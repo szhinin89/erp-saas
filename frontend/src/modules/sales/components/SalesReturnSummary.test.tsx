@@ -2,6 +2,8 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { render, cleanup } from "@testing-library/react";
 import { SalesReturnSummary } from "./SalesReturnSummary";
+import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.config";
+import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 import type {
   SalesReturnDetailDto,
   SalesReturnDto,
@@ -134,5 +136,44 @@ describe("SalesReturnSummary — totales migrados a ZHMoneyValue (SALES-DS-MONEY
     container.querySelectorAll(".zh-money-value").forEach((el) => {
       expect(el.getAttribute("style")).toBeNull();
     });
+  });
+});
+
+describe("SalesReturnSummary — precisión de línea (ERP-PRECISION-FRONTEND-06B)", () => {
+  it("cantidad usa quantityDecimals y P. unitario usa salesUnitPriceDecimals; IVA/total siguen en moneyDecimals", () => {
+    setPrecisionPolicyForTests({
+      ...TEST_PRECISION_POLICY,
+      quantityDecimals: 6,
+      salesUnitPriceDecimals: 4,
+    });
+    const { container } = render(
+      <SalesReturnSummary
+        salesReturn={buildSalesReturn({
+          lines: [buildLine({ quantity: 1.234567, unitPrice: 12.3457, vatAmount: 3, taxInclusiveTotal: 23 })],
+        })}
+        decimals={2}
+      />,
+    );
+
+    const row = container.querySelector(".sr-lines-table tbody tr");
+    const texts = Array.from(row?.querySelectorAll("td") ?? []).map((td) => td.textContent);
+    expect(texts).toContain("1.234567");
+    expect(texts).toContain("12.3457");
+    expect(texts).toContain("3.00");
+    expect(texts).toContain("23.00");
+  });
+
+  it("con quantityDecimals=0 la cantidad se muestra sin decimales", () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, quantityDecimals: 0 });
+    const { container } = render(
+      <SalesReturnSummary
+        salesReturn={buildSalesReturn({ lines: [buildLine({ quantity: 3 })] })}
+        decimals={2}
+      />,
+    );
+
+    const row = container.querySelector(".sr-lines-table tbody tr");
+    const texts = Array.from(row?.querySelectorAll("td") ?? []).map((td) => td.textContent);
+    expect(texts).toContain("3");
   });
 });

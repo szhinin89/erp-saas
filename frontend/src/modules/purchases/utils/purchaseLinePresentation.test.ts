@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.config";
+import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 import type { PurchaseItemContextDto } from "../api/purchaseService";
 import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
 import {
@@ -87,7 +89,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
     // Redacción legible para el usuario (PURCHASE-UI-P4): nunca expone el
     // código técnico crudo de UOM ("UNIT"/"04"/"19"), usa la palabra
     // genérica "unidades" en su lugar.
-    expect(vm.inventory.equivalenceDetail).toBe("1 PACA = 12.0000 unidades");
+    expect(vm.inventory.equivalenceDetail).toBe("1 PACA = 12.000000 unidades");
     expect(vm.inventory.baseQuantity).toBe("24.0000 unidades");
   });
 
@@ -163,7 +165,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
       }),
     );
 
-    expect(vm.inventory.baseUnitCost).toBe("$0.9854");
+    expect(vm.inventory.baseUnitCost).toBe("$0.985417");
     expect(vm.commercial.profitability.marginPctValue).toBeCloseTo(8.76, 1);
     expect(vm.commercial.profitability.marginPctValue).toBeGreaterThan(0);
   });
@@ -235,7 +237,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
         }),
       );
 
-      expect(vm.inventory.baseUnitCost).toBe("$0.8515");
+      expect(vm.inventory.baseUnitCost).toBe("$0.851458");
       expect(vm.commercial.profitability.marginPctValue).toBeCloseTo(21.16, 1);
     });
 
@@ -270,7 +272,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
       );
 
       const expected = (47.3 + 4.8 + 0.86) / 48;
-      expect(vm.inventory.baseUnitCost).toBe(`$${expected.toFixed(4)}`);
+      expect(vm.inventory.baseUnitCost).toBe(`$${expected.toFixed(6)}`);
     });
   });
 
@@ -349,7 +351,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
 
       expect(vm.inventory.baseQuantityValue).toBe(48);
       expect(vm.inventory.baseUnitCostValue).toBeCloseTo(0.8515, 3);
-      expect(vm.inventory.baseUnitCost).toBe("$0.8515");
+      expect(vm.inventory.baseUnitCost).toBe("$0.851458");
       expect(vm.commercial.profitability.marginPctValue).toBeCloseTo(21.16, 1);
       // Total línea 47.00 se compone fuera del view-model (netLine + IVA/ICE en PurchaseLineCard);
       // aquí solo se confirma que el costo real usado para el margen es consistente con esa cifra:
@@ -1207,6 +1209,36 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
 
 
 describe("reception presentation labels", () => {
+  it("muestra el factor máximo de policy a 10 decimales sin recortarlo", () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, conversionFactorDecimals: 10 });
+    const vm = buildPurchaseLinePresentation(line({ context: undefined,
+      conversionFactor: 12.1234567891, packagingLevelId: "paca-12" }));
+    expect(vm.inventory.conversionFactorLabel).toBe("12.1234567891 unidades por presentación");
+    expect(vm.inventory.conversionFactorValue).toBe(12.1234567891);
+  });
+
+  it.each([false, true])("unidades por presentación usa conversionFactorDecimals y conserva el factor crudo (contexto=%s)", (withContext) => {
+    setPrecisionPolicyForTests({
+      ...TEST_PRECISION_POLICY,
+      conversionFactorDecimals: 3,
+      quantityDecimals: 4,
+      purchaseUnitPriceDecimals: 5,
+    });
+    try {
+      const vm = buildPurchaseLinePresentation(line({
+        conversionFactor: 12.345678,
+        packagingLevelId: "paca-12",
+        context: withContext ? {
+          ...context,
+          packagingLevels: [{ ...context.packagingLevels[0], baseQuantity: 12.345678 }],
+        } : undefined,
+      }));
+      expect(vm.inventory.conversionFactorLabel).toBe("12.346 unidades por presentación");
+      expect(vm.inventory.conversionFactorValue).toBe(12.345678);
+    } finally {
+      setPrecisionPolicyForTests(TEST_PRECISION_POLICY);
+    }
+  });
   it.each([false, true])("keeps manual and saved unit labels free of technical codes (saved=%s)", (saved) => {
     const vm = buildPurchaseLinePresentation(line({
       packagingLevelId: "internal-packaging-id",
@@ -1223,12 +1255,12 @@ describe("reception presentation labels", () => {
     expect(vm.inventory.presentation).toBe("UNIDAD X1");
     expect(vm.inventory.conversionFactorLabel).toBe("1 unidad");
     expect(vm.inventory.baseQuantity).toBe("4.0000 unidades");
-    expect(vm.inventory.baseUnitCost).toBe("$1.9600");
+    expect(vm.inventory.baseUnitCost).toBe("$1.960000");
   });
   it("explains a box factor separately from its name", () => {
     const vm = buildPurchaseLinePresentation(line({ packagingLevelId: "paca-12" }));
     expect(vm.inventory.presentationLabel).toBe("PACA");
-    expect(vm.inventory.conversionFactorLabel).toBe("12 unidades por presentaci\u00f3n");
+    expect(vm.inventory.conversionFactorLabel).toBe("12.000000 unidades por presentaci\u00f3n");
     expect(vm.inventory.baseQuantityValue).toBe(24);
     expect(vm.inventory.baseUnitCostValue).toBeCloseTo(9.29 / 12);
   });
@@ -1239,6 +1271,6 @@ describe("reception presentation labels", () => {
     }));
     expect(vm.inventory.presentationLabel).not.toContain("19");
     expect(vm.inventory.presentationLabel).not.toContain("internal-packaging-id");
-    expect(vm.inventory.conversionFactorLabel).toBe("12 unidades por presentaci\u00f3n");
+    expect(vm.inventory.conversionFactorLabel).toBe("12.000000 unidades por presentaci\u00f3n");
   });
 });

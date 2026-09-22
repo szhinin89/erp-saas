@@ -193,10 +193,13 @@ export function buildPurchaseLinePresentation(
   const presentationLabel = selectedPackaging?.name?.trim() ||
     (t?.("purchases.lines.presentationNameUnavailable", "Nombre de presentación no disponible") ??
       "Nombre de presentación no disponible");
+  // ERP-PRECISION-FRONTEND-06B1: el factor visible respeta conversionFactorDecimals (igual que
+  // la equivalencia); el valor numérico crudo (conversionFactorValue) no cambia.
+  const conversionFactorText = formatMoney(conversionFactor, decimals.conversionFactorDecimals);
   const conversionFactorLabel = conversionFactor === 1
     ? (t?.("purchases.lines.oneBaseUnit", "1 unidad") ?? "1 unidad")
-    : (t?.("purchases.lines.unitsPerPresentation", { factor: conversionFactor }) ??
-      `${conversionFactor} unidades por presentación`);
+    : (t?.("purchases.lines.unitsPerPresentation", { factor: conversionFactorText }) ??
+      `${conversionFactorText} unidades por presentación`);
   // Palabra genérica para expresar cantidades en unidad base al usuario —
   // nunca el código técnico crudo (p. ej. "04"/"19"): el DTO de contexto no
   // trae un nombre legible de UOM, solo el código, así que no se muestra
@@ -210,10 +213,10 @@ export function buildPurchaseLinePresentation(
     hasItem && selectedPackaging && conversionFactor > 1
       ? (t?.("purchases.lines.equivalenceDetail", {
           package: selectedPackaging.name,
-          qty: formatMoney(conversionFactor, decimals.quantityDecimals),
+          qty: formatMoney(conversionFactor, decimals.conversionFactorDecimals),
           unit: baseUnitWord,
         }) ??
-        `1 ${selectedPackaging.name} = ${formatMoney(conversionFactor, decimals.quantityDecimals)} ${baseUnitWord}`)
+        `1 ${selectedPackaging.name} = ${formatMoney(conversionFactor, decimals.conversionFactorDecimals)} ${baseUnitWord}`)
       : "";
   // PURCHASE-LINE-HEADER-INVENTORY-MODE-01 — el costo real unitario base debe descontar el
   // descuento de línea (y sumar flete/otros gastos ya asignados, si existen) antes de dividir
@@ -347,15 +350,11 @@ export function buildPurchaseLinePresentation(
         : UNKNOWN,
       baseQuantityValue: quantityInBase,
       conversionFactorValue: conversionFactor,
-      // NOTA: se mantiene purchaseUnitPriceDecimals (no unitCostDecimals) — ver "casos dudosos"
-      // en el reporte del ticket COMPANY-PRECISION-POLICY-FRONTEND-CONSUMERS-MIGRATION-02 lote 2.
-      // baseUnitCost es un costo unitario derivado, pero purchaseLinePresentation.test.ts fija
-      // en 39+ asserts un formato de 4 decimales ($0.8515) heredado del legacy purchaseUnitPrice;
-      // reclasificar a unitCostDecimals (default 6) rompe esos tests sin que el ticket autorice
-      // explícitamente ese cambio de comportamiento visible.
+      // ERP-PRECISION-FRONTEND-06B: baseUnitCost es un costo unitario derivado → unitCostDecimals
+      // (ya no purchaseUnitPriceDecimals, que gobierna el precio de compra capturado).
       baseUnitCost:
         hasItem && quantityInBase > 0
-          ? formatMoneyWithSymbol(baseUnitCost, decimals.purchaseUnitPriceDecimals)
+          ? formatMoneyWithSymbol(baseUnitCost, decimals.unitCostDecimals)
           : UNKNOWN,
       baseUnitCostValue: baseUnitCost,
     },

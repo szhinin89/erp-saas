@@ -9,6 +9,8 @@ import {
   within,
 } from "@testing-library/react";
 import { PackagingLevelsSection } from "./CollectionSection";
+import { setPrecisionPolicyForTests } from "../../../../lib/config/precisionPolicy.config";
+import { TEST_PRECISION_POLICY } from "../../../../test/precisionPolicyFixture";
 import type { ItemPackagingLevelDto } from "../../../../types/items";
 
 afterEach(() => cleanup());
@@ -77,7 +79,8 @@ describe("PackagingLevelsSection", () => {
     expect(screen.getByRole("button", { name: "Crear UNIDAD X1" })).toBeTruthy();
   });
 
-  it("permite agregar PACA x12 y llama onSave con el conjunto completo", async () => {
+  it.each([12, 12.1234567891])("permite guardar una presentación con factor %s y precisión 10", async (factor) => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, conversionFactorDecimals: 10 });
     const onSave = vi.fn().mockResolvedValue(undefined);
     render(
       <PackagingLevelsSection
@@ -107,7 +110,7 @@ describe("PackagingLevelsSection", () => {
       ".zh-numeric-input",
     ) as NodeListOf<HTMLInputElement>;
     fireEvent.change(quantityInputs[quantityInputs.length - 2], {
-      target: { value: "12" },
+      target: { value: String(factor) },
     });
 
     fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
@@ -127,7 +130,7 @@ describe("PackagingLevelsSection", () => {
       id: null,
       name: "PACA x12",
       uomCode: "PACA",
-      baseQuantity: 12,
+      baseQuantity: factor,
     });
   });
 

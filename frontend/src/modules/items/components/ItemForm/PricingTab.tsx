@@ -356,12 +356,9 @@ export function PricingTab({ t, disabled, itemId, vatRateOptions }: Props) {
           value={formatOptionalMoney(
             hasCost ? averageCost : null,
             currencyCode,
-            // PRICING-LAB-COST-DECIMAL-SEMANTICS-01: mantiene la fuente legacy
-            // (purchaseUnitPriceDecimals) a propósito para no cambiar los
-            // decimales visibles sin tests que cubran el nuevo formato.
-            // Semánticamente debería ser unitCostDecimals — pendiente de
-            // decisión de negocio en un ticket aparte.
-            pp.purchaseUnitPriceDecimals,
+            // ERP-PRECISION-FRONTEND-06B: la fuente sigue siendo averageCost (sin cambio de
+            // datos) → averageCostDecimals.
+            pp.averageCostDecimals,
           )}
         />
         <Metric
@@ -369,8 +366,8 @@ export function PricingTab({ t, disabled, itemId, vatRateOptions }: Props) {
           value={formatOptionalMoney(
             lastCost,
             currencyCode,
-            // PRICING-LAB-COST-DECIMAL-SEMANTICS-01: ver nota arriba.
-            pp.purchaseUnitPriceDecimals,
+            // ERP-PRECISION-FRONTEND-06B: último costo → unitCostDecimals.
+            pp.unitCostDecimals,
           )}
         />
         <Metric
@@ -378,10 +375,8 @@ export function PricingTab({ t, disabled, itemId, vatRateOptions }: Props) {
           value={formatOptionalMoney(
             hasCost ? averageCost : null,
             currencyCode,
-            // PRICING-LAB-COST-DECIMAL-SEMANTICS-01: mantiene la fuente legacy
-            // (purchaseUnitPriceDecimals) a propósito; el mapeo correcto sería
-            // averageCostDecimals — pendiente de decisión de negocio y tests.
-            pp.purchaseUnitPriceDecimals,
+            // ERP-PRECISION-FRONTEND-06B: costo promedio → averageCostDecimals.
+            pp.averageCostDecimals,
           )}
         />
         <Metric

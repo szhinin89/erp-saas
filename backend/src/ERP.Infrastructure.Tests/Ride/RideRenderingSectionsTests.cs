@@ -32,6 +32,10 @@ public sealed class RideRenderingSectionsTests
         RideQrCodeGeneratorTestFactory.Create().Generate(layout.Header.AccessKey);
 
     [Theory]
+    [InlineData(false, 6, 2, "1.234567", "12.35")]
+    [InlineData(true, 6, 2, "1.234567", "12.35")]
+    [InlineData(false, 6, 6, "1.234567", "12.345678")]
+    [InlineData(true, 6, 6, "1.234567", "12.345678")]
     [InlineData(false, 6, 4, "1.234567", "12.3457")]
     [InlineData(true, 6, 4, "1.234567", "12.3457")]
     [InlineData(false, 0, 6, "1", "12.345678")]

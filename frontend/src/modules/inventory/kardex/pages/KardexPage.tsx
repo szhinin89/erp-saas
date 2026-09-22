@@ -126,10 +126,10 @@ export function KardexPage() {
 
   const policy = getPrecisionPolicy();
   const qty = policy.quantityDecimals;
-  // INVENTORY-DECIMAL-SEMANTICS-01: "Costo Unit." y "Costo Promedio" son semánticamente costo
-  // (unitCostDecimals/averageCostDecimals), pero usan purchaseUnitPriceDecimals; reclasificarlas
-  // es una decisión de negocio pendiente.
-  const cost = policy.purchaseUnitPriceDecimals;
+  // ERP-PRECISION-FRONTEND-06B: "Costo Unit." → unitCostDecimals; "Costo Promedio" →
+  // averageCostDecimals.
+  const unitCost = policy.unitCostDecimals;
+  const averageCost = policy.averageCostDecimals;
   const total = policy.moneyDecimals;
 
   // ZH-LISTING-MAIN-ROW-NUMBER-FIX-07: showRowNumber activo — "Seq." (sequenceNumber) sigue
@@ -175,14 +175,14 @@ export function KardexPage() {
       header: "Costo Unit.",
       align: "right",
       cellClassName: "zh-table-cell--num",
-      render: (m) => (m.unitCost != null ? formatMoneyWithSymbol(m.unitCost, cost) : "—"),
+      render: (m) => (m.unitCost != null ? formatMoneyWithSymbol(m.unitCost, unitCost) : "—"),
     },
     {
       key: "avgCost",
       header: "Costo Promedio",
       align: "right",
       cellClassName: "zh-table-cell--num",
-      render: (m) => formatMoneyWithSymbol(m.runningAverageCost, cost),
+      render: (m) => formatMoneyWithSymbol(m.runningAverageCost, averageCost),
     },
     {
       key: "stockValue",
@@ -434,7 +434,7 @@ export function KardexPage() {
             <SummaryCard
               icon="payments"
               label="Costo Promedio"
-              value={formatMoneyWithSymbol(ctx.summary.averageCost, cost)}
+              value={formatMoneyWithSymbol(ctx.summary.averageCost, averageCost)}
             />
             <SummaryCard
               icon="account_balance_wallet"

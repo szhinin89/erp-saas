@@ -11,6 +11,8 @@ import {
 import { FormProvider, useForm } from "react-hook-form";
 import { PricingTab } from "./PricingTab";
 import type { CreateItemFormValues } from "../../schemas/createItemSchema";
+import { setPrecisionPolicyForTests } from "../../../../lib/config/precisionPolicy.config";
+import { TEST_PRECISION_POLICY } from "../../../../test/precisionPolicyFixture";
 
 vi.mock("../../../pricing/facades/priceListLookupFacade", () => ({
   priceListLookupFacade: {
@@ -280,6 +282,21 @@ describe("PricingTab", () => {
       expect(marginMetric?.textContent).toContain("20.00%");
       expect(markupMetric?.textContent).toContain("25.00%");
       expect(statusMetric?.textContent).toContain("Saludable");
+    });
+  });
+
+  it("costo base actual y costo promedio usan averageCostDecimals (ERP-PRECISION-FRONTEND-06B)", async () => {
+    setPrecisionPolicyForTests({
+      ...TEST_PRECISION_POLICY,
+      averageCostDecimals: 8,
+      unitCostDecimals: 3,
+      purchaseUnitPriceDecimals: 5,
+    });
+    render(<PricingHarness baseSalePrice={100} itemId="item-1" />);
+
+    await waitFor(() => {
+      expect(getMetricValue("Costo base actual")?.trim()).toBe("USD 80.00000000");
+      expect(getMetricValue("Costo promedio")?.trim()).toBe("USD 80.00000000");
     });
   });
 

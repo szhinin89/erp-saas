@@ -4,6 +4,8 @@ import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { I18nProvider } from "../../../i18n/i18n";
 import { DistributeCostModal } from "./DistributeCostModal";
 import type { DistributeCostSourceLine } from "../utils/purchaseCalc";
+import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.config";
+import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 
 const lines: DistributeCostSourceLine[] = [
   {
@@ -106,5 +108,35 @@ describe("DistributeCostModal — valores monetarios de solo lectura (ZHMoneyVal
 
     const checkbox = container.querySelector('input[type="checkbox"]');
     expect(checkbox).toBeTruthy();
+  });
+});
+
+describe("DistributeCostModal — precisión (ERP-PRECISION-FRONTEND-06B)", () => {
+  it("cantidad usa quantityDecimals y % participación usa percentageDecimals", () => {
+    setPrecisionPolicyForTests({
+      ...TEST_PRECISION_POLICY,
+      quantityDecimals: 3,
+      percentageDecimals: 4,
+    });
+    const { container } = renderModal();
+
+    const amountInput = container.querySelector(".pdc-toolbar input") as HTMLInputElement;
+    fireEvent.blur(amountInput, { target: { value: "20" } });
+    fireEvent.click(screen.getByText("Calcular"));
+
+    const cellTexts = Array.from(container.querySelectorAll("tbody td")).map((td) => td.textContent);
+    expect(cellTexts).toContain("10.000");
+    expect(cellTexts).toContain("5.000");
+    // Ambas líneas valen 50 de 100 → 50% cada una, con 4 decimales.
+    expect(cellTexts.filter((t) => t === "50.0000%").length).toBe(2);
+  });
+
+  it("con quantityDecimals=0 la cantidad no muestra decimales", () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, quantityDecimals: 0 });
+    const { container } = renderModal();
+
+    const cellTexts = Array.from(container.querySelectorAll("tbody td")).map((td) => td.textContent);
+    expect(cellTexts).toContain("10");
+    expect(cellTexts).toContain("5");
   });
 });

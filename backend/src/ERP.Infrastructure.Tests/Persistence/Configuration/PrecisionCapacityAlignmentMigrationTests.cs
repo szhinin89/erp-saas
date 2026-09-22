@@ -239,6 +239,26 @@ public sealed class PrecisionCapacityAlignmentMigrationTests : IAsyncLifetime
             .Be("24.0000000001");
     }
 
+    [Theory]
+    [InlineData("1.230000")]
+    [InlineData("1.234500")]
+    [InlineData("1.234567")]
+    public async Task Sales_price_and_quantity_survive_PostgreSQL_round_trip(string price)
+    {
+        await using (var db = CreateContext())
+            await db.Database.MigrateAsync();
+        await using var conn = await OpenAsync();
+        await ExecAsync(conn, "SET session_replication_role = replica");
+        await InsertAsync(conn, "sales_invoice_details", new()
+        {
+            ["unit_price"] = price,
+            ["quantity"] = "1.123456",
+            ["quantity_in_base_uom"] = "1.123456",
+        });
+        (await ScalarAsync(conn, "SELECT unit_price::text FROM sales_invoice_details")).Should().Be(price);
+        (await ScalarAsync(conn, "SELECT quantity::text FROM sales_invoice_details")).Should().Be("1.123456");
+    }
+
     /// <summary>
     /// Inserta una fila mínima rellenando las columnas NOT NULL sin default con un valor neutro por
     /// tipo; las columnas indicadas en <paramref name="values"/> reciben el valor de la prueba.

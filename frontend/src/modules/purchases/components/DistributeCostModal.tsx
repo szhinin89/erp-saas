@@ -6,6 +6,7 @@ import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import { ZhSelect } from "../../../components/zh/inputs/ZhSelect";
 import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
+import { formatMoney } from "../../../lib/sanitizers";
 import { useI18n } from "../../../i18n/i18n";
 import type { PurchaseCostDistributionType } from "../api/purchaseService";
 import {
@@ -50,6 +51,9 @@ export function DistributeCostModal({
   // purchaseLinePresentation.ts (costo unitario != monto total de línea/factura).
   const totalAmountDecimals = policy.moneyDecimals;
   const unitCostDecimals = policy.unitCostDecimals;
+  // ERP-PRECISION-FRONTEND-06B: cantidad → quantityDecimals; % participación → percentageDecimals.
+  const quantityDecimals = policy.quantityDecimals;
+  const percentageDecimals = policy.percentageDecimals;
 
   const [costType, setCostType] =
     useState<PurchaseCostDistributionType>("Freight");
@@ -252,7 +256,7 @@ export function DistributeCostModal({
                 />
               </td>
               <td>{p.description}</td>
-              <td className="zh-table-cell--num">{p.quantity}</td>
+              <td className="zh-table-cell--num">{formatMoney(p.quantity, quantityDecimals)}</td>
               <td className="zh-table-cell--num">
                 <ZHMoneyValue
                   value={p.currentUnitCost}
@@ -268,7 +272,7 @@ export function DistributeCostModal({
                 />
               </td>
               <td className="zh-table-cell--num">
-                {hasCalculated ? `${p.participationPct.toFixed(2)}%` : "—"}
+                {hasCalculated ? `${formatMoney(p.participationPct, percentageDecimals)}%` : "—"}
               </td>
               <td className="zh-table-cell--num">
                 <ZHMoneyValue

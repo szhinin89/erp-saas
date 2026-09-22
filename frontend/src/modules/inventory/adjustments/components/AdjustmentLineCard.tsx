@@ -137,14 +137,9 @@ export function AdjustmentLineCard({
             {t("inventory.adjustments.lines.equivalence", "Equivalencia")}
           </ZHFieldLabel>
           <ZHDataValue variant="numeric">
-            {/* INVENTORY-DECIMAL-SEMANTICS-01: se mantiene el 2 fijo (no quantityDecimals,
-                default 4) porque StockAdjustmentFormPage.test.tsx cubre exactamente este
-                formato ("Equivale a 1.00 unidades base" / "Equivale a 12.00 unidades base") —
-                cambiarlo rompe esa cobertura sin red de regresión para el nuevo valor visible.
-                Reclasificación pendiente como decisión de negocio, no efecto de esta
-                migración. */}
+            {/* ERP-PRECISION-FRONTEND-06B: la equivalencia en unidad base usa quantityDecimals. */}
             {t("inventory.adjustments.lines.equivalentTo", "Equivale a")}{" "}
-            {formatMoney(view.quantityInBaseUom, 2)} {baseUnitWord}
+            {formatMoney(view.quantityInBaseUom, quantityDecimals)} {baseUnitWord}
           </ZHDataValue>
         </div>
 

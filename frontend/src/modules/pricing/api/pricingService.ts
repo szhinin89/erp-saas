@@ -5,6 +5,8 @@ import {
   apiPut,
   apiDelete,
 } from "../../lib/apiEnvelope";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
+import { formatMoney } from "../../../lib/sanitizers";
 
 const BASE = "/api/v1/pricing";
 
@@ -163,22 +165,30 @@ export function formatRuleGeneral(
   currencyCode: string,
   translate?: (key: string, params?: Record<string, string | number>) => string,
 ): string {
+  // ERP-PRECISION-FRONTEND-06B: porcentajes → percentageDecimals; precio fijo/ajuste unitario →
+  // salesUnitPriceDecimals (política de la empresa).
+  const policy = getPrecisionPolicy();
+  const pct = (v: number) => formatMoney(v, policy.percentageDecimals);
+  const unit = (v: number) => formatMoney(v, policy.salesUnitPriceDecimals);
   if (translate) {
     if (!ruleType || ruleValue == null) return translate("pricing.ux.rule.none");
-    const value = ruleType === "FixedPrice" ? `${currencyCode} ${ruleValue}`
-      : ruleType === "FixedAdjustment" && ruleValue >= 0 ? `+${ruleValue}` : ruleValue;
+    const isPercent = ruleType === "PercentDiscount" || ruleType === "PercentMarkup";
+    const value = isPercent ? pct(ruleValue)
+      : ruleType === "FixedPrice" ? `${currencyCode} ${unit(ruleValue)}`
+      : ruleType === "FixedAdjustment" ? `${ruleValue >= 0 ? "+" : ""}${unit(ruleValue)}`
+      : ruleValue;
     return translate(`pricing.ux.rule.${ruleType}`, { value });
   }
   if (!ruleType || ruleValue == null) return "Sin regla";
   switch (ruleType) {
     case "PercentDiscount":
-      return `Descuento ${ruleValue}%`;
+      return `Descuento ${pct(ruleValue)}%`;
     case "PercentMarkup":
-      return `Recargo ${ruleValue}%`;
+      return `Recargo ${pct(ruleValue)}%`;
     case "FixedPrice":
-      return `Precio fijo ${currencySymbol(currencyCode)}${ruleValue}`;
+      return `Precio fijo ${currencySymbol(currencyCode)}${unit(ruleValue)}`;
     case "FixedAdjustment":
-      return `Ajuste ${ruleValue >= 0 ? "+" : ""}${ruleValue}`;
+      return `Ajuste ${ruleValue >= 0 ? "+" : ""}${unit(ruleValue)}`;
     default:
       return "Sin regla";
   }

@@ -45,10 +45,19 @@ export function KardexMovementDetailModal({
   const navigate = useNavigate();
   const policy = getPrecisionPolicy();
   const qty = policy.quantityDecimals;
-  // INVENTORY-DECIMAL-SEMANTICS-01: "Costo Unitario" y "Costo Promedio Corrido" son
-  // semánticamente costo (unitCostDecimals/averageCostDecimals), pero usan
-  // purchaseUnitPriceDecimals; reclasificarlas es una decisión de negocio pendiente.
-  const cost = policy.purchaseUnitPriceDecimals;
+  // ERP-PRECISION-FRONTEND-06B: "Costo Unitario" → unitCostDecimals; "Costo Promedio Corrido" →
+  // averageCostDecimals.
+  const unitCost = policy.unitCostDecimals;
+  const averageCost = policy.averageCostDecimals;
+  // "Precio Comercial" = UnitPrice de la línea del documento origen (GetKardexMovementDetail):
+  // PurchaseInvoice → precio de compra (purchaseUnitPriceDecimals); SalesInvoice → precio de venta
+  // (salesUnitPriceDecimals). Solo esos dos tipos lo informan.
+  const sourcePrice =
+    detail?.sourceDocument?.docType === "SalesInvoice"
+      ? policy.salesUnitPriceDecimals
+      : detail?.sourceDocument?.docType === "PurchaseInvoice"
+        ? policy.purchaseUnitPriceDecimals
+        : null;
   const total = policy.moneyDecimals;
 
   const m = detail?.movement;
@@ -98,7 +107,7 @@ export function KardexMovementDetailModal({
                 label="Costo Unitario"
                 value={
                   m.unitCost != null
-                    ? formatMoneyWithSymbol(m.unitCost, cost)
+                    ? formatMoneyWithSymbol(m.unitCost, unitCost)
                     : "—"
                 }
               />
@@ -120,7 +129,7 @@ export function KardexMovementDetailModal({
               />
               <Field
                 label="Costo Promedio Corrido"
-                value={formatMoneyWithSymbol(m.runningAverageCost, cost)}
+                value={formatMoneyWithSymbol(m.runningAverageCost, averageCost)}
               />
               <Field
                 label="Valor de Inventario Corrido"
@@ -158,12 +167,12 @@ export function KardexMovementDetailModal({
                       value={detail.sourceDocument.partnerName}
                     />
                   )}
-                  {detail.sourceDocument.unitPrice != null && (
+                  {detail.sourceDocument.unitPrice != null && sourcePrice != null && (
                     <Field
                       label="Precio Comercial"
                       value={formatMoneyWithSymbol(
                         detail.sourceDocument.unitPrice,
-                        cost,
+                        sourcePrice,
                       )}
                     />
                   )}

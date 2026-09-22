@@ -377,14 +377,14 @@ describe("StockAdjustmentFormPage — creación", () => {
     await addProductLine();
 
     // Sin presentación: 1 unidad base.
-    expect(screen.getByText(/Equivale a 1\.00 unidades base/)).toBeTruthy();
+    expect(screen.getByText(/Equivale a 1.0000 unidades base/)).toBeTruthy();
 
     fireEvent.change(screen.getByLabelText("Presentación Arroz 1kg"), {
       target: { value: "pk-12" },
     });
 
     expect(
-      await screen.findByText(/Equivale a 12\.00 unidades base/),
+      await screen.findByText(/Equivale a 12.0000 unidades base/),
     ).toBeTruthy();
   });
 

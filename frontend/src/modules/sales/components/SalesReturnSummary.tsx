@@ -1,5 +1,7 @@
 import { ZHCard } from "../../../components/zh/ZHCard";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
+import { formatMoney } from "../../../lib/sanitizers";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import type { SalesReturnDto } from "../api/salesReturnService";
 import "../../../styles/shared/erp-form-core.css";
@@ -13,8 +15,11 @@ interface Props {
  * Muestra lo ya congelado/persistido de una devolución: líneas (una vez
  * autorizada), resumen de impuestos/total y asignaciones de reembolso.
  * Nunca recalcula nada — todos los valores vienen tal cual del servidor.
+ * `decimals` (moneyDecimals) rige totales/impuestos; cantidad y precio unitario siguen la política
+ * de la empresa (quantityDecimals / salesUnitPriceDecimals).
  */
 export function SalesReturnSummary({ salesReturn, decimals }: Readonly<Props>) {
+  const { quantityDecimals, salesUnitPriceDecimals } = getPrecisionPolicy();
   const lineColumns: ZHDataTableColumn<SalesReturnDto["lines"][number]>[] = [
     {
       key: "product",
@@ -26,13 +31,13 @@ export function SalesReturnSummary({ salesReturn, decimals }: Readonly<Props>) {
         </>
       ),
     },
-    { key: "quantity", header: "Cantidad", align: "right", cellClassName: "zh-table-cell--num", render: (line) => line.quantity },
+    { key: "quantity", header: "Cantidad", align: "right", cellClassName: "zh-table-cell--num", render: (line) => formatMoney(line.quantity, quantityDecimals) },
     {
       key: "unitPrice",
       header: "P. unitario",
       align: "right",
       cellClassName: "zh-table-cell--num",
-      render: (line) => <ZHMoneyValue value={line.unitPrice} decimals={decimals} currencySymbol="" />,
+      render: (line) => <ZHMoneyValue value={line.unitPrice} decimals={salesUnitPriceDecimals} currencySymbol="" />,
     },
     {
       key: "vat",

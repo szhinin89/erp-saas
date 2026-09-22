@@ -8,6 +8,22 @@ namespace ERP.Application.Tests.ElectronicDocuments;
 
 public sealed class InvoiceXmlBuilderTests
 {
+    [Fact]
+    public void Precision_final_QA_XML_caps_quantity_and_price_at_six_and_fiscal_totals_at_two()
+    {
+        var data = ValidInvoiceData();
+        data = data with { Details = [data.Details[0] with {
+            Quantity = 1.1234567891m, UnitPrice = 12.1234567891m,
+        }] };
+        var result = new InvoiceXmlBuilder(new FakeTaxCategoryCodeResolver()).Build(data);
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var xml = XDocument.Parse(result.Value!.Xml);
+        xml.Descendants("cantidad").Single().Value.Should().Be("1.123457");
+        xml.Descendants("precioUnitario").Single().Value.Should().Be("12.123457");
+        xml.Descendants("importeTotal").Single().Value.Should().Be("23.00");
+        xml.Descendants("precioTotalSinImpuesto").Single().Value.Should().Be("20.00");
+    }
+
     /// <summary>Doble de prueba independiente de la implementación real registrada en DI
     /// (<c>SriTaxCategoryCodeResolver</c>, Fase 9) — mantiene estas pruebas desacopladas de
     /// esa clase concreta, ejercitando el builder contra cualquier resolver conforme al contrato.</summary>
