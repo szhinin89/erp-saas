@@ -7,8 +7,8 @@ using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Company.Entities;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -71,7 +71,8 @@ public sealed class AdminCoreCompanyUpdateControllerTests
     {
         var entity = Company.CreateManaged(Guid.NewGuid(), "1790016919001", "Actualizada");
         var command = new UpdateCompanyForAdminCoreCommand(entity.Id, entity.LegalName, null, true, entity.TaxIdentificationNumber);
-        var controller = Build(request => {
+        var controller = Build(request =>
+        {
             request.Should().Be(command);
             return Result<CompanyDetailDto>.Success(CompanyDetailDto.FromEntity(entity));
         });

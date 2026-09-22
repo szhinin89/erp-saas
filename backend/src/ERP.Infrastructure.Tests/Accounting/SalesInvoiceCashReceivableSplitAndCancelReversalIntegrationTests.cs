@@ -1,13 +1,11 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
-using ERP.Application.Modules.Accounting.UseCases.JournalEntries;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
-using ERP.Domain.Modules.Accounting.ValueObjects;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Company.Entities;

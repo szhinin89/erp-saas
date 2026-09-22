@@ -1,4 +1,3 @@
-using ERP.Infrastructure.Tests.TestData;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Purchases.UseCases;
@@ -13,6 +12,7 @@ using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories.Payables;
 using ERP.Infrastructure.Persistence.Repositories.Purchases;
+using ERP.Infrastructure.Tests.TestData;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Moq;

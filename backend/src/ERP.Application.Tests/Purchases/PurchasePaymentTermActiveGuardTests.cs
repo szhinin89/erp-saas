@@ -1,17 +1,17 @@
-using ERP.Application.Tests.TestSupport;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.MasterData.Services;
 using ERP.Application.Modules.Purchases.Services;
 using ERP.Application.Modules.Purchases.UseCases;
+using ERP.Application.Tests.TestSupport;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Interfaces;
+using ERP.Domain.Modules.Expenses.Interfaces;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
-using ERP.Domain.Modules.Expenses.Interfaces;
 using FluentAssertions;
 using Moq;
 
@@ -132,8 +132,11 @@ public sealed class PurchasePaymentTermActiveGuardTests
             DateOnly.FromDateTime(DateTime.UtcNow), null, 100, 0, 100, UserId);
         fx.ReceptionRepo.Setup(r => r.GetByLineIdAsync(TenantId, lineId, It.IsAny<CancellationToken>())).ReturnsAsync(source);
         fx.ExpenseRepo.Setup(r => r.ExistsByReceptionDocumentIdAsync(TenantId, source.Id, It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        var cmd = Fixture.ValidCommand() with { AccessKey = omitKey ? null : key,
-            Lines = [new(null, "Servicio", 1m, 100m, "0", PurchaseReceptionLineId: lineId)] };
+        var cmd = Fixture.ValidCommand() with
+        {
+            AccessKey = omitKey ? null : key,
+            Lines = [new(null, "Servicio", 1m, 100m, "0", PurchaseReceptionLineId: lineId)]
+        };
         var result = await fx.BuildCreateHandler().Handle(cmd, default);
         result.Code.Should().Be(ApiResponseCodes.Common.Conflict);
         fx.Repo.Verify(r => r.AddAsync(It.IsAny<PurchaseInvoice>(), It.IsAny<CancellationToken>()), Times.Never);

@@ -1,7 +1,7 @@
-using ERP.Application.Modules.Companies;
 using ERP.Application.Common;
-using ERP.Application.Modules.Companies.UseCases.PrecisionPolicy;
 using ERP.Application.Common.Persistence;
+using ERP.Application.Modules.Companies;
+using ERP.Application.Modules.Companies.UseCases.PrecisionPolicy;
 using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Application.Modules.Purchases.Services;
 using ERP.Domain.MasterData.Interfaces;

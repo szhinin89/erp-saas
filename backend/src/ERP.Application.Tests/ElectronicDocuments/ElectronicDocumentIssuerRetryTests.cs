@@ -4,7 +4,6 @@ using ERP.Application.Common.Interfaces.SRI;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.ElectronicDocuments.SchemaValidation;
 using ERP.Application.Modules.ElectronicDocuments.Services;
-using ERP.Application.Modules.ElectronicDocuments.XmlBuilders;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.ElectronicDocuments.Interfaces;

@@ -4,7 +4,6 @@ using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Caja.Interfaces;
-using ERP.Domain.Modules.Company.Interfaces;
 using FluentAssertions;
 using Moq;
 

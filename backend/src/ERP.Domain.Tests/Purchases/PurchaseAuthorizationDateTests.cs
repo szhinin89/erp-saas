@@ -1,7 +1,7 @@
-using System.Text.Json;
 using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Purchases.Entities;
 using FluentAssertions;
+using System.Text.Json;
 
 namespace ERP.Domain.Tests.Purchases;
 

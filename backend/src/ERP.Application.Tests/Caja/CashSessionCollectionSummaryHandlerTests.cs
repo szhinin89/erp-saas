@@ -4,7 +4,6 @@ using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Interfaces;
-using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Finance.Enums;
 using ERP.Domain.Modules.Finance.Interfaces;

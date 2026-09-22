@@ -1,11 +1,11 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Common.Interfaces.SRI;
+using ERP.Application.Modules.ElectronicInvoicing.Services;
 using ERP.Application.Modules.ElectronicInvoicing.UseCases.GetSriConfiguration;
 using ERP.Application.Modules.ElectronicInvoicing.UseCases.InspectSriCertificate;
 using ERP.Application.Modules.ElectronicInvoicing.UseCases.UpsertSriConfiguration;
 using ERP.Application.Modules.ElectronicInvoicing.UseCases.ValidateSriConfiguration;
-using ERP.Application.Modules.ElectronicInvoicing.Services;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;

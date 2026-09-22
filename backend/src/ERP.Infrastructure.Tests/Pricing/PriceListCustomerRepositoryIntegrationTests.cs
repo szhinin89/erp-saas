@@ -1,7 +1,6 @@
 using ERP.Application;
 using ERP.Application.Audit;
 using ERP.Application.Common;
-using ERP.Domain.Audit;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Pricing.Entities;
 using ERP.Domain.Modules.Pricing.Interfaces;

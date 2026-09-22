@@ -20,5 +20,6 @@ public sealed class UnspecifiedDateTimeKindException : Exception
             $"{entityName}.{propertyName} tiene DateTimeKind.{kind}. Todo DateTime persistible debe "
                 + "normalizarse a UTC (DateTimeKind.Utc) antes de llegar a SaveChanges — usar "
                 + "ERP.Domain.Common.UtcDateTime.Normalize() en la entidad/factory/mutador de origen."
-        ) { }
+        )
+    { }
 }

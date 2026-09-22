@@ -1,11 +1,12 @@
-using ERP.Application.Modules.Companies;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
+using ERP.Application.Modules.Companies;
 using ERP.Application.Modules.Payables.UseCases;
 using ERP.Application.Modules.Pricing.Services;
 using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Application.Modules.Purchases.Services;
 using ERP.Domain.Configuration.Interfaces;
+using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
@@ -13,7 +14,6 @@ using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
-using ERP.Domain.MasterData.Interfaces;
 using MediatR;
 using Microsoft.Extensions.Logging;
 

@@ -1,4 +1,3 @@
-﻿using System.Globalization;
 using ERP.Application.Common;
 using ERP.Infrastructure.Persistence;
 using FluentAssertions;
@@ -7,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql;
+using System.Globalization;
 using Testcontainers.PostgreSql;
 
 namespace ERP.Infrastructure.Tests.Persistence.Configuration;

@@ -1,7 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Caja.DTOs;
 using ERP.Domain.Access.Interfaces;
-using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;

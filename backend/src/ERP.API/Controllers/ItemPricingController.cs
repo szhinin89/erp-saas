@@ -1,9 +1,9 @@
 using ERP.API.Contracts;
-using ERP.Application.Modules.Pricing.UseCases.PricingRules;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Items.UseCases.Profitability;
 using ERP.Application.Modules.Pricing.UseCases.ItemPricingSimulation;
 using ERP.Application.Modules.Pricing.UseCases.PriceListItems;
+using ERP.Application.Modules.Pricing.UseCases.PricingRules;
 using ERP.Domain.Kernel.Permissions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;

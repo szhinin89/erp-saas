@@ -3,7 +3,6 @@ using ERP.Domain.Branches.Entities;
 using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Company.Entities;
-using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Interceptors;

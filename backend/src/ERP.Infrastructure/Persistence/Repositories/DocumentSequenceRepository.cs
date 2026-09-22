@@ -1,6 +1,5 @@
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Interfaces;
-using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using System.Globalization;

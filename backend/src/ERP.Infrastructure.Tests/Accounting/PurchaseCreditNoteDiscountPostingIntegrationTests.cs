@@ -4,7 +4,6 @@ using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.MasterData.Entities;
-using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Payables.Entities;

@@ -1,7 +1,7 @@
+using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Finance.Entities;
-using ERP.Domain.MasterData.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

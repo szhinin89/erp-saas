@@ -1,5 +1,3 @@
-using ERP.Domain.Modules.Caja.Interfaces;
-using ERP.Domain.Modules.Finance.Entities;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
@@ -12,8 +10,10 @@ using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Accounting.ValueObjects;
 using ERP.Domain.Modules.Caja.Entities;
+using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Enums;
+using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Finance.Enums;
 using ERP.Domain.Modules.Finance.Events;
 using ERP.Domain.Modules.Finance.Interfaces;

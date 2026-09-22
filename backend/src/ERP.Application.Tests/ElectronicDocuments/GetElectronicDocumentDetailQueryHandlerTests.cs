@@ -1,6 +1,5 @@
 using ERP.Application.Audit;
 using ERP.Application.Common;
-using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Application.Modules.ElectronicDocuments.UseCases.GetElectronicDocumentDetail;
 using ERP.Domain.Modules.Company.Interfaces;

@@ -1,6 +1,5 @@
 using ERP.Domain.Exceptions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace ERP.Infrastructure.Persistence.Interceptors;

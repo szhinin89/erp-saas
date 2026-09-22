@@ -1,6 +1,5 @@
 using ERP.Application.Common;
 using ERP.Domain.MasterData.Entities;
-using ERP.Domain.MasterData.Enums;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.MasterData.Repositories;

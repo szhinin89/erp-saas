@@ -1,6 +1,5 @@
-using ERP.Application.Modules.Companies;
-using ERP.Domain.Configuration.Entities;
 using ERP.Application.Common;
+using ERP.Application.Modules.Companies;
 using ERP.Application.Modules.Ride.Branding;
 using ERP.Application.Modules.Ride.DTOs;
 using ERP.Application.Modules.Ride.Parsers;
@@ -8,6 +7,7 @@ using ERP.Application.Modules.Ride.Rendering;
 using ERP.Application.Modules.Ride.Services;
 using ERP.Application.Modules.Ride.Storage;
 using ERP.Application.Modules.Ride.Templates;
+using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Modules.Ride.Entities;
 using ERP.Domain.Modules.Ride.Enums;
 using ERP.Domain.Modules.Ride.Interfaces;

@@ -1,6 +1,4 @@
-using System.Security.Claims;
 using ERP.Application.Auth.UseCases.RefreshToken;
-using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
@@ -11,6 +9,7 @@ using ERP.Domain.Tenants.Entities;
 using ERP.Domain.Tenants.Interfaces;
 using FluentAssertions;
 using Moq;
+using System.Security.Claims;
 
 namespace ERP.Application.Tests.Auth;
 

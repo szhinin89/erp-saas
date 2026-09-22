@@ -1,7 +1,6 @@
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Enums;
 using ERP.Domain.Access.Interfaces;
-using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories;

@@ -1,9 +1,8 @@
 using ERP.Application.Modules.Companies;
 using ERP.Domain.Configuration.Entities;
-using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Accounting.Enums;
+using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Purchases.Enums;
-using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories.CompanyConfig;

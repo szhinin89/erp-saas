@@ -1,5 +1,4 @@
 using ERP.Application.Common;
-using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Application.Modules.ElectronicDocuments.XmlBuilders;
 using ERP.Application.Modules.Retentions.Services;
 using ERP.Application.Modules.Ride.Branding;

@@ -1,7 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.DTOs;
-using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Inventory.Interfaces;
+using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Interfaces;

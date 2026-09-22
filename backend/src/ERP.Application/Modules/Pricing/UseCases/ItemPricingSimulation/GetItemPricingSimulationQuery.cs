@@ -3,12 +3,12 @@ using ERP.Application.Common.Services;
 using ERP.Application.Modules.Companies;
 using ERP.Application.Modules.Pricing.DTOs;
 using ERP.Application.Modules.Pricing.Services;
+using ERP.Application.Modules.Pricing.UseCases.PricingRules;
 using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Pricing.Entities;
 using ERP.Domain.Modules.Pricing.Interfaces;
-using MediatR;
 using FluentValidation;
-using ERP.Application.Modules.Pricing.UseCases.PricingRules;
+using MediatR;
 
 namespace ERP.Application.Modules.Pricing.UseCases.ItemPricingSimulation;
 

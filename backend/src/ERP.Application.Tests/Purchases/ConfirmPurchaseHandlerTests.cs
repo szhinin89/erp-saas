@@ -1,4 +1,3 @@
-using ERP.Application.Tests.TestSupport;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Payables.UseCases;
@@ -6,6 +5,7 @@ using ERP.Application.Modules.Pricing.DTOs;
 using ERP.Application.Modules.Pricing.Services;
 using ERP.Application.Modules.Purchases.Services;
 using ERP.Application.Modules.Purchases.UseCases;
+using ERP.Application.Tests.TestSupport;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Interfaces;

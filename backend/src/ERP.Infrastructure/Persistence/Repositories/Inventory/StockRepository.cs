@@ -1,6 +1,6 @@
-using ERP.Application.Modules.Companies;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
+using ERP.Application.Modules.Companies;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;

@@ -6,7 +6,6 @@ using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.ValueObjects;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Expenses.Entities;
-using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.ValueObjects;

@@ -1,8 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Companies;
-using ERP.Application.Modules.Pricing.DTOs;
 using ERP.Application.Modules.Pricing.Services;
-using ERP.Domain.Common;
 using MediatR;
 
 namespace ERP.Application.Modules.Sales.UseCases.PreviewSalesRepricing;

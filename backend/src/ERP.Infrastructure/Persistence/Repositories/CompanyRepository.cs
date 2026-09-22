@@ -1,7 +1,6 @@
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using ERP.Infrastructure.Persistence;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 
@@ -140,7 +139,7 @@ public sealed class CompanyRepository : ICompanyRepository
             await _db.SaveChangesAsync(cancellationToken);
         }
         catch (DbUpdateException ex) when (ex.InnerException is Npgsql.PostgresException
-            { SqlState: "23505", ConstraintName: "uq_company_tax_identification_number" })
+        { SqlState: "23505", ConstraintName: "uq_company_tax_identification_number" })
         {
             throw new ERP.Domain.Exceptions.CompanyRucAlreadyExistsException(
                 ex.Entries.Select(e => e.Entity).OfType<Company>().FirstOrDefault()?.TaxIdentificationNumber ?? "");

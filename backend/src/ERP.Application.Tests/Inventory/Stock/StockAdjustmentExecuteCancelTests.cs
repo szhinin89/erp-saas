@@ -1,8 +1,8 @@
-using ERP.Application.Tests.TestSupport;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Inventory.Stock.UseCases.CancelStockAdjustment;
 using ERP.Application.Modules.Inventory.Stock.UseCases.ExecuteStockAdjustment;
+using ERP.Application.Tests.TestSupport;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;

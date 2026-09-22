@@ -1,4 +1,3 @@
-using ERP.Infrastructure.Tests.TestData;
 using ERP.Application.Common;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.Modules.Company.Entities;
@@ -7,6 +6,7 @@ using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories.Inventory;
+using ERP.Infrastructure.Tests.TestData;
 using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;

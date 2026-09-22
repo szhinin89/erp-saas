@@ -1,8 +1,8 @@
 using ERP.Application.Common;
-using ERP.Application.Modules.Company.UseCases.UpdateCompanyForAdminCore;
-using ERP.Application.Modules.Companies.DTOs;
 using ERP.Application.Modules.Companies;
+using ERP.Application.Modules.Companies.DTOs;
 using ERP.Application.Modules.Companies.UseCases.GetCompanyProfile;
+using ERP.Application.Modules.Company.UseCases.UpdateCompanyForAdminCore;
 using ERP.Application.Modules.Media;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Enums;

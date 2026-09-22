@@ -2,7 +2,6 @@ using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
-using ERP.Domain.Modules.Accounting.ValueObjects;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Seeding;

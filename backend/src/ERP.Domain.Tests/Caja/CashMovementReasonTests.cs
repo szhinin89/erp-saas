@@ -1,7 +1,6 @@
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Enums;
 using FluentAssertions;
-using Xunit;
 
 namespace ERP.Domain.Tests.Caja;
 

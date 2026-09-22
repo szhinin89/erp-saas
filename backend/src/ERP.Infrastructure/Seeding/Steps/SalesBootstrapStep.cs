@@ -7,7 +7,6 @@ using ERP.Domain.Modules.Pricing.Entities;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Enums;
 using ERP.Infrastructure.Persistence;
-using ERP.Infrastructure.Seeding;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 

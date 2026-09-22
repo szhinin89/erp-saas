@@ -12,9 +12,12 @@ public sealed class InvoiceXmlBuilderTests
     public void Precision_final_QA_XML_caps_quantity_and_price_at_six_and_fiscal_totals_at_two()
     {
         var data = ValidInvoiceData();
-        data = data with { Details = [data.Details[0] with {
+        data = data with
+        {
+            Details = [data.Details[0] with {
             Quantity = 1.1234567891m, UnitPrice = 12.1234567891m,
-        }] };
+        }]
+        };
         var result = new InvoiceXmlBuilder(new FakeTaxCategoryCodeResolver()).Build(data);
         result.IsSuccess.Should().BeTrue(result.Error);
         var xml = XDocument.Parse(result.Value!.Xml);

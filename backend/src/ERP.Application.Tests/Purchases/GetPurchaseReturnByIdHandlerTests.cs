@@ -1,6 +1,5 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.UseCases;
-using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Items.Entities;
