@@ -178,7 +178,6 @@ export function OperationSettingsSection() {
                 >
                   <option value="es">{t("app.langMenu.spanish")}</option>
                   <option value="en">{t("app.langMenu.english")}</option>
-                  <option value="qu">{t("app.langMenu.kichwa")}</option>
                 </ZhSelect>
               </ZHField>
             </ZHGrid>

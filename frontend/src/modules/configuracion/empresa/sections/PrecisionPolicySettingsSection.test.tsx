@@ -277,7 +277,7 @@ describe("i18n ES/EN/QU", () => {
     "session.precisionPolicy.loadError",
     "session.precisionPolicy.retry",
   ];
-  it.each(["es", "en", "qu"] as const)("locale %s tiene todas las claves", (locale) => {
+  it.each(["es", "en"] as const)("locale %s tiene todas las claves", (locale) => {
     for (const key of keys) expect(dictionaries[locale][key], `${locale}:${key}`).toBeTruthy();
     expect(dictionaries[locale]["settings.company.precision.example"]).toContain("{{value}}");
   });

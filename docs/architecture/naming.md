@@ -68,6 +68,5 @@ Jerarquía CSS: [FRONTEND-RULES.md](./frontend.md#css--jerarquía-de-3-niveles).
 |--------|---------|-------|
 | `es` | `es.json` | Español |
 | `en` | `en.json` | Inglés |
-| `qu` | `qu.json` | Kichwa de Cañar, Ecuador |
 
 Toda clave nueva en **los tres** archivos.

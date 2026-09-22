@@ -43,7 +43,7 @@ que `inventory/products` y `inventory/warehouses`:
 
 ### 1 — i18n primero, código después
 
-Añadir **todas** las claves nuevas a `es.json`, `en.json` y `qu.json`
+Añadir **todas** las claves nuevas a `es.json` y `en.json`
 **antes** de escribir cualquier componente.
 
 Nunca dejar texto visible hardcodeado. Todo usa `t('clave', 'fallback')`.
@@ -145,7 +145,7 @@ useEffect(() => {
 ## Archivos a producir (en orden)
 
 ```
-1. es.json + en.json + qu.json   ← PRIMERO siempre
+1. es.json + en.json   ← PRIMERO siempre
 2. {modulo}UiStore.ts            ← Zustand: tab, editingItem, toast, activity
 3. {Modulo}ToastManager.tsx      ← auto-dismiss 3s, clases prd-toast-*
 4. {Modulo}ConfirmModal.tsx      ← clases prd-modal-* (copia del patrón)
@@ -217,7 +217,7 @@ grep -rn '"[A-ZÁÉÍÓÚ][a-záéíóú ]\{4,\}"' {dir}/components/ {dir}/pages
 
 | ❌ Prohibido | ✅ Corrección |
 |-------------|-------------|
-| Escribir componentes antes de las keys i18n | Keys en es/en/qu primero |
+| Escribir componentes antes de las keys i18n | Keys en es/en primero |
 | `<span>Texto visible</span>` directo | `<span>{t('key','fallback')}</span>` |
 | Clases `prd-*` en el `.css` del módulo | Solo importar `ProductsPage.css` |
 | Clases del módulo sin prefijo propio | `{prefix}-nombre-clase` siempre |

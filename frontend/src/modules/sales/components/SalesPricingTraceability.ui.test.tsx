@@ -194,7 +194,7 @@ describe("i18n — claves sales.pricing.* en ES/EN/QU sin hardcodes", () => {
     "sales.pricing.contextUnavailable",
     "sales.pricing.pvp",
   ];
-  it.each(["es", "en", "qu"] as const)("locale %s tiene todas las claves y conserva {{name}}", (locale) => {
+  it.each(["es", "en"] as const)("locale %s tiene todas las claves y conserva {{name}}", (locale) => {
     for (const key of KEYS) {
       const text = dictionaries[locale][key];
       expect(text, `${locale}:${key}`).toBeTruthy();

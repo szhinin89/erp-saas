@@ -1,11 +1,11 @@
 /**
  * check-i18n-keys.mjs
- * Verifica consistencia de claves i18n entre locales (es/en/qu).
+ * Verifica consistencia de claves i18n entre locales (es/en).
  *
  * Reglas:
- *   - Toda clave en es.json debe existir en en.json y qu.json
+ *   - Toda clave en es.json debe existir en en.json
  *   - Toda clave en en.json debe existir en es.json (es es la fuente de verdad)
- *   - Detecta claves vacías ("") en cualquier locale
+ *   - Detecta claves vacías en español
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -20,21 +20,34 @@ const LOCALES_DIR = path.join(REPO_ROOT, 'frontend/src/i18n/locales');
 function loadLocale(name, result) {
   const p = path.join(LOCALES_DIR, `${name}.json`);
   if (!fs.existsSync(p)) {
-    addViolation(result, { rule: 'F-i18n-missing-locale', file: p, message: `locale ${name}.json not found` });
+    addViolation(result, {
+      rule: 'F-i18n-missing-locale',
+      file: p,
+      message: `locale ${name}.json not found`,
+    });
     return null;
   }
+
   const { dictionary, duplicates } = inspectLocale(fs.readFileSync(p, 'utf8'));
+
   for (const key of duplicates) {
-    addViolation(result, { rule: 'F-i18n-duplicate', file: p, message: `duplicate key in ${name}: ${key}` });
+    addViolation(result, {
+      rule: 'F-i18n-duplicate',
+      file: p,
+      message: `duplicate key in ${name}: ${key}`,
+    });
   }
+
   return dictionary;
 }
 
 function flatKeys(obj, prefix = '') {
   /** @type {Map<string,string>} */
   const out = new Map();
+
   for (const [k, v] of Object.entries(obj)) {
     const full = prefix ? `${prefix}.${k}` : k;
+
     if (typeof v === 'object' && v !== null) {
       for (const [nested, val] of flatKeys(v, full)) {
         out.set(nested, val);
@@ -43,6 +56,7 @@ function flatKeys(obj, prefix = '') {
       out.set(full, String(v ?? ''));
     }
   }
+
   return out;
 }
 
@@ -51,36 +65,44 @@ export function runCheckI18nKeys() {
 
   const es = loadLocale('es', result);
   const en = loadLocale('en', result);
-  const qu = loadLocale('qu', result);
 
   if (!es) {
-    addViolation(result, { rule: 'F-i18n-missing-locale', file: 'frontend/src/i18n/locales/es.json', message: 'locale es.json not found' });
+    addViolation(result, {
+      rule: 'F-i18n-missing-locale',
+      file: 'frontend/src/i18n/locales/es.json',
+      message: 'locale es.json not found',
+    });
     return result;
   }
 
   const esKeys = flatKeys(es);
   const enKeys = en ? flatKeys(en) : new Map();
-  const quKeys = qu ? flatKeys(qu) : new Map();
 
   for (const [key, val] of esKeys) {
-    // Clave vacía en español
     if (val.trim() === '') {
-      addWarning(result, { rule: 'F-i18n-empty', file: 'frontend/src/i18n/locales/es.json', message: `empty value for key: ${key}` });
+      addWarning(result, {
+        rule: 'F-i18n-empty',
+        file: 'frontend/src/i18n/locales/es.json',
+        message: `empty value for key: ${key}`,
+      });
     }
-    // Falta en inglés
+
     if (en && !enKeys.has(key)) {
-      addViolation(result, { rule: 'F-i18n-missing-en', file: 'frontend/src/i18n/locales/en.json', message: `key missing in en: ${key}` });
-    }
-    // Falta en quechua
-    if (qu && !quKeys.has(key)) {
-      addViolation(result, { rule: 'F-i18n-missing-qu', file: 'frontend/src/i18n/locales/qu.json', message: `key missing in qu: ${key}` });
+      addViolation(result, {
+        rule: 'F-i18n-missing-en',
+        file: 'frontend/src/i18n/locales/en.json',
+        message: `key missing in en: ${key}`,
+      });
     }
   }
 
-  // Claves en en que no están en es (huérfanas)
   for (const key of enKeys.keys()) {
     if (!esKeys.has(key)) {
-      addWarning(result, { rule: 'F-i18n-orphan-en', file: 'frontend/src/i18n/locales/en.json', message: `orphan key in en (not in es): ${key}` });
+      addWarning(result, {
+        rule: 'F-i18n-orphan-en',
+        file: 'frontend/src/i18n/locales/en.json',
+        message: `orphan key in en (not in es): ${key}`,
+      });
     }
   }
 

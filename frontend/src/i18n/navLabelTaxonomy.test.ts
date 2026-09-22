@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 
 import en from './locales/en.json';
 import es from './locales/es.json';
-import qu from './locales/qu.json';
 
 /**
  * ZH-MENU-TAXONOMY-STANDARD-01: regresión puntual — un ítem de menú (Nivel 3) no debe repetir
@@ -12,7 +11,7 @@ import qu from './locales/qu.json';
  * (p. ej. "Cuentas por pagar > Cuentas por pagar") sí pueden repetir el nombre a propósito.
  */
 describe('nav menu labels do not repeat their multi-screen parent group name', () => {
-  const dictionaries: Record<string, Record<string, string>> = { es, en, qu };
+  const dictionaries: Record<string, Record<string, string>> = { es, en };
 
   const ambiguousPairs = [
     {

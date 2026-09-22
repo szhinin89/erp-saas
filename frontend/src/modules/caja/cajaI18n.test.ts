@@ -19,7 +19,7 @@ describe("cash locale integrity", () => {
     expect(cashMovementTypeLabel(() => "translated", "FutureType")).toBe("FutureType");
   });
 
-  it.each(["en", "qu"] as const)("localizes the 401 fallback and preserves API messages in %s", locale => {
+  it.each(["en"] as const)("localizes the 401 fallback and preserves API messages in %s", locale => {
     const labels = { generic: dictionaries[locale]["caja.session.openError"], unauthorized: dictionaries[locale]["caja.session.unauthorized"] };
     expect(formatApiRequestError({ isAxiosError: true, response: { status: 401, data: null } }, labels)).toBe(labels.unauthorized);
     expect(formatApiRequestError({ isAxiosError: true, response: { status: 401, data: { message: { user: "server message" } } } }, labels)).toBe("server message");
@@ -33,7 +33,7 @@ describe("cash locale integrity", () => {
     // huérfanas preexistentes de otros módulos.
     const scoped = (dict: Record<string, string>) =>
       Object.keys(dict).filter((k) => k.startsWith("caja.") || k.startsWith("common."));
-    for (const locale of ["es", "en", "qu"] as const) {
+    for (const locale of ["es", "en"] as const) {
       expect(scoped(dictionaries[locale]).sort()).toEqual(scoped(dictionaries.es).sort());
       const source = readFileSync(resolve(`src/i18n/locales/${locale}.json`), "utf8");
       const ast = ts.parseJsonText(`${locale}.json`, source);
@@ -57,7 +57,7 @@ describe("cash locale integrity", () => {
         if (match[1] === undefined) continue;
         const key = match[1];
         const params = (text: string) => [...text.matchAll(/\{\{(\w+)\}\}/g)].map(m => m[1]).sort();
-        for (const locale of ["es", "en", "qu"] as const) {
+        for (const locale of ["es", "en"] as const) {
           expect(dictionaries[locale][key], `${locale}: ${key}`).toBeTruthy();
           expect(params(dictionaries[locale][key])).toEqual(params(dictionaries.es[key]));
         }
@@ -89,7 +89,7 @@ describe("cash locale integrity", () => {
     }
   });
 
-  it.each(["en", "qu"] as const)("localizes validation while preserving constraints in %s", locale => {
+  it.each(["en"] as const)("localizes validation while preserving constraints in %s", locale => {
     const t = (key: string, params?: Record<string, string | number>) => {
       let text = dictionaries[locale][key];
       for (const [key, value] of Object.entries(params ?? {})) text = text.replaceAll(`{{${key}}}`, String(value));

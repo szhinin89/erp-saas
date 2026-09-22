@@ -241,7 +241,7 @@ Confirmar orden con usuario. Referencia: `ProductsPage` (Datos → Imágenes →
 
 ### Checklist `.zh-form-tabs` + `PageShell` + `TableCard`
 
-1. Listado: `{módulo}.tabList` en es/en/qu; no `app.nav.*` en esa pestaña.
+1. Listado: `{módulo}.tabList` en es/en; no `app.nav.*` en esa pestaña.
 2. `PageShell` **`action`**: solo en pestaña datos (`tab === 'data'`, etc.).
 3. `ZHDirtyBar`: misma condición; en altas `saveLabel` "Crear".
 4. Tras cambio `location.pathname`, cerrar el panel abierto del `ZHAppLauncher`.
@@ -291,11 +291,11 @@ Clases frecuentes (no recrear): `.pg-page`, `.table`, `.badge`, `.zh-status`, `.
 
 ---
 
-## i18n — Kichwa de Cañar
+## i18n
 
-- Locale **`qu`**, archivo **`qu.json`**.
-- Claves nuevas: **siempre** `es.json`, `en.json`, `qu.json`.
-- Contenido `qu`: **Kichwa de Cañar, Ecuador** — no quechua genérico.
+- Locales soportados: **`es`** y **`en`**.
+- Claves nuevas: **siempre** `es.json` y `en.json`.
+- `es.json` es la fuente de verdad y el gate arquitectónico valida paridad con `en.json`.
 - Prohibido texto duro visible al usuario.
 
 ---

@@ -31,7 +31,7 @@ Cursor adapter: `.cursor/rules/stack-tools-source-of-truth.mdc`
 | Logs | Serilog |
 | BD | PostgreSQL 16 (Docker, puerto 5435) |
 | Contenedores | Docker Compose (raíz repo) |
-| Frontend | React 19, TS, Vite, React Router v7, RHF + Zod, Axios, Zustand, i18next (`es`,`en`,`qu`) |
+| Frontend | React 19, TS, Vite, React Router v7, RHF + Zod, Axios, Zustand, i18next (`es`,`en`) |
 | Tests BE | xUnit, Moq, FluentAssertions, `WebApplicationFactory` |
 | Tests FE | Vitest, Playwright, ESLint |
 

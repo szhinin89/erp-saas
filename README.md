@@ -4,7 +4,7 @@ Monorepo enterprise: **backend** (.NET 10, Clean Architecture, PostgreSQL) + **f
 
 ## Visión
 
-ERP **SaaS multi-tenant** para Ecuador: facturación electrónica **SRI**, inventario, contabilidad, ventas, compras, RBAC e i18n **es / en / Kichwa (`qu`)**.
+ERP **SaaS multi-tenant** para Ecuador: facturación electrónica **SRI**, inventario, contabilidad, ventas, compras, RBAC e i18n **es / en**.
 
 ## Documentación
 

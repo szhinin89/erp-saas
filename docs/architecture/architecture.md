@@ -56,7 +56,7 @@ Estructura **real** (prevalece sobre diagramas desactualizados):
 | Backend (.NET 10) | `backend/src/ERP.Domain`, `ERP.Application`, `ERP.Infrastructure`, `ERP.API` |
 | Módulos backend | `ERP.*/Modules/<Nombre>/` (p. ej. `Accounting`, `Customers`, `Branches`) |
 | Frontend | `frontend/` — Vite + React |
-| i18n | `frontend/src/i18n/locales/` (`es`, `en`, `qu`) |
+| i18n | `frontend/src/i18n/locales/` (`es`, `en`) |
 | Reglas de implementación | `docs/architecture/*` (canónico) |
 | Docs humanas | `CONTEXT.md`, `docs/ARCHITECTURE.md`, `STATUS.md`, `docs/DEVELOPMENT.md`, `docs/DATABASE.md` |
 
@@ -298,7 +298,7 @@ Si la feature es solo frontend o solo API, aplicar las capas que correspondan (p
 | 7 | Copy UX, PageShell | [FRONTEND-RULES.md#copy-ux](./frontend.md) |
 | 8 | Menú sin duplicar `to` | [FRONTEND-RULES.md#menú-estático](./frontend.md) |
 | 9 | IDs sensibles fuera de la URL | [SAAS-RULES.md](./security.md) |
-| 10 | Claves i18n nuevas | [FRONTEND-RULES.md#i18n-kichwa-de-cañar](./frontend.md) |
+| 10 | Claves i18n nuevas | [FRONTEND-RULES.md#i18n](./frontend.md) |
 
 **Regla práctica:** en frontend, no bajar a Copy UX sin alinear ZH Form + orden de tabs. En backend, no exponer endpoints sin Validator + reglas dominio/EF.
 

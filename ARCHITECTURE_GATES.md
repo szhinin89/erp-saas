@@ -35,7 +35,7 @@ Este archivo define **puertas de arquitectura** (gates) para PR, CI, revisiones 
 | G-O04 | Validación **4 capas** para datos persistidos (Zod, FluentValidation, Domain, EF config) | `CLAUDE.md` |
 | G-O05 | Multi-tenant: **`TenantId`** en queries; empresa operativa vía **`CompanyId`** cuando aplique | ADR-004 |
 | G-O06 | Integraciones explícitas (SRI, Redis, Hangfire) vía Infrastructure + interfaces en Application | Review |
-| G-O07 | i18n: claves nuevas en **`es.json`**, **`en.json`**, **`qu.json`** | Reglas frontend |
+| G-O07 | i18n: claves nuevas en **`es.json`** y **`en.json`** | Reglas frontend |
 | G-O08 | Módulo/pantalla comercializable: **`SaasFeatureDefinition`** + planes antes de cerrar | Reglas SaaS |
 | G-O09 | Controllers usan **`ApiResultExtensions`** (`ToOkOrBadRequest`, etc.) | `backend-api-contracts` |
 | G-O10 | Entidades de dominio instanciadas solo vía **`Create(...)`** factories | Domain rules |

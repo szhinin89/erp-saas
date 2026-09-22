@@ -12,12 +12,7 @@ import type { Locale } from "../i18n/dictionaries";
 
 type LangOption = { value: Locale; label: string; optionTitle?: string };
 
-/**
- * Etiquetas del menú según idioma activo (Item owner):
- * - UI español → Español, Inglés, Kichwa
- * - UI inglés → Spanish, English, Kichwa
- * - UI kichwa → Español, Inglés, Kichwa
- */
+/** Selector de idioma de la UI: Español e Inglés. */
 export function LanguageSwitcher() {
   const { locale, setLocale, t } = useI18n();
   const [open, setOpen] = useState(false);
@@ -31,11 +26,6 @@ export function LanguageSwitcher() {
     () => [
       { value: "es", label: t("app.langMenu.spanish") },
       { value: "en", label: t("app.langMenu.english") },
-      {
-        value: "qu",
-        label: t("app.langMenu.kichwa"),
-        optionTitle: t("app.language.kichwa"),
-      },
     ],
     [t],
   );
@@ -117,7 +107,6 @@ export function LanguageSwitcher() {
         aria-label={t("app.languageSwitcher.aria")}
         aria-haspopup="listbox"
         aria-expanded={open}
-        title={locale === "qu" ? t("app.language.kichwa") : undefined}
         onClick={() => {
           setOpen((s) => !s);
         }}

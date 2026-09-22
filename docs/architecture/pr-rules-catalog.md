@@ -621,7 +621,7 @@ export const productService = {
 ## F-03 — i18n trilingüe obligatorio
 
 ### RULE
-Texto visible al usuario **solo** vía claves i18n en `es.json`, `en.json`, `qu.json`. **Prohibido** strings hardcodeados en JSX salvo nombres propios técnicos. Locale `qu` = Kichwa de Cañar (Ecuador).
+Texto visible al usuario **solo** vía claves i18n en `es.json` y `en.json`. **Prohibido** strings hardcodeados en JSX salvo nombres propios técnicos.
 
 ### WHY
 Producto trilingüe es requisito comercial y legal interno.

@@ -1,7 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-/**
- * i18n: es / en / **qu** donde **qu** = Kichwa de Cañar (Ecuador); ver `dictionaries.ts`.
- */
+/** i18n: español / inglés. */
 import React, {
   createContext,
   useCallback,

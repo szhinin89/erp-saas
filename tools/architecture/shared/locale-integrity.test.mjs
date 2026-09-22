@@ -8,7 +8,7 @@ test('detects duplicate keys before parsing, including escaped equivalents', () 
 test('does not mistake quoted content for duplicate keys', () => {
   assert.deepEqual(inspectLocale(JSON.stringify({ 'caja.a': '"caja.a": "text"' })).duplicates, []);
 });
-for (const locale of ['en', 'qu']) {
+for (const locale of ['en']) {
   test(`detects ES keys missing in ${locale} and orphan keys`, () => {
     assert.deepEqual(compareLocaleKeys({ 'caja.a': 'A' }, { 'caja.b': 'B' }), {
       missing: ['caja.a'], extra: ['caja.b'],

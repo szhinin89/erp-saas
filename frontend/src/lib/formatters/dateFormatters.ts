@@ -41,7 +41,7 @@ export function formatDateTimeSeconds(iso: string | null | undefined): string {
  * Único punto autorizado para `Intl`/`toLocaleDateString` en el proyecto:
  * locale español fijo en `es-EC` (nunca `es-ES` como fallback genérico).
  */
-export function formatLongDate(date: Date, uiLocale: "es" | "en" | "qu"): string {
+export function formatLongDate(date: Date, uiLocale: "es" | "en"): string {
   const intlLocale = uiLocale === "en" ? "en-US" : "es-EC";
   return date.toLocaleDateString(intlLocale, {
     weekday: "long",

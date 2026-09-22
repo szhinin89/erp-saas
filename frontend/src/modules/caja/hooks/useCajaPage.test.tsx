@@ -1356,7 +1356,7 @@ describe("useCajaPage — no usa diálogos nativos", () => {
   });
 });
 
-describe.each(["en", "qu"] as const)("cash i18n %s", (locale) => {
+describe.each(["en"] as const)("cash i18n %s", (locale) => {
   it("renders opening, detail, manual movement dialog and closing with localized labels", async () => {
     localStorage.setItem(storageKey, locale);
     const dict = dictionaries[locale];

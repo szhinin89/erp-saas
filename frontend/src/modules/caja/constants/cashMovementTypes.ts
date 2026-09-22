@@ -6,7 +6,7 @@
 // otro archivo.
 //
 // TREASURY-CASH-ARCHITECTURE-I18N-AUDIT-04 — los LABELS visibles ya no viven hardcodeados aquí:
-// cada tipo declara su labelKey + fallbackLabel; los tres diccionarios (es/en/qu) contienen todas
+// cada tipo declara su labelKey + fallbackLabel; los diccionarios (es/en) contienen todas
 // las etiquetas, y fallbackLabel es solo la red de seguridad estándar del proyecto (t(key,
 // fallback)) si algún locale llegara a perder la key — nunca la fuente real de la traducción.
 // La resolución siempre usa useI18n().t y los valores internos (`value`) permanecen estables.
