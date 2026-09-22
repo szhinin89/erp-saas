@@ -1,9 +1,9 @@
 namespace ERP.Application.Common.Interfaces;
 
 /// <summary>
-/// Seeds the default access profiles for a newly created tenant. Currently seeds only "DataEntry";
-/// additional profiles (e.g. Facturador, Bodeguero, Contador) are a pending product decision, not
-/// yet implemented. Invoked exclusively from <c>ERP.Infrastructure.Services.CompanyProvisioningService</c>
+/// Seeds the baseline access profiles for a newly created tenant. Currently seeds only "DataEntry".
+/// Operational profiles are tenant-configurable through AccessProfile and are intentionally not
+/// seeded as fixed product roles. Invoked exclusively from <c>ERP.Infrastructure.Services.CompanyProvisioningService</c>
 /// — the single production entry point that creates a Company. No handler should call it directly.
 /// Implementation: <c>ERP.Infrastructure.Seeding.DefaultProfileSeeder</c>.
 /// </summary>

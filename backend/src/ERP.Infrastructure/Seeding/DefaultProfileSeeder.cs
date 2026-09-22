@@ -8,9 +8,9 @@ using Microsoft.Extensions.Logging;
 namespace ERP.Infrastructure.Seeding;
 
 /// <summary>
-/// Creates or updates the default access profiles for a tenant. Currently seeds only "DataEntry"
-/// (<see cref="DataEntryProfileBundle"/>) — additional bundles (e.g. Facturador, Bodeguero, Contador)
-/// are a pending product decision, not yet implemented.
+/// Creates or updates the baseline access profiles for a tenant. Currently seeds only "DataEntry"
+/// (<see cref="DataEntryProfileBundle"/>). Operational profiles are intentionally tenant-configurable
+/// through AccessProfile and are not seeded as fixed product roles.
 /// Safe to call multiple times: new profiles are created, existing profiles have missing permissions
 /// added (additive-only — never removes permissions that were customized by the admin).
 /// Uses EF Core so it participates in the same DbContext transaction as tenant creation.
