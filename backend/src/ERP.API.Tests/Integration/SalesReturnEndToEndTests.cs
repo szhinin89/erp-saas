@@ -110,6 +110,18 @@ public sealed class SalesReturnFlowFixture : IAsyncLifetime
         await db.SaveChangesAsync();
         CompanyId = company.Id;
 
+        // La creación real de una empresa aprovisiona una política de precisión.
+        // Este fixture debe reproducir ese invariante porque StockRepository resuelve
+        // la precisión de forma fail-closed.
+        db.CompanyPrecisionPolicies.Add(
+            ERP.Domain.Configuration.Entities.CompanyPrecisionPolicy.CreateStandardCommercial(
+                TenantId,
+                CompanyId,
+                _adminId
+            )
+        );
+        await db.SaveChangesAsync();
+
         // Se fija el contexto tenant/company mutable ANTES de seguir sembrando: entidades
         // creadas más abajo (p. ej. Item) levantan domain events cuyos *AuditHandler leen
         // ICurrentTenant/ICurrentCompany vía IAuditContext — deben resolver ya al valor real,
