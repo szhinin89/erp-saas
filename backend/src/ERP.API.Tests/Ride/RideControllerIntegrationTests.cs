@@ -123,6 +123,22 @@ public sealed class RideControllerIntegrationFixture : IAsyncLifetime
         CompanyAId = companyA.Id;
         CompanyBId = companyB.Id;
 
+        // El aprovisionamiento real de una empresa crea su política de precisión.
+        // El pipeline RIDE la resuelve fail-closed al generar el documento.
+        db.CompanyPrecisionPolicies.AddRange(
+            ERP.Domain.Configuration.Entities.CompanyPrecisionPolicy.CreateStandardCommercial(
+                TenantId,
+                CompanyAId,
+                adminId
+            ),
+            ERP.Domain.Configuration.Entities.CompanyPrecisionPolicy.CreateStandardCommercial(
+                TenantId,
+                CompanyBId,
+                adminId
+            )
+        );
+        await db.SaveChangesAsync();
+
         var user = IdentityUser.Create(
             $"ride-api-{Guid.NewGuid():N}",
             "Test",
