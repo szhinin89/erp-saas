@@ -843,18 +843,26 @@ public sealed class CreatePurchaseDraftHandler
                 snapshotWhCode = whCheck.Warehouse?.Code;
             }
 
+            var normalizedLine = await PurchaseLineNormalizer.NormalizeAsync(
+                l,
+                precision,
+                _receptionRepo,
+                tid,
+                ct
+            );
+
             var line = PurchaseInvoiceDetail.Create(
                 invoiceId,
                 tid,
                 l.Description,
                 l.Quantity,
-                await PurchaseUnitPriceNormalizer.NormalizeAsync(l, precision, _receptionRepo, tid, ct),
+                normalizedLine.UnitPrice,
                 vatCode,
                 packaging.UomCode,
                 l.ItemId,
                 l.WarehouseId,
                 l.Notes,
-                l.DiscountPct,
+                normalizedLine.DiscountPct,
                 iceCode,
                 snapshotSku,
                 snapshotItemName,
@@ -867,7 +875,8 @@ public sealed class CreatePurchaseDraftHandler
                 baseUomCode: packaging.BaseUomCode,
                 packagingLevelId: packaging.PackagingLevelId,
                 quantityDecimals: precision.QuantityDecimals,
-                unitCostDecimals: precision.UnitCostDecimals
+                unitCostDecimals: precision.UnitCostDecimals,
+                    exactDiscountAmount: normalizedLine.ExactDiscountAmount
             );
             if (l.FreightAllocated.HasValue)
                 line.SetFreightAllocated(l.FreightAllocated.Value);
@@ -1148,18 +1157,26 @@ public sealed class UpdatePurchaseDraftHandler
                     snapshotWhCode = whCheck.Warehouse?.Code;
                 }
 
+                var normalizedLine = await PurchaseLineNormalizer.NormalizeAsync(
+                    l,
+                    precision,
+                    _receptionRepo,
+                    _t.TenantId,
+                    ct
+                );
+
                 var line = PurchaseInvoiceDetail.Create(
                     inv.Id,
                     _t.TenantId,
                     l.Description,
                     l.Quantity,
-                    await PurchaseUnitPriceNormalizer.NormalizeAsync(l, precision, _receptionRepo, _t.TenantId, ct),
+                    normalizedLine.UnitPrice,
                     vatCode,
                     packaging.UomCode,
                     l.ItemId,
                     l.WarehouseId,
                     l.Notes,
-                    l.DiscountPct,
+                    normalizedLine.DiscountPct,
                     iceCode,
                     snapshotSku,
                     snapshotItemName,
@@ -1172,7 +1189,8 @@ public sealed class UpdatePurchaseDraftHandler
                     baseUomCode: packaging.BaseUomCode,
                     packagingLevelId: packaging.PackagingLevelId,
                     quantityDecimals: precision.QuantityDecimals,
-                    unitCostDecimals: precision.UnitCostDecimals
+                    unitCostDecimals: precision.UnitCostDecimals,
+                    exactDiscountAmount: normalizedLine.ExactDiscountAmount
                 );
                 if (l.FreightAllocated.HasValue)
                     line.SetFreightAllocated(l.FreightAllocated.Value);
@@ -1545,9 +1563,15 @@ public sealed class GetPurchaseListHandler
 ///   idempotente: un precio editado que ya cumple la escala no cambia.
 /// La línea de recepción y el parser XML nunca se alteran.
 /// </summary>
-file static class PurchaseUnitPriceNormalizer
+file sealed record PurchaseLineNormalization(
+    decimal UnitPrice,
+    decimal DiscountPct,
+    decimal? ExactDiscountAmount
+);
+
+file static class PurchaseLineNormalizer
 {
-    public static async Task<decimal> NormalizeAsync(
+    public static async Task<PurchaseLineNormalization> NormalizeAsync(
         PurchaseLineInput line,
         EffectivePrecisionPolicyDto precision,
         IPurchaseReceptionDocumentRepository receptionRepo,
@@ -1555,18 +1579,40 @@ file static class PurchaseUnitPriceNormalizer
         CancellationToken ct
     )
     {
+        PurchaseReceptionLine? original = null;
+
         if (line.PurchaseReceptionLineId is { } receptionLineId)
         {
             var document = await receptionRepo.GetByLineIdAsync(tenantId, receptionLineId, ct);
-            var original = document?.Lines.FirstOrDefault(l => l.Id == receptionLineId)?.UnitPrice;
-            if (original.HasValue && original.Value == line.UnitPrice)
-                return line.UnitPrice;
+            original = document?.Lines.FirstOrDefault(l => l.Id == receptionLineId);
         }
 
-        return Math.Round(
-            line.UnitPrice,
-            precision.PurchaseUnitPriceDecimals,
-            MidpointRounding.AwayFromZero
+        var unitPrice =
+            original is not null && original.UnitPrice == line.UnitPrice
+                ? line.UnitPrice
+                : Math.Round(
+                    line.UnitPrice,
+                    precision.PurchaseUnitPriceDecimals,
+                    MidpointRounding.AwayFromZero
+                );
+
+        var xmlDiscountUnchanged =
+            original is not null
+            && original.Quantity == line.Quantity
+            && original.UnitPrice == line.UnitPrice
+            && original.DiscountPct == line.DiscountPct;
+
+        if (xmlDiscountUnchanged)
+            return new(unitPrice, line.DiscountPct, original!.Discount);
+
+        return new(
+            unitPrice,
+            Math.Round(
+                line.DiscountPct,
+                precision.PercentageDecimals,
+                MidpointRounding.AwayFromZero
+            ),
+            null
         );
     }
 }

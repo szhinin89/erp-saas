@@ -13,6 +13,33 @@ namespace ERP.Application.Tests.Purchases.PurchaseReception;
 /// </summary>
 public sealed class PurchaseXmlDraftParserTests
 {
+    [Fact]
+    public void Precision_final_QA_unedited_XML_discount_survives_draft_line_creation()
+    {
+        const string xml = """
+            <factura><infoTributaria><ruc>1791352688001</ruc><razonSocial>Proveedor</razonSocial>
+            <codDoc>01</codDoc><estab>001</estab><ptoEmi>001</ptoEmi><secuencial>000000123</secuencial>
+            </infoTributaria><infoFactura><fechaEmision>01/07/2026</fechaEmision></infoFactura>
+            <detalles><detalle><codigoPrincipal>QA</codigoPrincipal><descripcion>Precision QA</descripcion>
+            <cantidad>1000.000000</cantidad><precioUnitario>100.000000</precioUnitario>
+            <descuento>1234.56</descuento><precioTotalSinImpuesto>98765.44</precioTotalSinImpuesto>
+            <impuestos><impuesto><codigo>2</codigo><codigoPorcentaje>0</codigoPorcentaje>
+            <tarifa>0.00</tarifa><baseImponible>98765.44</baseImponible><valor>0.00</valor>
+            </impuesto></impuestos></detalle></detalles></factura>
+            """;
+        var parsed = new PurchaseXmlDraftParser().Parse(xml);
+        parsed.IsSuccess.Should().BeTrue(parsed.Error);
+        var original = parsed.Value!.Lines.Single();
+        var draft = ERP.Domain.Modules.Purchases.Entities.PurchaseInvoiceDetail.Create(
+            Guid.NewGuid(), Guid.NewGuid(), original.Description, original.Quantity,
+            original.UnitPrice, original.VatCode, "UNIT", discountPct: original.DiscountPct,
+            quantityDecimals: 6, unitCostDecimals: 10, exactDiscountAmount: original.Discount);
+
+        draft.UnitPrice.Should().Be(original.UnitPrice);
+        draft.DiscountAmount.Should().Be(original.Discount,
+            "un XML sin editar debe conservar el descuento al pasar a una línea operativa");
+    }
+
     private sealed class FakeTaxCategoryCodeResolver : ISriTaxCategoryCodeResolver
     {
         public string? Resolve(string taxCode) =>

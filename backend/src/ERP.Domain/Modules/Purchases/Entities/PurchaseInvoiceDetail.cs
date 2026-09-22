@@ -177,7 +177,8 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
         string? baseUomCode = null,
         Guid? packagingLevelId = null,
         int quantityDecimals = FiscalPrecision.Quantity,
-        int unitCostDecimals = FiscalPrecision.UnitCost
+        int unitCostDecimals = FiscalPrecision.UnitCost,
+        decimal? exactDiscountAmount = null
     )
     {
         if (string.IsNullOrWhiteSpace(description))
@@ -250,7 +251,21 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
             IsFrozen = false,
             _unitCostDecimals = unitCostDecimals,
         };
-        line.RecalcDiscount();
+        if (exactDiscountAmount.HasValue)
+        {
+            if (exactDiscountAmount.Value < 0 || exactDiscountAmount.Value > line.LineSubtotal)
+                throw new ArgumentOutOfRangeException(
+                    nameof(exactDiscountAmount),
+                    "El descuento exacto debe estar entre cero y el subtotal de la línea."
+                );
+
+            line.DiscountAmount = exactDiscountAmount.Value;
+        }
+        else
+        {
+            line.RecalcDiscount();
+        }
+
         line.RecalcCosts();
         // Mismo criterio que el objeto-initializer anterior: solo el código se conoce en Create()
         // (tarifa/nombre/monto llegan después vía ApplyTaxes) — se registra igual como fila inicial
