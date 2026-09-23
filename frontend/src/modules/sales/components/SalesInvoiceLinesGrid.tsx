@@ -10,6 +10,7 @@ interface SalesInvoiceLinesGridProps {
   readOnly: boolean;
   vatLabel: (code: string) => string;
   vatRates?: Record<string, number>;
+  iceRates?: Record<string, number>;
   warehouses: WarehouseDto[];
   selectedWarehouseId: string;
   onUpdate: (key: number, field: string, value: unknown) => void;
@@ -45,6 +46,7 @@ export function SalesInvoiceLinesGrid({
   readOnly,
   vatLabel,
   vatRates,
+  iceRates,
   warehouses,
   selectedWarehouseId,
   onUpdate,
@@ -90,6 +92,7 @@ export function SalesInvoiceLinesGrid({
           readOnly={readOnly}
           vatLabel={vatLabel(l.vatCode)}
           vatRates={vatRates}
+          iceRates={iceRates}
           warehouses={warehouses}
           selectedWarehouseId={selectedWarehouseId}
           onUpdate={onUpdate}

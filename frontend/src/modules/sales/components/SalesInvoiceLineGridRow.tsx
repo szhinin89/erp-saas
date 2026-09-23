@@ -34,6 +34,7 @@ interface SalesInvoiceLineGridRowProps {
   readOnly: boolean;
   vatLabel: string;
   vatRates?: Record<string, number>;
+  iceRates?: Record<string, number>;
   warehouses: WarehouseDto[];
   selectedWarehouseId: string;
   onUpdate: (key: number, field: string, value: unknown) => void;
@@ -75,6 +76,7 @@ export function SalesInvoiceLineGridRow({
   readOnly,
   vatLabel,
   vatRates,
+  iceRates,
   warehouses,
   selectedWarehouseId,
   onUpdate,
@@ -85,7 +87,7 @@ export function SalesInvoiceLineGridRow({
 }: SalesInvoiceLineGridRowProps) {
   const { t } = useOptionalI18n();
   const dc = getPrecisionPolicy();
-  const previewFiscal = calcFiscalLine(line, vatRates);
+  const previewFiscal = calcFiscalLine(line, vatRates, iceRates);
   const total = backendLine?.taxInclusiveTotal ?? previewFiscal.total;
 
   // Vista previa fiscal: Base/IVA/Total usan el mismo orden de redondeo por línea que

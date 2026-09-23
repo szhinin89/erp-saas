@@ -426,6 +426,7 @@ export function SalesPage() {
               selectedWarehouseId={ctx.selectedWarehouseId}
               onWarehouseChange={ctx.handleWarehouseChange}
               vatRates={ctx.vatRatesMap}
+              iceRates={ctx.iceRatesMap}
               focusSignal={ctx.productSearchFocusKey}
               customerId={ctx.formWatch.customerId || undefined}
             />

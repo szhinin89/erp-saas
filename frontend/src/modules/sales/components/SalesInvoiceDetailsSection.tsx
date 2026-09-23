@@ -34,6 +34,7 @@ interface SalesInvoiceDetailsSectionProps {
   selectedWarehouseId: string;
   onWarehouseChange: (id: string) => void;
   vatRates?: Record<string, number>;
+  iceRates?: Record<string, number>;
   /** Cambia (se incrementa) cada vez que el buscador de productos debe recibir foco — UX retail. */
   focusSignal?: number;
   /** SALES-CONTEXTUAL-PRICING-READ-06A: cliente actualmente seleccionado en la venta (o
@@ -57,6 +58,7 @@ export function SalesInvoiceDetailsSection({
   selectedWarehouseId,
   onWarehouseChange,
   vatRates,
+  iceRates,
   focusSignal,
   customerId,
 }: SalesInvoiceDetailsSectionProps) {
@@ -293,6 +295,7 @@ export function SalesInvoiceDetailsSection({
           readOnly={readOnly}
           vatLabel={vatLabel}
           vatRates={vatRates}
+          iceRates={iceRates}
           warehouses={warehouses}
           selectedWarehouseId={selectedWarehouseId}
           onUpdate={onUpdateLine}
