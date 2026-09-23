@@ -185,6 +185,9 @@ public sealed class SalesInvoiceCashReceivableSplitAndCancelReversalIntegrationT
         var services = new ServiceCollection();
         services.AddScoped<ERP.Application.Common.Services.ICompanyClock, ERP.Infrastructure.Persistence.Services.CompanyClock>();
         services.AddLogging();
+        services.AddSingleton<ERP.Application.Modules.Companies.ICompanyPrecisionPolicyProvider>(
+            ERP.Infrastructure.Tests.TestData.StandardPrecisionPolicyProvider.Instance
+        );
         services.AddSingleton(db);
         services.AddSingleton<ICurrentTenant>(new FixedCurrentTenant(_tenantId));
         services.AddSingleton<ICurrentCompany>(new FixedCurrentCompany(_companyId));
@@ -281,6 +284,87 @@ public sealed class SalesInvoiceCashReceivableSplitAndCancelReversalIntegrationT
     // IsCreditAllowed=true para que AuthorizeSalesInvoiceHandler lo excluya de cashApplied — este
     // test llama a inv.Authorize(uid, cashApplied) directamente (nivel de dominio, mismo patrón
     // que la suite de Lotes 1/2/6A), así que no depende de PaymentMethod/IPaymentMethodRepository.
+
+    [Fact]
+    public async Task Descuento_subcentavo_persiste_sin_lineas_cero_y_se_reversa_tras_recargar()
+    {
+        var issueDate = new DateOnly(2026, 9, 13);
+        Guid invoiceId;
+        Guid originalEntryId;
+
+        var (postingDb, _) = BuildWiredContext();
+        await using (postingDb)
+        {
+            await SeedPeriodAsync(postingDb, issueDate);
+            var invoice = BuildAuthorizableInvoice(
+                issueDate, "001-001-000000107", 0.30m, cashPortion: 0.30m
+            );
+            var line = invoice.Lines.Single();
+            line.ApplyDiscount(1.15m);
+            line.ApplyTaxes("10", 15m, "IVA 15%", null, 0m, null);
+            invoice.ReplacePayments(
+                new[] { SalesInvoicePayment.Create(
+                    invoice.Id, _tenantId, Guid.NewGuid(), "01", "Efectivo", 0.35m
+                ) },
+                _createdBy
+            );
+
+            line.DiscountAmount.Should().Be(0.003450m);
+            line.TaxableBase.Should().Be(0.30m);
+            invoice.Subtotal.Should().Be(0.303450m);
+            invoice.TotalVat.Should().Be(0.05m);
+            invoice.GrandTotal.Should().Be(0.35m);
+
+            postingDb.SalesInvoices.Add(invoice);
+            await postingDb.SaveChangesAsync();
+            invoice.Authorize(_createdBy, cashApplied: 0.35m);
+            await postingDb.SaveChangesAsync();
+            invoiceId = invoice.Id;
+        }
+
+        // A new context is essential: PostgreSQL numeric(18,2), not tracked CLR values,
+        // must be the source of both the assertions and the cancellation/reversal.
+        var (cancellationDb, _) = BuildWiredContext();
+        await using (cancellationDb)
+        {
+            var original = await cancellationDb.JournalEntries.Include(x => x.Lines)
+                .SingleAsync(x => x.SourceEventId == invoiceId && x.SourceEventType == "InvoiceIssued");
+            originalEntryId = original.Id;
+            original.Status.Should().Be(JournalEntryStatus.Posted);
+            original.Lines.Should().HaveCount(3);
+            original.Lines.Should().OnlyContain(l => l.Debit > 0m || l.Credit > 0m);
+            original.Lines.Sum(l => l.Debit).Should().Be(0.35m);
+            original.Lines.Sum(l => l.Credit).Should().Be(0.35m);
+            var accounts = await cancellationDb.Accounts
+                .Where(a => a.CompanyId == _companyId).ToListAsync();
+            var discountAccount = accounts.Single(a => a.Code.Value == "4.1.02.001");
+            original.Lines.Should().NotContain(l => l.AccountId == discountAccount.Id);
+
+            var invoice = await cancellationDb.SalesInvoices
+                .Include(x => x.Lines).Include(x => x.Payments)
+                .SingleAsync(x => x.Id == invoiceId);
+            invoice.Cancel("Regresión descuento subcentavo", _createdBy);
+            await cancellationDb.SaveChangesAsync();
+        }
+
+        await using var verifyDb = CreateContext();
+        var persistedOriginal = await verifyDb.JournalEntries.Include(x => x.Lines)
+            .SingleAsync(x => x.Id == originalEntryId);
+        persistedOriginal.Status.Should().Be(JournalEntryStatus.Reversed);
+        persistedOriginal.ReverseJournalEntryId.Should().NotBeNull();
+        var reversal = await verifyDb.JournalEntries.Include(x => x.Lines)
+            .SingleAsync(x => x.Id == persistedOriginal.ReverseJournalEntryId);
+        reversal.Status.Should().Be(JournalEntryStatus.Posted);
+        reversal.OriginalJournalEntryId.Should().Be(originalEntryId);
+        reversal.Lines.Should().HaveCount(3);
+        reversal.Lines.Should().OnlyContain(l => l.Debit > 0m || l.Credit > 0m);
+        reversal.Lines.Sum(l => l.Debit).Should().Be(0.35m);
+        reversal.Lines.Sum(l => l.Credit).Should().Be(0.35m);
+        reversal.Lines.Select(l => new { l.AccountId, l.Debit, l.Credit }).Should()
+            .BeEquivalentTo(persistedOriginal.Lines.Select(l => new {
+                l.AccountId, Debit = l.Credit, Credit = l.Debit
+            }));
+    }
 
     [Fact]
     public async Task Venta_100_por_ciento_contado_genera_Debe_Caja_sin_ninguna_linea_de_CxC()

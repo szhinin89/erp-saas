@@ -106,6 +106,42 @@ public sealed class SalesInvoiceAuthorizedPostingTranslatorTests
         captured!.TotalDiscount.Should().Be(0.06m);
     }
 
+    [Theory]
+    [InlineData("0.003450", "0.00", "0.30")]
+    [InlineData("0.006900", "0.01", "0.31")]
+    [InlineData("0.005000", "0.01", "0.31")]
+    public async Task Subtotal_y_descuento_se_normalizan_juntos_sin_alterar_el_balance(
+        string fiscalDiscountText, string accountingDiscountText, string accountingSubtotalText
+    )
+    {
+        var culture = System.Globalization.CultureInfo.InvariantCulture;
+        var fiscalDiscount = decimal.Parse(fiscalDiscountText, culture);
+        var accountingDiscount = decimal.Parse(accountingDiscountText, culture);
+        var accountingSubtotal = decimal.Parse(accountingSubtotalText, culture);
+        var m = new Mocks();
+        PostingFact? captured = null;
+        m.PostingEngine.Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
+            .Callback<PostingFact, CancellationToken>((fact, _) => captured = fact)
+            .ReturnsAsync(Result<PostingOutcomeDto>.Success(
+                new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)
+            ));
+        var notification = new SalesInvoiceAuthorizedEvent(
+            Guid.NewGuid(), "001-001-000000001", 0.35m, UserId, CashSessionId,
+            TenantId, CompanyId, new DateOnly(2026, 9, 13),
+            0.30m + fiscalDiscount, 0.05m, 0m, fiscalDiscount, 0m
+        );
+
+        await m.BuildTranslator().Handle(notification, CancellationToken.None);
+
+        captured.Should().NotBeNull();
+        captured!.TotalDiscount.Should().Be(accountingDiscount);
+        captured.Subtotal.Should().Be(accountingSubtotal);
+        (captured.Subtotal - captured.TotalDiscount + captured.TotalVat)
+            .Should().Be(captured.GrandTotal).And.Be(0.35m);
+        notification.TotalDiscount.Should().Be(fiscalDiscount);
+        notification.Subtotal.Should().Be(0.30m + fiscalDiscount);
+    }
+
     [Fact]
     public async Task Factura_con_IRBPNR_propaga_TotalIrbpnr_al_PostingFact()
     {

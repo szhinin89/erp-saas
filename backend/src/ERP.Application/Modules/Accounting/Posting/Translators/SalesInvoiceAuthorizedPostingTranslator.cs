@@ -1,4 +1,5 @@
 using ERP.Application.Modules.Sales.Exceptions;
+using ERP.Domain.Common;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Sales.Events;
 using MediatR;
@@ -74,6 +75,14 @@ public sealed class SalesInvoiceAuthorizedPostingTranslator
                 factCashApplied = 0m;
         }
 
+        // SALES-DISCOUNT-PERSISTENCE-REVERSAL-01: journal amounts persist at numeric(18,2).
+        // Normalize BOTH components: Subtotal - TotalDiscount is already the sum of
+        // cent-rounded taxable bases, so equal rounding preserves that exact difference.
+        // JournalFactory then omits a discount that rounds to zero before it becomes a line.
+        // The fiscal event and its six-decimal discount remain unchanged.
+        var accountingSubtotal = Math.Round(e.Subtotal, FiscalPrecision.TaxAmount, MidpointRounding.AwayFromZero);
+        var accountingDiscount = Math.Round(e.TotalDiscount, FiscalPrecision.TaxAmount, MidpointRounding.AwayFromZero);
+
         var fact = new PostingFact(
             e.TenantId!.Value,
             e.CompanyId,
@@ -81,10 +90,10 @@ public sealed class SalesInvoiceAuthorizedPostingTranslator
             FactTypeName,
             e.InvoiceId,
             e.IssueDate,
-            e.Subtotal,
+            accountingSubtotal,
             e.TotalVat,
             e.TotalIce,
-            e.TotalDiscount,
+            accountingDiscount,
             e.GrandTotal,
             TotalIrbpnr: e.TotalIrbpnr,
             CashApplied: factCashApplied,
