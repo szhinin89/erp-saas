@@ -1,6 +1,9 @@
 import type { SalesLineInput } from "../api/salesService";
-import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
+import Decimal from "decimal.js";
 import { normalizeOptionalCode } from "../../../lib/sanitizers";
+
+// Local precision for products of decimal inputs; never mutate Decimal globally.
+const SalesDecimal = Decimal.clone({ precision: 64 });
 
 export function lineGross(l: SalesLineInput): number {
   return l.quantity * l.unitPrice;
@@ -28,38 +31,51 @@ export function calcLineTax(
   return { vat: (taxableBase * vatRate) / 100, ice };
 }
 
-/** SALES-PRESENTATIONS-03: cantidad ingresada por el usuario en la presentación seleccionada
- * (ej. "1" al vender 1 caja x12) convertida a unidad base (ej. "12") — la misma fórmula que
- * SalesInvoiceDetail.Create usa en backend (Quantity * ConversionFactor). Sin presentación,
- * conversionFactor es 1 y esto es un no-op (preserva el comportamiento actual). */
-function roundFiscalAmount(value: number): number {
-  const decimals = getPrecisionPolicy().moneyDecimals;
-  const factor = 10 ** decimals;
-  return Math.round(value * factor) / factor;
-}
-
+/** Mirrors SalesInvoiceDetail.RecalcDiscount/TaxableBase and SriTaxCalculator.Compute.
+ * FiscalPrecision: discount = 6 decimals; base, ICE, VAT and total = 2.
+ * TaxableBase excludes ICE; only the VAT calculation includes rounded ICE. */
 export function calcFiscalLine(
   l: SalesLineInput,
   vatRates?: Record<string, number>,
   iceRates?: Record<string, number>,
 ): {
+  discount: number;
   taxableBase: number;
   vat: number;
   ice: number;
   total: number;
   vatRate: number;
 } {
-  const net = lineNet(l);
+  const gross = new SalesDecimal(l.quantity).times(l.unitPrice);
+  const discountPct = l.discountPct ?? 0;
+  const discount = (discountPct > 0
+    ? gross.times(discountPct).div(100)
+    : new SalesDecimal(0)).toDecimalPlaces(6, Decimal.ROUND_HALF_UP);
+  const taxableBase = gross.minus(discount).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
   const iceRate = (l.iceCode ? iceRates?.[l.iceCode] : undefined) ?? 0;
-  const iceRaw = iceRate > 0 ? (net * iceRate) / 100 : 0;
-  const ice = roundFiscalAmount(iceRaw);
-  const taxableBase = roundFiscalAmount(net + iceRaw);
+  const ice = (iceRate > 0
+    ? taxableBase.times(iceRate).div(100)
+    : new SalesDecimal(0)).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
   const vatRate = vatRates?.[l.vatCode] ?? 0;
-  const vat = roundFiscalAmount((taxableBase * vatRate) / 100);
-  const total = roundFiscalAmount(taxableBase + vat);
+  const vat = (vatRate > 0
+    ? taxableBase.plus(ice).times(vatRate).div(100)
+    : new SalesDecimal(0)).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+  const total = taxableBase.plus(ice).plus(vat).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
 
-  return { taxableBase, vat, ice, total, vatRate };
+  return {
+    discount: discount.toNumber(),
+    taxableBase: taxableBase.toNumber(),
+    vat: vat.toNumber(),
+    ice: ice.toNumber(),
+    total: total.toNumber(),
+    vatRate,
+  };
 }
+
+/** SALES-PRESENTATIONS-03: cantidad ingresada por el usuario en la presentación seleccionada
+ * (ej. "1" al vender 1 caja x12) convertida a unidad base (ej. "12") — la misma fórmula que
+ * SalesInvoiceDetail.Create usa en backend (Quantity * ConversionFactor). Sin presentación,
+ * conversionFactor es 1 y esto es un no-op (preserva el comportamiento actual). */
 export function lineQuantityInBaseUom(line: {
   quantity: number;
   conversionFactor?: number;
@@ -290,45 +306,31 @@ export function calcSummary(
   vatRates?: Record<string, number>,
   iceRates?: Record<string, number>,
 ) {
-  // COMPANY-PRECISION-POLICY-FRONTEND-CONSUMERS-MIGRATION-01: total/impuestos son montos
-  // fiscales fijos (FiscalPrecision backend) — usan moneyDecimals de la policy nueva, nunca un
-  // campo configurable como salesUnitPriceDecimals.
-  const roundTotal = roundFiscalAmount;
-
-  const subtotal = lines.reduce((s, l) => s + lineGross(l), 0);
-  const discount = lines.reduce((s, l) => s + lineDiscountAmt(l), 0);
-
-  // SALES-FRONTEND-LINE-ROUNDING-MATCH-BACKEND-01: el backend (SalesInvoiceDetail.ApplyTaxes)
-  // redondea taxableBase/vatAmount a moneyDecimals POR LÍNEA y luego suma esos valores ya
-  // redondeados — nunca suma los valores crudos de todas las líneas y redondea recién al final.
-  // Con más de una línea, "redondear la suma" y "sumar lo redondeado" pueden diferir en un
-  // centavo (caso real: MANJAR DE LECHE 80G + 1 LITRO FRUTILLA, backend $2.64 vs frontend $2.65
-  // con el cálculo anterior) — este bloque replica exactamente el orden de operaciones del
-  // backend para que el total mostrado, el monto cobrado y el payload de pagos coincidan siempre
-  // con el grandTotal real que se autoriza.
-  const byRate = new Map<number, { base: number; tax: number }>();
-  let netSubtotal = 0;
-  let totalVat = 0;
-  let totalIce = 0;
-  let total = 0;
+  // SalesInvoice sums already rounded line values. Its gross subtotal is
+  // LineSubtotalRounded = TaxableBase + DiscountAmount (not raw quantity * price).
+  const byRate = new Map<number, { base: Decimal; tax: Decimal }>();
+  let subtotal = new SalesDecimal(0);
+  let discount = new SalesDecimal(0);
+  let netSubtotal = new SalesDecimal(0);
+  let totalVat = new SalesDecimal(0);
+  let totalIce = new SalesDecimal(0);
+  let total = new SalesDecimal(0);
 
   for (const l of lines) {
     const fiscal = calcFiscalLine(l, vatRates, iceRates);
-    const taxableBase = fiscal.taxableBase;
-    const vatRate = fiscal.vatRate;
-    const vatAmount = fiscal.vat;
-    const ice = fiscal.ice;
-    const lineTotal = fiscal.total;
+    subtotal = subtotal.plus(fiscal.taxableBase).plus(fiscal.discount);
+    discount = discount.plus(fiscal.discount);
+    netSubtotal = netSubtotal.plus(fiscal.taxableBase);
+    totalIce = totalIce.plus(fiscal.ice);
+    totalVat = totalVat.plus(fiscal.vat);
+    total = total.plus(fiscal.total);
 
-    netSubtotal += taxableBase;
-    totalIce += ice;
-    totalVat += vatAmount;
-    total += lineTotal;
-
-    const entry = byRate.get(vatRate) ?? { base: 0, tax: 0 };
-    entry.base += taxableBase;
-    entry.tax += vatAmount;
-    byRate.set(vatRate, entry);
+    const entry = byRate.get(fiscal.vatRate) ?? {
+      base: new SalesDecimal(0), tax: new SalesDecimal(0),
+    };
+    entry.base = entry.base.plus(fiscal.taxableBase);
+    entry.tax = entry.tax.plus(fiscal.vat);
+    byRate.set(fiscal.vatRate, entry);
   }
 
   const taxBreakdown: TaxBreakdownEntry[] = Array.from(byRate.entries())
@@ -336,17 +338,17 @@ export function calcSummary(
     .map(([rate, v]) => ({
       label: formatVatLabel(rate),
       rate,
-      base: roundTotal(v.base),
-      tax: roundTotal(v.tax),
+      base: v.base.toNumber(),
+      tax: v.tax.toNumber(),
     }));
 
   return {
-    subtotal: roundTotal(subtotal),
-    discount: roundTotal(discount),
-    netSubtotal: roundTotal(netSubtotal),
-    vat: roundTotal(totalVat),
-    ice: roundTotal(totalIce),
-    total: roundTotal(total),
+    subtotal: subtotal.toNumber(),
+    discount: discount.toNumber(),
+    netSubtotal: netSubtotal.toNumber(),
+    vat: totalVat.toNumber(),
+    ice: totalIce.toNumber(),
+    total: total.toNumber(),
     taxBreakdown,
   };
 }

@@ -796,3 +796,56 @@ describe("calcFiscalLine — fiscal rounding parity", () => {
     expect(summary.total).toBe(fiscal.total);
   });
 });
+
+// Explicit oracle: SalesInvoiceDetail (discount 6dp, base 2dp), then
+// SriTaxCalculator.Compute (ICE -> VAT on base + rounded ICE -> total, all 2dp).
+// Expected values are backend decimal results, not derived from frontend helpers.
+describe("SALES-FRONTEND-FISCAL-PARITY-03 backend oracle", () => {
+  it.each([
+    { price: 0.30, qty: 1, pct: 0, iceCode: undefined, discount: 0, base: 0.30, ice: 0, vat: 0.05, total: 0.35, subtotal: 0.30 },
+    { price: 0.30, qty: 1, pct: 1.15, iceCode: undefined, discount: 0.00345, base: 0.30, ice: 0, vat: 0.05, total: 0.35, subtotal: 0.30345 },
+    { price: 1.005, qty: 1, pct: 0, iceCode: undefined, discount: 0, base: 1.01, ice: 0, vat: 0.15, total: 1.16, subtotal: 1.01 },
+    { price: 0.0137, qty: 1, pct: 0, iceCode: "ICE01", discount: 0, base: 0.01, ice: 0, vat: 0, total: 0.01, subtotal: 0.01 },
+    { price: 0.335, qty: 3, pct: 0, iceCode: undefined, discount: 0, base: 1.01, ice: 0, vat: 0.15, total: 1.16, subtotal: 1.01 },
+    { price: 0.15, qty: 1, pct: 0, iceCode: "ICE01", discount: 0, base: 0.15, ice: 0.02, vat: 0.03, total: 0.20, subtotal: 0.15 },
+    { price: 1.000001, qty: 1, pct: 50, iceCode: undefined, discount: 0.500001, base: 0.50, ice: 0, vat: 0.08, total: 0.58, subtotal: 1.000001 },
+  ])("price=$price qty=$qty discount=$pct ICE=$iceCode", (oracle) => {
+    const line: SalesLineInput = {
+      description: "Backend oracle",
+      quantity: oracle.qty,
+      unitPrice: oracle.price,
+      discountPct: oracle.pct,
+      vatCode: "10",
+      iceCode: oracle.iceCode,
+    };
+    expect(calcFiscalLine(line, TEST_VAT_RATES, TEST_ICE_RATES)).toEqual({
+      discount: oracle.discount,
+      taxableBase: oracle.base,
+      ice: oracle.ice,
+      vat: oracle.vat,
+      total: oracle.total,
+      vatRate: 15,
+    });
+    expect(calcSummary([line], TEST_VAT_RATES, TEST_ICE_RATES)).toEqual({
+      subtotal: oracle.subtotal,
+      discount: oracle.discount,
+      netSubtotal: oracle.base,
+      ice: oracle.ice,
+      vat: oracle.vat,
+      total: oracle.total,
+      taxBreakdown: [{ label: "IVA 15%", rate: 15, base: oracle.base, tax: oracle.vat }],
+    });
+  });
+
+  it("sums rounded lines and six-decimal discounts with decimal arithmetic", () => {
+    const lines: SalesLineInput[] = Array.from({ length: 3 }, () => ({
+      description: "Backend oracle", quantity: 1, unitPrice: 0.3,
+      discountPct: 1.15, vatCode: "10",
+    }));
+    expect(calcSummary(lines, TEST_VAT_RATES)).toEqual({
+      subtotal: 0.91035, discount: 0.01035, netSubtotal: 0.9,
+      ice: 0, vat: 0.15, total: 1.05,
+      taxBreakdown: [{ label: "IVA 15%", rate: 15, base: 0.9, tax: 0.15 }],
+    });
+  });
+});
