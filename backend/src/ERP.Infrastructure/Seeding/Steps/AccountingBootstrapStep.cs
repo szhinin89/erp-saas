@@ -148,7 +148,7 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
     // intermedio) — se agregan las 10 cuentas agrupadoras intermedias faltantes
     // (3.1.01/3.1.02/3.1.03/4.2.01/5.1.01/6.1.01/6.2.01/6.3.01/6.4.01/6.5.01), todas
     // AllowsPosting=false y ninguna referenciada por MinimalPostingRules.
-    public const int RetailChartAccountCount = 103;
+    public const int RetailChartAccountCount = 105;
 
     private static readonly IReadOnlyList<RetailAccount> RetailChart =
     [
@@ -211,6 +211,8 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         new("4.1.01.003", "Ventas exentas de IVA", "4.1.01", AccountType.Income, AccountNature.Credit, true),
         new("4.1.01.004", "Ventas no objeto de IVA", "4.1.01", AccountType.Income, AccountNature.Credit, true),
         new("4.1.01.005", "Ventas de servicios retail", "4.1.01", AccountType.Income, AccountNature.Credit, true),
+        new("4.1.02", "Descuentos sobre ventas", "4.1", AccountType.Income, AccountNature.Credit, false),
+        new("4.1.02.001", "Descuentos concedidos en ventas", "4.1.02", AccountType.Income, AccountNature.Credit, true),
         new("4.2", "Otros ingresos", "4", AccountType.Income, AccountNature.Credit, false),
         new("4.2.01", "Ajustes y diferencias positivas", "4.2", AccountType.Income, AccountNature.Credit, false),
         new("4.2.01.001", "Ingresos por ajustes positivos de inventario", "4.2.01", AccountType.Income, AccountNature.Credit, true),
@@ -321,9 +323,11 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
             [
                 new("1.1.01.001", AccountNature.Debit, PostingAmountKind.CashApplied),
                 new("1.1.03.001", AccountNature.Debit, PostingAmountKind.PendingBalance),
+                new("4.1.02.001", AccountNature.Debit, PostingAmountKind.Discount),
                 new("4.1.01.001", AccountNature.Credit, PostingAmountKind.Subtotal),
                 new("2.1.02.001", AccountNature.Credit, PostingAmountKind.TaxVat),
                 new("2.1.03.001", AccountNature.Credit, PostingAmountKind.TaxIce),
+                new("2.1.03.002", AccountNature.Credit, PostingAmountKind.TaxIrbpnr),
             ]
         ),
         new(
@@ -611,12 +615,21 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
     /// </summary>
     internal static bool MatchesLegacySalesInvoiceIssuedForm(
         IReadOnlyCollection<(string AccountCode, AccountNature Nature, PostingAmountKind AmountKind)> lines
-    ) =>
-        lines.Any(l =>
-            l.AccountCode == LegacySalesInvoiceIssuedDebitLine.AccountCode
-            && l.Nature == LegacySalesInvoiceIssuedDebitLine.Nature
-            && l.AmountKind == LegacySalesInvoiceIssuedDebitLine.AmountKind
-        );
+    )
+    {
+        var currentSet = lines.ToHashSet();
+        var legacySet = new HashSet<(string AccountCode, AccountNature Nature, PostingAmountKind AmountKind)>
+        {
+            ("1.1.03.001", AccountNature.Debit, PostingAmountKind.GrandTotal),
+            ("4.1.01.001", AccountNature.Credit, PostingAmountKind.Subtotal),
+            ("2.1.02.001", AccountNature.Credit, PostingAmountKind.TaxVat),
+            ("2.1.03.001", AccountNature.Credit, PostingAmountKind.TaxIce),
+        };
+
+        return lines.Count == legacySet.Count
+            && currentSet.Count == legacySet.Count
+            && currentSet.SetEquals(legacySet);
+    }
 
     /// <summary>
     /// PURCHASE-CREDIT-NOTE-DISCOUNT-POSTING-ACCOUNT-01 — a diferencia del gap de líneas de
@@ -1100,14 +1113,10 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         if (rule is null)
             return false;
 
-        var receivableAccount = accountByCode[LegacySalesInvoiceIssuedDebitLine.AccountCode];
-        var hasLegacyDebitLine = rule.Lines.Any(l =>
-            l.AccountId == receivableAccount.Id
-            && l.Nature == LegacySalesInvoiceIssuedDebitLine.Nature
-            && l.AmountKind == LegacySalesInvoiceIssuedDebitLine.AmountKind
-        );
-        if (!hasLegacyDebitLine)
-            return false;
+        var receivableAccount = accountByCode["1.1.03.001"];
+        var salesAccount = accountByCode["4.1.01.001"];
+        var vatAccount = accountByCode["2.1.02.001"];
+        var iceAccount = accountByCode["2.1.03.001"];
 
         if (
             !accountByCode.TryGetValue("1.1.01.001", out var cashAccount)
@@ -1119,14 +1128,80 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
             return false;
         }
 
-        rule.RemoveLine(
-            receivableAccount.Id,
-            LegacySalesInvoiceIssuedDebitLine.Nature,
-            LegacySalesInvoiceIssuedDebitLine.AmountKind
+        if (
+            !accountByCode.TryGetValue("4.1.02.001", out var discountAccount)
+            || !discountAccount.IsActive
+            || !discountAccount.AllowsPosting
+        )
+        {
+            LogPostingRuleSkippedInvalidAccount("Sales", "InvoiceIssued", "4.1.02.001", companyId);
+            return false;
+        }
+
+        if (
+            !accountByCode.TryGetValue("2.1.03.002", out var irbpnrAccount)
+            || !irbpnrAccount.IsActive
+            || !irbpnrAccount.AllowsPosting
+        )
+        {
+            LogPostingRuleSkippedInvalidAccount("Sales", "InvoiceIssued", "2.1.03.002", companyId);
+            return false;
+        }
+
+        static bool Matches(
+            PostingRule postingRule,
+            params (Guid AccountId, AccountNature Nature, PostingAmountKind AmountKind)[] expected
+        )
+        {
+            if (postingRule.Lines.Count != expected.Length)
+                return false;
+
+            var current = postingRule.Lines
+                .Select(l => (l.AccountId, l.Nature, l.AmountKind))
+                .ToHashSet();
+
+            return current.Count == expected.Length && current.SetEquals(expected);
+        }
+
+        var changed = false;
+
+        var isLegacyFourLineForm = Matches(
+            rule,
+            (receivableAccount.Id, AccountNature.Debit, PostingAmountKind.GrandTotal),
+            (salesAccount.Id, AccountNature.Credit, PostingAmountKind.Subtotal),
+            (vatAccount.Id, AccountNature.Credit, PostingAmountKind.TaxVat),
+            (iceAccount.Id, AccountNature.Credit, PostingAmountKind.TaxIce)
         );
-        rule.AddLine(cashAccount.Id, AccountNature.Debit, PostingAmountKind.CashApplied);
-        rule.AddLine(receivableAccount.Id, AccountNature.Debit, PostingAmountKind.PendingBalance);
-        return true;
+
+        if (isLegacyFourLineForm)
+        {
+            rule.RemoveLine(
+                receivableAccount.Id,
+                AccountNature.Debit,
+                PostingAmountKind.GrandTotal
+            );
+            rule.AddLine(cashAccount.Id, AccountNature.Debit, PostingAmountKind.CashApplied);
+            rule.AddLine(receivableAccount.Id, AccountNature.Debit, PostingAmountKind.PendingBalance);
+            changed = true;
+        }
+
+        var isCanonicalFiveLineForm = Matches(
+            rule,
+            (cashAccount.Id, AccountNature.Debit, PostingAmountKind.CashApplied),
+            (receivableAccount.Id, AccountNature.Debit, PostingAmountKind.PendingBalance),
+            (salesAccount.Id, AccountNature.Credit, PostingAmountKind.Subtotal),
+            (vatAccount.Id, AccountNature.Credit, PostingAmountKind.TaxVat),
+            (iceAccount.Id, AccountNature.Credit, PostingAmountKind.TaxIce)
+        );
+
+        if (isCanonicalFiveLineForm)
+        {
+            rule.AddLine(discountAccount.Id, AccountNature.Debit, PostingAmountKind.Discount);
+            rule.AddLine(irbpnrAccount.Id, AccountNature.Credit, PostingAmountKind.TaxIrbpnr);
+            changed = true;
+        }
+
+        return changed;
     }
 
     [LoggerMessage(
@@ -1181,8 +1256,8 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
 
     [LoggerMessage(
         Level = LogLevel.Information,
-        Message = "Corrected legacy Sales/InvoiceIssued posting rule (single Debit GrandTotal to "
-            + "CxC -> conditional Debit CashApplied/PendingBalance) for company {CompanyId}."
+        Message = "Corrected Sales/InvoiceIssued posting rule to current form "
+            + "(CashApplied/PendingBalance + sales Discount + IRBPNR) for company {CompanyId}."
     )]
     private partial void LogLegacySalesInvoiceIssuedRuleCorrected(Guid companyId);
 

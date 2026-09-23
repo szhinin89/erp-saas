@@ -32,6 +32,34 @@ export function calcLineTax(
  * (ej. "1" al vender 1 caja x12) convertida a unidad base (ej. "12") — la misma fórmula que
  * SalesInvoiceDetail.Create usa en backend (Quantity * ConversionFactor). Sin presentación,
  * conversionFactor es 1 y esto es un no-op (preserva el comportamiento actual). */
+function roundFiscalAmount(value: number): number {
+  const decimals = getPrecisionPolicy().moneyDecimals;
+  const factor = 10 ** decimals;
+  return Math.round(value * factor) / factor;
+}
+
+export function calcFiscalLine(
+  l: SalesLineInput,
+  vatRates?: Record<string, number>,
+  iceRates?: Record<string, number>,
+): {
+  taxableBase: number;
+  vat: number;
+  ice: number;
+  total: number;
+  vatRate: number;
+} {
+  const net = lineNet(l);
+  const iceRate = (l.iceCode ? iceRates?.[l.iceCode] : undefined) ?? 0;
+  const iceRaw = iceRate > 0 ? (net * iceRate) / 100 : 0;
+  const ice = roundFiscalAmount(iceRaw);
+  const taxableBase = roundFiscalAmount(net + iceRaw);
+  const vatRate = vatRates?.[l.vatCode] ?? 0;
+  const vat = roundFiscalAmount((taxableBase * vatRate) / 100);
+  const total = roundFiscalAmount(taxableBase + vat);
+
+  return { taxableBase, vat, ice, total, vatRate };
+}
 export function lineQuantityInBaseUom(line: {
   quantity: number;
   conversionFactor?: number;
@@ -265,11 +293,7 @@ export function calcSummary(
   // COMPANY-PRECISION-POLICY-FRONTEND-CONSUMERS-MIGRATION-01: total/impuestos son montos
   // fiscales fijos (FiscalPrecision backend) — usan moneyDecimals de la policy nueva, nunca un
   // campo configurable como salesUnitPriceDecimals.
-  const totalAmountDecimals = getPrecisionPolicy().moneyDecimals;
-  const roundTotal = (v: number) => {
-    const factor = 10 ** totalAmountDecimals;
-    return Math.round(v * factor) / factor;
-  };
+  const roundTotal = roundFiscalAmount;
 
   const subtotal = lines.reduce((s, l) => s + lineGross(l), 0);
   const discount = lines.reduce((s, l) => s + lineDiscountAmt(l), 0);
@@ -289,16 +313,12 @@ export function calcSummary(
   let total = 0;
 
   for (const l of lines) {
-    const net = lineNet(l);
-    const iceRate = (l.iceCode ? iceRates?.[l.iceCode] : undefined) ?? 0;
-    const iceRaw = iceRate > 0 ? (net * iceRate) / 100 : 0;
-    const ice = roundTotal(iceRaw);
-    // La base imponible del IVA incluye el ICE (normativa SRI Ecuador) — redondeada a
-    // moneyDecimals antes de calcular el IVA sobre ella, igual que backend.
-    const taxableBase = roundTotal(net + iceRaw);
-    const vatRate = vatRates?.[l.vatCode] ?? 0;
-    const vatAmount = roundTotal((taxableBase * vatRate) / 100);
-    const lineTotal = roundTotal(taxableBase + vatAmount);
+    const fiscal = calcFiscalLine(l, vatRates, iceRates);
+    const taxableBase = fiscal.taxableBase;
+    const vatRate = fiscal.vatRate;
+    const vatAmount = fiscal.vat;
+    const ice = fiscal.ice;
+    const lineTotal = fiscal.total;
 
     netSubtotal += taxableBase;
     totalIce += ice;

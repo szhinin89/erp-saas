@@ -18,7 +18,8 @@ public sealed class SalesInvoiceAuthorizedPostingTranslatorTests
     private static SalesInvoiceAuthorizedEvent Event(
         DateOnly? issueDate = null,
         Guid? invoiceId = null,
-        decimal totalIrbpnr = 0m
+        decimal totalIrbpnr = 0m,
+        decimal totalDiscount = 0m
     ) =>
         new(
             invoiceId ?? Guid.NewGuid(),
@@ -32,7 +33,7 @@ public sealed class SalesInvoiceAuthorizedPostingTranslatorTests
             100m,
             15m,
             0m,
-            0m,
+            totalDiscount,
             totalIrbpnr
         );
 
@@ -80,6 +81,29 @@ public sealed class SalesInvoiceAuthorizedPostingTranslatorTests
         // TAX-LINE-SSOT-ICE-IRBPNR-01 Fase 5E — documento sin IRBPNR no debe generar un
         // TotalIrbpnr falso.
         captured.TotalIrbpnr.Should().Be(0m);
+    }
+
+    [Fact]
+    public async Task Factura_con_descuento_propaga_TotalDiscount_al_PostingFact()
+    {
+        var m = new Mocks();
+        PostingFact? captured = null;
+
+        m.PostingEngine.Setup(e =>
+                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
+            )
+            .Callback<PostingFact, CancellationToken>((fact, _) => captured = fact)
+            .ReturnsAsync(
+                Result<PostingOutcomeDto>.Success(
+                    new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)
+                )
+            );
+
+        var translator = m.BuildTranslator();
+        await translator.Handle(Event(totalDiscount: 0.06m), CancellationToken.None);
+
+        captured.Should().NotBeNull();
+        captured!.TotalDiscount.Should().Be(0.06m);
     }
 
     [Fact]

@@ -4,6 +4,7 @@ import {
   lineDiscountAmt,
   lineNet,
   calcLineTax,
+  calcFiscalLine,
   calcSummary,
   lineExceedsStock,
   lineQuantityInBaseUom,
@@ -742,5 +743,56 @@ describe("parenthesizeRateLabel", () => {
 
   it("deja sin cambios un texto que no tiene formato de tasa porcentual", () => {
     expect(parenthesizeRateLabel("Sin IVA")).toBe("Sin IVA");
+  });
+});
+
+describe("calcFiscalLine — fiscal rounding parity", () => {
+  it("redondea $0.30 con IVA 15% a IVA $0.05 y total $0.35", () => {
+    const line: SalesLineInput = {
+      description: "Producto",
+      quantity: 1,
+      unitPrice: 0.3,
+      vatCode: "10",
+      discountPct: 0,
+    };
+
+    const result = calcFiscalLine(line, TEST_VAT_RATES);
+
+    expect(result.taxableBase).toBe(0.3);
+    expect(result.vat).toBe(0.05);
+    expect(result.total).toBe(0.35);
+  });
+
+  it("aplica descuento 20% antes del IVA y obtiene $0.28", () => {
+    const line: SalesLineInput = {
+      description: "Producto",
+      quantity: 1,
+      unitPrice: 0.3,
+      vatCode: "10",
+      discountPct: 20,
+    };
+
+    const result = calcFiscalLine(line, TEST_VAT_RATES);
+
+    expect(result.taxableBase).toBe(0.24);
+    expect(result.vat).toBe(0.04);
+    expect(result.total).toBe(0.28);
+  });
+
+  it("mantiene paridad con calcSummary para una sola línea", () => {
+    const line: SalesLineInput = {
+      description: "Producto",
+      quantity: 1,
+      unitPrice: 0.3,
+      vatCode: "10",
+      discountPct: 0,
+    };
+
+    const fiscal = calcFiscalLine(line, TEST_VAT_RATES);
+    const summary = calcSummary([line], TEST_VAT_RATES);
+
+    expect(summary.netSubtotal).toBe(fiscal.taxableBase);
+    expect(summary.vat).toBe(fiscal.vat);
+    expect(summary.total).toBe(fiscal.total);
   });
 });

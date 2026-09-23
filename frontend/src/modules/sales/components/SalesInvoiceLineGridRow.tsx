@@ -18,8 +18,7 @@ import { useOptionalI18n } from "../../../i18n/i18n";
 import { roundToDecimals } from "../../../lib/sanitizers";
 import { resolveLinePriceListLabel } from "../utils/pricingTraceability";
 import {
-  lineNet,
-  calcLineTax,
+  calcFiscalLine,
   lineExceedsStock,
   stockBadgeInfo,
   parenthesizeRateLabel,
@@ -86,18 +85,13 @@ export function SalesInvoiceLineGridRow({
 }: SalesInvoiceLineGridRowProps) {
   const { t } = useOptionalI18n();
   const dc = getPrecisionPolicy();
-  const previewNet = lineNet(line);
-  const previewTax = calcLineTax(line, vatRates);
-  const total =
-    backendLine?.taxInclusiveTotal ??
-    previewNet + previewTax.vat + previewTax.ice;
+  const previewFiscal = calcFiscalLine(line, vatRates);
+  const total = backendLine?.taxInclusiveTotal ?? previewFiscal.total;
 
-  // Base e IVA de línea: cuando ya existe backendLine (factura guardada/emitida), se usan sus
-  // valores — misma fuente que ya usaba `total` — para que Base/IVA/Total nunca queden
-  // desalineados entre sí (mismo criterio que evitó el bug de FIX04 con la cantidad). En un
-  // borrador nuevo sin backendLine, los tres salen del mismo cálculo local (previewNet/previewTax).
-  const baseAmount = backendLine?.taxableBase ?? previewNet;
-  const vatAmount = backendLine?.vatAmount ?? previewTax.vat;
+  // Vista previa fiscal: Base/IVA/Total usan el mismo orden de redondeo por línea que
+  // calcSummary y el backend. Si ya existe backendLine, el snapshot backend sigue mandando.
+  const baseAmount = backendLine?.taxableBase ?? previewFiscal.taxableBase;
+  const vatAmount = backendLine?.vatAmount ?? previewFiscal.vat;
   const ivaTotalsLabel = parenthesizeRateLabel(vatLabel);
 
   const sku = line._sku ?? backendLine?.snapshotSku ?? "";

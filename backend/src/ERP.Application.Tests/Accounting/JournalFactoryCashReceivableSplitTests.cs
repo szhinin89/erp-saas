@@ -21,7 +21,15 @@ public sealed class JournalFactoryCashReceivableSplitTests
     private static readonly Guid CompanyId = Guid.NewGuid();
     private static readonly Guid CreatedBy = Guid.NewGuid();
 
-    private static PostingFact Fact(decimal cashApplied, decimal pendingBalance) =>
+    private static PostingFact Fact(
+        decimal cashApplied,
+        decimal pendingBalance,
+        decimal subtotal = 100m,
+        decimal totalVat = 15m,
+        decimal totalIce = 0m,
+        decimal totalDiscount = 0m,
+        decimal totalIrbpnr = 0m
+    ) =>
         new(
             TenantId,
             CompanyId,
@@ -29,11 +37,12 @@ public sealed class JournalFactoryCashReceivableSplitTests
             "InvoiceIssued",
             Guid.NewGuid(),
             new DateOnly(2026, 9, 13),
-            Subtotal: 100m,
-            TotalVat: 15m,
-            TotalIce: 0m,
-            TotalDiscount: 0m,
+            Subtotal: subtotal,
+            TotalVat: totalVat,
+            TotalIce: totalIce,
+            TotalDiscount: totalDiscount,
             GrandTotal: cashApplied + pendingBalance,
+            TotalIrbpnr: totalIrbpnr,
             CashApplied: cashApplied,
             PendingBalance: pendingBalance
         );
@@ -156,10 +165,19 @@ public sealed class JournalFactoryCashReceivableSplitTests
             );
     }
 
-    // Mismas 5 líneas que AccountingBootstrapStep.MinimalPostingRules sembra hoy para
-    // "Sales"/"InvoiceIssued" (Lote 3) — Debe Caja(CashApplied) + Debe CxC(PendingBalance),
-    // Haber Ventas(Subtotal) + Haber IVA(TaxVat) + Haber ICE(TaxIce).
-    private static (PostingRule rule, Guid cash, Guid receivable, Guid sales, Guid vat, Guid ice) SplitRule()
+    // Misma forma vigente de AccountingBootstrapStep.MinimalPostingRules para
+    // "Sales"/"InvoiceIssued": Caja/CxC + descuento concedido en Debe;
+    // Ventas + IVA + ICE + IRBPNR en Haber. Las líneas cuyo monto es 0 se omiten.
+    private static (
+        PostingRule rule,
+        Guid cash,
+        Guid receivable,
+        Guid discount,
+        Guid sales,
+        Guid vat,
+        Guid ice,
+        Guid irbpnr
+    ) SplitRule()
     {
         var rule = PostingRule.Create(
             TenantId,
@@ -171,23 +189,30 @@ public sealed class JournalFactoryCashReceivableSplitTests
             null,
             CreatedBy
         );
+
         var cash = Guid.NewGuid();
         var receivable = Guid.NewGuid();
+        var discount = Guid.NewGuid();
         var sales = Guid.NewGuid();
         var vat = Guid.NewGuid();
         var ice = Guid.NewGuid();
+        var irbpnr = Guid.NewGuid();
+
         rule.AddLine(cash, AccountNature.Debit, PostingAmountKind.CashApplied);
         rule.AddLine(receivable, AccountNature.Debit, PostingAmountKind.PendingBalance);
+        rule.AddLine(discount, AccountNature.Debit, PostingAmountKind.Discount);
         rule.AddLine(sales, AccountNature.Credit, PostingAmountKind.Subtotal);
         rule.AddLine(vat, AccountNature.Credit, PostingAmountKind.TaxVat);
         rule.AddLine(ice, AccountNature.Credit, PostingAmountKind.TaxIce);
-        return (rule, cash, receivable, sales, vat, ice);
+        rule.AddLine(irbpnr, AccountNature.Credit, PostingAmountKind.TaxIrbpnr);
+
+        return (rule, cash, receivable, discount, sales, vat, ice, irbpnr);
     }
 
     [Fact]
     public async Task Venta_contado_omite_la_linea_de_CxC_ninguna_CxC_ficticia()
     {
-        var (rule, cash, receivable, _, _, _) = SplitRule();
+        var (rule, cash, receivable, _, _, _, _, _) = SplitRule();
         var m = new Mocks();
         m.SetupRule(rule);
 
@@ -202,7 +227,7 @@ public sealed class JournalFactoryCashReceivableSplitTests
     [Fact]
     public async Task Venta_credito_puro_omite_la_linea_de_Caja_sin_movimiento_de_caja_ficticio()
     {
-        var (rule, cash, receivable, _, _, _) = SplitRule();
+        var (rule, cash, receivable, _, _, _, _, _) = SplitRule();
         var m = new Mocks();
         m.SetupRule(rule);
 
@@ -217,7 +242,7 @@ public sealed class JournalFactoryCashReceivableSplitTests
     [Fact]
     public async Task Venta_parcial_genera_ambas_lineas_Caja_y_CxC_balanceadas()
     {
-        var (rule, cash, receivable, sales, vat, _) = SplitRule();
+        var (rule, cash, receivable, _, sales, vat, _, _) = SplitRule();
         var m = new Mocks();
         m.SetupRule(rule);
 
@@ -232,5 +257,68 @@ public sealed class JournalFactoryCashReceivableSplitTests
         var totalDebit = m.Captured.Lines.Sum(l => l.Debit);
         var totalCredit = m.Captured.Lines.Sum(l => l.Credit);
         totalDebit.Should().Be(totalCredit).And.Be(115m);
+    }
+
+    [Fact]
+    public async Task Venta_con_descuento_contabiliza_contra_ingreso_y_queda_exactamente_balanceada()
+    {
+        var (rule, cash, _, discount, sales, vat, _, _) = SplitRule();
+        var m = new Mocks();
+        m.SetupRule(rule);
+
+        var result = await m.BuildEngine().PostAsync(
+            Fact(
+                cashApplied: 0.28m,
+                pendingBalance: 0m,
+                subtotal: 0.30m,
+                totalVat: 0.04m,
+                totalDiscount: 0.06m
+            )
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        m.Captured.Should().NotBeNull();
+        m.Captured!.Lines.Should().Contain(l => l.AccountId == cash && l.Debit == 0.28m);
+        m.Captured.Lines.Should().Contain(l => l.AccountId == discount && l.Debit == 0.06m);
+        m.Captured.Lines.Should().Contain(l => l.AccountId == sales && l.Credit == 0.30m);
+        m.Captured.Lines.Should().Contain(l => l.AccountId == vat && l.Credit == 0.04m);
+
+        var totalDebit = m.Captured.Lines.Sum(l => l.Debit);
+        var totalCredit = m.Captured.Lines.Sum(l => l.Credit);
+
+        totalDebit.Should().Be(0.34m);
+        totalCredit.Should().Be(0.34m);
+        totalDebit.Should().Be(totalCredit);
+    }
+
+    [Fact]
+    public async Task Venta_con_IRBPNR_contabiliza_impuesto_y_queda_exactamente_balanceada()
+    {
+        var (rule, cash, _, _, sales, _, _, irbpnr) = SplitRule();
+        var m = new Mocks();
+        m.SetupRule(rule);
+
+        var result = await m.BuildEngine().PostAsync(
+            Fact(
+                cashApplied: 1.02m,
+                pendingBalance: 0m,
+                subtotal: 1.00m,
+                totalVat: 0m,
+                totalIrbpnr: 0.02m
+            )
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        m.Captured.Should().NotBeNull();
+        m.Captured!.Lines.Should().Contain(l => l.AccountId == cash && l.Debit == 1.02m);
+        m.Captured.Lines.Should().Contain(l => l.AccountId == sales && l.Credit == 1.00m);
+        m.Captured.Lines.Should().Contain(l => l.AccountId == irbpnr && l.Credit == 0.02m);
+
+        var totalDebit = m.Captured.Lines.Sum(l => l.Debit);
+        var totalCredit = m.Captured.Lines.Sum(l => l.Credit);
+
+        totalDebit.Should().Be(1.02m);
+        totalCredit.Should().Be(1.02m);
+        totalDebit.Should().Be(totalCredit);
     }
 }

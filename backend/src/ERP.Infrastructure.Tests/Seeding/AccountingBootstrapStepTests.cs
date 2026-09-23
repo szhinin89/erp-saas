@@ -1233,24 +1233,47 @@ public sealed class AccountingBootstrapStepTests
                 r.CompanyId == _companyId && r.SourceModule == "Sales" && r.FactType == "InvoiceIssued"
             );
 
-        corrected.Lines.Should().HaveCount(5);
+        corrected.Lines.Should().HaveCount(7);
+
         var debitLines = corrected.Lines.Where(l => l.Nature == AccountNature.Debit).ToList();
-        debitLines.Should().HaveCount(2);
+        debitLines.Should().HaveCount(3);
         debitLines.Select(l => l.AmountKind)
             .Should()
-            .BeEquivalentTo(new[] { PostingAmountKind.CashApplied, PostingAmountKind.PendingBalance });
+            .BeEquivalentTo(
+                new[]
+                {
+                    PostingAmountKind.CashApplied,
+                    PostingAmountKind.PendingBalance,
+                    PostingAmountKind.Discount,
+                }
+            );
 
         var creditLines = corrected.Lines.Where(l => l.Nature == AccountNature.Credit).ToList();
+        creditLines.Should().HaveCount(4);
         creditLines.Select(l => l.Id)
             .Should()
-            .BeEquivalentTo(creditLineIds, because: "las líneas de Haber (Subtotal/TaxVat/TaxIce) no se tocan");
+            .Contain(creditLineIds, because: "las líneas Haber históricas Subtotal/TaxVat/TaxIce se conservan");
+        creditLines.Select(l => l.AmountKind)
+            .Should()
+            .Contain(PostingAmountKind.TaxIrbpnr);
 
         var cashAccountId = debitLines.Single(l => l.AmountKind == PostingAmountKind.CashApplied).AccountId;
         (await verifyDb.Accounts.SingleAsync(a => a.Id == cashAccountId)).Code.Value.Should().Be("1.1.01.001");
+
         var receivableLine = debitLines.Single(l => l.AmountKind == PostingAmountKind.PendingBalance);
         (await verifyDb.Accounts.SingleAsync(a => a.Id == receivableLine.AccountId)).Code.Value
             .Should()
             .Be("1.1.03.001");
+
+        var discountLine = debitLines.Single(l => l.AmountKind == PostingAmountKind.Discount);
+        (await verifyDb.Accounts.SingleAsync(a => a.Id == discountLine.AccountId)).Code.Value
+            .Should()
+            .Be("4.1.02.001");
+
+        var irbpnrLine = creditLines.Single(l => l.AmountKind == PostingAmountKind.TaxIrbpnr);
+        (await verifyDb.Accounts.SingleAsync(a => a.Id == irbpnrLine.AccountId)).Code.Value
+            .Should()
+            .Be("2.1.03.002");
     }
 
     /// <summary>
