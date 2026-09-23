@@ -1092,17 +1092,9 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
     }
 
     /// <summary>
-    /// SALES-CASH-VS-RECEIVABLE-POSTING-SPLIT-AND-CANCEL-REVERSAL-01 Lote 3 — corrige
-    /// <paramref name="rule"/> de la forma vieja (una sola línea de Debe, 100% GrandTotal a
-    /// "1.1.03.001 CxC clientes") a la forma vigente (dos líneas de Debe condicionales: Caja por
-    /// CashApplied, CxC por PendingBalance) SOLO si la línea de Debe actual coincide EXACTAMENTE con
-    /// <see cref="LegacySalesInvoiceIssuedDebitLine"/> — cualquier otra forma (ya corregida, o
-    /// modificada manualmente por un admin) se deja intacta, nunca se adivina ni se sobreescribe
-    /// (mismo criterio que <see cref="TryCorrectLegacyPurchaseCreditNoteAuthorizedRule"/>). Nunca
-    /// toca JournalEntry ya posteados con la regla vieja — solo la configuración de la regla, para
-    /// que autorizaciones futuras separen Caja/CxC correctamente. Devuelve <c>false</c> sin tocar
-    /// nada si <paramref name="rule"/> es <c>null</c>, si no coincide con la forma vieja, o si la
-    /// cuenta de Caja no está disponible (inactiva/sin AllowsPosting).
+    /// Corrects only exact legacy 4/5-line Sales/InvoiceIssued rules to the canonical seven
+    /// lines after validating every required account. Preserves existing line IDs and never
+    /// touches posted entries. Shared by bootstrap and explicit Production maintenance.
     /// </summary>
     private bool TryCorrectLegacySalesInvoiceIssuedRule(
         PostingRule? rule,
@@ -1113,95 +1105,24 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         if (rule is null)
             return false;
 
-        var receivableAccount = accountByCode["1.1.03.001"];
-        var salesAccount = accountByCode["4.1.01.001"];
-        var vatAccount = accountByCode["2.1.02.001"];
-        var iceAccount = accountByCode["2.1.03.001"];
-
-        if (
-            !accountByCode.TryGetValue("1.1.01.001", out var cashAccount)
-            || !cashAccount.IsActive
-            || !cashAccount.AllowsPosting
-        )
+        var status = DiagnoseSalesInvoiceRule(rule, accountByCode);
+        if (status != "Legacy4" && status != "Legacy5")
         {
-            LogPostingRuleSkippedInvalidAccount("Sales", "InvoiceIssued", "1.1.01.001", companyId);
+            if (status != "Canonical7")
+                _logger.LogWarning("Sales/InvoiceIssued company={CompanyId} rule={RuleId}: {Diagnostic}", companyId, rule.Id, status);
             return false;
         }
 
-        if (
-            !accountByCode.TryGetValue("4.1.02.001", out var discountAccount)
-            || !discountAccount.IsActive
-            || !discountAccount.AllowsPosting
-        )
+        if (status == "Legacy4")
         {
-            LogPostingRuleSkippedInvalidAccount("Sales", "InvoiceIssued", "4.1.02.001", companyId);
-            return false;
+            // Keep the original receivable line ID and the three credit line IDs.
+            var receivable = rule.Lines.Single(l => l.AmountKind == PostingAmountKind.GrandTotal);
+            _db.Entry(receivable).Property(l => l.AmountKind).CurrentValue = PostingAmountKind.PendingBalance;
+            rule.AddLine(accountByCode["1.1.01.001"].Id, AccountNature.Debit, PostingAmountKind.CashApplied);
         }
-
-        if (
-            !accountByCode.TryGetValue("2.1.03.002", out var irbpnrAccount)
-            || !irbpnrAccount.IsActive
-            || !irbpnrAccount.AllowsPosting
-        )
-        {
-            LogPostingRuleSkippedInvalidAccount("Sales", "InvoiceIssued", "2.1.03.002", companyId);
-            return false;
-        }
-
-        static bool Matches(
-            PostingRule postingRule,
-            params (Guid AccountId, AccountNature Nature, PostingAmountKind AmountKind)[] expected
-        )
-        {
-            if (postingRule.Lines.Count != expected.Length)
-                return false;
-
-            var current = postingRule.Lines
-                .Select(l => (l.AccountId, l.Nature, l.AmountKind))
-                .ToHashSet();
-
-            return current.Count == expected.Length && current.SetEquals(expected);
-        }
-
-        var changed = false;
-
-        var isLegacyFourLineForm = Matches(
-            rule,
-            (receivableAccount.Id, AccountNature.Debit, PostingAmountKind.GrandTotal),
-            (salesAccount.Id, AccountNature.Credit, PostingAmountKind.Subtotal),
-            (vatAccount.Id, AccountNature.Credit, PostingAmountKind.TaxVat),
-            (iceAccount.Id, AccountNature.Credit, PostingAmountKind.TaxIce)
-        );
-
-        if (isLegacyFourLineForm)
-        {
-            rule.RemoveLine(
-                receivableAccount.Id,
-                AccountNature.Debit,
-                PostingAmountKind.GrandTotal
-            );
-            rule.AddLine(cashAccount.Id, AccountNature.Debit, PostingAmountKind.CashApplied);
-            rule.AddLine(receivableAccount.Id, AccountNature.Debit, PostingAmountKind.PendingBalance);
-            changed = true;
-        }
-
-        var isCanonicalFiveLineForm = Matches(
-            rule,
-            (cashAccount.Id, AccountNature.Debit, PostingAmountKind.CashApplied),
-            (receivableAccount.Id, AccountNature.Debit, PostingAmountKind.PendingBalance),
-            (salesAccount.Id, AccountNature.Credit, PostingAmountKind.Subtotal),
-            (vatAccount.Id, AccountNature.Credit, PostingAmountKind.TaxVat),
-            (iceAccount.Id, AccountNature.Credit, PostingAmountKind.TaxIce)
-        );
-
-        if (isCanonicalFiveLineForm)
-        {
-            rule.AddLine(discountAccount.Id, AccountNature.Debit, PostingAmountKind.Discount);
-            rule.AddLine(irbpnrAccount.Id, AccountNature.Credit, PostingAmountKind.TaxIrbpnr);
-            changed = true;
-        }
-
-        return changed;
+        rule.AddLine(accountByCode["4.1.02.001"].Id, AccountNature.Debit, PostingAmountKind.Discount);
+        rule.AddLine(accountByCode["2.1.03.002"].Id, AccountNature.Credit, PostingAmountKind.TaxIrbpnr);
+        return true;
     }
 
     [LoggerMessage(

@@ -555,6 +555,20 @@ if (args.Contains("remediate-purchase-return-postings"))
     return;
 }
 
+// SALES-INVOICE-POSTING-RULE-PROD-BACKFILL-02: explicit maintenance, including Production.
+// Dry-run by default; add `apply` to update only exactly recognized legacy rule configurations.
+if (args.Contains("backfill-sales-invoice-posting-rule"))
+{
+    using var scope = app.Services.CreateScope();
+    var service = scope.ServiceProvider.GetRequiredService<ERP.Infrastructure.Seeding.AccountingChartBackfillService>();
+    var apply = args.Contains("apply");
+    var rows = await service.RunSalesInvoiceRuleMaintenanceAsync(apply);
+    Console.WriteLine($"[backfill-sales-invoice-posting-rule] Mode={(apply ? "APPLY" : "DRY-RUN")} Companies={rows.Count}");
+    foreach (var row in rows)
+        Console.WriteLine($"Tenant={row.TenantId} Company={row.CompanyId}: {row.Diagnostic}");
+    return;
+}
+
 // Bootstrap global: único flujo oficial para datos de instalación (navegación + InstallData).
 // Ver ERP.Infrastructure.Seeding.Global.GlobalBootstrapOrchestrator.
 using (var globalBootstrapScope = app.Services.CreateScope())
