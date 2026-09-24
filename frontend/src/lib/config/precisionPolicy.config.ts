@@ -114,14 +114,75 @@ export class PrecisionPolicyNotLoadedError extends Error {
   }
 }
 
-let _cache: PrecisionPolicy | null = null;
+/**
+ * ZH-DESIGN-SYSTEM-PRECISION-01C: snapshot inmutable del ÚNICO estado de precisión del frontend.
+ * `getPrecisionPolicy()`, `isPrecisionPolicyLoaded()` y los suscriptores leen exactamente esta
+ * referencia; se reemplaza solo cuando el estado cambia (referencia estable para
+ * `useSyncExternalStore`). Sin política cargada no existe ningún valor por defecto.
+ */
+export type PrecisionPolicySnapshot =
+  | { readonly loaded: false; readonly policy: null }
+  | { readonly loaded: true; readonly policy: PrecisionPolicy };
+
+const EMPTY_SNAPSHOT: PrecisionPolicySnapshot = Object.freeze({ loaded: false, policy: null });
+
+/** Única fuente autoritativa en memoria de la PrecisionPolicy activa. */
+let _snapshot: PrecisionPolicySnapshot = EMPTY_SNAPSHOT;
+
+/**
+ * Control de concurrencia (no es estado de negocio): cada load/save/clear/set toma una generación
+ * nueva y una respuesta solo se publica si su generación sigue siendo la vigente. Así una request
+ * vieja (otra empresa, un load anterior a un save o a un clear) nunca sobrescribe el estado, sin
+ * depender del orden en que resuelvan las promesas ni de poder abortarlas.
+ */
+let _generation = 0;
+
+/**
+ * Generación del save en vuelo mientras siga siendo la operación vigente (solo metadata técnica,
+ * nunca una policy). Un load que empieza en ese intervalo pudo leer el backend ANTES de que el save
+ * confirmara: no desplaza al save ni se publica. Un clear posterior avanza `_generation` y deja
+ * este marcador sin efecto, así los loads de la nueva empresa se publican con normalidad.
+ */
+let _pendingSaveGeneration: number | null = null;
+
+const _listeners = new Set<() => void>();
+
+function publish(next: PrecisionPolicySnapshot): void {
+  if (next === _snapshot) return;
+  _snapshot = next;
+  for (const listener of [..._listeners]) listener();
+}
+
+function publishPolicy(policy: PrecisionPolicy | null): void {
+  publish(policy ? Object.freeze({ loaded: true, policy }) : EMPTY_SNAPSHOT);
+}
+
+/** Snapshot actual (misma referencia mientras el estado no cambie). */
+export function getPrecisionPolicySnapshot(): PrecisionPolicySnapshot {
+  return _snapshot;
+}
+
+/** Notifica cada cambio del estado aceptado (load/save vigente, clear). Devuelve el unsubscribe. */
+export function subscribePrecisionPolicy(listener: () => void): () => void {
+  _listeners.add(listener);
+  return () => {
+    _listeners.delete(listener);
+  };
+}
 
 const BASE = "/api/v1/config/precision-policy";
 
-/** Carga la política de la empresa activa y la deja disponible para `getPrecisionPolicy()`. Lanza si la API falla. */
+/**
+ * Carga la política de la empresa activa y la deja disponible para `getPrecisionPolicy()`. Lanza
+ * si la API falla (sin tocar el estado vigente). Devuelve siempre la respuesta del backend, pero
+ * solo la publica si ningún load/save/clear posterior la dejó obsoleta. Iniciado durante un save
+ * vigente es stale desde el origen: devuelve la respuesta pero nunca la publica.
+ */
 export async function loadPrecisionPolicy(): Promise<PrecisionPolicy> {
+  if (_pendingSaveGeneration === _generation) return apiGet<PrecisionPolicy>(BASE);
+  const generation = ++_generation;
   const cfg = await apiGet<PrecisionPolicy>(BASE);
-  _cache = cfg;
+  if (generation === _generation) publishPolicy(cfg);
   return cfg;
 }
 
@@ -130,23 +191,25 @@ export function loadPrecisionPolicyMetadata(): Promise<PrecisionPolicyMetadata> 
 }
 
 export function isPrecisionPolicyLoaded(): boolean {
-  return _cache !== null;
+  return _snapshot.loaded;
 }
 
-/** Olvida la política cacheada (logout / cambio de empresa) — evita usar la de otra empresa. */
+/** Olvida la política (logout / cambio de empresa) e invalida todo load/save en vuelo. */
 export function clearPrecisionPolicy(): void {
-  _cache = null;
+  _generation++;
+  publishPolicy(null);
 }
 
 /** Política cargada de la empresa activa. Lanza `PrecisionPolicyNotLoadedError` si aún no se cargó. */
 export function getPrecisionPolicy(): PrecisionPolicy {
-  if (!_cache) throw new PrecisionPolicyNotLoadedError();
-  return _cache;
+  if (!_snapshot.loaded) throw new PrecisionPolicyNotLoadedError();
+  return _snapshot.policy;
 }
 
-/** Solo tests: fija la política cacheada sin pasar por la API. */
+/** Solo tests: fija la política sin pasar por la API (mismo estado único; invalida lo que esté en vuelo). */
 export function setPrecisionPolicyForTests(policy: PrecisionPolicy | null): void {
-  _cache = policy;
+  _generation++;
+  publishPolicy(policy);
 }
 
 export type UpdatePrecisionPolicyInput = Omit<
@@ -154,10 +217,21 @@ export type UpdatePrecisionPolicyInput = Omit<
   "isLocked" | "lockedAt" | "lockedReason" | "moneyDecimals" | "taxDecimals" | "accountingDecimals"
 >;
 
+/**
+ * Guarda y publica la respuesta real del backend (sin estado optimista). Invalida los loads
+ * anteriores y los iniciados mientras está en vuelo; si un clear o un save posterior lo dejó
+ * obsoleto, devuelve el resultado sin publicarlo.
+ */
 export async function savePrecisionPolicy(
   input: UpdatePrecisionPolicyInput,
 ): Promise<PrecisionPolicy> {
-  const result = await apiPut<PrecisionPolicy>(BASE, input);
-  _cache = result;
-  return result;
+  const generation = ++_generation;
+  _pendingSaveGeneration = generation;
+  try {
+    const result = await apiPut<PrecisionPolicy>(BASE, input);
+    if (generation === _generation) publishPolicy(result);
+    return result;
+  } finally {
+    if (_pendingSaveGeneration === generation) _pendingSaveGeneration = null;
+  }
 }
