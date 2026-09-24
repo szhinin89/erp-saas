@@ -223,6 +223,9 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
         var services = new ServiceCollection();
         services.AddScoped<ERP.Application.Common.Services.ICompanyClock, ERP.Infrastructure.Persistence.Services.CompanyClock>();
         services.AddLogging();
+        services.AddSingleton<ERP.Application.Modules.Companies.ICompanyPrecisionPolicyProvider>(
+            ERP.Infrastructure.Tests.TestData.StandardPrecisionPolicyProvider.Instance
+        );
         services.AddSingleton(db);
         services.AddSingleton<ICurrentTenant>(new FixedCurrentTenant(tenantId));
         services.AddSingleton<ICurrentCompany>(new FixedCurrentCompany(companyId));
