@@ -1,8 +1,13 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { act, render, screen, cleanup } from "@testing-library/react";
 import { ZHMoneyValue } from "./ZHMoneyValue";
 import { ZHLocaleProvider } from "./ZHLocaleProvider";
+import {
+  setPrecisionPolicyForTests,
+  type PrecisionPolicy,
+} from "../../lib/config/precisionPolicy.config";
+import { TEST_PRECISION_POLICY } from "../../test/precisionPolicyFixture";
 
 afterEach(() => {
   cleanup();
@@ -363,5 +368,109 @@ describe("ZHMoneyValue — characterization 01A", () => {
       </ZHLocaleProvider>,
     );
     expect(amount()).toBe("1,234.50");
+  });
+});
+
+/** ZH-DESIGN-SYSTEM-PRECISION-02A — precisión semántica (`precision`) sobre la PrecisionPolicy. */
+describe("ZHMoneyValue — precision semántica (02A)", () => {
+  const amount = () => document.querySelector(".zh-money-value__amount")?.textContent;
+  const text = () => document.querySelector(".zh-money-value")?.textContent;
+
+  const POLICY_A: PrecisionPolicy = {
+    ...TEST_PRECISION_POLICY,
+    unitCostDecimals: 6,
+    averageCostDecimals: 8,
+    salesUnitPriceDecimals: 4,
+    purchaseUnitPriceDecimals: 5,
+    moneyDecimals: 2,
+    taxDecimals: 3,
+    accountingDecimals: 4,
+  };
+  const POLICY_B: PrecisionPolicy = { ...POLICY_A, unitCostDecimals: 4 };
+
+  it("unitCost=6: 0.2261 → $0.226100", () => {
+    setPrecisionPolicyForTests(POLICY_A);
+    render(<ZHMoneyValue value={0.2261} precision="unitCost" />);
+    expect(text()).toBe("$0.226100");
+  });
+
+  it("reactivo sin remount: policy A (unitCost 6) → B (unitCost 4): $0.226100 → $0.2261", () => {
+    setPrecisionPolicyForTests(POLICY_A);
+    render(<ZHMoneyValue value={0.2261} precision="unitCost" />);
+    const node = document.querySelector(".zh-money-value__amount");
+    expect(text()).toBe("$0.226100");
+    act(() => setPrecisionPolicyForTests(POLICY_B));
+    expect(document.querySelector(".zh-money-value__amount")).toBe(node);
+    expect(text()).toBe("$0.2261");
+  });
+
+  it.each<[Parameters<typeof ZHMoneyValue>[0]["precision"], number, string]>([
+    ["salesUnitPrice", 0.3, "0.3000"],
+    ["purchaseUnitPrice", 0.3, "0.30000"],
+    ["averageCost", 0.3, "0.30000000"],
+    ["money", 0.3, "0.30"],
+    ["tax", 0.3, "0.300"],
+    ["accounting", 0.3, "0.3000"],
+  ])("%s lee su escala de la policy vía resolver (%s → %s)", (precision, value, expected) => {
+    setPrecisionPolicyForTests(POLICY_A);
+    render(<ZHMoneyValue value={value} precision={precision} />);
+    expect(amount()).toBe(expected);
+  });
+
+  it("decimals explícito gana sobre precision (unitCost 6, decimals 3 → 0.226)", () => {
+    setPrecisionPolicyForTests(POLICY_A);
+    render(<ZHMoneyValue value={0.2261} precision="unitCost" decimals={3} />);
+    expect(amount()).toBe("0.226");
+  });
+
+  it("decimals={0} sigue siendo override válido", () => {
+    setPrecisionPolicyForTests(POLICY_A);
+    render(<ZHMoneyValue value={12.6} precision="unitCost" decimals={0} />);
+    expect(amount()).toBe("13");
+  });
+
+  it("sin precision ni decimals: contrato legacy 2 y NO depende de la policy cargada", () => {
+    setPrecisionPolicyForTests(null);
+    render(<ZHMoneyValue value={0.2261} />);
+    expect(amount()).toBe("0.23");
+  });
+
+  it("null/undefined con precision → '—' sin símbolo", () => {
+    setPrecisionPolicyForTests(POLICY_A);
+    const { container } = render(<ZHMoneyValue value={null} precision="unitCost" />);
+    expect(container.textContent).toBe("—");
+    expect(container.firstElementChild?.className).toContain("zh-money-value--empty");
+    cleanup();
+    const u = render(<ZHMoneyValue value={undefined} precision="unitCost" />);
+    expect(u.container.textContent).toBe("—");
+  });
+
+  it("cero con precision se muestra con la escala semántica ($0.000000), no como vacío", () => {
+    setPrecisionPolicyForTests(POLICY_A);
+    render(<ZHMoneyValue value={0} precision="unitCost" />);
+    expect(text()).toBe("$0.000000");
+  });
+
+  it("negativos con precision conservan el contrato legacy '$-…'", () => {
+    setPrecisionPolicyForTests(POLICY_A);
+    render(<ZHMoneyValue value={-5} precision="salesUnitPrice" />);
+    expect(text()).toBe("$-5.0000");
+  });
+
+  it("locale explícito con precision: representación Intl sobre la escala semántica", () => {
+    setPrecisionPolicyForTests(POLICY_A);
+    render(<ZHMoneyValue value={1234.5} precision="salesUnitPrice" locale="en-US" />);
+    expect(amount()).toBe("1,234.5000");
+  });
+
+  it("DOM/clases idénticos al contrato legacy; align end por defecto; importe en __amount (tabular-nums)", () => {
+    setPrecisionPolicyForTests(POLICY_A);
+    const { container } = render(<ZHMoneyValue value={1} precision="money" />);
+    const el = container.firstElementChild as HTMLElement;
+    expect(el.className).toBe("zh-money-value zh-money-value--default zh-money-value--end");
+    expect([...el.children].map((c) => c.className)).toEqual([
+      "zh-money-value__symbol",
+      "zh-money-value__amount",
+    ]);
   });
 });

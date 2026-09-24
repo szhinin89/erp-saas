@@ -519,7 +519,9 @@ select.zh-input--compact {
   font-weight: 400;
 }
 
-/* ZHMoneyValue — valor monetario de solo lectura, reemplaza el patrón manual
+/* ZHMoneyValue / ZHNumberValue (ZH-DESIGN-SYSTEM-PRECISION-02A): misma base visual; ZHNumberValue
+   es la variante sin símbolo, con __prefix/__suffix en el tono del símbolo.
+   ZHMoneyValue — valor monetario de solo lectura, reemplaza el patrón manual
    "$" + formatMoney(value) repetido por módulo. Sin tokens dedicados de "strong"/"total"
    en el DS: --strong/--total reutilizan el mismo peso (700) ya usado por otros elementos
    destacados de zh-ui.css (.zh-auth-brand-name, .zh-avatar); --total usa además
@@ -528,7 +530,8 @@ select.zh-input--compact {
    indivisible: `white-space: nowrap` evita que el símbolo y el valor (dos
    <span> hijos del inline-flex) envuelvan a líneas distintas cuando el
    contenedor padre es angosto (tablas, mini-cards, cols de precio). */
-.zh-money-value {
+.zh-money-value,
+.zh-number-value {
   display: inline-flex;
   align-items: baseline;
   gap: var(--space-1);
@@ -536,15 +539,18 @@ select.zh-input--compact {
   white-space: nowrap;
 }
 
-.zh-money-value--start {
+.zh-money-value--start,
+.zh-number-value--start {
   justify-content: flex-start;
 }
 
-.zh-money-value--end {
+.zh-money-value--end,
+.zh-number-value--end {
   justify-content: flex-end;
 }
 
-.zh-money-value--default {
+.zh-money-value--default,
+.zh-number-value--default {
   font-size: var(--text-body-md-size);
   font-weight: var(--text-body-md-weight);
 }
@@ -553,18 +559,21 @@ select.zh-input--compact {
    secundarios/de menor peso visual dentro de una línea (p.ej. ICE/IRBPNR junto
    al IVA principal): antes cada módulo envolvía el ZHMoneyValue en un div con
    font-size/color locales para lograr este look "de-enfatizado". */
-.zh-money-value--muted {
+.zh-money-value--muted,
+.zh-number-value--muted {
   font-size: var(--text-help-size);
   font-weight: 400;
   color: var(--color-text-secondary);
 }
 
-.zh-money-value--strong {
+.zh-money-value--strong,
+.zh-number-value--strong {
   font-size: var(--text-body-md-size);
   font-weight: 700;
 }
 
-.zh-money-value--total {
+.zh-money-value--total,
+.zh-number-value--total {
   font-size: var(--text-body-lg-size);
   font-weight: 700;
 }
@@ -576,21 +585,26 @@ select.zh-input--compact {
    look aprobado (20px/800, antes repartido entre erp-form-core.css 18px base
    + un override local de purchases-invoice.css a 20px) — solo se relocaliza
    la propiedad al componente global en vez de dos reglas CSS por pantalla. */
-.zh-money-value--grand {
+.zh-money-value--grand,
+.zh-number-value--grand {
   font-size: 20px;
   font-weight: 800;
   letter-spacing: -0.5px;
 }
 
-.zh-money-value__symbol {
+.zh-money-value__symbol,
+.zh-number-value__prefix,
+.zh-number-value__suffix {
   color: var(--color-text-secondary);
 }
 
-.zh-money-value__amount {
+.zh-money-value__amount,
+.zh-number-value__amount {
   font-variant-numeric: tabular-nums;
 }
 
-.zh-money-value--empty {
+.zh-money-value--empty,
+.zh-number-value--empty {
   color: var(--color-text-secondary);
 }
 

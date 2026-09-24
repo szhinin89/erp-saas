@@ -88,9 +88,26 @@ export function roundToDecimals(value: number, decimals: number): number {
   return sign * shift(rounded, -decimals);
 }
 
+/**
+ * ZH-DESIGN-SYSTEM-PRECISION-02A: ÚNICO motor de formato numérico de presentación. Redondea con
+ * Decimal.js ROUND_HALF_UP (= backend MidpointRounding.AwayFromZero, incluidos los empates) y
+ * devuelve punto decimal sin agrupación — el estándar del proyecto.
+ *
+ * `locale` (solo si se pide explícitamente) aplica ÚNICAMENTE representación (separadores y
+ * agrupación): Intl recibe el texto ya fijado a `decimals` como cadena decimal exacta, nunca un
+ * Number, y con min = max = `decimals` no tiene nada que redondear. No hay segundo redondeo.
+ */
+export function formatDecimalDisplay(value: number, decimals: number, locale?: string): string {
+  const fixed = new Decimal(value).toFixed(decimals, Decimal.ROUND_HALF_UP);
+  if (!locale) return fixed;
+  return new Intl.NumberFormat(locale, {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(fixed as Intl.StringNumericLiteral);
+}
+
 export function formatMoney(value: number, decimals = 2): string {
-  // Decimal rounding matches backend MidpointRounding.AwayFromZero, including ties.
-  return new Decimal(value).toFixed(decimals, Decimal.ROUND_HALF_UP);
+  return formatDecimalDisplay(value, decimals);
 }
 
 export function formatMoneyWithSymbol(
