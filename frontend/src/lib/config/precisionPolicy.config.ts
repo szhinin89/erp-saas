@@ -30,6 +30,62 @@ export type PrecisionPolicy = {
   accountingDecimals: number;
 };
 
+/**
+ * ZH-DESIGN-SYSTEM-PRECISION-01B: ÚNICO contrato semántico de precisión del frontend — QUÉ
+ * representa un valor. El Design System traduce la semántica a decimales solo vía
+ * `resolvePrecisionDecimals`; ningún componente/módulo debe mantener su propio mapeo.
+ * `settlementToleranceAmount` queda fuera a propósito: es un monto, no una cantidad de decimales.
+ */
+export type PrecisionKind =
+  | "money"
+  | "tax"
+  | "accounting"
+  | "salesUnitPrice"
+  | "purchaseUnitPrice"
+  | "unitCost"
+  | "averageCost"
+  | "quantity"
+  | "percentage"
+  | "conversionFactor";
+
+/** Campos de la policy que expresan una cantidad de decimales. */
+export type PrecisionDecimalsField = Extract<keyof PrecisionPolicy, `${string}Decimals`>;
+
+/**
+ * SSOT del mapeo semántica → campo real de la policy. `satisfies Record<…>` obliga en compile-time
+ * a mapear toda semántica nueva (y rechaza claves sobrantes). money/tax/accounting se leen de la
+ * policy como cualquier otro campo: que hoy compartan escala es un detalle del backend.
+ */
+export const PRECISION_FIELD_BY_KIND = {
+  money: "moneyDecimals",
+  tax: "taxDecimals",
+  accounting: "accountingDecimals",
+  salesUnitPrice: "salesUnitPriceDecimals",
+  purchaseUnitPrice: "purchaseUnitPriceDecimals",
+  unitCost: "unitCostDecimals",
+  averageCost: "averageCostDecimals",
+  quantity: "quantityDecimals",
+  percentage: "percentageDecimals",
+  conversionFactor: "conversionFactorDecimals",
+} as const satisfies Readonly<Record<PrecisionKind, PrecisionDecimalsField>>;
+
+/**
+ * Decimales que la policy de la empresa define para `kind`. Puro: no lee caché/API/React, no
+ * formatea ni redondea, no muta la policy y no aplica defaults — un campo ausente o no entero es
+ * un error de contrato (fail-closed), nunca motivo para inventar una precisión.
+ */
+export function resolvePrecisionDecimals(
+  policy: Readonly<Pick<PrecisionPolicy, PrecisionDecimalsField>>,
+  kind: PrecisionKind,
+): number {
+  const field = PRECISION_FIELD_BY_KIND[kind];
+  const decimals = policy[field];
+  if (!Number.isInteger(decimals)) {
+    throw new TypeError(`La política de precisión no define un entero válido para "${kind}" (${field}).`);
+  }
+  return decimals;
+}
+
 /** Metadata estática (GET /precision-policy/metadata): definiciones y perfiles predefinidos. */
 export type PrecisionFieldMetadata = {
   key: string;
