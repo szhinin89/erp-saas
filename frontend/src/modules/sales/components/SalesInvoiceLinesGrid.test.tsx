@@ -216,13 +216,20 @@ describe("SalesInvoiceLinesGrid — cabecera de columnas (SALES-INVOICE-LINES-GR
     expect(onUpdateLine).toHaveBeenCalledWith(1, "quantity", 5);
   });
 
-  it("cambiar el precio facturado sigue disparando onUpdateLine", () => {
+  // El campo editable es el precio facturado (neto): la fila emite "invoicedUnitPrice" y
+  // useSalesPage.updateLine lo convierte al par persistido unitPrice/discountPct
+  // (resolveInvoicedUnitPriceEdit). La fila nunca escribe unitPrice directamente.
+  it.each([
+    ["mayor que la referencia", "30", 30],
+    ["menor que la referencia", "20", 20],
+  ])("cambiar el precio facturado (%s) dispara onUpdateLine con invoicedUnitPrice", (_case, typed, expected) => {
     const onUpdateLine = vi.fn();
     renderSection([baseLine({ unitPrice: 26 })], { onUpdateLine });
     const priceInput = screen.getByDisplayValue("26.00");
-    fireEvent.change(priceInput, { target: { value: "30" } });
+    fireEvent.change(priceInput, { target: { value: typed } });
     fireEvent.blur(priceInput);
-    expect(onUpdateLine).toHaveBeenCalledWith(1, "unitPrice", 30);
+    expect(onUpdateLine).toHaveBeenCalledTimes(1);
+    expect(onUpdateLine).toHaveBeenCalledWith(1, "invoicedUnitPrice", expected);
   });
 
   it("no muestra 'regla general' ni 'excepción' como texto principal", () => {
