@@ -68,6 +68,7 @@ import {
 } from "../../lib/apiError";
 import {
   calcSummary,
+  resolveInvoicedUnitPriceEdit,
   formatVatLabel,
   lineExceedsStock,
   findMergeableLineIndex,
@@ -999,19 +1000,24 @@ export function useSalesPage() {
       const currentLines = getValues("lines");
       setValue(
         "lines",
-        currentLines.map((l) =>
-          l._key === key
-            ? {
-                ...l,
-                [field]: value,
-                // SALES-PRICE-LIST-DISCOUNT-VISIBILITY-01: editar el precio facturado a mano deja
-                // de reflejar el precio resuelto por la lista de precios — se marca para que la UI
-                // distinga "precio de lista/regla" de "precio manual" en vez de seguir mostrando
-                // el desglose de descuento como si siguiera vigente.
-                ...(field === "unitPrice" ? { _isManualPrice: true } : {}),
-              }
-            : l,
-        ),
+        currentLines.map((l) => {
+          if (l._key !== key) return l;
+          if (field === "invoicedUnitPrice") {
+            const pricing = resolveInvoicedUnitPriceEdit(
+              l.unitPrice, Number(value), getPrecisionPolicy().percentageDecimals,
+            );
+            return {
+              ...l, ...pricing,
+              ...(pricing.unitPrice !== l.unitPrice ? { _isManualPrice: true } : {}),
+            };
+          }
+          return {
+            ...l,
+            [field]: value,
+            // A direct reference-price change remains a manual price.
+            ...(field === "unitPrice" ? { _isManualPrice: true } : {}),
+          };
+        }),
         { shouldDirty: true },
       );
     },

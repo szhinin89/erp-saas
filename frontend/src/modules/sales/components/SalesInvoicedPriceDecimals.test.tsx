@@ -5,9 +5,11 @@ import { MemoryRouter } from "react-router-dom";
 import { SalesInvoiceDetailsSection } from "./SalesInvoiceDetailsSection";
 import { SalesRepricingTable } from "./SalesRepricingTable";
 import { roundToDecimals } from "../../../lib/sanitizers";
-import { calcFiscalLine } from "../utils/salesCalc";
+import { calcFiscalLine, resolveInvoicedUnitPriceEdit } from "../utils/salesCalc";
+import { mapInvoiceLinesToFormValues } from "../utils/salesInvoiceHydration";
+import { useState } from "react";
 import { SalesInvoiceLineGridRow } from "./SalesInvoiceLineGridRow";
-import type { SalesInvoiceDetailDto } from "../api/salesService";
+import type { SalesInvoiceDetailDto, SalesInvoiceDto } from "../api/salesService";
 import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 import { buildRepricingPlan, mapResolvedPricingToLineFields } from "../hooks/useSalesCustomerRepricing";
 import type { SalesLineFormValues } from "../schemas/salesInvoiceSchema";
@@ -84,6 +86,68 @@ const listPriceText = (c: HTMLElement) =>
   c.querySelector(".sf-product__pricelist-value")?.textContent ?? "";
 
 describe("precio facturado unitario neto del descuento", () => {
+  function EditableRow() {
+    const [current, setCurrent] = useState(line({ unitPrice: 0.3, discountPct: 10, _basePrice: 0.3 }));
+    const [snapshot, setSnapshot] = useState<SalesInvoiceDetailDto>();
+    return <MemoryRouter>
+      <SalesInvoiceLineGridRow
+        line={current} backendLine={snapshot} readOnly={false} disabled={false} index={0}
+        vatLabel="IVA 15%" vatRates={{ "10": 15 }}
+        warehouses={WAREHOUSES} selectedWarehouseId="wh-1"
+        onUpdate={(_key, field, value) => setCurrent(previous => ({
+          ...previous,
+          ...(field === "invoicedUnitPrice"
+            ? resolveInvoicedUnitPriceEdit(previous.unitPrice, Number(value), TEST_PRECISION_POLICY.percentageDecimals)
+            : { [field]: value }),
+        }))}
+        onUpdateWarehouse={vi.fn()} onRemove={vi.fn()}
+      />
+      <output data-testid="reference-price">{current.unitPrice}</output>
+      <button onClick={() => {
+        // Simulate the existing wire contract: persistDraft sends both fields;
+        // hydration reads them back without re-resolving live list/PVP metadata.
+        const fiscal = calcFiscalLine(current, { "10": 15 });
+        const persisted = JSON.parse(JSON.stringify({ lines: [{
+          ...current, listPriceAtSale: 0.3, taxableBase: fiscal.taxableBase,
+          vatAmount: fiscal.vat, taxInclusiveTotal: fiscal.total,
+        }] })) as SalesInvoiceDto;
+        setSnapshot(persisted.lines[0]);
+        setCurrent(mapInvoiceLinesToFormValues(persisted)[0]);
+      }}>Reabrir snapshot</button>
+    </MemoryRouter>;
+  }
+
+  it.each([
+    ["0.2250", "25.00", "0.3", "$0.23", "$0.03", "$0.26"],
+    ["0.3000", "0.00", "0.3", "$0.30", "$0.05", "$0.35"],
+    ["0.4000", "0.00", "0.4", "$0.40", "$0.06", "$0.46"],
+  ])("editar neto %s sincroniza descuento, fiscalidad y snapshot", (net, discount, reference, base, vat, total) => {
+    salesDecimals = 4;
+    const { container, getByText, getByTestId } = render(<EditableRow />);
+    expect(priceInput(container).value).toBe("0.2700");
+    const input = priceInput(container);
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: net } });
+    fireEvent.blur(input);
+    const assertRelation = () => {
+      expect(priceInput(container).value).toBe(net);
+      expect(container.querySelector<HTMLInputElement>(".sf-product__disc-input")?.value).toBe(discount);
+      expect(getByTestId("reference-price").textContent).toBe(reference);
+      expect(Array.from(container.querySelectorAll(".sf-product__subtotal-value"), el => el.textContent))
+        .toEqual([base, vat]);
+      expect(container.querySelector(".sf-product__total-amount")?.textContent).toBe(total);
+    };
+    assertRelation();
+    fireEvent.click(getByText("Reabrir snapshot"));
+    assertRelation();
+    const discountInput = container.querySelector<HTMLInputElement>(".sf-product__disc-input")!;
+    fireEvent.change(discountInput, { target: { value: "10" } });
+    fireEvent.blur(discountInput);
+    expect(priceInput(container).value).toBe(reference === "0.3" ? "0.2700" : "0.3600");
+    expect(container.querySelector(".sf-product__total-amount")?.textContent)
+      .toBe(reference === "0.3" ? "$0.31" : "$0.41");
+  });
+
   function row(discountPct: number, readOnly = false, onUpdate = vi.fn(), backendLine?: SalesInvoiceDetailDto) {
     return <MemoryRouter><SalesInvoiceLineGridRow
       line={line({ unitPrice: 0.3, discountPct })}
@@ -136,15 +200,16 @@ describe("precio facturado unitario neto del descuento", () => {
     const { container } = render(row(10, false, onUpdate));
     const input = priceInput(container);
     fireEvent.focus(input);
-    expect(input.value).toBe("0.3000");
-    expect(container.textContent).toContain("Precio unitario antes del descuento");
+    expect(input.value).toBe("0.2700");
+    expect(container.textContent).toContain("Precio facturado sin IVA");
+    expect(container.textContent).not.toContain("Precio unitario antes del descuento");
     fireEvent.blur(input);
     expect(input.value).toBe("0.2700");
     expect(onUpdate).not.toHaveBeenCalled();
     fireEvent.focus(input);
     fireEvent.change(input, { target: { value: "0.4000" } });
     fireEvent.blur(input);
-    expect(onUpdate).toHaveBeenCalledWith(1, "unitPrice", 0.4);
+    expect(onUpdate).toHaveBeenCalledWith(1, "invoicedUnitPrice", 0.4);
   });
 });
 
@@ -247,7 +312,7 @@ describe("precio manual — foco/blur no lo altera", () => {
     const input = priceInput(container);
     fireEvent.change(input, { target: { value: "0.480" } });
     fireEvent.blur(input);
-    expect(onUpdateLine).toHaveBeenCalledWith(1, "unitPrice", 0.48);
+    expect(onUpdateLine).toHaveBeenCalledWith(1, "invoicedUnitPrice", 0.48);
   });
 
   it("línea manual (0.50 tecleado) se muestra con los decimales configurados", () => {

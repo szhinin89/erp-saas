@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { useState } from "react";
 import type { SalesInvoiceDetailDto } from "../api/salesService";
 import type { SalesLineFormValues } from "../schemas/salesInvoiceSchema";
 import type { WarehouseDto, ItemWarehouseAvailabilityDto } from "../../inventory/types";
@@ -89,7 +88,6 @@ export function SalesInvoiceLineGridRow({
 }: SalesInvoiceLineGridRowProps) {
   const { t } = useOptionalI18n();
   const dc = getPrecisionPolicy();
-  const [editingUnitPrice, setEditingUnitPrice] = useState(false);
   // The DTO has no net unit-price snapshot. Hydration preserves these two
   // commercial inputs; never derive the unit price from the cent-rounded base.
   const invoicedUnitPrice = calcInvoicedUnitPrice(
@@ -98,12 +96,18 @@ export function SalesInvoiceLineGridRow({
     dc.salesUnitPriceDecimals,
   );
   const previewFiscal = calcFiscalLine(line, vatRates, iceRates);
-  const total = backendLine?.taxInclusiveTotal ?? previewFiscal.total;
+  const priceChanged = backendLine && (
+    (backendLine.unitPrice != null && backendLine.unitPrice !== line.unitPrice) ||
+    (backendLine.discountPct != null && backendLine.discountPct !== (line.discountPct ?? 0)) ||
+    (backendLine.quantity != null && backendLine.quantity !== line.quantity)
+  );
+  const fiscalSnapshot = readOnly || !priceChanged ? backendLine : undefined;
+  const total = fiscalSnapshot?.taxInclusiveTotal ?? previewFiscal.total;
 
   // Vista previa fiscal: Base/IVA/Total usan el mismo orden de redondeo por línea que
-  // calcSummary y el backend. Si ya existe backendLine, el snapshot backend sigue mandando.
-  const baseAmount = backendLine?.taxableBase ?? previewFiscal.taxableBase;
-  const vatAmount = backendLine?.vatAmount ?? previewFiscal.vat;
+  // calcSummary y el backend. El snapshot manda hasta editar los importes del borrador.
+  const baseAmount = fiscalSnapshot?.taxableBase ?? previewFiscal.taxableBase;
+  const vatAmount = fiscalSnapshot?.vatAmount ?? previewFiscal.vat;
   const ivaTotalsLabel = parenthesizeRateLabel(vatLabel);
 
   const sku = line._sku ?? backendLine?.snapshotSku ?? "";
@@ -333,10 +337,10 @@ export function SalesInvoiceLineGridRow({
           )}
         </div>
 
-        {/* Net display; editing retains the existing pre-discount unitPrice contract. */}
+        {/* Net editing is converted to the persisted price/discount pair by updateLine. */}
         <div className="sf-product__price-block">
           <ZHFieldLabel size="sm" className="sf-product__price-label">
-            {editingUnitPrice ? "Precio unitario antes del descuento" : "Precio facturado sin IVA"}
+            Precio facturado sin IVA
           </ZHFieldLabel>
           <ZHInputGroup className="sf-product__price-wrap" prefix="$">
             <ZhDecimalInput
@@ -346,22 +350,15 @@ export function SalesInvoiceLineGridRow({
               decimals={dc.salesUnitPriceDecimals}
               positiveOnly
               defaultValue={invoicedUnitPrice}
-              onFocus={(e) => {
-                if (readOnly || disabled) return;
-                setEditingUnitPrice(true);
-                e.currentTarget.value = roundToDecimals(line.unitPrice, dc.salesUnitPriceDecimals)
-                  .toFixed(dc.salesUnitPriceDecimals);
-              }}
               onBlur={(e) => {
                 // 07C3: solo cuenta como edición si el valor tecleado difiere del que se MUESTRA
                 // (redondeado a los decimales configurados). Un simple foco/blur no debe volver
                 // "manual" ni redondear silenciosamente un precio resuelto por Pricing.
                 const typed = Number(e.target.value) || 0;
-                setEditingUnitPrice(false);
                 e.currentTarget.value = invoicedUnitPrice.toFixed(dc.salesUnitPriceDecimals);
                 if (readOnly || disabled) return;
-                if (typed === roundToDecimals(line.unitPrice, dc.salesUnitPriceDecimals)) return;
-                onUpdate(line._key, "unitPrice", typed);
+                if (typed === invoicedUnitPrice) return;
+                onUpdate(line._key, "invoicedUnitPrice", typed);
               }}
               disabled={disabled}
             />

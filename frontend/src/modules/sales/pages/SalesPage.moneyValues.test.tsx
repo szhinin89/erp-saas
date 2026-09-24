@@ -4,6 +4,7 @@ import { render, screen, cleanup } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { SalesPageContext } from "../hooks/useSalesPage";
 import type { SalesInvoiceDto } from "../api/salesService";
+import { calcSummary } from "../utils/salesCalc";
 
 // ── Mocks de componentes pesados: esta suite prueba la migración de valores
 // monetarios read-only restantes de SalesPage a ZHMoneyValue (SALES-DS-MONEY-12):
@@ -284,6 +285,56 @@ function getMoneyValueByText(text: string): HTMLElement {
 }
 
 describe("SalesPage — valores monetarios read-only migrados a ZHMoneyValue (SALES-DS-MONEY-12)", () => {
+  it.each([
+    { pct: 25, discount: 0.075, subtotal: 0.305, base: 0.23, vat: 0.03, total: 0.26, baseDisplay: "0.23", vatDisplay: "0.03", totalDisplay: "0.26", display: "0.08", subtotalDisplay: "0.31" },
+    { pct: 10, discount: 0.03, subtotal: 0.3, base: 0.27, vat: 0.04, total: 0.31, baseDisplay: "0.27", vatDisplay: "0.04", totalDisplay: "0.31", display: "0.03", subtotalDisplay: "0.30" },
+    { pct: 1.15, discount: 0.00345, subtotal: 0.30345, base: 0.3, vat: 0.05, total: 0.35, baseDisplay: "0.30", vatDisplay: "0.05", totalDisplay: "0.35", display: "0.00", subtotalDisplay: "0.30" },
+  ])("sidebar, emission modal and reopened discount agree for $pct%", (testCase) => {
+    const summary = calcSummary([{
+      description: "Producto", quantity: 1, unitPrice: 0.3,
+      discountPct: testCase.pct, vatCode: "10",
+    }], { "10": 15 });
+    const original = structuredClone(summary);
+    expect(summary).toMatchObject({
+      discount: testCase.discount, subtotal: testCase.subtotal,
+      netSubtotal: testCase.base, vat: testCase.vat, total: testCase.total,
+    });
+    useSalesPageMock.mockReturnValue(buildCtx({
+      summary, totalDiscount: summary.discount, grandTotal: summary.total,
+      taxBreakdown: summary.taxBreakdown, issuePhase: "confirm",
+    }));
+    const { container, rerender } = renderSalesPage();
+    const sidebarDiscount = () => container.querySelector(
+      ".sf-summary__discount-total .zh-money-value",
+    )?.textContent;
+    expect(sidebarDiscount()).toBe(`$${testCase.display}`);
+    const modalAmount = (label: string) => screen.getByText(label, { selector: "dt" })
+      .nextElementSibling?.textContent;
+    expect(modalAmount("Descuento")).toBe(`$${testCase.display}`);
+    expect(modalAmount("Subtotal")).toBe(`$${testCase.subtotalDisplay}`);
+    expect(modalAmount("IVA")).toBe(`$${testCase.vatDisplay}`);
+    expect(modalAmount("Total")).toBe(`$${testCase.totalDisplay}`);
+    expect(container.querySelectorAll(".sf-tax-table .zh-money-value")[0]?.textContent)
+      .toBe(`$${testCase.baseDisplay}`);
+
+    // Reopened read-only context uses the persisted DTO, as useSalesPage does.
+    const invoice = buildInvoice({
+      status: "Authorized", subtotal: testCase.subtotal,
+      totalDiscount: testCase.discount, grandTotal: testCase.total,
+      totalVat: testCase.vat,
+    });
+    useSalesPageMock.mockReturnValue(buildCtx({
+      readOnly: true, isDraft: false, editing: invoice, summary,
+      totalDiscount: invoice.totalDiscount, grandTotal: invoice.grandTotal,
+      taxBreakdown: summary.taxBreakdown,
+    }));
+    rerender(<MemoryRouter><SalesPage /></MemoryRouter>);
+    expect(sidebarDiscount()).toBe(`$${testCase.display}`);
+    expect(container.querySelector(".sf-total-box__amount .zh-money-value")?.textContent)
+      .toBe(`$${testCase.totalDisplay}`);
+    expect(summary).toEqual(original);
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
   });

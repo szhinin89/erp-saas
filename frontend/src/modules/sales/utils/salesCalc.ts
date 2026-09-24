@@ -28,6 +28,25 @@ export function lineGross(l: SalesLineInput): number {
   return l.quantity * l.unitPrice;
 }
 
+/** Invert the line discount against the persisted, resolved unit price.
+ * A higher net remains an allowed manual price, never a negative discount. */
+export function resolveInvoicedUnitPriceEdit(
+  referencePrice: number,
+  netPrice: number,
+  percentageDecimals: number,
+): { unitPrice: number; discountPct: number } {
+  const reference = new SalesDecimal(referencePrice);
+  const net = SalesDecimal.max(netPrice, 0);
+  if (reference.lte(0) || net.gt(reference)) {
+    return { unitPrice: net.toNumber(), discountPct: 0 };
+  }
+  return {
+    unitPrice: referencePrice,
+    discountPct: reference.minus(net).div(reference).times(100)
+      .toDecimalPlaces(percentageDecimals, Decimal.ROUND_HALF_UP).toNumber(),
+  };
+}
+
 export function lineDiscountAmt(l: SalesLineInput): number {
   return lineGross(l) * ((l.discountPct ?? 0) / 100);
 }

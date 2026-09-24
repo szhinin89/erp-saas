@@ -1,3 +1,5 @@
+import Decimal from "decimal.js";
+
 /**
  * Único punto de normalización de códigos de catálogo opcionales (tributarios: ICE, IVA
  * opcional, autorización SRI, etc.). Un `<select>`/`<input>` HTML no puede representar `null`
@@ -87,7 +89,8 @@ export function roundToDecimals(value: number, decimals: number): number {
 }
 
 export function formatMoney(value: number, decimals = 2): string {
-  return value.toFixed(decimals);
+  // Decimal rounding matches backend MidpointRounding.AwayFromZero, including ties.
+  return new Decimal(value).toFixed(decimals, Decimal.ROUND_HALF_UP);
 }
 
 export function formatMoneyWithSymbol(
@@ -95,7 +98,7 @@ export function formatMoneyWithSymbol(
   decimals = 2,
   symbol = "$",
 ): string {
-  return `${symbol}${value.toFixed(decimals)}`;
+  return `${symbol}${formatMoney(value, decimals)}`;
 }
 
 export function parseDecimal(raw: string): number {

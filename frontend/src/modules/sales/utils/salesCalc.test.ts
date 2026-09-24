@@ -6,6 +6,7 @@ import {
   calcLineTax,
   calcFiscalLine,
   calcInvoicedUnitPrice,
+  resolveInvoicedUnitPriceEdit,
   calcSummary,
   lineExceedsStock,
   lineQuantityInBaseUom,
@@ -22,6 +23,22 @@ import type {
   SalesLineInput,
   SalesInvoiceDetailDto,
 } from "../api/salesService";
+
+describe("resolveInvoicedUnitPriceEdit", () => {
+  it.each([
+    [0.3, 0.225, 2, 0.3, 25],
+    [0.3, 0.3, 2, 0.3, 0],
+    [0.3, 0, 2, 0.3, 100],
+    [0.3, 0.4, 2, 0.4, 0],
+    [0, 0.225, 2, 0.225, 0],
+    [0, 0, 2, 0, 0],
+    [0.3, 0.2, 2, 0.3, 33.33],
+    [0.3, 0.2, 4, 0.3, 33.3333],
+    [0.27, 0.243, 2, 0.27, 10],
+  ])("reference %s net %s precision %s", (reference, net, decimals, unitPrice, discountPct) => {
+    expect(resolveInvoicedUnitPriceEdit(reference, net, decimals)).toEqual({ unitPrice, discountPct });
+  });
+});
 
 describe("calcInvoicedUnitPrice", () => {
   it.each([

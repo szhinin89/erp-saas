@@ -1,5 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { normalizeOptionalCode, roundToDecimals } from "./sanitizers";
+import { formatMoney, formatMoneyWithSymbol, normalizeOptionalCode, roundToDecimals } from "./sanitizers";
+
+describe("money presentation HALF_UP / AwayFromZero", () => {
+  it.each([
+    [0.075, 2, "0.08"], [0.305, 2, "0.31"],
+    [-0.075, 2, "-0.08"], [-0.305, 2, "-0.31"],
+    [0.03, 2, "0.03"], [0.00345, 2, "0.00"],
+    [0.074999, 2, "0.07"], [0.3000, 4, "0.3000"],
+    [0.00345, 6, "0.003450"],
+  ])("formats %s at %s decimals as %s", (value, decimals, expected) => {
+    expect(formatMoney(value, decimals)).toBe(expected);
+    expect(formatMoneyWithSymbol(value, decimals)).toBe(`$${expected}`);
+  });
+});
 
 describe("normalizeOptionalCode", () => {
   it("convierte null a null", () => {
