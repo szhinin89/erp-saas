@@ -251,3 +251,117 @@ describe("ZHMoneyValue — decimals", () => {
     expect(container.firstElementChild?.hasAttribute("style")).toBe(false);
   });
 });
+
+/**
+ * ZH-DESIGN-SYSTEM-PRECISION-01A — LEGACY CHARACTERIZATION.
+ * Congela el contrato REAL actual antes de la migración a precisión semántica.
+ * - "contract:" → comportamiento público que debe conservarse.
+ * - "legacy:"   → deuda caracterizada (default decimals=2, "$-5.00", ruta Intl con locale);
+ *                 NO es la arquitectura futura deseada ni una regla del ERP.
+ */
+describe("ZHMoneyValue — characterization 01A", () => {
+  const amount = () => document.querySelector(".zh-money-value__amount")?.textContent;
+  const root = (container: HTMLElement) => container.firstElementChild as HTMLElement;
+
+  it("contract: estructura DOM exacta — span raíz con __symbol y __amount en ese orden", () => {
+    const { container } = render(<ZHMoneyValue value={10} />);
+    const el = root(container);
+    expect(el.tagName).toBe("SPAN");
+    expect(el.className).toBe("zh-money-value zh-money-value--default zh-money-value--end");
+    expect(el.children).toHaveLength(2);
+    expect(el.children[0]?.className).toBe("zh-money-value__symbol");
+    expect(el.children[1]?.className).toBe("zh-money-value__amount");
+    expect(el.textContent).toBe("$10.00");
+  });
+
+  it("contract: vacío agrega --empty, conserva modificadores y className, texto '—'", () => {
+    const { container } = render(
+      <ZHMoneyValue value={null} emphasis="total" align="start" className="x" />,
+    );
+    const el = root(container);
+    expect(el.className).toBe(
+      "zh-money-value zh-money-value--total zh-money-value--start zh-money-value--empty x",
+    );
+    expect(el.textContent).toBe("—");
+    expect(el.children).toHaveLength(0);
+  });
+
+  it("legacy: default decimals=2 cuando no se pasa decimals", () => {
+    render(<ZHMoneyValue value={1.5} />);
+    expect(amount()).toBe("1.50");
+  });
+
+  it.each([
+    [0, "12"],
+    [2, "12.35"],
+    [4, "12.3457"],
+    [6, "12.345678"],
+  ])("contract: decimals={%s} formatea 12.345678 como %s", (decimals, expected) => {
+    render(<ZHMoneyValue value={12.345678} decimals={decimals} />);
+    expect(amount()).toBe(expected);
+  });
+
+  it("contract: cero se muestra con símbolo y decimales ($0.00), no como vacío", () => {
+    const { container } = render(<ZHMoneyValue value={0} />);
+    expect(root(container).textContent).toBe("$0.00");
+    expect(root(container).className.includes("zh-money-value--empty")).toBe(false);
+  });
+
+  it("contract: positivos sin separador de miles en la ruta sin locale", () => {
+    render(<ZHMoneyValue value={1234567.5} />);
+    expect(amount()).toBe("1234567.50");
+  });
+
+  it("legacy: negativos se muestran como '$-5.00' (símbolo antes del signo)", () => {
+    const { container } = render(<ZHMoneyValue value={-5} />);
+    expect(root(container).textContent).toBe("$-5.00");
+    expect(amount()).toBe("-5.00");
+  });
+
+  it.each([
+    [0.075, "0.08"],
+    [0.305, "0.31"],
+    [-0.075, "-0.08"],
+    [1.005, "1.01"],
+  ])("contract: sin locale, midpoint %s con 2 decimales → %s (Decimal ROUND_HALF_UP)", (value, expected) => {
+    render(<ZHMoneyValue value={value} decimals={2} />);
+    expect(amount()).toBe(expected);
+  });
+
+  it("contract: currencySymbol vacío renderiza __symbol vacío (el span sigue existiendo)", () => {
+    const { container } = render(<ZHMoneyValue value={3} currencySymbol="" />);
+    const symbol = document.querySelector(".zh-money-value__symbol");
+    expect(symbol).not.toBeNull();
+    expect(symbol?.textContent).toBe("");
+    expect(root(container).textContent).toBe("3.00");
+  });
+
+  it("legacy: con locale explícito usa Intl.NumberFormat — agrega separador de miles", () => {
+    render(<ZHMoneyValue value={1234567.5} locale="en-US" />);
+    expect(amount()).toBe("1,234,567.50");
+  });
+
+  it("legacy: con locale, negativos → '$-5.00' (mismo orden símbolo/signo)", () => {
+    const { container } = render(<ZHMoneyValue value={-5} locale="en-US" />);
+    expect(root(container).textContent).toBe("$-5.00");
+  });
+
+  it.each([
+    [1.005, "1.01"],
+    [0.075, "0.08"],
+    [-0.075, "-0.08"],
+  ])("legacy: con locale, midpoint %s se delega a Intl → %s (hoy coincide con la ruta sin locale)", (value, expected) => {
+    render(<ZHMoneyValue value={value} decimals={2} locale="en-US" />);
+    expect(amount()).toBe(fmt("en-US", value, 2));
+    expect(amount()).toBe(expected);
+  });
+
+  it("legacy: ZHLocaleProvider activa la misma ruta Intl que la prop locale", () => {
+    render(
+      <ZHLocaleProvider locale="en-US">
+        <ZHMoneyValue value={1234.5} />
+      </ZHLocaleProvider>,
+    );
+    expect(amount()).toBe("1,234.50");
+  });
+});

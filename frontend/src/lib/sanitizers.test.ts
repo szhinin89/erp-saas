@@ -55,3 +55,37 @@ describe("roundToDecimals ? operational precision", () => {
     expect(roundToDecimals(-value, decimals)).toBe(-expected);
   });
 });
+
+/**
+ * ZH-DESIGN-SYSTEM-PRECISION-01A — characterization de formatMoney / formatMoneyWithSymbol.
+ * "legacy:" = default decimals=2 y símbolo antes del signo; se congelan temporalmente.
+ */
+describe("formatMoney / formatMoneyWithSymbol — characterization 01A", () => {
+  it("legacy: default decimals=2 en ambos formatters", () => {
+    expect(formatMoney(5)).toBe("5.00");
+    expect(formatMoneyWithSymbol(5)).toBe("$5.00");
+  });
+
+  it.each([
+    [0, 0, "0"], [0, 2, "0.00"], [-0, 2, "0.00"], [0, 6, "0.000000"],
+  ])("contract: cero %s a %s decimales → %s", (value, decimals, expected) => {
+    expect(formatMoney(value, decimals)).toBe(expected);
+  });
+
+  it.each([
+    [12.345678, 0, "12"], [12.345678, 2, "12.35"],
+    [12.345678, 4, "12.3457"], [12.345678, 6, "12.345678"],
+    [1234567.5, 2, "1234567.50"], [1.005, 2, "1.01"],
+  ])("contract: %s a %s decimales → %s (sin separador de miles, HALF_UP)", (value, decimals, expected) => {
+    expect(formatMoney(value, decimals)).toBe(expected);
+  });
+
+  it("legacy: símbolo va antes del signo en negativos ('$-5.00')", () => {
+    expect(formatMoneyWithSymbol(-5, 2)).toBe("$-5.00");
+  });
+
+  it("contract: símbolo personalizado y vacío", () => {
+    expect(formatMoneyWithSymbol(5, 2, "USD ")).toBe("USD 5.00");
+    expect(formatMoneyWithSymbol(5, 2, "")).toBe("5.00");
+  });
+});

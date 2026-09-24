@@ -42,3 +42,39 @@ describe("precisionPolicy.config — sin defaults, fail-closed", () => {
     expect(getPrecisionPolicy().salesUnitPriceDecimals).toBe(5);
   });
 });
+
+// ZH-DESIGN-SYSTEM-PRECISION-01A — cobertura mínima de contrato (sin tocar reactividad / race A-B:
+// esos temas son de Fase 1C).
+describe("precisionPolicy.config — characterization 01A", () => {
+  it("contract: loadPrecisionPolicy consulta GET /api/v1/config/precision-policy", async () => {
+    const { clearPrecisionPolicy, loadPrecisionPolicy } = await freshConfig();
+    clearPrecisionPolicy();
+    apiGet.mockResolvedValue(TEST_PRECISION_POLICY);
+    await loadPrecisionPolicy();
+    expect(apiGet).toHaveBeenCalledWith("/api/v1/config/precision-policy");
+  });
+
+  it("contract: clearPrecisionPolicy tras una carga vuelve al estado no cargado (fail-closed)", async () => {
+    const { clearPrecisionPolicy, getPrecisionPolicy, isPrecisionPolicyLoaded, loadPrecisionPolicy, PrecisionPolicyNotLoadedError } =
+      await freshConfig();
+    apiGet.mockResolvedValue(TEST_PRECISION_POLICY);
+    await loadPrecisionPolicy();
+    expect(isPrecisionPolicyLoaded()).toBe(true);
+    clearPrecisionPolicy();
+    expect(isPrecisionPolicyLoaded()).toBe(false);
+    expect(() => getPrecisionPolicy()).toThrow(PrecisionPolicyNotLoadedError);
+  });
+
+  it("contract: getPrecisionPolicy devuelve los campos fijos del sistema tal como llegan de la API", async () => {
+    const { clearPrecisionPolicy, getPrecisionPolicy, loadPrecisionPolicy } = await freshConfig();
+    clearPrecisionPolicy();
+    apiGet.mockResolvedValue(TEST_PRECISION_POLICY);
+    await loadPrecisionPolicy();
+    const p = getPrecisionPolicy();
+    expect([p.moneyDecimals, p.taxDecimals, p.accountingDecimals]).toEqual([
+      TEST_PRECISION_POLICY.moneyDecimals,
+      TEST_PRECISION_POLICY.taxDecimals,
+      TEST_PRECISION_POLICY.accountingDecimals,
+    ]);
+  });
+});
