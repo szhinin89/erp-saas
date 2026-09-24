@@ -5,6 +5,9 @@ import { MemoryRouter } from "react-router-dom";
 import { SalesInvoiceDetailsSection } from "./SalesInvoiceDetailsSection";
 import { SalesRepricingTable } from "./SalesRepricingTable";
 import { roundToDecimals } from "../../../lib/sanitizers";
+import { calcFiscalLine } from "../utils/salesCalc";
+import { SalesInvoiceLineGridRow } from "./SalesInvoiceLineGridRow";
+import type { SalesInvoiceDetailDto } from "../api/salesService";
 import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 import { buildRepricingPlan, mapResolvedPricingToLineFields } from "../hooks/useSalesCustomerRepricing";
 import type { SalesLineFormValues } from "../schemas/salesInvoiceSchema";
@@ -79,6 +82,71 @@ const priceInput = (c: HTMLElement) =>
   c.querySelector<HTMLInputElement>(".sf-product__price-input")!;
 const listPriceText = (c: HTMLElement) =>
   c.querySelector(".sf-product__pricelist-value")?.textContent ?? "";
+
+describe("precio facturado unitario neto del descuento", () => {
+  function row(discountPct: number, readOnly = false, onUpdate = vi.fn(), backendLine?: SalesInvoiceDetailDto) {
+    return <MemoryRouter><SalesInvoiceLineGridRow
+      line={line({ unitPrice: 0.3, discountPct })}
+      backendLine={backendLine}
+      readOnly={readOnly} disabled={readOnly} index={0}
+      vatLabel="IVA 15%" vatRates={{ "10": 15 }}
+      warehouses={WAREHOUSES} selectedWarehouseId="wh-1"
+      onUpdate={onUpdate} onUpdateWarehouse={vi.fn()} onRemove={vi.fn()}
+    /></MemoryRouter>;
+  }
+
+  it.each([
+    [0, 4, "0.3000", 0.30, 0.05, 0.35],
+    [10, 4, "0.2700", 0.27, 0.04, 0.31],
+    [1.15, 4, "0.2966", 0.30, 0.05, 0.35],
+    [1.15, 5, "0.29655", 0.30, 0.05, 0.35],
+  ])("dto %s con %s decimales muestra %s sin alterar impuestos", (pct, decimals, expected, base, vat, total) => {
+    salesDecimals = decimals;
+    const { container } = render(row(pct));
+    expect(priceInput(container).value).toBe(expected);
+    const fiscal = calcFiscalLine(line({ unitPrice: 0.3, discountPct: pct }), { "10": 15 });
+    expect(fiscal).toMatchObject({ taxableBase: base, vat, total });
+    expect(Array.from(container.querySelectorAll(".sf-product__subtotal-value"), el => el.textContent))
+      .toEqual([`$${fiscal.taxableBase.toFixed(2)}`, `$${fiscal.vat.toFixed(2)}`]);
+    expect(container.querySelector(".sf-product__total-amount")?.textContent).toBe(`$${fiscal.total.toFixed(2)}`);
+  });
+
+  it("actualiza el neto al cambiar el descuento en la misma fila", () => {
+    salesDecimals = 4;
+    const { container, rerender } = render(row(0));
+    expect(priceInput(container).value).toBe("0.3000");
+    rerender(row(10));
+    expect(priceInput(container).value).toBe("0.2700");
+    rerender(row(1.15));
+    expect(priceInput(container).value).toBe("0.2966");
+  });
+
+  it("reabierto usa precio y porcentaje persistidos sin dividir la base fiscal", () => {
+    salesDecimals = 5;
+    const backend = { unitPrice: 0.3, discountPct: 1.15, taxableBase: 0.3,
+      vatAmount: 0.05, taxInclusiveTotal: 0.35 } as SalesInvoiceDetailDto;
+    const { container } = render(row(1.15, true, vi.fn(), backend));
+    expect(priceInput(container).value).toBe("0.29655");
+    expect(priceInput(container).disabled).toBe(true);
+  });
+
+  it("foco y blur no persisten el neto como precio bruto ni aplican dos veces el descuento", () => {
+    salesDecimals = 4;
+    const onUpdate = vi.fn();
+    const { container } = render(row(10, false, onUpdate));
+    const input = priceInput(container);
+    fireEvent.focus(input);
+    expect(input.value).toBe("0.3000");
+    expect(container.textContent).toContain("Precio unitario antes del descuento");
+    fireEvent.blur(input);
+    expect(input.value).toBe("0.2700");
+    expect(onUpdate).not.toHaveBeenCalled();
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: "0.4000" } });
+    fireEvent.blur(input);
+    expect(onUpdate).toHaveBeenCalledWith(1, "unitPrice", 0.4);
+  });
+});
 
 describe("roundToDecimals — mitad hacia arriba como el backend", () => {
   it("0.495 → 0.50 / 0.495 / 0.495 con 2 / 3 / 4 decimales (toFixed daría 0.49)", () => {

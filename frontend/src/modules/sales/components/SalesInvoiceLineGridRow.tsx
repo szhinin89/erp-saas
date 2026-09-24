@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useState } from "react";
 import type { SalesInvoiceDetailDto } from "../api/salesService";
 import type { SalesLineFormValues } from "../schemas/salesInvoiceSchema";
 import type { WarehouseDto, ItemWarehouseAvailabilityDto } from "../../inventory/types";
@@ -19,6 +20,7 @@ import { roundToDecimals } from "../../../lib/sanitizers";
 import { resolveLinePriceListLabel } from "../utils/pricingTraceability";
 import {
   calcFiscalLine,
+  calcInvoicedUnitPrice,
   lineExceedsStock,
   stockBadgeInfo,
   parenthesizeRateLabel,
@@ -87,6 +89,14 @@ export function SalesInvoiceLineGridRow({
 }: SalesInvoiceLineGridRowProps) {
   const { t } = useOptionalI18n();
   const dc = getPrecisionPolicy();
+  const [editingUnitPrice, setEditingUnitPrice] = useState(false);
+  // The DTO has no net unit-price snapshot. Hydration preserves these two
+  // commercial inputs; never derive the unit price from the cent-rounded base.
+  const invoicedUnitPrice = calcInvoicedUnitPrice(
+    line.unitPrice,
+    line.discountPct ?? 0,
+    dc.salesUnitPriceDecimals,
+  );
   const previewFiscal = calcFiscalLine(line, vatRates, iceRates);
   const total = backendLine?.taxInclusiveTotal ?? previewFiscal.total;
 
@@ -323,24 +333,33 @@ export function SalesInvoiceLineGridRow({
           )}
         </div>
 
-        {/* Col 5: Precio facturado — input editable, sin recalcular nada en frontend. */}
+        {/* Net display; editing retains the existing pre-discount unitPrice contract. */}
         <div className="sf-product__price-block">
           <ZHFieldLabel size="sm" className="sf-product__price-label">
-            Precio facturado sin IVA
+            {editingUnitPrice ? "Precio unitario antes del descuento" : "Precio facturado sin IVA"}
           </ZHFieldLabel>
           <ZHInputGroup className="sf-product__price-wrap" prefix="$">
             <ZhDecimalInput
-              key={line.unitPrice}
+              key={`${line.unitPrice}:${line.discountPct ?? 0}:${dc.salesUnitPriceDecimals}`}
               className="sf-product__price-input"
               density="compact"
               decimals={dc.salesUnitPriceDecimals}
               positiveOnly
-              defaultValue={roundToDecimals(line.unitPrice, dc.salesUnitPriceDecimals)}
+              defaultValue={invoicedUnitPrice}
+              onFocus={(e) => {
+                if (readOnly || disabled) return;
+                setEditingUnitPrice(true);
+                e.currentTarget.value = roundToDecimals(line.unitPrice, dc.salesUnitPriceDecimals)
+                  .toFixed(dc.salesUnitPriceDecimals);
+              }}
               onBlur={(e) => {
                 // 07C3: solo cuenta como edición si el valor tecleado difiere del que se MUESTRA
                 // (redondeado a los decimales configurados). Un simple foco/blur no debe volver
                 // "manual" ni redondear silenciosamente un precio resuelto por Pricing.
                 const typed = Number(e.target.value) || 0;
+                setEditingUnitPrice(false);
+                e.currentTarget.value = invoicedUnitPrice.toFixed(dc.salesUnitPriceDecimals);
+                if (readOnly || disabled) return;
                 if (typed === roundToDecimals(line.unitPrice, dc.salesUnitPriceDecimals)) return;
                 onUpdate(line._key, "unitPrice", typed);
               }}

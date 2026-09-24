@@ -5,6 +5,25 @@ import { normalizeOptionalCode } from "../../../lib/sanitizers";
 // Local precision for products of decimal inputs; never mutate Decimal globally.
 const SalesDecimal = Decimal.clone({ precision: 64 });
 
+/** Commercial unit price after discount, independent of fiscal base rounding. */
+export function calcInvoicedUnitPrice(
+  unitPrice: number,
+  discountPct: number,
+  decimals: number,
+): number {
+  const net = new SalesDecimal(unitPrice)
+    .times(new SalesDecimal(1).minus(new SalesDecimal(discountPct).div(100)));
+  // Preserve the existing display's midpoint-noise handling for Number inputs
+  // computed upstream (e.g. 0.495 * 3 = 1.4849999999999999).
+  const scale = new SalesDecimal(10).pow(decimals);
+  const shifted = net.abs().times(scale);
+  const midpoint = shifted.floor().plus(0.5);
+  const normalized = shifted.minus(midpoint).abs().lte(shifted.times(Number.EPSILON))
+    ? midpoint.div(scale).times(net.isNegative() ? -1 : 1)
+    : net;
+  return normalized.toDecimalPlaces(decimals, Decimal.ROUND_HALF_UP).toNumber();
+}
+
 export function lineGross(l: SalesLineInput): number {
   return l.quantity * l.unitPrice;
 }

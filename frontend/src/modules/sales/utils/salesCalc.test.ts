@@ -5,6 +5,7 @@ import {
   lineNet,
   calcLineTax,
   calcFiscalLine,
+  calcInvoicedUnitPrice,
   calcSummary,
   lineExceedsStock,
   lineQuantityInBaseUom,
@@ -21,6 +22,21 @@ import type {
   SalesLineInput,
   SalesInvoiceDetailDto,
 } from "../api/salesService";
+
+describe("calcInvoicedUnitPrice", () => {
+  it.each([
+    [0.3, 0, 4, 0.3],
+    [0.3, 10, 4, 0.27],
+    [0.3, 1.15, 5, 0.29655],
+    [0.3, 1.15, 4, 0.2966],
+    [0.3, 100, 4, 0],
+    [0.495 * 3, 0, 2, 1.49],
+    [1.484999, 0, 2, 1.48],
+    [-1.485, 0, 2, -1.49],
+  ])("price %s discount %s at %s decimals = %s", (price, discount, decimals, expected) => {
+    expect(calcInvoicedUnitPrice(price, discount, decimals)).toBe(expected);
+  });
+});
 
 // ── Mock data: deterministic, no business logic, numeric placeholders only ──
 
