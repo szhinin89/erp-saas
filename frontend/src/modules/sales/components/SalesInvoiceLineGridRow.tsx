@@ -434,6 +434,7 @@ export function SalesInvoiceLineGridRow({
                 </ZHFieldLabel>
                 <ZHMoneyValue
                   value={unitCostAtSale}
+                  precision="unitCost"
                   className="sf-product__stock-wh"
                 />
               </div>

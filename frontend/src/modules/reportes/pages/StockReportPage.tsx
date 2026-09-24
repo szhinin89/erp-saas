@@ -10,7 +10,9 @@ import {
 } from "../../../components/ReportPageTemplate";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
-import { formatMoney } from "../../../lib/sanitizers";
+import { formatDecimalDisplay, formatMoney } from "../../../lib/sanitizers";
+import { ZHNumberValue } from "../../../components/zh/ZHNumberValue";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
 import {
@@ -44,6 +46,8 @@ export function StockReportPage() {
   const [rows, setRows] = useState<StockReportRowDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // La KPI recibe texto (ReportKpiCard.value: string): semántica declarada, mismo resolver y motor.
+  const quantityDecimals = usePrecisionDecimals("quantity");
 
   useEffect(() => {
     warehouseService
@@ -86,9 +90,9 @@ export function StockReportPage() {
     { key: "sku", header: "SKU", cellClassName: "subtle", render: (row) => row.sku },
     { key: "product", header: "Producto", render: (row) => row.productName },
     { key: "warehouse", header: "Bodega", cellClassName: "subtle", render: (row) => row.warehouseName },
-    { key: "quantity", header: "Stock Actual", align: "right", render: (row) => formatMoney(row.quantity, 4) },
-    { key: "available", header: "Disponible", align: "right", render: (row) => formatMoney(row.availableQuantity, 4) },
-    { key: "avgCost", header: "Costo Promedio", align: "right", render: (row) => formatMoney(row.averageCost, 6) },
+    { key: "quantity", header: "Stock Actual", align: "right", render: (row) => <ZHNumberValue value={row.quantity} precision="quantity" /> },
+    { key: "available", header: "Disponible", align: "right", render: (row) => <ZHNumberValue value={row.availableQuantity} precision="quantity" /> },
+    { key: "avgCost", header: "Costo Promedio", align: "right", render: (row) => <ZHNumberValue value={row.averageCost} precision="averageCost" /> },
     { key: "stockValue", header: "Valor Inventario", align: "right", render: (row) => formatMoney(row.stockValue) },
     {
       key: "status",
@@ -115,7 +119,7 @@ export function StockReportPage() {
           icon="functions"
           tone="secondary"
           label="Unidades Totales"
-          value={formatMoney(totalQuantity, 4)}
+          value={formatDecimalDisplay(totalQuantity, quantityDecimals)}
         />
         <ReportKpiCard
           icon="payments"

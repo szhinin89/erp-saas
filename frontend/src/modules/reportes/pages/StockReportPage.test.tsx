@@ -5,6 +5,8 @@ import { I18nProvider } from "../../../i18n/i18n";
 import { StockReportPage } from "./StockReportPage";
 import { stockService, type StockReportRowDto } from "../../inventory/stock/api/stockService";
 import { warehouseService } from "../../inventory/warehouses/api/warehouseService";
+import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.config";
+import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 
 /**
  * ZH-LISTING-COMPLIANCE-AUDIT-08 — /reports/stock es un listado principal migrado de
@@ -91,5 +93,46 @@ describe("StockReportPage — ZH-LISTING-COMPLIANCE-AUDIT-08", () => {
     await screen.findByText("SKU-001");
 
     expect(document.title).toBe("Reporte de Stock");
+  });
+});
+
+// ZH-DESIGN-SYSTEM-PRECISION-02B — Stock Actual / Disponible / Unidades Totales (quantity) y
+// Costo Promedio (averageCost) salen de la PrecisionPolicy; sin los literales 4 / 6 anteriores.
+describe("StockReportPage — precisión semántica (02B)", () => {
+  const PRECISE_ROW: StockReportRowDto = {
+    ...ROW,
+    quantity: 12.3456789,
+    availableQuantity: 10.5,
+    averageCost: 1.23456789,
+  };
+
+  async function renderWithPolicy(quantityDecimals: number, averageCostDecimals: number) {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, quantityDecimals, averageCostDecimals });
+    vi.mocked(stockService.getReport).mockResolvedValue([PRECISE_ROW]);
+    renderPage();
+    await waitFor(() => expect(screen.getByText("SKU-001")).toBeTruthy());
+    const row = screen.getByText("SKU-001").closest("tr")!;
+    const [quantity, available, averageCost] = [...row.querySelectorAll(".zh-number-value")].map(
+      (el) => el.textContent,
+    );
+    return { quantity, available, averageCost };
+  }
+
+  it("policy quantity=2 / averageCost=4", async () => {
+    const cells = await renderWithPolicy(2, 4);
+    expect(cells).toEqual({ quantity: "12.35", available: "10.50", averageCost: "1.2346" });
+    expect(screen.getByText("Unidades Totales").closest(".pg-kpi")?.textContent).toContain("12.35");
+  });
+
+  it("policy quantity=6 / averageCost=8", async () => {
+    const cells = await renderWithPolicy(6, 8);
+    expect(cells).toEqual({ quantity: "12.345679", available: "10.500000", averageCost: "1.23456789" });
+    expect(screen.getByText("Unidades Totales").closest(".pg-kpi")?.textContent).toContain("12.345679");
+  });
+
+  it("Valor Inventario (money) no se migra en este piloto: sigue en 2 decimales", async () => {
+    await renderWithPolicy(6, 8);
+    const row = screen.getByText("SKU-001").closest("tr")!;
+    expect(within(row).getByText("150.00")).toBeTruthy();
   });
 });
