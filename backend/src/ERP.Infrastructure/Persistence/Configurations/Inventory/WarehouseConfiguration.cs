@@ -46,7 +46,7 @@ public sealed class WarehouseConfiguration : IEntityTypeConfiguration<Warehouse>
             .Property(x => x.Longitude)
             .HasColumnName("longitude")
             .HasMaxLength(Warehouse.LatLonMaxLen);
-        builder.Property(x => x.Capacity).HasColumnName("capacity").HasColumnType("numeric(18,4)");
+        builder.Property(x => x.Capacity).HasColumnName("capacity").HasColumnType($"numeric(18,{WarehousePrecision.Capacity})");
         builder
             .Property(x => x.DailyDispatchGoal)
             .HasColumnName("daily_dispatch_goal")

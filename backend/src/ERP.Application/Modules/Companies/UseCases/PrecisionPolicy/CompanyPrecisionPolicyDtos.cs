@@ -27,7 +27,13 @@ public sealed record EffectivePrecisionPolicyDto(
     // ZH-DESIGN-SYSTEM-PRECISION-04C1 — escala fija de porcentajes FISCALES (p. ej. % de retención
     // SRI), leída de FiscalPrecision.Percentage. No configurable ni persistida; distinta de
     // PercentageDecimals (porcentajes operativos configurables por empresa).
-    int FiscalPercentageDecimals
+    int FiscalPercentageDecimals,
+    // ZH-DESIGN-SYSTEM-PRECISION-06 — escalas CONTRACTUALES fijas de datos sin policy configurable,
+    // leídas de su SSOT de dominio (WarehousePrecision / CreditTermsPrecision / ItemPrecision), las
+    // mismas que usa la columna física. No configurables ni persistidas en company_precision_policy.
+    int WarehouseCapacityDecimals,
+    int CreditInstallmentPercentageDecimals,
+    int PackagingWeightDecimals
 );
 
 /// <summary>Payload de entrada para actualizar la policy. ProfileType Standard/HighPrecision ignora los campos individuales.</summary>

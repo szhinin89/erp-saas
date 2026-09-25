@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
 import {
   getPurchaseLineBlockingReasons,
@@ -50,7 +51,7 @@ function line(overrides: Partial<PurchaseLineFormValues> = {}): PurchaseLineForm
 
 describe("purchaseLineReadiness", () => {
   it("prioriza seleccionar o crear item cuando una linea XML no tiene itemId", () => {
-    const readiness = getPurchaseLineReadiness(line({ itemId: undefined }));
+    const readiness = getPurchaseLineReadiness(line({ itemId: undefined }), { precisionPolicy: TEST_PRECISION_POLICY });
 
     expect(readiness.status).toBe("MISSING_ITEM");
     expect(readiness.label).toBe("Sin producto vinculado");
@@ -65,7 +66,7 @@ describe("purchaseLineReadiness", () => {
         itemId: "item-1",
         _readinessIssue: "SUPPLIER_CODE_CONFLICT",
         packagingLevelId: undefined,
-      }),
+      }), { precisionPolicy: TEST_PRECISION_POLICY },
     );
 
     expect(readiness.status).toBe("SUPPLIER_CODE_CONFLICT");
@@ -74,7 +75,7 @@ describe("purchaseLineReadiness", () => {
 
   it("detecta presentacion faltante cuando la linea XML tiene item con stock", () => {
     const readiness = getPurchaseLineReadiness(
-      line({ itemId: "item-1", packagingLevelId: undefined }),
+      line({ itemId: "item-1", packagingLevelId: undefined }), { precisionPolicy: TEST_PRECISION_POLICY },
     );
 
     expect(readiness.status).toBe("MISSING_PRESENTATION");
@@ -88,7 +89,7 @@ describe("purchaseLineReadiness", () => {
         itemId: "item-1",
         packagingLevelId: "box-1",
         warehouseId: undefined,
-      }),
+      }), { precisionPolicy: TEST_PRECISION_POLICY },
     );
 
     expect(readiness.status).toBe("MISSING_WAREHOUSE");
@@ -98,7 +99,7 @@ describe("purchaseLineReadiness", () => {
           itemId: "item-1",
           packagingLevelId: "box-1",
           warehouseId: undefined,
-        }),
+        }), { precisionPolicy: TEST_PRECISION_POLICY },
       ),
     ).toBe("SELECT_WAREHOUSE");
   });
@@ -106,7 +107,7 @@ describe("purchaseLineReadiness", () => {
   it("detecta impuesto no reconocido cuando el catalogo cargado no contiene el codigo", () => {
     const readiness = getPurchaseLineReadiness(
       line({ itemId: "item-1", packagingLevelId: "box-1", vatCode: "999" }),
-      { vatRates: { "2": 15 } },
+      { precisionPolicy: TEST_PRECISION_POLICY, vatRates: { "2": 15 } },
     );
 
     expect(readiness.status).toBe("INVALID_TAX");
@@ -134,12 +135,12 @@ describe("purchaseLineReadiness", () => {
       },
     });
 
-    const readiness = getPurchaseLineReadiness(suspiciousLine);
+    const readiness = getPurchaseLineReadiness(suspiciousLine, { precisionPolicy: TEST_PRECISION_POLICY });
 
     expect(readiness.status).toBe("SUSPICIOUS_PACKAGING_COST");
     expect(readiness.blocking).toBe(true);
     expect(readiness.detail).toContain("1.08");
-    expect(getPurchaseLineBlockingReasons([suspiciousLine])).toHaveLength(1);
+    expect(getPurchaseLineBlockingReasons([suspiciousLine], { precisionPolicy: TEST_PRECISION_POLICY })).toHaveLength(1);
   });
 
   it("PURCHASE-LINE-MISSING-SALE-PRICE-WARNING-01 — avisa (no bloquea) cuando falta precio de venta en item inventariable", () => {
@@ -153,13 +154,13 @@ describe("purchaseLineReadiness", () => {
       context: { ...line().context!, pvp: 0 },
     });
 
-    const readiness = getPurchaseLineReadiness(readyLine, { vatRates: { "2": 15 } });
+    const readiness = getPurchaseLineReadiness(readyLine, { precisionPolicy: TEST_PRECISION_POLICY, vatRates: { "2": 15 } });
 
     expect(readiness.status).toBe("READY");
     expect(readiness.blocking).toBe(false);
     expect(readiness.warning?.status).toBe("MISSING_SALE_PRICE_FOR_MARGIN");
     expect(readiness.warning?.detail).toContain("no tiene precio de venta configurado");
-    expect(getPurchaseLineBlockingReasons([readyLine], { vatRates: { "2": 15 } }))
+    expect(getPurchaseLineBlockingReasons([readyLine], { precisionPolicy: TEST_PRECISION_POLICY, vatRates: { "2": 15 } }))
       .toHaveLength(0);
   });
 
@@ -185,7 +186,7 @@ describe("purchaseLineReadiness", () => {
       },
     });
 
-    const readiness = getPurchaseLineReadiness(suspiciousLine);
+    const readiness = getPurchaseLineReadiness(suspiciousLine, { precisionPolicy: TEST_PRECISION_POLICY });
 
     expect(readiness.status).toBe("SUSPICIOUS_PACKAGING_COST");
     expect(readiness.blocking).toBe(true);
@@ -203,7 +204,7 @@ describe("purchaseLineReadiness", () => {
       context: { ...line().context!, pvp: 100 },
     });
 
-    const readiness = getPurchaseLineReadiness(readyLine, { vatRates: { "2": 15 } });
+    const readiness = getPurchaseLineReadiness(readyLine, { precisionPolicy: TEST_PRECISION_POLICY, vatRates: { "2": 15 } });
 
     expect(readiness.warning).toBeUndefined();
   });
@@ -219,7 +220,7 @@ describe("purchaseLineReadiness", () => {
       context: { ...line().context!, tracksStock: false, pvp: 0 },
     });
 
-    const readiness = getPurchaseLineReadiness(serviceLine, { vatRates: { "2": 15 } });
+    const readiness = getPurchaseLineReadiness(serviceLine, { precisionPolicy: TEST_PRECISION_POLICY, vatRates: { "2": 15 } });
 
     expect(readiness.warning).toBeUndefined();
   });
@@ -227,7 +228,7 @@ describe("purchaseLineReadiness", () => {
   it("no genera warning de precio de venta sin producto vinculado (itemId ausente)", () => {
     const noItemLine = line({ itemId: undefined });
 
-    const readiness = getPurchaseLineReadiness(noItemLine);
+    const readiness = getPurchaseLineReadiness(noItemLine, { precisionPolicy: TEST_PRECISION_POLICY });
 
     expect(readiness.warning).toBeUndefined();
   });
@@ -242,11 +243,11 @@ describe("purchaseLineReadiness", () => {
       quantityInBaseUom: 12,
     });
 
-    expect(isPurchaseLineReady(readyLine, { vatRates: { "2": 15 } })).toBe(true);
-    expect(getPurchaseLineReadiness(readyLine, { vatRates: { "2": 15 } }).status).toBe(
+    expect(isPurchaseLineReady(readyLine, { precisionPolicy: TEST_PRECISION_POLICY, vatRates: { "2": 15 } })).toBe(true);
+    expect(getPurchaseLineReadiness(readyLine, { precisionPolicy: TEST_PRECISION_POLICY, vatRates: { "2": 15 } }).status).toBe(
       "READY",
     );
-    expect(getPurchaseLineBlockingReasons([readyLine], { vatRates: { "2": 15 } }))
+    expect(getPurchaseLineBlockingReasons([readyLine], { precisionPolicy: TEST_PRECISION_POLICY, vatRates: { "2": 15 } }))
       .toHaveLength(0);
   });
 });

@@ -4,6 +4,7 @@ import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import type { SalesListItemDto } from "../api/salesService";
 import { salesService } from "../api/salesService";
 import { formatMoney } from "../../../lib/sanitizers";
+import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
 import { SalesReturnInvoicePicker } from "./SalesReturnInvoicePicker";
 
@@ -91,7 +92,7 @@ describe("SalesReturnInvoicePicker — valor seleccionado (ZHPickerSelectedValue
 
     const meta = container.querySelector(".zh-picker-selected-value__meta");
     expect(meta?.textContent).toBe(
-      `Juan Pérez — ${formatDate(invoice.issueDate)} — ${formatMoney(invoice.grandTotal)}`,
+      `Juan Pérez — ${formatDate(invoice.issueDate)} — ${formatMoney(invoice.grandTotal, TEST_PRECISION_POLICY.moneyDecimals)}`,
     );
   });
 

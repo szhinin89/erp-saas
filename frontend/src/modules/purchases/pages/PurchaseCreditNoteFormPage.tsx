@@ -1,4 +1,6 @@
 import { purchaseReceptionService } from "../api/purchaseReceptionService";
+import { formatMoney } from "../../../lib/sanitizers";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { useEffect, useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -66,6 +68,7 @@ function computeTaxPreview(taxableBase: number, vatRate: number, iceRate: number
  * misma variable `invoiceId` que dispara el effect de carga ya existente.
  */
 export function PurchaseCreditNoteFormPage() {
+  const moneyDecimals = usePrecisionDecimals("money"); // mensaje de cuadre (06)
   const [searchParams] = useSearchParams();
   const invoiceIdParam = searchParams.get("invoiceId") ?? "";
   const receptionDocumentId = searchParams.get("receptionDocumentId") ?? "";
@@ -372,7 +375,7 @@ export function PurchaseCreditNoteFormPage() {
               {t("purchases.creditNote.affectedInvoice.total", "Total")}
             </span>
             <span className="pcn-summary-grid__value">
-              <ZHMoneyValue value={invoice.grandTotal} currencySymbol="" />
+              <ZHMoneyValue precision="money" value={invoice.grandTotal} currencySymbol="" />
             </span>
           </div>
           <div>
@@ -505,7 +508,7 @@ export function PurchaseCreditNoteFormPage() {
               {returnLoadError && <ZHPageNotice variant="error" message={returnLoadError} />}
               <PurchaseReturnableLinesEditor returnableLines={returnableLines} invoiceLines={invoice.lines}
                 selected={returnFields} append={appendReturn} remove={removeReturn} disabled={isSubmitting} />
-              {xmlMismatch && <ZHPageNotice variant="error" message={`El total a devolver debe coincidir con la NC/XML recibido (${receivedTotal?.toFixed(2)}).`} />}
+              {xmlMismatch && <ZHPageNotice variant="error" message={`El total a devolver debe coincidir con la NC/XML recibido (${receivedTotal == null ? "" : formatMoney(receivedTotal, moneyDecimals)}).`} />}
             </ZHCard>
           )}
 
@@ -516,7 +519,7 @@ export function PurchaseCreditNoteFormPage() {
                   {t("purchases.creditNote.lines.subtotal", "Subtotal")}
                 </span>
                 <span className="pcn-summary-grid__value">
-                  <ZHMoneyValue value={subtotal} currencySymbol="" />
+                  <ZHMoneyValue precision="money" value={subtotal} currencySymbol="" />
                 </span>
               </div>
               {(isDiscount || iceAmount > 0) && (
@@ -525,7 +528,7 @@ export function PurchaseCreditNoteFormPage() {
                     {t("purchases.creditNote.taxSummaryLines.iceCredit", "ICE crédito")}
                   </span>
                   <span className="pcn-summary-grid__value">
-                    <ZHMoneyValue value={iceAmount} currencySymbol="" />
+                    <ZHMoneyValue precision="tax" value={iceAmount} currencySymbol="" />
                   </span>
                 </div>
               )}
@@ -534,19 +537,19 @@ export function PurchaseCreditNoteFormPage() {
                   {t("purchases.creditNote.lines.vatAmount", "IVA")}
                 </span>
                 <span className="pcn-summary-grid__value">
-                  <ZHMoneyValue value={vatAmount} currencySymbol="" />
+                  <ZHMoneyValue precision="tax" value={vatAmount} currencySymbol="" />
                 </span>
               </div>
               {!isDiscount && returnTotals.irbpnr > 0 && <div>
                 <span className="pcn-summary-grid__label">IRBPNR</span>
-                <ZHMoneyValue value={returnTotals.irbpnr} currencySymbol="" />
+                <ZHMoneyValue precision="tax" value={returnTotals.irbpnr} currencySymbol="" />
               </div>}
               <div>
                 <span className="pcn-summary-grid__label">
                   {t("purchases.creditNote.lines.total", "Total crédito")}
                 </span>
                 <span className="pcn-summary-grid__value">
-                  <ZHMoneyValue value={totalAmount} currencySymbol="" />
+                  <ZHMoneyValue precision="money" value={totalAmount} currencySymbol="" />
                 </span>
               </div>
               <div>

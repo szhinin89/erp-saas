@@ -5,7 +5,6 @@ import {
   apiPut,
   apiDelete,
 } from "../../lib/apiEnvelope";
-import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { formatMoney } from "../../../lib/sanitizers";
 
 const BASE = "/api/v1/pricing";
@@ -158,18 +157,26 @@ function currencySymbol(code: string): string {
   return CURRENCY_SYMBOLS[code] ?? code;
 }
 
+/**
+ * ZH-DESIGN-SYSTEM-PRECISION-06 — escalas del texto de una regla, resueltas por el caller React
+ * (`usePrecisionDecimals("percentage" | "salesUnitPrice")`): utilidad pura, no lee la policy.
+ */
+export type RuleValueScales = {
+  percentageDecimals: number;
+  salesUnitPriceDecimals: number;
+};
+
 /** Texto orientado al usuario para la columna "Regla General" del listado. */
 export function formatRuleGeneral(
   ruleType: string | null,
   ruleValue: number | null,
   currencyCode: string,
+  scales: RuleValueScales,
   translate?: (key: string, params?: Record<string, string | number>) => string,
 ): string {
-  // ERP-PRECISION-FRONTEND-06B: porcentajes → percentageDecimals; precio fijo/ajuste unitario →
-  // salesUnitPriceDecimals (política de la empresa).
-  const policy = getPrecisionPolicy();
-  const pct = (v: number) => formatMoney(v, policy.percentageDecimals);
-  const unit = (v: number) => formatMoney(v, policy.salesUnitPriceDecimals);
+  // Porcentajes → percentage; precio fijo/ajuste unitario → salesUnitPrice.
+  const pct = (v: number) => formatMoney(v, scales.percentageDecimals);
+  const unit = (v: number) => formatMoney(v, scales.salesUnitPriceDecimals);
   if (translate) {
     if (!ruleType || ruleValue == null) return translate("pricing.ux.rule.none");
     const isPercent = ruleType === "PercentDiscount" || ruleType === "PercentMarkup";

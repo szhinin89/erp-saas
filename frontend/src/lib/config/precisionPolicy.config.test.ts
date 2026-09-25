@@ -110,6 +110,9 @@ describe("resolvePrecisionDecimals — semántica → campo real de la policy", 
     taxDecimals: 12,
     accountingDecimals: 13,
     fiscalPercentageDecimals: 2,
+    warehouseCapacityDecimals: 9,
+    creditInstallmentPercentageDecimals: 6,
+    packagingWeightDecimals: 5,
   };
 
   it.each<[PrecisionKind, number]>([
@@ -124,6 +127,9 @@ describe("resolvePrecisionDecimals — semántica → campo real de la policy", 
     ["percentage", 4],
     ["conversionFactor", 10],
     ["fiscalPercentage", 2],
+    ["warehouseCapacity", 9],
+    ["creditInstallmentPercentage", 6],
+    ["packagingWeight", 5],
   ])("%s → %s", (kind, expected) => {
     expect(resolvePrecisionDecimals(DISTINCT_POLICY, kind)).toBe(expected);
   });
@@ -175,20 +181,23 @@ describe("resolvePrecisionDecimals — semántica → campo real de la policy", 
     expect(resolvePrecisionDecimals(policy, "fiscalPercentage")).toBe(2);
   });
 
-  it("exhaustividad: el mapa cubre las 11 semánticas y cada campo *Decimals de la policy exactamente una vez", () => {
+  it("exhaustividad: el mapa cubre las 14 semánticas y cada campo *Decimals de la policy exactamente una vez", () => {
     expect(Object.keys(PRECISION_FIELD_BY_KIND).sort()).toEqual(
       [
         "accounting",
         "averageCost",
         "conversionFactor",
+        "creditInstallmentPercentage",
         "fiscalPercentage",
         "money",
+        "packagingWeight",
         "percentage",
         "purchaseUnitPrice",
         "quantity",
         "salesUnitPrice",
         "tax",
         "unitCost",
+        "warehouseCapacity",
       ],
     );
     const decimalsFields = Object.keys(TEST_PRECISION_POLICY)

@@ -55,6 +55,7 @@ import {
 } from "../../lib/apiError";
 import { message } from "../../../lib/messages";
 import { useI18n } from "../../../i18n/i18n";
+import { usePrecisionPolicy } from "../../../hooks/usePrecisionPolicy";
 import {
   todayIso,
   toLocalIsoDate,
@@ -116,6 +117,8 @@ const SUPPLIER_CODE_CONFLICT_DETAIL =
 
 export function usePurchasesPage() {
   const { t } = useI18n();
+  // Policy de la empresa para la presentación/readiness de líneas (utilidades puras, 06).
+  const precisionPolicy = usePrecisionPolicy();
   const activeBranchId = useActiveBranchStore((s) => s.branch)?.id ?? null;
   // ── Page state ─────────────────────────────────────────────────────
   const [tab, setTab] = useState<Tab>("nuevo");
@@ -277,6 +280,7 @@ export function usePurchasesPage() {
     const entries = lines.map((line) => [
       line._key,
       getPurchaseLineReadiness(line, {
+        precisionPolicy,
         globalWarehouseId: formWatch.globalWarehouseId,
         vatRates: vatRatesMap,
         iceRates: iceRatesMap,
@@ -284,17 +288,18 @@ export function usePurchasesPage() {
       }),
     ] as const);
     return Object.fromEntries(entries);
-  }, [formWatch.globalWarehouseId, iceRatesMap, lines, t, vatRatesMap]);
+  }, [formWatch.globalWarehouseId, iceRatesMap, lines, precisionPolicy, t, vatRatesMap]);
 
   const lineReadinessBlockers = useMemo(
     () =>
       getPurchaseLineBlockingReasons(lines, {
+        precisionPolicy,
         globalWarehouseId: formWatch.globalWarehouseId,
         vatRates: vatRatesMap,
         iceRates: iceRatesMap,
         t,
       }),
-    [formWatch.globalWarehouseId, iceRatesMap, lines, t, vatRatesMap],
+    [formWatch.globalWarehouseId, iceRatesMap, lines, precisionPolicy, t, vatRatesMap],
   );
   const hasLineReadinessBlockers = lineReadinessBlockers.length > 0;
   // El detalle por línea (número + motivo) ya se muestra dentro de cada línea;

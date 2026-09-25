@@ -7,6 +7,7 @@ describe("buildWithholdingIssueMessage — CRITICAL-CONFIRMATIONS-PURCHASES-EXPE
       "001-001-000000123",
       "Proveedor Uno",
       42.5,
+      2,
     );
 
     expect(msg).toContain("001-001-000000123");
@@ -15,7 +16,7 @@ describe("buildWithholdingIssueMessage — CRITICAL-CONFIRMATIONS-PURCHASES-EXPE
   });
 
   it("advierte impacto tributario (SRI) y contable, y aclara el vínculo con la compra", () => {
-    const msg = buildWithholdingIssueMessage("001-001-000000123", "Proveedor Uno", 10);
+    const msg = buildWithholdingIssueMessage("001-001-000000123", "Proveedor Uno", 10, 2);
 
     expect(msg).toMatch(/SRI/);
     expect(msg).toMatch(/contable/i);
@@ -23,13 +24,13 @@ describe("buildWithholdingIssueMessage — CRITICAL-CONFIRMATIONS-PURCHASES-EXPE
   });
 
   it("referencia el campo de punto de emisión sin asumir un valor ya seleccionado", () => {
-    const msg = buildWithholdingIssueMessage("001-001-000000123", "Proveedor Uno", 10);
+    const msg = buildWithholdingIssueMessage("001-001-000000123", "Proveedor Uno", 10, 2);
 
     expect(msg).toMatch(/punto de emisión/i);
   });
 
   it("omite el total retenido cuando no está disponible, sin romper el resto del mensaje", () => {
-    const msg = buildWithholdingIssueMessage("001-001-000000123", "Proveedor Uno", null);
+    const msg = buildWithholdingIssueMessage("001-001-000000123", "Proveedor Uno", null, 2);
 
     expect(msg).not.toContain("total retenido");
     expect(msg).toContain("001-001-000000123");

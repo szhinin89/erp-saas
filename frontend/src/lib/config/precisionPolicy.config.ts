@@ -6,8 +6,9 @@ import { apiGet, apiPut } from "../../modules/lib/apiEnvelope";
  * PrecisionPolicyDefinitions): aquí NO existe ningún valor por defecto ni rango escrito a mano.
  * Si la API falla, se propaga el error — nunca se inventan valores.
  *
- * `moneyDecimals` / `taxDecimals` / `accountingDecimals` son FIJOS del sistema (FiscalPrecision
- * backend) — nunca editables desde la pantalla de precisión.
+ * `moneyDecimals` / `taxDecimals` / `accountingDecimals` / `fiscalPercentageDecimals` son FIJOS del
+ * sistema (FiscalPrecision backend) y `warehouseCapacityDecimals` / `creditInstallmentPercentageDecimals`
+ * son CONTRACTUALES fijos (SSOT de dominio backend) — nunca editables desde la pantalla de precisión.
  */
 export type PrecisionProfileType = "StandardCommercial" | "HighPrecision" | "Custom";
 
@@ -30,6 +31,13 @@ export type PrecisionPolicy = {
   accountingDecimals: number;
   /** 04C1 — escala FIJA de porcentajes fiscales (FiscalPrecision.Percentage), p. ej. % de retención SRI. */
   fiscalPercentageDecimals: number;
+  // 06 — escalas CONTRACTUALES fijas (SSOT de dominio backend, mismas que su columna física).
+  /** Capacidad de bodega en m³ (WarehousePrecision.Capacity → numeric(18,4)). */
+  warehouseCapacityDecimals: number;
+  /** % de cada cuota de un plazo de crédito (CreditTermsPrecision.InstallmentPercentage → numeric(5,2)). */
+  creditInstallmentPercentageDecimals: number;
+  /** Peso de un nivel de empaque (ItemPrecision.PackagingWeight → numeric(10,3)). */
+  packagingWeightDecimals: number;
 };
 
 /**
@@ -49,7 +57,10 @@ export type PrecisionKind =
   | "quantity"
   | "percentage"
   | "fiscalPercentage"
-  | "conversionFactor";
+  | "conversionFactor"
+  | "warehouseCapacity"
+  | "creditInstallmentPercentage"
+  | "packagingWeight";
 
 /** Campos de la policy que expresan una cantidad de decimales. */
 export type PrecisionDecimalsField = Extract<keyof PrecisionPolicy, `${string}Decimals`>;
@@ -71,6 +82,9 @@ export const PRECISION_FIELD_BY_KIND = {
   percentage: "percentageDecimals",
   fiscalPercentage: "fiscalPercentageDecimals",
   conversionFactor: "conversionFactorDecimals",
+  warehouseCapacity: "warehouseCapacityDecimals",
+  creditInstallmentPercentage: "creditInstallmentPercentageDecimals",
+  packagingWeight: "packagingWeightDecimals",
 } as const satisfies Readonly<Record<PrecisionKind, PrecisionDecimalsField>>;
 
 /**
@@ -218,7 +232,16 @@ export function setPrecisionPolicyForTests(policy: PrecisionPolicy | null): void
 
 export type UpdatePrecisionPolicyInput = Omit<
   PrecisionPolicy,
-  "isLocked" | "lockedAt" | "lockedReason" | "moneyDecimals" | "taxDecimals" | "accountingDecimals" | "fiscalPercentageDecimals"
+  | "isLocked"
+  | "lockedAt"
+  | "lockedReason"
+  | "moneyDecimals"
+  | "taxDecimals"
+  | "accountingDecimals"
+  | "fiscalPercentageDecimals"
+  | "warehouseCapacityDecimals"
+  | "creditInstallmentPercentageDecimals"
+  | "packagingWeightDecimals"
 >;
 
 /**

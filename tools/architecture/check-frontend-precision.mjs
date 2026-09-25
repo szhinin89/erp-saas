@@ -1,35 +1,28 @@
-import fs from 'node:fs';
 import path from 'node:path';
-import {
-  ARCH_DIR,
-  REPO_ROOT,
-  loadConfig,
-  loadGrandfather,
-  toRepoRel,
-  walkFiles,
-  readText,
-  matchGlob,
-} from './shared/fs-utils.mjs';
+import { REPO_ROOT, loadConfig, toRepoRel, walkFiles, readText, matchGlob } from './shared/fs-utils.mjs';
 import { createCheckResult, addViolation, addWarning } from './shared/report-utils.mjs';
 
 /**
- * F-PREC — ZH-DESIGN-SYSTEM-PRECISION-05. Canónico: docs/architecture/frontend.md § Precision guard.
+ * F-PREC — ZH-DESIGN-SYSTEM-PRECISION-05/06. Canónico: docs/architecture/frontend.md § Precision guard.
  *
- * Impide que código productivo del frontend vuelva a decidir precisión numérica a mano o por el
- * default legacy (2) en vez de la semántica (`PrecisionKind`) del Design System:
- *   F-PREC-decimals         `decimals={…}` en JSX que no es una constante contractual `*_DECIMALS`.
+ * Arquitectura FINAL (06): una sola ruta de precisión — Backend SSOT → EffectivePrecisionPolicyDto
+ * → PrecisionPolicy → PrecisionKind → resolvePrecisionDecimals → Design System → consumidor. El
+ * guard impide cualquier otra forma de decidir la escala en código productivo:
+ *   F-PREC-decimals         cualquier `decimals={…}` en JSX (la API pública solo acepta `precision`).
  *   F-PREC-implicit-format  `formatMoney(x)` / `formatMoneyWithSymbol(x)` sin escala.
- *   F-PREC-implicit-value   `<ZHMoneyValue|ZHNumberValue|ZhDecimalInput|ZhCurrencyInput>` sin
- *                           `precision` ni `decimals` (default legacy 2).
+ *   F-PREC-implicit-value   `<ZHMoneyValue|ZHNumberValue|ZhDecimalInput|ZhCurrencyInput>` sin `precision`.
  *   F-PREC-toFixed          `.toFixed(…)` (formato/redondeo local; usar el motor único).
  *   F-PREC-intl             `Intl.NumberFormat` local (la representación la decide el Design System).
- *   F-PREC-policy-read      `getPrecisionPolicy()` fuera de la infraestructura (usar hooks/`precision`).
+ *   F-PREC-policy-read      `getPrecisionPolicy()` / `getPrecisionPolicySnapshot()` directos (usar
+ *                           `precision`, `usePrecisionDecimals` o `usePrecisionPolicy` + resolver).
+ *   F-PREC-alt-mapping      segunda tabla semántica → campo `…Decimals` (el único mapeo es
+ *                           PRECISION_FIELD_BY_KIND).
  *
  * Análisis textual contextual (sin AST): comentarios eliminados preservando líneas; llamadas y
- * etiquetas JSX con paréntesis/llaves balanceados. Tolerancia por ocurrencias EXACTAS: cada
- * (archivo, regla) tiene un máximo = deuda legacy (architecture-grandfather.json →
- * frontendPrecisionGrandfathered) + excepción justificada (config/frontend-precision.json →
- * exceptions). Superarlo → violación; quedar por debajo → aviso para bajar el baseline.
+ * etiquetas JSX con paréntesis/llaves balanceados. Sin deuda legacy tolerada: solo excepciones
+ * justificadas que NO deciden presentación (cálculo, métrica técnica, payload externo) en
+ * config/frontend-precision.json → exceptions, con conteo exacto. Superarlo → violación; quedar por
+ * debajo → aviso para bajar la excepción.
  */
 export const CHECK_NAME = 'frontend-precision';
 
@@ -40,23 +33,25 @@ export const RULES = {
   toFixed: 'F-PREC-toFixed',
   intl: 'F-PREC-intl',
   policyRead: 'F-PREC-policy-read',
+  altMapping: 'F-PREC-alt-mapping',
 };
 
 const MESSAGES = {
   [RULES.decimals]:
-    '`decimals={…}` decide la escala a mano — declarar `precision="<PrecisionKind>"`; un override contractual usa una constante nombrada `*_DECIMALS` documentada.',
+    '`decimals={…}` decide la escala en la pantalla — declarar `precision="<PrecisionKind>"` (un contrato fijo nuevo se agrega como PrecisionKind con SSOT backend).',
   [RULES.implicitFormat]:
-    'formatter sin escala (default legacy 2) — pasar `usePrecisionDecimals(kind)` o usar ZHMoneyValue/ZHNumberValue con `precision`.',
+    'formatter sin escala — pasar `usePrecisionDecimals(kind)` o usar ZHMoneyValue/ZHNumberValue con `precision`.',
   [RULES.implicitValue]:
-    'componente numérico sin `precision` ni `decimals` (default legacy 2) — declarar `precision="<PrecisionKind>"`.',
+    'componente numérico sin `precision` — declarar `precision="<PrecisionKind>"`.',
   [RULES.toFixed]:
     '`.toFixed()` local — la presentación usa el motor único (ZH*Value / formatDecimalDisplay con escala semántica); un cálculo legítimo se registra como excepción.',
   [RULES.intl]: '`Intl.NumberFormat` local — la representación numérica la decide el Design System.',
   [RULES.policyRead]:
-    '`getPrecisionPolicy()` directo — en presentación usar `precision`/`usePrecisionDecimals`; un cálculo legítimo se registra como excepción.',
+    'lectura directa de la policy — en presentación usar `precision`/`usePrecisionDecimals` (o `usePrecisionPolicy` + `resolvePrecisionDecimals` para utilidades puras); un cálculo legítimo se registra como excepción.',
+  [RULES.altMapping]:
+    'segunda tabla semántica → `…Decimals` — el único mapeo es PRECISION_FIELD_BY_KIND (resolvePrecisionDecimals).',
 };
 
-const CONTRACT_CONSTANT = /^[A-Z][A-Z0-9_]*_DECIMALS$/;
 const VALUE_TAGS = ['ZHMoneyValue', 'ZHNumberValue', 'ZhDecimalInput', 'ZhCurrencyInput'];
 
 /** Elimina comentarios `//` y `/* *\/` preservando saltos de línea (los números de línea no cambian). */
@@ -159,12 +154,8 @@ export function findPrecisionHits(rel, raw) {
   const push = (rule, index) =>
     hits.push({ rule, file: rel, line: lineOf(content, index), message: MESSAGES[rule] });
 
-  // F-PREC-decimals — atributo JSX `decimals={expr}`.
-  for (const m of content.matchAll(/\bdecimals=\{/g)) {
-    const open = m.index + m[0].length - 1;
-    const expr = content.slice(open + 1, balancedEnd(content, open) - 1).trim();
-    if (!CONTRACT_CONSTANT.test(expr)) push(RULES.decimals, m.index);
-  }
+  // F-PREC-decimals — cualquier atributo JSX `decimals={…}` (o `decimals="…"`).
+  for (const m of content.matchAll(/\bdecimals=[{"]/g)) push(RULES.decimals, m.index);
 
   // F-PREC-implicit-format — formatter con un solo argumento.
   for (const m of content.matchAll(/\b(formatMoneyWithSymbol|formatMoney)\s*\(/g)) {
@@ -176,16 +167,21 @@ export function findPrecisionHits(rel, raw) {
   // F-PREC-implicit-value — etiqueta sin precision ni decimals.
   for (const m of content.matchAll(new RegExp(`<(${VALUE_TAGS.join('|')})\\b`, 'g'))) {
     const tag = jsxTagText(content, m.index);
-    if (!/\bprecision=/.test(tag) && !/\bdecimals=/.test(tag)) push(RULES.implicitValue, m.index);
+    if (!/\bprecision=/.test(tag)) push(RULES.implicitValue, m.index);
   }
 
   for (const m of content.matchAll(/\.toFixed\s*\(/g)) push(RULES.toFixed, m.index);
   for (const m of content.matchAll(/\bIntl\s*\.\s*NumberFormat\b/g)) push(RULES.intl, m.index);
-  for (const m of content.matchAll(/\bgetPrecisionPolicy\s*\(/g)) {
+  for (const m of content.matchAll(/\bgetPrecisionPolicy(?:Snapshot)?\s*\(/g)) {
     const before = content.slice(Math.max(0, m.index - 20), m.index);
     if (/function\s+$/.test(before)) continue;
     push(RULES.policyRead, m.index);
   }
+
+  // F-PREC-alt-mapping — `kind: "kindDecimals"`: la forma exacta de PRECISION_FIELD_BY_KIND repetida
+  // fuera de la infraestructura (segunda tabla semántica → campo). Las claves de formulario de la
+  // pantalla de configuración (metadata, p. ej. `name: "quantityDecimals"`) no coinciden.
+  for (const m of content.matchAll(/\b(\w+)\s*:\s*["'`]\1Decimals["'`]/g)) push(RULES.altMapping, m.index);
 
   return hits;
 }
@@ -207,12 +203,12 @@ export function isInScope(cfg, rel) {
 }
 
 /**
- * Aplica tolerancias exactas (deuda legacy + excepciones) a los hallazgos.
+ * Aplica las excepciones justificadas (conteo exacto) a los hallazgos.
  * @param {ReturnType<typeof findPrecisionHits>} hits
- * @param {{ legacy: object[], exceptions: object[] }} allowances
+ * @param {{ exceptions: object[] }} allowances
  */
 export function evaluateHits(hits, allowances, result = createCheckResult(CHECK_NAME)) {
-  const allowed = toAllowanceMap([...(allowances.legacy ?? []), ...(allowances.exceptions ?? [])]);
+  const allowed = toAllowanceMap(allowances.exceptions ?? []);
   /** @type {Map<string, typeof hits>} */
   const byKey = new Map();
   for (const h of hits) {
@@ -226,7 +222,7 @@ export function evaluateHits(hits, allowances, result = createCheckResult(CHECK_
     for (const h of list) {
       addViolation(result, {
         ...h,
-        message: `${h.message} (${list.length} ocurrencia(s) en el archivo; tolerancia registrada ${max})`,
+        message: `${h.message} (${list.length} ocurrencia(s) en el archivo; excepción registrada ${max})`,
       });
     }
   }
@@ -237,7 +233,7 @@ export function evaluateHits(hits, allowances, result = createCheckResult(CHECK_
       addWarning(result, {
         rule,
         file,
-        message: `tolerancia registrada ${max} > ocurrencias actuales ${actual} — bajar el baseline/excepción (no deja crecer deuda).`,
+        message: `excepción registrada ${max} > ocurrencias actuales ${actual} — bajar la excepción.`,
       });
     }
   }
@@ -257,52 +253,11 @@ function scanRepo(cfg) {
 
 export function runCheckFrontendPrecision() {
   const cfg = loadConfig('frontend-precision.json');
-  const grandfather = loadGrandfather();
-  return evaluateHits(scanRepo(cfg), {
-    legacy: grandfather.frontendPrecisionGrandfathered,
-    exceptions: cfg.exceptions,
-  });
-}
-
-/**
- * Regenera frontendPrecisionGrandfathered SOLO para `legacyGlobs` (módulos cerrados), con las
- * ocurrencias actuales. Los módulos abiertos nunca se baselinan: se corrigen o se registran como
- * excepción justificada en config/frontend-precision.json.
- */
-function writeBaseline() {
-  const cfg = loadConfig('frontend-precision.json');
-  const grandfather = loadGrandfather();
-  const counts = new Map();
-  for (const h of scanRepo(cfg)) {
-    if (!cfg.legacyGlobs.some((g) => matchGlob(g, h.file))) continue;
-    const key = `${h.file}|${h.rule}`;
-    counts.set(key, (counts.get(key) ?? 0) + 1);
-  }
-  const entries = [...counts.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, count]) => {
-      const [file, rule] = key.split('|');
-      return { file, rule, count };
-    });
-  // Reescribe SOLO la clave propia (el resto del archivo conserva su formato/diff).
-  const gfPath = path.join(ARCH_DIR, 'architecture-grandfather.json');
-  const text = fs.readFileSync(gfPath, 'utf8');
-  const block = JSON.stringify(entries, null, 2).replace(/\n/g, '\n  ');
-  const keyRe = /("frontendPrecisionGrandfathered":\s*)\[[\s\S]*?\n {2}\]/;
-  const next = keyRe.test(text)
-    ? text.replace(keyRe, `$1${block}`)
-    : text.replace(/\n\}\s*$/, `,\n  "frontendPrecisionGrandfathered": ${block}\n}\n`);
-  if (!('frontendPrecisionGrandfathered' in grandfather) && next === text) {
-    throw new Error('frontend-precision: no se pudo insertar la clave en architecture-grandfather.json');
-  }
-  fs.writeFileSync(gfPath, next, 'utf8');
-  console.log(`frontend-precision: wrote ${entries.length} legacy entr(ies) to ${toRepoRel(gfPath)}`);
+  return evaluateHits(scanRepo(cfg), { exceptions: cfg.exceptions });
 }
 
 if (process.argv[1]?.endsWith('check-frontend-precision.mjs')) {
-  if (process.argv.includes('--write-baseline')) {
-    writeBaseline();
-  } else if (process.argv.includes('--list')) {
+  if (process.argv.includes('--list')) {
     const cfg = loadConfig('frontend-precision.json');
     for (const h of scanRepo(cfg)) console.log(`${h.file}:${h.line}\t${h.rule}`);
   } else {

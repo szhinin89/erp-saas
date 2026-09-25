@@ -5,7 +5,6 @@ import { ZhSelect } from "../../../../components/zh/inputs/ZhSelect";
 import { ZhTextInput } from "../../../../components/zh/inputs/ZhTextInput";
 import { ZhDecimalInput } from "../../../../components/zh/inputs/ZhDecimalInput";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/ZHDataTable";
-import { getPrecisionPolicy } from "../../../../lib/config/precisionPolicy.config";
 import type {
   ItemImageDto,
   ItemUnitConversionDto,
@@ -279,7 +278,6 @@ export function PackagingLevelsSection({
   onSave: (levels: PackagingLevelInput[]) => Promise<void>;
 }) {
   const active = levels.filter((l) => l.isActive);
-  const conversionFactorDecimals = getPrecisionPolicy().conversionFactorDecimals;
   const [adding, setAdding] = useState(false);
   const [addDraft, setAddDraft] = useState<PackagingLevelDraft>(
     emptyPackagingDraft,
@@ -609,7 +607,7 @@ export function PackagingLevelsSection({
                     <td>
                       <ZhDecimalInput
                         density="compact"
-                        decimals={conversionFactorDecimals}
+                        precision="conversionFactor"
                         positiveOnly
                         value={editDraft.baseQuantity}
                         onChange={(e) =>
@@ -637,7 +635,7 @@ export function PackagingLevelsSection({
                     <td>
                       <ZhDecimalInput
                         density="compact"
-                        decimals={3}
+                        precision="packagingWeight"
                         positiveOnly
                         value={editDraft.weight}
                         onChange={(e) =>
@@ -832,7 +830,7 @@ export function PackagingLevelsSection({
                   <td>
                     <ZhDecimalInput
                       density="compact"
-                      decimals={conversionFactorDecimals}
+                      precision="conversionFactor"
                       positiveOnly
                       value={addDraft.baseQuantity}
                       onChange={(e) =>
@@ -860,7 +858,7 @@ export function PackagingLevelsSection({
                   <td>
                     <ZhDecimalInput
                       density="compact"
-                      decimals={3}
+                      precision="packagingWeight"
                       positiveOnly
                       value={addDraft.weight}
                       onChange={(e) =>

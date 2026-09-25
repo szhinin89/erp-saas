@@ -1,6 +1,7 @@
 ﻿import { useState, type ReactNode } from "react";
 import { ZHBtn, ZHField } from "./ZHForm";
 import { ZhDecimalInput } from "./inputs/ZhDecimalInput";
+import type { PrecisionKind } from "../../lib/config/precisionPolicy.config";
 
 interface ConfirmProps {
   open: boolean;
@@ -76,15 +77,12 @@ export function ZHConfirmModal({
   );
 }
 
-interface PromptProps {
+interface PromptBaseProps {
   open: boolean;
   title: string;
   message?: string;
   label: string;
   placeholder?: string;
-  type?: "text" | "number" | "date" | "datetime-local" | "decimal";
-  /** Solo aplica con type="decimal" — cantidad de decimales permitidos (ej. getPrecisionPolicy().percentageDecimals). */
-  decimals?: number;
   positiveOnly?: boolean;
   defaultValue?: string;
   required?: boolean;
@@ -95,14 +93,24 @@ interface PromptProps {
   onCancel: () => void;
 }
 
-export function ZHPromptModal({
+/**
+ * ZH-DESIGN-SYSTEM-PRECISION-06 — `type="decimal"` exige `precision` (semántica del valor pedido);
+ * no existe `decimals` público.
+ */
+type PromptProps = PromptBaseProps &
+  (
+    | { type?: "text" | "number" | "date" | "datetime-local"; precision?: never }
+    | { type: "decimal"; precision: PrecisionKind }
+  );
+
+export function ZHPromptModal(props: PromptProps) {
+  const {
   open,
   title,
   message,
   label,
   placeholder,
   type = "text",
-  decimals,
   positiveOnly,
   defaultValue = "",
   required = true,
@@ -111,7 +119,7 @@ export function ZHPromptModal({
   variant = "default",
   onConfirm,
   onCancel,
-}: PromptProps) {
+  } = props;
   const [value, setValue] = useState(defaultValue);
   if (!open) return null;
   return (
@@ -137,9 +145,9 @@ export function ZHPromptModal({
         <div className="zh-confirm-body">
           {message && <p className="zh-confirm-message">{message}</p>}
           <ZHField density="compact" label={label}>
-            {type === "decimal" ? (
+            {props.type === "decimal" ? (
               <ZhDecimalInput
-                decimals={decimals}
+                precision={props.precision}
                 positiveOnly={positiveOnly}
                 value={value}
                 onChange={(e) => setValue(e.target.value)}

@@ -11,10 +11,12 @@ export function buildWithholdingIssueMessage(
   invoiceNumber: string,
   supplierName: string,
   totalRetained: number | null | undefined,
+  // ZH-DESIGN-SYSTEM-PRECISION-06 — escala money resuelta por el caller React (usePrecisionDecimals).
+  moneyDecimals: number,
 ): string {
   const totalPart =
     totalRetained != null
-      ? ` por un total retenido de ${formatMoneyWithSymbol(totalRetained)}`
+      ? ` por un total retenido de ${formatMoneyWithSymbol(totalRetained, moneyDecimals)}`
       : "";
   return (
     `Vas a emitir una retención vinculada a la compra ${invoiceNumber} — ${supplierName}` +

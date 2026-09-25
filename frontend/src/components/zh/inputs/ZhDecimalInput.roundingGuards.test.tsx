@@ -21,6 +21,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useForm, type RegisterOptions, type UseFormReturn } from "react-hook-form";
 import { ZhDecimalInput } from "./ZhDecimalInput";
+import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.config";
+import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 
 afterEach(() => cleanup());
 
@@ -34,7 +36,7 @@ describe("A. defaultValue numérico con midpoint binario (patrón defaultValue d
     [0.075, "0.08", "0.07"],
   ])("03C: %s con decimals=2 monta '%s' (antes '%s'); focus/blur sin edición no emiten onChange", (value, legacy) => {
     const onChange = vi.fn();
-    render(<ZhDecimalInput aria-label="valor" decimals={2} defaultValue={value} onChange={onChange} />);
+    render(<ZhDecimalInput aria-label="valor" precision="money" defaultValue={value} onChange={onChange} />);
     expect(input().value).toBe(legacy); // al montar ya está redondeado por el motor Decimal
     fireEvent.focus(input());
     expect(input().value).toBe(legacy);
@@ -44,7 +46,7 @@ describe("A. defaultValue numérico con midpoint binario (patrón defaultValue d
   });
 
   it("03C: value controlado numérico 1.005 (decimals=2) renderiza '1.01' (antes '1.00')", () => {
-    render(<ZhDecimalInput aria-label="valor" decimals={2} value={1.005} onChange={() => {}} />);
+    render(<ZhDecimalInput aria-label="valor" precision="money" value={1.005} onChange={() => {}} />);
     expect(input().value).toBe("1.01");
   });
 });
@@ -59,6 +61,8 @@ type RhfResult = {
 
 /** Harness RHF: el formState se lee en render (suscripción real del proxy de RHF). */
 function renderRhf(defaultValue: unknown, decimals: number, options?: RegisterOptions<{ x: unknown }, "x">): RhfResult {
+  // 06 — `decimals` es la escala que entrega la policy (el input declara precision="quantity").
+  setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, quantityDecimals: decimals });
   const changes = { count: 0 };
   let form: UseFormReturn<{ x: unknown }> | null = null;
   const expose = (f: UseFormReturn<{ x: unknown }>) => {
@@ -73,7 +77,7 @@ function renderRhf(defaultValue: unknown, decimals: number, options?: RegisterOp
       <>
         <ZhDecimalInput
           aria-label="valor"
-          decimals={decimals}
+          precision="quantity"
           {...reg}
           onChange={(e) => {
             changes.count++;
@@ -199,19 +203,17 @@ describe("C2. Items — edición REAL sigue normalizando con el motor Decimal (0
 function PurchaseQtyHarness({
   quantity,
   factor,
-  decimals,
   updateLine,
 }: {
   quantity: number;
   factor: number;
-  decimals: number;
   updateLine: (field: string, value: number) => void;
 }) {
   return (
     <ZhDecimalInput
       aria-label="valor"
       density="compact"
-      decimals={decimals}
+      precision="quantity"
       positiveOnly
       defaultValue={quantity * factor}
       onBlur={(e) => {
@@ -226,18 +228,16 @@ function PurchaseQtyHarness({
 /** Réplica del costo base (sin la fórmula inversa, que no depende del input). */
 function PurchaseCostHarness({
   baseUnitCost,
-  decimals,
   commit,
 }: {
   baseUnitCost: number;
-  decimals: number;
   commit: (entered: number) => void;
 }) {
   return (
     <ZhDecimalInput
       aria-label="valor"
       density="compact"
-      decimals={decimals}
+      precision="purchaseUnitPrice"
       positiveOnly
       defaultValue={baseUnitCost}
       onBlur={(e) => commit(Number(e.target.value) || 0)}
@@ -248,7 +248,7 @@ function PurchaseCostHarness({
 describe("D. Purchases — cantidad/costo base calculados (focus → blur sin edición)", () => {
   it("03C: qty 2 × factor 1.000025 = 2.00005 (quantityDecimals=4) monta '2.0001' (antes '2.0000'); el blur SIGUE confirmando quantity 2.00005… ≠ 2 (deriva de Compras, fuera de 03C)", () => {
     const updateLine = vi.fn();
-    render(<PurchaseQtyHarness quantity={2} factor={1.000025} decimals={4} updateLine={updateLine} />);
+    render(<PurchaseQtyHarness quantity={2} factor={1.000025} updateLine={updateLine} />);
     expect(input().value).toBe("2.0001");
     fireEvent.focus(input());
     fireEvent.blur(input());
@@ -259,7 +259,7 @@ describe("D. Purchases — cantidad/costo base calculados (focus → blur sin ed
 
   it("legacy: el round-trip altera la cantidad AUNQUE no haya midpoint (3 × 1.00015 = 3.00045 → '3.0005' → 3.00004999…), igual con Decimal", () => {
     const updateLine = vi.fn();
-    render(<PurchaseQtyHarness quantity={3} factor={1.00015} decimals={4} updateLine={updateLine} />);
+    render(<PurchaseQtyHarness quantity={3} factor={1.00015} updateLine={updateLine} />);
     expect(input().value).toBe("3.0005");
     fireEvent.focus(input());
     fireEvent.blur(input());
@@ -273,14 +273,14 @@ describe("D. Purchases — cantidad/costo base calculados (focus → blur sin ed
 
   it("legacy: sin presentación con escala exacta (qty 2 × 1) el blur confirma el mismo valor", () => {
     const updateLine = vi.fn();
-    render(<PurchaseQtyHarness quantity={2} factor={1} decimals={4} updateLine={updateLine} />);
+    render(<PurchaseQtyHarness quantity={2} factor={1} updateLine={updateLine} />);
     fireEvent.blur(input());
     expect(updateLine).toHaveBeenCalledWith("quantity", 2);
   });
 
   it("03C: costo base 0.30005 (purchaseUnitPriceDecimals=4) monta '0.3001' (antes '0.3000'); el blur confirma 0.3001 (antes 0.3)", () => {
     const commit = vi.fn();
-    render(<PurchaseCostHarness baseUnitCost={0.30005} decimals={4} commit={commit} />);
+    render(<PurchaseCostHarness baseUnitCost={0.30005} commit={commit} />);
     expect(input().value).toBe("0.3001");
     fireEvent.focus(input());
     fireEvent.blur(input());

@@ -1,6 +1,9 @@
 import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
 import type { ItemMatchStatus } from "../api/purchaseReceptionService";
-import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
+import {
+  resolvePrecisionDecimals,
+  type PrecisionPolicy,
+} from "../../../lib/config/precisionPolicy.config";
 import { formatMoney, formatMoneyWithSymbol } from "../../../lib/sanitizers";
 import { calcMarginPercent } from "../../../lib/margin";
 import { lineNet, calcLineTax } from "./purchaseCalc";
@@ -142,11 +145,25 @@ export interface PurchaseLinePresentationVM {
 
 export function buildPurchaseLinePresentation(
   line: PurchaseLineFormValues,
+  // ZH-DESIGN-SYSTEM-PRECISION-06 — utilidad pura: la policy la entrega el caller React
+  // (`usePrecisionPolicy`) y cada escala se resuelve con `resolvePrecisionDecimals`.
+  policy: PrecisionPolicy,
   t?: TFunction,
   vatRates?: Record<string, number>,
   iceRates?: Record<string, number>,
 ): PurchaseLinePresentationVM {
-  const decimals = getPrecisionPolicy();
+  const decimals = {
+    conversionFactorDecimals: resolvePrecisionDecimals(policy, "conversionFactor"),
+    percentageDecimals: resolvePrecisionDecimals(policy, "percentage"),
+    fiscalPercentageDecimals: resolvePrecisionDecimals(policy, "fiscalPercentage"),
+    quantityDecimals: resolvePrecisionDecimals(policy, "quantity"),
+    purchaseUnitPriceDecimals: resolvePrecisionDecimals(policy, "purchaseUnitPrice"),
+    moneyDecimals: resolvePrecisionDecimals(policy, "money"),
+    taxDecimals: resolvePrecisionDecimals(policy, "tax"),
+    unitCostDecimals: resolvePrecisionDecimals(policy, "unitCost"),
+    averageCostDecimals: resolvePrecisionDecimals(policy, "averageCost"),
+    salesUnitPriceDecimals: resolvePrecisionDecimals(policy, "salesUnitPrice"),
+  };
   const ctx = line.context;
   const hasItem = !!line.itemId;
   const isLoading = !!line._contextLoading;
@@ -298,10 +315,10 @@ export function buildPurchaseLinePresentation(
         ? formatMoneyWithSymbol(line.xmlDiscount ?? 0, decimals.moneyDecimals)
         : UNKNOWN,
       vatPercentage: hasOrigin
-        ? formatMoney(line.xmlVatPercentage ?? 0, decimals.percentageDecimals)
+        ? formatMoney(line.xmlVatPercentage ?? 0, decimals.fiscalPercentageDecimals)
         : UNKNOWN,
       taxValue: hasOrigin
-        ? formatMoneyWithSymbol(line.xmlTaxValue ?? 0, decimals.moneyDecimals)
+        ? formatMoneyWithSymbol(line.xmlTaxValue ?? 0, decimals.taxDecimals)
         : UNKNOWN,
       totalLine: hasOrigin
         ? formatMoneyWithSymbol(line.xmlTotalLine ?? 0, decimals.moneyDecimals)
@@ -310,10 +327,10 @@ export function buildPurchaseLinePresentation(
         ? formatMoneyWithSymbol(line.xmlTaxableBase ?? 0, decimals.moneyDecimals)
         : UNKNOWN,
       iceValue: hasOrigin
-        ? formatMoneyWithSymbol(line.xmlIceAmount ?? 0, decimals.moneyDecimals)
+        ? formatMoneyWithSymbol(line.xmlIceAmount ?? 0, decimals.taxDecimals)
         : UNKNOWN,
       irbpnrValue: hasOrigin
-        ? formatMoneyWithSymbol(line.xmlIrbpnrAmount ?? 0, decimals.moneyDecimals)
+        ? formatMoneyWithSymbol(line.xmlIrbpnrAmount ?? 0, decimals.taxDecimals)
         : UNKNOWN,
       hasIrbpnr: hasOrigin && (line.xmlIrbpnrAmount ?? 0) > 0,
       additionalFields: line.xmlAdditionalFields ?? [],
@@ -528,6 +545,7 @@ export function computeUnitPriceFromBaseUnitCost(params: {
  */
 export function buildSuspiciousPackagingCostWarning(
   line: PurchaseLineFormValues,
+  policy: PrecisionPolicy,
   t?: TFunction,
 ): { blocking: true; message: string } | null {
   const ctx = line.context;
@@ -535,7 +553,7 @@ export function buildSuspiciousPackagingCostWarning(
   const salePrice = ctx.pvp ?? 0;
   if (!(salePrice > 0)) return null;
 
-  const vm = buildPurchaseLinePresentation(line, t);
+  const vm = buildPurchaseLinePresentation(line, policy, t);
   const baseUnitCostValue = vm.inventory.baseUnitCostValue;
   if (!(baseUnitCostValue > 0)) return null;
   const marginPctValue = vm.commercial.profitability.marginPctValue;
@@ -566,6 +584,7 @@ export function buildSuspiciousPackagingCostWarning(
  */
 export function buildMissingSalePriceForMarginWarning(
   line: PurchaseLineFormValues,
+  policy: PrecisionPolicy,
   t?: TFunction,
 ): { blocking: false; message: string } | null {
   const ctx = line.context;
@@ -573,7 +592,7 @@ export function buildMissingSalePriceForMarginWarning(
   const salePrice = ctx.pvp ?? 0;
   if (salePrice > 0) return null;
 
-  const vm = buildPurchaseLinePresentation(line, t);
+  const vm = buildPurchaseLinePresentation(line, policy, t);
   const baseUnitCostValue = vm.inventory.baseUnitCostValue;
   if (!(baseUnitCostValue > 0)) return null;
 

@@ -13,6 +13,7 @@ import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import { ZhCurrencyInput } from "./ZhCurrencyInput";
 import {
   setPrecisionPolicyForTests,
+  type PrecisionKind,
   type PrecisionPolicy,
 } from "../../../lib/config/precisionPolicy.config";
 import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
@@ -21,8 +22,21 @@ afterEach(() => {
   cleanup();
 });
 
-function renderInput(props: React.ComponentProps<typeof ZhCurrencyInput> = {}) {
-  const utils = render(<ZhCurrencyInput aria-label="monto" {...props} />);
+/**
+ * ZH-DESIGN-SYSTEM-PRECISION-06 — `precision` es la única API. `decimals` es SOLO un parámetro de
+ * este helper de test: la escala que entrega la PrecisionPolicy (se fija como quantityDecimals y el
+ * input declara `precision="quantity"`). Si el caso pasa su propia `precision`, manda la policy del test.
+ */
+type RenderProps = Omit<React.ComponentProps<typeof ZhCurrencyInput>, "precision"> & {
+  precision?: PrecisionKind;
+  decimals?: number;
+};
+
+function renderInput({ decimals = 2, precision, ...props }: RenderProps = {}) {
+  if (precision === undefined) {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, quantityDecimals: decimals });
+  }
+  const utils = render(<ZhCurrencyInput aria-label="monto" precision={precision ?? "quantity"} {...props} />);
   const input = utils.getByLabelText("monto") as HTMLInputElement;
   const wrapper = input.parentElement as HTMLElement;
   return { ...utils, input, wrapper };
@@ -80,7 +94,7 @@ describe("ZhCurrencyInput — DOM y props (contract)", () => {
 
   it("contract: forwardRef expone el HTMLInputElement", () => {
     const ref = React.createRef<HTMLInputElement>();
-    render(<ZhCurrencyInput ref={ref} aria-label="monto" />);
+    render(<ZhCurrencyInput ref={ref} aria-label="monto" precision="money" />);
     expect(ref.current).toBeInstanceOf(HTMLInputElement);
   });
 });
@@ -115,7 +129,7 @@ describe("ZhCurrencyInput — teclado", () => {
     expect(keyAllowed(input, "-")).toBe(false);
   });
 
-  it("legacy: default decimals=2 limita los dígitos tras el punto", () => {
+  it("escala 2 limita los dígitos tras el punto", () => {
     const { input } = renderInput();
     typeRaw(input, "1.2");
     expect(keyAllowed(input, "3")).toBe(true);
@@ -153,7 +167,7 @@ describe("ZhCurrencyInput — paste", () => {
     expect(onChange).toHaveBeenCalledTimes(1);
   });
 
-  it("legacy: exceso de decimales en paste se TRUNCA con default decimals=2", () => {
+  it("legacy: exceso de decimales en paste se TRUNCA con escala 2", () => {
     const { input } = renderInput();
     paste(input, "1.239");
     expect(input.value).toBe("1.23");
@@ -256,23 +270,22 @@ describe("ZhCurrencyInput — precision semántica (03B)", () => {
     expect(allowsDecimal(input, 2)).toBe(false);
   });
 
-  it("decimals explícito gana sobre precision; decimals={0} bloquea el punto", () => {
-    setPrecisionPolicyForTests(POLICY_A);
-    const { input } = renderInput({ precision: "salesUnitPrice", decimals: 1 });
-    expect(allowsDecimal(input, 1)).toBe(false);
-    cleanup();
-    const zero = renderInput({ precision: "salesUnitPrice", decimals: 0 });
-    expect(keyAllowed(zero.input, ".")).toBe(false);
+  it("06 — API única: `precision` obligatorio, sin `decimals` público ni default legacy (compile-time)", () => {
+    // @ts-expect-error — sin `precision` no compila: no existe default 2.
+    const withoutPrecision = <ZhCurrencyInput aria-label="x" />;
+    // @ts-expect-error — `decimals` ya no es API pública (la escala sale de la policy).
+    const withDecimals = <ZhCurrencyInput aria-label="x" precision="money" decimals={2} />;
+    expect([withoutPrecision, withDecimals]).toHaveLength(2);
   });
 
-  it("sin precision ni decimals: legacy 2 SIN policy cargada; value='5' sigue funcionando", () => {
-    setPrecisionPolicyForTests(null);
-    const { input } = renderInput({ value: "5", onChange: () => {} });
-    expect(input.value).toBe("5");
+  it("06 — escalas 1 y 0 resueltas por la policy; 0 bloquea el punto", () => {
+    setPrecisionPolicyForTests({ ...POLICY_A, salesUnitPriceDecimals: 1 });
+    const { input } = renderInput({ precision: "salesUnitPrice" });
+    expect(allowsDecimal(input, 1)).toBe(false);
     cleanup();
-    const uncontrolled = renderInput();
-    expect(allowsDecimal(uncontrolled.input, 1)).toBe(true);
-    expect(allowsDecimal(uncontrolled.input, 2)).toBe(false);
+    setPrecisionPolicyForTests({ ...POLICY_A, salesUnitPriceDecimals: 0 });
+    const zero = renderInput({ precision: "salesUnitPrice" });
+    expect(keyAllowed(zero.input, ".")).toBe(false);
   });
 
   it("forwardRef expone el HTMLInputElement también con precision", () => {

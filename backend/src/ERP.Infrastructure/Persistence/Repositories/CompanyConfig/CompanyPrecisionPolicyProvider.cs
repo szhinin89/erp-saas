@@ -4,6 +4,9 @@ using ERP.Application.Modules.Companies.UseCases.PrecisionPolicy;
 using ERP.Domain.Common;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Exceptions;
+using ERP.Domain.Modules.Finance.Entities;
+using ERP.Domain.Modules.Inventory.Entities;
+using ERP.Domain.Modules.Items.Entities;
 
 namespace ERP.Infrastructure.Persistence.Repositories.CompanyConfig;
 
@@ -68,6 +71,9 @@ public sealed class CompanyPrecisionPolicyProvider : ICompanyPrecisionPolicyProv
             MoneyDecimals: FiscalPrecision.TaxAmount,
             TaxDecimals: FiscalPrecision.TaxAmount,
             AccountingDecimals: FiscalPrecision.TaxAmount,
-            FiscalPercentageDecimals: FiscalPrecision.Percentage
+            FiscalPercentageDecimals: FiscalPrecision.Percentage,
+            WarehouseCapacityDecimals: WarehousePrecision.Capacity,
+            CreditInstallmentPercentageDecimals: CreditTermsPrecision.InstallmentPercentage,
+            PackagingWeightDecimals: ItemPrecision.PackagingWeight
         );
 }

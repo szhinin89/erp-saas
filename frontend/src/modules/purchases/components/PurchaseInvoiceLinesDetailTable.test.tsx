@@ -73,8 +73,9 @@ describe("PurchaseInvoiceLinesDetailTable — columnas de solo lectura (ZHMoneyV
     expect(cells.length).toBe(7);
 
     const texts = Array.from(cells).map((el) => el.textContent);
+    // ZH-DESIGN-SYSTEM-PRECISION-06 — Precio = purchaseUnitPrice (fixture 4); montos money; IVA/ICE/IRBPNR tax.
     expect(texts).toEqual([
-      "5.00",
+      "5.0000",
       "2.00",
       "48.00",
       "7.20",

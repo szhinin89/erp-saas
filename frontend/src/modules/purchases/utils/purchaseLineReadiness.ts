@@ -1,4 +1,5 @@
 import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
+import type { PrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import {
   buildMissingSalePriceForMarginWarning,
   buildSuspiciousPackagingCostWarning,
@@ -56,6 +57,8 @@ export interface PurchaseLineReadiness {
 }
 
 export interface PurchaseLineReadinessOptions {
+  /** ZH-DESIGN-SYSTEM-PRECISION-06 — policy de la empresa (caller React: `usePrecisionPolicy`). */
+  precisionPolicy: PrecisionPolicy;
   globalWarehouseId?: string | null;
   vatRates?: Record<string, number>;
   iceRates?: Record<string, number>;
@@ -164,10 +167,11 @@ function message(
 
 function buildMissingSalePriceWarning(
   line: PurchaseLineFormValues,
+  policy: PrecisionPolicy,
   t: TFunction,
   rawT?: TFunction,
 ): PurchaseLineReadinessWarning | undefined {
-  const built = buildMissingSalePriceForMarginWarning(line, rawT);
+  const built = buildMissingSalePriceForMarginWarning(line, policy, rawT);
   if (!built) return undefined;
   return {
     status: "MISSING_SALE_PRICE_FOR_MARGIN",
@@ -182,13 +186,13 @@ function buildMissingSalePriceWarning(
 
 export function getPurchaseLineReadiness(
   line: PurchaseLineFormValues,
-  options: PurchaseLineReadinessOptions = {},
+  options: PurchaseLineReadinessOptions,
 ): PurchaseLineReadiness {
   const t = options.t ?? fallbackT;
   // Igual que con buildSuspiciousPackagingCostWarning más abajo: se le pasa options.t crudo
   // (no el `t` ya resuelto con el fallback de este archivo) para que distinga "sin traductor
   // real" de "hay traductor real" y use su propio fallback interpolado en el primer caso.
-  const warning = buildMissingSalePriceWarning(line, t, options.t);
+  const warning = buildMissingSalePriceWarning(line, options.precisionPolicy, t, options.t);
 
   const primary = computePrimaryReadiness(line, options, t);
   return warning ? { ...primary, warning } : primary;
@@ -235,7 +239,7 @@ function computePrimaryReadiness(
   // este módulo — pero buildSuspiciousPackagingCostWarning necesita distinguir "sin traductor
   // real" (usa su propio fallback interpolado) de "hay traductor real" (usa i18next), así que se
   // le pasa options.t directamente, nunca el `t` ya resuelto con el default de este archivo.
-  const suspiciousPackagingCost = buildSuspiciousPackagingCostWarning(line, options.t);
+  const suspiciousPackagingCost = buildSuspiciousPackagingCostWarning(line, options.precisionPolicy, options.t);
   if (suspiciousPackagingCost) {
     return {
       status: "SUSPICIOUS_PACKAGING_COST",
@@ -278,7 +282,7 @@ function computePrimaryReadiness(
 
 export function getPurchaseLineBlockingReasons(
   lines: PurchaseLineFormValues[],
-  options: PurchaseLineReadinessOptions = {},
+  options: PurchaseLineReadinessOptions,
 ) {
   return lines
     .map((line, index) => ({
@@ -291,14 +295,14 @@ export function getPurchaseLineBlockingReasons(
 
 export function isPurchaseLineReady(
   line: PurchaseLineFormValues,
-  options: PurchaseLineReadinessOptions = {},
+  options: PurchaseLineReadinessOptions,
 ) {
   return !getPurchaseLineReadiness(line, options).blocking;
 }
 
 export function getPurchaseLinePrimaryAction(
   line: PurchaseLineFormValues,
-  options: PurchaseLineReadinessOptions = {},
+  options: PurchaseLineReadinessOptions,
 ) {
   return getPurchaseLineReadiness(line, options).primaryAction;
 }

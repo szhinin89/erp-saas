@@ -17,7 +17,7 @@ import {
   ZhDateInput,
 } from "../../../components/zh/inputs";
 import { parseDecimal } from "../../../lib/sanitizers";
-import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import type {
   PriceListDto,
   CreatePriceListPayload,
@@ -40,7 +40,11 @@ type Tab = "resumen" | "listado" | "nuevo" | "productos" | "excepciones" | "clie
 export function PriceListsPage() {
   const { t } = useI18n();
   const { canShow } = usePermissionsUi();
-  const pp = getPrecisionPolicy();
+  // Escalas semánticas (06): % de regla → percentage; precio/ajuste → salesUnitPrice.
+  const pp = {
+    percentageDecimals: usePrecisionDecimals("percentage"),
+    salesUnitPriceDecimals: usePrecisionDecimals("salesUnitPrice"),
+  };
   const [tab, setTab] = useState<Tab>("listado");
   const [items, setItems] = useState<PriceListDto[]>([]);
   const [loading, setLoading] = useState(false);
@@ -216,7 +220,7 @@ export function PriceListsPage() {
     {
       key: "generalRule",
       header: "Regla General",
-      render: (pl) => formatRuleGeneral(pl.ruleType, pl.ruleValue, pl.currencyCode, t),
+      render: (pl) => formatRuleGeneral(pl.ruleType, pl.ruleValue, pl.currencyCode, pp, t),
     },
     {
       key: "default",
@@ -407,7 +411,7 @@ export function PriceListsPage() {
                   <ZhDecimalInput
                     value={fRuleValue}
                     onChange={(e) => setFRuleValue(e.target.value)}
-                    decimals={pp.percentageDecimals}
+                    precision="percentage"
                     positiveOnly
                     placeholder="15"
                   />
@@ -423,7 +427,7 @@ export function PriceListsPage() {
                   <ZhDecimalInput
                     value={fRuleValue}
                     onChange={(e) => setFRuleValue(e.target.value)}
-                    decimals={pp.percentageDecimals}
+                    precision="percentage"
                     positiveOnly
                     placeholder="8"
                   />
@@ -440,7 +444,7 @@ export function PriceListsPage() {
                     value={fRuleValue}
                     onChange={(e) => setFRuleValue(e.target.value)}
                     currency={fCurrency}
-                    decimals={pp.salesUnitPriceDecimals}
+                    precision="salesUnitPrice"
                     placeholder="25"
                   />
                 </div>
@@ -456,7 +460,7 @@ export function PriceListsPage() {
                   <ZhDecimalInput
                     value={fRuleValue}
                     onChange={(e) => setFRuleValue(e.target.value)}
-                    decimals={pp.salesUnitPriceDecimals}
+                    precision="salesUnitPrice"
                     placeholder="3"
                   />
                 </div>

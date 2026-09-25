@@ -114,7 +114,7 @@ public sealed class ItemPackagingLevelConfiguration : IEntityTypeConfiguration<I
             .IsRequired();
         builder.Property(x => x.UomCode).HasColumnName("uom_code").HasMaxLength(10).IsRequired();
         builder.Property(x => x.Barcode).HasColumnName("barcode").HasMaxLength(100);
-        builder.Property(x => x.Weight).HasColumnName("weight").HasPrecision(10, 3);
+        builder.Property(x => x.Weight).HasColumnName("weight").HasPrecision(10, ItemPrecision.PackagingWeight);
         builder.Property(x => x.IsBaseUnit).HasColumnName("is_base_unit").IsRequired();
         builder
             .Property(x => x.IsPurchaseDefault)

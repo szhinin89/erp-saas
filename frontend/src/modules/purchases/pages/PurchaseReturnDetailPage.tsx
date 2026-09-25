@@ -303,7 +303,7 @@ export function PurchaseReturnDetailPage() {
             <div>
               <span className="sr-general-grid__label">Total autorizado</span>
               <span className="sr-general-grid__value">
-                <ZHMoneyValue value={editing.authorizedGrandTotal} currencySymbol="" />
+                <ZHMoneyValue precision="money" value={editing.authorizedGrandTotal} currencySymbol="" />
               </span>
             </div>
           )}

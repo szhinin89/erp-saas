@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.config";
+import { getPrecisionPolicy, setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.config";
 import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 import type { PurchaseItemContextDto } from "../api/purchaseService";
 import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
@@ -65,7 +65,7 @@ function line(overrides: Partial<PurchaseLineFormValues>): PurchaseLineFormValue
 
 describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
   it("muestra ítem vinculado sin presentación cuando la línea XML no tiene packagingLevelId", () => {
-    const vm = buildPurchaseLinePresentation(line({ packagingLevelId: undefined }));
+    const vm = buildPurchaseLinePresentation(line({ packagingLevelId: undefined }), getPrecisionPolicy());
 
     expect(vm.status.label).toBe("Ítem vinculado sin presentación");
     expect(vm.status.tone).toBe("warning");
@@ -80,7 +80,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
         baseUomCode: "UNIT",
         conversionFactor: 12,
         quantityInBaseUom: 24,
-      }),
+      }), getPrecisionPolicy(),
     );
 
     expect(vm.status.label).toBe("Ítem + PACA");
@@ -102,7 +102,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
         baseUomCode: "UNIT",
         conversionFactor: 12,
         quantityInBaseUom: 24,
-      }),
+      }), getPrecisionPolicy(),
     );
 
     expect(vm.inventory.presentationLabel).toBe("Nombre de presentación no disponible");
@@ -124,7 +124,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
           lastPurchaseCost: 5,
           averageCost: 4,
         },
-      }),
+      }), getPrecisionPolicy(),
     );
 
     expect(vm.commercial.costs.showDeviationAlert).toBe(true);
@@ -162,7 +162,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
           ],
           pvp: 1.08,
         },
-      }),
+      }), getPrecisionPolicy(),
     );
 
     expect(vm.inventory.baseUnitCost).toBe("$0.985417");
@@ -172,7 +172,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
 
   describe("PURCHASE-LINE-HEADER-INVENTORY-MODE-01 — modo de cabecera", () => {
     it("sin presentación vinculada: hasPresentation es false (cabecera mantiene datos XML/factura)", () => {
-      const vm = buildPurchaseLinePresentation(line({ packagingLevelId: undefined }));
+      const vm = buildPurchaseLinePresentation(line({ packagingLevelId: undefined }), getPrecisionPolicy());
 
       expect(vm.inventory.hasPresentation).toBe(false);
     });
@@ -199,7 +199,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
               },
             ],
           },
-        }),
+        }), getPrecisionPolicy(),
       );
 
       expect(vm.inventory.hasPresentation).toBe(true);
@@ -234,7 +234,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
             ],
             pvp: 1.08,
           },
-        }),
+        }), getPrecisionPolicy(),
       );
 
       expect(vm.inventory.baseUnitCost).toBe("$0.851458");
@@ -268,7 +268,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
               },
             ],
           },
-        }),
+        }), getPrecisionPolicy(),
       );
 
       const expected = (47.3 + 4.8 + 0.86) / 48;
@@ -279,7 +279,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
   describe("PURCHASE-LINE-HEADER-COST-BASE-MODE-01 — Costo de cabecera no debe mezclar cantidad base con costo de presentación", () => {
     it("sin presentación: hasPresentation es false — PurchaseLineCard debe usar l.unitPrice como Costo de cabecera, no baseUnitCostValue", () => {
       const vm = buildPurchaseLinePresentation(
-        line({ packagingLevelId: undefined, quantity: 8, unitPrice: 5.9125 }),
+        line({ packagingLevelId: undefined, quantity: 8, unitPrice: 5.9125 }), getPrecisionPolicy(),
       );
 
       expect(vm.inventory.hasPresentation).toBe(false);
@@ -309,7 +309,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
               },
             ],
           },
-        }),
+        }), getPrecisionPolicy(),
       );
 
       expect(vm.inventory.hasPresentation).toBe(true);
@@ -346,7 +346,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
             ],
             pvp: 1.08,
           },
-        }),
+        }), getPrecisionPolicy(),
       );
 
       expect(vm.inventory.baseQuantityValue).toBe(48);
@@ -385,7 +385,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
               },
             ],
           },
-        }),
+        }), getPrecisionPolicy(),
       );
 
       const expected = (47.3 + 4.8 + 0.86) / 48;
@@ -418,7 +418,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
               },
             ],
           },
-        }),
+        }), getPrecisionPolicy(),
       );
       const withDiscount = buildPurchaseLinePresentation(
         line({
@@ -443,7 +443,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
               },
             ],
           },
-        }),
+        }), getPrecisionPolicy(),
       );
 
       expect(withoutDiscount.inventory.baseUnitCostValue).toBeCloseTo(
@@ -481,7 +481,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
               },
             ],
           },
-        }),
+        }), getPrecisionPolicy(),
       );
 
       // "Producto recibido (XML)" sigue mostrando el descuento documental — no se tocó vm.xml.*.
@@ -505,7 +505,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
           xmlIceAmount: 0,
           xmlIrbpnrAmount: 0.24,
           xmlTotalLine: 14.83,
-        }),
+        }), getPrecisionPolicy(),
       );
 
       expect(vm.xml.taxableBase).toBe("$12.98");
@@ -526,7 +526,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
           xmlIceAmount: 0,
           xmlIrbpnrAmount: 0.72,
           xmlTotalLine: 15.65,
-        }),
+        }), getPrecisionPolicy(),
       );
 
       expect(vm.xml.taxableBase).toBe("$12.98");
@@ -539,7 +539,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
 
     it("hasIrbpnr es false cuando xmlIrbpnrAmount es 0", () => {
       const vm = buildPurchaseLinePresentation(
-        line({ xmlIrbpnrAmount: 0 }),
+        line({ xmlIrbpnrAmount: 0 }), getPrecisionPolicy(),
       );
 
       expect(vm.xml.hasIrbpnr).toBe(false);
@@ -547,7 +547,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
 
     it("hasIrbpnr es false cuando xmlIrbpnrAmount es undefined", () => {
       const vm = buildPurchaseLinePresentation(
-        line({ xmlIrbpnrAmount: undefined }),
+        line({ xmlIrbpnrAmount: undefined }), getPrecisionPolicy(),
       );
 
       expect(vm.xml.hasIrbpnr).toBe(false);
@@ -591,7 +591,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
     }
 
     it("SIXPACK X6 (factor 6): cantidad base 48, costo base 0.8515, margen ~21.16%", () => {
-      const vm = buildPurchaseLinePresentation(clubPlatinoLine("sixpack-x6"));
+      const vm = buildPurchaseLinePresentation(clubPlatinoLine("sixpack-x6"), getPrecisionPolicy());
 
       expect(vm.inventory.baseQuantityValue).toBe(48);
       expect(vm.inventory.baseUnitCostValue).toBeCloseTo(0.8515, 4);
@@ -599,7 +599,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
     });
 
     it("UNIDAD X1 (factor 1): cantidad base 8, costo base 5.1090, margen ~-373.05%", () => {
-      const vm = buildPurchaseLinePresentation(clubPlatinoLine("unidad-x1"));
+      const vm = buildPurchaseLinePresentation(clubPlatinoLine("unidad-x1"), getPrecisionPolicy());
 
       expect(vm.inventory.baseQuantityValue).toBe(8);
       expect(vm.inventory.baseUnitCostValue).toBeCloseTo(5.109, 4);
@@ -607,15 +607,15 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
     });
 
     it("volver a SIXPACK X6 recupera exactamente 48 / 0.8515 (no queda pegado en UNIDAD X1)", () => {
-      const vm = buildPurchaseLinePresentation(clubPlatinoLine("sixpack-x6"));
+      const vm = buildPurchaseLinePresentation(clubPlatinoLine("sixpack-x6"), getPrecisionPolicy());
 
       expect(vm.inventory.baseQuantityValue).toBe(48);
       expect(vm.inventory.baseUnitCostValue).toBeCloseTo(0.8515, 4);
     });
 
     it("headerInputKey cambia entre SIXPACK X6 y UNIDAD X1 aunque ambas tengan hasPresentation=true", () => {
-      const sixpack = buildPurchaseLinePresentation(clubPlatinoLine("sixpack-x6"));
-      const unidad = buildPurchaseLinePresentation(clubPlatinoLine("unidad-x1"));
+      const sixpack = buildPurchaseLinePresentation(clubPlatinoLine("sixpack-x6"), getPrecisionPolicy());
+      const unidad = buildPurchaseLinePresentation(clubPlatinoLine("unidad-x1"), getPrecisionPolicy());
 
       // Ambas presentaciones son reales (packagingLevelId siempre presente) — hasPresentation es
       // true en las dos, por lo que la key NO puede depender solo de ese booleano (esa era la causa
@@ -633,8 +633,8 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
     });
 
     it("headerInputKey es estable para la MISMA presentación (no fuerza remount en cada render)", () => {
-      const vm1 = buildPurchaseLinePresentation(clubPlatinoLine("sixpack-x6"));
-      const vm2 = buildPurchaseLinePresentation(clubPlatinoLine("sixpack-x6"));
+      const vm1 = buildPurchaseLinePresentation(clubPlatinoLine("sixpack-x6"), getPrecisionPolicy());
+      const vm2 = buildPurchaseLinePresentation(clubPlatinoLine("sixpack-x6"), getPrecisionPolicy());
 
       expect(headerInputKey("qty", vm1, "sixpack-x6")).toBe(
         headerInputKey("qty", vm2, "sixpack-x6"),
@@ -645,9 +645,9 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
     });
 
     it("headerInputKey distingue modo sin presentación (invoice) del modo con presentación (base)", () => {
-      const withPackaging = buildPurchaseLinePresentation(clubPlatinoLine("sixpack-x6"));
+      const withPackaging = buildPurchaseLinePresentation(clubPlatinoLine("sixpack-x6"), getPrecisionPolicy());
       const withoutPackaging = buildPurchaseLinePresentation(
-        line({ packagingLevelId: undefined }),
+        line({ packagingLevelId: undefined }), getPrecisionPolicy(),
       );
 
       expect(
@@ -658,7 +658,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
     it("edición manual de cantidad con presentación sigue reversando a quantity/quantityInBaseUom (no rompe con la key nueva)", () => {
       // Mismo cálculo que ya usa PurchasesPage.tsx en el onBlur del input de Cantidad —
       // verifica que la fórmula de reversa sigue intacta, la key nueva no la afecta.
-      const vm = buildPurchaseLinePresentation(clubPlatinoLine("unidad-x1"));
+      const vm = buildPurchaseLinePresentation(clubPlatinoLine("unidad-x1"), getPrecisionPolicy());
       const factor = vm.inventory.conversionFactorValue;
       const entered = 10; // usuario teclea 10 unidades base
       const reversedQuantity = entered / factor || 1;
@@ -668,7 +668,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
     });
 
     it("edición manual de costo con presentación sigue usando computeUnitPriceFromBaseUnitCost (no rompe con la key nueva)", () => {
-      const vm = buildPurchaseLinePresentation(clubPlatinoLine("sixpack-x6"));
+      const vm = buildPurchaseLinePresentation(clubPlatinoLine("sixpack-x6"), getPrecisionPolicy());
 
       const recalculated = computeUnitPriceFromBaseUnitCost({
         newBaseUnitCost: 0.9,
@@ -724,7 +724,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
 
     it("bloquea UNIDAD X1: costo base 5.1090, precio venta 1.08, margen -373.05% (< -50%)", () => {
       const warning = buildSuspiciousPackagingCostWarning(
-        clubPlatinoLine("unidad-x1"),
+        clubPlatinoLine("unidad-x1"), getPrecisionPolicy(),
       );
 
       expect(warning).not.toBeNull();
@@ -734,7 +734,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
 
     it("no bloquea SIXPACK X6: costo base 0.8515, precio venta 1.08, margen 21.16%", () => {
       const warning = buildSuspiciousPackagingCostWarning(
-        clubPlatinoLine("sixpack-x6"),
+        clubPlatinoLine("sixpack-x6"), getPrecisionPolicy(),
       );
 
       expect(warning).toBeNull();
@@ -750,7 +750,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
             ...clubPlatinoContext,
             pvp: 0,
           },
-        }),
+        }), getPrecisionPolicy(),
       );
 
       expect(warning).toBeNull();
@@ -766,7 +766,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
             ...clubPlatinoContext,
             tracksStock: false,
           },
-        }),
+        }), getPrecisionPolicy(),
       );
 
       expect(warning).toBeNull();
@@ -780,7 +780,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
           unitPrice: 5.109,
           packagingLevelId: "unidad-x1",
           context: clubPlatinoContext,
-        }),
+        }), getPrecisionPolicy(),
       );
 
       expect(warning).toBeNull();
@@ -793,7 +793,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
           unitPrice: 1.2,
           packagingLevelId: "unidad-x1",
           context: { ...clubPlatinoContext, pvp: 1.08 },
-        }),
+        }), getPrecisionPolicy(),
       );
 
       expect(warning).toBeNull();
@@ -833,7 +833,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
           unitPrice: 5.109,
           packagingLevelId: "unidad-x1",
           context: noPvpContext,
-        }),
+        }), getPrecisionPolicy(),
       );
 
       expect(warning).not.toBeNull();
@@ -848,7 +848,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
           unitPrice: 5.109,
           packagingLevelId: "unidad-x1",
           context: { ...noPvpContext, pvp: 1.08 },
-        }),
+        }), getPrecisionPolicy(),
       );
 
       expect(warning).toBeNull();
@@ -864,7 +864,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
           baseUomCode: "UNIT",
           conversionFactor: 6,
           context: { ...noPvpContext, pvp: 1.08 },
-        }),
+        }), getPrecisionPolicy(),
       );
 
       expect(warning).toBeNull();
@@ -877,7 +877,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
           unitPrice: 5.109,
           packagingLevelId: "unidad-x1",
           context: { ...noPvpContext, tracksStock: false },
-        }),
+        }), getPrecisionPolicy(),
       );
 
       expect(warning).toBeNull();
@@ -891,7 +891,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
           unitPrice: 5.109,
           packagingLevelId: "unidad-x1",
           context: noPvpContext,
-        }),
+        }), getPrecisionPolicy(),
       );
 
       expect(warning).toBeNull();
@@ -924,7 +924,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
       });
 
     it("recién cargada (sin editar): editableHeader ya coincide con el snapshot XML (misma fórmula, base/IVA/total)", () => {
-      const vm = buildPurchaseLinePresentation(clubPlatinoXmlLine());
+      const vm = buildPurchaseLinePresentation(clubPlatinoXmlLine(), getPrecisionPolicy());
 
       expect(vm.editableHeader.taxableBase).toBeCloseTo(40.87, 2);
       expect(vm.editableHeader.vatAmount).toBeCloseTo(6.13, 2);
@@ -933,7 +933,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
 
     it("caso real: editar a Cantidad 50 / Costo 2 → cabecera editable muestra Base 100 / IVA 15 / Total 115, NO el snapshot XML", () => {
       const vm = buildPurchaseLinePresentation(
-        clubPlatinoXmlLine({ quantity: 50, unitPrice: 2, discountPct: 0 }),
+        clubPlatinoXmlLine({ quantity: 50, unitPrice: 2, discountPct: 0 }), getPrecisionPolicy(),
       );
 
       expect(vm.editableHeader.taxableBase).toBe(100);
@@ -944,7 +944,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
 
     it("el bloque 'Producto recibido (XML)' conserva el snapshot original (8 / 5.9125 / 40.87 / 6.13 / 0.00 / 47.00) después de la edición", () => {
       const vm = buildPurchaseLinePresentation(
-        clubPlatinoXmlLine({ quantity: 50, unitPrice: 2, discountPct: 0 }),
+        clubPlatinoXmlLine({ quantity: 50, unitPrice: 2, discountPct: 0 }), getPrecisionPolicy(),
       );
 
       // vm.xml.* nunca depende de quantity/unitPrice editados — solo de los campos xml* congelados.
@@ -958,7 +958,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
 
     it("PURCHASE-LINE-PACKAGING-SUSPICIOUS-COST-GUARD-01 — Producto recibido (XML) NUNCA muestra valores derivados de la edición manual (no 8.3333 / $13.8873 / $100 / $15 / $115)", () => {
       const vm = buildPurchaseLinePresentation(
-        clubPlatinoXmlLine({ quantity: 50, unitPrice: 2, discountPct: 0 }),
+        clubPlatinoXmlLine({ quantity: 50, unitPrice: 2, discountPct: 0 }), getPrecisionPolicy(),
       );
 
       expect(vm.xml.quantity).not.toBe("8.3333");
@@ -971,7 +971,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
     it("datos adicionales XML no cambian tras editar cantidad/costo/presentación", () => {
       const additionalFields = [{ name: "TIPO DE MATERIAL", value: "Liquido" }];
       const before = buildPurchaseLinePresentation(
-        clubPlatinoXmlLine({ xmlAdditionalFields: additionalFields }),
+        clubPlatinoXmlLine({ xmlAdditionalFields: additionalFields }), getPrecisionPolicy(),
       );
       const afterEdit = buildPurchaseLinePresentation(
         clubPlatinoXmlLine({
@@ -982,7 +982,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
           packagingLevelId: "unidad-x1",
           conversionFactor: 1,
           quantityInBaseUom: 50,
-        }),
+        }), getPrecisionPolicy(),
       );
 
       expect(before.xml.additionalFields).toEqual(additionalFields);
@@ -991,7 +991,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
 
     it("editar solo Cantidad recalcula IVA/Total de cabecera", () => {
       const vm = buildPurchaseLinePresentation(
-        clubPlatinoXmlLine({ quantity: 100, unitPrice: 2, discountPct: 0 }),
+        clubPlatinoXmlLine({ quantity: 100, unitPrice: 2, discountPct: 0 }), getPrecisionPolicy(),
       );
 
       expect(vm.editableHeader.taxableBase).toBe(200);
@@ -1001,7 +1001,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
 
     it("editar solo Costo recalcula IVA/Total de cabecera", () => {
       const vm = buildPurchaseLinePresentation(
-        clubPlatinoXmlLine({ quantity: 50, unitPrice: 3, discountPct: 0 }),
+        clubPlatinoXmlLine({ quantity: 50, unitPrice: 3, discountPct: 0 }), getPrecisionPolicy(),
       );
 
       expect(vm.editableHeader.taxableBase).toBe(150);
@@ -1012,7 +1012,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
     it("cambiar presentación y luego editar no deja IVA/Total pegados a un valor anterior", () => {
       // Primer estado: presentación SIXPACK X6, sin editar (vm1 refleja quantity/unitPrice XML).
       const vm1 = buildPurchaseLinePresentation(
-        clubPlatinoXmlLine({ packagingLevelId: "sixpack-x6" }),
+        clubPlatinoXmlLine({ packagingLevelId: "sixpack-x6" }), getPrecisionPolicy(),
       );
       // Segundo estado: el usuario cambió de presentación Y editó cabecera (quantity/unitPrice ya
       // no son los del XML) — editableHeader debe reflejar el estado nuevo, no arrastrar vm1.
@@ -1022,7 +1022,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
           quantity: 50,
           unitPrice: 2,
           discountPct: 0,
-        }),
+        }), getPrecisionPolicy(),
       );
 
       expect(vm1.editableHeader.total).toBeCloseTo(47.0, 2);
@@ -1043,7 +1043,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
           unitPrice: 2,
           discountPct: 0,
           xmlIrbpnrAmount: 0.72,
-        }),
+        }), getPrecisionPolicy(),
       );
 
       expect(vm.editableHeader.irbpnrAmount).toBe(0.72);
@@ -1061,7 +1061,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
           unitPrice: 10,
           discountPct: 0,
           context: { ...context, vatPercent: 15, icePercent: 0 },
-        }),
+        }), getPrecisionPolicy(),
       );
 
       expect(vm.editableHeader.taxableBase).toBe(100);
@@ -1079,7 +1079,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
             { name: "Unidad", value: "3 /  0" },
             { name: "valor2", value: "0.72" },
           ],
-        }),
+        }), getPrecisionPolicy(),
       );
 
       expect(vm.xml.hasAdditionalFields).toBe(true);
@@ -1091,7 +1091,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
 
     it("hasAdditionalFields es false y additionalFields es [] cuando la línea no trae detAdicional", () => {
       const vm = buildPurchaseLinePresentation(
-        line({ xmlAdditionalFields: undefined }),
+        line({ xmlAdditionalFields: undefined }), getPrecisionPolicy(),
       );
 
       expect(vm.xml.hasAdditionalFields).toBe(false);
@@ -1100,7 +1100,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
 
     it("hasAdditionalFields es false cuando additionalFields es un arreglo vacío", () => {
       const vm = buildPurchaseLinePresentation(
-        line({ xmlAdditionalFields: [] }),
+        line({ xmlAdditionalFields: [] }), getPrecisionPolicy(),
       );
 
       expect(vm.xml.hasAdditionalFields).toBe(false);
@@ -1212,7 +1212,7 @@ describe("reception presentation labels", () => {
   it("muestra el factor máximo de policy a 10 decimales sin recortarlo", () => {
     setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, conversionFactorDecimals: 10 });
     const vm = buildPurchaseLinePresentation(line({ context: undefined,
-      conversionFactor: 12.1234567891, packagingLevelId: "paca-12" }));
+      conversionFactor: 12.1234567891, packagingLevelId: "paca-12" }), getPrecisionPolicy());
     expect(vm.inventory.conversionFactorLabel).toBe("12.1234567891 unidades por presentación");
     expect(vm.inventory.conversionFactorValue).toBe(12.1234567891);
   });
@@ -1232,7 +1232,7 @@ describe("reception presentation labels", () => {
           ...context,
           packagingLevels: [{ ...context.packagingLevels[0], baseQuantity: 12.345678 }],
         } : undefined,
-      }));
+      }), getPrecisionPolicy());
       expect(vm.inventory.conversionFactorLabel).toBe("12.346 unidades por presentación");
       expect(vm.inventory.conversionFactorValue).toBe(12.345678);
     } finally {
@@ -1250,7 +1250,7 @@ describe("reception presentation labels", () => {
         id: "internal-packaging-id", name: "UNIDAD X1", baseQuantity: 1,
         uomCode: "19", isBaseUnit: true, isPurchaseDefault: true,
       }] },
-    }));
+    }), getPrecisionPolicy());
     expect(vm.inventory.presentationLabel).toBe("UNIDAD X1");
     expect(vm.inventory.presentation).toBe("UNIDAD X1");
     expect(vm.inventory.conversionFactorLabel).toBe("1 unidad");
@@ -1258,7 +1258,7 @@ describe("reception presentation labels", () => {
     expect(vm.inventory.baseUnitCost).toBe("$1.960000");
   });
   it("explains a box factor separately from its name", () => {
-    const vm = buildPurchaseLinePresentation(line({ packagingLevelId: "paca-12" }));
+    const vm = buildPurchaseLinePresentation(line({ packagingLevelId: "paca-12" }), getPrecisionPolicy());
     expect(vm.inventory.presentationLabel).toBe("PACA");
     expect(vm.inventory.conversionFactorLabel).toBe("12.000000 unidades por presentaci\u00f3n");
     expect(vm.inventory.baseQuantityValue).toBe(24);
@@ -1268,7 +1268,7 @@ describe("reception presentation labels", () => {
     const vm = buildPurchaseLinePresentation(line({ context: undefined,
       packagingLevelId: "internal-packaging-id", baseUomCode: "19", uomCode: "19",
       conversionFactor: 12, quantityInBaseUom: 24,
-    }));
+    }), getPrecisionPolicy());
     expect(vm.inventory.presentationLabel).not.toContain("19");
     expect(vm.inventory.presentationLabel).not.toContain("internal-packaging-id");
     expect(vm.inventory.conversionFactorLabel).toBe("12.000000 unidades por presentaci\u00f3n");

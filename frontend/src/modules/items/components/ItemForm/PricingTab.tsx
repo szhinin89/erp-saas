@@ -7,7 +7,7 @@ import {
   ZHGrid,
 } from "../../../../components/zh/ZHForm";
 import { ZhDecimalInput, ZhSelect } from "../../../../components/zh/inputs";
-import { getPrecisionPolicy } from "../../../../lib/config/precisionPolicy.config";
+import { usePrecisionDecimals } from "../../../../hooks/usePrecisionPolicy";
 import { formatMoney } from "../../../../lib/sanitizers";
 import { useAsync } from "../../../../hooks/useAsync";
 import { priceListLookupFacade } from "../../../pricing/facades/priceListLookupFacade";
@@ -114,7 +114,14 @@ export function PricingTab({ t, disabled, itemId, vatRateOptions }: Props) {
     formState: { errors },
   } = useFormContext<CreateItemFormValues>();
   const fe = (msg?: string) => (msg ? t(msg, msg) : null);
-  const pp = getPrecisionPolicy();
+  // Escalas semánticas (06): IVA es porcentaje FISCAL; margen/markup, porcentaje operativo.
+  const pp = {
+    salesUnitPriceDecimals: usePrecisionDecimals("salesUnitPrice"),
+    unitCostDecimals: usePrecisionDecimals("unitCost"),
+    averageCostDecimals: usePrecisionDecimals("averageCost"),
+    percentageDecimals: usePrecisionDecimals("percentage"),
+    fiscalPercentageDecimals: usePrecisionDecimals("fiscalPercentage"),
+  };
   const [inputPriceMode, setInputPriceMode] =
     useState<PriceInputMode>("net");
   const [inputPriceValue, setInputPriceValue] = useState("");
@@ -258,7 +265,7 @@ export function PricingTab({ t, disabled, itemId, vatRateOptions }: Props) {
           <div className="items-currency-input">
             <span className="items-currency-input__prefix">{currencyCode}</span>
             <ZhDecimalInput
-              decimals={pp.salesUnitPriceDecimals}
+              precision="salesUnitPrice"
               positiveOnly
               placeholder={t("items.pricing.pvpPlaceholder", "0.00")}
               value={inputPriceValue}
@@ -325,7 +332,7 @@ export function PricingTab({ t, disabled, itemId, vatRateOptions }: Props) {
       <div className="items-metric-grid">
         <Metric
           label={t("items.pricing.saleVatRate", "Tarifa IVA venta")}
-          value={formatVatRate(selectedVatRate, pp.percentageDecimals)}
+          value={formatVatRate(selectedVatRate, pp.fiscalPercentageDecimals)}
         />
         <Metric
           label={t("items.pricing.netToSave", "Precio sin IVA que se guardará")}

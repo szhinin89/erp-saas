@@ -3,7 +3,6 @@ import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import type { PurchaseLineDto } from "../api/purchaseService";
 import { purchaseReturnPreview } from "../utils/purchaseReturnPreview";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
-import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import type {
   PurchaseReturnLineFormValues,
 } from "../schemas/purchaseReturnSchema";
@@ -42,9 +41,6 @@ export function PurchaseReturnableLinesEditor({
     return <p className="sr-lines-empty">Esta factura no tiene líneas devolvibles.</p>;
   }
 
-  // Cantidad a devolver — cantidad, no precio/monto: quantityDecimals.
-  const quantityDecimals = getPrecisionPolicy().quantityDecimals;
-
   const indexOf = (invoiceDetailId: string) =>
     selected.findIndex((l) => l.originalInvoiceDetailId === invoiceDetailId);
 
@@ -75,7 +71,7 @@ export function PurchaseReturnableLinesEditor({
       const exceeds = qty > line.remainingQuantity;
       return <>
         <ZhDecimalInput aria-label={`Cantidad a devolver: ${line.description}`} aria-invalid={exceeds}
-          decimals={quantityDecimals} positiveOnly disabled={disabled || line.remainingQuantity <= 0}
+          precision="quantity" positiveOnly disabled={disabled || line.remainingQuantity <= 0}
           value={qty ? String(qty) : ""} onChange={(e) => handleQuantityChange(line, e.target.value)} />
         {exceeds && <div role="alert" className="sr-lines-table__error">Excede lo disponible ({line.remainingQuantity}).</div>}
       </>;
@@ -83,10 +79,11 @@ export function PurchaseReturnableLinesEditor({
   ];
   if (invoiceLines) {
     columns.push({ key: "price", header: "Precio/costo", align: "right", render: (line) =>
-      <ZHMoneyValue value={source(line)?.unitPrice ?? 0} currencySymbol="" /> });
-    for (const [key, header] of [["base", "Base"], ["vat", "IVA"], ["ice", "ICE"], ["irbpnr", "IRBPNR"], ["total", "Total"]] as const) {
+      <ZHMoneyValue value={source(line)?.unitPrice ?? 0} precision="purchaseUnitPrice" currencySymbol="" /> });
+    // Base/Total → money; IVA/ICE/IRBPNR → tax (06).
+    for (const [key, header, precision] of [["base", "Base", "money"], ["vat", "IVA", "tax"], ["ice", "ICE", "tax"], ["irbpnr", "IRBPNR", "tax"], ["total", "Total", "money"]] as const) {
       columns.push({ key, header, align: "right", render: (line) =>
-        <ZHMoneyValue value={purchaseReturnPreview(source(line), quantity(line))[key]} currencySymbol="" /> });
+        <ZHMoneyValue value={purchaseReturnPreview(source(line), quantity(line))[key]} precision={precision} currencySymbol="" /> });
     }
   }
   columns.push({ key: "warehouse", header: "Bodega", render: (line) => source(line)?.snapshotWarehouseCode ?? line.warehouseId });

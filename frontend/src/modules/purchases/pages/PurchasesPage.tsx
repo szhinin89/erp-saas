@@ -29,7 +29,7 @@ import { ZhDateTimeInput } from "../../../components/zh/inputs/ZhDateTimeInput";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { ZhSelect } from "../../../components/zh/inputs/ZhSelect";
 import { ZhTextarea } from "../../../components/zh/inputs/ZhTextarea";
-import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
+import { usePrecisionDecimals, usePrecisionPolicy } from "../../../hooks/usePrecisionPolicy";
 import { formatMoney, formatMoneyWithSymbol } from "../../../lib/sanitizers";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
 import {
@@ -79,6 +79,7 @@ import "../../../styles/shared/erp-form-core.css";
 import "../styles/purchases-invoice.css";
 
 export function PurchasesPage() {
+  const moneyDecimals = usePrecisionDecimals("money"); // textos compuestos (06)
   const ctx = usePurchasesPage();
   const navigate = useNavigate();
   const { t } = useI18n();
@@ -90,6 +91,7 @@ export function PurchasesPage() {
     ctx.vatRatesMap,
     ctx.iceRatesMap,
     t,
+    moneyDecimals,
   );
   const statusLabel = (status: string) =>
     t(`purchases.status.${status.toLowerCase()}`, status);
@@ -854,7 +856,7 @@ export function PurchasesPage() {
                                     <span className="pdl-search__result-price">
                                       <ZHMoneyValue
                                         value={item.baseSalePrice}
-                                        decimals={getPrecisionPolicy().salesUnitPriceDecimals}
+                                        precision="salesUnitPrice"
                                       />
                                     </span>
                                   )}
@@ -1186,6 +1188,7 @@ export function PurchasesPage() {
                 ctx.editing.invoiceNumber,
                 ctx.editing.supplierName,
                 ctx.whPreview?.totalRetained,
+                moneyDecimals,
               )
             : undefined
         }
@@ -1280,6 +1283,7 @@ function buildXmlConfirmChecklist(
   vatRatesMap: Record<string, number>,
   iceRatesMap: Record<string, number>,
   t: TFunction,
+  moneyDecimals: number,
 ): XmlConfirmChecklistSummary {
   const xmlLines = lines.filter((line) => line.purchaseReceptionLineId);
   const persistedByReceptionLine = new Map(
@@ -1428,10 +1432,7 @@ function buildXmlConfirmChecklist(
           totalDifference === null
             ? t("purchases.confirm.checklist.totalDifferenceUnavailable")
             : t("purchases.confirm.checklist.totalDifferenceValue", {
-                amount: formatMoneyWithSymbol(
-                  Math.abs(totalDifference),
-                  getPrecisionPolicy().moneyDecimals,
-                ),
+                amount: formatMoneyWithSymbol(Math.abs(totalDifference), moneyDecimals),
               }),
         tone:
           totalDifference === null
@@ -1641,6 +1642,7 @@ function PurchaseLineCard({
   ctx: ReturnType<typeof usePurchasesPage>;
 }) {
   const { t } = useI18n();
+  const precisionPolicy = usePrecisionPolicy(); // presentación de línea (06)
   const viewMatchedItem = useViewMatchedItem();
   // Estado local de expandir/colapsar SOLO la banda inferior de detalle
   // (Producto recibido XML / Presentación e inventario / Información
@@ -1655,7 +1657,7 @@ function PurchaseLineCard({
   // con origen XML mostraba xmlTaxValue/xmlTotalLine en cabecera sin importar que el usuario ya
   // hubiera cambiado quantity/unitPrice — Base imp. sí se recalculaba pero IVA/Total quedaban
   // pegados al valor documental original.
-  const vm = buildPurchaseLinePresentation(l, t, ctx.vatRatesMap, ctx.iceRatesMap);
+  const vm = buildPurchaseLinePresentation(l, precisionPolicy, t, ctx.vatRatesMap, ctx.iceRatesMap);
   const sub = vm.editableHeader.taxableBase;
   const vatAmt = vm.editableHeader.vatAmount;
   const iceAmt = vm.editableHeader.iceAmount;
@@ -1868,7 +1870,7 @@ function PurchaseLineCard({
                 key={headerInputKey("qty", vm, l.packagingLevelId)}
                 className="pdl-input pdl-input--qty"
                 density="compact"
-                decimals={getPrecisionPolicy().quantityDecimals}
+                precision="quantity"
                 positiveOnly
                 defaultValue={
                   vm.inventory.hasPresentation
@@ -1901,7 +1903,7 @@ function PurchaseLineCard({
                   key={headerInputKey("cost", vm, l.packagingLevelId)}
                   className="pdl-input pdl-input--cost"
                   density="compact"
-                  decimals={getPrecisionPolicy().purchaseUnitPriceDecimals}
+                  precision="purchaseUnitPrice"
                   positiveOnly
                   defaultValue={
                     vm.inventory.hasPresentation
@@ -1940,7 +1942,7 @@ function PurchaseLineCard({
                 {t("purchases.lines.taxableBaseShort", "BASE IMP.")}
               </ZHFieldLabel>
               <div className="pdl-line__metric-value">
-                <ZHMoneyValue value={sub} decimals={getPrecisionPolicy().moneyDecimals} />
+                <ZHMoneyValue value={sub} precision="money" />
               </div>
             </div>
             <div className="pdl-line__metric">
@@ -1951,7 +1953,7 @@ function PurchaseLineCard({
                 <div className="pdl-line__tax-amount">
                   <ZHMoneyValue
                     value={vatAmt}
-                    decimals={getPrecisionPolicy().moneyDecimals}
+                    precision="tax"
                     currencySymbol=""
                     emphasis="strong"
                   />
@@ -1962,7 +1964,7 @@ function PurchaseLineCard({
                   </ZHDataValue>
                   <ZHMoneyValue
                     value={iceAmt}
-                    decimals={getPrecisionPolicy().moneyDecimals}
+                    precision="tax"
                     emphasis="muted"
                   />
                 </div>
@@ -1973,7 +1975,7 @@ function PurchaseLineCard({
                     </ZHDataValue>
                     <ZHMoneyValue
                       value={irbpnrAmt}
-                      decimals={getPrecisionPolicy().moneyDecimals}
+                      precision="tax"
                       emphasis="muted"
                     />
                   </div>
@@ -1987,7 +1989,7 @@ function PurchaseLineCard({
               <div className="pdl-line__total">
                 <ZHMoneyValue
                   value={total}
-                  decimals={getPrecisionPolicy().moneyDecimals}
+                  precision="money"
                   emphasis="grand"
                 />
               </div>
@@ -2744,6 +2746,7 @@ function PaymentScheduleSection({
   ctx: ReturnType<typeof usePurchasesPage>;
 }) {
   const { t } = useI18n();
+  const moneyDecimals = usePrecisionDecimals("money"); // texto compuesto (06)
   return (
     <div className="pf-card">
       <div className="pf-card__header">
@@ -2858,7 +2861,7 @@ function PaymentScheduleSection({
             message={t("purchases.schedule.mismatch", {
               amount: formatMoney(
                 roundToTotalAmount(ctx.localTotal - ctx.ptRowsSum),
-                getPrecisionPolicy().moneyDecimals,
+                moneyDecimals,
               ),
             })}
           />
@@ -2882,7 +2885,7 @@ function PaymentScheduleSection({
                   </td>
                   <td>{formatDate(s.dueDate)}</td>
                   <td className="zh-table-cell--num">
-                    <ZHMoneyValue value={s.amount} decimals={getPrecisionPolicy().moneyDecimals} />
+                    <ZHMoneyValue value={s.amount} precision="money" />
                   </td>
                   <td className="pf-schedule-notes">
                     {s.notes || "—"}
@@ -2927,7 +2930,7 @@ function PaymentScheduleSection({
                     </td>
                     <td>
                       <ZhDecimalInput
-                        decimals={getPrecisionPolicy().moneyDecimals}
+                        precision="money"
                         positiveOnly
                         density="compact"
                         className="pf-schedule-input--amount"
@@ -2987,12 +2990,12 @@ function PaymentScheduleSection({
                 <strong
                   className={`pf-schedule-footer__amount ${ctx.ptMismatch ? "pf-schedule-footer__amount--error" : "pf-schedule-footer__amount--default"}`}
                 >
-                  <ZHMoneyValue value={ctx.ptRowsSum} decimals={getPrecisionPolicy().moneyDecimals} />
+                  <ZHMoneyValue value={ctx.ptRowsSum} precision="money" />
                 </strong>
                 {" / "}
                 {t("purchases.schedule.purchaseTotal", "Total compra")}:{" "}
                 <strong className="pf-schedule-footer__purchase-total">
-                  <ZHMoneyValue value={ctx.localTotal} decimals={getPrecisionPolicy().moneyDecimals} />
+                  <ZHMoneyValue value={ctx.localTotal} precision="money" />
                 </strong>
               </span>
             </div>
@@ -3180,11 +3183,11 @@ function RetentionSection({
                       </td>
                       <td>{l.retentionCodeName}</td>
                       <td className="zh-table-cell--num">
-                        <ZHMoneyValue value={l.taxableBase} decimals={getPrecisionPolicy().moneyDecimals} />
+                        <ZHMoneyValue value={l.taxableBase} precision="money" />
                       </td>
                       <td className="zh-table-cell--num">{l.retentionPct}%</td>
                       <td className="zh-table-cell--num pf-retention-amount">
-                        <ZHMoneyValue value={l.amountRetained} decimals={getPrecisionPolicy().moneyDecimals} />
+                        <ZHMoneyValue value={l.amountRetained} precision="money" />
                       </td>
                     </tr>
                   ))}
@@ -3194,7 +3197,7 @@ function RetentionSection({
             {ctx.whPreview.totalRetained > 0 && (
               <div className="pf-retention__total">
                 {t("purchases.retention.totalToWithhold", "Total a retener")}:{" "}
-                <ZHMoneyValue value={ctx.whPreview.totalRetained} decimals={getPrecisionPolicy().moneyDecimals} />
+                <ZHMoneyValue value={ctx.whPreview.totalRetained} precision="money" />
               </div>
             )}
           </>
@@ -3245,11 +3248,11 @@ function RetentionSection({
                     </td>
                     <td>{l.retentionCodeDescription}</td>
                     <td className="zh-table-cell--num">
-                      <ZHMoneyValue value={l.baseAmount} decimals={getPrecisionPolicy().moneyDecimals} />
+                      <ZHMoneyValue value={l.baseAmount} precision="money" />
                     </td>
                     <td className="zh-table-cell--num">{l.retentionRate}%</td>
                     <td className="zh-table-cell--num pf-retention-amount">
-                      <ZHMoneyValue value={l.retainedAmount} decimals={getPrecisionPolicy().moneyDecimals} />
+                      <ZHMoneyValue value={l.retainedAmount} precision="money" />
                     </td>
                   </tr>
                 ))}
@@ -3331,18 +3334,18 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
                 <tr key={row.vatCode}>
                   <td>{row.vatPercent}%</td>
                   <td className="zh-table-cell--num">
-                    <ZHMoneyValue value={row.taxableBase} decimals={getPrecisionPolicy().moneyDecimals} />
+                    <ZHMoneyValue value={row.taxableBase} precision="money" />
                   </td>
                   <td className="zh-table-cell--num">
-                    <ZHMoneyValue value={row.vat} decimals={getPrecisionPolicy().moneyDecimals} />
+                    <ZHMoneyValue value={row.vat} precision="tax" />
                   </td>
                   {hasIce && (
                     <td className="zh-table-cell--num">
-                      <ZHMoneyValue value={row.ice} decimals={getPrecisionPolicy().moneyDecimals} />
+                      <ZHMoneyValue value={row.ice} precision="tax" />
                     </td>
                   )}
                   <td className="zh-table-cell--num">
-                    <ZHMoneyValue value={row.total} decimals={getPrecisionPolicy().moneyDecimals} />
+                    <ZHMoneyValue value={row.total} precision="money" />
                   </td>
                 </tr>
               ))}
@@ -3356,7 +3359,7 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
           <span className="pf-totals__value">
             <ZHMoneyValue
               value={ctx.editing ? ctx.editing.subtotal : ctx.localSummary.subtotal}
-              decimals={getPrecisionPolicy().moneyDecimals}
+              precision="money"
             />
           </span>
         </div>
@@ -3370,7 +3373,7 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
               value={
                 ctx.editing ? ctx.editing.totalDiscount : ctx.localSummary.discount
               }
-              decimals={getPrecisionPolicy().moneyDecimals}
+              precision="money"
             />
           </span>
         </div>
@@ -3379,7 +3382,7 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
           <span className="pf-totals__value">
             <ZHMoneyValue
               value={ctx.editing ? ctx.editing.totalIce : ctx.localSummary.ice}
-              decimals={getPrecisionPolicy().moneyDecimals}
+              precision="tax"
             />
           </span>
         </div>
@@ -3391,7 +3394,7 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
           <span className="pf-totals__value">
             <ZHMoneyValue
               value={ctx.editing ? ctx.editing.totalVat : ctx.localSummary.vat}
-              decimals={getPrecisionPolicy().moneyDecimals}
+              precision="tax"
             />
           </span>
         </div>
@@ -3410,7 +3413,7 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
               </span>
             </span>
             <span className="pf-totals__value">
-              <ZHMoneyValue value={ctx.editing.totalIrbpnr} decimals={getPrecisionPolicy().moneyDecimals} />
+              <ZHMoneyValue value={ctx.editing.totalIrbpnr} precision="tax" />
             </span>
           </div>
         )}
@@ -3419,7 +3422,7 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
           <span className="pf-totals__value">
             <ZHMoneyValue
               value={ctx.editing ? ctx.editing.totalFreight : ctx.formWatch.freightCost}
-              decimals={getPrecisionPolicy().moneyDecimals}
+              precision="money"
             />
           </span>
         </div>
@@ -3428,7 +3431,7 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
           <span className="pf-totals__value">
             <ZHMoneyValue
               value={ctx.editing ? ctx.editing.totalOtherCosts : ctx.formWatch.otherCosts}
-              decimals={getPrecisionPolicy().moneyDecimals}
+              precision="money"
             />
           </span>
         </div>
@@ -3445,7 +3448,7 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
         <span className="pf-totals__grand-value">
           <ZHMoneyValue
             value={ctx.editing ? ctx.editing.grandTotal : ctx.localTotal}
-            decimals={getPrecisionPolicy().moneyDecimals}
+            precision="money"
           />
         </span>
       </div>
@@ -3473,7 +3476,7 @@ function TotalMiniCard({
         className={`pf-total-mini-card__value ${highlight ? "pf-total-mini-card__value--highlight" : "pf-total-mini-card__value--default"}`}
         data-tone={color === "var(--color-error)" ? "error" : "default"}
       >
-        <ZHMoneyValue value={value} decimals={getPrecisionPolicy().moneyDecimals} />
+        <ZHMoneyValue value={value} precision="money" />
       </div>
     </div>
   );

@@ -6,7 +6,7 @@ import {
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { formatDate, formatDateTime } from "../../../lib/formatters/dateFormatters";
 import { formatMoney, formatMoneyWithSymbol } from "../../../lib/sanitizers";
-import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { useI18n } from "../../../i18n/i18n";
 import type {
   PurchaseReceptionXmlView,
@@ -43,10 +43,10 @@ export function PurchaseReceptionXmlViewModal({
   onClose,
 }: Props) {
   const { t } = useI18n();
-  const qty = getPrecisionPolicy().quantityDecimals;
-  const cost = getPrecisionPolicy().purchaseUnitPriceDecimals;
-  const total = getPrecisionPolicy().moneyDecimals;
-  const pct = getPrecisionPolicy().percentageDecimals;
+  // Escalas de textos compuestos (06): cantidad; montos; tarifas de impuesto del XML (porcentaje FISCAL).
+  const qty = usePrecisionDecimals("quantity");
+  const total = usePrecisionDecimals("money");
+  const pct = usePrecisionDecimals("fiscalPercentage");
 
   const totalRows: TotalRow[] = data
     ? [
@@ -129,7 +129,7 @@ export function PurchaseReceptionXmlViewModal({
       render: (row) => (
         <ZHMoneyValue
           value={row.value}
-          decimals={total}
+          precision="money"
           align="end"
           emphasis={row.emphasize ? "strong" : "default"}
         />
@@ -160,7 +160,7 @@ export function PurchaseReceptionXmlViewModal({
       header: t("purchases.reception.xmlView.taxes.base", "Base"),
       align: "right",
       render: (row) => (
-        <ZHMoneyValue value={row.taxableBase} decimals={total} align="end" />
+        <ZHMoneyValue value={row.taxableBase} precision="money" align="end" />
       ),
     },
     {
@@ -168,7 +168,7 @@ export function PurchaseReceptionXmlViewModal({
       header: t("purchases.reception.xmlView.taxes.amount", "Valor"),
       align: "right",
       render: (row) => (
-        <ZHMoneyValue value={row.amount} decimals={total} align="end" />
+        <ZHMoneyValue value={row.amount} precision="tax" align="end" />
       ),
     },
   ];
@@ -195,7 +195,7 @@ export function PurchaseReceptionXmlViewModal({
       header: t("purchases.reception.xmlView.lines.unitPrice", "Precio unit."),
       align: "right",
       render: (row) => (
-        <ZHMoneyValue value={row.unitPrice} decimals={cost} align="end" />
+        <ZHMoneyValue value={row.unitPrice} precision="purchaseUnitPrice" align="end" />
       ),
     },
     {
@@ -203,7 +203,7 @@ export function PurchaseReceptionXmlViewModal({
       header: t("purchases.reception.xmlView.lines.discount", "Descuento"),
       align: "right",
       render: (row) => (
-        <ZHMoneyValue value={row.discountAmount} decimals={total} align="end" />
+        <ZHMoneyValue value={row.discountAmount} precision="money" align="end" />
       ),
     },
     {
@@ -211,7 +211,7 @@ export function PurchaseReceptionXmlViewModal({
       header: t("purchases.reception.xmlView.lines.taxableBase", "Base imponible"),
       align: "right",
       render: (row) => (
-        <ZHMoneyValue value={row.taxableBase} decimals={total} align="end" />
+        <ZHMoneyValue value={row.taxableBase} precision="money" align="end" />
       ),
     },
     {
@@ -219,7 +219,7 @@ export function PurchaseReceptionXmlViewModal({
       header: t("purchases.reception.xmlView.lines.vat", "IVA"),
       align: "right",
       render: (row) => (
-        <ZHMoneyValue value={row.vatAmount} decimals={total} align="end" />
+        <ZHMoneyValue value={row.vatAmount} precision="tax" align="end" />
       ),
     },
     {
@@ -227,7 +227,7 @@ export function PurchaseReceptionXmlViewModal({
       header: t("purchases.reception.xmlView.lines.ice", "ICE"),
       align: "right",
       render: (row) => (
-        <ZHMoneyValue value={row.iceAmount} decimals={total} align="end" />
+        <ZHMoneyValue value={row.iceAmount} precision="tax" align="end" />
       ),
     },
     {
@@ -235,7 +235,7 @@ export function PurchaseReceptionXmlViewModal({
       header: t("purchases.reception.xmlView.lines.irbpnr", "IRBPNR"),
       align: "right",
       render: (row) => (
-        <ZHMoneyValue value={row.irbpnrAmount} decimals={total} align="end" />
+        <ZHMoneyValue value={row.irbpnrAmount} precision="tax" align="end" />
       ),
     },
     {
@@ -243,7 +243,7 @@ export function PurchaseReceptionXmlViewModal({
       header: t("purchases.reception.xmlView.lines.total", "Total línea"),
       align: "right",
       render: (row) => (
-        <ZHMoneyValue value={row.lineTotal} decimals={total} align="end" />
+        <ZHMoneyValue value={row.lineTotal} precision="money" align="end" />
       ),
     },
     {
@@ -517,6 +517,7 @@ function LineTax({
   totalDecimals: number;
   pctDecimals: number;
 }) {
+  const taxDecimals = usePrecisionDecimals("tax"); // (06) valor del impuesto
   return (
     <div>
       <dt>
@@ -525,7 +526,7 @@ function LineTax({
       <dd>
         {formatTaxRate(tax.rate, pctDecimals)} ·{" "}
         {formatMoneyWithSymbol(tax.taxableBase, totalDecimals)} ·{" "}
-        {formatMoneyWithSymbol(tax.amount, totalDecimals)}
+        {formatMoneyWithSymbol(tax.amount, taxDecimals)}
       </dd>
     </div>
   );

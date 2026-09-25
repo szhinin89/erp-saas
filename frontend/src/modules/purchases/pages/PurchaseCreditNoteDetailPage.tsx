@@ -265,28 +265,28 @@ export function PurchaseCreditNoteDetailPage() {
       header: t("purchases.creditNote.taxSummaryLines.discountBase", "Base descuento a aplicar"),
       align: "right",
       cellClassName: "zh-table-cell--num",
-      render: (summary) => <ZHMoneyValue value={summary.taxableBase} currencySymbol="" />,
+      render: (summary) => <ZHMoneyValue precision="money" value={summary.taxableBase} currencySymbol="" />,
     },
     {
       key: "iceCredit",
       header: t("purchases.creditNote.taxSummaryLines.iceCredit", "ICE crédito"),
       align: "right",
       cellClassName: "zh-table-cell--num",
-      render: (summary) => <ZHMoneyValue value={summary.iceAmount} currencySymbol="" />,
+      render: (summary) => <ZHMoneyValue precision="tax" value={summary.iceAmount} currencySymbol="" />,
     },
     {
       key: "vatCredit",
       header: t("purchases.creditNote.taxSummaryLines.vatCredit", "IVA crédito"),
       align: "right",
       cellClassName: "zh-table-cell--num",
-      render: (summary) => <ZHMoneyValue value={summary.vatAmount} currencySymbol="" />,
+      render: (summary) => <ZHMoneyValue precision="tax" value={summary.vatAmount} currencySymbol="" />,
     },
     {
       key: "totalCredit",
       header: t("purchases.creditNote.taxSummaryLines.totalCredit", "Total NC"),
       align: "right",
       cellClassName: "zh-table-cell--num",
-      render: (summary) => <ZHMoneyValue value={summary.totalAmount} currencySymbol="" />,
+      render: (summary) => <ZHMoneyValue precision="money" value={summary.totalAmount} currencySymbol="" />,
     },
   ];
 
@@ -297,21 +297,21 @@ export function PurchaseCreditNoteDetailPage() {
       header: t("purchases.creditNote.lines.subtotal", "Subtotal"),
       align: "right",
       cellClassName: "zh-table-cell--num",
-      render: (line) => <ZHMoneyValue value={line.subtotal} currencySymbol="" />,
+      render: (line) => <ZHMoneyValue precision="money" value={line.subtotal} currencySymbol="" />,
     },
     {
       key: "vatAmount",
       header: t("purchases.creditNote.lines.vatAmount", "IVA"),
       align: "right",
       cellClassName: "zh-table-cell--num",
-      render: (line) => <ZHMoneyValue value={line.vatAmount} currencySymbol="" />,
+      render: (line) => <ZHMoneyValue precision="tax" value={line.vatAmount} currencySymbol="" />,
     },
     {
       key: "total",
       header: t("purchases.creditNote.lines.total", "Total crédito"),
       align: "right",
       cellClassName: "zh-table-cell--num",
-      render: (line) => <ZHMoneyValue value={line.totalAmount} currencySymbol="" />,
+      render: (line) => <ZHMoneyValue precision="money" value={line.totalAmount} currencySymbol="" />,
     },
   ];
   // FLOW-READY-02C-R1.1: las notas de crédito tipo Devolución nunca se autorizan aquí — se aplican
@@ -336,8 +336,8 @@ export function PurchaseCreditNoteDetailPage() {
       key: "warehouse", header: "Bodega", render: (line) => line.warehouseName ?? "—",
     });
     discountLineColumns.splice(discountLineColumns.length - 1, 0,
-      { key: "ice", header: "ICE", align: "right", render: (line) => <ZHMoneyValue value={line.iceAmount ?? 0} currencySymbol="" /> },
-      { key: "irbpnr", header: "IRBPNR", align: "right", render: (line) => <ZHMoneyValue value={line.irbpnrAmount ?? 0} currencySymbol="" /> },
+      { key: "ice", header: "ICE", align: "right", render: (line) => <ZHMoneyValue precision="tax" value={line.iceAmount ?? 0} currencySymbol="" /> },
+      { key: "irbpnr", header: "IRBPNR", align: "right", render: (line) => <ZHMoneyValue precision="tax" value={line.irbpnrAmount ?? 0} currencySymbol="" /> },
     );
   }
   const exceedsBalance =
@@ -384,7 +384,7 @@ export function PurchaseCreditNoteDetailPage() {
               {t("purchases.creditNote.affectedInvoice.balanceDue", "Saldo pendiente")}
             </span>
             <span className="pcn-summary-grid__value">
-              <ZHMoneyValue value={editing.invoiceBalanceDue} currencySymbol="" />
+              <ZHMoneyValue precision="money" value={editing.invoiceBalanceDue} currencySymbol="" />
             </span>
           </div>
           <div>
@@ -392,7 +392,7 @@ export function PurchaseCreditNoteDetailPage() {
               {t("purchases.creditNote.lines.total", "Total crédito")}
             </span>
             <span className="pcn-summary-grid__value">
-              <ZHMoneyValue value={editing.totalAmount} currencySymbol="" />
+              <ZHMoneyValue precision="money" value={editing.totalAmount} currencySymbol="" />
             </span>
           </div>
           {editing.appliedToPayableAmount !== null && (
@@ -401,7 +401,7 @@ export function PurchaseCreditNoteDetailPage() {
                 {t("purchases.creditNote.summary.reducesPayable", "Reduce CxP")}
               </span>
               <span className="pcn-summary-grid__value">
-                <ZHMoneyValue value={editing.appliedToPayableAmount} currencySymbol="" />
+                <ZHMoneyValue precision="money" value={editing.appliedToPayableAmount} currencySymbol="" />
               </span>
             </div>
           )}
@@ -459,7 +459,7 @@ export function PurchaseCreditNoteDetailPage() {
                     <div>
                       <span className="pcn-summary-grid__label">Total devolución</span>
                       <span className="pcn-summary-grid__value">
-                        <ZHMoneyValue
+                        <ZHMoneyValue precision="money"
                           value={editing.linkedPurchaseReturnAuthorizedGrandTotal}
                           currencySymbol=""
                         />

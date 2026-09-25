@@ -7,9 +7,8 @@ import { SemanticDecimals } from "../SemanticDecimals";
 import "./ZhInputs.css";
 
 type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> & {
-  /** Override CONTRACTUAL explícito (constante `*_DECIMALS` documentada): gana sobre `precision`.
-   * Sin `decimals` ni `precision` = default legacy 2, DEPRECATED (F-PREC-implicit-value). */
-  decimals?: number;
+  /** PRIVADO del core: decimales ya resueltos desde `precision` por la API pública. */
+  decimals: number;
   currency?: string;
 };
 
@@ -17,9 +16,7 @@ type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> & {
  * Input de moneda con símbolo de divisa y limitación de decimales.
  * Compatible con RHF register() via forwardRef.
  *
- * Fallback fijo de 2 decimales (COMPANY-PRECISION-POLICY-FRONTEND-CONSUMERS-MIGRATION-07):
- * los callers que necesiten la precisión de la empresa declaran `precision` (03B, vía
- * `SemanticDecimals`) o pasan `decimals` explícito — sin ninguno de los dos no lee config.
+ * La escala sale siempre de `precision` (PrecisionPolicy de la empresa): sin fallback.
  *
  * @example
  * <ZhCurrencyInput {...register('price')} precision="salesUnitPrice" />
@@ -28,7 +25,7 @@ type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> & {
 const ZhCurrencyInputCore = React.forwardRef<HTMLInputElement, Props>(
   (
     {
-      decimals = 2,
+      decimals,
       currency = "USD",
       onKeyDown,
       onPaste,
@@ -78,28 +75,17 @@ const ZhCurrencyInputCore = React.forwardRef<HTMLInputElement, Props>(
 ZhCurrencyInputCore.displayName = "ZhCurrencyInputCore";
 
 /**
- * ZH-DESIGN-SYSTEM-PRECISION-03B — API pública. Prioridad de decimales (igual que `ZHMoneyValue`):
- * `decimals` explícito > `precision` (PrecisionPolicy vía `SemanticDecimals`) > default legacy del
- * core. Solo resuelve CUÁNTOS decimales: el comportamiento del input es el del core, sin cambios.
- * Sin `precision` no depende de la PrecisionPolicy.
- *
- * LEGACY (ZH-DESIGN-SYSTEM-PRECISION-05B): sin `decimals` ni `precision` usa el default fijo 2 —
- * DEPRECATED para código nuevo y bloqueado por el guard F-PREC-implicit-value (compatibilidad
- * temporal, sin consumidores productivos hoy). No se expresa como sobrecarga @deprecated: el
- * componente es un `forwardRef` (una sola firma de llamada) y separarla exigiría un cast del tipo
- * exportado. Patrón normal: `precision`; `decimals` solo como constante contractual `*_DECIMALS`.
+ * ZH-DESIGN-SYSTEM-PRECISION-06 — API pública: `precision` es OBLIGATORIO y es la única forma de
+ * decidir la escala (PrecisionPolicy vía `SemanticDecimals` → `resolvePrecisionDecimals`). No
+ * existe `decimals` público ni default: el core recibe los decimales ya resueltos (detalle privado).
  */
-export const ZhCurrencyInput = React.forwardRef<HTMLInputElement, Props & { precision?: PrecisionKind }>(
-  ({ precision, decimals, ...props }, ref) => {
-    if (decimals == null && precision !== undefined) {
-      return (
-        <SemanticDecimals kind={precision}>
-          {(resolved) => <ZhCurrencyInputCore {...props} decimals={resolved} ref={ref} />}
-        </SemanticDecimals>
-      );
-    }
-    return <ZhCurrencyInputCore {...props} decimals={decimals} ref={ref} />;
-  },
-);
+export const ZhCurrencyInput = React.forwardRef<
+  HTMLInputElement,
+  Omit<Props, "decimals"> & { precision: PrecisionKind }
+>(({ precision, ...props }, ref) => (
+  <SemanticDecimals kind={precision}>
+    {(resolved) => <ZhCurrencyInputCore {...props} decimals={resolved} ref={ref} />}
+  </SemanticDecimals>
+));
 
 ZhCurrencyInput.displayName = "ZhCurrencyInput";

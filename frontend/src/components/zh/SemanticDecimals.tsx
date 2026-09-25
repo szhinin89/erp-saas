@@ -7,9 +7,8 @@ import type { PrecisionKind } from "../../lib/config/precisionPolicy.config";
  * compartido por displays (`ZHMoneyValue`, `ZHNumberValue`) e inputs (`ZhDecimalInput`,
  * `ZhCurrencyInput`). INTERNO: no usar desde módulos.
  *
- * Existe como componente para respetar las Rules of Hooks: el hook solo se ejecuta cuando el
- * consumidor pidió `precision` sin `decimals`, así los consumidores legacy no dependen de la
- * PrecisionPolicy.
+ * ZH-DESIGN-SYSTEM-PRECISION-06: `precision` es obligatorio en toda la API pública, así que este
+ * puente resuelve SIEMPRE los decimales (no existe rama `decimals`/legacy).
  */
 export function SemanticDecimals({
   kind,

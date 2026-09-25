@@ -18,6 +18,7 @@ import { ZHMoneyValue } from "../ZHMoneyValue";
 import { ZHNumberValue } from "../ZHNumberValue";
 import {
   setPrecisionPolicyForTests,
+  type PrecisionKind,
   type PrecisionPolicy,
 } from "../../../lib/config/precisionPolicy.config";
 import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
@@ -26,8 +27,21 @@ afterEach(() => {
   cleanup();
 });
 
-function renderInput(props: React.ComponentProps<typeof ZhDecimalInput> = {}) {
-  const utils = render(<ZhDecimalInput aria-label="valor" {...props} />);
+/**
+ * ZH-DESIGN-SYSTEM-PRECISION-06 — `precision` es la única API. `decimals` es SOLO un parámetro de
+ * este helper de test: la escala que la PrecisionPolicy entrega (se fija como quantityDecimals y el
+ * input declara `precision="quantity"`). Si el caso pasa su propia `precision`, la policy del test manda.
+ */
+type RenderProps = Omit<React.ComponentProps<typeof ZhDecimalInput>, "precision"> & {
+  precision?: PrecisionKind;
+  decimals?: number;
+};
+
+function renderInput({ decimals = 2, precision, ...props }: RenderProps = {}) {
+  if (precision === undefined) {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, quantityDecimals: decimals });
+  }
+  const utils = render(<ZhDecimalInput aria-label="valor" precision={precision ?? "quantity"} {...props} />);
   const input = utils.getByLabelText("valor") as HTMLInputElement;
   return { ...utils, input };
 }
@@ -61,7 +75,7 @@ describe("ZhDecimalInput — DOM y props (contract)", () => {
 
   it("contract: forwardRef expone el HTMLInputElement", () => {
     const ref = React.createRef<HTMLInputElement>();
-    render(<ZhDecimalInput ref={ref} aria-label="valor" />);
+    render(<ZhDecimalInput ref={ref} aria-label="valor" precision="money" />);
     expect(ref.current).toBeInstanceOf(HTMLInputElement);
   });
 
@@ -81,7 +95,7 @@ describe("ZhDecimalInput — DOM y props (contract)", () => {
 });
 
 describe("ZhDecimalInput — value / defaultValue", () => {
-  it("legacy: default decimals=2 al formatear value numérico", () => {
+  it("value numérico se formatea con la escala resuelta (2)", () => {
     const { input } = renderInput({ value: 5, onChange: () => {} });
     expect(input.value).toBe("5.00");
   });
@@ -408,26 +422,20 @@ describe("ZhDecimalInput — precision semántica (03B)", () => {
     expect(keyAllowed(input, "3")).toBe(false); // quantity=1 ya no admite un 2.º decimal
   });
 
-  it("decimals explícito gana sobre precision", () => {
-    setPrecisionPolicyForTests(POLICY_A);
-    const { input } = renderInput({ precision: "quantity", decimals: 4, defaultValue: 1.5 });
-    expect(input.value).toBe("1.5000");
+  it("06 — API única: `precision` obligatorio, sin `decimals` público ni default legacy (compile-time)", () => {
+    // @ts-expect-error — sin `precision` no compila: no existe default 2.
+    const withoutPrecision = <ZhDecimalInput aria-label="x" />;
+    // @ts-expect-error — `decimals` ya no es API pública (la escala sale de la policy).
+    const withDecimals = <ZhDecimalInput aria-label="x" precision="money" decimals={2} />;
+    const semantic = <ZhDecimalInput aria-label="x" precision="money" />;
+    expect([withoutPrecision, withDecimals, semantic]).toHaveLength(3);
   });
 
-  it("decimals={0} es override válido sobre precision", () => {
-    setPrecisionPolicyForTests(POLICY_A);
-    const { input } = renderInput({ precision: "unitCost", decimals: 0, defaultValue: 7.6 });
+  it("06 — escala 0 resuelta por la policy: redondea al entero y bloquea el punto", () => {
+    setPrecisionPolicyForTests({ ...POLICY_A, unitCostDecimals: 0 });
+    const { input } = renderInput({ precision: "unitCost", defaultValue: 7.6 });
     expect(input.value).toBe("8");
     expect(keyAllowed(input, ".")).toBe(false);
-  });
-
-  it("sin precision ni decimals: legacy 2 SIN policy cargada (no impacto en los 60 consumidores)", () => {
-    setPrecisionPolicyForTests(null);
-    const { input } = renderInput({ defaultValue: 5 });
-    expect(input.value).toBe("5.00");
-    cleanup();
-    const legacy = renderInput({ value: "5", onChange: () => {} });
-    expect(legacy.input.value).toBe("5");
   });
 
   it("forwardRef expone el HTMLInputElement también con precision", () => {
@@ -567,7 +575,7 @@ describe("ZhDecimalInput — coma decimal normalizada a punto (03C0)", () => {
     expect(input.value).toBe("1");
   });
 
-  it("precision='quantity' y decimals explícito también normalizan", () => {
+  it("precision='quantity' con escalas 3 y 4 también normalizan", () => {
     setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, quantityDecimals: 3 });
     const semantic = renderInput({ precision: "quantity" });
     typeRaw(semantic.input, "2");
@@ -611,7 +619,7 @@ describe("ZhDecimalInput — coma decimal normalizada a punto (03C0)", () => {
       return (
         <ZhDecimalInput
           aria-label="valor"
-          decimals={2}
+          precision="money"
           {...form.register("amount", { setValueAs: (v) => (v === "" ? null : Number(v)) })}
         />
       );
@@ -677,10 +685,11 @@ describe("ZhDecimalInput — motor Decimal único (03C)", () => {
     cleanup();
 
     expect(formatMoney(value, decimals)).toBe(expected);
-    const money = render(<ZHMoneyValue value={value} decimals={decimals} />);
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, moneyDecimals: decimals });
+    const money = render(<ZHMoneyValue value={value} precision="money" />);
     expect(money.container.querySelector(".zh-money-value__amount")?.textContent).toBe(expected);
     cleanup();
-    const number = render(<ZHNumberValue value={value} decimals={decimals} />);
+    const number = render(<ZHNumberValue value={value} precision="money" />);
     expect(number.container.querySelector(".zh-number-value__amount")?.textContent).toBe(expected);
   });
 
@@ -763,8 +772,8 @@ describe("ZhDecimalInput — blur sin edición (03D)", () => {
 
   it("value controlado actualizado por el padre NO cuenta como edición: focus → blur no emite onChange", () => {
     const onChange = vi.fn();
-    const { rerender } = render(<ZhDecimalInput aria-label="valor" decimals={2} value="5" onChange={onChange} />);
-    rerender(<ZhDecimalInput aria-label="valor" decimals={2} value="7.5" onChange={onChange} />);
+    const { rerender } = render(<ZhDecimalInput aria-label="valor" precision="money" value="5" onChange={onChange} />);
+    rerender(<ZhDecimalInput aria-label="valor" precision="money" value="7.5" onChange={onChange} />);
     const el = document.querySelector("input")!;
     expect(el.value).toBe("7.5");
     fireEvent.focus(el);
@@ -851,9 +860,9 @@ describe("ZhDecimalInput — onValueCommit (04A1)", () => {
   it("value controlado actualizado por el padre no emite", () => {
     const onValueCommit = vi.fn();
     const { rerender } = render(
-      <ZhDecimalInput aria-label="valor" decimals={2} value="5" onChange={() => {}} onValueCommit={onValueCommit} />,
+      <ZhDecimalInput aria-label="valor" precision="money" value="5" onChange={() => {}} onValueCommit={onValueCommit} />,
     );
-    rerender(<ZhDecimalInput aria-label="valor" decimals={2} value="9" onChange={() => {}} onValueCommit={onValueCommit} />);
+    rerender(<ZhDecimalInput aria-label="valor" precision="money" value="9" onChange={() => {}} onValueCommit={onValueCommit} />);
     const el = document.querySelector("input")!;
     fireEvent.focus(el);
     fireEvent.blur(el);

@@ -21,14 +21,10 @@ type ZHNumberValueBaseProps = {
 };
 
 /**
- * `precision` (semántica de la PrecisionPolicy) es el estándar; `decimals` es un override
- * excepcional y gana si se pasan ambos. Uno de los dos es obligatorio: no existe default.
+ * `precision` (semántica de la PrecisionPolicy) es la ÚNICA forma de decidir la escala
+ * (ZH-DESIGN-SYSTEM-PRECISION-06): no existe `decimals` ni default.
  */
-export type ZHNumberValueProps = ZHNumberValueBaseProps &
-  (
-    | { precision: PrecisionKind; decimals?: number }
-    | { precision?: PrecisionKind; decimals: number }
-  );
+export type ZHNumberValueProps = ZHNumberValueBaseProps & { precision: PrecisionKind };
 
 /**
  * ZH-DESIGN-SYSTEM-PRECISION-02A — valor numérico NO monetario de solo lectura (cantidades,
@@ -39,7 +35,6 @@ export type ZHNumberValueProps = ZHNumberValueBaseProps &
 export function ZHNumberValue({
   value,
   precision,
-  decimals,
   prefix,
   suffix,
   emphasis = "default",
@@ -61,8 +56,5 @@ export function ZHNumberValue({
     />
   );
 
-  if (decimals == null) {
-    return <SemanticDecimals kind={precision as PrecisionKind}>{render}</SemanticDecimals>;
-  }
-  return render(decimals);
+  return <SemanticDecimals kind={precision}>{render}</SemanticDecimals>;
 }

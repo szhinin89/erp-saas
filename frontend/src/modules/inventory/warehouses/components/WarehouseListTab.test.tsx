@@ -8,9 +8,10 @@ import { setPrecisionPolicyForTests } from "../../../../lib/config/precisionPoli
 import { TEST_PRECISION_POLICY } from "../../../../test/precisionPolicyFixture";
 
 /**
- * ZH-DESIGN-SYSTEM-PRECISION-04E — el listado muestra la capacidad (m³) con la escala contractual
- * WAREHOUSE_CAPACITY_DECIMALS (numeric(18,4)), la misma del input: sin el `toFixed(2)` anterior que
- * truncaba visualmente 100.1234 → 100.12. No es dato de la PrecisionPolicy: no reacciona a ella.
+ * ZH-DESIGN-SYSTEM-PRECISION-04E/06 — el listado muestra la capacidad (m³) con la escala del
+ * contrato `warehouseCapacity` (backend WarehousePrecision.Capacity → numeric(18,4)), recibida en la
+ * PrecisionPolicy efectiva: sin el `toFixed(2)` anterior (100.1234 → 100.12) ni constante frontend.
+ * No depende de quantity/money.
  */
 
 afterEach(() => cleanup());
@@ -49,13 +50,19 @@ function renderList() {
   );
 }
 
-describe("WarehouseListadoTab — capacidad con override contractual de 4 decimales (04E)", () => {
-  it("muestra 100.1234 m³ (no 100.12) y no cambia con la PrecisionPolicy", () => {
+describe("WarehouseListadoTab — capacidad con el contrato warehouseCapacity (04E/06)", () => {
+  it("muestra 100.1234 m³ (no 100.12) y no depende de quantity/money", () => {
     setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, quantityDecimals: 2, moneyDecimals: 2 });
     const { container } = renderList();
     expect(container.textContent).toContain("100.1234 m³");
     expect(container.textContent).not.toContain("100.12 m³");
     act(() => setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, quantityDecimals: 6, moneyDecimals: 4 }));
     expect(container.textContent).toContain("100.1234 m³");
+  });
+
+  it("la escala sale de la policy efectiva (única fuente): warehouseCapacityDecimals 3 → 100.123 m³", () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, warehouseCapacityDecimals: 3 });
+    const { container } = renderList();
+    expect(container.textContent).toContain("100.123 m³");
   });
 });

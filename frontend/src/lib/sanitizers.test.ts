@@ -68,9 +68,14 @@ describe("roundToDecimals ? operational precision", () => {
  * "legacy:" = default decimals=2 y símbolo antes del signo; se congelan temporalmente.
  */
 describe("formatMoney / formatMoneyWithSymbol — characterization 01A", () => {
-  it("legacy: default decimals=2 en ambos formatters", () => {
-    expect(formatMoney(5)).toBe("5.00");
-    expect(formatMoneyWithSymbol(5)).toBe("$5.00");
+  it("06 — escala obligatoria: sin escala no compila (no existe default 2)", () => {
+    // @ts-expect-error — formatMoney exige la escala resuelta.
+    const a = () => formatMoney(5);
+    // @ts-expect-error — formatMoneyWithSymbol exige la escala resuelta.
+    const b = () => formatMoneyWithSymbol(5);
+    expect([typeof a, typeof b]).toEqual(["function", "function"]);
+    expect(formatMoney(5, 2)).toBe("5.00");
+    expect(formatMoneyWithSymbol(5, 2)).toBe("$5.00");
   });
 
   it.each([
@@ -110,7 +115,6 @@ describe("formatDecimalDisplay — motor único (02A)", () => {
 
   it.each([0.075, 0.305, 1.005, -0.075, 0, 1234567.5])("formatMoney delega en el motor único (%s)", (value) => {
     expect(formatMoney(value, 2)).toBe(formatDecimalDisplay(value, 2));
-    expect(formatMoney(value)).toBe(formatDecimalDisplay(value, 2));
   });
 
   it("con locale, Intl recibe la cadena YA redondeada (nunca un Number): no hay segundo redondeo", () => {
@@ -203,12 +207,11 @@ describe("sanitizeDecimal — política de separadores (03C01)", () => {
   });
 });
 
-// ZH-DESIGN-SYSTEM-PRECISION-05B — las sobrecargas solo marcan la forma sin escala como @deprecated
-// (ayuda al desarrollador; la autoridad es F-PREC): el runtime no cambia.
-describe("formatMoney / formatMoneyWithSymbol — sobrecargas 05B, runtime intacto", () => {
-  it("legacy sin escala sigue en 2 decimales (compatibilidad)", () => {
-    expect(formatMoney(1.005)).toBe("1.01");
-    expect(formatMoneyWithSymbol(-5)).toBe("$-5.00");
+// ZH-DESIGN-SYSTEM-PRECISION-06 — formatters con escala obligatoria (sin forma legacy).
+describe("formatMoney / formatMoneyWithSymbol — escala obligatoria (06)", () => {
+  it("half-up y contrato de negativos con la escala recibida", () => {
+    expect(formatMoney(1.005, 2)).toBe("1.01");
+    expect(formatMoneyWithSymbol(-5, 2)).toBe("$-5.00");
   });
 
   it("escala explícita/semántica igual que antes; símbolo opcional", () => {

@@ -26,6 +26,7 @@ function renderWithholdingIssueModal(onConfirm: (epId: string) => void) {
         "001-001-000000123",
         "Proveedor Uno",
         42.5,
+        2,
       )}
       label="ID del punto de emisión"
       placeholder="ID del punto de emisión"
@@ -66,7 +67,7 @@ describe("Modal 'Emitir retención' — resumen y comportamiento (CRITICAL-CONFI
         open
         title="Emitir retención"
         variant="warning"
-        message={buildWithholdingIssueMessage("001-001-000000123", "Proveedor Uno", 42.5)}
+        message={buildWithholdingIssueMessage("001-001-000000123", "Proveedor Uno", 42.5, 2)}
         label="ID del punto de emisión"
         placeholder="ID del punto de emisión"
         confirmLabel="Emitir"

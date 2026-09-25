@@ -8,7 +8,6 @@ import {
   ZHToggle,
 } from "../../../../components/zh/ZHForm";
 import { ZhDecimalInput } from "../../../../components/zh/inputs/ZhDecimalInput";
-import { getPrecisionPolicy } from "../../../../lib/config/precisionPolicy.config";
 import { UnitConversionsSection } from "../../detail/components/CollectionSection";
 import type { CreateItemFormValues } from "../../schemas/createItemSchema";
 import type { ItemUnitConversionDto } from "../../../../types/items";
@@ -35,7 +34,6 @@ export function InventoryTab({
   } = useFormContext<CreateItemFormValues>();
   const navigate = useNavigate();
   const fe = (msg?: string) => (msg ? t(msg, msg) : null);
-  const quantityDecimals = getPrecisionPolicy().quantityDecimals;
 
   return (
     <>
@@ -134,7 +132,7 @@ export function InventoryTab({
             fieldError={fe(errors.stockConfig?.minStockQty?.message)}
           >
             <ZhDecimalInput
-              decimals={quantityDecimals}
+              precision="quantity"
               positiveOnly
               {...register("stockConfig.minStockQty", {
                 valueAsNumber: true,
@@ -148,7 +146,7 @@ export function InventoryTab({
             fieldError={fe(errors.stockConfig?.maxStockQty?.message)}
           >
             <ZhDecimalInput
-              decimals={quantityDecimals}
+              precision="quantity"
               positiveOnly
               {...register("stockConfig.maxStockQty", {
                 valueAsNumber: true,

@@ -22,6 +22,9 @@ export const TEST_PRECISION_POLICY: PrecisionPolicy = {
   taxDecimals: 2,
   accountingDecimals: 2,
   fiscalPercentageDecimals: 2,
+  warehouseCapacityDecimals: 4,
+  creditInstallmentPercentageDecimals: 2,
+  packagingWeightDecimals: 3,
 };
 
 /**

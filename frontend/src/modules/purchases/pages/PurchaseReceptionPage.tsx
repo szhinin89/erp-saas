@@ -114,7 +114,7 @@ export function PurchaseReceptionPage() {
                   : t("purchases.reception.values.subtotal", "Subtotal")}
               </span>
               <span>
-                <ZHMoneyValue value={row.subtotal} />
+                <ZHMoneyValue precision="money" value={row.subtotal} />
               </span>
             </p>
             <p className="pur-values-line">
@@ -122,7 +122,7 @@ export function PurchaseReceptionPage() {
                 {t("purchases.reception.values.vat", "IVA")}
               </span>
               <span>
-                <ZHMoneyValue value={row.vatAmount} />
+                <ZHMoneyValue precision="tax" value={row.vatAmount} />
               </span>
             </p>
             {isCreditNote ? (
@@ -134,12 +134,12 @@ export function PurchaseReceptionPage() {
                   )}
                 </span>
                 <span>
-                  <ZHMoneyValue value={row.total} />
+                  <ZHMoneyValue precision="money" value={row.total} />
                 </span>
               </p>
             ) : (
               <p className="pur-values-total">
-                <ZHMoneyValue value={row.total} />
+                <ZHMoneyValue precision="money" value={row.total} />
               </p>
             )}
           </div>

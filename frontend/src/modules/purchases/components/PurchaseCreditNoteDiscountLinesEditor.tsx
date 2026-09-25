@@ -8,7 +8,6 @@ import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
-import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { useI18n } from "../../../i18n/i18n";
 import type { PurchaseCreditNoteDraftFormValues } from "../schemas/purchaseCreditNoteSchema";
 import "../../../styles/shared/erp-form-core.css";
@@ -44,9 +43,7 @@ export function PurchaseCreditNoteDiscountLinesEditor({
   disabled,
 }: Readonly<Props>) {
   const { t } = useI18n();
-  // Subtotal/IVA de la línea libre de descuento — montos, no cantidad ni precio de compra:
-  // moneyDecimals (fijo, FiscalPrecision).
-  const moneyDecimals = getPrecisionPolicy().moneyDecimals;
+  // Subtotal de la línea libre de descuento → money; IVA → tax (06).
 
   return (
     <div className="table-scroll">
@@ -76,7 +73,7 @@ export function PurchaseCreditNoteDiscountLinesEditor({
               </td>
               <td className="zh-text-align-right">
                 <ZhDecimalInput
-                  decimals={moneyDecimals}
+precision="money"
                   positiveOnly
                   disabled={disabled}
                   {...register(`lines.${index}.subtotal` as const)}
@@ -84,7 +81,7 @@ export function PurchaseCreditNoteDiscountLinesEditor({
               </td>
               <td className="zh-text-align-right">
                 <ZhDecimalInput
-                  decimals={moneyDecimals}
+precision="tax"
                   positiveOnly
                   disabled={disabled}
                   {...register(`lines.${index}.vatAmount` as const)}

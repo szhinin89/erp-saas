@@ -5,7 +5,7 @@ import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import { ZhSelect } from "../../../components/zh/inputs/ZhSelect";
-import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { formatMoney } from "../../../lib/sanitizers";
 import { useI18n } from "../../../i18n/i18n";
 import type { PurchaseCostDistributionType } from "../api/purchaseService";
@@ -44,16 +44,12 @@ export function DistributeCostModal({
   onApply,
 }: Props) {
   const { t } = useI18n();
-  const policy = getPrecisionPolicy();
-  // Totales/valores agregados de la simulación (freight, valor a distribuir, totales de
-  // factura) usan moneyDecimals (fijo, FiscalPrecision). Los costos por unidad (costo unitario
-  // actual/nuevo, asignado por unidad) usan unitCostDecimals — misma semántica que
-  // purchaseLinePresentation.ts (costo unitario != monto total de línea/factura).
-  const totalAmountDecimals = policy.moneyDecimals;
-  const unitCostDecimals = policy.unitCostDecimals;
-  // ERP-PRECISION-FRONTEND-06B: cantidad → quantityDecimals; % participación → percentageDecimals.
-  const quantityDecimals = policy.quantityDecimals;
-  const percentageDecimals = policy.percentageDecimals;
+  // Totales/valores agregados de la simulación (freight, valor a distribuir, totales de factura)
+  // → precision="money"; costos por unidad (actual/nuevo, asignado por unidad) → "unitCost" —
+  // misma semántica que purchaseLinePresentation.ts. Textos compuestos (06): cantidad y % de
+  // participación con la escala semántica del hook.
+  const quantityDecimals = usePrecisionDecimals("quantity");
+  const percentageDecimals = usePrecisionDecimals("percentage");
 
   const [costType, setCostType] =
     useState<PurchaseCostDistributionType>("Freight");
@@ -175,7 +171,7 @@ export function DistributeCostModal({
           label={t("purchases.distributeCost.amount", "Valor a distribuir")}
         >
           <ZhDecimalInput
-            decimals={totalAmountDecimals}
+            precision="money"
             positiveOnly
             defaultValue={amount}
             onBlur={(e) => setAmount(Number(e.target.value) || 0)}
@@ -260,14 +256,14 @@ export function DistributeCostModal({
               <td className="zh-table-cell--num">
                 <ZHMoneyValue
                   value={p.currentUnitCost}
-                  decimals={unitCostDecimals}
+                  precision="unitCost"
                   currencySymbol=""
                 />
               </td>
               <td className="zh-table-cell--num">
                 <ZHMoneyValue
                   value={p.subtotalBase}
-                  decimals={totalAmountDecimals}
+                  precision="money"
                   currencySymbol=""
                 />
               </td>
@@ -277,28 +273,28 @@ export function DistributeCostModal({
               <td className="zh-table-cell--num">
                 <ZHMoneyValue
                   value={hasCalculated ? p.allocatedAmount : null}
-                  decimals={totalAmountDecimals}
+                  precision="money"
                   currencySymbol=""
                 />
               </td>
               <td className="zh-table-cell--num">
                 <ZHMoneyValue
                   value={hasCalculated ? p.allocatedPerUnit : null}
-                  decimals={unitCostDecimals}
+                  precision="unitCost"
                   currencySymbol=""
                 />
               </td>
               <td className="zh-table-cell--num">
                 <ZHMoneyValue
                   value={hasCalculated ? p.newUnitCost : null}
-                  decimals={unitCostDecimals}
+                  precision="unitCost"
                   currencySymbol=""
                 />
               </td>
               <td className="zh-table-cell--num">
                 <ZHMoneyValue
                   value={hasCalculated ? p.newLineTotal : null}
-                  decimals={totalAmountDecimals}
+                  precision="money"
                   currencySymbol=""
                 />
               </td>
@@ -317,7 +313,7 @@ export function DistributeCostModal({
           </span>
           <ZHMoneyValue
             value={subtotalBaseIncluded}
-            decimals={totalAmountDecimals}
+            precision="money"
             currencySymbol=""
             emphasis="strong"
           />
@@ -331,7 +327,7 @@ export function DistributeCostModal({
           </span>
           <ZHMoneyValue
             value={subtotalBaseAll}
-            decimals={totalAmountDecimals}
+            precision="money"
             currencySymbol=""
             emphasis="strong"
           />
@@ -342,7 +338,7 @@ export function DistributeCostModal({
           </span>
           <ZHMoneyValue
             value={amount}
-            decimals={totalAmountDecimals}
+            precision="money"
             currencySymbol=""
             emphasis="strong"
           />
@@ -353,7 +349,7 @@ export function DistributeCostModal({
           </span>
           <ZHMoneyValue
             value={hasCalculated ? totalDistributed : null}
-            decimals={totalAmountDecimals}
+            precision="money"
             currencySymbol=""
             emphasis="strong"
           />
@@ -367,7 +363,7 @@ export function DistributeCostModal({
           </span>
           <ZHMoneyValue
             value={hasCalculated ? roundingDiff : null}
-            decimals={totalAmountDecimals}
+            precision="money"
             currencySymbol=""
             emphasis="strong"
           />
@@ -381,7 +377,7 @@ export function DistributeCostModal({
           </span>
           <ZHMoneyValue
             value={grandTotal}
-            decimals={totalAmountDecimals}
+            precision="money"
             currencySymbol=""
             emphasis="strong"
           />
@@ -395,7 +391,7 @@ export function DistributeCostModal({
           </span>
           <ZHMoneyValue
             value={hasCalculated ? totalFacturaDespues : null}
-            decimals={totalAmountDecimals}
+            precision="money"
             currencySymbol=""
             emphasis="strong"
           />
@@ -409,7 +405,7 @@ export function DistributeCostModal({
           </span>
           <ZHMoneyValue
             value={hasCalculated ? totalFacturaDespues : null}
-            decimals={totalAmountDecimals}
+            precision="money"
             currencySymbol=""
             emphasis="strong"
           />
@@ -423,7 +419,7 @@ export function DistributeCostModal({
           </span>
           <ZHMoneyValue
             value={hasCalculated ? roundingDiff : null}
-            decimals={totalAmountDecimals}
+            precision="money"
             currencySymbol=""
             emphasis="strong"
           />
@@ -437,7 +433,7 @@ export function DistributeCostModal({
           </span>
           <ZHMoneyValue
             value={totalFreight}
-            decimals={totalAmountDecimals}
+            precision="money"
             currencySymbol=""
             emphasis="strong"
           />
@@ -451,7 +447,7 @@ export function DistributeCostModal({
           </span>
           <ZHMoneyValue
             value={totalOtherCosts}
-            decimals={totalAmountDecimals}
+            precision="money"
             currencySymbol=""
             emphasis="strong"
           />

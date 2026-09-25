@@ -13,16 +13,13 @@ import {
 } from './check-frontend-precision.mjs';
 
 /**
- * ZH-DESIGN-SYSTEM-PRECISION-05 — el guard F-PREC se prueba por su RESULTADO: alcance y
- * tolerancias reales (config/frontend-precision.json + architecture-grandfather.json) aplicados a
- * fixtures mínimos, y el run-all real sobre el repositorio.
+ * ZH-DESIGN-SYSTEM-PRECISION-05/06 — el guard F-PREC se prueba por su RESULTADO: alcance y
+ * excepciones reales (config/frontend-precision.json) aplicados a fixtures mínimos, y el run-all
+ * real sobre el repositorio. Arquitectura final (06): sin deuda legacy tolerada.
  */
 
 const cfg = loadConfig('frontend-precision.json');
-const allowances = {
-  legacy: loadGrandfather().frontendPrecisionGrandfathered,
-  exceptions: cfg.exceptions,
-};
+const allowances = { exceptions: cfg.exceptions };
 const OPEN_FILE = 'frontend/src/modules/sales/components/NewFeature.tsx';
 
 /** Violaciones reales del guard para `source` ubicado en `file`. */
@@ -33,83 +30,82 @@ function guard(source, file = OPEN_FILE) {
 
 // ── DEBE FALLAR ──────────────────────────────────────────────────────────────────────────────
 
-test('falla: ZhDecimalInput decimals={2} nuevo (sin override contractual)', () => {
-  assert.deepEqual(guard('<ZhDecimalInput decimals={2} positiveOnly />'), [RULES.decimals]);
+test('falla: cualquier `decimals` en JSX — literal, policy o constante *_DECIMALS (06: sin overrides)', () => {
+  assert.deepEqual(guard('<ZhDecimalInput precision="money" decimals={2} />'), [RULES.decimals]);
+  assert.deepEqual(guard('<ZHMoneyValue value={x} precision="money" decimals={policy.moneyDecimals} />'), [RULES.decimals]);
+  assert.deepEqual(guard('<ZhDecimalInput precision="money" decimals={WAREHOUSE_CAPACITY_DECIMALS} />'), [RULES.decimals]);
 });
 
-test('falla: ZHMoneyValue decimals={policy.moneyDecimals} / dc.x / getPrecisionPolicy()', () => {
-  assert.deepEqual(guard('<ZHMoneyValue value={x} decimals={policy.moneyDecimals} />'), [RULES.decimals]);
-  assert.deepEqual(guard('<ZHNumberValue value={x} decimals={dc.quantityDecimals} />'), [RULES.decimals]);
-  assert.deepEqual(
-    guard('<ZHMoneyValue value={x} decimals={getPrecisionPolicy().moneyDecimals} />'),
-    [RULES.decimals, RULES.policyRead],
-  );
+test('falla: componente numérico sin precision', () => {
+  assert.deepEqual(guard('<ZHMoneyValue value={total} emphasis="strong" />'), [RULES.implicitValue]);
+  assert.deepEqual(guard('<ZhDecimalInput {...register("amount")} positiveOnly />'), [RULES.implicitValue]);
+  assert.deepEqual(guard('<ZhCurrencyInput value={v} />'), [RULES.implicitValue]);
 });
 
 test('falla: formatMoney(value) / formatMoneyWithSymbol(value) sin escala', () => {
   assert.deepEqual(guard('const t = <span>{formatMoney(total)}</span>;'), [RULES.implicitFormat]);
-  assert.deepEqual(
-    guard('const t = `Total ${formatMoneyWithSymbol(\n  a + b,\n)}`;'),
-    [RULES.implicitFormat],
-  );
+  assert.deepEqual(guard('const t = `Total ${formatMoneyWithSymbol(\n  a + b,\n)}`;'), [RULES.implicitFormat]);
 });
 
-test('falla: componente numérico sin precision ni decimals (default legacy 2)', () => {
-  assert.deepEqual(guard('<ZHMoneyValue value={total} emphasis="strong" />'), [RULES.implicitValue]);
-  assert.deepEqual(guard('<ZhDecimalInput {...register("amount")} positiveOnly />'), [RULES.implicitValue]);
-});
-
-test('falla: value.toFixed(2) en JSX, Intl.NumberFormat local, getPrecisionPolicy() para display', () => {
-  assert.deepEqual(guard('<td>{row.amount.toFixed(2)}</td>'), [RULES.toFixed]);
-  assert.deepEqual(guard('const f = new Intl.NumberFormat("es-EC", { minimumFractionDigits: 2 });'), [RULES.intl]);
+test('falla: lectura directa de la policy (getPrecisionPolicy / getPrecisionPolicySnapshot)', () => {
   assert.deepEqual(
     guard('const d = getPrecisionPolicy().moneyDecimals; <span>{formatMoney(x, d)}</span>'),
     [RULES.policyRead],
   );
+  assert.deepEqual(guard('const snap = getPrecisionPolicySnapshot();'), [RULES.policyRead]);
 });
 
-test('falla: la deuda de un módulo cerrado NO puede crecer (una ocurrencia más que el baseline)', () => {
-  const entry = allowances.legacy.find((e) => e.rule === RULES.decimals);
-  assert.ok(entry, 'baseline de módulos cerrados presente');
-  const source = Array.from({ length: entry.count + 1 }, () => '<ZhDecimalInput decimals={4} />').join('\n');
-  const violations = guard(source, entry.file);
-  assert.equal(violations.length, entry.count + 1);
-  assert.ok(violations.every((r) => r === RULES.decimals));
+test('falla: toFixed / Intl.NumberFormat locales de presentación', () => {
+  assert.deepEqual(guard('<td>{row.amount.toFixed(2)}</td>'), [RULES.toFixed]);
+  assert.deepEqual(guard('const f = new Intl.NumberFormat("es-EC", { minimumFractionDigits: 2 });'), [RULES.intl]);
 });
 
-test('falla: una excepción abierta tampoco puede crecer (conteo exacto, no wildcard)', () => {
+test('falla: nueva ruta alternativa — segunda tabla semántica → campo …Decimals', () => {
+  assert.deepEqual(
+    guard('const MY_MAP = { money: "moneyDecimals", quantity: "quantityDecimals" };'),
+    [RULES.altMapping, RULES.altMapping],
+  );
+});
+
+test('falla: una excepción no puede crecer (conteo exacto, no wildcard)', () => {
   const exc = cfg.exceptions.find((e) => e.rule === RULES.toFixed);
   const source = Array.from({ length: exc.count + 1 }, (_, i) => `const v${i} = x.toFixed(1);`).join('\n');
   assert.equal(guard(source, exc.file).length, exc.count + 1);
-  assert.deepEqual(guard('const v = x.toFixed(1);', OPEN_FILE), [RULES.toFixed]);
+});
+
+test('falla: Purchases/Items/Pricing ya no tienen tolerancia legacy (06)', () => {
+  assert.deepEqual(guard('<ZhDecimalInput decimals={4} />', 'frontend/src/modules/purchases/pages/PurchasesPage.tsx'), [
+    RULES.decimals,
+    RULES.implicitValue,
+  ]);
+  assert.deepEqual(guard('<ZHMoneyValue value={x} />', 'frontend/src/modules/items/components/X.tsx'), [RULES.implicitValue]);
+  assert.deepEqual(guard('getPrecisionPolicy();', 'frontend/src/modules/pricing/pages/X.tsx'), [RULES.policyRead]);
 });
 
 // ── DEBE PASAR ───────────────────────────────────────────────────────────────────────────────
 
-test('pasa: precision semántica en read-only e input', () => {
+test('pasa: precision semántica en read-only e inputs (incluidos los contratos fijos del backend)', () => {
   assert.deepEqual(guard('<ZHMoneyValue value={x} precision="money" />'), []);
   assert.deepEqual(guard('<ZHNumberValue value={q} precision="quantity" suffix=" und" />'), []);
   assert.deepEqual(guard('<ZhDecimalInput precision="purchaseUnitPrice" {...register("p")} />'), []);
+  assert.deepEqual(guard('<ZhDecimalInput precision="warehouseCapacity" {...register("capacity")} />'), []);
+  assert.deepEqual(guard('<ZhCurrencyInput precision="salesUnitPrice" value={v} />'), []);
 });
 
-test('pasa: usePrecisionDecimals("money") + formatMoney(value, decimals)', () => {
+test('pasa: usePrecisionDecimals + formatter con escala; usePrecisionPolicy + resolver en utilidades', () => {
   const src = [
     'const moneyDecimals = usePrecisionDecimals("money");',
     'const s = `Total: ${formatMoney(total, moneyDecimals)}`;',
-    'const t = formatMoneyWithSymbol(a, moneyDecimals);',
+    'const policy = usePrecisionPolicy();',
+    'const d = resolvePrecisionDecimals(policy, "quantity");',
   ].join('\n');
   assert.deepEqual(guard(src), []);
 });
 
-test('pasa: override contractual con constante nombrada *_DECIMALS', () => {
-  assert.deepEqual(guard('<ZhDecimalInput decimals={WAREHOUSE_CAPACITY_DECIMALS} positiveOnly />'), []);
-  assert.deepEqual(guard('<ZhDecimalInput decimals={INSTALLMENT_PERCENTAGE_DECIMALS} />'), []);
-});
-
-test('pasa: cálculo sin API de precisión, metadata *Decimals y texto en comentarios', () => {
+test('pasa: cálculo sin API de precisión, metadata de configuración y comentarios', () => {
   const src = [
     'const rounded = roundToDecimals(value, decimals);',
-    'const cfg = { quantityDecimals: 4, moneyDecimals: 2 };',
+    'const field = { name: "quantityDecimals", i18nKey: "quantity" };',
     '<ZhNumberInput {...register("quantityDecimals")} />',
     '// antes: formatMoney(x) y x.toFixed(2)',
     '/* <ZHMoneyValue value={x} decimals={2} /> */',
@@ -117,27 +113,30 @@ test('pasa: cálculo sin API de precisión, metadata *Decimals y texto en coment
   assert.deepEqual(guard(src), []);
 });
 
-test('pasa: tests, infraestructura del Design System y deuda legacy ya baselined', () => {
+test('pasa: tests e internos del Design System', () => {
   assert.deepEqual(guard('<ZhDecimalInput decimals={2} />', 'frontend/src/modules/sales/Foo.test.tsx'), []);
-  assert.deepEqual(guard('return value.toFixed(2);', 'frontend/src/components/zh/inputs/ZhDecimalInput.tsx'), []);
-  const entry = allowances.legacy.find((e) => e.rule === RULES.decimals);
-  const source = Array.from({ length: entry.count }, () => '<ZhDecimalInput decimals={4} />').join('\n');
-  assert.deepEqual(guard(source, entry.file), []);
+  assert.deepEqual(guard('<ZhDecimalInputCore decimals={resolved} />', 'frontend/src/components/zh/inputs/ZhDecimalInput.tsx'), []);
 });
 
-test('pasa: excepciones abiertas auditadas en su conteo exacto', () => {
+test('pasa: excepciones auditadas en su conteo exacto, con justificación y sin wildcard', () => {
   for (const exc of cfg.exceptions) {
     assert.ok(exc.reason?.length > 10, `excepción sin justificación: ${exc.file}`);
     assert.ok(!exc.file.includes('*'), `excepción con wildcard: ${exc.file}`);
+    assert.ok(
+      [RULES.policyRead, RULES.toFixed].includes(exc.rule),
+      `una excepción solo cubre cálculo/métrica/payload, no presentación: ${exc.rule}`,
+    );
   }
 });
 
 // ── Resultado real sobre el repositorio ──────────────────────────────────────────────────────
 
-test('repositorio actual: 0 violaciones F-PREC y sin tolerancias sobrantes', () => {
+test('repositorio actual: 0 violaciones, 0 excepciones sobrantes y 0 grandfather de precisión', () => {
   const result = runCheckFrontendPrecision();
   assert.deepEqual(result.violations, []);
   assert.deepEqual(result.warnings, []);
+  assert.equal(loadGrandfather().frontendPrecisionGrandfathered, undefined);
+  assert.equal(cfg.legacyGlobs, undefined);
 });
 
 test('run-all --only frontend-precision reporta PASS', () => {

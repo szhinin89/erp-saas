@@ -8,7 +8,7 @@ import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDa
 import {  ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import {  ZhCurrencyInput } from "../../../components/zh/inputs/ZhCurrencyInput";
 import {  formatMoney, parseDecimal } from "../../../lib/sanitizers";
-import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import {  formatDateTime } from "../../../lib/formatters/dateFormatters";
 import { formatApiRequestError } from "../../lib/apiError";
 import { useI18n } from "../../../i18n/i18n";
@@ -47,6 +47,11 @@ export function PriceListExceptionsTab({
   mode?: "products" | "exceptions";
 }) {
   const { t } = useI18n();
+  // Escalas semánticas (06): % de regla → percentage; precio/ajuste → salesUnitPrice.
+  const pp = {
+    percentageDecimals: usePrecisionDecimals("percentage"),
+    salesUnitPriceDecimals: usePrecisionDecimals("salesUnitPrice"),
+  };
   const { canShow } = usePermissionsUi();
   const [assigning, setAssigning] = useState(false);
   const [revision, setRevision] = useState(0);
@@ -143,19 +148,19 @@ export function PriceListExceptionsTab({
       key: "basePrice",
       align: "right",
       header: t("pricing.ux.base"),
-      render: (row) => (row.baseSalePrice != null ? formatMoney(row.baseSalePrice, getPrecisionPolicy().salesUnitPriceDecimals) : "—"),
+      render: (row) => (row.baseSalePrice != null ? formatMoney(row.baseSalePrice, pp.salesUnitPriceDecimals) : "—"),
     },
     {
       key: "generalRule",
       header: t("pricing.ux.general"),
-      render: () => formatRuleGeneral(priceList.ruleType, priceList.ruleValue, priceList.currencyCode, t),
+      render: () => formatRuleGeneral(priceList.ruleType, priceList.ruleValue, priceList.currencyCode, pp, t),
     },
     {
       key: "exception",
       header: t("pricing.ux.exception"),
       render: (row) =>
         row.rule
-          ? formatRuleGeneral(row.rule.ruleType, row.rule.ruleValue, priceList.currencyCode, t)
+          ? formatRuleGeneral(row.rule.ruleType, row.rule.ruleValue, priceList.currencyCode, pp, t)
           : t("pricing.ux.none"),
     },
     {
@@ -210,7 +215,7 @@ export function PriceListExceptionsTab({
 
       <div className="prd-stat-grid">
         <div><strong>{t("pricing.ux.name")}</strong><p>{priceList.name}</p></div>
-        <div><strong>{t("pricing.ux.general")}</strong><p>{formatRuleGeneral(priceList.ruleType, priceList.ruleValue, priceList.currencyCode, t)}</p></div>
+        <div><strong>{t("pricing.ux.general")}</strong><p>{formatRuleGeneral(priceList.ruleType, priceList.ruleValue, priceList.currencyCode, pp, t)}</p></div>
         <div><strong>{t("pricing.ux.validity")}</strong><p>{priceList.validFrom ? formatDate(priceList.validFrom) : "—"} · {priceList.validUntil ? formatDate(priceList.validUntil) : "—"}</p></div>
         <div><strong>{t("pricing.ux.status")}</strong><p>{t(priceList.isActive ? "pricing.ux.active" : "pricing.ux.inactive")}</p></div>
         <div><strong>{t("pricing.ux.count")}</strong><p>{loading ? "—" : rows.length}</p></div>
@@ -280,7 +285,11 @@ function ExceptionDrawer({
 }) {
   const { t } = useI18n();
   const { canShow } = usePermissionsUi();
-  const pp = getPrecisionPolicy();
+  // Escalas semánticas (06): % de regla → percentage; precio/ajuste → salesUnitPrice.
+  const pp = {
+    percentageDecimals: usePrecisionDecimals("percentage"),
+    salesUnitPriceDecimals: usePrecisionDecimals("salesUnitPrice"),
+  };
   const [selected, setSelected] = useState<DrawerProduct | null>(product);
   const [ruleType, setRuleType] = useState("");
   const [ruleValue, setRuleValue] = useState("");
@@ -449,7 +458,7 @@ function ExceptionDrawer({
             <ZhDecimalInput
               value={ruleValue}
               onChange={(e) => setRuleValue(e.target.value)}
-              decimals={pp.percentageDecimals}
+              precision="percentage"
               positiveOnly
               placeholder="15"
             />
@@ -465,7 +474,7 @@ function ExceptionDrawer({
             <ZhDecimalInput
               value={ruleValue}
               onChange={(e) => setRuleValue(e.target.value)}
-              decimals={pp.percentageDecimals}
+              precision="percentage"
               positiveOnly
               placeholder="8"
             />
@@ -482,7 +491,7 @@ function ExceptionDrawer({
               value={ruleValue}
               onChange={(e) => setRuleValue(e.target.value)}
               currency={priceList.currencyCode}
-              decimals={pp.salesUnitPriceDecimals}
+              precision="salesUnitPrice"
               placeholder="25"
             />
           </div>
@@ -498,7 +507,7 @@ function ExceptionDrawer({
             <ZhDecimalInput
               value={ruleValue}
               onChange={(e) => setRuleValue(e.target.value)}
-              decimals={pp.salesUnitPriceDecimals}
+              precision="salesUnitPrice"
               placeholder="3"
             />
           </div>
@@ -509,8 +518,8 @@ function ExceptionDrawer({
         <div role="status" className="zh-field">
           <p>{t("pricing.ux.summary")}</p>
           <p>{selected.baseSalePrice == null ? "—" : formatMoney(selected.baseSalePrice, pp.salesUnitPriceDecimals)}
-            {" → "}{formatRuleGeneral(priceList.ruleType, priceList.ruleValue, priceList.currencyCode, t)}
-            {" → "}{formatRuleGeneral(ruleType || null, ruleValue.trim() ? parseDecimal(ruleValue) : null, priceList.currencyCode, t)}
+            {" → "}{formatRuleGeneral(priceList.ruleType, priceList.ruleValue, priceList.currencyCode, pp, t)}
+            {" → "}{formatRuleGeneral(ruleType || null, ruleValue.trim() ? parseDecimal(ruleValue) : null, priceList.currencyCode, pp, t)}
             {" → "}<CalculatedPrice key={`${selected.itemId}-${ruleType}-${ruleValue}-${active}`} itemId={selected.itemId} priceList={priceList}
               draft={ruleType && ruleValue.trim() && Number.isFinite(parseDecimal(ruleValue)) ? { priceListId: priceList.id, itemId: selected.itemId, ruleType, ruleValue: parseDecimal(ruleValue) } : undefined}
               incomplete={!ruleType || !ruleValue.trim() || !Number.isFinite(parseDecimal(ruleValue)) || !active} />
@@ -539,7 +548,7 @@ function ExceptionDrawer({
         message={
           existingInactive
             ? `Esta excepción ya existe pero está desactivada, con el valor ` +
-              `"${formatRuleGeneral(existingInactive.ruleType, existingInactive.ruleValue, priceList.currencyCode, t)}"` +
+              `"${formatRuleGeneral(existingInactive.ruleType, existingInactive.ruleValue, priceList.currencyCode, pp, t)}"` +
               (selected?.baseSalePrice != null
                 ? ` (precio base actual del ítem: ${priceList.currencyCode} ${formatMoney(selected.baseSalePrice, pp.salesUnitPriceDecimals)}). `
                 : ". ") +
@@ -667,6 +676,7 @@ function CalculatedPrice({ itemId, priceList, draft, incomplete = false }: {
   incomplete?: boolean;
 }) {
   const { t } = useI18n();
+  const salesUnitPriceDecimals = usePrecisionDecimals("salesUnitPrice"); // (06)
   const [price, setPrice] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(!incomplete);
@@ -683,5 +693,5 @@ function CalculatedPrice({ itemId, priceList, draft, incomplete = false }: {
     return () => { current = false; clearTimeout(timeout); };
   }, [itemId, priceList.id, draft, incomplete, t]);
   if (error) return <span title={error}>{t("pricing.ux.unavailable")}</span>;
-  return <span>{loading ? t("pricing.ux.loading") : price == null ? t("pricing.ux.unavailable") : `${priceList.currencyCode} ${formatMoney(price, getPrecisionPolicy().salesUnitPriceDecimals)}`}</span>;
+  return <span>{loading ? t("pricing.ux.loading") : price == null ? t("pricing.ux.unavailable") : `${priceList.currencyCode} ${formatMoney(price, salesUnitPriceDecimals)}`}</span>;
 }

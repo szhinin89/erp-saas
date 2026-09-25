@@ -7,7 +7,6 @@ import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { ZhSelect } from "../../../components/zh/inputs";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
-import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
@@ -100,7 +99,7 @@ export function PurchaseCreditNoteListPage() {
       render: (row) => (
         <ZHMoneyValue
           value={row.totalAmount}
-          decimals={getPrecisionPolicy().moneyDecimals}
+          precision="money"
           currencySymbol=""
         />
       ),

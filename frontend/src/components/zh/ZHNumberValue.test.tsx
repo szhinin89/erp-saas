@@ -61,16 +61,18 @@ describe("ZHNumberValue — precisión semántica (02A)", () => {
     expect(node?.textContent).toBe("12.3");
   });
 
-  it("decimals explícito gana sobre precision", () => {
-    setPrecisionPolicyForTests(POLICY_A);
-    const { container } = render(<ZHNumberValue value={12.5} precision="quantity" decimals={0} />);
-    expect(amount(container)).toBe("13");
+  it("06 — API única (compile-time): `precision` obligatorio y sin `decimals` público", () => {
+    // @ts-expect-error — sin `precision` no compila.
+    const withoutPrecision = <ZHNumberValue value={1} />;
+    // @ts-expect-error — `decimals` ya no es API pública.
+    const withDecimals = <ZHNumberValue value={1} precision="quantity" decimals={0} />;
+    expect([withoutPrecision, withDecimals]).toHaveLength(2);
   });
 
-  it("solo decimals: no depende de la policy cargada", () => {
-    setPrecisionPolicyForTests(null);
-    const { container } = render(<ZHNumberValue value={2} decimals={3} />);
-    expect(amount(container)).toBe("2.000");
+  it("06 — escala 0 resuelta por la policy redondea al entero", () => {
+    setPrecisionPolicyForTests({ ...POLICY_A, quantityDecimals: 0 });
+    const { container } = render(<ZHNumberValue value={12.5} precision="quantity" />);
+    expect(amount(container)).toBe("13");
   });
 });
 
@@ -148,8 +150,8 @@ describe("ZHNumberValue — presentación (02A)", () => {
   });
 
   it("no muta el value recibido", () => {
-    setPrecisionPolicyForTests(POLICY_A);
-    const props = Object.freeze({ value: 0.075, decimals: 2 });
+    setPrecisionPolicyForTests({ ...POLICY_A, moneyDecimals: 2 });
+    const props = Object.freeze({ value: 0.075, precision: "money" as const });
     const { container } = render(<ZHNumberValue {...props} />);
     expect(amount(container)).toBe("0.08");
     expect(props.value).toBe(0.075);
@@ -173,8 +175,10 @@ describe("motor único: ZHMoneyValue, ZHNumberValue y formatMoney convergen (02A
     [0.12345, 4], [0.2261, 6], [1.123456785, 8], [0.0045783210, 10],
   ])("%s a %s decimales produce el mismo texto en los tres caminos", (value, decimals) => {
     const expected = formatDecimalDisplay(value, decimals);
-    const money = render(<ZHMoneyValue value={value} decimals={decimals} />);
-    const number = render(<ZHNumberValue value={value} decimals={decimals} />);
+    // 06 — la escala llega por la policy (money = decimals), mismo resolver que en la app.
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, moneyDecimals: decimals });
+    const money = render(<ZHMoneyValue value={value} precision="money" />);
+    const number = render(<ZHNumberValue value={value} precision="money" />);
     expect(money.container.querySelector(".zh-money-value__amount")?.textContent).toBe(expected);
     expect(amount(number.container)).toBe(expected);
     expect(formatMoney(value, decimals)).toBe(expected);

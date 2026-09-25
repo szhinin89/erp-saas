@@ -1,5 +1,5 @@
 ﻿import { formatDecimalDisplay } from "../../../../lib/sanitizers";
-import { WAREHOUSE_CAPACITY_DECIMALS } from "../../../../schemas/inventory/warehouseSchema";
+import { usePrecisionDecimals } from "../../../../hooks/usePrecisionPolicy";
 import {
   useCallback,
   useMemo,
@@ -58,6 +58,7 @@ export function WarehouseListadoTab({
   searchInputRef,
 }: Props) {
   const { t } = useI18n();
+  const capacityDecimals = usePrecisionDecimals("warehouseCapacity"); // m³ (06)
   const localRef = useRef<HTMLInputElement>(null);
   const inputRef = searchInputRef ?? localRef;
   const [query, setQuery] = useState("");
@@ -127,7 +128,7 @@ export function WarehouseListadoTab({
       header: t("warehouses.table.capacity", "Capacidad"),
       render: (row) =>
         row.capacity ? (
-          <span className="mono subtle">{formatDecimalDisplay(row.capacity, WAREHOUSE_CAPACITY_DECIMALS)} m³</span>
+          <span className="mono subtle">{formatDecimalDisplay(row.capacity, capacityDecimals)} m³</span>
         ) : (
           <span className="subtle">—</span>
         ),

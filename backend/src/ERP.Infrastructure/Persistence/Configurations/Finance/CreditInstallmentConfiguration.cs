@@ -18,7 +18,7 @@ public sealed class CreditInstallmentConfiguration : IEntityTypeConfiguration<Cr
         builder
             .Property(x => x.Percentage)
             .HasColumnName("percentage")
-            .HasColumnType("numeric(5,2)")
+            .HasColumnType($"numeric(5,{CreditTermsPrecision.InstallmentPercentage})")
             .IsRequired();
 
         builder

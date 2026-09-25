@@ -292,6 +292,23 @@ public sealed class CompanyPrecisionPolicyUseCasesTests
     }
 
     [Fact]
+    public async Task Get_incluye_las_escalas_contractuales_fijas_desde_su_SSOT_de_dominio()
+    {
+        // ZH-DESIGN-SYSTEM-PRECISION-06 — el frontend no define escalas propias: capacidad de bodega y
+        // % de cuota de crédito llegan en la policy efectiva desde la misma constante que usa su columna.
+        var (provider, _, _, _) = BuildProvider(TenantA, CompanyA);
+
+        var dto = await provider.GetEffectiveAsync();
+
+        dto.WarehouseCapacityDecimals.Should().Be(ERP.Domain.Modules.Inventory.Entities.WarehousePrecision.Capacity);
+        dto.WarehouseCapacityDecimals.Should().Be(4); // warehouses.capacity numeric(18,4)
+        dto.CreditInstallmentPercentageDecimals.Should().Be(ERP.Domain.Modules.Finance.Entities.CreditTermsPrecision.InstallmentPercentage);
+        dto.CreditInstallmentPercentageDecimals.Should().Be(2); // credit_installments.percentage numeric(5,2)
+        dto.PackagingWeightDecimals.Should().Be(ERP.Domain.Modules.Items.Entities.ItemPrecision.PackagingWeight);
+        dto.PackagingWeightDecimals.Should().Be(3); // item_packaging_levels.weight numeric(10,3)
+    }
+
+    [Fact]
     public async Task Update_perfil_HighPrecision_carga_los_valores_correctos()
     {
         var (provider, repo, tenant, company) = BuildProvider(TenantA, CompanyA);

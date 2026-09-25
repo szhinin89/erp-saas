@@ -20,7 +20,7 @@ import {
   sriLookupService,
   type SriVatRateLookup,
 } from "../../../modules/items/catalog/api/catalogService";
-import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { formatMoney, formatMoneyWithSymbol } from "../../../lib/sanitizers";
 import { calcMarginAmount, calcMarginPercent } from "../../../lib/margin";
 import type { ItemEditorFormValues } from "./itemEditorSchema";
@@ -507,7 +507,12 @@ function PurchaseInfoReadOnly({
 }: {
   purchaseContext: NonNullable<CreateItemInitialData["purchaseContext"]>;
 }) {
-  const pp = getPrecisionPolicy();
+  // Presentación semántica (06): mismo resolver que el Design System.
+  const pp = {
+    purchaseUnitPriceDecimals: usePrecisionDecimals("purchaseUnitPrice"),
+    quantityDecimals: usePrecisionDecimals("quantity"),
+    percentageDecimals: usePrecisionDecimals("percentage"),
+  };
   const { unitCost, quantity, discountPct } = purchaseContext;
   const hasDiscount = discountPct != null;
   const costFinal = unitCost * (1 - (discountPct ?? 0) / 100);
@@ -587,7 +592,13 @@ function PriceAndProfitability({
   purchaseVatCodeFieldError?: string;
   isUpdate: boolean;
 }) {
-  const pp = getPrecisionPolicy();
+  // Presentación semántica (06): IVA es porcentaje FISCAL; margen/descuento, porcentaje operativo.
+  const pp = {
+    purchaseUnitPriceDecimals: usePrecisionDecimals("purchaseUnitPrice"),
+    salesUnitPriceDecimals: usePrecisionDecimals("salesUnitPrice"),
+    percentageDecimals: usePrecisionDecimals("percentage"),
+    fiscalPercentageDecimals: usePrecisionDecimals("fiscalPercentage"),
+  };
   const costFinal = purchaseContext
     ? purchaseContext.unitCost * (1 - (purchaseContext.discountPct ?? 0) / 100)
     : null;
@@ -619,7 +630,7 @@ function PriceAndProfitability({
           <input
             value={
               xmlVatPercent != null
-                ? `${formatMoney(xmlVatPercent, pp.percentageDecimals)}%`
+                ? `${formatMoney(xmlVatPercent, pp.fiscalPercentageDecimals)}%`
                 : "—"
             }
             disabled
@@ -634,7 +645,7 @@ function PriceAndProfitability({
             <option value="">Sin IVA configurado</option>
             {vatRateOptions.map((v) => (
               <option key={v.code} value={v.code}>
-                {v.name} ({formatMoney(v.percentage, pp.percentageDecimals)}%)
+                {v.name} ({formatMoney(v.percentage, pp.fiscalPercentageDecimals)}%)
               </option>
             ))}
           </select>
@@ -660,7 +671,7 @@ function PriceAndProfitability({
             <option value="">Sin IVA configurado</option>
             {vatRateOptions.map((v) => (
               <option key={v.code} value={v.code}>
-                {v.name} ({formatMoney(v.percentage, pp.percentageDecimals)}%)
+                {v.name} ({formatMoney(v.percentage, pp.fiscalPercentageDecimals)}%)
               </option>
             ))}
           </select>
@@ -674,7 +685,7 @@ function PriceAndProfitability({
           fieldError={salePriceFieldError}
         >
           <ZhDecimalInput
-            decimals={pp.salesUnitPriceDecimals}
+            precision="salesUnitPrice"
             positiveOnly
             placeholder="0.00"
             {...register("salePrice", {
@@ -715,7 +726,7 @@ function PriceAndProfitability({
             <span className="citm-margin-sim__label">IVA</span>
             <span className="citm-margin-sim__value">
               {hasItemVat
-                ? `${formatMoney(itemVatPercent, pp.percentageDecimals)}%`
+                ? `${formatMoney(itemVatPercent, pp.fiscalPercentageDecimals)}%`
                 : "—"}
             </span>
           </div>
