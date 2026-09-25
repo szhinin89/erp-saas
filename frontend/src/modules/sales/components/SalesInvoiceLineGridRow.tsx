@@ -316,7 +316,7 @@ export function SalesInvoiceLineGridRow({
                 key={line.discountPct ?? 0}
                 className="sf-product__disc-input"
                 density="compact"
-                decimals={dc.percentageDecimals}
+                precision="percentage"
                 positiveOnly
                 defaultValue={line.discountPct ?? 0}
                 onBlur={(e) =>
@@ -347,7 +347,7 @@ export function SalesInvoiceLineGridRow({
               key={`${line.unitPrice}:${line.discountPct ?? 0}:${dc.salesUnitPriceDecimals}`}
               className="sf-product__price-input"
               density="compact"
-              decimals={dc.salesUnitPriceDecimals}
+              precision="salesUnitPrice"
               positiveOnly
               defaultValue={invoicedUnitPrice}
               onBlur={(e) => {
@@ -539,7 +539,7 @@ export function SalesInvoiceLineGridRow({
             // lee line.quantity en vivo) queda desincronizado de la cantidad visible.
             key={line.quantity}
             className="sf-product__qty-input"
-            decimals={dc.quantityDecimals}
+            precision="quantity"
             positiveOnly
             defaultValue={line.quantity}
             onBlur={(e) =>

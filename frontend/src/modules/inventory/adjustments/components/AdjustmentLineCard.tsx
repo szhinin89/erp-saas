@@ -119,7 +119,7 @@ export function AdjustmentLineCard({
             {view.uomCode})
           </ZHFieldLabel>
           <ZhDecimalInput
-            decimals={quantityDecimals}
+            precision="quantity"
             positiveOnly
             density="compact"
             key={`qty-${line._key}-${line.packagingLevelId ?? "base"}`}
@@ -160,7 +160,7 @@ export function AdjustmentLineCard({
           </ZHFieldLabel>
           {movementType === "Ingreso" && !formLocked ? (
             <ZhDecimalInput
-              decimals={unitCostDecimals}
+              precision="unitCost"
               positiveOnly
               density="compact"
               key={`cost-${line._key}`}

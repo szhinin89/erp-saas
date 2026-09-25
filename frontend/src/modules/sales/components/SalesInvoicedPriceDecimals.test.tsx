@@ -11,6 +11,7 @@ import { useState } from "react";
 import { SalesInvoiceLineGridRow } from "./SalesInvoiceLineGridRow";
 import type { SalesInvoiceDetailDto, SalesInvoiceDto } from "../api/salesService";
 import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
+import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.config";
 import { buildRepricingPlan, mapResolvedPricingToLineFields } from "../hooks/useSalesCustomerRepricing";
 import type { SalesLineFormValues } from "../schemas/salesInvoiceSchema";
 import type { WarehouseDto } from "../../inventory/types";
@@ -19,20 +20,14 @@ import type { SalesRepricingPreviewItemDto } from "../api/salesRepricingPreviewS
 // SALES-INVOICED-PRICE-CONFIGURED-DECIMALS-07C3 — "Precio facturado" (UnitPrice) y el resto de
 // precios de venta siempre con salesUnitPriceDecimals, sin hardcode 2 ni toFixed sobre binario.
 
-let salesDecimals = 2;
-vi.mock("../../../lib/config/precisionPolicy.config", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../../lib/config/precisionPolicy.config")>();
-  return {
-    ...actual,
-    getPrecisionPolicy: () => ({
-      ...TEST_PRECISION_POLICY,
-      salesUnitPriceDecimals: salesDecimals,
-    }),
-  };
-});
+// ZH-DESIGN-SYSTEM-PRECISION-03E: la escala se fija en la PrecisionPolicy REAL (fuente única que
+// leen tanto getPrecisionPolicy() como los inputs con `precision`), no en un mock paralelo.
+function setSalesDecimals(decimals: number) {
+  setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, salesUnitPriceDecimals: decimals });
+}
 
 beforeEach(() => {
-  salesDecimals = 2;
+  setSalesDecimals(2);
 });
 afterEach(() => cleanup());
 
@@ -122,7 +117,7 @@ describe("precio facturado unitario neto del descuento", () => {
     ["0.3000", "0.00", "0.3", "$0.30", "$0.05", "$0.35"],
     ["0.4000", "0.00", "0.4", "$0.40", "$0.06", "$0.46"],
   ])("editar neto %s sincroniza descuento, fiscalidad y snapshot", (net, discount, reference, base, vat, total) => {
-    salesDecimals = 4;
+    setSalesDecimals(4);
     const { container, getByText, getByTestId } = render(<EditableRow />);
     expect(priceInput(container).value).toBe("0.2700");
     const input = priceInput(container);
@@ -165,7 +160,7 @@ describe("precio facturado unitario neto del descuento", () => {
     [1.15, 4, "0.2966", 0.30, 0.05, 0.35],
     [1.15, 5, "0.29655", 0.30, 0.05, 0.35],
   ])("dto %s con %s decimales muestra %s sin alterar impuestos", (pct, decimals, expected, base, vat, total) => {
-    salesDecimals = decimals;
+    setSalesDecimals(decimals);
     const { container } = render(row(pct));
     expect(priceInput(container).value).toBe(expected);
     const fiscal = calcFiscalLine(line({ unitPrice: 0.3, discountPct: pct }), { "10": 15 });
@@ -176,7 +171,7 @@ describe("precio facturado unitario neto del descuento", () => {
   });
 
   it("actualiza el neto al cambiar el descuento en la misma fila", () => {
-    salesDecimals = 4;
+    setSalesDecimals(4);
     const { container, rerender } = render(row(0));
     expect(priceInput(container).value).toBe("0.3000");
     rerender(row(10));
@@ -186,7 +181,7 @@ describe("precio facturado unitario neto del descuento", () => {
   });
 
   it("reabierto usa precio y porcentaje persistidos sin dividir la base fiscal", () => {
-    salesDecimals = 5;
+    setSalesDecimals(5);
     const backend = { unitPrice: 0.3, discountPct: 1.15, taxableBase: 0.3,
       vatAmount: 0.05, taxInclusiveTotal: 0.35 } as SalesInvoiceDetailDto;
     const { container } = render(row(1.15, true, vi.fn(), backend));
@@ -195,7 +190,7 @@ describe("precio facturado unitario neto del descuento", () => {
   });
 
   it("foco y blur no persisten el neto como precio bruto ni aplican dos veces el descuento", () => {
-    salesDecimals = 4;
+    setSalesDecimals(4);
     const onUpdate = vi.fn();
     const { container } = render(row(10, false, onUpdate));
     const input = priceInput(container);
@@ -240,7 +235,7 @@ describe("línea de venta nueva — Precio facturado y Precio lista con decimale
     [3, "0.495", "0.550"],
     [4, "0.4950", "0.5500"],
   ])("config %i decimales → precio facturado %s y precio lista %s", (decimals, invoiced, list) => {
-    salesDecimals = decimals;
+    setSalesDecimals(decimals);
     const { container } = renderLines([line()]);
     expect(priceInput(container).value).toBe(invoiced);
     expect(listPriceText(container)).toContain(list); // antes: siempre 2 decimales
@@ -253,7 +248,7 @@ describe("draft reabierto y factura autorizada (read-only)", () => {
     [3, "0.495"],
     [4, "0.4950"],
   ])("draft reabierto (editable) con config %i → %s", (decimals, expected) => {
-    salesDecimals = decimals;
+    setSalesDecimals(decimals);
     const { container } = renderLines([
       line({ _priceListIdAtSale: "l1", _priceListNameAtSale: "MAYORISTA001", _traceabilityVersionAtSale: 1 }),
     ]);
@@ -265,7 +260,7 @@ describe("draft reabierto y factura autorizada (read-only)", () => {
     [3, "0.495", "0.550"],
     [4, "0.4950", "0.5500"],
   ])("factura autorizada con config %i → facturado %s, lista %s", (decimals, invoiced, list) => {
-    salesDecimals = decimals;
+    setSalesDecimals(decimals);
     const { container } = renderLines(
       [
         line({
@@ -288,7 +283,7 @@ describe("conversionFactor (venta por presentación)", () => {
     [3, "1.485"],
     [4, "1.4850"],
   ])("0.495 × caja de 3, config %i → %s", (decimals, expected) => {
-    salesDecimals = decimals;
+    setSalesDecimals(decimals);
     const fields = mapResolvedPricingToLineFields(0.495, 0.55, "MAYORISTA001", null, 3, "l1");
     const { container } = renderLines([line({ unitPrice: fields.unitPrice, conversionFactor: 3 })]);
     expect(priceInput(container).value).toBe(expected);
@@ -306,7 +301,7 @@ describe("precio manual — foco/blur no lo altera", () => {
   });
 
   it("editar a un valor distinto sí se envía, ya con los decimales configurados", () => {
-    salesDecimals = 3;
+    setSalesDecimals(3);
     const onUpdateLine = vi.fn();
     const { container } = renderLines([line()], { onUpdateLine });
     const input = priceInput(container);
@@ -316,7 +311,7 @@ describe("precio manual — foco/blur no lo altera", () => {
   });
 
   it("línea manual (0.50 tecleado) se muestra con los decimales configurados", () => {
-    salesDecimals = 4;
+    setSalesDecimals(4);
     const { container } = renderLines([line({ unitPrice: 0.5, _isManualPrice: true })]);
     expect(priceInput(container).value).toBe("0.5000");
   });
