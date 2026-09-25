@@ -1,6 +1,9 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, cleanup } from "@testing-library/react";
+import { useState } from "react";
+import { act, render, cleanup, fireEvent } from "@testing-library/react";
+import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.config";
+import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 import { ReturnableLinesEditor } from "./ReturnableLinesEditor";
 import type { ReturnableLineDto } from "../api/salesReturnService";
 
@@ -136,5 +139,46 @@ describe("ReturnableLinesEditor — presentación (SALES-PRESENTATIONS-04)", () 
     );
 
     expect(container.querySelector("select")).toBeNull();
+  });
+});
+
+/** ZH-DESIGN-SYSTEM-PRECISION-04D — "cantidad a devolver" declara `precision="quantity"`. */
+describe("ReturnableLinesEditor — precision='quantity' (04D)", () => {
+  function Stateful({ spy }: { spy: (id: string, v: string) => void }) {
+    const [quantities, setQuantities] = useState<Record<string, string>>({});
+    return (
+      <ReturnableLinesEditor
+        lines={[buildLine()]}
+        quantities={quantities}
+        onChangeQuantity={(id, v) => {
+          spy(id, v);
+          setQuantities((q) => ({ ...q, [id]: v }));
+        }}
+      />
+    );
+  }
+  function allowsDecimal(input: HTMLInputElement, digits: number) {
+    fireEvent.change(input, { target: { value: `1.${"1".repeat(digits)}` } });
+    input.setSelectionRange(input.value.length, input.value.length);
+    return fireEvent.keyDown(input, { key: "9" });
+  }
+
+  it("usa quantityDecimals de la policy y reacciona A → B sin remount", () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, quantityDecimals: 3 });
+    const { container } = render(<Stateful spy={() => {}} />);
+    const qty = container.querySelector<HTMLInputElement>("input.zh-numeric-input")!;
+    expect([allowsDecimal(qty, 2), allowsDecimal(qty, 3)]).toEqual([true, false]);
+    act(() => setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, quantityDecimals: 1 }));
+    expect(container.querySelector("input.zh-numeric-input")).toBe(qty);
+    expect(allowsDecimal(qty, 1)).toBe(false);
+  });
+
+  it("paste '2,5' → onChangeQuantity recibe el texto canónico '2.5' (mismo contrato)", () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, quantityDecimals: 4 });
+    const spy = vi.fn();
+    const { container } = render(<Stateful spy={spy} />);
+    const qty = container.querySelector<HTMLInputElement>("input.zh-numeric-input")!;
+    fireEvent.paste(qty, { clipboardData: { getData: () => "2,5" } });
+    expect(spy).toHaveBeenLastCalledWith("od-1", "2.5");
   });
 });

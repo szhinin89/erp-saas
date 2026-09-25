@@ -402,6 +402,9 @@ export function CreditTermsPage() {
                   </FormField>
                   <FormField label="Porcentaje (%)">
                     <ZhDecimalInput
+                      // Override contractual (ZH-DESIGN-SYSTEM-PRECISION-04D): reparto % de la cuota,
+                      // persistido en CreditInstallment numeric(5,2); no es un porcentaje operativo de
+                      // CompanyPrecisionPolicy ni un porcentaje fiscal — su escala es la de la columna.
                       decimals={2}
                       positiveOnly
                       defaultValue={inst.percentage}

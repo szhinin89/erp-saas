@@ -370,7 +370,7 @@ export function FiscalSettingsSection() {
                     hint="Si una venta a Consumidor Final supera este monto, debe seleccionarse un cliente identificado."
                   >
                     <ZhDecimalInput
-                      decimals={2}
+                      precision="money"
                       positiveOnly
                       disabled={policySaving || !canEdit}
                       {...registerPolicy("consumerFinalMaxAmount")}

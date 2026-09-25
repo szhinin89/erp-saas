@@ -290,7 +290,7 @@ function PrecisionPolicyForm({
                   >
                     <ZhDecimalInput
                       disabled={fieldsDisabled}
-                      decimals={policy.moneyDecimals}
+                      precision="money"
                       positiveOnly
                       {...register("settlementToleranceAmount")}
                     />

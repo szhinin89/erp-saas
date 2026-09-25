@@ -84,7 +84,7 @@ export function ReturnableLinesEditor({
                 </td>
                 <td className="zh-text-align-right">
                   <ZhDecimalInput
-                    decimals={dc.quantityDecimals}
+                    precision="quantity"
                     positiveOnly
                     disabled={disabled || line.remainingQuantity <= 0}
                     value={qty}

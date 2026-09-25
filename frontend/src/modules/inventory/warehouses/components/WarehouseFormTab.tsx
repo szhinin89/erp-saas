@@ -315,7 +315,12 @@ export function WarehouseFormTab({
                   error={errors.capacity?.message}
                 >
                   <ZhDecimalInput
-                    decimals={2}
+                    // Override contractual (ZH-DESIGN-SYSTEM-PRECISION-04D1): capacidad física en m³, sin
+                    // PrecisionKind (no es cantidad de ítems ni dato de la PrecisionPolicy). Su única escala
+                    // definida es la persistencia — Warehouse.Capacity decimal? → numeric(18,4); el validador
+                    // no la limita y ninguna regla funcional exige 2 — así que el input admite 4 para no
+                    // truncar al editar una capacidad guardada con 3–4 decimales.
+                    decimals={4}
                     positiveOnly
                     placeholder="0"
                     disabled={saving}

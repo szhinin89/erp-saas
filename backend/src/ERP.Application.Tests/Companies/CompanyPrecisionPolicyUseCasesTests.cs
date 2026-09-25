@@ -227,6 +227,34 @@ public sealed class CompanyPrecisionPolicyUseCasesTests
         validator.Validate(ok with { ProfileType = "Nope" }).IsValid.Should().BeFalse();
     }
 
+    [Theory]
+    [InlineData("0")]
+    [InlineData("0.01")]
+    [InlineData("0.02")]
+    [InlineData("0.010")] // ceros finales no agregan escala efectiva
+    public void SettlementTolerance_dentro_de_la_escala_money_es_valida(string tolerance)
+    {
+        var cmd = new UpdateCompanyPrecisionPolicyCommand(
+            "Custom", 2, 4, 4, 2, 6, 6, 6,
+            decimal.Parse(tolerance, System.Globalization.CultureInfo.InvariantCulture)
+        );
+        new UpdateCompanyPrecisionPolicyCommandValidator().Validate(cmd).IsValid.Should().BeTrue();
+    }
+
+    [Fact]
+    public void SettlementTolerance_con_mas_escala_que_money_se_rechaza_sin_depender_de_PostgreSQL()
+    {
+        // 04D1 — antes 0.015 pasaba el rango 0–0.02 y numeric(5,2) lo redondeaba en silencio a 0.02.
+        var cmd = new UpdateCompanyPrecisionPolicyCommand("Custom", 2, 4, 4, 2, 6, 6, 6, 0.015m);
+        var result = new UpdateCompanyPrecisionPolicyCommandValidator().Validate(cmd);
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e =>
+            e.PropertyName == nameof(UpdateCompanyPrecisionPolicyCommand.SettlementToleranceAmount)
+            && e.ErrorMessage.Contains(ERP.Domain.Common.FiscalPrecision.TaxAmount.ToString())
+        );
+    }
+
     [Fact]
     public async Task Get_sin_contexto_de_empresa_activa_falla_cerrado()
     {

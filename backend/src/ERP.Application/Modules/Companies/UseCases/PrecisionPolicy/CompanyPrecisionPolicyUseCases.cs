@@ -133,6 +133,14 @@ public sealed class UpdateCompanyPrecisionPolicyCommandValidator
         RangeRule(x => x.AverageCostDecimals, PrecisionPolicyDefinitions.AverageCostDecimals);
         RangeRule(x => x.ConversionFactorDecimals, PrecisionPolicyDefinitions.ConversionFactorDecimals);
         RangeRule(x => x.SettlementToleranceAmount, PrecisionPolicyDefinitions.SettlementToleranceAmount);
+        // ZH-DESIGN-SYSTEM-PRECISION-04D1 — la tolerancia es un MONTO: su escala es la de money
+        // (FiscalPrecision.TaxAmount, la misma que expone EffectivePrecisionPolicyDto.MoneyDecimals y la de
+        // la columna numeric(5,2)). Un valor con más decimales se rechaza aquí, nunca lo redondea PostgreSQL.
+        RuleFor(x => x.SettlementToleranceAmount)
+            .Must(v => decimal.Round(v, ERP.Domain.Common.FiscalPrecision.TaxAmount) == v)
+            .WithMessage(
+                $"La tolerancia de cuadre admite como máximo {ERP.Domain.Common.FiscalPrecision.TaxAmount} decimales."
+            );
     }
 
     private void RangeRule<T>(System.Linq.Expressions.Expression<Func<UpdateCompanyPrecisionPolicyCommand, T>> selector, string key)

@@ -4,8 +4,8 @@ import { render, screen, cleanup, waitFor, fireEvent, within } from "@testing-li
 import { I18nProvider } from "../../../../i18n/i18n";
 import { dictionaries } from "../../../../i18n/dictionaries";
 import { precisionExample, PRECISION_SECTIONS } from "../precisionPolicyFields";
-import type { PrecisionPolicy } from "../../../../lib/config/precisionPolicy.config";
-import { TEST_PRECISION_METADATA } from "../../../../test/precisionPolicyFixture";
+import { setPrecisionPolicyForTests, type PrecisionPolicy } from "../../../../lib/config/precisionPolicy.config";
+import { TEST_PRECISION_METADATA, TEST_PRECISION_POLICY } from "../../../../test/precisionPolicyFixture";
 
 // ERP-PRECISION-POLICY-SETTINGS-UX-02 — estructura, ejemplos dinámicos y bloqueo de la pantalla
 // de precisión decimal por empresa. No cambia rangos, defaults ni cálculos.
@@ -354,5 +354,32 @@ describe("ERP-PRECISION-POLICY-SSOT-CLEANUP-04 — la pantalla solo consume la A
     );
     await screen.findByText(/No se pudo cargar la configuración de precisión/);
     expect(document.querySelector("form")).toBeNull();
+  });
+});
+
+/**
+ * ZH-DESIGN-SYSTEM-PRECISION-04D — la tolerancia de cuadre es un MONTO (decimal 0–0.02, numeric(5,2),
+ * comparada contra diferencias monetarias al autorizar ventas/devoluciones): `precision="money"`
+ * (antes decimals={policy.moneyDecimals}, misma escala). Los campos *Decimals son METADATA de
+ * precisión y siguen siendo ZhNumberInput enteros, sin PrecisionKind.
+ */
+describe("PrecisionPolicySettingsSection — tolerancia con precision='money' (04D)", () => {
+  function allowsDecimal(el: HTMLInputElement, digits: number) {
+    fireEvent.change(el, { target: { value: `0.${"0".repeat(digits)}` } });
+    el.setSelectionRange(el.value.length, el.value.length);
+    return fireEvent.keyDown(el, { key: "1" });
+  }
+
+  it("la tolerancia toma moneyDecimals de la policy activa (sintética 3)", async () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, moneyDecimals: 3 });
+    await renderSection(policy());
+    const tolerance = input("settlementToleranceAmount");
+    expect([allowsDecimal(tolerance, 2), allowsDecimal(tolerance, 3)]).toEqual([true, false]);
+  });
+
+  it("los campos *Decimals (metadata) son enteros: no admiten punto decimal", async () => {
+    await renderSection(policy());
+    const quantityDecimals = input("quantityDecimals");
+    expect(fireEvent.keyDown(quantityDecimals, { key: "." })).toBe(false);
   });
 });

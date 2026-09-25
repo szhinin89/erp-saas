@@ -59,7 +59,7 @@ export function SalesPosPreferencesSection() {
           >
             <ZhDecimalInput
               disabled={page.saving || !page.canEdit}
-              decimals={2}
+              precision="percentage"
               positiveOnly
               {...register("maxDiscountPercent")}
             />

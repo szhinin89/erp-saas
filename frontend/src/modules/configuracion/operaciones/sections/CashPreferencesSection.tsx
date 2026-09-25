@@ -69,7 +69,7 @@ export function CashPreferencesSection() {
           >
             <ZhDecimalInput
               disabled={page.saving || !page.canEdit || !page.allowCloseWithDifferenceValue}
-              decimals={2}
+              precision="money"
               positiveOnly
               {...register("maxAllowedDifference")}
             />
