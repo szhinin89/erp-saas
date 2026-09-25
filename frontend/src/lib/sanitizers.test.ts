@@ -5,6 +5,7 @@ import {
   formatMoneyWithSymbol,
   normalizeOptionalCode,
   roundToDecimals,
+  sanitizeDecimal,
 } from "./sanitizers";
 
 describe("money presentation HALF_UP / AwayFromZero", () => {
@@ -137,5 +138,67 @@ describe("formatDecimalDisplay — motor único (02A)", () => {
     const es = formatDecimalDisplay(12345.675, 2, "es-EC");
     expect(es.replace(/\D/g, "")).toBe("1234568"); // mismos dígitos que "12345.68"
     expect(es).toBe(new Intl.NumberFormat("es-EC", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format("12345.68"));
+  });
+});
+
+/** ZH-DESIGN-SYSTEM-PRECISION-03C0 — regla léxica única del separador decimal en entrada (paste). */
+describe("sanitizeDecimal — separador decimal (03C0)", () => {
+  it.each([
+    ["1,5", 2, false, "1.5"],
+    ["0,075", 3, false, "0.075"],
+    ["-1,5", 2, false, "-1.5"],
+    ["-1,5", 2, true, "1.5"],
+    ["12,3499", 2, false, "12.34"], // sigue TRUNCANDO, no redondea
+    ["1,5", 0, false, "1"], // decimals=0 descarta la parte decimal (igual que con punto)
+  ])("coma decimal: %s (decimals %s, positiveOnly %s) → %s", (raw, decimals, positiveOnly, expected) => {
+    expect(sanitizeDecimal(raw, decimals, positiveOnly)).toBe(expected);
+  });
+
+  it.each([
+    ["1,234.56", 2, "1234.56"], // con punto presente, la coma es agrupación (contrato 01A)
+    ["$ 1,234.56 USD", 2, "1234.56"],
+    ["12.3499", 2, "12.34"],
+    ["abc", 2, ""],
+    ["", 2, ""],
+    ["1.2.3", 4, "1.23"],
+  ])("contratos existentes intactos: %s → %s", (raw, decimals, expected) => {
+    expect(sanitizeDecimal(raw, decimals)).toBe(expected);
+  });
+});
+
+/**
+ * ZH-DESIGN-SYSTEM-PRECISION-03C01 — política oficial de separadores en paste (normalización léxica,
+ * sin locale/Intl/Decimal): una sola aparición = decimal; mixtos → el separador MÁS A LA DERECHA es
+ * decimal y el otro agrupación; un solo tipo repetido en grupos de 3 = agrupación. Luego trunca.
+ */
+describe("sanitizeDecimal — política de separadores (03C01)", () => {
+  it.each([
+    // una sola aparición → decimal (sin inferir miles por 3 dígitos)
+    ["1,5", 2, "1.5"],
+    ["0,075", 3, "0.075"],
+    ["1,234", 3, "1.234"],
+    ["1.234", 3, "1.234"],
+    // mixtos → el separador de la derecha es decimal
+    ["1.234,56", 2, "1234.56"],
+    ["1,234.56", 2, "1234.56"],
+    ["12.345,6789", 4, "12345.6789"],
+    ["1.234.567,89", 2, "1234567.89"],
+    ["1,234,567.89", 2, "1234567.89"],
+    // un solo tipo repetido con grupos de 3 → agrupación
+    ["1,234,567", 2, "1234567"],
+    ["1.234.567", 2, "1234567"],
+    // truncado posterior (no redondea)
+    ["1.234,5678", 2, "1234.56"],
+    ["1,234.5678", 2, "1234.56"],
+    // malformado: contratos previos intactos
+    ["1.2.3", 4, "1.23"],
+    ["1,2,3", 2, "123"],
+  ])("%s (decimals %s) → %s", (raw, decimals, expected) => {
+    expect(sanitizeDecimal(raw, decimals)).toBe(expected);
+  });
+
+  it("signo: '-1.234,56' → '-1234.56'; con positiveOnly → '1234.56'", () => {
+    expect(sanitizeDecimal("-1.234,56", 2)).toBe("-1234.56");
+    expect(sanitizeDecimal("-1.234,56", 2, true)).toBe("1234.56");
   });
 });

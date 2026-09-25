@@ -1,5 +1,5 @@
 import React from "react";
-import { allowsDecimalKey } from "../../../lib/validators/numericValidators";
+import { handleDecimalKeyDown } from "../../../lib/validators/numericValidators";
 import { sanitizeDecimal } from "../../../lib/sanitizers";
 import { setProgrammaticInputValue } from "../../../lib/inputUtils";
 import type { PrecisionKind } from "../../../lib/config/precisionPolicy.config";
@@ -46,7 +46,7 @@ const ZhDecimalInputCore = React.forwardRef<HTMLInputElement, Props>(
     ref,
   ) => {
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (!allowsDecimalKey(e, decimals, positiveOnly)) e.preventDefault();
+      handleDecimalKeyDown(e, decimals, positiveOnly);
       onKeyDown?.(e);
     };
 

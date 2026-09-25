@@ -311,3 +311,69 @@ describe("ZhCurrencyInput — precision semántica (03B)", () => {
     expect(wrapper.querySelector(".zh-input-prefix")?.textContent).toBe("USD");
   });
 });
+
+/** ZH-DESIGN-SYSTEM-PRECISION-03C0 — coma decimal normalizada a punto; contrato positivo intacto. */
+describe("ZhCurrencyInput — coma decimal normalizada a punto (03C0)", () => {
+  function press(input: HTMLInputElement, key: string) {
+    input.setSelectionRange(input.value.length, input.value.length);
+    return keyAllowed(input, key);
+  }
+
+  it("teclado: '1' + ',' → '1.' y onChange recibe el punto", () => {
+    const onChange = vi.fn();
+    const { input } = renderInput({ onChange });
+    typeRaw(input, "1");
+    onChange.mockClear();
+    expect(press(input, ",")).toBe(false);
+    expect(input.value).toBe("1.");
+    expect((onChange.mock.calls[0]![0] as { target: HTMLInputElement }).target.value).toBe("1.");
+  });
+
+  it("paste '1,5' → '1.5'; paste '-1,5' → '1.5' (siempre positivo); exceso trunca", () => {
+    const { input } = renderInput();
+    paste(input, "1,5");
+    expect(input.value).toBe("1.5");
+    paste(input, "-1,5");
+    expect(input.value).toBe("1.5");
+    paste(input, "12,3499");
+    expect(input.value).toBe("12.34");
+  });
+
+  it("límite de decimales y decimals=0 aplican igual con coma", () => {
+    const { input } = renderInput({ decimals: 2 });
+    typeRaw(input, "1.23");
+    expect(press(input, ",")).toBe(false);
+    cleanup();
+    const zero = renderInput({ decimals: 0 });
+    typeRaw(zero.input, "1");
+    expect(press(zero.input, ",")).toBe(false);
+    expect(zero.input.value).toBe("1");
+  });
+
+  it("precision='salesUnitPrice' también normaliza; blur sigue sin formatear", () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, salesUnitPriceDecimals: 4 });
+    const onChange = vi.fn();
+    const { input, wrapper } = renderInput({ precision: "salesUnitPrice", onChange });
+    typeRaw(input, "5");
+    press(input, ",");
+    expect(input.value).toBe("5.");
+    onChange.mockClear();
+    fireEvent.blur(input);
+    expect(input.value).toBe("5.");
+    expect(onChange).not.toHaveBeenCalled();
+    expect(wrapper.className).toBe("zh-prefixed-input");
+  });
+});
+
+/** ZH-DESIGN-SYSTEM-PRECISION-03C01 — paste con formato mixto; sigue siempre positivo. */
+describe("ZhCurrencyInput — paste con separadores mixtos (03C01)", () => {
+  it("paste '1.234,56' → '1234.56'; '-1.234,56' → '1234.56'; '1,234,567' → '1234567'", () => {
+    const { input } = renderInput();
+    paste(input, "1.234,56");
+    expect(input.value).toBe("1234.56");
+    paste(input, "-1.234,56");
+    expect(input.value).toBe("1234.56");
+    paste(input, "1,234,567");
+    expect(input.value).toBe("1234567");
+  });
+});

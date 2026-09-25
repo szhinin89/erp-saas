@@ -44,13 +44,40 @@ export function sanitizeInteger(raw: string, positiveOnly = false): string {
   return negative && digits.length > 0 ? `-${digits}` : digits;
 }
 
+/**
+ * ZH-DESIGN-SYSTEM-PRECISION-03C0/03C01 — política léxica ÚNICA de separadores de la entrada (sin
+ * locale/Intl/Decimal). Devuelve solo dígitos y a lo sumo un "." canónico, o varios "." si la
+ * cadena está malformada (lo resuelve después `sanitizeDecimal`, contrato previo):
+ * - "." y "," juntos: el separador MÁS A LA DERECHA es decimal; el otro es agrupación y se elimina
+ *   ("1.234,56" / "1,234.56" → "1234.56").
+ * - un solo tipo, una aparición: es decimal ("1,5" → "1.5"; "1,234" → "1.234", sin inferir miles).
+ * - un solo tipo repetido en grupos de 3 ("1,234,567" / "1.234.567"): agrupación → "1234567".
+ * - otro repetido (malformado): comas se descartan, puntos quedan como estaban ("1.2.3").
+ */
+function normalizeDecimalSeparators(raw: string): string {
+  const t = raw.replace(/[^\d.,]/g, "");
+  const lastDot = t.lastIndexOf(".");
+  const lastComma = t.lastIndexOf(",");
+  if (lastDot !== -1 && lastComma !== -1) {
+    const [decimal, grouping] = lastDot > lastComma ? [".", ","] : [",", "."];
+    return t.split(grouping).join("").replace(decimal, ".");
+  }
+  if (lastDot === -1 && lastComma === -1) return t;
+  const sep = lastComma !== -1 ? "," : ".";
+  const count = t.split(sep).length - 1;
+  if (count === 1) return t.replace(sep, ".");
+  const grouped = new RegExp(`^\\d{1,3}(\\${sep}\\d{3})+$`).test(t);
+  if (grouped || sep === ",") return t.split(sep).join("");
+  return t;
+}
+
 export function sanitizeDecimal(
   raw: string,
   decimals: number,
   positiveOnly = false,
 ): string {
   const negative = !positiveOnly && raw.trimStart().startsWith("-");
-  let s = raw.replace(/[^\d.]/g, "");
+  let s = normalizeDecimalSeparators(raw);
   const parts = s.split(".");
   if (parts.length > 1) {
     const intPart = parts[0]!;

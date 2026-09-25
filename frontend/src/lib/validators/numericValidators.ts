@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { setProgrammaticInputValue } from "../inputUtils";
 
 const NAV_KEYS = new Set([
   "Backspace",
@@ -62,6 +63,30 @@ export function allowsDecimalKey(
     return input.value.length - dotIndex - 1 < decimals;
   }
   return false;
+}
+
+/**
+ * ZH-DESIGN-SYSTEM-PRECISION-03C0 — onKeyDown ÚNICO de los inputs decimales (`ZhDecimalInput`,
+ * `ZhCurrencyInput`). Aplica `allowsDecimalKey` y normaliza la coma decimal: el teclado/numpad
+ * es-EC emite ",", que se cancela y se inserta "." en la selección (valor canónico ERP). La coma
+ * nunca queda en el DOM; el resto de teclas conserva el comportamiento nativo.
+ */
+export function handleDecimalKeyDown(
+  e: React.KeyboardEvent<HTMLInputElement>,
+  decimals: number,
+  positiveOnly = false,
+): void {
+  if (!allowsDecimalKey(e, decimals, positiveOnly)) {
+    e.preventDefault();
+    return;
+  }
+  if (e.key !== "," || e.ctrlKey || e.metaKey) return;
+  e.preventDefault();
+  const input = e.currentTarget;
+  const start = input.selectionStart ?? input.value.length;
+  const end = input.selectionEnd ?? start;
+  setProgrammaticInputValue(input, `${input.value.slice(0, start)}.${input.value.slice(end)}`);
+  input.setSelectionRange(start + 1, start + 1);
 }
 
 // ── Zod schemas ────────────────────────────────────────────────────────────────

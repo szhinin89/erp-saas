@@ -152,9 +152,11 @@ describe("ZhDecimalInput — teclado", () => {
     expect(keyAllowed(input, ".")).toBe(false);
   });
 
-  it("legacy: la coma se permite como tecla si aún no hay punto (no se convierte a punto)", () => {
+  // 03C0: antes "legacy: la coma se permite como tecla (no se convierte a punto)" — defecto corregido.
+  it("contract: la coma nativa se cancela y se inserta el punto canónico (03C0)", () => {
     const { input } = renderInput();
-    expect(keyAllowed(input, ",")).toBe(true);
+    expect(keyAllowed(input, ",")).toBe(false);
+    expect(input.value).toBe(".");
   });
 
   it("contract: decimals=0 bloquea punto y coma", () => {
@@ -481,5 +483,158 @@ describe("ZhDecimalInput — precision semántica (03B)", () => {
     fireEvent.blur(input);
     expect(input.value).toBe("2.500");
     expect(getValues().qty).toBe("2.500");
+  });
+});
+
+/**
+ * ZH-DESIGN-SYSTEM-PRECISION-03C0 — coma decimal. El teclado es-EC (y el numpad) emite ",": se
+ * normaliza a "." (valor canónico ERP). La coma nunca queda en el DOM ni en el valor del formulario.
+ */
+describe("ZhDecimalInput — coma decimal normalizada a punto (03C0)", () => {
+  /** Tecla sobre el valor actual con el cursor al final; devuelve si el navegador la insertaría. */
+  function press(input: HTMLInputElement, key: string, init: object = {}) {
+    input.setSelectionRange(input.value.length, input.value.length);
+    return fireEvent.keyDown(input, { key, ...init });
+  }
+
+  it("teclado: '1' + ',' deja '1.' (la coma no queda en el DOM) y onChange recibe '1.'", () => {
+    const onChange = vi.fn();
+    const { input } = renderInput({ onChange });
+    typeRaw(input, "1");
+    onChange.mockClear();
+    expect(press(input, ",")).toBe(false); // la coma nativa se cancela…
+    expect(input.value).toBe("1."); // …y se inserta el punto canónico
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect((onChange.mock.calls[0]![0] as { target: HTMLInputElement }).target.value).toBe("1.");
+  });
+
+  it("numpad (code NumpadDecimal, key ',') se trata igual", () => {
+    const { input } = renderInput();
+    typeRaw(input, "7");
+    press(input, ",", { code: "NumpadDecimal" });
+    expect(input.value).toBe("7.");
+  });
+
+  it("la coma reemplaza la selección y deja el cursor tras el punto", () => {
+    const { input } = renderInput();
+    typeRaw(input, "123");
+    input.setSelectionRange(1, 3);
+    fireEvent.keyDown(input, { key: "," });
+    expect(input.value).toBe("1.");
+    expect(input.selectionStart).toBe(2);
+  });
+
+  it("negativo: '-1' + ',' → '-1.'", () => {
+    const { input } = renderInput();
+    typeRaw(input, "-1");
+    press(input, ",");
+    expect(input.value).toBe("-1.");
+  });
+
+  it("segundo separador: con '.' presente, ',' se bloquea igual que un segundo '.'", () => {
+    const { input } = renderInput();
+    typeRaw(input, "1.2");
+    expect(press(input, ",")).toBe(false);
+    expect(input.value).toBe("1.2");
+  });
+
+  it("decimals=0: ',' no inserta separador", () => {
+    const { input } = renderInput({ decimals: 0 });
+    typeRaw(input, "1");
+    expect(press(input, ",")).toBe(false);
+    expect(input.value).toBe("1");
+  });
+
+  it("límite de decimales tras la coma normalizada ('1,23' + '4' bloqueado con decimals=2)", () => {
+    const { input } = renderInput({ decimals: 2 });
+    typeRaw(input, "1");
+    press(input, ",");
+    typeRaw(input, "1.23");
+    expect(press(input, "4")).toBe(false);
+  });
+
+  it("Ctrl/Meta + ',' sigue siendo un atajo (no inserta punto)", () => {
+    const { input } = renderInput();
+    typeRaw(input, "1");
+    expect(press(input, ",", { ctrlKey: true })).toBe(true);
+    expect(input.value).toBe("1");
+  });
+
+  it("precision='quantity' y decimals explícito también normalizan", () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, quantityDecimals: 3 });
+    const semantic = renderInput({ precision: "quantity" });
+    typeRaw(semantic.input, "2");
+    press(semantic.input, ",");
+    expect(semantic.input.value).toBe("2.");
+    cleanup();
+    const explicit = renderInput({ decimals: 4 });
+    typeRaw(explicit.input, "3");
+    press(explicit.input, ",");
+    expect(explicit.input.value).toBe("3.");
+  });
+
+  it.each([
+    ["1,5", 2, false, "1.5"],
+    ["0,075", 3, false, "0.075"],
+    ["-1,5", 2, false, "-1.5"],
+    ["-1,5", 2, true, "1.5"],
+    ["12,3499", 2, false, "12.34"],
+  ])("paste %s (decimals %s, positiveOnly %s) → %s", (text, decimals, positiveOnly, expected) => {
+    const onChange = vi.fn();
+    const { input } = renderInput({ decimals, positiveOnly, onChange });
+    paste(input, text);
+    expect(input.value).toBe(expected);
+    expect(onChange).toHaveBeenCalledTimes(1);
+  });
+
+  it("blur tras escribir con coma se comporta igual que con punto ('1,5' → '1.50', nunca '1.00')", () => {
+    const { input } = renderInput({ decimals: 2 });
+    typeRaw(input, "1");
+    press(input, ",");
+    typeRaw(input, "1.5");
+    fireEvent.blur(input);
+    expect(input.value).toBe("1.50");
+  });
+
+  it("RHF: '1,5' produce el mismo valor lógico que '1.5' (ni 15, ni 1, ni NaN)", () => {
+    let getValues: () => { amount: number | null } = () => ({ amount: null });
+    function Form() {
+      const form = useForm<{ amount: number | null }>({ defaultValues: { amount: null } });
+      getValues = form.getValues;
+      return (
+        <ZhDecimalInput
+          aria-label="valor"
+          decimals={2}
+          {...form.register("amount", { setValueAs: (v) => (v === "" ? null : Number(v)) })}
+        />
+      );
+    }
+    const { getByLabelText } = render(<Form />);
+    const input = getByLabelText("valor") as HTMLInputElement;
+    typeRaw(input, "1");
+    press(input, ",");
+    typeRaw(input, "1.5");
+    expect(getValues().amount).toBe(1.5);
+    cleanup();
+    const pasted = render(<Form />);
+    paste(pasted.getByLabelText("valor") as HTMLInputElement, "1,5");
+    expect(getValues().amount).toBe(1.5);
+  });
+});
+
+/** ZH-DESIGN-SYSTEM-PRECISION-03C01 — paste con formato mixto (Excel es-EC / en-US). */
+describe("ZhDecimalInput — paste con separadores mixtos (03C01)", () => {
+  it.each([
+    ["1.234,56", false, "1234.56"],
+    ["1,234.56", false, "1234.56"],
+    ["-1.234,56", false, "-1234.56"],
+    ["-1.234,56", true, "1234.56"],
+    ["1.234,5678", false, "1234.56"],
+  ])("paste %s (positiveOnly %s) → %s", (text, positiveOnly, expected) => {
+    const onChange = vi.fn();
+    const { input } = renderInput({ decimals: 2, positiveOnly, onChange });
+    paste(input, text);
+    expect(input.value).toBe(expected);
+    expect(onChange).toHaveBeenCalledTimes(1);
   });
 });
