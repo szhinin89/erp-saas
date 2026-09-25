@@ -61,6 +61,7 @@ Ejemplo anotación GitHub:
 | `check-module-boundaries.mjs` | F-module | Cross-imports entre módulos (configurable) |
 | `check-css-prefixes.mjs` | F-css | Prefijos por área; clases ambiguas |
 | `check-design-system.mjs` | F-04 | Design System único (grid/toggle/icon/modal/tabs/table/activity) |
+| `check-frontend-precision.mjs` | F-PREC | Precisión numérica semántica: sin `decimals` manual (salvo constante contractual `*_DECIMALS`), sin formatter/componente con default legacy, sin `toFixed`/`Intl.NumberFormat`/`getPrecisionPolicy()` locales. Tolerancia exacta por archivo+regla+conteo: deuda de módulos cerrados en `architecture-grandfather.json` (`frontendPrecisionGrandfathered`, `--write-baseline`) y excepciones abiertas justificadas en `config/frontend-precision.json`. Tests: `node --test tools/architecture/check-frontend-precision.test.mjs` |
 | `check-no-cross-layer.mjs` | F-cross-layer | Pages sin fetch/axios/api directo |
 
 ### Backend (heurístico, sin Roslyn)

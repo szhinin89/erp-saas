@@ -545,7 +545,7 @@ export function ExpenseDocumentFormPage() {
               <ZHFormAlert
                 type="warning"
                 message="El total calculado no cuadra con el XML recibido."
-                detail={`IVA XML recibido: ${formatDecimalDisplay(reception!.vatAmount, taxDecimals)} — Total XML recibido: ${formatDecimalDisplay(receptionMismatch.receivedTotal, moneyDecimals)} — Total calculado en pantalla: ${receptionMismatch.calculatedTotal.toFixed(2)}. Revise cantidad, valor unitario y código IVA de cada línea antes de guardar.`}
+                detail={`IVA XML recibido: ${formatDecimalDisplay(reception!.vatAmount, taxDecimals)} — Total XML recibido: ${formatDecimalDisplay(receptionMismatch.receivedTotal, moneyDecimals)} — Total calculado en pantalla: ${formatDecimalDisplay(receptionMismatch.calculatedTotal, moneyDecimals)}. Revise cantidad, valor unitario y código IVA de cada línea antes de guardar.`}
               />
             )}
             <ExpenseDocumentHeader

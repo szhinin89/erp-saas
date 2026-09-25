@@ -225,6 +225,18 @@ Reglas:
 - **Prohibido en consumidores nuevos:** `decimals={getPrecisionPolicy().xDecimals}`, literales `2/4/6` como escala semántica, `toFixed`/`Intl.NumberFormat`/formatters por módulo, tabla o KPI. `decimals` explícito queda solo como override/compatibilidad legacy. `usePrecisionDecimals` + `formatDecimalDisplay` solo cuando el destino exige un `string` (p. ej. atributos, texto exportado), nunca para evitar un componente de presentación disponible.
 - **Override contractual:** un dato sin `PrecisionKind` (no pertenece a la PrecisionPolicy) usa una constante nombrada y documentada con la escala de su persistencia, compartida por input y presentación (p. ej. `WAREHOUSE_CAPACITY_DECIMALS = 4` → `numeric(18,4)`; % de cuota de crédito `INSTALLMENT_PERCENTAGE_DECIMALS = 2` → `numeric(5,2)`), formateada con el motor único. Nunca un literal suelto ni un kind nuevo por apariencia/unidad.
 
+### Precision guard (F-PREC — ZH-DESIGN-SYSTEM-PRECISION-05)
+
+`architecture:check` incluye `frontend-precision` (`tools/architecture/check-frontend-precision.mjs`). En código productivo nuevo de `frontend/src`:
+
+- **Semántica antes que `decimals`:** `ZHMoneyValue`/`ZHNumberValue`/`ZhDecimalInput`/`ZhCurrencyInput` declaran `precision="<PrecisionKind>"`; sin `precision` ni `decimals` es default legacy (F-PREC-implicit-value).
+- **`decimals` solo como override contractual:** `decimals={X_DECIMALS}` con una constante nombrada `*_DECIMALS` documentada junto a su persistencia. Literales (`decimals={2}`) y lecturas de policy (`decimals={policy.xDecimals}`) fallan (F-PREC-decimals).
+- **Sin formatter implícito:** `formatMoney(x)`/`formatMoneyWithSymbol(x)` sin escala fallan; en texto compuesto, `usePrecisionDecimals(kind)` + `formatMoney(x, decimals)` (F-PREC-implicit-format).
+- **Sin `toFixed`/`Intl.NumberFormat` locales** (F-PREC-toFixed, F-PREC-intl) ni `getPrecisionPolicy()` directo (F-PREC-policy-read): la presentación usa hooks/`precision`.
+- **Excepción legítima** (cálculo, métrica no de negocio, payload externo): se registra en `tools/architecture/config/frontend-precision.json` → `exceptions` con archivo, regla, conteo exacto y `reason`. Nunca wildcard ni carpeta completa.
+- **Módulos cerrados** (Purchases, Items, Pricing): su deuda está congelada por ocurrencias exactas en `architecture-grandfather.json` → `frontendPrecisionGrandfathered`; no puede crecer. Al reducirla, el check avisa y se regenera con `node tools/architecture/check-frontend-precision.mjs --write-baseline`.
+- Fuera de alcance: tests, `src/test/**`, internos del Design System (`components/zh/**`) y la infraestructura de precisión (`lib/sanitizers.ts`, `precisionPolicy.config.ts`, `usePrecisionPolicy.ts`).
+
 ### Excepción: barra de guardado de página completa
 
 `.pg-actions-bar` (con `.pg-actions-info` + `.pg-actions-buttons`) se

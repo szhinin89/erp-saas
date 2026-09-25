@@ -61,7 +61,7 @@ export function RegisterCollectionModal({
     setError,
     formState: { errors },
   } = useForm<RegisterCollectionFormValues>({
-    resolver: zodResolver(buildRegisterCollectionSchema(maxAmount)),
+    resolver: zodResolver(buildRegisterCollectionSchema(maxAmount, moneyDecimals)),
     defaultValues: {
       amount: maxAmount,
       installmentId: "",

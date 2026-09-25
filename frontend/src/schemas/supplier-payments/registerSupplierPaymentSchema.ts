@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { formatMoney } from "../../lib/sanitizers";
 
 /**
  * SUPPLIER-PAYMENTS-FRONTEND-15E — validación de interfaz del formulario de registro de Pagos a
@@ -30,33 +31,39 @@ export const supplierPaymentApplicationLineSchema = z.object({
     .positive("El monto debe ser mayor a cero."),
 });
 
-export const registerSupplierPaymentSchema = z
-  .object({
-    supplierId: z.string().min(1, "El proveedor es obligatorio."),
-    paymentDate: z.string().min(1, "La fecha es obligatoria."),
-    receiptNumber: z.string().max(30, "Máximo 30 caracteres.").optional().nullable(),
-    methodLines: z
-      .array(supplierPaymentMethodLineSchema)
-      .min(1, "Debe agregar al menos un medio de pago."),
-    applicationLines: z
-      .array(supplierPaymentApplicationLineSchema)
-      .min(1, "Debe seleccionar al menos una cuota."),
-  })
-  .superRefine((data, ctx) => {
-    const totalMethods = data.methodLines.reduce((sum, l) => sum + (l.amount || 0), 0);
-    const totalApplications = data.applicationLines.reduce(
-      (sum, l) => sum + (l.amountApplied || 0),
-      0,
-    );
-    if (Math.abs(totalMethods - totalApplications) > 0.005) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["methodLines"],
-        message:
-          `La suma de los medios de pago (${totalMethods.toFixed(2)}) debe ser igual a la ` +
-          `suma de las cuotas aplicadas (${totalApplications.toFixed(2)}).`,
-      });
-    }
-  });
+// ZH-DESIGN-SYSTEM-PRECISION-05 — `moneyDecimals` solo decide la REPRESENTACIÓN de las sumas del
+// mensaje (caller: usePrecisionDecimals("money")); la tolerancia de la regla no cambia.
+export function buildRegisterSupplierPaymentSchema(moneyDecimals: number) {
+  return z
+    .object({
+      supplierId: z.string().min(1, "El proveedor es obligatorio."),
+      paymentDate: z.string().min(1, "La fecha es obligatoria."),
+      receiptNumber: z.string().max(30, "Máximo 30 caracteres.").optional().nullable(),
+      methodLines: z
+        .array(supplierPaymentMethodLineSchema)
+        .min(1, "Debe agregar al menos un medio de pago."),
+      applicationLines: z
+        .array(supplierPaymentApplicationLineSchema)
+        .min(1, "Debe seleccionar al menos una cuota."),
+    })
+    .superRefine((data, ctx) => {
+      const totalMethods = data.methodLines.reduce((sum, l) => sum + (l.amount || 0), 0);
+      const totalApplications = data.applicationLines.reduce(
+        (sum, l) => sum + (l.amountApplied || 0),
+        0,
+      );
+      if (Math.abs(totalMethods - totalApplications) > 0.005) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["methodLines"],
+          message:
+            `La suma de los medios de pago (${formatMoney(totalMethods, moneyDecimals)}) debe ser igual a la ` +
+            `suma de las cuotas aplicadas (${formatMoney(totalApplications, moneyDecimals)}).`,
+        });
+      }
+    });
+}
 
-export type RegisterSupplierPaymentFormValues = z.infer<typeof registerSupplierPaymentSchema>;
+export type RegisterSupplierPaymentFormValues = z.infer<
+  ReturnType<typeof buildRegisterSupplierPaymentSchema>
+>;

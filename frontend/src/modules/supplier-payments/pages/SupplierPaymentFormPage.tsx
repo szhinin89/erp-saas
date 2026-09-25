@@ -30,7 +30,7 @@ import { SupplierPaymentAllocationPreview } from "../components/SupplierPaymentA
 import { SupplierPaymentConfirmModal } from "../components/SupplierPaymentConfirmModal";
 import { computeAutomaticAllocations } from "../utils/allocation";
 import {
-  registerSupplierPaymentSchema,
+  buildRegisterSupplierPaymentSchema,
   type RegisterSupplierPaymentFormValues,
 } from "../../../schemas/supplier-payments/registerSupplierPaymentSchema";
 import "../styles/supplier-payments.css";
@@ -77,7 +77,7 @@ export function SupplierPaymentFormPage() {
   const [modalError, setModalError] = useState<string | null>(null);
 
   const form = useForm<RegisterSupplierPaymentFormValues>({
-    resolver: zodResolver(registerSupplierPaymentSchema),
+    resolver: zodResolver(buildRegisterSupplierPaymentSchema(moneyDecimals)),
     defaultValues: {
       supplierId: "",
       paymentDate: todayIso(),

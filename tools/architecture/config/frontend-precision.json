@@ -1,0 +1,84 @@
+{
+  "$schemaNote": "Reglas F-PREC (ZH-DESIGN-SYSTEM-PRECISION-05). Canónico: docs/architecture/frontend.md § Precision guard. Checks Node: tools/architecture/README.md. `exceptions` = casos ABIERTOS auditados y justificados (archivo + regla + conteo exacto + reason); nunca wildcard. La deuda de módulos cerrados vive en architecture-grandfather.json → frontendPrecisionGrandfathered (solo `legacyGlobs`, --write-baseline).",
+  "scanGlobs": [
+    "frontend/src/**/*.ts",
+    "frontend/src/**/*.tsx"
+  ],
+  "excludeGlobs": [
+    "frontend/src/**/*.test.ts",
+    "frontend/src/**/*.test.tsx",
+    "frontend/src/test/**",
+    "frontend/src/components/zh/**",
+    "frontend/src/lib/sanitizers.ts",
+    "frontend/src/lib/config/precisionPolicy.config.ts",
+    "frontend/src/hooks/usePrecisionPolicy.ts"
+  ],
+  "legacyGlobs": [
+    "frontend/src/modules/purchases/**",
+    "frontend/src/modules/items/**",
+    "frontend/src/modules/pricing/**",
+    "frontend/src/components/items/**"
+  ],
+  "exceptions": [
+    {
+      "file": "frontend/src/modules/caja/pages/CajaPage.tsx",
+      "rule": "F-PREC-toFixed",
+      "count": 1,
+      "reason": "Proporción de cobro por medio (% con 1 decimal): métrica visual, no dato de negocio con PrecisionKind."
+    },
+    {
+      "file": "frontend/src/modules/electronicDocuments/monitor/components/ElectronicDocumentsDashboardCards.tsx",
+      "rule": "F-PREC-toFixed",
+      "count": 1,
+      "reason": "Horas transcurridas (1 decimal): métrica operativa, no dato de negocio con PrecisionKind."
+    },
+    {
+      "file": "frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.tsx",
+      "rule": "F-PREC-toFixed",
+      "count": 1,
+      "reason": "Cálculo: diferencia total calculado vs XML recibido para comparar contra la tolerancia (no presentación)."
+    },
+    {
+      "file": "frontend/src/modules/expenses/utils/expenseDocumentDraftModel.ts",
+      "rule": "F-PREC-policy-read",
+      "count": 1,
+      "reason": "Cálculo: roundMoney de los totales del borrador (utilidad pura de cálculo, no presentación)."
+    },
+    {
+      "file": "frontend/src/modules/sales/api/printAgentClient.ts",
+      "rule": "F-PREC-toFixed",
+      "count": 1,
+      "reason": "Payload del agente de impresión (contrato del agente externo), no presentación del ERP."
+    },
+    {
+      "file": "frontend/src/modules/sales/components/CreditSimulatorModal.tsx",
+      "rule": "F-PREC-policy-read",
+      "count": 1,
+      "reason": "Cálculo: factor de redondeo de la diferencia monto vs suma de cuotas."
+    },
+    {
+      "file": "frontend/src/modules/sales/components/PaymentMethodsSection.tsx",
+      "rule": "F-PREC-policy-read",
+      "count": 2,
+      "reason": "Cálculo: factor de redondeo de la diferencia pagado vs total (nota de tolerancia y caja resumen); la presentación usa usePrecisionDecimals."
+    },
+    {
+      "file": "frontend/src/modules/sales/components/paymentRemaining.ts",
+      "rule": "F-PREC-policy-read",
+      "count": 1,
+      "reason": "Cálculo: factor de redondeo del saldo restante por cobrar."
+    },
+    {
+      "file": "frontend/src/modules/sales/components/SalesInvoiceLineGridRow.tsx",
+      "rule": "F-PREC-policy-read",
+      "count": 1,
+      "reason": "Cálculo (calcInvoicedUnitPrice) + key de remount y reset controlado del input de precio facturado."
+    },
+    {
+      "file": "frontend/src/modules/sales/hooks/useSalesPage.ts",
+      "rule": "F-PREC-policy-read",
+      "count": 4,
+      "reason": "Cálculo: factores de vuelto/redondeo, repricing de descuento y escala de precio en recálculos (no presentación)."
+    }
+  ]
+}
