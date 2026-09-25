@@ -1,11 +1,14 @@
 import { z } from "zod";
+import { formatMoney } from "../../../lib/sanitizers";
 
 // ── Aplicar crédito ────────────────────────────────────────────────────
 // Espejo de ApplySupplierCreditValidator — amount ≤ AvailableAmount es la
 // fuente de verdad del backend (§13.4); aquí solo se anticipa para no hacer
 // un viaje al servidor con un monto que el backend rechazará seguro.
 
-export function buildApplySupplierCreditSchema(availableAmount: number) {
+// ZH-DESIGN-SYSTEM-PRECISION-04G — `moneyDecimals` solo decide la REPRESENTACIÓN del saldo en el
+// mensaje (el caller React lo resuelve con usePrecisionDecimals("money")); la regla no cambia.
+export function buildApplySupplierCreditSchema(availableAmount: number, moneyDecimals: number) {
   return z.object({
     targetPurchasePayableId: z.string().min(1, "Seleccione la cuenta por pagar destino."),
     amount: z.coerce
@@ -13,7 +16,7 @@ export function buildApplySupplierCreditSchema(availableAmount: number) {
       .positive("El monto debe ser mayor a cero.")
       .max(
         availableAmount,
-        `El monto no puede exceder el saldo disponible (${availableAmount.toFixed(2)}).`,
+        `El monto no puede exceder el saldo disponible (${formatMoney(availableAmount, moneyDecimals)}).`,
       ),
   });
 }
@@ -31,6 +34,7 @@ export type ApplySupplierCreditFormValues = z.infer<
 export function buildRegisterSupplierCreditRefundSchema(
   availableAmount: number,
   requiresReference: boolean,
+  moneyDecimals: number,
 ) {
   return z
     .object({
@@ -42,7 +46,7 @@ export function buildRegisterSupplierCreditRefundSchema(
         .positive("El monto debe ser mayor a cero.")
         .max(
           availableAmount,
-          `El monto no puede exceder el saldo disponible (${availableAmount.toFixed(2)}).`,
+          `El monto no puede exceder el saldo disponible (${formatMoney(availableAmount, moneyDecimals)}).`,
         ),
       effectiveDate: z.string().min(1, "La fecha efectiva es obligatoria."),
       externalReference: z.string().optional().default(""),

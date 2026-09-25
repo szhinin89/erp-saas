@@ -4,11 +4,15 @@ import {
   calculateExpenseDocumentTotals,
   calculateExpenseLineTotals,
   documentToHeader,
+  documentToLines,
+  newExpenseDraftLine,
   findVatCodeForRate,
 } from "./expenseDocumentDraftModel";
 import type { ExpenseDocumentHeaderState } from "../components/ExpenseDocumentHeader";
 import type { ExpenseDraftLineState } from "../components/ExpenseDocumentLinesEditor";
 import type { ExpenseDocumentDetailDto } from "../api/expenseDocumentService";
+import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.config";
+import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 
 /**
  * RETENTIONS-EXPENSE-TAX-SUPPORT-UI-02H — `buildExpenseDraftPayload` es la misma función que
@@ -220,5 +224,41 @@ describe("findVatCodeForRate — auto-seleccion desde recepcion XML", () => {
     const impliedRate = (7 / 90) * 100; // ~7.78%, no existe en el catalogo
 
     expect(findVatCodeForRate(CATALOG, impliedRate)).toBeNull();
+  });
+});
+
+/**
+ * ZH-DESIGN-SYSTEM-PRECISION-04G — el modelo textual del borrador recibe sus escalas del caller
+ * (utilidad pura): no consulta la PrecisionPolicy y no usa toFixed (motor único, ROUND_HALF_UP).
+ */
+describe("expenseDocumentDraftModel — escalas explícitas del modelo textual (04G)", () => {
+  const LINE = {
+    id: "l-1",
+    expenseSubcategoryId: "sub-1",
+    description: "Servicio",
+    quantity: 2,
+    unitAmount: 1.23455,
+    discountAmount: 0.125,
+    vatCode: "2",
+    notes: null,
+  };
+
+  it("línea nueva: '0' con la escala de cada campo (precio 4, money 2), no el literal '0.00'", () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, purchaseUnitPriceDecimals: 6, moneyDecimals: 3 });
+    const line = newExpenseDraftLine({ unitPriceDecimals: 4, moneyDecimals: 2 });
+    expect([line.quantity, line.unitPrice, line.discountValue]).toEqual(["1", "0.0000", "0.00"]);
+  });
+
+  it("documento → texto con las escalas recibidas (no las de la policy global), half-up", () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, purchaseUnitPriceDecimals: 6, moneyDecimals: 3 });
+    const doc = { lines: [LINE] } as unknown as ExpenseDocumentDetailDto;
+    const [line] = documentToLines(doc, { unitPriceDecimals: 4, moneyDecimals: 2 });
+    expect([line!.quantity, line!.unitPrice, line!.discountValue]).toEqual(["2", "1.2346", "0.13"]);
+  });
+
+  it("documento sin líneas → una línea nueva con las mismas escalas", () => {
+    const doc = { lines: [] } as unknown as ExpenseDocumentDetailDto;
+    const lines = documentToLines(doc, { unitPriceDecimals: 3, moneyDecimals: 1 });
+    expect([lines[0]!.unitPrice, lines[0]!.discountValue]).toEqual(["0.000", "0.0"]);
   });
 });

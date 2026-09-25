@@ -7,6 +7,8 @@ import { ZHCard } from "../../../components/zh/ZHCard";
 import { ZHBtn, ZHFormActions, ZHFormAlert } from "../../../components/zh/ZHForm";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { message } from "../../../lib/messages";
+import { formatMoney } from "../../../lib/sanitizers";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { applyServerErrors } from "../../lib/validationErrors";
 import { formatApiRequestError, readApiErrorMessage } from "../../lib/apiError";
 import { businessPartnerFacade } from "../../masterData/api/businessPartnerFacade";
@@ -55,6 +57,7 @@ function todayIso(): string {
  * confirma el pago en una única operación (aplica saldos + genera asiento, todo o nada).
  */
 export function SupplierPaymentFormPage() {
+  const moneyDecimals = usePrecisionDecimals("money"); // representación del mensaje (04G)
   const { has } = usePermissionsUi();
   const canCreate = has(PERMISSIONS.create);
   const navigate = useNavigate();
@@ -150,7 +153,7 @@ export function SupplierPaymentFormPage() {
         if (installment && line.amountApplied > installment.outstandingAmount + 0.005) {
           setError(`applicationLines.${idx}.amountApplied`, {
             type: "manual",
-            message: `El monto no puede superar el saldo pendiente de la cuota (${installment.outstandingAmount.toFixed(2)}).`,
+            message: `El monto no puede superar el saldo pendiente de la cuota (${formatMoney(installment.outstandingAmount, moneyDecimals)}).`,
           });
           ok = false;
         }
@@ -158,7 +161,7 @@ export function SupplierPaymentFormPage() {
 
       return ok;
     },
-    [methodsById, installmentsById, setError],
+    [methodsById, installmentsById, setError, moneyDecimals],
   );
 
   const onValid = handleSubmit((values) => {

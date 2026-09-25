@@ -5,6 +5,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type Dispatch,
   type SetStateAction,
@@ -65,6 +66,7 @@ import {
   hasConfiguredExpenseSubcategory,
   newExpenseDraftLine,
   parseExpenseNumber,
+  type ExpenseDraftLineScales,
   type VatRateByCode,
 } from "../utils/expenseDocumentDraftModel";
 import {
@@ -116,7 +118,20 @@ export function ExpenseDocumentFormPage() {
 
   const [header, setHeader] = useState<ExpenseDocumentHeaderState>(EMPTY_HEADER);
   const [supplier, setSupplier] = useState<SupplierPickerRow | null>(null);
-  const [lines, setLines] = useState<ExpenseDraftLineState[]>([newExpenseDraftLine()]);
+  // Escalas del modelo textual del borrador (04G): mismas semánticas que los inputs de la línea.
+  const moneyDecimals = usePrecisionDecimals("money");
+  const unitPriceDecimals = usePrecisionDecimals("purchaseUnitPrice");
+  const draftScales = useMemo<ExpenseDraftLineScales>(
+    () => ({ unitPriceDecimals, moneyDecimals }),
+    [unitPriceDecimals, moneyDecimals],
+  );
+  // `load` lee las escalas vigentes sin depender de ellas: un cambio de policy no debe recargar
+  // el documento (perdería la edición en curso).
+  const draftScalesRef = useRef(draftScales);
+  useEffect(() => {
+    draftScalesRef.current = draftScales;
+  }, [draftScales]);
+  const [lines, setLines] = useState<ExpenseDraftLineState[]>(() => [newExpenseDraftLine(draftScales)]);
   const [tree, setTree] = useState<ExpenseCategoryTreeNodeDto[]>([]);
   const [accounts, setAccounts] = useState<AccountDto[]>([]);
   const [paymentTerms, setPaymentTerms] = useState<PaymentTermDto[]>([]);
@@ -155,7 +170,6 @@ export function ExpenseDocumentFormPage() {
     [lines, vatRateByCode],
   );
   // Presentación de textos compuestos (04E): semántica declarada, mismo resolver y motor.
-  const moneyDecimals = usePrecisionDecimals("money");
   const taxDecimals = usePrecisionDecimals("tax");
   const receptionMismatch = useMemo(() => {
     if (!reception) return null;
@@ -206,7 +220,7 @@ export function ExpenseDocumentFormPage() {
         setDocument(expenseDocument);
         setHeader(documentToHeader(expenseDocument, toDateTimeLocalInputValue));
         setSupplier(documentToSupplier(expenseDocument));
-        setLines(documentToLines(expenseDocument));
+        setLines(documentToLines(expenseDocument, draftScalesRef.current));
       } else {
         setDocument(null);
         const source = fromReceptionId
@@ -226,7 +240,7 @@ export function ExpenseDocumentFormPage() {
           identificationNumber: source.supplierTaxId, isActive: true,
           hasSupplierRole: true, supplierConfig: null,
         } : null);
-        const initialLine = newExpenseDraftLine();
+        const initialLine = newExpenseDraftLine(draftScalesRef.current);
         if (source && source.subtotal > 0) {
           const impliedRate = (source.vatAmount / source.subtotal) * 100;
           const matchedCode = findVatCodeForRate(vatRateRows, impliedRate);
@@ -300,7 +314,7 @@ export function ExpenseDocumentFormPage() {
     });
 
     if (lines.length === 0) {
-      const line = newExpenseDraftLine();
+      const line = newExpenseDraftLine(draftScales);
       nextLines[line.key] = { expenseSubcategoryId: "Debe incluir al menos una linea." };
       setLines([line]);
     }
@@ -347,7 +361,7 @@ export function ExpenseDocumentFormPage() {
         setDocument(saved);
         setHeader(documentToHeader(saved, toDateTimeLocalInputValue));
         setSupplier(documentToSupplier(saved));
-        setLines(documentToLines(saved));
+        setLines(documentToLines(saved, draftScales));
       }
     } catch (error) {
       mapBackendErrors(error, setHeaderErrors);

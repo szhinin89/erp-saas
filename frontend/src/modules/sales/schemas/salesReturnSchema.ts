@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { formatMoney } from "../../../lib/sanitizers";
 
 // ── Draft (crear/editar) ────────────────────────────────────────────────
 // Espejo de CreateSalesReturnDraftValidator/UpdateSalesReturnDraftValidator
@@ -44,7 +45,9 @@ export const refundAllocationSchema = z.object({
 
 export type RefundAllocationFormValues = z.infer<typeof refundAllocationSchema>;
 
-export function buildAuthorizeSalesReturnSchema(grandTotal: number) {
+// ZH-DESIGN-SYSTEM-PRECISION-04G — `moneyDecimals` solo decide la REPRESENTACIÓN de los montos del
+// mensaje (caller: usePrecisionDecimals("money")); la tolerancia de la regla no cambia.
+export function buildAuthorizeSalesReturnSchema(grandTotal: number, moneyDecimals: number) {
   return z
     .object({
       refundAllocations: z
@@ -57,7 +60,7 @@ export function buildAuthorizeSalesReturnSchema(grandTotal: number) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["refundAllocations"],
-          message: `El total de las asignaciones (${sum.toFixed(2)}) no coincide con el total devuelto (${grandTotal.toFixed(2)}).`,
+          message: `El total de las asignaciones (${formatMoney(sum, moneyDecimals)}) no coincide con el total devuelto (${formatMoney(grandTotal, moneyDecimals)}).`,
         });
       }
     });

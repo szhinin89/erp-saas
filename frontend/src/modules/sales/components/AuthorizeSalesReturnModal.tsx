@@ -63,7 +63,7 @@ export function AuthorizeSalesReturnModal({
     watch,
     formState: { errors },
   } = useForm<AuthorizeSalesReturnFormValues>({
-    resolver: zodResolver(buildAuthorizeSalesReturnSchema(grandTotal)),
+    resolver: zodResolver(buildAuthorizeSalesReturnSchema(grandTotal, moneyDecimals)),
     defaultValues: { refundAllocations: [{ method: "Cash", amount: grandTotal }] },
   });
   const { fields, append, remove } = useFieldArray({

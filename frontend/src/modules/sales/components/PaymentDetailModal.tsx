@@ -16,7 +16,6 @@ import { ZHFieldLabel } from "../../../components/zh/ZHFieldLabel";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { formatMoney } from "../../../lib/sanitizers";
-import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { PAYMENT_DETAIL_TOLERANCE } from "../constants/tolerances";
 import { deriveDetailReference } from "../utils/paymentDetailReference";
@@ -61,8 +60,6 @@ export function PaymentDetailModal({
 }: Props) {
   const [rows, setRows] = useState<DetailRow[]>(initialRows);
   const [nextKey, setNextKey] = useState(initialKey);
-  // Montaje del input editable (defaultValue): escala de money de la policy.
-  const totalAmountDecimals = getPrecisionPolicy().moneyDecimals;
   // Presentación de textos compuestos (subtítulo/mensaje): semántica declarada (04E).
   const moneyDecimals = usePrecisionDecimals("money");
 
@@ -401,11 +398,8 @@ export function PaymentDetailModal({
               <ZhDecimalInput
                 precision="money"
                 positiveOnly
-                defaultValue={
-                  row.amount > 0
-                    ? formatMoney(row.amount, totalAmountDecimals)
-                    : ""
-                }
+                // Valor canónico ("" = sin monto): el input (precision="money") decide la escala (04G).
+                defaultValue={row.amount > 0 ? row.amount : ""}
                 placeholder="0.00"
                 onBlur={(e) =>
                   upd(row._k, (r) => ({

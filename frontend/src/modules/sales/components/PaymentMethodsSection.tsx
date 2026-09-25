@@ -5,7 +5,7 @@ import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHFieldHelp } from "../../../components/zh/help";
 import { HELP_KEYS } from "../../../help";
 import { ZhDecimalInput } from "../../../components/zh/inputs";
-import { formatMoney, formatMoneyWithSymbol } from "../../../lib/sanitizers";
+import { formatMoneyWithSymbol } from "../../../lib/sanitizers";
 import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { INVOICE_PAYMENT_TOLERANCE } from "../constants/tolerances";
@@ -204,10 +204,8 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
                       <ZhDecimalInput
                         precision="money"
                         positiveOnly
-                        defaultValue={formatMoney(
-                          entry!.amount,
-                          getPrecisionPolicy().moneyDecimals,
-                        )}
+                        // Valor canónico: el input (precision="money") decide la escala (04G).
+                        defaultValue={entry!.amount}
                         disabled={ctx.fieldDisabled}
                         onBlur={(e) => {
                           const val = Number(e.target.value) || 0;
@@ -309,14 +307,8 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
                   <ZhDecimalInput
                     precision="money"
                     positiveOnly
-                    defaultValue={
-                      ctx.cashReceived > 0
-                        ? formatMoney(
-                            ctx.cashReceived,
-                            getPrecisionPolicy().moneyDecimals,
-                          )
-                        : ""
-                    }
+                    // Valor canónico ("" = sin monto): el input (precision="money") decide la escala (04G).
+                    defaultValue={ctx.cashReceived > 0 ? ctx.cashReceived : ""}
                     disabled={ctx.fieldDisabled}
                     onBlur={(e) =>
                       ctx.setCashReceived(Number(e.target.value) || 0)

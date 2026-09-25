@@ -60,7 +60,7 @@ export function RegisterSupplierCreditRefundModal({
     watch,
     formState: { errors },
   } = useForm<RegisterSupplierCreditRefundFormValues>({
-    resolver: zodResolver(buildRegisterSupplierCreditRefundSchema(availableAmount, false)),
+    resolver: zodResolver(buildRegisterSupplierCreditRefundSchema(availableAmount, false, moneyDecimals)),
     defaultValues: {
       destination: "",
       paymentMethodCode: "",

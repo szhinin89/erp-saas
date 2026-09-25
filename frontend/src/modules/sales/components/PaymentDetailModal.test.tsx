@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import { act, render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { PaymentDetailModal } from "./PaymentDetailModal";
 import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.config";
 import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
@@ -267,5 +267,36 @@ describe("PaymentDetailModal — precision='money' (04B)", () => {
     fireEvent.change(first, { target: { value: "7.125" } });
     fireEvent.blur(first);
     expect(first.value).toBe("7.125");
+  });
+});
+
+/**
+ * ZH-DESIGN-SYSTEM-PRECISION-04G — `defaultValue={row.amount > 0 ? row.amount : ""}`: el input
+ * (precision="money") aplica la escala; "" (sin monto) conserva su significado.
+ */
+describe("PaymentDetailModal — defaultValue canónico (04G)", () => {
+  it("monto existente con la escala de money; monto 0 → vacío (placeholder)", () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, moneyDecimals: 3 });
+    const { container } = renderModal({
+      initialRows: [
+        { _k: 1, amount: 10, transfer: { companyBankAccountId: BANK_ACCOUNT_PICHINCHA, receiptNumber: "1", transferDate: "2026-09-17" } },
+        { _k: 2, amount: 0, transfer: { companyBankAccountId: BANK_ACCOUNT_PICHINCHA, receiptNumber: "2", transferDate: "2026-09-17" } },
+      ],
+    });
+    const inputs = [...container.querySelectorAll<HTMLInputElement>("input.zh-numeric-input")];
+    expect(inputs.map((i) => i.value)).toEqual(["10.000", ""]);
+  });
+
+  it("focus→blur sin editar y policy A→B: texto intacto; payload idéntico", () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, moneyDecimals: 2 });
+    const { container, onConfirm } = renderModal();
+    const first = container.querySelector<HTMLInputElement>("input.zh-numeric-input")!;
+    act(() => setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, moneyDecimals: 3 }));
+    fireEvent.focus(first);
+    fireEvent.blur(first);
+    expect(first.value).toBe("10.00");
+    fireEvent.click(screen.getByText(/^Confirmar/));
+    const rows = onConfirm.mock.calls[0]![0] as { amount: number }[];
+    expect(rows.map((r) => r.amount)).toEqual([10, 20]);
   });
 });

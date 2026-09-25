@@ -42,7 +42,7 @@ export function CreditSimulatorModal({
   onConfirm,
   onCancel,
 }: Props) {
-  // Cálculo (factor de redondeo) y montaje del input editable: escala de money de la policy.
+  // Cálculo (factor de redondeo): escala de money de la policy.
   const totalAmountDecimals = getPrecisionPolicy().moneyDecimals;
   const factor = 10 ** totalAmountDecimals;
   // Presentación de textos compuestos (subtítulo/mensaje): semántica declarada (04E).
@@ -122,7 +122,8 @@ export function CreditSimulatorModal({
                 <ZhDecimalInput
                   precision="money"
                   positiveOnly
-                  defaultValue={formatMoney(row.amount, totalAmountDecimals)}
+                  // Valor canónico: el input (precision="money") decide la escala (04G).
+                  defaultValue={row.amount}
                   onBlur={(e) =>
                     onRowsChange(
                       rows.map((r, i) =>

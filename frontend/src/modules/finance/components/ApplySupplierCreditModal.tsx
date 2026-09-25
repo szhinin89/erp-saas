@@ -49,7 +49,7 @@ export function ApplySupplierCreditModal({ open, credit, onClose, onApplied }: P
     setError,
     formState: { errors },
   } = useForm<ApplySupplierCreditFormValues>({
-    resolver: zodResolver(buildApplySupplierCreditSchema(availableAmount)),
+    resolver: zodResolver(buildApplySupplierCreditSchema(availableAmount, moneyDecimals)),
     defaultValues: { targetPurchasePayableId: "", amount: availableAmount },
   });
 

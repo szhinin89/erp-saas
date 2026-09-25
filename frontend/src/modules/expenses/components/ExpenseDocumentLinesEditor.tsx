@@ -5,12 +5,14 @@ import { ZhSelect } from "../../../components/zh/inputs/ZhSelect";
 import { ZhTextarea } from "../../../components/zh/inputs/ZhTextarea";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import type { AccountDto } from "../../accounting/api/accountingApi";
 import type { SriVatRateLookup } from "../../items/facades/sriLookupFacade";
 import type { ExpenseCategoryTreeNodeDto } from "../api/expenseCategoryService";
 import {
   calculateExpenseLineTotals,
   newExpenseDraftLine,
+  type ExpenseDraftLineScales,
   type VatRateByCode,
 } from "../utils/expenseDocumentDraftModel";
 import { ExpenseSubcategorySelector } from "./ExpenseSubcategorySelector";
@@ -52,6 +54,11 @@ export function ExpenseDocumentLinesEditor({
   errors,
   onChange,
 }: Props) {
+  // Escalas de una línea nueva (04G): mismas semánticas que sus inputs.
+  const draftScales: ExpenseDraftLineScales = {
+    unitPriceDecimals: usePrecisionDecimals("purchaseUnitPrice"),
+    moneyDecimals: usePrecisionDecimals("money"),
+  };
 
   const updateLine = (
     key: string,
@@ -75,7 +82,7 @@ export function ExpenseDocumentLinesEditor({
           variant="secondary"
           size="sm"
           disabled={disabled}
-          onClick={() => onChange([...lines, newExpenseDraftLine()])}
+          onClick={() => onChange([...lines, newExpenseDraftLine(draftScales)])}
         >
           <span className="material-symbols-outlined" aria-hidden="true">
             add

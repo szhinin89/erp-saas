@@ -1,5 +1,5 @@
 import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
-import { normalizeOptionalCode } from "../../../lib/sanitizers";
+import { formatDecimalDisplay, normalizeOptionalCode } from "../../../lib/sanitizers";
 import type { AccountDto } from "../../accounting/api/accountingApi";
 import type { SupplierPickerRow } from "../../masterData/types/businessPartner.types";
 import type { ExpenseCategoryTreeNodeDto } from "../api/expenseCategoryService";
@@ -20,14 +20,25 @@ export interface ExpenseLineTotals {
 
 export type VatRateByCode = Map<string, number>;
 
-export function newExpenseDraftLine(): ExpenseDraftLineState {
+/**
+ * ZH-DESIGN-SYSTEM-PRECISION-04G — escalas del MODELO TEXTUAL del borrador (los inputs de la línea
+ * son controlados con `value` string: el texto es el dato que se edita y se envía). Utilidad pura:
+ * no consulta la PrecisionPolicy; el caller React las resuelve con `usePrecisionDecimals`
+ * (unitPrice → "purchaseUnitPrice", discountValue → "money", las mismas `precision` de sus inputs).
+ */
+export interface ExpenseDraftLineScales {
+  unitPriceDecimals: number;
+  moneyDecimals: number;
+}
+
+export function newExpenseDraftLine(scales: ExpenseDraftLineScales): ExpenseDraftLineState {
   return {
     key: globalThis.crypto?.randomUUID?.() ?? `line-${Date.now()}-${Math.random()}`,
     expenseSubcategoryId: "",
     description: "",
     quantity: "1",
-    unitPrice: "0.00",
-    discountValue: "0.00",
+    unitPrice: formatDecimalDisplay(0, scales.unitPriceDecimals),
+    discountValue: formatDecimalDisplay(0, scales.moneyDecimals),
     vatCode: "0",
     notes: "",
   };
@@ -129,6 +140,7 @@ export function documentToHeader(
 
 export function documentToLines(
   document: ExpenseDocumentDetailDto,
+  scales: ExpenseDraftLineScales,
 ): ExpenseDraftLineState[] {
   return document.lines.length > 0
     ? document.lines.map((line) => ({
@@ -136,12 +148,12 @@ export function documentToLines(
         expenseSubcategoryId: line.expenseSubcategoryId,
         description: line.description,
         quantity: String(line.quantity),
-        unitPrice: line.unitAmount.toFixed(getPrecisionPolicy().purchaseUnitPriceDecimals),
-        discountValue: line.discountAmount.toFixed(getPrecisionPolicy().moneyDecimals),
+        unitPrice: formatDecimalDisplay(line.unitAmount, scales.unitPriceDecimals),
+        discountValue: formatDecimalDisplay(line.discountAmount, scales.moneyDecimals),
         vatCode: line.vatCode,
         notes: line.notes ?? "",
       }))
-    : [newExpenseDraftLine()];
+    : [newExpenseDraftLine(scales)];
 }
 
 export function flattenExpenseSubcategories(
