@@ -188,7 +188,7 @@ export function RegisterSupplierCreditRefundModal({
         </ZHField>
 
         <ZHField label="Monto a reembolsar" required fieldError={errors.amount?.message}>
-          <ZhDecimalInput decimals={2} positiveOnly disabled={saving} {...register("amount")} />
+          <ZhDecimalInput precision="money" positiveOnly disabled={saving} {...register("amount")} />
         </ZHField>
 
         <ZHField label="Fecha efectiva" required fieldError={errors.effectiveDate?.message}>

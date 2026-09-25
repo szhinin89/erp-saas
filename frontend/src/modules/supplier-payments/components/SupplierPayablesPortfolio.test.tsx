@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { FormProvider, useForm } from "react-hook-form";
 import { SupplierPayablesPortfolio } from "./SupplierPayablesPortfolio";
+import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.config";
+import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 import type { PendingInstallmentOption } from "../api/pendingPayablesFacade";
 import type { RegisterSupplierPaymentFormValues } from "../../../schemas/supplier-payments/registerSupplierPaymentSchema";
 
@@ -162,5 +164,34 @@ describe("SupplierPayablesPortfolio", () => {
     expect(
       screen.getByText("Este proveedor no tiene cuentas por pagar pendientes."),
     ).toBeTruthy();
+  });
+});
+
+/** ZH-DESIGN-SYSTEM-PRECISION-04B — "Monto a aplicar" declara `precision="money"` (antes policy.moneyDecimals). */
+describe("SupplierPayablesPortfolio — precision='money' (04B)", () => {
+  it("paste '10,5' → '10.5' y applicationLines recibe 10.5 (mismo payload)", () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, moneyDecimals: 2 });
+    render(<Wrapper />);
+    const input = screen.getByLabelText(/Monto a aplicar: FAC 001-001-000031760/) as HTMLInputElement;
+    fireEvent.paste(input, { clipboardData: { getData: () => "10,5" } });
+    expect(input.value).toBe("10.5");
+    const applied = JSON.parse(screen.getByTestId("applicationLines").textContent ?? "[]");
+    expect(applied).toEqual([{ accountsPayableInstallmentId: "inst-1", amountApplied: 10.5 }]);
+  });
+
+  it("policy sintética moneyDecimals=3: el teclado admite un 3.er decimal (con 2 lo bloqueaba)", () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, moneyDecimals: 3 });
+    render(<Wrapper />);
+    const input = screen.getByLabelText(/Monto a aplicar: FAC 001-001-000031760/) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "10.12" } });
+    input.setSelectionRange(5, 5);
+    expect(fireEvent.keyDown(input, { key: "5" })).toBe(true);
+    cleanup();
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, moneyDecimals: 2 });
+    render(<Wrapper />);
+    const two = screen.getByLabelText(/Monto a aplicar: FAC 001-001-000031760/) as HTMLInputElement;
+    fireEvent.change(two, { target: { value: "10.12" } });
+    two.setSelectionRange(5, 5);
+    expect(fireEvent.keyDown(two, { key: "5" })).toBe(false);
   });
 });

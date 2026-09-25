@@ -3,6 +3,8 @@ import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { PaymentDetailModal } from "./PaymentDetailModal";
+import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.config";
+import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 
 afterEach(() => {
   cleanup();
@@ -238,5 +240,32 @@ describe("PaymentDetailModal — cuenta bancaria destino obligatoria (SALES-TRAN
     expect(onConfirm).toHaveBeenCalledTimes(1);
     const rows = onConfirm.mock.calls[0][0];
     expect(rows[0].transfer.companyBankAccountId).toBe(BANK_ACCOUNT_PICHINCHA);
+  });
+});
+
+/** ZH-DESIGN-SYSTEM-PRECISION-04B — monto de cada fila declara `precision="money"`. */
+describe("PaymentDetailModal — precision='money' (04B)", () => {
+  it("editar el monto de una fila → onConfirm recibe el valor canónico (mismo contrato de filas)", () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, moneyDecimals: 2 });
+    const { onConfirm, container } = renderModal();
+    const first = container.querySelector<HTMLInputElement>("input.zh-numeric-input")!;
+    expect(first.value).toBe("10.00");
+    fireEvent.focus(first);
+    fireEvent.paste(first, { clipboardData: { getData: () => "12,5" } });
+    fireEvent.blur(first);
+    expect(first.value).toBe("12.50");
+    fireEvent.click(screen.getByText(/^Confirmar/));
+    const rows = onConfirm.mock.calls[0]![0] as { amount: number }[];
+    expect(rows.map((r) => r.amount)).toEqual([12.5, 20]);
+  });
+
+  it("policy sintética moneyDecimals=3: la edición se normaliza a 3 decimales", () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, moneyDecimals: 3 });
+    const { container } = renderModal();
+    const first = container.querySelector<HTMLInputElement>("input.zh-numeric-input")!;
+    fireEvent.focus(first);
+    fireEvent.change(first, { target: { value: "7.125" } });
+    fireEvent.blur(first);
+    expect(first.value).toBe("7.125");
   });
 });

@@ -134,7 +134,7 @@ export function ApplySupplierCreditModal({ open, credit, onClose, onApplied }: P
 
         <ZHField label="Monto a aplicar" required fieldError={errors.amount?.message}>
           <ZhDecimalInput
-            decimals={2}
+            precision="money"
             positiveOnly
             disabled={saving}
             {...register("amount")}

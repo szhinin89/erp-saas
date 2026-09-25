@@ -116,7 +116,7 @@ export function CreditSimulatorModal({
               </td>
               <td className="zh-table-cell--num">
                 <ZhDecimalInput
-                  decimals={totalAmountDecimals}
+                  precision="money"
                   positiveOnly
                   defaultValue={formatMoney(row.amount, totalAmountDecimals)}
                   onBlur={(e) =>

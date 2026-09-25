@@ -198,7 +198,7 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
                     <div className="sales-payment-amount-row">
                       <span className="sales-payment-dollar">$</span>
                       <ZhDecimalInput
-                        decimals={getPrecisionPolicy().moneyDecimals}
+                        precision="money"
                         positiveOnly
                         defaultValue={formatMoney(
                           entry!.amount,
@@ -303,7 +303,7 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
                 <div className="sales-cash-box__input-wrap">
                   <span className="sales-cash-box__currency">$</span>
                   <ZhDecimalInput
-                    decimals={getPrecisionPolicy().moneyDecimals}
+                    precision="money"
                     positiveOnly
                     defaultValue={
                       ctx.cashReceived > 0

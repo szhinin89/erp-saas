@@ -4,6 +4,8 @@ import { cleanup, render, screen, fireEvent, waitFor } from "@testing-library/re
 import { useForm } from "react-hook-form";
 import { I18nProvider } from "../../../i18n/i18n";
 import { ManualCashMovementModal } from "./ManualCashMovementModal";
+import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.config";
+import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 import { manualCashMovementTypeOptions } from "../constants/cashMovementTypes";
 import type { RecordMovementFormValues } from "../schemas/cajaSchema";
 import type { CashMovementReasonDto } from "../api/cajaService";
@@ -165,5 +167,57 @@ describe("ManualCashMovementModal", () => {
     render(<Harness saveError="" />);
 
     expect(screen.queryByText("Error:")).toBeNull();
+  });
+});
+
+/** ZH-DESIGN-SYSTEM-PRECISION-04B — "Monto" declara `precision="money"` (antes `decimals={2}`). */
+describe("ManualCashMovementModal — precision='money' (04B)", () => {
+  function MoneyHarness({ onValues }: { onValues: (amount: unknown) => void }) {
+    const form = useForm<RecordMovementFormValues>({
+      defaultValues: { movementType: "", reasonId: "", amount: 0, description: "" },
+    });
+    return (
+      <I18nProvider>
+        <ManualCashMovementModal
+          open
+          saving={false}
+          saveError=""
+          register={form.register}
+          errors={form.formState.errors}
+          selectedMovementType=""
+          movementTypes={movementTypes}
+          reasons={[]}
+          reasonsLoading={false}
+          onSubmit={(e) => {
+            e.preventDefault();
+            onValues(form.getValues("amount"));
+          }}
+          onClose={() => {}}
+        />
+      </I18nProvider>
+    );
+  }
+
+  it("edición con coma → '12.50' y el formulario recibe el valor canónico", async () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, moneyDecimals: 2 });
+    const onValues = vi.fn();
+    render(<MoneyHarness onValues={onValues} />);
+    const amount = document.querySelector<HTMLInputElement>("input.zh-numeric-input")!;
+    fireEvent.focus(amount);
+    fireEvent.paste(amount, { clipboardData: { getData: () => "12,5" } });
+    fireEvent.blur(amount);
+    expect(amount.value).toBe("12.50");
+    fireEvent.click(screen.getByText("Registrar"));
+    await waitFor(() => expect(onValues).toHaveBeenCalledWith("12.50"));
+  });
+
+  it("policy sintética moneyDecimals=3: admite 3 decimales y normaliza la edición a 3", () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, moneyDecimals: 3 });
+    render(<MoneyHarness onValues={() => {}} />);
+    const amount = document.querySelector<HTMLInputElement>("input.zh-numeric-input")!;
+    fireEvent.focus(amount);
+    fireEvent.change(amount, { target: { value: "5.1" } });
+    fireEvent.blur(amount);
+    expect(amount.value).toBe("5.100");
   });
 });

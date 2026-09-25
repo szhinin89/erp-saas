@@ -395,7 +395,7 @@ export function PaymentDetailModal({
                 Monto
               </ZHFieldLabel>
               <ZhDecimalInput
-                decimals={totalAmountDecimals}
+                precision="money"
                 positiveOnly
                 defaultValue={
                   row.amount > 0

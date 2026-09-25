@@ -471,7 +471,7 @@ export function CajaPage() {
               >
                 <ZhDecimalInput
                   {...ctx.openForm.register("openingAmount")}
-                  decimals={2}
+                  precision="money"
                   positiveOnly
                 />
               </ZHField>

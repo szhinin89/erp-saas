@@ -163,7 +163,7 @@ export function RegisterCollectionModal({
       <div>
         <ZHField label="Monto a cobrar" error={errors.amount?.message} required>
           <ZhDecimalInput
-            decimals={2}
+            precision="money"
             positiveOnly
             disabled={saving}
             {...register("amount", {

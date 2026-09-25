@@ -115,7 +115,7 @@ export function ManualCashMovementModal({
           required
           fieldError={errors.amount?.message}
         >
-          <ZhDecimalInput {...register("amount")} decimals={2} positiveOnly />
+          <ZhDecimalInput {...register("amount")} precision="money" positiveOnly />
         </ZHField>
         <ZHField
           density="compact"

@@ -154,7 +154,7 @@ export function AuthorizeSalesReturnModal({
               fieldError={errors.refundAllocations?.[idx]?.amount?.message}
             >
               <ZhDecimalInput
-                decimals={2}
+                precision="money"
                 positiveOnly
                 disabled={saving}
                 {...register(`refundAllocations.${idx}.amount` as const, {
