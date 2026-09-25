@@ -10,8 +10,8 @@
  *   redondear (qty × factor), `positiveOnly`, onBlur que confirma SIEMPRE `Number(e.target.value)`.
  *
  * Convención de nombres:
- * - "legacy→03C: …"  expectativa que DEBE cambiar deliberadamente con el motor Decimal (se indica el
- *   valor futuro). No es una regla del ERP: es la deuda binaria de Number.toFixed.
+ * - "03C: …"         expectativa actualizada deliberadamente al motor Decimal (ROUND_HALF_UP) en 03C
+ *   (antes "legacy→03C"; el valor previo de Number.toFixed se indica como "antes").
  * - "legacy: …"      comportamiento actual que NO depende del motor (blur/dirty/round-trip).
  */
 import { useEffect } from "react";
@@ -28,12 +28,12 @@ const input = () => screen.getByLabelText("valor") as HTMLInputElement;
 
 describe("A. defaultValue numérico con midpoint binario (patrón defaultValue de Purchases/Sales)", () => {
   it.each([
-    [1.005, "1.00", "1.01"],
-    [0.075, "0.07", "0.08"],
-  ])("legacy→03C: %s con decimals=2 monta '%s' (futuro '%s'); focus/blur sin edición no emiten onChange", (value, legacy) => {
+    [1.005, "1.01", "1.00"],
+    [0.075, "0.08", "0.07"],
+  ])("03C: %s con decimals=2 monta '%s' (antes '%s'); focus/blur sin edición no emiten onChange", (value, legacy) => {
     const onChange = vi.fn();
     render(<ZhDecimalInput aria-label="valor" decimals={2} defaultValue={value} onChange={onChange} />);
-    expect(input().value).toBe(legacy); // al montar ya está redondeado por Number.toFixed
+    expect(input().value).toBe(legacy); // al montar ya está redondeado por el motor Decimal
     fireEvent.focus(input());
     expect(input().value).toBe(legacy);
     fireEvent.blur(input());
@@ -41,9 +41,9 @@ describe("A. defaultValue numérico con midpoint binario (patrón defaultValue d
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it("legacy→03C: value controlado numérico 1.005 (decimals=2) renderiza '1.00' (futuro '1.01')", () => {
+  it("03C: value controlado numérico 1.005 (decimals=2) renderiza '1.01' (antes '1.00')", () => {
     render(<ZhDecimalInput aria-label="valor" decimals={2} value={1.005} onChange={() => {}} />);
-    expect(input().value).toBe("1.00");
+    expect(input().value).toBe("1.01");
   });
 });
 
@@ -137,21 +137,21 @@ const ITEMS_REGISTER = {
 } as RegisterOptions<{ x: unknown }, "x">;
 
 describe("C. Items — valor persistido con más escala que la policy (focus → blur sin edición)", () => {
-  it("legacy→03C: salePrice 1.005 con salesUnitPriceDecimals=2 → DOM '1.005' → '1.00' (futuro '1.01'); valor 1 (futuro 1.01); isDirty=true", async () => {
+  it("03C: salePrice 1.005 con salesUnitPriceDecimals=2 → DOM '1.005' → '1.01' (antes '1.00'); valor 1.01 (antes 1); isDirty=true (sin cambio)", async () => {
     const rhf = renderRhf(1.005, 2, ITEMS_REGISTER);
     expect(input().value).toBe("1.005"); // RHF escribe el número persistido tal cual
     await focusBlur();
-    expect(input().value).toBe("1.00");
+    expect(input().value).toBe("1.01");
     expect(rhf.changes.count).toBe(1);
-    expect(rhf.getValues()).toBe(1);
+    expect(rhf.getValues()).toBe(1.01);
     expect(rhf.state()).toEqual({ isDirty: true, dirty: true, touched: true });
   });
 
-  it("legacy→03C: stock mínimo 2.00005 con quantityDecimals=4 → '2.0000' (futuro '2.0001'); valor 2 (futuro 2.0001); isDirty=true", async () => {
+  it("03C: stock mínimo 2.00005 con quantityDecimals=4 → '2.0001' (antes '2.0000'); valor 2.0001 (antes 2); isDirty=true (sin cambio)", async () => {
     const rhf = renderRhf(2.00005, 4, ITEMS_REGISTER);
     await focusBlur();
-    expect(input().value).toBe("2.0000");
-    expect(rhf.getValues()).toBe(2);
+    expect(input().value).toBe("2.0001");
+    expect(rhf.getValues()).toBe(2.0001);
     expect(rhf.state().isDirty).toBe(true);
   });
 
@@ -225,15 +225,15 @@ function PurchaseCostHarness({
 }
 
 describe("D. Purchases — cantidad/costo base calculados (focus → blur sin edición)", () => {
-  it("legacy→03C: qty 2 × factor 1.000025 = 2.00005 (quantityDecimals=4) monta '2.0000' (futuro '2.0001'); el blur CONFIRMA quantity 1.99995… ≠ 2", () => {
+  it("03C: qty 2 × factor 1.000025 = 2.00005 (quantityDecimals=4) monta '2.0001' (antes '2.0000'); el blur SIGUE confirmando quantity 2.00005… ≠ 2 (deriva de Compras, fuera de 03C)", () => {
     const updateLine = vi.fn();
     render(<PurchaseQtyHarness quantity={2} factor={1.000025} decimals={4} updateLine={updateLine} />);
-    expect(input().value).toBe("2.0000");
+    expect(input().value).toBe("2.0001");
     fireEvent.focus(input());
     fireEvent.blur(input());
-    expect(updateLine).toHaveBeenCalledWith("quantityInBaseUom", 2); // futuro 2.0001
-    expect(updateLine).toHaveBeenCalledWith("quantity", 2 / 1.000025); // futuro 2.0001 / 1.000025
-    expect(2 / 1.000025).not.toBe(2);
+    expect(updateLine).toHaveBeenCalledWith("quantityInBaseUom", 2.0001); // antes 2
+    expect(updateLine).toHaveBeenCalledWith("quantity", 2.0001 / 1.000025); // antes 2 / 1.000025
+    expect(2.0001 / 1.000025).not.toBe(2);
   });
 
   it("legacy: el round-trip altera la cantidad AUNQUE no haya midpoint (3 × 1.00015 = 3.00045 → '3.0005' → 3.00004999…), igual con Decimal", () => {
@@ -254,12 +254,12 @@ describe("D. Purchases — cantidad/costo base calculados (focus → blur sin ed
     expect(updateLine).toHaveBeenCalledWith("quantity", 2);
   });
 
-  it("legacy→03C: costo base 0.30005 (purchaseUnitPriceDecimals=4) monta '0.3000' (futuro '0.3001'); el blur confirma 0.3 (futuro 0.3001)", () => {
+  it("03C: costo base 0.30005 (purchaseUnitPriceDecimals=4) monta '0.3001' (antes '0.3000'); el blur confirma 0.3001 (antes 0.3)", () => {
     const commit = vi.fn();
     render(<PurchaseCostHarness baseUnitCost={0.30005} decimals={4} commit={commit} />);
-    expect(input().value).toBe("0.3000");
+    expect(input().value).toBe("0.3001");
     fireEvent.focus(input());
     fireEvent.blur(input());
-    expect(commit).toHaveBeenCalledWith(0.3);
+    expect(commit).toHaveBeenCalledWith(0.3001);
   });
 });

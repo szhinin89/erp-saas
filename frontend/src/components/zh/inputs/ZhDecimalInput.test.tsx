@@ -4,7 +4,7 @@
  *
  * Congelan el comportamiento REAL actual antes de migrar el Design System de precisión.
  * - "contract:" → comportamiento público que debe conservarse.
- * - "legacy:"   → deuda caracterizada (p. ej. Number.toFixed binario, truncado en paste). Se
+ * - "legacy:"   → deuda caracterizada (p. ej. truncado en paste). Se
  *                 congela temporalmente para que su futura migración al formatter SSOT sea
  *                 deliberada y verificable; NO es una regla del ERP.
  */
@@ -13,7 +13,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import { useForm } from "react-hook-form";
 import { ZhDecimalInput } from "./ZhDecimalInput";
-import { formatMoney } from "../../../lib/sanitizers";
+import { formatDecimalDisplay, formatMoney } from "../../../lib/sanitizers";
+import { ZHMoneyValue } from "../ZHMoneyValue";
+import { ZHNumberValue } from "../ZHNumberValue";
 import {
   setPrecisionPolicyForTests,
   type PrecisionPolicy,
@@ -89,12 +91,12 @@ describe("ZhDecimalInput — value / defaultValue", () => {
     [2, 12.3456, "12.35"],
     [4, 12.3456, "12.3456"],
     [6, 12.3456, "12.345600"],
-  ])("legacy: decimals=%s formatea value numérico %s como %s (Number.toFixed)", (decimals, value, expected) => {
+  ])("legacy: decimals=%s formatea value numérico %s como %s (motor Decimal desde 03C)", (decimals, value, expected) => {
     const { input } = renderInput({ value, decimals, onChange: () => {} });
     expect(input.value).toBe(expected);
   });
 
-  it("legacy: defaultValue numérico se formatea con Number.toFixed(decimals)", () => {
+  it("legacy: defaultValue numérico se formatea con decimals (motor Decimal desde 03C)", () => {
     const { input } = renderInput({ defaultValue: 7.5, decimals: 4 });
     expect(input.value).toBe("7.5000");
   });
@@ -112,15 +114,17 @@ describe("ZhDecimalInput — value / defaultValue", () => {
     expect(input.value).toBe("0.00");
   });
 
-  it("legacy: deuda binaria — value 1.005 con 2 decimales muestra '1.00' (formatMoney da '1.01')", () => {
+  // 03C: antes "legacy: deuda binaria … muestra '1.00'" (Number.toFixed). Ahora motor Decimal único.
+  it("contract (03C): value 1.005 con 2 decimales muestra '1.01', igual que formatMoney", () => {
     const { input } = renderInput({ value: 1.005, decimals: 2, onChange: () => {} });
-    expect(input.value).toBe("1.00");
+    expect(input.value).toBe("1.01");
     expect(formatMoney(1.005, 2)).toBe("1.01");
   });
 
-  it("legacy: deuda binaria — value 0.075 con 2 decimales muestra '0.07' (formatMoney da '0.08')", () => {
+  // 03C: antes "legacy: deuda binaria … muestra '0.07'" (Number.toFixed).
+  it("contract (03C): value 0.075 con 2 decimales muestra '0.08', igual que formatMoney", () => {
     const { input } = renderInput({ value: 0.075, decimals: 2, onChange: () => {} });
-    expect(input.value).toBe("0.07");
+    expect(input.value).toBe("0.08");
     expect(formatMoney(0.075, 2)).toBe("0.08");
   });
 });
@@ -296,7 +300,7 @@ describe("ZhDecimalInput — focus / blur / onChange", () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it("legacy: formats numeric value using Number.toFixed on blur y dispara onChange programático", () => {
+  it("legacy: formats numeric value on blur (motor Decimal desde 03C) y dispara onChange programático", () => {
     const onChange = vi.fn();
     const { input } = renderInput({ decimals: 4, onChange });
     typeRaw(input, "5");
@@ -313,11 +317,12 @@ describe("ZhDecimalInput — focus / blur / onChange", () => {
     expect(input.value).toBe("12.200000");
   });
 
-  it("legacy: deuda binaria en blur — '1.005' con decimals=2 queda '1.00'", () => {
+  // 03C: antes "legacy: deuda binaria en blur — '1.005' … queda '1.00'" (Number.toFixed).
+  it("contract (03C): blur de '1.005' con decimals=2 queda '1.01' (motor Decimal ROUND_HALF_UP)", () => {
     const { input } = renderInput({ decimals: 2 });
     typeRaw(input, "1.005");
     fireEvent.blur(input);
-    expect(input.value).toBe("1.00");
+    expect(input.value).toBe("1.01");
   });
 
   it("legacy: blur usa parseFloat — '12abc' se normaliza a '12.00'", () => {
@@ -455,10 +460,11 @@ describe("ZhDecimalInput — precision semántica (03B)", () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it("precision no cambia el motor: la deuda binaria legacy sigue (money=2, 1.005 → '1.00')", () => {
+  // 03C: antes "precision no cambia el motor: la deuda binaria legacy sigue (1.005 → '1.00')".
+  it("precision usa el mismo motor Decimal oficial (money=2, 1.005 → '1.01')", () => {
     setPrecisionPolicyForTests(POLICY_A);
     const { input } = renderInput({ precision: "money", value: 1.005, onChange: () => {} });
-    expect(input.value).toBe("1.00");
+    expect(input.value).toBe("1.01");
   });
 
   it("precision no cambia paste: sigue truncando a la escala resuelta", () => {
@@ -636,5 +642,50 @@ describe("ZhDecimalInput — paste con separadores mixtos (03C01)", () => {
     paste(input, text);
     expect(input.value).toBe(expected);
     expect(onChange).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * ZH-DESIGN-SYSTEM-PRECISION-03C — ZhDecimalInput converge al motor ÚNICO del Design System: sus tres
+ * rutas numéricas (value, defaultValue, blur) producen el mismo texto que formatMoney, ZHMoneyValue y
+ * ZHNumberValue a la misma escala (el formatter no se duplica: se compara contra formatDecimalDisplay).
+ */
+describe("ZhDecimalInput — motor Decimal único (03C)", () => {
+  it.each([
+    [1.005, 2],
+    [0.075, 2],
+    [2.00005, 4],
+    [0.30005, 4],
+    [1.2345, 2],
+    [12.5, 2],
+  ])("%s a %s decimales: value, defaultValue y blur coinciden con el resto del DS", (value, decimals) => {
+    const expected = formatDecimalDisplay(value, decimals);
+
+    const controlled = renderInput({ value, decimals, onChange: () => {} });
+    expect(controlled.input.value).toBe(expected);
+    cleanup();
+
+    const uncontrolled = renderInput({ defaultValue: value, decimals });
+    expect(uncontrolled.input.value).toBe(expected);
+    cleanup();
+
+    const typed = renderInput({ decimals });
+    typeRaw(typed.input, String(value));
+    fireEvent.blur(typed.input);
+    expect(typed.input.value).toBe(expected);
+    cleanup();
+
+    expect(formatMoney(value, decimals)).toBe(expected);
+    const money = render(<ZHMoneyValue value={value} decimals={decimals} />);
+    expect(money.container.querySelector(".zh-money-value__amount")?.textContent).toBe(expected);
+    cleanup();
+    const number = render(<ZHNumberValue value={value} decimals={decimals} />);
+    expect(number.container.querySelector(".zh-number-value__amount")?.textContent).toBe(expected);
+  });
+
+  it("valores no midpoint conservan el resultado previo (1.2345 → '1.23', 12.5 → '12.50')", () => {
+    expect(renderInput({ value: 1.2345, decimals: 2, onChange: () => {} }).input.value).toBe("1.23");
+    cleanup();
+    expect(renderInput({ value: 12.5, decimals: 2, onChange: () => {} }).input.value).toBe("12.50");
   });
 });

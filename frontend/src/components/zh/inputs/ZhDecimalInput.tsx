@@ -1,6 +1,6 @@
 import React from "react";
 import { handleDecimalKeyDown } from "../../../lib/validators/numericValidators";
-import { sanitizeDecimal } from "../../../lib/sanitizers";
+import { formatDecimalDisplay, sanitizeDecimal } from "../../../lib/sanitizers";
 import { setProgrammaticInputValue } from "../../../lib/inputUtils";
 import type { PrecisionKind } from "../../../lib/config/precisionPolicy.config";
 import { SemanticDecimals } from "../SemanticDecimals";
@@ -66,9 +66,7 @@ const ZhDecimalInputCore = React.forwardRef<HTMLInputElement, Props>(
       if (raw !== "") {
         const num = parseFloat(raw);
         if (!Number.isNaN(num)) {
-          const formatted = (positiveOnly ? Math.max(0, num) : num).toFixed(
-            decimals,
-          );
+          const formatted = formatDecimalDisplay(positiveOnly ? Math.max(0, num) : num, decimals);
           if (formatted !== raw)
             setProgrammaticInputValue(e.currentTarget, formatted);
         }
@@ -91,10 +89,10 @@ const ZhDecimalInputCore = React.forwardRef<HTMLInputElement, Props>(
         type="text"
         inputMode="decimal"
         className={cls}
-        value={typeof value === "number" ? value.toFixed(decimals) : value}
+        value={typeof value === "number" ? formatDecimalDisplay(value, decimals) : value}
         defaultValue={
           typeof defaultValue === "number"
-            ? defaultValue.toFixed(decimals)
+            ? formatDecimalDisplay(defaultValue, decimals)
             : defaultValue
         }
         onKeyDown={handleKeyDown}
