@@ -356,10 +356,11 @@ describe("ZhDecimalInput — focus / blur / onChange", () => {
     expect(input.value).toBe("-3.50");
   });
 
-  it("legacy: blur también reformatea un input readOnly", () => {
+  // 03D: antes "legacy: blur también reformatea un input readOnly" — era un blur SIN edición.
+  it("contract (03D): blur sin edición no reformatea (tampoco en readOnly)", () => {
     const { input } = renderInput({ readOnly: true, defaultValue: "5" });
     fireEvent.blur(input);
-    expect(input.value).toBe("5.00");
+    expect(input.value).toBe("5");
   });
 
   it("contract: onChange se dispara en cada edición del usuario", () => {
@@ -687,5 +688,96 @@ describe("ZhDecimalInput — motor Decimal único (03C)", () => {
     expect(renderInput({ value: 1.2345, decimals: 2, onChange: () => {} }).input.value).toBe("1.23");
     cleanup();
     expect(renderInput({ value: 12.5, decimals: 2, onChange: () => {} }).input.value).toBe("12.50");
+  });
+});
+
+/**
+ * ZH-DESIGN-SYSTEM-PRECISION-03D — "entrar y salir de un campo sin modificarlo no es una edición":
+ * sin edición no se reescribe el valor ni se emite onChange sintético; el onBlur externo se propaga
+ * siempre. Con edición real (teclado, borrado, paste, coma) el blur normaliza con el motor Decimal.
+ */
+describe("ZhDecimalInput — blur sin edición (03D)", () => {
+  it("focus → blur sin edición: DOM intacto, 0 onChange, onFocus y onBlur externos SÍ se llaman", () => {
+    const onChange = vi.fn();
+    const onFocus = vi.fn();
+    const onBlur = vi.fn();
+    const { input } = renderInput({ defaultValue: "5", onChange, onFocus, onBlur });
+    fireEvent.focus(input);
+    fireEvent.blur(input);
+    expect(input.value).toBe("5");
+    expect(onChange).not.toHaveBeenCalled();
+    expect(onFocus).toHaveBeenCalledTimes(1);
+    expect(onBlur).toHaveBeenCalledTimes(1);
+  });
+
+  it("valor persistido con más escala (defaultValue '1.005', decimals=2) no se altera por visitar el campo", () => {
+    const onChange = vi.fn();
+    const { input } = renderInput({ defaultValue: "1.005", decimals: 2, onChange });
+    fireEvent.focus(input);
+    fireEvent.blur(input);
+    expect(input.value).toBe("1.005");
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("edición real → blur sí normaliza con ROUND_HALF_UP y emite onChange (teclado '1.005' → '1.01')", () => {
+    const onChange = vi.fn();
+    const { input } = renderInput({ decimals: 2, onChange });
+    fireEvent.focus(input);
+    typeRaw(input, "1.005");
+    onChange.mockClear();
+    fireEvent.blur(input);
+    expect(input.value).toBe("1.01");
+    expect(onChange).toHaveBeenCalledTimes(1);
+  });
+
+  it("paste '1,5' cuenta como edición → blur normaliza a '1.50'", () => {
+    const { input } = renderInput({ decimals: 2 });
+    fireEvent.focus(input);
+    paste(input, "1,5");
+    fireEvent.blur(input);
+    expect(input.value).toBe("1.50");
+  });
+
+  it("coma de teclado cuenta como edición → blur normaliza ('7' + ',' → '7.' → '7.00')", () => {
+    const { input } = renderInput({ decimals: 2 });
+    fireEvent.focus(input);
+    typeRaw(input, "7");
+    input.setSelectionRange(1, 1);
+    fireEvent.keyDown(input, { key: "," });
+    fireEvent.blur(input);
+    expect(input.value).toBe("7.00");
+  });
+
+  it("tras un blur con edición, un nuevo focus → blur sin edición no vuelve a emitir", () => {
+    const onChange = vi.fn();
+    const { input } = renderInput({ decimals: 2, onChange });
+    fireEvent.focus(input);
+    typeRaw(input, "5");
+    fireEvent.blur(input);
+    expect(input.value).toBe("5.00");
+    onChange.mockClear();
+    fireEvent.focus(input);
+    fireEvent.blur(input);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("value controlado actualizado por el padre NO cuenta como edición: focus → blur no emite onChange", () => {
+    const onChange = vi.fn();
+    const { rerender } = render(<ZhDecimalInput aria-label="valor" decimals={2} value="5" onChange={onChange} />);
+    rerender(<ZhDecimalInput aria-label="valor" decimals={2} value="7.5" onChange={onChange} />);
+    const el = document.querySelector("input")!;
+    expect(el.value).toBe("7.5");
+    fireEvent.focus(el);
+    fireEvent.blur(el);
+    expect(el.value).toBe("7.5");
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("onChange del consumidor sigue recibiendo cada edición", () => {
+    const onChange = vi.fn();
+    const { input } = renderInput({ onChange });
+    fireEvent.change(input, { target: { value: "1" } });
+    fireEvent.change(input, { target: { value: "1.2" } });
+    expect(onChange).toHaveBeenCalledTimes(2);
   });
 });

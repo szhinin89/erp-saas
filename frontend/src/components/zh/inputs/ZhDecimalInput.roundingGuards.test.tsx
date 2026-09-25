@@ -12,7 +12,9 @@
  * Convención de nombres:
  * - "03C: …"         expectativa actualizada deliberadamente al motor Decimal (ROUND_HALF_UP) en 03C
  *   (antes "legacy→03C"; el valor previo de Number.toFixed se indica como "antes").
- * - "legacy: …"      comportamiento actual que NO depende del motor (blur/dirty/round-trip).
+ * - "legacy: …"      comportamiento actual que NO depende del motor (round-trip de Compras).
+ * - "03D: …"         contrato "entrar y salir sin modificar no es una edición": sin edición no se
+ *   reescribe el valor ni se emite onChange sintético (antes sí; el valor previo se indica como "antes").
  */
 import { useEffect } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -102,21 +104,21 @@ async function focusBlur() {
 }
 
 describe("B. RHF focus → blur sin edición, valor inicial no canónico (5, decimals=2)", () => {
-  it("legacy: register string — DOM '5' → '5.00', 1 onChange, valor '5.00', isDirty=true, touched=true", async () => {
+  it("03D: register string — DOM '5' se conserva (antes '5.00'), 0 onChange (antes 1), valor '5', isDirty=false (antes true), touched=true", async () => {
     const rhf = renderRhf(5, 2);
     expect(input().value).toBe("5");
     await focusBlur();
-    expect(input().value).toBe("5.00");
-    expect(rhf.changes.count).toBe(1);
-    expect(rhf.getValues()).toBe("5.00");
-    expect(rhf.state()).toEqual({ isDirty: true, dirty: true, touched: true });
+    expect(input().value).toBe("5");
+    expect(rhf.changes.count).toBe(0);
+    expect(rhf.getValues()).toBe("5"); // el onBlur propio de RHF relee el DOM (sin normalizar)
+    expect(rhf.state()).toEqual({ isDirty: false, dirty: false, touched: true });
   });
 
-  it("legacy: register + valueAsNumber — DOM '5' → '5.00', 1 onChange, valor 5, isDirty=false, touched=true", async () => {
+  it("03D: register + valueAsNumber — DOM '5' se conserva (antes '5.00'), 0 onChange (antes 1), valor 5, isDirty=false, touched=true", async () => {
     const rhf = renderRhf(5, 2, { valueAsNumber: true });
     await focusBlur();
-    expect(input().value).toBe("5.00");
-    expect(rhf.changes.count).toBe(1);
+    expect(input().value).toBe("5");
+    expect(rhf.changes.count).toBe(0);
     expect(rhf.getValues()).toBe(5);
     expect(rhf.state()).toEqual({ isDirty: false, dirty: false, touched: true });
   });
@@ -137,38 +139,57 @@ const ITEMS_REGISTER = {
 } as RegisterOptions<{ x: unknown }, "x">;
 
 describe("C. Items — valor persistido con más escala que la policy (focus → blur sin edición)", () => {
-  it("03C: salePrice 1.005 con salesUnitPriceDecimals=2 → DOM '1.005' → '1.01' (antes '1.00'); valor 1.01 (antes 1); isDirty=true (sin cambio)", async () => {
+  it("03D: salePrice persistido 1.005 (decimals=2) se CONSERVA al visitar el campo (antes '1.01' y dirty); isDirty=false, touched=true", async () => {
     const rhf = renderRhf(1.005, 2, ITEMS_REGISTER);
     expect(input().value).toBe("1.005"); // RHF escribe el número persistido tal cual
     await focusBlur();
-    expect(input().value).toBe("1.01");
-    expect(rhf.changes.count).toBe(1);
-    expect(rhf.getValues()).toBe(1.01);
-    expect(rhf.state()).toEqual({ isDirty: true, dirty: true, touched: true });
+    expect(input().value).toBe("1.005");
+    expect(rhf.changes.count).toBe(0);
+    expect(rhf.getValues()).toBe(1.005);
+    expect(rhf.state()).toEqual({ isDirty: false, dirty: false, touched: true });
   });
 
-  it("03C: stock mínimo 2.00005 con quantityDecimals=4 → '2.0001' (antes '2.0000'); valor 2.0001 (antes 2); isDirty=true (sin cambio)", async () => {
+  it("03D: stock mínimo persistido 2.00005 (decimals=4) se CONSERVA al visitar el campo (antes '2.0001' y dirty)", async () => {
     const rhf = renderRhf(2.00005, 4, ITEMS_REGISTER);
     await focusBlur();
-    expect(input().value).toBe("2.0001");
-    expect(rhf.getValues()).toBe(2.0001);
-    expect(rhf.state().isDirty).toBe(true);
+    expect(input().value).toBe("2.00005");
+    expect(rhf.getValues()).toBe(2.00005);
+    expect(rhf.state().isDirty).toBe(false);
   });
 
-  it("legacy: valor con más escala SIN midpoint (1.2345, decimals=2) también se reescribe → '1.23', isDirty=true (igual con Decimal)", async () => {
+  it("03D: valor con más escala sin midpoint (1.2345, decimals=2) ya no se reescribe al visitar (antes '1.23' y dirty)", async () => {
     const rhf = renderRhf(1.2345, 2, ITEMS_REGISTER);
     await focusBlur();
-    expect(input().value).toBe("1.23");
-    expect(rhf.getValues()).toBe(1.23);
-    expect(rhf.state().isDirty).toBe(true);
+    expect(input().value).toBe("1.2345");
+    expect(rhf.getValues()).toBe(1.2345);
+    expect(rhf.state().isDirty).toBe(false);
   });
 
-  it("legacy: valor persistido dentro de la escala (12.5, decimals=2) → '12.50', valor 12.5, isDirty=false", async () => {
+  it("03D: valor persistido dentro de la escala (12.5, decimals=2) se conserva '12.5' (antes '12.50'), isDirty=false", async () => {
     const rhf = renderRhf(12.5, 2, ITEMS_REGISTER);
     await focusBlur();
-    expect(input().value).toBe("12.50");
+    expect(input().value).toBe("12.5");
     expect(rhf.getValues()).toBe(12.5);
     expect(rhf.state().isDirty).toBe(false);
+  });
+});
+
+describe("C2. Items — edición REAL sigue normalizando con el motor Decimal (03D)", () => {
+  it("03D: persistido 1.005 → el usuario escribe 1.015 → blur '1.02' (ROUND_HALF_UP), valor 1.02, isDirty=true", async () => {
+    const rhf = renderRhf(1.005, 2, ITEMS_REGISTER);
+    await act(async () => {
+      fireEvent.focus(input());
+    });
+    await act(async () => {
+      fireEvent.change(input(), { target: { value: "1.015" } });
+    });
+    await act(async () => {
+      fireEvent.blur(input());
+    });
+    expect(input().value).toBe("1.02");
+    expect(rhf.changes.count).toBe(2); // edición del usuario + normalización del blur
+    expect(rhf.getValues()).toBe(1.02);
+    expect(rhf.state()).toEqual({ isDirty: true, dirty: true, touched: true });
   });
 });
 
@@ -245,6 +266,9 @@ describe("D. Purchases — cantidad/costo base calculados (focus → blur sin ed
     const committed = updateLine.mock.calls.find(([field]) => field === "quantity")![1] as number;
     expect(committed).toBe(3.0005 / 1.00015);
     expect(committed).not.toBe(3);
+    // 03D: el INPUT ya no reescribe nada (DOM intacto, sin onChange sintético); la deriva la produce
+    // el onBlur del CONSUMIDOR de Compras, que confirma siempre → requiere reabrir Purchases.
+    expect(input().value).toBe("3.0005");
   });
 
   it("legacy: sin presentación con escala exacta (qty 2 × 1) el blur confirma el mismo valor", () => {

@@ -37,6 +37,8 @@ const ZhDecimalInputCore = React.forwardRef<HTMLInputElement, Props>(
       onKeyDown,
       onPaste,
       onBlur,
+      onFocus,
+      onChange,
       value,
       defaultValue,
       className,
@@ -45,6 +47,22 @@ const ZhDecimalInputCore = React.forwardRef<HTMLInputElement, Props>(
     },
     ref,
   ) => {
+    // ZH-DESIGN-SYSTEM-PRECISION-03D — "entrar y salir sin modificar no es una edición". Metadata
+    // efímera (no una copia del valor): se activa con el onChange de React, que solo ocurre por
+    // entrada real (teclado, borrado, paste y coma normalizada, que se inyectan como input); no
+    // con el montaje ni con un `value` controlado actualizado por el padre. Se reinicia al enfocar.
+    const editedSinceFocus = React.useRef(false);
+
+    const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+      editedSinceFocus.current = false;
+      onFocus?.(e);
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      editedSinceFocus.current = true;
+      onChange?.(e);
+    };
+
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
       handleDecimalKeyDown(e, decimals, positiveOnly);
       onKeyDown?.(e);
@@ -58,12 +76,12 @@ const ZhDecimalInputCore = React.forwardRef<HTMLInputElement, Props>(
       onPaste?.(e);
     };
 
-    // Re-formatea al perder el foco (ej. "5" → "5.0000", "12.2" → "12.200000") — el input es
-    // no controlado mientras se edita, así que sin esto el DOM se queda con lo que el usuario
-    // tecleó literalmente en vez de respetar `decimals` configurado por empresa.
+    // Re-formatea al perder el foco (ej. "5" → "5.0000", "12.2" → "12.200000") SOLO si el usuario
+    // editó desde el último focus: sin edición el valor (p. ej. un dato persistido con más escala)
+    // no se reescribe ni se emite onChange sintético. El onBlur externo se propaga siempre.
     const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
       const raw = e.currentTarget.value.trim();
-      if (raw !== "") {
+      if (editedSinceFocus.current && raw !== "") {
         const num = parseFloat(raw);
         if (!Number.isNaN(num)) {
           const formatted = formatDecimalDisplay(positiveOnly ? Math.max(0, num) : num, decimals);
@@ -71,6 +89,7 @@ const ZhDecimalInputCore = React.forwardRef<HTMLInputElement, Props>(
             setProgrammaticInputValue(e.currentTarget, formatted);
         }
       }
+      editedSinceFocus.current = false;
       onBlur?.(e);
     };
 
@@ -97,6 +116,8 @@ const ZhDecimalInputCore = React.forwardRef<HTMLInputElement, Props>(
         }
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
+        onFocus={handleFocus}
+        onChange={handleChange}
         onBlur={handleBlur}
       />
     );
