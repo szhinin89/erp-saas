@@ -7,7 +7,6 @@ import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { formatDate, formatDateTime } from "../../../lib/formatters/dateFormatters";
-import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError, readApiErrorMessage } from "../../lib/apiError";
 import { businessPartnerFacade } from "../../masterData/api/businessPartnerFacade";
@@ -50,7 +49,6 @@ export function SupplierPaymentDetailPage() {
   const { has } = usePermissionsUi();
   const canView = has(PERMISSIONS.view);
   const canReverse = has(PERMISSIONS.reverse);
-  const decimals = getPrecisionPolicy().moneyDecimals;
 
   const [payment, setPayment] = useState<SupplierPaymentDto | null>(null);
   const [supplierName, setSupplierName] = useState("");
@@ -145,7 +143,7 @@ export function SupplierPaymentDetailPage() {
       key: "amount",
       header: "Monto",
       align: "right",
-      render: (line) => <ZHMoneyValue value={line.amount} decimals={decimals} />,
+      render: (line) => <ZHMoneyValue value={line.amount} precision="money" />,
     },
   ];
 
@@ -159,7 +157,7 @@ export function SupplierPaymentDetailPage() {
       key: "amountApplied",
       header: "Monto aplicado",
       align: "right",
-      render: (line) => <ZHMoneyValue value={line.amountApplied} decimals={decimals} />,
+      render: (line) => <ZHMoneyValue value={line.amountApplied} precision="money" />,
     },
   ];
 
@@ -209,7 +207,7 @@ export function SupplierPaymentDetailPage() {
                 {formatDateTime(payment.createdAt)}
               </ZHField>
               <ZHField label="Total" readOnly>
-                <ZHMoneyValue value={payment.totalAmount} decimals={decimals} emphasis="strong" />
+                <ZHMoneyValue value={payment.totalAmount} precision="money" emphasis="strong" />
               </ZHField>
             </div>
           </ZHCard>

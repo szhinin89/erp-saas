@@ -6,7 +6,6 @@ import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDa
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
-import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
 import {
@@ -23,7 +22,6 @@ export function SupplierPaymentsPage() {
   const canView = has(PERMISSIONS.view);
   const canCreate = has(PERMISSIONS.create);
   const navigate = useNavigate();
-  const decimals = getPrecisionPolicy().moneyDecimals;
 
   const [rows, setRows] = useState<SupplierPaymentListItemDto[]>([]);
   const [total, setTotal] = useState(0);
@@ -75,7 +73,7 @@ export function SupplierPaymentsPage() {
         key: "total",
         header: "Total",
         align: "right",
-        render: (row) => <ZHMoneyValue value={row.totalAmount} decimals={decimals} />,
+        render: (row) => <ZHMoneyValue value={row.totalAmount} precision="money" />,
       },
       {
         key: "status",
@@ -83,7 +81,7 @@ export function SupplierPaymentsPage() {
         render: (row) => <SupplierPaymentStatusBadge status={row.status} />,
       },
     ],
-    [decimals],
+    [],
   );
 
   if (!canView) return <NoAccessPage title="Pagos a proveedores" />;

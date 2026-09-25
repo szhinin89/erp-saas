@@ -11,7 +11,6 @@ import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDa
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
-import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
 import { payablesService, type PayableListItemDto } from "../api/payablesService";
@@ -35,7 +34,6 @@ export function PayablesPage() {
   const { has } = usePermissionsUi();
   const canView = has(PERMISSIONS.view);
   const navigate = useNavigate();
-  const decimals = getPrecisionPolicy().moneyDecimals;
 
   const [rows, setRows] = useState<PayableListItemDto[]>([]);
   const [total, setTotal] = useState(0);
@@ -103,19 +101,19 @@ export function PayablesPage() {
         key: "total",
         header: "Total",
         align: "right",
-        render: (row) => <ZHMoneyValue value={row.totalAmount} decimals={decimals} />,
+        render: (row) => <ZHMoneyValue value={row.totalAmount} precision="money" />,
       },
       {
         key: "paid",
         header: "Pagado",
         align: "right",
-        render: (row) => <ZHMoneyValue value={row.paidAmount} decimals={decimals} />,
+        render: (row) => <ZHMoneyValue value={row.paidAmount} precision="money" />,
       },
       {
         key: "outstanding",
         header: "Saldo",
         align: "right",
-        render: (row) => <ZHMoneyValue value={row.outstandingAmount} decimals={decimals} />,
+        render: (row) => <ZHMoneyValue value={row.outstandingAmount} precision="money" />,
       },
       {
         key: "status",
@@ -123,7 +121,7 @@ export function PayablesPage() {
         render: (row) => <PayableStatusBadge status={row.status} />,
       },
     ],
-    [decimals],
+    [],
   );
 
   if (!canView) return <NoAccessPage title="Cuentas por pagar" />;

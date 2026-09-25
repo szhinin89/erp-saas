@@ -15,7 +15,7 @@ import {
 } from "../../../../components/PageShell";
 import { formatDate } from "../../../../lib/formatters/dateFormatters";
 import { formatMoney } from "../../../../lib/sanitizers";
-import { getPrecisionPolicy } from "../../../../lib/config/precisionPolicy.config";
+import { usePrecisionDecimals } from "../../../../hooks/usePrecisionPolicy";
 import { useStockAdjustmentsPage, PAGE_SIZE } from "../hooks/useStockAdjustmentsPage";
 import { AdjustmentLifecycleModals } from "../components/AdjustmentLifecycleModals";
 import {
@@ -38,6 +38,7 @@ import "./StockAdjustmentsPage.css";
  * un 0 que el usuario leería como "costo cero".
  */
 export function StockAdjustmentsPage() {
+  const totalCostDecimals = usePrecisionDecimals("money"); // presentación (04E), antes de returns
   const { t } = useI18n();
   const ctx = useStockAdjustmentsPage();
   const navigate = useNavigate();
@@ -53,7 +54,6 @@ export function StockAdjustmentsPage() {
   const totalCost = (row: StockAdjustmentDto) =>
     row.lines.reduce((sum, l) => sum + (l.totalCost ?? 0), 0);
   // Costo total del documento (agregado de líneas), no costo unitario — moneyDecimals.
-  const totalCostDecimals = getPrecisionPolicy().moneyDecimals;
 
   // ZH-LISTING-MAIN-ROW-NUMBER-FIX-07: showRowNumber activo — "N.º" (adjustmentNumber) sigue
   // siendo el identificador funcional del documento; "N°" es solo el índice visual de fila,

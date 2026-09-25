@@ -14,6 +14,7 @@ import {
 import type { BranchListItemDto } from "../../../branches/types";
 import {
   STORAGE_TYPES,
+  WAREHOUSE_CAPACITY_DECIMALS,
   type WarehouseFormValues,
 } from "../../../../schemas/inventory/warehouseSchema";
 import {
@@ -320,7 +321,7 @@ export function WarehouseFormTab({
                     // definida es la persistencia — Warehouse.Capacity decimal? → numeric(18,4); el validador
                     // no la limita y ninguna regla funcional exige 2 — así que el input admite 4 para no
                     // truncar al editar una capacidad guardada con 3–4 decimales.
-                    decimals={4}
+                    decimals={WAREHOUSE_CAPACITY_DECIMALS}
                     positiveOnly
                     placeholder="0"
                     disabled={saving}

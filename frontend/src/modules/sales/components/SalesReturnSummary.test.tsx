@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from "vitest";
-import { render, cleanup } from "@testing-library/react";
+import { act, render, cleanup } from "@testing-library/react";
 import { SalesReturnSummary } from "./SalesReturnSummary";
 import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.config";
 import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
@@ -71,7 +71,7 @@ afterEach(() => {
 describe("SalesReturnSummary — totales migrados a ZHMoneyValue (SALES-DS-MONEY-12)", () => {
   it("la fila de línea (P. unitario/IVA/ICE/Total línea) usa ZHMoneyValue sin símbolo de moneda", () => {
     const { container } = render(
-      <SalesReturnSummary salesReturn={buildSalesReturn()} decimals={2} />,
+      <SalesReturnSummary salesReturn={buildSalesReturn()} />,
     );
 
     const cells = container.querySelectorAll(
@@ -86,7 +86,7 @@ describe("SalesReturnSummary — totales migrados a ZHMoneyValue (SALES-DS-MONEY
 
   it('"Total a reembolsar" usa ZHMoneyValue con el valor del grandTotal', () => {
     const { container } = render(
-      <SalesReturnSummary salesReturn={buildSalesReturn({ grandTotal: 110 })} decimals={2} />,
+      <SalesReturnSummary salesReturn={buildSalesReturn({ grandTotal: 110 })} />,
     );
 
     const grandRow = container.querySelector(".sr-totals-grid__grand");
@@ -97,7 +97,7 @@ describe("SalesReturnSummary — totales migrados a ZHMoneyValue (SALES-DS-MONEY
 
   it("el descuento se muestra con el signo - seguido de ZHMoneyValue", () => {
     const { container } = render(
-      <SalesReturnSummary salesReturn={buildSalesReturn({ totalDiscount: 5 })} decimals={2} />,
+      <SalesReturnSummary salesReturn={buildSalesReturn({ totalDiscount: 5 })} />,
     );
 
     const rows = container.querySelectorAll(".sr-general-grid__value");
@@ -116,7 +116,6 @@ describe("SalesReturnSummary — totales migrados a ZHMoneyValue (SALES-DS-MONEY
         salesReturn={buildSalesReturn({
           refundAllocations: [{ id: "ra-1", method: "Cash", amount: 110 }],
         })}
-        decimals={2}
       />,
     );
 
@@ -130,7 +129,7 @@ describe("SalesReturnSummary — totales migrados a ZHMoneyValue (SALES-DS-MONEY
 
   it("no hay estilos inline en ningún valor monetario del resumen", () => {
     const { container } = render(
-      <SalesReturnSummary salesReturn={buildSalesReturn()} decimals={2} />,
+      <SalesReturnSummary salesReturn={buildSalesReturn()} />,
     );
 
     container.querySelectorAll(".zh-money-value").forEach((el) => {
@@ -151,7 +150,6 @@ describe("SalesReturnSummary — precisión de línea (ERP-PRECISION-FRONTEND-06
         salesReturn={buildSalesReturn({
           lines: [buildLine({ quantity: 1.234567, unitPrice: 12.3457, vatAmount: 3, taxInclusiveTotal: 23 })],
         })}
-        decimals={2}
       />,
     );
 
@@ -168,12 +166,27 @@ describe("SalesReturnSummary — precisión de línea (ERP-PRECISION-FRONTEND-06
     const { container } = render(
       <SalesReturnSummary
         salesReturn={buildSalesReturn({ lines: [buildLine({ quantity: 3 })] })}
-        decimals={2}
       />,
     );
 
     const row = container.querySelector(".sr-lines-table tbody tr");
     const texts = Array.from(row?.querySelectorAll("td") ?? []).map((td) => td.textContent);
     expect(texts).toContain("3");
+  });
+});
+
+describe("SalesReturnSummary — cantidad reactiva sin remount (ZH-DESIGN-SYSTEM-PRECISION-04E)", () => {
+  it("la cantidad (texto compuesto con usePrecisionDecimals) reacciona A → B; sin símbolo $", () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, quantityDecimals: 2 });
+    const { container } = render(
+      <SalesReturnSummary salesReturn={buildSalesReturn({ lines: [buildLine({ quantity: 1.5 })] })} />,
+    );
+    const cells = () =>
+      Array.from(container.querySelectorAll(".sr-lines-table tbody tr td")).map((td) => td.textContent);
+    expect(cells()).toContain("1.50");
+
+    act(() => setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, quantityDecimals: 4 }));
+    expect(cells()).toContain("1.5000");
+    expect(container.querySelector(".sr-lines-table")?.textContent).not.toContain("$");
   });
 });

@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
-import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import type { PayableInstallmentDto } from "../api/payablesService";
 import { PayableStatusBadge } from "./PayableStatusBadge";
 
@@ -12,7 +11,6 @@ export function PayableInstallmentsTable({
 }: {
   installments: PayableInstallmentDto[];
 }) {
-  const decimals = getPrecisionPolicy().moneyDecimals;
 
   const columns = useMemo<ZHDataTableColumn<PayableInstallmentDto>[]>(
     () => [
@@ -22,19 +20,19 @@ export function PayableInstallmentsTable({
         key: "amount",
         header: "Valor",
         align: "right",
-        render: (row) => <ZHMoneyValue value={row.amount} decimals={decimals} />,
+        render: (row) => <ZHMoneyValue value={row.amount} precision="money" />,
       },
       {
         key: "paid",
         header: "Pagado",
         align: "right",
-        render: (row) => <ZHMoneyValue value={row.paidAmount} decimals={decimals} />,
+        render: (row) => <ZHMoneyValue value={row.paidAmount} precision="money" />,
       },
       {
         key: "outstanding",
         header: "Saldo",
         align: "right",
-        render: (row) => <ZHMoneyValue value={row.outstandingAmount} decimals={decimals} />,
+        render: (row) => <ZHMoneyValue value={row.outstandingAmount} precision="money" />,
       },
       {
         key: "status",
@@ -42,7 +40,7 @@ export function PayableInstallmentsTable({
         render: (row) => <PayableStatusBadge status={row.status} />,
       },
     ],
-    [decimals],
+    [],
   );
 
   return (

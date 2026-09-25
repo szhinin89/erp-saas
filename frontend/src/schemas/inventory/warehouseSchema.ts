@@ -1,5 +1,12 @@
 import { z } from "zod";
 
+/**
+ * ZH-DESIGN-SYSTEM-PRECISION-04D1/04E — escala CONTRACTUAL de la capacidad de bodega (m³): la de su
+ * persistencia (Warehouse.Capacity → numeric(18,4)). Sin PrecisionKind (no es dato de la
+ * PrecisionPolicy): override explícito compartido por el input y el listado.
+ */
+export const WAREHOUSE_CAPACITY_DECIMALS = 4;
+
 export const STORAGE_TYPES = ["Mixto", "Frío", "Seco", "Granel"] as const;
 
 export const warehouseSchema = z.object({

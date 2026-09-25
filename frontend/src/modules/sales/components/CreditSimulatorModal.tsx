@@ -7,6 +7,7 @@ import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { formatMoney } from "../../../lib/sanitizers";
 import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { INSTALLMENT_ROUNDING_TOLERANCE } from "../constants/tolerances";
 
 interface Props {
@@ -41,8 +42,11 @@ export function CreditSimulatorModal({
   onConfirm,
   onCancel,
 }: Props) {
+  // Cálculo (factor de redondeo) y montaje del input editable: escala de money de la policy.
   const totalAmountDecimals = getPrecisionPolicy().moneyDecimals;
   const factor = 10 ** totalAmountDecimals;
+  // Presentación de textos compuestos (subtítulo/mensaje): semántica declarada (04E).
+  const moneyDecimals = usePrecisionDecimals("money");
   const totalCuotas = rows.reduce((s, r) => s + r.amount, 0);
   const diff = Math.round((amount - totalCuotas) * factor) / factor;
   const hasInvalidRow = rows.some(
@@ -55,7 +59,7 @@ export function CreditSimulatorModal({
       onClose={onCancel}
       size="md"
       title="Simulación de Cuotas"
-      subtitle={`${isManual ? "Personalizado" : "Automático"} — Monto a crédito: $${formatMoney(amount, totalAmountDecimals)}${paymentTermName && installments && daysBetween ? ` — ${paymentTermName} (${installments} cuota${installments > 1 ? "s" : ""} × ${daysBetween} días)` : ""}`}
+      subtitle={`${isManual ? "Personalizado" : "Automático"} — Monto a crédito: $${formatMoney(amount, moneyDecimals)}${paymentTermName && installments && daysBetween ? ` — ${paymentTermName} (${installments} cuota${installments > 1 ? "s" : ""} × ${daysBetween} días)` : ""}`}
       footer={
         <>
           <ZHBtn variant="ghost" size="md" onClick={onCancel}>
@@ -80,7 +84,7 @@ export function CreditSimulatorModal({
       {diff !== 0 && (
         <ZHPageNotice
           variant="warning"
-          message={`Diferencia: $${formatMoney(Math.abs(diff), totalAmountDecimals)} — las cuotas deben sumar $${formatMoney(amount, totalAmountDecimals)}`}
+          message={`Diferencia: $${formatMoney(Math.abs(diff), moneyDecimals)} — las cuotas deben sumar $${formatMoney(amount, moneyDecimals)}`}
         />
       )}
       {diff === 0 && hasInvalidRow && (
@@ -141,7 +145,7 @@ export function CreditSimulatorModal({
             <td className="zh-table-cell--num">
               <ZHMoneyValue
                 value={totalCuotas}
-                decimals={totalAmountDecimals}
+                precision="money"
                 emphasis="strong"
               />
             </td>

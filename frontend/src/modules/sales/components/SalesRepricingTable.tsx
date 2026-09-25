@@ -1,19 +1,12 @@
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
-import { roundToDecimals } from "../../../lib/sanitizers";
 import type { RepricingRow } from "../hooks/useSalesCustomerRepricing";
 
 /**
  * Tabla "Producto | Precio actual | Nuevo precio" del modal de cambio de cliente. Ambos precios
- * son UnitPrice, así que se muestran siempre con los decimales configurados para precio de venta
- * (`decimals` = salesUnitPriceDecimals) — nunca un formato fijo.
+ * son UnitPrice: declaran `precision="salesUnitPrice"` (ZH-DESIGN-SYSTEM-PRECISION-04E) y el
+ * Design System resuelve la escala de la PrecisionPolicy — nunca un formato fijo ni una prop.
  */
-export function SalesRepricingTable({
-  rows,
-  decimals,
-}: {
-  rows: RepricingRow[];
-  decimals: number;
-}) {
+export function SalesRepricingTable({ rows }: { rows: RepricingRow[] }) {
   return (
     <div className="zh-table-wrap">
       <table className="zh-table zh-table--compact">
@@ -29,16 +22,10 @@ export function SalesRepricingTable({
             <tr key={row.key}>
               <td>{row.description}</td>
               <td>
-                <ZHMoneyValue
-                  value={roundToDecimals(row.currentUnitPrice, decimals)}
-                  decimals={decimals}
-                />
+                <ZHMoneyValue value={row.currentUnitPrice} precision="salesUnitPrice" />
               </td>
               <td>
-                <ZHMoneyValue
-                  value={roundToDecimals(row.fields.unitPrice, decimals)}
-                  decimals={decimals}
-                />
+                <ZHMoneyValue value={row.fields.unitPrice} precision="salesUnitPrice" />
               </td>
             </tr>
           ))}

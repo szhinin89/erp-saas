@@ -7,6 +7,7 @@ import { HELP_KEYS } from "../../../help";
 import { ZhDecimalInput } from "../../../components/zh/inputs";
 import { formatMoney, formatMoneyWithSymbol } from "../../../lib/sanitizers";
 import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { INVOICE_PAYMENT_TOLERANCE } from "../constants/tolerances";
 import type { SalesPageContext } from "../hooks/useSalesPage";
 import { remainingToCollect } from "./paymentRemaining";
@@ -33,6 +34,9 @@ function resolveSriPaymentMethodCode(
 
 // ── Payment Methods Section ─────────────────────────────────────────────
 export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
+  // Presentación de textos compuestos: semántica declarada (04E). Los `factor` de redondeo y los
+  // defaultValue de inputs siguen leyendo la escala de money de la policy (cálculo / montaje).
+  const moneyDecimals = usePrecisionDecimals("money");
   return (
     <div className="sf-sidebar__section">
       <div className="sf-sidebar__header zh-section-title">
@@ -61,7 +65,7 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
                 <span className="sales-payment-chip__amount">
                   <ZHMoneyValue
                     value={p.amount}
-                    decimals={getPrecisionPolicy().moneyDecimals}
+                    precision="money"
                   />
                 </span>
               </div>
@@ -88,7 +92,7 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
             }
             return (
               <div className="sales-payment-tolerance-note">
-                Diferencia {formatMoneyWithSymbol(absDiff, decimals)} dentro de
+                Diferencia {formatMoneyWithSymbol(absDiff, moneyDecimals)} dentro de
                 tolerancia — saldada
               </div>
             );
@@ -239,7 +243,7 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
                     <span className="sales-payment-ref-amount">
                       <ZHMoneyValue
                         value={totalForMethod}
-                        decimals={getPrecisionPolicy().moneyDecimals}
+                        precision="money"
                       />{" "}
                       <span className="sales-payment-ref-count">
                         ({entries.length})
@@ -259,7 +263,7 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
                     >
                       <ZHMoneyValue
                         value={entry!.amount}
-                        decimals={getPrecisionPolicy().moneyDecimals}
+                        precision="money"
                       />
                     </span>
                   )}
@@ -337,7 +341,7 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
                         ? ctx.cashDue - ctx.cashReceived
                         : ctx.cashChange
                     }
-                    decimals={getPrecisionPolicy().moneyDecimals}
+                    precision="money"
                   />
                 </span>
               </div>
@@ -363,7 +367,7 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
                   <span className="sales-summary-row__amount">
                     <ZHMoneyValue
                       value={paid}
-                      decimals={getPrecisionPolicy().moneyDecimals}
+                      precision="money"
                     />
                   </span>
                 </div>
@@ -381,7 +385,7 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
                     <span className="sales-summary-total-row__amount">
                       <ZHMoneyValue
                         value={Math.abs(diff)}
-                        decimals={getPrecisionPolicy().moneyDecimals}
+                        precision="money"
                       />
                     </span>
                   )}

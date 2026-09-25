@@ -1,3 +1,5 @@
+import { formatDecimalDisplay } from "../../../lib/sanitizers";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { purchaseReceptionService, type ExpenseReceptionDraft } from "../../purchases/api/purchaseReceptionService";
 import {
   useCallback,
@@ -152,6 +154,9 @@ export function ExpenseDocumentFormPage() {
     () => calculateExpenseDocumentTotals(lines, vatRateByCode),
     [lines, vatRateByCode],
   );
+  // Presentación de textos compuestos (04E): semántica declarada, mismo resolver y motor.
+  const moneyDecimals = usePrecisionDecimals("money");
+  const taxDecimals = usePrecisionDecimals("tax");
   const receptionMismatch = useMemo(() => {
     if (!reception) return null;
     const tolerance = 0.01;
@@ -517,8 +522,8 @@ export function ExpenseDocumentFormPage() {
           <ZHCard bodyClassName="exp-doc-card-body">
             {reception && (
               <p>
-                Factura recibida: subtotal {reception.subtotal.toFixed(2)}, IVA{" "}
-                {reception.vatAmount.toFixed(2)}, total {reception.total.toFixed(2)}.
+                Factura recibida: subtotal {formatDecimalDisplay(reception.subtotal, moneyDecimals)}, IVA{" "}
+                {formatDecimalDisplay(reception.vatAmount, taxDecimals)}, total {formatDecimalDisplay(reception.total, moneyDecimals)}.
                 Complete el detalle y seleccione la subcategoría de cada gasto.
               </p>
             )}
@@ -526,7 +531,7 @@ export function ExpenseDocumentFormPage() {
               <ZHFormAlert
                 type="warning"
                 message="El total calculado no cuadra con el XML recibido."
-                detail={`IVA XML recibido: ${reception!.vatAmount.toFixed(2)} — Total XML recibido: ${receptionMismatch.receivedTotal.toFixed(2)} — Total calculado en pantalla: ${receptionMismatch.calculatedTotal.toFixed(2)}. Revise cantidad, valor unitario y código IVA de cada línea antes de guardar.`}
+                detail={`IVA XML recibido: ${formatDecimalDisplay(reception!.vatAmount, taxDecimals)} — Total XML recibido: ${formatDecimalDisplay(receptionMismatch.receivedTotal, moneyDecimals)} — Total calculado en pantalla: ${receptionMismatch.calculatedTotal.toFixed(2)}. Revise cantidad, valor unitario y código IVA de cada línea antes de guardar.`}
               />
             )}
             <ExpenseDocumentHeader

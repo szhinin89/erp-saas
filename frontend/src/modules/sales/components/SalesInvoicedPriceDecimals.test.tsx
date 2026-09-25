@@ -333,7 +333,8 @@ describe("modal repricing — precios actual y nuevo con decimales configurados"
     [3, "0.600", "0.495"],
     [4, "0.6000", "0.4950"],
   ])("config %i → actual %s / nuevo %s", (decimals, current, next) => {
-    const { container } = render(<SalesRepricingTable rows={rows(0.6, 0.495)} decimals={decimals} />);
+    setSalesDecimals(decimals); // 04E: la tabla declara precision="salesUnitPrice" (sin prop decimals)
+    const { container } = render(<SalesRepricingTable rows={rows(0.6, 0.495)} />);
     const amounts = Array.from(container.querySelectorAll(".zh-money-value__amount")).map(
       (n) => n.textContent,
     );

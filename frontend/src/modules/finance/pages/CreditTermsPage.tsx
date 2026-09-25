@@ -1,4 +1,5 @@
-﻿import { useCallback, useEffect, useState } from "react";
+﻿import { formatDecimalDisplay } from "../../../lib/sanitizers";
+import { useCallback, useEffect, useState } from "react";
 
 import { Badge } from "../../../components/PageShell";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
@@ -27,6 +28,9 @@ import { message } from "../../../lib/messages";
 import "../../../styles/shared/items-catalog.css";
 
 type Tab = "resumen" | "listado" | "nuevo";
+
+/** Override contractual (04D/04E): % de cuota persistido en CreditInstallment numeric(5,2). */
+const INSTALLMENT_PERCENTAGE_DECIMALS = 2;
 
 export function CreditTermsPage() {
   const [tab, setTab] = useState<Tab>("listado");
@@ -363,7 +367,7 @@ export function CreditTermsPage() {
                 <h4>
                   Cuotas{" "}
                   <span className={`ct-installment-sum ${installmentSum === 100 ? "ct-installment-sum--ok" : "ct-installment-sum--error"}`}>
-                    (Suma: {installmentSum.toFixed(2)}%)
+                    (Suma: {formatDecimalDisplay(installmentSum, INSTALLMENT_PERCENTAGE_DECIMALS)}%)
                   </span>
                 </h4>
                 <ZHBtn onClick={addInstallment}>
@@ -405,7 +409,7 @@ export function CreditTermsPage() {
                       // Override contractual (ZH-DESIGN-SYSTEM-PRECISION-04D): reparto % de la cuota,
                       // persistido en CreditInstallment numeric(5,2); no es un porcentaje operativo de
                       // CompanyPrecisionPolicy ni un porcentaje fiscal — su escala es la de la columna.
-                      decimals={2}
+                      decimals={INSTALLMENT_PERCENTAGE_DECIMALS}
                       positiveOnly
                       defaultValue={inst.percentage}
                       onBlur={(e) =>

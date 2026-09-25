@@ -1,25 +1,25 @@
 import { ZHCard } from "../../../components/zh/ZHCard";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
-import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
-import { formatMoney } from "../../../lib/sanitizers";
+import { formatDecimalDisplay } from "../../../lib/sanitizers";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import type { SalesReturnDto } from "../api/salesReturnService";
 import "../../../styles/shared/erp-form-core.css";
 
 interface Props {
   salesReturn: SalesReturnDto;
-  decimals: number;
 }
 
 /**
  * Muestra lo ya congelado/persistido de una devolución: líneas (una vez
  * autorizada), resumen de impuestos/total y asignaciones de reembolso.
  * Nunca recalcula nada — todos los valores vienen tal cual del servidor.
- * `decimals` (moneyDecimals) rige totales/impuestos; cantidad y precio unitario siguen la política
- * de la empresa (quantityDecimals / salesUnitPriceDecimals).
+ * ZH-DESIGN-SYSTEM-PRECISION-04E: cada valor declara su semántica (money/tax/quantity/
+ * salesUnitPrice) y el Design System resuelve la escala — sin prop `decimals` ni lectura de policy.
  */
-export function SalesReturnSummary({ salesReturn, decimals }: Readonly<Props>) {
-  const { quantityDecimals, salesUnitPriceDecimals } = getPrecisionPolicy();
+export function SalesReturnSummary({ salesReturn }: Readonly<Props>) {
+  // Celda de texto (sin componente): semántica declarada, mismo resolver y motor.
+  const quantityDecimals = usePrecisionDecimals("quantity");
   const lineColumns: ZHDataTableColumn<SalesReturnDto["lines"][number]>[] = [
     {
       key: "product",
@@ -31,34 +31,34 @@ export function SalesReturnSummary({ salesReturn, decimals }: Readonly<Props>) {
         </>
       ),
     },
-    { key: "quantity", header: "Cantidad", align: "right", cellClassName: "zh-table-cell--num", render: (line) => formatMoney(line.quantity, quantityDecimals) },
+    { key: "quantity", header: "Cantidad", align: "right", cellClassName: "zh-table-cell--num", render: (line) => formatDecimalDisplay(line.quantity, quantityDecimals) },
     {
       key: "unitPrice",
       header: "P. unitario",
       align: "right",
       cellClassName: "zh-table-cell--num",
-      render: (line) => <ZHMoneyValue value={line.unitPrice} decimals={salesUnitPriceDecimals} currencySymbol="" />,
+      render: (line) => <ZHMoneyValue value={line.unitPrice} precision="salesUnitPrice" currencySymbol="" />,
     },
     {
       key: "vat",
       header: "IVA",
       align: "right",
       cellClassName: "zh-table-cell--num",
-      render: (line) => <ZHMoneyValue value={line.vatAmount} decimals={decimals} currencySymbol="" />,
+      render: (line) => <ZHMoneyValue value={line.vatAmount} precision="tax" currencySymbol="" />,
     },
     {
       key: "ice",
       header: "ICE",
       align: "right",
       cellClassName: "zh-table-cell--num",
-      render: (line) => <ZHMoneyValue value={line.iceAmount} decimals={decimals} currencySymbol="" />,
+      render: (line) => <ZHMoneyValue value={line.iceAmount} precision="tax" currencySymbol="" />,
     },
     {
       key: "total",
       header: "Total línea",
       align: "right",
       cellClassName: "zh-table-cell--num",
-      render: (line) => <ZHMoneyValue value={line.taxInclusiveTotal} decimals={decimals} currencySymbol="" />,
+      render: (line) => <ZHMoneyValue value={line.taxInclusiveTotal} precision="money" currencySymbol="" />,
     },
   ];
 
@@ -73,7 +73,7 @@ export function SalesReturnSummary({ salesReturn, decimals }: Readonly<Props>) {
       header: "Monto",
       align: "right",
       cellClassName: "zh-table-cell--num",
-      render: (a) => <ZHMoneyValue value={a.amount} decimals={decimals} currencySymbol="" />,
+      render: (a) => <ZHMoneyValue value={a.amount} precision="money" currencySymbol="" />,
     },
   ];
 
@@ -97,7 +97,7 @@ export function SalesReturnSummary({ salesReturn, decimals }: Readonly<Props>) {
             <span className="sr-general-grid__value">
               <ZHMoneyValue
                 value={salesReturn.subtotal}
-                decimals={decimals}
+                precision="money"
                 currencySymbol=""
               />
             </span>
@@ -108,7 +108,7 @@ export function SalesReturnSummary({ salesReturn, decimals }: Readonly<Props>) {
               -
               <ZHMoneyValue
                 value={salesReturn.totalDiscount}
-                decimals={decimals}
+                precision="money"
                 currencySymbol=""
               />
             </span>
@@ -118,7 +118,7 @@ export function SalesReturnSummary({ salesReturn, decimals }: Readonly<Props>) {
             <span className="sr-general-grid__value">
               <ZHMoneyValue
                 value={salesReturn.totalVat}
-                decimals={decimals}
+                precision="tax"
                 currencySymbol=""
               />
             </span>
@@ -128,7 +128,7 @@ export function SalesReturnSummary({ salesReturn, decimals }: Readonly<Props>) {
             <span className="sr-general-grid__value">
               <ZHMoneyValue
                 value={salesReturn.totalIce}
-                decimals={decimals}
+                precision="tax"
                 currencySymbol=""
               />
             </span>
@@ -138,7 +138,7 @@ export function SalesReturnSummary({ salesReturn, decimals }: Readonly<Props>) {
             <span className="sr-general-grid__value">
               <ZHMoneyValue
                 value={salesReturn.grandTotal}
-                decimals={decimals}
+                precision="money"
                 currencySymbol=""
               />
             </span>

@@ -5,8 +5,8 @@ import { ZHBtn } from "../../../components/zh/ZHForm";
 import { Badge } from "../../../components/PageShell";
 import { ZHFieldHelp } from "../../../components/zh/help";
 import { HELP_KEYS } from "../../../help";
-import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
-import { roundToDecimals } from "../../../lib/sanitizers";
+import { formatDecimalDisplay } from "../../../lib/sanitizers";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { stockBadgeInfo, discountBadgeText } from "../utils/salesCalc";
 
 // SALES-ITEM-SEARCH-RESULTS-GRID-COMPONENT-01: extraído de SalesInvoiceDetailsSection —
@@ -62,7 +62,8 @@ export function SalesItemSearchResultsGrid({
   onHoverIndex,
   registerResultRef,
 }: SalesItemSearchResultsGridProps) {
-  const dc = getPrecisionPolicy();
+  // Texto compuesto "stock UOM": semántica declarada, mismo resolver y motor (04E).
+  const quantityDecimals = usePrecisionDecimals("quantity");
 
   return (
     <>
@@ -128,7 +129,7 @@ export function SalesItemSearchResultsGrid({
                 item.availableStock != null ? (
                   <>
                     <span className="sf-result__stock-qty">
-                      {item.availableStock.toFixed(dc.quantityDecimals)}{" "}
+                      {formatDecimalDisplay(item.availableStock, quantityDecimals)}{" "}
                       {item.uomAbbrev}
                     </span>
                     <Badge label={badge.label} variant={badge.variant} upper size="md" />
@@ -159,8 +160,8 @@ export function SalesItemSearchResultsGrid({
               <>
                 <span className="sf-result__col sf-result__col-price-normal">
                   <ZHMoneyValue
-                    value={roundToDecimals(item.salePriceWithoutTax!, dc.salesUnitPriceDecimals)}
-                    decimals={dc.salesUnitPriceDecimals}
+                    value={item.salePriceWithoutTax!}
+                    precision="salesUnitPrice"
                     className={
                       hasDiscount
                         ? "sf-result__price-normal"
@@ -189,8 +190,8 @@ export function SalesItemSearchResultsGrid({
                 <span className="sf-result__col sf-result__col-price-final">
                   {effectiveFinal != null && (
                     <ZHMoneyValue
-                      value={roundToDecimals(effectiveFinal, dc.salesUnitPriceDecimals)}
-                      decimals={dc.salesUnitPriceDecimals}
+                      value={effectiveFinal}
+                      precision="salesUnitPrice"
                       className="sf-result__price-final"
                     />
                   )}

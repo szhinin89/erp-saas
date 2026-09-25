@@ -6,7 +6,6 @@ import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
-import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { formatApiRequestError } from "../../lib/apiError";
 import {
   payablesService,
@@ -41,7 +40,6 @@ export function PayableDetailPage() {
   const navigate = useNavigate();
   const { has } = usePermissionsUi();
   const canView = has(PERMISSIONS.view);
-  const decimals = getPrecisionPolicy().moneyDecimals;
 
   const [payable, setPayable] = useState<PayableDetailDto | null>(null);
   const [loading, setLoading] = useState(false);
@@ -135,15 +133,15 @@ export function PayableDetailPage() {
           <ZHCard title="Saldo">
             <div className="pay-detail-summary">
               <ZHField label="Total" readOnly>
-                <ZHMoneyValue value={payable.totalAmount} decimals={decimals} emphasis="strong" />
+                <ZHMoneyValue value={payable.totalAmount} precision="money" emphasis="strong" />
               </ZHField>
               <ZHField label="Pagado" readOnly>
-                <ZHMoneyValue value={payable.paidAmount} decimals={decimals} />
+                <ZHMoneyValue value={payable.paidAmount} precision="money" />
               </ZHField>
               <ZHField label="Saldo" readOnly>
                 <ZHMoneyValue
                   value={payable.outstandingAmount}
-                  decimals={decimals}
+                  precision="money"
                   emphasis="total"
                 />
               </ZHField>

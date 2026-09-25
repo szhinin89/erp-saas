@@ -1,3 +1,4 @@
+import { formatMoneyWithSymbol } from "../../../lib/sanitizers";
 import { useNavigate } from "react-router-dom";
 import { useI18n } from "../../../i18n/i18n";
 import { useAuthStore } from "../../../store/authStore";
@@ -14,7 +15,7 @@ import "./DashboardPage.css";
 
 function fmt(n: number | undefined, decimals = 2) {
   if (n === undefined || n === null) return "—";
-  return `$${n.toFixed(decimals)}`;
+  return formatMoneyWithSymbol(n, decimals); // motor único (04E), sin toFixed
 }
 
 function fmtN(n: number | undefined) {

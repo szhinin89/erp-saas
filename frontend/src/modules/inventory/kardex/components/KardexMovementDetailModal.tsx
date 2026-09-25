@@ -7,7 +7,7 @@ import {
   formatDateTimeSeconds,
 } from "../../../../lib/formatters/dateFormatters";
 import { formatMoney, formatMoneyWithSymbol } from "../../../../lib/sanitizers";
-import { getPrecisionPolicy } from "../../../../lib/config/precisionPolicy.config";
+import { usePrecisionDecimals } from "../../../../hooks/usePrecisionPolicy";
 import type { KardexMovementDetailDto } from "../../stock/api/kardexService";
 
 type Props = {
@@ -43,22 +43,25 @@ export function KardexMovementDetailModal({
   movementTypeLabels,
 }: Props) {
   const navigate = useNavigate();
-  const policy = getPrecisionPolicy();
-  const qty = policy.quantityDecimals;
-  // ERP-PRECISION-FRONTEND-06B: "Costo Unitario" → unitCostDecimals; "Costo Promedio Corrido" →
-  // averageCostDecimals.
-  const unitCost = policy.unitCostDecimals;
-  const averageCost = policy.averageCostDecimals;
+  // ZH-DESIGN-SYSTEM-PRECISION-04E — presentación: semántica declarada, mismo resolver y motor.
+  const qty = usePrecisionDecimals("quantity");
+  const unitCost = usePrecisionDecimals("unitCost");
+  const averageCost = usePrecisionDecimals("averageCost");
+  const salesUnitPrice = usePrecisionDecimals("salesUnitPrice");
+  const purchaseUnitPrice = usePrecisionDecimals("purchaseUnitPrice");
+  const percentage = usePrecisionDecimals("percentage");
+  // Tasa de IVA del documento origen: porcentaje FISCAL (tasa SRI), no operativo.
+  const fiscalPercentage = usePrecisionDecimals("fiscalPercentage");
+  const total = usePrecisionDecimals("money");
   // "Precio Comercial" = UnitPrice de la línea del documento origen (GetKardexMovementDetail):
   // PurchaseInvoice → precio de compra (purchaseUnitPriceDecimals); SalesInvoice → precio de venta
   // (salesUnitPriceDecimals). Solo esos dos tipos lo informan.
   const sourcePrice =
     detail?.sourceDocument?.docType === "SalesInvoice"
-      ? policy.salesUnitPriceDecimals
+      ? salesUnitPrice
       : detail?.sourceDocument?.docType === "PurchaseInvoice"
-        ? policy.purchaseUnitPriceDecimals
+        ? purchaseUnitPrice
         : null;
-  const total = policy.moneyDecimals;
 
   const m = detail?.movement;
   const typeLabel = m
@@ -179,13 +182,13 @@ export function KardexMovementDetailModal({
                   {detail.sourceDocument.discountPct != null && (
                     <Field
                       label="Descuento"
-                      value={`${formatMoney(detail.sourceDocument.discountPct, policy.percentageDecimals)}%`}
+                      value={`${formatMoney(detail.sourceDocument.discountPct, percentage)}%`}
                     />
                   )}
                   {detail.sourceDocument.vatRate != null && (
                     <Field
                       label="IVA"
-                      value={`${formatMoney(detail.sourceDocument.vatRate, policy.percentageDecimals)}%`}
+                      value={`${formatMoney(detail.sourceDocument.vatRate, fiscalPercentage)}%`}
                     />
                   )}
                   {detail.sourceDocument.reason && (

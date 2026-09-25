@@ -13,7 +13,7 @@ import { ZHElectronicEnvironmentBanner } from "../../../components/zh/ZHElectron
 import { ZHSectionHelp } from "../../../components/zh/help";
 import { HELP_KEYS } from "../../../help";
 import { formatMoney } from "../../../lib/sanitizers";
-import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { CustomerPicker } from "../components/CustomerPicker";
 import { SalesPriceListContext } from "../components/SalesPriceListContext";
 import { SalesRepricingTable } from "../components/SalesRepricingTable";
@@ -59,6 +59,7 @@ export function SalesPage() {
   const [searchParams] = useSearchParams();
   const openedFromParam = useRef(false);
   const [sriDiagnosticOpen, setSriDiagnosticOpen] = useState(false);
+  const moneyDecimals = usePrecisionDecimals("money"); // texto de ayuda (04E)
 
   // Esta pantalla tiene layout propio (sf-layout) y no pasa por PageShell, así que
   // debe sincronizar el título de la pestaña explícitamente. Los textos de esta
@@ -104,7 +105,7 @@ export function SalesPage() {
       header: "Total",
       align: "right",
       cellClassName: "zh-table-cell--num",
-      render: (inv) => <ZHMoneyValue value={inv.grandTotal} decimals={getPrecisionPolicy().moneyDecimals} />,
+      render: (inv) => <ZHMoneyValue value={inv.grandTotal} precision="money" />,
     },
     { key: "lines", header: "Líneas", align: "center", render: (inv) => inv.lineCount },
     {
@@ -327,7 +328,7 @@ export function SalesPage() {
                     variables={{
                       maxConsumerFinalAmount: formatMoney(
                         ctx.consumerFinalPolicy.consumerFinalMaxAmount,
-                        getPrecisionPolicy().moneyDecimals,
+                        moneyDecimals,
                       ),
                     }}
                   />
@@ -352,13 +353,13 @@ export function SalesPage() {
                         <td>
                           <ZHMoneyValue
                             value={e.base}
-                            decimals={getPrecisionPolicy().moneyDecimals}
+                            precision="money"
                           />
                         </td>
                         <td>
                           <ZHMoneyValue
                             value={e.tax}
-                            decimals={getPrecisionPolicy().moneyDecimals}
+                            precision="tax"
                           />
                         </td>
                       </tr>
@@ -372,7 +373,7 @@ export function SalesPage() {
                       -
                       <ZHMoneyValue
                         value={ctx.totalDiscount}
-                        decimals={getPrecisionPolicy().moneyDecimals}
+                        precision="money"
                       />
                     </span>
                   </div>
@@ -385,7 +386,7 @@ export function SalesPage() {
                 <div className="sf-total-box__amount">
                   <ZHMoneyValue
                     value={ctx.grandTotal}
-                    decimals={getPrecisionPolicy().moneyDecimals}
+                    precision="money"
                     emphasis="total"
                   />
                 </div>
@@ -768,10 +769,7 @@ export function SalesPage() {
                 {ctx.repricingModal.rows.length} producto
                 {ctx.repricingModal.rows.length === 1 ? "" : "s"}.
               </p>
-              <SalesRepricingTable
-                rows={ctx.repricingModal.rows}
-                decimals={getPrecisionPolicy().salesUnitPriceDecimals}
-              />
+              <SalesRepricingTable rows={ctx.repricingModal.rows} />
             </div>
           )
         }

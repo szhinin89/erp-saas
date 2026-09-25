@@ -1,6 +1,5 @@
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
-import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import type { ReturnableLineDto } from "../api/salesReturnService";
 import "../../../styles/shared/erp-form-core.css";
 
@@ -25,7 +24,6 @@ export function ReturnableLinesEditor({
   onChangeQuantity,
   disabled,
 }: Props) {
-  const dc = getPrecisionPolicy();
 
   if (lines.length === 0) {
     return <p className="sr-lines-empty">Esta factura no tiene líneas devolvibles.</p>;
@@ -78,7 +76,7 @@ export function ReturnableLinesEditor({
                 <td className="zh-table-cell--num">
                   <ZHMoneyValue
                     value={line.unitPrice}
-                    decimals={dc.salesUnitPriceDecimals}
+                    precision="salesUnitPrice"
                     currencySymbol=""
                   />
                 </td>

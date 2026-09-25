@@ -1,4 +1,6 @@
-﻿import {
+﻿import { formatDecimalDisplay } from "../../../../lib/sanitizers";
+import { WAREHOUSE_CAPACITY_DECIMALS } from "../../../../schemas/inventory/warehouseSchema";
+import {
   useCallback,
   useMemo,
   useRef,
@@ -125,7 +127,7 @@ export function WarehouseListadoTab({
       header: t("warehouses.table.capacity", "Capacidad"),
       render: (row) =>
         row.capacity ? (
-          <span className="mono subtle">{row.capacity.toFixed(2)} m³</span>
+          <span className="mono subtle">{formatDecimalDisplay(row.capacity, WAREHOUSE_CAPACITY_DECIMALS)} m³</span>
         ) : (
           <span className="subtle">—</span>
         ),

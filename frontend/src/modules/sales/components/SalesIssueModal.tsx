@@ -4,7 +4,6 @@ import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { Badge, type BadgeVariant } from "../../../components/PageShell";
-import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { formatDateTime } from "../../../lib/formatters/dateFormatters";
 import { salesService, type SalesInvoiceDto } from "../api/salesService";
 import {
@@ -230,7 +229,6 @@ export function SalesIssueModal({
   }, [phase, result, printingPrefs.mode, receiptPrintState]);
 
   if (phase === "idle") return null;
-  const dc = getPrecisionPolicy().moneyDecimals;
 
   const title =
     phase === "processing"
@@ -341,19 +339,19 @@ export function SalesIssueModal({
             <dd>{lineCount}</dd>
             <dt>Subtotal</dt>
             <dd>
-              <ZHMoneyValue value={subtotal} decimals={dc} />
+              <ZHMoneyValue value={subtotal} precision="money" />
             </dd>
             <dt>Descuento</dt>
             <dd>
-              <ZHMoneyValue value={discount} decimals={dc} />
+              <ZHMoneyValue value={discount} precision="money" />
             </dd>
             <dt>IVA</dt>
             <dd>
-              <ZHMoneyValue value={vat} decimals={dc} />
+              <ZHMoneyValue value={vat} precision="tax" />
             </dd>
             <dt>Total</dt>
             <dd>
-              <ZHMoneyValue value={total} decimals={dc} emphasis="total" />
+              <ZHMoneyValue value={total} precision="money" emphasis="total" />
             </dd>
           </dl>
           <p className="zh-confirm-message">
@@ -428,17 +426,17 @@ export function SalesIssueModal({
             </dd>
             <dt>Total</dt>
             <dd>
-              <ZHMoneyValue value={result.grandTotal} decimals={dc} emphasis="total" />
+              <ZHMoneyValue value={result.grandTotal} precision="money" emphasis="total" />
             </dd>
             {cashDue > 0 && (
               <>
                 <dt>Monto recibido</dt>
                 <dd>
-                  <ZHMoneyValue value={cashReceived} decimals={dc} />
+                  <ZHMoneyValue value={cashReceived} precision="money" />
                 </dd>
                 <dt>Vuelto</dt>
                 <dd>
-                  <ZHMoneyValue value={cashChange} decimals={dc} emphasis="total" />
+                  <ZHMoneyValue value={cashChange} precision="money" emphasis="total" />
                 </dd>
               </>
             )}

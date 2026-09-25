@@ -14,7 +14,7 @@ import { ZHIconButton } from "../../../../components/zh/ZHIconButton";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/ZHDataTable";
 import { formatDate } from "../../../../lib/formatters/dateFormatters";
 import { formatMoneyWithSymbol, formatMoney } from "../../../../lib/sanitizers";
-import { getPrecisionPolicy } from "../../../../lib/config/precisionPolicy.config";
+import { usePrecisionDecimals } from "../../../../hooks/usePrecisionPolicy";
 import { useInventoryInvestigationPage } from "../hooks/useInventoryInvestigationPage";
 import type { InitialDocument } from "../hooks/useInventoryInvestigationPage";
 import type { StockMovementDto } from "../../stock/api/stockService";
@@ -117,6 +117,11 @@ export function KardexPage() {
     ctx.movementTypeFilter,
   ]);
 
+  // 04E: presentación con semántica declarada (hooks antes de cualquier return temprano).
+  const qty = usePrecisionDecimals("quantity");
+  const unitCost = usePrecisionDecimals("unitCost");
+  const averageCost = usePrecisionDecimals("averageCost");
+  const total = usePrecisionDecimals("money");
   if (!canView)
     return (
       <NoAccessPage
@@ -124,13 +129,6 @@ export function KardexPage() {
       />
     );
 
-  const policy = getPrecisionPolicy();
-  const qty = policy.quantityDecimals;
-  // ERP-PRECISION-FRONTEND-06B: "Costo Unit." → unitCostDecimals; "Costo Promedio" →
-  // averageCostDecimals.
-  const unitCost = policy.unitCostDecimals;
-  const averageCost = policy.averageCostDecimals;
-  const total = policy.moneyDecimals;
 
   // ZH-LISTING-MAIN-ROW-NUMBER-FIX-07: showRowNumber activo — "Seq." (sequenceNumber) sigue
   // siendo la secuencia funcional del movimiento; "N°" es solo el índice visual de fila

@@ -6,7 +6,6 @@ import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import { ZhSelect } from "../../../components/zh/inputs/ZhSelect";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
-import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import {
@@ -447,7 +446,6 @@ function EligibilityBadge({
 }
 
 function RetentionDocumentSummary({ retention }: { retention: RetentionDocumentDto }) {
-  const decimals = getPrecisionPolicy().moneyDecimals;
   return (
     <div className="exp-doc-retention-summary">
       <ZHGrid cols={3}>
@@ -467,7 +465,7 @@ function RetentionDocumentSummary({ retention }: { retention: RetentionDocumentD
 
       <div className="exp-doc-retention-summary__total">
         <span>Total retenido</span>
-        <ZHMoneyValue value={retention.totalRetained} decimals={decimals} emphasis="grand" />
+        <ZHMoneyValue value={retention.totalRetained} precision="money" emphasis="grand" />
       </div>
 
       {retention.lines.length > 0 && (
@@ -481,14 +479,14 @@ function RetentionDocumentSummary({ retention }: { retention: RetentionDocumentD
               </div>
               <div className="exp-doc-line__totals">
                 <span>
-                  Base <ZHMoneyValue value={line.baseAmount} decimals={decimals} currencySymbol="" />
+                  Base <ZHMoneyValue value={line.baseAmount} precision="money" currencySymbol="" />
                 </span>
                 <span>{line.retentionRate}%</span>
                 <span>
                   Retenido{" "}
                   <ZHMoneyValue
                     value={line.retainedAmount}
-                    decimals={decimals}
+                    precision="money"
                     currencySymbol=""
                     emphasis="strong"
                   />

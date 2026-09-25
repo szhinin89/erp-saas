@@ -14,7 +14,6 @@ import { ZhSelect } from "../../../components/zh/inputs/ZhSelect";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
-import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
 import {
@@ -34,7 +33,6 @@ export function ExpenseDocumentsPage() {
   const canView = has(PERMISSIONS.view);
   const canCreate = has(PERMISSIONS.create);
   const navigate = useNavigate();
-  const decimals = getPrecisionPolicy().moneyDecimals;
 
   const [rows, setRows] = useState<ExpenseDocumentListItemDto[]>([]);
   const [total, setTotal] = useState(0);
@@ -106,11 +104,11 @@ export function ExpenseDocumentsPage() {
         header: "Total",
         align: "right",
         render: (row) => (
-          <ZHMoneyValue value={row.grandTotal} decimals={decimals} />
+          <ZHMoneyValue value={row.grandTotal} precision="money" />
         ),
       },
     ],
-    [decimals],
+    [],
   );
 
   if (!canView) return <NoAccessPage title="Gastos" />;

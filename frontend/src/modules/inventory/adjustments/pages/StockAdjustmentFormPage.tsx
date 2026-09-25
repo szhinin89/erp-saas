@@ -15,7 +15,7 @@ import {
   NoAccessPage,
 } from "../../../../components/PageShell";
 import { formatMoney } from "../../../../lib/sanitizers";
-import { getPrecisionPolicy } from "../../../../lib/config/precisionPolicy.config";
+import { usePrecisionDecimals } from "../../../../hooks/usePrecisionPolicy";
 import { useStockAdjustmentFormPage } from "../hooks/useStockAdjustmentFormPage";
 import { AdjustmentProductPicker } from "../components/AdjustmentProductPicker";
 import { AdjustmentLineCard } from "../components/AdjustmentLineCard";
@@ -35,7 +35,7 @@ export function StockAdjustmentFormPage() {
   const ctx = useStockAdjustmentFormPage();
   // Costo total (ejecutado/estimado) del documento — agregado, no costo unitario:
   // moneyDecimals.
-  const totalCostDecimals = getPrecisionPolicy().moneyDecimals;
+  const totalCostDecimals = usePrecisionDecimals("money"); // presentación (04E)
 
   if (!ctx.canView) {
     return (

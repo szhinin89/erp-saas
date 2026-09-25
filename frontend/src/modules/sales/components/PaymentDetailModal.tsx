@@ -17,6 +17,7 @@ import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { formatMoney } from "../../../lib/sanitizers";
 import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { PAYMENT_DETAIL_TOLERANCE } from "../constants/tolerances";
 import { deriveDetailReference } from "../utils/paymentDetailReference";
 
@@ -60,7 +61,10 @@ export function PaymentDetailModal({
 }: Props) {
   const [rows, setRows] = useState<DetailRow[]>(initialRows);
   const [nextKey, setNextKey] = useState(initialKey);
+  // Montaje del input editable (defaultValue): escala de money de la policy.
   const totalAmountDecimals = getPrecisionPolicy().moneyDecimals;
+  // Presentación de textos compuestos (subtítulo/mensaje): semántica declarada (04E).
+  const moneyDecimals = usePrecisionDecimals("money");
 
   const isCard = detailType === "Card";
   const isTransfer = detailType === "Transfer";
@@ -102,7 +106,7 @@ export function PaymentDetailModal({
       onClose={onCancel}
       size={isCard ? "lg" : "md"}
       title={methodName}
-      subtitle={`Disponible: $${formatMoney(available, totalAmountDecimals)}`}
+      subtitle={`Disponible: $${formatMoney(available, moneyDecimals)}`}
       footer={
         <>
           <div className="zh-modal-footer-summary">
@@ -110,7 +114,7 @@ export function PaymentDetailModal({
               Total:{" "}
               <ZHMoneyValue
                 value={totalDetail}
-                decimals={totalAmountDecimals}
+                precision="money"
                 emphasis="strong"
               />
             </span>
@@ -139,7 +143,7 @@ export function PaymentDetailModal({
       {exceeds && (
         <ZHPageNotice
           variant="error"
-          message={`Excede el saldo disponible ($${formatMoney(available, totalAmountDecimals)}) por $${formatMoney(totalDetail - available, totalAmountDecimals)}`}
+          message={`Excede el saldo disponible ($${formatMoney(available, moneyDecimals)}) por $${formatMoney(totalDetail - available, moneyDecimals)}`}
         />
       )}
 
