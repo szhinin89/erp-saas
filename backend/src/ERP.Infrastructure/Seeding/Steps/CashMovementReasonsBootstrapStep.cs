@@ -46,8 +46,10 @@ public sealed partial class CashMovementReasonsBootstrapStep : ICompanyBootstrap
     {
         var (tenantId, companyId, actorId) = context;
 
+        // Bootstrap sin tenant HTTP ambiente: bypass vía PlatformQueryAccessor, con TenantId +
+        // CompanyId reaplicados explícitamente.
         var existingCodes = await _db
-            .CashMovementReasons.IgnoreQueryFilters()
+            .CashMovementReasons.AsPlatformQuery()
             .Where(r => r.TenantId == tenantId && r.CompanyId == companyId)
             .Select(r => r.Code)
             .ToListAsync(cancellationToken);

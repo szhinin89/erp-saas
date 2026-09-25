@@ -1,4 +1,5 @@
 using System.Data;
+using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,7 +11,9 @@ public sealed partial class AccountingChartBackfillService
     public async Task<IReadOnlyList<SalesInvoiceRuleMaintenanceResult>> RunSalesInvoiceRuleMaintenanceAsync(
         bool apply = false, CancellationToken cancellationToken = default)
     {
-        var companies = await _db.Companies.IgnoreQueryFilters().AsNoTracking()
+        // Cross-tenant enumeration (no ambient tenant in a deployment command) goes through the
+        // sanctioned PlatformQueryAccessor; each write below runs under JobExecutionContext.Begin.
+        var companies = await _db.Companies.AsPlatformQuery().AsNoTracking()
             .Select(c => new { c.Id, c.TenantId }).ToListAsync(cancellationToken);
         var results = new List<SalesInvoiceRuleMaintenanceResult>();
         foreach (var company in companies)

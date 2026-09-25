@@ -1,5 +1,6 @@
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
+using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Seeding.Steps;
@@ -30,15 +31,17 @@ public sealed partial class AccountingBootstrapStep
         return invalid.Length == 0 ? shape : $"{shape}; InvalidAccounts: {string.Join(", ", invalid)}";
     }
 
+    // Bypass through the sanctioned PlatformQueryAccessor (no ambient tenant in a deployment
+    // command); TenantId + CompanyId are re-applied explicitly in every query below.
     internal async Task<string> MaintainSalesInvoiceRuleAsync(Guid tenantId, Guid companyId, bool apply, CancellationToken cancellationToken)
     {
-        var rules = await _db.PostingRules.IgnoreQueryFilters().Include(r => r.Lines)
+        var rules = await _db.PostingRules.AsPlatformQuery().Include(r => r.Lines)
             .Where(r => r.TenantId == tenantId && r.CompanyId == companyId && r.SourceModule == "Sales" && r.FactType == "InvoiceIssued")
             .ToListAsync(cancellationToken);
         if (rules.Count != 1)
             return rules.Count == 0 ? "MissingRule: unchanged" : "Custom: multiple matching rules; unchanged";
 
-        var accounts = await _db.Accounts.IgnoreQueryFilters()
+        var accounts = await _db.Accounts.AsPlatformQuery()
             .Where(a => a.TenantId == tenantId && a.CompanyId == companyId)
             .ToDictionaryAsync(a => a.Code.Value, a => new AccountSeedLookup(a.Id, a.IsActive, a.AllowsPosting), cancellationToken);
         var status = DiagnoseSalesInvoiceRule(rules[0], accounts);

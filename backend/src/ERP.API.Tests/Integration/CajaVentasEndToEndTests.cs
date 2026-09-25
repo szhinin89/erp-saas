@@ -311,6 +311,13 @@ public sealed class CajaVentasFlowFixture : IAsyncLifetime
         await accountingBootstrap.ExecuteAsync(
             new CompanyBootstrapContext(TenantId, CompanyId, _adminId)
         );
+
+        // API-TESTS-CAJA-VENTAS-PRECISION-POLICY-SEED-01: mismo motivo — sin el bootstrap oficial
+        // de CompanyPrecisionPolicy (paso que CompanyProvisioningService ejecuta en producción),
+        // crear ventas falla fail-closed con CompanyPrecisionPolicyMissingException.
+        await new PrecisionPolicyBootstrapStep(db).ExecuteAsync(
+            new CompanyBootstrapContext(TenantId, CompanyId, _adminId)
+        );
     }
 
     /// <summary>

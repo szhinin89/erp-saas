@@ -12,6 +12,25 @@ namespace ERP.Application.Modules.Finance.UseCases.CreditTerms;
 
 public sealed record InstallmentInput(int Number, int DaysOffset, decimal Percentage);
 
+/// <summary>
+/// ZH-BACKEND-PRECISION-HARDENING-01 — escala del % de cuota (SSOT
+/// <see cref="CreditTermsPrecision.InstallmentPercentage"/>, columna <c>numeric(5,2)</c>). Se rechaza
+/// antes de persistir: 33.335 + 33.335 + 33.33 suma 100 exacto en memoria, pero PostgreSQL lo
+/// guardaría como 33.34 + 33.34 + 33.33 = 100.01. Compartida por Create/Update.
+/// </summary>
+public static class InstallmentPercentageRules
+{
+    public static readonly string ScaleMessage =
+        $"El porcentaje de cuota admite como máximo {CreditTermsPrecision.InstallmentPercentage} decimales.";
+
+    public static IRuleBuilderOptions<T, decimal> WithinInstallmentPercentageScale<T>(
+        this IRuleBuilder<T, decimal> ruleBuilder
+    ) =>
+        ruleBuilder
+            .Must(v => decimal.Round(v, CreditTermsPrecision.InstallmentPercentage) == v)
+            .WithMessage(ScaleMessage);
+}
+
 // ── Commands & Queries ──────────────────────────────────────────────────
 
 public sealed record CreateCreditTermCommand(
@@ -64,6 +83,7 @@ public sealed class CreateCreditTermCommandValidator : AbstractValidator<CreateC
             .ChildRules(i =>
             {
                 i.RuleFor(x => x.Percentage).GreaterThan(0).LessThanOrEqualTo(100);
+                i.RuleFor(x => x.Percentage).WithinInstallmentPercentageScale();
                 i.RuleFor(x => x.DaysOffset).GreaterThanOrEqualTo(0);
                 i.RuleFor(x => x.Number).GreaterThan(0);
             })
@@ -87,6 +107,7 @@ public sealed class UpdateCreditTermCommandValidator : AbstractValidator<UpdateC
             .ChildRules(i =>
             {
                 i.RuleFor(x => x.Percentage).GreaterThan(0).LessThanOrEqualTo(100);
+                i.RuleFor(x => x.Percentage).WithinInstallmentPercentageScale();
                 i.RuleFor(x => x.DaysOffset).GreaterThanOrEqualTo(0);
                 i.RuleFor(x => x.Number).GreaterThan(0);
             })

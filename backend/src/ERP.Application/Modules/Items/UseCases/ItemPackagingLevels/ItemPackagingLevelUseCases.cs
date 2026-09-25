@@ -30,6 +30,11 @@ public sealed record ReplaceItemPackagingLevelsCommand(
 public sealed class ReplaceItemPackagingLevelsCommandValidator
     : AbstractValidator<ReplaceItemPackagingLevelsCommand>
 {
+    // ZH-BACKEND-PRECISION-HARDENING-01 — escala del peso por nivel (SSOT ItemPrecision.PackagingWeight,
+    // columna numeric(10,3)): un valor con más decimales se rechaza aquí, nunca lo redondea PostgreSQL.
+    public static readonly string PackagingWeightScaleMessage =
+        $"El peso admite como máximo {ItemPrecision.PackagingWeight} decimales.";
+
     public ReplaceItemPackagingLevelsCommandValidator()
     {
         RuleFor(x => x.Id).NotEmpty();
@@ -55,6 +60,9 @@ public sealed class ReplaceItemPackagingLevelsCommandValidator
                 l.RuleFor(x => x.Name).NotEmpty().MaximumLength(50);
                 l.RuleFor(x => x.UomCode).NotEmpty().MaximumLength(10);
                 l.RuleFor(x => x.BaseQuantity).GreaterThan(0);
+                l.RuleFor(x => x.Weight)
+                    .Must(w => w is null || decimal.Round(w.Value, ItemPrecision.PackagingWeight) == w.Value)
+                    .WithMessage(PackagingWeightScaleMessage);
                 l.RuleFor(x => x.BaseQuantity)
                     .Equal(1m)
                     .When(x => x.IsBaseUnit)

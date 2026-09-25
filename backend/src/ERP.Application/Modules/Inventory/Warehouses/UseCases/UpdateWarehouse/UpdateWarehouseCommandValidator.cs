@@ -61,6 +61,8 @@ public sealed class UpdateWarehouseCommandValidator : AbstractValidator<UpdateWa
             .WithMessage("La capacidad no puede ser negativa.")
             .When(x => x.Capacity.HasValue);
 
+        RuleFor(x => x.Capacity).WithinCapacityScale();
+
         RuleFor(x => x.DailyDispatchGoal)
             .GreaterThanOrEqualTo(0)
             .WithMessage("La meta de despacho diario no puede ser negativa.")
