@@ -331,7 +331,12 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
     }
 
     // Documento de recepción (snapshot fuente inmutable del XML) con una línea de precio original conocido.
-    private static (IPurchaseReceptionDocumentRepository Repo, Guid LineId) ReceptionWithLine(decimal xmlUnitPrice)
+    private static (IPurchaseReceptionDocumentRepository Repo, Guid LineId) ReceptionWithLine(
+        decimal xmlUnitPrice,
+        decimal quantity = 1m,
+        decimal discountPct = 0m,
+        decimal discount = 0m
+    )
     {
         var document = ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionDocument.Create(
             TenantId,
@@ -354,16 +359,16 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
             document.Id,
             TenantId,
             "Línea XML",
-            1m,
+            quantity,
             xmlUnitPrice,
             vatCode: "10",
             taxCode: "2",
             vatPercentage: 15m,
             taxValue: 0.15m,
-            discountPct: 0m,
-            discount: 0m,
-            lineSubtotal: xmlUnitPrice,
-            totalLine: xmlUnitPrice
+            discountPct: discountPct,
+            discount: discount,
+            lineSubtotal: quantity * xmlUnitPrice - discount,
+            totalLine: quantity * xmlUnitPrice - discount
         );
         document.AttachSriAuthorization(
             "AUTH-1",
@@ -522,5 +527,94 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
         );
 
         invoice.Lines.Single().UnitPrice.Should().Be(2.3457m);
+    }
+
+    // ── ZH-PURCHASES-XML-DISCOUNT-FIX-01: contrato del descuento XML en el borrador ─────────
+    // Caso real QA: 1000 × 100 con <descuento>1234.56</descuento>. El parser deriva DiscountPct=1.23
+    // (redondeado a 2); recalcular desde ese % daría 1230.00. Sin editar, el monto XML es la fuente.
+    // IVA "10" → 15% (BuildTaxResolver). Base = 98765.44 = precioTotalSinImpuesto del XML.
+
+    [Fact]
+    public async Task Create_linea_XML_sin_editar_conserva_descuento_exacto_y_calcula_IVA_sobre_la_base_XML()
+    {
+        var (repo, lineId) = ReceptionWithLine(100m, quantity: 1000m, discountPct: 1.23m, discount: 1234.56m);
+
+        var saved = await CreateWithLineAsync(
+            4,
+            new PurchaseLineInput(null, "XML", 1000m, 100m, "10", DiscountPct: 1.23m, PurchaseReceptionLineId: lineId),
+            repo
+        );
+
+        var line = saved.Lines.Single();
+        line.DiscountAmount.Should().Be(1234.56m);
+        line.TaxableBase.Should().Be(98765.44m);
+        line.VatAmount.Should().Be(14814.82m);
+        line.TaxInclusiveTotal.Should().Be(113580.26m);
+    }
+
+    [Fact]
+    public async Task Update_linea_XML_sin_editar_conserva_descuento_exacto_y_calcula_IVA_sobre_la_base_XML()
+    {
+        var (repo, lineId) = ReceptionWithLine(100m, quantity: 1000m, discountPct: 1.23m, discount: 1234.56m);
+
+        var invoice = await UpdateWithLineAsync(
+            4,
+            new PurchaseLineInput(null, "XML", 1000m, 100m, "10", DiscountPct: 1.23m, PurchaseReceptionLineId: lineId),
+            repo
+        );
+
+        var line = invoice.Lines.Single();
+        line.DiscountAmount.Should().Be(1234.56m);
+        line.TaxableBase.Should().Be(98765.44m);
+        line.VatAmount.Should().Be(14814.82m);
+        line.TaxInclusiveTotal.Should().Be(113580.26m);
+    }
+
+    [Fact]
+    public async Task Linea_XML_con_cantidad_editada_recalcula_el_descuento_desde_el_porcentaje()
+    {
+        var (repo, lineId) = ReceptionWithLine(100m, quantity: 1000m, discountPct: 1.23m, discount: 1234.56m);
+
+        var saved = await CreateWithLineAsync(
+            4,
+            new PurchaseLineInput(null, "XML editada", 500m, 100m, "10", DiscountPct: 1.23m, PurchaseReceptionLineId: lineId),
+            repo
+        );
+
+        var line = saved.Lines.Single();
+        line.DiscountAmount.Should().Be(615.00m);
+        line.TaxableBase.Should().Be(49385.00m);
+        line.VatAmount.Should().Be(7407.75m);
+        line.TaxInclusiveTotal.Should().Be(56792.75m);
+    }
+
+    [Fact]
+    public async Task Linea_XML_con_descuento_cero_no_aplica_descuento()
+    {
+        var (repo, lineId) = ReceptionWithLine(100m, quantity: 1000m);
+
+        var saved = await CreateWithLineAsync(
+            4,
+            new PurchaseLineInput(null, "XML", 1000m, 100m, "10", PurchaseReceptionLineId: lineId),
+            repo
+        );
+
+        var line = saved.Lines.Single();
+        line.DiscountAmount.Should().Be(0m);
+        line.TaxableBase.Should().Be(100000m);
+        line.VatAmount.Should().Be(15000m);
+        line.TaxInclusiveTotal.Should().Be(115000m);
+    }
+
+    [Fact]
+    public async Task Linea_manual_sin_descuento_calcula_IVA_sobre_el_subtotal()
+    {
+        var saved = await CreateWithLineAsync(4, new PurchaseLineInput(null, "Manual", 2m, 50m, "10"));
+
+        var line = saved.Lines.Single();
+        line.DiscountAmount.Should().Be(0m);
+        line.TaxableBase.Should().Be(100m);
+        line.VatAmount.Should().Be(15m);
+        line.TaxInclusiveTotal.Should().Be(115m);
     }
 }
