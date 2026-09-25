@@ -5,6 +5,10 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach } from "vitest";
 import { I18nProvider } from "../../i18n/i18n";
 import { ZHDataTable, type ZHDataTableColumn } from "./ZHDataTable";
+import { ZHNumberValue } from "./ZHNumberValue";
+import { ZHMoneyValue } from "./ZHMoneyValue";
+import { setPrecisionPolicyForTests } from "../../lib/config/precisionPolicy.config";
+import { TEST_PRECISION_POLICY } from "../../test/precisionPolicyFixture";
 
 /**
  * ZH-DATATABLE-ROW-NUMBER-01 — la columna "N°" es opt-in (`showRowNumber`), es solo una
@@ -183,5 +187,56 @@ describe("ZHDataTable — column.cellClassName (ZH-LISTING-GLOBAL-STANDARD-06)",
 
     const firstDataCell = screen.getAllByRole("row")[1].querySelectorAll("td")[1];
     expect(firstDataCell.className).toBe("zh-text-align-right zh-table-cell--num");
+  });
+});
+
+/**
+ * ZH-DESIGN-SYSTEM-PRECISION-02C — patrón oficial de columna numérica (sin cambios en ZHDataTable):
+ * `align: "right"` (header + celda) y el render devuelve ZHNumberValue/ZHMoneyValue con `precision`.
+ * La tabla nunca resuelve precisión: solo aloja el nodo de presentación.
+ */
+describe("ZHDataTable — columnas numéricas con precisión semántica (02C)", () => {
+  interface StockRow {
+    id: string;
+    name: string;
+    qty: number | null;
+    cost: number;
+  }
+  const STOCK: StockRow[] = [
+    { id: "1", name: "Arroz", qty: 12.5, cost: 1.23456789 },
+    { id: "2", name: "Azúcar", qty: null, cost: 0 },
+  ];
+  const STOCK_COLUMNS: ZHDataTableColumn<StockRow>[] = [
+    { key: "name", header: "Producto", render: (r) => r.name },
+    {
+      key: "qty",
+      header: "Cantidad",
+      align: "right",
+      render: (r) => <ZHNumberValue value={r.qty} precision="quantity" />,
+    },
+    {
+      key: "cost",
+      header: "Costo",
+      align: "right",
+      render: (r) => <ZHMoneyValue value={r.cost} precision="averageCost" />,
+    },
+  ];
+
+  it("texto sin clase de alineación; numéricas alineadas a la derecha en header y celda", () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, quantityDecimals: 2, averageCostDecimals: 8 });
+    renderTable(<ZHDataTable columns={STOCK_COLUMNS} rows={STOCK} rowKey={(r) => r.id} />);
+    const headers = screen.getAllByRole("columnheader");
+    expect(headers.map((h) => h.className)).toEqual(["", "zh-text-align-right", "zh-text-align-right"]);
+    const cells = within(screen.getAllByRole("row")[1]!).getAllByRole("cell");
+    expect(cells.map((c) => c.className)).toEqual(["", "zh-text-align-right", "zh-text-align-right"]);
+  });
+
+  it("renderers ZHNumberValue/ZHMoneyValue: escala semántica, null → —, cero con escala, valores largos completos", () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, quantityDecimals: 2, averageCostDecimals: 8 });
+    renderTable(<ZHDataTable columns={STOCK_COLUMNS} rows={STOCK} rowKey={(r) => r.id} />);
+    const [, first, second] = screen.getAllByRole("row");
+    const text = (row: HTMLElement) => within(row).getAllByRole("cell").map((c) => c.textContent);
+    expect(text(first!)).toEqual(["Arroz", "12.50", "$1.23456789"]);
+    expect(text(second!)).toEqual(["Azúcar", "—", "$0.00000000"]);
   });
 });

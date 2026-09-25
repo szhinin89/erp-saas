@@ -139,7 +139,10 @@ export function ReportKpiCard({
   badgeTone?: BadgeVariant;
   trend?: { icon: string; label: string; tone: RptKpiTrendTone };
   label: string;
-  value: string;
+  /** Texto ya listo, o un nodo de presentación del DS (p. ej. `<ZHNumberValue precision="quantity" />`).
+   * La tarjeta es solo layout: no conoce precisión ni formatea; el valor anidado hereda la
+   * tipografía de `.pg-kpi-value` (page-template.css). */
+  value: ReactNode;
   /** Color semántico del valor numérico (`.pg-kpi-value--success`/`--danger`).
    * `default` mantiene el color neutro actual — no confundir con `trend.tone`
    * (esa es la etiqueta de tendencia debajo del valor, no el número en sí). */

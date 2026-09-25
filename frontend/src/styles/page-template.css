@@ -234,6 +234,17 @@
   color: var(--color-error);
 }
 
+/* ZH-DESIGN-SYSTEM-PRECISION-02C — un valor numérico del DS (<ZHNumberValue>/<ZHMoneyValue>)
+   dentro del KPI toma la tipografía y el tono (valueTone) de la tarjeta, que es quien define el
+   layout; el componente conserva su formato semántico, tabular-nums y nowrap. */
+.pg-kpi-value .zh-number-value,
+.pg-kpi-value .zh-money-value {
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+}
+
 .pg-kpi-unit {
   font-size: var(--text-help-size);
   font-weight: var(--text-help-weight);

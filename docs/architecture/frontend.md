@@ -200,6 +200,26 @@ reglas: [`pr-rules-catalog.md#f-04`](./pr-rules-catalog.md#f-04--design-system-�
 
 Todo dato numérico (montos, cantidades, porcentajes, stock, impuestos, totales, secuenciales, valores calculados) se alinea a la **derecha** en inputs, tablas, cards, KPIs, labels, dashboards, reportes y cualquier componente reutilizable — nunca centrado ni a la izquierda, salvo excepción documentada y aprobada por arquitectura. Si un componente base no lo soporta, se corrige el componente, nunca una excepción local. Detalle completo, ejemplos y excepciones: [`pr-rules-catalog.md#f-05`](./pr-rules-catalog.md#f-05--alineación-de-datos-numéricos-num-001).
 
+### Presentación numérica read-only con precisión semántica (ZH-DESIGN-SYSTEM-PRECISION-02)
+
+La pantalla declara **qué** representa el dato; el Design System decide **cómo** mostrarlo; dominio/aplicación deciden **cómo** calcularlo. Una sola cadena, sin caminos paralelos:
+
+| Capa | Pieza única | Responsabilidad |
+|------|-------------|-----------------|
+| Semántica | `PrecisionKind` (`lib/config/precisionPolicy.config.ts`) | `money`, `tax`, `accounting`, `salesUnitPrice`, `purchaseUnitPrice`, `unitCost`, `averageCost`, `quantity`, `percentage`, `conversionFactor` |
+| Precisión | `resolvePrecisionDecimals` + PrecisionPolicy de la empresa (React: `usePrecisionDecimals`) | semántica → decimales; único mapa `PRECISION_FIELD_BY_KIND` |
+| Formato | `formatDecimalDisplay` (`lib/sanitizers.ts`) | redondeo Decimal.js `ROUND_HALF_UP`, punto decimal; `locale` explícito solo cambia separadores/agrupación |
+| Presentación | `ZHMoneyValue` (con símbolo) / `ZHNumberValue` (sin símbolo; `prefix`/`suffix` opcionales, p. ej. `suffix="%"`) | prop `precision`; `null`/`undefined` → `—`; cero con escala; signo visible; `align` end y `tabular-nums` por defecto |
+| Layout | `ZHDataTable`, `ReportKpiCard`, `ZHInfoRow` | alojan el nodo de presentación; **nunca** conocen ni resuelven precisión |
+
+Reglas:
+
+- **Semántica ≠ símbolo.** `PrecisionKind` define la escala; el componente define la apariencia. El mismo `precision="averageCost"` se usa en `ZHMoneyValue` (con `$`) o en `ZHNumberValue` (columna sin símbolo) y resuelve los mismos decimales. Prohibido crear un kind por apariencia.
+- **Tablas:** columna numérica = `align: "right"` (header + celda) + `render` que devuelve `ZHNumberValue`/`ZHMoneyValue` con `precision`. Sin celda numérica propia, sin `text-align` por módulo.
+- **KPI:** `ReportKpiCard value={<ZHNumberValue … precision="…" />}`; el valor hereda la tipografía/tono de la tarjeta. Un `string` sigue siendo válido.
+- **Label + valor:** `ZHInfoRow label={…} value={<ZHMoneyValue … precision="…" />}`; el label nunca conoce la precisión.
+- **Prohibido en consumidores nuevos:** `decimals={getPrecisionPolicy().xDecimals}`, literales `2/4/6` como escala semántica, `toFixed`/`Intl.NumberFormat`/formatters por módulo, tabla o KPI. `decimals` explícito queda solo como override/compatibilidad legacy. `usePrecisionDecimals` + `formatDecimalDisplay` solo cuando el destino exige un `string` (p. ej. atributos, texto exportado), nunca para evitar un componente de presentación disponible.
+
 ### Excepción: barra de guardado de página completa
 
 `.pg-actions-bar` (con `.pg-actions-info` + `.pg-actions-buttons`) se

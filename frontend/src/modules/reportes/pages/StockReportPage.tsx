@@ -10,9 +10,8 @@ import {
 } from "../../../components/ReportPageTemplate";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
-import { formatDecimalDisplay, formatMoney } from "../../../lib/sanitizers";
+import { formatMoney } from "../../../lib/sanitizers";
 import { ZHNumberValue } from "../../../components/zh/ZHNumberValue";
-import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
 import {
@@ -46,8 +45,6 @@ export function StockReportPage() {
   const [rows, setRows] = useState<StockReportRowDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // La KPI recibe texto (ReportKpiCard.value: string): semántica declarada, mismo resolver y motor.
-  const quantityDecimals = usePrecisionDecimals("quantity");
 
   useEffect(() => {
     warehouseService
@@ -119,7 +116,7 @@ export function StockReportPage() {
           icon="functions"
           tone="secondary"
           label="Unidades Totales"
-          value={formatDecimalDisplay(totalQuantity, quantityDecimals)}
+          value={<ZHNumberValue value={totalQuantity} precision="quantity" />}
         />
         <ReportKpiCard
           icon="payments"
