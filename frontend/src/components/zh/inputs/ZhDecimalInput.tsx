@@ -17,6 +17,12 @@ type Props = Omit<
   /** `compact` = misma densidad que `<ZHField density="compact">`, para uso suelto
    * dentro de celdas de tabla (`.zh-input--compact`). */
   density?: ZhInputDensity;
+  /** ZH-DESIGN-SYSTEM-PRECISION-04A1 — commit de NEGOCIO: se llama una sola vez al perder el foco
+   * y SOLO si el usuario editó desde el último focus (teclado, borrado, paste, coma), con el texto
+   * canónico final ya normalizado/redondeado. No se llama por focus→blur sin edición, por un
+   * `value` controlado nuevo ni por un cambio de policy. `onBlur` se sigue llamando siempre
+   * (touched/validación); usar este callback, no `onBlur`, para confirmar datos. */
+  onValueCommit?: (value: string) => void;
 };
 
 /**
@@ -39,6 +45,7 @@ const ZhDecimalInputCore = React.forwardRef<HTMLInputElement, Props>(
       onBlur,
       onFocus,
       onChange,
+      onValueCommit,
       value,
       defaultValue,
       className,
@@ -81,7 +88,8 @@ const ZhDecimalInputCore = React.forwardRef<HTMLInputElement, Props>(
     // no se reescribe ni se emite onChange sintético. El onBlur externo se propaga siempre.
     const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
       const raw = e.currentTarget.value.trim();
-      if (editedSinceFocus.current && raw !== "") {
+      const edited = editedSinceFocus.current;
+      if (edited && raw !== "") {
         const num = parseFloat(raw);
         if (!Number.isNaN(num)) {
           const formatted = formatDecimalDisplay(positiveOnly ? Math.max(0, num) : num, decimals);
@@ -90,6 +98,7 @@ const ZhDecimalInputCore = React.forwardRef<HTMLInputElement, Props>(
         }
       }
       editedSinceFocus.current = false;
+      if (edited) onValueCommit?.(e.currentTarget.value);
       onBlur?.(e);
     };
 

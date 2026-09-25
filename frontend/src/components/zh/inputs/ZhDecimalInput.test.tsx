@@ -781,3 +781,93 @@ describe("ZhDecimalInput — blur sin edición (03D)", () => {
     expect(onChange).toHaveBeenCalledTimes(2);
   });
 });
+
+/**
+ * ZH-DESIGN-SYSTEM-PRECISION-04A1 — `onValueCommit`: commit de negocio SOLO tras edición real, una
+ * vez, con el texto canónico final. La autoridad de "hubo edición" es el propio input
+ * (editedSinceFocus); onBlur/onChange conservan su contrato.
+ */
+describe("ZhDecimalInput — onValueCommit (04A1)", () => {
+  it("focus → blur sin edición: 0 commits, onBlur sí se llama", () => {
+    const onValueCommit = vi.fn();
+    const onBlur = vi.fn();
+    const { input } = renderInput({ defaultValue: "12.34567", decimals: 4, onValueCommit, onBlur });
+    fireEvent.focus(input);
+    fireEvent.blur(input);
+    expect(onValueCommit).not.toHaveBeenCalled();
+    expect(onBlur).toHaveBeenCalledTimes(1);
+    expect(input.value).toBe("12.34567");
+  });
+
+  it("teclado → 1 commit con el valor canónico redondeado (ROUND_HALF_UP '1.005' → '1.01')", () => {
+    const onValueCommit = vi.fn();
+    const { input } = renderInput({ decimals: 2, onValueCommit });
+    fireEvent.focus(input);
+    typeRaw(input, "1.005");
+    fireEvent.blur(input);
+    expect(onValueCommit).toHaveBeenCalledTimes(1);
+    expect(onValueCommit).toHaveBeenCalledWith("1.01");
+  });
+
+  it("paste '1.234,56' → 1 commit '1234.56'; coma de teclado → 1 commit con punto", () => {
+    const onValueCommit = vi.fn();
+    const { input } = renderInput({ decimals: 2, onValueCommit });
+    fireEvent.focus(input);
+    paste(input, "1.234,56");
+    fireEvent.blur(input);
+    expect(onValueCommit).toHaveBeenLastCalledWith("1234.56");
+    fireEvent.focus(input);
+    typeRaw(input, "7");
+    input.setSelectionRange(1, 1);
+    fireEvent.keyDown(input, { key: "," });
+    typeRaw(input, "7.5");
+    fireEvent.blur(input);
+    expect(onValueCommit).toHaveBeenCalledTimes(2);
+    expect(onValueCommit).toHaveBeenLastCalledWith("7.50");
+  });
+
+  it("blur repetido sin segunda edición no vuelve a emitir", () => {
+    const onValueCommit = vi.fn();
+    const { input } = renderInput({ decimals: 2, onValueCommit });
+    fireEvent.focus(input);
+    typeRaw(input, "3");
+    fireEvent.blur(input);
+    fireEvent.focus(input);
+    fireEvent.blur(input);
+    fireEvent.blur(input);
+    expect(onValueCommit).toHaveBeenCalledTimes(1);
+  });
+
+  it("cambio de policy (precision) sin edición no emite", () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, quantityDecimals: 4 });
+    const onValueCommit = vi.fn();
+    const { input } = renderInput({ precision: "quantity", defaultValue: 12.5, onValueCommit });
+    act(() => setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, quantityDecimals: 2 }));
+    fireEvent.focus(input);
+    fireEvent.blur(input);
+    expect(onValueCommit).not.toHaveBeenCalled();
+  });
+
+  it("value controlado actualizado por el padre no emite", () => {
+    const onValueCommit = vi.fn();
+    const { rerender } = render(
+      <ZhDecimalInput aria-label="valor" decimals={2} value="5" onChange={() => {}} onValueCommit={onValueCommit} />,
+    );
+    rerender(<ZhDecimalInput aria-label="valor" decimals={2} value="9" onChange={() => {}} onValueCommit={onValueCommit} />);
+    const el = document.querySelector("input")!;
+    fireEvent.focus(el);
+    fireEvent.blur(el);
+    expect(onValueCommit).not.toHaveBeenCalled();
+  });
+
+  it("onChange conserva su contrato (cada edición + normalización del blur)", () => {
+    const onChange = vi.fn();
+    const onValueCommit = vi.fn();
+    const { input } = renderInput({ decimals: 2, onChange, onValueCommit });
+    fireEvent.focus(input);
+    typeRaw(input, "4");
+    fireEvent.blur(input);
+    expect(onChange).toHaveBeenCalledTimes(2); // edición + "4" → "4.00"
+    expect(onValueCommit).toHaveBeenCalledWith("4.00");
+  });
+});

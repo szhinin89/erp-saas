@@ -14,6 +14,7 @@ import { TEST_PRECISION_POLICY } from "../../../../test/precisionPolicyFixture";
  */
 
 const updateLineQuantity = vi.fn();
+const mockLine = { quantity: 12.5 };
 
 vi.mock("../hooks/useStockTransferPage", () => ({
   useStockTransferPage: () => ({
@@ -27,7 +28,7 @@ vi.mock("../hooks/useStockTransferPage", () => ({
     targetWarehouse: null,
     sameWarehouse: false,
     branchNameForWarehouse: () => "",
-    lines: [{ _key: 1, sku: "ARZ", name: "Arroz", quantity: 12.5, availableAtSource: null }],
+    lines: [{ _key: 1, sku: "ARZ", name: "Arroz", quantity: mockLine.quantity, availableAtSource: null }],
     totalUnits: 12.5,
     reason: "",
     notes: "",
@@ -58,6 +59,7 @@ const { StockTransferPage } = await import("./StockTransferPage");
 afterEach(() => {
   cleanup();
   updateLineQuantity.mockReset();
+  mockLine.quantity = 12.5;
 });
 
 function renderPage() {
@@ -90,12 +92,30 @@ describe("StockTransferPage — cantidad con precision='quantity' (03E)", () => 
     expect(updateLineQuantity).toHaveBeenLastCalledWith(1, 3.25);
   });
 
-  it("foco/blur sin editar: el input no reescribe, pero el onBlur del consumidor confirma el mismo valor", () => {
+  // 04A: antes el onBlur del consumidor confirmaba el mismo valor; ahora la guarda local lo evita.
+  it("foco/blur sin editar: el input no reescribe ni se llama updateLineQuantity (04A)", () => {
     setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, quantityDecimals: 4 });
     const qty = renderPage();
     fireEvent.focus(qty);
     fireEvent.blur(qty);
     expect(qty.value).toBe("12.5000");
-    expect(updateLineQuantity).toHaveBeenCalledWith(1, 12.5);
+    expect(updateLineQuantity).not.toHaveBeenCalled();
+  });
+});
+
+describe("StockTransferPage — commit solo tras edición real (04A1)", () => {
+  it("cantidad almacenada 12.34567 (quantity=4 → '12.3457'): foco/blur sin editar → updateLineQuantity 0; editar → commit", () => {
+    mockLine.quantity = 12.34567;
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, quantityDecimals: 4 });
+    const qty = renderPage();
+    expect(qty.value).toBe("12.3457");
+    fireEvent.focus(qty);
+    fireEvent.blur(qty);
+    expect(updateLineQuantity).not.toHaveBeenCalled();
+    fireEvent.focus(qty);
+    fireEvent.change(qty, { target: { value: "12.3456" } });
+    fireEvent.blur(qty);
+    expect(updateLineQuantity).toHaveBeenCalledTimes(1);
+    expect(updateLineQuantity).toHaveBeenCalledWith(1, 12.3456);
   });
 });

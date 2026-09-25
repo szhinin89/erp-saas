@@ -15,7 +15,8 @@ import { ZHFieldHelp } from "../../../components/zh/help";
 import { HELP_KEYS } from "../../../help";
 import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { useOptionalI18n } from "../../../i18n/i18n";
-import { roundToDecimals } from "../../../lib/sanitizers";
+import { formatDecimalDisplay } from "../../../lib/sanitizers";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { resolveLinePriceListLabel } from "../utils/pricingTraceability";
 import {
   calcFiscalLine,
@@ -88,6 +89,8 @@ export function SalesInvoiceLineGridRow({
 }: SalesInvoiceLineGridRowProps) {
   const { t } = useOptionalI18n();
   const dc = getPrecisionPolicy();
+  // Solo presentación del "Manual X%" (texto compuesto): semántica declarada, mismo resolver/motor.
+  const percentageDecimals = usePrecisionDecimals("percentage");
   // The DTO has no net unit-price snapshot. Hydration preserves these two
   // commercial inputs; never derive the unit price from the cent-rounded base.
   const invoicedUnitPrice = calcInvoicedUnitPrice(
@@ -243,8 +246,8 @@ export function SalesInvoiceLineGridRow({
           {listPrice != null ? (
             <div className="sf-product__pricelist-row">
               <ZHMoneyValue
-                value={roundToDecimals(listPrice, dc.salesUnitPriceDecimals)}
-                decimals={dc.salesUnitPriceDecimals}
+                value={listPrice}
+                precision="salesUnitPrice"
                 emphasis="strong"
                 className="sf-product__pricelist-value sf-product__pricelist-value--bold"
               />
@@ -283,7 +286,7 @@ export function SalesInvoiceLineGridRow({
             <div className="sf-product__discount-readonly">
               {hasManualDiscount && (
                 <span className="sf-product__discount-manual">
-                  Manual {manualDiscountPct.toFixed(dc.percentageDecimals)}%
+                  Manual {formatDecimalDisplay(manualDiscountPct, percentageDecimals)}%
                 </span>
               )}
               {hasRuleDiscount && (
@@ -319,12 +322,9 @@ export function SalesInvoiceLineGridRow({
                 precision="percentage"
                 positiveOnly
                 defaultValue={line.discountPct ?? 0}
-                onBlur={(e) =>
-                  onUpdate(
-                    line._key,
-                    "discountPct",
-                    Math.min(100, Math.max(0, Number(e.target.value) || 0)),
-                  )
+                // 04A1: commit de negocio solo tras edición real (no por foco/blur ni por escala oculta).
+                onValueCommit={(value) =>
+                  onUpdate(line._key, "discountPct", Math.min(100, Math.max(0, Number(value) || 0)))
                 }
                 disabled={disabled}
               />
@@ -355,7 +355,9 @@ export function SalesInvoiceLineGridRow({
                 // (redondeado a los decimales configurados). Un simple foco/blur no debe volver
                 // "manual" ni redondear silenciosamente un precio resuelto por Pricing.
                 const typed = Number(e.target.value) || 0;
-                e.currentTarget.value = invoicedUnitPrice.toFixed(dc.salesUnitPriceDecimals);
+                // Reset visual al neto mostrado — mismo motor único del DS (sin toFixed binario);
+                // la escala es la de calcInvoicedUnitPrice (cálculo), no una lectura de display.
+                e.currentTarget.value = formatDecimalDisplay(invoicedUnitPrice, dc.salesUnitPriceDecimals);
                 if (readOnly || disabled) return;
                 if (typed === invoicedUnitPrice) return;
                 onUpdate(line._key, "invoicedUnitPrice", typed);
@@ -542,9 +544,8 @@ export function SalesInvoiceLineGridRow({
             precision="quantity"
             positiveOnly
             defaultValue={line.quantity}
-            onBlur={(e) =>
-              onUpdate(line._key, "quantity", Number(e.target.value) || 1)
-            }
+            // 04A1: commit de negocio solo tras edición real (no por foco/blur ni por escala oculta).
+            onValueCommit={(value) => onUpdate(line._key, "quantity", Number(value) || 1)}
             disabled={disabled}
           />
           {equivalenceLabel && (

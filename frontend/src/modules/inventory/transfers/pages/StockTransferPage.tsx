@@ -195,12 +195,8 @@ export function StockTransferPage() {
                         density="compact"
                         defaultValue={line.quantity}
                         disabled={ctx.formLocked}
-                        onBlur={(e) =>
-                          ctx.updateLineQuantity(
-                            line._key,
-                            Number(e.target.value) || 0,
-                          )
-                        }
+                        // 04A1: commit solo tras edición real (no por foco/blur ni por escala oculta).
+                        onValueCommit={(value) => ctx.updateLineQuantity(line._key, Number(value) || 0)}
                       />
                     </div>
 

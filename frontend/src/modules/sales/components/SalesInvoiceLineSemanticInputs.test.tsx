@@ -115,7 +115,8 @@ describe("SalesInvoiceLineGridRow — precisión semántica en inputs (03E)", ()
     expect(row.onUpdate).toHaveBeenCalledWith(1, "invoicedUnitPrice", 0.25);
   });
 
-  it("cantidad y Dto. %: foco/blur sin editar no reescriben el input, pero el onBlur del consumidor CONFIRMA el mismo valor", () => {
+  // 04A: antes el onBlur del consumidor confirmaba el mismo valor; ahora la guarda local lo evita.
+  it("cantidad y Dto. %: foco/blur sin editar no reescriben el input ni llaman onUpdate (04A)", () => {
     setPrecisionPolicyForTests(POLICY);
     const row = renderRow();
     fireEvent.focus(row.qty());
@@ -124,9 +125,7 @@ describe("SalesInvoiceLineGridRow — precisión semántica en inputs (03E)", ()
     fireEvent.blur(row.discount());
     expect(row.qty().value).toBe("12.5000");
     expect(row.discount().value).toBe("10.000");
-    // Comportamiento real del consumidor (sin guarda): recibe los mismos valores de la línea.
-    expect(row.onUpdate).toHaveBeenCalledWith(1, "quantity", 12.5);
-    expect(row.onUpdate).toHaveBeenCalledWith(1, "discountPct", 10);
+    expect(row.onUpdate).not.toHaveBeenCalled();
   });
 
   it("no altera el cálculo fiscal mostrado (Base/IVA/Total)", () => {
@@ -136,5 +135,79 @@ describe("SalesInvoiceLineGridRow — precisión semántica en inputs (03E)", ()
       (el) => el.textContent,
     );
     expect(fiscal).toEqual(["$0.60", "$0.09", "$0.69"]);
+  });
+});
+
+describe("SalesInvoiceLineGridRow — displays read-only y reset del precio (04A)", () => {
+  function renderReadOnly(discountPct: number) {
+    const { container } = render(
+      <MemoryRouter>
+        <SalesInvoiceLineGridRow
+          line={{
+            _key: 1, itemId: "item-1", warehouseId: "wh-1", description: "MANJAR", quantity: 1,
+            unitPrice: 0.3, vatCode: "10", discountPct, _sku: "M1", _name: "MANJAR", _pvp: 0.3,
+            _basePrice: 0.3, _isManualPrice: false, _listPriceAtSale: 0.3,
+          }}
+          readOnly disabled={false} index={0} vatLabel="IVA 15%" vatRates={{ "10": 15 }}
+          warehouses={WAREHOUSES} selectedWarehouseId="wh-1"
+          onUpdate={() => {}} onUpdateWarehouse={() => {}} onRemove={() => {}}
+        />
+      </MemoryRouter>,
+    );
+    return container;
+  }
+
+  it("'Manual X%' y precio lista usan precisión semántica y reaccionan a la policy", () => {
+    setPrecisionPolicyForTests(POLICY);
+    const c = renderReadOnly(5);
+    expect(c.querySelector(".sf-product__discount-manual")?.textContent).toBe("Manual 5.000%");
+    expect(c.querySelector(".sf-product__pricelist-value")?.textContent).toBe("$0.3000");
+    act(() => setPrecisionPolicyForTests({ ...POLICY, percentageDecimals: 1, salesUnitPriceDecimals: 2 }));
+    expect(c.querySelector(".sf-product__discount-manual")?.textContent).toBe("Manual 5.0%");
+    expect(c.querySelector(".sf-product__pricelist-value")?.textContent).toBe("$0.30");
+  });
+
+  it("precio facturado: teclear el mismo neto no llama onUpdate y el reset visual deja '0.2700'", () => {
+    setPrecisionPolicyForTests(POLICY);
+    const row = renderRow();
+    fireEvent.focus(row.price());
+    fireEvent.change(row.price(), { target: { value: "0.27" } });
+    fireEvent.blur(row.price());
+    expect(row.price().value).toBe("0.2700");
+    expect(row.onUpdate).not.toHaveBeenCalled();
+  });
+
+  it("Dto. %: editar a otro valor sí llama onUpdate con el valor acotado", () => {
+    setPrecisionPolicyForTests(POLICY);
+    const row = renderRow();
+    fireEvent.focus(row.discount());
+    fireEvent.change(row.discount(), { target: { value: "12.5" } });
+    fireEvent.blur(row.discount());
+    expect(row.onUpdate).toHaveBeenCalledWith(1, "discountPct", 12.5);
+  });
+});
+
+describe("SalesInvoiceLineGridRow — commit solo tras edición real (04A1)", () => {
+  it("cantidad almacenada 12.34567 (quantity=4 → '12.3457'): foco/blur sin editar → onUpdate 0", () => {
+    setPrecisionPolicyForTests(POLICY);
+    const row = renderRow({ quantity: 12.34567 });
+    expect(row.qty().value).toBe("12.3457");
+    fireEvent.focus(row.qty());
+    fireEvent.blur(row.qty());
+    expect(row.onUpdate).not.toHaveBeenCalled();
+  });
+
+  it("policy 4 → 2 sin editar → onUpdate 0; luego editar → commit con la nueva escala", () => {
+    setPrecisionPolicyForTests(POLICY);
+    const row = renderRow({ quantity: 12.34567 });
+    act(() => setPrecisionPolicyForTests({ ...POLICY, quantityDecimals: 2 }));
+    fireEvent.focus(row.qty());
+    fireEvent.blur(row.qty());
+    expect(row.onUpdate).not.toHaveBeenCalled();
+    fireEvent.focus(row.qty());
+    fireEvent.change(row.qty(), { target: { value: "12.34" } });
+    fireEvent.blur(row.qty());
+    expect(row.onUpdate).toHaveBeenCalledTimes(1);
+    expect(row.onUpdate).toHaveBeenCalledWith(1, "quantity", 12.34);
   });
 });

@@ -16,7 +16,9 @@ afterEach(() => cleanup());
 
 type CardProps = Parameters<typeof AdjustmentLineCard>[0];
 
-function renderCard(overrides: { quantity?: number; unitCostBase?: number | null } = {}) {
+function renderCard(
+  overrides: { quantity?: number; unitCostBase?: number | null; movementType?: "Ingreso" | "Egreso" } = {},
+) {
   const onPatch = vi.fn();
   const view = {
     line: {
@@ -40,7 +42,7 @@ function renderCard(overrides: { quantity?: number; unitCostBase?: number | null
       <AdjustmentLineCard
         index={0}
         view={view}
-        movementType="Ingreso"
+        movementType={overrides.movementType ?? "Ingreso"}
         formLocked={false}
         onPatch={onPatch}
         onRemove={() => {}}
@@ -48,7 +50,7 @@ function renderCard(overrides: { quantity?: number; unitCostBase?: number | null
     </I18nProvider>,
   );
   const quantity = screen.getByLabelText(/Cantidad Arroz/) as HTMLInputElement;
-  const cost = screen.getByLabelText(/Costo unitario base Arroz/) as HTMLInputElement;
+  const cost = screen.queryByLabelText(/Costo unitario base Arroz/) as HTMLInputElement;
   return { onPatch, quantity, cost };
 }
 
@@ -90,14 +92,16 @@ describe("AdjustmentLineCard — precisión semántica en inputs (03E)", () => {
     expect(onPatch).toHaveBeenLastCalledWith(1, { unitCostBase: 0.3 });
   });
 
-  it("focus → blur sin editar: el input no reescribe, pero el onBlur del consumidor CONFIRMA igual (mismo valor)", () => {
+  // 04A: antes el onBlur del consumidor confirmaba el mismo valor; ahora la guarda local lo evita.
+  it("focus → blur sin editar: el input no reescribe ni se llama onPatch (cantidad y costo, 04A)", () => {
     setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, quantityDecimals: 4, unitCostDecimals: 6 });
-    const { quantity, onPatch } = renderCard();
+    const { quantity, cost, onPatch } = renderCard();
     fireEvent.focus(quantity);
     fireEvent.blur(quantity);
+    fireEvent.focus(cost);
+    fireEvent.blur(cost);
     expect(quantity.value).toBe("12.5000");
-    // Comportamiento real del consumidor (sin guarda propia): onPatch se llama con el valor sin cambios.
-    expect(onPatch).toHaveBeenCalledWith(1, { quantity: 12.5 });
+    expect(onPatch).not.toHaveBeenCalled();
   });
 
   it("hereda la coma del Design System: '1,5' → onPatch quantity 1.5", () => {
@@ -108,5 +112,46 @@ describe("AdjustmentLineCard — precisión semántica en inputs (03E)", () => {
     fireEvent.blur(quantity);
     expect(quantity.value).toBe("1.5000");
     expect(onPatch).toHaveBeenLastCalledWith(1, { quantity: 1.5 });
+  });
+});
+
+describe("AdjustmentLineCard — displays read-only con precisión semántica (04A)", () => {
+  it("equivalencia, stock y costo (Egreso) usan la escala semántica y REACCIONAN a la policy al instante", () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, quantityDecimals: 4, unitCostDecimals: 6 });
+    renderCard({ movementType: "Egreso" });
+    expect(screen.getByText(/Equivale a 12\.5000/)).toBeTruthy();
+    expect(screen.getByText("10.0000 UND")).toBeTruthy();
+    expect(screen.getByText("0.226100")).toBeTruthy();
+    act(() => setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, quantityDecimals: 2, unitCostDecimals: 4 }));
+    expect(screen.getByText(/Equivale a 12\.50 /)).toBeTruthy();
+    expect(screen.getByText("10.00 UND")).toBeTruthy();
+    expect(screen.getByText("0.2261")).toBeTruthy();
+    // El input editable montado sin tocar conserva su texto (no se reescribe sin edición).
+    expect((screen.getByLabelText(/Cantidad Arroz/) as HTMLInputElement).value).toBe("12.5000");
+  });
+});
+
+describe("AdjustmentLineCard — commit solo tras edición real (04A1)", () => {
+  it("cantidad almacenada 12.34567 (quantity=4 → '12.3457'): foco/blur sin editar → onPatch 0; editar 12.3456 → commit", () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, quantityDecimals: 4, unitCostDecimals: 6 });
+    const { quantity, onPatch } = renderCard({ quantity: 12.34567 });
+    expect(quantity.value).toBe("12.3457");
+    fireEvent.focus(quantity);
+    fireEvent.blur(quantity);
+    expect(onPatch).not.toHaveBeenCalled();
+    fireEvent.focus(quantity);
+    fireEvent.change(quantity, { target: { value: "12.3456" } });
+    fireEvent.blur(quantity);
+    expect(onPatch).toHaveBeenCalledTimes(1);
+    expect(onPatch).toHaveBeenCalledWith(1, { quantity: 12.3456 });
+  });
+
+  it("policy 4 → 2 sin editar → onPatch 0", () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, quantityDecimals: 4 });
+    const { quantity, onPatch } = renderCard();
+    act(() => setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, quantityDecimals: 2 }));
+    fireEvent.focus(quantity);
+    fireEvent.blur(quantity);
+    expect(onPatch).not.toHaveBeenCalled();
   });
 });

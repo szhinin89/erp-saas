@@ -7,8 +7,8 @@ import { ZhDecimalInput } from "../../../../components/zh/inputs/ZhDecimalInput"
 import { ZhSelect } from "../../../../components/zh/inputs/ZhSelect";
 import { ZhTextarea } from "../../../../components/zh/inputs/ZhTextarea";
 import { Badge } from "../../../../components/PageShell";
-import { formatMoney } from "../../../../lib/sanitizers";
-import { getPrecisionPolicy } from "../../../../lib/config/precisionPolicy.config";
+import { formatDecimalDisplay } from "../../../../lib/sanitizers";
+import { usePrecisionDecimals } from "../../../../hooks/usePrecisionPolicy";
 import type { AdjustmentMovementType } from "../types";
 import type { useStockAdjustmentFormPage } from "../hooks/useStockAdjustmentFormPage";
 
@@ -48,13 +48,11 @@ export function AdjustmentLineCard({
   const { t } = useI18n();
   const { line } = view;
   const baseUnitWord = t("inventory.adjustments.lines.baseUnit", "unidades base");
-  // Política de precisión de la empresa: cantidad/equivalencia/stock usan quantityDecimals,
-  // factor de conversión (baseQuantity de presentación) usa conversionFactorDecimals, costo
-  // unitario base usa unitCostDecimals.
-  const policy = getPrecisionPolicy();
-  const quantityDecimals = policy.quantityDecimals;
-  const conversionFactorDecimals = policy.conversionFactorDecimals;
-  const unitCostDecimals = policy.unitCostDecimals;
+  // Textos compuestos de solo lectura (opción de <select>, "Equivale a …", "stock UOM"): la
+  // semántica se declara y la escala la resuelve el Design System (reactiva a la policy).
+  const quantityDecimals = usePrecisionDecimals("quantity");
+  const conversionFactorDecimals = usePrecisionDecimals("conversionFactor");
+  const unitCostDecimals = usePrecisionDecimals("unitCost");
 
   return (
     <ZHLineCard
@@ -106,7 +104,7 @@ export function AdjustmentLineCard({
               </option>
               {line.packagingLevels.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.name} (x{formatMoney(p.baseQuantity, conversionFactorDecimals)})
+                  {p.name} (x{formatDecimalDisplay(p.baseQuantity, conversionFactorDecimals)})
                 </option>
               ))}
             </ZhSelect>
@@ -126,9 +124,8 @@ export function AdjustmentLineCard({
             defaultValue={line.quantity}
             disabled={formLocked}
             aria-label={`${t("inventory.adjustments.lines.quantity", "Cantidad")} ${line.itemName}`}
-            onBlur={(e) =>
-              onPatch(line._key, { quantity: Number(e.target.value) || 0 })
-            }
+            // 04A1: commit solo tras edición real (no por foco/blur ni por escala oculta).
+            onValueCommit={(value) => onPatch(line._key, { quantity: Number(value) || 0 })}
           />
         </div>
 
@@ -139,7 +136,7 @@ export function AdjustmentLineCard({
           <ZHDataValue variant="numeric">
             {/* ERP-PRECISION-FRONTEND-06B: la equivalencia en unidad base usa quantityDecimals. */}
             {t("inventory.adjustments.lines.equivalentTo", "Equivale a")}{" "}
-            {formatMoney(view.quantityInBaseUom, quantityDecimals)} {baseUnitWord}
+            {formatDecimalDisplay(view.quantityInBaseUom, quantityDecimals)} {baseUnitWord}
           </ZHDataValue>
         </div>
 
@@ -150,7 +147,7 @@ export function AdjustmentLineCard({
           <ZHDataValue variant="numeric">
             {line.currentStock === null
               ? "—"
-              : `${formatMoney(line.currentStock, quantityDecimals)} ${line.baseUomCode}`}
+              : `${formatDecimalDisplay(line.currentStock, quantityDecimals)} ${line.baseUomCode}`}
           </ZHDataValue>
         </div>
 
@@ -166,11 +163,9 @@ export function AdjustmentLineCard({
               key={`cost-${line._key}`}
               defaultValue={line.unitCostBase ?? ""}
               aria-label={`${t("inventory.adjustments.lines.unitCostBase", "Costo unitario base")} ${line.itemName}`}
-              onBlur={(e) =>
-                onPatch(line._key, {
-                  unitCostBase:
-                    e.target.value === "" ? null : Number(e.target.value) || 0,
-                })
+              // 04A1: commit solo tras edición real (no por foco/blur ni por escala oculta).
+              onValueCommit={(value) =>
+                onPatch(line._key, { unitCostBase: value === "" ? null : Number(value) || 0 })
               }
             />
           ) : (
@@ -180,7 +175,7 @@ export function AdjustmentLineCard({
                     "inventory.adjustments.lines.costFromAverage",
                     "Lo calcula el sistema",
                   )
-                : formatMoney(line.unitCostBase, unitCostDecimals)}
+                : formatDecimalDisplay(line.unitCostBase, unitCostDecimals)}
             </ZHDataValue>
           )}
         </div>
