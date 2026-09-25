@@ -3,6 +3,7 @@ using ERP.Domain.Branches.Entities;
 using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Interceptors;
@@ -225,6 +226,70 @@ public sealed class UtcDateTimeGuardInterceptorTests : IAsyncLifetime
         exception.WithMessage("*CashSession.OpenedAt*");
         exception.WithMessage("*Local*");
     }
+
+    // ZH-DATETIME-KIND-HARDENING-01: reproduce el INVALID_DATETIME_KIND de POST de transferencias
+    // de stock — StockTransfer.Create convertía el DateOnly del día operativo con
+    // ToDateTime(TimeOnly.MinValue) (Kind=Unspecified) y el guard lo rechazaba en SaveChanges.
+    // Round-trip real: se persiste y se relee; la fecha de negocio no debe desplazarse de día.
+    [Fact]
+    public async Task SaveChanges_StockTransferCreatedFromBusinessDate_PersistsAndRoundTripsSameDate()
+    {
+        var businessDate = new DateOnly(2026, 9, 25);
+        Guid transferId;
+
+        await using (var db = CreateContext())
+        {
+            var source = MakeWarehouse("BOD-01", isMain: true);
+            var target = MakeWarehouse("BOD-02", isMain: false);
+            db.Warehouses.AddRange(source, target);
+
+            var transfer = StockTransfer.Create(
+                _tenantId,
+                sequential: 1,
+                operationBranchId: _branchId,
+                sourceWarehouseId: source.Id,
+                targetWarehouseId: target.Id,
+                reason: null,
+                notes: null,
+                createdBy: _userId,
+                transferDate: businessDate,
+                companyId: _companyId
+            );
+            db.StockTransfers.Add(transfer);
+            transferId = transfer.Id;
+
+            var act = () => db.SaveChangesAsync();
+            await act.Should().NotThrowAsync();
+        }
+
+        await using (var db = CreateContext())
+        {
+            var persisted = await db.StockTransfers.AsNoTracking().SingleAsync(t => t.Id == transferId);
+            persisted.TransferDate.Kind.Should().Be(DateTimeKind.Utc);
+            DateOnly.FromDateTime(persisted.TransferDate).Should().Be(businessDate);
+            persisted.TransferDate.TimeOfDay.Should().Be(TimeSpan.Zero);
+        }
+    }
+
+    private Warehouse MakeWarehouse(string code, bool isMain) =>
+        Warehouse.Create(
+            tenantId: _tenantId,
+            branchId: _branchId,
+            name: $"Bodega {code}",
+            code: code,
+            storageType: null,
+            address: null,
+            phone: null,
+            email: null,
+            manager: null,
+            latitude: null,
+            longitude: null,
+            capacity: null,
+            dailyDispatchGoal: null,
+            createdBy: _userId,
+            companyId: _companyId,
+            isMain: isMain
+        );
 
     // ── Helpers de identidad para el DbContext ───────────────────────────────
 
