@@ -474,3 +474,21 @@ describe("ZHMoneyValue — precision semántica (02A)", () => {
     ]);
   });
 });
+
+// ZH-DESIGN-SYSTEM-PRECISION-05B — la firma sin precision/decimals queda @deprecated (sobrecarga);
+// el runtime sigue siendo decimals > precision > legacy 2.
+describe("ZHMoneyValue — sobrecargas 05B, runtime intacto", () => {
+  it("legacy 2 / decimals contractual / precision semántica", () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, moneyDecimals: 3 });
+    const text = (el: React.ReactElement) => {
+      const { container } = render(el);
+      const t = container.querySelector(".zh-money-value")?.textContent;
+      cleanup();
+      return t;
+    };
+    expect(text(<ZHMoneyValue value={1.5} />)).toBe("$1.50");
+    expect(text(<ZHMoneyValue value={1.5} decimals={4} />)).toBe("$1.5000");
+    expect(text(<ZHMoneyValue value={1.5} precision="money" />)).toBe("$1.500");
+    expect(text(<ZHMoneyValue value={1.5} precision="money" decimals={1} />)).toBe("$1.5");
+  });
+});

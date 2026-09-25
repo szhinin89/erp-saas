@@ -133,10 +133,26 @@ export function formatDecimalDisplay(value: number, decimals: number, locale?: s
   }).format(fixed as Intl.StringNumericLiteral);
 }
 
+/**
+ * @deprecated ZH-DESIGN-SYSTEM-PRECISION-05B — LEGACY: sin escala usa el default fijo 2. Solo
+ * compatibilidad de consumidores legacy baselined (F-PREC-implicit-format). Código nuevo:
+ * `formatMoney(value, usePrecisionDecimals(kind))` o ZHMoneyValue/ZHNumberValue con `precision`.
+ */
+export function formatMoney(value: number): string;
+/** Representación con la escala recibida (semántica vía `usePrecisionDecimals`, o contractual). */
+export function formatMoney(value: number, decimals: number): string;
 export function formatMoney(value: number, decimals = 2): string {
   return formatDecimalDisplay(value, decimals);
 }
 
+/**
+ * @deprecated ZH-DESIGN-SYSTEM-PRECISION-05B — LEGACY: sin escala usa el default fijo 2. Solo
+ * compatibilidad de consumidores legacy baselined (F-PREC-implicit-format). Código nuevo:
+ * `formatMoneyWithSymbol(value, usePrecisionDecimals(kind))` o ZHMoneyValue con `precision`.
+ */
+export function formatMoneyWithSymbol(value: number): string;
+/** Representación con símbolo y la escala recibida (semántica vía `usePrecisionDecimals`, o contractual). */
+export function formatMoneyWithSymbol(value: number, decimals: number, symbol?: string): string;
 export function formatMoneyWithSymbol(
   value: number,
   decimals = 2,

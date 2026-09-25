@@ -1,3 +1,4 @@
+import type { JSX } from "react";
 import type { PrecisionKind } from "../../lib/config/precisionPolicy.config";
 import {
   NumericDisplay,
@@ -21,8 +22,8 @@ export type ZHMoneyValueProps = {
   /** Semántica del valor (estándar): los decimales salen de la PrecisionPolicy de la empresa vía
    * `usePrecisionDecimals`, y el componente re-renderiza si la policy cambia. */
   precision?: PrecisionKind;
-  /** Override explícito / compatibilidad legacy: gana sobre `precision`. Sin `decimals` ni
-   * `precision` se mantiene el default legacy de 2. */
+  /** Override CONTRACTUAL explícito (constante `*_DECIMALS` documentada): gana sobre `precision`.
+   * Sin `decimals` ni `precision` = default legacy 2, DEPRECATED (ver sobrecargas). */
   decimals?: number;
   className?: string;
 };
@@ -30,11 +31,28 @@ export type ZHMoneyValueProps = {
 /** Default legacy para consumidores que aún no declaran `precision` ni `decimals`. */
 const LEGACY_DEFAULT_DECIMALS = 2;
 
+type ZHMoneyValueBaseProps = Omit<ZHMoneyValueProps, "precision" | "decimals">;
+
 /**
- * Valor monetario de solo lectura. Formato único `formatDecimalDisplay` (Decimal.js
- * ROUND_HALF_UP, punto decimal); `Intl` solo aplica representación cuando se pide un locale.
- * Negativos: se conserva el contrato actual `$-5.00`.
+ * @deprecated ZH-DESIGN-SYSTEM-PRECISION-05B — LEGACY: sin `precision` ni `decimals` usa el default
+ * fijo 2. Solo compatibilidad de consumidores legacy baselined (F-PREC-implicit-value). Código
+ * nuevo: `precision="<PrecisionKind>"`.
  */
+export function ZHMoneyValue(
+  props: ZHMoneyValueBaseProps & { precision?: undefined; decimals?: undefined },
+): JSX.Element;
+/** Override contractual: `decimals={X_DECIMALS}` (constante nombrada y documentada). */
+export function ZHMoneyValue(
+  props: ZHMoneyValueBaseProps & { precision?: PrecisionKind; decimals: number },
+): JSX.Element;
+/**
+ * Valor monetario de solo lectura con precisión semántica (patrón estándar). Formato único
+ * `formatDecimalDisplay` (Decimal.js ROUND_HALF_UP, punto decimal); `Intl` solo aplica
+ * representación cuando se pide un locale. Negativos: se conserva el contrato actual `$-5.00`.
+ */
+export function ZHMoneyValue(
+  props: ZHMoneyValueBaseProps & { precision: PrecisionKind; decimals?: number },
+): JSX.Element;
 export function ZHMoneyValue({
   value,
   currencySymbol = "$",
@@ -44,7 +62,7 @@ export function ZHMoneyValue({
   precision,
   decimals,
   className,
-}: ZHMoneyValueProps) {
+}: ZHMoneyValueProps): JSX.Element {
   const render = (resolvedDecimals: number) => (
     <NumericDisplay
       block="zh-money-value"

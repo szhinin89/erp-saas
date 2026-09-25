@@ -237,6 +237,13 @@ Reglas:
 - **Módulos cerrados** (Purchases, Items, Pricing): su deuda está congelada por ocurrencias exactas en `architecture-grandfather.json` → `frontendPrecisionGrandfathered`; no puede crecer. Al reducirla, el check avisa y se regenera con `node tools/architecture/check-frontend-precision.mjs --write-baseline`.
 - Fuera de alcance: tests, `src/test/**`, internos del Design System (`components/zh/**`) y la infraestructura de precisión (`lib/sanitizers.ts`, `precisionPolicy.config.ts`, `usePrecisionPolicy.ts`).
 
+### Legacy precision API (ZH-DESIGN-SYSTEM-PRECISION-05B)
+
+- **Compatibilidad temporal:** `formatMoney(x)`/`formatMoneyWithSymbol(x)` sin escala, `ZHMoneyValue` y `ZhDecimalInput`/`ZhCurrencyInput` sin `precision` ni `decimals` siguen resolviendo el default fijo 2 en runtime, solo para los consumidores legacy baselined (módulos cerrados). `ZHNumberValue` no tiene rama legacy: exige `precision` o `decimals` por tipo.
+- **Deprecated para código nuevo:** los formatters y `ZHMoneyValue` exponen la forma legacy como sobrecarga `@deprecated` (el editor la tacha); en los inputs (`forwardRef`, una sola firma) la rama legacy está documentada como deprecated en JSDoc. La autoridad es el guard F-PREC (§ Precision guard): la deprecación de TypeScript es solo ayuda al desarrollador.
+- **Patrón normal:** `precision="<PrecisionKind>"` o `usePrecisionDecimals(kind)` + formatter con escala. `decimals` solo como override contractual (`*_DECIMALS`).
+- **Ruta de retiro:** (1) actual — runtime compatible + F-PREC impide deuda nueva; (2) reabrir/migrar Purchases; (3) Items (incluye `components/items`); (4) Pricing; (5) `frontendPrecisionGrandfathered` = 0; (6) recién entonces eliminar los defaults legacy (formatters con escala obligatoria, sin sobrecarga legacy; `ZHMoneyValue`/inputs con `precision` o `decimals` obligatorio). Ninguna etapa se adelanta: los defaults solo se eliminan con el baseline en cero.
+
 ### Excepción: barra de guardado de página completa
 
 `.pg-actions-bar` (con `.pg-actions-info` + `.pg-actions-buttons`) se

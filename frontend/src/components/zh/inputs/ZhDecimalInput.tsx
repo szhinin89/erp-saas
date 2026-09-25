@@ -10,6 +10,8 @@ type Props = Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
   "type" | "value" | "defaultValue"
 > & {
+  /** Override CONTRACTUAL explícito (constante `*_DECIMALS` documentada): gana sobre `precision`.
+   * Sin `decimals` ni `precision` = default legacy 2, DEPRECATED (F-PREC-implicit-value). */
   decimals?: number;
   positiveOnly?: boolean;
   value?: string | number;
@@ -32,8 +34,9 @@ type Props = Omit<
  * pantalla repita formatMoney(x, decimals) para mostrar el valor inicial correctamente.
  *
  * @example
- * <ZhDecimalInput {...register('price')} decimals={decimalConfig.sales} positiveOnly />
- * <ZhDecimalInput {...register('amount')} density="compact" />
+ * <ZhDecimalInput {...register('price')} precision="salesUnitPrice" positiveOnly />
+ * <ZhDecimalInput {...register('amount')} precision="money" density="compact" />
+ * <ZhDecimalInput {...register('capacity')} decimals={WAREHOUSE_CAPACITY_DECIMALS} />
  */
 const ZhDecimalInputCore = React.forwardRef<HTMLInputElement, Props>(
   (
@@ -140,6 +143,12 @@ ZhDecimalInputCore.displayName = "ZhDecimalInputCore";
  * `decimals` explícito > `precision` (PrecisionPolicy vía `SemanticDecimals`) > default legacy del
  * core. Solo resuelve CUÁNTOS decimales: el comportamiento del input es el del core, sin cambios.
  * Sin `precision` no depende de la PrecisionPolicy.
+ *
+ * LEGACY (ZH-DESIGN-SYSTEM-PRECISION-05B): sin `decimals` ni `precision` usa el default fijo 2 —
+ * DEPRECATED para código nuevo y bloqueado por el guard F-PREC-implicit-value (compatibilidad
+ * temporal, sin consumidores productivos hoy). No se expresa como sobrecarga @deprecated: el
+ * componente es un `forwardRef` (una sola firma de llamada) y separarla exigiría un cast del tipo
+ * exportado. Patrón normal: `precision`; `decimals` solo como constante contractual `*_DECIMALS`.
  */
 export const ZhDecimalInput = React.forwardRef<HTMLInputElement, Props & { precision?: PrecisionKind }>(
   ({ precision, decimals, ...props }, ref) => {

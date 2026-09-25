@@ -202,3 +202,19 @@ describe("sanitizeDecimal — política de separadores (03C01)", () => {
     expect(sanitizeDecimal("-1.234,56", 2, true)).toBe("1234.56");
   });
 });
+
+// ZH-DESIGN-SYSTEM-PRECISION-05B — las sobrecargas solo marcan la forma sin escala como @deprecated
+// (ayuda al desarrollador; la autoridad es F-PREC): el runtime no cambia.
+describe("formatMoney / formatMoneyWithSymbol — sobrecargas 05B, runtime intacto", () => {
+  it("legacy sin escala sigue en 2 decimales (compatibilidad)", () => {
+    expect(formatMoney(1.005)).toBe("1.01");
+    expect(formatMoneyWithSymbol(-5)).toBe("$-5.00");
+  });
+
+  it("escala explícita/semántica igual que antes; símbolo opcional", () => {
+    expect(formatMoney(1.23456, 4)).toBe("1.2346");
+    expect(formatMoney(2, 0)).toBe("2");
+    expect(formatMoneyWithSymbol(1.5, 3)).toBe("$1.500");
+    expect(formatMoneyWithSymbol(1.5, 2, "€")).toBe("€1.50");
+  });
+});
