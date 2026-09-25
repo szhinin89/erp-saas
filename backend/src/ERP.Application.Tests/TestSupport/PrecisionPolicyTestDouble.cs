@@ -32,7 +32,8 @@ public static class PrecisionPolicyTestDouble
             LockedReason: null,
             MoneyDecimals: 2,
             TaxDecimals: 2,
-            AccountingDecimals: 2
+            AccountingDecimals: 2,
+            FiscalPercentageDecimals: ERP.Domain.Common.FiscalPrecision.Percentage
         );
 
     public static ICompanyPrecisionPolicyProvider Mock(

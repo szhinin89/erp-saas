@@ -206,7 +206,7 @@ La pantalla declara **qué** representa el dato; el Design System decide **cómo
 
 | Capa | Pieza única | Responsabilidad |
 |------|-------------|-----------------|
-| Semántica | `PrecisionKind` (`lib/config/precisionPolicy.config.ts`) | `money`, `tax`, `accounting`, `salesUnitPrice`, `purchaseUnitPrice`, `unitCost`, `averageCost`, `quantity`, `percentage`, `conversionFactor` |
+| Semántica | `PrecisionKind` (`lib/config/precisionPolicy.config.ts`) | `money`, `tax`, `accounting`, `salesUnitPrice`, `purchaseUnitPrice`, `unitCost`, `averageCost`, `quantity`, `percentage`, `fiscalPercentage`, `conversionFactor` |
 | Precisión | `resolvePrecisionDecimals` + PrecisionPolicy de la empresa (React: `usePrecisionDecimals`) | semántica → decimales; único mapa `PRECISION_FIELD_BY_KIND` |
 | Formato | `formatDecimalDisplay` (`lib/sanitizers.ts`) | redondeo Decimal.js `ROUND_HALF_UP`, punto decimal; `locale` explícito solo cambia separadores/agrupación |
 | Presentación | `ZHMoneyValue` (con símbolo) / `ZHNumberValue` (sin símbolo; `prefix`/`suffix` opcionales, p. ej. `suffix="%"`) | prop `precision`; `null`/`undefined` → `—`; cero con escala; signo visible; `align` end y `tabular-nums` por defecto |
@@ -214,6 +214,7 @@ La pantalla declara **qué** representa el dato; el Design System decide **cómo
 
 Reglas:
 
+- **`percentage` ≠ `fiscalPercentage`.** `percentage` = porcentajes operativos configurables por empresa (descuentos, márgenes, reglas). `fiscalPercentage` = porcentajes fiscales de escala FIJA del sistema (p. ej. % de retención SRI), leídos de `FiscalPrecision.Percentage` vía `fiscalPercentageDecimals`; el backend rechaza en validación valores con más escala en vez de redondearlos en silencio.
 - **Semántica ≠ símbolo.** `PrecisionKind` define la escala; el componente define la apariencia. El mismo `precision="averageCost"` se usa en `ZHMoneyValue` (con `$`) o en `ZHNumberValue` (columna sin símbolo) y resuelve los mismos decimales. Prohibido crear un kind por apariencia.
 - **Tablas:** columna numérica = `align: "right"` (header + celda) + `render` que devuelve `ZHNumberValue`/`ZHMoneyValue` con `precision`. Sin celda numérica propia, sin `text-align` por módulo.
 - **KPI:** `ReportKpiCard value={<ZHNumberValue … precision="…" />}`; el valor hereda la tipografía/tono de la tarjeta. Un `string` sigue siendo válido.

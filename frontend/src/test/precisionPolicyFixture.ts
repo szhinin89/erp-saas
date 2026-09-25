@@ -21,6 +21,7 @@ export const TEST_PRECISION_POLICY: PrecisionPolicy = {
   moneyDecimals: 2,
   taxDecimals: 2,
   accountingDecimals: 2,
+  fiscalPercentageDecimals: 2,
 };
 
 /**

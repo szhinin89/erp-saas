@@ -67,6 +67,7 @@ public sealed class CompanyPrecisionPolicyProvider : ICompanyPrecisionPolicyProv
             // semánticos claros; el valor numérico de los 3 es intencionalmente el mismo hoy.
             MoneyDecimals: FiscalPrecision.TaxAmount,
             TaxDecimals: FiscalPrecision.TaxAmount,
-            AccountingDecimals: FiscalPrecision.TaxAmount
+            AccountingDecimals: FiscalPrecision.TaxAmount,
+            FiscalPercentageDecimals: FiscalPrecision.Percentage
         );
 }

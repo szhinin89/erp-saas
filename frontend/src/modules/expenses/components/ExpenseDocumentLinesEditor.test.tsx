@@ -1,6 +1,9 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { useState } from "react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.config";
+import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 import { ExpenseDocumentLinesEditor } from "./ExpenseDocumentLinesEditor";
 import type { ExpenseDraftLineState } from "./ExpenseDocumentLinesEditor";
 import type { SriVatRateLookup } from "../../items/facades/sriLookupFacade";
@@ -86,5 +89,69 @@ describe("ExpenseDocumentLinesEditor — Codigo IVA selector", () => {
     );
 
     expect(screen.getByText(/20 - Codigo IVA no vigente/)).toBeDefined();
+  });
+});
+
+/**
+ * ZH-DESIGN-SYSTEM-PRECISION-04C — Cantidad → `precision="quantity"`, Valor unitario →
+ * `precision="purchaseUnitPrice"`, Descuento (MONTO: DiscountAmount numeric(18,2), redondeado por
+ * el dominio a FiscalPrecision.TaxAmount) → `precision="money"`. onChange (recálculo en vivo) y
+ * payload intactos.
+ */
+describe("ExpenseDocumentLinesEditor — precisión semántica (04C)", () => {
+  function Stateful({ spy }: { spy: (lines: ExpenseDraftLineState[]) => void }) {
+    const [lines, setLines] = useState([makeLine()]);
+    return (
+      <ExpenseDocumentLinesEditor
+        lines={lines}
+        tree={[]}
+        accountsById={new Map()}
+        vatRates={VAT_RATES}
+        vatRateByCode={new Map(VAT_RATES.map((r) => [r.code, r.percentage]))}
+        onChange={(next) => {
+          spy(next);
+          setLines(next);
+        }}
+      />
+    );
+  }
+
+  /** ¿Admite un dígito más tras `digits` decimales? (usa el estado real del editor). */
+  function allowsDecimal(input: HTMLInputElement, digits: number) {
+    fireEvent.change(input, { target: { value: `1.${"1".repeat(digits)}` } });
+    input.setSelectionRange(input.value.length, input.value.length);
+    return fireEvent.keyDown(input, { key: "9" });
+  }
+
+  const POLICY = { ...TEST_PRECISION_POLICY, quantityDecimals: 3, purchaseUnitPriceDecimals: 5, moneyDecimals: 2 };
+
+  it("cantidad/valor unitario/descuento toman quantity (3), purchaseUnitPrice (5) y money (2)", () => {
+    setPrecisionPolicyForTests(POLICY);
+    render(<Stateful spy={() => {}} />);
+    const qty = screen.getByLabelText(/^Cantidad/) as HTMLInputElement;
+    const price = screen.getByLabelText(/^Valor unitario/) as HTMLInputElement;
+    const discount = screen.getByLabelText(/^Descuento/) as HTMLInputElement;
+    expect([allowsDecimal(qty, 2), allowsDecimal(qty, 3)]).toEqual([true, false]);
+    expect([allowsDecimal(price, 4), allowsDecimal(price, 5)]).toEqual([true, false]);
+    expect([allowsDecimal(discount, 1), allowsDecimal(discount, 2)]).toEqual([true, false]);
+  });
+
+  it("policy A → B sin remount: la cantidad sigue la nueva escala en la siguiente edición", () => {
+    setPrecisionPolicyForTests(POLICY);
+    render(<Stateful spy={() => {}} />);
+    const qty = screen.getByLabelText(/^Cantidad/) as HTMLInputElement;
+    act(() => setPrecisionPolicyForTests({ ...POLICY, quantityDecimals: 1 }));
+    expect(screen.getByLabelText(/^Cantidad/)).toBe(qty);
+    expect(allowsDecimal(qty, 1)).toBe(false);
+  });
+
+  it("coma/paste → valor canónico y el onChange (recálculo) recibe el mismo shape de línea", () => {
+    setPrecisionPolicyForTests(POLICY);
+    const spy = vi.fn();
+    render(<Stateful spy={spy} />);
+    const discount = screen.getByLabelText(/^Descuento/) as HTMLInputElement;
+    fireEvent.paste(discount, { clipboardData: { getData: () => "1.234,5" } });
+    expect(discount.value).toBe("1234.5");
+    expect(spy).toHaveBeenLastCalledWith([makeLine({ discountValue: "1234.5" })]);
   });
 });

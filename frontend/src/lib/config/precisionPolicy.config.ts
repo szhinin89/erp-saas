@@ -28,6 +28,8 @@ export type PrecisionPolicy = {
   moneyDecimals: number;
   taxDecimals: number;
   accountingDecimals: number;
+  /** 04C1 — escala FIJA de porcentajes fiscales (FiscalPrecision.Percentage), p. ej. % de retención SRI. */
+  fiscalPercentageDecimals: number;
 };
 
 /**
@@ -46,6 +48,7 @@ export type PrecisionKind =
   | "averageCost"
   | "quantity"
   | "percentage"
+  | "fiscalPercentage"
   | "conversionFactor";
 
 /** Campos de la policy que expresan una cantidad de decimales. */
@@ -66,6 +69,7 @@ export const PRECISION_FIELD_BY_KIND = {
   averageCost: "averageCostDecimals",
   quantity: "quantityDecimals",
   percentage: "percentageDecimals",
+  fiscalPercentage: "fiscalPercentageDecimals",
   conversionFactor: "conversionFactorDecimals",
 } as const satisfies Readonly<Record<PrecisionKind, PrecisionDecimalsField>>;
 
@@ -214,7 +218,7 @@ export function setPrecisionPolicyForTests(policy: PrecisionPolicy | null): void
 
 export type UpdatePrecisionPolicyInput = Omit<
   PrecisionPolicy,
-  "isLocked" | "lockedAt" | "lockedReason" | "moneyDecimals" | "taxDecimals" | "accountingDecimals"
+  "isLocked" | "lockedAt" | "lockedReason" | "moneyDecimals" | "taxDecimals" | "accountingDecimals" | "fiscalPercentageDecimals"
 >;
 
 /**

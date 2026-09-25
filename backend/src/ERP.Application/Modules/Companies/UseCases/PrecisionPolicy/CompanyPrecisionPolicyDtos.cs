@@ -23,7 +23,11 @@ public sealed record EffectivePrecisionPolicyDto(
     // ── Fijos del sistema — leídos de FiscalPrecision, nunca de company_precision_policy ──
     int MoneyDecimals,
     int TaxDecimals,
-    int AccountingDecimals
+    int AccountingDecimals,
+    // ZH-DESIGN-SYSTEM-PRECISION-04C1 — escala fija de porcentajes FISCALES (p. ej. % de retención
+    // SRI), leída de FiscalPrecision.Percentage. No configurable ni persistida; distinta de
+    // PercentageDecimals (porcentajes operativos configurables por empresa).
+    int FiscalPercentageDecimals
 );
 
 /// <summary>Payload de entrada para actualizar la policy. ProfileType Standard/HighPrecision ignora los campos individuales.</summary>

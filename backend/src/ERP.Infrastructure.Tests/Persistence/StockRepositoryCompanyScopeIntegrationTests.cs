@@ -224,7 +224,8 @@ public sealed class StockRepositoryCompanyScopeIntegrationTests : IAsyncLifetime
                     LockedReason: null,
                     MoneyDecimals: 2,
                     TaxDecimals: 2,
-                    AccountingDecimals: 2
+                    AccountingDecimals: 2,
+                    FiscalPercentageDecimals: ERP.Domain.Common.FiscalPrecision.Percentage
                 )
             );
     }

@@ -177,7 +177,6 @@ export function ExpenseRetentionSection({
     );
   }
 
-  const decimals = getPrecisionPolicy();
   const canApply = !!eligibility?.isEligible;
 
   const updateLine = (key: string, patch: Partial<RetentionIntentFormState["lines"][number]>) =>
@@ -378,7 +377,7 @@ export function ExpenseRetentionSection({
                     <ZhDecimalInput
                       density="compact"
                       positiveOnly
-                      decimals={decimals.moneyDecimals}
+                      precision="money"
                       value={line.baseAmount}
                       disabled={disabled}
                       onChange={(event) => updateLine(line.key, { baseAmount: event.target.value })}
@@ -389,7 +388,7 @@ export function ExpenseRetentionSection({
                     <ZhDecimalInput
                       density="compact"
                       positiveOnly
-                      decimals={decimals.percentageDecimals}
+                      precision="fiscalPercentage"
                       value={line.retentionRate}
                       disabled={disabled}
                       onChange={(event) => updateLine(line.key, { retentionRate: event.target.value })}
@@ -400,7 +399,7 @@ export function ExpenseRetentionSection({
                     <ZhDecimalInput
                       density="compact"
                       positiveOnly
-                      decimals={decimals.moneyDecimals}
+                      precision="money"
                       value={line.retainedAmount}
                       disabled={disabled}
                       onChange={(event) => updateLine(line.key, { retainedAmount: event.target.value })}

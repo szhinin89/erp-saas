@@ -1,6 +1,9 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { useState } from "react";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.config";
+import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 import { ExpenseRetentionSection } from "./ExpenseRetentionSection";
 import { emissionPointsService } from "../../emissionPoints/api/emissionPointsService";
 import { expenseDocumentService } from "../api/expenseDocumentService";
@@ -174,5 +177,71 @@ describe("ExpenseRetentionSection — sin número de retención manual", () => {
     expect(onChange).toHaveBeenCalledWith({
       lines: [{ ...line, retainedAmount: "30" }],
     });
+  });
+});
+
+/**
+ * ZH-DESIGN-SYSTEM-PRECISION-04C — Base y Valor retenido → `precision="money"` (dominio los redondea
+ * a FiscalPrecision.TaxAmount, misma fuente que moneyDecimals). "% Retención" BLOQUEADO: su escala
+ * real es fiscal fija (FiscalPrecision.Percentage = 2, Math.Round en RetentionDocumentLine, XML
+ * porcentajeRetener F2), no la percentageDecimals operativa, y ese SSOT no está expuesto al frontend.
+ */
+describe("ExpenseRetentionSection — precisión semántica (04C)", () => {
+  function Stateful({ spy }: { spy: (patch: unknown) => void }) {
+    const [value, setValue] = useState({
+      ...emptyRetentionIntentState(),
+      appliesRetention: true,
+      emissionPointId: "ep-1",
+      issueDate: "2026-09-01",
+      lines: [newRetentionIntentLine()],
+    });
+    return (
+      <ExpenseRetentionSection
+        expenseDocumentId="exp-1"
+        documentStatus="Draft"
+        refreshKey={0}
+        value={value}
+        onChange={(patch) => {
+          spy(patch);
+          setValue((prev) => ({ ...prev, ...patch }));
+        }}
+        onEligibilityChange={() => {}}
+      />
+    );
+  }
+
+  function allowsDecimal(input: HTMLInputElement, digits: number) {
+    fireEvent.change(input, { target: { value: `1.${"1".repeat(digits)}` } });
+    input.setSelectionRange(input.value.length, input.value.length);
+    return fireEvent.keyDown(input, { key: "9" });
+  }
+
+  it("Base y Valor retenido usan moneyDecimals de la policy (sintética 3)", async () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, moneyDecimals: 3 });
+    render(<Stateful spy={() => {}} />);
+    await waitFor(() => expect(screen.getByLabelText(/^Base/)).toBeTruthy());
+    const base = screen.getByLabelText(/^Base/) as HTMLInputElement;
+    const retained = screen.getByLabelText(/^Valor retenido/) as HTMLInputElement;
+    expect([allowsDecimal(base, 2), allowsDecimal(base, 3)]).toEqual([true, false]);
+    expect([allowsDecimal(retained, 2), allowsDecimal(retained, 3)]).toEqual([true, false]);
+  });
+
+  it("paste '1.234,56' en Base → onChange con baseAmount '1234.56' (mismo payload string)", async () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, moneyDecimals: 2 });
+    const spy = vi.fn();
+    render(<Stateful spy={spy} />);
+    await waitFor(() => expect(screen.getByLabelText(/^Base/)).toBeTruthy());
+    fireEvent.paste(screen.getByLabelText(/^Base/), { clipboardData: { getData: () => "1.234,56" } });
+    const patch = spy.mock.calls.at(-1)![0] as { lines: { baseAmount: string }[] };
+    expect(patch.lines[0]!.baseAmount).toBe("1234.56");
+  });
+
+  // 04C1: antes "BLOQUEADO — sigue en percentageDecimals (policy 4 → admitía 4 decimales)".
+  it("'% Retención' usa fiscalPercentage: con percentageDecimals=4 y fiscalPercentageDecimals=2 admite SOLO 2", async () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, percentageDecimals: 4, fiscalPercentageDecimals: 2 });
+    render(<Stateful spy={() => {}} />);
+    await waitFor(() => expect(screen.getByLabelText(/^% Retención/)).toBeTruthy());
+    const rate = screen.getByLabelText(/^% Retención/) as HTMLInputElement;
+    expect([allowsDecimal(rate, 1), allowsDecimal(rate, 2)]).toEqual([true, false]);
   });
 });

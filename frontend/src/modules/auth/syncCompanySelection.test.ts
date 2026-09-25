@@ -112,6 +112,7 @@ describe("syncCompanySelection", () => {
         moneyDecimals: 2,
         taxDecimals: 2,
         accountingDecimals: 2,
+        fiscalPercentageDecimals: 2,
       };
     });
   });

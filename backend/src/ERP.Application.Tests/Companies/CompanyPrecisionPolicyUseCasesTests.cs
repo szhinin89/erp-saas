@@ -259,6 +259,8 @@ public sealed class CompanyPrecisionPolicyUseCasesTests
         dto.MoneyDecimals.Should().Be(ERP.Domain.Common.FiscalPrecision.TaxAmount);
         dto.TaxDecimals.Should().Be(ERP.Domain.Common.FiscalPrecision.TaxAmount);
         dto.AccountingDecimals.Should().Be(ERP.Domain.Common.FiscalPrecision.TaxAmount);
+        // 04C1 — porcentaje FISCAL fijo (p. ej. % de retención SRI), distinto de PercentageDecimals operativo.
+        dto.FiscalPercentageDecimals.Should().Be(ERP.Domain.Common.FiscalPrecision.Percentage);
     }
 
     [Fact]

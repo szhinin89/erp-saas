@@ -80,10 +80,11 @@ describe("precisionPolicy.config — characterization 01A", () => {
     apiGet.mockResolvedValue(TEST_PRECISION_POLICY);
     await loadPrecisionPolicy();
     const p = getPrecisionPolicy();
-    expect([p.moneyDecimals, p.taxDecimals, p.accountingDecimals]).toEqual([
+    expect([p.moneyDecimals, p.taxDecimals, p.accountingDecimals, p.fiscalPercentageDecimals]).toEqual([
       TEST_PRECISION_POLICY.moneyDecimals,
       TEST_PRECISION_POLICY.taxDecimals,
       TEST_PRECISION_POLICY.accountingDecimals,
+      TEST_PRECISION_POLICY.fiscalPercentageDecimals, // 04C1: parte del contrato de la API
     ]);
   });
 });
@@ -108,6 +109,7 @@ describe("resolvePrecisionDecimals — semántica → campo real de la policy", 
     moneyDecimals: 11,
     taxDecimals: 12,
     accountingDecimals: 13,
+    fiscalPercentageDecimals: 2,
   };
 
   it.each<[PrecisionKind, number]>([
@@ -121,6 +123,7 @@ describe("resolvePrecisionDecimals — semántica → campo real de la policy", 
     ["quantity", 1],
     ["percentage", 4],
     ["conversionFactor", 10],
+    ["fiscalPercentage", 2],
   ])("%s → %s", (kind, expected) => {
     expect(resolvePrecisionDecimals(DISTINCT_POLICY, kind)).toBe(expected);
   });
@@ -166,12 +169,19 @@ describe("resolvePrecisionDecimals — semántica → campo real de la policy", 
     expect(() => resolvePrecisionDecimals(fractional, "quantity")).toThrow(TypeError);
   });
 
-  it("exhaustividad: el mapa cubre las 10 semánticas y cada campo *Decimals de la policy exactamente una vez", () => {
+  it("percentage (operativo) y fiscalPercentage (fiscal fijo) resuelven campos distintos (04C1)", () => {
+    const policy = { ...TEST_PRECISION_POLICY, percentageDecimals: 4, fiscalPercentageDecimals: 2 };
+    expect(resolvePrecisionDecimals(policy, "percentage")).toBe(4);
+    expect(resolvePrecisionDecimals(policy, "fiscalPercentage")).toBe(2);
+  });
+
+  it("exhaustividad: el mapa cubre las 11 semánticas y cada campo *Decimals de la policy exactamente una vez", () => {
     expect(Object.keys(PRECISION_FIELD_BY_KIND).sort()).toEqual(
       [
         "accounting",
         "averageCost",
         "conversionFactor",
+        "fiscalPercentage",
         "money",
         "percentage",
         "purchaseUnitPrice",

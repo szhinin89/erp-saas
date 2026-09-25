@@ -146,7 +146,7 @@ export function ExpenseDocumentLinesEditor({
                   <ZhDecimalInput
                     density="compact"
                     positiveOnly
-                    decimals={decimals.quantityDecimals}
+                    precision="quantity"
                     value={line.quantity}
                     disabled={disabled}
                     className="exp-doc-number-input"
@@ -165,7 +165,7 @@ export function ExpenseDocumentLinesEditor({
                   <ZhDecimalInput
                     density="compact"
                     positiveOnly
-                    decimals={decimals.purchaseUnitPriceDecimals}
+                    precision="purchaseUnitPrice"
                     value={line.unitPrice}
                     disabled={disabled}
                     className="exp-doc-number-input"
@@ -183,7 +183,7 @@ export function ExpenseDocumentLinesEditor({
                   <ZhDecimalInput
                     density="compact"
                     positiveOnly
-                    decimals={decimals.moneyDecimals}
+                    precision="money"
                     value={line.discountValue}
                     disabled={disabled}
                     className="exp-doc-number-input"

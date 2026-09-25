@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Retentions.DTOs;
 using ERP.Application.Modules.Retentions.Services;
+using ERP.Domain.Common;
 using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Expenses.Interfaces;
 using ERP.Domain.Modules.Payables.Enums;
@@ -81,6 +82,14 @@ public sealed class IssueRetentionLineValidator : AbstractValidator<IssueRetenti
         RuleFor(x => x.RetentionCode).NotEmpty();
         RuleFor(x => x.BaseAmount).GreaterThan(0);
         RuleFor(x => x.RetentionRate).GreaterThan(0);
+        // ZH-DESIGN-SYSTEM-PRECISION-04C1 — el % de retención es un porcentaje fiscal de escala fija
+        // (FiscalPrecision.Percentage): un valor con más decimales se rechaza aquí en vez de que el
+        // dominio lo redondee en silencio (RetentionDocumentLine.Create conserva su redondeo defensivo).
+        RuleFor(x => x.RetentionRate)
+            .Must(rate => decimal.Round(rate, FiscalPrecision.Percentage) == rate)
+            .WithMessage(
+                $"El porcentaje de retención admite como máximo {FiscalPrecision.Percentage} decimales."
+            );
         RuleFor(x => x.RetainedAmount).GreaterThan(0);
         RuleFor(x => x).Must(l => l.RetainedAmount <= l.BaseAmount)
             .WithMessage("El monto retenido no puede ser mayor a la base imponible.");
