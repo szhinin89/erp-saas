@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { I18nProvider } from "../../../i18n/i18n";
 import { JournalEntryDetailPage } from "./JournalEntryDetailPage";
 import type { JournalEntryDetailDto } from "../api/accountingApi";
+import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.config";
+import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 
 /**
  * ACCOUNTING-JOURNAL-LINE-DESCRIPTIONS-EXPENSES-PAYABLES-01 — la columna Descripción de la tabla
@@ -117,4 +119,20 @@ it("falls back to a friendly (translated) description when displayDescription ca
   const rows = within(table).getAllByRole("row");
   expect(within(rows[1]!).getByText("Gastos — Confirmación de gasto")).toBeTruthy();
   expect(within(rows[1]!).queryByText("Expenses — DocumentConfirmed — expense-1")).toBeNull();
+});
+
+// ZH-DESIGN-SYSTEM-PRECISION-04F — Debe/Haber/totales del asiento declaran `precision="accounting"`
+// (no money, aunque hoy ambas escalas coincidan): con escalas distintas manda accountingDecimals.
+it("debe/haber y totales usan accountingDecimals (no moneyDecimals) y reaccionan A → B", async () => {
+  setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, accountingDecimals: 2, moneyDecimals: 4 });
+  mocks.getJournalEntryById.mockResolvedValue(BASE_ENTRY);
+  const { container } = show();
+  await screen.findByRole("table");
+  const amounts = () => [...container.querySelectorAll(".zh-money-value")].map((e) => e.textContent);
+  expect(amounts()).toContain("$100.00");
+  expect(amounts()).not.toContain("$100.0000");
+
+  act(() => setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, accountingDecimals: 3, moneyDecimals: 4 }));
+  expect(amounts()).toContain("$100.000");
+  expect(amounts()).not.toContain("$100.00");
 });

@@ -561,18 +561,18 @@ export function SalesInvoiceLineGridRow({
             <ZHFieldLabel size="sm" className="sf-product__subtotal-label">
               Base sin IVA
             </ZHFieldLabel>
-            <ZHMoneyValue value={baseAmount} className="sf-product__subtotal-value" />
+            <ZHMoneyValue precision="money" value={baseAmount} className="sf-product__subtotal-value" />
           </div>
           <div className="sf-product__subtotal-row">
             <ZHFieldLabel size="sm" className="sf-product__subtotal-label">
               {ivaTotalsLabel}
             </ZHFieldLabel>
-            <ZHMoneyValue value={vatAmount} className="sf-product__subtotal-value" />
+            <ZHMoneyValue precision="tax" value={vatAmount} className="sf-product__subtotal-value" />
           </div>
           <ZHFieldLabel size="sm" className="sf-product__total-label">
             Total línea
           </ZHFieldLabel>
-          <ZHMoneyValue
+          <ZHMoneyValue precision="money"
             value={total}
             emphasis="total"
             className="sf-product__total-amount"

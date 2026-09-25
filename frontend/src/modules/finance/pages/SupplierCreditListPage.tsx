@@ -4,10 +4,10 @@ import { PageShell, Badge } from "../../../components/PageShell";
 import { ZHCard } from "../../../components/zh/ZHCard";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
-import { formatMoney } from "../../../lib/sanitizers";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
 import { supplierCreditService, type SupplierCreditDto } from "../api/supplierCreditService";
+import { ZHNumberValue } from "../../../components/zh/ZHNumberValue";
 
 const PAGE_SIZE = 25;
 
@@ -60,13 +60,13 @@ export function SupplierCreditListPage() {
       key: "originalAmount",
       header: "Monto original",
       align: "right",
-      render: (row) => formatMoney(row.originalAmount),
+      render: (row) => <ZHNumberValue value={row.originalAmount} precision="money" />,
     },
     {
       key: "availableAmount",
       header: "Saldo disponible",
       align: "right",
-      render: (row) => <strong>{formatMoney(row.availableAmount)}</strong>,
+      render: (row) => <ZHNumberValue value={row.availableAmount} precision="money" emphasis="strong" />,
     },
     {
       key: "isOpen",

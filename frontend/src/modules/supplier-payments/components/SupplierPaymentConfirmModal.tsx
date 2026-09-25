@@ -5,6 +5,7 @@ import { formatMoney } from "../../../lib/sanitizers";
 import type { PaymentMethodDto } from "../../sales/facades/paymentMethodLookupFacade";
 import type { PendingInstallmentOption } from "../api/pendingPayablesFacade";
 import type { RegisterSupplierPaymentFormValues } from "../../../schemas/supplier-payments/registerSupplierPaymentSchema";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 
 interface Props {
   open: boolean;
@@ -35,6 +36,7 @@ export function SupplierPaymentConfirmModal({
   onCancel,
   onConfirm,
 }: Props) {
+  const moneyDecimals = usePrecisionDecimals("money"); // presentación (04F)
   if (!open || !values) return null;
 
   const methodsById = new Map(methods.map((m) => [m.id, m]));
@@ -67,14 +69,14 @@ export function SupplierPaymentConfirmModal({
           <dt>Número de recibo</dt>
           <dd>{values.receiptNumber?.trim() || "Se asignará un número de sistema automático"}</dd>
           <dt>Total</dt>
-          <dd>{formatMoney(total)}</dd>
+          <dd>{formatMoney(total, moneyDecimals)}</dd>
         </dl>
 
         <h4 className="sp-confirm-subtitle">Medios de pago</h4>
         <ul className="sp-confirm-list">
           {values.methodLines.map((line, idx) => (
             <li key={idx}>
-              {methodsById.get(line.paymentMethodId)?.name ?? "—"} — {formatMoney(line.amount || 0)}
+              {methodsById.get(line.paymentMethodId)?.name ?? "—"} — {formatMoney(line.amount || 0, moneyDecimals)}
             </li>
           ))}
         </ul>
@@ -88,7 +90,7 @@ export function SupplierPaymentConfirmModal({
                 {installment
                   ? `${installment.documentType} ${installment.documentNumber} — Cuota #${installment.installmentNumber}`
                   : "—"}{" "}
-                — {formatMoney(line.amountApplied || 0)}
+                — {formatMoney(line.amountApplied || 0, moneyDecimals)}
               </li>
             );
           })}

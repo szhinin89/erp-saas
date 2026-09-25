@@ -19,6 +19,7 @@ import {
   buildRegisterSupplierCreditRefundSchema,
   type RegisterSupplierCreditRefundFormValues,
 } from "../schemas/supplierCreditSchema";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 
 interface Props {
   open: boolean;
@@ -42,6 +43,7 @@ export function RegisterSupplierCreditRefundModal({
   onClose,
   onRegistered,
 }: Props) {
+  const moneyDecimals = usePrecisionDecimals("money"); // presentación (04F)
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [bankAccounts, setBankAccounts] = useState<CompanyBankAccountDto[]>([]);
@@ -153,7 +155,7 @@ export function RegisterSupplierCreditRefundModal({
       onClose={handleClose}
       size="md"
       title="Registrar reembolso"
-      subtitle={`Proveedor: ${credit.supplierId} — Saldo disponible: ${formatMoney(credit.availableAmount)}`}
+      subtitle={`Proveedor: ${credit.supplierId} — Saldo disponible: ${formatMoney(credit.availableAmount, moneyDecimals)}`}
     >
       <div>
         <ZHField

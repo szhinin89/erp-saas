@@ -17,6 +17,7 @@ import { applyServerErrors } from "../../lib/validationErrors";
 import { formatApiRequestError } from "../../lib/apiError";
 import { message } from "../../../lib/messages";
 import { formatMoneyWithSymbol } from "../../../lib/sanitizers";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 
 export type UseManualCashMovementFlowArgs = {
   /** Id de la sesión de caja contra la que se registra el movimiento — null si no hay ninguna
@@ -46,6 +47,7 @@ export function useManualCashMovementFlow({
   isSessionOpen,
   onRecorded,
 }: UseManualCashMovementFlowArgs) {
+  const moneyDecimals = usePrecisionDecimals("money"); // presentación (04F)
   const { t } = useI18n();
   const { canShow } = usePermissionsUi();
   const canRecordManualMovements = canShow("caja.record");
@@ -159,7 +161,7 @@ export function useManualCashMovementFlow({
           <br />
           {t("caja.session.concept")}: <strong>{data.description}</strong>
           <br />
-          {t("caja.movements.table.amount")}: <strong>{formatMoneyWithSymbol(data.amount)}</strong>
+          {t("caja.movements.table.amount")}: <strong>{formatMoneyWithSymbol(data.amount, moneyDecimals)}</strong>
         </p>
       ),
       variant: isIncome ? "warning" : "danger",

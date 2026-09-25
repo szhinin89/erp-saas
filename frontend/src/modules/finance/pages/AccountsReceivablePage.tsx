@@ -78,9 +78,9 @@ export function AccountsReceivablePage() {
     { key: "createdBy", header: "Emitido por", render: (r) => r.createdByName || "Usuario no disponible" },
     { key: "invoiceDate", header: "Fecha factura", render: (r) => formatDateTime(r.invoiceCreatedAt) },
     { key: "dueDate", header: "Vence", render: (r) => (r.dueDate ? formatDate(r.dueDate) : "—") },
-    { key: "originalAmount", header: "Monto original", render: (r) => <ZHMoneyValue value={r.originalAmount} /> },
-    { key: "paidAmount", header: "Cobrado", render: (r) => <ZHMoneyValue value={r.paidAmount} /> },
-    { key: "balanceDue", header: "Saldo pendiente", render: (r) => <ZHMoneyValue value={r.balanceDue} emphasis="strong" /> },
+    { key: "originalAmount", header: "Monto original", render: (r) => <ZHMoneyValue precision="money" value={r.originalAmount} /> },
+    { key: "paidAmount", header: "Cobrado", render: (r) => <ZHMoneyValue precision="money" value={r.paidAmount} /> },
+    { key: "balanceDue", header: "Saldo pendiente", render: (r) => <ZHMoneyValue precision="money" value={r.balanceDue} emphasis="strong" /> },
     {
       key: "status",
       header: "Estado",

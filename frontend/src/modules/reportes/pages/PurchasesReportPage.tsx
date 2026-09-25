@@ -23,6 +23,8 @@ import {
 import { SupplierPicker } from "../../purchases/components/SupplierPicker";
 import { ZhDateInput } from "../../../components/zh/inputs";
 import type { SupplierPickerRow } from "../../masterData/types/businessPartner.types";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
+import { ZHNumberValue } from "../../../components/zh/ZHNumberValue";
 
 const STATUS_LABEL: Record<string, string> = {
   Draft: "Borrador",
@@ -45,6 +47,7 @@ const EMPTY_TOTALS: PurchasesReportTotalsDto = {
 };
 
 export function PurchasesReportPage() {
+  const moneyDecimals = usePrecisionDecimals("money"); // presentación (04F)
   const companySessionVersion = useAuthStore((s) => s.companySessionVersion);
   const [dateFrom, setDateFrom] = useState(todayIso());
   const [dateTo, setDateTo] = useState(todayIso());
@@ -90,10 +93,10 @@ export function PurchasesReportPage() {
     { key: "date", header: "Fecha", cellClassName: "subtle", render: (row) => formatDate(row.issueDate) },
     { key: "supplier", header: "Proveedor", render: (row) => row.supplierName },
     { key: "taxId", header: "RUC/ID", cellClassName: "subtle", render: (row) => row.supplierTaxId },
-    { key: "subtotal", header: "Subtotal", align: "right", render: (row) => formatMoney(row.subtotal) },
-    { key: "vat", header: "IVA", align: "right", render: (row) => formatMoney(row.totalVat) },
-    { key: "discount", header: "Descuento", align: "right", render: (row) => formatMoney(row.totalDiscount) },
-    { key: "total", header: "Total", align: "right", render: (row) => formatMoney(row.grandTotal) },
+    { key: "subtotal", header: "Subtotal", align: "right", render: (row) => <ZHNumberValue value={row.subtotal} precision="money" /> },
+    { key: "vat", header: "IVA", align: "right", render: (row) => <ZHNumberValue value={row.totalVat} precision="tax" /> },
+    { key: "discount", header: "Descuento", align: "right", render: (row) => <ZHNumberValue value={row.totalDiscount} precision="money" /> },
+    { key: "total", header: "Total", align: "right", render: (row) => <ZHNumberValue value={row.grandTotal} precision="money" /> },
     {
       key: "status",
       header: "Estado",
@@ -115,7 +118,7 @@ export function PurchasesReportPage() {
           icon="payments"
           tone="primary"
           label="Total Comprado"
-          value={formatMoney(totals.grandTotal)}
+          value={<ZHNumberValue value={totals.grandTotal} precision="money" />}
         />
         <ReportKpiCard
           icon="receipt_long"
@@ -127,13 +130,13 @@ export function PurchasesReportPage() {
           icon="calculate"
           tone="tertiary"
           label="Subtotal"
-          value={formatMoney(totals.subtotal)}
+          value={<ZHNumberValue value={totals.subtotal} precision="money" />}
         />
         <ReportKpiCard
           icon="percent"
           tone="tertiary"
           label="IVA"
-          value={formatMoney(totals.totalVat)}
+          value={<ZHNumberValue value={totals.totalVat} precision="tax" />}
         />
       </div>
 
@@ -182,7 +185,7 @@ export function PurchasesReportPage() {
         />
         {!loading && rows.length > 0 && (
           <p className="rpt-footer-note zh-mt-8">
-            Descuento total: {formatMoney(totals.totalDiscount)}
+            Descuento total: {formatMoney(totals.totalDiscount, moneyDecimals)}
           </p>
         )}
       </div>

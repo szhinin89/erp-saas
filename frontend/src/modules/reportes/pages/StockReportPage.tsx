@@ -10,7 +10,6 @@ import {
 } from "../../../components/ReportPageTemplate";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
-import { formatMoney } from "../../../lib/sanitizers";
 import { ZHNumberValue } from "../../../components/zh/ZHNumberValue";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
@@ -90,7 +89,7 @@ export function StockReportPage() {
     { key: "quantity", header: "Stock Actual", align: "right", render: (row) => <ZHNumberValue value={row.quantity} precision="quantity" /> },
     { key: "available", header: "Disponible", align: "right", render: (row) => <ZHNumberValue value={row.availableQuantity} precision="quantity" /> },
     { key: "avgCost", header: "Costo Promedio", align: "right", render: (row) => <ZHNumberValue value={row.averageCost} precision="averageCost" /> },
-    { key: "stockValue", header: "Valor Inventario", align: "right", render: (row) => formatMoney(row.stockValue) },
+    { key: "stockValue", header: "Valor Inventario", align: "right", render: (row) => <ZHNumberValue value={row.stockValue} precision="money" /> },
     {
       key: "status",
       header: "Estado",
@@ -122,7 +121,7 @@ export function StockReportPage() {
           icon="payments"
           tone="tertiary"
           label="Valor de Inventario"
-          value={formatMoney(totalValue)}
+          value={<ZHNumberValue value={totalValue} precision="money" />}
         />
       </div>
 

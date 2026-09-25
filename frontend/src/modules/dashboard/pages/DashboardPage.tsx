@@ -1,4 +1,5 @@
 import { formatMoneyWithSymbol } from "../../../lib/sanitizers";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { useNavigate } from "react-router-dom";
 import { useI18n } from "../../../i18n/i18n";
 import { useAuthStore } from "../../../store/authStore";
@@ -13,7 +14,7 @@ import { formatLongDate } from "../../../lib/formatters/dateFormatters";
 import { brandConfig, getCopyrightText } from "../../../shared/branding/brandConfig";
 import "./DashboardPage.css";
 
-function fmt(n: number | undefined, decimals = 2) {
+function fmt(n: number | undefined, decimals: number) {
   if (n === undefined || n === null) return "—";
   return formatMoneyWithSymbol(n, decimals); // motor único (04E), sin toFixed
 }
@@ -24,6 +25,7 @@ function fmtN(n: number | undefined) {
 }
 
 export function DashboardPage() {
+  const moneyDecimals = usePrecisionDecimals("money"); // ventas / CxC / CxP (04F)
   const { t, locale } = useI18n();
   const user = useAuthStore((s) => s.user);
   const companySessionVersion = useAuthStore((s) => s.companySessionVersion);
@@ -61,7 +63,7 @@ export function DashboardPage() {
           tone="primary"
           badge={periodLabel ? <Badge label={periodLabel} variant="info" /> : undefined}
           label="Ventas del mes"
-          value={loading ? "…" : fmt(d?.salesMtd)}
+          value={loading ? "…" : fmt(d?.salesMtd, moneyDecimals)}
           sub={
             <p className="subtle">
               {loading ? "" : `${fmtN(d?.invoicesMtd)} facturas`}
@@ -73,12 +75,12 @@ export function DashboardPage() {
           icon="account_balance"
           tone="warning"
           label="Cuentas por cobrar"
-          value={loading ? "…" : fmt(d?.pendingArTotal)}
+          value={loading ? "…" : fmt(d?.pendingArTotal, moneyDecimals)}
           trend={
             !loading && !!d?.overdueArTotal
               ? {
                   icon: "warning",
-                  label: `${fmt(d.overdueArTotal)} vencido`,
+                  label: `${fmt(d.overdueArTotal, moneyDecimals)} vencido`,
                   tone: "warning",
                 }
               : undefined
@@ -101,12 +103,12 @@ export function DashboardPage() {
           icon="shopping_cart"
           tone="primary"
           label="Cuentas por pagar"
-          value={loading ? "…" : fmt(d?.pendingApTotal)}
+          value={loading ? "…" : fmt(d?.pendingApTotal, moneyDecimals)}
           trend={
             !loading && !!d?.overdueApTotal
               ? {
                   icon: "warning",
-                  label: `${fmt(d.overdueApTotal)} vencido`,
+                  label: `${fmt(d.overdueApTotal, moneyDecimals)} vencido`,
                   tone: "warning",
                 }
               : undefined
@@ -242,7 +244,7 @@ export function DashboardPage() {
               <div className="dsh-summary-row">
                 <span className="dsh-summary-label">Ventas del año</span>
                 <span className="dsh-summary-value">
-                  {loading ? "…" : fmt(d?.salesYtd)}
+                  {loading ? "…" : fmt(d?.salesYtd, moneyDecimals)}
                 </span>
               </div>
               <div className="dsh-summary-row">
@@ -256,7 +258,7 @@ export function DashboardPage() {
                   Cuentas por cobrar vencidas
                 </span>
                 <span className="dsh-summary-value dsh-summary-value--warn">
-                  {loading ? "…" : fmt(d?.overdueArTotal)}
+                  {loading ? "…" : fmt(d?.overdueArTotal, moneyDecimals)}
                 </span>
               </div>
               <div className="dsh-summary-row">
@@ -264,7 +266,7 @@ export function DashboardPage() {
                   Cuentas por pagar vencidas
                 </span>
                 <span className="dsh-summary-value dsh-summary-value--warn">
-                  {loading ? "…" : fmt(d?.overdueApTotal)}
+                  {loading ? "…" : fmt(d?.overdueApTotal, moneyDecimals)}
                 </span>
               </div>
             </div>

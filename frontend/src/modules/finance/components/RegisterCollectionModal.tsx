@@ -25,6 +25,7 @@ import {
   buildRegisterCollectionSchema,
   type RegisterCollectionFormValues,
 } from "../../../schemas/finance/registerCollectionSchema";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 
 interface Props {
   open: boolean;
@@ -44,6 +45,7 @@ export function RegisterCollectionModal({
   onClose,
   onRegistered,
 }: Props) {
+  const moneyDecimals = usePrecisionDecimals("money"); // presentación (04F)
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [methods, setMethods] = useState<PaymentMethodDto[]>([]);
@@ -158,7 +160,7 @@ export function RegisterCollectionModal({
       onClose={handleClose}
       size="md"
       title="Registrar cobro"
-      subtitle={`Factura ${receivable.invoiceNumber} — Cliente: ${receivable.customerName} — Saldo pendiente: ${formatMoney(receivable.balanceDue)}`}
+      subtitle={`Factura ${receivable.invoiceNumber} — Cliente: ${receivable.customerName} — Saldo pendiente: ${formatMoney(receivable.balanceDue, moneyDecimals)}`}
     >
       <div>
         <ZHField label="Monto a cobrar" error={errors.amount?.message} required>
@@ -179,7 +181,7 @@ export function RegisterCollectionModal({
               <option value="">Sin cuota específica</option>
               {pendingInstallments.map((i) => (
                 <option key={i.id} value={i.id}>
-                  Cuota #{i.installmentNumber} — {formatMoney(i.amount - i.paidAmount)} pendiente
+                  Cuota #{i.installmentNumber} — {formatMoney(i.amount - i.paidAmount, moneyDecimals)} pendiente
                 </option>
               ))}
             </ZhSelect>

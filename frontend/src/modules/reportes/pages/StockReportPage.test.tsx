@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import { I18nProvider } from "../../../i18n/i18n";
 import { StockReportPage } from "./StockReportPage";
 import { stockService, type StockReportRowDto } from "../../inventory/stock/api/stockService";
@@ -134,5 +134,26 @@ describe("StockReportPage — precisión semántica (02B)", () => {
     await renderWithPolicy(6, 8);
     const row = screen.getByText("SKU-001").closest("tr")!;
     expect(within(row).getByText("150.00")).toBeTruthy();
+  });
+});
+
+// ZH-DESIGN-SYSTEM-PRECISION-04F — "Valor Inventario" (celda y KPI) deja el default legacy 2 de
+// `formatMoney(x)`: declara money (valor monetario del stock), sin "$" como antes, reactivo.
+describe("StockReportPage — valor de inventario money (04F)", () => {
+  it("celda y KPI usan moneyDecimals, sin símbolo, y reaccionan A → B", async () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, moneyDecimals: 2 });
+    vi.mocked(stockService.getReport).mockResolvedValue([{ ...ROW, stockValue: 150.125 }]);
+    const { container } = renderPage();
+    await waitFor(() => expect(screen.getByText("SKU-001")).toBeTruthy());
+    const row = screen.getByText("SKU-001").closest("tr")!;
+    const cell = () => [...row.querySelectorAll(".zh-number-value")].map((e) => e.textContent);
+    const kpi = () => [...container.querySelectorAll(".pg-kpi-value .zh-number-value")].map((e) => e.textContent);
+    expect(cell()).toContain("150.13");
+    expect(kpi()).toContain("150.13");
+    expect(container.textContent).not.toContain("$150");
+
+    act(() => setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, moneyDecimals: 3 }));
+    expect(cell()).toContain("150.125");
+    expect(kpi()).toContain("150.125");
   });
 });

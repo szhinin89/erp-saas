@@ -17,7 +17,7 @@ function today(): string {
 const LINE_COLUMNS: ZHDataTableColumn<FinancialStatementLineDto>[] = [
   { key: "accountCode", header: "Código", render: (r) => <code className="prd-sku">{r.accountCode}</code> },
   { key: "accountName", header: "Cuenta", render: (r) => r.accountName },
-  { key: "amount", header: "Saldo", align: "right", render: (r) => <ZHMoneyValue value={r.amount} /> },
+  { key: "amount", header: "Saldo", align: "right", render: (r) => <ZHMoneyValue precision="accounting" value={r.amount} /> },
 ];
 
 /**
@@ -92,7 +92,7 @@ export function BalanceSheetReportTab() {
               emptyMessage="Sin cuentas de activo con saldo a la fecha de corte."
             />
             <div className="zh-actions">
-              <span>Total Activos <ZHMoneyValue value={data.totalAssets} emphasis="total" /></span>
+              <span>Total Activos <ZHMoneyValue precision="accounting" value={data.totalAssets} emphasis="total" /></span>
             </div>
           </ZHCard>
 
@@ -105,7 +105,7 @@ export function BalanceSheetReportTab() {
               emptyMessage="Sin cuentas de pasivo con saldo a la fecha de corte."
             />
             <div className="zh-actions">
-              <span>Total Pasivos <ZHMoneyValue value={data.totalLiabilities} emphasis="total" /></span>
+              <span>Total Pasivos <ZHMoneyValue precision="accounting" value={data.totalLiabilities} emphasis="total" /></span>
             </div>
           </ZHCard>
 
@@ -118,13 +118,13 @@ export function BalanceSheetReportTab() {
               emptyMessage="Sin cuentas de patrimonio con saldo a la fecha de corte."
             />
             <div className="zh-actions">
-              <span>Total Patrimonio <ZHMoneyValue value={data.totalEquity} emphasis="total" /></span>
+              <span>Total Patrimonio <ZHMoneyValue precision="accounting" value={data.totalEquity} emphasis="total" /></span>
             </div>
           </ZHCard>
 
           <div className="zh-actions">
-            <span>Total Activo <ZHMoneyValue value={data.totalAssets} emphasis="grand" /></span>
-            <span>Total Pasivo + Patrimonio <ZHMoneyValue value={data.totalLiabilities + data.totalEquity} emphasis="grand" /></span>
+            <span>Total Activo <ZHMoneyValue precision="accounting" value={data.totalAssets} emphasis="grand" /></span>
+            <span>Total Pasivo + Patrimonio <ZHMoneyValue precision="accounting" value={data.totalLiabilities + data.totalEquity} emphasis="grand" /></span>
           </div>
         </>
       )}

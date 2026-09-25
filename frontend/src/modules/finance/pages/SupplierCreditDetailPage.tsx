@@ -16,6 +16,8 @@ import {
 } from "../api/supplierCreditService";
 import { ApplySupplierCreditModal } from "../components/ApplySupplierCreditModal";
 import { RegisterSupplierCreditRefundModal } from "../components/RegisterSupplierCreditRefundModal";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
+import { ZHNumberValue } from "../../../components/zh/ZHNumberValue";
 
 const MOVEMENT_TYPE_LABEL: Record<string, string> = {
   Application: "Aplicación",
@@ -31,6 +33,7 @@ const MOVEMENT_TYPE_LABEL: Record<string, string> = {
  * aplicaciones/reembolsos activos.
  */
 export function SupplierCreditDetailPage() {
+  const moneyDecimals = usePrecisionDecimals("money"); // presentación (04F)
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -73,7 +76,7 @@ export function SupplierCreditDetailPage() {
     if (!credit || !movement.targetPurchasePayableId) return;
     const confirmed = await message.confirm({
       title: "Revertir aplicación",
-      message: `¿Revertir la aplicación de ${formatMoney(movement.amount)}? Esta acción no se puede deshacer.`,
+      message: `¿Revertir la aplicación de ${formatMoney(movement.amount, moneyDecimals)}? Esta acción no se puede deshacer.`,
       variant: "danger",
       confirmLabel: "Revertir aplicación",
     });
@@ -148,7 +151,7 @@ export function SupplierCreditDetailPage() {
 
   const movementColumns: ZHDataTableColumn<SupplierCreditMovementDto>[] = [
     { key: "type", header: "Tipo", render: (m) => MOVEMENT_TYPE_LABEL[m.movementType] ?? m.movementType },
-    { key: "amount", header: "Monto", align: "right", cellClassName: "zh-table-cell--num", render: (m) => formatMoney(m.amount) },
+    { key: "amount", header: "Monto", align: "right", cellClassName: "zh-table-cell--num", render: (m) => <ZHNumberValue value={m.amount} precision="money" /> },
     { key: "date", header: "Fecha", render: (m) => formatDateTime(m.createdAtUtc) },
     {
       key: "actions",
@@ -213,12 +216,12 @@ export function SupplierCreditDetailPage() {
         <div className="sr-general-grid">
           <div>
             <span className="sr-general-grid__label">Monto original</span>
-            <span className="sr-general-grid__value">{formatMoney(credit.originalAmount)}</span>
+            <span className="sr-general-grid__value">{formatMoney(credit.originalAmount, moneyDecimals)}</span>
           </div>
           <div>
             <span className="sr-general-grid__label">Saldo disponible</span>
             <span className="sr-general-grid__value">
-              <strong>{formatMoney(credit.availableAmount)}</strong>
+              <strong>{formatMoney(credit.availableAmount, moneyDecimals)}</strong>
             </span>
           </div>
         </div>

@@ -24,10 +24,12 @@ import { applyServerErrors } from "../../lib/validationErrors";
 import { formatApiRequestError } from "../../lib/apiError";
 import { message } from "../../../lib/messages";
 import { formatMoneyWithSymbol } from "../../../lib/sanitizers";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 
 type Tab = "listado" | "abrir" | "detalle" | "cerrar";
 
 export function useCajaPage() {
+  const moneyDecimals = usePrecisionDecimals("money"); // presentación (04F)
   const { t } = useI18n();
 
   // ── Page state ─────────────────────────────────────────────────────
@@ -166,7 +168,7 @@ export function useCajaPage() {
                 <br />
               </>
             ) : null}
-            {t("caja.session.initialAmount")}: <strong>{formatMoneyWithSymbol(data.openingAmount)}</strong>.
+            {t("caja.session.initialAmount")}: <strong>{formatMoneyWithSymbol(data.openingAmount, moneyDecimals)}</strong>.
           </p>
         </>
       ),
@@ -252,11 +254,11 @@ export function useCajaPage() {
             {t("caja.session.closeExplanation")}
           </p>
           <p className="zh-confirm-message">
-            {t("caja.session.expected")}: <strong>{formatMoneyWithSymbol(expected)}</strong>
+            {t("caja.session.expected")}: <strong>{formatMoneyWithSymbol(expected, moneyDecimals)}</strong>
             <br />
-            {t("caja.session.counted")}: <strong>{formatMoneyWithSymbol(counted)}</strong>
+            {t("caja.session.counted")}: <strong>{formatMoneyWithSymbol(counted, moneyDecimals)}</strong>
             <br />
-            {t("caja.session.difference")}: <strong>{formatMoneyWithSymbol(difference)}</strong>
+            {t("caja.session.difference")}: <strong>{formatMoneyWithSymbol(difference, moneyDecimals)}</strong>
           </p>
           {hasMismatch ? (
             <p className="zh-confirm-message">

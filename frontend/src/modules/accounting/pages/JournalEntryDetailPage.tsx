@@ -272,10 +272,10 @@ export function JournalEntryDetailPage() {
                   </td>
                   <td>{l.displayDescription ?? friendlyDescription(t, l.description)}</td>
                   <td className="zh-table-cell--num">
-                    <ZHMoneyValue value={l.debit > 0 ? l.debit : null} />
+                    <ZHMoneyValue precision="accounting" value={l.debit > 0 ? l.debit : null} />
                   </td>
                   <td className="zh-table-cell--num">
-                    <ZHMoneyValue value={l.credit > 0 ? l.credit : null} />
+                    <ZHMoneyValue precision="accounting" value={l.credit > 0 ? l.credit : null} />
                   </td>
                 </tr>
               ))}
@@ -291,10 +291,10 @@ export function JournalEntryDetailPage() {
                   <strong>Totales</strong>
                 </td>
                 <td className="zh-table-cell--num">
-                  <ZHMoneyValue value={entry.totalDebit} emphasis="total" />
+                  <ZHMoneyValue precision="accounting" value={entry.totalDebit} emphasis="total" />
                 </td>
                 <td className="zh-table-cell--num">
-                  <ZHMoneyValue value={entry.totalCredit} emphasis="total" />
+                  <ZHMoneyValue precision="accounting" value={entry.totalCredit} emphasis="total" />
                 </td>
               </tr>
             </tfoot>

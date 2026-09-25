@@ -78,12 +78,12 @@ export function TrialBalanceReportTab() {
     { key: "accountCode", header: "Código", render: (r) => <code className="prd-sku">{r.accountCode}</code> },
     { key: "accountName", header: "Cuenta", render: (r) => r.accountName },
     { key: "accountType", header: "Tipo", render: (r) => r.accountType },
-    { key: "openingDebit", header: "Saldo inicial deudor", align: "right", render: (r) => <ZHMoneyValue value={r.openingDebit > 0 ? r.openingDebit : null} /> },
-    { key: "openingCredit", header: "Saldo inicial acreedor", align: "right", render: (r) => <ZHMoneyValue value={r.openingCredit > 0 ? r.openingCredit : null} /> },
-    { key: "periodDebit", header: "Movimiento debe", align: "right", render: (r) => <ZHMoneyValue value={r.periodDebit > 0 ? r.periodDebit : null} /> },
-    { key: "periodCredit", header: "Movimiento haber", align: "right", render: (r) => <ZHMoneyValue value={r.periodCredit > 0 ? r.periodCredit : null} /> },
-    { key: "closingDebit", header: "Saldo final deudor", align: "right", render: (r) => <ZHMoneyValue value={r.closingDebit > 0 ? r.closingDebit : null} emphasis="strong" /> },
-    { key: "closingCredit", header: "Saldo final acreedor", align: "right", render: (r) => <ZHMoneyValue value={r.closingCredit > 0 ? r.closingCredit : null} emphasis="strong" /> },
+    { key: "openingDebit", header: "Saldo inicial deudor", align: "right", render: (r) => <ZHMoneyValue precision="accounting" value={r.openingDebit > 0 ? r.openingDebit : null} /> },
+    { key: "openingCredit", header: "Saldo inicial acreedor", align: "right", render: (r) => <ZHMoneyValue precision="accounting" value={r.openingCredit > 0 ? r.openingCredit : null} /> },
+    { key: "periodDebit", header: "Movimiento debe", align: "right", render: (r) => <ZHMoneyValue precision="accounting" value={r.periodDebit > 0 ? r.periodDebit : null} /> },
+    { key: "periodCredit", header: "Movimiento haber", align: "right", render: (r) => <ZHMoneyValue precision="accounting" value={r.periodCredit > 0 ? r.periodCredit : null} /> },
+    { key: "closingDebit", header: "Saldo final deudor", align: "right", render: (r) => <ZHMoneyValue precision="accounting" value={r.closingDebit > 0 ? r.closingDebit : null} emphasis="strong" /> },
+    { key: "closingCredit", header: "Saldo final acreedor", align: "right", render: (r) => <ZHMoneyValue precision="accounting" value={r.closingCredit > 0 ? r.closingCredit : null} emphasis="strong" /> },
   ];
 
   return (
@@ -129,8 +129,8 @@ export function TrialBalanceReportTab() {
       />
       {lines.length > 0 && (
         <div className="zh-actions">
-          <span>Total Debe <ZHMoneyValue value={totals.periodDebit} emphasis="total" /></span>
-          <span>Total Haber <ZHMoneyValue value={totals.periodCredit} emphasis="total" /></span>
+          <span>Total Debe <ZHMoneyValue precision="accounting" value={totals.periodDebit} emphasis="total" /></span>
+          <span>Total Haber <ZHMoneyValue precision="accounting" value={totals.periodCredit} emphasis="total" /></span>
         </div>
       )}
     </ZHCard>

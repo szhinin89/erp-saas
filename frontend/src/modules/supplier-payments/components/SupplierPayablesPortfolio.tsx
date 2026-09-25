@@ -6,9 +6,9 @@ import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { ZhDecimalInput } from "../../../components/zh/inputs";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
-import { formatMoney } from "../../../lib/sanitizers";
 import type { PendingInstallmentOption } from "../api/pendingPayablesFacade";
 import type { RegisterSupplierPaymentFormValues } from "../../../schemas/supplier-payments/registerSupplierPaymentSchema";
+import { ZHNumberValue } from "../../../components/zh/ZHNumberValue";
 
 interface Props {
   installments: PendingInstallmentOption[];
@@ -142,21 +142,21 @@ export function SupplierPayablesPortfolio({ installments, loading, disabled }: P
       header: "Valor total",
       align: "right",
       cellClassName: "zh-table-cell--num",
-      render: (r) => formatMoney(r.totalAmount),
+      render: (r) => <ZHNumberValue value={r.totalAmount} precision="money" />,
     },
     {
       key: "paid",
       header: "Pagado",
       align: "right",
       cellClassName: "zh-table-cell--num",
-      render: (r) => formatMoney(r.paidAmount),
+      render: (r) => <ZHNumberValue value={r.paidAmount} precision="money" />,
     },
     {
       key: "outstanding",
       header: "Saldo pendiente",
       align: "right",
       cellClassName: "zh-table-cell--num",
-      render: (r) => formatMoney(r.outstandingAmount),
+      render: (r) => <ZHNumberValue value={r.outstandingAmount} precision="money" />,
     },
     {
       key: "status",
@@ -222,14 +222,14 @@ export function SupplierPayablesPortfolio({ installments, loading, disabled }: P
           icon="account_balance_wallet"
           tone="primary"
           label="Total pendiente"
-          value={formatMoney(summary.totalPending)}
+          value={<ZHNumberValue value={summary.totalPending} precision="money" />}
         />
         <ReportKpiCard
           layout="horizontal"
           icon="warning"
           tone={summary.totalOverdue > 0 ? "error" : "neutral"}
           label="Total vencido"
-          value={formatMoney(summary.totalOverdue)}
+          value={<ZHNumberValue value={summary.totalOverdue} precision="money" />}
         />
         <ReportKpiCard
           layout="horizontal"

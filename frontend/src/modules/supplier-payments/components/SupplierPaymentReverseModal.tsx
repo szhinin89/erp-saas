@@ -6,6 +6,7 @@ import { formatDate } from "../../../lib/formatters/dateFormatters";
 import { formatMoney } from "../../../lib/sanitizers";
 import type { PaymentMethodDto } from "../../sales/facades/paymentMethodLookupFacade";
 import type { SupplierPaymentDto } from "../api/supplierPaymentService";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 
 interface Props {
   open: boolean;
@@ -34,6 +35,7 @@ export function SupplierPaymentReverseModal({
   onCancel,
   onConfirm,
 }: Props) {
+  const moneyDecimals = usePrecisionDecimals("money"); // presentación (04F)
   const [reason, setReason] = useState("");
   const [touched, setTouched] = useState(false);
 
@@ -82,14 +84,14 @@ export function SupplierPaymentReverseModal({
           <dt>Fecha</dt>
           <dd>{formatDate(payment.paymentDate)}</dd>
           <dt>Total</dt>
-          <dd>{formatMoney(payment.totalAmount)}</dd>
+          <dd>{formatMoney(payment.totalAmount, moneyDecimals)}</dd>
         </dl>
 
         <h4 className="sp-confirm-subtitle">Medios de pago</h4>
         <ul className="sp-confirm-list">
           {payment.methodLines.map((line) => (
             <li key={line.id}>
-              {methodsById.get(line.paymentMethodId)?.name ?? "—"} — {formatMoney(line.amount)}
+              {methodsById.get(line.paymentMethodId)?.name ?? "—"} — {formatMoney(line.amount, moneyDecimals)}
             </li>
           ))}
         </ul>
@@ -97,7 +99,7 @@ export function SupplierPaymentReverseModal({
         <h4 className="sp-confirm-subtitle">Cuotas aplicadas</h4>
         <ul className="sp-confirm-list">
           {payment.applicationLines.map((line) => (
-            <li key={line.id}>{formatMoney(line.amountApplied)}</li>
+            <li key={line.id}>{formatMoney(line.amountApplied, moneyDecimals)}</li>
           ))}
         </ul>
 

@@ -30,8 +30,11 @@ import { ManualCashMovementModal } from "../components/ManualCashMovementModal";
 import "../../../styles/shared/erp-form-core.css";
 import "../../../styles/shared/items-catalog.css";
 import "./CajaPage.css";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
+import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 
 export function CajaPage() {
+  const moneyDecimals = usePrecisionDecimals("money"); // presentación (04F)
   const { t } = useI18n();
   const ctx = useCajaPage();
   const [expandedMethodId, setExpandedMethodId] = useState<string | null>(null);
@@ -63,28 +66,28 @@ export function CajaPage() {
       header: t("caja.session.totalInvoiced"),
       align: "right",
       cellClassName: "zh-table-cell--num",
-      render: (s) => formatMoneyWithSymbol(s.totalInvoiced),
+      render: (s) => <ZHMoneyValue value={s.totalInvoiced} precision="money" />,
     },
     {
       key: "expectedCash",
       header: t("caja.session.expectedCash"),
       align: "right",
       cellClassName: "zh-table-cell--num",
-      render: (s) => formatMoneyWithSymbol(s.expectedCash),
+      render: (s) => <ZHMoneyValue value={s.expectedCash} precision="money" />,
     },
     {
       key: "countedAmount",
       header: t("caja.session.counted"),
       align: "right",
       cellClassName: "zh-table-cell--num",
-      render: (s) => (s.countedAmount != null ? formatMoneyWithSymbol(s.countedAmount) : "—"),
+      render: (s) => (s.countedAmount != null ? <ZHMoneyValue value={s.countedAmount} precision="money" /> : "—"),
     },
     {
       key: "difference",
       header: t("caja.session.difference"),
       align: "right",
       cellClassName: "zh-table-cell--num",
-      render: (s) => (s.difference != null ? formatMoneyWithSymbol(s.difference) : "—"),
+      render: (s) => (s.difference != null ? <ZHMoneyValue value={s.difference} precision="money" /> : "—"),
     },
     { key: "movements", header: t("caja.session.movements"), align: "center", render: (s) => s.movementCount },
     {
@@ -129,7 +132,7 @@ export function CajaPage() {
       header: t("common.total"),
       align: "right",
       cellClassName: "zh-table-cell--num",
-      render: (m) => formatMoneyWithSymbol(m.amount),
+      render: (m) => <ZHMoneyValue value={m.amount} precision="money" />,
     },
   ];
 
@@ -141,7 +144,7 @@ export function CajaPage() {
     { key: "type", header: t("caja.movements.table.type"), render: (m) => cashMovementTypeLabel(t, m.movementType) },
     { key: "reason", header: t("caja.movements.table.reason"), render: (m) => m.reasonName ?? "—" },
     { key: "description", header: t("caja.movements.table.description"), render: (m) => m.description },
-    { key: "amount", header: t("caja.movements.table.amount"), align: "right", cellClassName: "zh-table-cell--num", render: (m) => formatMoneyWithSymbol(m.amount) },
+    { key: "amount", header: t("caja.movements.table.amount"), align: "right", cellClassName: "zh-table-cell--num", render: (m) => <ZHMoneyValue value={m.amount} precision="money" /> },
     { key: "user", header: t("caja.movements.table.user"), render: (m) => m.createdByName ?? "—" },
     { key: "reference", header: t("caja.movements.table.reference"), render: (m) => m.referenceNumber ?? "—" },
   ];
@@ -149,7 +152,7 @@ export function CajaPage() {
   const arqueoColumns: ZHDataTableColumn<CashClosingCountDto>[] = [
     { key: "denomination", header: t("caja.session.denomination"), render: (c) => c.denominationLabel },
     { key: "quantity", header: t("caja.session.quantity"), align: "center", render: (c) => c.quantity },
-    { key: "total", header: t("common.total"), align: "right", cellClassName: "zh-table-cell--num", render: (c) => formatMoneyWithSymbol(c.total) },
+    { key: "total", header: t("common.total"), align: "right", cellClassName: "zh-table-cell--num", render: (c) => <ZHMoneyValue value={c.total} precision="money" /> },
   ];
 
   // ── CASH-SESSION-COLLECTION-SUMMARY-01/UX-02 — Cobros del turno != efectivo físico de caja ──
@@ -188,7 +191,7 @@ export function CajaPage() {
       header: t("common.total"),
       align: "right",
       cellClassName: "zh-table-cell--num",
-      render: (m) => formatMoneyWithSymbol(m.amount),
+      render: (m) => <ZHMoneyValue value={m.amount} precision="money" />,
     },
     {
       key: "percent",
@@ -231,14 +234,14 @@ export function CajaPage() {
       header: t("caja.session.invoiceTotal"),
       align: "right",
       cellClassName: "zh-table-cell--num",
-      render: (d) => formatMoneyWithSymbol(d.invoiceTotal),
+      render: (d) => <ZHMoneyValue value={d.invoiceTotal} precision="money" />,
     },
     {
       key: "amount",
       header: t("caja.session.methodAmount"),
       align: "right",
       cellClassName: "zh-table-cell--num",
-      render: (d) => formatMoneyWithSymbol(d.amount),
+      render: (d) => <ZHMoneyValue value={d.amount} precision="money" />,
     },
     {
       key: "mixed",
@@ -279,7 +282,7 @@ export function CajaPage() {
         {ctx.mySession && ctx.tab === "listado" && (
           <ZHPageNotice
             variant="info"
-            message={t("caja.session.openBalance", { balance: formatMoneyWithSymbol(ctx.mySession.currentBalance) })}
+            message={t("caja.session.openBalance", { balance: formatMoneyWithSymbol(ctx.mySession.currentBalance, moneyDecimals) })}
           />
         )}
 
@@ -350,7 +353,7 @@ export function CajaPage() {
 
                     <div className="cj-summary-grid">
                       <SummaryCard label={t("caja.session.invoices")} value={String(s.invoiceCount)} />
-                      <SummaryCard label={t("caja.session.totalInvoiced")} value={formatMoneyWithSymbol(s.totalInvoiced)} />
+                      <SummaryCard label={t("caja.session.totalInvoiced")} value={formatMoneyWithSymbol(s.totalInvoiced, moneyDecimals)} />
                       <SummaryCard label={t("caja.session.cashier")} value={s.userName ?? "—"} />
                       <SummaryCard
                         label={t("caja.session.closedBy")}
@@ -369,20 +372,20 @@ export function CajaPage() {
 
                     <h6 className="cj-collection-detail-subtitle">{t("caja.session.physicalRegister")}</h6>
                     <div className="cj-summary-grid">
-                      <SummaryCard label={t("caja.movementType.opening")} value={formatMoneyWithSymbol(s.openingAmount)} />
-                      <SummaryCard label={t("caja.session.cashSales")} value={formatMoneyWithSymbol(s.saleIncomeCash)} />
-                      <SummaryCard label={t("caja.session.manualIncome")} value={formatMoneyWithSymbol(s.manualIncomeCash)} />
-                      <SummaryCard label={t("caja.session.manualExpense")} value={formatMoneyWithSymbol(s.manualExpenseCash)} />
-                      <SummaryCard label={t("caja.session.expectedBalance")} value={formatMoneyWithSymbol(s.expectedCash)} highlight />
+                      <SummaryCard label={t("caja.movementType.opening")} value={formatMoneyWithSymbol(s.openingAmount, moneyDecimals)} />
+                      <SummaryCard label={t("caja.session.cashSales")} value={formatMoneyWithSymbol(s.saleIncomeCash, moneyDecimals)} />
+                      <SummaryCard label={t("caja.session.manualIncome")} value={formatMoneyWithSymbol(s.manualIncomeCash, moneyDecimals)} />
+                      <SummaryCard label={t("caja.session.manualExpense")} value={formatMoneyWithSymbol(s.manualExpenseCash, moneyDecimals)} />
+                      <SummaryCard label={t("caja.session.expectedBalance")} value={formatMoneyWithSymbol(s.expectedCash, moneyDecimals)} highlight />
                       {s.status === "Closed" && (
                         <>
                           <SummaryCard
                             label={t("caja.session.counted")}
-                            value={formatMoneyWithSymbol(s.countedAmount ?? 0)}
+                            value={formatMoneyWithSymbol(s.countedAmount ?? 0, moneyDecimals)}
                           />
                           <SummaryCard
                             label={t("caja.session.difference")}
-                            value={formatMoneyWithSymbol(s.difference ?? 0)}
+                            value={formatMoneyWithSymbol(s.difference ?? 0, moneyDecimals)}
                             highlight={(s.difference ?? 0) !== 0}
                           />
                         </>
@@ -580,38 +583,34 @@ export function CajaPage() {
             <div className="cj-summary-grid">
               <SummaryCard
                 label={t("caja.movementType.opening")}
-                value={formatMoneyWithSymbol(ctx.viewing.openingAmount)}
+                value={formatMoneyWithSymbol(ctx.viewing.openingAmount, moneyDecimals)}
               />
               <SummaryCard
                 label={t("caja.session.income")}
-                value={formatMoneyWithSymbol(ctx.viewing.totalIncome)}
+                value={formatMoneyWithSymbol(ctx.viewing.totalIncome, moneyDecimals)}
               />
               <SummaryCard
                 label={t("caja.session.expense")}
-                value={formatMoneyWithSymbol(ctx.viewing.totalExpense)}
+                value={formatMoneyWithSymbol(ctx.viewing.totalExpense, moneyDecimals)}
               />
               <SummaryCard
                 label={t("caja.session.expectedBalance")}
-                value={formatMoneyWithSymbol(ctx.viewing.currentBalance)}
+                value={formatMoneyWithSymbol(ctx.viewing.currentBalance, moneyDecimals)}
                 highlight
               />
               {ctx.viewing.status === "Closed" && (
                 <>
                   <SummaryCard
                     label={t("caja.session.expected")}
-                    value={formatMoneyWithSymbol(
-                      ctx.viewing.expectedAmount ?? 0,
-                    )}
+                    value={formatMoneyWithSymbol(ctx.viewing.expectedAmount ?? 0, moneyDecimals)}
                   />
                   <SummaryCard
                     label={t("caja.session.counted")}
-                    value={formatMoneyWithSymbol(
-                      ctx.viewing.countedAmount ?? 0,
-                    )}
+                    value={formatMoneyWithSymbol(ctx.viewing.countedAmount ?? 0, moneyDecimals)}
                   />
                   <SummaryCard
                     label={t("caja.session.difference")}
-                    value={formatMoneyWithSymbol(ctx.viewing.difference ?? 0)}
+                    value={formatMoneyWithSymbol(ctx.viewing.difference ?? 0, moneyDecimals)}
                     highlight={(ctx.viewing.difference ?? 0) !== 0}
                   />
                 </>
@@ -633,15 +632,15 @@ export function CajaPage() {
                   />
                   <SummaryCard
                     label={t("caja.session.totalInvoiced")}
-                    value={formatMoneyWithSymbol(ctx.collectionSummary?.totalInvoiced ?? 0)}
+                    value={formatMoneyWithSymbol(ctx.collectionSummary?.totalInvoiced ?? 0, moneyDecimals)}
                   />
                   <SummaryCard
                     label={t("caja.session.totalCollected")}
-                    value={formatMoneyWithSymbol(ctx.collectionSummary?.totalCollected ?? 0)}
+                    value={formatMoneyWithSymbol(ctx.collectionSummary?.totalCollected ?? 0, moneyDecimals)}
                   />
                   <SummaryCard
                     label={t("caja.session.creditSales")}
-                    value={formatMoneyWithSymbol(ctx.collectionSummary?.totalCredit ?? 0)}
+                    value={formatMoneyWithSymbol(ctx.collectionSummary?.totalCredit ?? 0, moneyDecimals)}
                   />
                 </div>
                 <h5 className="cj-collection-detail-title">{t("caja.session.collectionsByMethod")}</h5>
@@ -752,11 +751,11 @@ export function CajaPage() {
             <div className="cj-close-summary">
               <div>
                 <strong>{t("caja.session.expectedBalance")}:</strong>{" "}
-                {formatMoneyWithSymbol(ctx.viewing.currentBalance)}
+                {formatMoneyWithSymbol(ctx.viewing.currentBalance, moneyDecimals)}
               </div>
               <div>
                 <strong>{t("caja.session.counted")}:</strong>{" "}
-                {formatMoneyWithSymbol(ctx.countedTotal)}
+                {formatMoneyWithSymbol(ctx.countedTotal, moneyDecimals)}
               </div>
               <div
                 className={
@@ -766,9 +765,7 @@ export function CajaPage() {
                 }
               >
                 <strong>{t("caja.session.difference")}:</strong>{" "}
-                {formatMoneyWithSymbol(
-                  ctx.countedTotal - ctx.viewing.currentBalance,
-                )}
+                {formatMoneyWithSymbol(ctx.countedTotal - ctx.viewing.currentBalance, moneyDecimals)}
               </div>
             </div>
 
@@ -796,9 +793,7 @@ export function CajaPage() {
                         />
                       </td>
                       <td className="zh-table-cell--num">
-                        {formatMoneyWithSymbol(
-                          c.denominationValue * c.quantity,
-                        )}
+                        {formatMoneyWithSymbol(c.denominationValue * c.quantity, moneyDecimals)}
                       </td>
                     </tr>
                   ))}
@@ -809,7 +804,7 @@ export function CajaPage() {
                       {t("caja.session.totalCounted")}
                     </td>
                     <td className="zh-table-cell--num cj-arqueo-total">
-                      {formatMoneyWithSymbol(ctx.countedTotal)}
+                      {formatMoneyWithSymbol(ctx.countedTotal, moneyDecimals)}
                     </td>
                   </tr>
                 </tfoot>

@@ -22,7 +22,7 @@ function today(): string {
 const LINE_COLUMNS: ZHDataTableColumn<FinancialStatementLineDto>[] = [
   { key: "accountCode", header: "Código", render: (r) => <code className="prd-sku">{r.accountCode}</code> },
   { key: "accountName", header: "Cuenta", render: (r) => r.accountName },
-  { key: "amount", header: "Monto", align: "right", render: (r) => <ZHMoneyValue value={r.amount} /> },
+  { key: "amount", header: "Monto", align: "right", render: (r) => <ZHMoneyValue precision="accounting" value={r.amount} /> },
 ];
 
 /**
@@ -99,7 +99,7 @@ export function IncomeStatementReportTab() {
               emptyMessage="Sin ingresos contabilizados en el rango seleccionado."
             />
             <div className="zh-actions">
-              <span>Total Ingresos <ZHMoneyValue value={data.totalIncome} emphasis="total" /></span>
+              <span>Total Ingresos <ZHMoneyValue precision="accounting" value={data.totalIncome} emphasis="total" /></span>
             </div>
           </ZHCard>
 
@@ -112,12 +112,12 @@ export function IncomeStatementReportTab() {
               emptyMessage="Sin costos contabilizados en el rango seleccionado."
             />
             <div className="zh-actions">
-              <span>Total Costos <ZHMoneyValue value={data.totalCost} emphasis="total" /></span>
+              <span>Total Costos <ZHMoneyValue precision="accounting" value={data.totalCost} emphasis="total" /></span>
             </div>
           </ZHCard>
 
           <div className="zh-actions">
-            <span>Utilidad bruta <ZHMoneyValue value={data.grossProfit} emphasis="grand" /></span>
+            <span>Utilidad bruta <ZHMoneyValue precision="accounting" value={data.grossProfit} emphasis="grand" /></span>
           </div>
 
           <ZHCard title={<span className="zh-section-title">Gastos</span>} className="zh-mb-16">
@@ -129,12 +129,12 @@ export function IncomeStatementReportTab() {
               emptyMessage="Sin gastos contabilizados en el rango seleccionado."
             />
             <div className="zh-actions">
-              <span>Total Gastos <ZHMoneyValue value={data.totalExpense} emphasis="total" /></span>
+              <span>Total Gastos <ZHMoneyValue precision="accounting" value={data.totalExpense} emphasis="total" /></span>
             </div>
           </ZHCard>
 
           <div className="zh-actions">
-            <span>Utilidad neta <ZHMoneyValue value={data.netProfit} emphasis="grand" /></span>
+            <span>Utilidad neta <ZHMoneyValue precision="accounting" value={data.netProfit} emphasis="grand" /></span>
           </div>
         </>
       )}

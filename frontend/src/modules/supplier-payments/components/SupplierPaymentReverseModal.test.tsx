@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
 import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { I18nProvider } from "../../../i18n/i18n";
 import { SupplierPaymentReverseModal } from "./SupplierPaymentReverseModal";
 import type { SupplierPaymentDto } from "../api/supplierPaymentService";
+import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.config";
+import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 
 afterEach(() => {
   cleanup();
@@ -122,5 +124,20 @@ describe("SupplierPaymentReverseModal", () => {
     renderModal(baseProps({ submitError: "El pago ya fue reversado." }));
 
     expect(screen.getByText("El pago ya fue reversado.")).toBeTruthy();
+  });
+});
+
+// ZH-DESIGN-SYSTEM-PRECISION-04F — total, medios de pago y cuotas aplicadas (textos compuestos)
+// usan usePrecisionDecimals("money") en vez del default legacy 2; sin "$" como antes.
+describe("SupplierPaymentReverseModal — montos con semántica money (04F)", () => {
+  it("usa moneyDecimals y reacciona A → B sin remount", () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, moneyDecimals: 2 });
+    renderModal(baseProps());
+    const text = () => document.body.textContent ?? "";
+    expect(text()).toContain("300.00");
+    expect(text()).not.toContain("$300");
+
+    act(() => setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, moneyDecimals: 4 }));
+    expect(text()).toContain("300.0000");
   });
 });

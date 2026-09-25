@@ -4,6 +4,7 @@ import { formatMoney } from "../../../lib/sanitizers";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
 import { ZHPickerResultItem } from "../../../components/zh/ZHPickerResultItem";
 import { ZHPickerSelectedValue } from "../../../components/zh/ZHPickerSelectedValue";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 
 type Props = {
   value: SalesListItemDto | null;
@@ -18,6 +19,7 @@ type Props = {
  * pantalla de Ventas), sin crear un endpoint ni un cliente HTTP nuevo.
  */
 export function SalesReturnInvoicePicker({ value, onChange, disabled }: Props) {
+  const moneyDecimals = usePrecisionDecimals("money"); // presentación (04F)
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SalesListItemDto[]>([]);
   const [open, setOpen] = useState(false);
@@ -69,7 +71,7 @@ export function SalesReturnInvoicePicker({ value, onChange, disabled }: Props) {
     return (
       <ZHPickerSelectedValue
         title={value.invoiceNumber}
-        meta={`${value.customerName} — ${formatDate(value.issueDate)} — ${formatMoney(value.grandTotal)}`}
+        meta={`${value.customerName} — ${formatDate(value.issueDate)} — ${formatMoney(value.grandTotal, moneyDecimals)}`}
         clearLabel="Cambiar factura"
         onClear={disabled ? undefined : handleClear}
       />
@@ -102,7 +104,7 @@ export function SalesReturnInvoicePicker({ value, onChange, disabled }: Props) {
               <ZHPickerResultItem
                 key={row.id}
                 title={row.invoiceNumber}
-                meta={`${row.customerName} — ${formatDate(row.issueDate)} — ${formatMoney(row.grandTotal)}`}
+                meta={`${row.customerName} — ${formatDate(row.issueDate)} — ${formatMoney(row.grandTotal, moneyDecimals)}`}
                 onClick={() => handleSelect(row)}
               />
             ))}

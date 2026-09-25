@@ -5,6 +5,7 @@ import type { PaymentMethodDto } from "../../sales/facades/paymentMethodLookupFa
 import type { PendingInstallmentOption } from "../api/pendingPayablesFacade";
 import { computeAutomaticAllocations } from "../utils/allocation";
 import type { RegisterSupplierPaymentFormValues } from "../../../schemas/supplier-payments/registerSupplierPaymentSchema";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 
 interface Props {
   methods: PaymentMethodDto[];
@@ -17,6 +18,7 @@ interface Props {
  * partir de los medios y cuotas ya cargados en el formulario.
  */
 export function SupplierPaymentAllocationPreview({ methods, installments }: Props) {
+  const moneyDecimals = usePrecisionDecimals("money"); // presentación (04F)
   const { watch } = useFormContext<RegisterSupplierPaymentFormValues>();
   const methodLines = watch("methodLines") ?? [];
   const applicationLines = watch("applicationLines") ?? [];
@@ -59,7 +61,7 @@ export function SupplierPaymentAllocationPreview({ methods, installments }: Prop
                     ? `${installment.documentType} ${installment.documentNumber} — Cuota #${installment.installmentNumber}`
                     : "—"}
                 </td>
-                <td className="zh-text-align-right">{formatMoney(a.amount)}</td>
+                <td className="zh-text-align-right">{formatMoney(a.amount, moneyDecimals)}</td>
               </tr>
             );
           })}

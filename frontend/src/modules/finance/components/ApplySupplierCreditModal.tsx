@@ -16,6 +16,7 @@ import {
   buildApplySupplierCreditSchema,
   type ApplySupplierCreditFormValues,
 } from "../schemas/supplierCreditSchema";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 
 interface Props {
   open: boolean;
@@ -33,6 +34,7 @@ interface Props {
  * API genérica de Cuentas por Pagar).
  */
 export function ApplySupplierCreditModal({ open, credit, onClose, onApplied }: Props) {
+  const moneyDecimals = usePrecisionDecimals("money"); // presentación (04F)
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [payables, setPayables] = useState<PayableListItemDto[]>([]);
@@ -108,7 +110,7 @@ export function ApplySupplierCreditModal({ open, credit, onClose, onApplied }: P
       onClose={handleClose}
       size="md"
       title="Aplicar crédito de proveedor"
-      subtitle={`Proveedor: ${credit.supplierId} — Saldo disponible: ${formatMoney(credit.availableAmount)}`}
+      subtitle={`Proveedor: ${credit.supplierId} — Saldo disponible: ${formatMoney(credit.availableAmount, moneyDecimals)}`}
     >
       <div>
         <ZHField
@@ -126,7 +128,7 @@ export function ApplySupplierCreditModal({ open, credit, onClose, onApplied }: P
             </option>
             {payables.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.documentNumber} — Saldo {formatMoney(p.outstandingAmount)}
+                {p.documentNumber} — Saldo {formatMoney(p.outstandingAmount, moneyDecimals)}
               </option>
             ))}
           </select>

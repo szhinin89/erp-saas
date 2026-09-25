@@ -113,13 +113,13 @@ export function GeneralJournalReportTab() {
       key: "debit",
       header: "Debe",
       align: "right",
-      render: (r) => <ZHMoneyValue value={r.debit > 0 ? r.debit : null} />,
+      render: (r) => <ZHMoneyValue precision="accounting" value={r.debit > 0 ? r.debit : null} />,
     },
     {
       key: "credit",
       header: "Haber",
       align: "right",
-      render: (r) => <ZHMoneyValue value={r.credit > 0 ? r.credit : null} />,
+      render: (r) => <ZHMoneyValue precision="accounting" value={r.credit > 0 ? r.credit : null} />,
     },
   ];
 
@@ -199,8 +199,8 @@ export function GeneralJournalReportTab() {
       />
       {lines.length > 0 && (
         <div className="zh-actions">
-          <span>Total Debe <ZHMoneyValue value={totalDebit} emphasis="total" /></span>
-          <span>Total Haber <ZHMoneyValue value={totalCredit} emphasis="total" /></span>
+          <span>Total Debe <ZHMoneyValue precision="accounting" value={totalDebit} emphasis="total" /></span>
+          <span>Total Haber <ZHMoneyValue precision="accounting" value={totalCredit} emphasis="total" /></span>
         </div>
       )}
     </ZHCard>

@@ -20,6 +20,7 @@ import {
   type SalesReturnDto,
   type SalesReturnRefundMethod,
 } from "../api/salesReturnService";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 
 interface Props {
   open: boolean;
@@ -47,6 +48,7 @@ export function AuthorizeSalesReturnModal({
   onClose,
   onAuthorized,
 }: Props) {
+  const moneyDecimals = usePrecisionDecimals("money"); // presentación (04F)
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const submittingRef = useRef(false);
@@ -124,7 +126,7 @@ export function AuthorizeSalesReturnModal({
       onClose={handleClose}
       size="md"
       title="Autorizar devolución"
-      subtitle={`${salesReturn.returnNumber} — Total a reembolsar: ${formatMoney(grandTotal)}`}
+      subtitle={`${salesReturn.returnNumber} — Total a reembolsar: ${formatMoney(grandTotal, moneyDecimals)}`}
     >
       <div>
         {fields.map((field, idx) => (

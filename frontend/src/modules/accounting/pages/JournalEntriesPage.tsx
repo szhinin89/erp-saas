@@ -5,7 +5,6 @@ import { ZHCard } from "../../../components/zh/ZHCard";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZhSelect } from "../../../components/zh/inputs";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
-import { formatMoney } from "../../../lib/sanitizers";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
@@ -16,6 +15,7 @@ import { accountingApi, type JournalEntryListItemDto } from "../api/accountingAp
 // documento origen truncado) no tiene estilo — mismo root cause ya corregido en
 // AccountingReportsPage.tsx (ACCOUNTING-REPORTS-DS-QA-FIX-10E).
 import "../../../styles/shared/items-catalog.css";
+import { ZHNumberValue } from "../../../components/zh/ZHNumberValue";
 
 const PAGE_SIZE = 20;
 
@@ -134,13 +134,13 @@ export function JournalEntriesPage() {
       key: "totalDebit",
       header: "Debe",
       align: "right",
-      render: (row) => formatMoney(row.totalDebit),
+      render: (row) => <ZHNumberValue value={row.totalDebit} precision="accounting" />,
     },
     {
       key: "totalCredit",
       header: "Haber",
       align: "right",
-      render: (row) => formatMoney(row.totalCredit),
+      render: (row) => <ZHNumberValue value={row.totalCredit} precision="accounting" />,
     },
     {
       key: "status",

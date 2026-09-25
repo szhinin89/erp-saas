@@ -93,19 +93,19 @@ export function GeneralLedgerReportTab() {
       key: "debit",
       header: "Debe",
       align: "right",
-      render: (r) => <ZHMoneyValue value={r.debit > 0 ? r.debit : null} />,
+      render: (r) => <ZHMoneyValue precision="accounting" value={r.debit > 0 ? r.debit : null} />,
     },
     {
       key: "credit",
       header: "Haber",
       align: "right",
-      render: (r) => <ZHMoneyValue value={r.credit > 0 ? r.credit : null} />,
+      render: (r) => <ZHMoneyValue precision="accounting" value={r.credit > 0 ? r.credit : null} />,
     },
     {
       key: "runningBalance",
       header: "Saldo",
       align: "right",
-      render: (r) => <ZHMoneyValue value={r.runningBalance} emphasis="strong" />,
+      render: (r) => <ZHMoneyValue precision="accounting" value={r.runningBalance} emphasis="strong" />,
     },
   ];
 
@@ -161,10 +161,10 @@ export function GeneralLedgerReportTab() {
           className="zh-mb-16"
         >
           <div className="zh-actions">
-            <span>Saldo inicial <ZHMoneyValue value={acc.openingBalance} emphasis="strong" /></span>
-            <span>Debe <ZHMoneyValue value={acc.periodDebit} /></span>
-            <span>Haber <ZHMoneyValue value={acc.periodCredit} /></span>
-            <span>Saldo final <ZHMoneyValue value={acc.closingBalance} emphasis="total" /></span>
+            <span>Saldo inicial <ZHMoneyValue precision="accounting" value={acc.openingBalance} emphasis="strong" /></span>
+            <span>Debe <ZHMoneyValue precision="accounting" value={acc.periodDebit} /></span>
+            <span>Haber <ZHMoneyValue precision="accounting" value={acc.periodCredit} /></span>
+            <span>Saldo final <ZHMoneyValue precision="accounting" value={acc.closingBalance} emphasis="total" /></span>
           </div>
           <ZHDataTable
             columns={movementColumns}
