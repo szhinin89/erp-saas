@@ -2,6 +2,8 @@ import React from "react";
 import { allowsDecimalKey } from "../../../lib/validators/numericValidators";
 import { sanitizeDecimal } from "../../../lib/sanitizers";
 import { setProgrammaticInputValue } from "../../../lib/inputUtils";
+import type { PrecisionKind } from "../../../lib/config/precisionPolicy.config";
+import { SemanticDecimals } from "../SemanticDecimals";
 import "./ZhInputs.css";
 
 type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> & {
@@ -14,14 +16,14 @@ type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> & {
  * Compatible con RHF register() via forwardRef.
  *
  * Fallback fijo de 2 decimales (COMPANY-PRECISION-POLICY-FRONTEND-CONSUMERS-MIGRATION-07):
- * los callers que necesiten la precisión de la empresa deben pasar `decimals` explícito
- * desde precisionPolicy.config.ts — este componente compartido no lee config por su cuenta.
+ * los callers que necesiten la precisión de la empresa declaran `precision` (03B, vía
+ * `SemanticDecimals`) o pasan `decimals` explícito — sin ninguno de los dos no lee config.
  *
  * @example
  * <ZhCurrencyInput {...register('price')} decimals={precisionPolicy.salesUnitPriceDecimals} />
  * <ZhCurrencyInput {...register('cost')} decimals={precisionPolicy.purchaseUnitPriceDecimals} currency="USD" />
  */
-export const ZhCurrencyInput = React.forwardRef<HTMLInputElement, Props>(
+const ZhCurrencyInputCore = React.forwardRef<HTMLInputElement, Props>(
   (
     {
       decimals = 2,
@@ -68,6 +70,27 @@ export const ZhCurrencyInput = React.forwardRef<HTMLInputElement, Props>(
         />
       </div>
     );
+  },
+);
+
+ZhCurrencyInputCore.displayName = "ZhCurrencyInputCore";
+
+/**
+ * ZH-DESIGN-SYSTEM-PRECISION-03B — API pública. Prioridad de decimales (igual que `ZHMoneyValue`):
+ * `decimals` explícito > `precision` (PrecisionPolicy vía `SemanticDecimals`) > default legacy del
+ * core. Solo resuelve CUÁNTOS decimales: el comportamiento del input es el del core, sin cambios.
+ * Sin `precision` no depende de la PrecisionPolicy.
+ */
+export const ZhCurrencyInput = React.forwardRef<HTMLInputElement, Props & { precision?: PrecisionKind }>(
+  ({ precision, decimals, ...props }, ref) => {
+    if (decimals == null && precision !== undefined) {
+      return (
+        <SemanticDecimals kind={precision}>
+          {(resolved) => <ZhCurrencyInputCore {...props} decimals={resolved} ref={ref} />}
+        </SemanticDecimals>
+      );
+    }
+    return <ZhCurrencyInputCore {...props} decimals={decimals} ref={ref} />;
   },
 );
 

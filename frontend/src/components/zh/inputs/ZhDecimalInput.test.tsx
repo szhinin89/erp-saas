@@ -10,9 +10,15 @@
  */
 import React from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render } from "@testing-library/react";
+import { act, cleanup, fireEvent, render } from "@testing-library/react";
+import { useForm } from "react-hook-form";
 import { ZhDecimalInput } from "./ZhDecimalInput";
 import { formatMoney } from "../../../lib/sanitizers";
+import {
+  setPrecisionPolicyForTests,
+  type PrecisionPolicy,
+} from "../../../lib/config/precisionPolicy.config";
+import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 
 afterEach(() => {
   cleanup();
@@ -355,5 +361,125 @@ describe("ZhDecimalInput — focus / blur / onChange", () => {
     fireEvent.change(input, { target: { value: "1" } });
     fireEvent.change(input, { target: { value: "1.5" } });
     expect(onChange).toHaveBeenCalledTimes(2);
+  });
+});
+
+/**
+ * ZH-DESIGN-SYSTEM-PRECISION-03B — API semántica `precision`. Solo resuelve CUÁNTOS decimales
+ * (vía SemanticDecimals → usePrecisionDecimals); el comportamiento legacy del input no cambia.
+ */
+describe("ZhDecimalInput — precision semántica (03B)", () => {
+  const POLICY_A: PrecisionPolicy = {
+    ...TEST_PRECISION_POLICY,
+    quantityDecimals: 3,
+    percentageDecimals: 1,
+    unitCostDecimals: 5,
+    moneyDecimals: 2,
+  };
+  const POLICY_B: PrecisionPolicy = { ...POLICY_A, quantityDecimals: 1 };
+
+  it.each([
+    ["quantity", "1.235"],
+    ["percentage", "1.2"],
+    ["unitCost", "1.23457"],
+  ] as const)("precision=%s usa la escala de la policy (defaultValue 1.234567 → %s)", (precision, expected) => {
+    setPrecisionPolicyForTests(POLICY_A);
+    const { input } = renderInput({ precision, defaultValue: 1.234567 });
+    expect(input.value).toBe(expected);
+  });
+
+  it("policy A → B sin remount: value controlado y límite de teclado siguen la nueva escala", () => {
+    setPrecisionPolicyForTests(POLICY_A);
+    const { input } = renderInput({ precision: "quantity", value: 12.3456, onChange: () => {} });
+    expect(input.value).toBe("12.346");
+    act(() => setPrecisionPolicyForTests(POLICY_B));
+    const again = document.querySelector("input");
+    expect(again).toBe(input);
+    expect(input.value).toBe("12.3");
+    typeRaw(input, "1.2");
+    expect(keyAllowed(input, "3")).toBe(false); // quantity=1 ya no admite un 2.º decimal
+  });
+
+  it("decimals explícito gana sobre precision", () => {
+    setPrecisionPolicyForTests(POLICY_A);
+    const { input } = renderInput({ precision: "quantity", decimals: 4, defaultValue: 1.5 });
+    expect(input.value).toBe("1.5000");
+  });
+
+  it("decimals={0} es override válido sobre precision", () => {
+    setPrecisionPolicyForTests(POLICY_A);
+    const { input } = renderInput({ precision: "unitCost", decimals: 0, defaultValue: 7.6 });
+    expect(input.value).toBe("8");
+    expect(keyAllowed(input, ".")).toBe(false);
+  });
+
+  it("sin precision ni decimals: legacy 2 SIN policy cargada (no impacto en los 60 consumidores)", () => {
+    setPrecisionPolicyForTests(null);
+    const { input } = renderInput({ defaultValue: 5 });
+    expect(input.value).toBe("5.00");
+    cleanup();
+    const legacy = renderInput({ value: "5", onChange: () => {} });
+    expect(legacy.input.value).toBe("5");
+  });
+
+  it("forwardRef expone el HTMLInputElement también con precision", () => {
+    setPrecisionPolicyForTests(POLICY_A);
+    const ref = React.createRef<HTMLInputElement>();
+    render(<ZhDecimalInput ref={ref} aria-label="valor" precision="quantity" />);
+    expect(ref.current).toBeInstanceOf(HTMLInputElement);
+    expect(ref.current?.className).toBe("zh-numeric-input");
+  });
+
+  it("value string controlado y defaultValue string se pasan sin formatear, igual que legacy", () => {
+    setPrecisionPolicyForTests(POLICY_A);
+    const { input } = renderInput({ precision: "quantity", value: "7.5", onChange: () => {} });
+    expect(input.value).toBe("7.5");
+    cleanup();
+    const def = renderInput({ precision: "quantity", defaultValue: "3" });
+    expect(def.input.value).toBe("3");
+  });
+
+  it("precision no cambia blur/onChange: formatea con la escala resuelta y emite una vez; ya formateado no emite", () => {
+    setPrecisionPolicyForTests(POLICY_A);
+    const onChange = vi.fn();
+    const { input } = renderInput({ precision: "quantity", onChange });
+    typeRaw(input, "5");
+    onChange.mockClear();
+    fireEvent.blur(input);
+    expect(input.value).toBe("5.000");
+    expect(onChange).toHaveBeenCalledTimes(1);
+    onChange.mockClear();
+    fireEvent.blur(input);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("precision no cambia el motor: la deuda binaria legacy sigue (money=2, 1.005 → '1.00')", () => {
+    setPrecisionPolicyForTests(POLICY_A);
+    const { input } = renderInput({ precision: "money", value: 1.005, onChange: () => {} });
+    expect(input.value).toBe("1.00");
+  });
+
+  it("precision no cambia paste: sigue truncando a la escala resuelta", () => {
+    setPrecisionPolicyForTests(POLICY_A);
+    const { input } = renderInput({ precision: "quantity" });
+    paste(input, "12.34567");
+    expect(input.value).toBe("12.345");
+  });
+
+  it("RHF register funciona con precision (ref + onChange + blur)", () => {
+    setPrecisionPolicyForTests(POLICY_A);
+    let getValues: () => { qty: string } = () => ({ qty: "" });
+    function Form() {
+      const form = useForm<{ qty: string }>({ defaultValues: { qty: "" } });
+      getValues = form.getValues;
+      return <ZhDecimalInput aria-label="valor" precision="quantity" {...form.register("qty")} />;
+    }
+    const { getByLabelText } = render(<Form />);
+    const input = getByLabelText("valor") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "2.5" } });
+    expect(getValues().qty).toBe("2.5");
+    fireEvent.blur(input);
+    expect(input.value).toBe("2.500");
+    expect(getValues().qty).toBe("2.500");
   });
 });

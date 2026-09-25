@@ -9,8 +9,13 @@
  */
 import React from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render } from "@testing-library/react";
+import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import { ZhCurrencyInput } from "./ZhCurrencyInput";
+import {
+  setPrecisionPolicyForTests,
+  type PrecisionPolicy,
+} from "../../../lib/config/precisionPolicy.config";
+import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 
 afterEach(() => {
   cleanup();
@@ -210,5 +215,99 @@ describe("ZhCurrencyInput — focus / blur / onChange", () => {
     fireEvent.change(input, { target: { value: "1" } });
     fireEvent.change(input, { target: { value: "1.5" } });
     expect(onChange).toHaveBeenCalledTimes(2);
+  });
+});
+
+/**
+ * ZH-DESIGN-SYSTEM-PRECISION-03B — API semántica `precision`. Solo resuelve CUÁNTOS decimales
+ * (límite de teclado/paste); el comportamiento legacy (sin normalizar, sin blur) no cambia.
+ */
+describe("ZhCurrencyInput — precision semántica (03B)", () => {
+  const POLICY_A: PrecisionPolicy = { ...TEST_PRECISION_POLICY, salesUnitPriceDecimals: 4, moneyDecimals: 3 };
+  const POLICY_B: PrecisionPolicy = { ...POLICY_A, salesUnitPriceDecimals: 2 };
+
+  /** ¿Se permite un dígito más tras `digits` decimales? */
+  function allowsDecimal(input: HTMLInputElement, digits: number) {
+    typeRaw(input, `1.${"1".repeat(digits)}`);
+    return keyAllowed(input, "9");
+  }
+
+  it("precision=salesUnitPrice limita a salesUnitPriceDecimals (4)", () => {
+    setPrecisionPolicyForTests(POLICY_A);
+    const { input } = renderInput({ precision: "salesUnitPrice" });
+    expect(allowsDecimal(input, 3)).toBe(true);
+    expect(allowsDecimal(input, 4)).toBe(false);
+  });
+
+  it("precision=money limita a moneyDecimals (3) y trunca el paste a esa escala", () => {
+    setPrecisionPolicyForTests(POLICY_A);
+    const { input } = renderInput({ precision: "money" });
+    expect(allowsDecimal(input, 3)).toBe(false);
+    paste(input, "9.87654");
+    expect(input.value).toBe("9.876");
+  });
+
+  it("policy A → B reactiva sin remount (salesUnitPrice 4 → 2)", () => {
+    setPrecisionPolicyForTests(POLICY_A);
+    const { input } = renderInput({ precision: "salesUnitPrice" });
+    expect(allowsDecimal(input, 3)).toBe(true);
+    act(() => setPrecisionPolicyForTests(POLICY_B));
+    expect(document.querySelector("input")).toBe(input);
+    expect(allowsDecimal(input, 2)).toBe(false);
+  });
+
+  it("decimals explícito gana sobre precision; decimals={0} bloquea el punto", () => {
+    setPrecisionPolicyForTests(POLICY_A);
+    const { input } = renderInput({ precision: "salesUnitPrice", decimals: 1 });
+    expect(allowsDecimal(input, 1)).toBe(false);
+    cleanup();
+    const zero = renderInput({ precision: "salesUnitPrice", decimals: 0 });
+    expect(keyAllowed(zero.input, ".")).toBe(false);
+  });
+
+  it("sin precision ni decimals: legacy 2 SIN policy cargada; value='5' sigue funcionando", () => {
+    setPrecisionPolicyForTests(null);
+    const { input } = renderInput({ value: "5", onChange: () => {} });
+    expect(input.value).toBe("5");
+    cleanup();
+    const uncontrolled = renderInput();
+    expect(allowsDecimal(uncontrolled.input, 1)).toBe(true);
+    expect(allowsDecimal(uncontrolled.input, 2)).toBe(false);
+  });
+
+  it("forwardRef expone el HTMLInputElement también con precision", () => {
+    setPrecisionPolicyForTests(POLICY_A);
+    const ref = React.createRef<HTMLInputElement>();
+    render(<ZhCurrencyInput ref={ref} aria-label="monto" precision="money" />);
+    expect(ref.current).toBeInstanceOf(HTMLInputElement);
+  });
+
+  it("value string controlado se muestra tal cual y el value numérico sigue sin normalizar", () => {
+    setPrecisionPolicyForTests(POLICY_A);
+    const { input } = renderInput({ precision: "salesUnitPrice", value: "12.5", onChange: () => {} });
+    expect(input.value).toBe("12.5");
+    cleanup();
+    const numeric = renderInput({ precision: "salesUnitPrice", value: 5, onChange: () => {} });
+    expect(numeric.input.value).toBe("5");
+  });
+
+  it("blur sigue sin formatear y sin disparar onChange", () => {
+    setPrecisionPolicyForTests(POLICY_A);
+    const onChange = vi.fn();
+    const { input } = renderInput({ precision: "salesUnitPrice", onChange });
+    typeRaw(input, "5");
+    onChange.mockClear();
+    fireEvent.blur(input);
+    expect(input.value).toBe("5");
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("signo, paste y prefijo sin cambios: '-' bloqueado, paste negativo pierde el signo, USD por defecto", () => {
+    setPrecisionPolicyForTests(POLICY_A);
+    const { input, wrapper } = renderInput({ precision: "salesUnitPrice" });
+    expect(keyAllowed(input, "-")).toBe(false);
+    paste(input, "-5.5");
+    expect(input.value).toBe("5.5");
+    expect(wrapper.querySelector(".zh-input-prefix")?.textContent).toBe("USD");
   });
 });

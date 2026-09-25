@@ -1,13 +1,11 @@
 import { useMemo, type ReactNode } from "react";
 import { useZHLocale } from "./ZHLocaleProvider";
 import { formatDecimalDisplay } from "../../lib/sanitizers";
-import { usePrecisionDecimals } from "../../hooks/usePrecisionPolicy";
-import type { PrecisionKind } from "../../lib/config/precisionPolicy.config";
 
 /**
  * ZH-DESIGN-SYSTEM-PRECISION-02A — piezas INTERNAS compartidas por `ZHMoneyValue` y
- * `ZHNumberValue` (no usar directamente desde módulos): un solo renderer de markup/estado vacío y
- * un solo camino semántico → decimales. El formato es siempre `formatDecimalDisplay`.
+ * `ZHNumberValue` (no usar directamente desde módulos): un solo renderer de markup/estado vacío.
+ * El camino semántica → decimales vive en `SemanticDecimals`; el formato es `formatDecimalDisplay`.
  */
 
 export type ZHNumericEmphasis = "default" | "muted" | "strong" | "total" | "grand";
@@ -67,19 +65,4 @@ export function NumericDisplay({
       {after}
     </span>
   );
-}
-
-/**
- * Resuelve los decimales de una semántica y delega el render. Existe como componente propio para
- * respetar las Rules of Hooks: el hook solo se ejecuta cuando el consumidor pidió `precision` sin
- * `decimals`, así los consumidores legacy no dependen de la PrecisionPolicy.
- */
-export function SemanticDecimals({
-  kind,
-  children,
-}: {
-  kind: PrecisionKind;
-  children: (decimals: number) => ReactNode;
-}) {
-  return <>{children(usePrecisionDecimals(kind))}</>;
 }

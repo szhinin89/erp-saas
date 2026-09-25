@@ -2,6 +2,8 @@ import React from "react";
 import { allowsDecimalKey } from "../../../lib/validators/numericValidators";
 import { sanitizeDecimal } from "../../../lib/sanitizers";
 import { setProgrammaticInputValue } from "../../../lib/inputUtils";
+import type { PrecisionKind } from "../../../lib/config/precisionPolicy.config";
+import { SemanticDecimals } from "../SemanticDecimals";
 import type { ZhInputDensity } from "./ZhTextInput";
 
 type Props = Omit<
@@ -27,7 +29,7 @@ type Props = Omit<
  * <ZhDecimalInput {...register('price')} decimals={decimalConfig.sales} positiveOnly />
  * <ZhDecimalInput {...register('amount')} density="compact" />
  */
-export const ZhDecimalInput = React.forwardRef<HTMLInputElement, Props>(
+const ZhDecimalInputCore = React.forwardRef<HTMLInputElement, Props>(
   (
     {
       decimals = 2,
@@ -100,6 +102,27 @@ export const ZhDecimalInput = React.forwardRef<HTMLInputElement, Props>(
         onBlur={handleBlur}
       />
     );
+  },
+);
+
+ZhDecimalInputCore.displayName = "ZhDecimalInputCore";
+
+/**
+ * ZH-DESIGN-SYSTEM-PRECISION-03B — API pública. Prioridad de decimales (igual que `ZHMoneyValue`):
+ * `decimals` explícito > `precision` (PrecisionPolicy vía `SemanticDecimals`) > default legacy del
+ * core. Solo resuelve CUÁNTOS decimales: el comportamiento del input es el del core, sin cambios.
+ * Sin `precision` no depende de la PrecisionPolicy.
+ */
+export const ZhDecimalInput = React.forwardRef<HTMLInputElement, Props & { precision?: PrecisionKind }>(
+  ({ precision, decimals, ...props }, ref) => {
+    if (decimals == null && precision !== undefined) {
+      return (
+        <SemanticDecimals kind={precision}>
+          {(resolved) => <ZhDecimalInputCore {...props} decimals={resolved} ref={ref} />}
+        </SemanticDecimals>
+      );
+    }
+    return <ZhDecimalInputCore {...props} decimals={decimals} ref={ref} />;
   },
 );
 

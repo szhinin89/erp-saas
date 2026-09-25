@@ -1,10 +1,10 @@
 import type { PrecisionKind } from "../../lib/config/precisionPolicy.config";
 import {
   NumericDisplay,
-  SemanticDecimals,
   type ZHNumericAlign,
   type ZHNumericEmphasis,
 } from "./ZHNumericDisplay";
+import { SemanticDecimals } from "./SemanticDecimals";
 
 export type ZHMoneyValueEmphasis = ZHNumericEmphasis;
 export type ZHMoneyValueAlign = ZHNumericAlign;
