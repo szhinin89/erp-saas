@@ -23,7 +23,7 @@ type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> & {
  * </ZHField>
  */
 export const ZhDateTimeInput = React.forwardRef<HTMLInputElement, Props>(
-  ({ className, density = "default", ...props }, ref) => {
+  ({ className, density = "default", step = 1, ...props }, ref) => {
     const cls = [className, density === "compact" ? "zh-input--compact" : ""]
       .filter(Boolean)
       .join(" ");
@@ -32,6 +32,9 @@ export const ZhDateTimeInput = React.forwardRef<HTMLInputElement, Props>(
         {...props}
         ref={ref}
         type="datetime-local"
+        // ZH-TEMPORAL-DATETIME-SECONDS-02I: los instantes del ERP (p. ej. fechaAutorizacion SRI)
+        // tienen segundos reales; step=1 permite que el valor los conserve sin marcarse inválido.
+        step={step}
         className={cls || undefined}
       />
     );

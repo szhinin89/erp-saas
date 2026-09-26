@@ -2,7 +2,6 @@ using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Application.Modules.Purchases.UseCases;
-using ERP.Domain.Common;
 using ERP.Domain.Kernel.Permissions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -95,7 +94,7 @@ public sealed class PurchaseCreditNoteController : ControllerBase
                     request.CreditNoteNumber,
                     request.AccessKey,
                     request.AuthorizationNumber,
-                    UtcDateTime.Normalize(request.AuthorizationDate),
+                    request.AuthorizationDate,
                     request.IssueDate,
                     request.Reason,
                     request.Lines,

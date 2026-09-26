@@ -5,6 +5,7 @@ import { ZhTextInput } from "../../../components/zh/inputs";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { ReportKpiCard } from "../../../components/ReportPageTemplate";
 import type { BranchesPageContext } from "../hooks/useBranchesPage";
+import { formatDateTime } from "../../../lib/formatters/dateFormatters";
 
 type BranchRow = BranchesPageContext["filtered"][number];
 
@@ -243,7 +244,7 @@ export function BranchesListSection({
           </p>
           {items.length > 0 && (
             <p className="pg-table-timestamp">
-              Última carga: {new Date().toTimeString().slice(0, 8)}
+              Última carga: {formatDateTime(new Date().toISOString())}
             </p>
           )}
         </div>

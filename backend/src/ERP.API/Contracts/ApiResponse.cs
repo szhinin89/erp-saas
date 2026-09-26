@@ -3,10 +3,14 @@ namespace ERP.API.Contracts;
 /// <summary>Mensaje para usuario (seguro, siempre presente) y para desarrollador (detalle técnico, solo Development).</summary>
 public sealed record ApiResponseMessage(string User, string? Dev);
 
-/// <summary>Metadatos de trazabilidad incluidos en cada respuesta.</summary>
+/// <summary>
+/// Metadatos de trazabilidad incluidos en cada respuesta. <c>Timestamp</c> es un INSTANTE del
+/// contrato temporal único (ZH-TEMPORAL-CONTRACT-02J): <see cref="DateTime"/> Kind=Utc serializado
+/// como ISO-8601 terminado en "Z" (nunca "+00:00").
+/// </summary>
 public sealed record ApiResponseMeta(
     string CorrelationId,
-    DateTimeOffset Timestamp,
+    DateTime Timestamp,
     string? TraceId = null
 );
 

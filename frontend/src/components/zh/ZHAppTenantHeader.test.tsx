@@ -39,6 +39,7 @@ describe("ZHAppTenantHeader", () => {
         id: "company-1",
         displayName: "Comercial Andrade S.A.",
         logo: null,
+        timezone: "America/Guayaquil",
       },
     });
     useActiveBranchStore.setState({

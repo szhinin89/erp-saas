@@ -9,10 +9,7 @@ import { ZHMoneyValue } from "../../../../components/zh/ZHMoneyValue";
 import { message } from "../../../../lib/messages";
 import { formatApiRequestError } from "../../../lib/apiError";
 import { accountingApi, type FinancialStatementLineDto } from "../../api/accountingApi";
-
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
-}
+import { todayIso } from "../../../../lib/formatters/dateFormatters";
 
 const LINE_COLUMNS: ZHDataTableColumn<FinancialStatementLineDto>[] = [
   { key: "accountCode", header: "Código", render: (r) => <code className="prd-sku">{r.accountCode}</code> },
@@ -30,7 +27,7 @@ const LINE_COLUMNS: ZHDataTableColumn<FinancialStatementLineDto>[] = [
  * Resultados (`ZHFilterBar`, `ZHCard` anidado con `zh-section-title`, `ZHMoneyValue`).
  */
 export function BalanceSheetReportTab() {
-  const [asOfDate, setAsOfDate] = useState(today());
+  const [asOfDate, setAsOfDate] = useState(todayIso());
   const [data, setData] = useState<{
     assetLines: FinancialStatementLineDto[];
     totalAssets: number;

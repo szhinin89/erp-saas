@@ -11,7 +11,7 @@ import { ZHBtn } from "../../../../components/zh/ZHForm";
 import { ZHCard } from "../../../../components/zh/ZHCard";
 import { ZHConfirmModal } from "../../../../components/zh/ZHConfirmModal";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/ZHDataTable";
-import { formatDateTime } from "../../../../lib/formatters/dateFormatters";
+import { companyDayUtcRange, formatDateTime } from "../../../../lib/formatters/dateFormatters";
 import {
   userSessionAdminService,
   type SessionStatisticsDto,
@@ -68,8 +68,9 @@ export function AdminUserSessionsPage() {
           identityUserId: identityUserId || undefined,
           companyId: companyId || undefined,
           status: status || undefined,
-          fromUtc: fromDate ? `${fromDate}T00:00:00Z` : undefined,
-          toUtc: toDate ? `${toDate}T23:59:59Z` : undefined,
+          // Días de empresa (Company.Timezone) → rango instante UTC [desde, hasta).
+          fromUtc: fromDate ? companyDayUtcRange(fromDate)?.startUtc : undefined,
+          toUtc: toDate ? companyDayUtcRange(toDate)?.endUtcExclusive : undefined,
           pageNumber,
           pageSize: PAGE_SIZE,
         }),

@@ -20,7 +20,7 @@ public interface IXmlInvoiceParser
 public sealed record InvoiceParseResult(
     string AccessKey,
     string InvoiceNumber,
-    DateTime IssueDate,
+    DateOnly IssueDate,
     string SupplierRuc,
     string SupplierLegalName,
     decimal Subtotal,
@@ -46,7 +46,7 @@ public sealed record SupplierNoteParseResult(
     string EmPointCode,
     string Sequential,
     string NoteNumber,
-    DateTime IssueDate,
+    DateOnly IssueDate,
     string SupplierRuc,
     string SupplierLegalName,
     decimal Subtotal,

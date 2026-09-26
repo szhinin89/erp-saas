@@ -54,7 +54,7 @@ public sealed class ElectronicDocumentRepository : IElectronicDocumentRepository
         Guid tenantId,
         Guid? companyId,
         DateTime? dateFromUtc,
-        DateTime? dateToUtc,
+        DateTime? dateToUtcExclusive,
         IReadOnlyList<ElectronicDocumentState>? states,
         ElectronicDocumentType? documentType,
         string? environment,
@@ -68,8 +68,8 @@ public sealed class ElectronicDocumentRepository : IElectronicDocumentRepository
 
         if (dateFromUtc.HasValue)
             query = query.Where(x => x.CreatedAt >= dateFromUtc.Value);
-        if (dateToUtc.HasValue)
-            query = query.Where(x => x.CreatedAt <= dateToUtc.Value);
+        if (dateToUtcExclusive.HasValue)
+            query = query.Where(x => x.CreatedAt < dateToUtcExclusive.Value);
         if (states is { Count: > 0 })
             query = query.Where(x => states.Contains(x.CurrentState));
         if (documentType.HasValue)

@@ -10,7 +10,7 @@ import { ZHBtn } from "../../../../components/zh/ZHForm";
 import { ZhTextInput } from "../../../../components/zh/inputs";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/ZHDataTable";
 import { useI18n } from "../../../../i18n/i18n";
-import { formatDateTimeSeconds } from "../../../../lib/formatters/dateFormatters";
+import { formatDateTime } from "../../../../lib/formatters/dateFormatters";
 import {
   activityService,
   type UserActivityDto,
@@ -73,7 +73,7 @@ export function ActivityPage() {
     return <NoAccessPage title={t("app.nav.item.admin.activity")} />;
 
   const activityColumns: ZHDataTableColumn<UserActivityDto>[] = [
-    { key: "when", header: t("audit.column.when"), render: (row) => formatDateTimeSeconds(row.createdAt) },
+    { key: "when", header: t("audit.column.when"), render: (row) => formatDateTime(row.createdAt) },
     { key: "who", header: t("audit.column.who"), render: (row) => row.userFullName || row.userEmail || "—" },
     { key: "module", header: "Módulo", render: (row) => row.module },
     { key: "what", header: t("audit.column.what"), render: (row) => t(actionVerbI18nKey(row.action)) },

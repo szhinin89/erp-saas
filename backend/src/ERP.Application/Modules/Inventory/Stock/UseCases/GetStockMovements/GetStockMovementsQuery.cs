@@ -9,9 +9,11 @@ namespace ERP.Application.Modules.Inventory.Stock.UseCases.GetStockMovements;
 /// GetKardexMovementDetail (company-wide por diseño), aquí <see cref="WarehouseId"/> es obligatorio:
 /// el handler valida que esa bodega pertenezca a la sucursal activa antes de consultar movimientos.
 /// </summary>
+/// <remarks>ZH-TEMPORAL-CONTRACT-02: <c>From</c>/<c>To</c> son días de empresa inclusivos (business-date);
+/// el handler los convierte a <c>[inicioUtc, finUtc)</c> con <c>ICompanyClock</c>.</remarks>
 public sealed record GetStockMovementsQuery(
     Guid ItemId,
     Guid WarehouseId,
-    DateTime? From,
-    DateTime? To
+    DateOnly? From,
+    DateOnly? To
 ) : IRequest<Result<IReadOnlyList<StockMovementDto>>>, IBranchScopedRequest;

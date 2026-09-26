@@ -1,3 +1,4 @@
+using ERP.Application.Common.Services;
 using ERP.Application.Common;
 using ERP.Application.Modules.Inventory.Stock.UseCases.GetStockMovements;
 using ERP.Domain.Modules.Inventory.Entities;
@@ -55,7 +56,14 @@ public sealed class GetStockMovementsBranchScopeTests
         }
 
         public GetStockMovementsQueryHandler BuildHandler() =>
-            new(StockRepo.Object, WarehouseRepo.Object, Tenant.Object, Branch.Object);
+            new(
+                StockRepo.Object,
+                WarehouseRepo.Object,
+                Tenant.Object,
+                Branch.Object,
+                new Mock<ICurrentCompany>().Object,
+                new Mock<ICompanyClock>().Object
+            );
     }
 
     [Fact]

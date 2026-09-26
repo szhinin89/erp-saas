@@ -20,7 +20,7 @@ public class DashboardController : ControllerBase
     [ProducesResponseType(typeof(DashboardKpisDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetKpis(
-        [FromQuery] DateTime? asOf = null,
+        [FromQuery] DateOnly? asOf = null,
         CancellationToken cancellationToken = default
     )
     {

@@ -677,6 +677,26 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
             DateTime utcInstant,
             CancellationToken ct = default
         ) => Task.FromResult(DateOnly.FromDateTime(utcInstant));
+
+        public Task<(DateTime StartUtc, DateTime EndUtc)> DayUtcRangeAsync(
+            Guid companyId,
+            Guid tenantId,
+            DateOnly day,
+            CancellationToken ct = default
+        ) =>
+            Task.FromResult(
+                ERP.Application.Common.Services.CompanyTimeZone.DayUtcRange(day, ERP.Application.Common.Services.CompanyTimeZone.Resolve(ERP.Application.Common.Services.CompanyTimeZone.DefaultTimezoneId))
+            );
+
+        public Task<DateTime> CompanyLocalToUtcAsync(
+            Guid companyId,
+            Guid tenantId,
+            DateTime companyLocal,
+            CancellationToken ct = default
+        ) =>
+            Task.FromResult(
+                ERP.Application.Common.Services.CompanyTimeZone.ToUtc(companyLocal, ERP.Application.Common.Services.CompanyTimeZone.Resolve(ERP.Application.Common.Services.CompanyTimeZone.DefaultTimezoneId))
+            );
     }
 
     private sealed class NoOpPublisher : MediatR.IPublisher

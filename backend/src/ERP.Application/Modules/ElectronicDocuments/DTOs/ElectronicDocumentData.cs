@@ -52,7 +52,8 @@ public sealed record ElectronicDocumentModifiedReference(
     string DocTypeCode,
     /// <summary>Número del documento original, formato "EST-PTO-SECUENCIAL".</summary>
     string Number,
-    DateTime IssueDate
+    /// <summary>Fecha de negocio (ZH-TEMPORAL-CONTRACT-02) — se formatea directo, sin DateTime.</summary>
+    DateOnly IssueDate
 );
 
 /// <summary>Establecimiento, punto de emisión, secuencial y ambiente — contexto de emisión SRI.</summary>
@@ -67,7 +68,8 @@ public sealed record ElectronicDocumentEmissionContext(
     string EstablishmentAddress,
     string EmissionPoint,
     string Sequential,
-    DateTime IssueDate
+    /// <summary>Fecha de emisión = fecha de negocio (ZH-TEMPORAL-CONTRACT-02); "ddMMyyyy"/"dd/MM/yyyy" directo desde DateOnly.</summary>
+    DateOnly IssueDate
 );
 
 /// <summary>Empresa emisora del comprobante.</summary>

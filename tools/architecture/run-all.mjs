@@ -7,6 +7,7 @@ import { runCheckModuleBoundaries } from './check-module-boundaries.mjs';
 import { runCheckCssPrefixes } from './check-css-prefixes.mjs';
 import { runCheckDesignSystem } from './check-design-system.mjs';
 import { runCheckFrontendPrecision } from './check-frontend-precision.mjs';
+import { runCheckFrontendDateTime } from './check-frontend-datetime.mjs';
 import { runCheckNoCrossLayer } from './check-no-cross-layer.mjs';
 import { runCheckPlatformLegacySurface } from './check-platform-legacy-surface.mjs';
 // NOTA: 'frontend-subscriber-naming' (check-frontend-subscriber-naming.mjs) queda deshabilitado
@@ -34,6 +35,7 @@ export const CHECKS = [
   { name: 'css-prefixes', run: runCheckCssPrefixes },
   { name: 'design-system', run: runCheckDesignSystem },
   { name: 'frontend-precision', run: runCheckFrontendPrecision },
+  { name: 'frontend-datetime', run: runCheckFrontendDateTime },
   { name: 'no-cross-layer', run: runCheckNoCrossLayer },
   { name: 'platform-legacy-surface', run: runCheckPlatformLegacySurface },
   // { name: 'frontend-subscriber-naming', run: runCheckFrontendSubscriberNaming }, // deshabilitado — ver nota de import arriba

@@ -10,6 +10,11 @@ export interface SessionContextDto {
     id: string;
     displayName: string;
     logo: CompanyLogo | null;
+    /**
+     * Company.Timezone (IANA) de la empresa operativa activa — SSOT de la zona con la que se
+     * presentan instantes UTC y se convierten horas ingresadas (ZH-TEMPORAL-CONTRACT-02).
+     */
+    timezone: string;
   };
   authorization: {
     roles: string[];

@@ -6,7 +6,7 @@ import type {
 } from "../api/purchaseService";
 import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
 import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
-import { toLocalIsoDate } from "../../../lib/formatters/dateFormatters";
+import { addDaysIso } from "../../../lib/formatters/dateFormatters";
 
 type LineWithContext = PurchaseLineInput & { context?: PurchaseItemContextDto };
 
@@ -287,17 +287,16 @@ export function generateScheduleRows(
   const amt = total > 0 ? Math.round((total * factor) / count) / factor : 0;
   let accumulated = 0;
   const rows: ScheduleRow[] = [];
-  const d = new Date(date + "T00:00:00");
   for (let i = 1; i <= count; i++) {
-    const due = new Date(d);
-    due.setDate(due.getDate() + daysBetween * i);
+    // Fecha de negocio: aritmética de calendario pura, sin Date/zona del navegador.
+    const due = addDaysIso(date, daysBetween * i);
     const a =
       i === count && total > 0
         ? Math.round((total - accumulated) * factor) / factor
         : amt;
     rows.push({
       number: i,
-      dueDate: toLocalIsoDate(due),
+      dueDate: due,
       amount: a,
       notes: "",
     });

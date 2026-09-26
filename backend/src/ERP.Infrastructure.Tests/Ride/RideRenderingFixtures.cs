@@ -61,7 +61,7 @@ internal static class RideRenderingFixtures
                     "Av. Amazonas y Naciones Unidas",
                     "001",
                     "000000001",
-                    new DateTime(2026, 7, 1)
+                    new DateOnly(2026, 7, 1)
                 ),
                 Issuer: new ElectronicDocumentIssuerData(
                     "1790012345001",
@@ -109,7 +109,7 @@ internal static class RideRenderingFixtures
                     "Av. Amazonas y Naciones Unidas",
                     "001",
                     "000000123",
-                    new DateTime(2026, 7, 8)
+                    new DateOnly(2026, 7, 8)
                 ),
                 Issuer: new ElectronicDocumentIssuerData(
                     "1790012345001",
@@ -187,7 +187,7 @@ internal static class RideRenderingFixtures
                     "Av. Amazonas y Naciones Unidas",
                     "001",
                     "000000300",
-                    new DateTime(2026, 7, 10)
+                    new DateOnly(2026, 7, 10)
                 ),
                 Issuer: new ElectronicDocumentIssuerData(
                     "1790012345001",
@@ -248,7 +248,7 @@ internal static class RideRenderingFixtures
                     "Av. Amazonas y Naciones Unidas",
                     "001",
                     "000000301",
-                    new DateTime(2026, 7, 10)
+                    new DateOnly(2026, 7, 10)
                 ),
                 Issuer: new ElectronicDocumentIssuerData(
                     "1790012345001",
@@ -303,7 +303,7 @@ internal static class RideRenderingFixtures
                     "Av. Amazonas y Naciones Unidas",
                     "001",
                     "000000302",
-                    new DateTime(2026, 7, 10)
+                    new DateOnly(2026, 7, 10)
                 ),
                 Issuer: new ElectronicDocumentIssuerData(
                     "1790012345001",
@@ -360,7 +360,7 @@ internal static class RideRenderingFixtures
                     "Av. Amazonas y Naciones Unidas",
                     "001",
                     "000000303",
-                    new DateTime(2026, 7, 10)
+                    new DateOnly(2026, 7, 10)
                 ),
                 Issuer: new ElectronicDocumentIssuerData(
                     "1790012345001",
@@ -430,7 +430,7 @@ internal static class RideRenderingFixtures
                     "Av. Amazonas y Naciones Unidas",
                     "001",
                     "000000200",
-                    new DateTime(2026, 7, 9)
+                    new DateOnly(2026, 7, 9)
                 ),
                 Issuer: new ElectronicDocumentIssuerData(
                     "1790012345001",

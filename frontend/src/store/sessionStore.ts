@@ -2,6 +2,10 @@ import { create } from "zustand";
 import { sessionService } from "../modules/session/api/sessionService";
 import { useActiveBranchStore } from "./activeBranchStore";
 import type { SessionContextDto } from "../types/session";
+import {
+  DEFAULT_COMPANY_TIME_ZONE,
+  setCompanyTimeZone,
+} from "../lib/formatters/dateFormatters";
 
 interface SessionState {
   identity: SessionContextDto["identity"] | null;
@@ -34,6 +38,7 @@ export const useSessionStore = create<SessionState>()((set) => ({
   isLoading: false,
 
   setSession: (dto) => {
+    setCompanyTimeZone(dto.tenant?.timezone);
     set({
       identity: dto.identity,
       tenant: dto.tenant,
@@ -49,6 +54,7 @@ export const useSessionStore = create<SessionState>()((set) => ({
     set({ isLoading: true });
     try {
       const dto = await sessionService.getContext();
+      setCompanyTimeZone(dto.tenant?.timezone);
       set({
         identity: dto.identity,
         tenant: dto.tenant,
@@ -68,6 +74,7 @@ export const useSessionStore = create<SessionState>()((set) => ({
   },
 
   clear: () => {
+    setCompanyTimeZone(DEFAULT_COMPANY_TIME_ZONE);
     set({
       identity: null,
       tenant: null,

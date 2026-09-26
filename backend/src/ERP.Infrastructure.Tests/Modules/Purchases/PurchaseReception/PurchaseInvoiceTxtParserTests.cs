@@ -43,7 +43,9 @@ public sealed class PurchaseInvoiceTxtParserTests
         first.AccessKey.Should().Be("0107202601179135268800120150270001617400016174011");
         first.AccessKey.Should().HaveLength(49);
         first.IssueDate.Should().Be(new DateOnly(2026, 7, 1));
-        first.AuthorizationDate.Should().Be(new DateTime(2026, 7, 1, 21, 6, 55));
+        // ZH-TEMPORAL-CONTRACT-02: hora de pared Ecuador tal cual, sin etiquetarla UTC.
+        first.AuthorizationLocalDateTime.Should().Be(new DateTime(2026, 7, 1, 21, 6, 55));
+        first.AuthorizationLocalDateTime.Kind.Should().Be(DateTimeKind.Unspecified);
         first.Subtotal.Should().Be(15.96m);
         first.VatAmount.Should().Be(2.4m);
         first.Total.Should().Be(18.35m);

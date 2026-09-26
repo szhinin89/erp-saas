@@ -224,7 +224,7 @@ public sealed class PurchaseCreditNote : AuditableEntity, ITenantScopedEntity, I
             CreditNoteNumber = creditNoteNumber.Trim(),
             AccessKey = OptionalCode.Normalize(accessKey),
             AuthorizationNumber = OptionalCode.Normalize(authorizationNumber),
-            AuthorizationDate = UtcDateTime.Normalize(authorizationDate),
+            AuthorizationDate = UtcDateTime.EnsureUtc(authorizationDate),
             IssueDate = issueDate,
             Reason = reason.Trim(),
             CreateClientRequestId = createClientRequestId,
@@ -267,7 +267,7 @@ public sealed class PurchaseCreditNote : AuditableEntity, ITenantScopedEntity, I
         CreditNoteNumber = creditNoteNumber.Trim();
         AccessKey = OptionalCode.Normalize(accessKey);
         AuthorizationNumber = OptionalCode.Normalize(authorizationNumber);
-        AuthorizationDate = UtcDateTime.Normalize(authorizationDate);
+        AuthorizationDate = UtcDateTime.EnsureUtc(authorizationDate);
         IssueDate = issueDate;
         Reason = reason.Trim();
         ReplaceLines(lines);

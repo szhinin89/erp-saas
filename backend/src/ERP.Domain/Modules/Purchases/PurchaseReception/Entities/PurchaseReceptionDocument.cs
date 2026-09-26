@@ -173,7 +173,7 @@ public sealed class PurchaseReceptionDocument
                 ? null
                 : modifiedDocumentNumber.Trim(),
             IssueDate = issueDate,
-            AuthorizationDate = UtcDateTime.Normalize(authorizationDate),
+            AuthorizationDate = UtcDateTime.EnsureUtc(authorizationDate),
             Subtotal = subtotal,
             VatAmount = vatAmount,
             TotalAmount = totalAmount,
@@ -288,9 +288,9 @@ public sealed class PurchaseReceptionDocument
         ValidateProcessingOutcome(processing);
 
         AuthorizationNumber = authorizationNumber.Trim();
-        AuthorizationDate = UtcDateTime.Normalize(authorizationDate);
+        AuthorizationDate = UtcDateTime.EnsureUtc(authorizationDate);
         XmlContent = xmlContent;
-        XmlDownloadedAt = UtcDateTime.Normalize(downloadedAtUtc);
+        XmlDownloadedAt = UtcDateTime.EnsureUtc(downloadedAtUtc);
         DocTypeCode = docTypeCode?.Trim();
         SriPaymentMethodCode = sriPaymentMethodCode?.Trim();
         Status = PurchaseReceptionDocumentStatus.Verified;

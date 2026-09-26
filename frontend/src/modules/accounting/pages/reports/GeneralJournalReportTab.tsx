@@ -6,7 +6,7 @@ import { ZhDateInput, ZhSelect, ZhTextInput } from "../../../../components/zh/in
 import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/ZHDataTable";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHMoneyValue } from "../../../../components/zh/ZHMoneyValue";
-import { formatDate } from "../../../../lib/formatters/dateFormatters";
+import { formatDate, firstDayOfMonthIso, todayIso } from "../../../../lib/formatters/dateFormatters";
 import { message } from "../../../../lib/messages";
 import { formatApiRequestError } from "../../../lib/apiError";
 import { useI18n } from "../../../../i18n/i18n";
@@ -24,15 +24,6 @@ const SOURCE_MODULE_OPTIONS = [
   { value: "Accounting", label: "Contabilidad (reversos)" },
 ];
 
-function firstDayOfMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
-}
-
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
 /**
  * Libro Diario (ACCOUNTING-REPORTS-09) — todas las líneas de asientos Posted en el rango,
  * consume `GET /accounting/reports/general-journal`. Solo lectura, sin recálculo.
@@ -44,8 +35,8 @@ function today(): string {
  */
 export function GeneralJournalReportTab() {
   const { t } = useI18n();
-  const [fromDate, setFromDate] = useState(firstDayOfMonth());
-  const [toDate, setToDate] = useState(today());
+  const [fromDate, setFromDate] = useState(firstDayOfMonthIso());
+  const [toDate, setToDate] = useState(todayIso());
   const [sourceModule, setSourceModule] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);

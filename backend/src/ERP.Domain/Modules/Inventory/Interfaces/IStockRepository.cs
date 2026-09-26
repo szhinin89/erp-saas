@@ -68,7 +68,7 @@ public interface IStockRepository
         Guid productId,
         Guid warehouseId,
         DateTime? fromUtc,
-        DateTime? toUtc,
+        DateTime? toUtcExclusive,
         CancellationToken cancellationToken = default
     );
 
@@ -82,7 +82,7 @@ public interface IStockRepository
         Guid productId,
         Guid? warehouseId,
         DateTime? fromUtc,
-        DateTime? toUtc,
+        DateTime? toUtcExclusive,
         CancellationToken cancellationToken = default
     );
 

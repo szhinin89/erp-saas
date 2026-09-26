@@ -24,8 +24,8 @@ public interface IStockTransferRepository
         Guid? sourceWarehouseId,
         Guid? targetWarehouseId,
         string? status,
-        DateTime? startDate,
-        DateTime? endDate,
+        DateOnly? startDate,
+        DateOnly? endDate,
         CancellationToken cancellationToken = default
     );
     Task SaveChangesAsync(CancellationToken cancellationToken = default);

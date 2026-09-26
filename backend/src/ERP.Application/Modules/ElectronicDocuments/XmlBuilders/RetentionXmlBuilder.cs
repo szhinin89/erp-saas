@@ -287,7 +287,7 @@ public sealed class RetentionXmlBuilder : IRetentionXmlBuilder
             sourceDocument.IssueDate is { } issueDate
                 ? new XElement(
                     "fechaEmisionDocSustento",
-                    issueDate.ToDateTime(TimeOnly.MinValue).ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)
+                    issueDate.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)
                 )
                 : null
         );

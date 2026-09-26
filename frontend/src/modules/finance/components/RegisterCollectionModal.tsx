@@ -26,6 +26,7 @@ import {
   type RegisterCollectionFormValues,
 } from "../../../schemas/finance/registerCollectionSchema";
 import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
+import { todayIso } from "../../../lib/formatters/dateFormatters";
 
 interface Props {
   open: boolean;
@@ -115,7 +116,7 @@ export function RegisterCollectionModal({
       await paymentService.registerCollection({
         customerId: receivable.customerId,
         amount: values.amount,
-        paymentDate: new Date().toISOString().slice(0, 10),
+        paymentDate: todayIso(),
         paymentMethodId: values.paymentMethodId || null,
         companyBankAccountId,
         cashRegisterId,

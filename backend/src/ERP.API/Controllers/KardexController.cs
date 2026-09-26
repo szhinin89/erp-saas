@@ -44,8 +44,8 @@ public sealed class KardexController : ControllerBase
     public async Task<IActionResult> GetKardexByProduct(
         Guid productId,
         [FromQuery] Guid? warehouseId,
-        [FromQuery] DateTime? from,
-        [FromQuery] DateTime? to,
+        [FromQuery] DateOnly? from,
+        [FromQuery] DateOnly? to,
         CancellationToken ct = default
     )
     {

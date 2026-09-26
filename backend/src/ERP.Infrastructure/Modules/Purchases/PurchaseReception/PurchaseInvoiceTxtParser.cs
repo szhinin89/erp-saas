@@ -214,10 +214,9 @@ public sealed class PurchaseInvoiceTxtParser : IPurchaseReceptionParser
             reason = $"FECHA_AUTORIZACION inválida: '{Field("FECHA_AUTORIZACION")}'.";
             return false;
         }
-        // El TXT no trae offset — se marca Kind=Utc sin desplazar el valor (igual que el resto del
-        // pipeline la trata como timestamp opaco). Necesario porque Npgsql exige Kind=Utc para
-        // "timestamp with time zone"; sin esto, persistir el documento en Fase 2 lanza ArgumentException.
-        authorizationDate = DateTime.SpecifyKind(authorizationDate, DateTimeKind.Utc);
+        // ZH-TEMPORAL-CONTRACT-02: el TXT no trae offset — FECHA_AUTORIZACION es hora de pared
+        // Ecuador/empresa. Se entrega tal cual (Kind=Unspecified); etiquetarla UTC aquí corría el
+        // instante real +5h. La conversión a UTC ocurre una sola vez en Application (ICompanyClock).
 
         if (
             !TryParseAmount(Field("VALOR_SIN_IMPUESTOS"), out var subtotal)

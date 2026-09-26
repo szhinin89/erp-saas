@@ -106,6 +106,265 @@ public sealed class DateTimeCompanyClockGuardrailTests
             );
     }
 
+    // ══════════════════════════════════════════════════════════════════════════════════════
+    // ZH-TEMPORAL-CONTRACT-SINGLE-SOURCE-02 — contrato temporal único (docs/architecture/
+    // data-standards.md § Contrato temporal): fecha de negocio = DateOnly/date/"YYYY-MM-DD";
+    // instante = DateTime Kind=Utc/timestamptz/"...Z". Extensión de este mismo guard, no uno paralelo.
+    // ══════════════════════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Único punto donde una hora sin zona se interpreta o se construye a partir de un día:
+    /// <c>CompanyTimeZone</c> (aritmética de Company.Timezone). <c>DateTime.SpecifyKind</c> fuera de
+    /// aquí es exactamente el bug que etiquetaba una hora local como UTC (drift ±5h), y
+    /// <c>DateOnly.ToDateTime</c> fuera de aquí convierte una fecha de negocio en un instante falso.
+    /// </summary>
+    private static readonly IReadOnlyDictionary<string, string> TimeZoneMathOnlyIn = new Dictionary<
+        string,
+        string
+    >(StringComparer.Ordinal)
+    {
+        ["ERP.Application/Common/Services/CompanyTimeZone.cs"] =
+            "Única implementación de la aritmética Company.Timezone ⇄ UTC (ICompanyClock delega aquí).",
+    };
+
+    [Fact]
+    public void SpecifyKind_y_DateOnly_ToDateTime_solo_en_CompanyTimeZone()
+    {
+        var violations = ScanProductionLines(
+            (relative, line) =>
+                !TimeZoneMathOnlyIn.ContainsKey(relative)
+                && (
+                    line.Contains("DateTime.SpecifyKind(", StringComparison.Ordinal)
+                    || line.Contains(".ToDateTime(", StringComparison.Ordinal)
+                ),
+            "SpecifyKind/ToDateTime"
+        );
+
+        violations
+            .Should()
+            .BeEmpty(
+                "una hora sin zona solo se convierte con ICompanyClock/CompanyTimeZone (hora de "
+                    + "empresa → UTC) y una fecha de negocio viaja como DateOnly — nunca SpecifyKind "
+                    + "ni DateOnly.ToDateTime.\n" + string.Join("\n", violations)
+            );
+    }
+
+    [Fact]
+    public void Ninguna_conversion_a_la_zona_del_servidor()
+    {
+        var violations = ScanProductionLines(
+            (_, line) =>
+                line.Contains(".ToLocalTime(", StringComparison.Ordinal)
+                || line.Contains(".LocalDateTime", StringComparison.Ordinal),
+            "ToLocalTime/LocalDateTime"
+        );
+
+        violations
+            .Should()
+            .BeEmpty(
+                "la zona del servidor nunca es la de la empresa: presentar/derivar con "
+                    + "ICompanyClock (Company.Timezone).\n" + string.Join("\n", violations)
+            );
+    }
+
+    /// <summary>
+    /// Todo parseo de DateTime/DateTimeOffset declara <c>DateTimeStyles</c> explícito — sin él, un
+    /// valor con offset se convierte a la zona del SERVIDOR (Kind=Local) y uno sin zona queda
+    /// ambiguo. Los instantes de la API pasan por <c>UtcDateTime.TryParseInstant</c>.
+    /// </summary>
+    [Fact]
+    public void Parseo_de_DateTime_declara_DateTimeStyles_explicito()
+    {
+        var violations = new List<string>();
+        foreach (var (relative, code) in ProductionFiles())
+        {
+            foreach (
+                System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(
+                    code,
+                    @"\bDateTime(?:Offset)?\.(?:Try)?Parse(?:Exact)?\s*\("
+                )
+            )
+            {
+                var call = BalancedCall(code, match.Index + match.Length - 1);
+                if (!call.Contains("DateTimeStyles", StringComparison.Ordinal))
+                    violations.Add($"{relative}:{LineOf(code, match.Index)} — '{match.Value}' sin DateTimeStyles");
+            }
+        }
+
+        violations.Should().BeEmpty(string.Join("\n", violations));
+    }
+
+    /// <summary>
+    /// ZH-TEMPORAL-CONTRACT-02J — una fecha de negocio nunca se parsea con la cultura del servidor:
+    /// <c>DateOnly.(Try)Parse(Exact)</c> declara <c>CultureInfo.InvariantCulture</c> (formatos
+    /// externos fijos, p. ej. SRI "dd/MM/yyyy"). En la API una fecha de negocio llega tipada como
+    /// <c>DateOnly</c> ("YYYY-MM-DD", System.Text.Json ISO estricto), sin parseo manual.
+    /// </summary>
+    [Fact]
+    public void Parseo_de_DateOnly_usa_InvariantCulture()
+    {
+        var violations = new List<string>();
+        foreach (var (relative, code) in ProductionFiles())
+        {
+            foreach (
+                System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(
+                    code,
+                    @"\bDateOnly\.(?:Try)?Parse(?:Exact)?\s*\("
+                )
+            )
+            {
+                var call = BalancedCall(code, match.Index + match.Length - 1);
+                if (!call.Contains("InvariantCulture", StringComparison.Ordinal))
+                    violations.Add($"{relative}:{LineOf(code, match.Index)} — '{match.Value}' sin InvariantCulture");
+            }
+        }
+
+        violations.Should().BeEmpty(string.Join("\n", violations));
+    }
+
+    /// <summary>
+    /// ZH-TEMPORAL-CONTRACT-02J — solo dos representaciones temporales productivas: DateOnly (fecha
+    /// de negocio) y DateTime Kind=Utc (instante, "…Z"). Se prohíbe declarar <c>DateTimeOffset</c>
+    /// (serializa "+00:00") y declarar fechas/instantes como <c>string</c> en contratos
+    /// (<c>string …Date/…At/…Utc</c>) — ambos fueron terceras formas reales (ApiResponse.Timestamp,
+    /// TransferDate/CashDate de Ventas). Usos técnicos de <c>DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()</c>
+    /// no declaran el tipo y quedan fuera.
+    /// </summary>
+    [Fact]
+    public void Solo_DateOnly_y_DateTime_UTC_como_tipos_temporales_declarados()
+    {
+        var violations = new List<string>();
+        foreach (var (relative, code) in ProductionFiles())
+        {
+            foreach (
+                System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(
+                    code,
+                    @"\bDateTimeOffset\??\s+\w+\s*[,;)={]"
+                )
+            )
+                violations.Add($"{relative}:{LineOf(code, match.Index)} — DateTimeOffset declarado: '{match.Value.Trim()}'");
+
+            foreach (
+                System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(
+                    code,
+                    @"(?<!const\s)\bstring\??\s+\w*(?:Date|At|Utc)\s*[,)=;{]"
+                )
+            )
+                violations.Add($"{relative}:{LineOf(code, match.Index)} — fecha como string: '{match.Value.Trim()}'");
+        }
+
+        violations
+            .Should()
+            .BeEmpty(
+                "fecha de negocio = DateOnly; instante = DateTime Kind=Utc.\n" + string.Join("\n", violations)
+            );
+    }
+
+    /// <summary>
+    /// <c>[FromQuery] DateTime</c> solo para filtros instante explícitos (nombre terminado en
+    /// <c>Utc</c>, valor ISO con zona validado por UtcInstantModelBinder). Un filtro por día es
+    /// fecha de negocio: <c>DateOnly</c> (y si filtra un instante, ICompanyClock.DayUtcRangeAsync).
+    /// </summary>
+    [Fact]
+    public void FromQuery_DateTime_solo_como_filtro_instante_Utc_explicito()
+    {
+        var violations = new List<string>();
+        foreach (var (relative, code) in ProductionFiles())
+        {
+            foreach (
+                System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(
+                    code,
+                    @"\[(?:[\w.]*\.)?FromQuery[^\]]*\]\s*DateTime\??\s+(\w+)"
+                )
+            )
+            {
+                if (!match.Groups[1].Value.EndsWith("Utc", StringComparison.Ordinal))
+                    violations.Add($"{relative}:{LineOf(code, match.Index)} — '{match.Value}'");
+            }
+        }
+
+        violations
+            .Should()
+            .BeEmpty(
+                "filtro por día = [FromQuery] DateOnly; filtro instante = [FromQuery] DateTime "
+                    + "<nombre>Utc.\n" + string.Join("\n", violations)
+            );
+    }
+
+    [Fact]
+    public void Borde_HTTP_registra_el_contrato_de_instante_UTC()
+    {
+        var program = File.ReadAllText(Path.Combine(ResolveBackendSrcRoot(), "ERP.API", "Program.cs"));
+
+        program.Should().Contain("UtcInstantModelBinderProvider", "DateTime en query/route exige zona explícita");
+        program.Should().Contain("UtcInstantJsonConverter", "DateTime en JSON exige/emite UTC con 'Z'");
+    }
+
+    private static List<string> ScanProductionLines(Func<string, string, bool> isViolation, string label)
+    {
+        var violations = new List<string>();
+        foreach (var (relative, file) in ProductionFilePaths())
+        {
+            foreach (var (line, lineNumber) in ReadCodeLines(file))
+            {
+                if (isViolation(relative, line))
+                    violations.Add($"{relative}:{lineNumber} — {label}: {line.Trim()}");
+            }
+        }
+        return violations;
+    }
+
+    private static IEnumerable<(string Relative, string File)> ProductionFilePaths()
+    {
+        var backendSrcRoot = ResolveBackendSrcRoot();
+        var sep = Path.DirectorySeparatorChar;
+        foreach (var project in ScannedProjects)
+        {
+            var projectDir = Path.Combine(backendSrcRoot, project);
+            if (!Directory.Exists(projectDir))
+                continue;
+            foreach (var file in Directory.EnumerateFiles(projectDir, "*.cs", SearchOption.AllDirectories))
+            {
+                if (
+                    file.Contains($"{sep}bin{sep}", StringComparison.Ordinal)
+                    || file.Contains($"{sep}obj{sep}", StringComparison.Ordinal)
+                    || file.Contains($"{sep}Migrations{sep}", StringComparison.Ordinal)
+                )
+                    continue;
+                yield return (Path.GetRelativePath(backendSrcRoot, file).Replace('\\', '/'), file);
+            }
+        }
+    }
+
+    /// <summary>Código del archivo sin comentarios <c>//</c> de línea completa (líneas preservadas).</summary>
+    private static IEnumerable<(string Relative, string Code)> ProductionFiles()
+    {
+        foreach (var (relative, file) in ProductionFilePaths())
+        {
+            var code = string.Join(
+                "\n",
+                File.ReadAllLines(file)
+                    .Select(l => l.TrimStart().StartsWith("//", StringComparison.Ordinal) ? string.Empty : l)
+            );
+            yield return (relative, code);
+        }
+    }
+
+    private static string BalancedCall(string code, int openParen)
+    {
+        var depth = 0;
+        for (var i = openParen; i < code.Length; i++)
+        {
+            if (code[i] == '(')
+                depth++;
+            else if (code[i] == ')' && --depth == 0)
+                return code[openParen..(i + 1)];
+        }
+        return code[openParen..];
+    }
+
+    private static int LineOf(string code, int index) => code[..index].Count(c => c == '\n') + 1;
+
     /// <summary>
     /// Líneas de código real, excluyendo comentarios de una línea (`//`, `///`) — este propio
     /// archivo y varios ya corregidos documentan el patrón prohibido en prosa como ejemplo de qué

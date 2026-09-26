@@ -12,7 +12,7 @@ namespace ERP.Application.Tests.Catalog;
 /// catálogo tributario SRI es nacional (Ecuador, America/Guayaquil) para todas las empresas del
 /// sistema — la fecha de vigencia debe evaluarse contra el día calendario ecuatoriano, nunca
 /// <c>DateOnly.FromDateTime(DateTime.UtcNow)</c> (que se adelanta un día entre las 19:00 y 23:59
-/// hora Ecuador). No se puede inyectar un reloj fijo aquí (SriCatalogClock es un helper interno
+/// hora Ecuador). No se puede inyectar un reloj fijo aquí (CompanyTimeZone.Today es aritmética pura
 /// sin abstracción) — el test valida la conversión real contra un cálculo independiente con el
 /// mismo IANA id, tolerando el margen de milisegundos entre ambas lecturas de "ahora".
 /// </summary>

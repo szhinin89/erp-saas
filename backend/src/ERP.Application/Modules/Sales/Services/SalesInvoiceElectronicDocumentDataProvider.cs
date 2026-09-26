@@ -185,7 +185,7 @@ public sealed class SalesInvoiceElectronicDocumentDataProvider : IElectronicDocu
                 EstablishmentAddress: emissionPoint.Establishment.Address,
                 EmissionPoint: emissionPoint.Code,
                 Sequential: ExtractSequential(invoice.InvoiceNumber),
-                IssueDate: invoice.IssueDate.ToDateTime(TimeOnly.MinValue)
+                IssueDate: invoice.IssueDate
             ),
             Issuer: new ElectronicDocumentIssuerData(
                 TaxId: company!.TaxIdentificationNumber,

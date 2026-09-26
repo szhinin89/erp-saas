@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Common.Models;
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.ImportPurchaseReception;
 using ERP.Domain.Modules.Purchases.Interfaces;
@@ -18,6 +19,12 @@ public sealed class ImportPurchaseReceptionHandlerTests
     private static readonly Guid BranchId = Guid.NewGuid();
     private static readonly Guid UserId = Guid.NewGuid();
 
+    /// <summary>
+    /// ZH-TEMPORAL-CONTRACT-02: FECHA_AUTORIZACION del TXT = 01/07/2026 21:06:55 hora Ecuador
+    /// (UTC-5) → instante real 02/07/2026 02:06:55Z. Nunca 21:06:55Z.
+    /// </summary>
+    private static readonly DateTime SampleAuthorizationUtc = new(2026, 7, 2, 2, 6, 55, DateTimeKind.Utc);
+
     private static PurchaseReceptionRecord SampleRecord(
         string accessKey = "0107202601179135268800120150270001617400016174011"
     ) =>
@@ -36,6 +43,25 @@ public sealed class ImportPurchaseReceptionHandlerTests
             18.35m,
             null
         );
+
+    private static Mock<ICompanyClock> GuayaquilClock()
+    {
+        var clock = new Mock<ICompanyClock>();
+        clock
+            .Setup(c =>
+                c.CompanyLocalToUtcAsync(
+                    CompanyId,
+                    TenantId,
+                    It.IsAny<DateTime>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                (Guid _, Guid _, DateTime local, CancellationToken _) =>
+                    CompanyTimeZone.ToUtc(local, CompanyTimeZone.Resolve("America/Guayaquil"))
+            );
+        return clock;
+    }
 
     private static (
         ImportPurchaseReceptionHandler handler,
@@ -76,7 +102,8 @@ public sealed class ImportPurchaseReceptionHandlerTests
             tenant.Object,
             company.Object,
             branch.Object,
-            user.Object
+            user.Object,
+            GuayaquilClock().Object
         );
 
         return (handler, parser, verifier, repo, creditNoteRepo);
@@ -138,6 +165,9 @@ public sealed class ImportPurchaseReceptionHandlerTests
         added.CompanyId.Should().Be(CompanyId);
         added.BranchId.Should().Be(BranchId);
         added.CreatedBy.Should().Be(UserId);
+        added.AuthorizationDate.Should().Be(SampleAuthorizationUtc);
+        added.AuthorizationDate!.Value.Kind.Should().Be(DateTimeKind.Utc);
+        result.Value.Items[0].AuthorizationDate.Should().Be(SampleAuthorizationUtc);
         added.AccessKey.Should().Be(record.AccessKey);
         result.Value.Items[0].DocumentId.Should().Be(added.Id);
 
@@ -159,7 +189,7 @@ public sealed class ImportPurchaseReceptionHandlerTests
             record.AccessKey,
             record.InvoiceNumber,
             record.IssueDate,
-            record.AuthorizationDate,
+            SampleAuthorizationUtc,
             record.Subtotal,
             record.VatAmount,
             record.Total,
@@ -225,7 +255,7 @@ public sealed class ImportPurchaseReceptionHandlerTests
             record.AccessKey,
             record.InvoiceNumber,
             record.IssueDate,
-            record.AuthorizationDate,
+            SampleAuthorizationUtc,
             record.Subtotal,
             record.VatAmount,
             record.Total,

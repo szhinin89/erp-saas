@@ -131,8 +131,24 @@ public sealed class SalesReturnCreditNoteDataProviderTests
         public Mock<ISriSettingsRepository> SriSettingsRepo { get; } = new();
         public Mock<ISriDocTypeCatalogResolver> DocTypeResolver { get; } = new();
 
+        /// <summary>ZH-TEMPORAL-CONTRACT-02: matemática real de CompanyTimeZone con America/Guayaquil.</summary>
+        public Mock<ICompanyClock> CompanyClock { get; } = new();
+
         public Mocks()
         {
+            CompanyClock
+                .Setup(c =>
+                    c.LocalDateAsync(
+                        CompanyId,
+                        TenantId,
+                        It.IsAny<DateTime>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(
+                    (Guid _, Guid _, DateTime utc, CancellationToken _) =>
+                        CompanyTimeZone.LocalDate(utc, CompanyTimeZone.Resolve("America/Guayaquil"))
+                );
             DocTypeResolver
                 .Setup(r => r.IsActiveElectronicDocTypeAsync("04", It.IsAny<CancellationToken>()))
                 .ReturnsAsync(true);
@@ -146,7 +162,8 @@ public sealed class SalesReturnCreditNoteDataProviderTests
                 EstablishmentRepo.Object,
                 CompanyRepo.Object,
                 SriSettingsRepo.Object,
-                DocTypeResolver.Object
+                DocTypeResolver.Object,
+                CompanyClock.Object
             );
 
         public void SeedHappyPath(SalesInvoice invoice)
@@ -246,6 +263,27 @@ public sealed class SalesReturnCreditNoteDataProviderTests
         data.ModifiedDocument.Number.Should().Be(invoice.InvoiceNumber);
         data.Details.Should().ContainSingle();
         data.Totals!.GrandTotal.Should().Be(salesReturn.GrandTotal);
+        // ZH-TEMPORAL-CONTRACT-02: fechaEmision = día de empresa del instante de la devolución
+        // (vía ICompanyClock), nunca el día UTC; la fecha del documento modificado es la fecha de
+        // negocio de la factura, copiada tal cual (DateOnly).
+        data.Emission.IssueDate.Should()
+            .Be(
+                CompanyTimeZone.LocalDate(
+                    salesReturn.UpdatedAt ?? salesReturn.CreatedAt,
+                    CompanyTimeZone.Resolve("America/Guayaquil")
+                )
+            );
+        data.ModifiedDocument.IssueDate.Should().Be(new DateOnly(2026, 7, 20));
+        m.CompanyClock.Verify(
+            c =>
+                c.LocalDateAsync(
+                    CompanyId,
+                    TenantId,
+                    salesReturn.UpdatedAt ?? salesReturn.CreatedAt,
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
     }
 
     // SALES-PRESENTATIONS-04: la nota de crédito debe reflejar la cantidad VISIBLE devuelta (1

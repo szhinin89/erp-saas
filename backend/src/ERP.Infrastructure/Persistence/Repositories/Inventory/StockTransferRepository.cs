@@ -46,8 +46,8 @@ public sealed class StockTransferRepository : IStockTransferRepository
         Guid? sourceWarehouseId,
         Guid? targetWarehouseId,
         string? status,
-        DateTime? startDate,
-        DateTime? endDate,
+        DateOnly? startDate,
+        DateOnly? endDate,
         CancellationToken ct = default
     )
     {

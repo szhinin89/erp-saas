@@ -9,8 +9,8 @@ public sealed record ListStockAdjustmentsQuery(
     string? Status,
     Guid? ReasonId,
     string? MovementType,
-    DateTime? StartDate,
-    DateTime? EndDate,
+    DateOnly? StartDate,
+    DateOnly? EndDate,
     int PageNumber = 1,
     int PageSize = 20
 ) : IRequest<Result<PagedResult<StockAdjustmentDto>>>, IBranchScopedRequest;

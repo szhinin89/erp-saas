@@ -45,7 +45,7 @@ public sealed class InvoiceRideXmlParserTests
                 EstablishmentAddress: "Av. Amazonas y Naciones Unidas",
                 EmissionPoint: "001",
                 Sequential: "000000123",
-                IssueDate: new DateTime(2026, 7, 8)
+                IssueDate: new DateOnly(2026, 7, 8)
             ),
             Issuer: new ElectronicDocumentIssuerData(
                 TaxId: "1790012345001",
@@ -159,7 +159,7 @@ public sealed class InvoiceRideXmlParserTests
                 EstablishmentAddress: "Av. 6 de Diciembre",
                 EmissionPoint: "002",
                 Sequential: "000000456",
-                IssueDate: new DateTime(2026, 7, 10)
+                IssueDate: new DateOnly(2026, 7, 10)
             ),
             Issuer: new ElectronicDocumentIssuerData(
                 TaxId: "1790012345001",
@@ -254,7 +254,7 @@ public sealed class InvoiceRideXmlParserTests
                 EstablishmentAddress: "Av. Amazonas y Naciones Unidas",
                 EmissionPoint: "001",
                 Sequential: "000000789",
-                IssueDate: new DateTime(2026, 7, 11)
+                IssueDate: new DateOnly(2026, 7, 11)
             ),
             Issuer: new ElectronicDocumentIssuerData(
                 TaxId: "1790012345001",

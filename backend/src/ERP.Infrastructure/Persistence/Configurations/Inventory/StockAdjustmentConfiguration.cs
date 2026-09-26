@@ -37,7 +37,11 @@ public sealed class StockAdjustmentConfiguration : IEntityTypeConfiguration<Stoc
             .Property(x => x.Notes)
             .HasColumnName("notes")
             .HasMaxLength(StockAdjustment.NotesMaxLen);
-        builder.Property(x => x.AdjustmentDate).HasColumnName("adjustment_date").IsRequired();
+        builder
+            .Property(x => x.AdjustmentDate)
+            .HasColumnName("adjustment_date")
+            .HasColumnType("date")
+            .IsRequired();
         builder
             .Property(x => x.Status)
             .HasColumnName("status")

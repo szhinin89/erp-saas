@@ -44,6 +44,7 @@ public sealed class SalesReturnCreditNoteDataProvider : IElectronicDocumentDataP
     private readonly ICompanyRepository _companyRepository;
     private readonly ISriSettingsRepository _sriSettingsRepository;
     private readonly ISriDocTypeCatalogResolver _docTypeCatalogResolver;
+    private readonly ICompanyClock _companyClock;
 
     public SalesReturnCreditNoteDataProvider(
         ISalesReturnRepository returnRepository,
@@ -52,9 +53,11 @@ public sealed class SalesReturnCreditNoteDataProvider : IElectronicDocumentDataP
         IEstablishmentRepository establishmentRepository,
         ICompanyRepository companyRepository,
         ISriSettingsRepository sriSettingsRepository,
-        ISriDocTypeCatalogResolver docTypeCatalogResolver
+        ISriDocTypeCatalogResolver docTypeCatalogResolver,
+        ICompanyClock companyClock
     )
     {
+        _companyClock = companyClock;
         _returnRepository = returnRepository;
         _invoiceRepository = invoiceRepository;
         _emissionPointRepository = emissionPointRepository;
@@ -148,6 +151,16 @@ public sealed class SalesReturnCreditNoteDataProvider : IElectronicDocumentDataP
 
         var details = salesReturn.Lines.Select(BuildDetailLine).ToList();
 
+        // ZH-TEMPORAL-CONTRACT-02: fechaEmision es fecha de negocio de la empresa. El origen es un
+        // instante (UpdatedAt/CreatedAt, UTC) — formatearlo directo tomaba el día UTC, que entre las
+        // 19:00 y 23:59 hora Ecuador ya es "mañana" (mismo patrón del rechazo SRI [65]).
+        var issueDate = await _companyClock.LocalDateAsync(
+            salesReturn.CompanyId,
+            reference.TenantId,
+            salesReturn.UpdatedAt ?? salesReturn.CreatedAt,
+            ct
+        );
+
         var data = new ElectronicDocumentData(
             Emission: new ElectronicDocumentEmissionContext(
                 Environment: sriSettings!.Environment.ToString(CultureInfo.InvariantCulture),
@@ -157,7 +170,7 @@ public sealed class SalesReturnCreditNoteDataProvider : IElectronicDocumentDataP
                 EstablishmentAddress: emissionPoint.Establishment.Address,
                 EmissionPoint: emissionPoint.Code,
                 Sequential: ExtractSequential(salesReturn.CreditNoteDocumentNumber!),
-                IssueDate: salesReturn.UpdatedAt ?? salesReturn.CreatedAt
+                IssueDate: issueDate
             ),
             Issuer: new ElectronicDocumentIssuerData(
                 TaxId: company!.TaxIdentificationNumber,
@@ -190,7 +203,7 @@ public sealed class SalesReturnCreditNoteDataProvider : IElectronicDocumentDataP
             ModifiedDocument: new ElectronicDocumentModifiedReference(
                 DocTypeCode: invoice.DocTypeCode,
                 Number: invoice.InvoiceNumber,
-                IssueDate: invoice.IssueDate.ToDateTime(TimeOnly.MinValue)
+                IssueDate: invoice.IssueDate
             )
         );
 

@@ -45,8 +45,8 @@ public sealed class StockAdjustmentRepository : IStockAdjustmentRepository
         string? status,
         Guid? reasonId,
         string? movementType,
-        DateTime? startDate,
-        DateTime? endDate,
+        DateOnly? startDate,
+        DateOnly? endDate,
         IReadOnlyCollection<Guid>? branchWarehouseIds = null,
         CancellationToken ct = default
     )

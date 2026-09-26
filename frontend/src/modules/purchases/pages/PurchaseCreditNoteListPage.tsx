@@ -7,7 +7,7 @@ import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { ZhSelect } from "../../../components/zh/inputs";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
-import { formatDate } from "../../../lib/formatters/dateFormatters";
+import { formatDate, formatDateTime } from "../../../lib/formatters/dateFormatters";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
 import {
@@ -112,7 +112,7 @@ export function PurchaseCreditNoteListPage() {
     {
       key: "createdAt",
       header: "Creada",
-      render: (row) => formatDate(row.createdAt),
+      render: (row) => formatDateTime(row.createdAt),
     },
     {
       key: "actions",

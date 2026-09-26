@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Domain.Modules.SriCatalogs.Enums;
 using ERP.Domain.Modules.SriCatalogs.Interfaces;
 using MediatR;
@@ -142,47 +143,13 @@ public sealed class GetSriVatRatesQueryHandler
         // resolver ICompanyClock por empresa. El catálogo tributario SRI es nacional (Ecuador,
         // America/Guayaquil) para todas las empresas del sistema, así que la vigencia se evalúa
         // contra el día calendario ecuatoriano — nunca DateOnly.FromDateTime(DateTime.UtcNow), que
-        // se adelanta un día entre las 19:00 y 23:59 hora Ecuador.
-        var today = SriCatalogClock.TodayInEcuador();
+        // se adelanta un día entre las 19:00 y 23:59 hora Ecuador. ZH-TEMPORAL-CONTRACT-02: misma
+        // aritmética única que CompanyClock (CompanyTimeZone), sin reloj paralelo.
+        var today = CompanyTimeZone.Today(CompanyTimeZone.Resolve(CompanyTimeZone.DefaultTimezoneId));
         var items = await _repo.GetActiveVatRatesAsync(today, cancellationToken);
         return Result<IReadOnlyList<SriVatRateDto>>.Success(
             items.Select(r => new SriVatRateDto(r.Code, r.Name, r.Percentage)).ToList()
         );
-    }
-}
-
-/// <summary>
-/// Fecha calendario ecuatoriana para catálogos SRI platform-scoped (sin tenant/empresa en
-/// contexto, así que <c>ICompanyClock</c> no aplica aquí — ese resuelve <c>Company.Timezone</c>
-/// por empresa). Mismo criterio de resiliencia que <c>CompanyClock</c> (Infrastructure): intenta el
-/// IANA id real, cae a un offset fijo UTC-5 si el SO no lo reconoce — Ecuador continental no
-/// observa horario de verano.
-/// </summary>
-internal static class SriCatalogClock
-{
-    private const string EcuadorTimeZoneId = "America/Guayaquil";
-
-    public static DateOnly TodayInEcuador()
-    {
-        var tz = ResolveTimeZone();
-        return DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz));
-    }
-
-    private static TimeZoneInfo ResolveTimeZone()
-    {
-        try
-        {
-            return TimeZoneInfo.FindSystemTimeZoneById(EcuadorTimeZoneId);
-        }
-        catch (Exception ex) when (ex is TimeZoneNotFoundException or InvalidTimeZoneException)
-        {
-            return TimeZoneInfo.CreateCustomTimeZone(
-                "Ecuador-Fixed-UTC-5",
-                TimeSpan.FromHours(-5),
-                "Ecuador (UTC-5)",
-                "Ecuador (UTC-5)"
-            );
-        }
     }
 }
 

@@ -94,12 +94,14 @@ export interface CardDetailInput {
 export interface TransferDetailInput {
   companyBankAccountId?: string;
   receiptNumber?: string;
+  /** Fecha de negocio ISO "YYYY-MM-DD" (backend DateOnly). */
   transferDate?: string;
 }
 export interface ChequeDetailInput {
   bankName?: string;
   chequeNumber?: string;
   holderName?: string;
+  /** Fecha de negocio ISO "YYYY-MM-DD" (backend DateOnly). */
   cashDate?: string;
 }
 

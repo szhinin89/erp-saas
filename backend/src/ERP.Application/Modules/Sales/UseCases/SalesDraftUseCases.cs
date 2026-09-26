@@ -71,14 +71,16 @@ public sealed record CardDetailInput(
 public sealed record TransferDetailInput(
     Guid? CompanyBankAccountId = null,
     string? ReceiptNumber = null,
-    string? TransferDate = null
+    /// <summary>Fecha de negocio (ZH-TEMPORAL-CONTRACT-02J): API "YYYY-MM-DD" → DateOnly, sin parseo por cultura.</summary>
+    DateOnly? TransferDate = null
 );
 
 public sealed record ChequeDetailInput(
     string? BankName = null,
     string? ChequeNumber = null,
     string? HolderName = null,
-    string? CashDate = null
+    /// <summary>Fecha de negocio (ZH-TEMPORAL-CONTRACT-02J): API "YYYY-MM-DD" → DateOnly, sin parseo por cultura.</summary>
+    DateOnly? CashDate = null
 );
 
 /// <summary>
@@ -1545,7 +1547,7 @@ file static class SalesPaymentHelper
                     return PaymentsBuildResult.Fail(
                         "El comprobante/referencia de la transferencia es obligatorio."
                     );
-                if (ParseDate(input.TransferDetail.TransferDate) is null)
+                if (input.TransferDetail.TransferDate is null)
                     return PaymentsBuildResult.Fail(
                         "La fecha de operación de la transferencia es obligatoria."
                     );
@@ -1579,7 +1581,7 @@ file static class SalesPaymentHelper
                         payment.Id,
                         input.TransferDetail.CompanyBankAccountId!.Value,
                         input.TransferDetail.ReceiptNumber ?? string.Empty,
-                        ParseDate(input.TransferDetail.TransferDate) ?? default
+                        input.TransferDetail.TransferDate ?? default
                     )
                 );
 
@@ -1590,7 +1592,7 @@ file static class SalesPaymentHelper
                         input.ChequeDetail.BankName,
                         input.ChequeDetail.ChequeNumber,
                         input.ChequeDetail.HolderName,
-                        ParseDate(input.ChequeDetail.CashDate)
+                        input.ChequeDetail.CashDate
                     )
                 );
 
@@ -1609,9 +1611,6 @@ file static class SalesPaymentHelper
 
         return PaymentsBuildResult.Ok(items, cashApplied);
     }
-
-    private static DateOnly? ParseDate(string? iso) =>
-        iso is not null && DateOnly.TryParse(iso, out var d) ? d : null;
 
     /// <summary>
     /// SALES-SETTLEMENT-CREDIT-01 — recalcula el efectivo aplicado (excluye método Crédito) a

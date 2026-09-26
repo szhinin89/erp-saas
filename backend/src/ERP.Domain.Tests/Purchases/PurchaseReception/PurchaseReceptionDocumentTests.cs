@@ -14,16 +14,26 @@ namespace ERP.Domain.Tests.Purchases.PurchaseReception;
 public sealed class PurchaseReceptionDocumentTests
 {
     [Fact]
-    public void Reception_and_xml_dates_without_timezone_are_normalized_to_utc()
+    public void Reception_and_xml_dates_are_utc_instants_and_zone_less_values_are_rejected()
     {
-        var date = new DateTime(2026, 9, 3, 21, 50, 0, DateTimeKind.Unspecified);
+        // ZH-TEMPORAL-CONTRACT-SINGLE-SOURCE-02: la entidad solo acepta instantes UTC. La hora sin
+        // zona del TXT SRI (hora Ecuador) se convierte en Application vía ICompanyClock, nunca aquí.
+        var wallClock = new DateTime(2026, 9, 3, 21, 50, 0, DateTimeKind.Unspecified);
+        var zoneLess = () => PurchaseReceptionDocument.Create(
+            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), PurchaseReceptionSourceDocType.Invoice,
+            "1791352688001", "Supplier", null,
+            "0107202601179135268800120150270001617400016174011", "015-027-000161740",
+            new DateOnly(2026, 9, 3), wallClock, 100m, 15m, 115m, UserId);
+        zoneLess.Should().Throw<ArgumentException>();
+
+        var date = new DateTime(2026, 9, 4, 2, 50, 0, DateTimeKind.Utc);
         var document = PurchaseReceptionDocument.Create(
             Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), PurchaseReceptionSourceDocType.Invoice,
             "1791352688001", "Supplier", null,
             "0107202601179135268800120150270001617400016174011", "015-027-000161740",
             new DateOnly(2026, 9, 3), date, 100m, 15m, 115m, UserId);
         document.AuthorizationDate!.Value.Kind.Should().Be(DateTimeKind.Utc);
-        document.AuthorizationDate.Value.Ticks.Should().Be(date.Ticks);
+        document.AuthorizationDate.Value.Should().Be(date);
 
         document.AttachSriAuthorization("AUTH-1", date, "<factura/>", date, [], UserId,
             "01", "20", new PurchaseReceptionProcessingOutcome(

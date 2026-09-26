@@ -289,7 +289,7 @@ public sealed class DashboardKpiReaderTests : IAsyncLifetime
         await using var read = CreateContext(infra.CompanyId);
         var reader = new DashboardKpiReader(read, new FixedCurrentCompany(infra.CompanyId));
 
-        var result = await reader.ReadAsync(_tenantId, infra.CompanyId, new DateTime(2026, 8, 15));
+        var result = await reader.ReadAsync(_tenantId, infra.CompanyId, new DateOnly(2026, 8, 15));
 
         result.SalesMtd.Should().Be(0m);
         result.InvoicesMtd.Should().Be(0);
@@ -319,7 +319,7 @@ public sealed class DashboardKpiReaderTests : IAsyncLifetime
 
         await using var read = CreateContext(infra.CompanyId);
         var reader = new DashboardKpiReader(read, new FixedCurrentCompany(infra.CompanyId));
-        var result = await reader.ReadAsync(_tenantId, infra.CompanyId, new DateTime(2026, 8, 20));
+        var result = await reader.ReadAsync(_tenantId, infra.CompanyId, new DateOnly(2026, 8, 20));
 
         result.SalesMtd.Should().Be(100m);
         result.InvoicesMtd.Should().Be(1);
@@ -337,7 +337,7 @@ public sealed class DashboardKpiReaderTests : IAsyncLifetime
 
         await using var read = CreateContext(infra.CompanyId);
         var reader = new DashboardKpiReader(read, new FixedCurrentCompany(infra.CompanyId));
-        var result = await reader.ReadAsync(_tenantId, infra.CompanyId, new DateTime(2026, 8, 20));
+        var result = await reader.ReadAsync(_tenantId, infra.CompanyId, new DateOnly(2026, 8, 20));
 
         result.SalesYtd.Should().Be(150m);
     }
@@ -368,7 +368,7 @@ public sealed class DashboardKpiReaderTests : IAsyncLifetime
 
         await using var read = CreateContext(infra.CompanyId);
         var reader = new DashboardKpiReader(read, new FixedCurrentCompany(infra.CompanyId));
-        var result = await reader.ReadAsync(_tenantId, infra.CompanyId, new DateTime(2026, 8, 20));
+        var result = await reader.ReadAsync(_tenantId, infra.CompanyId, new DateOnly(2026, 8, 20));
 
         result.SalesMtd.Should().Be(0m);
         result.InvoicesMtd.Should().Be(0);
@@ -427,7 +427,7 @@ public sealed class DashboardKpiReaderTests : IAsyncLifetime
 
         await using var read = CreateContext(infra.CompanyId);
         var reader = new DashboardKpiReader(read, new FixedCurrentCompany(infra.CompanyId));
-        var result = await reader.ReadAsync(_tenantId, infra.CompanyId, new DateTime(2026, 8, 20));
+        var result = await reader.ReadAsync(_tenantId, infra.CompanyId, new DateOnly(2026, 8, 20));
 
         result.PendingArTotal.Should().Be(100m);
         result.PendingArCount.Should().Be(1);
@@ -480,7 +480,7 @@ public sealed class DashboardKpiReaderTests : IAsyncLifetime
         var reader = new DashboardKpiReader(read, new FixedCurrentCompany(infra.CompanyId));
         // asOf = 2026-08-20: la cuota de "overdue" vence 2026-07-01 (pasada); la de "current"
         // vence 2026-10-01 (futura) — solo "overdue" debe contar como vencida.
-        var result = await reader.ReadAsync(_tenantId, infra.CompanyId, new DateTime(2026, 8, 20));
+        var result = await reader.ReadAsync(_tenantId, infra.CompanyId, new DateOnly(2026, 8, 20));
 
         result.PendingArTotal.Should().Be(400m);
         result.OverdueArTotal.Should().Be(100m);
@@ -540,7 +540,7 @@ public sealed class DashboardKpiReaderTests : IAsyncLifetime
 
         await using var read = CreateContext(company.Id);
         var reader = new DashboardKpiReader(read, new FixedCurrentCompany(company.Id));
-        var result = await reader.ReadAsync(_tenantId, company.Id, new DateTime(2026, 8, 20));
+        var result = await reader.ReadAsync(_tenantId, company.Id, new DateOnly(2026, 8, 20));
 
         result.PendingApTotal.Should().Be(150m);
         result.PendingApCount.Should().Be(1);
@@ -596,7 +596,7 @@ public sealed class DashboardKpiReaderTests : IAsyncLifetime
 
         await using var read = CreateContext(company.Id);
         var reader = new DashboardKpiReader(read, new FixedCurrentCompany(company.Id));
-        var result = await reader.ReadAsync(_tenantId, company.Id, new DateTime(2026, 8, 20));
+        var result = await reader.ReadAsync(_tenantId, company.Id, new DateOnly(2026, 8, 20));
 
         result.PendingApTotal.Should().Be(550m);
         result.OverdueApTotal.Should().Be(150m);
@@ -680,7 +680,7 @@ public sealed class DashboardKpiReaderTests : IAsyncLifetime
 
         await using var read = CreateContext(infra.CompanyId);
         var reader = new DashboardKpiReader(read, new FixedCurrentCompany(infra.CompanyId));
-        var result = await reader.ReadAsync(_tenantId, infra.CompanyId, new DateTime(2026, 8, 20));
+        var result = await reader.ReadAsync(_tenantId, infra.CompanyId, new DateOnly(2026, 8, 20));
 
         result.OutOfStockSkuCount.Should().Be(2); // outOfStockItem + noMovementItem
         result.LowStockSkuCount.Should().Be(1); // lowStockItem (3+4=7 <= 10), una sola vez
@@ -748,7 +748,7 @@ public sealed class DashboardKpiReaderTests : IAsyncLifetime
 
         await using var read = CreateContext(companyA.Id);
         var reader = new DashboardKpiReader(read, new FixedCurrentCompany(companyA.Id));
-        var result = await reader.ReadAsync(_tenantId, companyA.Id, new DateTime(2026, 8, 20));
+        var result = await reader.ReadAsync(_tenantId, companyA.Id, new DateOnly(2026, 8, 20));
 
         result.PendingApTotal.Should().Be(0m);
         result.PendingApCount.Should().Be(0);

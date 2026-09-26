@@ -579,8 +579,8 @@ public sealed class StockAdjustmentBranchOwnershipTests
                     It.IsAny<string?>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<string?>(),
-                    It.IsAny<DateTime?>(),
-                    It.IsAny<DateTime?>(),
+                    It.IsAny<DateOnly?>(),
+                    It.IsAny<DateOnly?>(),
                     It.IsAny<IReadOnlyCollection<Guid>?>(),
                     It.IsAny<CancellationToken>()
                 ),

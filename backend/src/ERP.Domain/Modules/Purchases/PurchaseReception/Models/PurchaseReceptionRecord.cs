@@ -14,7 +14,12 @@ public sealed record PurchaseReceptionRecord(
     string InvoiceNumber,
     string AccessKey,
     DateOnly IssueDate,
-    DateTime AuthorizationDate,
+    /// <summary>
+    /// FECHA_AUTORIZACION tal como la publica el SRI en el TXT: hora de pared Ecuador/empresa, SIN
+    /// offset (Kind=Unspecified). No es un instante todavía — ZH-TEMPORAL-CONTRACT-02: se convierte
+    /// a UTC una sola vez en Application con <c>ICompanyClock.CompanyLocalToUtcAsync</c>.
+    /// </summary>
+    DateTime AuthorizationLocalDateTime,
     string? ReceiverIdentification,
     decimal Subtotal,
     decimal VatAmount,

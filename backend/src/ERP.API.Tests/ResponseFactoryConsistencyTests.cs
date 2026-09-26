@@ -123,7 +123,8 @@ public sealed class ResponseFactoryConsistencyTests
         );
 
         response.Meta.CorrelationId.Should().Be("trace-123");
-        response.Meta.Timestamp.Should().BeCloseTo(DateTimeOffset.UtcNow, TimeSpan.FromSeconds(5));
+        response.Meta.Timestamp.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        response.Meta.Timestamp.Kind.Should().Be(DateTimeKind.Utc);
     }
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);

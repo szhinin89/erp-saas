@@ -169,7 +169,7 @@ public sealed class RetentionElectronicDocumentDataProvider : IRetentionElectron
                 EstablishmentAddress: emissionPoint.Establishment.Address,
                 EmissionPoint: emissionPoint.Code,
                 Sequential: ExtractSequential(retention.RetentionNumber!),
-                IssueDate: retention.IssueDate!.Value.ToDateTime(TimeOnly.MinValue)
+                IssueDate: retention.IssueDate!.Value
             ),
             NumeroCompleto: retention.RetentionNumber!,
             Issuer: new ElectronicDocumentIssuerData(

@@ -28,7 +28,7 @@ const KPIS = {
   overdueApCount: 0,
   lowStockSkuCount: 3,
   outOfStockSkuCount: 1,
-  asOf: "2026-09-25T00:00:00Z",
+  asOf: "2026-09-25",
   month: 9,
   year: 2026,
 } satisfies DashboardKpisDto;

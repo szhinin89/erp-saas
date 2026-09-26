@@ -10,6 +10,7 @@ public static class PurchaseReceptionMapper
     public static PurchaseReceptionItemDto ToDto(
         PurchaseReceptionVerifiedItem item,
         PurchaseReceptionDocument document,
+        DateTime authorizationDateUtc,
         bool creditNoteExists = false,
         Guid? creditNoteId = null,
         Guid? cancelledCreditNoteId = null
@@ -22,7 +23,7 @@ public static class PurchaseReceptionMapper
             item.Record.ModifiedDocumentNumber,
             item.Record.AccessKey,
             item.Record.IssueDate,
-            item.Record.AuthorizationDate,
+            authorizationDateUtc,
             item.Record.Subtotal,
             item.Record.VatAmount,
             item.Record.Total,

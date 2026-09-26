@@ -345,12 +345,24 @@ public sealed class InitialStockImportProcessor : IImportProcessor
         return unitCost;
     }
 
+    private static readonly string[] CutoffDateFormats = ["yyyy-MM-dd", "dd/MM/yyyy"];
+
     private static void ValidateCutoffDate(string? cutoffDateRaw, List<RowIssue> issues)
     {
         if (string.IsNullOrWhiteSpace(cutoffDateRaw))
             return;
 
-        if (!DateTime.TryParse(cutoffDateRaw, out _))
+        // ZH-TEMPORAL-CONTRACT-02: fecha de negocio → DateOnly con formatos explícitos e
+        // InvariantCulture (antes DateTime.TryParse dependía de la cultura del servidor).
+        if (
+            !DateOnly.TryParseExact(
+                cutoffDateRaw.Trim(),
+                CutoffDateFormats,
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None,
+                out _
+            )
+        )
         {
             issues.Add(
                 new RowIssue(

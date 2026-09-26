@@ -2,10 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { ZHModal } from "../../../../components/zh/ZHModal";
 import { ZHBtn } from "../../../../components/zh/ZHForm";
 import { Badge } from "../../../../components/PageShell";
-import {
-  formatDate,
-  formatDateTimeSeconds,
-} from "../../../../lib/formatters/dateFormatters";
+import { formatDate, formatDateTime } from "../../../../lib/formatters/dateFormatters";
 import { formatMoney, formatMoneyWithSymbol } from "../../../../lib/sanitizers";
 import { usePrecisionDecimals } from "../../../../hooks/usePrecisionPolicy";
 import type { KardexMovementDetailDto } from "../../stock/api/kardexService";
@@ -299,7 +296,7 @@ export function KardexMovementDetailModal({
               <Field label="Usuario" value={detail.actor.userName} />
               <Field
                 label="Fecha de Creación"
-                value={formatDateTimeSeconds(m.createdAt)}
+                value={formatDateTime(m.createdAt)}
               />
               <Field
                 label="Fecha Efectiva"

@@ -14,6 +14,7 @@ import { ZHConfirmModal } from "../../../../components/zh/ZHConfirmModal";
 import { ZHBtn } from "../../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../../components/zh/ZHIconButton";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/ZHDataTable";
+import { formatDateTime } from "../../../../lib/formatters/dateFormatters";
 
 interface Props {
   warehouses: WarehouseDto[];
@@ -294,7 +295,7 @@ export function WarehouseListadoTab({
             </p>
             <p className="pg-table-timestamp">
               {t("warehouses.list.lastLoad", "Última carga:")}{" "}
-              {new Date().toTimeString().slice(0, 8)}
+              {formatDateTime(new Date().toISOString())}
             </p>
           </div>
         </>

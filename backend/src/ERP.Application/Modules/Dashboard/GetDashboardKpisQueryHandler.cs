@@ -30,20 +30,13 @@ public sealed class GetDashboardKpisQueryHandler
         CancellationToken cancellationToken
     )
     {
-        DateTime asOf;
-        if (query.AsOf.HasValue)
-        {
-            asOf = query.AsOf.Value.Date;
-        }
-        else
-        {
-            var today = await _companyClock.TodayAsync(
+        var asOf =
+            query.AsOf
+            ?? await _companyClock.TodayAsync(
                 _currentCompany.CompanyId,
                 _currentTenant.TenantId,
                 cancellationToken
             );
-            asOf = today.ToDateTime(TimeOnly.MinValue);
-        }
 
         var dto = await _reader.ReadAsync(
             _currentTenant.TenantId,

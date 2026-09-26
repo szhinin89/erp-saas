@@ -56,7 +56,7 @@ internal static class RetentionRideRenderingFixtures
                     EstablishmentAddress: "Av. Principal 123",
                     EmissionPoint: "001",
                     Sequential: "000000850",
-                    IssueDate: new DateTime(2026, 8, 5)
+                    IssueDate: new DateOnly(2026, 8, 5)
                 ),
                 NumeroCompleto: "001-001-000000850",
                 Issuer: new ElectronicDocumentIssuerData(
@@ -144,7 +144,7 @@ internal static class RetentionRideRenderingFixtures
                     EstablishmentAddress: "Av. Principal 123",
                     EmissionPoint: "001",
                     Sequential: "000000001",
-                    IssueDate: new DateTime(2026, 8, 1)
+                    IssueDate: new DateOnly(2026, 8, 1)
                 ),
                 NumeroCompleto: "001-001-000000001",
                 Issuer: new ElectronicDocumentIssuerData(

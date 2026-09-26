@@ -6,7 +6,7 @@ import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { formatMoney } from "../../../lib/sanitizers";
-import { formatDateTime } from "../../../lib/formatters/dateFormatters";
+import { formatDateTime, todayIso } from "../../../lib/formatters/dateFormatters";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
 import {
@@ -113,7 +113,7 @@ export function SupplierCreditDetailPage() {
     try {
       await supplierCreditService.reverseRefund(credit.id, movement.id, {
         reason: reason.trim(),
-        effectiveDate: new Date().toISOString().slice(0, 10),
+        effectiveDate: todayIso(),
         clientRequestId: crypto.randomUUID(),
       });
       message.success("Reembolso revertido correctamente.");

@@ -18,9 +18,11 @@ namespace ERP.Application.Modules.Inventory.Stock.UseCases.GetKardexByProduct;
 /// únicamente para exigir que exista una sucursal operativa válida en el contexto (mismo requisito
 /// que el resto del módulo), no para restringir los resultados a esa sucursal.
 /// </summary>
+/// <remarks>ZH-TEMPORAL-CONTRACT-02: <c>From</c>/<c>To</c> son días de empresa inclusivos (business-date);
+/// el handler los convierte a <c>[inicioUtc, finUtc)</c> con <c>ICompanyClock</c>.</remarks>
 public sealed record GetKardexByProductQuery(
     Guid ProductId,
     Guid? WarehouseId = null,
-    DateTime? From = null,
-    DateTime? To = null
+    DateOnly? From = null,
+    DateOnly? To = null
 ) : IRequest<Result<IReadOnlyList<StockMovementDto>>>, IBranchScopedRequest;

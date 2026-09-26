@@ -6649,8 +6649,8 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateTime>("AdjustmentDate")
-                        .HasColumnType("timestamp with time zone")
+                    b.Property<DateOnly>("AdjustmentDate")
+                        .HasColumnType("date")
                         .HasColumnName("adjustment_date");
 
                     b.Property<string>("AdjustmentNumber")
@@ -7062,8 +7062,8 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
 
-                    b.Property<DateTime>("TransferDate")
-                        .HasColumnType("timestamp with time zone")
+                    b.Property<DateOnly>("TransferDate")
+                        .HasColumnType("date")
                         .HasColumnName("transfer_date");
 
                     b.Property<string>("TransferNumber")

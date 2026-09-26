@@ -34,7 +34,11 @@ public sealed class StockTransferConfiguration : IEntityTypeConfiguration<StockT
             .Property(x => x.TargetWarehouseId)
             .HasColumnName("target_warehouse_id")
             .IsRequired();
-        builder.Property(x => x.TransferDate).HasColumnName("transfer_date").IsRequired();
+        builder
+            .Property(x => x.TransferDate)
+            .HasColumnName("transfer_date")
+            .HasColumnType("date")
+            .IsRequired();
         builder
             .Property(x => x.Status)
             .HasColumnName("status")

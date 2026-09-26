@@ -25,8 +25,16 @@ public sealed record SessionIdentityDto(
 /// <summary>
 /// DisplayName/Logo provienen de la empresa operativa activa (TradeName ?? LegalName,
 /// logo activo en Media); si no hay empresa resuelta, DisplayName cae a Tenant.Name.
+/// ZH-TEMPORAL-CONTRACT-02: <c>Timezone</c> = <c>Company.Timezone</c> (IANA) de la empresa operativa
+/// activa — SSOT de la zona con la que el frontend presenta instantes UTC y convierte horas locales
+/// ingresadas por el usuario. Sin empresa resuelta: zona fiscal nacional por defecto.
 /// </summary>
-public sealed record SessionTenantDto(Guid Id, string DisplayName, CompanyLogoDto? Logo);
+public sealed record SessionTenantDto(
+    Guid Id,
+    string DisplayName,
+    CompanyLogoDto? Logo,
+    string Timezone
+);
 
 public sealed record SessionAuthorizationDto(
     IReadOnlyList<string> Roles,

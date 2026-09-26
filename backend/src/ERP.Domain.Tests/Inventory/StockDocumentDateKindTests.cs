@@ -4,18 +4,17 @@ using FluentAssertions;
 namespace ERP.Domain.Tests.Inventory;
 
 /// <summary>
-/// ZH-DATETIME-KIND-HARDENING-01 — TransferDate/AdjustmentDate son fechas de negocio (día operativo
-/// de la empresa, DateOnly resuelto por ICompanyClock) almacenadas en columnas timestamptz. La
-/// convención del ERP para fechas sin zona es medianoche UTC (ver UtcDateTime.Normalize):
-/// <c>DateOnly.ToDateTime(TimeOnly.MinValue)</c> produce Kind=Unspecified, que
-/// UtcDateTimeGuardInterceptor rechaza en SaveChanges (INVALID_DATETIME_KIND, HTTP 500).
+/// ZH-DATETIME-KIND-HARDENING-01 → ZH-TEMPORAL-CONTRACT-SINGLE-SOURCE-02 — TransferDate/AdjustmentDate
+/// son fechas de negocio (día operativo de la empresa, DateOnly resuelto por ICompanyClock). Ya no se
+/// almacenan como medianoche UTC en timestamptz: el contrato único de fecha de negocio es
+/// <c>DateOnly</c> ↔ PostgreSQL <c>date</c> ↔ API "YYYY-MM-DD" — el día entra y sale idéntico.
 /// </summary>
 public sealed class StockDocumentDateKindTests
 {
     private static readonly DateOnly BusinessDate = new(2026, 9, 25);
 
     [Fact]
-    public void StockTransfer_Create_StoresBusinessDateAsUtcMidnight()
+    public void StockTransfer_Create_ConservaElDiaDeNegocioComoDateOnly()
     {
         var transfer = StockTransfer.Create(
             tenantId: Guid.NewGuid(),
@@ -30,13 +29,11 @@ public sealed class StockDocumentDateKindTests
             companyId: Guid.NewGuid()
         );
 
-        transfer.TransferDate.Kind.Should().Be(DateTimeKind.Utc);
-        DateOnly.FromDateTime(transfer.TransferDate).Should().Be(BusinessDate);
-        transfer.TransferDate.TimeOfDay.Should().Be(TimeSpan.Zero);
+        transfer.TransferDate.Should().Be(BusinessDate);
     }
 
     [Fact]
-    public void StockAdjustment_Create_StoresBusinessDateAsUtcMidnight()
+    public void StockAdjustment_Create_ConservaElDiaDeNegocioComoDateOnly()
     {
         var adjustment = StockAdjustment.Create(
             tenantId: Guid.NewGuid(),
@@ -51,8 +48,6 @@ public sealed class StockDocumentDateKindTests
             adjustmentDate: BusinessDate
         );
 
-        adjustment.AdjustmentDate.Kind.Should().Be(DateTimeKind.Utc);
-        DateOnly.FromDateTime(adjustment.AdjustmentDate).Should().Be(BusinessDate);
-        adjustment.AdjustmentDate.TimeOfDay.Should().Be(TimeSpan.Zero);
+        adjustment.AdjustmentDate.Should().Be(BusinessDate);
     }
 }

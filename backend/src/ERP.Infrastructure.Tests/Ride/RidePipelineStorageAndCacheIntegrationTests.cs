@@ -110,7 +110,7 @@ public sealed class RidePipelineStorageAndCacheIntegrationTests : IAsyncLifetime
                 "Av. Amazonas y Naciones Unidas",
                 "001",
                 "000000123",
-                new DateTime(2026, 7, 8)
+                new DateOnly(2026, 7, 8)
             ),
             Issuer: new ElectronicDocumentIssuerData(
                 "1790012345001",

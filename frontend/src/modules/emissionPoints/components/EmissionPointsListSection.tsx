@@ -5,7 +5,7 @@ import { Badge } from "../../../components/PageShell";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { ReportKpiCard } from "../../../components/ReportPageTemplate";
 import { useI18n } from "../../../i18n/i18n";
-import { formatDate } from "../../../lib/formatters/dateFormatters";
+import { formatDateTime } from "../../../lib/formatters/dateFormatters";
 import { EMISSION_TYPE_ELECTRONIC } from "../api/emissionPointsService";
 import type { EmissionPointsPageContext } from "../hooks/useEmissionPointsPage";
 
@@ -93,7 +93,7 @@ export function EmissionPointsListSection({
         </span>
       ),
     },
-    { key: "createdAt", header: "Fecha", render: (row) => <span className="br-list-contact">{formatDate(row.createdAt)}</span> },
+    { key: "createdAt", header: "Fecha", render: (row) => <span className="br-list-contact">{formatDateTime(row.createdAt)}</span> },
     ...(canUpdate || canDelete
       ? [
           {
@@ -251,7 +251,7 @@ export function EmissionPointsListSection({
           </p>
           {items.length > 0 && (
             <p className="pg-table-timestamp">
-              Última carga: {new Date().toTimeString().slice(0, 8)}
+              Última carga: {formatDateTime(new Date().toISOString())}
             </p>
           )}
         </div>

@@ -47,7 +47,7 @@ beforeEach(() => {
   resetStores();
   vi.mocked(sessionService.getContext).mockResolvedValue({
     identity: { userId: "u1", fullName: "Test", email: "t@t.com" },
-    tenant: { id: "t1", displayName: "Tenant", logo: null },
+    tenant: { id: "t1", displayName: "Tenant", logo: null, timezone: "America/Guayaquil" },
     authorization: { roles: [], permissions: ["*"] },
     preferences: { language: "es" },
     branch: { id: "b1", name: "Matriz", isMainBranch: true },

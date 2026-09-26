@@ -58,7 +58,8 @@ import { useI18n } from "../../../i18n/i18n";
 import { usePrecisionPolicy } from "../../../hooks/usePrecisionPolicy";
 import {
   todayIso,
-  toLocalIsoDate,
+  addDaysIso,
+  fromDateTimeLocalInputValue,
 } from "../../../lib/formatters/dateFormatters";
 import { normalizeOptionalCode } from "../../../lib/sanitizers";
 import {
@@ -1431,7 +1432,8 @@ export function usePurchasesPage() {
         })),
         accessKey: normalizeOptionalCode(data.accessKey),
         authorizationNumber: normalizeOptionalCode(data.authorizationNumber),
-        authorizationDate: data.authorizationDate || null,
+        // ZH-TEMPORAL-CONTRACT-02: datetime-local = hora de Company.Timezone → UTC una sola vez.
+        authorizationDate: fromDateTimeLocalInputValue(data.authorizationDate),
         taxSupportCode: normalizeOptionalCode(data.taxSupportCode),
         sriPaymentMethodCode: normalizeOptionalCode(data.sriPaymentMethodCode),
         globalWarehouseId: data.globalWarehouseId || null,
@@ -1723,7 +1725,7 @@ export function usePurchasesPage() {
     async (epId: string) => {
       setModalWhIssue(false);
       if (!editing || whLoading || !whPreview) return;
-      // todayIso() usa hora local del dispositivo, no UTC — evita el desfase que
+      // todayIso() = hoy en Company.Timezone, nunca UTC — evita el desfase que
       // causaba fecha futura y rechazo SRI [65] FECHA EMISIÓN EXTEMPORÁNEA.
       const date = todayIso();
       // El backend (IssueRetentionCommand) no calcula por su cuenta — necesita las líneas ya
@@ -1863,16 +1865,13 @@ export function usePurchasesPage() {
     const issueDate = getValues("issueDate");
     if (!issueDate) return;
     const lastRow = ptRows.length > 0 ? ptRows[ptRows.length - 1] : null;
-    const lastDate = lastRow
-      ? new Date(lastRow.dueDate + "T00:00:00")
-      : new Date(issueDate + "T00:00:00");
-    const due = new Date(lastDate);
-    due.setDate(due.getDate() + ptDaysBetween);
+    // Fecha de negocio: aritmética de calendario pura, sin Date/zona del navegador.
+    const due = addDaysIso(lastRow ? lastRow.dueDate : issueDate, ptDaysBetween);
     setPtRows((prev) => [
       ...prev,
       {
         number: prev.length + 1,
-        dueDate: toLocalIsoDate(due),
+        dueDate: due,
         amount: 0,
         notes: "",
       },

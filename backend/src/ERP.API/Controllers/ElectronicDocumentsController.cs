@@ -45,8 +45,8 @@ public sealed class ElectronicDocumentsController : ControllerBase
     [HttpGet]
     [Authorize(Policy = $"perm:{ElectronicDocumentsPermissions.View}")]
     public async Task<IActionResult> GetList(
-        [FromQuery] DateTime? dateFrom = null,
-        [FromQuery] DateTime? dateTo = null,
+        [FromQuery] DateOnly? dateFrom = null,
+        [FromQuery] DateOnly? dateTo = null,
         [FromQuery] string? state = null,
         [FromQuery] string? documentType = null,
         [FromQuery] string? environment = null,

@@ -34,6 +34,7 @@ import {
   type RegisterSupplierPaymentFormValues,
 } from "../../../schemas/supplier-payments/registerSupplierPaymentSchema";
 import "../styles/supplier-payments.css";
+import { todayIso } from "../../../lib/formatters/dateFormatters";
 
 const PERMISSIONS = { create: "supplier-payments.create" } as const;
 
@@ -46,10 +47,6 @@ const EMPTY_METHOD_LINE = {
   checkDate: "",
   notes: "",
 };
-
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 /**
  * SUPPLIER-PAYMENTS-FRONTEND-15E — formulario de registro. Sin Draft: "Registrar pago" valida el

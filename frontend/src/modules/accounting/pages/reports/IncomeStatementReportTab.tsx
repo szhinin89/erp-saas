@@ -9,15 +9,7 @@ import { ZHMoneyValue } from "../../../../components/zh/ZHMoneyValue";
 import { message } from "../../../../lib/messages";
 import { formatApiRequestError } from "../../../lib/apiError";
 import { accountingApi, type FinancialStatementLineDto } from "../../api/accountingApi";
-
-function firstDayOfMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
-}
-
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
-}
+import { firstDayOfMonthIso, todayIso } from "../../../../lib/formatters/dateFormatters";
 
 const LINE_COLUMNS: ZHDataTableColumn<FinancialStatementLineDto>[] = [
   { key: "accountCode", header: "Código", render: (r) => <code className="prd-sku">{r.accountCode}</code> },
@@ -35,8 +27,8 @@ const LINE_COLUMNS: ZHDataTableColumn<FinancialStatementLineDto>[] = [
  * bruta/neta, `"total"` para subtotales de sección).
  */
 export function IncomeStatementReportTab() {
-  const [fromDate, setFromDate] = useState(firstDayOfMonth());
-  const [toDate, setToDate] = useState(today());
+  const [fromDate, setFromDate] = useState(firstDayOfMonthIso());
+  const [toDate, setToDate] = useState(todayIso());
   const [data, setData] = useState<{
     incomeLines: FinancialStatementLineDto[];
     totalIncome: number;

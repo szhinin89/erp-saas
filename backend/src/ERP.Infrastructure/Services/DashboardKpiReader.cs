@@ -26,11 +26,10 @@ public sealed class DashboardKpiReader : IDashboardKpiReader
     public async Task<DashboardKpisDto> ReadAsync(
         Guid tenantId,
         Guid companyId,
-        DateTime asOf,
+        DateOnly asOfDate,
         CancellationToken cancellationToken = default
     )
     {
-        var asOfDate = DateOnly.FromDateTime(asOf);
         var monthStart = new DateOnly(asOfDate.Year, asOfDate.Month, 1);
         var monthEnd = monthStart.AddMonths(1).AddDays(-1);
         var yearStart = new DateOnly(asOfDate.Year, 1, 1);
@@ -63,7 +62,7 @@ public sealed class DashboardKpiReader : IDashboardKpiReader
             OverdueApCount: overdueApCount,
             LowStockSkuCount: lowStockCount,
             OutOfStockSkuCount: outOfStockCount,
-            AsOf: asOf,
+            AsOf: asOfDate,
             Month: asOfDate.Month,
             Year: asOfDate.Year
         );

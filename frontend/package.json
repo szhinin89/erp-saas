@@ -23,6 +23,8 @@
     "architecture:design-system": "node ../tools/architecture/check-design-system.mjs",
     "architecture:precision": "node ../tools/architecture/check-frontend-precision.mjs",
     "architecture:precision:test": "node --test ../tools/architecture/check-frontend-precision.test.mjs",
+    "architecture:datetime": "node ../tools/architecture/check-frontend-datetime.mjs",
+    "architecture:datetime:test": "node --test ../tools/architecture/check-frontend-datetime.test.mjs",
     "architecture:cross-layer": "node ../tools/architecture/check-no-cross-layer.mjs",
     "architecture:backend": "node ../tools/architecture/run-all.mjs --only backend-layering && node ../tools/architecture/run-all.mjs --only backend-clean-architecture && node ../tools/architecture/run-all.mjs --only backend-controller-thin && node ../tools/architecture/run-all.mjs --only backend-tenant-rules",
     "architecture:report": "node ../tools/architecture/report-json.mjs",

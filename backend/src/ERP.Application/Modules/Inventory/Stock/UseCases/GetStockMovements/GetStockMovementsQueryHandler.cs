@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Inventory.Stock.DTOs;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Modules.Inventory.Entities;
@@ -14,18 +15,24 @@ public sealed class GetStockMovementsQueryHandler
     private readonly IWarehouseRepository _warehouseRepo;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentBranch _branch;
+    private readonly ICurrentCompany _company;
+    private readonly ICompanyClock _companyClock;
 
     public GetStockMovementsQueryHandler(
         IStockRepository repo,
         IWarehouseRepository warehouseRepo,
         ICurrentTenant tenant,
-        ICurrentBranch branch
+        ICurrentBranch branch,
+        ICurrentCompany company,
+        ICompanyClock companyClock
     )
     {
         _repo = repo;
         _warehouseRepo = warehouseRepo;
         _tenant = tenant;
         _branch = branch;
+        _company = company;
+        _companyClock = companyClock;
     }
 
     public async Task<Result<IReadOnlyList<StockMovementDto>>> Handle(
@@ -43,12 +50,19 @@ public sealed class GetStockMovementsQueryHandler
                 "La bodega seleccionada no pertenece a la sucursal activa."
             );
 
+        var (fromUtc, toUtcExclusive) = await _companyClock.DaysUtcRangeAsync(
+            _company.CompanyId,
+            _tenant.TenantId,
+            request.From,
+            request.To,
+            ct
+        );
         var movements = await _repo.GetMovementsAsync(
             _tenant.TenantId,
             request.ItemId,
             request.WarehouseId,
-            request.From,
-            request.To,
+            fromUtc,
+            toUtcExclusive,
             ct
         );
 

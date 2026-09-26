@@ -125,10 +125,13 @@ public sealed class UtcDateTimeGuardInterceptorTests : IAsyncLifetime
 
     public async Task DisposeAsync() => await _postgres.DisposeAsync();
 
-    private ErpDbContext CreateContext()
+    private ErpDbContext CreateContext(string? sessionTimeZone = null)
     {
+        var connectionString = sessionTimeZone is null
+            ? _postgres.GetConnectionString()
+            : $"{_postgres.GetConnectionString()};Timezone={sessionTimeZone}";
         var options = new DbContextOptionsBuilder<ErpDbContext>()
-            .UseNpgsql(_postgres.GetConnectionString())
+            .UseNpgsql(connectionString)
             .AddInterceptors(new UtcDateTimeGuardInterceptor())
             .Options;
 
@@ -227,6 +230,66 @@ public sealed class UtcDateTimeGuardInterceptorTests : IAsyncLifetime
         exception.WithMessage("*Local*");
     }
 
+    // ZH-TEMPORAL-CONTRACT-SINGLE-SOURCE-02 — BUSINESS DATE INVARIANCE + INSTANT ROUND-TRIP en la
+    // base real (migración TemporalContractInventoryBusinessDates02 aplicada por MigrateAsync): el
+    // TimeZone de la SESIÓN PostgreSQL no debe alterar ni el día de negocio (columna date) ni el
+    // instante (timestamptz). Se escribe con una zona de sesión y se relee con otra.
+    [Theory]
+    [InlineData("America/Guayaquil", "Europe/Madrid")]
+    [InlineData("UTC", "America/New_York")]
+    [InlineData("America/New_York", "America/Guayaquil")]
+    [InlineData("Europe/Madrid", "UTC")]
+    public async Task BusinessDate_e_instante_son_invariantes_a_la_zona_de_sesion(
+        string writeTimeZone,
+        string readTimeZone
+    )
+    {
+        var businessDate = new DateOnly(2026, 9, 25);
+        Guid transferId;
+        DateTime confirmedAt;
+
+        await using (var db = CreateContext(writeTimeZone))
+        {
+            var source = MakeWarehouse($"S{Guid.NewGuid():N}"[..8], isMain: true);
+            var target = MakeWarehouse($"T{Guid.NewGuid():N}"[..8], isMain: false);
+            db.Warehouses.AddRange(source, target);
+            var transfer = StockTransfer.Create(
+                _tenantId,
+                sequential: 1,
+                operationBranchId: _branchId,
+                sourceWarehouseId: source.Id,
+                targetWarehouseId: target.Id,
+                reason: null,
+                notes: null,
+                createdBy: _userId,
+                transferDate: businessDate,
+                companyId: _companyId
+            );
+            transfer.Confirm(_userId);
+            db.StockTransfers.Add(transfer);
+            await db.SaveChangesAsync();
+            transferId = transfer.Id;
+            confirmedAt = transfer.ConfirmedAt!.Value;
+        }
+
+        await using (var db = CreateContext(readTimeZone))
+        {
+            var persisted = await db.StockTransfers.AsNoTracking().SingleAsync(t => t.Id == transferId);
+            persisted.TransferDate.Should().Be(businessDate);
+            persisted.ConfirmedAt!.Value.Kind.Should().Be(DateTimeKind.Utc);
+            // timestamptz guarda microsegundos: mismo instante (sin ±5h), truncado a µs.
+            persisted.ConfirmedAt.Value.Should().BeCloseTo(confirmedAt, TimeSpan.FromMilliseconds(1));
+
+            var rawDate = await db
+                .Database.SqlQueryRaw<string>(
+                    "SELECT to_char(transfer_date, 'YYYY-MM-DD') AS \"Value\" FROM stock_transfers WHERE id = {0}",
+                    transferId
+                )
+                .SingleAsync();
+            rawDate.Should().Be("2026-09-25");
+        }
+    }
+
     // ZH-DATETIME-KIND-HARDENING-01: reproduce el INVALID_DATETIME_KIND de POST de transferencias
     // de stock — StockTransfer.Create convertía el DateOnly del día operativo con
     // ToDateTime(TimeOnly.MinValue) (Kind=Unspecified) y el guard lo rechazaba en SaveChanges.
@@ -265,9 +328,8 @@ public sealed class UtcDateTimeGuardInterceptorTests : IAsyncLifetime
         await using (var db = CreateContext())
         {
             var persisted = await db.StockTransfers.AsNoTracking().SingleAsync(t => t.Id == transferId);
-            persisted.TransferDate.Kind.Should().Be(DateTimeKind.Utc);
-            DateOnly.FromDateTime(persisted.TransferDate).Should().Be(businessDate);
-            persisted.TransferDate.TimeOfDay.Should().Be(TimeSpan.Zero);
+            // ZH-TEMPORAL-CONTRACT-02: columna date — el día de negocio vuelve idéntico.
+            persisted.TransferDate.Should().Be(businessDate);
         }
     }
 

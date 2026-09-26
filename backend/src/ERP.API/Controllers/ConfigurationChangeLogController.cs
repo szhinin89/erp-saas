@@ -35,15 +35,15 @@ public sealed class ConfigurationChangeLogController : ControllerBase
         [FromQuery] Guid? entityId,
         [FromQuery] string? key,
         [FromQuery] OrgScope? scope,
-        [FromQuery] DateTime? from,
-        [FromQuery] DateTime? to,
+        [FromQuery] DateTime? fromUtc,
+        [FromQuery] DateTime? toUtc,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 50,
         CancellationToken cancellationToken = default
     )
     {
         var result = await _mediator.Send(
-            new GetConfigurationChangeLogQuery(entityType, entityId, key, scope, from, to, page, pageSize),
+            new GetConfigurationChangeLogQuery(entityType, entityId, key, scope, fromUtc, toUtc, page, pageSize),
             cancellationToken
         );
         return this.ToOkOrBadRequest(result);

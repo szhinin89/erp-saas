@@ -1,0 +1,21 @@
+{
+  "$schemaNote": "Reglas F-DT (ZH-TEMPORAL-CONTRACT-SINGLE-SOURCE-02). Canónico: docs/architecture/data-standards.md § Contrato temporal. Único punto autorizado de zona horaria / hoy / conversión de instantes: frontend/src/lib/formatters/dateFormatters.ts (excluido). `exceptions` = usos auditados que NO son fecha de negocio ni presentación de instantes: archivo + regla + conteo exacto + reason; nunca wildcard.",
+  "scanGlobs": [
+    "frontend/src/**/*.ts",
+    "frontend/src/**/*.tsx"
+  ],
+  "excludeGlobs": [
+    "frontend/src/**/*.test.ts",
+    "frontend/src/**/*.test.tsx",
+    "frontend/src/test/**",
+    "frontend/src/lib/formatters/dateFormatters.ts"
+  ],
+  "exceptions": [
+    {
+      "file": "frontend/src/shared/branding/brandConfig.ts",
+      "rule": "F-DT-local-calendar",
+      "count": 1,
+      "reason": "Año de copyright del pie de marca (valor por defecto de parámetro): texto legal, no fecha de negocio ni presentación de un instante."
+    }
+  ]
+}

@@ -82,8 +82,8 @@ public sealed class StockController : ControllerBase
     public async Task<IActionResult> GetMovements(
         [FromQuery] Guid itemId,
         [FromQuery] Guid warehouseId,
-        [FromQuery] DateTime? from,
-        [FromQuery] DateTime? to,
+        [FromQuery] DateOnly? from,
+        [FromQuery] DateOnly? to,
         CancellationToken ct = default
     )
     {
@@ -147,8 +147,8 @@ public sealed class StockController : ControllerBase
         [FromQuery] string? status,
         [FromQuery] Guid? reasonId,
         [FromQuery] string? movementType,
-        [FromQuery] DateTime? startDate,
-        [FromQuery] DateTime? endDate,
+        [FromQuery] DateOnly? startDate,
+        [FromQuery] DateOnly? endDate,
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken ct = default

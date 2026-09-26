@@ -57,7 +57,7 @@ public sealed class InvoiceXmlBuilderTests
                 EstablishmentAddress: "Av. Amazonas y Naciones Unidas",
                 EmissionPoint: "001",
                 Sequential: "000000123",
-                IssueDate: new DateTime(2026, 7, 8)
+                IssueDate: new DateOnly(2026, 7, 8)
             ),
             Issuer: new ElectronicDocumentIssuerData(
                 TaxId: "1790012345001",

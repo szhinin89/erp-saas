@@ -13,7 +13,7 @@ vi.mock("../modules/session/api/sessionService", () => ({
 
 const baseDto: SessionContextDto = {
   identity: { userId: "user-1", fullName: "Test User", email: "t@t.com" },
-  tenant: { id: "tenant-1", displayName: "Tenant", logo: null },
+  tenant: { id: "tenant-1", displayName: "Tenant", logo: null, timezone: "America/Guayaquil" },
   authorization: { roles: ["Cajero"], permissions: ["*"] },
   preferences: { language: "es" },
   branch: { id: "branch-1", name: "Matriz", isMainBranch: true },

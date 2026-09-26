@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Companies;
+using ERP.Domain.Common;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
@@ -305,19 +306,19 @@ public sealed class StockRepository : IStockRepository
         Guid productId,
         Guid warehouseId,
         DateTime? fromUtc,
-        DateTime? toUtc,
+        DateTime? toUtcExclusive,
         CancellationToken ct = default
     )
     {
-        var from = AsUtc(fromUtc);
-        var to = AsUtc(toUtc);
+        var from = UtcDateTime.EnsureUtc(fromUtc);
+        var to = UtcDateTime.EnsureUtc(toUtcExclusive);
         var q = _db.Set<StockMovement>()
             .ForOperationalScope(tenantId, _company)
             .Where(m => m.ProductId == productId && m.WarehouseId == warehouseId);
         if (from.HasValue)
             q = q.Where(m => m.CreatedAt >= from.Value);
         if (to.HasValue)
-            q = q.Where(m => m.CreatedAt <= to.Value);
+            q = q.Where(m => m.CreatedAt < to.Value);
         return await q.OrderByDescending(m => m.SequenceNumber).ToListAsync(ct);
     }
 
@@ -326,12 +327,12 @@ public sealed class StockRepository : IStockRepository
         Guid productId,
         Guid? warehouseId,
         DateTime? fromUtc,
-        DateTime? toUtc,
+        DateTime? toUtcExclusive,
         CancellationToken ct = default
     )
     {
-        var from = AsUtc(fromUtc);
-        var to = AsUtc(toUtc);
+        var from = UtcDateTime.EnsureUtc(fromUtc);
+        var to = UtcDateTime.EnsureUtc(toUtcExclusive);
         var q = _db.Set<StockMovement>()
             .ForOperationalScope(tenantId, _company)
             .Where(m => m.ProductId == productId);
@@ -340,16 +341,9 @@ public sealed class StockRepository : IStockRepository
         if (from.HasValue)
             q = q.Where(m => m.CreatedAt >= from.Value);
         if (to.HasValue)
-            q = q.Where(m => m.CreatedAt <= to.Value);
+            q = q.Where(m => m.CreatedAt < to.Value);
         return await q.OrderBy(m => m.WarehouseId).ThenBy(m => m.SequenceNumber).ToListAsync(ct);
     }
-
-    /// <summary>
-    /// El model binder de ASP.NET produce DateTime.Kind=Unspecified para query params;
-    /// Npgsql exige Kind=Utc para comparar contra columnas timestamptz (created_at).
-    /// </summary>
-    private static DateTime? AsUtc(DateTime? value) =>
-        value is null ? null : DateTime.SpecifyKind(value.Value, DateTimeKind.Utc);
 
     public Task<StockMovement?> GetMovementByIdAsync(
         Guid tenantId,

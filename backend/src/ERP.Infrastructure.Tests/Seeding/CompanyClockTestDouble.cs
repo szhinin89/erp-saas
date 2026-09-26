@@ -36,4 +36,24 @@ internal sealed class AlwaysTodayCompanyClock : ICompanyClock
         DateTime utcInstant,
         CancellationToken ct = default
     ) => Task.FromResult(DateOnly.FromDateTime(utcInstant));
+
+    public Task<(DateTime StartUtc, DateTime EndUtc)> DayUtcRangeAsync(
+        Guid companyId,
+        Guid tenantId,
+        DateOnly day,
+        CancellationToken ct = default
+    ) =>
+        Task.FromResult(
+            CompanyTimeZone.DayUtcRange(day, CompanyTimeZone.Resolve(CompanyTimeZone.DefaultTimezoneId))
+        );
+
+    public Task<DateTime> CompanyLocalToUtcAsync(
+        Guid companyId,
+        Guid tenantId,
+        DateTime companyLocal,
+        CancellationToken ct = default
+    ) =>
+        Task.FromResult(
+            CompanyTimeZone.ToUtc(companyLocal, CompanyTimeZone.Resolve(CompanyTimeZone.DefaultTimezoneId))
+        );
 }

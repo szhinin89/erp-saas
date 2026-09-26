@@ -9,15 +9,7 @@ import { ZHMoneyValue } from "../../../../components/zh/ZHMoneyValue";
 import { message } from "../../../../lib/messages";
 import { formatApiRequestError } from "../../../lib/apiError";
 import { accountingApi, type TrialBalanceLineDto } from "../../api/accountingApi";
-
-function firstDayOfMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
-}
-
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
-}
+import { firstDayOfMonthIso, todayIso } from "../../../../lib/formatters/dateFormatters";
 
 /**
  * Balance de Comprobación (ACCOUNTING-REPORTS-09) — saldo inicial/movimiento/saldo final por
@@ -27,8 +19,8 @@ function today(): string {
  * se mueve del header a la barra de filtros con `<label htmlFor>` asociado.
  */
 export function TrialBalanceReportTab() {
-  const [fromDate, setFromDate] = useState(firstDayOfMonth());
-  const [toDate, setToDate] = useState(today());
+  const [fromDate, setFromDate] = useState(firstDayOfMonthIso());
+  const [toDate, setToDate] = useState(todayIso());
   const [includeZeroMovementAccounts, setIncludeZeroMovementAccounts] = useState(false);
   const [lines, setLines] = useState<TrialBalanceLineDto[]>([]);
   const [totals, setTotals] = useState({

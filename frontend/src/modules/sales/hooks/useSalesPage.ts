@@ -54,7 +54,7 @@ import {
 } from "../../../lib/config/precisionPolicy.config";
 import {
   todayIso,
-  toLocalIsoDate,
+  addDaysIso,
 } from "../../../lib/formatters/dateFormatters";
 import { normalizeOptionalCode } from "../../../lib/sanitizers";
 import { isEditableTarget } from "../../../lib/inputUtils";
@@ -1401,8 +1401,14 @@ export function useSalesPage() {
           amount: p.amount,
           reference: p.reference,
           cardDetail: p.cardDetail ?? undefined,
-          transferDetail: p.transferDetail ?? undefined,
-          chequeDetail: p.chequeDetail ?? undefined,
+          // ZH-TEMPORAL-CONTRACT-02J: transferDate/cashDate son fechas de negocio (API DateOnly
+          // "YYYY-MM-DD"); un input vacío se omite en vez de enviar "" (inválido para DateOnly).
+          transferDetail: p.transferDetail
+            ? { ...p.transferDetail, transferDate: p.transferDetail.transferDate || undefined }
+            : undefined,
+          chequeDetail: p.chequeDetail
+            ? { ...p.chequeDetail, cashDate: p.chequeDetail.cashDate || undefined }
+            : undefined,
         })),
         // ADR-033, Fase 4: solo se envía si el usuario confirmó explícitamente un cronograma
         // personalizado en el simulador — si no, se omite y el backend genera/regenera el
@@ -1719,15 +1725,15 @@ export function useSalesPage() {
       const base = Math.round((amount / count) * factor) / factor;
       const rows: CreditRow[] = [];
       let accumulated = 0;
-      const today = new Date();
+      // Hoy de la empresa + n días — fecha de negocio, sin Date/zona del navegador.
+      const today = todayIso();
       for (let i = 1; i <= count; i++) {
-        const due = new Date(today);
-        due.setDate(due.getDate() + interval * i);
+        const due = addDaysIso(today, interval * i);
         const isLast = i === count;
         const amt = isLast
           ? Math.round((amount - accumulated) * factor) / factor
           : base;
-        rows.push({ number: i, dueDate: toLocalIsoDate(due), amount: amt });
+        rows.push({ number: i, dueDate: due, amount: amt });
         accumulated += amt;
       }
       return rows;

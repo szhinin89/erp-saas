@@ -9,7 +9,7 @@ public interface IDashboardKpiReader
     Task<DashboardKpisDto> ReadAsync(
         Guid tenantId,
         Guid companyId,
-        DateTime asOf,
+        DateOnly asOf,
         CancellationToken cancellationToken = default
     );
 }

@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Purchases.PurchaseReception.DTOs;
 using ERP.Application.Modules.Purchases.PurchaseReception.Mapping;
 using ERP.Domain.Modules.Purchases.Interfaces;
@@ -20,6 +21,7 @@ public sealed class ImportPurchaseReceptionHandler
     private readonly ICurrentCompany _company;
     private readonly ICurrentBranch _branch;
     private readonly ICurrentUser _user;
+    private readonly ICompanyClock _companyClock;
 
     public ImportPurchaseReceptionHandler(
         IPurchaseReceptionParser parser,
@@ -29,9 +31,11 @@ public sealed class ImportPurchaseReceptionHandler
         ICurrentTenant tenant,
         ICurrentCompany company,
         ICurrentBranch branch,
-        ICurrentUser user
+        ICurrentUser user,
+        ICompanyClock companyClock
     )
     {
+        _companyClock = companyClock;
         _parser = parser;
         _verifier = verifier;
         _documentRepo = documentRepo;
@@ -63,6 +67,14 @@ public sealed class ImportPurchaseReceptionHandler
         {
             PurchaseReceptionDocument? document;
 
+            // ZH-TEMPORAL-CONTRACT-02: FECHA_AUTORIZACION (hora Ecuador/empresa) → UTC real, una vez.
+            var authorizationDateUtc = await _companyClock.CompanyLocalToUtcAsync(
+                _company.CompanyId,
+                _tenant.TenantId,
+                item.Record.AuthorizationLocalDateTime,
+                cancellationToken
+            );
+
             if (!pendingByAccessKey.TryGetValue(item.Record.AccessKey, out document))
             {
                 document = await _documentRepo.GetByAccessKeyAsync(
@@ -85,7 +97,7 @@ public sealed class ImportPurchaseReceptionHandler
                     item.Record.AccessKey,
                     item.Record.InvoiceNumber,
                     item.Record.IssueDate,
-                    item.Record.AuthorizationDate,
+                    authorizationDateUtc,
                     item.Record.Subtotal,
                     item.Record.VatAmount,
                     item.Record.Total,
@@ -138,6 +150,7 @@ public sealed class ImportPurchaseReceptionHandler
                 PurchaseReceptionMapper.ToDto(
                     item,
                     document,
+                    authorizationDateUtc,
                     creditNoteExists: creditNoteId is not null,
                     creditNoteId: creditNoteId,
                     cancelledCreditNoteId: cancelledCreditNoteId

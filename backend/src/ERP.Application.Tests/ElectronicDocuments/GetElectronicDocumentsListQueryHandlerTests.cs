@@ -1,3 +1,4 @@
+using ERP.Application.Common.Services;
 using ERP.Application.Common;
 using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Application.Modules.ElectronicDocuments.UseCases.GetElectronicDocumentsList;
@@ -80,7 +81,8 @@ public sealed class GetElectronicDocumentsListQueryHandlerTests
             NoSummaryResolver().Object,
             NoCompanyRepository().Object,
             TenantContext().Object,
-            CompanyContext(CompanyAId).Object
+            CompanyContext(CompanyAId).Object,
+            new Mock<ICompanyClock>().Object
         );
 
         var result = await handler.Handle(
@@ -140,7 +142,8 @@ public sealed class GetElectronicDocumentsListQueryHandlerTests
             NoSummaryResolver().Object,
             NoCompanyRepository().Object,
             TenantContext().Object,
-            CompanyContext(CompanyAId).Object
+            CompanyContext(CompanyAId).Object,
+            new Mock<ICompanyClock>().Object
         );
 
         await handler.Handle(

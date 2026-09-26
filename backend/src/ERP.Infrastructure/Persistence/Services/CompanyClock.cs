@@ -4,15 +4,11 @@ using Microsoft.EntityFrameworkCore;
 namespace ERP.Infrastructure.Persistence.Services;
 
 /// <summary>
-/// Implementación de <see cref="ICompanyClock"/>: resuelve <c>Company.Timezone</c> y convierte
-/// <c>DateTime.UtcNow</c> a la hora local de la empresa antes de extraer la fecha calendario.
+/// Implementación de <see cref="ICompanyClock"/>: resuelve <c>Company.Timezone</c> y delega la
+/// aritmética de zona horaria en <see cref="CompanyTimeZone"/> (única implementación).
 /// </summary>
 public sealed class CompanyClock : ICompanyClock
 {
-    // Ecuador continental no observa horario de verano — desfase fijo UTC-5, usado solo si el
-    // Timezone almacenado está vacío o el SO no reconoce el identificador (defensivo).
-    private const string DefaultTimezoneId = "America/Guayaquil";
-
     private readonly ErpDbContext _db;
 
     public CompanyClock(ErpDbContext db) => _db = db;
@@ -21,24 +17,18 @@ public sealed class CompanyClock : ICompanyClock
         Guid companyId,
         Guid tenantId,
         CancellationToken ct = default
-    )
-    {
-        var tz = await ResolveCompanyTimeZoneAsync(companyId, tenantId, ct);
-        var localNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
-        return DateOnly.FromDateTime(localNow);
-    }
+    ) => CompanyTimeZone.Today(await ResolveCompanyTimeZoneAsync(companyId, tenantId, ct));
 
     public async Task<DateOnly> LocalDateAsync(
         Guid companyId,
         Guid tenantId,
         DateTime utcInstant,
         CancellationToken ct = default
-    )
-    {
-        var tz = await ResolveCompanyTimeZoneAsync(companyId, tenantId, ct);
-        var instantUtc = DateTime.SpecifyKind(utcInstant, DateTimeKind.Utc);
-        return DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(instantUtc, tz));
-    }
+    ) =>
+        CompanyTimeZone.LocalDate(
+            utcInstant,
+            await ResolveCompanyTimeZoneAsync(companyId, tenantId, ct)
+        );
 
     public async Task<(DateTime StartUtc, DateTime EndUtc)> TodayUtcRangeAsync(
         Guid companyId,
@@ -47,17 +37,27 @@ public sealed class CompanyClock : ICompanyClock
     )
     {
         var tz = await ResolveCompanyTimeZoneAsync(companyId, tenantId, ct);
-        var localToday = DateOnly.FromDateTime(
-            TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz)
-        );
-        var localStart = localToday.ToDateTime(TimeOnly.MinValue);
-        var localEnd = localToday.AddDays(1).ToDateTime(TimeOnly.MinValue);
-
-        return (
-            TimeZoneInfo.ConvertTimeToUtc(localStart, tz),
-            TimeZoneInfo.ConvertTimeToUtc(localEnd, tz)
-        );
+        return CompanyTimeZone.DayUtcRange(CompanyTimeZone.Today(tz), tz);
     }
+
+    public async Task<(DateTime StartUtc, DateTime EndUtc)> DayUtcRangeAsync(
+        Guid companyId,
+        Guid tenantId,
+        DateOnly day,
+        CancellationToken ct = default
+    ) =>
+        CompanyTimeZone.DayUtcRange(day, await ResolveCompanyTimeZoneAsync(companyId, tenantId, ct));
+
+    public async Task<DateTime> CompanyLocalToUtcAsync(
+        Guid companyId,
+        Guid tenantId,
+        DateTime companyLocal,
+        CancellationToken ct = default
+    ) =>
+        CompanyTimeZone.ToUtc(
+            companyLocal,
+            await ResolveCompanyTimeZoneAsync(companyId, tenantId, ct)
+        );
 
     private async Task<TimeZoneInfo> ResolveCompanyTimeZoneAsync(
         Guid companyId,
@@ -71,31 +71,6 @@ public sealed class CompanyClock : ICompanyClock
             .Select(c => c.Timezone)
             .FirstOrDefaultAsync(ct);
 
-        return ResolveTimeZone(timezoneId);
+        return CompanyTimeZone.Resolve(timezoneId);
     }
-
-    private static TimeZoneInfo ResolveTimeZone(string? timezoneId)
-    {
-        var id = string.IsNullOrWhiteSpace(timezoneId) ? DefaultTimezoneId : timezoneId;
-        try
-        {
-            return TimeZoneInfo.FindSystemTimeZoneById(id);
-        }
-        catch (TimeZoneNotFoundException)
-        {
-            return FixedEcuadorOffset();
-        }
-        catch (InvalidTimeZoneException)
-        {
-            return FixedEcuadorOffset();
-        }
-    }
-
-    private static TimeZoneInfo FixedEcuadorOffset() =>
-        TimeZoneInfo.CreateCustomTimeZone(
-            "Ecuador-Fixed-UTC-5",
-            TimeSpan.FromHours(-5),
-            "Ecuador (UTC-5)",
-            "Ecuador (UTC-5)"
-        );
 }

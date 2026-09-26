@@ -68,7 +68,7 @@ public sealed class RidePipelineCreditNoteIntegrationTests
                 "Av. Amazonas y Naciones Unidas",
                 "001",
                 "000000045",
-                new DateTime(2026, 7, 30)
+                new DateOnly(2026, 7, 30)
             ),
             Issuer: new ElectronicDocumentIssuerData(
                 "1790012345001",
@@ -123,7 +123,7 @@ public sealed class RidePipelineCreditNoteIntegrationTests
             ModifiedDocument: new ElectronicDocumentModifiedReference(
                 "01",
                 "001-001-000000045",
-                new DateTime(2026, 7, 20)
+                new DateOnly(2026, 7, 20)
             )
         );
 

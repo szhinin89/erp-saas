@@ -5,7 +5,7 @@ import { ReportKpiCard } from "../../../components/ReportPageTemplate";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { ZhDecimalInput } from "../../../components/zh/inputs";
-import { formatDate } from "../../../lib/formatters/dateFormatters";
+import { formatDate, todayIso } from "../../../lib/formatters/dateFormatters";
 import type { PendingInstallmentOption } from "../api/pendingPayablesFacade";
 import type { RegisterSupplierPaymentFormValues } from "../../../schemas/supplier-payments/registerSupplierPaymentSchema";
 import { ZHNumberValue } from "../../../components/zh/ZHNumberValue";
@@ -20,10 +20,6 @@ const STATUS_LABELS: Record<string, string> = {
   pending: "Pendiente",
   partiallypaid: "Parcial",
 };
-
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 /**
  * SUPPLIER-PAYMENT-PROVIDER-PORTFOLIO-VISIBILITY-01 — cartera pendiente del proveedor visible en

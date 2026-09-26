@@ -33,7 +33,7 @@ public interface IElectronicDocumentRepository
         Guid tenantId,
         Guid? companyId,
         DateTime? dateFromUtc,
-        DateTime? dateToUtc,
+        DateTime? dateToUtcExclusive,
         IReadOnlyList<ElectronicDocumentState>? states,
         ElectronicDocumentType? documentType,
         string? environment,

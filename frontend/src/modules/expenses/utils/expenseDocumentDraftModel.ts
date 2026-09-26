@@ -9,6 +9,7 @@ import type {
 } from "../api/expenseDocumentService";
 import type { ExpenseDocumentHeaderState } from "../components/ExpenseDocumentHeader";
 import type { ExpenseDraftLineState } from "../components/ExpenseDocumentLinesEditor";
+import { fromDateTimeLocalInputValue } from "../../../lib/formatters/dateFormatters";
 
 export interface ExpenseLineTotals {
   subtotal: number;
@@ -189,9 +190,10 @@ export function buildExpenseDraftPayload(
     paymentTermId: header.paymentTermId || null,
     dueDate: header.dueDate || null,
     authorizationNumber: header.authorizationNumber.trim() || null,
-    authorizationDate: header.authorizationDate
-      ? new Date(header.authorizationDate).toISOString()
-      : null,
+    // DATE-02A: datetime-local = hora de Company.Timezone → UTC una sola vez. Antes
+    // `new Date(local).toISOString()` convertía con la zona del NAVEGADOR y al recargar se
+    // leía el UTC como hora local: +5h de drift por cada edición/guardado.
+    authorizationDate: fromDateTimeLocalInputValue(header.authorizationDate),
     notes: header.notes.trim() || null,
     taxSupportCode: normalizeOptionalCode(header.taxSupportCode),
     lines: lines.map((line) => ({

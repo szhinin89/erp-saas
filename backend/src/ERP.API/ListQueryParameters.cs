@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace ERP.API;
 
 internal static class ListQueryParameters
@@ -31,49 +29,6 @@ internal static class ListQueryParameters
             return null;
         var text = value.ToString();
         return string.IsNullOrWhiteSpace(text) ? null : text;
-    }
-
-    public static (DateOnly? From, DateOnly? To) ParseDateOnlyRange(
-        IQueryCollection query,
-        string fromKey = "dateFrom",
-        string toKey = "dateTo"
-    )
-    {
-        DateOnly? from = null;
-        DateOnly? to = null;
-        if (
-            query.TryGetValue(fromKey, out var fromValue)
-            && DateOnly.TryParse(fromValue, out var fromDate)
-        )
-            from = fromDate;
-        if (query.TryGetValue(toKey, out var toValue) && DateOnly.TryParse(toValue, out var toDate))
-            to = toDate;
-        return (from, to);
-    }
-
-    public static (DateTime? From, DateTime? To) ParseDateTimeRange(
-        IQueryCollection query,
-        string fromKey = "desde",
-        string toKey = "hasta"
-    )
-    {
-        // Kind=Utc obligatorio: un DateTime con Kind=Unspecified/Local usado como parámetro de
-        // una comparación EF Core contra una columna timestamptz falla en tiempo de ejecución
-        // (Npgsql exige Utc). Ver ZH-DATETIME-UTC-GUARDRAILS-01.
-        const DateTimeStyles styles = DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal;
-        DateTime? from = null;
-        DateTime? to = null;
-        if (
-            query.TryGetValue(fromKey, out var fromValue)
-            && DateTime.TryParse(fromValue, CultureInfo.InvariantCulture, styles, out var fromDate)
-        )
-            from = fromDate;
-        if (
-            query.TryGetValue(toKey, out var toValue)
-            && DateTime.TryParse(toValue, CultureInfo.InvariantCulture, styles, out var toDate)
-        )
-            to = toDate;
-        return (from, to);
     }
 
     public static (int Skip, int Take) ParseSkipTake(IQueryCollection query, int defaultTake = 50)

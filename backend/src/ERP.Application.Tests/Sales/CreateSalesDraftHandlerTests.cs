@@ -375,7 +375,7 @@ public sealed class CreateSalesDraftHandlerTests
                     TransferDetail: new TransferDetailInput(
                         companyBankAccountId,
                         "TRX-001",
-                        DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd")
+                        DateOnly.FromDateTime(DateTime.UtcNow)
                     )
                 ),
             }
@@ -507,7 +507,7 @@ public sealed class CreateSalesDraftHandlerTests
                 new(
                     cashMethodId,
                     115m,
-                    TransferDetail: new TransferDetailInput(Guid.NewGuid(), "TRX-001", "2026-07-13")
+                    TransferDetail: new TransferDetailInput(Guid.NewGuid(), "TRX-001", new DateOnly(2026, 7, 13))
                 ),
             }
         );

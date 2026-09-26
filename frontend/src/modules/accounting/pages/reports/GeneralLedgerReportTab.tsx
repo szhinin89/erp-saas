@@ -7,7 +7,7 @@ import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/Z
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHMoneyValue } from "../../../../components/zh/ZHMoneyValue";
 import { Badge } from "../../../../components/PageShell";
-import { formatDate } from "../../../../lib/formatters/dateFormatters";
+import { formatDate, firstDayOfMonthIso, todayIso } from "../../../../lib/formatters/dateFormatters";
 import { message } from "../../../../lib/messages";
 import { formatApiRequestError } from "../../../lib/apiError";
 import {
@@ -19,15 +19,6 @@ import {
 import { useI18n } from "../../../../i18n/i18n";
 import { sourceModuleLabel, friendlyDescription } from "../../labels/accountingLabels";
 
-function firstDayOfMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
-}
-
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
 /**
  * Libro Mayor (ACCOUNTING-REPORTS-09) — saldo inicial/movimiento/saldo final y detalle Kardex
  * por cuenta, consume `GET /accounting/reports/general-ledger`. Solo lectura, sin recálculo.
@@ -37,8 +28,8 @@ function today(): string {
  */
 export function GeneralLedgerReportTab() {
   const { t } = useI18n();
-  const [fromDate, setFromDate] = useState(firstDayOfMonth());
-  const [toDate, setToDate] = useState(today());
+  const [fromDate, setFromDate] = useState(firstDayOfMonthIso());
+  const [toDate, setToDate] = useState(todayIso());
   const [accountId, setAccountId] = useState("");
   const [accounts, setAccounts] = useState<AccountDto[]>([]);
   const [ledgerAccounts, setLedgerAccounts] = useState<GeneralLedgerAccountDto[]>([]);

@@ -17,7 +17,7 @@ public sealed class GetDashboardKpisQueryHandlerTests
     private static readonly Guid TenantId = Guid.NewGuid();
     private static readonly Guid CompanyId = Guid.NewGuid();
 
-    private static DashboardKpisDto SampleDto(DateTime asOf) =>
+    private static DashboardKpisDto SampleDto(DateOnly asOf) =>
         new(0m, 0, 0m, 0m, 0, 0m, 0, 0m, 0, 0m, 0, 0, 0, asOf, asOf.Month, asOf.Year);
 
     [Fact]
@@ -32,20 +32,20 @@ public sealed class GetDashboardKpisQueryHandlerTests
             .Setup(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(companyToday);
 
-        DateTime? capturedAsOf = null;
+        DateOnly? capturedAsOf = null;
         reader
             .Setup(r =>
-                r.ReadAsync(TenantId, CompanyId, It.IsAny<DateTime>(), It.IsAny<CancellationToken>())
+                r.ReadAsync(TenantId, CompanyId, It.IsAny<DateOnly>(), It.IsAny<CancellationToken>())
             )
-            .Callback<Guid, Guid, DateTime, CancellationToken>((_, _, asOf, _) => capturedAsOf = asOf)
-            .ReturnsAsync((Guid _, Guid _, DateTime asOf, CancellationToken _) => SampleDto(asOf));
+            .Callback<Guid, Guid, DateOnly, CancellationToken>((_, _, asOf, _) => capturedAsOf = asOf)
+            .ReturnsAsync((Guid _, Guid _, DateOnly asOf, CancellationToken _) => SampleDto(asOf));
 
         var handler = new GetDashboardKpisQueryHandler(reader.Object, tenant, company, companyClock.Object);
 
         var result = await handler.Handle(new GetDashboardKpisQuery(), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        capturedAsOf.Should().Be(companyToday.ToDateTime(TimeOnly.MinValue));
+        capturedAsOf.Should().Be(companyToday);
         companyClock.Verify(
             c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()),
             Times.Once
@@ -55,13 +55,13 @@ public sealed class GetDashboardKpisQueryHandlerTests
     [Fact]
     public async Task Con_AsOf_explicito_no_consulta_ICompanyClock()
     {
-        var explicitAsOf = new DateTime(2026, 3, 1, 15, 30, 0);
+        var explicitAsOf = new DateOnly(2026, 3, 1);
         var reader = new Mock<IDashboardKpiReader>();
         reader
             .Setup(r =>
-                r.ReadAsync(TenantId, CompanyId, explicitAsOf.Date, It.IsAny<CancellationToken>())
+                r.ReadAsync(TenantId, CompanyId, explicitAsOf, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync(SampleDto(explicitAsOf.Date));
+            .ReturnsAsync(SampleDto(explicitAsOf));
         var tenant = Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId);
         var company = Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId);
         var companyClock = new Mock<ICompanyClock>();

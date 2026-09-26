@@ -41,7 +41,7 @@ public sealed class ElectronicDocumentIssuerExceptionHandlingTests
                 "Dirección",
                 "001",
                 "000000001",
-                DateTime.UtcNow
+                new DateOnly(2026, 9, 25)
             ),
             Issuer: new ElectronicDocumentIssuerData(
                 "1792146739001",

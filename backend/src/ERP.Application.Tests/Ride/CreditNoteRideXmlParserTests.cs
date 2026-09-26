@@ -39,7 +39,7 @@ public sealed class CreditNoteRideXmlParserTests
                 EstablishmentAddress: "Av. Principal 123",
                 EmissionPoint: "001",
                 Sequential: "000000001",
-                IssueDate: new DateTime(2026, 7, 30)
+                IssueDate: new DateOnly(2026, 7, 30)
             ),
             Issuer: new ElectronicDocumentIssuerData(
                 TaxId: "1790012345001",
@@ -94,7 +94,7 @@ public sealed class CreditNoteRideXmlParserTests
             ModifiedDocument: new ElectronicDocumentModifiedReference(
                 DocTypeCode: "01",
                 Number: "001-001-000000045",
-                IssueDate: new DateTime(2026, 7, 20)
+                IssueDate: new DateOnly(2026, 7, 20)
             )
         );
 

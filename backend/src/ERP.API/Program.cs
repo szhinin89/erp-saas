@@ -104,12 +104,18 @@ builder.Host.UseSerilog(
 );
 
 builder
-    .Services.AddControllers()
+    .Services.AddControllers(opts =>
+    {
+        // ZH-TEMPORAL-CONTRACT-02: DateTime en query/route = instante con zona explícita.
+        opts.ModelBinderProviders.Insert(0, new ERP.API.Temporal.UtcInstantModelBinderProvider());
+    })
     .AddJsonOptions(opts =>
     {
         opts.JsonSerializerOptions.Converters.Add(
             new System.Text.Json.Serialization.JsonStringEnumConverter()
         );
+        // ZH-TEMPORAL-CONTRACT-02: DateTime en JSON = instante UTC ("...Z"); DateOnly = "YYYY-MM-DD".
+        opts.JsonSerializerOptions.Converters.Add(new ERP.API.Temporal.UtcInstantJsonConverter());
     });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerWithJwt();

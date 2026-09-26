@@ -43,7 +43,7 @@ public sealed class RetentionRidePdfServiceTests
                 EstablishmentAddress: "Av. Principal 123",
                 EmissionPoint: "001",
                 Sequential: "000000001",
-                IssueDate: new DateTime(2026, 8, 5)
+                IssueDate: new DateOnly(2026, 8, 5)
             ),
             NumeroCompleto: "001-001-000000001",
             Issuer: new ElectronicDocumentIssuerData(

@@ -68,8 +68,9 @@ public sealed class UserSessionRepository : IUserSessionRepository
             query = query.Where(x => x.Status == st);
         if (fromUtc is DateTime from)
             query = query.Where(x => x.StartedAt >= from);
+        // ZH-TEMPORAL-CONTRACT-02: rango instante semiabierto [fromUtc, toUtc).
         if (toUtc is DateTime to)
-            query = query.Where(x => x.StartedAt <= to);
+            query = query.Where(x => x.StartedAt < to);
 
         var total = await query.CountAsync(cancellationToken);
         var items = await query

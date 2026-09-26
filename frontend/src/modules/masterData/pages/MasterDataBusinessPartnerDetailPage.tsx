@@ -25,7 +25,7 @@ import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { applyServerErrors } from "../../lib/validationErrors";
 import { formatApiRequestError } from "../../lib/apiError";
 import { businessPartnerFacade } from "../api/businessPartnerFacade";
-import { formatDate } from "../../../lib/formatters/dateFormatters";
+import { formatDateTime } from "../../../lib/formatters/dateFormatters";
 import { geographyService, type GeoOption } from "../api/geographyService";
 import { useSriIdTypes, getSriIdTypeName } from "../api/useSriIdTypes";
 import { useLegalEntityTypes } from "../api/useLegalEntityTypes";
@@ -640,7 +640,7 @@ export function MasterDataBusinessPartnerDetailPage() {
               <Row label="Razón social" value={bp.legalName} />
               <Row label="Nombre comercial" value={bp.tradeName} />
               <Row label="País" value={bp.countryCode ?? "EC"} />
-              <Row label="Creado" value={formatDate(bp.createdAt)} />
+              <Row label="Creado" value={formatDateTime(bp.createdAt)} />
             </section>
           )}
 

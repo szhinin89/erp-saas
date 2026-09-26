@@ -3,6 +3,7 @@ using ERP.Application.Access.Caching;
 using ERP.Application.Auth.UseCases;
 using ERP.Application.Common;
 using ERP.Application.Common.Security;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Branches;
 using ERP.Application.Modules.Companies.DTOs;
 using ERP.Application.Modules.Media;
@@ -127,7 +128,10 @@ public sealed class GetSessionContextHandler
         var tenantDto = new SessionTenantDto(
             _currentTenant.TenantId,
             company?.TradeName ?? company?.LegalName ?? tenant?.Name ?? string.Empty,
-            logo
+            logo,
+            string.IsNullOrWhiteSpace(company?.Timezone)
+                ? CompanyTimeZone.DefaultTimezoneId
+                : company.Timezone
         );
 
         var authorization = new SessionAuthorizationDto(

@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Domain.Modules.Company.Interfaces;
@@ -16,15 +17,18 @@ public sealed class GetElectronicDocumentsListQueryHandler
     private readonly ICompanyRepository _companyRepository;
     private readonly ICurrentTenant _currentTenant;
     private readonly ICurrentCompany _currentCompany;
+    private readonly ICompanyClock _companyClock;
 
     public GetElectronicDocumentsListQueryHandler(
         IElectronicDocumentRepository repository,
         ISourceDocumentSummaryProviderResolver summaryResolver,
         ICompanyRepository companyRepository,
         ICurrentTenant currentTenant,
-        ICurrentCompany currentCompany
+        ICurrentCompany currentCompany,
+        ICompanyClock companyClock
     )
     {
+        _companyClock = companyClock;
         _repository = repository;
         _summaryResolver = summaryResolver;
         _companyRepository = companyRepository;
@@ -69,12 +73,19 @@ public sealed class GetElectronicDocumentsListQueryHandler
         }
 
         var companyId = _currentCompany.HasCompanyContext ? _currentCompany.CompanyId : (Guid?)null;
+        var (createdFromUtc, createdToUtcExclusive) = await _companyClock.DaysUtcRangeAsync(
+            companyId ?? Guid.Empty,
+            _currentTenant.TenantId,
+            query.DateFrom,
+            query.DateTo,
+            cancellationToken
+        );
 
         var (items, total) = await _repository.GetPagedAsync(
             _currentTenant.TenantId,
             companyId,
-            query.DateFrom,
-            query.DateTo,
+            createdFromUtc,
+            createdToUtcExclusive,
             states,
             documentType,
             query.Environment,

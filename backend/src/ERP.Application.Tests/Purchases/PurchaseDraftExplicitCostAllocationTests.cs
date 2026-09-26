@@ -28,7 +28,8 @@ namespace ERP.Application.Tests.Purchases;
 public sealed class PurchaseDraftExplicitCostAllocationTests
 {
     [Theory]
-    [InlineData("2026-09-03T21:50")]
+    // ZH-TEMPORAL-CONTRACT-02: mismo instante con offset explícito (16:50 Ecuador = 21:50Z).
+    [InlineData("2026-09-03T16:50:00-05:00")]
     [InlineData("2026-09-03T21:50:00Z")]
     [InlineData(null)]
     public async Task CreateDraft_normalizes_reception_date_before_save_and_allows_manual_purchase(string? date)

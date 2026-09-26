@@ -71,5 +71,5 @@ public static class ResponseFactory
         new(entry.User, env.IsDevelopment() ? entry.Dev : null);
 
     private static ApiResponseMeta BuildMeta(HttpContext context) =>
-        new(RequestCorrelationMiddleware.Resolve(context), DateTimeOffset.UtcNow);
+        new(RequestCorrelationMiddleware.Resolve(context), DateTime.UtcNow);
 }

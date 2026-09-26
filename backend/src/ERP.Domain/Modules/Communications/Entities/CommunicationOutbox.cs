@@ -94,7 +94,7 @@ public sealed class CommunicationOutbox
             BodyText = Optional(bodyText, BodyMaxLen, nameof(bodyText)),
             Status = CommunicationStatus.Pending,
             Priority = priority,
-            ScheduledAtUtc = UtcDateTime.Normalize(scheduledAtUtc ?? DateTime.UtcNow),
+            ScheduledAtUtc = UtcDateTime.EnsureUtc(scheduledAtUtc ?? DateTime.UtcNow),
             MaxRetries = Math.Clamp(maxRetries ?? DefaultMaxRetries, 0, 20),
             CorrelationType = Optional(correlationType, CorrelationTypeMaxLen, nameof(correlationType)),
             CorrelationId = correlationId == Guid.Empty ? null : correlationId,

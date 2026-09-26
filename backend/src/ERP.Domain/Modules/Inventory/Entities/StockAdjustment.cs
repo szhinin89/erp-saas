@@ -32,7 +32,8 @@ public sealed class StockAdjustment
     public Guid ReasonId { get; private set; }
     public string MovementType { get; private set; } = null!;
     public string? Notes { get; private set; }
-    public DateTime AdjustmentDate { get; private set; }
+    /// <summary>Fecha de negocio (PostgreSQL <c>date</c>) — ZH-TEMPORAL-CONTRACT-02: nunca un instante.</summary>
+    public DateOnly AdjustmentDate { get; private set; }
     public string Status { get; private set; } = "Draft";
     public DateTime? ExecutedAt { get; private set; }
     public Guid? ExecutedBy { get; private set; }
@@ -79,7 +80,7 @@ public sealed class StockAdjustment
             // DATETIME-COMPANY-CLOCK-GLOBAL-FIX-01: día operativo de la empresa (ICompanyClock,
             // resuelto en Application), nunca DateTime.UtcNow crudo — Domain no accede al reloj,
             // solo recibe el DateOnly ya resuelto.
-            AdjustmentDate = UtcDateTime.Normalize(adjustmentDate.ToDateTime(TimeOnly.MinValue)),
+            AdjustmentDate = adjustmentDate,
             Status = "Draft",
         };
         a.SetCreated(createdBy);

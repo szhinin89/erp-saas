@@ -9,7 +9,8 @@ public sealed class KardexOptions
     public const string Section = "Kardex";
 
     /// <summary>
-    /// true  → usa KardexSnapshot como punto de partida (O(período) vs O(total)).
+    /// true  → modo escalable (snapshots). Sin implementación vigente: KardexSnapshot se eliminó en
+    /// ZH-TEMPORAL-CONTRACT-02 por no tener consumidores; esta opción hoy no tiene efecto.
     /// false → calcula siempre desde el origen (comportamiento original, sin dependencia de snapshots).
     ///
     /// note: el modo escalable no se activa por defecto. En producción se debe

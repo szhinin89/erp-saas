@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Inventory.Stock.DTOs;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Modules.Inventory.Interfaces;
@@ -13,16 +14,22 @@ public sealed class GetKardexByProductQueryHandler
     private readonly IStockRepository _repo;
     private readonly IAccessRepository _accessRepo;
     private readonly ICurrentTenant _tenant;
+    private readonly ICurrentCompany _company;
+    private readonly ICompanyClock _companyClock;
 
     public GetKardexByProductQueryHandler(
         IStockRepository repo,
         IAccessRepository accessRepo,
-        ICurrentTenant tenant
+        ICurrentTenant tenant,
+        ICurrentCompany company,
+        ICompanyClock companyClock
     )
     {
         _repo = repo;
         _accessRepo = accessRepo;
         _tenant = tenant;
+        _company = company;
+        _companyClock = companyClock;
     }
 
     public async Task<Result<IReadOnlyList<StockMovementDto>>> Handle(
@@ -30,12 +37,19 @@ public sealed class GetKardexByProductQueryHandler
         CancellationToken ct
     )
     {
+        var (fromUtc, toUtcExclusive) = await _companyClock.DaysUtcRangeAsync(
+            _company.CompanyId,
+            _tenant.TenantId,
+            request.From,
+            request.To,
+            ct
+        );
         var movements = await _repo.GetMovementsByProductAsync(
             _tenant.TenantId,
             request.ProductId,
             request.WarehouseId,
-            request.From,
-            request.To,
+            fromUtc,
+            toUtcExclusive,
             ct
         );
 

@@ -12,7 +12,11 @@ namespace ERP.API.Middleware;
 
 public partial class ExceptionMiddleware
 {
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    // ZH-TEMPORAL-CONTRACT-02J: mismo contrato de instante que MVC (Program.cs) — "…Z".
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        Converters = { new ERP.API.Temporal.UtcInstantJsonConverter() },
+    };
 
     private readonly RequestDelegate _next;
     private readonly ILogger<ExceptionMiddleware> _logger;

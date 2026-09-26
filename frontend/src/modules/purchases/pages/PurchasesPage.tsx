@@ -31,7 +31,7 @@ import { ZhSelect } from "../../../components/zh/inputs/ZhSelect";
 import { ZhTextarea } from "../../../components/zh/inputs/ZhTextarea";
 import { usePrecisionDecimals, usePrecisionPolicy } from "../../../hooks/usePrecisionPolicy";
 import { formatMoney, formatMoneyWithSymbol } from "../../../lib/sanitizers";
-import { formatDate } from "../../../lib/formatters/dateFormatters";
+import { formatDate, formatDateTime } from "../../../lib/formatters/dateFormatters";
 import {
   ZHConfirmModal,
   ZHPromptModal,
@@ -370,7 +370,7 @@ export function PurchasesPage() {
               message={
                 ctx.editing?.status === "Cancelled"
                   ? t("purchases.notices.cancelledReadOnly", {
-                      date: formatDate(ctx.editing.cancelledAt),
+                      date: formatDateTime(ctx.editing.cancelledAt),
                       reason:
                         ctx.editing.cancelReason ??
                         t("purchases.notices.noReason", "Sin motivo"),
