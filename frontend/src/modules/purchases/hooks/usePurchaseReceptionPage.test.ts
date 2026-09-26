@@ -499,3 +499,100 @@ describe("usePurchaseReceptionPage — processCreditNote (PURCHASE-CREDIT-NOTE-A
     open.mockRestore();
   });
 });
+
+describe("usePurchaseReceptionPage — filtro por proveedor y orden por emisión (ZH-PURCHASES-RECEPTION-FILTER-SORT-01)", () => {
+  async function importRows(items: PurchaseReceptionItem[]) {
+    vi.mocked(purchaseReceptionService.importTxt).mockResolvedValue({
+      items,
+      totalParsed: items.length,
+      parseErrorCount: 0,
+      skippedUnsupportedCount: 0,
+    });
+    const hook = renderReceptionPageHook();
+    await act(async () => {
+      await hook.result.current.handleFileSelected(buildFile());
+    });
+    return hook;
+  }
+
+  const rows = [
+    buildItem({ documentId: "a", supplierRuc: "111", supplierName: "Beta S.A.", issueDate: "2026-08-10" }),
+    buildItem({ documentId: "b", supplierRuc: "222", supplierName: "Alfa Cía.", issueDate: "2026-08-01", supplierExists: false, supplierId: null, status: "NEW_SUPPLIER" }),
+    buildItem({ documentId: "c", supplierRuc: "111", supplierName: "Beta S.A.", issueDate: "2026-08-05" }),
+    buildItem({ documentId: "d", supplierRuc: "333", supplierName: "Gamma", issueDate: "2026-08-20" }),
+  ];
+  const ids = (items: PurchaseReceptionItem[]) => items.map((i) => i.documentId);
+
+  it("construye opciones únicas desde las filas cargadas (incluye proveedores no registrados)", async () => {
+    const { result } = await importRows(rows);
+    expect(result.current.supplierOptions).toEqual([
+      { ruc: "222", name: "Alfa Cía." },
+      { ruc: "111", name: "Beta S.A." },
+      { ruc: "333", name: "Gamma" },
+    ]);
+  });
+
+  it("sin selección muestra todo, por defecto más reciente primero", async () => {
+    const { result } = await importRows(rows);
+    expect(result.current.dateSortOrder).toBe("desc");
+    expect(ids(result.current.items)).toEqual(["d", "a", "c", "b"]);
+    expect(result.current.total).toBe(4);
+  });
+
+  it("filtra por uno o varios proveedores y ordena sobre el resultado filtrado", async () => {
+    const { result } = await importRows(rows);
+    act(() => result.current.addSupplierFilter("111"));
+    expect(ids(result.current.items)).toEqual(["a", "c"]);
+    expect(result.current.total).toBe(2);
+
+    act(() => result.current.addSupplierFilter("222"));
+    expect(ids(result.current.items)).toEqual(["a", "c", "b"]);
+
+    act(() => result.current.setDateSortOrder("asc"));
+    expect(ids(result.current.items)).toEqual(["b", "c", "a"]);
+
+    act(() => result.current.removeSupplierFilter("111"));
+    expect(ids(result.current.items)).toEqual(["b"]);
+  });
+
+  it("no altera los KPI superiores y limpiar filtros restaura todo", async () => {
+    const { result } = await importRows(rows);
+    const summaryBefore = result.current.summary;
+    act(() => result.current.addSupplierFilter("333"));
+    act(() => result.current.setDateSortOrder("asc"));
+    expect(result.current.summary).toEqual(summaryBefore);
+
+    act(() => result.current.clearFilters());
+    expect(result.current.selectedSupplierRucs).toEqual([]);
+    expect(result.current.dateSortOrder).toBe("desc");
+    expect(result.current.total).toBe(4);
+  });
+
+  it("paginación trabaja sobre el resultado filtrado y vuelve a la página 1 al cambiar filtro", async () => {
+    const many = Array.from({ length: 25 }, (_, i) =>
+      buildItem({
+        documentId: `x${i}`,
+        supplierRuc: i < 22 ? "111" : "222",
+        issueDate: `2026-08-${String(i + 1).padStart(2, "0")}`,
+      }),
+    );
+    const { result } = await importRows(many);
+    act(() => result.current.setPage(2));
+    expect(result.current.items).toHaveLength(5);
+
+    act(() => result.current.addSupplierFilter("222"));
+    expect(result.current.page).toBe(1);
+    expect(result.current.total).toBe(3);
+    expect(ids(result.current.items)).toEqual(["x24", "x23", "x22"]);
+  });
+
+  it("importar un nuevo TXT limpia la selección de proveedores", async () => {
+    const { result } = await importRows(rows);
+    act(() => result.current.addSupplierFilter("111"));
+    await act(async () => {
+      await result.current.handleFileSelected(buildFile());
+    });
+    expect(result.current.selectedSupplierRucs).toEqual([]);
+    expect(result.current.total).toBe(4);
+  });
+});

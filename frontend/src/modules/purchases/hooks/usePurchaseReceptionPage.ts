@@ -20,6 +20,13 @@ export interface BatchXmlProgressState {
 
 const PAGE_SIZE = 20;
 
+export type ReceptionDateSortOrder = "desc" | "asc";
+
+export interface ReceptionSupplierOption {
+  ruc: string;
+  name: string;
+}
+
 function extractErrorMessage(err: unknown, fallback: string): string {
   const response = (
     err as { response?: { data?: { message?: { user?: string } } } }
@@ -37,6 +44,12 @@ export function usePurchaseReceptionPage() {
   );
   const [fileName, setFileName] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  // ZH-PURCHASES-RECEPTION-FILTER-SORT-01 — filtro/orden solo de UI sobre las filas ya cargadas
+  // en memoria (el TXT se importa completo). Clave del proveedor = RUC tal como viene en la fila,
+  // así también se filtran proveedores no registrados. No afecta los KPI superiores.
+  const [selectedSupplierRucs, setSelectedSupplierRucs] = useState<string[]>([]);
+  const [dateSortOrder, setDateSortOrderState] =
+    useState<ReceptionDateSortOrder>("desc");
   // Estado por fila de la consulta de XML — no viene del backend (que solo persiste el estado
   // previo cuando falla), es puramente de UI para mostrar "Consultando..."/"Error consulta".
   const [xmlRowState, setXmlRowState] = useState<
@@ -64,6 +77,7 @@ export function usePurchaseReceptionPage() {
     setError(null);
     setPage(1);
     setXmlRowState({});
+    setSelectedSupplierRucs([]);
     try {
       const importResult = await purchaseReceptionService.importTxt(
         file,
@@ -329,10 +343,53 @@ export function usePurchaseReceptionPage() {
   };
 
   const items = useMemo(() => result?.items ?? [], [result]);
+
+  const supplierOptions = useMemo<ReceptionSupplierOption[]>(() => {
+    const byRuc = new Map<string, string>();
+    for (const item of items) {
+      if (!byRuc.has(item.supplierRuc)) byRuc.set(item.supplierRuc, item.supplierName);
+    }
+    return [...byRuc.entries()]
+      .map(([ruc, name]) => ({ ruc, name }))
+      .sort((a, b) => a.name.localeCompare(b.name) || a.ruc.localeCompare(b.ruc));
+  }, [items]);
+
+  // Primero filtrar, luego ordenar. issueDate es fecha de negocio "YYYY-MM-DD" (ADR-034), la
+  // comparación de strings es cronológica; sort estable conserva el orden del TXT en empates.
+  const visibleItems = useMemo(() => {
+    const filtered =
+      selectedSupplierRucs.length === 0
+        ? items
+        : items.filter((i) => selectedSupplierRucs.includes(i.supplierRuc));
+    const direction = dateSortOrder === "asc" ? 1 : -1;
+    return [...filtered].sort(
+      (a, b) => direction * a.issueDate.localeCompare(b.issueDate),
+    );
+  }, [items, selectedSupplierRucs, dateSortOrder]);
+
   const pagedItems = useMemo(
-    () => items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
-    [items, page],
+    () => visibleItems.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [visibleItems, page],
   );
+
+  const addSupplierFilter = (ruc: string) => {
+    if (!ruc) return;
+    setSelectedSupplierRucs((prev) => (prev.includes(ruc) ? prev : [...prev, ruc]));
+    setPage(1);
+  };
+  const removeSupplierFilter = (ruc: string) => {
+    setSelectedSupplierRucs((prev) => prev.filter((r) => r !== ruc));
+    setPage(1);
+  };
+  const setDateSortOrder = (order: ReceptionDateSortOrder) => {
+    setDateSortOrderState(order);
+    setPage(1);
+  };
+  const clearFilters = () => {
+    setSelectedSupplierRucs([]);
+    setDateSortOrderState("desc");
+    setPage(1);
+  };
 
   const summary = useMemo(
     () => ({
@@ -351,7 +408,14 @@ export function usePurchaseReceptionPage() {
     result,
     fileName,
     items: pagedItems,
-    total: items.length,
+    total: visibleItems.length,
+    supplierOptions,
+    selectedSupplierRucs,
+    addSupplierFilter,
+    removeSupplierFilter,
+    dateSortOrder,
+    setDateSortOrder,
+    clearFilters,
     page,
     pageSize: PAGE_SIZE,
     setPage,

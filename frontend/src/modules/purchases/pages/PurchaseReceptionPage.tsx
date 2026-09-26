@@ -5,7 +5,9 @@ import {
   ZHDataTable,
   type ZHDataTableColumn,
 } from "../../../components/zh/ZHDataTable";
-import { ZHBtn } from "../../../components/zh/ZHForm";
+import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
+import { ZHFilterBar } from "../../../components/zh/ZHFilterBar";
+import { ZhSelect } from "../../../components/zh/inputs";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZhBatchProgress } from "../../../components/zh/progress/ZhBatchProgress";
@@ -15,7 +17,10 @@ import {
   formatDateTime,
 } from "../../../lib/formatters/dateFormatters";
 import { useI18n } from "../../../i18n/i18n";
-import { usePurchaseReceptionPage } from "../hooks/usePurchaseReceptionPage";
+import {
+  usePurchaseReceptionPage,
+  type ReceptionDateSortOrder,
+} from "../hooks/usePurchaseReceptionPage";
 import type { PurchaseReceptionItem } from "../api/purchaseReceptionService";
 import { CreateSupplierModal } from "../components/CreateSupplierModal";
 import { PurchaseReceptionProcessCell } from "../components/PurchaseReceptionProcessCell";
@@ -362,7 +367,95 @@ export function PurchaseReceptionPage() {
         {ctx.result === null && !ctx.uploading ? (
           <EmptyState message="Importe un archivo TXT para ver los comprobantes recibidos." />
         ) : (
-          <ZHDataTable
+          <>
+            {/* ZH-PURCHASES-RECEPTION-FILTER-SORT-01 — filtro multi-proveedor (select que agrega +
+                chips removibles, sin componente multiselect nuevo) y orden por fecha de emisión.
+                Solo afectan la tabla; los KPI superiores siguen sobre el total importado. */}
+            {ctx.result && (
+              <ZHFilterBar
+                onClear={ctx.clearFilters}
+                clearLabel={t("purchases.reception.filters.clear", "Limpiar filtros")}
+                disabled={ctx.uploading}
+                chips={
+                  ctx.selectedSupplierRucs.length > 0
+                    ? ctx.supplierOptions
+                        .filter((o) => ctx.selectedSupplierRucs.includes(o.ruc))
+                        .map((o) => (
+                          <ZHBtn
+                            key={o.ruc}
+                            variant="secondary"
+                            size="xs"
+                            type="button"
+                            aria-label={`${t(
+                              "purchases.reception.filters.removeSupplier",
+                              "Quitar proveedor",
+                            )} ${o.name}`}
+                            onClick={() => ctx.removeSupplierFilter(o.ruc)}
+                          >
+                            {o.name} · {o.ruc}
+                            <span className="material-symbols-outlined zh-icon-sm">
+                              close
+                            </span>
+                          </ZHBtn>
+                        ))
+                    : undefined
+                }
+              >
+                <div className="zh-filterbar__field zh-filterbar__field--grow">
+                  <ZHField
+                    label={t("purchases.reception.filters.supplier", "Proveedor")}
+                    density="compact"
+                  >
+                    <ZhSelect
+                      value=""
+                      disabled={ctx.uploading}
+                      onChange={(e) => ctx.addSupplierFilter(e.target.value)}
+                    >
+                      <option value="">
+                        {ctx.selectedSupplierRucs.length > 0
+                          ? t(
+                              "purchases.reception.filters.addSupplier",
+                              "Agregar otro proveedor...",
+                            )
+                          : t(
+                              "purchases.reception.filters.allSuppliers",
+                              "Todos los proveedores",
+                            )}
+                      </option>
+                      {ctx.supplierOptions
+                        .filter((o) => !ctx.selectedSupplierRucs.includes(o.ruc))
+                        .map((o) => (
+                          <option key={o.ruc} value={o.ruc}>
+                            {o.name} — {o.ruc}
+                          </option>
+                        ))}
+                    </ZhSelect>
+                  </ZHField>
+                </div>
+                <div className="zh-filterbar__field">
+                  <ZHField
+                    label={t("purchases.reception.filters.dateSort", "Orden por emisión")}
+                    density="compact"
+                  >
+                    <ZhSelect
+                      value={ctx.dateSortOrder}
+                      disabled={ctx.uploading}
+                      onChange={(e) =>
+                        ctx.setDateSortOrder(e.target.value as ReceptionDateSortOrder)
+                      }
+                    >
+                      <option value="desc">
+                        {t("purchases.reception.filters.sortDesc", "Más reciente primero")}
+                      </option>
+                      <option value="asc">
+                        {t("purchases.reception.filters.sortAsc", "Más antiguo primero")}
+                      </option>
+                    </ZhSelect>
+                  </ZHField>
+                </div>
+              </ZHFilterBar>
+            )}
+            <ZHDataTable
             columns={columns}
             rows={ctx.items}
             rowKey={(row) => row.documentId}
@@ -375,6 +468,7 @@ export function PurchaseReceptionPage() {
             total={ctx.total}
             onPageChange={ctx.setPage}
           />
+          </>
         )}
       </div>
 
