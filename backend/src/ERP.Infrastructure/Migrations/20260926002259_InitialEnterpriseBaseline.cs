@@ -190,6 +190,29 @@ namespace ERP.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "cash_movement_reasons",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    code = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
+                    name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    movement_type = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    sort_order = table.Column<int>(type: "integer", nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
+                    updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    is_active = table.Column<bool>(type: "boolean", nullable: false),
+                    is_system_seeded = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_cash_movement_reasons", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "communication_outbox",
                 columns: table => new
                 {
@@ -252,35 +275,6 @@ namespace ERP.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_communication_templates", x => x.id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "company_financial_destination_audit",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    code = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
-                    old_name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
-                    new_name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
-                    old_is_active = table.Column<bool>(type: "boolean", nullable: true),
-                    new_is_active = table.Column<bool>(type: "boolean", nullable: true),
-                    old_accounting_account_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    new_accounting_account_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    entity_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    action = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: false),
-                    user_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    user_name = table.Column<string>(type: "character varying(254)", maxLength: 254, nullable: false),
-                    occurred_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    correlation_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    request_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    source = table.Column<int>(type: "integer", nullable: false),
-                    reason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_company_financial_destination_audit", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
@@ -400,9 +394,9 @@ namespace ERP.Infrastructure.Migrations
                     company_id = table.Column<Guid>(type: "uuid", nullable: false),
                     product_id = table.Column<Guid>(type: "uuid", nullable: false),
                     warehouse_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    quantity = table.Column<decimal>(type: "numeric(18,4)", nullable: false),
-                    reserved_quantity = table.Column<decimal>(type: "numeric(18,4)", nullable: false),
-                    total_stock_value = table.Column<decimal>(type: "numeric(18,6)", nullable: false),
+                    quantity = table.Column<decimal>(type: "numeric(20,6)", nullable: false),
+                    reserved_quantity = table.Column<decimal>(type: "numeric(20,6)", nullable: false),
+                    total_stock_value = table.Column<decimal>(type: "numeric(22,10)", nullable: false),
                     last_updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
                     tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -824,6 +818,28 @@ namespace ERP.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "master_banks",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    country_code = table.Column<string>(type: "character varying(2)", maxLength: 2, nullable: false),
+                    code = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
+                    name = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
+                    short_name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
+                    updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    is_active = table.Column<bool>(type: "boolean", nullable: false),
+                    is_system_seeded = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_master_banks", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "master_customer_categories",
                 columns: table => new
                 {
@@ -1086,7 +1102,9 @@ namespace ERP.Infrastructure.Migrations
                     requires_reference = table.Column<bool>(type: "boolean", nullable: false),
                     is_credit_allowed = table.Column<bool>(type: "boolean", nullable: false),
                     sort_order = table.Column<int>(type: "integer", nullable: false),
+                    affects_physical_cash = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     detail_type = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, defaultValue: "None"),
+                    sri_payment_method_code = table.Column<string>(type: "character varying(5)", maxLength: 5, nullable: true),
                     tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -1745,18 +1763,18 @@ namespace ERP.Infrastructure.Migrations
                     product_id = table.Column<Guid>(type: "uuid", nullable: false),
                     warehouse_id = table.Column<Guid>(type: "uuid", nullable: false),
                     movement_type = table.Column<int>(type: "integer", nullable: false),
-                    quantity = table.Column<decimal>(type: "numeric(18,4)", nullable: false),
+                    quantity = table.Column<decimal>(type: "numeric(20,6)", nullable: false),
                     uom_code = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    previous_quantity = table.Column<decimal>(type: "numeric(18,4)", nullable: false),
-                    result_quantity = table.Column<decimal>(type: "numeric(18,4)", nullable: false),
+                    previous_quantity = table.Column<decimal>(type: "numeric(20,6)", nullable: false),
+                    result_quantity = table.Column<decimal>(type: "numeric(20,6)", nullable: false),
                     sequence_number = table.Column<long>(type: "bigint", nullable: false),
                     reference = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     source_doc_id = table.Column<Guid>(type: "uuid", nullable: true),
                     source_doc_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     source_doc_line_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    unit_cost = table.Column<decimal>(type: "numeric(18,6)", nullable: true),
+                    unit_cost = table.Column<decimal>(type: "numeric(22,10)", nullable: true),
                     total_cost = table.Column<decimal>(type: "numeric(18,6)", nullable: true),
-                    running_average_cost = table.Column<decimal>(type: "numeric(18,6)", nullable: false),
+                    running_average_cost = table.Column<decimal>(type: "numeric(22,10)", nullable: false),
                     running_stock_value = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
                     effective_date = table.Column<DateOnly>(type: "date", nullable: false),
                     lot_id = table.Column<Guid>(type: "uuid", nullable: true),
@@ -1789,9 +1807,9 @@ namespace ERP.Infrastructure.Migrations
                     status_after = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
                     target_purchase_payable_id = table.Column<Guid>(type: "uuid", nullable: true),
                     source_purchase_return_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    financial_destination_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    financial_destination_code_snapshot = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
-                    destination_type_code_snapshot = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
+                    company_bank_account_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    destination_code_snapshot = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
+                    destination_type_snapshot = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
                     accounting_account_id = table.Column<Guid>(type: "uuid", nullable: true),
                     cash_register_id = table.Column<Guid>(type: "uuid", nullable: true),
                     cash_session_id = table.Column<Guid>(type: "uuid", nullable: true),
@@ -2163,7 +2181,7 @@ namespace ERP.Infrastructure.Migrations
                     reason_id = table.Column<Guid>(type: "uuid", nullable: false),
                     movement_type = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
                     notes = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
-                    adjustment_date = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    adjustment_date = table.Column<DateOnly>(type: "date", nullable: false),
                     status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     executed_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     executed_by = table.Column<Guid>(type: "uuid", nullable: true),
@@ -2205,7 +2223,7 @@ namespace ERP.Infrastructure.Migrations
                     purchase_vat_code = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: true),
                     excise_tax_code = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: true),
                     is_for_sale = table.Column<bool>(type: "boolean", nullable: false),
-                    max_discount_percent = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: true),
+                    max_discount_percent = table.Column<decimal>(type: "numeric(9,6)", nullable: true),
                     available_on_web = table.Column<bool>(type: "boolean", nullable: false),
                     available_on_pos = table.Column<bool>(type: "boolean", nullable: false),
                     available_on_mobile = table.Column<bool>(type: "boolean", nullable: false),
@@ -2216,8 +2234,8 @@ namespace ERP.Infrastructure.Migrations
                     tracks_series = table.Column<bool>(type: "boolean", nullable: false),
                     allow_decimal_qty = table.Column<bool>(type: "boolean", nullable: false),
                     allow_decimal_sale = table.Column<bool>(type: "boolean", nullable: false),
-                    min_stock_qty = table.Column<decimal>(type: "numeric(14,4)", precision: 14, scale: 4, nullable: true),
-                    max_stock_qty = table.Column<decimal>(type: "numeric(14,4)", precision: 14, scale: 4, nullable: true),
+                    min_stock_qty = table.Column<decimal>(type: "numeric(16,6)", nullable: true),
+                    max_stock_qty = table.Column<decimal>(type: "numeric(16,6)", nullable: true),
                     tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -2302,6 +2320,32 @@ namespace ERP.Infrastructure.Migrations
                         principalTable: "posting_rules",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "price_list_customers",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    price_list_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    customer_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    is_active = table.Column<bool>(type: "boolean", nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
+                    updated_by = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_price_list_customers", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_price_list_customers_price_lists_price_list_id",
+                        column: x => x.price_list_id,
+                        principalTable: "price_lists",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -2615,13 +2659,13 @@ namespace ERP.Infrastructure.Migrations
                     packaging_level_id = table.Column<Guid>(type: "uuid", nullable: true),
                     uom_code = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
                     base_uom_code = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
-                    conversion_factor = table.Column<decimal>(type: "numeric(18,6)", nullable: false),
-                    quantity = table.Column<decimal>(type: "numeric(18,4)", nullable: false),
-                    quantity_in_base_uom = table.Column<decimal>(type: "numeric(18,4)", nullable: false),
-                    unit_cost_base = table.Column<decimal>(type: "numeric(18,6)", nullable: true),
+                    conversion_factor = table.Column<decimal>(type: "numeric(22,10)", nullable: false),
+                    quantity = table.Column<decimal>(type: "numeric(20,6)", nullable: false),
+                    quantity_in_base_uom = table.Column<decimal>(type: "numeric(20,6)", nullable: false),
+                    unit_cost_base = table.Column<decimal>(type: "numeric(22,10)", nullable: true),
                     total_cost = table.Column<decimal>(type: "numeric(18,2)", nullable: true),
-                    current_stock_before = table.Column<decimal>(type: "numeric(18,4)", nullable: true),
-                    current_stock_after = table.Column<decimal>(type: "numeric(18,4)", nullable: true),
+                    current_stock_before = table.Column<decimal>(type: "numeric(20,6)", nullable: true),
+                    current_stock_after = table.Column<decimal>(type: "numeric(20,6)", nullable: true),
                     line_notes = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
                     sort_order = table.Column<short>(type: "smallint", nullable: false)
                 },
@@ -2674,7 +2718,7 @@ namespace ERP.Infrastructure.Migrations
                     item_id = table.Column<Guid>(type: "uuid", nullable: false),
                     name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     level = table.Column<int>(type: "integer", nullable: false),
-                    base_quantity = table.Column<decimal>(type: "numeric(14,4)", precision: 14, scale: 4, nullable: false),
+                    base_quantity = table.Column<decimal>(type: "numeric(18,10)", nullable: false),
                     uom_code = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
                     barcode = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     weight = table.Column<decimal>(type: "numeric(10,3)", precision: 10, scale: 3, nullable: true),
@@ -2760,7 +2804,7 @@ namespace ERP.Infrastructure.Migrations
                     item_id = table.Column<Guid>(type: "uuid", nullable: false),
                     from_uom_code = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
                     to_uom_code = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
-                    factor = table.Column<decimal>(type: "numeric(14,6)", precision: 14, scale: 6, nullable: false),
+                    factor = table.Column<decimal>(type: "numeric(18,10)", nullable: false),
                     is_active = table.Column<bool>(type: "boolean", nullable: false),
                     tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -2945,6 +2989,91 @@ namespace ERP.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "company_bank_accounts",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    bank_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    account_type = table.Column<int>(type: "integer", nullable: false),
+                    account_number = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    display_name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    accounting_account_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    is_active = table.Column<bool>(type: "boolean", nullable: false),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
+                    updated_by = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_company_bank_accounts", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_company_bank_accounts_accounts_accounting_account_id",
+                        column: x => x.accounting_account_id,
+                        principalTable: "accounts",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_company_bank_accounts_company_company_id",
+                        column: x => x.company_id,
+                        principalTable: "company",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_company_bank_accounts_master_banks_bank_id",
+                        column: x => x.bank_id,
+                        principalTable: "master_banks",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "company_precision_policy",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    profile_type = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
+                    sales_unit_price_decimals = table.Column<short>(type: "smallint", nullable: false),
+                    purchase_unit_price_decimals = table.Column<short>(type: "smallint", nullable: false),
+                    quantity_decimals = table.Column<short>(type: "smallint", nullable: false),
+                    percentage_decimals = table.Column<short>(type: "smallint", nullable: false),
+                    unit_cost_decimals = table.Column<short>(type: "smallint", nullable: false),
+                    average_cost_decimals = table.Column<short>(type: "smallint", nullable: false),
+                    conversion_factor_decimals = table.Column<short>(type: "smallint", nullable: false),
+                    settlement_tolerance_amount = table.Column<decimal>(type: "numeric(5,2)", nullable: false),
+                    is_locked = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    locked_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    locked_reason = table.Column<string>(type: "text", nullable: true),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
+                    updated_by = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_company_precision_policy", x => x.id);
+                    table.CheckConstraint("ck_company_precision_policy_average_cost", "average_cost_decimals BETWEEN 2 AND 10");
+                    table.CheckConstraint("ck_company_precision_policy_conversion_factor", "conversion_factor_decimals BETWEEN 2 AND 10");
+                    table.CheckConstraint("ck_company_precision_policy_percentage", "percentage_decimals BETWEEN 2 AND 6");
+                    table.CheckConstraint("ck_company_precision_policy_purchase_unit_price", "purchase_unit_price_decimals BETWEEN 2 AND 10");
+                    table.CheckConstraint("ck_company_precision_policy_quantity", "quantity_decimals BETWEEN 0 AND 6");
+                    table.CheckConstraint("ck_company_precision_policy_sales_unit_price", "sales_unit_price_decimals BETWEEN 2 AND 6");
+                    table.CheckConstraint("ck_company_precision_policy_settlement_tolerance", "settlement_tolerance_amount BETWEEN 0.00 AND 0.02");
+                    table.CheckConstraint("ck_company_precision_policy_unit_cost", "unit_cost_decimals BETWEEN 2 AND 10");
+                    table.ForeignKey(
+                        name: "FK_company_precision_policy_company_company_id",
+                        column: x => x.company_id,
+                        principalTable: "company",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "company_special_tax_responsibilities",
                 columns: table => new
                 {
@@ -3035,6 +3164,44 @@ namespace ERP.Infrastructure.Migrations
                         name: "FK_expense_category_nodes_expense_category_nodes_parent_id",
                         column: x => x.parent_id,
                         principalTable: "expense_category_nodes",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "payment_method_accounts",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    payment_method_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    accounting_account_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
+                    updated_by = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_payment_method_accounts", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_payment_method_accounts_accounts_accounting_account_id",
+                        column: x => x.accounting_account_id,
+                        principalTable: "accounts",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_payment_method_accounts_company_company_id",
+                        column: x => x.company_id,
+                        principalTable: "company",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_payment_method_accounts_payment_methods_payment_method_id",
+                        column: x => x.payment_method_id,
+                        principalTable: "payment_methods",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                 });
@@ -3511,73 +3678,6 @@ namespace ERP.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "expense_documents",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    branch_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    supplier_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    supplier_name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    supplier_tax_id = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    issue_date = table.Column<DateOnly>(type: "date", nullable: false),
-                    accounting_date = table.Column<DateOnly>(type: "date", nullable: false),
-                    document_type = table.Column<string>(type: "character varying(5)", maxLength: 5, nullable: false),
-                    document_number = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
-                    authorization_number = table.Column<string>(type: "character varying(49)", maxLength: 49, nullable: true),
-                    authorization_date = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    payment_term_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    payment_term_name = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
-                    payment_term_installments = table.Column<int>(type: "integer", nullable: false),
-                    payment_term_days_between = table.Column<int>(type: "integer", nullable: false),
-                    due_date = table.Column<DateOnly>(type: "date", nullable: true),
-                    notes = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    tax_support_code = table.Column<string>(type: "character varying(5)", maxLength: 5, nullable: true),
-                    status = table.Column<int>(type: "integer", nullable: false),
-                    confirmed_subtotal = table.Column<decimal>(type: "numeric(18,2)", nullable: true),
-                    confirmed_total_tax = table.Column<decimal>(type: "numeric(18,2)", nullable: true),
-                    confirmed_total_discount = table.Column<decimal>(type: "numeric(18,2)", nullable: true),
-                    confirmed_grand_total = table.Column<decimal>(type: "numeric(18,2)", nullable: true),
-                    cancel_reason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    cancelled_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    cancelled_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
-                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
-                    updated_by = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_expense_documents", x => x.id);
-                    table.ForeignKey(
-                        name: "FK_expense_documents_branches_branch_id",
-                        column: x => x.branch_id,
-                        principalTable: "branches",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_expense_documents_company_company_id",
-                        column: x => x.company_id,
-                        principalTable: "company",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_expense_documents_master_business_partners_supplier_id",
-                        column: x => x.supplier_id,
-                        principalTable: "master_business_partners",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_expense_documents_master_payment_terms_payment_term_id",
-                        column: x => x.payment_term_id,
-                        principalTable: "master_payment_terms",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "supplier_payments",
                 columns: table => new
                 {
@@ -3824,78 +3924,6 @@ namespace ERP.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "expense_lines",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    expense_document_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    expense_subcategory_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    snapshot_accounting_account_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    snapshot_accounting_account_code = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
-                    snapshot_accounting_account_name = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: true),
-                    description = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
-                    quantity = table.Column<decimal>(type: "numeric(18,4)", nullable: false),
-                    unit_amount = table.Column<decimal>(type: "numeric(18,6)", nullable: false),
-                    discount_pct = table.Column<decimal>(type: "numeric(5,2)", nullable: false),
-                    discount_amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
-                    vat_code = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
-                    vat_rate = table.Column<decimal>(type: "numeric(5,2)", nullable: false),
-                    vat_amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
-                    snapshot_vat_name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    notes = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
-                    sort_order = table.Column<short>(type: "smallint", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_expense_lines", x => x.id);
-                    table.ForeignKey(
-                        name: "FK_expense_lines_accounts_snapshot_accounting_account_id",
-                        column: x => x.snapshot_accounting_account_id,
-                        principalTable: "accounts",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_expense_lines_expense_category_nodes_expense_subcategory_id",
-                        column: x => x.expense_subcategory_id,
-                        principalTable: "expense_category_nodes",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_expense_lines_expense_documents_expense_document_id",
-                        column: x => x.expense_document_id,
-                        principalTable: "expense_documents",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "expense_payment_schedules",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    expense_document_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    installment_number = table.Column<int>(type: "integer", nullable: false),
-                    due_date = table.Column<DateOnly>(type: "date", nullable: false),
-                    amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
-                    notes = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    updated_by = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_expense_payment_schedules", x => x.id);
-                    table.ForeignKey(
-                        name: "FK_expense_payment_schedules_expense_documents_expense_documen~",
-                        column: x => x.expense_document_id,
-                        principalTable: "expense_documents",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "supplier_payment_applications",
                 columns: table => new
                 {
@@ -3968,6 +3996,7 @@ namespace ERP.Infrastructure.Migrations
                     notes = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     default_warehouse_id = table.Column<Guid>(type: "uuid", nullable: true),
                     default_customer_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    accounting_account_id = table.Column<Guid>(type: "uuid", nullable: true),
                     tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -3979,6 +4008,12 @@ namespace ERP.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_cash_registers", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_cash_registers_accounts_accounting_account_id",
+                        column: x => x.accounting_account_id,
+                        principalTable: "accounts",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_cash_registers_branches_branch_id",
                         column: x => x.branch_id,
@@ -4102,7 +4137,7 @@ namespace ERP.Infrastructure.Migrations
                     operation_branch_id = table.Column<Guid>(type: "uuid", nullable: false),
                     source_warehouse_id = table.Column<Guid>(type: "uuid", nullable: false),
                     target_warehouse_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    transfer_date = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    transfer_date = table.Column<DateOnly>(type: "date", nullable: false),
                     status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     reason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     notes = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
@@ -4197,21 +4232,23 @@ namespace ERP.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "company_financial_destinations",
+                name: "payments",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     company_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    code = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
-                    name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    destination_type_code = table.Column<int>(type: "integer", nullable: false),
-                    accounting_account_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    currency_code = table.Column<string>(type: "character varying(3)", maxLength: 3, nullable: false),
+                    direction = table.Column<int>(type: "integer", nullable: false),
+                    partner_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
+                    payment_date = table.Column<DateOnly>(type: "date", nullable: false),
+                    payment_method_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    company_bank_account_id = table.Column<Guid>(type: "uuid", nullable: true),
                     cash_register_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    bank_institution_code = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
-                    bank_account_identifier_normalized = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    is_active = table.Column<bool>(type: "boolean", nullable: false),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
+                    reference = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    status = table.Column<int>(type: "integer", nullable: false),
+                    applied_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    reversed_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    reverse_reason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -4220,26 +4257,78 @@ namespace ERP.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_company_financial_destinations", x => x.id);
-                    table.CheckConstraint("chk_company_financial_destination_type_fields", "(\"destination_type_code\" = 1 AND \"bank_institution_code\" IS NOT NULL AND \"bank_account_identifier_normalized\" IS NOT NULL AND \"cash_register_id\" IS NULL) OR (\"destination_type_code\" = 2 AND \"cash_register_id\" IS NOT NULL AND \"bank_institution_code\" IS NULL AND \"bank_account_identifier_normalized\" IS NULL)");
+                    table.PrimaryKey("PK_payments", x => x.id);
+                    table.CheckConstraint("chk_payments_amount_positive", "amount > 0");
                     table.ForeignKey(
-                        name: "FK_company_financial_destinations_accounts_accounting_account_~",
-                        column: x => x.accounting_account_id,
-                        principalTable: "accounts",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_company_financial_destinations_cash_registers_cash_register~",
+                        name: "FK_payments_cash_registers_cash_register_id",
                         column: x => x.cash_register_id,
                         principalTable: "cash_registers",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_company_financial_destinations_company_company_id",
-                        column: x => x.company_id,
-                        principalTable: "company",
+                        name: "FK_payments_company_bank_accounts_company_bank_account_id",
+                        column: x => x.company_bank_account_id,
+                        principalTable: "company_bank_accounts",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_payments_master_business_partners_partner_id",
+                        column: x => x.partner_id,
+                        principalTable: "master_business_partners",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_payments_payment_methods_payment_method_id",
+                        column: x => x.payment_method_id,
+                        principalTable: "payment_methods",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "supplier_payment_methods",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    supplier_payment_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    payment_method_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_bank_account_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    cash_register_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
+                    reference_number = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
+                    check_number = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
+                    check_date = table.Column<DateOnly>(type: "date", nullable: true),
+                    notes = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_supplier_payment_methods", x => x.id);
+                    table.CheckConstraint("chk_supplier_payment_methods_destination_xor", "(\"company_bank_account_id\" IS NOT NULL AND \"cash_register_id\" IS NULL) OR (\"company_bank_account_id\" IS NULL AND \"cash_register_id\" IS NOT NULL)");
+                    table.ForeignKey(
+                        name: "FK_supplier_payment_methods_cash_registers_cash_register_id",
+                        column: x => x.cash_register_id,
+                        principalTable: "cash_registers",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_supplier_payment_methods_company_bank_accounts_company_bank~",
+                        column: x => x.company_bank_account_id,
+                        principalTable: "company_bank_accounts",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_supplier_payment_methods_payment_methods_payment_method_id",
+                        column: x => x.payment_method_id,
+                        principalTable: "payment_methods",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_supplier_payment_methods_supplier_payments_supplier_payment~",
+                        column: x => x.supplier_payment_id,
+                        principalTable: "supplier_payments",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -4257,16 +4346,16 @@ namespace ERP.Infrastructure.Migrations
                     packaging_level_id = table.Column<Guid>(type: "uuid", nullable: true),
                     uom_code = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false, defaultValue: "UNIT"),
                     base_uom_code = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false, defaultValue: "UNIT"),
-                    conversion_factor = table.Column<decimal>(type: "numeric(18,6)", nullable: false, defaultValue: 1m),
-                    quantity_in_base_uom = table.Column<decimal>(type: "numeric(18,4)", nullable: false),
-                    quantity = table.Column<decimal>(type: "numeric(18,4)", nullable: false),
-                    unit_price = table.Column<decimal>(type: "numeric(18,6)", nullable: false),
-                    discount_pct = table.Column<decimal>(type: "numeric(5,2)", nullable: false),
+                    conversion_factor = table.Column<decimal>(type: "numeric(22,10)", nullable: false, defaultValue: 1m),
+                    quantity_in_base_uom = table.Column<decimal>(type: "numeric(20,6)", nullable: false),
+                    quantity = table.Column<decimal>(type: "numeric(20,6)", nullable: false),
+                    unit_price = table.Column<decimal>(type: "numeric(22,10)", nullable: false),
+                    discount_pct = table.Column<decimal>(type: "numeric(9,6)", nullable: false),
                     discount_amount = table.Column<decimal>(type: "numeric(18,6)", nullable: false),
                     freight_allocated = table.Column<decimal>(type: "numeric(18,6)", nullable: false),
                     other_costs_allocated = table.Column<decimal>(type: "numeric(18,6)", nullable: false),
                     total_line_cost = table.Column<decimal>(type: "numeric(18,6)", nullable: false, defaultValue: 0m),
-                    landed_unit_cost = table.Column<decimal>(type: "numeric(18,6)", nullable: false, defaultValue: 0m),
+                    landed_unit_cost = table.Column<decimal>(type: "numeric(22,10)", nullable: false, defaultValue: 0m),
                     is_frozen = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     vat_code = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
                     vat_rate = table.Column<decimal>(type: "numeric(5,2)", nullable: false),
@@ -4276,7 +4365,7 @@ namespace ERP.Infrastructure.Migrations
                     snapshot_warehouse_code = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
                     snapshot_item_pvp = table.Column<decimal>(type: "numeric(18,6)", nullable: false),
                     purchase_order_detail_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    ordered_quantity = table.Column<decimal>(type: "numeric(18,4)", nullable: true),
+                    ordered_quantity = table.Column<decimal>(type: "numeric(20,6)", nullable: true),
                     purchase_reception_line_id = table.Column<Guid>(type: "uuid", nullable: true),
                     notes = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
                     sort_order = table.Column<short>(type: "smallint", nullable: false)
@@ -4452,7 +4541,7 @@ namespace ERP.Infrastructure.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     stock_transfer_id = table.Column<Guid>(type: "uuid", nullable: false),
                     product_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    quantity = table.Column<decimal>(type: "numeric(18,4)", nullable: false),
+                    quantity = table.Column<decimal>(type: "numeric(20,6)", nullable: false),
                     description = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
                     tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -4509,7 +4598,9 @@ namespace ERP.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: false),
                     reference_type = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     reference_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    reference_number = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true)
+                    reference_number = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    reason_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    reason_name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -4542,6 +4633,9 @@ namespace ERP.Infrastructure.Migrations
                     customer_id_type = table.Column<string>(type: "character varying(5)", maxLength: 5, nullable: false),
                     customer_email = table.Column<string>(type: "character varying(254)", maxLength: 254, nullable: true),
                     customer_address = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
+                    customer_preferred_price_list_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    customer_preferred_price_list_name = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: true),
+                    pricing_traceability_version = table.Column<int>(type: "integer", nullable: true),
                     currency_code = table.Column<string>(type: "character varying(3)", maxLength: 3, nullable: false),
                     exchange_rate = table.Column<decimal>(type: "numeric(18,4)", nullable: false),
                     payment_term_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -4599,87 +4693,42 @@ namespace ERP.Infrastructure.Migrations
                         principalTable: "master_business_partners",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "payments",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    direction = table.Column<int>(type: "integer", nullable: false),
-                    partner_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
-                    payment_date = table.Column<DateOnly>(type: "date", nullable: false),
-                    payment_method_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    financial_destination_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    reference = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    status = table.Column<int>(type: "integer", nullable: false),
-                    applied_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    reversed_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    reverse_reason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
-                    updated_by = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_payments", x => x.id);
-                    table.CheckConstraint("chk_payments_amount_positive", "amount > 0");
                     table.ForeignKey(
-                        name: "FK_payments_company_financial_destinations_financial_destinati~",
-                        column: x => x.financial_destination_id,
-                        principalTable: "company_financial_destinations",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_payments_master_business_partners_partner_id",
-                        column: x => x.partner_id,
-                        principalTable: "master_business_partners",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_payments_payment_methods_payment_method_id",
-                        column: x => x.payment_method_id,
-                        principalTable: "payment_methods",
+                        name: "FK_sales_invoices_price_lists_customer_preferred_price_list_id",
+                        column: x => x.customer_preferred_price_list_id,
+                        principalTable: "price_lists",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
-                name: "supplier_payment_methods",
+                name: "supplier_payment_allocations",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
                     supplier_payment_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    payment_method_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    financial_destination_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
-                    reference_number = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
-                    check_number = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
-                    check_date = table.Column<DateOnly>(type: "date", nullable: true),
-                    notes = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true)
+                    supplier_payment_method_line_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    supplier_payment_application_line_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_supplier_payment_methods", x => x.id);
+                    table.PrimaryKey("PK_supplier_payment_allocations", x => x.id);
                     table.ForeignKey(
-                        name: "FK_supplier_payment_methods_company_financial_destinations_fin~",
-                        column: x => x.financial_destination_id,
-                        principalTable: "company_financial_destinations",
+                        name: "FK_supplier_payment_allocations_supplier_payment_applications_~",
+                        column: x => x.supplier_payment_application_line_id,
+                        principalTable: "supplier_payment_applications",
                         principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_supplier_payment_methods_payment_methods_payment_method_id",
-                        column: x => x.payment_method_id,
-                        principalTable: "payment_methods",
+                        name: "FK_supplier_payment_allocations_supplier_payment_methods_suppl~",
+                        column: x => x.supplier_payment_method_line_id,
+                        principalTable: "supplier_payment_methods",
                         principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_supplier_payment_methods_supplier_payments_supplier_payment~",
+                        name: "FK_supplier_payment_allocations_supplier_payments_supplier_pay~",
                         column: x => x.supplier_payment_id,
                         principalTable: "supplier_payments",
                         principalColumn: "id",
@@ -4714,6 +4763,81 @@ namespace ERP.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "expense_documents",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    branch_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    supplier_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    supplier_name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    supplier_tax_id = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    issue_date = table.Column<DateOnly>(type: "date", nullable: false),
+                    accounting_date = table.Column<DateOnly>(type: "date", nullable: false),
+                    document_type = table.Column<string>(type: "character varying(5)", maxLength: 5, nullable: false),
+                    document_number = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
+                    authorization_number = table.Column<string>(type: "character varying(49)", maxLength: 49, nullable: true),
+                    authorization_date = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    payment_term_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    payment_term_name = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
+                    payment_term_installments = table.Column<int>(type: "integer", nullable: false),
+                    payment_term_days_between = table.Column<int>(type: "integer", nullable: false),
+                    due_date = table.Column<DateOnly>(type: "date", nullable: true),
+                    notes = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    tax_support_code = table.Column<string>(type: "character varying(5)", maxLength: 5, nullable: true),
+                    status = table.Column<int>(type: "integer", nullable: false),
+                    reception_document_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    access_key = table.Column<string>(type: "character varying(49)", maxLength: 49, nullable: true),
+                    confirmed_subtotal = table.Column<decimal>(type: "numeric(18,2)", nullable: true),
+                    confirmed_total_tax = table.Column<decimal>(type: "numeric(18,2)", nullable: true),
+                    confirmed_total_discount = table.Column<decimal>(type: "numeric(18,2)", nullable: true),
+                    confirmed_grand_total = table.Column<decimal>(type: "numeric(18,2)", nullable: true),
+                    cancel_reason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    cancelled_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    cancelled_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
+                    updated_by = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_expense_documents", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_expense_documents_branches_branch_id",
+                        column: x => x.branch_id,
+                        principalTable: "branches",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_expense_documents_company_company_id",
+                        column: x => x.company_id,
+                        principalTable: "company",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_expense_documents_master_business_partners_supplier_id",
+                        column: x => x.supplier_id,
+                        principalTable: "master_business_partners",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_expense_documents_master_payment_terms_payment_term_id",
+                        column: x => x.payment_term_id,
+                        principalTable: "master_payment_terms",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_expense_documents_purchase_reception_documents_reception_do~",
+                        column: x => x.reception_document_id,
+                        principalTable: "purchase_reception_documents",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "purchase_reception_lines",
                 columns: table => new
                 {
@@ -4723,15 +4847,15 @@ namespace ERP.Infrastructure.Migrations
                     supplier_code = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     supplier_aux_code = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     description = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
-                    quantity = table.Column<decimal>(type: "numeric(18,4)", nullable: false),
-                    unit_price = table.Column<decimal>(type: "numeric(18,6)", nullable: false),
+                    quantity = table.Column<decimal>(type: "numeric(20,6)", nullable: false),
+                    unit_price = table.Column<decimal>(type: "numeric(22,10)", nullable: false),
                     vat_code = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
                     tax_code = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
                     vat_percentage = table.Column<decimal>(type: "numeric(5,2)", nullable: false),
                     tax_value = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
                     ice_code = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: true),
                     ice_value = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
-                    discount_pct = table.Column<decimal>(type: "numeric(5,2)", nullable: false),
+                    discount_pct = table.Column<decimal>(type: "numeric(9,6)", nullable: false),
                     discount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
                     line_subtotal = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
                     total_line = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
@@ -4848,14 +4972,24 @@ namespace ERP.Infrastructure.Migrations
                     snapshot_sku = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     snapshot_item_name = table.Column<string>(type: "character varying(254)", maxLength: 254, nullable: true),
                     warehouse_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    warehouse_name = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: true),
+                    unit_cost_at_sale = table.Column<decimal>(type: "numeric(22,10)", nullable: true),
+                    total_cost_at_sale = table.Column<decimal>(type: "numeric(18,6)", nullable: true),
+                    list_price_at_sale = table.Column<decimal>(type: "numeric(18,6)", nullable: true),
+                    price_list_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    price_list_name = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: true),
+                    pricing_source = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    discount_source = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    discount_description = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
+                    selection_source = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
                     packaging_level_id = table.Column<Guid>(type: "uuid", nullable: true),
                     uom_code = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
                     base_uom_code = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
-                    conversion_factor = table.Column<decimal>(type: "numeric(18,6)", nullable: false),
-                    quantity_in_base_uom = table.Column<decimal>(type: "numeric(18,4)", nullable: false),
-                    quantity = table.Column<decimal>(type: "numeric(18,4)", nullable: false),
+                    conversion_factor = table.Column<decimal>(type: "numeric(22,10)", nullable: false),
+                    quantity_in_base_uom = table.Column<decimal>(type: "numeric(20,6)", nullable: false),
+                    quantity = table.Column<decimal>(type: "numeric(20,6)", nullable: false),
                     unit_price = table.Column<decimal>(type: "numeric(18,6)", nullable: false),
-                    discount_pct = table.Column<decimal>(type: "numeric(5,2)", nullable: false),
+                    discount_pct = table.Column<decimal>(type: "numeric(9,6)", nullable: false),
                     discount_amount = table.Column<decimal>(type: "numeric(18,6)", nullable: false),
                     vat_code = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
                     vat_rate = table.Column<decimal>(type: "numeric(5,2)", nullable: false),
@@ -4868,6 +5002,12 @@ namespace ERP.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_sales_invoice_details", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_sales_invoice_details_price_lists_price_list_id",
+                        column: x => x.price_list_id,
+                        principalTable: "price_lists",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_sales_invoice_details_sales_invoices_invoice_id",
                         column: x => x.invoice_id,
@@ -5016,35 +5156,73 @@ namespace ERP.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "supplier_payment_allocations",
+                name: "expense_lines",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    supplier_payment_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    supplier_payment_method_line_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    supplier_payment_application_line_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false)
+                    expense_document_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    expense_subcategory_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    snapshot_accounting_account_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    snapshot_accounting_account_code = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
+                    snapshot_accounting_account_name = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: true),
+                    description = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
+                    quantity = table.Column<decimal>(type: "numeric(20,6)", nullable: false),
+                    unit_amount = table.Column<decimal>(type: "numeric(22,10)", nullable: false),
+                    discount_pct = table.Column<decimal>(type: "numeric(9,6)", nullable: false),
+                    discount_amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
+                    vat_code = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
+                    vat_rate = table.Column<decimal>(type: "numeric(5,2)", nullable: false),
+                    vat_amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
+                    snapshot_vat_name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    notes = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
+                    sort_order = table.Column<short>(type: "smallint", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_supplier_payment_allocations", x => x.id);
+                    table.PrimaryKey("PK_expense_lines", x => x.id);
                     table.ForeignKey(
-                        name: "FK_supplier_payment_allocations_supplier_payment_applications_~",
-                        column: x => x.supplier_payment_application_line_id,
-                        principalTable: "supplier_payment_applications",
+                        name: "FK_expense_lines_accounts_snapshot_accounting_account_id",
+                        column: x => x.snapshot_accounting_account_id,
+                        principalTable: "accounts",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_expense_lines_expense_category_nodes_expense_subcategory_id",
+                        column: x => x.expense_subcategory_id,
+                        principalTable: "expense_category_nodes",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_expense_lines_expense_documents_expense_document_id",
+                        column: x => x.expense_document_id,
+                        principalTable: "expense_documents",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "expense_payment_schedules",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    expense_document_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    installment_number = table.Column<int>(type: "integer", nullable: false),
+                    due_date = table.Column<DateOnly>(type: "date", nullable: false),
+                    amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
+                    notes = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    updated_by = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_expense_payment_schedules", x => x.id);
                     table.ForeignKey(
-                        name: "FK_supplier_payment_allocations_supplier_payment_methods_suppl~",
-                        column: x => x.supplier_payment_method_line_id,
-                        principalTable: "supplier_payment_methods",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_supplier_payment_allocations_supplier_payments_supplier_pay~",
-                        column: x => x.supplier_payment_id,
-                        principalTable: "supplier_payments",
+                        name: "FK_expense_payment_schedules_expense_documents_expense_documen~",
+                        column: x => x.expense_document_id,
+                        principalTable: "expense_documents",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -5111,7 +5289,7 @@ namespace ERP.Infrastructure.Migrations
                     credit_note_number = table.Column<string>(type: "character varying(17)", maxLength: 17, nullable: false),
                     access_key = table.Column<string>(type: "character varying(49)", maxLength: 49, nullable: true),
                     authorization_number = table.Column<string>(type: "character varying(49)", maxLength: 49, nullable: true),
-                    authorization_date = table.Column<DateOnly>(type: "date", nullable: true),
+                    authorization_date = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     issue_date = table.Column<DateOnly>(type: "date", nullable: false),
                     reason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     subtotal = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
@@ -5188,9 +5366,9 @@ namespace ERP.Infrastructure.Migrations
                     purchase_return_id = table.Column<Guid>(type: "uuid", nullable: false),
                     original_invoice_detail_id = table.Column<Guid>(type: "uuid", nullable: false),
                     item_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    quantity = table.Column<decimal>(type: "numeric(18,4)", nullable: false),
+                    quantity = table.Column<decimal>(type: "numeric(20,6)", nullable: false),
                     warehouse_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    unit_cost = table.Column<decimal>(type: "numeric(18,6)", nullable: true),
+                    unit_cost = table.Column<decimal>(type: "numeric(22,10)", nullable: true),
                     vat_code = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
                     vat_rate = table.Column<decimal>(type: "numeric(5,2)", nullable: true),
                     returned_subtotal = table.Column<decimal>(type: "numeric(18,2)", nullable: true),
@@ -5345,6 +5523,7 @@ namespace ERP.Infrastructure.Migrations
                 columns: table => new
                 {
                     payment_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_bank_account_id = table.Column<Guid>(type: "uuid", nullable: true),
                     bank_name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     receipt_number = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     transfer_date = table.Column<DateOnly>(type: "date", nullable: true)
@@ -5352,6 +5531,12 @@ namespace ERP.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_payment_transfer_details", x => x.payment_id);
+                    table.ForeignKey(
+                        name: "FK_payment_transfer_details_company_bank_accounts_company_bank~",
+                        column: x => x.company_bank_account_id,
+                        principalTable: "company_bank_accounts",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_payment_transfer_details_sales_invoice_payments_payment_id",
                         column: x => x.payment_id,
@@ -5438,11 +5623,11 @@ namespace ERP.Infrastructure.Migrations
                     packaging_level_id = table.Column<Guid>(type: "uuid", nullable: true),
                     uom_code = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
                     base_uom_code = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
-                    conversion_factor = table.Column<decimal>(type: "numeric(18,6)", nullable: false),
-                    quantity_in_base_uom = table.Column<decimal>(type: "numeric(18,4)", nullable: false),
-                    quantity = table.Column<decimal>(type: "numeric(18,4)", nullable: false),
+                    conversion_factor = table.Column<decimal>(type: "numeric(22,10)", nullable: false),
+                    quantity_in_base_uom = table.Column<decimal>(type: "numeric(20,6)", nullable: false),
+                    quantity = table.Column<decimal>(type: "numeric(20,6)", nullable: false),
                     unit_price = table.Column<decimal>(type: "numeric(18,6)", nullable: false),
-                    discount_pct = table.Column<decimal>(type: "numeric(5,2)", nullable: false),
+                    discount_pct = table.Column<decimal>(type: "numeric(9,6)", nullable: false),
                     discount_amount = table.Column<decimal>(type: "numeric(18,6)", nullable: false),
                     vat_code = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
                     vat_rate = table.Column<decimal>(type: "numeric(5,2)", nullable: false),
@@ -5501,6 +5686,10 @@ namespace ERP.Infrastructure.Migrations
                     tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
                     purchase_credit_note_id = table.Column<Guid>(type: "uuid", nullable: false),
                     description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    purchase_invoice_detail_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    quantity = table.Column<decimal>(type: "numeric(20,6)", nullable: true),
+                    ice_amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
+                    irbpnr_amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
                     subtotal = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
                     vat_code = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
                     vat_rate = table.Column<decimal>(type: "numeric(5,2)", nullable: true),
@@ -5516,6 +5705,12 @@ namespace ERP.Infrastructure.Migrations
                         principalTable: "purchase_credit_notes",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_purchase_credit_note_details_purchase_invoice_details_purch~",
+                        column: x => x.purchase_invoice_detail_id,
+                        principalTable: "purchase_invoice_details",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -5698,7 +5893,8 @@ namespace ERP.Infrastructure.Migrations
                     supplier_credit_movement_id = table.Column<Guid>(type: "uuid", nullable: false),
                     transaction_type_code = table.Column<int>(type: "integer", nullable: false),
                     original_transaction_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    financial_destination_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_bank_account_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    cash_register_id = table.Column<Guid>(type: "uuid", nullable: true),
                     accounting_account_id = table.Column<Guid>(type: "uuid", nullable: false),
                     payment_method_code = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
@@ -5708,9 +5904,9 @@ namespace ERP.Infrastructure.Migrations
                     reason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     cash_session_id = table.Column<Guid>(type: "uuid", nullable: true),
                     cash_movement_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    financial_destination_code_snapshot = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    financial_destination_name_snapshot = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    destination_type_code_snapshot = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    destination_code_snapshot = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    destination_name_snapshot = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    destination_type_snapshot = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     accounting_account_code_snapshot = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     created_by_user_id = table.Column<Guid>(type: "uuid", nullable: false),
                     created_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -5721,6 +5917,7 @@ namespace ERP.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_supplier_credit_refund_transactions", x => x.id);
+                    table.CheckConstraint("chk_supplier_credit_refund_transactions_destination_xor", "(\"company_bank_account_id\" IS NOT NULL AND \"cash_register_id\" IS NULL) OR (\"company_bank_account_id\" IS NULL AND \"cash_register_id\" IS NOT NULL)");
                     table.ForeignKey(
                         name: "FK_supplier_credit_refund_transactions_accounts_accounting_acc~",
                         column: x => x.accounting_account_id,
@@ -5734,21 +5931,27 @@ namespace ERP.Infrastructure.Migrations
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
+                        name: "FK_supplier_credit_refund_transactions_cash_registers_cash_reg~",
+                        column: x => x.cash_register_id,
+                        principalTable: "cash_registers",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
                         name: "FK_supplier_credit_refund_transactions_cash_sessions_cash_sess~",
                         column: x => x.cash_session_id,
                         principalTable: "cash_sessions",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_supplier_credit_refund_transactions_company_company_id",
-                        column: x => x.company_id,
-                        principalTable: "company",
+                        name: "FK_supplier_credit_refund_transactions_company_bank_accounts_c~",
+                        column: x => x.company_bank_account_id,
+                        principalTable: "company_bank_accounts",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_supplier_credit_refund_transactions_company_financial_desti~",
-                        column: x => x.financial_destination_id,
-                        principalTable: "company_financial_destinations",
+                        name: "FK_supplier_credit_refund_transactions_company_company_id",
+                        column: x => x.company_id,
+                        principalTable: "company",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
@@ -6341,6 +6544,17 @@ namespace ERP.Infrastructure.Migrations
                 columns: new[] { "tenant_id", "cash_session_id" });
 
             migrationBuilder.CreateIndex(
+                name: "ix_cash_movement_reasons_tenant_company_type_active",
+                table: "cash_movement_reasons",
+                columns: new[] { "tenant_id", "company_id", "movement_type", "is_active" });
+
+            migrationBuilder.CreateIndex(
+                name: "uq_cash_movement_reasons_tenant_company_code",
+                table: "cash_movement_reasons",
+                columns: new[] { "tenant_id", "company_id", "code" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_cash_movements_cash_session_id",
                 table: "cash_movements",
                 column: "cash_session_id");
@@ -6360,6 +6574,11 @@ namespace ERP.Infrastructure.Migrations
                 name: "ix_cash_movements_tenant_type",
                 table: "cash_movements",
                 columns: new[] { "tenant_id", "movement_type" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_cash_registers_accounting_account_id",
+                table: "cash_registers",
+                column: "accounting_account_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_cash_registers_branch_id",
@@ -6511,58 +6730,40 @@ namespace ERP.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_company_financial_destination_audit_company_occurred_at",
-                table: "company_financial_destination_audit",
-                columns: new[] { "tenant_id", "company_id", "occurred_at_utc" });
-
-            migrationBuilder.CreateIndex(
-                name: "ix_company_financial_destination_audit_entity_occurred_at",
-                table: "company_financial_destination_audit",
-                columns: new[] { "tenant_id", "entity_id", "occurred_at_utc" });
-
-            migrationBuilder.CreateIndex(
-                name: "ix_company_financial_destination_audit_user_occurred_at",
-                table: "company_financial_destination_audit",
-                columns: new[] { "tenant_id", "user_id", "occurred_at_utc" });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_company_financial_destinations_accounting_account_id",
-                table: "company_financial_destinations",
+                name: "IX_company_bank_accounts_accounting_account_id",
+                table: "company_bank_accounts",
                 column: "accounting_account_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_company_financial_destinations_cash_register_id",
-                table: "company_financial_destinations",
-                column: "cash_register_id");
+                name: "IX_company_bank_accounts_bank_id",
+                table: "company_bank_accounts",
+                column: "bank_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_company_financial_destinations_company_id",
-                table: "company_financial_destinations",
+                name: "IX_company_bank_accounts_company_id",
+                table: "company_bank_accounts",
                 column: "company_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_company_financial_destinations_tenant_company",
-                table: "company_financial_destinations",
+                name: "ix_company_bank_accounts_tenant_company",
+                table: "company_bank_accounts",
                 columns: new[] { "tenant_id", "company_id" });
 
             migrationBuilder.CreateIndex(
-                name: "uq_company_financial_destinations_bank_identity",
-                table: "company_financial_destinations",
-                columns: new[] { "tenant_id", "company_id", "bank_institution_code", "bank_account_identifier_normalized" },
-                unique: true,
-                filter: "\"destination_type_code\" = 1");
+                name: "uq_company_bank_accounts_tenant_company_bank_type_number",
+                table: "company_bank_accounts",
+                columns: new[] { "tenant_id", "company_id", "bank_id", "account_type", "account_number" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "uq_company_financial_destinations_cash_register",
-                table: "company_financial_destinations",
-                columns: new[] { "tenant_id", "company_id", "cash_register_id" },
-                unique: true,
-                filter: "\"destination_type_code\" = 2");
+                name: "IX_company_precision_policy_company_id",
+                table: "company_precision_policy",
+                column: "company_id");
 
             migrationBuilder.CreateIndex(
-                name: "uq_company_financial_destinations_tenant_company_code",
-                table: "company_financial_destinations",
-                columns: new[] { "tenant_id", "company_id", "code" },
+                name: "uq_company_precision_policy_tenant_company",
+                table: "company_precision_policy",
+                columns: new[] { "tenant_id", "company_id" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -6883,6 +7084,11 @@ namespace ERP.Infrastructure.Migrations
                 column: "payment_term_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_expense_documents_reception_document_id",
+                table: "expense_documents",
+                column: "reception_document_id");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_expense_documents_supplier_id",
                 table: "expense_documents",
                 column: "supplier_id");
@@ -6903,10 +7109,25 @@ namespace ERP.Infrastructure.Migrations
                 columns: new[] { "tenant_id", "company_id", "status" });
 
             migrationBuilder.CreateIndex(
+                name: "uq_expense_documents_tenant_access_key",
+                table: "expense_documents",
+                columns: new[] { "tenant_id", "access_key" },
+                unique: true,
+                filter: "\"access_key\" IS NOT NULL AND \"status\" <> 2");
+
+            migrationBuilder.CreateIndex(
                 name: "uq_expense_documents_tenant_company_supplier_type_number",
                 table: "expense_documents",
                 columns: new[] { "tenant_id", "company_id", "supplier_id", "document_type", "document_number" },
-                unique: true);
+                unique: true,
+                filter: "\"status\" <> 2");
+
+            migrationBuilder.CreateIndex(
+                name: "uq_expense_documents_tenant_reception_document_id",
+                table: "expense_documents",
+                columns: new[] { "tenant_id", "reception_document_id" },
+                unique: true,
+                filter: "\"reception_document_id\" IS NOT NULL AND \"status\" <> 2");
 
             migrationBuilder.CreateIndex(
                 name: "ix_expense_lines_document",
@@ -7304,6 +7525,17 @@ namespace ERP.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "ix_master_banks_tenant",
+                table: "master_banks",
+                column: "tenant_id");
+
+            migrationBuilder.CreateIndex(
+                name: "uq_master_banks_tenant_country_code",
+                table: "master_banks",
+                columns: new[] { "tenant_id", "country_code", "code" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "ix_bpc_location",
                 table: "master_bp_contacts",
                 column: "location_id",
@@ -7597,6 +7829,27 @@ namespace ERP.Infrastructure.Migrations
                 column: "receivable_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_payment_method_accounts_accounting_account_id",
+                table: "payment_method_accounts",
+                column: "accounting_account_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_payment_method_accounts_company_id",
+                table: "payment_method_accounts",
+                column: "company_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_payment_method_accounts_payment_method_id",
+                table: "payment_method_accounts",
+                column: "payment_method_id");
+
+            migrationBuilder.CreateIndex(
+                name: "uq_payment_method_accounts_tenant_company_method",
+                table: "payment_method_accounts",
+                columns: new[] { "tenant_id", "company_id", "payment_method_id" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "ix_payment_methods_tenant_active",
                 table: "payment_methods",
                 columns: new[] { "tenant_id", "is_active" });
@@ -7608,9 +7861,19 @@ namespace ERP.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_payments_financial_destination_id",
+                name: "IX_payment_transfer_details_company_bank_account_id",
+                table: "payment_transfer_details",
+                column: "company_bank_account_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_payments_cash_register_id",
                 table: "payments",
-                column: "financial_destination_id");
+                column: "cash_register_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_payments_company_bank_account_id",
+                table: "payments",
+                column: "company_bank_account_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_payments_partner_id",
@@ -7662,6 +7925,24 @@ namespace ERP.Infrastructure.Migrations
                 name: "ix_price_list_audit_user_occurred_at",
                 table: "price_list_audit",
                 columns: new[] { "tenant_id", "user_id", "occurred_at_utc" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_price_list_customers_customer",
+                table: "price_list_customers",
+                column: "customer_id");
+
+            migrationBuilder.CreateIndex(
+                name: "uq_price_list_customers_list_customer",
+                table: "price_list_customers",
+                columns: new[] { "price_list_id", "customer_id" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "uq_price_list_customers_tenant_company_customer_active",
+                table: "price_list_customers",
+                columns: new[] { "tenant_id", "company_id", "customer_id", "is_active" },
+                unique: true,
+                filter: "is_active = true");
 
             migrationBuilder.CreateIndex(
                 name: "ix_price_list_item_audit_entity_occurred_at",
@@ -7752,6 +8033,11 @@ namespace ERP.Infrastructure.Migrations
                 name: "IX_purchase_credit_note_details_purchase_credit_note_id",
                 table: "purchase_credit_note_details",
                 column: "purchase_credit_note_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_purchase_credit_note_details_purchase_invoice_detail_id",
+                table: "purchase_credit_note_details",
+                column: "purchase_invoice_detail_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_purchase_credit_note_details_tenant_purchase_credit_note",
@@ -7863,7 +8149,7 @@ namespace ERP.Infrastructure.Migrations
                 table: "purchase_credit_notes",
                 columns: new[] { "tenant_id", "access_key" },
                 unique: true,
-                filter: "\"access_key\" IS NOT NULL");
+                filter: "\"access_key\" IS NOT NULL AND \"status\" <> 3");
 
             migrationBuilder.CreateIndex(
                 name: "uq_purchase_credit_notes_tenant_authorize_client_request_id",
@@ -7883,7 +8169,8 @@ namespace ERP.Infrastructure.Migrations
                 name: "uq_purchase_credit_notes_tenant_company_supplier_number",
                 table: "purchase_credit_notes",
                 columns: new[] { "tenant_id", "company_id", "supplier_id", "credit_note_number" },
-                unique: true);
+                unique: true,
+                filter: "\"status\" <> 3");
 
             migrationBuilder.CreateIndex(
                 name: "uq_purchase_credit_notes_tenant_create_client_request_id",
@@ -7903,7 +8190,7 @@ namespace ERP.Infrastructure.Migrations
                 table: "purchase_credit_notes",
                 columns: new[] { "tenant_id", "reception_document_id" },
                 unique: true,
-                filter: "\"reception_document_id\" IS NOT NULL");
+                filter: "\"reception_document_id\" IS NOT NULL AND \"status\" <> 3");
 
             migrationBuilder.CreateIndex(
                 name: "ix_purchase_invoice_audit_entity_occurred_at",
@@ -8048,13 +8335,14 @@ namespace ERP.Infrastructure.Migrations
                 table: "purchase_invoices",
                 columns: new[] { "tenant_id", "access_key" },
                 unique: true,
-                filter: "access_key IS NOT NULL");
+                filter: "access_key IS NOT NULL AND status <> 3");
 
             migrationBuilder.CreateIndex(
                 name: "uq_purchase_invoices_tenant_company_supplier_number",
                 table: "purchase_invoices",
                 columns: new[] { "tenant_id", "company_id", "supplier_id", "invoice_number" },
-                unique: true);
+                unique: true,
+                filter: "\"status\" <> 3");
 
             migrationBuilder.CreateIndex(
                 name: "ix_purchase_line_pvp_audit_invoice_occurred_at",
@@ -8403,6 +8691,11 @@ namespace ERP.Infrastructure.Migrations
                 column: "invoice_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_sales_invoice_details_price_list_id",
+                table: "sales_invoice_details",
+                column: "price_list_id");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_sales_invoice_details_tenant_invoice",
                 table: "sales_invoice_details",
                 columns: new[] { "tenant_id", "invoice_id" });
@@ -8446,6 +8739,11 @@ namespace ERP.Infrastructure.Migrations
                 name: "IX_sales_invoices_customer_id",
                 table: "sales_invoices",
                 column: "customer_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_sales_invoices_customer_preferred_price_list_id",
+                table: "sales_invoices",
+                column: "customer_preferred_price_list_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_sales_invoices_emission_point_id",
@@ -8825,19 +9123,24 @@ namespace ERP.Infrastructure.Migrations
                 column: "cash_movement_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_supplier_credit_refund_transactions_cash_register_id",
+                table: "supplier_credit_refund_transactions",
+                column: "cash_register_id");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_supplier_credit_refund_transactions_cash_session_id",
                 table: "supplier_credit_refund_transactions",
                 column: "cash_session_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_supplier_credit_refund_transactions_company_bank_account_id",
+                table: "supplier_credit_refund_transactions",
+                column: "company_bank_account_id");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_supplier_credit_refund_transactions_company_id",
                 table: "supplier_credit_refund_transactions",
                 column: "company_id");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_supplier_credit_refund_transactions_financial_destination_id",
-                table: "supplier_credit_refund_transactions",
-                column: "financial_destination_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_supplier_credit_refund_transactions_original_transaction_id",
@@ -8955,9 +9258,14 @@ namespace ERP.Infrastructure.Migrations
                 columns: new[] { "tenant_id", "supplier_payment_id" });
 
             migrationBuilder.CreateIndex(
-                name: "ix_supplier_payment_methods_financial_destination",
+                name: "ix_supplier_payment_methods_bank_account",
                 table: "supplier_payment_methods",
-                column: "financial_destination_id");
+                column: "company_bank_account_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_supplier_payment_methods_cash_register",
+                table: "supplier_payment_methods",
+                column: "cash_register_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_supplier_payment_methods_payment_method",
@@ -9142,13 +9450,16 @@ namespace ERP.Infrastructure.Migrations
                 name: "cash_closing_counts");
 
             migrationBuilder.DropTable(
+                name: "cash_movement_reasons");
+
+            migrationBuilder.DropTable(
                 name: "communication_outbox_attachments");
 
             migrationBuilder.DropTable(
                 name: "communication_templates");
 
             migrationBuilder.DropTable(
-                name: "company_financial_destination_audit");
+                name: "company_precision_policy");
 
             migrationBuilder.DropTable(
                 name: "company_special_tax_responsibilities");
@@ -9316,6 +9627,9 @@ namespace ERP.Infrastructure.Migrations
                 name: "payment_cheque_details");
 
             migrationBuilder.DropTable(
+                name: "payment_method_accounts");
+
+            migrationBuilder.DropTable(
                 name: "payment_transfer_details");
 
             migrationBuilder.DropTable(
@@ -9323,6 +9637,9 @@ namespace ERP.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "price_list_audit");
+
+            migrationBuilder.DropTable(
+                name: "price_list_customers");
 
             migrationBuilder.DropTable(
                 name: "price_list_item_audit");
@@ -9543,9 +9860,6 @@ namespace ERP.Infrastructure.Migrations
                 name: "posting_rules");
 
             migrationBuilder.DropTable(
-                name: "price_lists");
-
-            migrationBuilder.DropTable(
                 name: "purchase_credit_note_tax_summaries");
 
             migrationBuilder.DropTable(
@@ -9622,7 +9936,7 @@ namespace ERP.Infrastructure.Migrations
                 name: "accounts_payable_installments");
 
             migrationBuilder.DropTable(
-                name: "company_financial_destinations");
+                name: "company_bank_accounts");
 
             migrationBuilder.DropTable(
                 name: "payment_methods");
@@ -9643,7 +9957,7 @@ namespace ERP.Infrastructure.Migrations
                 name: "accounts_payables");
 
             migrationBuilder.DropTable(
-                name: "accounts");
+                name: "master_banks");
 
             migrationBuilder.DropTable(
                 name: "brands");
@@ -9658,6 +9972,9 @@ namespace ERP.Infrastructure.Migrations
                 name: "cash_sessions");
 
             migrationBuilder.DropTable(
+                name: "price_lists");
+
+            migrationBuilder.DropTable(
                 name: "purchase_reception_documents");
 
             migrationBuilder.DropTable(
@@ -9665,6 +9982,9 @@ namespace ERP.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "purchase_invoices");
+
+            migrationBuilder.DropTable(
+                name: "accounts");
 
             migrationBuilder.DropTable(
                 name: "emission_point");

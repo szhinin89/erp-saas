@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ERP.Infrastructure.Migrations
 {
     [DbContext(typeof(ErpDbContext))]
-    [Migration("20260911005353_PurchaseCreditNoteReceptionUniqueExcludesCancelled")]
-    partial class PurchaseCreditNoteReceptionUniqueExcludesCancelled
+    [Migration("20260926002259_InitialEnterpriseBaseline")]
+    partial class InitialEnterpriseBaseline
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -938,6 +938,117 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("branches", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Configuration.Entities.CompanyPrecisionPolicy", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<short>("AverageCostDecimals")
+                        .HasColumnType("smallint")
+                        .HasColumnName("average_cost_decimals");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<short>("ConversionFactorDecimals")
+                        .HasColumnType("smallint")
+                        .HasColumnName("conversion_factor_decimals");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("IsLocked")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_locked");
+
+                    b.Property<DateTime?>("LockedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("locked_at");
+
+                    b.Property<string>("LockedReason")
+                        .HasColumnType("text")
+                        .HasColumnName("locked_reason");
+
+                    b.Property<short>("PercentageDecimals")
+                        .HasColumnType("smallint")
+                        .HasColumnName("percentage_decimals");
+
+                    b.Property<string>("ProfileType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("profile_type");
+
+                    b.Property<short>("PurchaseUnitPriceDecimals")
+                        .HasColumnType("smallint")
+                        .HasColumnName("purchase_unit_price_decimals");
+
+                    b.Property<short>("QuantityDecimals")
+                        .HasColumnType("smallint")
+                        .HasColumnName("quantity_decimals");
+
+                    b.Property<short>("SalesUnitPriceDecimals")
+                        .HasColumnType("smallint")
+                        .HasColumnName("sales_unit_price_decimals");
+
+                    b.Property<decimal>("SettlementToleranceAmount")
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("settlement_tolerance_amount");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<short>("UnitCostDecimals")
+                        .HasColumnType("smallint")
+                        .HasColumnName("unit_cost_decimals");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("TenantId", "CompanyId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_company_precision_policy_tenant_company");
+
+                    b.ToTable("company_precision_policy", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_company_precision_policy_average_cost", "average_cost_decimals BETWEEN 2 AND 10");
+
+                            t.HasCheckConstraint("ck_company_precision_policy_conversion_factor", "conversion_factor_decimals BETWEEN 2 AND 10");
+
+                            t.HasCheckConstraint("ck_company_precision_policy_percentage", "percentage_decimals BETWEEN 2 AND 6");
+
+                            t.HasCheckConstraint("ck_company_precision_policy_purchase_unit_price", "purchase_unit_price_decimals BETWEEN 2 AND 10");
+
+                            t.HasCheckConstraint("ck_company_precision_policy_quantity", "quantity_decimals BETWEEN 0 AND 6");
+
+                            t.HasCheckConstraint("ck_company_precision_policy_sales_unit_price", "sales_unit_price_decimals BETWEEN 2 AND 6");
+
+                            t.HasCheckConstraint("ck_company_precision_policy_settlement_tolerance", "settlement_tolerance_amount BETWEEN 0.00 AND 0.02");
+
+                            t.HasCheckConstraint("ck_company_precision_policy_unit_cost", "unit_cost_decimals BETWEEN 2 AND 10");
+                        });
+                });
+
             modelBuilder.Entity("ERP.Domain.Configuration.Entities.ConfigFeature", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1494,6 +1605,78 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("ix_geo_provinces_country_id");
 
                     b.ToTable("geo_provinces", "global");
+                });
+
+            modelBuilder.Entity("ERP.Domain.MasterData.Entities.Bank", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("code");
+
+                    b.Property<string>("CountryCode")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)")
+                        .HasColumnName("country_code");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsSystemSeeded")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_system_seeded");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("ShortName")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("short_name");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_master_banks_tenant");
+
+                    b.HasIndex("TenantId", "CountryCode", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("uq_master_banks_tenant_country_code");
+
+                    b.ToTable("master_banks", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.MasterData.Entities.BusinessPartner", b =>
@@ -3092,6 +3275,15 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("movement_type");
 
+                    b.Property<Guid?>("ReasonId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reason_id");
+
+                    b.Property<string>("ReasonName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("reason_name");
+
                     b.Property<Guid?>("ReferenceId")
                         .HasColumnType("uuid")
                         .HasColumnName("reference_id");
@@ -3128,12 +3320,91 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("cash_movements", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Caja.Entities.CashMovementReason", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("code");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsSystemSeeded")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_system_seeded");
+
+                    b.Property<string>("MovementType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("movement_type");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "CompanyId", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("uq_cash_movement_reasons_tenant_company_code");
+
+                    b.HasIndex("TenantId", "CompanyId", "MovementType", "IsActive")
+                        .HasDatabaseName("ix_cash_movement_reasons_tenant_company_type_active");
+
+                    b.ToTable("cash_movement_reasons", (string)null);
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Caja.Entities.CashRegister", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<Guid?>("AccountingAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("accounting_account_id");
 
                     b.Property<Guid>("BranchId")
                         .HasColumnType("uuid")
@@ -3203,6 +3474,8 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("updated_by");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AccountingAccountId");
 
                     b.HasIndex("BranchId");
 
@@ -5030,7 +5303,7 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("TenantId", "AccessKey")
                         .IsUnique()
                         .HasDatabaseName("uq_expense_documents_tenant_access_key")
-                        .HasFilter("\"access_key\" IS NOT NULL");
+                        .HasFilter("\"access_key\" IS NOT NULL AND \"status\" <> 2");
 
                     b.HasIndex("TenantId", "CompanyId")
                         .HasDatabaseName("ix_expense_documents_tenant_company");
@@ -5038,7 +5311,7 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("TenantId", "ReceptionDocumentId")
                         .IsUnique()
                         .HasDatabaseName("uq_expense_documents_tenant_reception_document_id")
-                        .HasFilter("\"reception_document_id\" IS NOT NULL");
+                        .HasFilter("\"reception_document_id\" IS NOT NULL AND \"status\" <> 2");
 
                     b.HasIndex("TenantId", "CompanyId", "IssueDate")
                         .HasDatabaseName("ix_expense_documents_tenant_company_issue_date");
@@ -5048,7 +5321,8 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasIndex("TenantId", "CompanyId", "SupplierId", "DocumentType", "DocumentNumber")
                         .IsUnique()
-                        .HasDatabaseName("uq_expense_documents_tenant_company_supplier_type_number");
+                        .HasDatabaseName("uq_expense_documents_tenant_company_supplier_type_number")
+                        .HasFilter("\"status\" <> 2");
 
                     b.ToTable("expense_documents", (string)null);
                 });
@@ -5071,7 +5345,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("discount_amount");
 
                     b.Property<decimal>("DiscountPct")
-                        .HasColumnType("numeric(5,2)")
+                        .HasColumnType("numeric(9,6)")
                         .HasColumnName("discount_pct");
 
                     b.Property<Guid>("ExpenseDocumentId")
@@ -5088,7 +5362,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("notes");
 
                     b.Property<decimal>("Quantity")
-                        .HasColumnType("numeric(18,4)")
+                        .HasColumnType("numeric(20,6)")
                         .HasColumnName("quantity");
 
                     b.Property<string>("SnapshotAccountingAccountCode")
@@ -5119,7 +5393,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("tenant_id");
 
                     b.Property<decimal>("UnitAmount")
-                        .HasColumnType("numeric(18,6)")
+                        .HasColumnType("numeric(22,10)")
                         .HasColumnName("unit_amount");
 
                     b.Property<decimal>("VatAmount")
@@ -5213,36 +5487,30 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("expense_payment_schedules", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.CompanyFinancialDestination", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.CompanyBankAccount", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("AccountNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("account_number");
+
+                    b.Property<int>("AccountType")
+                        .HasColumnType("integer")
+                        .HasColumnName("account_type");
+
                     b.Property<Guid>("AccountingAccountId")
                         .HasColumnType("uuid")
                         .HasColumnName("accounting_account_id");
 
-                    b.Property<string>("BankAccountIdentifierNormalized")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("bank_account_identifier_normalized");
-
-                    b.Property<string>("BankInstitutionCode")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("bank_institution_code");
-
-                    b.Property<Guid?>("CashRegisterId")
+                    b.Property<Guid>("BankId")
                         .HasColumnType("uuid")
-                        .HasColumnName("cash_register_id");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)")
-                        .HasColumnName("code");
+                        .HasColumnName("bank_id");
 
                     b.Property<Guid>("CompanyId")
                         .HasColumnType("uuid")
@@ -5256,25 +5524,15 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("CurrencyCode")
+                    b.Property<string>("DisplayName")
                         .IsRequired()
-                        .HasMaxLength(3)
-                        .HasColumnType("character varying(3)")
-                        .HasColumnName("currency_code");
-
-                    b.Property<int>("DestinationTypeCode")
-                        .HasColumnType("integer")
-                        .HasColumnName("destination_type_code");
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("display_name");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean")
                         .HasColumnName("is_active");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("name");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
@@ -5298,134 +5556,18 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasIndex("AccountingAccountId");
 
-                    b.HasIndex("CashRegisterId");
+                    b.HasIndex("BankId");
 
                     b.HasIndex("CompanyId");
 
                     b.HasIndex("TenantId", "CompanyId")
-                        .HasDatabaseName("ix_company_financial_destinations_tenant_company");
+                        .HasDatabaseName("ix_company_bank_accounts_tenant_company");
 
-                    b.HasIndex("TenantId", "CompanyId", "CashRegisterId")
+                    b.HasIndex("TenantId", "CompanyId", "BankId", "AccountType", "AccountNumber")
                         .IsUnique()
-                        .HasDatabaseName("uq_company_financial_destinations_cash_register")
-                        .HasFilter("\"destination_type_code\" = 2");
+                        .HasDatabaseName("uq_company_bank_accounts_tenant_company_bank_type_number");
 
-                    b.HasIndex("TenantId", "CompanyId", "Code")
-                        .IsUnique()
-                        .HasDatabaseName("uq_company_financial_destinations_tenant_company_code");
-
-                    b.HasIndex("TenantId", "CompanyId", "BankInstitutionCode", "BankAccountIdentifierNormalized")
-                        .IsUnique()
-                        .HasDatabaseName("uq_company_financial_destinations_bank_identity")
-                        .HasFilter("\"destination_type_code\" = 1");
-
-                    b.ToTable("company_financial_destinations", null, t =>
-                        {
-                            t.HasCheckConstraint("chk_company_financial_destination_type_fields", "(\"destination_type_code\" = 1 AND \"bank_institution_code\" IS NOT NULL AND \"bank_account_identifier_normalized\" IS NOT NULL AND \"cash_register_id\" IS NULL) OR (\"destination_type_code\" = 2 AND \"cash_register_id\" IS NOT NULL AND \"bank_institution_code\" IS NULL AND \"bank_account_identifier_normalized\" IS NULL)");
-                        });
-                });
-
-            modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.CompanyFinancialDestinationAudit", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasMaxLength(80)
-                        .HasColumnType("character varying(80)")
-                        .HasColumnName("action");
-
-                    b.Property<string>("Code")
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)")
-                        .HasColumnName("code");
-
-                    b.Property<Guid>("CompanyId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("company_id");
-
-                    b.Property<string>("CorrelationId")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("correlation_id");
-
-                    b.Property<Guid>("EntityId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("entity_id");
-
-                    b.Property<Guid?>("NewAccountingAccountId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("new_accounting_account_id");
-
-                    b.Property<bool?>("NewIsActive")
-                        .HasColumnType("boolean")
-                        .HasColumnName("new_is_active");
-
-                    b.Property<string>("NewName")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("new_name");
-
-                    b.Property<DateTime>("OccurredAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("occurred_at_utc");
-
-                    b.Property<Guid?>("OldAccountingAccountId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("old_accounting_account_id");
-
-                    b.Property<bool?>("OldIsActive")
-                        .HasColumnType("boolean")
-                        .HasColumnName("old_is_active");
-
-                    b.Property<string>("OldName")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("old_name");
-
-                    b.Property<string>("Reason")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("reason");
-
-                    b.Property<string>("RequestId")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("request_id");
-
-                    b.Property<int>("Source")
-                        .HasColumnType("integer")
-                        .HasColumnName("source");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.Property<string>("UserName")
-                        .IsRequired()
-                        .HasMaxLength(254)
-                        .HasColumnType("character varying(254)")
-                        .HasColumnName("user_name");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId", "CompanyId", "OccurredAtUtc")
-                        .HasDatabaseName("ix_company_financial_destination_audit_company_occurred_at");
-
-                    b.HasIndex("TenantId", "EntityId", "OccurredAtUtc")
-                        .HasDatabaseName("ix_company_financial_destination_audit_entity_occurred_at");
-
-                    b.HasIndex("TenantId", "UserId", "OccurredAtUtc")
-                        .HasDatabaseName("ix_company_financial_destination_audit_user_occurred_at");
-
-                    b.ToTable("company_financial_destination_audit", (string)null);
+                    b.ToTable("company_bank_accounts", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.CreditInstallment", b =>
@@ -5548,6 +5690,14 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("applied_at_utc");
 
+                    b.Property<Guid?>("CashRegisterId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cash_register_id");
+
+                    b.Property<Guid?>("CompanyBankAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_bank_account_id");
+
                     b.Property<Guid>("CompanyId")
                         .HasColumnType("uuid")
                         .HasColumnName("company_id");
@@ -5563,10 +5713,6 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<int>("Direction")
                         .HasColumnType("integer")
                         .HasColumnName("direction");
-
-                    b.Property<Guid?>("FinancialDestinationId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("financial_destination_id");
 
                     b.Property<Guid>("PartnerId")
                         .HasColumnType("uuid")
@@ -5612,7 +5758,9 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FinancialDestinationId");
+                    b.HasIndex("CashRegisterId");
+
+                    b.HasIndex("CompanyBankAccountId");
 
                     b.HasIndex("PartnerId");
 
@@ -5712,6 +5860,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("cash_movement_id");
 
+                    b.Property<Guid?>("CashRegisterId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cash_register_id");
+
                     b.Property<Guid?>("CashSessionId")
                         .HasColumnType("uuid")
                         .HasColumnName("cash_session_id");
@@ -5719,6 +5871,10 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<Guid>("ClientRequestId")
                         .HasColumnType("uuid")
                         .HasColumnName("client_request_id");
+
+                    b.Property<Guid?>("CompanyBankAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_bank_account_id");
 
                     b.Property<Guid>("CompanyId")
                         .HasColumnType("uuid")
@@ -5738,11 +5894,23 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(3)")
                         .HasColumnName("currency_code");
 
-                    b.Property<string>("DestinationTypeCodeSnapshot")
+                    b.Property<string>("DestinationCodeSnapshot")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
-                        .HasColumnName("destination_type_code_snapshot");
+                        .HasColumnName("destination_code_snapshot");
+
+                    b.Property<string>("DestinationNameSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("destination_name_snapshot");
+
+                    b.Property<string>("DestinationTypeSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("destination_type_snapshot");
 
                     b.Property<DateOnly>("EffectiveDate")
                         .HasColumnType("date")
@@ -5752,22 +5920,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("external_reference");
-
-                    b.Property<string>("FinancialDestinationCodeSnapshot")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("financial_destination_code_snapshot");
-
-                    b.Property<Guid>("FinancialDestinationId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("financial_destination_id");
-
-                    b.Property<string>("FinancialDestinationNameSnapshot")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("financial_destination_name_snapshot");
 
                     b.Property<Guid?>("OriginalTransactionId")
                         .HasColumnType("uuid")
@@ -5822,11 +5974,13 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasIndex("CashMovementId");
 
+                    b.HasIndex("CashRegisterId");
+
                     b.HasIndex("CashSessionId");
 
-                    b.HasIndex("CompanyId");
+                    b.HasIndex("CompanyBankAccountId");
 
-                    b.HasIndex("FinancialDestinationId");
+                    b.HasIndex("CompanyId");
 
                     b.HasIndex("OriginalTransactionId");
 
@@ -5853,7 +6007,10 @@ namespace ERP.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("uq_supplier_credit_refund_transactions_movement");
 
-                    b.ToTable("supplier_credit_refund_transactions", (string)null);
+                    b.ToTable("supplier_credit_refund_transactions", null, t =>
+                        {
+                            t.HasCheckConstraint("chk_supplier_credit_refund_transactions_destination_xor", "(\"company_bank_account_id\" IS NOT NULL AND \"cash_register_id\" IS NULL) OR (\"company_bank_account_id\" IS NULL AND \"cash_register_id\" IS NOT NULL)");
+                        });
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.InitialLoad.Entities.ImportBatch", b =>
@@ -6188,11 +6345,11 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("product_id");
 
                     b.Property<decimal>("Quantity")
-                        .HasColumnType("numeric(18,4)")
+                        .HasColumnType("numeric(20,6)")
                         .HasColumnName("quantity");
 
                     b.Property<decimal>("ReservedQuantity")
-                        .HasColumnType("numeric(18,4)")
+                        .HasColumnType("numeric(20,6)")
                         .HasColumnName("reserved_quantity");
 
                     b.Property<Guid>("TenantId")
@@ -6200,7 +6357,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("tenant_id");
 
                     b.Property<decimal>("TotalStockValue")
-                        .HasColumnType("numeric(18,6)")
+                        .HasColumnType("numeric(22,10)")
                         .HasColumnName("total_stock_value");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -6495,8 +6652,8 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateTime>("AdjustmentDate")
-                        .HasColumnType("timestamp with time zone")
+                    b.Property<DateOnly>("AdjustmentDate")
+                        .HasColumnType("date")
                         .HasColumnName("adjustment_date");
 
                     b.Property<string>("AdjustmentNumber")
@@ -6624,15 +6781,15 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("company_id");
 
                     b.Property<decimal>("ConversionFactor")
-                        .HasColumnType("numeric(18,6)")
+                        .HasColumnType("numeric(22,10)")
                         .HasColumnName("conversion_factor");
 
                     b.Property<decimal?>("CurrentStockAfter")
-                        .HasColumnType("numeric(18,4)")
+                        .HasColumnType("numeric(20,6)")
                         .HasColumnName("current_stock_after");
 
                     b.Property<decimal?>("CurrentStockBefore")
-                        .HasColumnType("numeric(18,4)")
+                        .HasColumnType("numeric(20,6)")
                         .HasColumnName("current_stock_before");
 
                     b.Property<Guid>("ItemId")
@@ -6655,11 +6812,11 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("packaging_level_id");
 
                     b.Property<decimal>("Quantity")
-                        .HasColumnType("numeric(18,4)")
+                        .HasColumnType("numeric(20,6)")
                         .HasColumnName("quantity");
 
                     b.Property<decimal>("QuantityInBaseUom")
-                        .HasColumnType("numeric(18,4)")
+                        .HasColumnType("numeric(20,6)")
                         .HasColumnName("quantity_in_base_uom");
 
                     b.Property<short>("SortOrder")
@@ -6679,7 +6836,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("total_cost");
 
                     b.Property<decimal?>("UnitCostBase")
-                        .HasColumnType("numeric(18,6)")
+                        .HasColumnType("numeric(22,10)")
                         .HasColumnName("unit_cost_base");
 
                     b.Property<string>("UomCode")
@@ -6739,7 +6896,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("movement_type");
 
                     b.Property<decimal>("PreviousQuantity")
-                        .HasColumnType("numeric(18,4)")
+                        .HasColumnType("numeric(20,6)")
                         .HasColumnName("previous_quantity");
 
                     b.Property<Guid>("ProductId")
@@ -6747,7 +6904,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("product_id");
 
                     b.Property<decimal>("Quantity")
-                        .HasColumnType("numeric(18,4)")
+                        .HasColumnType("numeric(20,6)")
                         .HasColumnName("quantity");
 
                     b.Property<string>("Reference")
@@ -6756,11 +6913,11 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("reference");
 
                     b.Property<decimal>("ResultQuantity")
-                        .HasColumnType("numeric(18,4)")
+                        .HasColumnType("numeric(20,6)")
                         .HasColumnName("result_quantity");
 
                     b.Property<decimal>("RunningAverageCost")
-                        .HasColumnType("numeric(18,6)")
+                        .HasColumnType("numeric(22,10)")
                         .HasColumnName("running_average_cost");
 
                     b.Property<decimal>("RunningStockValue")
@@ -6797,7 +6954,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("total_cost");
 
                     b.Property<decimal?>("UnitCost")
-                        .HasColumnType("numeric(18,6)")
+                        .HasColumnType("numeric(22,10)")
                         .HasColumnName("unit_cost");
 
                     b.Property<string>("UomCode")
@@ -6908,8 +7065,8 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
 
-                    b.Property<DateTime>("TransferDate")
-                        .HasColumnType("timestamp with time zone")
+                    b.Property<DateOnly>("TransferDate")
+                        .HasColumnType("date")
                         .HasColumnName("transfer_date");
 
                     b.Property<string>("TransferNumber")
@@ -6970,7 +7127,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("product_id");
 
                     b.Property<decimal>("Quantity")
-                        .HasColumnType("numeric(18,4)")
+                        .HasColumnType("numeric(20,6)")
                         .HasColumnName("quantity");
 
                     b.Property<Guid>("StockTransferId")
@@ -7782,8 +7939,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("barcode");
 
                     b.Property<decimal>("BaseQuantity")
-                        .HasPrecision(14, 4)
-                        .HasColumnType("numeric(14,4)")
+                        .HasColumnType("numeric(18,10)")
                         .HasColumnName("base_quantity");
 
                     b.Property<DateTime>("CreatedAt")
@@ -8136,8 +8292,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("created_by");
 
                     b.Property<decimal>("Factor")
-                        .HasPrecision(14, 6)
-                        .HasColumnType("numeric(14,6)")
+                        .HasColumnType("numeric(18,10)")
                         .HasColumnName("factor");
 
                     b.Property<string>("FromUomCode")
@@ -8939,6 +9094,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("amount");
 
+                    b.Property<Guid?>("CashRegisterId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cash_register_id");
+
                     b.Property<DateOnly?>("CheckDate")
                         .HasColumnType("date")
                         .HasColumnName("check_date");
@@ -8948,9 +9107,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(30)")
                         .HasColumnName("check_number");
 
-                    b.Property<Guid>("FinancialDestinationId")
+                    b.Property<Guid?>("CompanyBankAccountId")
                         .HasColumnType("uuid")
-                        .HasColumnName("financial_destination_id");
+                        .HasColumnName("company_bank_account_id");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(500)
@@ -8976,8 +9135,11 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FinancialDestinationId")
-                        .HasDatabaseName("ix_supplier_payment_methods_financial_destination");
+                    b.HasIndex("CashRegisterId")
+                        .HasDatabaseName("ix_supplier_payment_methods_cash_register");
+
+                    b.HasIndex("CompanyBankAccountId")
+                        .HasDatabaseName("ix_supplier_payment_methods_bank_account");
 
                     b.HasIndex("PaymentMethodId")
                         .HasDatabaseName("ix_supplier_payment_methods_payment_method");
@@ -8987,7 +9149,10 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("TenantId", "SupplierPaymentId")
                         .HasDatabaseName("ix_supplier_payment_methods_tenant_payment");
 
-                    b.ToTable("supplier_payment_methods", (string)null);
+                    b.ToTable("supplier_payment_methods", null, t =>
+                        {
+                            t.HasCheckConstraint("chk_supplier_payment_methods_destination_xor", "(\"company_bank_account_id\" IS NOT NULL AND \"cash_register_id\" IS NULL) OR (\"company_bank_account_id\" IS NULL AND \"cash_register_id\" IS NOT NULL)");
+                        });
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Payables.Entities.SupplierPaymentSequence", b =>
@@ -9213,6 +9378,66 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("ix_price_list_audit_user_occurred_at");
 
                     b.ToTable("price_list_audit", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Pricing.Entities.PriceListCustomer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_id");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<Guid>("PriceListId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("price_list_id");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId")
+                        .HasDatabaseName("ix_price_list_customers_customer");
+
+                    b.HasIndex("PriceListId", "CustomerId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_price_list_customers_list_customer");
+
+                    b.HasIndex("TenantId", "CompanyId", "CustomerId", "IsActive")
+                        .IsUnique()
+                        .HasDatabaseName("uq_price_list_customers_tenant_company_customer_active")
+                        .HasFilter("is_active = true");
+
+                    b.ToTable("price_list_customers", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Pricing.Entities.PriceListItem", b =>
@@ -9764,7 +9989,7 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("TenantId", "AccessKey")
                         .IsUnique()
                         .HasDatabaseName("uq_purchase_credit_notes_tenant_access_key")
-                        .HasFilter("\"access_key\" IS NOT NULL");
+                        .HasFilter("\"access_key\" IS NOT NULL AND \"status\" <> 3");
 
                     b.HasIndex("TenantId", "AuthorizeClientRequestId")
                         .IsUnique()
@@ -9801,7 +10026,8 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasIndex("TenantId", "CompanyId", "SupplierId", "CreditNoteNumber")
                         .IsUnique()
-                        .HasDatabaseName("uq_purchase_credit_notes_tenant_company_supplier_number");
+                        .HasDatabaseName("uq_purchase_credit_notes_tenant_company_supplier_number")
+                        .HasFilter("\"status\" <> 3");
 
                     b.ToTable("purchase_credit_notes", (string)null);
                 });
@@ -9836,7 +10062,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("purchase_invoice_detail_id");
 
                     b.Property<decimal?>("Quantity")
-                        .HasColumnType("numeric(18,4)")
+                        .HasColumnType("numeric(20,6)")
                         .HasColumnName("quantity");
 
                     b.Property<decimal>("Subtotal")
@@ -10206,7 +10432,7 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("TenantId", "AccessKey")
                         .IsUnique()
                         .HasDatabaseName("uq_purchase_invoices_tenant_access_key")
-                        .HasFilter("access_key IS NOT NULL");
+                        .HasFilter("access_key IS NOT NULL AND status <> 3");
 
                     b.HasIndex("TenantId", "CompanyId")
                         .HasDatabaseName("ix_purchase_invoices_tenant_company");
@@ -10219,7 +10445,8 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasIndex("TenantId", "CompanyId", "SupplierId", "InvoiceNumber")
                         .IsUnique()
-                        .HasDatabaseName("uq_purchase_invoices_tenant_company_supplier_number");
+                        .HasDatabaseName("uq_purchase_invoices_tenant_company_supplier_number")
+                        .HasFilter("\"status\" <> 3");
 
                     b.ToTable("purchase_invoices", (string)null);
                 });
@@ -10327,7 +10554,7 @@ namespace ERP.Infrastructure.Migrations
 
                     b.Property<decimal>("ConversionFactor")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("numeric(18,6)")
+                        .HasColumnType("numeric(22,10)")
                         .HasDefaultValue(1m)
                         .HasColumnName("conversion_factor");
 
@@ -10342,7 +10569,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("discount_amount");
 
                     b.Property<decimal>("DiscountPct")
-                        .HasColumnType("numeric(5,2)")
+                        .HasColumnType("numeric(9,6)")
                         .HasColumnName("discount_pct");
 
                     b.Property<decimal>("FreightAllocated")
@@ -10365,7 +10592,7 @@ namespace ERP.Infrastructure.Migrations
 
                     b.Property<decimal>("LandedUnitCost")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("numeric(18,6)")
+                        .HasColumnType("numeric(22,10)")
                         .HasDefaultValue(0m)
                         .HasColumnName("landed_unit_cost");
 
@@ -10375,7 +10602,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("notes");
 
                     b.Property<decimal?>("OrderedQuantity")
-                        .HasColumnType("numeric(18,4)")
+                        .HasColumnType("numeric(20,6)")
                         .HasColumnName("ordered_quantity");
 
                     b.Property<decimal>("OtherCostsAllocated")
@@ -10395,11 +10622,11 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("purchase_reception_line_id");
 
                     b.Property<decimal>("Quantity")
-                        .HasColumnType("numeric(18,4)")
+                        .HasColumnType("numeric(20,6)")
                         .HasColumnName("quantity");
 
                     b.Property<decimal>("QuantityInBaseUom")
-                        .HasColumnType("numeric(18,4)")
+                        .HasColumnType("numeric(20,6)")
                         .HasColumnName("quantity_in_base_uom");
 
                     b.Property<string>("SnapshotItemName")
@@ -10446,7 +10673,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("total_line_cost");
 
                     b.Property<decimal>("UnitPrice")
-                        .HasColumnType("numeric(18,6)")
+                        .HasColumnType("numeric(22,10)")
                         .HasColumnName("unit_price");
 
                     b.Property<string>("UomCode")
@@ -11179,7 +11406,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("purchase_return_id");
 
                     b.Property<decimal>("Quantity")
-                        .HasColumnType("numeric(18,4)")
+                        .HasColumnType("numeric(20,6)")
                         .HasColumnName("quantity");
 
                     b.Property<decimal?>("ReturnedDiscountAmount")
@@ -11199,7 +11426,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("tenant_id");
 
                     b.Property<decimal?>("UnitCost")
-                        .HasColumnType("numeric(18,6)")
+                        .HasColumnType("numeric(22,10)")
                         .HasColumnName("unit_cost");
 
                     b.Property<string>("VatCode")
@@ -11464,6 +11691,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("cash_session_id");
 
+                    b.Property<Guid?>("CompanyBankAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_bank_account_id");
+
                     b.Property<Guid>("CompanyId")
                         .HasColumnType("uuid")
                         .HasColumnName("company_id");
@@ -11473,10 +11704,15 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("correlation_id");
 
-                    b.Property<string>("DestinationTypeCodeSnapshot")
+                    b.Property<string>("DestinationCodeSnapshot")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("destination_code_snapshot");
+
+                    b.Property<string>("DestinationTypeSnapshot")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("destination_type_code_snapshot");
+                        .HasColumnName("destination_type_snapshot");
 
                     b.Property<DateOnly?>("EffectiveDate")
                         .HasColumnType("date")
@@ -11490,15 +11726,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("external_reference");
-
-                    b.Property<string>("FinancialDestinationCodeSnapshot")
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)")
-                        .HasColumnName("financial_destination_code_snapshot");
-
-                    b.Property<Guid?>("FinancialDestinationId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("financial_destination_id");
 
                     b.Property<int?>("MovementType")
                         .HasColumnType("integer")
@@ -11855,7 +12082,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("discount");
 
                     b.Property<decimal>("DiscountPct")
-                        .HasColumnType("numeric(5,2)")
+                        .HasColumnType("numeric(9,6)")
                         .HasColumnName("discount_pct");
 
                     b.Property<string>("IceCode")
@@ -11892,7 +12119,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("purchase_reception_document_id");
 
                     b.Property<decimal>("Quantity")
-                        .HasColumnType("numeric(18,4)")
+                        .HasColumnType("numeric(20,6)")
                         .HasColumnName("quantity");
 
                     b.Property<string>("SupplierAuxCode")
@@ -11924,7 +12151,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("total_line");
 
                     b.Property<decimal>("UnitPrice")
-                        .HasColumnType("numeric(18,6)")
+                        .HasColumnType("numeric(22,10)")
                         .HasColumnName("unit_price");
 
                     b.Property<string>("VatCode")
@@ -12388,6 +12615,12 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<bool>("AffectsPhysicalCash")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("affects_physical_cash");
+
                     b.Property<string>("Code")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -12438,6 +12671,11 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("sort_order");
 
+                    b.Property<string>("SriPaymentMethodCode")
+                        .HasMaxLength(5)
+                        .HasColumnType("character varying(5)")
+                        .HasColumnName("sri_payment_method_code");
+
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
@@ -12460,6 +12698,66 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("ix_payment_methods_tenant_active");
 
                     b.ToTable("payment_methods", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.PaymentMethodAccount", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountingAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("accounting_account_id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("PaymentMethodId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payment_method_id");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountingAccountId");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("PaymentMethodId");
+
+                    b.HasIndex("TenantId", "CompanyId", "PaymentMethodId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_payment_method_accounts_tenant_company_method");
+
+                    b.ToTable("payment_method_accounts", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesInvoice", b =>
@@ -12528,6 +12826,15 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("customer_id");
 
+                    b.Property<Guid?>("CustomerPreferredPriceListId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_preferred_price_list_id");
+
+                    b.Property<string>("CustomerPreferredPriceListName")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("customer_preferred_price_list_name");
+
                     b.Property<string>("DocTypeCode")
                         .IsRequired()
                         .HasMaxLength(5)
@@ -12573,6 +12880,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("notes");
 
+                    b.Property<int?>("PricingTraceabilityVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("pricing_traceability_version");
+
                     b.Property<string>("SriPaymentMethodCode")
                         .HasMaxLength(5)
                         .HasColumnType("character varying(5)")
@@ -12611,6 +12922,8 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasIndex("CustomerId");
 
+                    b.HasIndex("CustomerPreferredPriceListId");
+
                     b.HasIndex("EmissionPointId");
 
                     b.HasIndex("TenantId", "CompanyId")
@@ -12646,7 +12959,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("base_uom_code");
 
                     b.Property<decimal>("ConversionFactor")
-                        .HasColumnType("numeric(18,6)")
+                        .HasColumnType("numeric(22,10)")
                         .HasColumnName("conversion_factor");
 
                     b.Property<string>("Description")
@@ -12659,9 +12972,19 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("numeric(18,6)")
                         .HasColumnName("discount_amount");
 
+                    b.Property<string>("DiscountDescription")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("discount_description");
+
                     b.Property<decimal>("DiscountPct")
-                        .HasColumnType("numeric(5,2)")
+                        .HasColumnType("numeric(9,6)")
                         .HasColumnName("discount_pct");
+
+                    b.Property<string>("DiscountSource")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("discount_source");
 
                     b.Property<Guid>("InvoiceId")
                         .HasColumnType("uuid")
@@ -12675,6 +12998,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("item_id");
 
+                    b.Property<decimal?>("ListPriceAtSale")
+                        .HasColumnType("numeric(18,6)")
+                        .HasColumnName("list_price_at_sale");
+
                     b.Property<string>("Notes")
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)")
@@ -12684,13 +13011,32 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("packaging_level_id");
 
+                    b.Property<Guid?>("PriceListId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("price_list_id");
+
+                    b.Property<string>("PriceListName")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("price_list_name");
+
+                    b.Property<string>("PricingSource")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("pricing_source");
+
                     b.Property<decimal>("Quantity")
-                        .HasColumnType("numeric(18,4)")
+                        .HasColumnType("numeric(20,6)")
                         .HasColumnName("quantity");
 
                     b.Property<decimal>("QuantityInBaseUom")
-                        .HasColumnType("numeric(18,4)")
+                        .HasColumnType("numeric(20,6)")
                         .HasColumnName("quantity_in_base_uom");
+
+                    b.Property<string>("SelectionSource")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("selection_source");
 
                     b.Property<string>("SnapshotItemName")
                         .HasMaxLength(254)
@@ -12714,6 +13060,14 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
+
+                    b.Property<decimal?>("TotalCostAtSale")
+                        .HasColumnType("numeric(18,6)")
+                        .HasColumnName("total_cost_at_sale");
+
+                    b.Property<decimal?>("UnitCostAtSale")
+                        .HasColumnType("numeric(22,10)")
+                        .HasColumnName("unit_cost_at_sale");
 
                     b.Property<decimal>("UnitPrice")
                         .HasColumnType("numeric(18,6)")
@@ -12743,9 +13097,16 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("warehouse_id");
 
+                    b.Property<string>("WarehouseName")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("warehouse_name");
+
                     b.HasKey("Id");
 
                     b.HasIndex("InvoiceId");
+
+                    b.HasIndex("PriceListId");
 
                     b.HasIndex("WarehouseId");
 
@@ -13281,7 +13642,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("base_uom_code");
 
                     b.Property<decimal>("ConversionFactor")
-                        .HasColumnType("numeric(18,6)")
+                        .HasColumnType("numeric(22,10)")
                         .HasColumnName("conversion_factor");
 
                     b.Property<string>("Description")
@@ -13295,7 +13656,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("discount_amount");
 
                     b.Property<decimal>("DiscountPct")
-                        .HasColumnType("numeric(5,2)")
+                        .HasColumnType("numeric(9,6)")
                         .HasColumnName("discount_pct");
 
                     b.Property<bool>("IsFrozen")
@@ -13315,11 +13676,11 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("packaging_level_id");
 
                     b.Property<decimal>("Quantity")
-                        .HasColumnType("numeric(18,4)")
+                        .HasColumnType("numeric(20,6)")
                         .HasColumnName("quantity");
 
                     b.Property<decimal>("QuantityInBaseUom")
-                        .HasColumnType("numeric(18,4)")
+                        .HasColumnType("numeric(20,6)")
                         .HasColumnName("quantity_in_base_uom");
 
                     b.Property<Guid>("ReturnId")
@@ -15903,6 +16264,15 @@ namespace ERP.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Configuration.Entities.CompanyPrecisionPolicy", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Company.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ERP.Domain.Geography.Entities.GeoCanton", b =>
                 {
                     b.HasOne("ERP.Domain.Geography.Entities.GeoProvince", null)
@@ -16354,6 +16724,11 @@ namespace ERP.Infrastructure.Migrations
 
             modelBuilder.Entity("ERP.Domain.Modules.Caja.Entities.CashRegister", b =>
                 {
+                    b.HasOne("ERP.Domain.Modules.Accounting.Entities.Account", null)
+                        .WithMany()
+                        .HasForeignKey("AccountingAccountId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("ERP.Domain.Branches.Entities.Branch", "Branch")
                         .WithMany()
                         .HasForeignKey("BranchId")
@@ -16617,7 +16992,7 @@ namespace ERP.Infrastructure.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.CompanyFinancialDestination", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.CompanyBankAccount", b =>
                 {
                     b.HasOne("ERP.Domain.Modules.Accounting.Entities.Account", null)
                         .WithMany()
@@ -16625,10 +17000,11 @@ namespace ERP.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("ERP.Domain.Modules.Caja.Entities.CashRegister", null)
+                    b.HasOne("ERP.Domain.MasterData.Entities.Bank", null)
                         .WithMany()
-                        .HasForeignKey("CashRegisterId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .HasForeignKey("BankId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("ERP.Domain.Modules.Company.Entities.Company", null)
                         .WithMany()
@@ -16648,9 +17024,14 @@ namespace ERP.Infrastructure.Migrations
 
             modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.Payment", b =>
                 {
-                    b.HasOne("ERP.Domain.Modules.Finance.Entities.CompanyFinancialDestination", null)
+                    b.HasOne("ERP.Domain.Modules.Caja.Entities.CashRegister", null)
                         .WithMany()
-                        .HasForeignKey("FinancialDestinationId")
+                        .HasForeignKey("CashRegisterId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP.Domain.Modules.Finance.Entities.CompanyBankAccount", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyBankAccountId")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("ERP.Domain.MasterData.Entities.BusinessPartner", null)
@@ -16697,20 +17078,24 @@ namespace ERP.Infrastructure.Migrations
                         .HasForeignKey("CashMovementId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("ERP.Domain.Modules.Caja.Entities.CashRegister", null)
+                        .WithMany()
+                        .HasForeignKey("CashRegisterId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("ERP.Domain.Modules.Caja.Entities.CashSession", null)
                         .WithMany()
                         .HasForeignKey("CashSessionId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("ERP.Domain.Modules.Finance.Entities.CompanyBankAccount", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyBankAccountId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("ERP.Domain.Modules.Company.Entities.Company", null)
                         .WithMany()
                         .HasForeignKey("CompanyId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("ERP.Domain.Modules.Finance.Entities.CompanyFinancialDestination", null)
-                        .WithMany()
-                        .HasForeignKey("FinancialDestinationId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -16897,8 +17282,7 @@ namespace ERP.Infrastructure.Migrations
                                 .HasColumnName("is_for_sale");
 
                             b1.Property<decimal?>("MaxDiscountPercent")
-                                .HasPrecision(5, 2)
-                                .HasColumnType("numeric(5,2)")
+                                .HasColumnType("numeric(9,6)")
                                 .HasColumnName("max_discount_percent");
 
                             b1.HasKey("ItemId");
@@ -16923,13 +17307,11 @@ namespace ERP.Infrastructure.Migrations
                                 .HasColumnName("allow_decimal_sale");
 
                             b1.Property<decimal?>("MaxStockQty")
-                                .HasPrecision(14, 4)
-                                .HasColumnType("numeric(14,4)")
+                                .HasColumnType("numeric(16,6)")
                                 .HasColumnName("max_stock_qty");
 
                             b1.Property<decimal?>("MinStockQty")
-                                .HasPrecision(14, 4)
-                                .HasColumnType("numeric(14,4)")
+                                .HasColumnType("numeric(16,6)")
                                 .HasColumnName("min_stock_qty");
 
                             b1.Property<bool>("TracksLot")
@@ -17195,11 +17577,15 @@ namespace ERP.Infrastructure.Migrations
 
             modelBuilder.Entity("ERP.Domain.Modules.Payables.Entities.SupplierPaymentMethodLine", b =>
                 {
-                    b.HasOne("ERP.Domain.Modules.Finance.Entities.CompanyFinancialDestination", null)
+                    b.HasOne("ERP.Domain.Modules.Caja.Entities.CashRegister", null)
                         .WithMany()
-                        .HasForeignKey("FinancialDestinationId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .HasForeignKey("CashRegisterId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP.Domain.Modules.Finance.Entities.CompanyBankAccount", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyBankAccountId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("ERP.Domain.Modules.Sales.Entities.PaymentMethod", null)
                         .WithMany()
@@ -17211,6 +17597,15 @@ namespace ERP.Infrastructure.Migrations
                         .WithMany("MethodLines")
                         .HasForeignKey("SupplierPaymentId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Pricing.Entities.PriceListCustomer", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Pricing.Entities.PriceList", null)
+                        .WithMany()
+                        .HasForeignKey("PriceListId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
@@ -17589,6 +17984,27 @@ namespace ERP.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.PaymentMethodAccount", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Accounting.Entities.Account", null)
+                        .WithMany()
+                        .HasForeignKey("AccountingAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Company.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Sales.Entities.PaymentMethod", null)
+                        .WithMany()
+                        .HasForeignKey("PaymentMethodId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesInvoice", b =>
                 {
                     b.HasOne("ERP.Domain.Branches.Entities.Branch", null)
@@ -17614,6 +18030,11 @@ namespace ERP.Infrastructure.Migrations
                         .HasForeignKey("CustomerId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Pricing.Entities.PriceList", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerPreferredPriceListId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("ERP.Domain.Modules.Company.Entities.EmissionPoint", null)
                         .WithMany()
@@ -17706,6 +18127,11 @@ namespace ERP.Infrastructure.Migrations
                         .HasForeignKey("InvoiceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Pricing.Entities.PriceList", null)
+                        .WithMany()
+                        .HasForeignKey("PriceListId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("ERP.Domain.Modules.Inventory.Entities.Warehouse", null)
                         .WithMany()
@@ -17813,6 +18239,10 @@ namespace ERP.Infrastructure.Migrations
                                 .HasColumnType("character varying(100)")
                                 .HasColumnName("bank_name");
 
+                            b1.Property<Guid?>("CompanyBankAccountId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("company_bank_account_id");
+
                             b1.Property<string>("ReceiptNumber")
                                 .HasMaxLength(50)
                                 .HasColumnType("character varying(50)")
@@ -17824,7 +18254,14 @@ namespace ERP.Infrastructure.Migrations
 
                             b1.HasKey("PaymentId");
 
+                            b1.HasIndex("CompanyBankAccountId");
+
                             b1.ToTable("payment_transfer_details", (string)null);
+
+                            b1.HasOne("ERP.Domain.Modules.Finance.Entities.CompanyBankAccount", null)
+                                .WithMany()
+                                .HasForeignKey("CompanyBankAccountId")
+                                .OnDelete(DeleteBehavior.Restrict);
 
                             b1.WithOwner()
                                 .HasForeignKey("PaymentId");
