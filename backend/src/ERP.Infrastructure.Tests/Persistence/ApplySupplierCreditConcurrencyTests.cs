@@ -703,7 +703,7 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
 
         await using var verify = CreateContext();
         var movementId = result
-            .Value!.Movements.Single(m => m.TargetPurchasePayableId == payableId)
+            .Value!.Movements.Single(m => m.AccountsPayableId == payableId)
             .Id;
         var entry = await verify
             .JournalEntries.Include(e => e.Lines)
@@ -734,7 +734,7 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
         );
         applyResult.IsSuccess.Should().BeTrue(applyResult.Error);
         var movementId = applyResult
-            .Value!.Movements.Single(m => m.TargetPurchasePayableId == payableId)
+            .Value!.Movements.Single(m => m.AccountsPayableId == payableId)
             .Id;
 
         var reverseHandler = new ReverseSupplierCreditApplicationHandler(

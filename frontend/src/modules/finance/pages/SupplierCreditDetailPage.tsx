@@ -75,7 +75,7 @@ export function SupplierCreditDetailPage() {
   };
 
   const handleReverseApplication = async (movement: SupplierCreditMovementDto) => {
-    if (!credit || !movement.targetPurchasePayableId) return;
+    if (!credit || !movement.accountsPayableId) return;
     const confirmed = await message.confirm({
       title: "Revertir aplicación",
       message: `¿Revertir la aplicación de ${formatMoney(movement.amount, moneyDecimals)}? Esta acción no se puede deshacer.`,
@@ -86,7 +86,7 @@ export function SupplierCreditDetailPage() {
     setReversing(movement.id);
     try {
       await supplierCreditService.reverseApplication(credit.id, movement.id, {
-        targetPurchasePayableId: movement.targetPurchasePayableId,
+        targetPurchasePayableId: movement.accountsPayableId,
         clientRequestId: crypto.randomUUID(),
       });
       message.success("Aplicación revertida correctamente.");

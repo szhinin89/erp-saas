@@ -12,38 +12,7 @@ using System.Text;
 
 namespace ERP.Application.Modules.Finance.UseCases;
 
-// ── DTOs ────────────────────────────────────────────────────────────────
-
-public sealed record SupplierCreditMovementDto(
-    Guid Id,
-    string MovementType,
-    decimal Amount,
-    Guid? TargetPurchasePayableId,
-    Guid? ReversalOfMovementId,
-    DateTime CreatedAtUtc
-);
-
-/// <summary>
-/// ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — origen generalizado: <see cref="SourceType"/>
-/// ("PurchaseReturn" | "SupplierPayment", derivado), exactamente uno de
-/// <see cref="SourcePurchaseReturnId"/>/<see cref="SourceSupplierPaymentId"/>, y
-/// <see cref="SourceDocumentNumber"/> (número visible del documento de origen, solo lectura —
-/// resuelto en las queries; null en las respuestas de comandos).
-/// </summary>
-public sealed record SupplierCreditDto(
-    Guid Id,
-    Guid SupplierId,
-    Guid BranchId,
-    string CurrencyCode,
-    Guid? SourcePurchaseReturnId,
-    decimal OriginalAmount,
-    decimal AvailableAmount,
-    bool IsOpen,
-    IReadOnlyList<SupplierCreditMovementDto> Movements,
-    string SourceType = "PurchaseReturn",
-    Guid? SourceSupplierPaymentId = null,
-    string? SourceDocumentNumber = null
-);
+// DTOs de lectura: SupplierCreditReadModel.cs (ZH-SUPPLIER-CREDIT-READ-MODEL-02D-D).
 
 // ── Command ─────────────────────────────────────────────────────────────
 
@@ -339,32 +308,10 @@ public sealed class ApplySupplierCreditHandler
 
 // ── Mapping (compartido con ReverseSupplierCreditApplicationUseCases) ────
 
+/// <summary>Respuesta de los comandos: mismo mapeo único del read-model, sin enriquecimiento (la API
+/// re-lee el detalle enriquecido tras el comando).</summary>
 internal static class Map
 {
-    public static SupplierCreditDto ToDto(
-        Domain.Modules.Purchases.Entities.SupplierCredit c,
-        string? sourceDocumentNumber = null
-    ) =>
-        new(
-            c.Id,
-            c.SupplierId,
-            c.BranchId,
-            c.CurrencyCode,
-            c.SourcePurchaseReturnId,
-            c.OriginalAmount,
-            c.AvailableAmount,
-            c.IsOpen,
-            c.Movements.Select(m => new SupplierCreditMovementDto(
-                    m.Id,
-                    m.MovementType.ToString(),
-                    m.Amount,
-                    m.TargetPurchasePayableId,
-                    m.ReversalOfMovementId,
-                    m.CreatedAtUtc
-                ))
-                .ToList(),
-            c.SourceType.ToString(),
-            c.SourceSupplierPaymentId,
-            sourceDocumentNumber
-        );
+    public static SupplierCreditDto ToDto(Domain.Modules.Purchases.Entities.SupplierCredit c) =>
+        SupplierCreditReadModel.ToDetail(c, SupplierCreditReadContext.Empty);
 }

@@ -31,6 +31,16 @@ public interface ISupplierCreditRefundTransactionRepository
         CancellationToken ct = default
     );
 
+    /// <summary>
+    /// ZH-SUPPLIER-CREDIT-READ-MODEL-02D-D — todas las transacciones (ingresos y reversas) de un
+    /// crédito, sin tracking, en una sola consulta — lectura del historial del detalle.
+    /// </summary>
+    Task<IReadOnlyList<SupplierCreditRefundTransaction>> ListBySupplierCreditIdAsync(
+        Guid tenantId,
+        Guid supplierCreditId,
+        CancellationToken ct = default
+    );
+
     Task AddAsync(SupplierCreditRefundTransaction transaction, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
 }

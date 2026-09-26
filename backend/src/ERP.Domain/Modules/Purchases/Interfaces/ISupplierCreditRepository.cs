@@ -1,4 +1,5 @@
 using ERP.Domain.Modules.Purchases.Entities;
+using ERP.Domain.Modules.Purchases.Enums;
 
 namespace ERP.Domain.Modules.Purchases.Interfaces;
 
@@ -54,21 +55,47 @@ public interface ISupplierCreditRepository
     );
 
     /// <summary>
-    /// ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — número visible del documento de origen de cada
-    /// crédito (número de devolución o número del pago a proveedor), solo lectura para los DTOs.
-    /// Créditos cuyo origen no puede resolverse simplemente no aparecen en el diccionario.
+    /// ZH-SUPPLIER-CREDIT-READ-MODEL-02D-D — documento de origen de cada crédito (devolución:
+    /// número + instante de autorización; pago: SystemNumber + PaymentDate), solo lectura, en DOS
+    /// consultas fijas para todo el lote (nunca una por crédito). Créditos cuyo origen no puede
+    /// resolverse no aparecen en el diccionario. Reemplaza <c>GetSourceDocumentNumbersAsync</c> (02C).
     /// </summary>
-    Task<IReadOnlyDictionary<Guid, string>> GetSourceDocumentNumbersAsync(
+    Task<IReadOnlyDictionary<Guid, SupplierCreditSourceDocument>> GetSourceDocumentsAsync(
         Guid tenantId,
         IReadOnlyCollection<Guid> supplierCreditIds,
         CancellationToken ct = default
     );
 
-    /// <summary>P0-02 Fase 11 — listado paginado para <c>GetSupplierCreditListQuery</c>, mismo patrón que <c>IPurchaseReturnRepository.GetPagedAsync</c>.</summary>
-    Task<(IReadOnlyList<SupplierCredit> Items, int Total)> GetPagedAsync(
+    /// <summary>
+    /// ZH-SUPPLIER-CREDIT-READ-MODEL-02D-D — listado paginado con filtros ejecutados en BD (empresa
+    /// operativa fail-closed), sin cargar movimientos, orden estable (CreatedAt desc, Id desc).
+    /// Reemplaza <c>GetPagedAsync</c> (Fase 11).
+    /// </summary>
+    Task<(IReadOnlyList<SupplierCredit> Items, int Total)> SearchAsync(
         Guid tenantId,
+        SupplierCreditSearchCriteria criteria,
         int page,
         int pageSize,
         CancellationToken ct = default
     );
 }
+
+/// <summary>ZH-SUPPLIER-CREDIT-READ-MODEL-02D-D — filtros del listado de saldos a favor (todos opcionales).</summary>
+public sealed record SupplierCreditSearchCriteria(
+    Guid? SupplierId = null,
+    SupplierCreditSourceType? SourceType = null,
+    bool? IsOpen = null
+);
+
+/// <summary>
+/// ZH-SUPPLIER-CREDIT-READ-MODEL-02D-D — documento de origen tal como lo guarda el dominio:
+/// <see cref="BusinessDate"/> para el pago (<c>PaymentDate</c>), <see cref="AuthorizedAtUtc"/> para
+/// la devolución (que no tiene fecha de negocio propia; Application la convierte a fecha de la
+/// empresa con su zona horaria, ADR-034).
+/// </summary>
+public sealed record SupplierCreditSourceDocument(
+    Guid DocumentId,
+    string? Number,
+    DateOnly? BusinessDate,
+    DateTime? AuthorizedAtUtc
+);

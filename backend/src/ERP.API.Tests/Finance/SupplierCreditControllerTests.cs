@@ -48,18 +48,27 @@ public sealed class SupplierCreditControllerTests
             null!;
     }
 
-    private static SupplierCreditDto SampleDto(Guid id) =>
-        new(
+    private static SupplierCreditDto SampleDto(Guid id)
+    {
+        var sourceReturnId = Guid.NewGuid();
+        return new(
             id,
             Guid.NewGuid(),
+            "Proveedor Test",
             Guid.NewGuid(),
             "USD",
-            Guid.NewGuid(),
+            "PurchaseReturn",
+            sourceReturnId,
+            sourceReturnId,
+            null,
+            "00000001",
+            new DateOnly(2026, 9, 1),
             100m,
             100m,
             true,
             new List<SupplierCreditMovementDto>()
         );
+    }
 
     private static SupplierCreditRefundTransactionDto SampleRefundDto(Guid id) =>
         new(
@@ -134,11 +143,11 @@ public sealed class SupplierCreditControllerTests
     {
         var controller = BuildController(_ =>
             Result<SupplierCreditListResultDto>.Success(
-                new SupplierCreditListResultDto(new List<SupplierCreditDto>(), 0, 1, 20)
+                new SupplierCreditListResultDto(new List<SupplierCreditListItemDto>(), 0, 1, 20)
             )
         );
 
-        var response = await controller.GetList(1, 20, CancellationToken.None);
+        var response = await controller.GetList(1, 20, ct: CancellationToken.None);
 
         response.Should().BeOfType<OkObjectResult>();
     }
@@ -152,7 +161,7 @@ public sealed class SupplierCreditControllerTests
         object? sent = null;
         var controller = BuildController(req =>
         {
-            sent = req;
+            sent ??= req;
             return Result<SupplierCreditDto>.Success(SampleDto(id));
         });
 
@@ -165,6 +174,36 @@ public sealed class SupplierCreditControllerTests
         response.Should().BeOfType<OkObjectResult>();
         sent.Should().BeOfType<ApplySupplierCreditCommand>();
         ((ApplySupplierCreditCommand)sent!).SupplierCreditId.Should().Be(id);
+    }
+
+    /// <summary>
+    /// ZH-SUPPLIER-CREDIT-READ-MODEL-02D-D — tras el comando exitoso la respuesta es el detalle
+    /// enriquecido re-leído (misma forma que GET /{id}); si el comando falla no se re-lee.
+    /// </summary>
+    [Fact]
+    public async Task Apply_exitoso_responde_con_el_detalle_releido_y_fallido_no_relee()
+    {
+        var id = Guid.NewGuid();
+        var sent = new List<object>();
+        var controller = BuildController(req =>
+        {
+            sent.Add(req);
+            return Result<SupplierCreditDto>.Success(SampleDto(id));
+        });
+
+        await controller.Apply(id, new ApplySupplierCreditRequest(Guid.NewGuid(), 40m, Guid.NewGuid()), CancellationToken.None);
+
+        sent.Should().HaveCount(2);
+        sent[1].Should().BeOfType<GetSupplierCreditByIdQuery>().Which.Id.Should().Be(id);
+
+        var failed = new List<object>();
+        var failing = BuildController(req =>
+        {
+            failed.Add(req);
+            return Result<SupplierCreditDto>.ValidationFailure("x");
+        });
+        await failing.Apply(id, new ApplySupplierCreditRequest(Guid.NewGuid(), 40m, Guid.NewGuid()), CancellationToken.None);
+        failed.Should().ContainSingle();
     }
 
     [Fact]
@@ -211,7 +250,7 @@ public sealed class SupplierCreditControllerTests
         object? sent = null;
         var controller = BuildController(req =>
         {
-            sent = req;
+            sent ??= req;
             return Result<SupplierCreditDto>.Success(SampleDto(id));
         });
 

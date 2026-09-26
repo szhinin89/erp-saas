@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Domain.Modules.Purchases.Entities;
+using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -101,14 +102,14 @@ public sealed class SupplierCreditRepository : ISupplierCreditRepository
             .Select(x => (Guid?)x.Id)
             .FirstOrDefaultAsync(ct);
 
-    public async Task<IReadOnlyDictionary<Guid, string>> GetSourceDocumentNumbersAsync(
+    public async Task<IReadOnlyDictionary<Guid, SupplierCreditSourceDocument>> GetSourceDocumentsAsync(
         Guid tenantId,
         IReadOnlyCollection<Guid> supplierCreditIds,
         CancellationToken ct = default
     )
     {
         if (supplierCreditIds.Count == 0)
-            return new Dictionary<Guid, string>();
+            return new Dictionary<Guid, SupplierCreditSourceDocument>();
 
         var credits = _db
             .SupplierCredits.ForOperationalScope(tenantId, _company)
@@ -118,33 +119,45 @@ public sealed class SupplierCreditRepository : ISupplierCreditRepository
         var fromReturns = await (
             from c in credits
             join r in _db.PurchaseReturns.AsNoTracking() on c.SourcePurchaseReturnId equals r.Id
-            where r.TenantId == tenantId && r.ReturnNumber != null
-            select new { c.Id, Number = r.ReturnNumber! }
+            where r.TenantId == tenantId
+            select new { c.Id, DocumentId = r.Id, r.ReturnNumber, r.AuthorizedAtUtc }
         ).ToListAsync(ct);
 
         var fromPayments = await (
             from c in credits
             join p in _db.SupplierPayments.AsNoTracking() on c.SourceSupplierPaymentId equals p.Id
             where p.TenantId == tenantId
-            select new { c.Id, Number = p.ReceiptNumber ?? p.SystemNumber }
+            select new { c.Id, DocumentId = p.Id, p.SystemNumber, p.PaymentDate }
         ).ToListAsync(ct);
 
-        return fromReturns.Concat(fromPayments).ToDictionary(x => x.Id, x => x.Number);
+        return fromReturns
+            .Select(x => (x.Id, Doc: new SupplierCreditSourceDocument(x.DocumentId, x.ReturnNumber, null, x.AuthorizedAtUtc)))
+            .Concat(fromPayments.Select(x => (x.Id, Doc: new SupplierCreditSourceDocument(x.DocumentId, x.SystemNumber, (DateOnly?)x.PaymentDate, null))))
+            .ToDictionary(x => x.Id, x => x.Doc);
     }
 
-    public async Task<(IReadOnlyList<SupplierCredit> Items, int Total)> GetPagedAsync(
+    public async Task<(IReadOnlyList<SupplierCredit> Items, int Total)> SearchAsync(
         Guid tenantId,
+        SupplierCreditSearchCriteria criteria,
         int page,
         int pageSize,
         CancellationToken ct = default
     )
     {
-        var query = _db
-            .SupplierCredits.ForOperationalScope(tenantId, _company)
-            .Include(x => x.Movements);
+        var query = _db.SupplierCredits.ForOperationalScope(tenantId, _company).AsNoTracking();
+        if (criteria.SupplierId is { } supplierId)
+            query = query.Where(x => x.SupplierId == supplierId);
+        if (criteria.SourceType == SupplierCreditSourceType.SupplierPayment)
+            query = query.Where(x => x.SourceSupplierPaymentId != null);
+        else if (criteria.SourceType == SupplierCreditSourceType.PurchaseReturn)
+            query = query.Where(x => x.SourcePurchaseReturnId != null);
+        if (criteria.IsOpen is { } isOpen)
+            query = isOpen ? query.Where(x => x.AvailableAmount > 0) : query.Where(x => x.AvailableAmount <= 0);
+
         var total = await query.CountAsync(ct);
         var items = await query
             .OrderByDescending(x => x.CreatedAt)
+            .ThenByDescending(x => x.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(ct);

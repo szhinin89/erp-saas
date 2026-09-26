@@ -1,7 +1,9 @@
 using ERP.API.Contracts;
 using ERP.API.Extensions;
+using ERP.Application.Common;
 using ERP.Application.Modules.Finance.UseCases;
 using ERP.Domain.Kernel.Permissions;
+using ERP.Domain.Modules.Purchases.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -42,7 +44,10 @@ public sealed class SupplierCreditController : ControllerBase
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct) =>
         this.ToOkOrNotFound(await _mediator.Send(new GetSupplierCreditByIdQuery(id), ct));
 
-    /// <summary>Lista créditos de proveedor paginados.</summary>
+    /// <summary>
+    /// Lista créditos de proveedor paginados. ZH-SUPPLIER-CREDIT-READ-MODEL-02D-D: filtros opcionales
+    /// server-side por proveedor, origen (<c>PurchaseReturn</c>|<c>SupplierPayment</c>) y abierto/cerrado.
+    /// </summary>
     /// <response code="200">Listado paginado.</response>
     [HttpGet]
     [Authorize(Policy = $"perm:{FinancePermissions.View}")]
@@ -53,12 +58,31 @@ public sealed class SupplierCreditController : ControllerBase
     public async Task<IActionResult> GetList(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
+        [FromQuery] Guid? supplierId = null,
+        [FromQuery] SupplierCreditSourceType? sourceType = null,
+        [FromQuery] bool? isOpen = null,
         CancellationToken ct = default
     ) =>
         this.ToOkOrBadRequest(
-            await _mediator.Send(new GetSupplierCreditListQuery(page, pageSize), ct),
+            await _mediator.Send(
+                new GetSupplierCreditListQuery(page, pageSize, supplierId, sourceType, isOpen),
+                ct
+            ),
             "OK"
         );
+
+    /// <summary>
+    /// ZH-SUPPLIER-CREDIT-READ-MODEL-02D-D — tras un comando exitoso sobre el crédito, responde con
+    /// el MISMO detalle enriquecido que <see cref="GetById"/> (una sola forma de respuesta).
+    /// </summary>
+    private async Task<IActionResult> RespondWithDetailAsync(
+        Guid id,
+        Result<SupplierCreditDto> commandResult,
+        CancellationToken ct
+    ) =>
+        commandResult.IsSuccess
+            ? this.ToOkOrNotFound(await _mediator.Send(new GetSupplierCreditByIdQuery(id), ct))
+            : this.ToOkOrBadRequest(commandResult);
 
     // ══════════════════════════════════════════════════════════════════════
     // APLICACIÓN
@@ -84,7 +108,8 @@ public sealed class SupplierCreditController : ControllerBase
         [FromBody] ApplySupplierCreditRequest request,
         CancellationToken ct
     ) =>
-        this.ToOkOrBadRequest(
+        await RespondWithDetailAsync(
+            id,
             await _mediator.Send(
                 new ApplySupplierCreditCommand(
                     id,
@@ -93,7 +118,8 @@ public sealed class SupplierCreditController : ControllerBase
                     request.ClientRequestId
                 ),
                 ct
-            )
+            ),
+            ct
         );
 
     /// <summary>Revierte una aplicación previa — nunca edita el movimiento original, crea uno nuevo.</summary>
@@ -114,7 +140,8 @@ public sealed class SupplierCreditController : ControllerBase
         [FromBody] ReverseSupplierCreditApplicationRequest request,
         CancellationToken ct
     ) =>
-        this.ToOkOrBadRequest(
+        await RespondWithDetailAsync(
+            id,
             await _mediator.Send(
                 new ReverseSupplierCreditApplicationCommand(
                     id,
@@ -123,7 +150,8 @@ public sealed class SupplierCreditController : ControllerBase
                     request.ClientRequestId
                 ),
                 ct
-            )
+            ),
+            ct
         );
 
     // ══════════════════════════════════════════════════════════════════════

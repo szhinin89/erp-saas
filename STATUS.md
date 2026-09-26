@@ -2,6 +2,14 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-26** · Kernel refactor: **2026-06-05**.
 
+## ZH-SUPPLIER-CREDIT-READ-MODEL-02D-D — Lectura enriquecida de saldos a favor (2026-09-26)
+
+**Estado: COMPLETADO (sin commit).** Sin UI nueva (02D-E).
+- DTOs (máx. 2): `SupplierCreditListItemDto` (nuevo) + `SupplierCreditDto` (detalle enriquecido: proveedor, origen tipo/Id/número/fecha, movimientos cronológicos con CxP destino, datos del reembolso, reversas enlazadas, autor). Proyección única `SupplierCreditReadModel` para list/detail/comandos; Apply/ReverseApplication responden con el detalle re-leído.
+- `GET /finance/supplier-credits`: filtros en BD `supplierId`, `sourceType`, `isOpen`; orden estable (CreatedAt desc, Id desc); consultas fijas por página (sin N+1).
+- Origen: devolución → `ReturnNumber` + `AuthorizedAtUtc` convertido a fecha de la empresa (ADR-034); pago → `SystemNumber` + `PaymentDate` (antes número visible = recibo externo si existía).
+- Evidencia: Application 2274 · Architecture 116 · PostgreSQL focalizadas 32/32 · API controller 19/19 · vitest finance/payables/supplier-payments 91/91 · `tsc -b`/eslint OK · `architecture:check` 244 = `HEAD`.
+
 ## ZH-SUPPLIER-CREDIT-APPLY-PAYABLES-02D-C — Saldo a favor aplicable a CxP de Compra y de Gasto (2026-09-26)
 
 **Estado: COMPLETADO (sin commit).**

@@ -4,33 +4,72 @@ const BASE = "/api/v1/finance/supplier-credits";
 
 // ── DTOs (mismo contrato que SupplierCreditDto/SupplierCreditRefundTransactionDto en ERP.API) ──
 
+/**
+ * ZH-SUPPLIER-CREDIT-READ-MODEL-02D-D — movimiento del historial con los datos que el dominio
+ * guarda según su tipo (null cuando no aplican): aplicación → CxP destino; reembolso → destino,
+ * forma de pago, referencia; reversas → movimiento original / motivo.
+ */
 export interface SupplierCreditMovementDto {
   id: string;
   movementType: string;
   amount: number;
-  targetPurchasePayableId: string | null;
-  reversalOfMovementId: string | null;
   createdAtUtc: string;
+  createdByUserId: string;
+  createdByName: string | null;
+  reversalOfMovementId: string | null;
+  reversedByMovementId: string | null;
+  accountsPayableId: string | null;
+  payableDocumentNumber: string | null;
+  payableOriginType: string | null;
+  refundTransactionId: string | null;
+  effectiveDate: string | null;
+  destinationType: "Cash" | "Bank" | null;
+  destinationName: string | null;
+  paymentMethodCode: string | null;
+  referenceNumber: string | null;
+  reason: string | null;
 }
 
+/** Detalle de un saldo a favor (GET /{id} y respuesta de aplicar/reversar aplicación). */
 export interface SupplierCreditDto {
   id: string;
   supplierId: string;
+  supplierName: string | null;
   branchId: string;
   currencyCode: string;
-  /**
-   * ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — origen generalizado (exactamente uno):
-   * devolución de compra o remanente no aplicado de un pago a proveedor (anticipo).
-   */
+  /** Origen (exactamente uno): devolución de compra o remanente no aplicado de un pago (anticipo). */
   sourceType: SupplierCreditSourceType;
+  sourceDocumentId: string;
   sourcePurchaseReturnId: string | null;
   sourceSupplierPaymentId: string | null;
-  /** Número visible del documento de origen (solo en consultas; null en respuestas de comandos). */
   sourceDocumentNumber: string | null;
+  sourceDate: string | null;
   originalAmount: number;
   availableAmount: number;
   isOpen: boolean;
   movements: SupplierCreditMovementDto[];
+}
+
+/** ZH-SUPPLIER-CREDIT-READ-MODEL-02D-D — fila del listado. */
+export interface SupplierCreditListItemDto {
+  id: string;
+  supplierId: string;
+  supplierName: string | null;
+  sourceType: SupplierCreditSourceType;
+  sourceDocumentId: string;
+  sourceDocumentNumber: string | null;
+  sourceDate: string | null;
+  currencyCode: string;
+  originalAmount: number;
+  availableAmount: number;
+  isOpen: boolean;
+}
+
+/** Filtros server-side opcionales del listado (02D-D). */
+export interface SupplierCreditListFilters {
+  supplierId?: string | null;
+  sourceType?: SupplierCreditSourceType | null;
+  isOpen?: boolean | null;
 }
 
 /** Espejo exacto de SupplierCreditSourceType — backend (derivado, nunca persistido). */
@@ -38,7 +77,7 @@ export type SupplierCreditSourceType = "PurchaseReturn" | "SupplierPayment";
 
 
 export interface SupplierCreditListResultDto {
-  items: SupplierCreditDto[];
+  items: SupplierCreditListItemDto[];
   total: number;
   page: number;
   pageSize: number;
@@ -99,10 +138,13 @@ export interface ReverseSupplierCreditRefundPayload {
  * diseño, ver plan Fase 13 cambio exacto #1).
  */
 export const supplierCreditService = {
-  list: (page = 1, pageSize = 25) => {
+  list: (page = 1, pageSize = 25, filters: SupplierCreditListFilters = {}) => {
     const params = new URLSearchParams();
     params.set("page", String(page));
     params.set("pageSize", String(pageSize));
+    if (filters.supplierId) params.set("supplierId", filters.supplierId);
+    if (filters.sourceType) params.set("sourceType", filters.sourceType);
+    if (filters.isOpen !== undefined && filters.isOpen !== null) params.set("isOpen", String(filters.isOpen));
     return apiGet<SupplierCreditListResultDto>(`${BASE}?${params}`);
   },
 

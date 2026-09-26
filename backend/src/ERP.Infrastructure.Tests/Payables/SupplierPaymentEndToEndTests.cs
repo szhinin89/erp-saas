@@ -2127,15 +2127,22 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
 
         await using var queryDb = CreateContext();
         var repo = new SupplierCreditRepository(queryDb, new FixedCurrentCompany(_companyId));
-        var list = await new ERP.Application.Modules.Finance.UseCases.GetSupplierCreditListHandler(repo, new FixedCurrentTenant(_tenantId))
+        var list = await new ERP.Application.Modules.Finance.UseCases.GetSupplierCreditListHandler(
+                repo,
+                new ERP.Infrastructure.MasterData.Repositories.BusinessPartnerRepository(queryDb),
+                new CompanyRepository(queryDb),
+                new FixedCurrentTenant(_tenantId),
+                new FixedCurrentCompany(_companyId))
             .Handle(new ERP.Application.Modules.Finance.UseCases.GetSupplierCreditListQuery(), CancellationToken.None);
 
         list.IsSuccess.Should().BeTrue(list.Error);
         var dto = list.Value!.Items.Single();
         dto.SourceType.Should().Be("SupplierPayment");
-        dto.SourceSupplierPaymentId.Should().Be(register.Value!.Id);
-        dto.SourcePurchaseReturnId.Should().BeNull();
-        dto.SourceDocumentNumber.Should().Be(register.Value.DisplayNumber);
+        dto.SourceDocumentId.Should().Be(register.Value!.Id);
+        // 02D-D — el origen de un anticipo es el número de sistema del pago + su fecha de pago.
+        dto.SourceDocumentNumber.Should().Be(register.Value.SystemNumber);
+        dto.SourceDate.Should().Be(paymentDate);
+        dto.SupplierName.Should().Be("Proveedor Test");
     }
 }
 

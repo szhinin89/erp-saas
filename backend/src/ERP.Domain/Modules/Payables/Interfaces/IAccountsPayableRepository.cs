@@ -48,6 +48,18 @@ public interface IAccountsPayableRepository
     /// ZH-SUPPLIER-CREDIT-APPLY-PAYABLES-02D-C: devuelve también el tipo de origen (antes solo el Id,
     /// que se asumía siempre PurchaseInvoice).
     /// </summary>
+    /// <summary>
+    /// ZH-SUPPLIER-CREDIT-READ-MODEL-02D-D — número de documento y origen de un lote de CxP (una
+    /// sola consulta, sin tracking, acotada a tenant + empresa) — lectura del historial de
+    /// aplicaciones de un saldo a favor. Ids ajenos o inexistentes no aparecen en el diccionario.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, (string DocumentNumber, AccountsPayableOriginType OriginType)>> GetDocumentRefsByIdsAsync(
+        Guid tenantId,
+        Guid companyId,
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken ct = default
+    );
+
     Task<(AccountsPayableOriginType OriginType, Guid OriginId)?> GetOriginAsync(
         Guid tenantId,
         Guid id,

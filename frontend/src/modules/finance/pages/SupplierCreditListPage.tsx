@@ -8,7 +8,7 @@ import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
 import {
   supplierCreditService,
-  type SupplierCreditDto,
+  type SupplierCreditListItemDto,
 } from "../api/supplierCreditService";
 import { formatSupplierCreditOrigin } from "../utils/supplierCreditOrigin";
 import { ZHNumberValue } from "../../../components/zh/ZHNumberValue";
@@ -23,7 +23,7 @@ const PAGE_SIZE = 25;
  */
 export function SupplierCreditListPage() {
   const navigate = useNavigate();
-  const [items, setItems] = useState<SupplierCreditDto[]>([]);
+  const [items, setItems] = useState<SupplierCreditListItemDto[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -49,7 +49,7 @@ export function SupplierCreditListPage() {
     void fetchList();
   }, [fetchList]);
 
-  const columns: ZHDataTableColumn<SupplierCreditDto>[] = [
+  const columns: ZHDataTableColumn<SupplierCreditListItemDto>[] = [
     {
       key: "supplierId",
       header: "Proveedor",

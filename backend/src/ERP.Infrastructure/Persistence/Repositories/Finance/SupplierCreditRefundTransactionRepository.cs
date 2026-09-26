@@ -36,6 +36,17 @@ public sealed class SupplierCreditRefundTransactionRepository
             .SupplierCreditRefundTransactions.ForOperationalScope(tenantId, _company)
             .FirstOrDefaultAsync(x => x.SupplierCreditMovementId == supplierCreditMovementId, ct);
 
+    public async Task<IReadOnlyList<SupplierCreditRefundTransaction>> ListBySupplierCreditIdAsync(
+        Guid tenantId,
+        Guid supplierCreditId,
+        CancellationToken ct = default
+    ) =>
+        await _db
+            .SupplierCreditRefundTransactions.ForOperationalScope(tenantId, _company)
+            .AsNoTracking()
+            .Where(x => x.SupplierCreditId == supplierCreditId)
+            .ToListAsync(ct);
+
     public async Task<SupplierCreditRefundTransaction?> GetByIdForShareAsync(
         Guid tenantId,
         Guid id,
