@@ -419,6 +419,7 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
             new AccountsPayableRepository(db),
             new PurchaseInvoiceRepository(db, new FixedCurrentCompany(() => _companyId)),
             new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId)),
+            new ERP.Infrastructure.Persistence.Repositories.CompanyRepository(db),
             new UnitOfWork(db),
             new RealDatabaseExceptionTranslator(),
             new FixedCurrentTenant(() => _tenantId),

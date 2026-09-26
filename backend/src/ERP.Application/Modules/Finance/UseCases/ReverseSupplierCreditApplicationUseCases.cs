@@ -15,8 +15,9 @@ namespace ERP.Application.Modules.Finance.UseCases;
 
 /// <summary>
 /// P0-02 Fase 7 — reversa una aplicación previa de <c>SupplierCredit</c> contra una
-/// <c>PurchasePayable</c> destino: mismo orden de locks que <c>ApplySupplierCreditUseCases</c>
-/// (Lock A destino → Lock B, §15.4), idempotente (§16.2, fila <c>ReverseApplication</c>).
+/// <c>AccountsPayable</c> destino (Compra o Gasto, ZH-SUPPLIER-CREDIT-APPLY-PAYABLES-02D-C): misma
+/// resolución de destino que <c>ApplySupplierCreditUseCases</c> (<see cref="SupplierCreditPayableTarget"/>,
+/// Lock A destino → Lock B, §15.4), idempotente (§16.2, fila <c>ReverseApplication</c>).
 /// <c>TargetPurchasePayableId</c> se recibe explícito (redundante con el ya persistido en el
 /// movimiento original) porque Lock A debe adquirirse ANTES de poder cargar el agregado que lo
 /// confirma — el propio handler revalida bajo lock que coincide con el movimiento real (§9.3).
@@ -87,18 +88,21 @@ public sealed class ReverseSupplierCreditApplicationHandler
         await _uow.BeginTransactionAsync(ct);
         try
         {
-            var purchaseInvoiceId = await _payableRepo.GetOriginIdAsync(
+            var lockError = await SupplierCreditPayableTarget.AcquireOriginLockAsync(
+                _payableRepo,
+                _purchaseReturnRepo,
                 tid,
                 cmd.TargetPurchasePayableId,
                 ct
             );
-            if (purchaseInvoiceId is null)
+            if (lockError is not null)
             {
                 await _uow.RollbackAsync(ct);
-                return Result<SupplierCreditDto>.NotFound("La cuenta por pagar destino no existe.");
+                return lockError == SupplierCreditPayableTarget.NotFoundMessage
+                    ? Result<SupplierCreditDto>.NotFound(lockError)
+                    : Result<SupplierCreditDto>.ValidationFailure(lockError);
             }
 
-            await _purchaseReturnRepo.AcquireFinancialLockAsync(tid, purchaseInvoiceId.Value, ct);
             await _creditRepo.AcquireLockAsync(tid, cmd.SupplierCreditId, ct);
 
             var payable = await _payableRepo.GetByIdAsync(tid, cmd.TargetPurchasePayableId, ct);
@@ -116,6 +120,13 @@ public sealed class ReverseSupplierCreditApplicationHandler
                 return Result<SupplierCreditDto>.NotFound(
                     "El crédito de proveedor indicado no existe."
                 );
+            }
+
+            var ownershipError = SupplierCreditPayableTarget.ValidateOwnership(payable, credit);
+            if (ownershipError is not null)
+            {
+                await _uow.RollbackAsync(ct);
+                return Result<SupplierCreditDto>.NotFound(ownershipError);
             }
 
             // ── Idempotencia (§16.2) ──

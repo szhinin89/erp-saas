@@ -40,14 +40,19 @@ public interface IAccountsPayableRepository
     );
 
     /// <summary>
-    /// PAYABLES-PURCHASE-MIGRATION-10 — descubrimiento mínimo, sin tracking, del
-    /// <see cref="AccountsPayable.OriginId"/> de una CxP (reemplaza
-    /// <c>IPurchasePayableRepository.GetPurchaseInvoiceIdAsync</c>), usado únicamente para
-    /// determinar qué Lock A adquirir ANTES de la recarga autoritativa. Deliberadamente no rastrea
-    /// la entidad — así la posterior llamada a <see cref="GetByIdAsync"/> (ya tracking) ejecutada
-    /// después del lock garantiza una lectura fresca real desde PostgreSQL.
+    /// PAYABLES-PURCHASE-MIGRATION-10 — descubrimiento mínimo, sin tracking, del origen
+    /// (<see cref="AccountsPayable.OriginType"/> + <see cref="AccountsPayable.OriginId"/>) de una CxP,
+    /// usado únicamente para determinar qué Lock A adquirir ANTES de la recarga autoritativa.
+    /// Deliberadamente no rastrea la entidad — así la posterior llamada a <see cref="GetByIdAsync"/>
+    /// (ya tracking) ejecutada después del lock garantiza una lectura fresca real desde PostgreSQL.
+    /// ZH-SUPPLIER-CREDIT-APPLY-PAYABLES-02D-C: devuelve también el tipo de origen (antes solo el Id,
+    /// que se asumía siempre PurchaseInvoice).
     /// </summary>
-    Task<Guid?> GetOriginIdAsync(Guid tenantId, Guid id, CancellationToken ct = default);
+    Task<(AccountsPayableOriginType OriginType, Guid OriginId)?> GetOriginAsync(
+        Guid tenantId,
+        Guid id,
+        CancellationToken ct = default
+    );
 
     /// <summary>
     /// PAYABLES-READ-API-11 — listado paginado genérico (cualquier origen) para

@@ -200,6 +200,18 @@ public sealed class CancelExpenseDocumentHandler
                     )
                     : null;
 
+            // ZH-SUPPLIER-CREDIT-APPLY-PAYABLES-02D-C — espejo de PI-CANC-02 (CancelPurchaseHandler):
+            // desde 02D-C un saldo a favor de proveedor puede aplicarse a una CxP de Gasto; anularla
+            // con ese saldo aplicado lo dejaría consumido sin reversa posible (SC-014 exige CxP no
+            // anulada). Debe reversarse primero la aplicación.
+            if (payable is not null && payable.SupplierCreditAmount > 0)
+            {
+                await _uow.RollbackAsync(ct);
+                return Result<ExpenseDocumentDetailDto>.ValidationFailure(
+                    "No se puede anular un gasto con saldo a favor del proveedor aplicado contra su cuenta por pagar. Reverse primero la aplicación."
+                );
+            }
+
             if (payable is not null)
             {
                 try

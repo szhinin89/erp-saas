@@ -11,7 +11,11 @@ import { formatApiRequestError } from "../../lib/apiError";
 import { formatMoney } from "../../../lib/sanitizers";
 import type { SupplierCreditDto } from "../api/supplierCreditService";
 import { supplierCreditService } from "../api/supplierCreditService";
-import { payablesService, type PayableListItemDto } from "../../payables/api/payablesService";
+import {
+  payableOriginLabel,
+  payablesService,
+  type PayableListItemDto,
+} from "../../payables/api/payablesService";
 import {
   buildApplySupplierCreditSchema,
   type ApplySupplierCreditFormValues,
@@ -28,10 +32,10 @@ interface Props {
 /**
  * Aplica el crédito de proveedor contra una CxP destino del mismo proveedor. El selector de CxP
  * se resuelve exclusivamente vía `payablesService.list(...)` (filtro server-side — nunca
- * client-side sobre una lista completa, diseño Fase 13 cambio exacto #2). SupplierCredit solo
- * existe para Compras — se filtra `originType: "PurchaseInvoice"` (PAYABLES-LEGACY-CLEANUP-13:
- * migrado del `payableService` legacy (endpoint de CxP exclusivo de Compras, eliminado) a la
- * API genérica de Cuentas por Pagar).
+ * client-side sobre una lista completa, diseño Fase 13 cambio exacto #2).
+ * ZH-SUPPLIER-CREDIT-APPLY-PAYABLES-02D-C: CxP de Compra y de Gasto (el backend resuelve el lock
+ * según el origen); pendientes y parcialmente pagadas (el filtro de estado es de un solo valor →
+ * dos consultas server-side). Manual no admite saldos a favor (el backend lo rechaza igual).
  */
 export function ApplySupplierCreditModal({ open, credit, onClose, onApplied }: Props) {
   const moneyDecimals = usePrecisionDecimals("money"); // presentación (04F)
@@ -58,13 +62,18 @@ export function ApplySupplierCreditModal({ open, credit, onClose, onApplied }: P
     reset({ targetPurchasePayableId: "", amount: credit.availableAmount });
     setSubmitError("");
     setLoadingPayables(true);
-    payablesService
-      .list(
-        { supplierId: credit.supplierId, status: "pending", originType: "PurchaseInvoice" },
-        1,
-        100,
+    Promise.all(
+      (["pending", "partiallypaid"] as const).map((status) =>
+        payablesService.list({ supplierId: credit.supplierId, status }, 1, 100),
+      ),
+    )
+      .then((results) =>
+        setPayables(
+          results
+            .flatMap((r) => r.items)
+            .filter((p) => p.outstandingAmount > 0 && p.originType !== "Manual"),
+        ),
       )
-      .then((r) => setPayables(r.items.filter((p) => p.outstandingAmount > 0)))
       .catch(() => setPayables([]))
       .finally(() => setLoadingPayables(false));
   }, [open, credit, reset]);
@@ -128,7 +137,8 @@ export function ApplySupplierCreditModal({ open, credit, onClose, onApplied }: P
             </option>
             {payables.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.documentNumber} — Saldo {formatMoney(p.outstandingAmount, moneyDecimals)}
+                {payableOriginLabel(p.originType)} · {p.documentNumber} — Saldo pendiente{" "}
+                {formatMoney(p.outstandingAmount, moneyDecimals)}
               </option>
             ))}
           </select>

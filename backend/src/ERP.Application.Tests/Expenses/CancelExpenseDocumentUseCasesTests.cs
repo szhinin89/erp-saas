@@ -108,6 +108,33 @@ public sealed class CancelExpenseDocumentUseCasesTests
         fx.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    /// <summary>
+    /// ZH-SUPPLIER-CREDIT-APPLY-PAYABLES-02D-C — espejo de PI-CANC-02: con un saldo a favor aplicado
+    /// contra la CxP del gasto, la anulación se bloquea sin tocar ni el gasto ni la CxP.
+    /// </summary>
+    [Fact]
+    public async Task Cancelar_gasto_con_saldo_a_favor_aplicado_en_la_CxP_se_bloquea()
+    {
+        var fx = new Fixture();
+        var document = fx.ConfirmedDocument();
+        fx.SetupDocument(document);
+        var payable = fx.SetupPayable(document.Id, document.GrandTotal);
+        payable.ApplySupplierCredit(10m, UserId);
+
+        var result = await fx.Handler.Handle(
+            new CancelExpenseDocumentCommand(document.Id, "Documento duplicado"),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        result.Error.Should().Contain("saldo a favor");
+        document.Status.Should().Be(ExpenseStatus.Confirmed);
+        payable.Status.Should().NotBe(AccountsPayableStatus.Cancelled);
+        fx.Uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+        fx.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     [Fact]
     public async Task Cancelar_gasto_en_Draft_se_bloquea()
     {

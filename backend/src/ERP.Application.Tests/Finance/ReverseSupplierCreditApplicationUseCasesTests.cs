@@ -85,9 +85,9 @@ public sealed class ReverseSupplierCreditApplicationUseCasesTests
         {
             PayableRepo
                 .Setup(r =>
-                    r.GetOriginIdAsync(TenantId, PayableId, It.IsAny<CancellationToken>())
+                    r.GetOriginAsync(TenantId, PayableId, It.IsAny<CancellationToken>())
                 )
-                .ReturnsAsync(PurchaseInvoiceId);
+                .ReturnsAsync(((AccountsPayableOriginType, Guid)?)(AccountsPayableOriginType.PurchaseInvoice, PurchaseInvoiceId));
             PayableRepo
                 .Setup(r => r.GetByIdAsync(TenantId, PayableId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(f.Payable);
@@ -103,13 +103,13 @@ public sealed class ReverseSupplierCreditApplicationUseCasesTests
         {
             PayableRepo
                 .Setup(r =>
-                    r.GetOriginIdAsync(
+                    r.GetOriginAsync(
                         TenantId,
                         OtherPayableId,
                         It.IsAny<CancellationToken>()
                     )
                 )
-                .ReturnsAsync(OtherPurchaseInvoiceId);
+                .ReturnsAsync(((AccountsPayableOriginType, Guid)?)(AccountsPayableOriginType.PurchaseInvoice, OtherPurchaseInvoiceId));
             PayableRepo
                 .Setup(r => r.GetByIdAsync(TenantId, OtherPayableId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(otherPayable);

@@ -2,6 +2,15 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-26** · Kernel refactor: **2026-06-05**.
 
+## ZH-SUPPLIER-CREDIT-APPLY-PAYABLES-02D-C — Saldo a favor aplicable a CxP de Compra y de Gasto (2026-09-26)
+
+**Estado: COMPLETADO (sin commit).**
+- `SupplierCreditPayableTarget` (única resolución, compartida por Apply/Reverse): Lock A según `AccountsPayable.OriginType` — Compra → `PurchaseInvoice.FinancialLock`; Gasto → sin advisory lock (no existe uno oficial; concurrencia optimista `xmin` de `AccountsPayable`, choque → SC-010); otro origen → rechazo fail-closed. Moneda: Compra = `PurchaseInvoice.CurrencyCode`, Gasto = `Company.CurrencyCode`. `IAccountsPayableRepository.GetOriginIdAsync` → `GetOriginAsync` (tipo + Id).
+- **Seguridad corregida**: la CxP destino se cargaba solo por tenant y nunca se validaba `CompanyId` (un saldo de la empresa A podía aplicarse a una CxP de la empresa B del mismo tenant/proveedor). Ahora se rechaza como inexistente (Apply y Reverse).
+- **Integridad**: `CancelExpenseDocument` bloquea si la CxP del gasto tiene saldo a favor aplicado (espejo de PI-CANC-02 de Compras) — sin esto, anular el gasto dejaba el saldo consumido sin reversa posible (SC-014).
+- Frontend: modal Aplicar lista CxP pendientes y parcialmente pagadas de Compra y Gasto (antes solo Compra y solo `pending`), con "Compra/Gasto · documento — Saldo pendiente"; etiqueta de origen única en `payablesService.payableOriginLabel`.
+- Evidencia: Domain 1206 · Application 2274 · Architecture 116 · PostgreSQL focalizadas 31/31 · API focalizadas 33/33 · vitest finance+payables 27/27 · `tsc -b`/eslint OK · `architecture:check` 244 = `HEAD` (mismo conjunto).
+
 ## ZH-SUPPLIER-CREDIT-REFUND-POSTING-02D-B — Asiento fail-closed del reembolso de SupplierCredit (2026-09-26)
 
 **Estado: COMPLETADO (sin commit).** Cierra el 6.º gap de PostingRule (traductor real sin regla sembrada).

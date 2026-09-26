@@ -56,12 +56,19 @@ public sealed class AccountsPayableRepository : IAccountsPayableRepository
             .Where(x => x.TenantId == tenantId && x.Installments.Any(i => i.Id == installmentId))
             .FirstOrDefaultAsync(ct);
 
-    public Task<Guid?> GetOriginIdAsync(Guid tenantId, Guid id, CancellationToken ct = default) =>
-        _db.AccountsPayables
+    public async Task<(AccountsPayableOriginType OriginType, Guid OriginId)?> GetOriginAsync(
+        Guid tenantId,
+        Guid id,
+        CancellationToken ct = default
+    )
+    {
+        var origin = await _db.AccountsPayables
             .AsNoTracking()
             .Where(x => x.TenantId == tenantId && x.Id == id)
-            .Select(x => (Guid?)x.OriginId)
+            .Select(x => new { x.OriginType, x.OriginId })
             .FirstOrDefaultAsync(ct);
+        return origin is null ? null : (origin.OriginType, origin.OriginId);
+    }
 
     public async Task<(IReadOnlyList<AccountsPayable> Items, int Total)> SearchAsync(
         Guid tenantId,

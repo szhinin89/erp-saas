@@ -48,7 +48,8 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
             CancellationToken ct = default
         ) => throw new NotImplementedException();
 
-        public Task<Guid?> GetOriginIdAsync(Guid tenantId, Guid id, CancellationToken ct = default) =>
+        public Task<(AccountsPayableOriginType OriginType, Guid OriginId)?> GetOriginAsync(
+            Guid tenantId, Guid id, CancellationToken ct = default) =>
             throw new NotImplementedException();
 
         public Task<(IReadOnlyList<AccountsPayable> Items, int Total)> SearchAsync(

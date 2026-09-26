@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Finance.UseCases;
 using ERP.Domain.Modules.Payables.Entities;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
@@ -97,6 +98,7 @@ public sealed class ApplySupplierCreditUseCasesTests
         public Mock<IAccountsPayableRepository> PayableRepo { get; } = new();
         public Mock<IPurchaseInvoiceRepository> InvoiceRepo { get; } = new();
         public Mock<IPurchaseReturnRepository> ReturnRepo { get; } = new();
+        public Mock<ICompanyRepository> CompanyRepo { get; } = new();
         public Mock<IUnitOfWork> Uow { get; } = new();
         public Mock<IDatabaseExceptionTranslator> DbEx { get; } = new();
 
@@ -104,9 +106,9 @@ public sealed class ApplySupplierCreditUseCasesTests
         {
             PayableRepo
                 .Setup(r =>
-                    r.GetOriginIdAsync(TenantId, PayableId, It.IsAny<CancellationToken>())
+                    r.GetOriginAsync(TenantId, PayableId, It.IsAny<CancellationToken>())
                 )
-                .ReturnsAsync(PurchaseInvoiceId);
+                .ReturnsAsync(((AccountsPayableOriginType, Guid)?)(AccountsPayableOriginType.PurchaseInvoice, PurchaseInvoiceId));
             PayableRepo
                 .Setup(r => r.GetByIdAsync(TenantId, PayableId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(f.Payable);
@@ -128,6 +130,7 @@ public sealed class ApplySupplierCreditUseCasesTests
                 PayableRepo.Object,
                 InvoiceRepo.Object,
                 ReturnRepo.Object,
+                CompanyRepo.Object,
                 Uow.Object,
                 DbEx.Object,
                 new FixedCurrentTenant(),
@@ -322,6 +325,113 @@ public sealed class ApplySupplierCreditUseCasesTests
         );
 
         sequence.Should().Equal("LockA", "LockB");
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // ZH-SUPPLIER-CREDIT-APPLY-PAYABLES-02D-C — destino genérico AccountsPayable
+    // ══════════════════════════════════════════════════════════════════════
+
+    private static AccountsPayable BuildPayable(
+        AccountsPayableOriginType originType,
+        Guid? companyId = null,
+        decimal total = 500m
+    )
+    {
+        var payable = AccountsPayable.CreateFromOrigin(
+            TenantId,
+            companyId ?? CompanyId,
+            BranchId,
+            SupplierId,
+            originType,
+            Guid.NewGuid(),
+            "EXP",
+            "GAS-000001",
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            UserId
+        );
+        payable.AddInstallment(1, DateOnly.FromDateTime(DateTime.UtcNow).AddDays(30), total);
+        return payable;
+    }
+
+    private static Mocks MocksFor(Fixture f, AccountsPayable payable)
+    {
+        var m = new Mocks(f);
+        m.PayableRepo.Setup(r => r.GetOriginAsync(TenantId, PayableId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(((AccountsPayableOriginType, Guid)?)(payable.OriginType, payable.OriginId));
+        m.PayableRepo.Setup(r => r.GetByIdAsync(TenantId, PayableId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(payable);
+        m.CompanyRepo.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(ERP.Domain.Modules.Company.Entities.Company.CreateManaged(
+                TenantId, "1790012345001", "Test S.A.", createdBy: UserId));
+        return m;
+    }
+
+    [Fact]
+    public async Task CxP_de_Gasto_aplica_con_moneda_de_la_empresa_sin_el_lock_de_Compras()
+    {
+        var f = BuildFixture(creditAmount: 100m);
+        var expensePayable = BuildPayable(AccountsPayableOriginType.ExpenseDocument);
+        var m = MocksFor(f, expensePayable);
+
+        var result = await m.BuildHandler().Handle(
+            new ApplySupplierCreditCommand(f.Credit.Id, PayableId, 30m, Guid.NewGuid()),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.AvailableAmount.Should().Be(70m);
+        expensePayable.SupplierCreditAmount.Should().Be(30m);
+        m.ReturnRepo.Verify(
+            r => r.AcquireFinancialLockAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never,
+            "Gastos no usa el Lock A de Compras; su concurrencia es el xmin de AccountsPayable"
+        );
+        m.InvoiceRepo.Verify(
+            r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        m.CreditRepo.Verify(r => r.AcquireLockAsync(TenantId, f.Credit.Id, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CxP_de_origen_Manual_se_rechaza_fail_closed_antes_de_bloquear_el_credito()
+    {
+        var f = BuildFixture(creditAmount: 100m);
+        var manualPayable = BuildPayable(AccountsPayableOriginType.Manual);
+        var m = MocksFor(f, manualPayable);
+
+        var result = await m.BuildHandler().Handle(
+            new ApplySupplierCreditCommand(f.Credit.Id, PayableId, 30m, Guid.NewGuid()),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Manual");
+        f.Credit.AvailableAmount.Should().Be(100m);
+        manualPayable.SupplierCreditAmount.Should().Be(0m);
+        m.CreditRepo.Verify(
+            r => r.AcquireLockAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task CxP_de_otra_empresa_del_mismo_tenant_se_rechaza_como_inexistente()
+    {
+        var f = BuildFixture(creditAmount: 100m);
+        var foreignPayable = BuildPayable(AccountsPayableOriginType.ExpenseDocument, companyId: Guid.NewGuid());
+        var m = MocksFor(f, foreignPayable);
+
+        var result = await m.BuildHandler().Handle(
+            new ApplySupplierCreditCommand(f.Credit.Id, PayableId, 30m, Guid.NewGuid()),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("La cuenta por pagar destino no existe.");
+        f.Credit.AvailableAmount.Should().Be(100m);
+        foreignPayable.SupplierCreditAmount.Should().Be(0m);
     }
 
     private sealed class FixedCurrentTenant : ICurrentTenant

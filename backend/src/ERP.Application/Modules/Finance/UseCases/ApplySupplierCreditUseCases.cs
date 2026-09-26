@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Enums;
@@ -47,9 +48,11 @@ public sealed record SupplierCreditDto(
 // ── Command ─────────────────────────────────────────────────────────────
 
 /// <summary>
-/// P0-02 Fase 7 — aplica un <c>SupplierCredit</c> existente contra una <c>PurchasePayable</c>
+/// P0-02 Fase 7 — aplica un <c>SupplierCredit</c> existente contra una <c>AccountsPayable</c>
 /// destino: Lock A (destino) → Lock B, en ese orden fijo (§15.4), idempotente (§16.2, fila
-/// <c>ApplyToPayable</c>).
+/// <c>ApplyToPayable</c>). ZH-SUPPLIER-CREDIT-APPLY-PAYABLES-02D-C: el destino puede ser una CxP de
+/// Compra o de Gasto — resolución de lock/empresa/moneda en <see cref="SupplierCreditPayableTarget"/>.
+/// El nombre <c>TargetPurchasePayableId</c> se conserva por compatibilidad de contrato (API/UI/BD).
 /// </summary>
 public sealed record ApplySupplierCreditCommand(
     Guid SupplierCreditId,
@@ -82,6 +85,7 @@ public sealed class ApplySupplierCreditHandler
     private readonly IAccountsPayableRepository _payableRepo;
     private readonly IPurchaseInvoiceRepository _invoiceRepo;
     private readonly IPurchaseReturnRepository _purchaseReturnRepo;
+    private readonly ICompanyRepository _companyRepo;
     private readonly IUnitOfWork _uow;
     private readonly IDatabaseExceptionTranslator _dbEx;
     private readonly ICurrentTenant _t;
@@ -92,6 +96,7 @@ public sealed class ApplySupplierCreditHandler
         IAccountsPayableRepository payableRepo,
         IPurchaseInvoiceRepository invoiceRepo,
         IPurchaseReturnRepository purchaseReturnRepo,
+        ICompanyRepository companyRepo,
         IUnitOfWork uow,
         IDatabaseExceptionTranslator dbEx,
         ICurrentTenant t,
@@ -102,6 +107,7 @@ public sealed class ApplySupplierCreditHandler
         _payableRepo = payableRepo;
         _invoiceRepo = invoiceRepo;
         _purchaseReturnRepo = purchaseReturnRepo;
+        _companyRepo = companyRepo;
         _uow = uow;
         _dbEx = dbEx;
         _t = t;
@@ -116,29 +122,26 @@ public sealed class ApplySupplierCreditHandler
         var tid = _t.TenantId;
         var uid = _u.UserId;
 
-        // §15.4: Lock A (del PurchasePayable destino) siempre antes de Lock B (del
-        // SupplierCredit). Descubrimiento sin tracking del PurchaseInvoiceId dueño del destino
-        // (mismo patrón GetPurchaseInvoiceIdAsync ya usado por RegisterPaymentCommandHandler/
-        // IssueRetentionUseCases/AuthorizePurchaseReturnUseCases) — garantiza que la recarga
-        // posterior (después del lock) sea la primera lectura tracking, genuinamente fresca.
+        // §15.4: Lock A (del destino, según su origen) siempre antes de Lock B (del
+        // SupplierCredit). Descubrimiento sin tracking del origen de la CxP — garantiza que la
+        // recarga posterior (después del lock) sea la primera lectura tracking, genuinamente fresca.
         await _uow.BeginTransactionAsync(ct);
         try
         {
-            var purchaseInvoiceId = await _payableRepo.GetOriginIdAsync(
+            var lockError = await SupplierCreditPayableTarget.AcquireOriginLockAsync(
+                _payableRepo,
+                _purchaseReturnRepo,
                 tid,
                 cmd.TargetPurchasePayableId,
                 ct
             );
-            if (purchaseInvoiceId is null)
+            if (lockError is not null)
             {
                 await _uow.RollbackAsync(ct);
-                // SC-002 — el destino no existe.
-                return Result<SupplierCreditDto>.ValidationFailure(
-                    "La cuenta por pagar destino no existe."
-                );
+                // SC-002 — el destino no existe o su origen no admite saldos a favor.
+                return Result<SupplierCreditDto>.ValidationFailure(lockError);
             }
 
-            await _purchaseReturnRepo.AcquireFinancialLockAsync(tid, purchaseInvoiceId.Value, ct);
             await _creditRepo.AcquireLockAsync(tid, cmd.SupplierCreditId, ct);
 
             var payable = await _payableRepo.GetByIdAsync(tid, cmd.TargetPurchasePayableId, ct);
@@ -185,6 +188,12 @@ public sealed class ApplySupplierCreditHandler
             }
 
             // ── Revalidación bajo lock (§9.3, §12.2) ──
+            var ownershipError = SupplierCreditPayableTarget.ValidateOwnership(payable, credit);
+            if (ownershipError is not null)
+            {
+                await _uow.RollbackAsync(ct);
+                return Result<SupplierCreditDto>.ValidationFailure(ownershipError);
+            }
             if (payable.Status == AccountsPayableStatus.Cancelled)
             {
                 await _uow.RollbackAsync(ct);
@@ -202,17 +211,23 @@ public sealed class ApplySupplierCreditHandler
                 );
             }
 
-            var invoice = await _invoiceRepo.GetByIdAsync(tid, payable.OriginId, ct);
-            if (invoice is null)
+            var targetCurrency = await SupplierCreditPayableTarget.ResolveCurrencyAsync(
+                payable,
+                _invoiceRepo,
+                _companyRepo,
+                tid,
+                ct
+            );
+            if (targetCurrency is null)
             {
                 await _uow.RollbackAsync(ct);
                 return Result<SupplierCreditDto>.NotFound(
-                    "La compra asociada a la cuenta por pagar destino no fue encontrada."
+                    "El documento asociado a la cuenta por pagar destino no fue encontrado."
                 );
             }
             if (
                 !string.Equals(
-                    invoice.CurrencyCode,
+                    targetCurrency,
                     credit.CurrencyCode,
                     StringComparison.OrdinalIgnoreCase
                 )
