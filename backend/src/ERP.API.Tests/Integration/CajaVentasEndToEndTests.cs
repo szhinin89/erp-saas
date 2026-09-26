@@ -771,16 +771,37 @@ public sealed class CajaVentasEndToEndTests : IClassFixture<CajaVentasFlowFixtur
     [Fact]
     public async Task Registrar_movimiento_manual_exige_permiso_caja_record_y_configuracion_de_empresa()
     {
-        // ── Turno abierto por un usuario con acceso total (Admin) — precondición común a todos
-        // los sub-escenarios; lo que se prueba es la autorización de registrar el movimiento, no
-        // la apertura del turno. ──
+        // ZH-SUPPLIER-PAYMENT-CASH-OWNERSHIP-02B — el turno lo abre el MISMO operador que luego
+        // registra y cierra: una sesión solo la opera quien la abrió (CashSession.UserId). Antes
+        // este test abría el turno con un Admin y registraba con otro usuario — exactamente el
+        // comportamiento que 02B cierra (ver escenario 3).
         var adminUserId = await _f.CreateUserWithBranchAccessAsync(_f.BranchAId);
-        _f.SetActiveContext(adminUserId, _f.BranchAId);
-        var openResponse = await _f.Client.PostAsJsonAsync(
+        var operatorProfileId = await _f.CreateProfileWithPermissionsAsync(
+            "Operador de Caja",
+            CajaPermissions.View,
+            CajaPermissions.Open,
+            CajaPermissions.Record,
+            CajaPermissions.Close
+        );
+        var operatorUserId = await _f.CreateUserWithBranchAccessAsync(
+            "Operador",
+            operatorProfileId,
+            _f.BranchAId
+        );
+        var operatorClient = _f.CreateClientForUser(operatorUserId, "Operador", _f.BranchAId);
+        // Nota de infraestructura de test: el ICurrentUser del fixture es un valor mutable
+        // compartido que fija el ÚLTIMO CreateClientForUser/SetActiveContext (no el JWT de cada
+        // cliente) — por eso cada actor fija su identidad justo antes de su request.
+        void ActAs(Guid userId) => _f.SetActiveContext(userId, _f.BranchAId);
+
+        ActAs(operatorUserId);
+        var openResponse = await operatorClient.PostAsJsonAsync(
             "/api/v1/cash-sessions/open",
             new { cashRegisterId = _f.CashRegisterA1Id, openingAmount = 100m, notes = (string?)null }
         );
-        openResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+        openResponse
+            .StatusCode.Should()
+            .Be(HttpStatusCode.Created, await openResponse.Content.ReadAsStringAsync());
         var session = (
             await openResponse.Content.ReadFromJsonAsync<Envelope<CashSessionResponseDto>>(JsonOptions)
         )!.Data!;
@@ -795,7 +816,7 @@ public sealed class CajaVentasEndToEndTests : IClassFixture<CajaVentasFlowFixtur
                 description = "Ingreso E2E permiso granular",
             };
 
-        // ── 1) Empresa permite (default true) + usuario SIN caja.record → 403 ──────────────
+        // ── 1) Usuario SIN caja.record → 403 (el permiso se evalúa antes que la propiedad) ──
         var noRecordProfileId = await _f.CreateProfileWithPermissionsAsync(
             "Solo Vista Caja",
             CajaPermissions.View
@@ -807,6 +828,7 @@ public sealed class CajaVentasEndToEndTests : IClassFixture<CajaVentasFlowFixtur
         );
         var noRecordClient = _f.CreateClientForUser(noRecordUserId, "Operador", _f.BranchAId);
 
+        ActAs(noRecordUserId);
         var forbiddenResponse = await noRecordClient.PostAsJsonAsync(
             $"/api/v1/cash-sessions/{session.Id}/movements",
             MovementBody()
@@ -817,20 +839,9 @@ public sealed class CajaVentasEndToEndTests : IClassFixture<CajaVentasFlowFixtur
         var getAsViewOnly = await noRecordClient.GetAsync($"/api/v1/cash-sessions/{session.Id}");
         getAsViewOnly.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        // ── 2) Empresa permite (default true) + usuario CON caja.record → éxito ────────────
-        var recordProfileId = await _f.CreateProfileWithPermissionsAsync(
-            "Vista y Registro de Movimientos",
-            CajaPermissions.View,
-            CajaPermissions.Record
-        );
-        var recordUserId = await _f.CreateUserWithBranchAccessAsync(
-            "Operador",
-            recordProfileId,
-            _f.BranchAId
-        );
-        var recordClient = _f.CreateClientForUser(recordUserId, "Operador", _f.BranchAId);
-
-        var allowedResponse = await recordClient.PostAsJsonAsync(
+        // ── 2) Dueño del turno CON caja.record + empresa permite → éxito ─────────────────────
+        ActAs(operatorUserId);
+        var allowedResponse = await operatorClient.PostAsJsonAsync(
             $"/api/v1/cash-sessions/{session.Id}/movements",
             MovementBody()
         );
@@ -838,27 +849,31 @@ public sealed class CajaVentasEndToEndTests : IClassFixture<CajaVentasFlowFixtur
             .StatusCode.Should()
             .Be(HttpStatusCode.Created, await allowedResponse.Content.ReadAsStringAsync());
 
-        // ── 3) Empresa deshabilita AllowManualInOutMovements + mismo usuario CON caja.record
-        // → rechazado por configuración (422, NO 403) — el permiso por sí solo no basta. ──────
-        await _f.SetOrgSettingAsync(
-            OrgSettingKeys.Cash.AllowManualInOutMovements,
-            "false",
-            SettingDataType.Bool
+        // ── 3) 02B: otro usuario CON caja.record pero que NO opera el turno → 422 ────────────
+        // (el permiso sin propiedad no basta), y el Admin con acceso total tampoco puede cerrar
+        // el turno ajeno — no existe bypass por rol.
+        var otherRecorderProfileId = await _f.CreateProfileWithPermissionsAsync(
+            "Vista y Registro de Movimientos",
+            CajaPermissions.View,
+            CajaPermissions.Record
         );
-
-        var rejectedByConfigResponse = await recordClient.PostAsJsonAsync(
+        var otherRecorderUserId = await _f.CreateUserWithBranchAccessAsync(
+            "Operador",
+            otherRecorderProfileId,
+            _f.BranchAId
+        );
+        var otherRecorderClient = _f.CreateClientForUser(otherRecorderUserId, "Operador", _f.BranchAId);
+        ActAs(otherRecorderUserId);
+        var foreignMovementResponse = await otherRecorderClient.PostAsJsonAsync(
             $"/api/v1/cash-sessions/{session.Id}/movements",
             MovementBody()
         );
-        rejectedByConfigResponse.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        foreignMovementResponse.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await foreignMovementResponse.Content.ReadAsStringAsync())
+            .Should()
+            .Contain("La caja seleccionada está siendo operada por otro usuario.");
 
-        // Restaura el contexto de usuario mutable compartido al admin del fixture y cierra el
-        // turno que abrió este test — CashRegisterA1Id es compartido por otros Facts de esta
-        // clase (IClassFixture: mismo Postgres para todos), y "una caja abierta por registradora"
-        // es un invariante real que bloquearía a los demás si esta sesión quedara abierta.
-        _f.SetActiveContext(adminUserId, _f.BranchAId);
-        var closeResponse = await _f.Client.PostAsJsonAsync(
-            $"/api/v1/cash-sessions/{session.Id}/close",
+        object CloseBody() =>
             new
             {
                 closingCounts = new[]
@@ -868,12 +883,49 @@ public sealed class CajaVentasEndToEndTests : IClassFixture<CajaVentasFlowFixtur
                     new { denominationValue = 5m, denominationLabel = "$5", quantity = 1 },
                 },
                 closeNotes = (string?)null,
-            }
+            };
+
+        ActAs(adminUserId);
+        var foreignCloseResponse = await _f.Client.PostAsJsonAsync(
+            $"/api/v1/cash-sessions/{session.Id}/close",
+            CloseBody()
+        );
+        foreignCloseResponse.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await foreignCloseResponse.Content.ReadAsStringAsync())
+            .Should()
+            .Contain("La caja seleccionada está siendo operada por otro usuario.");
+
+        // ── 4) Empresa deshabilita AllowManualInOutMovements + dueño CON caja.record
+        // → rechazado por configuración (422, NO 403) — el permiso por sí solo no basta. ──────
+        await _f.SetOrgSettingAsync(
+            OrgSettingKeys.Cash.AllowManualInOutMovements,
+            "false",
+            SettingDataType.Bool
+        );
+
+        ActAs(operatorUserId);
+        var rejectedByConfigResponse = await operatorClient.PostAsJsonAsync(
+            $"/api/v1/cash-sessions/{session.Id}/movements",
+            MovementBody()
+        );
+        rejectedByConfigResponse.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+
+        // ── 5) El dueño cierra su propio turno. CashRegisterA1Id es compartido por otros Facts
+        // de esta clase (IClassFixture: mismo Postgres), y "una caja abierta por registradora" es
+        // un invariante real que bloquearía a los demás si esta sesión quedara abierta. ────────
+        ActAs(operatorUserId);
+        var closeResponse = await operatorClient.PostAsJsonAsync(
+            $"/api/v1/cash-sessions/{session.Id}/close",
+            CloseBody()
         );
         closeResponse
             .StatusCode.Should()
             .Be(HttpStatusCode.OK, await closeResponse.Content.ReadAsStringAsync());
+
+        // Restaura el contexto de usuario mutable compartido al admin (igual que antes).
+        _f.SetActiveContext(adminUserId, _f.BranchAId);
     }
+
 }
 
 internal sealed record Envelope<T>(T? Data);

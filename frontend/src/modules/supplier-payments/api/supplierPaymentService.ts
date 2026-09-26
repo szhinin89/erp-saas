@@ -110,12 +110,27 @@ export interface SupplierPaymentDto {
   reversedAtUtc?: string | null;
   reversedBy?: string | null;
   reverseReason?: string | null;
+  /** 02B-FINAL — motivo estructurado de la reversa de fuentes bancarias (null si no aplica). */
+  reversalBankReason?: SupplierPaymentBankReversalReason | null;
+  /** 02B-FINAL — confirmación registrada de que el efectivo no se entregó (null si no aplica). */
+  reversalCashNotDeliveredConfirmed?: boolean | null;
 }
 
 /** Espejo exacto de ReverseSupplierPaymentRequest — backend (POST /{id}/reverse). */
 export interface ReverseSupplierPaymentRequest {
   reason: string;
+  /** Obligatorio (true) si el pago tiene fuentes de caja. */
+  cashNotDeliveredConfirmed?: boolean;
+  /** Obligatorio si el pago tiene fuentes bancarias. */
+  bankReversalReason?: SupplierPaymentBankReversalReason | null;
 }
+
+/**
+ * ZH-SUPPLIER-PAYMENT-REVERSAL-SEMANTICS-02B-FINAL — espejo del enum interno fijo
+ * `SupplierPaymentBankReversalReason` (no es un catálogo configurable). Todas significan que la
+ * transferencia NUNCA se debitó: la reversa es corrección documental, no devolución de fondos.
+ */
+export type SupplierPaymentBankReversalReason = "NotExecuted" | "RejectedByBank" | "RegistrationError";
 
 /** Espejo exacto de SupplierPaymentListItemDto — backend. */
 export interface SupplierPaymentListItemDto {
@@ -158,6 +173,6 @@ export const supplierPaymentService = {
 
   getById: (id: string) => apiGet<SupplierPaymentDto>(`${BASE}/${id}`),
 
-  reverse: (id: string, reason: string) =>
-    apiPost<SupplierPaymentDto>(`${BASE}/${id}/reverse`, { reason } satisfies ReverseSupplierPaymentRequest),
+  reverse: (id: string, request: ReverseSupplierPaymentRequest) =>
+    apiPost<SupplierPaymentDto>(`${BASE}/${id}/reverse`, request satisfies ReverseSupplierPaymentRequest),
 };

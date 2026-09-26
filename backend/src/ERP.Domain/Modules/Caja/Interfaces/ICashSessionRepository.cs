@@ -33,6 +33,19 @@ public interface ICashSessionRepository
         CancellationToken ct = default
     );
 
+    /// <summary>
+    /// ZH-SUPPLIER-PAYMENT-REVERSAL-SEMANTICS-02B-FINAL — mismo lock oficial (FOR UPDATE + recarga
+    /// tras el lock) pero sobre una sesión PUNTUAL por Id, en cualquier estado: la reversa documental
+    /// de un pago en efectivo debe actuar sobre la sesión ORIGINAL de la línea (nunca sobre otra
+    /// sesión abierta de la misma caja) y distinguir "cerrada" de "inexistente". Mismo orden
+    /// determinista por <c>CashRegisterId</c> que <see cref="GetOpenByCashRegisterForUpdateAsync"/>.
+    /// </summary>
+    Task<CashSession?> GetByIdForUpdateAsync(
+        Guid tenantId,
+        Guid cashSessionId,
+        CancellationToken ct = default
+    );
+
     /// <summary>Trazabilidad histórica: true si existe al menos una sesión (apertura) para esta Caja — nunca se borra ni se ignora una vez creada.</summary>
     Task<bool> ExistsByCashRegisterAsync(
         Guid tenantId,

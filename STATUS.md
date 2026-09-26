@@ -2,6 +2,22 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-26** · Kernel refactor: **2026-06-05**.
 
+## ZH-SUPPLIER-PAYMENT-CASH-OWNERSHIP-02B — Autoridad sobre CashSession (2026-09-26)
+
+**Estado: COMPLETADO (sin commit).** Regla SSOT `CashSession.IsControlledBy(userId)`: sesión `Open` y `UserId == ICurrentUser.UserId` (nunca por rol). El permiso decide QUÉ acción; la propiedad decide SOBRE QUÉ sesión — se exigen ambas.
+
+- **Aplicada (fail-closed, sin bypass)** en: `RegisterSupplierPayment` (+ sucursal activa), `ReverseSupplierPayment`, `RegisterSupplierCreditRefund`, `ReverseSupplierCreditRefund`, `RecordCashMovement`, `CloseCashSession`. Mensaje: "La caja seleccionada está siendo operada por otro usuario." (`CashSessionOwnership`, Application). Sin solicitud automática (CashFundingRequest pendiente).
+- **Auditoría `caja.manage`**: solo protege catálogos (cajas registradoras, motivos de movimiento); sin semántica sobre sesiones → no es excepción. Ninguna excepción documentada para operar sesiones ajenas.
+- **Apertura** sin cambios (1 sesión Open por caja y por usuario).
+- **Gate** `CashSessionOwnershipPolicyTests`: los 6 endpoints que mueven una sesión conservan su política de permiso (propiedad sin permiso no basta).
+- **Test API ajustado**: `CajaVentasEndToEndTests` abría el turno con Admin y registraba con otro usuario (el comportamiento que 02B cierra) — ahora opera el dueño y se prueba por HTTP el rechazo de otro usuario con `caja.record` y del Admin cerrando un turno ajeno.
+- **Impacto de negocio a decidir**: una reversa de pago/reembolso en efectivo solo la puede ejecutar quien opera hoy la sesión abierta de esa caja (Contabilidad/Cartera sin caja propia no puede reversar pagos en efectivo); el pago en efectivo desde una caja ajena queda bloqueado hasta CashFundingRequest.
+- **02B-CLOSE**: `ReverseSupplierPayment` con efecto en caja exige sucursal activa validada por `IBranchAccessGuard` (el comando sigue company-scoped: la reversa bancaria no la exige) y `CashSession.BranchId == sucursal activa`. Auditoría: la reversa registra automáticamente un ingreso físico (`SupplierPaymentReversal`) en la sesión abierta ACTUAL de la caja — presupone que el efectivo volvió al cajón; la reversa bancaria presupone fondos devueltos (asiento Debe Banco sin evidencia bancaria). Separar reversa documental vs devolución real queda recomendado (ver entrega 02B-CLOSE), no implementado.
+- **02B-FINAL — semántica de reversa**: `ReverseSupplierPayment` = corrección documental de una operación NO ejecutada (dinero que salió y regresó → futuro `SupplierPaymentRefund`, no implementado). Reversa siempre total; cada fuente debe calificar o se rechaza completa. Caja: `cashNotDeliveredConfirmed = true` + sesión ORIGINAL de la línea (`CashSessionId`, nuevo `ICashSessionRepository.GetByIdForUpdateAsync`, mismo lock/orden) abierta, controlada por el usuario y en la sucursal activa; compensación solo en esa sesión; sesión cerrada → "El efectivo salió de una sesión que ya está cerrada. Si el proveedor devolvió el dinero, registre una devolución de fondos." Banco: motivo estructurado `SupplierPaymentBankReversalReason` (NotExecuted/RejectedByBank/RegistrationError). Auditoría persistida en `supplier_payments` (`reversal_bank_reason`, `reversal_cash_not_delivered_confirmed`; migración `SupplierPaymentReversalSemantics`, 2 columnas nullable). Frontend: modal de reversa con checkbox de efectivo / motivo bancario y aviso de devolución de fondos.
+- **Evidencia**: Domain 1180 · Application 2230 · Infrastructure focalizadas 53/53 (concurrencia 02A verde, sin doble posting) · API 484/485 (mismo fallo preexistente) · Architecture 116 · `architecture:check` 243 = `HEAD`.
+
+---
+
 ## ZH-SUPPLIER-PAYMENT-CASH-TRANSFER-HARDENING-02A — Caja real y datos bancarios en pagos a proveedor (2026-09-26)
 
 **Estado: COMPLETADO (sin commit).** Corrige los 2 defectos de ZH-SUPPLIER-PAYMENT-FUNDING-AUDIT-01. SSOT intacto: `SupplierPayment` = único documento/asiento; `SupplierPaymentMethodLine` = fuente del dinero; `CashMovement` = efecto operativo (nunca postea).

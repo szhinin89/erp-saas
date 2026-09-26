@@ -368,7 +368,7 @@ public sealed class SupplierPaymentTests
         var reversedBy = Guid.NewGuid();
         var reversedAt = DateTime.UtcNow;
 
-        payment.Reverse("Error de digitación", reversedBy, reversedAt);
+        payment.Reverse("Error de digitación", reversedBy, reversedAt, bankReversalReason: SupplierPaymentBankReversalReason.NotExecuted);
 
         payment.Status.Should().Be(SupplierPaymentStatus.Reversed);
         payment.ReversedAtUtc.Should().Be(reversedAt);
@@ -386,7 +386,7 @@ public sealed class SupplierPaymentTests
         var allocations = new[] { new SupplierPaymentAllocationInput(0, 0, 300m) };
         var payment = CreatePayment(300m, methods, applications, allocations);
 
-        payment.Reverse("Duplicado", Guid.NewGuid(), DateTime.UtcNow);
+        payment.Reverse("Duplicado", Guid.NewGuid(), DateTime.UtcNow, bankReversalReason: SupplierPaymentBankReversalReason.NotExecuted);
 
         var evt = payment.DomainEvents.OfType<SupplierPaymentReversedEvent>().Single();
         evt.SupplierPaymentId.Should().Be(payment.Id);
@@ -402,9 +402,9 @@ public sealed class SupplierPaymentTests
     public void Bloquea_doble_reversa()
     {
         var payment = CreateSimplePayment();
-        payment.Reverse("Primer motivo", Guid.NewGuid(), DateTime.UtcNow);
+        payment.Reverse("Primer motivo", Guid.NewGuid(), DateTime.UtcNow, bankReversalReason: SupplierPaymentBankReversalReason.NotExecuted);
 
-        var act = () => payment.Reverse("Segundo intento", Guid.NewGuid(), DateTime.UtcNow);
+        var act = () => payment.Reverse("Segundo intento", Guid.NewGuid(), DateTime.UtcNow, bankReversalReason: SupplierPaymentBankReversalReason.NotExecuted);
 
         act.Should().Throw<InvalidOperationException>();
     }
@@ -414,7 +414,7 @@ public sealed class SupplierPaymentTests
     {
         var payment = CreateSimplePayment();
 
-        var act = () => payment.Reverse("   ", Guid.NewGuid(), DateTime.UtcNow);
+        var act = () => payment.Reverse("   ", Guid.NewGuid(), DateTime.UtcNow, bankReversalReason: SupplierPaymentBankReversalReason.NotExecuted);
 
         act.Should().Throw<ArgumentException>();
         payment.Status.Should().Be(SupplierPaymentStatus.Confirmed, "un intento inválido no debe mutar el estado");
@@ -488,5 +488,62 @@ public sealed class SupplierPaymentTests
         var act = () => payment.LinkCashMovement(payment.MethodLines[0].Id, Guid.NewGuid(), Guid.NewGuid());
 
         act.Should().Throw<InvalidOperationException>();
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // ZH-SUPPLIER-PAYMENT-REVERSAL-SEMANTICS-02B-FINAL
+    // ══════════════════════════════════════════════════════════════════════
+
+    private static SupplierPayment CreateLinkedCashPayment(decimal amount)
+    {
+        var payment = CreateSingle(new SupplierPaymentMethodLineInput(Guid.NewGuid(), null, Guid.NewGuid(), amount));
+        payment.LinkCashMovement(payment.MethodLines[0].Id, Guid.NewGuid(), Guid.NewGuid());
+        return payment;
+    }
+
+    [Fact]
+    public void Reversa_de_fuente_de_caja_exige_confirmacion_de_efectivo_no_entregado()
+    {
+        var payment = CreateLinkedCashPayment(50m);
+
+        var act = () => payment.Reverse("Duplicado", Guid.NewGuid(), DateTime.UtcNow, cashNotDeliveredConfirmed: false);
+
+        act.Should().Throw<InvalidOperationException>();
+        payment.Status.Should().Be(SupplierPaymentStatus.Confirmed);
+    }
+
+    [Fact]
+    public void Reversa_de_fuente_de_caja_sin_trazabilidad_de_sesion_se_rechaza()
+    {
+        var payment = CreateSingle(new SupplierPaymentMethodLineInput(Guid.NewGuid(), null, Guid.NewGuid(), 50m));
+
+        var act = () => payment.Reverse("Duplicado", Guid.NewGuid(), DateTime.UtcNow, cashNotDeliveredConfirmed: true);
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void Reversa_de_fuente_bancaria_exige_motivo_estructurado_y_lo_registra()
+    {
+        var payment = CreateSingle(new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 50m, "OP-1", TransactionDate: PaymentDate));
+
+        var withoutReason = () => payment.Reverse("Error", Guid.NewGuid(), DateTime.UtcNow);
+        withoutReason.Should().Throw<InvalidOperationException>();
+
+        payment.Reverse("Error", Guid.NewGuid(), DateTime.UtcNow, bankReversalReason: SupplierPaymentBankReversalReason.RejectedByBank);
+        payment.ReversalBankReason.Should().Be(SupplierPaymentBankReversalReason.RejectedByBank);
+        payment.ReversalCashNotDeliveredConfirmed.Should().BeNull();
+    }
+
+    [Fact]
+    public void Reversa_de_fuente_de_caja_confirmada_registra_la_afirmacion()
+    {
+        var payment = CreateLinkedCashPayment(50m);
+
+        payment.Reverse("Duplicado", Guid.NewGuid(), DateTime.UtcNow, cashNotDeliveredConfirmed: true);
+
+        payment.Status.Should().Be(SupplierPaymentStatus.Reversed);
+        payment.ReversalCashNotDeliveredConfirmed.Should().BeTrue();
+        payment.ReversalBankReason.Should().BeNull();
     }
 }

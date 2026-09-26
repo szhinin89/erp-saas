@@ -286,6 +286,37 @@ public sealed class SupplierPaymentsControllerTests
     }
 
     [Fact]
+    public async Task Reverse_propaga_confirmacion_de_efectivo_y_motivo_bancario_al_comando()
+    {
+        var id = Guid.NewGuid();
+        object? sentRequest = null;
+        var controller = BuildController(req =>
+        {
+            sentRequest = req;
+            return Result<SupplierPaymentDto>.Success(SampleDto(id) with { Status = "Reversed" });
+        });
+
+        await controller.Reverse(
+            id,
+            new ReverseSupplierPaymentRequest(
+                "Transferencia rechazada",
+                CashNotDeliveredConfirmed: true,
+                BankReversalReason: ERP.Domain.Modules.Payables.Enums.SupplierPaymentBankReversalReason.RejectedByBank
+            ),
+            CancellationToken.None
+        );
+
+        sentRequest.Should().Be(
+            new ReverseSupplierPaymentCommand(
+                id,
+                "Transferencia rechazada",
+                true,
+                ERP.Domain.Modules.Payables.Enums.SupplierPaymentBankReversalReason.RejectedByBank
+            )
+        );
+    }
+
+    [Fact]
     public async Task Reverse_con_pago_ya_reversado_retorna_422()
     {
         var controller = BuildController(_ =>

@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Modules.Branches;
 using ERP.Application.Modules.Payables.Exceptions;
 using ERP.Application.Modules.Payables.UseCases;
 using ERP.Domain.Modules.Caja.Entities;
@@ -34,7 +35,9 @@ public sealed class ReverseSupplierPaymentUseCasesTests
         Mock<IUnitOfWork> Uow,
         Mock<ICurrentTenant> Tenant,
         Mock<ICurrentCompany> Company,
-        Mock<ICurrentUser> User
+        Mock<ICurrentUser> User,
+        Mock<ICurrentBranch> Branch,
+        Mock<IBranchAccessGuard> BranchAccess
     );
 
     private static Mocks BuildMocks()
@@ -50,8 +53,19 @@ public sealed class ReverseSupplierPaymentUseCasesTests
         tenant.Setup(t => t.TenantId).Returns(TenantId);
         company.Setup(c => c.CompanyId).Returns(CompanyId);
         user.Setup(u => u.UserId).Returns(UserId);
+        var branch = new Mock<ICurrentBranch>();
+        branch.Setup(b => b.BranchId).Returns(BranchId);
+        branch.Setup(b => b.HasBranchContext).Returns(true);
+        var branchAccess = new Mock<IBranchAccessGuard>();
+        branchAccess
+            .Setup(g => g.RequireBranchAsync(BranchId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                Result<BranchAccessContext>.Success(
+                    new BranchAccessContext(UserId, TenantId, CompanyId, BranchId, "Matriz", true)
+                )
+            );
 
-        return new Mocks(supplierPayments, accountsPayables, cashSessions, uow, tenant, company, user);
+        return new Mocks(supplierPayments, accountsPayables, cashSessions, uow, tenant, company, user, branch, branchAccess);
     }
 
     private static ReverseSupplierPaymentCommandHandler BuildHandler(Mocks m) =>
@@ -62,6 +76,8 @@ public sealed class ReverseSupplierPaymentUseCasesTests
             m.Uow.Object,
             m.Tenant.Object,
             m.Company.Object,
+            m.Branch.Object,
+            m.BranchAccess.Object,
             m.User.Object
         );
 
@@ -133,7 +149,7 @@ public sealed class ReverseSupplierPaymentUseCasesTests
 
         var handler = BuildHandler(m);
         var result = await handler.Handle(
-            new ReverseSupplierPaymentCommand(payment.Id, "Error de digitación"),
+            ValidReversal(payment.Id, "Error de digitación"),
             CancellationToken.None
         );
 
@@ -156,7 +172,7 @@ public sealed class ReverseSupplierPaymentUseCasesTests
 
         var handler = BuildHandler(m);
         var result = await handler.Handle(
-            new ReverseSupplierPaymentCommand(payment.Id, "Duplicado"),
+            ValidReversal(payment.Id, "Duplicado"),
             CancellationToken.None
         );
 
@@ -180,7 +196,7 @@ public sealed class ReverseSupplierPaymentUseCasesTests
 
         var handler = BuildHandler(m);
         var result = await handler.Handle(
-            new ReverseSupplierPaymentCommand(payment.Id, "Cheque rechazado"),
+            ValidReversal(payment.Id, "Cheque rechazado"),
             CancellationToken.None
         );
 
@@ -196,13 +212,13 @@ public sealed class ReverseSupplierPaymentUseCasesTests
         var m = BuildMocks();
         var payable = CreatePayableWithInstallment(300m, out var installmentId);
         var payment = CreateConfirmedPayment(payable, installmentId, 300m);
-        payment.Reverse("Primera reversa", UserId, DateTime.UtcNow);
+        payment.Reverse("Primera reversa", UserId, DateTime.UtcNow, bankReversalReason: SupplierPaymentBankReversalReason.NotExecuted);
         SetupPayment(m, payment);
         SetupPayable(m, payable, installmentId);
 
         var handler = BuildHandler(m);
         var result = await handler.Handle(
-            new ReverseSupplierPaymentCommand(payment.Id, "Segundo intento"),
+            ValidReversal(payment.Id, "Segundo intento"),
             CancellationToken.None
         );
 
@@ -222,7 +238,7 @@ public sealed class ReverseSupplierPaymentUseCasesTests
 
         var handler = BuildHandler(m);
         var result = await handler.Handle(
-            new ReverseSupplierPaymentCommand(payment.Id, "   "),
+            ValidReversal(payment.Id, "   "),
             CancellationToken.None
         );
 
@@ -242,7 +258,7 @@ public sealed class ReverseSupplierPaymentUseCasesTests
 
         var handler = BuildHandler(m);
         var result = await handler.Handle(
-            new ReverseSupplierPaymentCommand(missingId, "Motivo"),
+            ValidReversal(missingId, "Motivo"),
             CancellationToken.None
         );
 
@@ -269,7 +285,7 @@ public sealed class ReverseSupplierPaymentUseCasesTests
 
         var handler = BuildHandler(m);
         var result = await handler.Handle(
-            new ReverseSupplierPaymentCommand(payment.Id, "Error de digitación"),
+            ValidReversal(payment.Id, "Error de digitación"),
             CancellationToken.None
         );
 
@@ -349,13 +365,13 @@ public sealed class ReverseSupplierPaymentUseCasesTests
         SetupPayable(m, payable, installmentId);
         m.CashSessions
             .Setup(r =>
-                r.GetOpenByCashRegisterForUpdateAsync(TenantId, session.CashRegisterId, It.IsAny<CancellationToken>())
+                r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(session);
         session.CurrentBalance.Should().Be(380m, "precondición: el pago ya sacó 120 del cajón");
 
         var result = await BuildHandler(m).Handle(
-            new ReverseSupplierPaymentCommand(payment.Id, "Pago duplicado"),
+            ValidReversal(payment.Id, "Pago duplicado"),
             CancellationToken.None
         );
 
@@ -372,27 +388,28 @@ public sealed class ReverseSupplierPaymentUseCasesTests
     }
 
     [Fact]
-    public async Task Reversa_de_pago_en_efectivo_sin_sesion_abierta_se_rechaza_y_el_pago_sigue_Confirmed()
+    public async Task Reversa_de_pago_en_efectivo_con_sesion_original_cerrada_se_rechaza_y_el_pago_sigue_Confirmed()
     {
         var m = BuildMocks();
         var session = OpenSession(Guid.NewGuid(), 500m);
         var payable = CreatePayableWithInstallment(120m, out var installmentId);
         var payment = CreateConfirmedCashPayment(payable, installmentId, 120m, session);
+        session.Close(UserId, new List<CashClosingCount>(), "cierre de turno");
         SetupPayment(m, payment);
         SetupPayable(m, payable, installmentId);
         m.CashSessions
-            .Setup(r =>
-                r.GetOpenByCashRegisterForUpdateAsync(TenantId, session.CashRegisterId, It.IsAny<CancellationToken>())
-            )
-            .ReturnsAsync((CashSession?)null);
+            .Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(session);
+        var movementsBefore = session.Movements.Count;
 
-        var result = await BuildHandler(m).Handle(
-            new ReverseSupplierPaymentCommand(payment.Id, "Pago duplicado"),
-            CancellationToken.None
-        );
+        var result = await BuildHandler(m).Handle(ValidReversal(payment.Id, "Pago duplicado"), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("sesión de caja abierta");
+        result.Error.Should().Be(
+            "El efectivo salió de una sesión que ya está cerrada. Si el proveedor devolvió el dinero, registre una devolución de fondos."
+        );
+        session.Movements.Should().HaveCount(movementsBefore);
+        payable.Installments[0].PaidAmount.Should().Be(120m, "la CxP no se altera");
         m.Uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
         m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -407,11 +424,379 @@ public sealed class ReverseSupplierPaymentUseCasesTests
         SetupPayable(m, payable, installmentId);
 
         var result = await BuildHandler(m).Handle(
-            new ReverseSupplierPaymentCommand(payment.Id, "Error"),
+            ValidReversal(payment.Id, "Error"),
             CancellationToken.None
         );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         m.CashSessions.VerifyNoOtherCalls();
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // ZH-SUPPLIER-PAYMENT-CASH-OWNERSHIP-02B
+    // ══════════════════════════════════════════════════════════════════════
+
+    [Fact]
+    public async Task Reversa_de_pago_en_efectivo_sobre_caja_operada_por_otro_usuario_se_rechaza()
+    {
+        var m = BuildMocks();
+        var foreignSession = CashSession.Open(
+            TenantId, CompanyId, BranchId, Guid.NewGuid(), Guid.NewGuid(),
+            "CAJA-01", "Caja Principal", Guid.NewGuid(), "001", 500m, Guid.NewGuid()
+        );
+        var payable = CreatePayableWithInstallment(120m, out var installmentId);
+        var payment = CreateConfirmedCashPayment(payable, installmentId, 120m, foreignSession);
+        SetupPayment(m, payment);
+        SetupPayable(m, payable, installmentId);
+        m.CashSessions
+            .Setup(r => r.GetByIdForUpdateAsync(TenantId, foreignSession.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(foreignSession);
+        var movementsBefore = foreignSession.Movements.Count;
+
+        var result = await BuildHandler(m).Handle(
+            ValidReversal(payment.Id, "Pago duplicado"),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("La caja seleccionada está siendo operada por otro usuario.");
+        foreignSession.Movements.Should().HaveCount(movementsBefore, "no se compensa silenciosamente en la caja ajena");
+        m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // ZH-SUPPLIER-PAYMENT-CASH-OWNERSHIP-02B-CLOSE — sucursal activa en reversas con efecto en caja
+    // ══════════════════════════════════════════════════════════════════════
+
+    private (Mocks M, SupplierPayment Payment, CashSession Session) CashReversalScenario(Guid sessionBranchId)
+    {
+        var m = BuildMocks();
+        var session = CashSession.Open(
+            TenantId, CompanyId, sessionBranchId, UserId, Guid.NewGuid(),
+            "CAJA-01", "Caja Principal", Guid.NewGuid(), "001", 500m, UserId
+        );
+        var payable = CreatePayableWithInstallment(120m, out var installmentId);
+        var payment = CreateConfirmedCashPayment(payable, installmentId, 120m, session);
+        SetupPayment(m, payment);
+        SetupPayable(m, payable, installmentId);
+        m.CashSessions
+            .Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(session);
+        return (m, payment, session);
+    }
+
+    [Fact]
+    public async Task Reversa_con_efecto_en_caja_de_otra_sucursal_se_rechaza()
+    {
+        var (m, payment, session) = CashReversalScenario(sessionBranchId: Guid.NewGuid());
+        var movementsBefore = session.Movements.Count;
+
+        var result = await BuildHandler(m).Handle(ValidReversal(payment.Id, "Error"), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("La caja seleccionada no pertenece a la sucursal activa.");
+        session.Movements.Should().HaveCount(movementsBefore);
+        m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Reversa_con_efecto_en_caja_sin_sucursal_activa_se_rechaza()
+    {
+        var (m, payment, session) = CashReversalScenario(sessionBranchId: BranchId);
+        m.Branch.Setup(b => b.BranchId).Returns(Guid.Empty);
+        m.Branch.Setup(b => b.HasBranchContext).Returns(false);
+
+        var result = await BuildHandler(m).Handle(ValidReversal(payment.Id, "Error"), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("seleccione la sucursal activa");
+        m.CashSessions.Verify(
+            r => r.GetByIdForUpdateAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Reversa_con_efecto_en_caja_y_sucursal_sin_acceso_se_rechaza_via_guard_oficial()
+    {
+        var (m, payment, _) = CashReversalScenario(sessionBranchId: BranchId);
+        m.BranchAccess
+            .Setup(g => g.RequireBranchAsync(BranchId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<BranchAccessContext>.Forbidden("No tiene acceso a esta sucursal."));
+
+        var result = await BuildHandler(m).Handle(ValidReversal(payment.Id, "Error"), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("No tiene acceso a esta sucursal.");
+        m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Reversa_bancaria_no_exige_sucursal_activa()
+    {
+        var m = BuildMocks();
+        m.Branch.Setup(b => b.BranchId).Returns(Guid.Empty);
+        m.Branch.Setup(b => b.HasBranchContext).Returns(false);
+        var payable = CreatePayableWithInstallment(300m, out var installmentId);
+        var payment = CreateConfirmedPayment(payable, installmentId, 300m);
+        SetupPayment(m, payment);
+        SetupPayable(m, payable, installmentId);
+
+        var result = await BuildHandler(m).Handle(ValidReversal(payment.Id, "Error"), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        m.BranchAccess.VerifyNoOtherCalls();
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // ZH-SUPPLIER-PAYMENT-REVERSAL-SEMANTICS-02B-FINAL — reversa = corrección documental
+    // ══════════════════════════════════════════════════════════════════════
+
+    /// <summary>Reversa documental válida: confirma que el efectivo no se entregó y declara que la transferencia no se ejecutó.</summary>
+    private static ReverseSupplierPaymentCommand ValidReversal(Guid paymentId, string reason) =>
+        new(paymentId, reason, CashNotDeliveredConfirmed: true, BankReversalReason: SupplierPaymentBankReversalReason.NotExecuted);
+
+    private static SupplierPayment CreateConfirmedMixedPayment(
+        AccountsPayable payable,
+        Guid installmentId,
+        decimal cashAmount,
+        decimal bankAmount,
+        CashSession session
+    )
+    {
+        var total = cashAmount + bankAmount;
+        var payment = SupplierPayment.Create(
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            new DateOnly(2026, 8, 28),
+            total,
+            "00000001",
+            null,
+            new[]
+            {
+                new SupplierPaymentMethodLineInput(Guid.NewGuid(), null, session.CashRegisterId, cashAmount),
+                new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, bankAmount, "OP-1", TransactionDate: new DateOnly(2026, 8, 28)),
+            },
+            new[] { new SupplierPaymentApplicationLineInput(installmentId, total) },
+            new[] { new SupplierPaymentAllocationInput(0, 0, cashAmount), new SupplierPaymentAllocationInput(1, 0, bankAmount) },
+            UserId
+        );
+        var movement = session.RecordMovement(
+            CashMovementType.SupplierPayment, cashAmount, "Pago a proveedor 00000001", UserId,
+            CashReferenceType.SupplierPayment, payment.Id, "00000001"
+        );
+        payment.LinkCashMovement(payment.MethodLines[0].Id, session.Id, movement.Id);
+        payable.RegisterPaymentToInstallment(installmentId, total, UserId);
+        return payment;
+    }
+
+    [Fact]
+    public async Task Efectivo_con_sesion_original_abierta_y_confirmacion_revierte_en_esa_misma_sesion()
+    {
+        var m = BuildMocks();
+        var session = OpenSession(Guid.NewGuid(), 500m);
+        var payable = CreatePayableWithInstallment(120m, out var installmentId);
+        var payment = CreateConfirmedCashPayment(payable, installmentId, 120m, session);
+        SetupPayment(m, payment);
+        SetupPayable(m, payable, installmentId);
+        m.CashSessions
+            .Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(session);
+
+        var result = await BuildHandler(m).Handle(
+            new ReverseSupplierPaymentCommand(payment.Id, "Registrado por error", CashNotDeliveredConfirmed: true),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.ReversalCashNotDeliveredConfirmed.Should().BeTrue();
+        result.Value.ReversalBankReason.Should().BeNull("el pago no tiene fuentes bancarias");
+        session.Movements.Should().ContainSingle(x => x.MovementType == CashMovementType.SupplierPaymentReversal);
+        session.CurrentBalance.Should().Be(500m);
+    }
+
+    [Fact]
+    public async Task Otra_sesion_abierta_de_la_misma_caja_no_sirve_para_revertir()
+    {
+        var m = BuildMocks();
+        var originalSession = OpenSession(Guid.NewGuid(), 500m);
+        var payable = CreatePayableWithInstallment(120m, out var installmentId);
+        var payment = CreateConfirmedCashPayment(payable, installmentId, 120m, originalSession);
+        originalSession.Close(UserId, new List<CashClosingCount>(), "cierre de turno");
+        // Turno nuevo, abierto por el MISMO usuario en la MISMA caja: no es la sesión de la que salió el efectivo.
+        var newShift = OpenSession(originalSession.CashRegisterId, 300m);
+        SetupPayment(m, payment);
+        SetupPayable(m, payable, installmentId);
+        m.CashSessions
+            .Setup(r => r.GetByIdForUpdateAsync(TenantId, originalSession.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(originalSession);
+        m.CashSessions
+            .Setup(r => r.GetOpenByCashRegisterForUpdateAsync(TenantId, originalSession.CashRegisterId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(newShift);
+
+        var result = await BuildHandler(m).Handle(ValidReversal(payment.Id, "Pago duplicado"), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().StartWith("El efectivo salió de una sesión que ya está cerrada.");
+        newShift.Movements.Should().ContainSingle("el turno nuevo nunca recibe la compensación");
+        m.CashSessions.Verify(
+            r => r.GetOpenByCashRegisterForUpdateAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Efectivo_sin_confirmacion_explicita_se_rechaza_sin_alterar_nada()
+    {
+        var m = BuildMocks();
+        var session = OpenSession(Guid.NewGuid(), 500m);
+        var payable = CreatePayableWithInstallment(120m, out var installmentId);
+        var payment = CreateConfirmedCashPayment(payable, installmentId, 120m, session);
+        SetupPayment(m, payment);
+        SetupPayable(m, payable, installmentId);
+        m.CashSessions
+            .Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(session);
+
+        var result = await BuildHandler(m).Handle(
+            new ReverseSupplierPaymentCommand(payment.Id, "Pago duplicado", CashNotDeliveredConfirmed: false),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("Debe confirmar que el efectivo no fue entregado al proveedor y permanece en la misma caja.");
+        payment.Status.Should().Be(SupplierPaymentStatus.Confirmed);
+        payable.Installments[0].PaidAmount.Should().Be(120m);
+        session.Movements.Should().HaveCount(2, "apertura + egreso original, sin compensación");
+        m.SupplierPayments.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData(SupplierPaymentBankReversalReason.NotExecuted)]
+    [InlineData(SupplierPaymentBankReversalReason.RejectedByBank)]
+    [InlineData(SupplierPaymentBankReversalReason.RegistrationError)]
+    public async Task Banco_con_motivo_estructurado_revierte_y_lo_registra(SupplierPaymentBankReversalReason reason)
+    {
+        var m = BuildMocks();
+        var payable = CreatePayableWithInstallment(300m, out var installmentId);
+        var payment = CreateConfirmedPayment(payable, installmentId, 300m);
+        SetupPayment(m, payment);
+        SetupPayable(m, payable, installmentId);
+
+        var result = await BuildHandler(m).Handle(
+            new ReverseSupplierPaymentCommand(payment.Id, "Transferencia no ejecutada", BankReversalReason: reason),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        payment.ReversalBankReason.Should().Be(reason);
+        result.Value!.ReversalBankReason.Should().Be(reason.ToString());
+        result.Value.ReversalCashNotDeliveredConfirmed.Should().BeNull("el pago no tiene fuentes de caja");
+    }
+
+    [Fact]
+    public async Task Banco_sin_motivo_estructurado_se_rechaza_sin_alterar_nada()
+    {
+        var m = BuildMocks();
+        var payable = CreatePayableWithInstallment(300m, out var installmentId);
+        var payment = CreateConfirmedPayment(payable, installmentId, 300m);
+        SetupPayment(m, payment);
+        SetupPayable(m, payable, installmentId);
+
+        var result = await BuildHandler(m).Handle(
+            new ReverseSupplierPaymentCommand(payment.Id, "Error"),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().StartWith("Debe indicar el motivo de la reversa bancaria");
+        payment.Status.Should().Be(SupplierPaymentStatus.Confirmed);
+        payable.Installments[0].PaidAmount.Should().Be(300m);
+        m.SupplierPayments.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Pago_mixto_donde_todas_las_fuentes_califican_se_revierte_completo()
+    {
+        var m = BuildMocks();
+        var session = OpenSession(Guid.NewGuid(), 500m);
+        var payable = CreatePayableWithInstallment(200m, out var installmentId);
+        var payment = CreateConfirmedMixedPayment(payable, installmentId, 80m, 120m, session);
+        SetupPayment(m, payment);
+        SetupPayable(m, payable, installmentId);
+        m.CashSessions
+            .Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(session);
+
+        var result = await BuildHandler(m).Handle(
+            new ReverseSupplierPaymentCommand(
+                payment.Id,
+                "Pago duplicado",
+                CashNotDeliveredConfirmed: true,
+                BankReversalReason: SupplierPaymentBankReversalReason.RejectedByBank
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        payment.Status.Should().Be(SupplierPaymentStatus.Reversed);
+        payable.Installments[0].PaidAmount.Should().Be(0m);
+        session.CurrentBalance.Should().Be(500m, "solo la fuente de caja se compensa, en su sesión original");
+        payment.ReversalBankReason.Should().Be(SupplierPaymentBankReversalReason.RejectedByBank);
+        payment.ReversalCashNotDeliveredConfirmed.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Pago_mixto_donde_la_fuente_de_caja_no_califica_rechaza_la_reversa_completa()
+    {
+        var m = BuildMocks();
+        var session = OpenSession(Guid.NewGuid(), 500m);
+        var payable = CreatePayableWithInstallment(200m, out var installmentId);
+        var payment = CreateConfirmedMixedPayment(payable, installmentId, 80m, 120m, session);
+        session.Close(UserId, new List<CashClosingCount>(), "cierre de turno");
+        SetupPayment(m, payment);
+        SetupPayable(m, payable, installmentId);
+        m.CashSessions
+            .Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(session);
+        var movementsBefore = session.Movements.Count;
+
+        // La fuente bancaria sí califica (NotExecuted), pero la de caja salió de una sesión cerrada.
+        var result = await BuildHandler(m).Handle(ValidReversal(payment.Id, "Pago duplicado"), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().StartWith("El efectivo salió de una sesión que ya está cerrada.");
+        payable.Installments[0].PaidAmount.Should().Be(200m, "sin reversa parcial: la CxP queda intacta");
+        session.Movements.Should().HaveCount(movementsBefore);
+        m.SupplierPayments.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Pago_mixto_sin_motivo_bancario_rechaza_la_reversa_completa_aunque_la_caja_califique()
+    {
+        var m = BuildMocks();
+        var session = OpenSession(Guid.NewGuid(), 500m);
+        var payable = CreatePayableWithInstallment(200m, out var installmentId);
+        var payment = CreateConfirmedMixedPayment(payable, installmentId, 80m, 120m, session);
+        SetupPayment(m, payment);
+        SetupPayable(m, payable, installmentId);
+        m.CashSessions
+            .Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(session);
+
+        var result = await BuildHandler(m).Handle(
+            new ReverseSupplierPaymentCommand(payment.Id, "Pago duplicado", CashNotDeliveredConfirmed: true),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().StartWith("Debe indicar el motivo de la reversa bancaria");
+        session.Movements.Should().HaveCount(2, "apertura + egreso original, sin compensación");
+        payable.Installments[0].PaidAmount.Should().Be(200m);
     }
 }

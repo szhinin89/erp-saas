@@ -526,4 +526,42 @@ public sealed class ReverseSupplierCreditRefundUseCasesTests
         compensation.ReferenceId.Should().Be(f.OriginalTx.Id, "la reversa apunta al reembolso ORIGINAL");
         result.Value!.OriginalTransactionId.Should().Be(f.OriginalTx.Id);
     }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // ZH-SUPPLIER-PAYMENT-CASH-OWNERSHIP-02B
+    // ══════════════════════════════════════════════════════════════════════
+
+    [Fact]
+    public async Task Reversa_de_reembolso_en_caja_operada_por_otro_usuario_se_rechaza()
+    {
+        var foreignSession = CashSession.Open(
+            TenantId, CompanyId, BranchId, Guid.NewGuid(), CashRegisterId,
+            "CAJA-01", "Caja Matriz", Guid.NewGuid(), "001-001", 0m, Guid.NewGuid()
+        );
+        var f = BuildCashFixture(foreignSession.Id, refundAmount: 40m);
+        var m = new Mocks(f);
+        m.CashSessionRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, foreignSession.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(foreignSession);
+        m.CashSessionRepo.Setup(r =>
+                r.GetOpenByCashRegisterForUpdateAsync(TenantId, CashRegisterId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(foreignSession);
+
+        var result = await m.BuildHandler().Handle(
+            new ReverseSupplierCreditRefundCommand(
+                f.Credit.Id,
+                f.OriginalTx.Id,
+                "Motivo",
+                DateOnly.FromDateTime(DateTime.UtcNow),
+                Guid.NewGuid()
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("La caja seleccionada está siendo operada por otro usuario.");
+        foreignSession.Movements.Should().ContainSingle();
+    }
 }

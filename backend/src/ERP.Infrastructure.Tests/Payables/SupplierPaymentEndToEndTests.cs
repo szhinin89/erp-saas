@@ -413,7 +413,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
         await db.SaveChangesAsync();
     }
 
-    private RegisterSupplierPaymentCommandHandler BuildHandler(ErpDbContext db) =>
+    private RegisterSupplierPaymentCommandHandler BuildHandler(ErpDbContext db, Guid? currentUserId = null) =>
         new(
             new SupplierPaymentRepository(db),
             new SupplierPaymentSequenceRepository(db),
@@ -426,7 +426,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             new FixedCurrentTenant(_tenantId),
             new FixedCurrentCompany(_companyId),
             new FixedCurrentBranch(_branchId),
-            new FixedCurrentUser(_createdBy)
+            new FixedCurrentUser(currentUserId ?? _createdBy)
         );
 
     private ReverseSupplierPaymentCommandHandler BuildReverseHandler(ErpDbContext db) =>
@@ -437,6 +437,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             new UnitOfWork(db),
             new FixedCurrentTenant(_tenantId),
             new FixedCurrentCompany(_companyId),
+            new FixedCurrentBranch(_branchId),
+            new AllowActiveBranchGuard(_tenantId, _companyId, _createdBy),
             new FixedCurrentUser(_createdBy)
         );
 
@@ -793,7 +795,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
         var (dbReverse, _) = BuildWiredContext();
         var reverseResult = await BuildReverseHandler(dbReverse)
             .Handle(
-                new ReverseSupplierPaymentCommand(paymentId, "Error de digitación"),
+                new ReverseSupplierPaymentCommand(paymentId, "Error de digitación", CashNotDeliveredConfirmed: true, BankReversalReason: SupplierPaymentBankReversalReason.NotExecuted),
                 CancellationToken.None
             );
 
@@ -862,7 +864,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
         var (dbReverse, _) = BuildWiredContext();
         var reverseResult = await BuildReverseHandler(dbReverse)
             .Handle(
-                new ReverseSupplierPaymentCommand(paymentId, "Cheque rechazado"),
+                new ReverseSupplierPaymentCommand(paymentId, "Cheque rechazado", CashNotDeliveredConfirmed: true, BankReversalReason: SupplierPaymentBankReversalReason.NotExecuted),
                 CancellationToken.None
             );
 
@@ -911,7 +913,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
         var (dbReverse, _) = BuildWiredContext();
         var reverseResult = await BuildReverseHandler(dbReverse)
             .Handle(
-                new ReverseSupplierPaymentCommand(paymentId, "Duplicado"),
+                new ReverseSupplierPaymentCommand(paymentId, "Duplicado", CashNotDeliveredConfirmed: true, BankReversalReason: SupplierPaymentBankReversalReason.NotExecuted),
                 CancellationToken.None
             );
 
@@ -954,12 +956,12 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
 
         var (dbFirstReverse, _) = BuildWiredContext();
         var firstReverse = await BuildReverseHandler(dbFirstReverse)
-            .Handle(new ReverseSupplierPaymentCommand(paymentId, "Motivo 1"), CancellationToken.None);
+            .Handle(new ReverseSupplierPaymentCommand(paymentId, "Motivo 1", CashNotDeliveredConfirmed: true, BankReversalReason: SupplierPaymentBankReversalReason.NotExecuted), CancellationToken.None);
         firstReverse.IsSuccess.Should().BeTrue(because: firstReverse.Error);
 
         var (dbSecondReverse, _) = BuildWiredContext();
         var secondReverse = await BuildReverseHandler(dbSecondReverse)
-            .Handle(new ReverseSupplierPaymentCommand(paymentId, "Motivo 2"), CancellationToken.None);
+            .Handle(new ReverseSupplierPaymentCommand(paymentId, "Motivo 2", CashNotDeliveredConfirmed: true, BankReversalReason: SupplierPaymentBankReversalReason.NotExecuted), CancellationToken.None);
 
         secondReverse.IsSuccess.Should().BeFalse("un pago ya Reversed no puede reversarse otra vez");
 
@@ -998,7 +1000,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
         var (dbReverse, _) = BuildWiredContext();
         var reverseResult = await BuildReverseHandler(dbReverse)
             .Handle(
-                new ReverseSupplierPaymentCommand(paymentId, "Error de digitación"),
+                new ReverseSupplierPaymentCommand(paymentId, "Error de digitación", CashNotDeliveredConfirmed: true, BankReversalReason: SupplierPaymentBankReversalReason.NotExecuted),
                 CancellationToken.None
             );
 
@@ -1148,7 +1150,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
 
         var (dbReverse, _) = BuildWiredContext();
         var reverseResult = await BuildReverseHandler(dbReverse)
-            .Handle(new ReverseSupplierPaymentCommand(paymentId, "Duplicado"), CancellationToken.None);
+            .Handle(new ReverseSupplierPaymentCommand(paymentId, "Duplicado", CashNotDeliveredConfirmed: true, BankReversalReason: SupplierPaymentBankReversalReason.NotExecuted), CancellationToken.None);
         reverseResult.IsSuccess.Should().BeTrue(because: reverseResult.Error);
 
         await using var readDb = CreateContext();
@@ -1360,7 +1362,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
 
         var (reverseDb, _) = BuildWiredContext();
         var reverseResult = await BuildReverseHandler(reverseDb).Handle(
-            new ReverseSupplierPaymentCommand(registerResult.Value!.Id, "Pago duplicado"),
+            new ReverseSupplierPaymentCommand(registerResult.Value!.Id, "Pago duplicado", CashNotDeliveredConfirmed: true, BankReversalReason: SupplierPaymentBankReversalReason.NotExecuted),
             CancellationToken.None
         );
         reverseResult.IsSuccess.Should().BeTrue(reverseResult.Error);
@@ -1613,4 +1615,134 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
         installments.Sum(x => x.PaidAmount).Should().Be(70m);
         installments.Should().ContainSingle(x => x.PaidAmount == 0m);
     }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // ZH-SUPPLIER-PAYMENT-CASH-OWNERSHIP-02B — Postgres real
+    // ══════════════════════════════════════════════════════════════════════
+
+    [Fact]
+    public async Task Otro_usuario_no_puede_pagar_en_efectivo_desde_la_caja_que_no_opera()
+    {
+        var paymentDate = new DateOnly(2026, 8, 28);
+        var (db, _) = BuildWiredContext();
+        await SeedPostingRuleAndPeriodAsync(db, paymentDate);
+
+        // La sesión fue abierta por _createdBy; paga un usuario distinto (con el permiso ya concedido).
+        var result = await BuildHandler(db, currentUserId: Guid.NewGuid()).Handle(
+            CashPaymentCommand(_purchaseInstallmentId, 100m, paymentDate),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("La caja seleccionada está siendo operada por otro usuario.");
+
+        await using var verifyDb = CreateContext();
+        (await verifyDb.SupplierPayments.AsNoTracking().AnyAsync()).Should().BeFalse();
+        (await verifyDb.JournalEntries.AsNoTracking().AnyAsync()).Should().BeFalse();
+        var session = await LoadSessionAsync();
+        session.Movements.Should().ContainSingle("solo la apertura");
+        session.CurrentBalance.Should().Be(OpeningCash);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // ZH-SUPPLIER-PAYMENT-REVERSAL-SEMANTICS-02B-FINAL — Postgres real
+    // ══════════════════════════════════════════════════════════════════════
+
+    [Fact]
+    public async Task Reversa_de_efectivo_con_sesion_original_cerrada_se_rechaza_sin_alterar_CxP_asiento_ni_caja()
+    {
+        var paymentDate = new DateOnly(2026, 8, 28);
+        var (db, _) = BuildWiredContext();
+        await SeedConfirmedAndReversedRulesAndPeriodAsync(db, paymentDate);
+        var registerResult = await BuildHandler(db).Handle(
+            CashPaymentCommand(_purchaseInstallmentId, 100m, paymentDate),
+            CancellationToken.None
+        );
+        registerResult.IsSuccess.Should().BeTrue(registerResult.Error);
+
+        // Cierra el turno del que salió el efectivo y abre uno nuevo en la misma caja (mismo usuario).
+        await using (var closeDb = CreateContext())
+        {
+            var original = await closeDb.Set<CashSession>().Include(x => x.Movements).FirstAsync(x => x.Id == _cashSessionId);
+            original.Close(_createdBy, new List<CashClosingCount>(), "Cierre de turno");
+            await closeDb.SaveChangesAsync();
+            var newShift = CashSession.Open(
+                _tenantId, _companyId, _branchId, _createdBy, _cashRegisterId,
+                "CAJA-01", "Caja Principal", original.EmissionPointId, "001", 200m, _createdBy
+            );
+            closeDb.Set<CashSession>().Add(newShift);
+            await closeDb.SaveChangesAsync();
+        }
+
+        var (reverseDb, _) = BuildWiredContext();
+        var result = await BuildReverseHandler(reverseDb).Handle(
+            new ReverseSupplierPaymentCommand(registerResult.Value!.Id, "Pago duplicado", CashNotDeliveredConfirmed: true),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be(
+            "El efectivo salió de una sesión que ya está cerrada. Si el proveedor devolvió el dinero, registre una devolución de fondos."
+        );
+
+        await using var verifyDb = CreateContext();
+        var payment = await verifyDb.SupplierPayments.AsNoTracking().SingleAsync();
+        payment.Status.Should().Be(SupplierPaymentStatus.Confirmed);
+        payment.ReversalCashNotDeliveredConfirmed.Should().BeNull();
+        var installment = await verifyDb.AccountsPayableInstallments.AsNoTracking().FirstAsync(x => x.Id == _purchaseInstallmentId);
+        installment.PaidAmount.Should().Be(100m, "la CxP no se altera");
+        (await verifyDb.JournalEntries.AsNoTracking().CountAsync()).Should().Be(1, "solo el asiento de confirmación, sin asiento inverso");
+        (await verifyDb.CashMovements.AsNoTracking().CountAsync(m => m.MovementType == CashMovementType.SupplierPaymentReversal))
+            .Should().Be(0, "ni el turno original ni el nuevo reciben compensación");
+    }
+
+    [Fact]
+    public async Task Reversa_de_efectivo_con_sesion_original_abierta_persiste_confirmacion_y_compensa_en_esa_sesion()
+    {
+        var paymentDate = new DateOnly(2026, 8, 28);
+        var (db, _) = BuildWiredContext();
+        await SeedConfirmedAndReversedRulesAndPeriodAsync(db, paymentDate);
+        var registerResult = await BuildHandler(db).Handle(
+            CashPaymentCommand(_purchaseInstallmentId, 100m, paymentDate),
+            CancellationToken.None
+        );
+        registerResult.IsSuccess.Should().BeTrue(registerResult.Error);
+
+        var (reverseDb, _) = BuildWiredContext();
+        var result = await BuildReverseHandler(reverseDb).Handle(
+            new ReverseSupplierPaymentCommand(registerResult.Value!.Id, "Registrado por error", CashNotDeliveredConfirmed: true),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        await using var verifyDb = CreateContext();
+        var payment = await verifyDb.SupplierPayments.AsNoTracking().SingleAsync();
+        payment.Status.Should().Be(SupplierPaymentStatus.Reversed);
+        payment.ReversalCashNotDeliveredConfirmed.Should().BeTrue();
+        payment.ReversalBankReason.Should().BeNull();
+        var compensation = await verifyDb.CashMovements.AsNoTracking()
+            .SingleAsync(m => m.MovementType == CashMovementType.SupplierPaymentReversal);
+        compensation.CashSessionId.Should().Be(_cashSessionId, "la compensación va a la sesión ORIGINAL");
+        (await LoadSessionAsync()).CurrentBalance.Should().Be(OpeningCash);
+    }
+}
+
+/// <summary>
+/// 02B-CLOSE — el guard real (IBranchAccessGuard) resuelve membresías vía HTTP/sesión; en este
+/// E2E de persistencia basta un guard que conceda la sucursal activa del fixture. Las reglas de
+/// rechazo del guard están cubiertas en Application (ReverseSupplierPaymentUseCasesTests) y en
+/// BranchScopeBehaviorTests.
+/// </summary>
+file sealed class AllowActiveBranchGuard(Guid tenantId, Guid companyId, Guid userId)
+    : ERP.Application.Modules.Branches.IBranchAccessGuard
+{
+    public Task<Result<ERP.Application.Modules.Branches.BranchAccessContext>> RequireBranchAsync(
+        Guid branchId,
+        CancellationToken cancellationToken = default
+    ) =>
+        Task.FromResult(
+            Result<ERP.Application.Modules.Branches.BranchAccessContext>.Success(
+                new ERP.Application.Modules.Branches.BranchAccessContext(userId, tenantId, companyId, branchId, "Matriz", true)
+            )
+        );
 }

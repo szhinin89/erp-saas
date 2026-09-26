@@ -16,7 +16,11 @@ import {
 } from "../../sales/facades/paymentMethodLookupFacade";
 import { bankAccountService, type CompanyBankAccountDto } from "../../finance/api/bankAccountService";
 import { cajaService, type CashRegisterDto } from "../../caja/api/cajaService";
-import { supplierPaymentService, type SupplierPaymentDto } from "../api/supplierPaymentService";
+import {
+  supplierPaymentService,
+  type ReverseSupplierPaymentRequest,
+  type SupplierPaymentDto,
+} from "../api/supplierPaymentService";
 import { SupplierPaymentStatusBadge } from "../components/SupplierPaymentStatusBadge";
 import { SupplierPaymentReverseModal } from "../components/SupplierPaymentReverseModal";
 import "../styles/supplier-payments.css";
@@ -96,12 +100,12 @@ export function SupplierPaymentDetailPage() {
     if (canView) void load();
   }, [canView, load]);
 
-  const handleReverseConfirm = async (reason: string) => {
+  const handleReverseConfirm = async (request: ReverseSupplierPaymentRequest) => {
     if (!id || reversing) return;
     setReversing(true);
     setReverseError(null);
     try {
-      await supplierPaymentService.reverse(id, reason);
+      await supplierPaymentService.reverse(id, request);
       message.success("Pago reversado correctamente.");
       setReverseModalOpen(false);
       await load();
@@ -262,7 +266,7 @@ export function SupplierPaymentDetailPage() {
           if (reversing) return;
           setReverseModalOpen(false);
         }}
-        onConfirm={(reason) => void handleReverseConfirm(reason)}
+        onConfirm={(request) => void handleReverseConfirm(request)}
       />
     </PageShell>
   );

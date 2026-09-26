@@ -90,6 +90,7 @@ public sealed class CashSessionConfiguration : IEntityTypeConfiguration<CashSess
         builder.Ignore(x => x.TotalIncome);
         builder.Ignore(x => x.TotalExpense);
         builder.Ignore(x => x.CurrentBalance);
+        builder.Ignore(x => x.IsOpen);
 
         // ── Relationships ───────────────────────────────────────────
         builder

@@ -175,10 +175,17 @@ describe("SupplierPaymentDetailPage — acción de reversa", () => {
     fireEvent.change(await screen.findByLabelText("Motivo de la reversa"), {
       target: { value: "Duplicado" },
     });
+    fireEvent.change(screen.getByLabelText("Motivo de la reversa bancaria"), {
+      target: { value: "RejectedByBank" },
+    });
     fireEvent.click(screen.getByText("Confirmar reversa"));
 
     await waitFor(() =>
-      expect(supplierPaymentService.reverse).toHaveBeenCalledWith("sp-1", "Duplicado"),
+      expect(supplierPaymentService.reverse).toHaveBeenCalledWith("sp-1", {
+        reason: "Duplicado",
+        cashNotDeliveredConfirmed: false,
+        bankReversalReason: "RejectedByBank",
+      }),
     );
     await waitFor(() => expect(supplierPaymentService.getById).toHaveBeenCalledTimes(2));
     // El modal se cierra y el detalle refleja el nuevo estado Reversed.
@@ -200,6 +207,9 @@ describe("SupplierPaymentDetailPage — acción de reversa", () => {
     fireEvent.click(await screen.findByText("Reversar pago"));
     fireEvent.change(await screen.findByLabelText("Motivo de la reversa"), {
       target: { value: "Intento" },
+    });
+    fireEvent.change(screen.getByLabelText("Motivo de la reversa bancaria"), {
+      target: { value: "NotExecuted" },
     });
     fireEvent.click(screen.getByText("Confirmar reversa"));
 

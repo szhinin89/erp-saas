@@ -630,6 +630,44 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
         movement.ReferenceNumber.Should().Be("REC-0042");
         result.Value.CashSessionId.Should().Be(session.Id);
     }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // ZH-SUPPLIER-PAYMENT-CASH-OWNERSHIP-02B
+    // ══════════════════════════════════════════════════════════════════════
+
+    [Fact]
+    public async Task Reembolso_en_efectivo_a_caja_operada_por_otro_usuario_se_rechaza()
+    {
+        var credit = BuildCredit(100m);
+        var m = new Mocks(credit);
+        var foreignSession = CashSession.Open(
+            TenantId, CompanyId, BranchId, Guid.NewGuid(), CashRegisterId,
+            "CAJA-01", "Caja Matriz", Guid.NewGuid(), "001-001", 0m, Guid.NewGuid()
+        );
+        m.CashRegisterRepo.Setup(r =>
+                r.GetByIdForShareAsync(TenantId, CashRegisterId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(BuildCashRegister());
+        m.AccountRepo.Setup(r =>
+                r.GetByIdForShareAsync(TenantId, CompanyId, AccountId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(BuildAccount());
+        m.PaymentMethodRepo.Setup(r =>
+                r.GetByCodeAsync(TenantId, "TRANSFER", It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(BuildPaymentMethod());
+        m.CashSessionRepo.Setup(r =>
+                r.GetOpenByCashRegisterForUpdateAsync(TenantId, CashRegisterId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(foreignSession);
+
+        var result = await m.BuildHandler().Handle(CashCommand(credit.Id, 40m), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("La caja seleccionada está siendo operada por otro usuario.");
+        foreignSession.Movements.Should().ContainSingle();
+        credit.AvailableAmount.Should().Be(100m, "el crédito no se consume si el reembolso se rechaza");
+    }
 }
 
 file static class TestExtensions

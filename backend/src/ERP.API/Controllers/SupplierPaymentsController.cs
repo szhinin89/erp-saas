@@ -58,7 +58,7 @@ public sealed class SupplierPaymentsController : ControllerBase
         CancellationToken ct
     ) =>
         this.ToOkOrBadRequest(
-            await _mediator.Send(new ReverseSupplierPaymentCommand(id, body.Reason), ct)
+            await _mediator.Send(new ReverseSupplierPaymentCommand(id, body.Reason, body.CashNotDeliveredConfirmed, body.BankReversalReason), ct)
         );
 
     [HttpGet]

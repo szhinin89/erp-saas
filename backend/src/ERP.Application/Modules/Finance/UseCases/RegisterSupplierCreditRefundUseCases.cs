@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
+using ERP.Application.Modules.Caja;
 using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Caja.Interfaces;
@@ -303,6 +304,14 @@ public sealed class RegisterSupplierCreditRefundHandler
                     // SC-027
                     return Result<SupplierCreditRefundTransactionDto>.ValidationFailure(
                         "No existe una sesión de caja activa para la caja indicada."
+                    );
+                }
+                // 02B — el efectivo devuelto entra a una caja: solo quien la opera puede recibirlo.
+                if (!cashSession.IsControlledBy(uid))
+                {
+                    await _uow.RollbackAsync(ct);
+                    return Result<SupplierCreditRefundTransactionDto>.ValidationFailure(
+                        CashSessionOwnership.RejectionMessage(cashSession)
                     );
                 }
             }

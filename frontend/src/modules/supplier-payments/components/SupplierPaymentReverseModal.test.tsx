@@ -111,9 +111,16 @@ describe("SupplierPaymentReverseModal", () => {
     fireEvent.change(screen.getByLabelText("Motivo de la reversa"), {
       target: { value: "   Error de digitación   " },
     });
+    fireEvent.change(screen.getByLabelText("Motivo de la reversa bancaria"), {
+      target: { value: "NotExecuted" },
+    });
     fireEvent.click(screen.getByText("Confirmar reversa"));
 
-    expect(onConfirm).toHaveBeenCalledWith("Error de digitación");
+    expect(onConfirm).toHaveBeenCalledWith({
+      reason: "Error de digitación",
+      cashNotDeliveredConfirmed: false,
+      bankReversalReason: "NotExecuted",
+    });
   });
 
   it("deshabilita los botones mientras saving es true", () => {
@@ -142,5 +149,80 @@ describe("SupplierPaymentReverseModal — montos con semántica money (04F)", ()
 
     act(() => setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, moneyDecimals: 4 }));
     expect(text()).toContain("300.0000");
+  });
+
+  // ── ZH-SUPPLIER-PAYMENT-REVERSAL-SEMANTICS-02B-FINAL ─────────────────────
+
+  function cashLine(): SupplierPaymentDto["methodLines"][number] {
+    return {
+      ...samplePayment().methodLines[0],
+      id: "ml-cash",
+      companyBankAccountId: null,
+      cashRegisterId: "cash-1",
+      transactionDate: null,
+      cashSessionId: "cs-1",
+      cashMovementId: "mv-1",
+    };
+  }
+
+  it("pago bancario: exige el motivo estructurado y no pide confirmación de efectivo", () => {
+    const onConfirm = vi.fn();
+    renderModal(baseProps({ onConfirm }));
+
+    expect(screen.queryByText(/el efectivo no fue entregado/)).toBeNull();
+    fireEvent.change(screen.getByLabelText("Motivo de la reversa"), { target: { value: "Error" } });
+    fireEvent.click(screen.getByText("Confirmar reversa"));
+
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(screen.getByText("Seleccione el motivo de la reversa bancaria.")).toBeTruthy();
+  });
+
+  it("pago en efectivo: exige confirmar que el efectivo no fue entregado y no pide motivo bancario", () => {
+    const onConfirm = vi.fn();
+    const payment = { ...samplePayment(), methodLines: [cashLine()] };
+    renderModal(baseProps({ onConfirm, payment }));
+
+    expect(screen.queryByLabelText("Motivo de la reversa bancaria")).toBeNull();
+    fireEvent.change(screen.getByLabelText("Motivo de la reversa"), { target: { value: "Duplicado" } });
+    fireEvent.click(screen.getByText("Confirmar reversa"));
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(screen.getByText("Debe confirmar que el efectivo no fue entregado al proveedor.")).toBeTruthy();
+
+    fireEvent.click(screen.getByLabelText(/Confirmo que el efectivo no fue entregado al proveedor/));
+    fireEvent.click(screen.getByText("Confirmar reversa"));
+
+    expect(onConfirm).toHaveBeenCalledWith({
+      reason: "Duplicado",
+      cashNotDeliveredConfirmed: true,
+      bankReversalReason: null,
+    });
+  });
+
+  it("pago mixto: exige ambas condiciones antes de confirmar", () => {
+    const onConfirm = vi.fn();
+    const payment = { ...samplePayment(), methodLines: [cashLine(), samplePayment().methodLines[0]] };
+    renderModal(baseProps({ onConfirm, payment }));
+
+    fireEvent.change(screen.getByLabelText("Motivo de la reversa"), { target: { value: "Duplicado" } });
+    fireEvent.click(screen.getByLabelText(/Confirmo que el efectivo no fue entregado al proveedor/));
+    fireEvent.click(screen.getByText("Confirmar reversa"));
+    expect(onConfirm).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByLabelText("Motivo de la reversa bancaria"), {
+      target: { value: "RejectedByBank" },
+    });
+    fireEvent.click(screen.getByText("Confirmar reversa"));
+
+    expect(onConfirm).toHaveBeenCalledWith({
+      reason: "Duplicado",
+      cashNotDeliveredConfirmed: true,
+      bankReversalReason: "RejectedByBank",
+    });
+  });
+
+  it("aclara que la reversa no es una devolución de fondos", () => {
+    renderModal(baseProps());
+
+    expect(screen.getByText(/registre una devolución de fondos/)).toBeTruthy();
   });
 });

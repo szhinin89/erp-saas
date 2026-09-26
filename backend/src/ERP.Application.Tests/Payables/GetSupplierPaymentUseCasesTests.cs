@@ -117,7 +117,7 @@ public sealed class GetSupplierPaymentUseCasesTests
     {
         var payable = CreatePayableWithInstallment(out var installmentId);
         var payment = CreatePayment(installmentId: installmentId);
-        payment.Reverse("Duplicado", UserId, DateTime.UtcNow);
+        payment.Reverse("Duplicado", UserId, DateTime.UtcNow, bankReversalReason: ERP.Domain.Modules.Payables.Enums.SupplierPaymentBankReversalReason.NotExecuted);
 
         var repo = new Mock<ISupplierPaymentRepository>();
         var accountsPayables = new Mock<IAccountsPayableRepository>();

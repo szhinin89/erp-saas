@@ -46,6 +46,19 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
     public Guid? ReversedBy { get; private set; }
     public string? ReverseReason { get; private set; }
 
+    /// <summary>
+    /// 02B-FINAL — motivo estructurado de la reversa documental de las fuentes bancarias (null si
+    /// el pago no tiene fuentes bancarias o no está reversado).
+    /// </summary>
+    public SupplierPaymentBankReversalReason? ReversalBankReason { get; private set; }
+
+    /// <summary>
+    /// 02B-FINAL — afirmación explícita, registrada al reversar, de que el efectivo NO fue entregado
+    /// al proveedor y permanece en la misma sesión de caja (null si el pago no tiene fuentes de caja
+    /// o no está reversado).
+    /// </summary>
+    public bool? ReversalCashNotDeliveredConfirmed { get; private set; }
+
     /// <summary>Número visible en pantallas/reportes: <see cref="ReceiptNumber"/> si existe, si no <see cref="SystemNumber"/>.</summary>
     public string DisplayNumber => string.IsNullOrWhiteSpace(ReceiptNumber) ? SystemNumber : ReceiptNumber;
 
@@ -230,7 +243,24 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
     /// agregado no conoce <c>AccountsPayable</c>, solo publica el evento para que Application y
     /// Accounting reaccionen).
     /// </summary>
-    public void Reverse(string reason, Guid reversedBy, DateTime reversedAtUtc)
+    /// <remarks>
+    /// ZH-SUPPLIER-PAYMENT-REVERSAL-SEMANTICS-02B-FINAL — la reversa es SIEMPRE total y SOLO una
+    /// corrección documental de una operación que no llegó a ejecutarse: el efectivo nunca se
+    /// entregó (sigue en la misma sesión de caja) y la transferencia nunca se debitó. Dinero que sí
+    /// salió y luego regresó NO se revierte aquí — será un futuro <c>SupplierPaymentRefund</c>.
+    /// Cada fuente debe calificar; si una sola no califica, se rechaza la reversa completa:
+    /// fuente de caja ⇒ <paramref name="cashNotDeliveredConfirmed"/> = true y trazabilidad de la
+    /// sesión original (<c>CashSessionId</c>/<c>CashMovementId</c>); fuente bancaria ⇒
+    /// <paramref name="bankReversalReason"/> obligatorio. Que la sesión original siga abierta y la
+    /// controle el usuario lo valida Application (el agregado no conoce Caja).
+    /// </remarks>
+    public void Reverse(
+        string reason,
+        Guid reversedBy,
+        DateTime reversedAtUtc,
+        bool cashNotDeliveredConfirmed = false,
+        SupplierPaymentBankReversalReason? bankReversalReason = null
+    )
     {
         if (Status != SupplierPaymentStatus.Confirmed)
             throw new InvalidOperationException(
@@ -239,9 +269,28 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
         if (string.IsNullOrWhiteSpace(reason))
             throw new ArgumentException("El motivo del reverso es obligatorio.", nameof(reason));
 
+        var cashLines = _methodLines.Where(l => l.CashRegisterId is not null).ToList();
+        var hasBankLines = _methodLines.Any(l => l.CompanyBankAccountId is not null);
+        if (cashLines.Any(l => l.CashSessionId is null || l.CashMovementId is null))
+            throw new InvalidOperationException(
+                "El pago tiene una fuente de efectivo sin sesión de caja registrada: no puede revertirse documentalmente."
+            );
+        if (cashLines.Count > 0 && !cashNotDeliveredConfirmed)
+            throw new InvalidOperationException(
+                "Debe confirmar que el efectivo no fue entregado al proveedor y permanece en la misma caja."
+            );
+        if (hasBankLines && bankReversalReason is null)
+            throw new InvalidOperationException(
+                "Debe indicar el motivo de la reversa bancaria: la transferencia no se ejecutó, fue rechazada por el banco o fue un error de registro."
+            );
+        if (bankReversalReason is { } bankReason && !Enum.IsDefined(bankReason))
+            throw new ArgumentException("El motivo de la reversa bancaria no es válido.", nameof(bankReversalReason));
+
         var trimmedReason = reason.Trim();
 
         Status = SupplierPaymentStatus.Reversed;
+        ReversalBankReason = hasBankLines ? bankReversalReason : null;
+        ReversalCashNotDeliveredConfirmed = cashLines.Count > 0 ? true : null;
         ReversedAtUtc = reversedAtUtc;
         ReversedBy = reversedBy;
         ReverseReason = trimmedReason;

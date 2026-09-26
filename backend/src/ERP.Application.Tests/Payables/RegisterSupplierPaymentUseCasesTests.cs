@@ -1213,4 +1213,66 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         payable.Installments[0].Status.Should().Be(AccountsPayableStatus.Paid);
         session.Movements.Should().ContainSingle(x => x.MovementType == CashMovementType.SupplierPayment && x.Amount == 80m);
     }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // ZH-SUPPLIER-PAYMENT-CASH-OWNERSHIP-02B — autoridad sobre la CashSession
+    // ══════════════════════════════════════════════════════════════════════
+
+    [Fact]
+    public async Task Efectivo_desde_caja_operada_por_otro_usuario_se_rechaza_sin_persistir_nada()
+    {
+        var m = BuildMocks();
+        var method = ActivePaymentMethod();
+        var destination = ActiveDestination(CompanyId);
+        var payable = CreatePayableWithInstallment(100m);
+        SetupMethodAndDestination(m, method, destination);
+        var foreignSession = CashSession.Open(
+            TenantId, CompanyId, BranchId, Guid.NewGuid(), destination.Id,
+            "CAJA-01", "Caja Principal", Guid.NewGuid(), "001", 500m, Guid.NewGuid()
+        );
+        m.CashSessions
+            .Setup(r => r.GetOpenByCashRegisterForUpdateAsync(TenantId, destination.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(foreignSession);
+        SetupPayable(m, payable);
+
+        var result = await BuildHandler(m).Handle(
+            SingleLineCommand(new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m), payable, 100m),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        result.Error.Should().Be("La caja seleccionada está siendo operada por otro usuario.");
+        foreignSession.Movements.Should().ContainSingle("la caja ajena no se toca");
+        payable.Installments[0].PaidAmount.Should().Be(0m);
+        m.SupplierPayments.Verify(r => r.AddAsync(It.IsAny<SupplierPayment>(), It.IsAny<CancellationToken>()), Times.Never);
+        m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Efectivo_desde_la_propia_caja_de_otra_sucursal_se_rechaza()
+    {
+        var m = BuildMocks();
+        var method = ActivePaymentMethod();
+        var destination = ActiveDestination(CompanyId);
+        var payable = CreatePayableWithInstallment(100m);
+        SetupMethodAndDestination(m, method, destination);
+        var otherBranchSession = CashSession.Open(
+            TenantId, CompanyId, Guid.NewGuid(), UserId, destination.Id,
+            "CAJA-01", "Caja Principal", Guid.NewGuid(), "001", 500m, UserId
+        );
+        m.CashSessions
+            .Setup(r => r.GetOpenByCashRegisterForUpdateAsync(TenantId, destination.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(otherBranchSession);
+        SetupPayable(m, payable);
+
+        var result = await BuildHandler(m).Handle(
+            SingleLineCommand(new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m), payable, 100m),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("La caja seleccionada no pertenece a la sucursal activa.");
+        m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
 }

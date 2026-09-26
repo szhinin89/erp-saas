@@ -85,3 +85,11 @@
 .sp-portfolio-apply .zh-numeric-input {
   max-width: 110px;
 }
+
+/* 02B-FINAL — confirmación explícita de efectivo no entregado en la reversa documental. */
+.sp-reverse-confirm {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+}

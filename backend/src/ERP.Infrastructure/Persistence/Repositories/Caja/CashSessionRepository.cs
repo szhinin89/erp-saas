@@ -78,6 +78,24 @@ public sealed class CashSessionRepository : ICashSessionRepository
         return session;
     }
 
+    public async Task<CashSession?> GetByIdForUpdateAsync(
+        Guid tenantId,
+        Guid cashSessionId,
+        CancellationToken ct = default
+    )
+    {
+        // Mismo patrón que GetOpenByCashRegisterForUpdateAsync (lock → recarga → Reload), por Id y
+        // sin filtrar por estado: el llamador decide qué hacer con una sesión cerrada.
+        await _db.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT 1 FROM cash_sessions WHERE tenant_id = {tenantId} AND id = {cashSessionId} FOR UPDATE",
+            ct
+        );
+        var session = await GetByIdAsync(tenantId, cashSessionId, ct);
+        if (session is not null)
+            await _db.Entry(session).ReloadAsync(ct);
+        return session;
+    }
+
     public Task<bool> ExistsByCashRegisterAsync(
         Guid tenantId,
         Guid cashRegisterId,

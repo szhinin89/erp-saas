@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Modules.Caja;
 using ERP.Application.Modules.Payables.Exceptions;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Enums;
@@ -129,7 +130,9 @@ public sealed record SupplierPaymentDto(
     DateTime CreatedAt,
     DateTime? ReversedAtUtc = null,
     Guid? ReversedBy = null,
-    string? ReverseReason = null
+    string? ReverseReason = null,
+    string? ReversalBankReason = null,
+    bool? ReversalCashNotDeliveredConfirmed = null
 );
 
 // ── Command ─────────────────────────────────────────────────────────────
@@ -403,6 +406,21 @@ public sealed class RegisterSupplierPaymentCommandHandler
                     await _uow.RollbackAsync(ct);
                     return Result<SupplierPaymentDto>.ValidationFailure(
                         $"No existe una sesión de caja abierta para la caja {cashRegisterId}. Abra la caja antes de pagar en efectivo."
+                    );
+                }
+                // 02B — autoridad sobre la sesión: solo quien la opera (CashSession.UserId) puede
+                // sacar efectivo de ella, y solo desde la sucursal activa. Sin bypass por rol ni
+                // solicitud automática (CashFundingRequest queda para una fase posterior).
+                if (!session.IsControlledBy(userId))
+                {
+                    await _uow.RollbackAsync(ct);
+                    return Result<SupplierPaymentDto>.ValidationFailure(CashSessionOwnership.RejectionMessage(session));
+                }
+                if (session.BranchId != branchId)
+                {
+                    await _uow.RollbackAsync(ct);
+                    return Result<SupplierPaymentDto>.ValidationFailure(
+                        "La caja seleccionada no pertenece a la sucursal activa."
                     );
                 }
                 openSessionsByRegister[cashRegisterId] = session;
@@ -764,6 +782,8 @@ internal static class SupplierPaymentDtoMapper
             p.CreatedAt,
             p.ReversedAtUtc,
             p.ReversedBy,
-            p.ReverseReason
+            p.ReverseReason,
+            p.ReversalBankReason?.ToString(),
+            p.ReversalCashNotDeliveredConfirmed
         );
 }

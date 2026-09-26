@@ -1,8 +1,11 @@
 using ERP.Application.Common;
+using ERP.Application.Modules.Branches;
+using ERP.Application.Modules.Caja;
 using ERP.Application.Modules.Payables.Exceptions;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Caja.Interfaces;
+using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
 using FluentValidation;
 using MediatR;
@@ -11,8 +14,19 @@ namespace ERP.Application.Modules.Payables.UseCases;
 
 // ── Request (POST body) ──────────────────────────────────────────────────
 
-/// <summary>SUPPLIER-PAYMENTS-REVERSE-16 — contrato HTTP de <c>POST /api/v1/supplier-payments/{id}/reverse</c>.</summary>
-public sealed record ReverseSupplierPaymentRequest(string Reason);
+/// <summary>
+/// SUPPLIER-PAYMENTS-REVERSE-16 — contrato HTTP de <c>POST /api/v1/supplier-payments/{id}/reverse</c>.
+/// ZH-SUPPLIER-PAYMENT-REVERSAL-SEMANTICS-02B-FINAL — la reversa es una CORRECCIÓN DOCUMENTAL de una
+/// operación que no llegó a ejecutarse, nunca la devolución de dinero ya entregado/transferido (eso
+/// será un futuro <c>SupplierPaymentRefund</c>): <see cref="CashNotDeliveredConfirmed"/> = "Confirmo
+/// que el efectivo no fue entregado al proveedor y permanece en la misma caja" (obligatorio si hay
+/// fuentes de caja); <see cref="BankReversalReason"/> obligatorio si hay fuentes bancarias.
+/// </summary>
+public sealed record ReverseSupplierPaymentRequest(
+    string Reason,
+    bool CashNotDeliveredConfirmed = false,
+    SupplierPaymentBankReversalReason? BankReversalReason = null
+);
 
 // ── Command ─────────────────────────────────────────────────────────────
 
@@ -24,7 +38,12 @@ public sealed record ReverseSupplierPaymentRequest(string Reason);
 /// cambian, no hay asiento parcial). Independiente de <c>ReverseCollectionCommand</c>
 /// (Payment/PaymentApplicationLine, Collections/CxC) — no lo reutiliza ni lo toca.
 /// </summary>
-public sealed record ReverseSupplierPaymentCommand(Guid SupplierPaymentId, string Reason)
+public sealed record ReverseSupplierPaymentCommand(
+    Guid SupplierPaymentId,
+    string Reason,
+    bool CashNotDeliveredConfirmed = false,
+    SupplierPaymentBankReversalReason? BankReversalReason = null
+)
     : IRequest<Result<SupplierPaymentDto>>,
         ICompanyScopedRequest;
 
@@ -50,6 +69,8 @@ public sealed class ReverseSupplierPaymentCommandHandler
     private readonly IUnitOfWork _uow;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
+    private readonly ICurrentBranch _b;
+    private readonly IBranchAccessGuard _branchAccess;
     private readonly ICurrentUser _u;
 
     public ReverseSupplierPaymentCommandHandler(
@@ -59,6 +80,8 @@ public sealed class ReverseSupplierPaymentCommandHandler
         IUnitOfWork uow,
         ICurrentTenant t,
         ICurrentCompany c,
+        ICurrentBranch b,
+        IBranchAccessGuard branchAccess,
         ICurrentUser u
     )
     {
@@ -68,6 +91,8 @@ public sealed class ReverseSupplierPaymentCommandHandler
         _uow = uow;
         _t = t;
         _c = c;
+        _b = b;
+        _branchAccess = branchAccess;
         _u = u;
     }
 
@@ -94,7 +119,13 @@ public sealed class ReverseSupplierPaymentCommandHandler
             // puede estar vacío.
             try
             {
-                payment.Reverse(cmd.Reason, userId, DateTime.UtcNow);
+                payment.Reverse(
+                    cmd.Reason,
+                    userId,
+                    DateTime.UtcNow,
+                    cmd.CashNotDeliveredConfirmed,
+                    cmd.BankReversalReason
+                );
             }
             catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
             {
@@ -107,29 +138,84 @@ public sealed class ReverseSupplierPaymentCommandHandler
             // esa caja. El egreso original nunca se borra ni se modifica; la trazabilidad queda por
             // ReferenceType/ReferenceId = SupplierPayment. Pagos anteriores a 02A (sin movimiento
             // original) no generan compensación — nunca hubo efecto en caja que deshacer.
-            // 02A-FINAL: mismo lock exclusivo y mismo orden determinista que el registro del pago
-            // (FOR UPDATE por CashRegisterId ascendente) — nunca deadlock entre reversas y pagos.
-            var openSessionsByRegister = new Dictionary<Guid, CashSession>();
-            foreach (var cashRegisterId in payment.MethodLines
-                .Where(l => l.CashMovementId is not null)
-                .Select(l => l.CashRegisterId!.Value)
-                .Distinct()
-                .OrderBy(id => id))
+            // 02B-CLOSE — sucursal activa obligatoria SOLO si la reversa produce un efecto
+            // operativo en caja. El comando sigue siendo company-scoped (una reversa bancaria no
+            // necesita sucursal), así que BranchScopeBehavior no valida el header aquí: se valida
+            // explícitamente con el mismo guard oficial (IBranchAccessGuard), nunca confiando en el
+            // X-Branch-Id crudo.
+            var hasCashEffect = payment.MethodLines.Any(l => l.CashRegisterId is not null);
+            if (hasCashEffect)
             {
-                var session = await _cashSessions.GetOpenByCashRegisterForUpdateAsync(tenantId, cashRegisterId, ct);
+                if (!_b.HasBranchContext)
+                {
+                    await _uow.RollbackAsync(ct);
+                    return Result<SupplierPaymentDto>.ValidationFailure(
+                        "La reversa devuelve efectivo a una caja: seleccione la sucursal activa de esa caja."
+                    );
+                }
+                var branchAccess = await _branchAccess.RequireBranchAsync(_b.BranchId, ct);
+                if (!branchAccess.IsSuccess)
+                {
+                    await _uow.RollbackAsync(ct);
+                    return Result<SupplierPaymentDto>.ValidationFailure(
+                        branchAccess.Error ?? "No tiene acceso a la sucursal activa."
+                    );
+                }
+            }
+
+            // 02B-FINAL — reversa documental de efectivo: el efectivo nunca se entregó y sigue en la
+            // MISMA sesión de la que salió. Se actúa únicamente sobre la sesión ORIGINAL de cada línea
+            // (CashSessionId guardado en 02A) — nunca sobre otra sesión abierta de la misma caja —, que
+            // debe seguir abierta, controlada por el usuario actual y en la sucursal activa. Lock
+            // oficial FOR UPDATE, en el mismo orden determinista por CashRegisterId que el registro
+            // del pago (02A-FINAL): nunca deadlock entre reversas y pagos. La confirmación explícita
+            // (CashNotDeliveredConfirmed) y la trazabilidad de la línea ya las exigió el dominio.
+            var originalSessions = new Dictionary<Guid, CashSession>();
+            foreach (var cashLine in payment.MethodLines
+                .Where(l => l.CashRegisterId is not null)
+                .GroupBy(l => l.CashSessionId!.Value)
+                .Select(g => g.First())
+                .OrderBy(l => l.CashRegisterId!.Value)
+                .ThenBy(l => l.CashSessionId!.Value))
+            {
+                var sessionId = cashLine.CashSessionId!.Value;
+                var session = await _cashSessions.GetByIdForUpdateAsync(tenantId, sessionId, ct);
                 if (session is null || session.CompanyId != companyId)
                 {
                     await _uow.RollbackAsync(ct);
                     return Result<SupplierPaymentDto>.ValidationFailure(
-                        $"No existe una sesión de caja abierta para la caja {cashRegisterId}. Abra la caja para registrar la devolución del efectivo antes de reversar el pago."
+                        "No se encontró la sesión de caja de la que salió el efectivo."
                     );
                 }
-                openSessionsByRegister[cashRegisterId] = session;
+                if (!session.IsOpen)
+                {
+                    await _uow.RollbackAsync(ct);
+                    return Result<SupplierPaymentDto>.ValidationFailure(
+                        "El efectivo salió de una sesión que ya está cerrada. Si el proveedor devolvió el dinero, registre una devolución de fondos."
+                    );
+                }
+                // 02B — solo quien opera la sesión original puede recibir de vuelta ese efectivo.
+                if (!session.IsControlledBy(userId))
+                {
+                    await _uow.RollbackAsync(ct);
+                    return Result<SupplierPaymentDto>.ValidationFailure(CashSessionOwnership.RejectionMessage(session));
+                }
+                // 02B-CLOSE — misma regla de sucursal que el registro del pago.
+                if (session.BranchId != _b.BranchId)
+                {
+                    await _uow.RollbackAsync(ct);
+                    return Result<SupplierPaymentDto>.ValidationFailure(
+                        "La caja seleccionada no pertenece a la sucursal activa."
+                    );
+                }
+                originalSessions[sessionId] = session;
             }
 
-            foreach (var methodLine in payment.MethodLines.Where(l => l.CashMovementId is not null))
+            // Ingreso compensatorio ÚNICAMENTE en la sesión original de cada línea; el egreso
+            // original nunca se borra (trazabilidad por ReferenceType/ReferenceId = SupplierPayment).
+            foreach (var methodLine in payment.MethodLines.Where(l => l.CashRegisterId is not null))
             {
-                var session = openSessionsByRegister[methodLine.CashRegisterId!.Value];
+                var session = originalSessions[methodLine.CashSessionId!.Value];
                 try
                 {
                     session.RecordMovement(

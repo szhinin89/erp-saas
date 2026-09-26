@@ -16,13 +16,19 @@ describe("supplierPaymentService", () => {
     apiPostMock.mockReset();
   });
 
-  it("reverse calls POST /api/v1/supplier-payments/{id}/reverse with { reason }", async () => {
+  it("reverse calls POST /api/v1/supplier-payments/{id}/reverse with reason, cash confirmation and bank reason", async () => {
     apiPostMock.mockResolvedValue({ id: "sp-1", status: "Reversed" });
 
-    await supplierPaymentService.reverse("sp-1", "Error de digitación");
+    await supplierPaymentService.reverse("sp-1", {
+      reason: "Error de digitación",
+      cashNotDeliveredConfirmed: false,
+      bankReversalReason: "NotExecuted",
+    });
 
     expect(apiPostMock).toHaveBeenCalledWith("/api/v1/supplier-payments/sp-1/reverse", {
       reason: "Error de digitación",
+      cashNotDeliveredConfirmed: false,
+      bankReversalReason: "NotExecuted",
     });
   });
 

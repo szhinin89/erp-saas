@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
+using ERP.Application.Modules.Caja;
 using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Finance.Entities;
@@ -183,6 +184,14 @@ public sealed class ReverseSupplierCreditRefundHandler
                     // SC-027
                     return Result<SupplierCreditRefundTransactionDto>.ValidationFailure(
                         "No existe una sesión de caja activa para revertir este reembolso."
+                    );
+                }
+                // 02B — el egreso compensatorio sale de una caja: solo quien la opera puede hacerlo.
+                if (!cashSession.IsControlledBy(uid))
+                {
+                    await _uow.RollbackAsync(ct);
+                    return Result<SupplierCreditRefundTransactionDto>.ValidationFailure(
+                        CashSessionOwnership.RejectionMessage(cashSession)
                     );
                 }
             }

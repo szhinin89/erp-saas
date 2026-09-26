@@ -101,6 +101,11 @@ public sealed class CloseCashSessionHandler
         if (session is null || session.BranchId != _b.BranchId)
             return Result<CashSessionDto>.NotFound("Sesión de caja no encontrada.");
 
+        // 02B — `caja.close` decide QUÉ puede hacer el usuario; solo quien abrió la sesión la
+        // cierra (CashSession.UserId). Fail-closed, sin bypass por rol ni por `caja.manage`.
+        if (!session.IsControlledBy(_u.UserId))
+            return Result<CashSessionDto>.ValidationFailure(CashSessionOwnership.RejectionMessage(session));
+
         var closingCounts = cmd
             .ClosingCounts.Where(c => c.Quantity > 0)
             .Select(c =>

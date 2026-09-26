@@ -77,6 +77,16 @@ public sealed class CashSession : AuditableEntity, ITenantScopedEntity, ICompany
         _movements.Where(m => IsExpense(m.MovementType)).Sum(m => m.Amount);
     public decimal CurrentBalance => OpeningAmount + TotalIncome - TotalExpense;
 
+    public bool IsOpen => Status == CashSessionStatus.Open;
+
+    /// <summary>
+    /// ZH-SUPPLIER-PAYMENT-CASH-OWNERSHIP-02B — SSOT de "quién controla esta sesión": la sesión está
+    /// abierta y la abrió <paramref name="userId"/> (<see cref="UserId"/>). Nunca por rol ni por
+    /// permiso: el permiso decide QUÉ acción puede ejecutar un usuario; esta regla decide SOBRE QUÉ
+    /// sesión. Tenant/empresa/sucursal/caja los valida cada caso de uso contra su contexto.
+    /// </summary>
+    public bool IsControlledBy(Guid userId) => IsOpen && userId != Guid.Empty && UserId == userId;
+
     private CashSession() { }
 
     public static CashSession Open(

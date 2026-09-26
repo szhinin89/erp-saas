@@ -38,6 +38,14 @@ public sealed class SupplierPaymentConfiguration : IEntityTypeConfiguration<Supp
         builder.Property(x => x.ReversedAtUtc).HasColumnName("reversed_at_utc");
         builder.Property(x => x.ReversedBy).HasColumnName("reversed_by");
         builder.Property(x => x.ReverseReason).HasColumnName("reverse_reason");
+        // ZH-SUPPLIER-PAYMENT-REVERSAL-SEMANTICS-02B-FINAL — auditoría de la reversa documental.
+        builder
+            .Property(x => x.ReversalBankReason)
+            .HasColumnName("reversal_bank_reason")
+            .HasConversion<int?>();
+        builder
+            .Property(x => x.ReversalCashNotDeliveredConfirmed)
+            .HasColumnName("reversal_cash_not_delivered_confirmed");
 
         builder.Ignore(x => x.DisplayNumber);
 
