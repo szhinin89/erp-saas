@@ -914,6 +914,10 @@ public static class DependencyInjection
             ERP.Infrastructure.Persistence.Repositories.Caja.CashSessionRepository
         >();
         services.AddScoped<
+            ERP.Domain.Modules.Caja.Interfaces.ICashFundingRequestRepository,
+            ERP.Infrastructure.Persistence.Repositories.Caja.CashFundingRequestRepository
+        >();
+        services.AddScoped<
             ERP.Domain.Modules.Caja.Interfaces.ICashMovementReasonRepository,
             ERP.Infrastructure.Persistence.Repositories.Caja.CashMovementReasonRepository
         >();

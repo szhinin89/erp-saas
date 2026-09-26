@@ -42,6 +42,15 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
     public string? ReceiptNumber { get; private set; }
 
     public SupplierPaymentStatus Status { get; private set; }
+
+    /// <summary>
+    /// ZH-CASH-FUNDING-REQUEST-FOUNDATION-02E-B — quién ejecutó/confirmó el pago. En el pago directo
+    /// es el mismo usuario que lo preparó (<see cref="AuditableEntity.CreatedBy"/>); en un pago
+    /// ejecutado al atender una solicitud de efectivo, <c>CreatedBy</c> es el originador (quien lo
+    /// preparó) y este campo es el cajero que entregó el efectivo y lo ejecutó.
+    /// </summary>
+    public Guid ConfirmedByUserId { get; private set; }
+
     public DateTime? ReversedAtUtc { get; private set; }
     public Guid? ReversedBy { get; private set; }
     public string? ReverseReason { get; private set; }
@@ -117,7 +126,8 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
         IReadOnlyList<SupplierPaymentAllocationInput> allocations,
         Guid createdBy,
         bool unappliedAmountConfirmed = false,
-        bool allowWithoutPayable = false
+        bool allowWithoutPayable = false,
+        Guid? confirmedBy = null
     )
     {
         if (tenantId == Guid.Empty)
@@ -229,6 +239,8 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
                 $"El pago deja {payment.UnappliedAmount.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)} sin aplicar: debe confirmar explícitamente que ese saldo quedará como anticipo a favor del proveedor."
             );
         payment.SetCreated(createdBy);
+        // 02E-B — originador (CreatedBy) vs ejecutor (ConfirmedBy); por defecto el mismo usuario.
+        payment.ConfirmedByUserId = confirmedBy is { } executor && executor != Guid.Empty ? executor : createdBy;
 
         payment.RaiseDomainEvent(
             new SupplierPaymentConfirmedEvent(

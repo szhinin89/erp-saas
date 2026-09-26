@@ -2,6 +2,16 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-26** · Kernel refactor: **2026-06-05**.
 
+## ZH-CASH-FUNDING-REQUEST-FOUNDATION-02E-B — Base de solicitudes de efectivo (2026-09-26)
+
+**Estado: COMPLETADO (sin commit).** Sin endpoints, permisos, menú ni UI (fases siguientes).
+- **Dominio**: `CashFundingRequest` (Caja) — Pending/Fulfilled/Rejected/Cancelled; Pending único mutable, terminales no reutilizables; efectivo > 0, total ≥ efectivo, una sola caja/sesión objetivo; `SupplierPaymentId` solo en Fulfilled; motivo obligatorio en Rejected/Cancelled.
+- **Snapshot**: `CashFundingPaymentSnapshotV1` (contrato explícito, nunca el command CLR) en `payment_payload` jsonb + `payload_version` + `payload_hash` (SHA-256 de la forma canónica: orden fijo, camelCase, decimales sin ceros de relleno; estable ante la normalización de jsonb).
+- **Actores**: `SupplierPayment.ConfirmedByUserId` (nuevo; backfill = `created_by`). Originador = `CreatedBy`; ejecutor = `ConfirmedByUserId`, dueño del ownership de caja, del `CashMovement` y de la mutación de CxP.
+- **Núcleo extraído**: `ISupplierPaymentRegistrar` (Payables/Services) con contexto explícito de actores; no maneja la transacción (la abre/cierra el llamador). El pago directo delega en él sin cambios de comportamiento (rechazos tempranos siguen sin transacción vía `PrevalidateAsync`).
+- **Persistencia**: tabla `cash_funding_requests` (migración `CashFundingRequestFoundation`), CHECKs de estado, índices (empresa+sesión+estado, empresa+solicitante+estado), únicos `(tenant, client_request_id)` y `supplier_payment_id` (filtrado), `xmin`. Repositorio con `GetByIdForUpdateAsync` (patrón oficial lock → recarga). Orden único de locks: CashSession → CashFundingRequest → resto.
+- Evidencia: Domain 1219 · Application 2290 · Architecture 116 · PostgreSQL focalizadas 59/59 (repositorio nuevo + E2E de pagos + saldos a favor) · API focalizadas 32/32 · `architecture:check` 244 = `HEAD`.
+
 ## ZH-SUPPLIER-BALANCES-02D-FINAL-QA — SPAY-02D CLOSED (2026-09-26)
 
 - Regresión: Domain 1206/1206 · Application 2279/2279 · Architecture 116/116 · API 486/487 (baseline `PG_unique_business_partner_identification_enforced`) · PostgreSQL focalizado 256/258 (baseline `PurchaseExpenseReprocessAfterCancelConstraintsTests.Trigger_cruzado_*`, fallan igual en `HEAD` limpio) · vitest 2495/2495 · `tsc -b`/build OK · lint 0 errores (35 warnings preexistentes, ninguno en archivos 02D) · `architecture:check` 244 = `HEAD` (mismo conjunto).

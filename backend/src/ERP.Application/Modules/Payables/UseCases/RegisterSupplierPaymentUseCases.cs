@@ -1,21 +1,6 @@
 using ERP.Application.Common;
-using ERP.Application.Modules.Caja;
-using ERP.Application.Modules.Finance;
-using ERP.Application.Modules.Payables.Exceptions;
-using ERP.Domain.Modules.Caja.Entities;
-using ERP.Domain.Modules.Caja.Enums;
-using ERP.Domain.Configuration.Interfaces;
-using ERP.Domain.Modules.Caja.Interfaces;
-using ERP.Domain.Modules.Company.Interfaces;
-using ERP.Domain.Modules.Finance.Interfaces;
+using ERP.Application.Modules.Payables.Services;
 using ERP.Domain.Modules.Payables.Entities;
-using ERP.Domain.Modules.Payables.Enums;
-using ERP.Domain.Modules.Payables.Interfaces;
-using ERP.Domain.Modules.Purchases.Entities;
-using ERP.Domain.Modules.Purchases.Interfaces;
-using ERP.Domain.Modules.Sales.Entities;
-using ERP.Domain.Modules.Sales.Enums;
-using ERP.Domain.Modules.Sales.Interfaces;
 using FluentValidation;
 using MediatR;
 
@@ -258,19 +243,15 @@ public sealed class RegisterSupplierPaymentCommandValidator
 
 // ── Handler ─────────────────────────────────────────────────────────────
 
+/// <summary>
+/// Pago directo: el usuario actual prepara y ejecuta. ZH-CASH-FUNDING-REQUEST-FOUNDATION-02E-B —
+/// solo gobierna la transacción; todas las reglas viven en <see cref="ISupplierPaymentRegistrar"/>
+/// (núcleo compartido con la ejecución de solicitudes de efectivo), sin cambios de comportamiento.
+/// </summary>
 public sealed class RegisterSupplierPaymentCommandHandler
     : IRequestHandler<RegisterSupplierPaymentCommand, Result<SupplierPaymentDto>>
 {
-    private readonly ISupplierPaymentRepository _supplierPayments;
-    private readonly ISupplierPaymentSequenceRepository _sequences;
-    private readonly IAccountsPayableRepository _accountsPayables;
-    private readonly IPaymentMethodRepository _paymentMethods;
-    private readonly ICompanyBankAccountRepository _bankAccounts;
-    private readonly ICashRegisterRepository _cashRegisters;
-    private readonly ICashSessionRepository _cashSessions;
-    private readonly ISupplierCreditRepository _supplierCredits;
-    private readonly IOperationalPreferencesResolver _preferences;
-    private readonly ICompanyRepository _companies;
+    private readonly ISupplierPaymentRegistrar _registrar;
     private readonly IUnitOfWork _uow;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
@@ -278,16 +259,7 @@ public sealed class RegisterSupplierPaymentCommandHandler
     private readonly ICurrentUser _u;
 
     public RegisterSupplierPaymentCommandHandler(
-        ISupplierPaymentRepository supplierPayments,
-        ISupplierPaymentSequenceRepository sequences,
-        IAccountsPayableRepository accountsPayables,
-        IPaymentMethodRepository paymentMethods,
-        ICompanyBankAccountRepository bankAccounts,
-        ICashRegisterRepository cashRegisters,
-        ICashSessionRepository cashSessions,
-        ISupplierCreditRepository supplierCredits,
-        IOperationalPreferencesResolver preferences,
-        ICompanyRepository companies,
+        ISupplierPaymentRegistrar registrar,
         IUnitOfWork uow,
         ICurrentTenant t,
         ICurrentCompany c,
@@ -295,16 +267,7 @@ public sealed class RegisterSupplierPaymentCommandHandler
         ICurrentUser u
     )
     {
-        _supplierCredits = supplierCredits;
-        _preferences = preferences;
-        _companies = companies;
-        _supplierPayments = supplierPayments;
-        _sequences = sequences;
-        _accountsPayables = accountsPayables;
-        _paymentMethods = paymentMethods;
-        _bankAccounts = bankAccounts;
-        _cashRegisters = cashRegisters;
-        _cashSessions = cashSessions;
+        _registrar = registrar;
         _uow = uow;
         _t = t;
         _c = c;
@@ -317,412 +280,31 @@ public sealed class RegisterSupplierPaymentCommandHandler
         CancellationToken ct
     )
     {
-        var tenantId = _t.TenantId;
-        var companyId = _c.CompanyId;
-        var branchId = _b.BranchId;
         var userId = _u.UserId;
 
-        var receiptNumber = string.IsNullOrWhiteSpace(cmd.ReceiptNumber) ? null : cmd.ReceiptNumber.Trim();
-
-        // ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — remanente sin confirmación explícita: rechazo
-        // ANTES de cualquier efecto (sin transacción, sin secuencia, sin caja, sin asiento). El
-        // dominio lo revalida de todas formas (defensa en profundidad).
-        var unappliedAmount = cmd.TotalAmount - cmd.ApplicationLines.Sum(l => l.AmountApplied);
-        if (unappliedAmount > 0 && !cmd.ConfirmUnappliedAmount)
-            return Result<SupplierPaymentDto>.ValidationFailure(
-                $"El pago supera el saldo que puede aplicarse en ${FormatMoney(unappliedAmount)}. Confirme que ese saldo quedará como anticipo a favor del proveedor."
-            );
-
-        // Política por empresa: solo gobierna el pago SIN ninguna CxP. Se resuelve únicamente
-        // cuando aplica — el anticipo por sobrepago no depende de ella.
-        var allowWithoutPayable = false;
-        if (cmd.ApplicationLines.Count == 0)
-        {
-            var preferences = await _preferences.ResolveAsync(ct);
-            allowWithoutPayable = preferences.Payables?.AllowSupplierPaymentWithoutPayable ?? false;
-            if (!allowWithoutPayable)
-                return Result<SupplierPaymentDto>.ValidationFailure(
-                    "La empresa no permite registrar pagos a proveedores sin una cuenta por pagar: seleccione al menos una cuota."
-                );
-        }
+        // Rechazo sin ningún efecto (ni transacción) para las reglas que no requieren locks (02C).
+        var intentError = await _registrar.PrevalidateAsync(cmd, ct);
+        if (intentError is not null)
+            return Result<SupplierPaymentDto>.ValidationFailure(intentError);
 
         await _uow.BeginTransactionAsync(ct);
         try
         {
-            // ── receipt_number único por (Tenant, Company, Supplier) si se informa ──
-            if (receiptNumber is not null)
-            {
-                var receiptExists = await _supplierPayments.ExistsByReceiptNumberAsync(
-                    tenantId,
-                    companyId,
-                    cmd.SupplierId,
-                    receiptNumber,
-                    ct
-                );
-                if (receiptExists)
-                {
-                    await _uow.RollbackAsync(ct);
-                    return Result<SupplierPaymentDto>.Conflict(
-                        "Ya existe un pago con ese número de comprobante para este proveedor."
-                    );
-                }
-            }
-
-            // ── PaymentMethodId debe existir y estar activo ──
-            var methodsById = new Dictionary<Guid, PaymentMethod>();
-            foreach (var methodId in cmd.MethodLines.Select(l => l.PaymentMethodId).Distinct())
-            {
-                var method = await _paymentMethods.GetByIdAsync(tenantId, methodId, ct);
-                if (method is null || !method.IsActive)
-                {
-                    await _uow.RollbackAsync(ct);
-                    return Result<SupplierPaymentDto>.ValidationFailure(
-                        $"El medio de pago {methodId} no existe o no está activo."
-                    );
-                }
-                methodsById[methodId] = method;
-            }
-
-            // ── 02A: medio ↔ destino, PaymentMethod como SSOT (fail-closed) ──
-            foreach (var line in cmd.MethodLines)
-            {
-                var lineError = ValidateMethodLineAgainstCatalog(line, methodsById[line.PaymentMethodId]);
-                if (lineError is not null)
-                {
-                    await _uow.RollbackAsync(ct);
-                    return Result<SupplierPaymentDto>.ValidationFailure(lineError);
-                }
-            }
-
-            // ── Cuenta bancaria/caja debe existir, pertenecer a la empresa, estar activa y tener cuenta contable ──
-            foreach (var bankAccountId in cmd.MethodLines
-                .Where(l => l.CompanyBankAccountId is not null)
-                .Select(l => l.CompanyBankAccountId!.Value)
-                .Distinct())
-            {
-                var bankAccount = await _bankAccounts.GetByIdAsync(tenantId, bankAccountId, ct);
-                if (bankAccount is null || bankAccount.CompanyId != companyId)
-                {
-                    await _uow.RollbackAsync(ct);
-                    return Result<SupplierPaymentDto>.NotFound(
-                        $"La cuenta bancaria {bankAccountId} no existe o no pertenece a esta empresa."
-                    );
-                }
-                if (!bankAccount.IsActive)
-                {
-                    await _uow.RollbackAsync(ct);
-                    return Result<SupplierPaymentDto>.ValidationFailure(
-                        $"La cuenta bancaria {bankAccountId} no está activa."
-                    );
-                }
-            }
-            foreach (var cashRegisterId in cmd.MethodLines
-                .Where(l => l.CashRegisterId is not null)
-                .Select(l => l.CashRegisterId!.Value)
-                .Distinct())
-            {
-                var cashRegister = await _cashRegisters.GetByIdAsync(tenantId, cashRegisterId, ct);
-                if (cashRegister is null || cashRegister.CompanyId != companyId)
-                {
-                    await _uow.RollbackAsync(ct);
-                    return Result<SupplierPaymentDto>.NotFound(
-                        $"La caja {cashRegisterId} no existe o no pertenece a esta empresa."
-                    );
-                }
-                if (!cashRegister.IsActive)
-                {
-                    await _uow.RollbackAsync(ct);
-                    return Result<SupplierPaymentDto>.ValidationFailure(
-                        $"La caja {cashRegisterId} no está activa."
-                    );
-                }
-                if (cashRegister.AccountingAccountId is null)
-                {
-                    await _uow.RollbackAsync(ct);
-                    return Result<SupplierPaymentDto>.ValidationFailure(
-                        $"La caja {cashRegisterId} no tiene una cuenta contable configurada."
-                    );
-                }
-            }
-
-            // ── 02A: cada caja exige su CashSession Open — el egreso operativo se registra en esa
-            // sesión. 02A-FINAL: lock exclusivo (FOR UPDATE) ANTES de leer el saldo, en orden
-            // determinista por CashRegisterId: dos pagos concurrentes sobre la misma caja quedan
-            // serializados (el segundo ve el saldo ya consumido y recibe la validación normal) y
-            // dos pagos con varias cajas nunca se bloquean en cruz ──
-            var openSessionsByRegister = new Dictionary<Guid, CashSession>();
-            foreach (var cashRegisterId in cmd.MethodLines
-                .Where(l => l.CashRegisterId is not null)
-                .Select(l => l.CashRegisterId!.Value)
-                .Distinct()
-                .OrderBy(id => id))
-            {
-                var session = await _cashSessions.GetOpenByCashRegisterForUpdateAsync(tenantId, cashRegisterId, ct);
-                if (session is null || session.CompanyId != companyId)
-                {
-                    await _uow.RollbackAsync(ct);
-                    return Result<SupplierPaymentDto>.ValidationFailure(
-                        $"No existe una sesión de caja abierta para la caja {cashRegisterId}. Abra la caja antes de pagar en efectivo."
-                    );
-                }
-                // 02B — autoridad sobre la sesión: solo quien la opera (CashSession.UserId) puede
-                // sacar efectivo de ella, y solo desde la sucursal activa. Sin bypass por rol ni
-                // solicitud automática (CashFundingRequest queda para una fase posterior).
-                if (!session.IsControlledBy(userId))
-                {
-                    await _uow.RollbackAsync(ct);
-                    return Result<SupplierPaymentDto>.ValidationFailure(CashSessionOwnership.RejectionMessage(session));
-                }
-                if (session.BranchId != branchId)
-                {
-                    await _uow.RollbackAsync(ct);
-                    return Result<SupplierPaymentDto>.ValidationFailure(
-                        "La caja seleccionada no pertenece a la sucursal activa."
-                    );
-                }
-                openSessionsByRegister[cashRegisterId] = session;
-            }
-
-            // ── 02A-CLOSE: sin sobregiro de caja (fail-closed, sin override). El consumo se ACUMULA
-            // por sesión: varias líneas de efectivo del mismo pago contra la misma caja nunca pueden
-            // superar juntas el efectivo esperado (CashSession.CurrentBalance, SSOT del arqueo) ──
-            foreach (var cashGroup in cmd.MethodLines
-                .Where(l => l.CashRegisterId is not null)
-                .GroupBy(l => l.CashRegisterId!.Value))
-            {
-                var requested = cashGroup.Sum(l => l.Amount);
-                var available = openSessionsByRegister[cashGroup.Key].CurrentBalance;
-                if (requested > available)
-                {
-                    await _uow.RollbackAsync(ct);
-                    return Result<SupplierPaymentDto>.ValidationFailure(
-                        $"La caja seleccionada dispone de ${FormatMoney(available)} y se intenta registrar un pago de ${FormatMoney(requested)}."
-                    );
-                }
-            }
-
-            // ── Carga y valida cada cuota referenciada, agrupando por AccountsPayable dueño ──
-            var payablesByInstallment = new Dictionary<Guid, AccountsPayable>();
-            foreach (var appLine in cmd.ApplicationLines)
-            {
-                var installmentId = appLine.AccountsPayableInstallmentId;
-                if (!payablesByInstallment.ContainsKey(installmentId))
-                {
-                    var payable = await _accountsPayables.GetByInstallmentIdAsync(tenantId, installmentId, ct);
-                    if (payable is null)
-                    {
-                        await _uow.RollbackAsync(ct);
-                        return Result<SupplierPaymentDto>.NotFound(
-                            $"La cuota {installmentId} no existe."
-                        );
-                    }
-                    if (payable.SupplierId != cmd.SupplierId)
-                    {
-                        await _uow.RollbackAsync(ct);
-                        return Result<SupplierPaymentDto>.ValidationFailure(
-                            "No se pueden mezclar cuotas de distintos proveedores en un mismo pago."
-                        );
-                    }
-                    if (payable.CompanyId != companyId)
-                    {
-                        await _uow.RollbackAsync(ct);
-                        return Result<SupplierPaymentDto>.ValidationFailure(
-                            "La cuota indicada no pertenece a esta empresa."
-                        );
-                    }
-
-                    payablesByInstallment[installmentId] = payable;
-                }
-
-                var installment = payablesByInstallment[installmentId]
-                    .Installments.First(i => i.Id == installmentId);
-
-                if (
-                    installment.Status is AccountsPayableStatus.Cancelled or AccountsPayableStatus.Paid
-                )
-                {
-                    await _uow.RollbackAsync(ct);
-                    return Result<SupplierPaymentDto>.ValidationFailure(
-                        $"La cuota {installmentId} está {installment.Status} y no admite pagos."
-                    );
-                }
-                if (installment.OutstandingAmount <= 0)
-                {
-                    await _uow.RollbackAsync(ct);
-                    return Result<SupplierPaymentDto>.ValidationFailure(
-                        $"La cuota {installmentId} no tiene saldo pendiente."
-                    );
-                }
-                if (appLine.AmountApplied > installment.OutstandingAmount)
-                {
-                    await _uow.RollbackAsync(ct);
-                    return Result<SupplierPaymentDto>.ValidationFailure(
-                        $"El monto aplicado a la cuota {installmentId} excede su saldo pendiente."
-                    );
-                }
-            }
-
-            // ── system_number ──
-            string systemNumber;
-            try
-            {
-                systemNumber = await _sequences.CaptureNextAsync(tenantId, companyId, ct);
-            }
-            catch
+            var registration = await _registrar.RegisterAsync(
+                cmd,
+                new SupplierPaymentRegistrationContext(_t.TenantId, _c.CompanyId, _b.BranchId, userId, userId),
+                ct
+            );
+            if (!registration.IsSuccess)
             {
                 await _uow.RollbackAsync(ct);
-                throw;
-            }
-
-            // ── Construye y confirma el agregado (invariantes de balance/distribución en dominio) ──
-            SupplierPayment payment;
-            try
-            {
-                payment = SupplierPayment.Create(
-                    tenantId,
-                    companyId,
-                    branchId,
-                    cmd.SupplierId,
-                    cmd.PaymentDate,
-                    cmd.TotalAmount,
-                    systemNumber,
-                    receiptNumber,
-                    cmd.MethodLines
-                        .Select(l => new SupplierPaymentMethodLineInput(
-                            l.PaymentMethodId,
-                            l.CompanyBankAccountId,
-                            l.CashRegisterId,
-                            l.Amount,
-                            l.ReferenceNumber,
-                            l.CheckNumber,
-                            l.CheckDate,
-                            l.Notes,
-                            l.TransactionDate
-                        ))
-                        .ToList(),
-                    cmd.ApplicationLines
-                        .Select(l => new SupplierPaymentApplicationLineInput(
-                            l.AccountsPayableInstallmentId,
-                            l.AmountApplied
-                        ))
-                        .ToList(),
-                    cmd.Allocations
-                        .Select(a => new SupplierPaymentAllocationInput(
-                            a.MethodLineIndex,
-                            a.ApplicationLineIndex,
-                            a.Amount
-                        ))
-                        .ToList(),
-                    userId,
-                    cmd.ConfirmUnappliedAmount,
-                    allowWithoutPayable
-                );
-            }
-            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
-            {
-                await _uow.RollbackAsync(ct);
-                return Result<SupplierPaymentDto>.ValidationFailure(ex.Message);
-            }
-
-            // ── Aplica cada monto a su cuota puntual y recalcula AccountsPayable cabecera ──
-            foreach (var appLine in cmd.ApplicationLines)
-            {
-                try
-                {
-                    payablesByInstallment[appLine.AccountsPayableInstallmentId]
-                        .RegisterPaymentToInstallment(
-                            appLine.AccountsPayableInstallmentId,
-                            appLine.AmountApplied,
-                            userId
-                        );
-                }
-                catch (InvalidOperationException ex)
-                {
-                    await _uow.RollbackAsync(ct);
-                    return Result<SupplierPaymentDto>.ValidationFailure(ex.Message);
-                }
-            }
-
-            // ── 02A: efecto operativo de caja — un egreso por cada fuente de caja, vinculado a la
-            // línea. CashMovement nunca postea: el asiento sigue siendo solo de SupplierPayment ──
-            foreach (var methodLine in payment.MethodLines.Where(l => l.CashRegisterId is not null))
-            {
-                var session = openSessionsByRegister[methodLine.CashRegisterId!.Value];
-                try
-                {
-                    var movement = session.RecordMovement(
-                        CashMovementType.SupplierPayment,
-                        methodLine.Amount,
-                        $"Pago a proveedor {payment.SystemNumber}",
-                        userId,
-                        CashReferenceType.SupplierPayment,
-                        payment.Id,
-                        payment.SystemNumber
-                    );
-                    payment.LinkCashMovement(methodLine.Id, session.Id, movement.Id);
-                }
-                catch (InvalidOperationException ex)
-                {
-                    await _uow.RollbackAsync(ct);
-                    return Result<SupplierPaymentDto>.ValidationFailure(ex.Message);
-                }
-            }
-
-            // ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — el remanente no aplicado vive SOLO en
-            // SupplierCredit (SSOT del anticipo), por exactamente UnappliedAmount, misma transacción.
-            // SupplierCredit NO contabiliza al crearse: el Debe "Anticipos a proveedores" lo genera
-            // el asiento del propio SupplierPayment (único posting financiero).
-            SupplierCredit? advance = null;
-            if (payment.UnappliedAmount > 0)
-            {
-                var company = await _companies.GetByIdAsync(companyId, ct);
-                if (company is null)
-                {
-                    await _uow.RollbackAsync(ct);
-                    return Result<SupplierPaymentDto>.NotFound("Empresa no encontrada.");
-                }
-                advance = SupplierCredit.CreateFromSupplierPayment(
-                    tenantId,
-                    companyId,
-                    payment.BranchId,
-                    payment.SupplierId,
-                    company.CurrencyCode,
-                    payment.Id,
-                    payment.UnappliedAmount,
-                    userId
-                );
-            }
-
-            await _supplierPayments.AddAsync(payment, ct);
-            if (advance is not null)
-                await _supplierCredits.AddAsync(advance, ct);
-
-            try
-            {
-                // SUPPLIER-PAYMENTS-POSTING-15D: SaveChangesAsync publica SupplierPaymentConfirmedEvent
-                // ANTES del commit (ErpDbContext.SaveChangesAsync, ADR-026 §8) —
-                // SupplierPaymentConfirmedPostingTranslator lanza SupplierPaymentPostingFailedException
-                // (nunca solo un warning) si el asiento no puede generarse. "No confirmar pago sin
-                // asiento": el catch de abajo revierte la transacción completa — ni el SupplierPayment
-                // ni los saldos de AccountsPayableInstallment mutados arriba llegan a persistirse.
-                await _supplierPayments.SaveChangesAsync(ct);
-            }
-            catch (Exception ex) when (ex.GetType().Name == "DbUpdateConcurrencyException")
-            {
-                await _uow.RollbackAsync(ct);
-                return Result<SupplierPaymentDto>.ValidationFailure(
-                    "Una de las cuentas por pagar afectadas fue modificada concurrentemente. Intente nuevamente."
-                );
-            }
-            catch (SupplierPaymentPostingFailedException ex)
-            {
-                await _uow.RollbackAsync(ct);
-                return Result<SupplierPaymentDto>.ValidationFailure(ex.Message, ex.Code);
+                return Result<SupplierPaymentDto>.Failure(registration.Error!, registration.Code);
             }
 
             await _uow.CommitAsync(ct);
+            var (payment, supplierCreditId) = registration.Value!;
             return Result<SupplierPaymentDto>.Success(
-                SupplierPaymentDtoMapper.ToDto(payment, supplierCreditId: advance?.Id),
+                SupplierPaymentDtoMapper.ToDto(payment, supplierCreditId: supplierCreditId),
                 ApiResponseCodes.Common.Created
             );
         }
@@ -736,47 +318,6 @@ public sealed class RegisterSupplierPaymentCommandHandler
             await _uow.RollbackAsync(ct);
             throw;
         }
-    }
-
-    /// <summary>Montos en mensajes: punto decimal y 2 decimales, siempre InvariantCulture (estándar de decimales).</summary>
-    private static string FormatMoney(decimal amount) =>
-        amount.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
-
-    /// <summary>
-    /// ZH-SUPPLIER-PAYMENT-CASH-TRANSFER-HARDENING-02A — reglas medio ↔ destino con
-    /// <see cref="PaymentMethod"/> como SSOT: medio de crédito prohibido; efectivo físico ⇒ caja
-    /// (banco prohibido); cualquier otro medio ⇒ cuenta bancaria (caja prohibida); medio con
-    /// <see cref="PaymentMethod.RequiresReference"/> ⇒ número de operación (o de cheque) obligatorio.
-    /// </summary>
-    internal static string? ValidateMethodLineAgainstCatalog(
-        SupplierPaymentMethodLineRequest line,
-        PaymentMethod method
-    )
-    {
-        // 02D-B — regla medio ↔ destino compartida con el reembolso de SupplierCredit.
-        var destinationError = PaymentMethodDestinationPolicy.Validate(
-            method,
-            hasBankAccount: line.CompanyBankAccountId is not null,
-            hasCashRegister: line.CashRegisterId is not null
-        );
-        if (destinationError is not null || method.AffectsPhysicalCash)
-            return destinationError;
-
-        // 02A-FINAL — fecha real del extracto, explícita; nunca se completa con PaymentDate.
-        if (line.TransactionDate is null)
-            return "La fecha de la transacción bancaria es obligatoria.";
-
-        if (method.RequiresReference)
-        {
-            var isCheck = method.DetailType == PaymentMethodDetailType.Check;
-            var reference = isCheck ? line.CheckNumber : line.ReferenceNumber;
-            if (string.IsNullOrWhiteSpace(reference))
-                return isCheck
-                    ? $"El medio de pago {method.Name} exige el número de cheque."
-                    : $"El medio de pago {method.Name} exige el número de operación bancaria (referencia).";
-        }
-
-        return null;
     }
 }
 

@@ -546,4 +546,27 @@ public sealed class SupplierPaymentTests
         payment.ReversalCashNotDeliveredConfirmed.Should().BeTrue();
         payment.ReversalBankReason.Should().BeNull();
     }
+
+    /// <summary>
+    /// ZH-CASH-FUNDING-REQUEST-FOUNDATION-02E-B — originador (CreatedBy) vs ejecutor (ConfirmedBy):
+    /// en el pago directo son el mismo usuario; al ejecutar una solicitud de efectivo, el cajero
+    /// queda como ConfirmedBy sin reemplazar al originador.
+    /// </summary>
+    [Fact]
+    public void ConfirmedBy_es_el_originador_por_defecto_y_el_ejecutor_cuando_se_informa()
+    {
+        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 300m, TransactionDate: PaymentDate) };
+        var applications = new[] { new SupplierPaymentApplicationLineInput(Guid.NewGuid(), 300m) };
+        var allocations = new[] { new SupplierPaymentAllocationInput(0, 0, 300m) };
+
+        var direct = CreatePayment(300m, methods, applications, allocations);
+        direct.ConfirmedByUserId.Should().Be(CreatedBy);
+
+        var executor = Guid.NewGuid();
+        var executed = SupplierPayment.Create(
+            TenantId, CompanyId, BranchId, SupplierId, PaymentDate, 300m, "00000002", null,
+            methods, applications, allocations, CreatedBy, confirmedBy: executor);
+        executed.CreatedBy.Should().Be(CreatedBy, "el originador sigue siendo quien preparó el pago");
+        executed.ConfirmedByUserId.Should().Be(executor);
+    }
 }

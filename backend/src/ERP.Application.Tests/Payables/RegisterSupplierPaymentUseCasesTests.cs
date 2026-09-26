@@ -137,6 +137,17 @@ public sealed class RegisterSupplierPaymentUseCasesTests
 
     private static RegisterSupplierPaymentCommandHandler BuildHandler(Mocks m) =>
         new(
+            // 02E-B — el handler delega en el núcleo compartido (mismas dependencias, mismas reglas).
+            BuildRegistrar(m),
+            m.Uow.Object,
+            m.Tenant.Object,
+            m.Company.Object,
+            m.Branch.Object,
+            m.User.Object
+        );
+
+    private static ERP.Application.Modules.Payables.Services.SupplierPaymentRegistrar BuildRegistrar(Mocks m) =>
+        new(
             m.SupplierPayments.Object,
             m.Sequences.Object,
             m.AccountsPayables.Object,
@@ -146,12 +157,7 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             m.CashSessions.Object,
             m.SupplierCredits.Object,
             m.Preferences.Object,
-            m.Companies.Object,
-            m.Uow.Object,
-            m.Tenant.Object,
-            m.Company.Object,
-            m.Branch.Object,
-            m.User.Object
+            m.Companies.Object
         );
 
     private static PaymentMethod ActivePaymentMethod() =>
@@ -1495,5 +1501,88 @@ public sealed class RegisterSupplierPaymentUseCasesTests
                 )
             )
             .IsValid.Should().BeFalse();
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // ZH-CASH-FUNDING-REQUEST-FOUNDATION-02E-B — núcleo compartido con actores explícitos
+    // ══════════════════════════════════════════════════════════════════════
+
+    [Fact]
+    public async Task Nucleo_con_ejecutor_que_controla_la_caja_registra_originador_y_ejecutor_sin_tocar_la_transaccion()
+    {
+        var m = BuildMocks();
+        var method = ActivePaymentMethod();
+        var destination = ActiveDestination(CompanyId);
+        var payable = CreatePayableWithInstallment(120m);
+        var session = SetupMethodAndDestination(m, method, destination); // sesión controlada por UserId (cajero)
+        SetupPayable(m, payable);
+        var originator = Guid.NewGuid(); // quien preparó el pago NO controla la caja
+
+        var result = await BuildRegistrar(m).RegisterAsync(
+            SingleLineCommand(new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 120m), payable, 120m),
+            new ERP.Application.Modules.Payables.Services.SupplierPaymentRegistrationContext(
+                TenantId, CompanyId, BranchId, originator, UserId),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var payment = result.Value!.Payment;
+        payment.CreatedBy.Should().Be(originator, "el originador sigue siendo el autor del pago");
+        payment.ConfirmedByUserId.Should().Be(UserId, "el cajero que controla la caja lo ejecuta");
+        session.Movements.Single(x => x.ReferenceId == payment.Id).CreatedBy
+            .Should().Be(UserId, "el egreso de caja lo registra quien entrega el efectivo");
+        payable.UpdatedBy.Should().Be(UserId);
+        m.Uow.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+        m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+        m.Uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Nucleo_evalua_el_ownership_sobre_el_ejecutor_nunca_sobre_el_originador()
+    {
+        var m = BuildMocks();
+        var method = ActivePaymentMethod();
+        var destination = ActiveDestination(CompanyId);
+        var payable = CreatePayableWithInstallment(100m);
+        var session = SetupMethodAndDestination(m, method, destination); // controlada por UserId
+        SetupPayable(m, payable);
+
+        // El originador controla la caja, pero el ejecutor no: se rechaza (ownership del ejecutor).
+        var result = await BuildRegistrar(m).RegisterAsync(
+            SingleLineCommand(new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m), payable, 100m),
+            new ERP.Application.Modules.Payables.Services.SupplierPaymentRegistrationContext(
+                TenantId, CompanyId, BranchId, UserId, Guid.NewGuid()),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("La caja seleccionada está siendo operada por otro usuario.");
+        session.Movements.Should().ContainSingle("solo la apertura");
+        m.SupplierPayments.Verify(r => r.AddAsync(It.IsAny<SupplierPayment>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Pago_directo_deja_al_mismo_usuario_como_originador_y_ejecutor()
+    {
+        var m = BuildMocks();
+        var method = ActivePaymentMethod();
+        var destination = ActiveDestination(CompanyId);
+        var payable = CreatePayableWithInstallment(120m);
+        SetupMethodAndDestination(m, method, destination);
+        SetupPayable(m, payable);
+        SupplierPayment? added = null;
+        m.SupplierPayments
+            .Setup(r => r.AddAsync(It.IsAny<SupplierPayment>(), It.IsAny<CancellationToken>()))
+            .Callback<SupplierPayment, CancellationToken>((p, _) => added = p);
+
+        var result = await BuildHandler(m).Handle(
+            SingleLineCommand(new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 120m), payable, 120m),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        (added!.CreatedBy, added.ConfirmedByUserId).Should().Be((UserId, UserId));
+        m.Uow.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Once);
+        m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 }

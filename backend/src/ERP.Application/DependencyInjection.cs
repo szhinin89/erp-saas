@@ -35,6 +35,10 @@ public static class DependencyInjection
         // RetentionDocument, consumida por IssueRetentionHandler (emisión aislada) y por
         // ConfirmExpenseDocumentHandler/CreateConfirmedExpenseHandler (emisión transaccional).
         services.AddScoped<IRetentionIssuer, RetentionIssuer>();
+        services.AddScoped<
+            ERP.Application.Modules.Payables.Services.ISupplierPaymentRegistrar,
+            ERP.Application.Modules.Payables.Services.SupplierPaymentRegistrar
+        >();
         // RETENTIONS-EXPENSES-INTEGRATION-01D-3 — operación interna reutilizable de anulación de
         // RetentionDocument (+ reversa de AP si corresponde), consumida por CancelRetentionHandler
         // (anulación aislada) y por CancelExpenseDocumentHandler (anulación transaccional).

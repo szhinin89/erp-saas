@@ -427,6 +427,17 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
 
     private RegisterSupplierPaymentCommandHandler BuildHandler(ErpDbContext db, Guid? currentUserId = null) =>
         new(
+            BuildRegistrar(db),
+            new UnitOfWork(db),
+            new FixedCurrentTenant(_tenantId),
+            new FixedCurrentCompany(_companyId),
+            new FixedCurrentBranch(_branchId),
+            new FixedCurrentUser(currentUserId ?? _createdBy)
+        );
+
+    /// <summary>02E-B — núcleo compartido de registro (el mismo que usará la ejecución de solicitudes de efectivo).</summary>
+    private ERP.Application.Modules.Payables.Services.SupplierPaymentRegistrar BuildRegistrar(ErpDbContext db) =>
+        new(
             new SupplierPaymentRepository(db),
             new SupplierPaymentSequenceRepository(db),
             new AccountsPayableRepository(db),
@@ -442,12 +453,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                 new FixedCurrentCompany(_companyId),
                 NullLogger<OperationalPreferencesResolver>.Instance
             ),
-            new CompanyRepository(db),
-            new UnitOfWork(db),
-            new FixedCurrentTenant(_tenantId),
-            new FixedCurrentCompany(_companyId),
-            new FixedCurrentBranch(_branchId),
-            new FixedCurrentUser(currentUserId ?? _createdBy)
+            new CompanyRepository(db)
         );
 
     private ReverseSupplierPaymentCommandHandler BuildReverseHandler(ErpDbContext db) =>
