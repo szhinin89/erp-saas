@@ -42,5 +42,16 @@ public interface ICashFundingRequestRepository
         CancellationToken ct = default
     );
 
+    /// <summary>
+    /// ZH-CASH-FUNDING-REQUEST-WORKFLOW-02E-C — bloquea (FOR UPDATE, orden determinista por Id) y
+    /// devuelve con tracking las solicitudes Pending de una sesión. Para el cierre de caja, que las
+    /// cancela en su misma transacción DESPUÉS de bloquear la CashSession (orden único de locks).
+    /// </summary>
+    Task<IReadOnlyList<CashFundingRequest>> ListPendingBySessionForUpdateAsync(
+        Guid tenantId,
+        Guid cashSessionId,
+        CancellationToken ct = default
+    );
+
     Task AddAsync(CashFundingRequest request, CancellationToken ct = default);
 }

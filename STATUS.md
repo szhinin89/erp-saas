@@ -2,6 +2,16 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-26** · Kernel refactor: **2026-06-05**.
 
+## ZH-CASH-FUNDING-REQUEST-WORKFLOW-02E-C — Workflow de solicitudes de efectivo (2026-09-26)
+
+**Estado: COMPLETADO (sin commit).** Sin endpoints, permisos, menú ni UI.
+- **Create**: exactamente una línea de efectivo; la caja debe tener sesión abierta de OTRO usuario (si el usuario la controla → pago directo) en la sucursal activa (guard oficial). Transacción con CashSession FOR UPDATE; validación completa del pago vía `ISupplierPaymentRegistrar.ValidateAsync` ejecutada por quien controla la sesión (incluye chequeo temprano de efectivo, sin reserva). Sin efectos financieros. Idempotencia ClientRequestId + PayloadHash (mismo → misma solicitud; distinto → 409).
+- **Fulfill**: CashSession FOR UPDATE (abierta, misma empresa/sucursal/caja, cajero la controla, guard oficial) → request FOR UPDATE → Pending → versión + huella + coherencia del snapshot (fail-closed) → núcleo de pagos (originador = solicitante, ejecutor = cajero) → `Fulfill` → commit. Cualquier fallo: rollback total, la solicitud queda Pending. Reintento sobre Fulfilled → misma respuesta, sin re-ejecutar.
+- **Reject** (cajero, motivo) y **Cancel** (solo solicitante, motivo): mismo orden de locks, sin efectos financieros.
+- **Cierre de caja**: ahora transaccional con CashSession FOR UPDATE; cancela en la misma transacción las solicitudes Pending de la sesión (FOR UPDATE, orden por Id, motivo "Caja cerrada").
+- Núcleo: `ISupplierPaymentRegistrar` separa `ValidateAsync` (sin efectos) de `RegisterAsync` (valida + ejecuta); pago directo sin cambios.
+- Evidencia: PostgreSQL workflow 19/19 (A–J, snapshot manipulado/versión, empresa, sucursal, ownership, idempotencia, Close∥Fulfill, SupplierCredit residual, fallo de posting) · PostgreSQL focalizadas pagos/caja/saldos 115/115 · Domain 1219 · Application 2290 · Architecture 116 · API focalizadas 32/32 · `architecture:check` 244 = `HEAD`.
+
 ## ZH-CASH-FUNDING-REQUEST-FOUNDATION-02E-B — Base de solicitudes de efectivo (2026-09-26)
 
 **Estado: COMPLETADO (sin commit).** Sin endpoints, permisos, menú ni UI (fases siguientes).

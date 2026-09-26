@@ -89,16 +89,21 @@ public sealed class CashSessionBranchScopeTests
                 .ReturnsAsync(DefaultPreferences());
         }
 
-        public CloseCashSessionHandler BuildHandler() =>
-            new(
+        public CloseCashSessionHandler BuildHandler()
+        {
+            WireCloseLocks(Repo);
+            return new(
                 Repo.Object,
                 EpRepo.Object,
                 CrRepo.Object,
                 Tenant.Object,
                 Branch.Object,
                 User.Object,
-                Preferences.Object
+                Preferences.Object,
+                NoPendingFundingRequests(),
+                new Mock<IUnitOfWork>().Object
             );
+        }
     }
 
     [Fact]
@@ -530,5 +535,19 @@ public sealed class CashSessionBranchScopeTests
             r => r.GetPagedAsync(TenantId, BranchBId, null, 1, 25, It.IsAny<CancellationToken>()),
             Times.Once
         );
+    }
+
+    // 02E-C — el cierre bloquea la sesión FOR UPDATE (delegado a la configuración de GetByIdAsync) y
+    // cancela las solicitudes de efectivo pendientes (ninguna en estos escenarios).
+    private static void WireCloseLocks(Mock<ICashSessionRepository> repo) =>
+        repo.Setup(r => r.GetByIdForUpdateAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Returns((Guid t, Guid id, CancellationToken c) => repo.Object.GetByIdAsync(t, id, c));
+
+    private static ICashFundingRequestRepository NoPendingFundingRequests()
+    {
+        var mock = new Mock<ICashFundingRequestRepository>();
+        mock.Setup(r => r.ListPendingBySessionForUpdateAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<ERP.Domain.Modules.Caja.Entities.CashFundingRequest>());
+        return mock.Object;
     }
 }

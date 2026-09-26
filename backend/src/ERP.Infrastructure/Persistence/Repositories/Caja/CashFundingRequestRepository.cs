@@ -78,6 +78,27 @@ public sealed class CashFundingRequestRepository : ICashFundingRequestRepository
             .ThenBy(x => x.Id)
             .ToListAsync(ct);
 
+    public async Task<IReadOnlyList<CashFundingRequest>> ListPendingBySessionForUpdateAsync(
+        Guid tenantId,
+        Guid cashSessionId,
+        CancellationToken ct = default
+    )
+    {
+        // Lock en orden determinista (Id) y luego recarga con tracking: mismo contrato que
+        // GetByIdForUpdateAsync (estado vigente bajo el lock).
+        await _db.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT 1 FROM cash_funding_requests WHERE tenant_id = {tenantId} AND cash_session_id = {cashSessionId} AND status = {(int)CashFundingRequestStatus.Pending} ORDER BY id FOR UPDATE",
+            ct
+        );
+        var pending = await Scoped(tenantId)
+            .Where(x => x.CashSessionId == cashSessionId && x.Status == CashFundingRequestStatus.Pending)
+            .OrderBy(x => x.Id)
+            .ToListAsync(ct);
+        foreach (var request in pending)
+            await _db.Entry(request).ReloadAsync(ct);
+        return pending.Where(r => r.IsPending).ToList();
+    }
+
     public Task AddAsync(CashFundingRequest request, CancellationToken ct = default) =>
         _db.CashFundingRequests.AddAsync(request, ct).AsTask();
 }

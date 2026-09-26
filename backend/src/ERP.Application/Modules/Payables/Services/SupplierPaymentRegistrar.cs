@@ -69,6 +69,19 @@ public interface ISupplierPaymentRegistrar
     /// </summary>
     Task<string?> PrevalidateAsync(RegisterSupplierPaymentCommand intent, CancellationToken ct);
 
+    /// <summary>
+    /// ZH-CASH-FUNDING-REQUEST-WORKFLOW-02E-C — TODAS las validaciones del pago (las mismas de
+    /// <see cref="RegisterAsync"/>: intención, comprobante, medios, destinos, caja FOR UPDATE +
+    /// ownership del ejecutor + sucursal + saldo, CxP) sin ningún efecto: ni secuencia, ni pago, ni
+    /// caja, ni asiento. Debe correr dentro de la transacción del llamador (toma el lock de caja).
+    /// Usado para validar una solicitud de efectivo "como si el cajero la ejecutara ahora".
+    /// </summary>
+    Task<Result<bool>> ValidateAsync(
+        RegisterSupplierPaymentCommand intent,
+        SupplierPaymentRegistrationContext context,
+        CancellationToken ct
+    );
+
     Task<Result<SupplierPaymentRegistration>> RegisterAsync(
         RegisterSupplierPaymentCommand intent,
         SupplierPaymentRegistrationContext context,
@@ -114,7 +127,20 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
         _companies = companies;
     }
 
-    public async Task<Result<SupplierPaymentRegistration>> RegisterAsync(
+    public async Task<Result<bool>> ValidateAsync(
+        RegisterSupplierPaymentCommand intent,
+        SupplierPaymentRegistrationContext context,
+        CancellationToken ct
+    )
+    {
+        var prepared = await PrepareAsync(intent, context, ct);
+        return prepared.IsSuccess
+            ? Result<bool>.Success(true)
+            : Result<bool>.Failure(prepared.Error!, prepared.Code);
+    }
+
+    /// <summary>Validación completa + locks, sin efectos: devuelve lo ya cargado para ejecutar.</summary>
+    private async Task<Result<PreparedPayment>> PrepareAsync(
         RegisterSupplierPaymentCommand cmd,
         SupplierPaymentRegistrationContext context,
         CancellationToken ct
@@ -123,14 +149,13 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
         var tenantId = context.TenantId;
         var companyId = context.CompanyId;
         var branchId = context.BranchId;
-        var originatorId = context.OriginatorUserId;
         var executorId = context.ExecutorUserId;
 
         var receiptNumber = string.IsNullOrWhiteSpace(cmd.ReceiptNumber) ? null : cmd.ReceiptNumber.Trim();
 
         var (intentError, allowWithoutPayable) = await CheckIntentAsync(cmd, ct);
         if (intentError is not null)
-            return Result<SupplierPaymentRegistration>.ValidationFailure(intentError);
+            return Result<PreparedPayment>.ValidationFailure(intentError);
 
         // ── receipt_number único por (Tenant, Company, Supplier) si se informa ──
         if (receiptNumber is not null)
@@ -143,7 +168,7 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
                 ct
             );
             if (receiptExists)
-                return Result<SupplierPaymentRegistration>.Conflict(
+                return Result<PreparedPayment>.Conflict(
                     "Ya existe un pago con ese número de comprobante para este proveedor."
                 );
         }
@@ -154,7 +179,7 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
         {
             var method = await _paymentMethods.GetByIdAsync(tenantId, methodId, ct);
             if (method is null || !method.IsActive)
-                return Result<SupplierPaymentRegistration>.ValidationFailure(
+                return Result<PreparedPayment>.ValidationFailure(
                     $"El medio de pago {methodId} no existe o no está activo."
                 );
             methodsById[methodId] = method;
@@ -165,7 +190,7 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
         {
             var lineError = ValidateMethodLineAgainstCatalog(line, methodsById[line.PaymentMethodId]);
             if (lineError is not null)
-                return Result<SupplierPaymentRegistration>.ValidationFailure(lineError);
+                return Result<PreparedPayment>.ValidationFailure(lineError);
         }
 
         // ── Cuenta bancaria/caja debe existir, pertenecer a la empresa, estar activa y tener cuenta contable ──
@@ -176,11 +201,11 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
         {
             var bankAccount = await _bankAccounts.GetByIdAsync(tenantId, bankAccountId, ct);
             if (bankAccount is null || bankAccount.CompanyId != companyId)
-                return Result<SupplierPaymentRegistration>.NotFound(
+                return Result<PreparedPayment>.NotFound(
                     $"La cuenta bancaria {bankAccountId} no existe o no pertenece a esta empresa."
                 );
             if (!bankAccount.IsActive)
-                return Result<SupplierPaymentRegistration>.ValidationFailure(
+                return Result<PreparedPayment>.ValidationFailure(
                     $"La cuenta bancaria {bankAccountId} no está activa."
                 );
         }
@@ -191,15 +216,15 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
         {
             var cashRegister = await _cashRegisters.GetByIdAsync(tenantId, cashRegisterId, ct);
             if (cashRegister is null || cashRegister.CompanyId != companyId)
-                return Result<SupplierPaymentRegistration>.NotFound(
+                return Result<PreparedPayment>.NotFound(
                     $"La caja {cashRegisterId} no existe o no pertenece a esta empresa."
                 );
             if (!cashRegister.IsActive)
-                return Result<SupplierPaymentRegistration>.ValidationFailure(
+                return Result<PreparedPayment>.ValidationFailure(
                     $"La caja {cashRegisterId} no está activa."
                 );
             if (cashRegister.AccountingAccountId is null)
-                return Result<SupplierPaymentRegistration>.ValidationFailure(
+                return Result<PreparedPayment>.ValidationFailure(
                     $"La caja {cashRegisterId} no tiene una cuenta contable configurada."
                 );
         }
@@ -218,7 +243,7 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
         {
             var session = await _cashSessions.GetOpenByCashRegisterForUpdateAsync(tenantId, cashRegisterId, ct);
             if (session is null || session.CompanyId != companyId)
-                return Result<SupplierPaymentRegistration>.ValidationFailure(
+                return Result<PreparedPayment>.ValidationFailure(
                     $"No existe una sesión de caja abierta para la caja {cashRegisterId}. Abra la caja antes de pagar en efectivo."
                 );
             // 02B — autoridad sobre la sesión: solo quien la opera (CashSession.UserId) puede sacar
@@ -226,11 +251,11 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
             // autoridad es del EJECUTOR (en el pago directo, el usuario actual; al atender una
             // solicitud de efectivo, el cajero que controla la sesión) — nunca se exceptúa.
             if (!session.IsControlledBy(executorId))
-                return Result<SupplierPaymentRegistration>.ValidationFailure(
+                return Result<PreparedPayment>.ValidationFailure(
                     CashSessionOwnership.RejectionMessage(session)
                 );
             if (session.BranchId != branchId)
-                return Result<SupplierPaymentRegistration>.ValidationFailure(
+                return Result<PreparedPayment>.ValidationFailure(
                     "La caja seleccionada no pertenece a la sucursal activa."
                 );
             openSessionsByRegister[cashRegisterId] = session;
@@ -246,7 +271,7 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
             var requested = cashGroup.Sum(l => l.Amount);
             var available = openSessionsByRegister[cashGroup.Key].CurrentBalance;
             if (requested > available)
-                return Result<SupplierPaymentRegistration>.ValidationFailure(
+                return Result<PreparedPayment>.ValidationFailure(
                     $"La caja seleccionada dispone de ${FormatMoney(available)} y se intenta registrar un pago de ${FormatMoney(requested)}."
                 );
         }
@@ -260,15 +285,15 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
             {
                 var payable = await _accountsPayables.GetByInstallmentIdAsync(tenantId, installmentId, ct);
                 if (payable is null)
-                    return Result<SupplierPaymentRegistration>.NotFound(
+                    return Result<PreparedPayment>.NotFound(
                         $"La cuota {installmentId} no existe."
                     );
                 if (payable.SupplierId != cmd.SupplierId)
-                    return Result<SupplierPaymentRegistration>.ValidationFailure(
+                    return Result<PreparedPayment>.ValidationFailure(
                         "No se pueden mezclar cuotas de distintos proveedores en un mismo pago."
                     );
                 if (payable.CompanyId != companyId)
-                    return Result<SupplierPaymentRegistration>.ValidationFailure(
+                    return Result<PreparedPayment>.ValidationFailure(
                         "La cuota indicada no pertenece a esta empresa."
                     );
 
@@ -279,18 +304,47 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
                 .Installments.First(i => i.Id == installmentId);
 
             if (installment.Status is AccountsPayableStatus.Cancelled or AccountsPayableStatus.Paid)
-                return Result<SupplierPaymentRegistration>.ValidationFailure(
+                return Result<PreparedPayment>.ValidationFailure(
                     $"La cuota {installmentId} está {installment.Status} y no admite pagos."
                 );
             if (installment.OutstandingAmount <= 0)
-                return Result<SupplierPaymentRegistration>.ValidationFailure(
+                return Result<PreparedPayment>.ValidationFailure(
                     $"La cuota {installmentId} no tiene saldo pendiente."
                 );
             if (appLine.AmountApplied > installment.OutstandingAmount)
-                return Result<SupplierPaymentRegistration>.ValidationFailure(
+                return Result<PreparedPayment>.ValidationFailure(
                     $"El monto aplicado a la cuota {installmentId} excede su saldo pendiente."
                 );
         }
+
+        return Result<PreparedPayment>.Success(
+            new PreparedPayment(receiptNumber, allowWithoutPayable, openSessionsByRegister, payablesByInstallment)
+        );
+    }
+
+    private sealed record PreparedPayment(
+        string? ReceiptNumber,
+        bool AllowWithoutPayable,
+        Dictionary<Guid, CashSession> OpenSessionsByRegister,
+        Dictionary<Guid, AccountsPayable> PayablesByInstallment
+    );
+
+    public async Task<Result<SupplierPaymentRegistration>> RegisterAsync(
+        RegisterSupplierPaymentCommand cmd,
+        SupplierPaymentRegistrationContext context,
+        CancellationToken ct
+    )
+    {
+        var prepared = await PrepareAsync(cmd, context, ct);
+        if (!prepared.IsSuccess)
+            return Result<SupplierPaymentRegistration>.Failure(prepared.Error!, prepared.Code);
+
+        var tenantId = context.TenantId;
+        var companyId = context.CompanyId;
+        var branchId = context.BranchId;
+        var originatorId = context.OriginatorUserId;
+        var executorId = context.ExecutorUserId;
+        var (receiptNumber, allowWithoutPayable, openSessionsByRegister, payablesByInstallment) = prepared.Value!;
 
         // ── system_number ──
         var systemNumber = await _sequences.CaptureNextAsync(tenantId, companyId, ct);
