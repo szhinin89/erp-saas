@@ -7,6 +7,7 @@
  */
 
 import type {
+  BusinessPartnerDetailDto,
   BusinessPartnerSummaryDto,
   CustomerPickerRow,
   SupplierPickerRow,
@@ -36,5 +37,21 @@ export function mapBusinessPartnerToSupplierPickerRow(
     isActive: bp.isActive,
     hasSupplierRole: true,
     supplierConfig: null, // disponible vía GET /roles si se necesita
+  };
+}
+
+/** Mapea el detalle de un BP (con roles) a una fila de proveedor — usado para hidratar la
+ * selección inicial por id en `SupplierSearchSelect` (antes `buildSupplierPickerRow` en compras). */
+export function mapBusinessPartnerDetailToSupplierPickerRow(
+  bp: BusinessPartnerDetailDto,
+): SupplierPickerRow {
+  const role = bp.roles?.find((r) => r.roleType === "Supplier" && r.isActive);
+  return {
+    id: bp.id,
+    identificationNumber: bp.identificationNumber,
+    fullName: bp.tradeName?.trim() || bp.legalName,
+    isActive: bp.isActive,
+    hasSupplierRole: !!role,
+    supplierConfig: role?.supplierConfig ?? null,
   };
 }

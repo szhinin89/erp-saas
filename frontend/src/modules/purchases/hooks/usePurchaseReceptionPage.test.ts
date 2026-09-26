@@ -541,24 +541,39 @@ describe("usePurchaseReceptionPage — filtro por proveedor y orden por emisión
 
   it("filtra por uno o varios proveedores y ordena sobre el resultado filtrado", async () => {
     const { result } = await importRows(rows);
-    act(() => result.current.addSupplierFilter("111"));
+    act(() => result.current.setSupplierFilter(["111"]));
     expect(ids(result.current.items)).toEqual(["a", "c"]);
     expect(result.current.total).toBe(2);
 
-    act(() => result.current.addSupplierFilter("222"));
+    act(() => result.current.setSupplierFilter(["111", "222"]));
     expect(ids(result.current.items)).toEqual(["a", "c", "b"]);
 
     act(() => result.current.setDateSortOrder("asc"));
     expect(ids(result.current.items)).toEqual(["b", "c", "a"]);
 
-    act(() => result.current.removeSupplierFilter("111"));
+    // Quitar chip = el buscador entrega la selección sin ese proveedor.
+    act(() => result.current.setSupplierFilter(["222"]));
     expect(ids(result.current.items)).toEqual(["b"]);
+  });
+
+  it("expone la selección como opciones (chips) en orden de selección, incluido el no registrado, sin duplicados", async () => {
+    const { result } = await importRows(rows);
+    act(() => result.current.setSupplierFilter(["333", "222", "333", ""]));
+    expect(result.current.selectedSupplierRucs).toEqual(["333", "222"]);
+    expect(result.current.selectedSupplierOptions).toEqual([
+      { ruc: "333", name: "Gamma" },
+      { ruc: "222", name: "Alfa Cía." },
+    ]);
+    expect(ids(result.current.items)).toEqual(["d", "b"]);
+
+    act(() => result.current.setSupplierFilter([]));
+    expect(result.current.total).toBe(4);
   });
 
   it("no altera los KPI superiores y limpiar filtros restaura todo", async () => {
     const { result } = await importRows(rows);
     const summaryBefore = result.current.summary;
-    act(() => result.current.addSupplierFilter("333"));
+    act(() => result.current.setSupplierFilter(["333"]));
     act(() => result.current.setDateSortOrder("asc"));
     expect(result.current.summary).toEqual(summaryBefore);
 
@@ -580,7 +595,7 @@ describe("usePurchaseReceptionPage — filtro por proveedor y orden por emisión
     act(() => result.current.setPage(2));
     expect(result.current.items).toHaveLength(5);
 
-    act(() => result.current.addSupplierFilter("222"));
+    act(() => result.current.setSupplierFilter(["222"]));
     expect(result.current.page).toBe(1);
     expect(result.current.total).toBe(3);
     expect(ids(result.current.items)).toEqual(["x24", "x23", "x22"]);
@@ -588,7 +603,7 @@ describe("usePurchaseReceptionPage — filtro por proveedor y orden por emisión
 
   it("importar un nuevo TXT limpia la selección de proveedores", async () => {
     const { result } = await importRows(rows);
-    act(() => result.current.addSupplierFilter("111"));
+    act(() => result.current.setSupplierFilter(["111"]));
     await act(async () => {
       await result.current.handleFileSelected(buildFile());
     });

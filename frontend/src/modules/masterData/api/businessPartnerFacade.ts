@@ -21,10 +21,7 @@ import {
   bpSalesSettingsService,
   businessPartnerService,
 } from "./businessPartnerService";
-import {
-  mapBusinessPartnerToCustomerPickerRow,
-  mapBusinessPartnerToSupplierPickerRow,
-} from "../adapters/businessPartnerCustomerAdapter";
+import { mapBusinessPartnerToCustomerPickerRow } from "../adapters/businessPartnerCustomerAdapter";
 import type {
   AddRetentionDefaultBody,
   AssignRoleBody,
@@ -64,8 +61,9 @@ export const businessPartnerFacade = {
 
   searchBusinessPartners: (
     params?: SearchBusinessPartnersParams,
+    signal?: AbortSignal,
   ): Promise<BusinessPartnerSummaryDto[]> =>
-    businessPartnerService.search(params),
+    businessPartnerService.search(params, signal),
 
   searchBusinessPartnersPaged: (
     params?: SearchBusinessPartnersParams,
@@ -117,20 +115,8 @@ export const businessPartnerFacade = {
   searchCustomers: (q?: string): Promise<CustomerPickerRow[]> =>
     businessPartnerFacade.searchCustomersForPicker(q),
 
-  searchSuppliersForPicker: async (
-    q?: string,
-  ): Promise<SupplierPickerRow[]> => {
-    const bps = await businessPartnerService.search({
-      q,
-      isActive: true,
-      roles: [RoleTypeEnum.Supplier],
-      take: 100,
-    });
-    return bps.map(mapBusinessPartnerToSupplierPickerRow);
-  },
-
-  searchSuppliers: (q?: string): Promise<SupplierPickerRow[]> =>
-    businessPartnerFacade.searchSuppliersForPicker(q),
+  // Búsqueda de proveedores: ÚNICA vía `SupplierSearchSelect` → `utils/supplierSearch.ts`
+  // (ZH-SUPPLIER-SEARCH-SINGLE-SOURCE-02). No agregar helpers paralelos aquí.
 
   // ── Roles ──────────────────────────────────────────────────────────────────
 

@@ -9,8 +9,8 @@ import {
   type CreateItemFormValues,
 } from "../../schemas/createItemSchema";
 
-vi.mock("../../../purchases/components/SupplierPicker", () => ({
-  SupplierPicker: () => <input aria-label="Proveedor" />,
+vi.mock("../../../masterData/components/SupplierSearchSelect", () => ({
+  SupplierSearchSelect: () => <input aria-label="Proveedor" />,
 }));
 
 afterEach(() => cleanup());

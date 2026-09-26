@@ -20,7 +20,7 @@ import {
   type PurchasesReportRowDto,
   type PurchasesReportTotalsDto,
 } from "../../purchases/api/purchaseService";
-import { SupplierPicker } from "../../purchases/components/SupplierPicker";
+import { SupplierSearchSelect } from "../../masterData/components/SupplierSearchSelect";
 import { ZhDateInput } from "../../../components/zh/inputs";
 import type { SupplierPickerRow } from "../../masterData/types/businessPartner.types";
 import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
@@ -165,7 +165,7 @@ export function PurchasesReportPage() {
           />
         </ReportFilterField>
         <ReportFilterField label="Proveedor">
-          <SupplierPicker
+          <SupplierSearchSelect
             value={supplier?.id ?? null}
             onChange={setSupplier}
           />

@@ -7,6 +7,8 @@ type ApiRequestConfig = {
   params?: Record<string, string | number | boolean | undefined>;
   headers?: Record<string, string>;
   onUploadProgress?: (event: { loaded: number; total?: number }) => void;
+  /** Cancela la request (p.ej. búsqueda con debounce que queda obsoleta al seguir escribiendo). */
+  signal?: AbortSignal;
 };
 
 /** Extrae `data` / `Data` del envelope estándar de la API. */

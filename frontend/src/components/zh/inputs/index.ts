@@ -11,3 +11,10 @@ export { ZhSelect } from "./ZhSelect";
 export { ZhTextarea } from "./ZhTextarea";
 
 export { ZhWarehouseSelector } from "./ZhWarehouseSelector";
+
+export { ZhSearchSelect } from "./ZhSearchSelect";
+export type {
+  ZhSearchSelectProps,
+  ZhSearchSelectSingleProps,
+  ZhSearchSelectMultipleProps,
+} from "./ZhSearchSelect";

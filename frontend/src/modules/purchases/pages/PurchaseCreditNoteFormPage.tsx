@@ -35,7 +35,7 @@ import { purchaseReturnPreview } from "../utils/purchaseReturnPreview";
 import { PurchaseReturnableLinesEditor } from "../components/PurchaseReturnableLinesEditor";
 import { PurchaseCreditNoteTaxSummaryLinesEditor } from "../components/PurchaseCreditNoteTaxSummaryLinesEditor";
 import { PurchaseInvoiceLinesDetailTable } from "../components/PurchaseInvoiceLinesDetailTable";
-import { SupplierPicker } from "../components/SupplierPicker";
+import { SupplierSearchSelect } from "../../masterData/components/SupplierSearchSelect";
 import { PurchaseInvoicePicker } from "../components/PurchaseInvoicePicker";
 import {
   purchaseCreditNoteDraftSchema,
@@ -60,7 +60,7 @@ function computeTaxPreview(taxableBase: number, vatRate: number, iceRate: number
  * orígenes: (1) Recepción XML/SRI → "Procesar NC" abre esta misma ruta con `?invoiceId=` (y
  * `?receptionDocumentId=` para precargar datos fiscales del XML); (2) menú "Notas de Crédito de
  * Compra → Nueva" abre la MISMA ruta sin parámetros — modo manual: el usuario elige proveedor y
- * factura `Confirmed` primero (`SupplierPicker` + `PurchaseInvoicePicker`, reutilizados/extendidos,
+ * factura `Confirmed` primero (`SupplierSearchSelect` + `PurchaseInvoicePicker`, reutilizados/extendidos,
  * ningún picker paralelo) y a partir de ahí el resto del formulario, la validación de cantidades y
  * el guardado son EXACTAMENTE el mismo código que el modo XML (mismo estado, mismo efecto de carga,
  * mismo `onSubmitFiscal`) — nunca un formulario ni un motor duplicado. El modo se decide una sola
@@ -307,7 +307,7 @@ export function PurchaseCreditNoteFormPage() {
             label={t("purchases.creditNote.affectedInvoice.supplier", "Proveedor")}
             required
           >
-            <SupplierPicker
+            <SupplierSearchSelect
               value={manualSupplierId}
               onChange={(supplier) => {
                 setManualSupplierId(supplier?.id ?? null);

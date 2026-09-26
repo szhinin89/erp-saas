@@ -1,16 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Badge } from "../../../components/PageShell";
 import { ZHField, ZHGrid } from "../../../components/zh/ZHForm";
 import { ZhDateInput } from "../../../components/zh/inputs/ZhDateInput";
 import { ZhDateTimeInput } from "../../../components/zh/inputs/ZhDateTimeInput";
 import { ZhSelect } from "../../../components/zh/inputs/ZhSelect";
 import { ZhTextarea } from "../../../components/zh/inputs/ZhTextarea";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
-import { ZHPickerResultItem } from "../../../components/zh/ZHPickerResultItem";
-import { ZHPickerSelectedValue } from "../../../components/zh/ZHPickerSelectedValue";
 import { businessPartnerFacade } from "../../masterData/api/businessPartnerFacade";
 import type { PaymentTermDto } from "../../masterData/api/paymentTermService";
 import type { SupplierPickerRow } from "../../masterData/types/businessPartner.types";
+import { SupplierSearchSelect } from "../../masterData/components/SupplierSearchSelect";
 import type { SriDocTypeLookup, SriTaxSupportLookup } from "../../items/facades/sriLookupFacade";
 
 export interface ExpenseDocumentHeaderState {
@@ -68,7 +65,10 @@ export function ExpenseDocumentHeader({
 
       <ZHGrid cols={3}>
         <ZHField label="Proveedor" required fieldError={errors?.supplierId}>
-          <ExpenseSupplierSelector
+          {/* ZH-SUPPLIER-SEARCH-SINGLE-SOURCE-02 — buscador único de proveedores; en Gastos solo
+              se ofrecen proveedores activos (mismo criterio que el selector propio anterior). */}
+          <SupplierSearchSelect
+            activeOnly
             value={supplier}
             disabled={disabled}
             onChange={(next) => {
@@ -221,135 +221,5 @@ export function ExpenseDocumentHeader({
         />
       </ZHField>
     </section>
-  );
-}
-
-function ExpenseSupplierSelector({
-  value,
-  disabled,
-  onChange,
-}: {
-  value: SupplierPickerRow | null;
-  disabled?: boolean;
-  onChange: (supplier: SupplierPickerRow | null) => void;
-}) {
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SupplierPickerRow[]>([]);
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [focusIdx, setFocusIdx] = useState(-1);
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const search = useCallback(async (q: string) => {
-    if (q.trim().length < 2) {
-      setResults([]);
-      return;
-    }
-    setLoading(true);
-    try {
-      setResults(await businessPartnerFacade.searchSuppliersForPicker(q.trim()));
-      setFocusIdx(-1);
-    } catch {
-      setResults([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!open || query.length < 2) return;
-    debounceRef.current = setTimeout(() => search(query), 300);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [open, query, search]);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(event.target as Node))
-        setOpen(false);
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  if (value) {
-    return (
-      <ZHPickerSelectedValue
-        title={value.fullName}
-        subtitle={value.identificationNumber}
-        meta={
-          !value.isActive && (
-            <Badge variant="warning" label="Proveedor inactivo" />
-          )
-        }
-        clearLabel="Cambiar proveedor"
-        onClear={disabled ? undefined : () => onChange(null)}
-      />
-    );
-  }
-
-  const handleSelect = (row: SupplierPickerRow) => {
-    onChange(row);
-    setOpen(false);
-    setQuery("");
-    setResults([]);
-  };
-
-  return (
-    <div ref={wrapRef} className="zh-picker">
-      <div className="zh-picker__input-wrap">
-        <ZhTextInput
-          value={query}
-          disabled={disabled}
-          placeholder="Buscar por RUC, razon social o nombre..."
-          onChange={(event) => {
-            setQuery(event.target.value);
-            setOpen(true);
-          }}
-          onFocus={() => {
-            if (query.length >= 2) setOpen(true);
-          }}
-          onKeyDown={(event) => {
-            if (!open || results.length === 0) return;
-            if (event.key === "ArrowDown") {
-              event.preventDefault();
-              setFocusIdx((idx) => Math.min(idx + 1, results.length - 1));
-            }
-            if (event.key === "ArrowUp") {
-              event.preventDefault();
-              setFocusIdx((idx) => Math.max(idx - 1, 0));
-            }
-            if (event.key === "Enter" && focusIdx >= 0) {
-              event.preventDefault();
-              handleSelect(results[focusIdx]!);
-            }
-            if (event.key === "Escape") setOpen(false);
-          }}
-        />
-        {loading && <span className="zh-picker__loading">Buscando...</span>}
-      </div>
-
-      {open && query.length >= 2 && (
-        <div className="zh-picker__dropdown">
-          {results.length === 0 && !loading && (
-            <div className="zh-picker__empty">Sin proveedores activos.</div>
-          )}
-          {results.map((row, index) => (
-            <ZHPickerResultItem
-              key={row.id}
-              title={row.fullName}
-              subtitle={row.identificationNumber}
-              meta={!row.isActive ? "Proveedor inactivo" : null}
-              selected={index === focusIdx}
-              onClick={() => handleSelect(row)}
-              onMouseEnter={() => setFocusIdx(index)}
-            />
-          ))}
-        </div>
-      )}
-    </div>
   );
 }

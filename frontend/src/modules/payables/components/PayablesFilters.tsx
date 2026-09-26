@@ -2,7 +2,7 @@ import { ZHField } from "../../../components/zh/ZHForm";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { ZhSelect } from "../../../components/zh/inputs/ZhSelect";
 import { ZhDateInput } from "../../../components/zh/inputs/ZhDateInput";
-import { SupplierPicker } from "../../purchases/components/SupplierPicker";
+import { SupplierSearchSelect } from "../../masterData/components/SupplierSearchSelect";
 import type { PayableOriginType, PayableStatus } from "../api/payablesService";
 
 export interface PayablesFiltersValue {
@@ -32,7 +32,7 @@ export function PayablesFilters({ value, onChange }: Props) {
       </ZHField>
 
       <ZHField label="Proveedor">
-        <SupplierPicker
+        <SupplierSearchSelect
           value={value.supplierId}
           onChange={(supplier) => onChange({ supplierId: supplier?.id ?? null })}
         />

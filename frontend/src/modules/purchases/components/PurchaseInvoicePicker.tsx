@@ -18,7 +18,7 @@ type Props = {
  * `Confirmed` de un proveedor ya elegido (única fuente válida para afectar con
  * una NC — `CreateDraftPurchaseCreditNoteHandler` rechaza cualquier otro
  * estado). Reutiliza `purchaseService.list` (mismo endpoint que `PurchasesPage`,
- * ahora con `supplierId` opcional) y el patrón visual de `SupplierPicker.tsx`
+ * ahora con `supplierId` opcional) y el patrón visual de los pickers del DS
  * (clases `zh-picker*` compartidas) — sin crear un endpoint, cliente HTTP ni
  * componente de picker paralelo.
  */

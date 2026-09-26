@@ -1,6 +1,5 @@
 import type {
   BusinessPartnerDetailDto,
-  SupplierPickerRow,
   SupplierRoleConfigDto,
 } from "../../masterData/types/businessPartner.types";
 
@@ -41,21 +40,6 @@ export function buildSupplierProfile(
       (config as SupplierConfigWithAccounting | null)
         ?.isRequiredToKeepAccounting ?? false,
     purchaseDefaultPaymentTermId,
-  };
-}
-
-export function buildSupplierPickerRow(
-  bp: BusinessPartnerDetailDto,
-): SupplierPickerRow {
-  const role = getActiveSupplierRole(bp);
-
-  return {
-    id: bp.id,
-    identificationNumber: bp.identificationNumber,
-    fullName: bp.tradeName || bp.legalName,
-    isActive: bp.isActive,
-    hasSupplierRole: !!role,
-    supplierConfig: role?.supplierConfig ?? null,
   };
 }
 

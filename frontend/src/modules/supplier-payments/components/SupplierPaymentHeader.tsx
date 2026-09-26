@@ -1,7 +1,7 @@
 import { Controller, useFormContext } from "react-hook-form";
 import { ZHField } from "../../../components/zh/ZHForm";
 import { ZhDateInput, ZhTextInput } from "../../../components/zh/inputs";
-import { SupplierPicker } from "../../purchases/components/SupplierPicker";
+import { SupplierSearchSelect } from "../../masterData/components/SupplierSearchSelect";
 import type { RegisterSupplierPaymentFormValues } from "../../../schemas/supplier-payments/registerSupplierPaymentSchema";
 
 interface Props {
@@ -9,7 +9,7 @@ interface Props {
 }
 
 /**
- * Cabecera del pago: proveedor (reutiliza `SupplierPicker`, ya sancionado como picker
+ * Cabecera del pago: proveedor (reutiliza `SupplierSearchSelect`, ya sancionado como picker
  * especializado — CLAUDE.md frontend), fecha y número de recibo manual (opcional; si se deja
  * vacío, el backend asigna `system_number` y ese es el número que se muestra al volver).
  */
@@ -27,7 +27,7 @@ export function SupplierPaymentHeader({ disabled }: Props) {
           name="supplierId"
           control={control}
           render={({ field }) => (
-            <SupplierPicker
+            <SupplierSearchSelect
               value={field.value || null}
               onChange={(supplier) => field.onChange(supplier?.id ?? "")}
               disabled={disabled}

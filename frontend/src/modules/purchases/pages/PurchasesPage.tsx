@@ -16,7 +16,7 @@ import { ZHFieldLabel } from "../../../components/zh/ZHFieldLabel";
 import { ZHDataValue } from "../../../components/zh/ZHDataValue";
 import { ZHInfoRow } from "../../../components/zh/ZHInfoRow";
 import { ZHInputGroup } from "../../../components/zh/ZHInputGroup";
-import { SupplierPicker } from "../components/SupplierPicker";
+import { SupplierSearchSelect } from "../../masterData/components/SupplierSearchSelect";
 import { DistributeCostModal } from "../components/DistributeCostModal";
 import { ProductPicker } from "../components/ProductPicker";
 import type { ProductProfile } from "../components/ProductPicker";
@@ -400,7 +400,7 @@ export function PurchasesPage() {
                   label={t("purchases.supplier.searchLabel", "RUC o nombre")}
                   required
                 >
-                  <SupplierPicker
+                  <SupplierSearchSelect
                     value={ctx.formWatch.supplierId || null}
                     onChange={ctx.handleSupplierChange}
                     disabled={ctx.fieldDisabled}

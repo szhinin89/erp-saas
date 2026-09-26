@@ -57,14 +57,20 @@ export const businessPartnerService = {
   /** GET /api/master/business-partners — búsqueda paginada */
   searchPaged: (
     params: SearchBusinessPartnersParams = {},
-  ): Promise<BusinessPartnerPagedResult> =>
-    apiGet<BusinessPartnerPagedResult>(`${BASE}${buildSearchQuery(params)}`),
+    signal?: AbortSignal,
+  ): Promise<BusinessPartnerPagedResult> => {
+    const url = `${BASE}${buildSearchQuery(params)}`;
+    return signal
+      ? apiGet<BusinessPartnerPagedResult>(url, { signal })
+      : apiGet<BusinessPartnerPagedResult>(url);
+  },
 
   /** Búsqueda simple — devuelve la lista de items sin metadata de paginación */
   search: async (
     params: SearchBusinessPartnersParams = {},
+    signal?: AbortSignal,
   ): Promise<BusinessPartnerSummaryDto[]> => {
-    const result = await businessPartnerService.searchPaged(params);
+    const result = await businessPartnerService.searchPaged(params, signal);
     return result.items;
   },
 

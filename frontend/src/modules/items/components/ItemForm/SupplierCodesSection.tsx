@@ -5,7 +5,7 @@ import {
   ZHFormSection,
   ZHGrid,
 } from "../../../../components/zh/ZHForm";
-import { SupplierPicker } from "../../../purchases/components/SupplierPicker";
+import { SupplierSearchSelect } from "../../../masterData/components/SupplierSearchSelect";
 import { useMarkPrimaryField } from "../../hooks/useMarkPrimaryField";
 import type { CreateItemFormValues } from "../../schemas/createItemSchema";
 
@@ -73,7 +73,7 @@ export function SupplierCodesSection({ t, disabled }: Props) {
               control={control}
               name={`supplierCodes.${index}.supplierId`}
               render={({ field: rhfField }) => (
-                <SupplierPicker
+                <SupplierSearchSelect
                   value={rhfField.value || null}
                   onChange={(supplier) => rhfField.onChange(supplier?.id ?? "")}
                   disabled={disabled}

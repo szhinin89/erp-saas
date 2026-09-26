@@ -357,10 +357,9 @@ export function usePurchaseReceptionPage() {
   // Primero filtrar, luego ordenar. issueDate es fecha de negocio "YYYY-MM-DD" (ADR-034), la
   // comparación de strings es cronológica; sort estable conserva el orden del TXT en empates.
   const visibleItems = useMemo(() => {
+    const selectedRucs = new Set(selectedSupplierRucs);
     const filtered =
-      selectedSupplierRucs.length === 0
-        ? items
-        : items.filter((i) => selectedSupplierRucs.includes(i.supplierRuc));
+      selectedRucs.size === 0 ? items : items.filter((i) => selectedRucs.has(i.supplierRuc));
     const direction = dateSortOrder === "asc" ? 1 : -1;
     return [...filtered].sort(
       (a, b) => direction * a.issueDate.localeCompare(b.issueDate),
@@ -372,15 +371,18 @@ export function usePurchaseReceptionPage() {
     [visibleItems, page],
   );
 
-  const addSupplierFilter = (ruc: string) => {
-    if (!ruc) return;
-    setSelectedSupplierRucs((prev) => (prev.includes(ruc) ? prev : [...prev, ruc]));
+  // ZH-SUPPLIER-SEARCH-REUSABLE-01 — el buscador (ZhSearchSelect múltiple, datasource local)
+  // entrega la selección completa; conserva el orden de selección y descarta duplicados/vacíos.
+  const setSupplierFilter = (rucs: readonly string[]) => {
+    setSelectedSupplierRucs([...new Set(rucs.filter(Boolean))]);
     setPage(1);
   };
-  const removeSupplierFilter = (ruc: string) => {
-    setSelectedSupplierRucs((prev) => prev.filter((r) => r !== ruc));
-    setPage(1);
-  };
+  const selectedSupplierOptions = useMemo(() => {
+    const byRuc = new Map(supplierOptions.map((o) => [o.ruc, o]));
+    return selectedSupplierRucs
+      .map((ruc) => byRuc.get(ruc))
+      .filter((o): o is ReceptionSupplierOption => o !== undefined);
+  }, [supplierOptions, selectedSupplierRucs]);
   const setDateSortOrder = (order: ReceptionDateSortOrder) => {
     setDateSortOrderState(order);
     setPage(1);
@@ -411,8 +413,8 @@ export function usePurchaseReceptionPage() {
     total: visibleItems.length,
     supplierOptions,
     selectedSupplierRucs,
-    addSupplierFilter,
-    removeSupplierFilter,
+    selectedSupplierOptions,
+    setSupplierFilter,
     dateSortOrder,
     setDateSortOrder,
     clearFilters,

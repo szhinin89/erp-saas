@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import type { ReactElement } from "react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { I18nProvider } from "../../../i18n/i18n";
 import { ExpenseDocumentHeader } from "./ExpenseDocumentHeader";
 import type { ExpenseDocumentHeaderState } from "./ExpenseDocumentHeader";
 import type { SriTaxSupportLookup } from "../../items/facades/sriLookupFacade";
@@ -13,13 +15,20 @@ import type { SriTaxSupportLookup } from "../../items/facades/sriLookupFacade";
  * dejarlo vacío sea un estado válido.
  */
 
+const bpFacade = vi.hoisted(() => ({
+  searchBusinessPartners: vi.fn(),
+  getBusinessPartner: vi.fn(),
+}));
 vi.mock("../../masterData/api/businessPartnerFacade", () => ({
-  businessPartnerFacade: { searchSuppliersForPicker: vi.fn() },
+  businessPartnerFacade: bpFacade,
 }));
 
 afterEach(() => {
   cleanup();
 });
+
+// El proveedor usa SupplierSearchSelect (i18n) — ZH-SUPPLIER-SEARCH-SINGLE-SOURCE-02.
+const renderUi = (ui: ReactElement) => render(ui, { wrapper: I18nProvider });
 
 const BASE_HEADER: ExpenseDocumentHeaderState = {
   supplierId: "sup-1",
@@ -42,7 +51,7 @@ const SRI_TAX_SUPPORTS: SriTaxSupportLookup[] = [
 
 function renderHeader(overrides: Partial<ExpenseDocumentHeaderState> = {}) {
   const onChange = vi.fn();
-  render(
+  renderUi(
     <ExpenseDocumentHeader
       value={{ ...BASE_HEADER, ...overrides }}
       supplier={null}
@@ -101,7 +110,7 @@ describe("ExpenseDocumentHeader — Código sustento tributario", () => {
   });
 
   it("regresión: se comporta como solo lectura cuando disabled=true (documento confirmado)", () => {
-    render(
+    renderUi(
       <ExpenseDocumentHeader
         value={{ ...BASE_HEADER, taxSupportCode: "02" }}
         supplier={null}
@@ -140,5 +149,53 @@ describe("ExpenseDocumentHeader - tipos de documento SRI", () => {
     expect(onChange).not.toHaveBeenCalled();
     fireEvent.change(select, { target: { value: "01" } });
     expect(onChange).toHaveBeenCalledWith({ documentType: "01" });
+  });
+});
+
+describe("ExpenseDocumentHeader — proveedor (ZH-SUPPLIER-SEARCH-SINGLE-SOURCE-02)", () => {
+  it("usa el buscador único: muestra el proveedor elegido, permite cambiarlo y busca solo activos", async () => {
+    bpFacade.searchBusinessPartners.mockResolvedValue([]);
+    const onSupplierChange = vi.fn();
+    const props = {
+      paymentTerms: [],
+      sriDocTypes: [],
+      sriTaxSupports: [],
+      onChange: vi.fn(),
+      onSupplierChange,
+    };
+    const { rerender } = renderUi(
+      <ExpenseDocumentHeader
+        {...props}
+        value={BASE_HEADER}
+        supplier={{
+          id: "sup-1",
+          fullName: "Proveedor Gasto S.A.",
+          identificationNumber: "1790000000001",
+          isActive: true,
+          hasSupplierRole: true,
+          supplierConfig: null,
+        }}
+      />,
+    );
+    expect(screen.getByText("Proveedor Gasto S.A.")).toBeTruthy();
+
+    fireEvent.click(screen.getByTitle("Cambiar proveedor"));
+    expect(onSupplierChange).toHaveBeenCalledWith(null);
+
+    rerender(
+      <ExpenseDocumentHeader {...props} value={{ ...BASE_HEADER, supplierId: "" }} supplier={null} />,
+    );
+    vi.useFakeTimers();
+    fireEvent.change(screen.getByPlaceholderText("Buscar por RUC, razón social o nombre..."), {
+      target: { value: "gasto" },
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+    });
+    vi.useRealTimers();
+    expect(bpFacade.searchBusinessPartners).toHaveBeenCalledWith(
+      expect.objectContaining({ q: "gasto", isActive: true, take: 30 }),
+      expect.any(AbortSignal),
+    );
   });
 });
