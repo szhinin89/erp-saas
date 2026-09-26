@@ -77,9 +77,11 @@ foreach($doc in $rootDocuments)
 
 
 
-$adrPath = Join-Path $DocsRoot "adr"
+# DH-003 -- SSOT de ADRs: docs/decisions (docs/adr se elimino en 8e925b70). Solo ADR-*.md:
+# docs/decisions tambien contiene README/disenos/archivo, que no son ADRs.
+$adrPath = Join-Path $DocsRoot "decisions"
 
-$adrCount = Count-Files $adrPath "*.md"
+$adrCount = Count-Files $adrPath "ADR-*.md"
 
 
 

@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-07-26 17:06:48",
+    "generated":  "2026-09-26 11:27:55",
     "source":  "architecture-progress.json, modules.json, domains.json, database-analysis.json, migration-analysis.json, frontend-analysis.json, backend-analysis.json",
     "method":  {
                    "layerToStage":  "Contiguous-window search over stages[] (real array order); a window is a candidate only if its average pct exactly equals the already-published layers[].pct. If multiple window sizes match, the largest is preferred (a multi-stage exact match is far less likely to be coincidental than a single-stage one); accepted as verified only if that largest match is unique. Ambiguous cases are reported (candidateCount) instead of guessed.",
@@ -104,17 +104,19 @@
                        "migrations":  null,
                        "frontendStats":  {
                                              "statistics":  {
-                                                                "SourceFiles":  381,
-                                                                "Pages":  1,
-                                                                "Components":  52,
-                                                                "Hooks":  5,
+                                                                "SourceFiles":  933,
+                                                                "Pages":  0,
+                                                                "Components":  126,
+                                                                "Hooks":  8,
                                                                 "Services":  0,
                                                                 "Stores":  0,
                                                                 "Routes":  1
                                                             },
                                              "modules":  [
                                                              "access",
+                                                             "accounting",
                                                              "admin",
+                                                             "admin-core",
                                                              "auth",
                                                              "branches",
                                                              "caja",
@@ -123,24 +125,29 @@
                                                              "config",
                                                              "configuracion",
                                                              "dashboard",
+                                                             "documentSequences",
                                                              "electronicDocuments",
                                                              "emissionPoints",
                                                              "establishments",
+                                                             "expenses",
                                                              "finance",
+                                                             "initialLoad",
                                                              "inventory",
                                                              "items",
                                                              "lib",
                                                              "logistica",
                                                              "masterData",
+                                                             "payables",
                                                              "pricing",
                                                              "purchases",
                                                              "reportes",
+                                                             "retentions",
                                                              "ride",
                                                              "sales",
                                                              "security",
                                                              "session",
                                                              "settings",
-                                                             "shared"
+                                                             "supplier-payments"
                                                          ]
                                          },
                        "aiBackendScaffold":  [
@@ -425,39 +432,39 @@
 
                                          ],
                        "databaseStats":  {
-                                             "DbContext":  59,
-                                             "DbSets":  121,
+                                             "DbContext":  82,
+                                             "DbSets":  181,
                                              "EntityConfigurations":  0,
-                                             "Repositories":  50,
-                                             "Migrations":  17
+                                             "Repositories":  93,
+                                             "Migrations":  9
                                          },
                        "migrations":  {
-                                          "totalFiles":  17,
+                                          "totalFiles":  9,
                                           "mostRecent":  [
                                                              {
-                                                                 "name":  "20260725165737_AddJournalEntryLineAndPostingRuleLine",
-                                                                 "modified":  "2026-07-25 11:57:37",
-                                                                 "sizeKB":  4.54
+                                                                 "name":  "20260926131427_SupplierPaymentUnappliedAdvance",
+                                                                 "modified":  "2026-09-26 08:14:27",
+                                                                 "sizeKB":  3.44
                                                              },
                                                              {
-                                                                 "name":  "20260725165737_AddJournalEntryLineAndPostingRuleLine.Designer",
-                                                                 "modified":  "2026-07-25 11:57:37",
-                                                                 "sizeKB":  491.88
+                                                                 "name":  "20260926131427_SupplierPaymentUnappliedAdvance.Designer",
+                                                                 "modified":  "2026-09-26 08:14:27",
+                                                                 "sizeKB":  771.45
                                                              },
                                                              {
                                                                  "name":  "ErpDbContextModelSnapshot",
-                                                                 "modified":  "2026-07-25 11:57:37",
-                                                                 "sizeKB":  491.73
+                                                                 "modified":  "2026-09-26 08:14:27",
+                                                                 "sizeKB":  771.31
                                                              },
                                                              {
-                                                                 "name":  "20260725000917_AddAccountingCoreFoundations.Designer",
-                                                                 "modified":  "2026-07-25 11:47:23",
-                                                                 "sizeKB":  475.18
+                                                                 "name":  "20260926122639_SupplierPaymentReversalSemantics.Designer",
+                                                                 "modified":  "2026-09-26 07:26:39",
+                                                                 "sizeKB":  770.39
                                                              },
                                                              {
-                                                                 "name":  "20260725000917_AddAccountingCoreFoundations",
-                                                                 "modified":  "2026-07-25 11:47:23",
-                                                                 "sizeKB":  8.64
+                                                                 "name":  "20260926122639_SupplierPaymentReversalSemantics",
+                                                                 "modified":  "2026-09-26 07:26:39",
+                                                                 "sizeKB":  1.17
                                                              }
                                                          ]
                                       },

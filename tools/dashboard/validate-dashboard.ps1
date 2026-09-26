@@ -235,7 +235,7 @@ if($archDeps -and $explorerModuleIds.Count -gt 0)
 
 if($governance)
 {
-    $adrDir = Join-Path $ProjectRoot "docs\adr"
+    $adrDir = Join-Path $ProjectRoot "docs\decisions"
     $adrFiles = @{}
     if(Test-Path $adrDir) { Get-ChildItem $adrDir -Filter "*.md" | ForEach-Object { $adrFiles[$_.Name] = $true } }
     foreach($gm in $governance.modules)

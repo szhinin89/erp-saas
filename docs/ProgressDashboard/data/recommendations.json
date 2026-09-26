@@ -1,19 +1,19 @@
 ﻿{
-    "generated":  "2026-07-26 17:06:47",
+    "generated":  "2026-09-26 11:27:54",
     "source":  "dashboard-model-v12.json, model-health.json, completion-intelligence.json, dependencies.json, critical-path.json, release-simulation.json",
     "rule":  "Deterministic rule engine -- every recommendation cites the exact JSON field(s) that triggered it in \u0027justifiedBy\u0027. No generic text, no invented relationships. A rule that finds no matching condition produces zero recommendations for that rule.",
     "recommendations":  [
                             {
                                 "title":  "Reduce critical findings below the production gate threshold",
-                                "text":  "Reducing 11 of the 31 current critical findings (to 20 or fewer) removes the Technical Debt production gate blocker, which currently forces Production Decision = NOT READY / NEEDS REVIEW.",
+                                "text":  "Reducing 16 of the 36 current critical findings (to 20 or fewer) removes the Technical Debt production gate blocker, which currently forces Production Decision = NOT READY / NEEDS REVIEW.",
                                 "justifiedBy":  [
-                                                    "dashboard-model-v12.json: TechnicalDebt.CriticalFindings = 31",
+                                                    "dashboard-model-v12.json: TechnicalDebt.CriticalFindings = 36",
                                                     "render-dashboard.ps1 threshold: CriticalFindings \u003e 20 fails the Technical Debt gate"
                                                 ]
                             },
                             {
                                 "title":  "Security reaches 80% raises Production Readiness",
-                                "text":  "Security reaches 80% moves Production Readiness from 74.92% to 82.88% (+7.96 pts), changing status from \u0027NOT READY\u0027 to \u0027NEEDS REVIEW\u0027.",
+                                "text":  "Security reaches 80% moves Production Readiness from 62.84% to 76.36% (+13.52 pts), changing status from \u0027NOT READY\u0027 to \u0027NOT READY\u0027.",
                                 "justifiedBy":  [
                                                     "release-simulation.json scenario \u0027Security reaches 80%\u0027",
                                                     "Formula: average of the 5 EngineeringScore components (tools/dashboard/render-dashboard.ps1)"
@@ -21,7 +21,7 @@
                             },
                             {
                                 "title":  "Quality reaches 85% raises Production Readiness",
-                                "text":  "Quality reaches 85% moves Production Readiness from 74.92% to 80.95% (+6.03 pts), changing status from \u0027NOT READY\u0027 to \u0027NEEDS REVIEW\u0027.",
+                                "text":  "Quality reaches 85% moves Production Readiness from 62.84% to 75.44% (+12.60 pts), changing status from \u0027NOT READY\u0027 to \u0027NOT READY\u0027.",
                                 "justifiedBy":  [
                                                     "release-simulation.json scenario \u0027Quality reaches 85%\u0027",
                                                     "Formula: average of the 5 EngineeringScore components (tools/dashboard/render-dashboard.ps1)"
@@ -29,7 +29,7 @@
                             },
                             {
                                 "title":  "Security 80% + Quality 85% combined raises Production Readiness",
-                                "text":  "Security 80% + Quality 85% combined moves Production Readiness from 74.92% to 88.91% (+13.99 pts), changing status from \u0027NOT READY\u0027 to \u0027NEEDS REVIEW\u0027.",
+                                "text":  "Security 80% + Quality 85% combined moves Production Readiness from 62.84% to 88.96% (+26.12 pts), changing status from \u0027NOT READY\u0027 to \u0027NEEDS REVIEW\u0027.",
                                 "justifiedBy":  [
                                                     "release-simulation.json scenario \u0027Security 80% + Quality 85% combined\u0027",
                                                     "Formula: average of the 5 EngineeringScore components (tools/dashboard/render-dashboard.ps1)"
@@ -61,71 +61,71 @@
                             },
                             {
                                 "title":  "Prioritize \u0027Common\u0027 in the dependency graph",
-                                "text":  "\u0027Common\u0027 has the highest transitive unblock count in the real dependency graph: completing it removes it as a dependency blocker for 28 module(s), touching 2 distinct verified process(es).",
+                                "text":  "\u0027Common\u0027 has the highest transitive unblock count in the real dependency graph: completing it removes it as a dependency blocker for 35 module(s), touching 2 distinct verified process(es).",
                                 "justifiedBy":  [
-                                                    "critical-path.json: module=\u0027Common\u0027, transitiveUnblocks=28, unlockedProcesses=2",
+                                                    "critical-path.json: module=\u0027Common\u0027, transitiveUnblocks=35, unlockedProcesses=2",
                                                     "dependencies.json real dependency graph (edges evidenced by \u0027using ERP.*\u0027 references)"
                                                 ]
                             },
                             {
-                                "title":  "\u0027Audit\u0027 unblocks 2 process(es)",
-                                "text":  "Completing \u0027Audit\u0027 (current score 77.75%) unblocks 8 direct dependent module(s) and 21 transitive dependent module(s), covering 2 verified business process(es).",
+                                "title":  "\u0027Navigation\u0027 unblocks 2 process(es)",
+                                "text":  "Completing \u0027Navigation\u0027 (current score 77.75%) unblocks 1 direct dependent module(s) and 29 transitive dependent module(s), covering 2 verified business process(es).",
                                 "justifiedBy":  [
-                                                    "critical-path.json: module=\u0027Audit\u0027, directUnblocks=8, transitiveUnblocks=21, unlockedProcesses=2"
+                                                    "critical-path.json: module=\u0027Navigation\u0027, directUnblocks=1, transitiveUnblocks=29, unlockedProcesses=2"
                                                 ]
                             },
                             {
-                                "title":  "\u0027Configuration\u0027 unblocks 2 process(es)",
-                                "text":  "Completing \u0027Configuration\u0027 (current score 77.75%) unblocks 6 direct dependent module(s) and 20 transitive dependent module(s), covering 2 verified business process(es).",
+                                "title":  "\u0027Tenants\u0027 unblocks 2 process(es)",
+                                "text":  "Completing \u0027Tenants\u0027 (current score 77.75%) unblocks 6 direct dependent module(s) and 29 transitive dependent module(s), covering 2 verified business process(es).",
                                 "justifiedBy":  [
-                                                    "critical-path.json: module=\u0027Configuration\u0027, directUnblocks=6, transitiveUnblocks=20, unlockedProcesses=2"
+                                                    "critical-path.json: module=\u0027Tenants\u0027, directUnblocks=6, transitiveUnblocks=29, unlockedProcesses=2"
                                                 ]
                             },
                             {
-                                "title":  "Resolve 13 circular dependency chain(s)",
-                                "text":  "The real dependency graph contains 13 circular reference chain(s) (e.g. Company -\u003e SriCatalogs -\u003e Items -\u003e Companies -\u003e Access -\u003e Auth -\u003e Company), which increases coupling and blocks a clean layering between the affected modules.",
+                                "title":  "Resolve 57 circular dependency chain(s)",
+                                "text":  "The real dependency graph contains 57 circular reference chain(s) (e.g. Items -\u003e Purchases -\u003e Items), which increases coupling and blocks a clean layering between the affected modules.",
                                 "justifiedBy":  [
-                                                    "dependencies.json: cycles = Company -\u003e SriCatalogs -\u003e Items -\u003e Companies -\u003e Access -\u003e Auth -\u003e Company | Access -\u003e Auth -\u003e Access | Company -\u003e SriCatalogs -\u003e Items -\u003e Companies -\u003e Access -\u003e Company | Company -\u003e SriCatalogs -\u003e Items -\u003e Companies -\u003e Company | Company -\u003e SriCatalogs -\u003e Items -\u003e Inventory -\u003e Purchases -\u003e Company | Items -\u003e Inventory -\u003e Purchases -\u003e Items | Items -\u003e Inventory -\u003e Purchases -\u003e Pricing -\u003e Items | Inventory -\u003e Purchases -\u003e Inventory | SriCatalogs -\u003e Items -\u003e Inventory -\u003e Sales -\u003e SriCatalogs | Inventory -\u003e Sales -\u003e Inventory | Company -\u003e SriCatalogs -\u003e Items -\u003e Inventory -\u003e Sales -\u003e ElectronicDocuments -\u003e Company | Items -\u003e Inventory -\u003e Sales -\u003e Items | Company -\u003e SriCatalogs -\u003e Items -\u003e Inventory -\u003e Sales -\u003e Company"
+                                                    "dependencies.json: cycles = Items -\u003e Purchases -\u003e Items | Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Company | Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Configuration | SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e SriCatalogs | Companies -\u003e Sales -\u003e Accounting -\u003e Inventory -\u003e Companies | Sales -\u003e Accounting -\u003e Inventory -\u003e Sales | Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Inventory -\u003e Items | Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Inventory -\u003e Purchases | Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Inventory -\u003e Branches | Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Inventory -\u003e Access -\u003e Auth -\u003e Company | Access -\u003e Auth -\u003e Access | Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Inventory -\u003e Access -\u003e Auth -\u003e Branches | Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Inventory -\u003e Access -\u003e Company | Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Inventory -\u003e Access -\u003e Branches | Accounting -\u003e Caja -\u003e Accounting | Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Caja -\u003e Company | Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Caja -\u003e Branches | Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Caja -\u003e Configuration | Sales -\u003e Accounting -\u003e Caja -\u003e Sales | Sales -\u003e Accounting -\u003e Caja -\u003e Finance -\u003e Sales | Accounting -\u003e Caja -\u003e Finance -\u003e Accounting | Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Caja -\u003e Finance -\u003e Payables -\u003e Company | Sales -\u003e Accounting -\u003e Caja -\u003e Finance -\u003e Payables -\u003e Sales | Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Caja -\u003e Finance -\u003e Payables -\u003e Branches | Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Caja -\u003e Finance -\u003e Payables -\u003e Configuration | Finance -\u003e Payables -\u003e Finance | Caja -\u003e Finance -\u003e Payables -\u003e Caja | Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Caja -\u003e Finance -\u003e Payables -\u003e Purchases | Caja -\u003e Finance -\u003e Caja | Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Caja -\u003e Finance -\u003e Purchases | Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Retentions -\u003e Configuration | SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Retentions -\u003e SriCatalogs | Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Retentions -\u003e Expenses -\u003e Purchases | SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Retentions -\u003e Expenses -\u003e SriCatalogs | Retentions -\u003e Expenses -\u003e Retentions | Accounting -\u003e Retentions -\u003e Expenses -\u003e Accounting | Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Retentions -\u003e Ride -\u003e Configuration | Companies -\u003e Sales -\u003e Accounting -\u003e Retentions -\u003e Ride -\u003e Companies | Retentions -\u003e Ride -\u003e ElectronicDocuments -\u003e Retentions | Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Retentions -\u003e Ride -\u003e ElectronicDocuments -\u003e Configuration | Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Retentions -\u003e Ride -\u003e ElectronicDocuments -\u003e Company | Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Retentions -\u003e Ride -\u003e Company | Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Retentions -\u003e Purchases | Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Retentions -\u003e Company | Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Purchases | Sales -\u003e Accounting -\u003e Sales | Pricing -\u003e Companies -\u003e Sales -\u003e Pricing | Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Company | Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Purchases | Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Branches | Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Configuration | Companies -\u003e Sales -\u003e Companies | Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Items | Items -\u003e Purchases -\u003e Pricing -\u003e Items | Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Configuration | SriCatalogs -\u003e Items -\u003e Purchases -\u003e SriCatalogs | Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Configuration"
                                                 ]
                             },
                             {
                                 "title":  "\u0027Common\u0027 is a single-author bottleneck with high coupling",
-                                "text":  "\u0027Common\u0027 has Bus Factor = 1 (single known contributor via git history) and coupling = 27 (fanIn=27, fanOut=0). Knowledge concentration on a highly-coupled module is a real continuity risk.",
+                                "text":  "\u0027Common\u0027 has Bus Factor = 1 (single known contributor via git history) and coupling = 34 (fanIn=34, fanOut=0). Knowledge concentration on a highly-coupled module is a real continuity risk.",
                                 "justifiedBy":  [
-                                                    "dependencies.json: node id=\u0027Common\u0027, busFactor=1, coupling=27"
-                                                ]
-                            },
-                            {
-                                "title":  "\u0027Company\u0027 is a single-author bottleneck with high coupling",
-                                "text":  "\u0027Company\u0027 has Bus Factor = 1 (single known contributor via git history) and coupling = 13 (fanIn=10, fanOut=3). Knowledge concentration on a highly-coupled module is a real continuity risk.",
-                                "justifiedBy":  [
-                                                    "dependencies.json: node id=\u0027Company\u0027, busFactor=1, coupling=13"
+                                                    "dependencies.json: node id=\u0027Common\u0027, busFactor=1, coupling=34"
                                                 ]
                             },
                             {
                                 "title":  "\u0027Sales\u0027 is a single-author bottleneck with high coupling",
-                                "text":  "\u0027Sales\u0027 has Bus Factor = 1 (single known contributor via git history) and coupling = 11 (fanIn=3, fanOut=8). Knowledge concentration on a highly-coupled module is a real continuity risk.",
+                                "text":  "\u0027Sales\u0027 has Bus Factor = 1 (single known contributor via git history) and coupling = 23 (fanIn=7, fanOut=16). Knowledge concentration on a highly-coupled module is a real continuity risk.",
                                 "justifiedBy":  [
-                                                    "dependencies.json: node id=\u0027Sales\u0027, busFactor=1, coupling=11"
+                                                    "dependencies.json: node id=\u0027Sales\u0027, busFactor=1, coupling=23"
                                                 ]
                             },
                             {
-                                "title":  "Assign a domain to 16 unmapped catalog item(s)",
-                                "text":  "model-health.json lists 16 unmapped item(s) (modules with domainId=\u0027unmapped\u0027 or zero features mapped). Resolving them raises Model Integrity confidence for downstream analysis (critical path, impact analysis).",
+                                "title":  "\u0027Purchases\u0027 is a single-author bottleneck with high coupling",
+                                "text":  "\u0027Purchases\u0027 has Bus Factor = 1 (single known contributor via git history) and coupling = 20 (fanIn=8, fanOut=12). Knowledge concentration on a highly-coupled module is a real continuity risk.",
                                 "justifiedBy":  [
-                                                    "model-health.json: unmappedItems=16"
+                                                    "dependencies.json: node id=\u0027Purchases\u0027, busFactor=1, coupling=20"
                                                 ]
                             },
                             {
-                                "title":  "Critical gap already tracked: Security Score bajo: 40.2% (Secrets detectados: 149, endpoints anonimos: 9)",
-                                "text":  "This gap is already computed by analyze-completion.ps1 and remains open: Security Score bajo: 40.2% (Secrets detectados: 149, endpoints anonimos: 9)",
+                                "title":  "Assign a domain to 22 unmapped catalog item(s)",
+                                "text":  "model-health.json lists 22 unmapped item(s) (modules with domainId=\u0027unmapped\u0027 or zero features mapped). Resolving them raises Model Integrity confidence for downstream analysis (critical path, impact analysis).",
+                                "justifiedBy":  [
+                                                    "model-health.json: unmappedItems=22"
+                                                ]
+                            },
+                            {
+                                "title":  "Critical gap already tracked: Security Score bajo: 12.4% (Secrets detectados: 188, endpoints anonimos: 10)",
+                                "text":  "This gap is already computed by analyze-completion.ps1 and remains open: Security Score bajo: 12.4% (Secrets detectados: 188, endpoints anonimos: 10)",
                                 "justifiedBy":  [
                                                     "completion-intelligence.json: criticalGaps"
                                                 ]
                             },
                             {
-                                "title":  "Critical gap already tracked: Quality Score bajo: 54.85%",
-                                "text":  "This gap is already computed by analyze-completion.ps1 and remains open: Quality Score bajo: 54.85%",
+                                "title":  "Critical gap already tracked: Quality Score bajo: 22%",
+                                "text":  "This gap is already computed by analyze-completion.ps1 and remains open: Quality Score bajo: 22%",
                                 "justifiedBy":  [
                                                     "completion-intelligence.json: criticalGaps"
                                                 ]

@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-07-26 17:06:49",
+    "generated":  "2026-09-26 11:27:55",
     "source":  "dashboard-model-v12.json, completion-intelligence.json",
     "method":  {
                    "productionReadinessScore":  "avg(Architecture, ModuleHealth, Quality, Security, Dependencies) -- same formula analyze-completion.ps1 uses internally to derive its published band",
@@ -11,28 +11,28 @@
                },
     "securityStatus":  "RED",
     "debtStatus":  "RED",
-    "productionReadinessScore":  74.92,
+    "productionReadinessScore":  62.84,
     "productionStatus":  "NOT READY",
     "maturity":  "Controlled",
-    "confidenceScore":  71.93,
+    "confidenceScore":  58.46,
     "risk":  {
                  "architectureRisk":  "LOW",
-                 "securityRisk":  "HIGH",
-                 "qualityRisk":  "HIGH",
+                 "securityRisk":  "CRITICAL",
+                 "qualityRisk":  "CRITICAL",
                  "technicalDebtRisk":  "HIGH",
-                 "overallRisk":  "HIGH"
+                 "overallRisk":  "CRITICAL"
              },
-    "productionDecision":  "NEEDS REVIEW",
+    "productionDecision":  "NOT READY",
     "decisionBlockers":  [
-                             "Security blockers - Security score 40.2%",
-                             "Quality blockers - Quality score 54.85%",
-                             "Debt blockers - 31 critical findings"
+                             "Security blockers - Security score 12.4%",
+                             "Quality blockers - Quality score 22%",
+                             "Debt blockers - 36 critical findings"
                          ],
     "quickRecommendations":  [
-                                 "Remove detected secrets (149 found)",
-                                 "Improve automated tests and code quality (current: 54.85%)",
-                                 "Reduce critical findings (currently 31)",
-                                 "Review security configuration (9 anonymous access points detected)"
+                                 "Remove detected secrets (188 found)",
+                                 "Improve automated tests and code quality (current: 22%)",
+                                 "Reduce critical findings (currently 36)",
+                                 "Review security configuration (10 anonymous access points detected)"
                              ],
     "qualityGateDetail":  {
                               "testAverage":  80,
@@ -43,37 +43,37 @@
                               "staticAnalysisStatus":  "PASS"
                           },
     "securityPosture":  {
-                            "level":  "Level 2",
-                            "label":  "Developing"
+                            "level":  "Level 1",
+                            "label":  "Critical"
                         },
     "debtTrend":  {
                       "status":  "Stable",
                       "detail":  "No historical data available"
                   },
     "releaseRecommendation":  {
-                                  "summary":  "Conditional release - pending review",
+                                  "summary":  "Release blocked",
                                   "actions":  [
-                                                  "Resolve open blockers before scheduling release",
-                                                  "Re-run Engineering Confidence Score after fixes"
+                                                  "Address all blockers listed below",
+                                                  "Do not schedule a release until Confidence Score reaches 70%+"
                                               ]
                               },
     "roadmap":  [
                     {
                         "order":  1,
                         "title":  "Security Hardening",
-                        "detail":  "Score: 40.2%",
+                        "detail":  "Score: 12.4%",
                         "priority":  "CRITICAL"
                     },
                     {
                         "order":  2,
                         "title":  "Quality Improvement",
-                        "detail":  "Score: 54.85%",
+                        "detail":  "Score: 22%",
                         "priority":  "HIGH"
                     },
                     {
                         "order":  3,
                         "title":  "Technical Debt Reduction",
-                        "detail":  "Findings: 31",
+                        "detail":  "Findings: 36",
                         "priority":  "HIGH"
                     }
                 ],
@@ -81,24 +81,24 @@
                            {
                                "gate":  "Security Gate",
                                "status":  "FAILED",
-                               "detail":  "Score 40.2%"
+                               "detail":  "Score 12.4%"
                            },
                            {
                                "gate":  "Quality Gate",
                                "status":  "FAILED",
-                               "detail":  "Score 54.85%"
+                               "detail":  "Score 22%"
                            },
                            {
                                "gate":  "Technical Debt Gate",
                                "status":  "FAILED",
-                               "detail":  "31 critical findings"
+                               "detail":  "36 critical findings"
                            }
                        ],
     "trend":  {
-                  "current":  72.88,
+                  "current":  60.83,
                   "previous":  72.88,
-                  "change":  0,
-                  "status":  "Stable"
+                  "change":  -12.05,
+                  "status":  "Declining"
               },
     "executiveFlags":  {
                            "securityHealth":  "NEEDS ATTENTION",

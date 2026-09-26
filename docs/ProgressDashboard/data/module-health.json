@@ -1,5 +1,5 @@
 ﻿{
-    "Generated":  "2026-07-26 17:06:25",
+    "Generated":  "2026-09-26 11:27:36",
     "Modules":  [
                     {
                         "Name":  "Company",
@@ -16,11 +16,18 @@
                         "Score":  90
                     },
                     {
-                        "Name":  "Purchases",
+                        "Name":  "Payables",
                         "Domain":  true,
                         "Application":  true,
                         "Frontend":  true,
                         "Score":  90
+                    },
+                    {
+                        "Name":  "Media",
+                        "Domain":  true,
+                        "Application":  true,
+                        "Frontend":  false,
+                        "Score":  65
                     },
                     {
                         "Name":  "Companies",
@@ -42,6 +49,20 @@
                         "Application":  true,
                         "Frontend":  true,
                         "Score":  90
+                    },
+                    {
+                        "Name":  "Settings",
+                        "Domain":  false,
+                        "Application":  true,
+                        "Frontend":  true,
+                        "Score":  90
+                    },
+                    {
+                        "Name":  "OrgConfig",
+                        "Domain":  false,
+                        "Application":  true,
+                        "Frontend":  false,
+                        "Score":  65
                     },
                     {
                         "Name":  "Integration",
@@ -72,6 +93,13 @@
                         "Score":  90
                     },
                     {
+                        "Name":  "Purchases",
+                        "Domain":  true,
+                        "Application":  true,
+                        "Frontend":  true,
+                        "Score":  90
+                    },
+                    {
                         "Name":  "Tenants",
                         "Domain":  true,
                         "Application":  false,
@@ -81,6 +109,13 @@
                     {
                         "Name":  "Session",
                         "Domain":  false,
+                        "Application":  true,
+                        "Frontend":  true,
+                        "Score":  90
+                    },
+                    {
+                        "Name":  "Retentions",
+                        "Domain":  true,
                         "Application":  true,
                         "Frontend":  true,
                         "Score":  90
@@ -114,7 +149,7 @@
                         "Score":  90
                     },
                     {
-                        "Name":  "Media",
+                        "Name":  "DocTypes",
                         "Domain":  true,
                         "Application":  true,
                         "Frontend":  false,
@@ -129,6 +164,13 @@
                     },
                     {
                         "Name":  "Caja",
+                        "Domain":  true,
+                        "Application":  true,
+                        "Frontend":  true,
+                        "Score":  90
+                    },
+                    {
+                        "Name":  "Expenses",
                         "Domain":  true,
                         "Application":  true,
                         "Frontend":  true,
@@ -156,14 +198,14 @@
                         "Score":  65
                     },
                     {
-                        "Name":  "Audit",
+                        "Name":  "Ride",
                         "Domain":  true,
                         "Application":  true,
-                        "Frontend":  false,
-                        "Score":  65
+                        "Frontend":  true,
+                        "Score":  90
                     },
                     {
-                        "Name":  "Ride",
+                        "Name":  "InitialLoad",
                         "Domain":  true,
                         "Application":  true,
                         "Frontend":  true,
@@ -191,11 +233,18 @@
                         "Score":  65
                     },
                     {
-                        "Name":  "Accounting",
+                        "Name":  "Communications",
                         "Domain":  true,
                         "Application":  true,
                         "Frontend":  false,
                         "Score":  65
+                    },
+                    {
+                        "Name":  "Accounting",
+                        "Domain":  true,
+                        "Application":  true,
+                        "Frontend":  true,
+                        "Score":  90
                     },
                     {
                         "Name":  "SriCatalogs",
@@ -205,8 +254,8 @@
                         "Score":  65
                     },
                     {
-                        "Name":  "OrgConfig",
-                        "Domain":  false,
+                        "Name":  "Audit",
+                        "Domain":  true,
                         "Application":  true,
                         "Frontend":  false,
                         "Score":  65

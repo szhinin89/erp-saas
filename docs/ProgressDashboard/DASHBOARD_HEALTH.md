@@ -8,13 +8,13 @@ Este documento **nunca se borra**. Los hallazgos resueltos se marcan como `Resue
 
 ## Dashboard Health Summary
 
-- Hallazgos abiertos: 3
-- Hallazgos resueltos: 0
-- Hallazgos críticos: 1
-- Hallazgos importantes: 2
+- Hallazgos abiertos: 1
+- Hallazgos resueltos: 2
+- Hallazgos críticos: 0
+- Hallazgos importantes: 1
 - Hallazgos menores: 0
 - Última auditoría: 2026-09-26
-- Estado general: Crítico
+- Estado general: Advertencia
 
 ---
 
@@ -23,14 +23,14 @@ Este documento **nunca se borra**. Los hallazgos resueltos se marcan como `Resue
 ### DH-001 — Datos del pipeline desactualizados
 
 - **Fecha de detección:** 2026-07-24
-- **Estado:** Abierto
+- **Estado:** Resuelto
 - **Prioridad:** 🟧 Importante
 - **Descripción:** Los JSON en `docs/ProgressDashboard/data/` fueron generados por última vez el 2026-07-20 19:20 (timestamps `generated` de `architecture-progress.json`, `impact.json`, `model-health.json`, `dependencies.json`, `release-simulation.json`, `recommendations.json`, `navigation-map.json`, `completion-intelligence.json`, `dashboard-summary.json`, `critical-path.json`, `explorer-index.json`), mientras 158 archivos `.cs`/`.ts`/`.tsx` en `backend/src` y `frontend/src` tienen fecha de modificación posterior a esa corrida.
 - **Impacto:** Las métricas, scores y estados mostrados en `index.html` pueden no reflejar el estado real actual del código. No rompe el pipeline; es información desactualizada.
 - **Recomendación:** Ejecutar el pipeline completo (`run-dashboard-final.ps1` + `analyze-modules/features/processes/tasks/impact.ps1` + `render-dashboard.ps1`) en la próxima entrega que modifique código real de algún módulo.
 - **Responsable:** Automático (pipeline)
-- **Fecha de resolución:** —
-- **Observaciones:** Persistirá como `Abierto` hasta que se corra el pipeline completo tras un cambio real de código. No se regenera solo para "refrescar la fecha" — regla de [[feedback_dashboard_regen_criteria]].
+- **Fecha de resolución:** 2026-09-26
+- **Observaciones:** Persistirá como `Abierto` hasta que se corra el pipeline completo tras un cambio real de código. No se regenera solo para "refrescar la fecha" — regla de [[feedback_dashboard_regen_criteria]]. **2026-09-26 (ZH-DASHBOARD-DH003-ADR-PATH-FIX-01):** resuelto al corregir DH-003. `run-dashboard-final.ps1` completo terminó con exit 0 tras el cambio real de código de SPAY-02C (`c395ec6c`): regeneró los 30 JSON de `data/`, `index.html` y el snapshot de `history/`. Evidencia de 02C en los datos: migración `SupplierPaymentUnappliedAdvance`, `GetSupplierPaymentPolicy*`, módulo Payables.
 
 ### DH-002 — 14 archivos JSON huérfanos sin documentar en `data/`
 
@@ -47,14 +47,21 @@ Este documento **nunca se borra**. Los hallazgos resueltos se marcan como `Resue
 ### DH-003 — `render-dashboard.ps1` falla: lee `docs/adr`, eliminado al consolidar la documentación
 
 - **Fecha de detección:** 2026-09-26 (entrega ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C-PROD-CLOSE)
-- **Estado:** Abierto
+- **Estado:** Resuelto
 - **Prioridad:** 🟥 Crítico
 - **Descripción:** `tools/dashboard/render-dashboard.ps1` (línea ~2936) hace `Get-ChildItem (Join-Path $ProjectRoot "docs\adr")`. Esa carpeta se eliminó en `8e925b70` (docs: consolidate project rules…); los ADR viven hoy en `docs/decisions/`. `run-dashboard-final.ps1` aborta con "render-dashboard.ps1 failed" después de actualizar los JSON de `data/`, sin generar `index.html`.
 - **Impacto:** El Dashboard no puede regenerarse. Una corrida deja los `data/*.json` actualizados y el `index.html` viejo: estado inconsistente. En esta entrega se revirtieron las salidas parciales, así que el repo queda coherente, sin regenerar.
 - **Recomendación:** Apuntar el renderer a `docs/decisions` (o hacer opcional la lectura de ADR) en una tarea propia del pipeline, y luego ejecutar `run-dashboard-final.ps1` completo. Eso también cerraría DH-001.
 - **Responsable:** Pipeline (tarea dedicada)
-- **Fecha de resolución:** —
+- **Fecha de resolución:** 2026-09-26 (ZH-DASHBOARD-DH003-ADR-PATH-FIX-01)
 - **Observaciones:** No se corrigió en 02C (hallazgo Crítico preexistente, fuera de alcance). Bloquea la regeneración pedida tras 02C.
+- **Causa raíz:** el commit `8e925b70` (docs: consolidate project rules and archive historical plans) movió `docs/adr/*` a `docs/decisions/` y renombró `docs/STATUS.md` a `/STATUS.md`, pero `tools/dashboard/*` siguió leyendo las rutas viejas.
+- **Corrección mínima:** una sola fuente por concepto, sin fallback, sin doble ruta y sin crear carpetas.
+  - ADRs → `docs/decisions`, en `render-dashboard.ps1` (verificación de ADR de gobernanza), `validate-dashboard.ps1` (check 6, referencias rotas) y `analyze-docs.ps1`. En este último el filtro pasa a `ADR-*.md`, porque `docs/decisions` también contiene documentos que no son ADR; ese script no lo invoca `run-dashboard-final.ps1` (salida huérfana, DH-002).
+  - `STATUS.md` → raíz del repo, en `render-dashboard.ps1` (lectura de consistencia). Es el mismo commit y la misma clase de defecto: la única otra ruta faltante del pipeline. Se incluyó aquí por decisión explícita del usuario, en lugar de abrir un DH-004.
+  - Etiquetas y comentarios visibles que nombraban las rutas viejas, actualizados en consecuencia.
+- **Verificación:** `run-dashboard-final.ps1` → exit 0, sin errores en el log; `index.html` y `data/*.json` regenerados; la sección ADR muestra "Todas las referencias a ADR fueron verificadas contra docs/decisions/"; `validate-dashboard` reporta `Broken references: 0`; no hay salidas parciales.
+- **Nota informativa (sin ID nuevo):** quedan citas en prosa a `docs/adr/...` dentro de datos fuente curados a mano (`roadmap.json`, `architecture-progress-source.json`, `modules-status.json`). Son texto histórico, no lecturas de ruta: no afectan ningún cálculo. Actualizarlas es una edición de contenido fuente, fuera de esta corrección.
 
 ---
 

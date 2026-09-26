@@ -1,8 +1,8 @@
 ﻿{
-    "Generated":  "2026-07-26 17:04:52",
+    "Generated":  "2026-09-26 11:26:54",
     "BackendRoot":  "C:\\ProyectCursor\\erp-saas\\backend\\src",
     "ProjectCount":  12,
-    "ModuleCount":  31,
+    "ModuleCount":  38,
     "Projects":  [
                      {
                          "Name":  "ERP.AI.Application",
@@ -79,6 +79,10 @@
                                              "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Common"
                                          },
                                          {
+                                             "Name":  "Communications",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Communications"
+                                         },
+                                         {
                                              "Name":  "Companies",
                                              "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Companies"
                                          },
@@ -95,6 +99,10 @@
                                              "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Dashboard"
                                          },
                                          {
+                                             "Name":  "DocTypes",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\DocTypes"
+                                         },
+                                         {
                                              "Name":  "ElectronicDocuments",
                                              "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\ElectronicDocuments"
                                          },
@@ -103,8 +111,16 @@
                                              "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\ElectronicInvoicing"
                                          },
                                          {
+                                             "Name":  "Expenses",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Expenses"
+                                         },
+                                         {
                                              "Name":  "Finance",
                                              "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Finance"
+                                         },
+                                         {
+                                             "Name":  "InitialLoad",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\InitialLoad"
                                          },
                                          {
                                              "Name":  "Integration",
@@ -131,12 +147,20 @@
                                              "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\OrgConfig"
                                          },
                                          {
+                                             "Name":  "Payables",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Payables"
+                                         },
+                                         {
                                              "Name":  "Pricing",
                                              "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Pricing"
                                          },
                                          {
                                              "Name":  "Purchases",
                                              "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Purchases"
+                                         },
+                                         {
+                                             "Name":  "Retentions",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Retentions"
                                          },
                                          {
                                              "Name":  "Ride",
@@ -153,6 +177,10 @@
                                          {
                                              "Name":  "Session",
                                              "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Session"
+                                         },
+                                         {
+                                             "Name":  "Settings",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Settings"
                                          }
                                      ]
                      },
@@ -212,6 +240,10 @@
                                              "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Common"
                                          },
                                          {
+                                             "Name":  "Communications",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Communications"
+                                         },
+                                         {
                                              "Name":  "Company",
                                              "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Company"
                                          },
@@ -220,12 +252,24 @@
                                              "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Configuration"
                                          },
                                          {
+                                             "Name":  "DocTypes",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\DocTypes"
+                                         },
+                                         {
                                              "Name":  "ElectronicDocuments",
                                              "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\ElectronicDocuments"
                                          },
                                          {
+                                             "Name":  "Expenses",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Expenses"
+                                         },
+                                         {
                                              "Name":  "Finance",
                                              "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Finance"
+                                         },
+                                         {
+                                             "Name":  "InitialLoad",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\InitialLoad"
                                          },
                                          {
                                              "Name":  "Inventory",
@@ -248,12 +292,20 @@
                                              "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Navigation"
                                          },
                                          {
+                                             "Name":  "Payables",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Payables"
+                                         },
+                                         {
                                              "Name":  "Pricing",
                                              "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Pricing"
                                          },
                                          {
                                              "Name":  "Purchases",
                                              "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Purchases"
+                                         },
+                                         {
+                                             "Name":  "Retentions",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Retentions"
                                          },
                                          {
                                              "Name":  "Ride",
@@ -338,18 +390,25 @@
                         "Projects":  "ERP.Application"
                     },
                     {
-                        "Name":  "Purchases",
+                        "Name":  "Payables",
                         "Layers":  [
                                        "Application",
-                                       "Domain",
-                                       "Infrastructure",
-                                       "Other"
+                                       "Domain"
                                    ],
                         "Projects":  [
                                          "ERP.Application",
-                                         "ERP.Domain",
-                                         "ERP.Infrastructure",
-                                         "ERP.Infrastructure.Tests"
+                                         "ERP.Domain"
+                                     ]
+                    },
+                    {
+                        "Name":  "Media",
+                        "Layers":  [
+                                       "Application",
+                                       "Domain"
+                                   ],
+                        "Projects":  [
+                                         "ERP.Application",
+                                         "ERP.Domain"
                                      ]
                     },
                     {
@@ -372,6 +431,16 @@
                                          "ERP.Application",
                                          "ERP.Domain"
                                      ]
+                    },
+                    {
+                        "Name":  "Settings",
+                        "Layers":  "Application",
+                        "Projects":  "ERP.Application"
+                    },
+                    {
+                        "Name":  "OrgConfig",
+                        "Layers":  "Application",
+                        "Projects":  "ERP.Application"
                     },
                     {
                         "Name":  "Integration",
@@ -412,6 +481,21 @@
                                      ]
                     },
                     {
+                        "Name":  "Purchases",
+                        "Layers":  [
+                                       "Application",
+                                       "Domain",
+                                       "Infrastructure",
+                                       "Other"
+                                   ],
+                        "Projects":  [
+                                         "ERP.Application",
+                                         "ERP.Domain",
+                                         "ERP.Infrastructure",
+                                         "ERP.Infrastructure.Tests"
+                                     ]
+                    },
+                    {
                         "Name":  "Tenants",
                         "Layers":  "Domain",
                         "Projects":  "ERP.Domain"
@@ -425,6 +509,17 @@
                         "Projects":  [
                                          "ERP.Application",
                                          "ERP.Application.Tests"
+                                     ]
+                    },
+                    {
+                        "Name":  "Retentions",
+                        "Layers":  [
+                                       "Application",
+                                       "Domain"
+                                   ],
+                        "Projects":  [
+                                         "ERP.Application",
+                                         "ERP.Domain"
                                      ]
                     },
                     {
@@ -466,7 +561,7 @@
                         "Projects":  "ERP.Application"
                     },
                     {
-                        "Name":  "Media",
+                        "Name":  "DocTypes",
                         "Layers":  [
                                        "Application",
                                        "Domain"
@@ -489,6 +584,17 @@
                     },
                     {
                         "Name":  "Caja",
+                        "Layers":  [
+                                       "Application",
+                                       "Domain"
+                                   ],
+                        "Projects":  [
+                                         "ERP.Application",
+                                         "ERP.Domain"
+                                     ]
+                    },
+                    {
+                        "Name":  "Expenses",
                         "Layers":  [
                                        "Application",
                                        "Domain"
@@ -526,7 +632,7 @@
                                      ]
                     },
                     {
-                        "Name":  "Audit",
+                        "Name":  "Ride",
                         "Layers":  [
                                        "Application",
                                        "Domain"
@@ -537,7 +643,7 @@
                                      ]
                     },
                     {
-                        "Name":  "Ride",
+                        "Name":  "InitialLoad",
                         "Layers":  [
                                        "Application",
                                        "Domain"
@@ -569,6 +675,17 @@
                         "Projects":  "ERP.Domain"
                     },
                     {
+                        "Name":  "Communications",
+                        "Layers":  [
+                                       "Application",
+                                       "Domain"
+                                   ],
+                        "Projects":  [
+                                         "ERP.Application",
+                                         "ERP.Domain"
+                                     ]
+                    },
+                    {
                         "Name":  "Accounting",
                         "Layers":  [
                                        "Application",
@@ -585,9 +702,15 @@
                         "Projects":  "ERP.Domain"
                     },
                     {
-                        "Name":  "OrgConfig",
-                        "Layers":  "Application",
-                        "Projects":  "ERP.Application"
+                        "Name":  "Audit",
+                        "Layers":  [
+                                       "Application",
+                                       "Domain"
+                                   ],
+                        "Projects":  [
+                                         "ERP.Application",
+                                         "ERP.Domain"
+                                     ]
                     },
                     {
                         "Name":  "Navigation",

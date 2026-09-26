@@ -3,6 +3,13 @@
         "module":  "Company",
         "features":  [
                          {
+                             "name":  "Configure Document Sequence",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Company/UseCases/ConfigureDocumentSequence"
+                                          ]
+                         },
+                         {
                              "name":  "Create Emission Point",
                              "status":  "implemented",
                              "evidence":  [
@@ -45,6 +52,13 @@
                                           ]
                          },
                          {
+                             "name":  "Get Document Sequences",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Company/UseCases/GetDocumentSequences"
+                                          ]
+                         },
+                         {
                              "name":  "Get Emission Points",
                              "status":  "implemented",
                              "evidence":  [
@@ -56,6 +70,20 @@
                              "status":  "implemented",
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/Company/UseCases/GetEstablishments"
+                                          ]
+                         },
+                         {
+                             "name":  "List Companies For Admin Core",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Company/UseCases/ListCompaniesForAdminCore"
+                                          ]
+                         },
+                         {
+                             "name":  "Update Company For Admin Core",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Company/UseCases/UpdateCompanyForAdminCore"
                                           ]
                          },
                          {
@@ -87,99 +115,61 @@
                      ]
     },
     {
-        "module":  "Purchases",
+        "module":  "Payables",
         "features":  [
                          {
-                             "name":  "Get Purchase Item Context",
+                             "name":  "Accounts Payable",
                              "status":  "implemented",
                              "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/GetPurchaseItemContext"
+                                              "backend/src/ERP.Application/Modules/Payables/UseCases/AccountsPayableQueryUseCases.cs"
                                           ]
                          },
                          {
-                             "name":  "Calculate Retention",
+                             "name":  "Create Accounts Payable From Origin",
                              "status":  "implemented",
                              "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/CalculateRetentionUseCases.cs"
+                                              "backend/src/ERP.Application/Modules/Payables/UseCases/CreateAccountsPayableFromOrigin.cs"
                                           ]
                          },
                          {
-                             "name":  "Cancel Purchase",
+                             "name":  "Get Supplier Payment Policy",
                              "status":  "implemented",
                              "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/CancelPurchaseUseCases.cs"
+                                              "backend/src/ERP.Application/Modules/Payables/UseCases/GetSupplierPaymentPolicyUseCases.cs"
                                           ]
                          },
                          {
-                             "name":  "Cancel Withholding",
+                             "name":  "Get Supplier Payment",
                              "status":  "implemented",
                              "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/CancelWithholdingUseCases.cs"
+                                              "backend/src/ERP.Application/Modules/Payables/UseCases/GetSupplierPaymentUseCases.cs"
                                           ]
                          },
                          {
-                             "name":  "Confirm Purchase",
+                             "name":  "Register Supplier Payment",
                              "status":  "implemented",
                              "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/ConfirmPurchaseUseCases.cs"
+                                              "backend/src/ERP.Application/Modules/Payables/UseCases/RegisterSupplierPaymentUseCases.cs"
                                           ]
                          },
                          {
-                             "name":  "Get Withholding",
+                             "name":  "Reverse Supplier Payment",
                              "status":  "implemented",
                              "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/GetWithholdingUseCases.cs"
-                                          ]
-                         },
-                         {
-                             "name":  "Issue Withholding",
-                             "status":  "implemented",
-                             "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/IssueWithholdingUseCases.cs"
-                                          ]
-                         },
-                         {
-                             "name":  "Purchase Cost",
-                             "status":  "implemented",
-                             "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseCostUseCases.cs"
-                                          ]
-                         },
-                         {
-                             "name":  "Purchase Draft",
-                             "status":  "implemented",
-                             "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseDraftUseCases.cs"
-                                          ]
-                         },
-                         {
-                             "name":  "Purchase Margin",
-                             "status":  "implemented",
-                             "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseMarginUseCases.cs"
-                                          ]
-                         },
-                         {
-                             "name":  "Create Purchase Reception Draft",
-                             "status":  "implemented",
-                             "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/CreatePurchaseReceptionDraft"
-                                          ]
-                         },
-                         {
-                             "name":  "Download Purchase Reception Xml",
-                             "status":  "implemented",
-                             "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/DownloadPurchaseReceptionXml"
-                                          ]
-                         },
-                         {
-                             "name":  "Import Purchase Reception",
-                             "status":  "implemented",
-                             "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/ImportPurchaseReception"
+                                              "backend/src/ERP.Application/Modules/Payables/UseCases/ReverseSupplierPaymentUseCases.cs"
                                           ]
                          }
+                     ]
+    },
+    {
+        "module":  "Media",
+        "features":  [
+
+                     ],
+        "pending":  true,
+        "reason":  "Application module exists but exposes no discrete UseCases/Query/Command (likely shared/infrastructure module)",
+        "evidence":  [
+                         "backend/src/ERP.Application/Modules/Media"
                      ]
     },
     {
@@ -193,10 +183,10 @@
                                           ]
                          },
                          {
-                             "name":  "Company Precision Policy",
+                             "name":  "Get Company Branding",
                              "status":  "implemented",
                              "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Companies/UseCases/PrecisionPolicy"
+                                              "backend/src/ERP.Application/Modules/Companies/UseCases/GetCompanyBranding"
                                           ]
                          },
                          {
@@ -221,6 +211,13 @@
                                           ]
                          },
                          {
+                             "name":  "Get Company Operational Readiness",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Companies/UseCases/GetCompanyOperationalReadiness"
+                                          ]
+                         },
+                         {
                              "name":  "Get Company Profile",
                              "status":  "implemented",
                              "evidence":  [
@@ -235,10 +232,24 @@
                                           ]
                          },
                          {
+                             "name":  "Get Sales Fiscal Policy",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Companies/UseCases/GetSalesFiscalPolicy"
+                                          ]
+                         },
+                         {
                              "name":  "List Companies",
                              "status":  "implemented",
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/Companies/UseCases/ListCompanies"
+                                          ]
+                         },
+                         {
+                             "name":  "Precision Policy",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Companies/UseCases/PrecisionPolicy"
                                           ]
                          },
                          {
@@ -281,6 +292,13 @@
                              "status":  "implemented",
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/Companies/UseCases/UpdateCompanyProfile"
+                                          ]
+                         },
+                         {
+                             "name":  "Update Consumer Final Max Amount",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Companies/UseCases/UpdateConsumerFinalMaxAmount"
                                           ]
                          },
                          {
@@ -328,6 +346,13 @@
                                           ]
                          },
                          {
+                             "name":  "Global Login",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Auth/UseCases/GlobalLogin"
+                                          ]
+                         },
+                         {
                              "name":  "List My Companies",
                              "status":  "implemented",
                              "evidence":  [
@@ -349,6 +374,13 @@
                                           ]
                          },
                          {
+                             "name":  "Operate Company",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Auth/UseCases/OperateCompany"
+                                          ]
+                         },
+                         {
                              "name":  "Password Reset",
                              "status":  "implemented",
                              "evidence":  [
@@ -356,10 +388,24 @@
                                           ]
                          },
                          {
+                             "name":  "Reauthenticate",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Auth/UseCases/Reauthenticate"
+                                          ]
+                         },
+                         {
                              "name":  "Refresh Token",
                              "status":  "implemented",
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/Auth/UseCases/RefreshToken"
+                                          ]
+                         },
+                         {
+                             "name":  "Return To Global",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Auth/UseCases/ReturnToGlobal"
                                           ]
                          },
                          {
@@ -388,6 +434,58 @@
                              "status":  "implemented",
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/Auth/UseCases/PasswordResetTokenIssuer.cs"
+                                          ]
+                         }
+                     ]
+    },
+    {
+        "module":  "Settings",
+        "features":  [
+                         {
+                             "name":  "Get Operational Preferences",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Settings/Operations/UseCases/GetOperationalPreferences"
+                                          ]
+                         },
+                         {
+                             "name":  "Update Operational Preferences",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Settings/Operations/UseCases/UpdateOperationalPreferences"
+                                          ]
+                         }
+                     ]
+    },
+    {
+        "module":  "OrgConfig",
+        "features":  [
+                         {
+                             "name":  "Get Branch Invoice Org Settings",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/OrgConfig/UseCases/GetBranchInvoiceOrgSettings"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Company Invoice Org Settings",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/OrgConfig/UseCases/GetCompanyInvoiceOrgSettings"
+                                          ]
+                         },
+                         {
+                             "name":  "Upsert Branch Invoice Org Settings",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/OrgConfig/UseCases/UpsertBranchInvoiceOrgSettings"
+                                          ]
+                         },
+                         {
+                             "name":  "Upsert Company Invoice Org Settings",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/OrgConfig/UseCases/UpsertCompanyInvoiceOrgSettings"
                                           ]
                          }
                      ]
@@ -595,6 +693,13 @@
         "module":  "Sales",
         "features":  [
                          {
+                             "name":  "Get Daily Sales Report",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Sales/UseCases/GetDailySalesReport"
+                                          ]
+                         },
+                         {
                              "name":  "Get Sales Invoice Defaults",
                              "status":  "implemented",
                              "evidence":  [
@@ -609,6 +714,34 @@
                                           ]
                          },
                          {
+                             "name":  "Get Sales Receipt Print Payload",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Sales/UseCases/GetSalesReceiptPrintPayload"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Sales Runtime Context",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Sales/UseCases/GetSalesRuntimeContext"
+                                          ]
+                         },
+                         {
+                             "name":  "Preview Sales Repricing",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Sales/UseCases/PreviewSalesRepricing"
+                                          ]
+                         },
+                         {
+                             "name":  "Authorize Sales Return",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Sales/UseCases/AuthorizeSalesReturnUseCases.cs"
+                                          ]
+                         },
+                         {
                              "name":  "Authorize Sales",
                              "status":  "implemented",
                              "evidence":  [
@@ -620,6 +753,13 @@
                              "status":  "implemented",
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/Sales/UseCases/CancelSalesUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Returnable Lines By Invoice",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Sales/UseCases/GetReturnableLinesByInvoiceUseCases.cs"
                                           ]
                          },
                          {
@@ -655,6 +795,27 @@
                              "status":  "implemented",
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/Sales/UseCases/SalesReceivableUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Sales Return Draft",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Sales/UseCases/SalesReturnDraftUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Sales Return",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Sales/UseCases/SalesReturnQueryUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Sales Return Refund",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Sales/UseCases/SalesReturnRefundHandler.cs"
                                           ]
                          }
                      ]
@@ -782,6 +943,13 @@
                                           ]
                          },
                          {
+                             "name":  "Item Supplier Codes",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Items/UseCases/ItemSupplierCodes"
+                                          ]
+                         },
+                         {
                              "name":  "Item Unit Conversions",
                              "status":  "implemented",
                              "evidence":  [
@@ -826,6 +994,200 @@
                      ]
     },
     {
+        "module":  "Purchases",
+        "features":  [
+                         {
+                             "name":  "Get Purchase Item Context",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/GetPurchaseItemContext"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Purchases By Supplier Report",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/GetPurchasesBySupplierReport"
+                                          ]
+                         },
+                         {
+                             "name":  "Authorize Purchase Credit Note",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/AuthorizePurchaseCreditNoteUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Authorize Purchase Return",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/AuthorizePurchaseReturnUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Calculate Retention",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/CalculateRetentionUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Cancel Purchase Credit Note",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/CancelPurchaseCreditNoteUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Cancel Purchase Return",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/CancelPurchaseReturnUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Cancel Purchase",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/CancelPurchaseUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Confirm Purchase",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/ConfirmPurchaseUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Credit Note Return Lines",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/CreditNoteReturnLines.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Purchase Invoice Tax Summaries",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/GetPurchaseInvoiceTaxSummariesUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Returnable Lines By Purchase Invoice",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/GetReturnableLinesByPurchaseInvoiceUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Link Purchase Credit Note To Return",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/LinkPurchaseCreditNoteToReturnUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Purchase Cost",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseCostUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Purchase Credit Note Draft",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseCreditNoteDraftUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Purchase Credit Note",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseCreditNoteQueryUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Purchase Draft",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseDraftUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Purchase Margin",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseMarginUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Purchase Return Draft",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseReturnDraftUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Purchase Return",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseReturnQueryUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Register Supplier Credit Note",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/RegisterSupplierCreditNoteUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Batch Download Purchase Reception Xml",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/BatchDownloadPurchaseReceptionXml"
+                                          ]
+                         },
+                         {
+                             "name":  "Create Expense Draft From Reception",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/CreateExpenseDraftFromReception"
+                                          ]
+                         },
+                         {
+                             "name":  "Create Purchase Reception Draft",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/CreatePurchaseReceptionDraft"
+                                          ]
+                         },
+                         {
+                             "name":  "Download Purchase Reception Xml",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/DownloadPurchaseReceptionXml"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Purchase Reception Xml View",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/GetPurchaseReceptionXmlView"
+                                          ]
+                         },
+                         {
+                             "name":  "Import Purchase Reception",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/ImportPurchaseReception"
+                                          ]
+                         }
+                     ]
+    },
+    {
         "module":  "Tenants",
         "features":  [
 
@@ -863,6 +1225,60 @@
                      ]
     },
     {
+        "module":  "Retentions",
+        "features":  [
+                         {
+                             "name":  "Cancel Retention",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Retentions/UseCases/CancelRetentionUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Generate Retention Ride Pdf",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Retentions/UseCases/GenerateRetentionRidePdfUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Generate Retention Xml",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Retentions/UseCases/GenerateRetentionXmlUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Retention By Source",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Retentions/UseCases/GetRetentionBySourceUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Retention Eligibility",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Retentions/UseCases/GetRetentionEligibilityUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Issue Retention",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Retentions/UseCases/IssueRetentionUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Register Retention Electronic Document",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Retentions/UseCases/RegisterRetentionElectronicDocumentUseCases.cs"
+                                          ]
+                         }
+                     ]
+    },
+    {
         "module":  "Common",
         "features":  [
 
@@ -876,6 +1292,76 @@
     {
         "module":  "Inventory",
         "features":  [
+                         {
+                             "name":  "Create Inventory Adjustment Reason",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/AdjustmentReasons/UseCases/CreateInventoryAdjustmentReason"
+                                          ]
+                         },
+                         {
+                             "name":  "List Inventory Adjustment Reasons",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/AdjustmentReasons/UseCases/ListInventoryAdjustmentReasons"
+                                          ]
+                         },
+                         {
+                             "name":  "Toggle Inventory Adjustment Reason",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/AdjustmentReasons/UseCases/ToggleInventoryAdjustmentReason"
+                                          ]
+                         },
+                         {
+                             "name":  "Update Inventory Adjustment Reason",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/AdjustmentReasons/UseCases/UpdateInventoryAdjustmentReason"
+                                          ]
+                         },
+                         {
+                             "name":  "Bulk Match Items",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/BulkMatchItems"
+                                          ]
+                         },
+                         {
+                             "name":  "Find Item Matches",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/FindItemMatches"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Line Match",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/GetLineMatch"
+                                          ]
+                         },
+                         {
+                             "name":  "Match Item",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/MatchItem"
+                                          ]
+                         },
+                         {
+                             "name":  "Unmatch Item",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/UnmatchItem"
+                                          ]
+                         },
+                         {
+                             "name":  "Cancel Stock Adjustment",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/CancelStockAdjustment"
+                                          ]
+                         },
                          {
                              "name":  "Confirm Stock Transfer",
                              "status":  "implemented",
@@ -909,6 +1395,13 @@
                              "status":  "implemented",
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/GetAggregatedStock"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Current Stock Report",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/GetCurrentStockReport"
                                           ]
                          },
                          {
@@ -947,10 +1440,31 @@
                                           ]
                          },
                          {
+                             "name":  "Get Stock Adjustment",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/GetStockAdjustment"
+                                          ]
+                         },
+                         {
                              "name":  "Get Stock Movements",
                              "status":  "implemented",
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/GetStockMovements"
+                                          ]
+                         },
+                         {
+                             "name":  "List Stock Adjustments",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/ListStockAdjustments"
+                                          ]
+                         },
+                         {
+                             "name":  "Update Stock Adjustment",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/UpdateStockAdjustment"
                                           ]
                          },
                          {
@@ -994,6 +1508,13 @@
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/Inventory/Warehouses/UseCases/UpdateWarehouse"
                                           ]
+                         },
+                         {
+                             "name":  "Warehouse Capacity Rules",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/Warehouses/UseCases/WarehouseCapacityRules.cs"
+                                          ]
                          }
                      ]
     },
@@ -1005,6 +1526,55 @@
                              "status":  "implemented",
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/Finance/UseCases/CreditTerms"
+                                          ]
+                         },
+                         {
+                             "name":  "Payments",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Finance/UseCases/Payments"
+                                          ]
+                         },
+                         {
+                             "name":  "Apply Supplier Credit",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Finance/UseCases/ApplySupplierCreditUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Company Bank Account",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Finance/UseCases/CompanyBankAccountUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Register Supplier Credit Refund",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Finance/UseCases/RegisterSupplierCreditRefundUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Reverse Supplier Credit Application",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Finance/UseCases/ReverseSupplierCreditApplicationUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Reverse Supplier Credit Refund",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Finance/UseCases/ReverseSupplierCreditRefundUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Supplier Credit",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Finance/UseCases/SupplierCreditQueryUseCases.cs"
                                           ]
                          }
                      ]
@@ -1085,24 +1655,39 @@
                      ]
     },
     {
-        "module":  "Media",
+        "module":  "DocTypes",
         "features":  [
-
-                     ],
-        "pending":  true,
-        "reason":  "Application module exists but exposes no discrete UseCases/Query/Command (likely shared/infrastructure module)",
-        "evidence":  [
-                         "backend/src/ERP.Application/Modules/Media"
+                         {
+                             "name":  "Document Flow Policy",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/DocTypes/UseCases/DocumentFlowPolicyUseCases.cs"
+                                          ]
+                         }
                      ]
     },
     {
         "module":  "Pricing",
         "features":  [
                          {
+                             "name":  "Customer Price List Context",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Pricing/UseCases/CustomerPriceListContext"
+                                          ]
+                         },
+                         {
                              "name":  "Item Pricing Simulation",
                              "status":  "implemented",
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/Pricing/UseCases/ItemPricingSimulation"
+                                          ]
+                         },
+                         {
+                             "name":  "Price List Customers",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Pricing/UseCases/PriceListCustomers"
                                           ]
                          },
                          {
@@ -1131,6 +1716,13 @@
     {
         "module":  "Caja",
         "features":  [
+                         {
+                             "name":  "Cash Movement Reason",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Caja/UseCases/CashMovementReasonUseCases.cs"
+                                          ]
+                         },
                          {
                              "name":  "Cash Register",
                              "status":  "implemented",
@@ -1204,6 +1796,25 @@
                      ]
     },
     {
+        "module":  "Expenses",
+        "features":  [
+                         {
+                             "name":  "Categories",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Expenses/UseCases/Categories"
+                                          ]
+                         },
+                         {
+                             "name":  "Documents",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Expenses/UseCases/Documents"
+                                          ]
+                         }
+                     ]
+    },
+    {
         "module":  "ElectronicInvoicing",
         "features":  [
                          {
@@ -1218,6 +1829,13 @@
                              "status":  "implemented",
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/ElectronicInvoicing/UseCases/GetSriConfiguration"
+                                          ]
+                         },
+                         {
+                             "name":  "Get System Provider Settings",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/ElectronicInvoicing/UseCases/GetSystemProviderSettings"
                                           ]
                          },
                          {
@@ -1239,6 +1857,13 @@
                              "status":  "implemented",
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/ElectronicInvoicing/UseCases/UpsertSriConfiguration"
+                                          ]
+                         },
+                         {
+                             "name":  "Upsert System Provider Settings",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/ElectronicInvoicing/UseCases/UpsertSystemProviderSettings"
                                           ]
                          },
                          {
@@ -1272,29 +1897,11 @@
     {
         "module":  "Configuration",
         "features":  [
-
-                     ],
-        "pending":  true,
-        "reason":  "Application module exists but exposes no discrete UseCases/Query/Command (likely shared/infrastructure module)",
-        "evidence":  [
-                         "backend/src/ERP.Application/Modules/Configuration"
-                     ]
-    },
-    {
-        "module":  "Audit",
-        "features":  [
                          {
-                             "name":  "Get Entity Activity",
+                             "name":  "Get Configuration Change Log",
                              "status":  "implemented",
                              "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Audit/UseCases/GetEntityActivity"
-                                          ]
-                         },
-                         {
-                             "name":  "Get My Activity",
-                             "status":  "implemented",
-                             "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Audit/UseCases/GetMyActivity"
+                                              "backend/src/ERP.Application/Modules/Configuration/UseCases/GetConfigurationChangeLog"
                                           ]
                          }
                      ]
@@ -1314,6 +1921,74 @@
                              "status":  "implemented",
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/Ride/UseCases/RegenerateRide"
+                                          ]
+                         }
+                     ]
+    },
+    {
+        "module":  "InitialLoad",
+        "features":  [
+                         {
+                             "name":  "Cancel Import Batch",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/InitialLoad/UseCases/CancelImportBatch"
+                                          ]
+                         },
+                         {
+                             "name":  "Confirm Import Batch",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/InitialLoad/UseCases/ConfirmImportBatch"
+                                          ]
+                         },
+                         {
+                             "name":  "Create Import Batch",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/InitialLoad/UseCases/CreateImportBatch"
+                                          ]
+                         },
+                         {
+                             "name":  "Download Import Template",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/InitialLoad/UseCases/DownloadImportTemplate"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Import Batch History",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/InitialLoad/UseCases/GetImportBatchHistory"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Import Batch Status",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/InitialLoad/UseCases/GetImportBatchStatus"
+                                          ]
+                         },
+                         {
+                             "name":  "Preview Import Batch",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/InitialLoad/UseCases/PreviewImportBatch"
+                                          ]
+                         },
+                         {
+                             "name":  "Upload Import File",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/InitialLoad/UseCases/UploadImportFile"
+                                          ]
+                         },
+                         {
+                             "name":  "Validate Import Batch",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/InitialLoad/UseCases/ValidateImportBatch"
                                           ]
                          }
                      ]
@@ -1410,6 +2085,39 @@
                      ]
     },
     {
+        "module":  "Communications",
+        "features":  [
+                         {
+                             "name":  "Get Company Email Settings",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Communications/UseCases/GetCompanyEmailSettings"
+                                          ]
+                         },
+                         {
+                             "name":  "Queue Email",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Communications/UseCases/QueueEmail"
+                                          ]
+                         },
+                         {
+                             "name":  "Send Test Email",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Communications/UseCases/SendTestEmail"
+                                          ]
+                         },
+                         {
+                             "name":  "Update Company Email Settings",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Communications/UseCases/UpdateCompanyEmailSettings"
+                                          ]
+                         }
+                     ]
+    },
+    {
         "module":  "Accounting",
         "features":  [
                          {
@@ -1427,10 +2135,24 @@
                                           ]
                          },
                          {
+                             "name":  "Journal Entries",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Accounting/UseCases/JournalEntries"
+                                          ]
+                         },
+                         {
                              "name":  "Posting Rules",
                              "status":  "implemented",
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/Accounting/UseCases/PostingRules"
+                                          ]
+                         },
+                         {
+                             "name":  "Reports",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Accounting/UseCases/Reports"
                                           ]
                          }
                      ]
@@ -1447,34 +2169,20 @@
                      ]
     },
     {
-        "module":  "OrgConfig",
+        "module":  "Audit",
         "features":  [
                          {
-                             "name":  "Get Branch Invoice Org Settings",
+                             "name":  "Get Entity Activity",
                              "status":  "implemented",
                              "evidence":  [
-                                              "backend/src/ERP.Application/Modules/OrgConfig/UseCases/GetBranchInvoiceOrgSettings"
+                                              "backend/src/ERP.Application/Modules/Audit/UseCases/GetEntityActivity"
                                           ]
                          },
                          {
-                             "name":  "Get Company Invoice Org Settings",
+                             "name":  "Get My Activity",
                              "status":  "implemented",
                              "evidence":  [
-                                              "backend/src/ERP.Application/Modules/OrgConfig/UseCases/GetCompanyInvoiceOrgSettings"
-                                          ]
-                         },
-                         {
-                             "name":  "Upsert Branch Invoice Org Settings",
-                             "status":  "implemented",
-                             "evidence":  [
-                                              "backend/src/ERP.Application/Modules/OrgConfig/UseCases/UpsertBranchInvoiceOrgSettings"
-                                          ]
-                         },
-                         {
-                             "name":  "Upsert Company Invoice Org Settings",
-                             "status":  "implemented",
-                             "evidence":  [
-                                              "backend/src/ERP.Application/Modules/OrgConfig/UseCases/UpsertCompanyInvoiceOrgSettings"
+                                              "backend/src/ERP.Application/Modules/Audit/UseCases/GetMyActivity"
                                           ]
                          }
                      ]

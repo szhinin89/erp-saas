@@ -1,10 +1,10 @@
 ﻿{
-    "generated":  "2026-07-26 17:06:35",
+    "generated":  "2026-09-26 11:27:42",
     "integrityScore":  100,
     "brokenReferences":  0,
     "missingEvidence":  0,
-    "unmappedItems":  16,
-    "totalReferenceChecks":  93,
+    "unmappedItems":  22,
+    "totalReferenceChecks":  266,
     "details":  {
                     "brokenReferences":  [
 
@@ -14,19 +14,25 @@
                                         ],
                     "unmappedItems":  [
                                           "module \u0027Dashboard\u0027 has no domain assigned (domainId: unmapped)",
-                                          "module \u0027Menu\u0027 has no domain assigned (domainId: unmapped)",
-                                          "module \u0027Integration\u0027 has no domain assigned (domainId: unmapped)",
-                                          "module \u0027Common\u0027 has no domain assigned (domainId: unmapped)",
+                                          "module \u0027Payables\u0027 has no domain assigned (domainId: unmapped)",
                                           "module \u0027Media\u0027 has no domain assigned (domainId: unmapped)",
+                                          "module \u0027Menu\u0027 has no domain assigned (domainId: unmapped)",
+                                          "module \u0027Settings\u0027 has no domain assigned (domainId: unmapped)",
+                                          "module \u0027Integration\u0027 has no domain assigned (domainId: unmapped)",
+                                          "module \u0027Retentions\u0027 has no domain assigned (domainId: unmapped)",
+                                          "module \u0027Common\u0027 has no domain assigned (domainId: unmapped)",
+                                          "module \u0027DocTypes\u0027 has no domain assigned (domainId: unmapped)",
+                                          "module \u0027Expenses\u0027 has no domain assigned (domainId: unmapped)",
+                                          "module \u0027InitialLoad\u0027 has no domain assigned (domainId: unmapped)",
                                           "module \u0027Catalog\u0027 has no domain assigned (domainId: unmapped)",
                                           "module \u0027Auxiliary\u0027 has no domain assigned (domainId: unmapped)",
+                                          "module \u0027Communications\u0027 has no domain assigned (domainId: unmapped)",
                                           "module \u0027Accounting\u0027 has no domain assigned (domainId: unmapped)",
                                           "module \u0027Navigation\u0027 has no domain assigned (domainId: unmapped)",
+                                          "module \u0027Media\u0027 has zero features mapped (Application module exists but exposes no discrete UseCases/Query/Command (likely shared/infrastructure module))",
                                           "module \u0027Menu\u0027 has zero features mapped (Domain-only catalog module (no Application UseCases layer yet))",
                                           "module \u0027Tenants\u0027 has zero features mapped (Domain-only catalog module (no Application UseCases layer yet))",
                                           "module \u0027Common\u0027 has zero features mapped (Application module exists but exposes no discrete UseCases/Query/Command (likely shared/infrastructure module))",
-                                          "module \u0027Media\u0027 has zero features mapped (Application module exists but exposes no discrete UseCases/Query/Command (likely shared/infrastructure module))",
-                                          "module \u0027Configuration\u0027 has zero features mapped (Application module exists but exposes no discrete UseCases/Query/Command (likely shared/infrastructure module))",
                                           "module \u0027Auxiliary\u0027 has zero features mapped (Domain-only catalog module (no Application UseCases layer yet))",
                                           "module \u0027SriCatalogs\u0027 has zero features mapped (Domain-only catalog module (no Application UseCases layer yet))"
                                       ]

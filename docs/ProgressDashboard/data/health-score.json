@@ -18,13 +18,22 @@
         "Score":  81.5
     },
     {
-        "Module":  "Purchases",
+        "Module":  "Payables",
         "Architecture":  90,
         "Tests":  80,
         "Documentation":  70,
         "Backend":  90,
         "Frontend":  70,
         "Score":  81.5
+    },
+    {
+        "Module":  "Media",
+        "Architecture":  90,
+        "Tests":  80,
+        "Documentation":  70,
+        "Backend":  65,
+        "Frontend":  70,
+        "Score":  77.75
     },
     {
         "Module":  "Companies",
@@ -52,6 +61,24 @@
         "Backend":  90,
         "Frontend":  70,
         "Score":  81.5
+    },
+    {
+        "Module":  "Settings",
+        "Architecture":  90,
+        "Tests":  80,
+        "Documentation":  70,
+        "Backend":  90,
+        "Frontend":  70,
+        "Score":  81.5
+    },
+    {
+        "Module":  "OrgConfig",
+        "Architecture":  90,
+        "Tests":  80,
+        "Documentation":  70,
+        "Backend":  65,
+        "Frontend":  70,
+        "Score":  77.75
     },
     {
         "Module":  "Integration",
@@ -90,6 +117,15 @@
         "Score":  81.5
     },
     {
+        "Module":  "Purchases",
+        "Architecture":  90,
+        "Tests":  80,
+        "Documentation":  70,
+        "Backend":  90,
+        "Frontend":  70,
+        "Score":  81.5
+    },
+    {
         "Module":  "Tenants",
         "Architecture":  90,
         "Tests":  80,
@@ -100,6 +136,15 @@
     },
     {
         "Module":  "Session",
+        "Architecture":  90,
+        "Tests":  80,
+        "Documentation":  70,
+        "Backend":  90,
+        "Frontend":  70,
+        "Score":  81.5
+    },
+    {
+        "Module":  "Retentions",
         "Architecture":  90,
         "Tests":  80,
         "Documentation":  70,
@@ -144,7 +189,7 @@
         "Score":  81.5
     },
     {
-        "Module":  "Media",
+        "Module":  "DocTypes",
         "Architecture":  90,
         "Tests":  80,
         "Documentation":  70,
@@ -163,6 +208,15 @@
     },
     {
         "Module":  "Caja",
+        "Architecture":  90,
+        "Tests":  80,
+        "Documentation":  70,
+        "Backend":  90,
+        "Frontend":  70,
+        "Score":  81.5
+    },
+    {
+        "Module":  "Expenses",
         "Architecture":  90,
         "Tests":  80,
         "Documentation":  70,
@@ -198,16 +252,16 @@
         "Score":  77.75
     },
     {
-        "Module":  "Audit",
+        "Module":  "Ride",
         "Architecture":  90,
         "Tests":  80,
         "Documentation":  70,
-        "Backend":  65,
+        "Backend":  90,
         "Frontend":  70,
-        "Score":  77.75
+        "Score":  81.5
     },
     {
-        "Module":  "Ride",
+        "Module":  "InitialLoad",
         "Architecture":  90,
         "Tests":  80,
         "Documentation":  70,
@@ -243,13 +297,22 @@
         "Score":  77.75
     },
     {
-        "Module":  "Accounting",
+        "Module":  "Communications",
         "Architecture":  90,
         "Tests":  80,
         "Documentation":  70,
         "Backend":  65,
         "Frontend":  70,
         "Score":  77.75
+    },
+    {
+        "Module":  "Accounting",
+        "Architecture":  90,
+        "Tests":  80,
+        "Documentation":  70,
+        "Backend":  90,
+        "Frontend":  70,
+        "Score":  81.5
     },
     {
         "Module":  "SriCatalogs",
@@ -261,7 +324,7 @@
         "Score":  77.75
     },
     {
-        "Module":  "OrgConfig",
+        "Module":  "Audit",
         "Architecture":  90,
         "Tests":  80,
         "Documentation":  70,

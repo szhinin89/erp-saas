@@ -8,8 +8,8 @@
                           "status":  "verified",
                           "evidence":  [
                                            "backend/src/ERP.Application/Modules/Sales/SalesMapper.cs",
-                                           "backend/src/ERP.Application/Modules/Sales/DTOs/SalesDtos.cs",
-                                           "backend/src/ERP.Application/Modules/Sales/Services/SalesInvoiceElectronicDocumentDataProvider.cs"
+                                           "backend/src/ERP.Application/Modules/Sales/SalesReturnMapper.cs",
+                                           "backend/src/ERP.Application/Modules/Sales/DTOs/SalesDtos.cs"
                                        ]
                       },
                       {
@@ -17,8 +17,9 @@
                           "module":  "Sales",
                           "status":  "verified",
                           "evidence":  [
-                                           "backend/src/ERP.Application/Modules/Sales/UseCases/AuthorizeSalesUseCases.cs",
-                                           "backend/src/ERP.Application/Modules/Sales/UseCases/SalesDraftUseCases.cs"
+                                           "backend/src/ERP.Application/Modules/Sales/DTOs/SalesDtos.cs",
+                                           "backend/src/ERP.Application/Modules/Sales/EventHandlers/SalesReturnAuditHandler.cs",
+                                           "backend/src/ERP.Application/Modules/Sales/Services/SalesCreditRequirementPolicy.cs"
                                        ]
                       },
                       {
@@ -28,7 +29,7 @@
                           "evidence":  [
                                            "backend/src/ERP.Application/Modules/Sales/IInvoiceItemSearchRepository.cs",
                                            "backend/src/ERP.Application/Modules/Sales/SalesMapper.cs",
-                                           "backend/src/ERP.Application/Modules/Sales/DTOs/SalesDtos.cs"
+                                           "backend/src/ERP.Application/Modules/Sales/SalesReturnMapper.cs"
                                        ]
                       },
                       {
@@ -47,8 +48,8 @@
                           "status":  "verified",
                           "evidence":  [
                                            "backend/src/ERP.Application/Modules/Sales/SalesMapper.cs",
-                                           "backend/src/ERP.Application/Modules/Sales/DTOs/SalesDtos.cs",
-                                           "backend/src/ERP.Application/Modules/Sales/Services/ISalesInvoiceEmissionStrategy.cs"
+                                           "backend/src/ERP.Application/Modules/Sales/DTOs/ReturnableLineDto.cs",
+                                           "backend/src/ERP.Application/Modules/Sales/DTOs/SalesDtos.cs"
                                        ]
                       },
                       {
@@ -57,8 +58,8 @@
                           "status":  "verified",
                           "evidence":  [
                                            "backend/src/ERP.Application/Modules/Sales/Services/SalesInvoiceElectronicDocumentDataProvider.cs",
-                                           "backend/src/ERP.Application/Modules/Sales/UseCases/AuthorizeSalesUseCases.cs",
-                                           "backend/src/ERP.Application/Modules/Sales/UseCases/CancelSalesUseCases.cs"
+                                           "backend/src/ERP.Application/Modules/Sales/Services/SalesReturnCreditNoteDataProvider.cs",
+                                           "backend/src/ERP.Application/Modules/Sales/UseCases/AuthorizeSalesReturnUseCases.cs"
                                        ]
                       }
                   ]
@@ -72,8 +73,8 @@
                           "status":  "verified",
                           "evidence":  [
                                            "backend/src/ERP.Application/Modules/Purchases/PurchaseMapper.cs",
-                                           "backend/src/ERP.Application/Modules/Purchases/DTOs/PurchaseDtos.cs",
-                                           "backend/src/ERP.Application/Modules/Purchases/DTOs/PurchaseItemContextDto.cs"
+                                           "backend/src/ERP.Application/Modules/Purchases/DTOs/PurchaseCreditNoteDto.cs",
+                                           "backend/src/ERP.Application/Modules/Purchases/DTOs/PurchaseDtos.cs"
                                        ]
                       },
                       {
@@ -83,7 +84,7 @@
                           "evidence":  [
                                            "backend/src/ERP.Application/Modules/Purchases/PurchaseMapper.cs",
                                            "backend/src/ERP.Application/Modules/Purchases/DTOs/PurchaseDtos.cs",
-                                           "backend/src/ERP.Application/Modules/Purchases/EventHandlers/PurchaseInvoiceAuditHandler.cs"
+                                           "backend/src/ERP.Application/Modules/Purchases/DTOs/PurchaseInvoiceTaxSummaryDto.cs"
                                        ]
                       },
                       {
@@ -91,9 +92,9 @@
                           "module":  "Purchases",
                           "status":  "verified",
                           "evidence":  [
-                                           "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/DTOs/PurchaseDraftDto.cs",
-                                           "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/DTOs/PurchaseReceptionDtos.cs",
-                                           "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/Mapping/PurchaseReceptionMapper.cs"
+                                           "backend/src/ERP.Application/Modules/Purchases/PurchaseMapper.cs",
+                                           "backend/src/ERP.Application/Modules/Purchases/DTOs/PurchaseCreditNoteDto.cs",
+                                           "backend/src/ERP.Application/Modules/Purchases/DTOs/PurchaseDtos.cs"
                                        ]
                       },
                       {
@@ -102,8 +103,8 @@
                           "status":  "verified",
                           "evidence":  [
                                            "backend/src/ERP.Application/Modules/Purchases/PurchaseMapper.cs",
-                                           "backend/src/ERP.Application/Modules/Purchases/DTOs/PurchaseDtos.cs",
-                                           "backend/src/ERP.Application/Modules/Purchases/DTOs/PurchaseItemContextDto.cs"
+                                           "backend/src/ERP.Application/Modules/Purchases/DTOs/PurchaseCreditNoteDto.cs",
+                                           "backend/src/ERP.Application/Modules/Purchases/DTOs/PurchaseDtos.cs"
                                        ]
                       },
                       {
@@ -113,7 +114,7 @@
                           "evidence":  [
                                            "backend/src/ERP.Application/Modules/Purchases/PurchaseMapper.cs",
                                            "backend/src/ERP.Application/Modules/Purchases/DTOs/PurchaseDtos.cs",
-                                           "backend/src/ERP.Application/Modules/Purchases/EventHandlers/IssuedWithholdingAuditHandler.cs"
+                                           "backend/src/ERP.Application/Modules/Purchases/UseCases/AuthorizePurchaseCreditNoteUseCases.cs"
                                        ]
                       }
                   ]

@@ -2338,7 +2338,7 @@ Write-Host "Architecture Explorer home built: 11 diagram nodes, $($filePanelsMap
 # cae a "Pendiente de evaluacion" (mismo literal que usa modules-status.json
 # para lo que no tiene evidencia todavia) -- nunca se infiere desde
 # heuristicas de score, que podria contradecir el estado real documentado en
-# CLAUDE.md/docs/STATUS.md (p.ej. un modulo FROZEN con score bajo se veria
+# CLAUDE.md/STATUS.md (p.ej. un modulo FROZEN con score bajo se veria
 # mal clasificado).
 #
 # Toda la presentacion (encabezados, orden de columnas, formato de celda)
@@ -2921,7 +2921,7 @@ Write-Host "Fase Dashboard 5.0: Dependencias Arquitectonicas ($($dependenciesDat
 # / modules[].changeRisk.band), que ya son datos reales y ya vivos.
 #
 # Validaciones (advierten, nunca detienen la generacion):
-#   1. Cada ADR referenciado en 'adr' debe existir realmente en docs/adr/.
+#   1. Cada ADR referenciado en 'adr' debe existir realmente en docs/decisions/.
 #   2. Cada modulo de architecture-governance.json debe existir en explorer-index.json.
 #   3. Cada fecha de auditoria (lastAudit/nextAudit distinta de 'Pendiente de
 #      auditoria') debe ser una fecha valida.
@@ -2933,7 +2933,7 @@ Write-Host "Fase Dashboard 5.0: Dependencias Arquitectonicas ($($dependenciesDat
 $governanceData = LoadJson "architecture-governance.json"
 $PENDING_AUDIT_TEXT = "Pendiente de auditoria"
 $adrFilesOnDisk = @{}
-Get-ChildItem (Join-Path $ProjectRoot "docs\adr") -Filter "*.md" | ForEach-Object { $adrFilesOnDisk[$_.Name] = $true }
+Get-ChildItem (Join-Path $ProjectRoot "docs\decisions") -Filter "*.md" | ForEach-Object { $adrFilesOnDisk[$_.Name] = $true }
 
 $governanceWarnings = @()
 $modulesWithoutAdr = @()
@@ -2997,7 +2997,7 @@ function Get-DebtSeverity($count)
 
 function Build-AdrDecisionRow($gm)
 {
-    $adrCell = if($gm.adrVerified) { $gm.adr } else { "$($gm.adr) <span style='color:$colorError' title='Referencia a ADR no encontrada en docs/adr/'>&#10060;</span>" }
+    $adrCell = if($gm.adrVerified) { $gm.adr } else { "$($gm.adr) <span style='color:$colorError' title='Referencia a ADR no encontrada en docs/decisions/'>&#10060;</span>" }
     $freezeCell = if($gm.architectureStatus -eq "Freeze") { "<span style='color:$colorDone'>Si</span>" } else { "No" }
     return "<tr><td>$($gm.id)</td><td>$adrCell</td><td>$($gm.architectureStatus)</td><td>$freezeCell</td><td>$($gm.lastAudit)</td></tr>"
 }
@@ -3007,7 +3007,7 @@ $adrDecisionRowsHtml = (@($governanceData.modules | ForEach-Object { Build-AdrDe
 $adrDecisionsHtml = @"
 <section id='adr-decisions' class='panel' data-group='architecture' data-subgroup='adr'>
 <h2>Decisiones Arquitectonicas (ADR)</h2>
-<p class='muted-note'>$($governanceData.modules.Count) modulos. adr/freezeStatus espejados de modules-status.json (Fase Dashboard 3.0). $(if($governanceWarnings.Count -gt 0){"<span style='color:$colorError'>&#9888; $($governanceWarnings.Count) problema(s) de validacion -- ver consola de generacion.</span>"}else{"Todas las referencias a ADR fueron verificadas contra docs/adr/."}) $(if($modulesWithoutAdr.Count -gt 0){"<span style='color:$colorPending'>&#9888; $($modulesWithoutAdr.Count) modulo(s) sin ADR.</span>"}) $(if($frozenModulesWithoutAudit.Count -gt 0){"<span style='color:$colorError'>&#9888; $($frozenModulesWithoutAudit.Count) modulo(s) Frozen sin auditoria registrada.</span>"})</p>
+<p class='muted-note'>$($governanceData.modules.Count) modulos. adr/freezeStatus espejados de modules-status.json (Fase Dashboard 3.0). $(if($governanceWarnings.Count -gt 0){"<span style='color:$colorError'>&#9888; $($governanceWarnings.Count) problema(s) de validacion -- ver consola de generacion.</span>"}else{"Todas las referencias a ADR fueron verificadas contra docs/decisions/."}) $(if($modulesWithoutAdr.Count -gt 0){"<span style='color:$colorPending'>&#9888; $($modulesWithoutAdr.Count) modulo(s) sin ADR.</span>"}) $(if($frozenModulesWithoutAudit.Count -gt 0){"<span style='color:$colorError'>&#9888; $($frozenModulesWithoutAudit.Count) modulo(s) Frozen sin auditoria registrada.</span>"})</p>
 <table class='sortable'>
 <tr><th>Modulo</th><th>ADR</th><th>Estado</th><th>Freeze</th><th>Ultima revision</th></tr>
 $adrDecisionRowsHtml
@@ -3399,13 +3399,13 @@ Write-Host "Fase Dashboard 7.0: KPIs del ERP Core + Salud del ERP (Estado genera
 # No crea archivos nuevos, no modifica documentacion, no modifica JSON
 # existentes. Solo LEE lo ya cargado (modules-status.json, architecture-
 # governance.json, roadmap.json, explorer-index.json, blockers.json) mas dos
-# lecturas de texto crudo nuevas (FEATURES.md, docs/STATUS.md) para el
+# lecturas de texto crudo nuevas (FEATURES.md, STATUS.md) para el
 # chequeo de presencia por alias -- y calcula inconsistencias en vivo.
 #
 # Diseno deliberado: los checks se apoyan en las fuentes JSON YA
 # INVESTIGADAS Y CITADAS en Fases 3.0/4.0/5.0/6.0 (modules-status.json en
 # particular ya es el resultado de una investigacion manual contra CLAUDE.md/
-# docs/STATUS.md/docs/ROADMAP.md/docs/adr/*.md/FEATURES.md) en vez de volver a
+# STATUS.md/docs/ROADMAP.md/docs/decisions/*.md/FEATURES.md) en vez de volver a
 # interpretar el texto de esos documentos con reglas nuevas -- evita que dos
 # mecanismos distintos den una segunda opinion divergente sobre el mismo
 # hecho. La UNICA lectura de texto nueva (FEATURES.md/STATUS.md) es una
@@ -3421,7 +3421,7 @@ Write-Host "Fase Dashboard 7.0: KPIs del ERP Core + Salud del ERP (Estado genera
 # score tecnico, pero eso no generaliza a todos los casos posibles de drift.
 # =============================================================================
 
-$rawStatusMd = Get-Content (Join-Path $ProjectRoot "docs\STATUS.md") -Raw
+$rawStatusMd = Get-Content (Join-Path $ProjectRoot "STATUS.md") -Raw
 $rawFeaturesMd = Get-Content (Join-Path $ProjectRoot "FEATURES.md") -Raw
 
 # Mapa de alias -- unico insumo curado manualmente de este motor (permite la
@@ -3559,7 +3559,7 @@ foreach($ms in $moduleStatusById.Values)
 {
     if($ms.functionalStatus -eq "Pendiente de evaluacion")
     {
-        Add-ConsistencyFinding $ms.id "modules-status.json" "CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*" "Pendiente de evaluacion" "Sin cita textual encontrada (Fase 3.0)" "Informativa" "Modulo sin documentacion"
+        Add-ConsistencyFinding $ms.id "modules-status.json" "CLAUDE.md / STATUS.md / docs/ROADMAP.md / docs/decisions/*" "Pendiente de evaluacion" "Sin cita textual encontrada (Fase 3.0)" "Informativa" "Modulo sin documentacion"
     }
 }
 
@@ -3594,7 +3594,7 @@ foreach($modId in $moduleAliases.Keys)
     if(-not $inFeatures -and -not $inStatus)
     {
         $docPresenceMissing += $modId
-        Add-ConsistencyFinding $modId "FEATURES.md" "docs/STATUS.md" "Sin alias encontrado" "Sin alias encontrado" "Informativa" "Ausente en FEATURES.md y STATUS.md (busqueda por alias, aproximada)"
+        Add-ConsistencyFinding $modId "FEATURES.md" "STATUS.md" "Sin alias encontrado" "Sin alias encontrado" "Informativa" "Ausente en FEATURES.md y STATUS.md (busqueda por alias, aproximada)"
     }
 }
 
@@ -3606,15 +3606,15 @@ $architectureConsistencyScore = [math]::Max(0, [math]::Round(100 - $totalPenalty
 
 # "Documentos sincronizados/desactualizados": para cada uno de los 5
 # documentos fuente, cuenta cuantos findings lo implican como docA o docB.
-$docImplicationCounts = @{ "docs/ROADMAP.md (roadmap.json)" = 0; "docs/STATUS.md (modules-status.json/architecture-governance.json)" = 0; "FEATURES.md" = 0; "docs/adr/*.md (architecture-governance.json)" = 0; "explorer-index.json (Dashboard)" = 0 }
+$docImplicationCounts = @{ "docs/ROADMAP.md (roadmap.json)" = 0; "STATUS.md (modules-status.json/architecture-governance.json)" = 0; "FEATURES.md" = 0; "docs/decisions/*.md (architecture-governance.json)" = 0; "explorer-index.json (Dashboard)" = 0 }
 foreach($f in $consistencyFindings)
 {
     foreach($docKey in @($f.docA, $f.docB))
     {
         if($docKey -match "roadmap") { $docImplicationCounts["docs/ROADMAP.md (roadmap.json)"]++ }
-        elseif($docKey -match "modules-status|architecture-governance") { $docImplicationCounts["docs/STATUS.md (modules-status.json/architecture-governance.json)"]++ }
+        elseif($docKey -match "modules-status|architecture-governance") { $docImplicationCounts["STATUS.md (modules-status.json/architecture-governance.json)"]++ }
         elseif($docKey -match "FEATURES") { $docImplicationCounts["FEATURES.md"]++ }
-        elseif($docKey -match "adr") { $docImplicationCounts["docs/adr/*.md (architecture-governance.json)"]++ }
+        elseif($docKey -match "decisions") { $docImplicationCounts["docs/decisions/*.md (architecture-governance.json)"]++ }
         elseif($docKey -match "explorer-index|blockers") { $docImplicationCounts["explorer-index.json (Dashboard)"]++ }
     }
 }
@@ -3639,7 +3639,7 @@ $docSyncRowsHtml = (@($docImplicationCounts.Keys | ForEach-Object {
 $architectureConsistencyHtml = @"
 <section id='architecture-consistency' class='panel' data-group='architecture' data-subgroup='resumen'>
 <h2>Consistencia Arquitectonica</h2>
-<p class='muted-note'>Calculado en vivo, sin datos manuales: modules-status.json + architecture-governance.json + roadmap.json + blockers.json + explorer-index.json (ya cargados por fases anteriores) + una busqueda de presencia por alias en FEATURES.md y docs/STATUS.md (aproximada, string search -- no comprension semantica). Limite honesto: esta maquina de reglas no reemplaza una auditoria de codigo real -- casos de drift sutiles (ver Fase ERP Core 1.0, hallazgo de Ride) requieren lectura de codigo, no solo cruce de documentos.</p>
+<p class='muted-note'>Calculado en vivo, sin datos manuales: modules-status.json + architecture-governance.json + roadmap.json + blockers.json + explorer-index.json (ya cargados por fases anteriores) + una busqueda de presencia por alias en FEATURES.md y STATUS.md (aproximada, string search -- no comprension semantica). Limite honesto: esta maquina de reglas no reemplaza una auditoria de codigo real -- casos de drift sutiles (ver Fase ERP Core 1.0, hallazgo de Ride) requieren lectura de codigo, no solo cruce de documentos.</p>
 
 <h3>Architecture Consistency Score</h3>
 <p class='big-status' style='color:$(Get-ScoreColor $architectureConsistencyScore)'>$architectureConsistencyScore%</p>
