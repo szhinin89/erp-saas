@@ -27,6 +27,8 @@ interface Props {
   credit: SupplierCreditDto | null;
   onClose: () => void;
   onApplied: (updated: SupplierCreditDto) => void;
+  /** 02D-F — CxP destino preseleccionada (entrada contextual desde la CxP); editable. */
+  defaultPayableId?: string | null;
 }
 
 /**
@@ -37,7 +39,7 @@ interface Props {
  * según el origen); pendientes y parcialmente pagadas (el filtro de estado es de un solo valor →
  * dos consultas server-side). Manual no admite saldos a favor (el backend lo rechaza igual).
  */
-export function ApplySupplierCreditModal({ open, credit, onClose, onApplied }: Props) {
+export function ApplySupplierCreditModal({ open, credit, onClose, onApplied, defaultPayableId }: Props) {
   const moneyDecimals = usePrecisionDecimals("money"); // presentación (04F)
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -51,6 +53,7 @@ export function ApplySupplierCreditModal({ open, credit, onClose, onApplied }: P
     handleSubmit,
     reset,
     setError,
+    setValue,
     formState: { errors },
   } = useForm<ApplySupplierCreditFormValues>({
     resolver: zodResolver(buildApplySupplierCreditSchema(availableAmount, moneyDecimals)),
@@ -77,6 +80,12 @@ export function ApplySupplierCreditModal({ open, credit, onClose, onApplied }: P
       .catch(() => setPayables([]))
       .finally(() => setLoadingPayables(false));
   }, [open, credit, reset]);
+
+  // 02D-F — preselección de la CxP destino una vez cargadas las opciones (solo si es elegible).
+  useEffect(() => {
+    if (defaultPayableId && payables.some((p) => p.id === defaultPayableId))
+      setValue("targetPurchasePayableId", defaultPayableId);
+  }, [payables, defaultPayableId, setValue]);
 
   const handleClose = () => {
     if (saving) return;
@@ -119,7 +128,7 @@ export function ApplySupplierCreditModal({ open, credit, onClose, onApplied }: P
       onClose={handleClose}
       size="md"
       title="Aplicar crédito de proveedor"
-      subtitle={`Proveedor: ${credit.supplierId} — Saldo disponible: ${formatMoney(credit.availableAmount, moneyDecimals)}`}
+      subtitle={`Proveedor: ${credit.supplierName ?? "—"} — Saldo disponible: ${formatMoney(credit.availableAmount, moneyDecimals)}`}
     >
       <div>
         <ZHField

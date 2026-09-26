@@ -328,3 +328,39 @@ describe("PurchaseReturnDetailPage — nombres legibles en el detalle (PURCHASE-
     expect(purchaseReturnService.getById).toHaveBeenCalledTimes(2);
   });
 });
+
+describe("PurchaseReturnDetailPage — saldo a favor generado (02D-F)", () => {
+  it("muestra el saldo generado y enlaza a su detalle en Saldos a favor", async () => {
+    vi.mocked(purchaseReturnService.getById).mockResolvedValue({
+      ...AUTHORIZED_RETURN_WITH_NAMES,
+      supplierCreditAmount: 50,
+      supplierCreditId: "cred-5",
+    });
+    render(
+      <I18nProvider>
+        <MemoryRouter initialEntries={["/purchases/returns/return-1"]}>
+          <Routes>
+            <Route path="/purchases/returns/:id" element={<PurchaseReturnDetailPage />} />
+            <Route path="/suppliers/credits/:id" element={<div>detalle del saldo cred-5</div>} />
+          </Routes>
+        </MemoryRouter>
+      </I18nProvider>,
+    );
+
+    await waitFor(() => expect(screen.getByText("Saldo a favor generado")).toBeTruthy());
+    fireEvent.click(screen.getByText("Ver saldo"));
+    await waitFor(() => expect(screen.getByText("detalle del saldo cred-5")).toBeTruthy());
+  });
+
+  it("sin saldo generado no muestra el bloque ni el enlace", async () => {
+    vi.mocked(purchaseReturnService.getById).mockResolvedValue({
+      ...AUTHORIZED_RETURN_WITH_NAMES,
+      supplierCreditAmount: null,
+      supplierCreditId: null,
+    });
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Datos generales")).toBeTruthy());
+    expect(screen.queryByText("Saldo a favor generado")).toBeNull();
+    expect(screen.queryByText("Ver saldo")).toBeNull();
+  });
+});

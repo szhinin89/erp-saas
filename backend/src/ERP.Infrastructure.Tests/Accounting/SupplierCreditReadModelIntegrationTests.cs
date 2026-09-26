@@ -14,6 +14,7 @@ using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
+using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Tenants.Entities;
@@ -433,6 +434,37 @@ public sealed class SupplierCreditReadModelIntegrationTests : IAsyncLifetime
         application.ReversedByMovementId.Should().Be(applicationReversal.Id);
         (applicationReversal.AccountsPayableId, applicationReversal.PayableDocumentNumber, applicationReversal.Reason)
             .Should().Be((payableId, "GAS-000777", (string?)null), "la reversa de aplicación no guarda motivo en el dominio");
+    }
+
+    /// <summary>
+    /// ZH-SUPPLIER-BALANCES-CROSS-LINKS-02D-F — saldo abierto agregado por proveedor para el aviso de
+    /// la CxP: suma solo saldos abiertos del proveedor en la empresa operativa (nunca de otra empresa
+    /// ni de otro proveedor), sin cargar agregados; con uno solo expone su Id.
+    /// </summary>
+    [Fact]
+    public async Task Saldo_abierto_por_proveedor_agrega_en_BD_con_aislamiento_por_empresa()
+    {
+        var (a, _) = await SeedAdvanceAsync(20m);
+        var (b, _) = await SeedAdvanceAsync(30m);
+        var (closed, _) = await SeedAdvanceAsync(15m);
+        await SeedAdvanceAsync(99m, supplierId: _otherSupplierId);
+        await SeedAdvanceAsync(77m, companyId: _otherCompanyId, branchId: _otherBranchId);
+        await ApplyAsync(closed, await SeedExpensePayableAsync(100m), 15m);
+
+        async Task<SupplierCreditOpenBalance> BalanceAsync()
+        {
+            await using var db = CreateContext();
+            return await new SupplierCreditRepository(db, new FixedCurrentCompany(() => _companyId))
+                .GetOpenBalanceBySupplierAsync(_tenantId, _supplierId, CancellationToken.None);
+        }
+
+        (await BalanceAsync()).Should().Be(new SupplierCreditOpenBalance(50m, 2, null));
+
+        await ApplyAsync(b, await SeedExpensePayableAsync(100m), 30m);
+        (await BalanceAsync()).Should().Be(new SupplierCreditOpenBalance(20m, 1, a));
+
+        await ApplyAsync(a, await SeedExpensePayableAsync(100m), 20m);
+        (await BalanceAsync()).Should().Be(new SupplierCreditOpenBalance(0m, 0, null));
     }
 
     // ── Dobles ─────────────────────────────────────────────────────────────

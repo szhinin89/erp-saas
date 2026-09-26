@@ -12,10 +12,11 @@ import { businessPartnerFacade } from "../../masterData/api/businessPartnerFacad
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 
 const routeParams: { id?: string } = { id: "sp-1" };
+const { navigateSpy } = vi.hoisted(() => ({ navigateSpy: vi.fn() }));
 
 vi.mock("react-router-dom", async () => {
   const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
-  return { ...actual, useNavigate: () => vi.fn(), useParams: () => routeParams };
+  return { ...actual, useNavigate: () => navigateSpy, useParams: () => routeParams };
 });
 
 vi.mock("../api/supplierPaymentService", () => ({
@@ -298,5 +299,24 @@ describe("Direct bank/cash identity display", () => {
     vi.mocked(cajaService.getCashRegisters).mockResolvedValue([{ id: "cash-1", name: "Main cash" } as CashRegisterDto]);
     renderPage();
     expect(await screen.findByText(cash ? "Main cash" : "Bank 12345")).toBeTruthy();
+  });
+});
+
+describe("SupplierPaymentDetailPage — saldo a favor generado (02D-F)", () => {
+  it('ofrece "Ver saldo a favor" y navega al detalle del saldo generado por el pago', async () => {
+    vi.mocked(supplierPaymentService.getById).mockResolvedValue(
+      payment({ totalAmount: 320, unappliedAmount: 20, supplierCreditId: "cred-9" }),
+    );
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Ver saldo a favor")).toBeTruthy());
+    fireEvent.click(screen.getByText("Ver saldo a favor"));
+    expect(navigateSpy).toHaveBeenCalledWith("/suppliers/credits/cred-9");
+  });
+
+  it("sin saldo generado no muestra el enlace", async () => {
+    vi.mocked(supplierPaymentService.getById).mockResolvedValue(payment());
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Aplicado a CxP")).toBeTruthy());
+    expect(screen.queryByText("Ver saldo a favor")).toBeNull();
   });
 });

@@ -68,6 +68,16 @@ export interface PayableDetailDto {
   installments: PayableInstallmentDto[];
   createdAt: string;
   updatedAt: string | null;
+  /** ZH-SUPPLIER-BALANCES-CROSS-LINKS-02D-F — saldo a favor abierto del proveedor (null si no tiene). */
+  supplierAvailableCredit: SupplierAvailableCreditDto | null;
+}
+
+/** Espejo de SupplierAvailableCreditDto — backend (solo informativo; se gestiona en Saldos a favor). */
+export interface SupplierAvailableCreditDto {
+  availableAmount: number;
+  openCount: number;
+  /** Id del único saldo abierto (si hay exactamente uno) — permite abrir "Aplicar saldo" directo. */
+  singleOpenCreditId: string | null;
 }
 
 export interface PayablesListFilters {

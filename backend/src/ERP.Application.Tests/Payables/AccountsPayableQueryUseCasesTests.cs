@@ -4,6 +4,7 @@ using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
+using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentAssertions;
 using Moq;
 
@@ -52,6 +53,16 @@ public sealed class AccountsPayableQueryUseCasesTests
     {
         public Mock<IAccountsPayableRepository> Repo { get; } = new();
         public Mock<IBusinessPartnerRepository> Partners { get; } = new();
+        public Mock<ISupplierCreditRepository> SupplierCredits { get; } = CreateSupplierCredits();
+
+        // 02D-F — por defecto el proveedor no tiene saldo a favor abierto.
+        private static Mock<ISupplierCreditRepository> CreateSupplierCredits()
+        {
+            var mock = new Mock<ISupplierCreditRepository>();
+            mock.Setup(r => r.GetOpenBalanceBySupplierAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new SupplierCreditOpenBalance(0m, 0, null));
+            return mock;
+        }
         public FixedCurrentTenant Tenant { get; } = new(TenantId);
         public FixedCurrentCompany Company { get; } = new(CompanyId);
     }
@@ -226,7 +237,7 @@ public sealed class AccountsPayableQueryUseCasesTests
             .Setup(p => p.GetNamesByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Dictionary<Guid, string> { [supplierId] = "Proveedor Tres" });
 
-        var handler = new GetAccountsPayableByIdHandler(m.Repo.Object, m.Partners.Object, m.Tenant, m.Company);
+        var handler = new GetAccountsPayableByIdHandler(m.Repo.Object, m.Partners.Object, m.SupplierCredits.Object, m.Tenant, m.Company);
         var result = await handler.Handle(new GetAccountsPayableByIdQuery(payable.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
@@ -237,6 +248,40 @@ public sealed class AccountsPayableQueryUseCasesTests
         result.Value.SupplierName.Should().Be("Proveedor Tres");
     }
 
+    /// <summary>
+    /// ZH-SUPPLIER-BALANCES-CROSS-LINKS-02D-F — el detalle informa el saldo a favor abierto del MISMO
+    /// proveedor (agregado, sin historial); sin saldo abierto el bloque queda en null.
+    /// </summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    [InlineData(0)]
+    public async Task Detalle_informa_el_saldo_a_favor_abierto_del_proveedor(int openCount)
+    {
+        var supplierId = Guid.NewGuid();
+        var payable = BuildPayable(AccountsPayableOriginType.ExpenseDocument, supplierId, 200m);
+        var singleId = openCount == 1 ? Guid.NewGuid() : (Guid?)null;
+        var m = new Mocks();
+        m.Repo
+            .Setup(r => r.GetByIdForCompanyAsync(TenantId, CompanyId, payable.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(payable);
+        m.Partners
+            .Setup(p => p.GetNamesByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<Guid, string> { [supplierId] = "Proveedor Tres" });
+        m.SupplierCredits
+            .Setup(r => r.GetOpenBalanceBySupplierAsync(TenantId, supplierId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SupplierCreditOpenBalance(openCount == 0 ? 0m : 45.5m, openCount, singleId));
+
+        var result = await new GetAccountsPayableByIdHandler(m.Repo.Object, m.Partners.Object, m.SupplierCredits.Object, m.Tenant, m.Company)
+            .Handle(new GetAccountsPayableByIdQuery(payable.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        if (openCount == 0)
+            result.Value!.SupplierAvailableCredit.Should().BeNull();
+        else
+            result.Value!.SupplierAvailableCredit.Should().Be(new SupplierAvailableCreditDto(45.5m, openCount, singleId));
+    }
+
     [Fact]
     public async Task Detalle_de_CxP_inexistente_retorna_NotFound()
     {
@@ -245,7 +290,7 @@ public sealed class AccountsPayableQueryUseCasesTests
             .Setup(r => r.GetByIdForCompanyAsync(TenantId, CompanyId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((AccountsPayable?)null);
 
-        var handler = new GetAccountsPayableByIdHandler(m.Repo.Object, m.Partners.Object, m.Tenant, m.Company);
+        var handler = new GetAccountsPayableByIdHandler(m.Repo.Object, m.Partners.Object, m.SupplierCredits.Object, m.Tenant, m.Company);
         var result = await handler.Handle(new GetAccountsPayableByIdQuery(Guid.NewGuid()), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
@@ -288,7 +333,7 @@ public sealed class AccountsPayableQueryUseCasesTests
         listResult.Value.Items[0].OutstandingAmount.Should().Be(expectedOutstanding);
         listResult.Value.Items[0].OutstandingAmount.Should().Be(180m);
 
-        var detailHandler = new GetAccountsPayableByIdHandler(m.Repo.Object, m.Partners.Object, m.Tenant, m.Company);
+        var detailHandler = new GetAccountsPayableByIdHandler(m.Repo.Object, m.Partners.Object, m.SupplierCredits.Object, m.Tenant, m.Company);
         var detailResult = await detailHandler.Handle(
             new GetAccountsPayableByIdQuery(payable.Id),
             CancellationToken.None

@@ -71,6 +71,17 @@ public interface ISupplierCreditRepository
     /// operativa fail-closed), sin cargar movimientos, orden estable (CreatedAt desc, Id desc).
     /// Reemplaza <c>GetPagedAsync</c> (Fase 11).
     /// </summary>
+    /// <summary>
+    /// ZH-SUPPLIER-BALANCES-CROSS-LINKS-02D-F — saldo disponible total y número de saldos abiertos
+    /// de un proveedor en la empresa operativa (fail-closed), sin cargar agregados ni movimientos:
+    /// una consulta agregada + (solo si hay exactamente uno) su Id, para ofrecer "Aplicar saldo".
+    /// </summary>
+    Task<SupplierCreditOpenBalance> GetOpenBalanceBySupplierAsync(
+        Guid tenantId,
+        Guid supplierId,
+        CancellationToken ct = default
+    );
+
     Task<(IReadOnlyList<SupplierCredit> Items, int Total)> SearchAsync(
         Guid tenantId,
         SupplierCreditSearchCriteria criteria,
@@ -79,6 +90,13 @@ public interface ISupplierCreditRepository
         CancellationToken ct = default
     );
 }
+
+/// <summary>ZH-SUPPLIER-BALANCES-CROSS-LINKS-02D-F — saldo abierto agregado de un proveedor.</summary>
+public sealed record SupplierCreditOpenBalance(
+    decimal AvailableAmount,
+    int OpenCount,
+    Guid? SingleOpenCreditId
+);
 
 /// <summary>ZH-SUPPLIER-CREDIT-READ-MODEL-02D-D — filtros del listado de saldos a favor (todos opcionales).</summary>
 public sealed record SupplierCreditSearchCriteria(

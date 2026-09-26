@@ -15,9 +15,12 @@ import { message } from "../../../lib/messages";
  * clientRequestId), ni la lógica de reversa.
  */
 
+// 02D-F — `?applyTo=` controlable por test (entrada contextual desde la CxP).
+let searchParams = new URLSearchParams();
 vi.mock("react-router-dom", () => ({
   useParams: () => ({ id: "credit-1" }),
   useNavigate: () => vi.fn(),
+  useSearchParams: () => [searchParams],
   Link: ({ to, children, className }: { to: string; children: React.ReactNode; className?: string }) => (
     <a href={to} className={className}>
       {children}
@@ -36,7 +39,8 @@ vi.mock("../api/supplierCreditService", () => ({
 }));
 
 vi.mock("../components/ApplySupplierCreditModal", () => ({
-  ApplySupplierCreditModal: () => null,
+  ApplySupplierCreditModal: ({ open, defaultPayableId }: { open: boolean; defaultPayableId?: string | null }) =>
+    open ? <div data-testid="apply-modal">aplicar → {defaultPayableId ?? "sin CxP"}</div> : null,
 }));
 
 vi.mock("../components/RegisterSupplierCreditRefundModal", () => ({
@@ -96,6 +100,7 @@ afterEach(() => cleanup());
 
 beforeEach(() => {
   vi.clearAllMocks();
+  searchParams = new URLSearchParams();
   vi.mocked(supplierCreditService.getById).mockResolvedValue(CREDIT);
 });
 
@@ -236,5 +241,27 @@ describe("SupplierCreditDetailPage — 02D-E", () => {
     expect(screen.queryByText("Aplicar a CxP")).toBeNull();
     expect(screen.queryByText("Registrar reembolso")).toBeNull();
     expect(screen.getByText("Cerrado")).toBeTruthy();
+  });
+});
+
+describe("SupplierCreditDetailPage — entrada contextual desde la CxP (02D-F)", () => {
+  it("?applyTo abre el flujo oficial de Aplicar con la CxP preseleccionada", async () => {
+    searchParams = new URLSearchParams("applyTo=payable-7");
+    render(<SupplierCreditDetailPage />);
+    await waitFor(() => expect(screen.getByTestId("apply-modal").textContent).toContain("payable-7"));
+  });
+
+  it("?applyTo no abre Aplicar si el saldo ya no está disponible", async () => {
+    searchParams = new URLSearchParams("applyTo=payable-7");
+    vi.mocked(supplierCreditService.getById).mockResolvedValue({ ...CREDIT, availableAmount: 0, isOpen: false });
+    render(<SupplierCreditDetailPage />);
+    await waitFor(() => expect(screen.getByText("Resumen")).toBeTruthy());
+    expect(screen.queryByTestId("apply-modal")).toBeNull();
+  });
+
+  it("sin applyTo no abre el modal", async () => {
+    render(<SupplierCreditDetailPage />);
+    await waitFor(() => expect(screen.getByText("Resumen")).toBeTruthy());
+    expect(screen.queryByTestId("apply-modal")).toBeNull();
   });
 });

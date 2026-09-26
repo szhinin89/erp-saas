@@ -233,7 +233,7 @@ export function SupplierPaymentDetailPage() {
                   size="sm"
                   onClick={() => navigate(`/suppliers/credits/${payment.supplierCreditId}`)}
                 >
-                  Ver anticipo (crédito de proveedor)
+                  Ver saldo a favor
                 </ZHBtn>
               </div>
             )}

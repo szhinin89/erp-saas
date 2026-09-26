@@ -4,6 +4,9 @@ import { EmptyState, LoadingState, NoAccessPage, PageShell } from "../../../comp
 import { ZHCard } from "../../../components/zh/ZHCard";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
+import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { formatMoneyWithSymbol } from "../../../lib/sanitizers";
+import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
 import { formatApiRequestError } from "../../lib/apiError";
@@ -40,6 +43,7 @@ export function PayableDetailPage() {
   const navigate = useNavigate();
   const { has } = usePermissionsUi();
   const canView = has(PERMISSIONS.view);
+  const moneyDecimals = usePrecisionDecimals("money");
 
   const [payable, setPayable] = useState<PayableDetailDto | null>(null);
   const [loading, setLoading] = useState(false);
@@ -70,6 +74,19 @@ export function PayableDetailPage() {
   if (!canView) return <NoAccessPage title="Cuenta por pagar" />;
 
   const originLink = payable ? originRoute(payable.originType, payable.originId) : null;
+  // ZH-SUPPLIER-BALANCES-CROSS-LINKS-02D-F — la CxP solo INFORMA el saldo a favor del proveedor y
+  // ofrece la entrada al flujo oficial; aplicar/reembolsar vive únicamente en Saldos a favor.
+  const credit = payable?.supplierAvailableCredit ?? null;
+  const showCredit = credit !== null && credit.availableAmount > 0;
+  const canApplyCredit =
+    payable !== null && payable.outstandingAmount > 0 && payable.status !== "cancelled";
+  const creditsListRoute = payable ? `/suppliers/credits?supplierId=${payable.supplierId}` : "";
+  const applyCreditRoute =
+    payable && credit
+      ? credit.singleOpenCreditId
+        ? `/suppliers/credits/${credit.singleOpenCreditId}?applyTo=${payable.id}`
+        : `${creditsListRoute}&applyTo=${payable.id}`
+      : "";
 
   return (
     <PageShell
@@ -129,6 +146,25 @@ export function PayableDetailPage() {
               </ZHField>
             </div>
           </ZHCard>
+
+          {showCredit && (
+            <ZHCard title="Saldo a favor del proveedor">
+              <ZHPageNotice
+                variant="info"
+                message={`Este proveedor tiene ${formatMoneyWithSymbol(credit.availableAmount, moneyDecimals)} a favor`}
+              />
+              <div className="pay-detail-actions">
+                <ZHBtn type="button" variant="ghost" size="sm" onClick={() => navigate(creditsListRoute)}>
+                  Ver saldos
+                </ZHBtn>
+                {canApplyCredit && (
+                  <ZHBtn type="button" variant="primary" size="sm" onClick={() => navigate(applyCreditRoute)}>
+                    Aplicar saldo
+                  </ZHBtn>
+                )}
+              </div>
+            </ZHCard>
+          )}
 
           <ZHCard title="Saldo">
             <div className="pay-detail-summary">

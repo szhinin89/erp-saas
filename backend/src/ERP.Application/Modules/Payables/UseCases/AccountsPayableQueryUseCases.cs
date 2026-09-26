@@ -3,6 +3,7 @@ using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
+using ERP.Domain.Modules.Purchases.Interfaces;
 using MediatR;
 
 namespace ERP.Application.Modules.Payables.UseCases;
@@ -64,7 +65,21 @@ public sealed record AccountsPayableDetailDto(
     string Status,
     IReadOnlyList<AccountsPayableInstallmentDetailDto> Installments,
     DateTime CreatedAt,
-    DateTime? UpdatedAt
+    DateTime? UpdatedAt,
+    // ZH-SUPPLIER-BALANCES-CROSS-LINKS-02D-F — saldo a favor abierto del MISMO proveedor en la
+    // empresa (null si no tiene). Solo informativo: la gestión del saldo vive en Saldos a favor.
+    SupplierAvailableCreditDto? SupplierAvailableCredit = null
+);
+
+/// <summary>
+/// ZH-SUPPLIER-BALANCES-CROSS-LINKS-02D-F — resumen del saldo a favor abierto del proveedor de la
+/// CxP: total disponible, cantidad de saldos abiertos y, si hay exactamente uno, su Id (para abrir
+/// directamente "Aplicar saldo").
+/// </summary>
+public sealed record SupplierAvailableCreditDto(
+    decimal AvailableAmount,
+    int OpenCount,
+    Guid? SingleOpenCreditId
 );
 
 // ── Queries ─────────────────────────────────────────────────────────────
@@ -161,18 +176,21 @@ public sealed class GetAccountsPayableByIdHandler
 {
     private readonly IAccountsPayableRepository _repo;
     private readonly IBusinessPartnerRepository _partners;
+    private readonly ISupplierCreditRepository _supplierCredits;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
 
     public GetAccountsPayableByIdHandler(
         IAccountsPayableRepository repo,
         IBusinessPartnerRepository partners,
+        ISupplierCreditRepository supplierCredits,
         ICurrentTenant t,
         ICurrentCompany c
     )
     {
         _repo = repo;
         _partners = partners;
+        _supplierCredits = supplierCredits;
         _t = t;
         _c = c;
     }
@@ -190,8 +208,14 @@ public sealed class GetAccountsPayableByIdHandler
             return Result<AccountsPayableDetailDto>.NotFound("Cuenta por pagar no encontrada.");
 
         var names = await _partners.GetNamesByIdsAsync([p.SupplierId], ct);
+        var balance = await _supplierCredits.GetOpenBalanceBySupplierAsync(_t.TenantId, p.SupplierId, ct);
         return Result<AccountsPayableDetailDto>.Success(
-            AccountsPayableDtoMapper.ToDetail(p, names.GetValueOrDefault(p.SupplierId, string.Empty))
+            AccountsPayableDtoMapper.ToDetail(p, names.GetValueOrDefault(p.SupplierId, string.Empty)) with
+            {
+                SupplierAvailableCredit = balance.OpenCount == 0
+                    ? null
+                    : new SupplierAvailableCreditDto(balance.AvailableAmount, balance.OpenCount, balance.SingleOpenCreditId),
+            }
         );
     }
 }

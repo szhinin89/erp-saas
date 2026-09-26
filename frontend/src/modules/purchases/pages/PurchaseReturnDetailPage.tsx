@@ -307,6 +307,22 @@ export function PurchaseReturnDetailPage() {
               </span>
             </div>
           )}
+          {editing.supplierCreditId && (
+            <div>
+              <span className="sr-general-grid__label">Saldo a favor generado</span>
+              <span className="sr-general-grid__value">
+                <ZHMoneyValue precision="money" value={editing.supplierCreditAmount ?? 0} />{" "}
+                <ZHBtn
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate(`/suppliers/credits/${editing.supplierCreditId}`)}
+                >
+                  Ver saldo
+                </ZHBtn>
+              </span>
+            </div>
+          )}
         </div>
       </ZHCard>
 

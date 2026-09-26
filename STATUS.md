@@ -2,6 +2,22 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-26** · Kernel refactor: **2026-06-05**.
 
+## ZH-SUPPLIER-BALANCES-02D-FINAL-QA — SPAY-02D CLOSED (2026-09-26)
+
+- Regresión: Domain 1206/1206 · Application 2279/2279 · Architecture 116/116 · API 486/487 (baseline `PG_unique_business_partner_identification_enforced`) · PostgreSQL focalizado 256/258 (baseline `PurchaseExpenseReprocessAfterCancelConstraintsTests.Trigger_cruzado_*`, fallan igual en `HEAD` limpio) · vitest 2495/2495 · `tsc -b`/build OK · lint 0 errores (35 warnings preexistentes, ninguno en archivos 02D) · `architecture:check` 244 = `HEAD` (mismo conjunto).
+- Regresiones 02D corregidas: GUID del proveedor visible en los subtítulos de los modales Aplicar/Reembolso (ahora nombre) y en la descripción del `CashMovement` de reembolso/reversa (texto sin GUID; trazabilidad por `ReferenceId`).
+- Pendientes fuera de 02D: `PurchaseExpenseExclusivityTests.cs` no compila (migración eliminada en el squash); `ISupplierCreditRepository.GetBySourcePurchaseReturnIdAsync` sin uso desde antes de 02D; bodegas N+1 en el detalle de devolución; lock pesimista de Gastos; permisos `supplier-balances.*`; SupplierPaymentRefund/CashFundingRequest/BankMovement/conciliación.
+
+## ZH-SUPPLIER-BALANCES-CROSS-LINKS-02D-F — Navegación contextual CxP ↔ Pago ↔ Devolución ↔ Saldos a favor (2026-09-26) — cierra SPAY-02D
+
+**Estado: COMPLETADO (sin commit).** Saldos a favor sigue siendo la ÚNICA pantalla que administra el saldo.
+- CxP: `AccountsPayableDetailDto.SupplierAvailableCredit` (total disponible, nº de saldos abiertos, Id si es único) vía `ISupplierCreditRepository.GetOpenBalanceBySupplierAsync` (1 agregado + 1 Id solo si hay uno; empresa operativa). Bloque "Este proveedor tiene $X a favor" con "Ver saldos" (`/suppliers/credits?supplierId=`) y "Aplicar saldo" (detalle del saldo `?applyTo=<CxP>` → modal oficial con la CxP preseleccionada; con varios saldos, listado filtrado que propaga `applyTo`). Sin import frontend payables→finance.
+- Devolución: `PurchaseReturnDto.SupplierCreditAmount` (dominio) + `SupplierCreditId` (detalle, por FK de origen) → "Saldo a favor generado: $X [Ver saldo]".
+- Pago: botón renombrado a "Ver saldo a favor" (misma navegación al detalle correcto).
+- Listado de saldos inicializa el filtro de proveedor desde `?supplierId=` (el buscador oficial hidrata el nombre por Id); sin sync continuo URL↔filtros (no existe ese patrón).
+- Evidencia: vitest finance/payables/purchase-return/supplier-payments 125/125 · `tsc -b`/eslint/build OK · `architecture:check` 244 = `HEAD` · Application 2279 · Domain 1206 · Architecture 116 · API focalizadas 83/83 · PostgreSQL read-model 6/6 (agregado + aislamiento por empresa).
+- Deuda preexistente anotada (no tocada): `GetPurchaseReturnByIdHandler` resuelve bodegas con una consulta por bodega distinta.
+
 ## ZH-SUPPLIER-BALANCES-UX-02D-E — Pantalla "Saldos a favor de proveedores" (2026-09-26)
 
 **Estado: COMPLETADO (sin commit).** Misma ruta `/suppliers/credits` y mismos Id/permisos/LabelKey del menú; solo cambia la etiqueta (es/en + NavItem).

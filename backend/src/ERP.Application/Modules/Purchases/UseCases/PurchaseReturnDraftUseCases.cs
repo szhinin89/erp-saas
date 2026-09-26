@@ -573,6 +573,7 @@ internal static class Map
                 ))
                 .ToList(),
             r.CreatedAt,
-            r.UpdatedAt
+            r.UpdatedAt,
+            SupplierCreditAmount: r.SupplierCreditAmount
         );
 }

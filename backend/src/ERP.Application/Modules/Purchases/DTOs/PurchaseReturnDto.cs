@@ -41,7 +41,12 @@ public sealed record PurchaseReturnDto(
     // devolución vía LinkPurchaseCreditNoteToReturn — flujo distinto al registro manual de
     // SupplierCreditNoteDocumentId; una devolución puede tener una sin la otra, o ninguna.
     Guid? LinkedPurchaseCreditNoteId = null,
-    string? LinkedPurchaseCreditNoteStatus = null
+    string? LinkedPurchaseCreditNoteStatus = null,
+    // ZH-SUPPLIER-BALANCES-CROSS-LINKS-02D-F — saldo a favor generado por la autorización
+    // (PurchaseReturn.SupplierCreditAmount, dato de dominio) y su SupplierCredit (resuelto solo en
+    // el detalle por la FK de origen — nunca por heurística).
+    decimal? SupplierCreditAmount = null,
+    Guid? SupplierCreditId = null
 );
 
 /// <summary>P0-02 Fase 5 — proyección de lectura de <c>PurchaseReturnDetail</c>.</summary>

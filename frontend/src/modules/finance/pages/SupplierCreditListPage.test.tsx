@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { SupplierCreditListPage } from "./SupplierCreditListPage";
 import { I18nProvider } from "../../../i18n/i18n";
 import type { SupplierCreditListItemDto } from "../api/supplierCreditService";
@@ -62,14 +62,22 @@ beforeEach(() => {
   list.mockReset().mockResolvedValue({ items: ROWS, total: 2, page: 1, pageSize: 25 });
 });
 
-function renderPage() {
+function renderPage(initialEntry = "/suppliers/credits") {
   render(
     <I18nProvider>
-      <MemoryRouter>
-        <SupplierCreditListPage />
+      <MemoryRouter initialEntries={[initialEntry]}>
+        <Routes>
+          <Route path="/suppliers/credits" element={<SupplierCreditListPage />} />
+          <Route path="/suppliers/credits/:id" element={<LocationProbe />} />
+        </Routes>
       </MemoryRouter>
     </I18nProvider>,
   );
+}
+
+function LocationProbe() {
+  const location = useLocation();
+  return <div data-testid="location">{location.pathname + location.search}</div>;
 }
 
 const lastFilters = () => list.mock.calls.at(-1)![2] as Record<string, unknown>;
@@ -124,5 +132,22 @@ describe("SupplierCreditListPage (02D-E)", () => {
     renderPage();
     await waitFor(() => expect(list).toHaveBeenCalled());
     expect(screen.queryByText("Cuentas bancarias")).toBeNull();
+  });
+});
+
+describe("SupplierCreditListPage — filtro por proveedor desde URL (02D-F)", () => {
+  it("?supplierId inicializa el filtro server-side del proveedor (con estado abiertos)", async () => {
+    renderPage("/suppliers/credits?supplierId=sup-9");
+    await waitFor(() => expect(list).toHaveBeenCalled());
+    expect(list.mock.calls[0]![2]).toEqual({ supplierId: "sup-9", sourceType: null, isOpen: true });
+  });
+
+  it("?applyTo se propaga al detalle al abrir un saldo", async () => {
+    renderPage("/suppliers/credits?supplierId=sup-9&applyTo=payable-7");
+    await waitFor(() => expect(screen.getAllByText("Ver").length).toBeGreaterThan(0));
+    fireEvent.click(screen.getAllByText("Ver")[0]!);
+    await waitFor(() =>
+      expect(screen.getByTestId("location").textContent).toBe("/suppliers/credits/cred-1?applyTo=payable-7"),
+    );
   });
 });

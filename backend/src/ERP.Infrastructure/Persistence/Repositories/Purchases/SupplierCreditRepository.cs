@@ -136,6 +136,28 @@ public sealed class SupplierCreditRepository : ISupplierCreditRepository
             .ToDictionary(x => x.Id, x => x.Doc);
     }
 
+    public async Task<SupplierCreditOpenBalance> GetOpenBalanceBySupplierAsync(
+        Guid tenantId,
+        Guid supplierId,
+        CancellationToken ct = default
+    )
+    {
+        var open = _db
+            .SupplierCredits.ForOperationalScope(tenantId, _company)
+            .AsNoTracking()
+            .Where(x => x.SupplierId == supplierId && x.AvailableAmount > 0);
+        var aggregate = await open.GroupBy(_ => 1)
+            .Select(g => new { Available = g.Sum(x => x.AvailableAmount), Count = g.Count() })
+            .FirstOrDefaultAsync(ct);
+        if (aggregate is null)
+            return new SupplierCreditOpenBalance(0m, 0, null);
+
+        Guid? singleId = aggregate.Count == 1
+            ? await open.Select(x => (Guid?)x.Id).FirstOrDefaultAsync(ct)
+            : null;
+        return new SupplierCreditOpenBalance(aggregate.Available, aggregate.Count, singleId);
+    }
+
     public async Task<(IReadOnlyList<SupplierCredit> Items, int Total)> SearchAsync(
         Guid tenantId,
         SupplierCreditSearchCriteria criteria,

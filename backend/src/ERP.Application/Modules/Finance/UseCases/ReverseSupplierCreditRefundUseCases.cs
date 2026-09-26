@@ -246,7 +246,7 @@ public sealed class ReverseSupplierCreditRefundHandler
                 var cashMovement = cashSession.RecordMovement(
                     CashMovementType.ManualExpense,
                     original.Amount,
-                    $"Reversa de reembolso de crédito a proveedor {credit.SupplierId}",
+                    "Reversa de reembolso de saldo a favor de proveedor",
                     uid,
                     CashReferenceType.SupplierCreditRefund,
                     original.Id,

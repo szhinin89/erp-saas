@@ -40,6 +40,7 @@ public sealed class GetPurchaseReturnByIdHandlerTests
         public Mock<IPurchaseReceptionDocumentRepository> ReceptionRepo { get; } = new();
         public Mock<IPurchaseInvoiceRepository> InvoiceRepo { get; } = new();
         public Mock<IPurchaseCreditNoteRepository> CreditNoteRepo { get; } = new();
+        public Mock<ISupplierCreditRepository> SupplierCreditRepo { get; } = new();
 
         public Mocks()
         {
@@ -73,6 +74,7 @@ public sealed class GetPurchaseReturnByIdHandlerTests
                 ReceptionRepo.Object,
                 InvoiceRepo.Object,
                 CreditNoteRepo.Object,
+                SupplierCreditRepo.Object,
                 FixedTenant()
             );
     }
@@ -419,5 +421,33 @@ public sealed class GetPurchaseReturnByIdHandlerTests
             r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
+    }
+
+    /// <summary>
+    /// ZH-SUPPLIER-BALANCES-CROSS-LINKS-02D-F — el detalle resuelve el SupplierCredit generado por la
+    /// devolución por su FK de origen (nunca por heurística); sin saldo generado queda en null.
+    /// </summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Handle_resuelve_el_saldo_a_favor_generado_por_su_FK_de_origen(bool generated)
+    {
+        var purchaseReturn = BuildAuthorizedReturn();
+        var creditId = Guid.NewGuid();
+        var m = new Mocks();
+        m.ReturnRepo
+            .Setup(r => r.GetByIdAsync(TenantId, purchaseReturn.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(purchaseReturn);
+        m.ItemRepo
+            .Setup(r => r.GetByIdsLightAsync(It.IsAny<IReadOnlyCollection<Guid>>(), TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<Item>());
+        m.SupplierCreditRepo
+            .Setup(r => r.GetIdBySourcePurchaseReturnIdAsync(TenantId, purchaseReturn.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(generated ? creditId : null);
+
+        var result = await m.BuildHandler().Handle(new GetPurchaseReturnByIdQuery(purchaseReturn.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.SupplierCreditId.Should().Be(generated ? creditId : null);
     }
 }

@@ -54,6 +54,10 @@ export interface PurchaseReturnDto {
    * flujo distinto al registro manual de supplierCreditNoteDocumentId; puede no existir. */
   linkedPurchaseCreditNoteId: string | null;
   linkedPurchaseCreditNoteStatus: string | null;
+  /** ZH-SUPPLIER-BALANCES-CROSS-LINKS-02D-F — saldo a favor generado al autorizar (dato de dominio). */
+  supplierCreditAmount?: number | null;
+  /** SupplierCredit generado (solo en el detalle, por FK de origen); null si no generó saldo. */
+  supplierCreditId?: string | null;
 }
 
 export interface PurchaseReturnListResultDto {

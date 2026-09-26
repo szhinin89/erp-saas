@@ -44,12 +44,23 @@ afterEach(() => {
   list.mockClear();
 });
 
-const CREDIT = { id: "cred-1", supplierId: "sup-1", availableAmount: 50 } as SupplierCreditDto;
+const CREDIT = {
+  id: "cred-1",
+  supplierId: "sup-1",
+  supplierName: "Distribuidora Andina",
+  availableAmount: 50,
+} as SupplierCreditDto;
 
-async function renderModal() {
+async function renderModal(defaultPayableId?: string) {
   render(
     <I18nProvider>
-      <ApplySupplierCreditModal open credit={CREDIT} onClose={() => {}} onApplied={() => {}} />
+      <ApplySupplierCreditModal
+        open
+        credit={CREDIT}
+        onClose={() => {}}
+        onApplied={() => {}}
+        defaultPayableId={defaultPayableId}
+      />
     </I18nProvider>,
   );
   await waitFor(() => expect(screen.getByText(/FAC-001/)).toBeTruthy());
@@ -118,5 +129,38 @@ describe("ApplySupplierCreditModal — CxP de Compra y de Gasto (02D-C)", () => 
     });
     await waitFor(() => expect(apply).toHaveBeenCalledTimes(1));
     expect(apply.mock.calls[0]![1]).toMatchObject({ targetPurchasePayableId: "pay-2", amount: 10 });
+  });
+});
+
+describe("ApplySupplierCreditModal — CxP preseleccionada desde la CxP (02D-F)", () => {
+  it("preselecciona la CxP destino elegible y la envía al aplicar", async () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, moneyDecimals: 2 });
+    apply.mockResolvedValue({ ...CREDIT, availableAmount: 40 });
+    const { amount } = await renderModal("pay-2");
+    await waitFor(() =>
+      expect((screen.getByRole("combobox") as HTMLSelectElement).value).toBe("pay-2"),
+    );
+    fireEvent.change(amount, { target: { value: "10" } });
+    fireEvent.blur(amount);
+    await act(async () => {
+      fireEvent.click(screen.getByText("Aplicar crédito"));
+    });
+    await waitFor(() => expect(apply).toHaveBeenCalledTimes(1));
+    expect(apply.mock.calls[0]![1]).toMatchObject({ targetPurchasePayableId: "pay-2" });
+  });
+
+  it("ignora una CxP preseleccionada que no es elegible", async () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, moneyDecimals: 2 });
+    await renderModal("pay-man");
+    expect((screen.getByRole("combobox") as HTMLSelectElement).value).toBe("");
+  });
+});
+
+describe("ApplySupplierCreditModal — sin GUID visible (02D QA)", () => {
+  it("el subtítulo muestra el nombre del proveedor, nunca su Id", async () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, moneyDecimals: 2 });
+    await renderModal();
+    expect(screen.getByText(/Proveedor: Distribuidora Andina/)).toBeTruthy();
+    expect(screen.queryByText(/sup-1/)).toBeNull();
   });
 });

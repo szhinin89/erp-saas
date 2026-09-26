@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Badge, PageShell, PageToolbar, TableCard } from "../../../components/PageShell";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
@@ -29,10 +29,18 @@ const PAGE_SIZE = 25;
  */
 export function SupplierCreditListPage() {
   const navigate = useNavigate();
+  // 02D-F — entrada contextual (p. ej. desde la CxP): `?supplierId=` inicializa el filtro de
+  // proveedor; `?applyTo=` (CxP destino) se propaga al detalle para abrir "Aplicar" preseleccionado.
+  // Sin sincronización continua URL↔filtros (no existe ese patrón en estas pantallas).
+  const [searchParams] = useSearchParams();
+  const applyTo = searchParams.get("applyTo");
   const [items, setItems] = useState<SupplierCreditListItemDto[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [filters, setFilters] = useState<SupplierCreditFiltersValue>(DEFAULT_SUPPLIER_CREDIT_FILTERS);
+  const [filters, setFilters] = useState<SupplierCreditFiltersValue>(() => ({
+    ...DEFAULT_SUPPLIER_CREDIT_FILTERS,
+    supplierId: searchParams.get("supplierId") || null,
+  }));
   const [loading, setLoading] = useState(false);
 
   const handleFiltersChange = (patch: Partial<SupplierCreditFiltersValue>) => {
@@ -122,14 +130,16 @@ export function SupplierCreditListPage() {
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => navigate(`/suppliers/credits/${row.id}`)}
+            onClick={() =>
+              navigate(`/suppliers/credits/${row.id}${applyTo ? `?applyTo=${applyTo}` : ""}`)
+            }
           >
             Ver
           </ZHBtn>
         ),
       },
     ],
-    [navigate],
+    [navigate, applyTo],
   );
 
   return (

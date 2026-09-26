@@ -30,6 +30,7 @@ public sealed class GetPurchaseReturnByIdHandler
     private readonly IPurchaseReceptionDocumentRepository _receptionRepo;
     private readonly IPurchaseInvoiceRepository _invoiceRepo;
     private readonly IPurchaseCreditNoteRepository _creditNoteRepo;
+    private readonly ISupplierCreditRepository _supplierCreditRepo;
     private readonly ICurrentTenant _t;
 
     public GetPurchaseReturnByIdHandler(
@@ -39,9 +40,11 @@ public sealed class GetPurchaseReturnByIdHandler
         IPurchaseReceptionDocumentRepository receptionRepo,
         IPurchaseInvoiceRepository invoiceRepo,
         IPurchaseCreditNoteRepository creditNoteRepo,
+        ISupplierCreditRepository supplierCreditRepo,
         ICurrentTenant t
     )
     {
+        _supplierCreditRepo = supplierCreditRepo;
         _repo = repo;
         _itemRepo = itemRepo;
         _warehouseRepo = warehouseRepo;
@@ -139,8 +142,13 @@ public sealed class GetPurchaseReturnByIdHandler
             ct
         );
 
+        // ZH-SUPPLIER-BALANCES-CROSS-LINKS-02D-F — saldo a favor generado (FK de origen, empresa
+        // operativa); null si la devolución no generó saldo.
+        var supplierCreditId = await _supplierCreditRepo.GetIdBySourcePurchaseReturnIdAsync(tenantId, dto.Id, ct);
+
         return dto with
         {
+            SupplierCreditId = supplierCreditId,
             Lines = enrichedLines,
             SupplierCreditNoteInvoiceNumber = creditNoteInvoiceNumber,
             SupplierCreditNoteAccessKey = creditNoteAccessKey,

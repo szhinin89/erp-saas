@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { PageShell, Badge } from "../../../components/PageShell";
 import { ZHCard } from "../../../components/zh/ZHCard";
 import { ZHBtn } from "../../../components/zh/ZHForm";
@@ -78,6 +78,11 @@ export function SupplierCreditDetailPage() {
   const [credit, setCredit] = useState<SupplierCreditDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [applyOpen, setApplyOpen] = useState(false);
+  // 02D-F — `?applyTo=<CxP>` (entrada desde la CxP): abre el flujo oficial de Aplicar con esa CxP
+  // preseleccionada, una sola vez, solo si hay saldo disponible.
+  const [searchParams] = useSearchParams();
+  const applyTo = searchParams.get("applyTo");
+  const [applyToHandled, setApplyToHandled] = useState(false);
   const [refundOpen, setRefundOpen] = useState(false);
   const [reversing, setReversing] = useState<string | null>(null);
 
@@ -103,6 +108,12 @@ export function SupplierCreditDetailPage() {
       cancelled = true;
     };
   }, [id, navigate]);
+
+  useEffect(() => {
+    if (!credit || !applyTo || applyToHandled) return;
+    setApplyToHandled(true);
+    if (credit.availableAmount > 0) setApplyOpen(true);
+  }, [credit, applyTo, applyToHandled]);
 
   const reload = async () => {
     if (!id) return;
@@ -311,6 +322,7 @@ export function SupplierCreditDetailPage() {
       <ApplySupplierCreditModal
         open={applyOpen}
         credit={credit}
+        defaultPayableId={applyTo}
         onClose={() => setApplyOpen(false)}
         onApplied={setCredit}
       />

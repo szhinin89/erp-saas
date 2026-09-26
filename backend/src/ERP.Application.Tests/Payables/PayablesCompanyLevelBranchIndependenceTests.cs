@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Application.Common;
 using ERP.Application.Modules.Payables.UseCases;
 using ERP.Domain.MasterData.Interfaces;
@@ -185,6 +186,7 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
         var handler = new GetAccountsPayableByIdHandler(
             repo,
             partners.Object,
+            NoOpenSupplierCredits(),
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
             Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyAId)
         );
@@ -241,6 +243,7 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
         var handler = new GetAccountsPayableByIdHandler(
             repo,
             partners.Object,
+            NoOpenSupplierCredits(),
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
             Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyAId) // activo en Empresa A
         );
@@ -269,6 +272,7 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
         var handler = new GetAccountsPayableByIdHandler(
             repo,
             partners.Object,
+            NoOpenSupplierCredits(),
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
             Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyBId) // activo en Empresa B, dueña del documento
         );
@@ -378,4 +382,10 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
 
         result.IsSuccess.Should().BeTrue(result.Error);
     }
+
+    // 02D-F — la CxP ahora informa el saldo a favor abierto del proveedor; aquí no hay ninguno.
+    private static ISupplierCreditRepository NoOpenSupplierCredits() =>
+        Mock.Of<ISupplierCreditRepository>(r =>
+            r.GetOpenBalanceBySupplierAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+            == Task.FromResult(new SupplierCreditOpenBalance(0m, 0, null)));
 }

@@ -415,7 +415,7 @@ public sealed class RegisterSupplierCreditRefundHandler
                 var cashMovement = cashSession.RecordMovement(
                     CashMovementType.ManualIncome,
                     cmd.Amount,
-                    $"Reembolso de crédito a proveedor {credit.SupplierId}",
+                    "Reembolso de saldo a favor de proveedor",
                     uid,
                     CashReferenceType.SupplierCreditRefund,
                     transaction.Id,

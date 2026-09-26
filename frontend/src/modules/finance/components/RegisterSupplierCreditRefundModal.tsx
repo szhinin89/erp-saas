@@ -155,7 +155,7 @@ export function RegisterSupplierCreditRefundModal({
       onClose={handleClose}
       size="md"
       title="Registrar reembolso"
-      subtitle={`Proveedor: ${credit.supplierId} — Saldo disponible: ${formatMoney(credit.availableAmount, moneyDecimals)}`}
+      subtitle={`Proveedor: ${credit.supplierName ?? "—"} — Saldo disponible: ${formatMoney(credit.availableAmount, moneyDecimals)}`}
     >
       <div>
         <ZHField
