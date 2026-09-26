@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-09-26 11:27:54",
+    "generated":  "2026-09-26 11:40:26",
     "source":  "dashboard-model-v12.json, model-health.json, completion-intelligence.json, dependencies.json, critical-path.json, release-simulation.json",
     "rule":  "Deterministic rule engine -- every recommendation cites the exact JSON field(s) that triggered it in \u0027justifiedBy\u0027. No generic text, no invented relationships. A rule that finds no matching condition produces zero recommendations for that rule.",
     "recommendations":  [

@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-09-26 11:27:55",
+    "generated":  "2026-09-26 11:40:27",
     "source":  "architecture-progress.json, modules.json, domains.json, database-analysis.json, migration-analysis.json, frontend-analysis.json, backend-analysis.json",
     "method":  {
                    "layerToStage":  "Contiguous-window search over stages[] (real array order); a window is a candidate only if its average pct exactly equals the already-published layers[].pct. If multiple window sizes match, the largest is preferred (a multi-stage exact match is far less likely to be coincidental than a single-stage one); accepted as verified only if that largest match is unique. Ambiguous cases are reported (candidateCount) instead of guessed.",

@@ -4382,6 +4382,9 @@ $jsHtml,
 ) -join "`n"
 
 
+. (Join-Path $PSScriptRoot 'compose-curated-dashboard.ps1')
+$html = Merge-CuratedDashboard -GeneratedHtml $html -ProjectRoot $ProjectRoot
+
 $html | Out-File $Output -Encoding utf8
 
 

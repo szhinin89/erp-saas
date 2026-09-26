@@ -9,7 +9,7 @@ Este documento **nunca se borra**. Los hallazgos resueltos se marcan como `Resue
 ## Dashboard Health Summary
 
 - Hallazgos abiertos: 1
-- Hallazgos resueltos: 2
+- Hallazgos resueltos: 3
 - Hallazgos críticos: 0
 - Hallazgos importantes: 1
 - Hallazgos menores: 0
@@ -64,6 +64,14 @@ Este documento **nunca se borra**. Los hallazgos resueltos se marcan como `Resue
 - **Nota informativa (sin ID nuevo):** quedan citas en prosa a `docs/adr/...` dentro de datos fuente curados a mano (`roadmap.json`, `architecture-progress-source.json`, `modules-status.json`). Son texto histórico, no lecturas de ruta: no afectan ningún cálculo. Actualizarlas es una edición de contenido fuente, fuera de esta corrección.
 
 ---
+
+### DH-004 — Regeneración sobrescribe presentación curada e historial
+
+- **Fecha de detección / resolución:** 2026-09-26
+- **Estado:** Resuelto
+- **Causa raíz:** commits `2a48d75d`, `cf2c7ff3`, `0162d2a7` y `e909f1ef` editaron la salida HTML sin trasladar su presentación al renderer. `51f52f21` volvió a generar la versión anterior del renderer.
+- **Corrección:** fuente explícita recuperada de `c395ec6c` en `templates/`, composición validada antes de escribir, datos técnicos actuales con precedencia y referencias ausentes conservadas como históricas. Se recuperan 39 secciones, navegación y diagrama con porcentajes originales y futuros a 0%.
+- **Alcance:** Dashboard exclusivamente; no se modifica ERP funcional, `PROGRESS.html` ni progreso manual.
 
 ## Convenciones de este documento
 

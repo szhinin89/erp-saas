@@ -8,6 +8,35 @@ Si algo en el código contradice este documento, el código gana y este document
 
 ---
 
+## Corrección DH-004 — presentación curada (2026-09-26)
+
+La regeneración de `51f52f21` perdió cambios hechos directamente al HTML entre
+`f171b820` y `c395ec6c`, incluidos el diagrama, porcentajes, navegación por hash y
+las secciones `guia-lectura`, `estado-actual` y `module-families`.
+
+`templates/dashboard-curated.html` es ahora la fuente explícita de esa presentación,
+recuperada de `c395ec6c`. Sus 32 secciones curadas y sus porcentajes se conservan como
+históricos fechados, no como mediciones actuales. El aviso visible distingue ambos.
+`templates/dashboard-curated.json` declara la procedencia, las 7 secciones técnicas
+sin edición manual que siguen regenerándose y las referencias históricas del explorador.
+La clasificación se obtuvo comparando cada sección con `f171b820` (último HTML del
+renderer antes de las ediciones directas), no infiriéndola por palabras clave.
+
+El renderer sigue produciendo datos técnicos actuales y llama a
+`compose-curated-dashboard.ps1` antes de su única escritura del HTML. El compositor
+inyecta las 7 secciones dinámicas y los 7 datasets JS del explorador/buscador en slots
+explícitos. Los datos actuales prevalecen por clave; las referencias ausentes del
+análisis actual se retienen con una etiqueta histórica. No se escriben datos históricos
+en los JSON dinámicos de `data/`. No se requiere Git para regenerar.
+
+La composición falla si falta una fuente, un dataset, una sección, quedan slots sin
+resolver o cambia una sección curada. Nunca toma el `index.html` de salida como fuente.
+Para cambiar contenido editorial, editar la plantilla y su manifiesto; para evidencia
+actual, corregir los analizadores. `PROGRESS.html` y `architecture-progress-source.json`
+se mantienen independientes e intactos. Las menciones anteriores a 36 secciones describen
+el contrato original: se recuperan las 39 que existían antes de la regresión, sin añadir
+nuevas secciones de producto.
+
 ## 1. Arquitectura del pipeline
 
 ```

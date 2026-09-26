@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-09-26 11:27:53",
+    "generated":  "2026-09-26 11:40:25",
     "source":  "modules.json (completion proxy = module score), dependencies.json (real dependency graph), impact.json (features/processes/risk), tasks.json (evidence-matched tasks)",
     "disclaimer":  "No effort/velocity data exists in this pipeline, so no completion dates or durations are estimated here -- only real relationship counts (dependents, features, processes).",
     "method":  {
