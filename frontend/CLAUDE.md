@@ -44,7 +44,7 @@ Tabla completa de estándares únicos (incluye modal, tabs, tabla, grid, toggle,
 - Todo nuevo formulario debe iniciar con componentes ZH (React Hook Form + Zod + `ZHField`/`ZhDecimalInput`/etc.).
 - HTML crudo permitido solo para:
   - `email`, `password`, `checkbox` (fuera de `ZHToggle`), `radio`, `file`, `color`
-  - scanner/picker/autocomplete especializado (`ZhWarehouseSelector`, `CustomerPicker`, `SupplierPicker`)
+  - scanner/picker/autocomplete especializado (`ZhWarehouseSelector`, `CustomerPicker`, `SupplierSearchSelect`)
   - tablas editables
   - SRI crítico
   - IAM/permisos

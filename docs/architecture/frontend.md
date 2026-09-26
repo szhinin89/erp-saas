@@ -122,6 +122,7 @@ y debe migrarse al tocar el archivo.
 | Input de teléfono | `ZhPhoneInput` (`components/zh/inputs/`) | `<input type="tel">` crudo |
 | Select simple | `ZhSelect` (`components/zh/inputs/`) | `<select>` crudo |
 | Textarea de notas/descripciones | `ZhTextarea` (`components/zh/inputs/`) | `<textarea>` crudo |
+| Búsqueda/selección en catálogos grandes (single o multiple con chips) | `ZhSearchSelect<T>` (`components/zh/inputs/`; datasource local `options` o remoto `loadOptions` con debounce + `AbortSignal`, `maxResults` default 30, teclado, clear) — sin dominio; wrappers por dominio encima, p. ej. `SupplierSearchSelect` (`modules/masterData/components/`, buscador ÚNICO de proveedores registrados: BP con rol Proveedor por nombre/nombre comercial/RUC, `value` por id o fila, `activeOnly`; su única lógica remota vive en `masterData/utils/supplierSearch.ts`) — ZH-SUPPLIER-SEARCH-REUSABLE-01 / SINGLE-SOURCE-02 | `<select>` / `ZhSelect` con cientos o miles de `<option>`; buscadores por módulo que dupliquen debounce/teclado/chips; `SupplierPicker` y selectores de proveedor propios por módulo (**eliminados**) |
 | Botón ícono | `ZHIconButton` (`components/zh/`) | `<button className="...">` con solo un ícono, implementaciones ad-hoc por módulo |
 | KPI card | `ReportKpiCard` (`components/ReportPageTemplate.tsx`) | tarjetas de KPI custom por módulo |
 
@@ -133,7 +134,7 @@ Los siguientes casos **no** requieren envolver el control en un componente ZH �
 HTML nativo o infraestructura especializada ya cubierta por otras reglas:
 
 - `type="email"`, `type="password"`, `type="checkbox"` (fuera de `ZHToggle`), `type="radio"`, `type="file"`, `type="color"`
-- Scanner / autocomplete / picker especializado (ej. `ZhWarehouseSelector`, `CustomerPicker`, `SupplierPicker`)
+- Scanner / autocomplete / picker especializado (ej. `ZhWarehouseSelector`, `CustomerPicker`, `SupplierSearchSelect`)
 - Tablas editables (celdas con edición inline tienen su propio patrón, no el de formulario)
 - Módulos SRI crítico, IAM/permisos, stock/logística crítica — cuando el control tiene semántica de negocio que un input ZH genérico no captura (documentar el motivo puntual en el propio código, no asumir la excepción por el nombre del módulo)
 
