@@ -38,7 +38,8 @@ public sealed record SupplierCreditListItemDto(
 /// La cuota no se guarda por movimiento (reparto FIFO en la CxP) y la reversa de aplicación no
 /// guarda motivo.</item>
 /// <item>Reembolso / su reversa: <see cref="RefundTransactionId"/>, fecha efectiva, destino
-/// (Cash/Bank + nombre congelado), código de forma de pago, referencia (solo en el ingreso) y
+/// (Cash/Bank + nombre congelado), código y nombre (catálogo oficial PaymentMethod, 02D-E) de la
+/// forma de pago, referencia (solo en el ingreso) y
 /// motivo (solo en la reversa).</item>
 /// <item>Reversas: <see cref="ReversalOfMovementId"/> (movimiento original) y, en el original,
 /// <see cref="ReversedByMovementId"/>.</item>
@@ -63,6 +64,7 @@ public sealed record SupplierCreditMovementDto(
     string? DestinationType,
     string? DestinationName,
     string? PaymentMethodCode,
+    string? PaymentMethodName,
     string? ReferenceNumber,
     string? Reason
 );
@@ -102,7 +104,8 @@ internal sealed record SupplierCreditReadContext(
     SupplierCreditSourceRef? Source,
     IReadOnlyDictionary<Guid, (string DocumentNumber, AccountsPayableOriginType OriginType)> Payables,
     IReadOnlyDictionary<Guid, SupplierCreditRefundTransaction> RefundTransactionsByMovement,
-    IReadOnlyDictionary<Guid, string> UserNames
+    IReadOnlyDictionary<Guid, string> UserNames,
+    IReadOnlyDictionary<string, string> PaymentMethodNames
 )
 {
     public static readonly SupplierCreditReadContext Empty = new(
@@ -110,7 +113,8 @@ internal sealed record SupplierCreditReadContext(
         null,
         new Dictionary<Guid, (string, AccountsPayableOriginType)>(),
         new Dictionary<Guid, SupplierCreditRefundTransaction>(),
-        new Dictionary<Guid, string>()
+        new Dictionary<Guid, string>(),
+        new Dictionary<string, string>()
     );
 }
 
@@ -225,6 +229,7 @@ internal static class SupplierCreditReadModel
             tx is null ? null : DestinationType(tx.DestinationTypeSnapshot),
             tx?.DestinationNameSnapshot,
             tx?.PaymentMethodCode,
+            tx is null ? null : ctx.PaymentMethodNames.GetValueOrDefault(tx.PaymentMethodCode),
             tx?.ExternalReference,
             tx?.TransactionTypeCode == RefundTransactionTypeCode.RefundReversed ? tx.Reason : null
         );

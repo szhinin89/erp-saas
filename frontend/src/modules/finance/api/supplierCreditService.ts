@@ -26,6 +26,8 @@ export interface SupplierCreditMovementDto {
   destinationType: "Cash" | "Bank" | null;
   destinationName: string | null;
   paymentMethodCode: string | null;
+  /** Nombre del catálogo oficial PaymentMethod (02D-E). */
+  paymentMethodName: string | null;
   referenceNumber: string | null;
   reason: string | null;
 }

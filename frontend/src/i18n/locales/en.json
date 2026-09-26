@@ -477,7 +477,7 @@
   "app.nav.item.reportes.compras": "Purchases Report",
   "app.nav.item.finance.creditTerms": "Credit Terms",
   "app.nav.item.finance.receivables": "Accounts Receivable",
-  "app.nav.item.finance.supplierCredits": "Supplier Credits",
+  "app.nav.item.finance.supplierCredits": "Supplier credit balances",
   "app.nav.group.inventory": "Inventory",
   "app.nav.group.electronicInvoicing": "Electronic Invoicing",
   "app.nav.item.inventory.items": "Products",

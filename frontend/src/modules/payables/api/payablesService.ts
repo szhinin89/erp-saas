@@ -5,16 +5,8 @@ const BASE = "/api/v1/payables";
 /** Espejo exacto de AccountsPayableOriginType — backend. */
 export type PayableOriginType = "PurchaseInvoice" | "ExpenseDocument" | "Manual";
 
-const PAYABLE_ORIGIN_LABEL: Record<PayableOriginType, string> = {
-  PurchaseInvoice: "Compra",
-  ExpenseDocument: "Gasto",
-  Manual: "Manual",
-};
-
-/** Etiqueta del origen de una CxP — única fuente para el Badge y contextos de texto (p. ej. un <option>). */
-export function payableOriginLabel(originType: PayableOriginType): string {
-  return PAYABLE_ORIGIN_LABEL[originType] ?? originType;
-}
+/** Etiqueta del origen — contrato compartido en `lib/payableOrigin` (única fuente). */
+export { payableOriginLabel } from "../../../lib/payableOrigin";
 
 /** Espejo exacto de AccountsPayableStatus — backend (serializado en minusculas). */
 export type PayableStatus = "pending" | "partiallypaid" | "paid" | "cancelled";

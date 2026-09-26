@@ -120,7 +120,7 @@
   "app.nav.item.pricing.priceLists": "Listas de Precios",
   "app.nav.item.finance.creditTerms": "Condiciones de Crédito",
   "app.nav.item.finance.receivables": "Cuentas por Cobrar",
-  "app.nav.item.finance.supplierCredits": "Créditos de Proveedor",
+  "app.nav.item.finance.supplierCredits": "Saldos a favor de proveedores",
   "app.nav.item.caja.registers": "Cajas registradoras",
   "app.nav.item.caja.sessions": "Turno de Caja",
   "app.nav.item.caja.movementReasons": "Motivos de movimientos",

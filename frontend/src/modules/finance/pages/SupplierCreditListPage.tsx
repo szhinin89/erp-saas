@@ -1,128 +1,147 @@
-import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { PageShell, Badge } from "../../../components/PageShell";
-import { ZHCard } from "../../../components/zh/ZHCard";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Badge, PageShell, PageToolbar, TableCard } from "../../../components/PageShell";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
+import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
+import { formatDate } from "../../../lib/formatters/dateFormatters";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
 import {
   supplierCreditService,
   type SupplierCreditListItemDto,
 } from "../api/supplierCreditService";
-import { formatSupplierCreditOrigin } from "../utils/supplierCreditOrigin";
-import { ZHNumberValue } from "../../../components/zh/ZHNumberValue";
+import { SupplierCreditFilters } from "../components/SupplierCreditFilters";
+import {
+  DEFAULT_SUPPLIER_CREDIT_FILTERS,
+  toSupplierCreditListFilters,
+  type SupplierCreditFiltersValue,
+} from "../utils/supplierCreditFilters";
+import { supplierCreditSourceLabel, supplierCreditSourceRoute } from "../utils/supplierCreditOrigin";
 
 const PAGE_SIZE = 25;
 
 /**
- * Listado de créditos de proveedor — consume exclusivamente
- * `GET /api/v1/finance/supplier-credits`. Mismo patrón de lista que
- * `PurchaseReturnListPage.tsx` (P0-02 Fase 12 / P0-03).
- * `AvailableAmount` mostrado es siempre el valor cacheado del servidor (§4.2 del diseño).
+ * ZH-SUPPLIER-BALANCES-UX-02D-E — "Saldos a favor de proveedores": dinero que el proveedor mantiene a
+ * favor de la empresa (anticipos / pagos mayores y devoluciones de compra). Una sola responsabilidad:
+ * consultar y abrir el saldo para gestionarlo. Filtros server-side (02D-D, default: abiertos).
+ * `AvailableAmount` es siempre el valor del servidor — nunca se recalcula en el cliente.
  */
 export function SupplierCreditListPage() {
   const navigate = useNavigate();
   const [items, setItems] = useState<SupplierCreditListItemDto[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
+  const [filters, setFilters] = useState<SupplierCreditFiltersValue>(DEFAULT_SUPPLIER_CREDIT_FILTERS);
   const [loading, setLoading] = useState(false);
+
+  const handleFiltersChange = (patch: Partial<SupplierCreditFiltersValue>) => {
+    setFilters((current) => ({ ...current, ...patch }));
+    setPage(1);
+  };
+
+  const handleReset = () => {
+    setFilters(DEFAULT_SUPPLIER_CREDIT_FILTERS);
+    setPage(1);
+  };
 
   const fetchList = useCallback(async () => {
     setLoading(true);
     try {
-      const r = await supplierCreditService.list(page, PAGE_SIZE);
+      const r = await supplierCreditService.list(page, PAGE_SIZE, toSupplierCreditListFilters(filters));
       setItems(r.items);
       setTotal(r.total);
     } catch (err: unknown) {
       message.error(
         formatApiRequestError(err, {
-          generic: "No se pudo cargar el listado de créditos de proveedor.",
+          generic: "No se pudo cargar el listado de saldos a favor de proveedores.",
         }),
       );
     } finally {
       setLoading(false);
     }
-  }, [page]);
+  }, [page, filters]);
 
   useEffect(() => {
     void fetchList();
   }, [fetchList]);
 
-  const columns: ZHDataTableColumn<SupplierCreditListItemDto>[] = [
-    {
-      key: "supplierId",
-      header: "Proveedor",
-      render: (row) => row.supplierId,
-    },
-    {
-      key: "origin",
-      header: "Origen",
-      render: (row) => formatSupplierCreditOrigin(row),
-    },
-    {
-      key: "currencyCode",
-      header: "Moneda",
-      render: (row) => row.currencyCode,
-    },
-    {
-      key: "originalAmount",
-      header: "Monto original",
-      align: "right",
-      render: (row) => <ZHNumberValue value={row.originalAmount} precision="money" />,
-    },
-    {
-      key: "availableAmount",
-      header: "Saldo disponible",
-      align: "right",
-      render: (row) => <ZHNumberValue value={row.availableAmount} precision="money" emphasis="strong" />,
-    },
-    {
-      key: "isOpen",
-      header: "Estado",
-      render: (row) => (
-        <Badge label={row.isOpen ? "Abierto" : "Cerrado"} variant={row.isOpen ? "green" : "gray"} />
-      ),
-    },
-    {
-      key: "actions",
-      header: "",
-      align: "right",
-      render: (row) => (
-        <ZHBtn
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate(`/suppliers/credits/${row.id}`)}
-        >
-          Ver
-        </ZHBtn>
-      ),
-    },
-  ];
+  const columns = useMemo<ZHDataTableColumn<SupplierCreditListItemDto>[]>(
+    () => [
+      {
+        key: "supplier",
+        header: "Proveedor",
+        render: (row) => <strong>{row.supplierName ?? "—"}</strong>,
+      },
+      {
+        key: "origin",
+        header: "Origen",
+        render: (row) => supplierCreditSourceLabel(row.sourceType),
+      },
+      {
+        key: "document",
+        header: "Documento",
+        render: (row) => {
+          const route = supplierCreditSourceRoute(row);
+          const label = row.sourceDocumentNumber ?? "—";
+          return route && row.sourceDocumentNumber ? (
+            <Link to={route} className="zh-link">
+              {label}
+            </Link>
+          ) : (
+            label
+          );
+        },
+      },
+      { key: "date", header: "Fecha", render: (row) => formatDate(row.sourceDate) },
+      {
+        key: "originalAmount",
+        header: "Monto original",
+        align: "right",
+        render: (row) => <ZHMoneyValue value={row.originalAmount} precision="money" />,
+      },
+      {
+        key: "availableAmount",
+        header: "Saldo disponible",
+        align: "right",
+        render: (row) => <ZHMoneyValue value={row.availableAmount} precision="money" emphasis="strong" />,
+      },
+      {
+        key: "status",
+        header: "Estado",
+        render: (row) => (
+          <Badge label={row.isOpen ? "Abierto" : "Cerrado"} variant={row.isOpen ? "green" : "gray"} />
+        ),
+      },
+      {
+        key: "actions",
+        header: "",
+        align: "right",
+        render: (row) => (
+          <ZHBtn
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(`/suppliers/credits/${row.id}`)}
+          >
+            Ver
+          </ZHBtn>
+        ),
+      },
+    ],
+    [navigate],
+  );
 
   return (
     <PageShell
-      title="Créditos de Proveedor"
-      subtitle="Saldo a favor originado por devoluciones de compra o anticipos de pagos a proveedores — aplicación y reembolso"
-      action={
-        <ZHBtn
-          type="button"
-          variant="ghost"
-          onClick={() => navigate("/treasury/banks/accounts")}
-        >
-          Cuentas bancarias
-        </ZHBtn>
-      }
+      kicker="Cuentas por pagar"
+      title="Saldos a favor de proveedores"
+      subtitle="Dinero que los proveedores mantienen a favor de la empresa: anticipos, pagos mayores y devoluciones de compra."
     >
-      <ZHCard
-        title="Listado"
-        actions={
-          <ZHBtn variant="ghost" size="sm" type="button" onClick={() => void fetchList()} disabled={loading}>
-            Actualizar
-          </ZHBtn>
-        }
-      >
+      <TableCard>
+        <PageToolbar>
+          <SupplierCreditFilters value={filters} onChange={handleFiltersChange} onReset={handleReset} />
+        </PageToolbar>
         <ZHDataTable
           columns={columns}
           rows={items}
@@ -130,13 +149,13 @@ export function SupplierCreditListPage() {
           loading={loading}
           showRowNumber
           rowNumberOffset={(page - 1) * PAGE_SIZE}
-          emptyMessage="No hay créditos de proveedor registrados."
+          emptyMessage="No hay saldos a favor de proveedores para estos filtros."
           page={page}
           pageSize={PAGE_SIZE}
           onPageChange={setPage}
           total={total}
         />
-      </ZHCard>
+      </TableCard>
     </PageShell>
   );
 }

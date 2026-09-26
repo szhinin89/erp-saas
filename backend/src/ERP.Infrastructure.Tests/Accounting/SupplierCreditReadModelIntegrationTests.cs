@@ -252,7 +252,7 @@ public sealed class SupplierCreditReadModelIntegrationTests : IAsyncLifetime
         return await new GetSupplierCreditByIdHandler(
                 new SupplierCreditRepository(db, company), new SupplierCreditRefundTransactionRepository(db, company),
                 new AccountsPayableRepository(db), new BusinessPartnerRepository(db), new AccessRepository(db),
-                new CompanyRepository(db), new FixedCurrentTenant(() => _tenantId))
+                new CompanyRepository(db), new PaymentMethodRepository(db), new FixedCurrentTenant(() => _tenantId))
             .Handle(new GetSupplierCreditByIdQuery(creditId), CancellationToken.None);
     }
 
@@ -417,8 +417,9 @@ public sealed class SupplierCreditReadModelIntegrationTests : IAsyncLifetime
 
         var refundMovement = dto.Movements[1];
         (refundMovement.Amount, refundMovement.RefundTransactionId, refundMovement.EffectiveDate, refundMovement.DestinationType,
-                refundMovement.DestinationName, refundMovement.PaymentMethodCode, refundMovement.ReferenceNumber, refundMovement.Reason)
-            .Should().Be((25m, refund.Id, _today, "Bank", "Banco Pichincha CTE", "TRANSFER", "TRX-445566", (string?)null));
+                refundMovement.DestinationName, refundMovement.PaymentMethodCode, refundMovement.PaymentMethodName,
+                refundMovement.ReferenceNumber, refundMovement.Reason)
+            .Should().Be((25m, refund.Id, _today, "Bank", "Banco Pichincha CTE", "TRANSFER", "Transferencia", "TRX-445566", (string?)null));
         refundMovement.AccountsPayableId.Should().BeNull();
 
         var refundReversal = dto.Movements[2];

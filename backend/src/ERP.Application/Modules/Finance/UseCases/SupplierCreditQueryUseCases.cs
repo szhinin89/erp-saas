@@ -6,6 +6,7 @@ using ERP.Domain.Modules.Finance.Interfaces;
 using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
+using ERP.Domain.Modules.Sales.Interfaces;
 using MediatR;
 
 namespace ERP.Application.Modules.Finance.UseCases;
@@ -40,7 +41,9 @@ public sealed record GetSupplierCreditListQuery(
 /// <summary>
 /// ZH-SUPPLIER-CREDIT-READ-MODEL-02D-D — detalle enriquecido con un número FIJO de consultas por
 /// crédito (nunca por movimiento): crédito + movimientos, origen (2 + zona horaria), nombre del
-/// proveedor, CxP destino de las aplicaciones (1), transacciones de reembolso (1), autores (1).
+/// proveedor, CxP destino de las aplicaciones (1), transacciones de reembolso (1), autores (1) y,
+/// solo si hay reembolsos, el catálogo oficial de formas de pago (1, incluye inactivas — son
+/// históricas) para el nombre legible (ZH-SUPPLIER-BALANCES-UX-02D-E).
 /// </summary>
 public sealed class GetSupplierCreditByIdHandler
     : IRequestHandler<GetSupplierCreditByIdQuery, Result<SupplierCreditDto>>
@@ -51,6 +54,7 @@ public sealed class GetSupplierCreditByIdHandler
     private readonly IBusinessPartnerRepository _partners;
     private readonly IAccessRepository _access;
     private readonly ICompanyRepository _companies;
+    private readonly IPaymentMethodRepository _paymentMethods;
     private readonly ICurrentTenant _t;
 
     public GetSupplierCreditByIdHandler(
@@ -60,11 +64,13 @@ public sealed class GetSupplierCreditByIdHandler
         IBusinessPartnerRepository partners,
         IAccessRepository access,
         ICompanyRepository companies,
+        IPaymentMethodRepository paymentMethods,
         ICurrentTenant t
     )
     {
         _credits = credits;
         _refunds = refunds;
+        _paymentMethods = paymentMethods;
         _payables = payables;
         _partners = partners;
         _access = access;
@@ -99,6 +105,11 @@ public sealed class GetSupplierCreditByIdHandler
             .ToList();
         var payables = await _payables.GetDocumentRefsByIdsAsync(tid, credit.CompanyId, payableIds, ct);
         var refunds = await _refunds.ListBySupplierCreditIdAsync(tid, credit.Id, ct);
+        var paymentMethodNames = refunds.Count == 0
+            ? new Dictionary<string, string>()
+            : (await _paymentMethods.ListAsync(tid, onlyActive: false, ct))
+                .GroupBy(m => m.Code, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First().Name, StringComparer.OrdinalIgnoreCase);
         var users = await _access.GetUsersByIdsAsync(
             credit.Movements.Select(m => m.CreatedByUserId).Distinct().ToList(),
             ct
@@ -112,7 +123,8 @@ public sealed class GetSupplierCreditByIdHandler
                     sources.GetValueOrDefault(credit.Id),
                     payables,
                     refunds.ToDictionary(r => r.SupplierCreditMovementId),
-                    users.ToDictionary(u => u.Id, u => $"{u.FirstName} {u.LastName}".Trim())
+                    users.ToDictionary(u => u.Id, u => $"{u.FirstName} {u.LastName}".Trim()),
+                    paymentMethodNames
                 )
             )
         );

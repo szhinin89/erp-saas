@@ -18,6 +18,11 @@ import { message } from "../../../lib/messages";
 vi.mock("react-router-dom", () => ({
   useParams: () => ({ id: "credit-1" }),
   useNavigate: () => vi.fn(),
+  Link: ({ to, children, className }: { to: string; children: React.ReactNode; className?: string }) => (
+    <a href={to} className={className}>
+      {children}
+    </a>
+  ),
 }));
 
 vi.mock("../api/supplierCreditService", () => ({
@@ -80,6 +85,7 @@ const CREDIT: SupplierCreditDto = {
       destinationType: "Bank",
       destinationName: "Banco Pichincha CTE",
       paymentMethodCode: "TRANSFER",
+      paymentMethodName: "Transferencia",
       referenceNumber: "TRX-1",
       reason: null,
     },
@@ -143,5 +149,92 @@ describe("SupplierCreditDetailPage — revertir reembolso: sin window.prompt", (
 
     await waitFor(() => expect(message.prompt).toHaveBeenCalled());
     expect(supplierCreditService.reverseRefund).not.toHaveBeenCalled();
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════
+// ZH-SUPPLIER-BALANCES-UX-02D-E — resumen, acciones e historial enriquecido
+// ══════════════════════════════════════════════════════════════════════
+
+const APPLICATION_MOVEMENT = {
+  ...CREDIT.movements[0]!,
+  id: "mov-app-1",
+  movementType: "Application",
+  amount: 15,
+  accountsPayableId: "payable-9",
+  payableDocumentNumber: "GAS-000777",
+  payableOriginType: "ExpenseDocument",
+  refundTransactionId: null,
+  effectiveDate: null,
+  destinationType: null,
+  destinationName: null,
+  paymentMethodCode: null,
+  paymentMethodName: null,
+  referenceNumber: null,
+};
+
+describe("SupplierCreditDetailPage — 02D-E", () => {
+  it("resumen muestra proveedor, origen con enlace y el saldo disponible del servidor", async () => {
+    render(<SupplierCreditDetailPage />);
+    await waitFor(() => expect(screen.getByText("Resumen")).toBeTruthy());
+    expect(screen.getAllByText("Proveedor Test").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Devolución de compra/).length).toBeGreaterThan(0);
+    expect(screen.getByText("00000003").closest("a")!.getAttribute("href")).toBe("/purchases/returns/return-1");
+    expect(screen.getByText("Saldo disponible")).toBeTruthy();
+    expect(screen.getByText("60.00")).toBeTruthy();
+    expect(screen.getByText("Aplicar a CxP")).toBeTruthy();
+    expect(screen.getByText("Registrar reembolso")).toBeTruthy();
+  });
+
+  it("historial: la aplicación muestra Compra/Gasto con enlace a la CxP", async () => {
+    vi.mocked(supplierCreditService.getById).mockResolvedValue({
+      ...CREDIT,
+      movements: [APPLICATION_MOVEMENT],
+    });
+    render(<SupplierCreditDetailPage />);
+    await waitFor(() => expect(screen.getByText("Gasto · GAS-000777")).toBeTruthy());
+    expect(screen.getByText("Gasto · GAS-000777").closest("a")!.getAttribute("href")).toBe("/payables/payable-9");
+    expect(screen.getByText("Aplicación a CxP")).toBeTruthy();
+    expect(screen.getAllByText("Ana Tesorera").length).toBeGreaterThan(0);
+  });
+
+  it("historial: el reembolso muestra banco, destino, medio legible y referencia (no el código)", async () => {
+    render(<SupplierCreditDetailPage />);
+    await waitFor(() => expect(screen.getByText("Banco · Banco Pichincha CTE")).toBeTruthy());
+    expect(screen.getByText("Transferencia")).toBeTruthy();
+    expect(screen.queryByText("TRANSFER")).toBeNull();
+    expect(screen.getByText("Ref. TRX-1")).toBeTruthy();
+  });
+
+  it("la reversa indica qué movimiento revierte y su motivo; el original ya no ofrece revertir", async () => {
+    vi.mocked(supplierCreditService.getById).mockResolvedValue({
+      ...CREDIT,
+      movements: [
+        { ...CREDIT.movements[0]!, reversedByMovementId: "mov-rev-1" },
+        {
+          ...CREDIT.movements[0]!,
+          id: "mov-rev-1",
+          movementType: "ReversalOfRefund",
+          reversalOfMovementId: "mov-refund-1",
+          referenceNumber: null,
+          reason: "Transferencia devuelta",
+          createdAtUtc: "2026-08-02T00:00:00Z",
+        },
+      ],
+    });
+    render(<SupplierCreditDetailPage />);
+    await waitFor(() => expect(screen.getByText("Motivo: Transferencia devuelta")).toBeTruthy());
+    expect(screen.getByText(/Revierte: Reembolso del/)).toBeTruthy();
+    expect(screen.getByText("Revertido")).toBeTruthy();
+    expect(screen.queryByText("Revertir")).toBeNull();
+  });
+
+  it("sin saldo disponible no ofrece Aplicar ni Registrar reembolso", async () => {
+    vi.mocked(supplierCreditService.getById).mockResolvedValue({ ...CREDIT, availableAmount: 0, isOpen: false });
+    render(<SupplierCreditDetailPage />);
+    await waitFor(() => expect(screen.getByText("Resumen")).toBeTruthy());
+    expect(screen.queryByText("Aplicar a CxP")).toBeNull();
+    expect(screen.queryByText("Registrar reembolso")).toBeNull();
+    expect(screen.getByText("Cerrado")).toBeTruthy();
   });
 });

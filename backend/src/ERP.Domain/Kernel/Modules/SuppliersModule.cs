@@ -96,7 +96,8 @@ public static class SuppliersModule
     // ApplySupplierCreditModal.tsx/RegisterSupplierCreditRefundModal.tsx, SupplierCreditController)
     // es la única acción de escritura real de esta pantalla y no estaba en el catálogo asignable.
     [NavItem(
-        "Créditos de proveedor",
+        // ZH-SUPPLIER-BALANCES-UX-02D-E — etiqueta de negocio (mismo Id/ruta/permisos/LabelKey).
+        "Saldos a favor de proveedores",
         Permission = FinancePermissions.View,
         LabelKey = "app.nav.item.finance.supplierCredits",
         SortOrder = 30,

@@ -2,6 +2,14 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-26** · Kernel refactor: **2026-06-05**.
 
+## ZH-SUPPLIER-BALANCES-UX-02D-E — Pantalla "Saldos a favor de proveedores" (2026-09-26)
+
+**Estado: COMPLETADO (sin commit).** Misma ruta `/suppliers/credits` y mismos Id/permisos/LabelKey del menú; solo cambia la etiqueta (es/en + NavItem).
+- Listado: Proveedor, Origen ("Anticipo / pago mayor" / "Devolución de compra"), Documento (enlace a `/supplier-payments/:id` o `/purchases/returns/:id`), Fecha, Monto original, Saldo disponible, Estado, Ver. Filtros server-side (`SupplierSearchSelect`, origen, estado; default Abiertos; "Restablecer filtros"). Eliminado el botón "Cuentas bancarias".
+- Detalle: Resumen (proveedor, origen, documento con enlace, fecha, montos, estado), Acciones solo con saldo > 0 ("Aplicar a CxP", "Registrar reembolso"), Historial cronológico (CxP Compra/Gasto con enlace a `/payables/:id`; Caja/Banco + destino + medio legible + referencia; reversas indican el movimiento revertido y el motivo cuando existe).
+- Medio de pago legible: `PaymentMethodName` en el read-model (catálogo oficial, 1 consulta solo si hay reembolsos). Etiqueta de origen de CxP movida a `lib/payableOrigin` (contrato compartido, sin import cruzado nuevo).
+- Evidencia: vitest finance/payables/supplier-payments 100/100 · `tsc -b`/eslint/build OK · `architecture:check` 244 = `HEAD` · backend Domain 1206 · Application 2274 · Architecture 116 · read-model PostgreSQL 5/5 · controller 19/19.
+
 ## ZH-SUPPLIER-CREDIT-READ-MODEL-02D-D — Lectura enriquecida de saldos a favor (2026-09-26)
 
 **Estado: COMPLETADO (sin commit).** Sin UI nueva (02D-E).
