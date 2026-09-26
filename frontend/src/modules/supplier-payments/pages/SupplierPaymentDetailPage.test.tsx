@@ -74,6 +74,9 @@ function payment(over: Partial<SupplierPaymentDto> = {}): SupplierPaymentDto {
         checkNumber: null,
         checkDate: null,
         notes: null,
+        transactionDate: "2026-08-28",
+        cashSessionId: null,
+        cashMovementId: null,
       },
     ],
     applicationLines: [

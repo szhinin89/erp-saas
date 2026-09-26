@@ -17,6 +17,8 @@ export interface SupplierPaymentMethodLineRequest {
   checkNumber?: string | null;
   checkDate?: string | null;
   notes?: string | null;
+  /** 02A — fecha efectiva real de la fuente bancaria ("YYYY-MM-DD"); null en fuentes de caja. */
+  transactionDate?: string | null;
 }
 
 /** Espejo exacto de SupplierPaymentApplicationLineRequest — backend. */
@@ -56,6 +58,11 @@ export interface SupplierPaymentMethodLineDto {
   checkNumber: string | null;
   checkDate: string | null;
   notes: string | null;
+  /** 02A — fecha efectiva de la fuente bancaria; null en fuentes de caja. */
+  transactionDate: string | null;
+  /** 02A — sesión/movimiento de caja vinculados (solo fuentes de efectivo físico). */
+  cashSessionId: string | null;
+  cashMovementId: string | null;
 }
 
 /**

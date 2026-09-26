@@ -34,7 +34,7 @@ public sealed class GetSupplierPaymentUseCasesTests
             100m,
             systemNumber,
             null,
-            new[] { new SupplierPaymentMethodLineInput(methodId, destinationId, null, 100m) },
+            new[] { new SupplierPaymentMethodLineInput(methodId, destinationId, null, 100m, TransactionDate: new DateOnly(2026, 8, 28)) },
             new[] { new SupplierPaymentApplicationLineInput(installmentId ?? Guid.NewGuid(), 100m) },
             new[] { new SupplierPaymentAllocationInput(0, 0, 100m) },
             UserId

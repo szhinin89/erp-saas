@@ -260,7 +260,7 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
             )
             .ReturnsAsync(pm);
         m.CashSessionRepo.Setup(r =>
-                r.GetOpenByCashRegisterForShareAsync(
+                r.GetOpenByCashRegisterForUpdateAsync(
                     TenantId,
                     CashRegisterId,
                     It.IsAny<CancellationToken>()
@@ -275,6 +275,43 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
         result.Value!.CashSessionId.Should().Be(session.Id);
         result.Value.CashMovementId.Should().NotBeNull();
         session.Movements.Should().HaveCount(2, "apertura + el movimiento del reembolso");
+    }
+
+    /// <summary>
+    /// ZH-SUPPLIER-PAYMENT-CASH-TRANSFER-HARDENING-02A — el proveedor DEVUELVE efectivo: el dinero
+    /// entra al cajón, así que el saldo esperado de la sesión debe AUMENTAR por el monto del
+    /// reembolso (antes se registraba como egreso y el esperado bajaba).
+    /// </summary>
+    [Fact]
+    public async Task Reembolso_en_efectivo_es_ingreso_y_aumenta_el_saldo_esperado_de_caja()
+    {
+        var credit = BuildCredit(100m);
+        var m = new Mocks(credit);
+        var session = BuildOpenCashSession();
+        m.CashRegisterRepo.Setup(r =>
+                r.GetByIdForShareAsync(TenantId, CashRegisterId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(BuildCashRegister());
+        m.AccountRepo.Setup(r =>
+                r.GetByIdForShareAsync(TenantId, CompanyId, AccountId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(BuildAccount());
+        m.PaymentMethodRepo.Setup(r =>
+                r.GetByCodeAsync(TenantId, "TRANSFER", It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(BuildPaymentMethod());
+        m.CashSessionRepo.Setup(r =>
+                r.GetOpenByCashRegisterForUpdateAsync(TenantId, CashRegisterId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(session);
+        var balanceBefore = session.CurrentBalance;
+
+        var result = await m.BuildHandler().Handle(CashCommand(credit.Id, 40m), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var movement = session.Movements.Single(x => x.Id == result.Value!.CashMovementId);
+        movement.MovementType.Should().Be(ERP.Domain.Modules.Caja.Enums.CashMovementType.ManualIncome);
+        session.CurrentBalance.Should().Be(balanceBefore + 40m);
     }
 
     [Fact]
@@ -407,7 +444,7 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
             )
             .ReturnsAsync(BuildPaymentMethod());
         m.CashSessionRepo.Setup(r =>
-                r.GetOpenByCashRegisterForShareAsync(
+                r.GetOpenByCashRegisterForUpdateAsync(
                     TenantId,
                     CashRegisterId,
                     It.IsAny<CancellationToken>()
@@ -545,6 +582,53 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
         public string? Email => null;
         public string? FullName => null;
         public string? Role => null;
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // ZH-SUPPLIER-PAYMENT-CASH-HARDENING-02A-CLOSE — trazabilidad refund → CashMovement
+    // ══════════════════════════════════════════════════════════════════════
+
+    [Fact]
+    public async Task Reembolso_en_efectivo_genera_CashMovement_que_referencia_a_la_transaccion_de_reembolso()
+    {
+        var credit = BuildCredit(100m);
+        var m = new Mocks(credit);
+        var session = BuildOpenCashSession();
+        m.CashRegisterRepo.Setup(r =>
+                r.GetByIdForShareAsync(TenantId, CashRegisterId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(BuildCashRegister());
+        m.AccountRepo.Setup(r =>
+                r.GetByIdForShareAsync(TenantId, CompanyId, AccountId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(BuildAccount());
+        m.PaymentMethodRepo.Setup(r =>
+                r.GetByCodeAsync(TenantId, "TRANSFER", It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(BuildPaymentMethod());
+        m.CashSessionRepo.Setup(r =>
+                r.GetOpenByCashRegisterForUpdateAsync(TenantId, CashRegisterId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(session);
+        var command = new RegisterSupplierCreditRefundCommand(
+            credit.Id,
+            null,
+            CashRegisterId,
+            "TRANSFER",
+            40m,
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            "REC-0042",
+            Guid.NewGuid()
+        );
+
+        var result = await m.BuildHandler().Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var movement = session.Movements.Single(x => x.Id == result.Value!.CashMovementId);
+        movement.ReferenceType.Should().Be(ERP.Domain.Modules.Caja.Enums.CashReferenceType.SupplierCreditRefund);
+        movement.ReferenceId.Should().Be(result.Value!.Id, "el movimiento apunta a la transacción de reembolso");
+        movement.ReferenceNumber.Should().Be("REC-0042");
+        result.Value.CashSessionId.Should().Be(session.Id);
     }
 }
 

@@ -2,12 +2,16 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Payables.Exceptions;
 using ERP.Application.Modules.Payables.UseCases;
 using ERP.Domain.Modules.Caja.Entities;
+using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Caja.Interfaces;
+using ERP.Domain.Modules.Finance.Entities;
+using ERP.Domain.Modules.Finance.Enums;
 using ERP.Domain.Modules.Finance.Interfaces;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Sales.Entities;
+using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Interfaces;
 using FluentAssertions;
 using Moq;
@@ -38,6 +42,7 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         Mock<IPaymentMethodRepository> PaymentMethods,
         Mock<ICompanyBankAccountRepository> BankAccounts,
         Mock<ICashRegisterRepository> CashRegisters,
+        Mock<ICashSessionRepository> CashSessions,
         Mock<IUnitOfWork> Uow,
         Mock<ICurrentTenant> Tenant,
         Mock<ICurrentCompany> Company,
@@ -53,6 +58,7 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         var paymentMethods = new Mock<IPaymentMethodRepository>();
         var bankAccounts = new Mock<ICompanyBankAccountRepository>();
         var cashRegisters = new Mock<ICashRegisterRepository>();
+        var cashSessions = new Mock<ICashSessionRepository>();
         var uow = new Mock<IUnitOfWork>();
         var tenant = new Mock<ICurrentTenant>();
         var company = new Mock<ICurrentCompany>();
@@ -85,6 +91,7 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             paymentMethods,
             bankAccounts,
             cashRegisters,
+            cashSessions,
             uow,
             tenant,
             company,
@@ -101,6 +108,7 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             m.PaymentMethods.Object,
             m.BankAccounts.Object,
             m.CashRegisters.Object,
+            m.CashSessions.Object,
             m.Uow.Object,
             m.Tenant.Object,
             m.Company.Object,
@@ -109,7 +117,65 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         );
 
     private static PaymentMethod ActivePaymentMethod() =>
-        PaymentMethod.Create(TenantId, "EFEC", "Efectivo", false, false, 1, UserId);
+        PaymentMethod.Create(
+            TenantId,
+            "EFEC",
+            "Efectivo",
+            false,
+            false,
+            1,
+            UserId,
+            affectsPhysicalCash: true
+        );
+
+    private static PaymentMethod TransferMethod() =>
+        PaymentMethod.Create(
+            TenantId,
+            "TRANS",
+            "Transferencia",
+            true,
+            false,
+            2,
+            UserId,
+            PaymentMethodDetailType.Transfer
+        );
+
+    private static CompanyBankAccount ActiveBankAccount(Guid companyId) =>
+        CompanyBankAccount.Create(
+            TenantId,
+            companyId,
+            Guid.NewGuid(),
+            BankAccountType.Checking,
+            "2200123456",
+            "Banco Pichincha",
+            Guid.NewGuid(),
+            UserId
+        );
+
+    private static CashSession OpenSession(Guid cashRegisterId, decimal openingAmount = 500m) =>
+        CashSession.Open(
+            TenantId,
+            CompanyId,
+            BranchId,
+            UserId,
+            cashRegisterId,
+            "CAJA-01",
+            "Caja Principal",
+            Guid.NewGuid(),
+            "001",
+            openingAmount,
+            UserId
+        );
+
+    private static void SetupTransfer(Mocks m, PaymentMethod method, CompanyBankAccount bankAccount)
+    {
+        m.PaymentMethods
+            .Setup(p => p.GetByIdAsync(TenantId, method.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(method);
+        m.BankAccounts
+            .Setup(b => b.GetByIdAsync(TenantId, bankAccount.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(bankAccount);
+    }
 
     private static CashRegister ActiveDestination(Guid companyId)
     {
@@ -141,10 +207,11 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         return payable;
     }
 
-    private void SetupMethodAndDestination(
+    private static CashSession SetupMethodAndDestination(
         Mocks m,
         PaymentMethod method,
-        CashRegister destination
+        CashRegister destination,
+        decimal openingAmount = 500m
     )
     {
         m.PaymentMethods
@@ -153,6 +220,13 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         m.CashRegisters
             .Setup(f => f.GetByIdAsync(TenantId, destination.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(destination);
+        var session = OpenSession(destination.Id, openingAmount);
+        m.CashSessions
+            .Setup(r =>
+                r.GetOpenByCashRegisterForUpdateAsync(TenantId, destination.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(session);
+        return session;
     }
 
     private void SetupPayable(Mocks m, AccountsPayable payable)
@@ -204,13 +278,12 @@ public sealed class RegisterSupplierPaymentUseCasesTests
     {
         var m = BuildMocks();
         var methodA = ActivePaymentMethod();
-        var methodB = PaymentMethod.Create(TenantId, "TRANS", "Transferencia", true, false, 2, UserId);
+        var methodB = TransferMethod();
         var destination = ActiveDestination(CompanyId);
+        var bankAccount = ActiveBankAccount(CompanyId);
         var payable = CreatePayableWithInstallment(300m);
         SetupMethodAndDestination(m, methodA, destination);
-        m.PaymentMethods
-            .Setup(p => p.GetByIdAsync(TenantId, methodB.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(methodB);
+        SetupTransfer(m, methodB, bankAccount);
         SetupPayable(m, payable);
 
         var handler = BuildHandler(m);
@@ -222,7 +295,7 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             new[]
             {
                 new SupplierPaymentMethodLineRequest(methodA.Id, null, destination.Id, 100m),
-                new SupplierPaymentMethodLineRequest(methodB.Id, null, destination.Id, 200m),
+                new SupplierPaymentMethodLineRequest(methodB.Id, bankAccount.Id, null, 200m, "OP-123", TransactionDate: new DateOnly(2026, 8, 28)),
             },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 300m) },
             new[]
@@ -284,14 +357,13 @@ public sealed class RegisterSupplierPaymentUseCasesTests
     {
         var m = BuildMocks();
         var methodA = ActivePaymentMethod();
-        var methodB = PaymentMethod.Create(TenantId, "TRANS", "Transferencia", true, false, 2, UserId);
+        var methodB = TransferMethod();
         var destination = ActiveDestination(CompanyId);
+        var bankAccount = ActiveBankAccount(CompanyId);
         var payableA = CreatePayableWithInstallment(150m);
         var payableB = CreatePayableWithInstallment(150m);
         SetupMethodAndDestination(m, methodA, destination);
-        m.PaymentMethods
-            .Setup(p => p.GetByIdAsync(TenantId, methodB.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(methodB);
+        SetupTransfer(m, methodB, bankAccount);
         SetupPayable(m, payableA);
         SetupPayable(m, payableB);
 
@@ -304,7 +376,7 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             new[]
             {
                 new SupplierPaymentMethodLineRequest(methodA.Id, null, destination.Id, 150m),
-                new SupplierPaymentMethodLineRequest(methodB.Id, null, destination.Id, 150m),
+                new SupplierPaymentMethodLineRequest(methodB.Id, bankAccount.Id, null, 150m, "OP-456", TransactionDate: new DateOnly(2026, 8, 28)),
             },
             new[]
             {
@@ -753,5 +825,392 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         result.Code.Should().Be("POSTING_ACCOUNT_INVALID");
         m.Uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
         m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // ZH-SUPPLIER-PAYMENT-CASH-TRANSFER-HARDENING-02A
+    // ══════════════════════════════════════════════════════════════════════
+
+    private RegisterSupplierPaymentCommand SingleLineCommand(
+        SupplierPaymentMethodLineRequest line,
+        AccountsPayable payable,
+        decimal amount
+    ) =>
+        new(
+            SupplierId,
+            new DateOnly(2026, 8, 28),
+            amount,
+            null,
+            new[] { line },
+            new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, amount) },
+            new[] { new SupplierPaymentAllocationLineRequest(0, 0, amount) }
+        );
+
+    [Fact]
+    public async Task Efectivo_registra_egreso_SupplierPayment_en_la_sesion_abierta_y_baja_el_saldo_esperado()
+    {
+        var m = BuildMocks();
+        var method = ActivePaymentMethod();
+        var destination = ActiveDestination(CompanyId);
+        var payable = CreatePayableWithInstallment(120m);
+        var session = SetupMethodAndDestination(m, method, destination);
+        SetupPayable(m, payable);
+        var expectedBefore = session.CurrentBalance;
+
+        var result = await BuildHandler(m).Handle(
+            SingleLineCommand(new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 120m), payable, 120m),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var line = result.Value!.MethodLines.Single();
+        line.CashSessionId.Should().Be(session.Id);
+        line.CashMovementId.Should().NotBeNull();
+        line.TransactionDate.Should().BeNull("una fuente de caja no lleva fecha bancaria");
+
+        var movement = session.Movements.Single(x => x.Id == line.CashMovementId);
+        movement.MovementType.Should().Be(CashMovementType.SupplierPayment);
+        movement.Amount.Should().Be(120m);
+        movement.ReferenceType.Should().Be(CashReferenceType.SupplierPayment);
+        movement.ReferenceId.Should().Be(result.Value.Id);
+        movement.ReferenceNumber.Should().Be(SystemNumber);
+        session.CurrentBalance.Should().Be(expectedBefore - 120m);
+    }
+
+    [Fact]
+    public async Task Efectivo_sin_sesion_de_caja_abierta_se_rechaza_con_rollback()
+    {
+        var m = BuildMocks();
+        var method = ActivePaymentMethod();
+        var destination = ActiveDestination(CompanyId);
+        var payable = CreatePayableWithInstallment(100m);
+        SetupMethodAndDestination(m, method, destination);
+        m.CashSessions
+            .Setup(r =>
+                r.GetOpenByCashRegisterForUpdateAsync(TenantId, destination.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync((CashSession?)null);
+        SetupPayable(m, payable);
+
+        var result = await BuildHandler(m).Handle(
+            SingleLineCommand(new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m), payable, 100m),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("sesión de caja abierta");
+        payable.Installments[0].PaidAmount.Should().Be(0m);
+        m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Transferencia_no_crea_movimiento_de_caja_y_guarda_cuenta_fecha_referencia_y_monto()
+    {
+        var m = BuildMocks();
+        var method = TransferMethod();
+        var bankAccount = ActiveBankAccount(CompanyId);
+        var payable = CreatePayableWithInstallment(250m);
+        SetupTransfer(m, method, bankAccount);
+        SetupPayable(m, payable);
+        var bankDate = new DateOnly(2026, 8, 27); // distinta de PaymentDate (2026-08-28)
+
+        var result = await BuildHandler(m).Handle(
+            SingleLineCommand(
+                new SupplierPaymentMethodLineRequest(
+                    method.Id,
+                    bankAccount.Id,
+                    null,
+                    250m,
+                    ReferenceNumber: " 000987654 ",
+                    Notes: "Transferencia interbancaria",
+                    TransactionDate: bankDate
+                ),
+                payable,
+                250m
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var line = result.Value!.MethodLines.Single();
+        line.PaymentMethodId.Should().Be(method.Id);
+        line.CompanyBankAccountId.Should().Be(bankAccount.Id);
+        line.Amount.Should().Be(250m);
+        line.TransactionDate.Should().Be(bankDate, "la fecha real de la fuente no se sustituye por PaymentDate");
+        line.ReferenceNumber.Should().Be("000987654");
+        line.Notes.Should().Be("Transferencia interbancaria");
+        line.CashRegisterId.Should().BeNull();
+        line.CashSessionId.Should().BeNull();
+        line.CashMovementId.Should().BeNull();
+        m.CashSessions.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Transferencia_sin_fecha_bancaria_se_rechaza_nunca_se_completa_con_PaymentDate()
+    {
+        var m = BuildMocks();
+        var method = TransferMethod();
+        var bankAccount = ActiveBankAccount(CompanyId);
+        var payable = CreatePayableWithInstallment(80m);
+        SetupTransfer(m, method, bankAccount);
+        SetupPayable(m, payable);
+
+        var result = await BuildHandler(m).Handle(
+            SingleLineCommand(
+                new SupplierPaymentMethodLineRequest(method.Id, bankAccount.Id, null, 80m, "OP-1", TransactionDate: null),
+                payable,
+                80m
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        result.Error.Should().Be("La fecha de la transacción bancaria es obligatoria.");
+        m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+        m.SupplierPayments.Verify(r => r.AddAsync(It.IsAny<SupplierPayment>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public void Validator_rechaza_linea_bancaria_sin_fecha_de_transaccion()
+    {
+        var result = new SupplierPaymentMethodLineRequestValidator().Validate(
+            new SupplierPaymentMethodLineRequest(Guid.NewGuid(), Guid.NewGuid(), null, 10m, "OP-1", TransactionDate: null)
+        );
+
+        result.IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Transferencia_sin_numero_de_operacion_se_rechaza_si_el_medio_exige_referencia()
+    {
+        var m = BuildMocks();
+        var method = TransferMethod();
+        var bankAccount = ActiveBankAccount(CompanyId);
+        var payable = CreatePayableWithInstallment(80m);
+        SetupTransfer(m, method, bankAccount);
+        SetupPayable(m, payable);
+
+        var result = await BuildHandler(m).Handle(
+            SingleLineCommand(new SupplierPaymentMethodLineRequest(method.Id, bankAccount.Id, null, 80m, TransactionDate: new DateOnly(2026, 8, 28)), payable, 80m),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("número de operación");
+        m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Efectivo_con_cuenta_bancaria_se_rechaza()
+    {
+        var m = BuildMocks();
+        var method = ActivePaymentMethod();
+        var bankAccount = ActiveBankAccount(CompanyId);
+        var payable = CreatePayableWithInstallment(100m);
+        SetupTransfer(m, method, bankAccount);
+        SetupPayable(m, payable);
+
+        var result = await BuildHandler(m).Handle(
+            SingleLineCommand(new SupplierPaymentMethodLineRequest(method.Id, bankAccount.Id, null, 100m, TransactionDate: new DateOnly(2026, 8, 28)), payable, 100m),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        result.Error.Should().Contain("debe ser una caja");
+        m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Transferencia_con_caja_se_rechaza()
+    {
+        var m = BuildMocks();
+        var method = TransferMethod();
+        var destination = ActiveDestination(CompanyId);
+        var payable = CreatePayableWithInstallment(100m);
+        SetupMethodAndDestination(m, method, destination);
+        SetupPayable(m, payable);
+
+        var result = await BuildHandler(m).Handle(
+            SingleLineCommand(new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m, "OP-9"), payable, 100m),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        result.Error.Should().Contain("debe ser una cuenta bancaria");
+        m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Medio_de_credito_se_rechaza_para_pago_a_proveedor()
+    {
+        var m = BuildMocks();
+        var credit = PaymentMethod.Create(TenantId, "CREDITO", "Crédito", false, true, 5, UserId);
+        var bankAccount = ActiveBankAccount(CompanyId);
+        var payable = CreatePayableWithInstallment(100m);
+        SetupTransfer(m, credit, bankAccount);
+        SetupPayable(m, payable);
+
+        var result = await BuildHandler(m).Handle(
+            SingleLineCommand(new SupplierPaymentMethodLineRequest(credit.Id, bankAccount.Id, null, 100m, TransactionDate: new DateOnly(2026, 8, 28)), payable, 100m),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("crédito");
+        m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public void Validator_rechaza_fecha_de_transaccion_en_una_fuente_de_caja()
+    {
+        var validator = new SupplierPaymentMethodLineRequestValidator();
+
+        var result = validator.Validate(
+            new SupplierPaymentMethodLineRequest(
+                Guid.NewGuid(),
+                null,
+                Guid.NewGuid(),
+                10m,
+                TransactionDate: new DateOnly(2026, 8, 28)
+            )
+        );
+
+        result.IsValid.Should().BeFalse();
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // ZH-SUPPLIER-PAYMENT-CASH-HARDENING-02A-CLOSE — sin sobregiro de caja
+    // ══════════════════════════════════════════════════════════════════════
+
+    private void AssertNothingPersisted(Mocks m, CashSession session, AccountsPayable payable)
+    {
+        m.SupplierPayments.Verify(r => r.AddAsync(It.IsAny<SupplierPayment>(), It.IsAny<CancellationToken>()), Times.Never);
+        m.SupplierPayments.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        m.Sequences.Verify(s => s.CaptureNextAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+        m.Uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+        session.Movements.Should().ContainSingle("solo la apertura: ningún egreso de caja registrado");
+        payable.Installments[0].PaidAmount.Should().Be(0m);
+    }
+
+    [Fact]
+    public async Task Efectivo_igual_al_disponible_de_caja_se_permite_y_deja_la_caja_en_cero()
+    {
+        var m = BuildMocks();
+        var method = ActivePaymentMethod();
+        var destination = ActiveDestination(CompanyId);
+        var payable = CreatePayableWithInstallment(80m);
+        var session = SetupMethodAndDestination(m, method, destination, openingAmount: 80m);
+        SetupPayable(m, payable);
+
+        var result = await BuildHandler(m).Handle(
+            SingleLineCommand(new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 80m), payable, 80m),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        session.CurrentBalance.Should().Be(0m);
+    }
+
+    [Fact]
+    public async Task Efectivo_mayor_al_disponible_de_caja_se_rechaza_con_mensaje_claro_y_no_persiste_nada()
+    {
+        var m = BuildMocks();
+        var method = ActivePaymentMethod();
+        var destination = ActiveDestination(CompanyId);
+        var payable = CreatePayableWithInstallment(200m);
+        var session = SetupMethodAndDestination(m, method, destination, openingAmount: 80m);
+        SetupPayable(m, payable);
+
+        var result = await BuildHandler(m).Handle(
+            SingleLineCommand(new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 120m), payable, 120m),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        result.Error.Should().Be("La caja seleccionada dispone de $80.00 y se intenta registrar un pago de $120.00.");
+        session.CurrentBalance.Should().Be(80m, "el esperado nunca queda negativo");
+        AssertNothingPersisted(m, session, payable);
+    }
+
+    [Fact]
+    public async Task Varias_lineas_de_efectivo_contra_la_misma_caja_se_validan_acumuladas()
+    {
+        var m = BuildMocks();
+        var method = ActivePaymentMethod();
+        var destination = ActiveDestination(CompanyId);
+        var payable = CreatePayableWithInstallment(120m);
+        var session = SetupMethodAndDestination(m, method, destination, openingAmount: 100m);
+        SetupPayable(m, payable);
+
+        // Cada línea (60) cabe sola en 100; juntas (120) no.
+        var result = await BuildHandler(m).Handle(
+            new RegisterSupplierPaymentCommand(
+                SupplierId,
+                new DateOnly(2026, 8, 28),
+                120m,
+                null,
+                new[]
+                {
+                    new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 60m),
+                    new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 60m),
+                },
+                new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 120m) },
+                new[]
+                {
+                    new SupplierPaymentAllocationLineRequest(0, 0, 60m),
+                    new SupplierPaymentAllocationLineRequest(1, 0, 60m),
+                }
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("La caja seleccionada dispone de $100.00 y se intenta registrar un pago de $120.00.");
+        AssertNothingPersisted(m, session, payable);
+    }
+
+    [Fact]
+    public async Task Pago_mixto_usa_todo_el_disponible_de_caja_y_completa_con_banco()
+    {
+        var m = BuildMocks();
+        var cash = ActivePaymentMethod();
+        var transfer = TransferMethod();
+        var destination = ActiveDestination(CompanyId);
+        var bankAccount = ActiveBankAccount(CompanyId);
+        var payable = CreatePayableWithInstallment(200m);
+        var session = SetupMethodAndDestination(m, cash, destination, openingAmount: 80m);
+        SetupTransfer(m, transfer, bankAccount);
+        SetupPayable(m, payable);
+
+        var result = await BuildHandler(m).Handle(
+            new RegisterSupplierPaymentCommand(
+                SupplierId,
+                new DateOnly(2026, 8, 28),
+                200m,
+                null,
+                new[]
+                {
+                    new SupplierPaymentMethodLineRequest(cash.Id, null, destination.Id, 80m),
+                    new SupplierPaymentMethodLineRequest(transfer.Id, bankAccount.Id, null, 120m, "OP-777", TransactionDate: new DateOnly(2026, 8, 28)),
+                },
+                new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 200m) },
+                new[]
+                {
+                    new SupplierPaymentAllocationLineRequest(0, 0, 80m),
+                    new SupplierPaymentAllocationLineRequest(1, 0, 120m),
+                }
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        session.CurrentBalance.Should().Be(0m);
+        payable.Installments[0].Status.Should().Be(AccountsPayableStatus.Paid);
+        session.Movements.Should().ContainSingle(x => x.MovementType == CashMovementType.SupplierPayment && x.Amount == 80m);
     }
 }

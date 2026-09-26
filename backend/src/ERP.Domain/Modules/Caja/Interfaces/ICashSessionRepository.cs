@@ -17,11 +17,17 @@ public interface ICashSessionRepository
     );
 
     /// <summary>
-    /// P0-02 Fase 8 — bloqueo real <c>SELECT ... FOR SHARE</c> sobre la sesión de caja activa
-    /// (§6.4quater paso 8 / §6.4quinquies paso 5), adquirido dentro de la transacción ambiente ya
-    /// abierta. Se libera automáticamente al COMMIT/ROLLBACK — nunca abre transacción propia.
+    /// Único lock oficial de la sesión de caja activa para todo flujo que registra movimientos en
+    /// ella (pago a proveedor y su reversa, reembolso de crédito de proveedor y su reversa):
+    /// <c>SELECT ... FOR UPDATE</c> adquirido dentro de la transacción ambiente ya abierta, liberado
+    /// al COMMIT/ROLLBACK — nunca abre transacción propia. Reemplaza al anterior FOR SHARE
+    /// (P0-02 Fase 8), que con el UPDATE posterior de la sesión producía deadlock entre dos
+    /// operaciones concurrentes (ZH-SUPPLIER-PAYMENT-CASH-TRANSFER-02A-FINAL/-CLOSE): con FOR UPDATE
+    /// quedan serializadas y, tras esperar el lock, la recarga lee los movimientos ya confirmados por
+    /// la otra transacción (saldo vigente). Si el llamador bloquea varias cajas, debe hacerlo en
+    /// orden determinista (por <c>CashRegisterId</c>).
     /// </summary>
-    Task<CashSession?> GetOpenByCashRegisterForShareAsync(
+    Task<CashSession?> GetOpenByCashRegisterForUpdateAsync(
         Guid tenantId,
         Guid cashRegisterId,
         CancellationToken ct = default

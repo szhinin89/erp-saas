@@ -1,5 +1,8 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Payables.Exceptions;
+using ERP.Domain.Modules.Caja.Entities;
+using ERP.Domain.Modules.Caja.Enums;
+using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Payables.Interfaces;
 using FluentValidation;
 using MediatR;
@@ -43,6 +46,7 @@ public sealed class ReverseSupplierPaymentCommandHandler
 {
     private readonly ISupplierPaymentRepository _supplierPayments;
     private readonly IAccountsPayableRepository _accountsPayables;
+    private readonly ICashSessionRepository _cashSessions;
     private readonly IUnitOfWork _uow;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
@@ -51,6 +55,7 @@ public sealed class ReverseSupplierPaymentCommandHandler
     public ReverseSupplierPaymentCommandHandler(
         ISupplierPaymentRepository supplierPayments,
         IAccountsPayableRepository accountsPayables,
+        ICashSessionRepository cashSessions,
         IUnitOfWork uow,
         ICurrentTenant t,
         ICurrentCompany c,
@@ -59,6 +64,7 @@ public sealed class ReverseSupplierPaymentCommandHandler
     {
         _supplierPayments = supplierPayments;
         _accountsPayables = accountsPayables;
+        _cashSessions = cashSessions;
         _uow = uow;
         _t = t;
         _c = c;
@@ -94,6 +100,53 @@ public sealed class ReverseSupplierPaymentCommandHandler
             {
                 await _uow.RollbackAsync(ct);
                 return Result<SupplierPaymentDto>.ValidationFailure(ex.Message);
+            }
+
+            // ZH-SUPPLIER-PAYMENT-CASH-TRANSFER-HARDENING-02A — por cada fuente de caja que sacó
+            // efectivo (CashMovementId vinculado), ingreso compensatorio en la sesión Open actual de
+            // esa caja. El egreso original nunca se borra ni se modifica; la trazabilidad queda por
+            // ReferenceType/ReferenceId = SupplierPayment. Pagos anteriores a 02A (sin movimiento
+            // original) no generan compensación — nunca hubo efecto en caja que deshacer.
+            // 02A-FINAL: mismo lock exclusivo y mismo orden determinista que el registro del pago
+            // (FOR UPDATE por CashRegisterId ascendente) — nunca deadlock entre reversas y pagos.
+            var openSessionsByRegister = new Dictionary<Guid, CashSession>();
+            foreach (var cashRegisterId in payment.MethodLines
+                .Where(l => l.CashMovementId is not null)
+                .Select(l => l.CashRegisterId!.Value)
+                .Distinct()
+                .OrderBy(id => id))
+            {
+                var session = await _cashSessions.GetOpenByCashRegisterForUpdateAsync(tenantId, cashRegisterId, ct);
+                if (session is null || session.CompanyId != companyId)
+                {
+                    await _uow.RollbackAsync(ct);
+                    return Result<SupplierPaymentDto>.ValidationFailure(
+                        $"No existe una sesión de caja abierta para la caja {cashRegisterId}. Abra la caja para registrar la devolución del efectivo antes de reversar el pago."
+                    );
+                }
+                openSessionsByRegister[cashRegisterId] = session;
+            }
+
+            foreach (var methodLine in payment.MethodLines.Where(l => l.CashMovementId is not null))
+            {
+                var session = openSessionsByRegister[methodLine.CashRegisterId!.Value];
+                try
+                {
+                    session.RecordMovement(
+                        CashMovementType.SupplierPaymentReversal,
+                        methodLine.Amount,
+                        $"Reversa de pago a proveedor {payment.SystemNumber}",
+                        userId,
+                        CashReferenceType.SupplierPayment,
+                        payment.Id,
+                        payment.SystemNumber
+                    );
+                }
+                catch (InvalidOperationException ex)
+                {
+                    await _uow.RollbackAsync(ct);
+                    return Result<SupplierPaymentDto>.ValidationFailure(ex.Message);
+                }
             }
 
             // Revierte, cuota por cuota, exactamente lo que esa línea aplicó — nunca por FIFO.

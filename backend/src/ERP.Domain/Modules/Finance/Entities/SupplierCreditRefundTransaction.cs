@@ -184,6 +184,30 @@ public sealed class SupplierCreditRefundTransaction : ICompanyOperationalEntity
     /// volver a resolverlos (§6.4quinquies). <see cref="ExternalReference"/> queda null en la fila
     /// de reversa; <paramref name="reason"/> es obligatorio.
     /// </summary>
+    /// <summary>
+    /// ZH-SUPPLIER-PAYMENT-CASH-HARDENING-02A-CLOSE — vincula el <c>CashMovement</c> registrado en
+    /// la sesión de caja DESPUÉS de construir la transacción (el movimiento necesita el Id de esta
+    /// transacción como <c>ReferenceId</c>). Solo destinos de caja, una única vez.
+    /// </summary>
+    public void LinkCashMovement(Guid cashSessionId, Guid cashMovementId)
+    {
+        if (CashRegisterId is null)
+            throw new InvalidOperationException(
+                "Solo una transacción con caja destino puede vincularse a un movimiento de caja."
+            );
+        if (CashMovementId is not null)
+            throw new InvalidOperationException(
+                "La transacción ya está vinculada a un movimiento de caja."
+            );
+        if (cashSessionId == Guid.Empty)
+            throw new ArgumentException("La sesión de caja es obligatoria.", nameof(cashSessionId));
+        if (cashMovementId == Guid.Empty)
+            throw new ArgumentException("El movimiento de caja es obligatorio.", nameof(cashMovementId));
+
+        CashSessionId = cashSessionId;
+        CashMovementId = cashMovementId;
+    }
+
     public static SupplierCreditRefundTransaction CreateReversal(
         SupplierCreditRefundTransaction original,
         Guid supplierCreditMovementId,

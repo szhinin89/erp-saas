@@ -21,6 +21,8 @@ export const supplierPaymentMethodLineSchema = z.object({
   referenceNumber: z.string().max(60, "Máximo 60 caracteres.").optional().nullable(),
   checkNumber: z.string().max(30, "Máximo 30 caracteres.").optional().nullable(),
   checkDate: z.string().optional().nullable(),
+  /** 02A — fecha efectiva de la transacción bancaria (solo destinos "bank:"); vacía ⇒ fecha del pago. */
+  transactionDate: z.string().optional().nullable(),
   notes: z.string().max(500, "Máximo 500 caracteres.").optional().nullable(),
 });
 

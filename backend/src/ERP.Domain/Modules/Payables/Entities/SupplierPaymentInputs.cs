@@ -14,7 +14,8 @@ public sealed record SupplierPaymentMethodLineInput(
     string? ReferenceNumber = null,
     string? CheckNumber = null,
     DateOnly? CheckDate = null,
-    string? Notes = null
+    string? Notes = null,
+    DateOnly? TransactionDate = null
 );
 
 /// <summary>

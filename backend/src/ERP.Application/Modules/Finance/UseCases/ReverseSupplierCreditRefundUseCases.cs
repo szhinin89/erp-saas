@@ -153,8 +153,9 @@ public sealed class ReverseSupplierCreditRefundHandler
             }
 
             // 6. Si corresponde a caja: resolver la CashRegisterId heredada (campo estructural
-            // inmutable del destino, §6.4ter) y bloquear (FOR SHARE) su CashSession activa —
-            // nunca revalida el destino/cuenta vigentes (§6.4quinquies paso 5).
+            // inmutable del destino, §6.4ter) y bloquear su CashSession activa con el lock oficial
+            // FOR UPDATE (02A-FINAL-CLOSE, antes FOR SHARE) — nunca revalida el destino/cuenta
+            // vigentes (§6.4quinquies paso 5).
             Domain.Modules.Caja.Entities.CashSession? cashSession = null;
             if (original.CashRegisterId.HasValue && original.CashSessionId.HasValue)
             {
@@ -171,7 +172,7 @@ public sealed class ReverseSupplierCreditRefundHandler
                     );
                 }
 
-                cashSession = await _cashSessionRepo.GetOpenByCashRegisterForShareAsync(
+                cashSession = await _cashSessionRepo.GetOpenByCashRegisterForUpdateAsync(
                     tid,
                     originalSession.CashRegisterId,
                     ct
@@ -211,15 +212,22 @@ public sealed class ReverseSupplierCreditRefundHandler
                 return Result<SupplierCreditRefundTransactionDto>.ValidationFailure(ex.Message);
             }
 
+            // ZH-SUPPLIER-PAYMENT-CASH-TRANSFER-HARDENING-02A — la reversa deshace el INGRESO del
+            // reembolso original: egreso compensatorio (antes ManualIncome, signo invertido). El
+            // movimiento original nunca se borra.
             Guid? cashMovementId = null;
             if (cashSession is not null)
             {
+                // 02A-CLOSE — misma referencia que el ingreso original (el refund ORIGINAL), para que
+                // ambos movimientos del ciclo de vida se encuentren por ReferenceId.
                 var cashMovement = cashSession.RecordMovement(
-                    CashMovementType.ManualIncome,
+                    CashMovementType.ManualExpense,
                     original.Amount,
                     $"Reversa de reembolso de crédito a proveedor {credit.SupplierId}",
                     uid,
-                    CashReferenceType.None
+                    CashReferenceType.SupplierCreditRefund,
+                    original.Id,
+                    SupplierCreditRefundCashReference.VisibleReference(original.ExternalReference)
                 );
                 cashMovementId = cashMovement.Id;
             }

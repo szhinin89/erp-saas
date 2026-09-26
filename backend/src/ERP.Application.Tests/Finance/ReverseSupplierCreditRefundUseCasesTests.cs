@@ -245,7 +245,7 @@ public sealed class ReverseSupplierCreditRefundUseCasesTests
             )
             .ReturnsAsync(session);
         m.CashSessionRepo.Setup(r =>
-                r.GetOpenByCashRegisterForShareAsync(
+                r.GetOpenByCashRegisterForUpdateAsync(
                     TenantId,
                     CashRegisterId,
                     It.IsAny<CancellationToken>()
@@ -272,6 +272,52 @@ public sealed class ReverseSupplierCreditRefundUseCasesTests
             .HaveCount(2, "apertura + el movimiento compensatorio de la reversa");
     }
 
+    /// <summary>
+    /// ZH-SUPPLIER-PAYMENT-CASH-TRANSFER-HARDENING-02A — la reversa de un reembolso en efectivo
+    /// deshace el ingreso original: el saldo esperado vuelve exactamente al valor previo al
+    /// reembolso (egreso compensatorio, sin borrar el movimiento original).
+    /// </summary>
+    [Fact]
+    public async Task Reversa_de_reembolso_en_efectivo_es_egreso_y_devuelve_el_saldo_esperado_al_estado_previo()
+    {
+        var session = BuildOpenCashSession();
+        var balanceBeforeRefund = session.CurrentBalance;
+        // Ingreso del reembolso original (lo que RegisterSupplierCreditRefund registra en la sesión).
+        session.RecordMovement(
+            ERP.Domain.Modules.Caja.Enums.CashMovementType.ManualIncome,
+            40m,
+            "Reembolso original",
+            UserId
+        );
+        var f = BuildCashFixture(session.Id, refundAmount: 40m);
+        var m = new Mocks(f);
+        m.CashSessionRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(session);
+        m.CashSessionRepo.Setup(r =>
+                r.GetOpenByCashRegisterForUpdateAsync(TenantId, CashRegisterId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(session);
+
+        var result = await m.BuildHandler().Handle(
+            new ReverseSupplierCreditRefundCommand(
+                f.Credit.Id,
+                f.OriginalTx.Id,
+                "Motivo",
+                DateOnly.FromDateTime(DateTime.UtcNow),
+                Guid.NewGuid()
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var compensation = session.Movements.Single(x => x.Id == result.Value!.CashMovementId);
+        compensation.MovementType.Should().Be(ERP.Domain.Modules.Caja.Enums.CashMovementType.ManualExpense);
+        session.Movements.Should().HaveCount(3, "apertura + ingreso original intacto + egreso compensatorio");
+        session.CurrentBalance.Should().Be(balanceBeforeRefund);
+    }
+
     [Fact]
     public async Task Caja_sin_sesion_activa_al_revertir_rechaza_SC_027_sin_mutar_el_original()
     {
@@ -287,7 +333,7 @@ public sealed class ReverseSupplierCreditRefundUseCasesTests
             )
             .ReturnsAsync(closedSession);
         m.CashSessionRepo.Setup(r =>
-                r.GetOpenByCashRegisterForShareAsync(
+                r.GetOpenByCashRegisterForUpdateAsync(
                     TenantId,
                     CashRegisterId,
                     It.IsAny<CancellationToken>()
@@ -442,5 +488,42 @@ public sealed class ReverseSupplierCreditRefundUseCasesTests
         public string? Email => null;
         public string? FullName => null;
         public string? Role => null;
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // ZH-SUPPLIER-PAYMENT-CASH-HARDENING-02A-CLOSE — la reversa conserva la trazabilidad
+    // ══════════════════════════════════════════════════════════════════════
+
+    [Fact]
+    public async Task Reversa_de_reembolso_en_efectivo_referencia_al_reembolso_original()
+    {
+        var session = BuildOpenCashSession();
+        var f = BuildCashFixture(session.Id, refundAmount: 40m);
+        var m = new Mocks(f);
+        m.CashSessionRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(session);
+        m.CashSessionRepo.Setup(r =>
+                r.GetOpenByCashRegisterForUpdateAsync(TenantId, CashRegisterId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(session);
+
+        var result = await m.BuildHandler().Handle(
+            new ReverseSupplierCreditRefundCommand(
+                f.Credit.Id,
+                f.OriginalTx.Id,
+                "Motivo",
+                DateOnly.FromDateTime(DateTime.UtcNow),
+                Guid.NewGuid()
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var compensation = session.Movements.Single(x => x.Id == result.Value!.CashMovementId);
+        compensation.ReferenceType.Should().Be(ERP.Domain.Modules.Caja.Enums.CashReferenceType.SupplierCreditRefund);
+        compensation.ReferenceId.Should().Be(f.OriginalTx.Id, "la reversa apunta al reembolso ORIGINAL");
+        result.Value!.OriginalTransactionId.Should().Be(f.OriginalTx.Id);
     }
 }

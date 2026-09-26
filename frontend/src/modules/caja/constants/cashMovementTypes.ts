@@ -31,6 +31,9 @@ export const CASH_MOVEMENT_TYPES: readonly CashMovementTypeInfo[] = [
   { value: "ManualExpense", labelKey: "caja.movementType.manualExpense", fallbackLabel: "Egreso manual", manualEntry: true },
   { value: "Withdrawal", labelKey: "caja.movementType.withdrawal", fallbackLabel: "Retiro de efectivo", manualEntry: true },
   { value: "SaleRefund", labelKey: "caja.movementType.saleRefund", fallbackLabel: "Reembolso de devolución", manualEntry: false },
+  // ZH-SUPPLIER-PAYMENT-CASH-TRANSFER-HARDENING-02A — tipos de sistema generados por Pagos a Proveedores.
+  { value: "SupplierPayment", labelKey: "caja.movementType.supplierPayment", fallbackLabel: "Pago a proveedor", manualEntry: false },
+  { value: "SupplierPaymentReversal", labelKey: "caja.movementType.supplierPaymentReversal", fallbackLabel: "Reversa de pago a proveedor", manualEntry: false },
 ];
 
 const TYPE_BY_VALUE: ReadonlyMap<string, CashMovementTypeInfo> = new Map(

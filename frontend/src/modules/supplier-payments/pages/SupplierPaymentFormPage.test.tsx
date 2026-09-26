@@ -86,6 +86,7 @@ const methods: PaymentMethodDto[] = [
     isCreditAllowed: false,
     sortOrder: 1,
     detailType: "Transfer",
+    affectsPhysicalCash: false,
   } as PaymentMethodDto,
   {
     id: "pm-2",
@@ -95,7 +96,8 @@ const methods: PaymentMethodDto[] = [
     requiresReference: false,
     isCreditAllowed: false,
     sortOrder: 2,
-    detailType: "Transfer",
+    detailType: "None",
+    affectsPhysicalCash: true,
   } as PaymentMethodDto,
 ];
 
@@ -319,6 +321,153 @@ describe("SupplierPaymentFormPage — cartera como única fuente de applicationL
     // el backend nunca se llama con montos descuadrados.
     await new Promise((resolve) => setTimeout(resolve, 100));
     expect(screen.queryByText("Confirmar y registrar")).toBeNull();
+    expect(supplierPaymentService.register).not.toHaveBeenCalled();
+  });
+});
+
+describe("SupplierPaymentFormPage — 02A medio ↔ destino y datos bancarios", () => {
+  const creditMethod = {
+    id: "pm-credit",
+    code: "CREDITO",
+    name: "Crédito",
+    isActive: true,
+    requiresReference: false,
+    isCreditAllowed: true,
+    sortOrder: 5,
+    detailType: "None",
+    affectsPhysicalCash: false,
+  } as PaymentMethodDto;
+  const referencedTransfer = {
+    id: "pm-ref",
+    code: "TRANSFERENCIA",
+    name: "Transferencia Bancaria",
+    isActive: true,
+    requiresReference: true,
+    isCreditAllowed: false,
+    sortOrder: 3,
+    detailType: "Transfer",
+    affectsPhysicalCash: false,
+  } as PaymentMethodDto;
+
+  beforeEach(() => {
+    vi.mocked(paymentMethodLookupFacade.list).mockResolvedValue([...methods, creditMethod, referencedTransfer]);
+    vi.mocked(pendingPayablesFacade.listPendingInstallments).mockResolvedValue([installment()]);
+  });
+
+  function destinationValues(): string[] {
+    const select = screen.getByLabelText(/^Caja \/ cuenta bancaria\*$/) as HTMLSelectElement;
+    return Array.from(select.options).map((o) => o.value).filter(Boolean);
+  }
+
+  it("un medio de efectivo solo ofrece cajas y uno bancario solo cuentas bancarias", async () => {
+    renderPage();
+    await selectSupplier();
+    const methodSelect = await screen.findByLabelText(/^Medio de pago\*$/);
+
+    fireEvent.change(methodSelect, { target: { value: "pm-2" } });
+    await waitFor(() => expect(destinationValues()).toEqual(["cash:cash-1"]));
+
+    fireEvent.change(methodSelect, { target: { value: "pm-1" } });
+    await waitFor(() => expect(destinationValues()).toEqual(["bank:fd-1"]));
+  });
+
+  it("no ofrece medios de crédito para pagar a un proveedor", async () => {
+    renderPage();
+    await selectSupplier();
+    const methodSelect = (await screen.findByLabelText(/^Medio de pago\*$/)) as HTMLSelectElement;
+
+    await waitFor(() => expect(Array.from(methodSelect.options).map((o) => o.value)).toContain("pm-ref"));
+    expect(Array.from(methodSelect.options).map((o) => o.value)).not.toContain("pm-credit");
+  });
+
+  it("envía la fecha de transacción bancaria informada y el número de operación", async () => {
+    renderPage();
+    await selectSupplier();
+    fireEvent.change(await screen.findByLabelText(/Monto a aplicar: FAC 001-001-000031760/), {
+      target: { value: "20" },
+    });
+    await fillMethodLine("pm-ref", "20");
+    fireEvent.change(screen.getByLabelText(/^Fecha de transacción bancaria\*$/), {
+      target: { value: "2026-08-26" },
+    });
+    fireEvent.change(screen.getByLabelText(/^Número de operación bancaria\*$/), {
+      target: { value: "000987654" },
+    });
+
+    fireEvent.click(screen.getByText("Registrar pago"));
+    fireEvent.click(await screen.findByText("Confirmar y registrar"));
+
+    await waitFor(() => expect(supplierPaymentService.register).toHaveBeenCalled());
+    expect(registerPayload()?.methodLines).toEqual([
+      expect.objectContaining({
+        companyBankAccountId: "fd-1",
+        cashRegisterId: null,
+        amount: 20,
+        referenceNumber: "000987654",
+        transactionDate: "2026-08-26",
+      }),
+    ]);
+  });
+
+  it("precarga visiblemente la fecha del pago en la fuente bancaria y la envía explícita; efectivo nunca envía fecha bancaria", async () => {
+    vi.mocked(pendingPayablesFacade.listPendingInstallments).mockResolvedValue([
+      installment({ outstandingAmount: 100 }),
+    ]);
+    renderPage();
+    await selectSupplier();
+    fireEvent.change(await screen.findByLabelText(/Monto a aplicar: FAC 001-001-000031760/), {
+      target: { value: "100" },
+    });
+    await fillMethodLine("pm-1", "70");
+    const bankDateInput = screen.getByLabelText(/^Fecha de transacción bancaria\*$/) as HTMLInputElement;
+    await waitFor(() => expect(bankDateInput.value).not.toBe(""));
+    fireEvent.click(screen.getByText("+ Agregar medio de pago"));
+    fireEvent.change(screen.getAllByLabelText(/^Medio de pago\*$/)[1], { target: { value: "pm-2" } });
+    fireEvent.change(screen.getAllByLabelText(/^Caja \/ cuenta bancaria\*$/)[1], {
+      target: { value: "cash:cash-1" },
+    });
+    fireEvent.change(screen.getAllByLabelText(/^Monto\*$/)[1], { target: { value: "30" } });
+
+    fireEvent.click(screen.getByText("Registrar pago"));
+    fireEvent.click(await screen.findByText("Confirmar y registrar"));
+
+    await waitFor(() => expect(supplierPaymentService.register).toHaveBeenCalled());
+    const payload = registerPayload();
+    expect(payload?.methodLines[0].transactionDate).toBe(payload?.paymentDate);
+    expect(payload?.methodLines[1].transactionDate).toBeNull();
+  });
+
+  it("si el usuario borra la fecha bancaria precargada, bloquea el registro (nunca se completa sola)", async () => {
+    renderPage();
+    await selectSupplier();
+    fireEvent.change(await screen.findByLabelText(/Monto a aplicar: FAC 001-001-000031760/), {
+      target: { value: "20" },
+    });
+    await fillMethodLine("pm-1", "20");
+    const bankDateInput = screen.getByLabelText(/^Fecha de transacción bancaria\*$/) as HTMLInputElement;
+    await waitFor(() => expect(bankDateInput.value).not.toBe(""));
+    fireEvent.change(bankDateInput, { target: { value: "" } });
+
+    fireEvent.click(screen.getByText("Registrar pago"));
+
+    expect(await screen.findByText("La fecha de la transacción bancaria es obligatoria.")).toBeTruthy();
+    expect(bankDateInput.value).toBe("");
+    expect(supplierPaymentService.register).not.toHaveBeenCalled();
+  });
+
+  it("bloquea el registro si el medio exige número de operación y no se informa", async () => {
+    renderPage();
+    await selectSupplier();
+    fireEvent.change(await screen.findByLabelText(/Monto a aplicar: FAC 001-001-000031760/), {
+      target: { value: "20" },
+    });
+    await fillMethodLine("pm-ref", "20");
+
+    fireEvent.click(screen.getByText("Registrar pago"));
+
+    expect(
+      await screen.findByText("El número de operación bancaria es obligatorio para este medio de pago."),
+    ).toBeTruthy();
     expect(supplierPaymentService.register).not.toHaveBeenCalled();
   });
 });

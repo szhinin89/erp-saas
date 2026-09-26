@@ -286,11 +286,13 @@ public sealed class RegisterSupplierCreditRefundHandler
                 );
             }
 
-            // 8. Si CASH_REGISTER: resolver y bloquear (FOR SHARE) CashSession activa.
+            // 8. Si CASH_REGISTER: resolver y bloquear CashSession activa. 02A-FINAL-CLOSE: lock
+            // exclusivo oficial (FOR UPDATE) retenido hasta el commit — serializa reembolsos,
+            // reversas y pagos concurrentes sobre la misma caja (antes FOR SHARE → deadlock).
             Domain.Modules.Caja.Entities.CashSession? cashSession = null;
             if (cmd.CashRegisterId is { } cashRegisterId)
             {
-                cashSession = await _cashSessionRepo.GetOpenByCashRegisterForShareAsync(
+                cashSession = await _cashSessionRepo.GetOpenByCashRegisterForUpdateAsync(
                     tid,
                     cashRegisterId,
                     ct
@@ -331,19 +333,6 @@ public sealed class RegisterSupplierCreditRefundHandler
 
             // CashMovement real (factory ya existente, esquema sin modificar, §24) — dentro de la
             // sesión ya bloqueada, antes de construir la transacción para poder congelar su Id.
-            Guid? cashMovementId = null;
-            if (cashSession is not null)
-            {
-                var cashMovement = cashSession.RecordMovement(
-                    CashMovementType.ManualExpense,
-                    cmd.Amount,
-                    $"Reembolso de crédito a proveedor {credit.SupplierId}",
-                    uid,
-                    CashReferenceType.None
-                );
-                cashMovementId = cashMovement.Id;
-            }
-
             var transaction = SupplierCreditRefundTransaction.CreateReceived(
                 tid,
                 credit.CompanyId,
@@ -364,10 +353,26 @@ public sealed class RegisterSupplierCreditRefundHandler
                 uid,
                 cmd.ClientRequestId,
                 hash,
-                externalReference: cmd.ExternalReference,
-                cashSessionId: cashSession?.Id,
-                cashMovementId: cashMovementId
+                externalReference: cmd.ExternalReference
             );
+
+            // ZH-SUPPLIER-PAYMENT-CASH-TRANSFER-HARDENING-02A — el proveedor DEVUELVE efectivo: el
+            // dinero entra al cajón → ingreso (antes ManualExpense, signo invertido).
+            // 02A-CLOSE — el movimiento referencia inequívocamente a esta transacción de reembolso
+            // (ReferenceType=SupplierCreditRefund, ReferenceId=transaction.Id), nunca None.
+            if (cashSession is not null)
+            {
+                var cashMovement = cashSession.RecordMovement(
+                    CashMovementType.ManualIncome,
+                    cmd.Amount,
+                    $"Reembolso de crédito a proveedor {credit.SupplierId}",
+                    uid,
+                    CashReferenceType.SupplierCreditRefund,
+                    transaction.Id,
+                    SupplierCreditRefundCashReference.VisibleReference(transaction.ExternalReference)
+                );
+                transaction.LinkCashMovement(cashSession.Id, cashMovement.Id);
+            }
 
             await _txRepo.AddAsync(transaction, ct);
 
@@ -460,4 +465,20 @@ internal static class RefundMap
             t.CashSessionId,
             t.CashMovementId
         );
+}
+
+/// <summary>
+/// ZH-SUPPLIER-PAYMENT-CASH-HARDENING-02A-CLOSE — referencia visible del <c>CashMovement</c> de un
+/// reembolso: la <c>ExternalReference</c> de la transacción si existe y cabe en
+/// <c>CashMovement.ReferenceNumber</c>. Nunca se trunca (una referencia recortada sería engañosa):
+/// si no cabe queda null y la referencia completa se resuelve por <c>ReferenceId</c> (la transacción).
+/// Compartido por Register/Reverse para no duplicar la regla.
+/// </summary>
+internal static class SupplierCreditRefundCashReference
+{
+    public static string? VisibleReference(string? externalReference) =>
+        string.IsNullOrWhiteSpace(externalReference)
+        || externalReference.Trim().Length > ERP.Domain.Modules.Caja.Entities.CashMovement.ReferenceNumberMaxLen
+            ? null
+            : externalReference.Trim();
 }

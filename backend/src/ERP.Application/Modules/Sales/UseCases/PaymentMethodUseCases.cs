@@ -48,7 +48,13 @@ public sealed record PaymentMethodDto(
     /// <see cref="PaymentMethodAccountSource.PaymentMethodAccount"/> (Tarjeta/Cheque). Para
     /// Efectivo/Transferencia/Crédito siempre es <c>null</c>: su cuenta no se configura aquí.
     /// </summary>
-    Guid? AccountingAccountId
+    Guid? AccountingAccountId,
+    /// <summary>
+    /// ZH-SUPPLIER-PAYMENT-CASH-TRANSFER-HARDENING-02A — SSOT de "mueve efectivo físico" (ya
+    /// persistido en <see cref="PaymentMethod.AffectsPhysicalCash"/>), expuesto para que la UI de
+    /// pagos a proveedor ofrezca caja o cuenta bancaria según el medio — nunca por Code/nombre.
+    /// </summary>
+    bool AffectsPhysicalCash = false
 );
 
 // ── Queries ─────────────────────────────────────────────────────────────
@@ -188,7 +194,8 @@ public sealed class GetPaymentMethodsHandler
             pm.DetailType,
             pm.SriPaymentMethodCode,
             source,
-            accountingAccountId
+            accountingAccountId,
+            pm.AffectsPhysicalCash
         );
     }
 

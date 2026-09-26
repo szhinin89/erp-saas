@@ -140,6 +140,11 @@ export function SupplierPaymentDetailPage() {
           : line.referenceNumber || "—",
     },
     {
+      key: "transactionDate",
+      header: "Fecha transacción",
+      render: (line) => (line.transactionDate ? formatDate(line.transactionDate) : "—"),
+    },
+    {
       key: "amount",
       header: "Monto",
       align: "right",

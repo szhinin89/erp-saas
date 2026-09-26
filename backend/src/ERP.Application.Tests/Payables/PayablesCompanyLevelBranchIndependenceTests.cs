@@ -125,7 +125,7 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
         SupplierPayment.Create(
             TenantId, companyId, branchId, SupplierId, new DateOnly(2026, 8, 28), 100m,
             Random.Shared.Next(10000000, 99999999).ToString(System.Globalization.CultureInfo.InvariantCulture), null,
-            new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 100m) },
+            new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 100m, TransactionDate: new DateOnly(2026, 8, 28)) },
             new[] { new SupplierPaymentApplicationLineInput(Guid.NewGuid(), 100m) },
             new[] { new SupplierPaymentAllocationInput(0, 0, 100m) },
             UserId

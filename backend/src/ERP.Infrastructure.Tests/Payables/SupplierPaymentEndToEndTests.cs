@@ -9,6 +9,7 @@ using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Accounting.ValueObjects;
 using ERP.Domain.Modules.Caja.Entities;
+using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Finance.Entities;
@@ -17,15 +18,18 @@ using ERP.Domain.Modules.Finance.Interfaces;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Sales.Entities;
+using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Accounting.Repositories;
 using ERP.Infrastructure.Persistence;
+using ERP.Infrastructure.Persistence.Interceptors;
 using ERP.Infrastructure.Persistence.Repositories.Caja;
 using ERP.Infrastructure.Persistence.Repositories.Finance;
 using ERP.Infrastructure.Persistence.Repositories.Payables;
 using ERP.Infrastructure.Persistence.Repositories.Sales;
 using FluentAssertions;
 using MediatR;
+using Npgsql;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.PostgreSql;
@@ -65,6 +69,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
     private Guid _cashMethodId;
     private Guid _transferMethodId;
     private Guid _cashRegisterId;
+    private Guid _cashSessionId;
+    private const decimal OpeningCash = 1000m;
     private Guid _companyBankAccountId;
     private Guid _cashAccountId;
     private Guid _bankAccountId;
@@ -174,7 +180,16 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
         _expenseInstallmentId = expenseInstallment.Id;
 
         // ── Catálogos: medios de pago + destinos financieros con cuenta contable ──
-        var cashMethod = PaymentMethod.Create(_tenantId, "EFEC", "Efectivo", false, false, 1, _createdBy);
+        var cashMethod = PaymentMethod.Create(
+            _tenantId,
+            "EFEC",
+            "Efectivo",
+            false,
+            false,
+            1,
+            _createdBy,
+            affectsPhysicalCash: true
+        );
         var transferMethod = PaymentMethod.Create(
             _tenantId,
             "TRANS",
@@ -182,7 +197,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             true,
             false,
             2,
-            _createdBy
+            _createdBy,
+            PaymentMethodDetailType.Transfer
         );
         db.PaymentMethods.AddRange(cashMethod, transferMethod);
 
@@ -234,6 +250,49 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
         db.CashRegisters.Add(cashRegisterEntity);
         await db.SaveChangesAsync();
 
+        // 02A — un pago en efectivo exige la CashSession Open de su caja.
+        var establishment = Establishment.Create(
+            _tenantId,
+            _branchId,
+            _companyId,
+            "001",
+            "Matriz",
+            "Av. Principal 123",
+            null,
+            isMain: true,
+            _createdBy
+        );
+        db.Set<Establishment>().Add(establishment);
+        await db.SaveChangesAsync();
+        var emissionPoint = EmissionPoint.Create(
+            _tenantId,
+            _companyId,
+            establishment.Id,
+            "001",
+            "Punto de emisión 1",
+            ERP.Domain.Modules.Company.Enums.EmissionType.Electronic,
+            isDefault: true,
+            _createdBy
+        );
+        db.Set<EmissionPoint>().Add(emissionPoint);
+        await db.SaveChangesAsync();
+        var cashSession = CashSession.Open(
+            _tenantId,
+            _companyId,
+            _branchId,
+            _createdBy,
+            cashRegisterEntity.Id,
+            "CAJA-01",
+            "Caja Principal",
+            emissionPoint.Id,
+            "001",
+            OpeningCash,
+            _createdBy
+        );
+        db.Set<CashSession>().Add(cashSession);
+        await db.SaveChangesAsync();
+        _cashSessionId = cashSession.Id;
+
         var bank = Bank.Create(_tenantId, "PICHINCHA", "Banco Pichincha", "Pichincha", _createdBy);
         db.Banks.Add(bank);
         await db.SaveChangesAsync();
@@ -266,6 +325,9 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
     {
         var options = new DbContextOptionsBuilder<ErpDbContext>()
             .UseNpgsql(_postgres.GetConnectionString())
+            // Igual que producción (DependencyInjection): corrige hijos nuevos (p. ej. CashMovement
+            // agregado a una CashSession ya trackeada) descubiertos como Modified por fixup.
+            .AddInterceptors(new NewChildEntityTrackingInterceptor())
             .Options;
 
         return new ErpDbContext(
@@ -285,6 +347,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
         var options = new DbContextOptionsBuilder<ErpDbContext>()
             .UseNpgsql(_postgres.GetConnectionString() + ";Include Error Detail=true")
             .EnableSensitiveDataLogging()
+            .AddInterceptors(new NewChildEntityTrackingInterceptor())
             .Options;
         var db = new ErpDbContext(
             options,
@@ -358,6 +421,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             new PaymentMethodRepository(db),
             new CompanyBankAccountRepository(db, new FixedCurrentCompany(_companyId)),
             new CashRegisterRepository(db, new FixedCurrentCompany(_companyId)),
+            new CashSessionRepository(db, new FixedCurrentCompany(_companyId)),
             new UnitOfWork(db),
             new FixedCurrentTenant(_tenantId),
             new FixedCurrentCompany(_companyId),
@@ -369,6 +433,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
         new(
             new SupplierPaymentRepository(db),
             new AccountsPayableRepository(db),
+            new CashSessionRepository(db, new FixedCurrentCompany(_companyId)),
             new UnitOfWork(db),
             new FixedCurrentTenant(_tenantId),
             new FixedCurrentCompany(_companyId),
@@ -508,7 +573,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             new[]
             {
                 new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 100m),
-                new SupplierPaymentMethodLineRequest(_transferMethodId, _companyBankAccountId, null, 200m),
+                new SupplierPaymentMethodLineRequest(_transferMethodId, _companyBankAccountId, null, 200m, "OP-E2E", TransactionDate: paymentDate),
             },
             new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m) },
             new[]
@@ -556,7 +621,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             paymentDate,
             500m,
             null,
-            new[] { new SupplierPaymentMethodLineRequest(_transferMethodId, _companyBankAccountId, null, 500m) },
+            new[] { new SupplierPaymentMethodLineRequest(_transferMethodId, _companyBankAccountId, null, 500m, "OP-E2E", TransactionDate: paymentDate) },
             new[]
             {
                 new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m),
@@ -612,7 +677,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             new[]
             {
                 new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 150m),
-                new SupplierPaymentMethodLineRequest(_transferMethodId, _companyBankAccountId, null, 150m),
+                new SupplierPaymentMethodLineRequest(_transferMethodId, _companyBankAccountId, null, 150m, "OP-E2E", TransactionDate: paymentDate),
             },
             new[]
             {
@@ -829,7 +894,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     new[]
                     {
                         new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 100m),
-                        new SupplierPaymentMethodLineRequest(_transferMethodId, _companyBankAccountId, null, 200m),
+                        new SupplierPaymentMethodLineRequest(_transferMethodId, _companyBankAccountId, null, 200m, "OP-E2E", TransactionDate: paymentDate),
                     },
                     new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m) },
                     new[]
@@ -1208,5 +1273,344 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             CancellationToken cancellationToken = default
         )
             where TNotification : INotification => Task.CompletedTask;
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // ZH-SUPPLIER-PAYMENT-CASH-TRANSFER-HARDENING-02A — Postgres real
+    // ══════════════════════════════════════════════════════════════════════
+
+    private async Task<CashSession> LoadSessionAsync()
+    {
+        await using var verifyDb = CreateContext();
+        return await verifyDb.Set<CashSession>().AsNoTracking().Include(x => x.Movements).FirstAsync(x => x.Id == _cashSessionId);
+    }
+
+    [Fact]
+    public async Task Efectivo_persiste_egreso_de_caja_vinculado_baja_el_esperado_y_postea_un_solo_asiento()
+    {
+        var paymentDate = new DateOnly(2026, 8, 28);
+        var (db, _) = BuildWiredContext();
+        await SeedPostingRuleAndPeriodAsync(db, paymentDate);
+
+        var result = await BuildHandler(db).Handle(
+            new RegisterSupplierPaymentCommand(
+                _supplierId,
+                paymentDate,
+                300m,
+                null,
+                new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 300m) },
+                new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m) },
+                new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) }
+            ),
+            CancellationToken.None
+        );
+        result.IsSuccess.Should().BeTrue(result.Error);
+
+        await using var verifyDb = CreateContext();
+        var line = await verifyDb.Set<SupplierPaymentMethodLine>().AsNoTracking().SingleAsync(x => x.SupplierPaymentId == result.Value!.Id);
+        line.CashSessionId.Should().Be(_cashSessionId);
+        line.CashMovementId.Should().NotBeNull();
+        line.TransactionDate.Should().BeNull();
+
+        var session = await LoadSessionAsync();
+        var movement = session.Movements.Single(x => x.Id == line.CashMovementId);
+        movement.MovementType.Should().Be(CashMovementType.SupplierPayment);
+        movement.Amount.Should().Be(300m);
+        movement.ReferenceType.Should().Be(CashReferenceType.SupplierPayment);
+        movement.ReferenceId.Should().Be(result.Value!.Id);
+        movement.ReferenceNumber.Should().Be(result.Value.SystemNumber);
+        session.CurrentBalance.Should().Be(OpeningCash - 300m);
+
+        // Sin doble contabilización: un único asiento (SupplierPayment) y ninguno con origen en Caja.
+        var entries = await verifyDb.JournalEntries.AsNoTracking().ToListAsync();
+        entries.Should().ContainSingle();
+        entries[0].SourceEventId.Should().Be(result.Value.Id);
+        entries[0].SourceModule.Should().Be("Payables");
+        entries.Should().NotContain(e => e.SourceEventId == movement.Id);
+    }
+
+    [Fact]
+    public async Task Reversa_de_efectivo_persiste_ingreso_compensatorio_conserva_el_original_y_restaura_el_esperado()
+    {
+        var paymentDate = new DateOnly(2026, 8, 28);
+        var (db, _) = BuildWiredContext();
+        await SeedConfirmedAndReversedRulesAndPeriodAsync(db, paymentDate);
+        var registerResult = await BuildHandler(db).Handle(
+            new RegisterSupplierPaymentCommand(
+                _supplierId,
+                paymentDate,
+                100m,
+                null,
+                new[]
+                {
+                    new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 40m),
+                    new SupplierPaymentMethodLineRequest(_transferMethodId, _companyBankAccountId, null, 60m, "OP-MIX", TransactionDate: paymentDate),
+                },
+                new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 100m) },
+                new[]
+                {
+                    new SupplierPaymentAllocationLineRequest(0, 0, 40m),
+                    new SupplierPaymentAllocationLineRequest(1, 0, 60m),
+                }
+            ),
+            CancellationToken.None
+        );
+        registerResult.IsSuccess.Should().BeTrue(registerResult.Error);
+        (await LoadSessionAsync()).CurrentBalance.Should().Be(OpeningCash - 40m, "solo la fuente de efectivo mueve el cajón");
+
+        var (reverseDb, _) = BuildWiredContext();
+        var reverseResult = await BuildReverseHandler(reverseDb).Handle(
+            new ReverseSupplierPaymentCommand(registerResult.Value!.Id, "Pago duplicado"),
+            CancellationToken.None
+        );
+        reverseResult.IsSuccess.Should().BeTrue(reverseResult.Error);
+
+        var session = await LoadSessionAsync();
+        var paymentMovements = session.Movements
+            .Where(x => x.ReferenceType == CashReferenceType.SupplierPayment && x.ReferenceId == registerResult.Value.Id)
+            .ToList();
+        paymentMovements.Should().HaveCount(2, "egreso original intacto + ingreso compensatorio");
+        paymentMovements.Should().ContainSingle(x => x.MovementType == CashMovementType.SupplierPayment && x.Amount == 40m);
+        paymentMovements.Should().ContainSingle(x => x.MovementType == CashMovementType.SupplierPaymentReversal && x.Amount == 40m);
+        session.CurrentBalance.Should().Be(OpeningCash);
+
+        await using var verifyDb = CreateContext();
+        var entries = await verifyDb.JournalEntries.AsNoTracking().ToListAsync();
+        entries.Should().HaveCount(2, "asiento de confirmación + asiento inverso, ninguno de Caja");
+        entries.Should().OnlyContain(e => e.SourceEventId == registerResult.Value.Id);
+    }
+
+    [Fact]
+    public async Task Transferencia_persiste_cuenta_fecha_referencia_y_monto_y_no_mueve_caja()
+    {
+        var paymentDate = new DateOnly(2026, 8, 28);
+        var bankDate = new DateOnly(2026, 8, 26);
+        var (db, _) = BuildWiredContext();
+        await SeedPostingRuleAndPeriodAsync(db, paymentDate);
+
+        var result = await BuildHandler(db).Handle(
+            new RegisterSupplierPaymentCommand(
+                _supplierId,
+                paymentDate,
+                200m,
+                null,
+                new[]
+                {
+                    new SupplierPaymentMethodLineRequest(
+                        _transferMethodId,
+                        _companyBankAccountId,
+                        null,
+                        200m,
+                        ReferenceNumber: "000555111",
+                        TransactionDate: bankDate
+                    ),
+                },
+                new[] { new SupplierPaymentApplicationLineRequest(_expenseInstallmentId, 200m) },
+                new[] { new SupplierPaymentAllocationLineRequest(0, 0, 200m) }
+            ),
+            CancellationToken.None
+        );
+        result.IsSuccess.Should().BeTrue(result.Error);
+
+        await using var verifyDb = CreateContext();
+        var payment = await verifyDb.SupplierPayments.AsNoTracking().Include(x => x.MethodLines).SingleAsync(x => x.Id == result.Value!.Id);
+        var line = payment.MethodLines.Single();
+        // Match futuro: Cuenta + Fecha + Referencia + Monto (+ SupplierId/SystemNumber en cabecera).
+        line.CompanyBankAccountId.Should().Be(_companyBankAccountId);
+        line.TransactionDate.Should().Be(bankDate);
+        line.ReferenceNumber.Should().Be("000555111");
+        line.Amount.Should().Be(200m);
+        line.PaymentMethodId.Should().Be(_transferMethodId);
+        payment.SupplierId.Should().Be(_supplierId);
+        payment.SystemNumber.Should().NotBeNullOrWhiteSpace();
+        line.CashSessionId.Should().BeNull();
+        line.CashMovementId.Should().BeNull();
+
+        var session = await LoadSessionAsync();
+        session.Movements.Should().ContainSingle("solo la apertura — una transferencia nunca toca el cajón");
+        session.CurrentBalance.Should().Be(OpeningCash);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // ZH-SUPPLIER-PAYMENT-CASH-HARDENING-02A-CLOSE — sin sobregiro, Postgres real
+    // ══════════════════════════════════════════════════════════════════════
+
+    /// <summary>Deja la sesión con exactamente <paramref name="available"/> de efectivo esperado
+    /// (retiro previo de la diferencia) — escenario "Caja disponible: $80".</summary>
+    private async Task LeaveCashAvailableAsync(decimal available)
+    {
+        await using var db = CreateContext();
+        var session = await db.Set<CashSession>().Include(x => x.Movements).FirstAsync(x => x.Id == _cashSessionId);
+        session.RecordMovement(CashMovementType.Withdrawal, session.CurrentBalance - available, "Depósito previo", _createdBy);
+        await db.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task Efectivo_mayor_al_disponible_se_rechaza_sin_persistir_pago_movimiento_ni_asiento()
+    {
+        var paymentDate = new DateOnly(2026, 8, 28);
+        await LeaveCashAvailableAsync(80m);
+        var (db, _) = BuildWiredContext();
+        await SeedPostingRuleAndPeriodAsync(db, paymentDate);
+
+        var result = await BuildHandler(db).Handle(
+            new RegisterSupplierPaymentCommand(
+                _supplierId,
+                paymentDate,
+                120m,
+                null,
+                new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 120m) },
+                new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 120m) },
+                new[] { new SupplierPaymentAllocationLineRequest(0, 0, 120m) }
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("La caja seleccionada dispone de $80.00 y se intenta registrar un pago de $120.00.");
+
+        await using var verifyDb = CreateContext();
+        (await verifyDb.SupplierPayments.AsNoTracking().AnyAsync()).Should().BeFalse();
+        (await verifyDb.JournalEntries.AsNoTracking().AnyAsync()).Should().BeFalse();
+        var installment = await verifyDb.AccountsPayableInstallments.AsNoTracking().FirstAsync(x => x.Id == _purchaseInstallmentId);
+        installment.PaidAmount.Should().Be(0m);
+        var session = await LoadSessionAsync();
+        session.Movements.Should().NotContain(x => x.MovementType == CashMovementType.SupplierPayment);
+        session.CurrentBalance.Should().Be(80m);
+    }
+
+    [Fact]
+    public async Task Pago_mixto_de_200_usa_80_de_caja_y_120_de_banco_con_un_solo_asiento()
+    {
+        var paymentDate = new DateOnly(2026, 8, 28);
+        await LeaveCashAvailableAsync(80m);
+        var (db, _) = BuildWiredContext();
+        await SeedPostingRuleAndPeriodAsync(db, paymentDate);
+
+        var result = await BuildHandler(db).Handle(
+            new RegisterSupplierPaymentCommand(
+                _supplierId,
+                paymentDate,
+                200m,
+                null,
+                new[]
+                {
+                    new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 80m),
+                    new SupplierPaymentMethodLineRequest(_transferMethodId, _companyBankAccountId, null, 120m, "OP-200", TransactionDate: paymentDate),
+                },
+                new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 200m) },
+                new[]
+                {
+                    new SupplierPaymentAllocationLineRequest(0, 0, 80m),
+                    new SupplierPaymentAllocationLineRequest(1, 0, 120m),
+                }
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var session = await LoadSessionAsync();
+        session.CurrentBalance.Should().Be(0m, "la caja entrega todo su disponible, nunca queda negativa");
+        session.Movements.Should().ContainSingle(x => x.MovementType == CashMovementType.SupplierPayment && x.Amount == 80m);
+
+        await using var verifyDb = CreateContext();
+        var entries = await verifyDb.JournalEntries.AsNoTracking().Include(x => x.Lines).ToListAsync();
+        entries.Should().ContainSingle("SupplierPayment es la única fuente del asiento");
+        entries[0].Lines.Sum(l => l.Debit).Should().Be(200m);
+        entries[0].Lines.Single(l => l.AccountId == _cashAccountId).Credit.Should().Be(80m);
+        entries[0].Lines.Single(l => l.AccountId == _bankAccountId).Credit.Should().Be(120m);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // ZH-SUPPLIER-PAYMENT-CASH-TRANSFER-02A-FINAL — concurrencia real sobre la misma CashSession
+    // ══════════════════════════════════════════════════════════════════════
+
+    private RegisterSupplierPaymentCommand CashPaymentCommand(Guid installmentId, decimal amount, DateOnly paymentDate) =>
+        new(
+            _supplierId,
+            paymentDate,
+            amount,
+            null,
+            new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, amount) },
+            new[] { new SupplierPaymentApplicationLineRequest(installmentId, amount) },
+            new[] { new SupplierPaymentAllocationLineRequest(0, 0, amount) }
+        );
+
+    /// <summary>
+    /// Saldo 100, dos pagos simultáneos de 70 contra la misma caja. Para garantizar que ambos
+    /// compiten de verdad (no por azar de scheduling), una conexión externa retiene FOR UPDATE sobre
+    /// la sesión hasta que PostgreSQL reporta a AMBOS handlers esperando ese lock; al liberarlo, el
+    /// FOR UPDATE del handler los serializa: uno confirma y el otro, al recargar la sesión bajo el
+    /// lock, ve 30 disponibles y recibe la validación normal de saldo — nunca un deadlock genérico.
+    /// </summary>
+    [Fact]
+    public async Task Dos_pagos_concurrentes_de_70_sobre_caja_de_100_se_serializan_y_solo_uno_confirma()
+    {
+        var paymentDate = new DateOnly(2026, 8, 28);
+        await LeaveCashAvailableAsync(100m);
+        var (seedDb, _) = BuildWiredContext();
+        await SeedPostingRuleAndPeriodAsync(seedDb, paymentDate);
+
+        await using var blocker = new NpgsqlConnection(_postgres.GetConnectionString());
+        await blocker.OpenAsync();
+        await using var blockerTx = await blocker.BeginTransactionAsync();
+        await using (var lockCmd = new NpgsqlCommand("SELECT 1 FROM cash_sessions WHERE id = @id FOR UPDATE", blocker, blockerTx))
+        {
+            lockCmd.Parameters.AddWithValue("id", _cashSessionId);
+            await lockCmd.ExecuteNonQueryAsync();
+        }
+
+        var (dbA, _) = BuildWiredContext();
+        var (dbB, _) = BuildWiredContext();
+        var paymentA = Task.Run(() => BuildHandler(dbA).Handle(CashPaymentCommand(_purchaseInstallmentId, 70m, paymentDate), CancellationToken.None));
+        var paymentB = Task.Run(() => BuildHandler(dbB).Handle(CashPaymentCommand(_expenseInstallmentId, 70m, paymentDate), CancellationToken.None));
+
+        // Espera observable (no un sleep ciego): ambos backends bloqueados en el lock de fila.
+        var deadline = DateTime.UtcNow.AddSeconds(20);
+        long waiting = 0;
+        while (DateTime.UtcNow < deadline)
+        {
+            await using var probe = new NpgsqlConnection(_postgres.GetConnectionString());
+            await probe.OpenAsync();
+            await using var countCmd = new NpgsqlCommand(
+                "SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock'",
+                probe
+            );
+            waiting = (long)(await countCmd.ExecuteScalarAsync())!;
+            if (waiting >= 2)
+                break;
+            await Task.Delay(50);
+        }
+        waiting.Should().BeGreaterThanOrEqualTo(2, "ambos pagos deben estar compitiendo por la misma CashSession");
+
+        await blockerTx.CommitAsync();
+        var results = await Task.WhenAll(paymentA, paymentB);
+
+        results.Count(r => r.IsSuccess).Should().Be(1, "solo un pago puede consumir el efectivo");
+        var rejected = results.Single(r => !r.IsSuccess);
+        rejected.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        rejected.Error.Should().Be("La caja seleccionada dispone de $30.00 y se intenta registrar un pago de $70.00.");
+        var confirmed = results.Single(r => r.IsSuccess).Value!;
+
+        await using var verifyDb = CreateContext();
+        var payments = await verifyDb.SupplierPayments.AsNoTracking().ToListAsync();
+        payments.Should().ContainSingle();
+        payments[0].Id.Should().Be(confirmed.Id);
+        payments[0].Status.Should().Be(SupplierPaymentStatus.Confirmed);
+
+        var session = await LoadSessionAsync();
+        session.CurrentBalance.Should().Be(30m, "nunca negativo: 100 − 70");
+        session.Movements.Where(x => x.MovementType == CashMovementType.SupplierPayment).Should().ContainSingle()
+            .Which.ReferenceId.Should().Be(confirmed.Id);
+
+        var entries = await verifyDb.JournalEntries.AsNoTracking().ToListAsync();
+        entries.Should().ContainSingle().Which.SourceEventId.Should().Be(confirmed.Id);
+
+        // Sin datos parciales del pago rechazado: su cuota sigue intacta.
+        var installments = await verifyDb.AccountsPayableInstallments.AsNoTracking()
+            .Where(x => x.Id == _purchaseInstallmentId || x.Id == _expenseInstallmentId)
+            .ToListAsync();
+        installments.Sum(x => x.PaidAmount).Should().Be(70m);
+        installments.Should().ContainSingle(x => x.PaidAmount == 0m);
     }
 }

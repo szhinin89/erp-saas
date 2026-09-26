@@ -65,6 +65,7 @@ const ACTIVE_PM: PaymentMethodDto = {
   isCreditAllowed: false,
   sortOrder: 1,
   detailType: "None",
+  affectsPhysicalCash: false,
   sriPaymentMethodCode: "01",
   accountSource: "CashRegister",
   accountingAccountId: null,

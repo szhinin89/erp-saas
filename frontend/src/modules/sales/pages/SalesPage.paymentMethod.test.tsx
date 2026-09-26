@@ -120,6 +120,7 @@ function buildPaymentMethod(
     isCreditAllowed: false,
     sortOrder: 1,
     detailType: "None",
+    affectsPhysicalCash: false,
     sriPaymentMethodCode: null,
     accountSource: "CashRegister",
     accountingAccountId: null,

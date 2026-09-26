@@ -22,6 +22,9 @@ export type PaymentMethodDto = {
   isCreditAllowed: boolean;
   sortOrder: number;
   detailType: PaymentMethodDetailType;
+  /** ZH-SUPPLIER-PAYMENT-CASH-TRANSFER-HARDENING-02A — SSOT backend de "mueve efectivo físico":
+   * true ⇒ el destino de un pago es una caja; false ⇒ una cuenta bancaria. Nunca inferir por code. */
+  affectsPhysicalCash: boolean;
   /** SALES-PAYMENT-METHOD-SRI-MAPPING-SSOT-01: código del catálogo sri_payment_method mapeado a
    * esta forma de cobro (null = sin mapeo propio, la emisión cae al default de empresa). */
   sriPaymentMethodCode: string | null;

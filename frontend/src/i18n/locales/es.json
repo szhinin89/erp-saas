@@ -749,6 +749,8 @@
   "caja.movementType.manualExpense": "Egreso manual",
   "caja.movementType.withdrawal": "Retiro de efectivo",
   "caja.movementType.saleRefund": "Reembolso de devolución",
+  "caja.movementType.supplierPayment": "Pago a proveedor",
+  "caja.movementType.supplierPaymentReversal": "Reversa de pago a proveedor",
   "caja.movements.table.date": "Fecha/Hora",
   "caja.movements.table.type": "Tipo",
   "caja.movements.table.reason": "Motivo",

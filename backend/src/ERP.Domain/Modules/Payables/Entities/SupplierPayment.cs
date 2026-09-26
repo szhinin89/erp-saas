@@ -137,7 +137,11 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
                     input.ReferenceNumber,
                     input.CheckNumber,
                     input.CheckDate,
-                    input.Notes
+                    input.Notes,
+                    // 02A-FINAL: la fecha efectiva de una fuente bancaria es un dato real del
+                    // extracto — obligatoria y explícita, nunca completada con PaymentDate (base
+                    // confiable de la futura conciliación). Fuente de caja → siempre null.
+                    input.TransactionDate
                 )
             );
 
@@ -197,6 +201,24 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
         );
 
         return payment;
+    }
+
+    /// <summary>
+    /// ZH-SUPPLIER-PAYMENT-CASH-TRANSFER-HARDENING-02A — vincula una fuente de caja con el
+    /// <c>CashMovement</c> operativo registrado en la <c>CashSession</c> abierta. El agregado no
+    /// conoce Caja (mismo principio que con <c>AccountsPayable</c>): Application registra el
+    /// movimiento y solo fija aquí la trazabilidad. Únicamente sobre un pago Confirmed.
+    /// </summary>
+    public void LinkCashMovement(Guid methodLineId, Guid cashSessionId, Guid cashMovementId)
+    {
+        if (Status != SupplierPaymentStatus.Confirmed)
+            throw new InvalidOperationException(
+                "Solo un pago Confirmed puede vincularse a un movimiento de caja."
+            );
+        var line =
+            _methodLines.FirstOrDefault(l => l.Id == methodLineId)
+            ?? throw new InvalidOperationException("El medio de pago indicado no pertenece a este pago.");
+        line.LinkCashMovement(cashSessionId, cashMovementId);
     }
 
     /// <summary>

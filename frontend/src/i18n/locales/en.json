@@ -3791,6 +3791,8 @@
   "caja.movementType.manualExpense": "Manual expense",
   "caja.movementType.withdrawal": "Cash withdrawal",
   "caja.movementType.saleRefund": "Return refund",
+  "caja.movementType.supplierPayment": "Supplier payment",
+  "caja.movementType.supplierPaymentReversal": "Supplier payment reversal",
   "caja.movements.table.date": "Date/Time",
   "caja.movements.table.type": "Type",
   "caja.movements.table.reason": "Reason",

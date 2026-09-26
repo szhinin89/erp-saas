@@ -1,10 +1,14 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Payables.Exceptions;
+using ERP.Domain.Modules.Caja.Entities;
+using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Finance.Interfaces;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
+using ERP.Domain.Modules.Sales.Entities;
+using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Interfaces;
 using FluentValidation;
 using MediatR;
@@ -13,7 +17,12 @@ namespace ERP.Application.Modules.Payables.UseCases;
 
 // ── DTOs (Request, línea por línea) ─────────────────────────────────────
 
-/// <summary>SUPPLIER-PAYMENTS-REGISTER-15C — un medio de pago usado en el registro.</summary>
+/// <summary>
+/// SUPPLIER-PAYMENTS-REGISTER-15C — un medio de pago usado en el registro.
+/// ZH-SUPPLIER-PAYMENT-CASH-TRANSFER-HARDENING-02A — <see cref="TransactionDate"/>: fecha efectiva
+/// real de una fuente bancaria — obligatoria y explícita (02A-FINAL: nunca completada con
+/// PaymentDate); prohibida en fuentes de caja. <see cref="ReferenceNumber"/> es el único número de operación bancaria.
+/// </summary>
 public sealed record SupplierPaymentMethodLineRequest(
     Guid PaymentMethodId,
     Guid? CompanyBankAccountId,
@@ -22,7 +31,8 @@ public sealed record SupplierPaymentMethodLineRequest(
     string? ReferenceNumber = null,
     string? CheckNumber = null,
     DateOnly? CheckDate = null,
-    string? Notes = null
+    string? Notes = null,
+    DateOnly? TransactionDate = null
 );
 
 /// <summary>SUPPLIER-PAYMENTS-REGISTER-15C — una aplicación a cuota de <c>AccountsPayableInstallment</c>.</summary>
@@ -68,7 +78,10 @@ public sealed record SupplierPaymentMethodLineDto(
     string? ReferenceNumber,
     string? CheckNumber,
     DateOnly? CheckDate,
-    string? Notes
+    string? Notes,
+    DateOnly? TransactionDate = null,
+    Guid? CashSessionId = null,
+    Guid? CashMovementId = null
 );
 
 /// <summary>
@@ -157,6 +170,15 @@ public sealed class SupplierPaymentMethodLineRequestValidator
         RuleFor(x => x)
             .Must(x => x.CompanyBankAccountId is not null ^ x.CashRegisterId is not null)
             .WithMessage("Debe especificar exactamente una cuenta bancaria o una caja destino.");
+        RuleFor(x => x.TransactionDate)
+            .Null()
+            .When(x => x.CashRegisterId is not null)
+            .WithMessage("La fecha de transacción bancaria no aplica a un medio de pago en caja.");
+        // 02A-FINAL — explícita, nunca completada con PaymentDate en backend.
+        RuleFor(x => x.TransactionDate)
+            .NotNull()
+            .When(x => x.CompanyBankAccountId is not null)
+            .WithMessage("La fecha de la transacción bancaria es obligatoria.");
     }
 }
 
@@ -216,6 +238,7 @@ public sealed class RegisterSupplierPaymentCommandHandler
     private readonly IPaymentMethodRepository _paymentMethods;
     private readonly ICompanyBankAccountRepository _bankAccounts;
     private readonly ICashRegisterRepository _cashRegisters;
+    private readonly ICashSessionRepository _cashSessions;
     private readonly IUnitOfWork _uow;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
@@ -229,6 +252,7 @@ public sealed class RegisterSupplierPaymentCommandHandler
         IPaymentMethodRepository paymentMethods,
         ICompanyBankAccountRepository bankAccounts,
         ICashRegisterRepository cashRegisters,
+        ICashSessionRepository cashSessions,
         IUnitOfWork uow,
         ICurrentTenant t,
         ICurrentCompany c,
@@ -242,6 +266,7 @@ public sealed class RegisterSupplierPaymentCommandHandler
         _paymentMethods = paymentMethods;
         _bankAccounts = bankAccounts;
         _cashRegisters = cashRegisters;
+        _cashSessions = cashSessions;
         _uow = uow;
         _t = t;
         _c = c;
@@ -284,6 +309,7 @@ public sealed class RegisterSupplierPaymentCommandHandler
             }
 
             // ── PaymentMethodId debe existir y estar activo ──
+            var methodsById = new Dictionary<Guid, PaymentMethod>();
             foreach (var methodId in cmd.MethodLines.Select(l => l.PaymentMethodId).Distinct())
             {
                 var method = await _paymentMethods.GetByIdAsync(tenantId, methodId, ct);
@@ -293,6 +319,18 @@ public sealed class RegisterSupplierPaymentCommandHandler
                     return Result<SupplierPaymentDto>.ValidationFailure(
                         $"El medio de pago {methodId} no existe o no está activo."
                     );
+                }
+                methodsById[methodId] = method;
+            }
+
+            // ── 02A: medio ↔ destino, PaymentMethod como SSOT (fail-closed) ──
+            foreach (var line in cmd.MethodLines)
+            {
+                var lineError = ValidateMethodLineAgainstCatalog(line, methodsById[line.PaymentMethodId]);
+                if (lineError is not null)
+                {
+                    await _uow.RollbackAsync(ct);
+                    return Result<SupplierPaymentDto>.ValidationFailure(lineError);
                 }
             }
 
@@ -343,6 +381,47 @@ public sealed class RegisterSupplierPaymentCommandHandler
                     await _uow.RollbackAsync(ct);
                     return Result<SupplierPaymentDto>.ValidationFailure(
                         $"La caja {cashRegisterId} no tiene una cuenta contable configurada."
+                    );
+                }
+            }
+
+            // ── 02A: cada caja exige su CashSession Open — el egreso operativo se registra en esa
+            // sesión. 02A-FINAL: lock exclusivo (FOR UPDATE) ANTES de leer el saldo, en orden
+            // determinista por CashRegisterId: dos pagos concurrentes sobre la misma caja quedan
+            // serializados (el segundo ve el saldo ya consumido y recibe la validación normal) y
+            // dos pagos con varias cajas nunca se bloquean en cruz ──
+            var openSessionsByRegister = new Dictionary<Guid, CashSession>();
+            foreach (var cashRegisterId in cmd.MethodLines
+                .Where(l => l.CashRegisterId is not null)
+                .Select(l => l.CashRegisterId!.Value)
+                .Distinct()
+                .OrderBy(id => id))
+            {
+                var session = await _cashSessions.GetOpenByCashRegisterForUpdateAsync(tenantId, cashRegisterId, ct);
+                if (session is null || session.CompanyId != companyId)
+                {
+                    await _uow.RollbackAsync(ct);
+                    return Result<SupplierPaymentDto>.ValidationFailure(
+                        $"No existe una sesión de caja abierta para la caja {cashRegisterId}. Abra la caja antes de pagar en efectivo."
+                    );
+                }
+                openSessionsByRegister[cashRegisterId] = session;
+            }
+
+            // ── 02A-CLOSE: sin sobregiro de caja (fail-closed, sin override). El consumo se ACUMULA
+            // por sesión: varias líneas de efectivo del mismo pago contra la misma caja nunca pueden
+            // superar juntas el efectivo esperado (CashSession.CurrentBalance, SSOT del arqueo) ──
+            foreach (var cashGroup in cmd.MethodLines
+                .Where(l => l.CashRegisterId is not null)
+                .GroupBy(l => l.CashRegisterId!.Value))
+            {
+                var requested = cashGroup.Sum(l => l.Amount);
+                var available = openSessionsByRegister[cashGroup.Key].CurrentBalance;
+                if (requested > available)
+                {
+                    await _uow.RollbackAsync(ct);
+                    return Result<SupplierPaymentDto>.ValidationFailure(
+                        $"La caja seleccionada dispone de ${FormatMoney(available)} y se intenta registrar un pago de ${FormatMoney(requested)}."
                     );
                 }
             }
@@ -442,7 +521,8 @@ public sealed class RegisterSupplierPaymentCommandHandler
                             l.ReferenceNumber,
                             l.CheckNumber,
                             l.CheckDate,
-                            l.Notes
+                            l.Notes,
+                            l.TransactionDate
                         ))
                         .ToList(),
                     cmd.ApplicationLines
@@ -478,6 +558,31 @@ public sealed class RegisterSupplierPaymentCommandHandler
                             appLine.AmountApplied,
                             userId
                         );
+                }
+                catch (InvalidOperationException ex)
+                {
+                    await _uow.RollbackAsync(ct);
+                    return Result<SupplierPaymentDto>.ValidationFailure(ex.Message);
+                }
+            }
+
+            // ── 02A: efecto operativo de caja — un egreso por cada fuente de caja, vinculado a la
+            // línea. CashMovement nunca postea: el asiento sigue siendo solo de SupplierPayment ──
+            foreach (var methodLine in payment.MethodLines.Where(l => l.CashRegisterId is not null))
+            {
+                var session = openSessionsByRegister[methodLine.CashRegisterId!.Value];
+                try
+                {
+                    var movement = session.RecordMovement(
+                        CashMovementType.SupplierPayment,
+                        methodLine.Amount,
+                        $"Pago a proveedor {payment.SystemNumber}",
+                        userId,
+                        CashReferenceType.SupplierPayment,
+                        payment.Id,
+                        payment.SystemNumber
+                    );
+                    payment.LinkCashMovement(methodLine.Id, session.Id, movement.Id);
                 }
                 catch (InvalidOperationException ex)
                 {
@@ -527,6 +632,51 @@ public sealed class RegisterSupplierPaymentCommandHandler
             await _uow.RollbackAsync(ct);
             throw;
         }
+    }
+
+    /// <summary>Montos en mensajes: punto decimal y 2 decimales, siempre InvariantCulture (estándar de decimales).</summary>
+    private static string FormatMoney(decimal amount) =>
+        amount.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// ZH-SUPPLIER-PAYMENT-CASH-TRANSFER-HARDENING-02A — reglas medio ↔ destino con
+    /// <see cref="PaymentMethod"/> como SSOT: medio de crédito prohibido; efectivo físico ⇒ caja
+    /// (banco prohibido); cualquier otro medio ⇒ cuenta bancaria (caja prohibida); medio con
+    /// <see cref="PaymentMethod.RequiresReference"/> ⇒ número de operación (o de cheque) obligatorio.
+    /// </summary>
+    internal static string? ValidateMethodLineAgainstCatalog(
+        SupplierPaymentMethodLineRequest line,
+        PaymentMethod method
+    )
+    {
+        if (method.IsCreditAllowed)
+            return $"El medio de pago {method.Name} es de crédito y no puede usarse para pagar a un proveedor.";
+
+        if (method.AffectsPhysicalCash)
+        {
+            if (line.CompanyBankAccountId is not null || line.CashRegisterId is null)
+                return $"El medio de pago {method.Name} mueve efectivo físico: el destino debe ser una caja, no una cuenta bancaria.";
+            return null;
+        }
+
+        if (line.CashRegisterId is not null || line.CompanyBankAccountId is null)
+            return $"El medio de pago {method.Name} es bancario: el destino debe ser una cuenta bancaria, no una caja.";
+
+        // 02A-FINAL — fecha real del extracto, explícita; nunca se completa con PaymentDate.
+        if (line.TransactionDate is null)
+            return "La fecha de la transacción bancaria es obligatoria.";
+
+        if (method.RequiresReference)
+        {
+            var isCheck = method.DetailType == PaymentMethodDetailType.Check;
+            var reference = isCheck ? line.CheckNumber : line.ReferenceNumber;
+            if (string.IsNullOrWhiteSpace(reference))
+                return isCheck
+                    ? $"El medio de pago {method.Name} exige el número de cheque."
+                    : $"El medio de pago {method.Name} exige el número de operación bancaria (referencia).";
+        }
+
+        return null;
     }
 }
 
@@ -580,7 +730,10 @@ internal static class SupplierPaymentDtoMapper
                     l.ReferenceNumber,
                     l.CheckNumber,
                     l.CheckDate,
-                    l.Notes
+                    l.Notes,
+                    l.TransactionDate,
+                    l.CashSessionId,
+                    l.CashMovementId
                 ))
                 .ToList(),
             p.ApplicationLines

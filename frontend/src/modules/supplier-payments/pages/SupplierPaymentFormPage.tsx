@@ -45,6 +45,7 @@ const EMPTY_METHOD_LINE = {
   referenceNumber: "",
   checkNumber: "",
   checkDate: "",
+  transactionDate: "",
   notes: "",
 };
 
@@ -125,6 +126,47 @@ export function SupplierPaymentFormPage() {
 
       values.methodLines.forEach((line, idx) => {
         const method = line.paymentMethodId ? methodsById.get(line.paymentMethodId) : undefined;
+        // 02A — mismo contrato que el backend (PaymentMethod SSOT): crédito prohibido; efectivo
+        // físico ⇒ caja; cualquier otro ⇒ cuenta bancaria con número de operación si lo exige.
+        if (method?.isCreditAllowed) {
+          setError(`methodLines.${idx}.paymentMethodId`, {
+            type: "manual",
+            message: "Un medio de crédito no puede usarse para pagar a un proveedor.",
+          });
+          ok = false;
+        }
+        if (method && line.destination) {
+          const wantsCash = method.affectsPhysicalCash;
+          if (wantsCash !== line.destination.startsWith("cash:")) {
+            setError(`methodLines.${idx}.destination`, {
+              type: "manual",
+              message: wantsCash
+                ? "Este medio mueve efectivo: seleccione una caja."
+                : "Este medio es bancario: seleccione una cuenta bancaria.",
+            });
+            ok = false;
+          }
+        }
+        if (line.destination.startsWith("bank:") && !line.transactionDate?.trim()) {
+          setError(`methodLines.${idx}.transactionDate`, {
+            type: "manual",
+            message: "La fecha de la transacción bancaria es obligatoria.",
+          });
+          ok = false;
+        }
+        if (
+          method &&
+          !method.affectsPhysicalCash &&
+          method.detailType !== "Check" &&
+          method.requiresReference &&
+          !line.referenceNumber?.trim()
+        ) {
+          setError(`methodLines.${idx}.referenceNumber`, {
+            type: "manual",
+            message: "El número de operación bancaria es obligatorio para este medio de pago.",
+          });
+          ok = false;
+        }
         if (method?.detailType === "Check") {
           if (!line.checkNumber?.trim()) {
             setError(`methodLines.${idx}.checkNumber`, {
@@ -192,16 +234,22 @@ export function SupplierPaymentFormPage() {
         paymentDate: pendingValues.paymentDate,
         totalAmount,
         receiptNumber: pendingValues.receiptNumber?.trim() || null,
-        methodLines: pendingValues.methodLines.map((l) => ({
-          paymentMethodId: l.paymentMethodId,
-          companyBankAccountId: l.destination.startsWith("bank:") ? l.destination.slice(5) : null,
-          cashRegisterId: l.destination.startsWith("cash:") ? l.destination.slice(5) : null,
-          amount: l.amount,
-          referenceNumber: l.referenceNumber?.trim() || null,
-          checkNumber: l.checkNumber?.trim() || null,
-          checkDate: l.checkDate?.trim() || null,
-          notes: l.notes?.trim() || null,
-        })),
+        methodLines: pendingValues.methodLines.map((l) => {
+          const isBank = l.destination.startsWith("bank:");
+          return {
+            paymentMethodId: l.paymentMethodId,
+            companyBankAccountId: isBank ? l.destination.slice(5) : null,
+            cashRegisterId: l.destination.startsWith("cash:") ? l.destination.slice(5) : null,
+            amount: l.amount,
+            referenceNumber: l.referenceNumber?.trim() || null,
+            checkNumber: l.checkNumber?.trim() || null,
+            checkDate: l.checkDate?.trim() || null,
+            notes: l.notes?.trim() || null,
+            // 02A-FINAL — cada fuente bancaria envía SIEMPRE su fecha explícita (precargada en el
+            // formulario, validada arriba); nunca se completa aquí ni en el backend.
+            transactionDate: isBank ? l.transactionDate?.trim() || null : null,
+          };
+        }),
         applicationLines: validApplicationLines.map((l) => ({
           accountsPayableInstallmentId: l.accountsPayableInstallmentId,
           amountApplied: l.amountApplied,

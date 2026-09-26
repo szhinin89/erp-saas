@@ -23,6 +23,7 @@ using ERP.Infrastructure.Persistence.Repositories.Purchases;
 using ERP.Infrastructure.Persistence.Repositories.Sales;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Testcontainers.PostgreSql;
 
 namespace ERP.Infrastructure.Tests.Persistence;
@@ -932,7 +933,7 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
 
         // Sin sesión activa alguna al momento de revertir (la sesión sembrada sigue Open pero es
         // simulada como "no compatible" cerrándola manualmente vía SQL directo — más simple:
-        // dejamos la sesión Open pero de OTRA caja, forzando que GetOpenByCashRegisterForShareAsync
+        // dejamos la sesión Open pero de OTRA caja, forzando que GetOpenByCashRegisterForUpdateAsync
         // no encuentre coincidencia para _cashRegisterId tras cerrar la única sesión existente).
         await using (var db = CreateContext())
         {
@@ -1053,5 +1054,178 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
             info = null!;
             return false;
         }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // ZH-SUPPLIER-PAYMENT-CASH-TRANSFER-02A-FINAL-CLOSE — lock exclusivo de CashSession en
+    // reembolsos/reversas: concurrencia real, sin deadlock ni movimientos parciales
+    // ══════════════════════════════════════════════════════════════════════
+
+    private async Task<Guid> OpenCashSessionAsync(decimal openingAmount)
+    {
+        await using var db = CreateContext();
+        var session = CashSession.Open(
+            _tenantId,
+            _companyId,
+            _branchId,
+            _userId,
+            _cashRegisterId,
+            "CAJA-01",
+            "Caja Matriz",
+            _emissionPointId,
+            "001",
+            openingAmount,
+            _userId
+        );
+        db.Set<CashSession>().Add(session);
+        await db.SaveChangesAsync();
+        return session.Id;
+    }
+
+    /// <summary>Conexión externa que retiene FOR UPDATE sobre la sesión (mismo lock que los handlers).</summary>
+    private async Task<(NpgsqlConnection Connection, NpgsqlTransaction Transaction)> HoldSessionLockAsync(Guid sessionId)
+    {
+        var connection = new NpgsqlConnection(_postgres.GetConnectionString());
+        await connection.OpenAsync();
+        var transaction = await connection.BeginTransactionAsync();
+        await using var cmd = new NpgsqlCommand("SELECT 1 FROM cash_sessions WHERE id = @id FOR UPDATE", connection, transaction);
+        cmd.Parameters.AddWithValue("id", sessionId);
+        await cmd.ExecuteNonQueryAsync();
+        return (connection, transaction);
+    }
+
+    /// <summary>Espera observable (no un sleep ciego) hasta que PostgreSQL reporte N backends bloqueados por lock.</summary>
+    private async Task WaitForLockWaitersAsync(int expected)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(20);
+        long waiting = 0;
+        while (DateTime.UtcNow < deadline)
+        {
+            await using var probe = new NpgsqlConnection(_postgres.GetConnectionString());
+            await probe.OpenAsync();
+            await using var cmd = new NpgsqlCommand(
+                "SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock'",
+                probe
+            );
+            waiting = (long)(await cmd.ExecuteScalarAsync())!;
+            if (waiting >= expected)
+                return;
+            await Task.Delay(50);
+        }
+        waiting.Should().BeGreaterThanOrEqualTo(expected, "las operaciones deben competir por la misma CashSession");
+    }
+
+    private async Task<CashSession> LoadSessionAsync(Guid sessionId)
+    {
+        await using var verify = CreateContext();
+        return await verify.Set<CashSession>().AsNoTracking().Include(x => x.Movements).FirstAsync(x => x.Id == sessionId);
+    }
+
+    [Fact]
+    public async Task Dos_reembolsos_en_efectivo_concurrentes_sobre_la_misma_caja_se_serializan_sin_deadlock()
+    {
+        // Créditos DISTINTOS: el lock del crédito no los serializa — solo el FOR UPDATE de la sesión.
+        var creditA = await SeedCreditAsync(100m);
+        var creditB = await SeedCreditAsync(100m);
+        var sessionId = await OpenCashSessionAsync(0m);
+
+        var (blocker, blockerTx) = await HoldSessionLockAsync(sessionId);
+        await using (blocker)
+        await using (blockerTx)
+        {
+            var refundA = Task.Run(() => ExecuteRegisterAsync(creditA, null, _cashRegisterId, "TRANSFER", 40m, Guid.NewGuid()));
+            var refundB = Task.Run(() => ExecuteRegisterAsync(creditB, null, _cashRegisterId, "TRANSFER", 40m, Guid.NewGuid()));
+            await WaitForLockWaitersAsync(2);
+            await blockerTx.CommitAsync();
+            var results = await Task.WhenAll(refundA, refundB);
+
+            results.Should().OnlyContain(r => r.Success, "serializados, ambos reembolsos legítimos confirman — ningún deadlock");
+
+            var session = await LoadSessionAsync(sessionId);
+            var refundMovements = session.Movements
+                .Where(m => m.ReferenceType == ERP.Domain.Modules.Caja.Enums.CashReferenceType.SupplierCreditRefund)
+                .ToList();
+            refundMovements.Should().HaveCount(2);
+            refundMovements.Select(m => m.ReferenceId).Should().BeEquivalentTo(results.Select(r => (Guid?)r.Value!.Id));
+            refundMovements.Should().OnlyContain(m => m.MovementType == ERP.Domain.Modules.Caja.Enums.CashMovementType.ManualIncome && m.Amount == 40m);
+            session.CurrentBalance.Should().Be(80m);
+
+            await using var verify = CreateContext();
+            (await verify.Set<SupplierCreditRefundTransaction>().CountAsync()).Should().Be(2);
+            var credits = await verify.Set<SupplierCredit>().AsNoTracking().Where(c => c.Id == creditA || c.Id == creditB).ToListAsync();
+            credits.Should().OnlyContain(c => c.AvailableAmount == 60m);
+        }
+    }
+
+    [Fact]
+    public async Task Reversa_y_reembolso_concurrentes_sobre_la_misma_caja_respetan_el_mismo_lock()
+    {
+        var creditA = await SeedCreditAsync(100m);
+        var creditB = await SeedCreditAsync(100m);
+        var sessionId = await OpenCashSessionAsync(0m);
+        var original = await ExecuteRegisterAsync(creditA, null, _cashRegisterId, "TRANSFER", 40m, Guid.NewGuid());
+        original.Success.Should().BeTrue(original.Error);
+
+        var (blocker, blockerTx) = await HoldSessionLockAsync(sessionId);
+        await using (blocker)
+        await using (blockerTx)
+        {
+            var reversal = Task.Run(() => ExecuteReverseAsync(creditA, original.Value!.Id, "Reembolso duplicado", Guid.NewGuid()));
+            var refundB = Task.Run(() => ExecuteRegisterAsync(creditB, null, _cashRegisterId, "TRANSFER", 25m, Guid.NewGuid()));
+            await WaitForLockWaitersAsync(2);
+            await blockerTx.CommitAsync();
+            var results = await Task.WhenAll(reversal, refundB);
+
+            results.Should().OnlyContain(r => r.Success, "reversa y reembolso se serializan — ningún deadlock");
+
+            var session = await LoadSessionAsync(sessionId);
+            // 0 + 40 (reembolso original) − 40 (reversa) + 25 (reembolso B)
+            session.CurrentBalance.Should().Be(25m);
+            var ofOriginal = session.Movements.Where(m => m.ReferenceId == original.Value!.Id).ToList();
+            ofOriginal.Should().HaveCount(2, "ingreso original intacto + egreso compensatorio, ambos con referencia al reembolso original");
+            ofOriginal.Should().ContainSingle(m => m.MovementType == ERP.Domain.Modules.Caja.Enums.CashMovementType.ManualIncome);
+            ofOriginal.Should().ContainSingle(m => m.MovementType == ERP.Domain.Modules.Caja.Enums.CashMovementType.ManualExpense);
+            session.Movements.Should().ContainSingle(m => m.ReferenceId == results[1].Value!.Id && m.Amount == 25m);
+
+            await using var verify = CreateContext();
+            (await verify.Set<SupplierCreditRefundTransaction>().CountAsync()).Should().Be(3, "original + reversa + reembolso B, sin parciales");
+        }
+    }
+
+    /// <summary>
+    /// 02A-FINAL-CLOSE — interleaving determinista del defecto que el test concurrente de
+    /// reversa+reembolso destapó de forma intermitente: el llamador ya tiene la sesión trackeada
+    /// ANTES del lock (ReverseSupplierCreditRefund la lee por Id), otra transacción confirma un
+    /// movimiento (cambia xmin), y luego se bloquea con FOR UPDATE. El repositorio debe entregar el
+    /// estado vigente bajo el lock (saldo + concurrency token) para que el UPDATE no falle.
+    /// </summary>
+    [Fact]
+    public async Task Sesion_trackeada_antes_del_lock_se_refresca_bajo_FOR_UPDATE_y_se_puede_persistir()
+    {
+        var sessionId = await OpenCashSessionAsync(100m);
+
+        await using var callerDb = CreateContext();
+        var callerRepo = new CashSessionRepository(callerDb, new FixedCurrentCompany(() => _companyId));
+        var trackedBeforeLock = await callerRepo.GetByIdAsync(_tenantId, sessionId);
+        trackedBeforeLock!.CurrentBalance.Should().Be(100m);
+
+        await using (var otherDb = CreateContext())
+        {
+            var other = await otherDb.Set<CashSession>().Include(x => x.Movements).FirstAsync(x => x.Id == sessionId);
+            other.RecordMovement(ERP.Domain.Modules.Caja.Enums.CashMovementType.ManualIncome, 50m, "Ingreso concurrente", _userId);
+            await otherDb.SaveChangesAsync();
+        }
+
+        await using var tx = await callerDb.Database.BeginTransactionAsync();
+        var locked = await callerRepo.GetOpenByCashRegisterForUpdateAsync(_tenantId, _cashRegisterId);
+        locked.Should().BeSameAs(trackedBeforeLock, "identity resolution: misma instancia trackeada");
+        locked!.CurrentBalance.Should().Be(150m, "bajo el lock se ve el movimiento ya confirmado por la otra transacción");
+        locked.RecordMovement(ERP.Domain.Modules.Caja.Enums.CashMovementType.ManualExpense, 30m, "Egreso bajo lock", _userId);
+        await callerDb.SaveChangesAsync();
+        await tx.CommitAsync();
+
+        var session = await LoadSessionAsync(sessionId);
+        session.Movements.Should().HaveCount(3);
+        session.CurrentBalance.Should().Be(120m);
     }
 }

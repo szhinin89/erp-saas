@@ -51,20 +51,31 @@ public sealed class CashSessionRepository : ICashSessionRepository
                 ct
             );
 
-    public async Task<CashSession?> GetOpenByCashRegisterForShareAsync(
+    public async Task<CashSession?> GetOpenByCashRegisterForUpdateAsync(
         Guid tenantId,
         Guid cashRegisterId,
         CancellationToken ct = default
     )
     {
-        // "FOR SHARE" no admite ORDER BY/LIMIT en la misma sentencia bloqueada sin ambigüedad de
-        // fila — se bloquean todas las sesiones abiertas de la caja (a lo sumo una por invariante
-        // de negocio) y luego se recarga con el método ya existente.
+        // Un FOR UPDATE no admite ORDER BY/LIMIT en la misma sentencia bloqueada sin ambigüedad de
+        // fila — se bloquean todas las sesiones abiertas de la caja (a lo sumo una por invariante de
+        // negocio) y luego se recarga con el método ya existente. La recarga ocurre DESPUÉS de
+        // obtener el lock, así ve el saldo que dejó la transacción que lo tenía.
         await _db.Database.ExecuteSqlInterpolatedAsync(
-            $"SELECT 1 FROM cash_sessions WHERE tenant_id = {tenantId} AND cash_register_id = {cashRegisterId} AND status = {(int)CashSessionStatus.Open} FOR SHARE",
+            $"SELECT 1 FROM cash_sessions WHERE tenant_id = {tenantId} AND cash_register_id = {cashRegisterId} AND status = {(int)CashSessionStatus.Open} FOR UPDATE",
             ct
         );
-        return await GetOpenByCashRegisterAsync(tenantId, cashRegisterId, ct);
+        var session = await GetOpenByCashRegisterAsync(tenantId, cashRegisterId, ct);
+        // 02A-FINAL-CLOSE — si el llamador ya tenía esta sesión trackeada ANTES del lock (p. ej.
+        // ReverseSupplierCreditRefund la lee por Id para resolver la caja), la query de arriba
+        // devuelve esa misma instancia por identity resolution, con escalares y xmin (concurrency
+        // token) de antes del lock → el UPDATE posterior afectaría 0 filas y fallaría con
+        // DbUpdateConcurrencyException aunque el lock ya serializó correctamente. Recargar tras el
+        // lock garantiza el contrato para cualquier llamador: estado vigente bajo el lock (los
+        // movimientos nuevos ya llegan por el Include de la query).
+        if (session is not null)
+            await _db.Entry(session).ReloadAsync(ct);
+        return session;
     }
 
     public Task<bool> ExistsByCashRegisterAsync(
