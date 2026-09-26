@@ -25,6 +25,10 @@ namespace ERP.Application.Modules.Accounting.Posting.Translators;
 /// falla, lanza <see cref="SupplierPaymentPostingFailedException"/> para que la transacción completa
 /// de la reversa se revierta (el pago sigue Confirmed, los saldos de
 /// <c>AccountsPayableInstallment</c> no cambian, no queda asiento parcial).
+///
+/// ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C (ADR-035) — espejo exacto de la confirmación: Haber
+/// CxP por lo aplicado (<c>AppliedToPayable</c>) + Haber "Anticipos a proveedores" por el remanente
+/// (<c>SupplierCredit</c>), mismo guard fail-closed si la regla no declara la línea de anticipo.
 /// </summary>
 public sealed class SupplierPaymentReversedPostingTranslator
     : INotificationHandler<SupplierPaymentReversedEvent>
@@ -77,7 +81,19 @@ public sealed class SupplierPaymentReversedPostingTranslator
             TotalIce: 0m,
             TotalDiscount: 0m,
             GrandTotal: e.TotalAmount,
+            AppliedToPayableAmount: e.AppliedAmount,
+            SupplierCreditAmount: e.UnappliedAmount,
             Allocations: allocations
+        );
+
+        await SupplierPaymentAdvancePostingGuard.EnsureAdvanceLineConfiguredAsync(
+            _postingEngine,
+            tenantId,
+            e.CompanyId,
+            SourceModuleName,
+            FactTypeName,
+            e.UnappliedAmount,
+            ct
         );
 
         var result = await _postingEngine.PostAsync(fact, ct);

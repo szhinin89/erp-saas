@@ -38,6 +38,7 @@
 | [ADR-032](./ADR-032-tax-line-ssot-ice-irbpnr.md) | ICE e IRBPNR como impuestos de línea — SSOT en `*DetailTax` (propuesta técnica) | Approved (dirección) — pre-implementación |
 | [ADR-033](./ADR-033-payment-term-ssot-and-document-schedules.md) | PaymentTerm como SSOT operativo + defaults por empresa/rol + cronograma final por documento (CreditTerm fuera de alcance) | Approved (diseño) — pre-implementación |
 | [ADR-034](./ADR-034-temporal-contract-single-source.md) | Contrato temporal único — fecha de negocio (DateOnly/date/"YYYY-MM-DD") vs. instante UTC (Company.Timezone); extensión controlada de ADR-023 por bug demostrado | Accepted |
+| [ADR-035](./ADR-035-supplier-payment-unapplied-advance.md) | Remanente no aplicado de SupplierPayment como anticipo — SupplierCredit SSOT (origen PurchaseReturn XOR SupplierPayment), PostingRule AppliedToPayable + SupplierCredit, política pago sin CxP | Accepted |
 
 Seguimiento de migración de ADRs aceptados con implementación pendiente: [`docs/architecture/ARCHITECTURE-BACKLOG.md`](../architecture/ARCHITECTURE-BACKLOG.md) (iniciativas `GOV-xxx`).
 

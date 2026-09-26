@@ -1,6 +1,7 @@
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Purchases.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -12,7 +13,17 @@ public sealed class SupplierCreditConfiguration : IEntityTypeConfiguration<Suppl
 {
     public void Configure(EntityTypeBuilder<SupplierCredit> builder)
     {
-        builder.ToTable("supplier_credits");
+        // ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — exactamente un origen (devolución de compra
+        // XOR pago a proveedor), mismo invariante que SupplierCredit.CreateCore.
+        builder.ToTable(
+            "supplier_credits",
+            t =>
+                t.HasCheckConstraint(
+                    "chk_supplier_credits_exactly_one_source",
+                    "(\"source_purchase_return_id\" IS NOT NULL AND \"source_supplier_payment_id\" IS NULL) "
+                        + "OR (\"source_purchase_return_id\" IS NULL AND \"source_supplier_payment_id\" IS NOT NULL)"
+                )
+        );
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").IsRequired();
@@ -30,8 +41,10 @@ public sealed class SupplierCreditConfiguration : IEntityTypeConfiguration<Suppl
             .IsRequired();
         builder
             .Property(x => x.SourcePurchaseReturnId)
-            .HasColumnName("source_purchase_return_id")
-            .IsRequired();
+            .HasColumnName("source_purchase_return_id");
+        builder
+            .Property(x => x.SourceSupplierPaymentId)
+            .HasColumnName("source_supplier_payment_id");
         builder
             .Property(x => x.OriginalAmount)
             .HasColumnName("original_amount")
@@ -58,6 +71,8 @@ public sealed class SupplierCreditConfiguration : IEntityTypeConfiguration<Suppl
 
         // ── Computed properties (NOT persisted) ─────────────────────
         builder.Ignore(x => x.IsOpen);
+        builder.Ignore(x => x.IsIntact);
+        builder.Ignore(x => x.SourceType);
 
         // ── Relationships ────────────────────────────────────────────
         builder
@@ -70,6 +85,14 @@ public sealed class SupplierCreditConfiguration : IEntityTypeConfiguration<Suppl
             .HasOne<PurchaseReturn>()
             .WithMany()
             .HasForeignKey(x => x.SourcePurchaseReturnId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder
+            .HasOne<SupplierPayment>()
+            .WithMany()
+            .HasForeignKey(x => x.SourceSupplierPaymentId)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder
@@ -103,5 +126,12 @@ public sealed class SupplierCreditConfiguration : IEntityTypeConfiguration<Suppl
             .HasIndex(x => new { x.TenantId, x.SourcePurchaseReturnId })
             .IsUnique()
             .HasDatabaseName("uq_supplier_credits_tenant_source_purchase_return");
+
+        // Un SupplierPayment origina a lo sumo un anticipo (su UnappliedAmount completo).
+        builder
+            .HasIndex(x => new { x.TenantId, x.SourceSupplierPaymentId })
+            .IsUnique()
+            .HasFilter("\"source_supplier_payment_id\" IS NOT NULL")
+            .HasDatabaseName("uq_supplier_credits_tenant_source_supplier_payment");
     }
 }

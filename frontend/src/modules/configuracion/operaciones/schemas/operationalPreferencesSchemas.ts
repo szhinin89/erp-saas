@@ -27,6 +27,11 @@ export const purchasesPreferencesSchema = z.object({
 });
 export type PurchasesPreferencesValues = z.infer<typeof purchasesPreferencesSchema>;
 
+export const payablesPreferencesSchema = z.object({
+  allowSupplierPaymentWithoutPayable: z.boolean(),
+});
+export type PayablesPreferencesValues = z.infer<typeof payablesPreferencesSchema>;
+
 export const printingPreferencesSchema = z.object({
   salesReceiptMode: z.enum(["AskBeforePrint", "AlwaysPrint", "NeverAutoPrint"]),
   salesReceiptCopies: z.coerce.number().int().min(1).max(3),

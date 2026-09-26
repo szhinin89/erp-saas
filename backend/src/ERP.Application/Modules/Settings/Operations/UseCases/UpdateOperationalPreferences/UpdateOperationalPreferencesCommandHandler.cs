@@ -74,6 +74,11 @@ public sealed class UpdateOperationalPreferencesCommandHandler
             await UpsertAsync(tenantId, companyId, OrgSettingKeys.Purchases.RequireReasonForCostChange, Bool(purchases.RequireReasonForCostChange), SettingDataType.Bool, userId, cancellationToken);
         }
 
+        if (command.Payables is { } payables)
+        {
+            await UpsertAsync(tenantId, companyId, OrgSettingKeys.Payables.AllowSupplierPaymentWithoutPayable, Bool(payables.AllowSupplierPaymentWithoutPayable), SettingDataType.Bool, userId, cancellationToken);
+        }
+
         if (command.Inventory is { } inventory)
         {
             await UpsertAsync(tenantId, companyId, OrgSettingKeys.Inventory.AllowNegativeStock, Bool(inventory.AllowNegativeStock), SettingDataType.Bool, userId, cancellationToken);
@@ -164,6 +169,9 @@ public sealed class UpdateOperationalPreferencesCommandHandler
                     p.Notifications.SalesInvoiceAuthorizedEnabled,
                     p.Notifications.SendCopyToCompanyEmail,
                     p.Notifications.DefaultLanguage
+                ),
+                Payables: new PayablesPreferencesDto(
+                    p.Payables?.AllowSupplierPaymentWithoutPayable ?? false
                 )
             )
         );

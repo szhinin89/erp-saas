@@ -22,16 +22,26 @@ public sealed record SupplierCreditMovementDto(
     DateTime CreatedAtUtc
 );
 
+/// <summary>
+/// ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — origen generalizado: <see cref="SourceType"/>
+/// ("PurchaseReturn" | "SupplierPayment", derivado), exactamente uno de
+/// <see cref="SourcePurchaseReturnId"/>/<see cref="SourceSupplierPaymentId"/>, y
+/// <see cref="SourceDocumentNumber"/> (número visible del documento de origen, solo lectura —
+/// resuelto en las queries; null en las respuestas de comandos).
+/// </summary>
 public sealed record SupplierCreditDto(
     Guid Id,
     Guid SupplierId,
     Guid BranchId,
     string CurrencyCode,
-    Guid SourcePurchaseReturnId,
+    Guid? SourcePurchaseReturnId,
     decimal OriginalAmount,
     decimal AvailableAmount,
     bool IsOpen,
-    IReadOnlyList<SupplierCreditMovementDto> Movements
+    IReadOnlyList<SupplierCreditMovementDto> Movements,
+    string SourceType = "PurchaseReturn",
+    Guid? SourceSupplierPaymentId = null,
+    string? SourceDocumentNumber = null
 );
 
 // ── Command ─────────────────────────────────────────────────────────────
@@ -316,7 +326,10 @@ public sealed class ApplySupplierCreditHandler
 
 internal static class Map
 {
-    public static SupplierCreditDto ToDto(Domain.Modules.Purchases.Entities.SupplierCredit c) =>
+    public static SupplierCreditDto ToDto(
+        Domain.Modules.Purchases.Entities.SupplierCredit c,
+        string? sourceDocumentNumber = null
+    ) =>
         new(
             c.Id,
             c.SupplierId,
@@ -334,6 +347,9 @@ internal static class Map
                     m.ReversalOfMovementId,
                     m.CreatedAtUtc
                 ))
-                .ToList()
+                .ToList(),
+            c.SourceType.ToString(),
+            c.SourceSupplierPaymentId,
+            sourceDocumentNumber
         );
 }

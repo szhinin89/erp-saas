@@ -17,7 +17,8 @@ public sealed record UpdateOperationalPreferencesCommand(
     InventoryPreferencesInput? Inventory,
     PrintingPreferencesInput? Printing,
     ElectronicDocumentsPreferencesInput? ElectronicDocuments,
-    NotificationsPreferencesInput? Notifications
+    NotificationsPreferencesInput? Notifications,
+    PayablesPreferencesInput? Payables = null
 ) : IRequest<Result<OperationalPreferencesDto>>;
 
 public sealed record SalesPosPreferencesInput(
@@ -48,6 +49,9 @@ public sealed record PurchasesPreferencesInput(
     bool AllowManualCostChange,
     bool RequireReasonForCostChange
 );
+
+/// <summary>ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — Cuentas por pagar / Pagos a proveedores.</summary>
+public sealed record PayablesPreferencesInput(bool AllowSupplierPaymentWithoutPayable);
 
 public sealed record InventoryPreferencesInput(
     bool AllowNegativeStock,

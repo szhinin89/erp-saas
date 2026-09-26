@@ -6,7 +6,9 @@ namespace ERP.Domain.Modules.Purchases.Enums;
 /// P0-02 §13.5). <see cref="SourceReturnCancelled"/> es de sistema, nunca seleccionable por el
 /// usuario en la API pública de aplicación/reembolso — se genera exclusivamente como efecto
 /// atómico de <see cref="Entities.PurchaseReturn"/>.Cancel() cuando existe un crédito íntegro
-/// asociado (§9.3).
+/// asociado (§9.3). <see cref="SourcePaymentReversed"/> (ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C)
+/// es su equivalente para un crédito originado por un <c>SupplierPayment</c>: efecto atómico de
+/// reversar ese pago mientras el anticipo sigue íntegro — también de sistema, nunca seleccionable.
 /// </summary>
 public enum SupplierCreditMovementType
 {
@@ -15,4 +17,5 @@ public enum SupplierCreditMovementType
     ReversalOfApplication = 3,
     ReversalOfRefund = 4,
     SourceReturnCancelled = 5,
+    SourcePaymentReversed = 6,
 }

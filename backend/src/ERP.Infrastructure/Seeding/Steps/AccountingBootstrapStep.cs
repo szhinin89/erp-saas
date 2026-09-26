@@ -496,10 +496,20 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         // PostingFact.Allocations en SupplierPaymentConfirmedPostingTranslator, no representable
         // como PostingRuleLine fija (cardinalidad variable, mismo criterio que
         // "Expenses"/"DocumentConfirmed").
+        //
+        // ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C (ADR-035) — el Debe fijo se separa en dos
+        // líneas: CxP por lo aplicado (AppliedToPayable) y "1.1.03.004 Anticipos a proveedores"
+        // por el remanente no aplicado (SupplierCredit — misma cuenta/AmountKind que
+        // "Purchases"/"PurchaseReturn" usa para el saldo a favor). JournalFactory omite la línea
+        // cuyo monto es 0 (pago sin remanente / pago sin CxP). La forma vieja (1 línea GrandTotal)
+        // se corrige vía TryCorrectLegacySupplierPaymentRule.
         new(
             "Payables",
             "SupplierPaymentConfirmed",
-            [new("2.1.01.001", AccountNature.Debit, PostingAmountKind.GrandTotal)]
+            [
+                new("2.1.01.001", AccountNature.Debit, PostingAmountKind.AppliedToPayable),
+                new("1.1.03.004", AccountNature.Debit, PostingAmountKind.SupplierCredit),
+            ]
         ),
         // SUPPLIER-PAYMENTS-REVERSE-16 — asiento inverso exacto: única línea fija (Haber CxP por
         // el total reversado); el Debe por cada medio de pago original es dinámico vía
@@ -508,7 +518,10 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         new(
             "Payables",
             "SupplierPaymentReversed",
-            [new("2.1.01.001", AccountNature.Credit, PostingAmountKind.GrandTotal)]
+            [
+                new("2.1.01.001", AccountNature.Credit, PostingAmountKind.AppliedToPayable),
+                new("1.1.03.004", AccountNature.Credit, PostingAmountKind.SupplierCredit),
+            ]
         ),
         // RETENTIONS-POSTING-RULE-SEED-01H / RETENTIONS-TAX-COMPONENT-POSTING-02C —
         // "Retentions"/"DocumentIssued" reclasifica el monto retenido: Debe CxP proveedor (se
@@ -872,11 +885,32 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
                     )
                 : null;
 
+        // ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — mismo criterio: null si la regla no existe.
+        var supplierPaymentRules = await _db
+            .PostingRules.IgnoreQueryFilters()
+            .Include(r => r.Lines)
+            .Where(r =>
+                r.TenantId == tenantId
+                && r.CompanyId == companyId
+                && r.SourceModule == "Payables"
+                && (r.FactType == "SupplierPaymentConfirmed" || r.FactType == "SupplierPaymentReversed")
+            )
+            .ToListAsync(cancellationToken);
+        var legacySupplierPaymentConfirmedRule = supplierPaymentRules.FirstOrDefault(r =>
+            r.FactType == "SupplierPaymentConfirmed"
+        );
+        var legacySupplierPaymentReversedRule = supplierPaymentRules.FirstOrDefault(r =>
+            r.FactType == "SupplierPaymentReversed"
+        );
+
         if (
             missingRules.Count == 0
             && legacyRule is null
             && legacyCreditNoteRule is null
             && legacySalesInvoiceIssuedRule is null
+            && !supplierPaymentRules.Any(r =>
+                r.Lines.Count == 1 && r.Lines.All(l => l.AmountKind == PostingAmountKind.GrandTotal)
+            )
         )
         {
             LogPostingRulesSkipped(companyId);
@@ -954,12 +988,26 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
             accountByCode,
             companyId
         );
+        var correctedSupplierPaymentConfirmedRule = TryCorrectLegacySupplierPaymentRule(
+            legacySupplierPaymentConfirmedRule,
+            AccountNature.Debit,
+            accountByCode,
+            companyId
+        );
+        var correctedSupplierPaymentReversedRule = TryCorrectLegacySupplierPaymentRule(
+            legacySupplierPaymentReversedRule,
+            AccountNature.Credit,
+            accountByCode,
+            companyId
+        );
 
         if (
             seededRulesCount == 0
             && !correctedLegacyRule
             && !correctedLegacyCreditNoteRule
             && !correctedLegacySalesInvoiceIssuedRule
+            && !correctedSupplierPaymentConfirmedRule
+            && !correctedSupplierPaymentReversedRule
         )
         {
             LogPostingRulesSkipped(companyId);
@@ -975,6 +1023,52 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
             LogLegacyPurchaseCreditNoteAuthorizedRuleCorrected(companyId);
         if (correctedLegacySalesInvoiceIssuedRule)
             LogLegacySalesInvoiceIssuedRuleCorrected(companyId);
+        if (correctedSupplierPaymentConfirmedRule || correctedSupplierPaymentReversedRule)
+            LogLegacySupplierPaymentRulesCorrected(companyId);
+    }
+
+    /// <summary>
+    /// ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C (ADR-035) — corrige
+    /// "Payables"/"SupplierPaymentConfirmed" (<paramref name="nature"/> = Debit) o
+    /// "SupplierPaymentReversed" (Credit) desde la forma previa exacta (UNA línea CxP
+    /// <see cref="PostingAmountKind.GrandTotal"/>) a la vigente: esa misma línea pasa a
+    /// <see cref="PostingAmountKind.AppliedToPayable"/> (conserva su Id, mismo criterio que
+    /// <see cref="TryCorrectLegacySalesInvoiceIssuedRule"/>) y se agrega "1.1.03.004 Anticipos a
+    /// proveedores" con <see cref="PostingAmountKind.SupplierCredit"/>. Para un pago sin remanente
+    /// ambas formas producen el mismo asiento. Reconocimiento único compartido con el comando de
+    /// despliegue de Production (<see cref="DiagnoseSupplierPaymentRule"/>): cualquier otra forma
+    /// (ya canónica o personalizada) se deja intacta — la personalizada queda registrada como
+    /// warning para revisión; si alguna cuenta canónica no está disponible, no toca nada (el
+    /// traductor rechazará fail-closed los pagos con remanente). Nunca toca asientos ya posteados.
+    /// </summary>
+    private bool TryCorrectLegacySupplierPaymentRule(
+        PostingRule? rule,
+        AccountNature nature,
+        Dictionary<string, AccountSeedLookup> accountByCode,
+        Guid companyId
+    )
+    {
+        if (rule is null)
+            return false;
+
+        var diagnostic = DiagnoseSupplierPaymentRule(rule, accountByCode);
+        if (diagnostic != SupplierPaymentRuleLegacy)
+        {
+            if (diagnostic != SupplierPaymentRuleCanonical)
+                _logger.LogWarning(
+                    "Payables/{FactType} company={CompanyId} rule={RuleId}: {Diagnostic} — requiere revisión manual; pagos con saldo no aplicado quedan bloqueados (fail-closed).",
+                    rule.FactType,
+                    companyId,
+                    rule.Id,
+                    diagnostic
+                );
+            return false;
+        }
+
+        var line = rule.Lines.Single();
+        _db.Entry(line).Property(l => l.AmountKind).CurrentValue = PostingAmountKind.AppliedToPayable;
+        rule.AddLine(accountByCode["1.1.03.004"].Id, nature, PostingAmountKind.SupplierCredit);
+        return true;
     }
 
     /// <summary>
@@ -1181,6 +1275,13 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
             + "(CashApplied/PendingBalance + sales Discount + IRBPNR) for company {CompanyId}."
     )]
     private partial void LogLegacySalesInvoiceIssuedRuleCorrected(Guid companyId);
+
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Corrected Payables/SupplierPayment posting rules to current form "
+            + "(AppliedToPayable + SupplierCredit advance line) for company {CompanyId}."
+    )]
+    private partial void LogLegacySupplierPaymentRulesCorrected(Guid companyId);
 
     [LoggerMessage(
         Level = LogLevel.Warning,

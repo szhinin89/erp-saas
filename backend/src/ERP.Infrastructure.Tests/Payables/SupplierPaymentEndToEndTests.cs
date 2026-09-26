@@ -3,6 +3,10 @@ using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
 using ERP.Application.Modules.Payables.UseCases;
 using ERP.Domain.Branches.Entities;
+using ERP.Domain.Configuration.Constants;
+using ERP.Domain.Configuration.Entities;
+using ERP.Domain.Configuration.Enums;
+using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
@@ -17,13 +21,21 @@ using ERP.Domain.Modules.Finance.Enums;
 using ERP.Domain.Modules.Finance.Interfaces;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
+using ERP.Domain.Modules.Purchases.Entities;
+using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Accounting.Repositories;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Interceptors;
+using ERP.Infrastructure.Persistence.Repositories;
 using ERP.Infrastructure.Persistence.Repositories.Caja;
+using ERP.Infrastructure.Persistence.Repositories.Configuration;
+using ERP.Infrastructure.Persistence.Repositories.Purchases;
+using ERP.Infrastructure.Services;
+using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using ERP.Infrastructure.Persistence.Repositories.Finance;
 using ERP.Infrastructure.Persistence.Repositories.Payables;
 using ERP.Infrastructure.Persistence.Repositories.Sales;
@@ -422,6 +434,15 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             new CompanyBankAccountRepository(db, new FixedCurrentCompany(_companyId)),
             new CashRegisterRepository(db, new FixedCurrentCompany(_companyId)),
             new CashSessionRepository(db, new FixedCurrentCompany(_companyId)),
+            new SupplierCreditRepository(db, new FixedCurrentCompany(_companyId)),
+            // 02C — resolver REAL de org_settings (Postgres), scope = company del contexto.
+            new OperationalPreferencesResolver(
+                new OrgSettingsRepository(db, new Mock<IConfigurationChangeLogger>().Object),
+                new FixedCurrentTenant(_tenantId),
+                new FixedCurrentCompany(_companyId),
+                NullLogger<OperationalPreferencesResolver>.Instance
+            ),
+            new CompanyRepository(db),
             new UnitOfWork(db),
             new FixedCurrentTenant(_tenantId),
             new FixedCurrentCompany(_companyId),
@@ -434,6 +455,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             new SupplierPaymentRepository(db),
             new AccountsPayableRepository(db),
             new CashSessionRepository(db, new FixedCurrentCompany(_companyId)),
+            new SupplierCreditRepository(db, new FixedCurrentCompany(_companyId)),
             new UnitOfWork(db),
             new FixedCurrentTenant(_tenantId),
             new FixedCurrentCompany(_companyId),
@@ -1724,6 +1746,396 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             .SingleAsync(m => m.MovementType == CashMovementType.SupplierPaymentReversal);
         compensation.CashSessionId.Should().Be(_cashSessionId, "la compensación va a la sesión ORIGINAL");
         (await LoadSessionAsync()).CurrentBalance.Should().Be(OpeningCash);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — anticipo por remanente no aplicado (Postgres real)
+    // ══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Reglas en su forma vigente (ADR-035): Debe/Haber CxP por AppliedToPayable + Debe/Haber
+    /// "Anticipos a proveedores" por SupplierCredit. Devuelve la cuenta de anticipos creada.
+    /// </summary>
+    private async Task<Guid> SeedAdvanceRulesAndPeriodAsync(ErpDbContext db, DateOnly entryDate)
+    {
+        var advanceAccount = Account.Create(
+            _tenantId,
+            _companyId,
+            AccountCode.Create($"1.1.{Guid.NewGuid():N}"[..8]),
+            "Anticipos a proveedores",
+            null,
+            AccountType.Asset,
+            AccountNature.Debit,
+            allowsPosting: true,
+            createdBy: _createdBy
+        );
+        db.Accounts.Add(advanceAccount);
+        await db.SaveChangesAsync();
+
+        var confirmedRule = PostingRule.Create(_tenantId, _companyId, "Payables", "SupplierPaymentConfirmed", null, null, null, _createdBy);
+        confirmedRule.AddLine(_payablesAccountId, AccountNature.Debit, PostingAmountKind.AppliedToPayable);
+        confirmedRule.AddLine(advanceAccount.Id, AccountNature.Debit, PostingAmountKind.SupplierCredit);
+        var reversedRule = PostingRule.Create(_tenantId, _companyId, "Payables", "SupplierPaymentReversed", null, null, null, _createdBy);
+        reversedRule.AddLine(_payablesAccountId, AccountNature.Credit, PostingAmountKind.AppliedToPayable);
+        reversedRule.AddLine(advanceAccount.Id, AccountNature.Credit, PostingAmountKind.SupplierCredit);
+
+        var period = AccountingPeriod.Create(
+            _tenantId,
+            _companyId,
+            entryDate.Year,
+            entryDate.Month,
+            new DateOnly(entryDate.Year, entryDate.Month, 1),
+            new DateOnly(entryDate.Year, entryDate.Month, DateTime.DaysInMonth(entryDate.Year, entryDate.Month)),
+            _createdBy
+        );
+        db.PostingRules.AddRange(confirmedRule, reversedRule);
+        db.AccountingPeriods.Add(period);
+        await db.SaveChangesAsync();
+        return advanceAccount.Id;
+    }
+
+    private async Task SetAllowWithoutPayableAsync(Guid companyId, bool allow)
+    {
+        await using var db = CreateContext();
+        db.OrgSettings.Add(
+            OrgSetting.Create(
+                _tenantId,
+                companyId,
+                OrgScope.Company,
+                companyId,
+                OrgSettingKeys.Payables.AllowSupplierPaymentWithoutPayable,
+                allow ? "true" : "false",
+                SettingDataType.Bool,
+                _createdBy
+            )
+        );
+        await db.SaveChangesAsync();
+    }
+
+    /// <summary>Transferencia de <paramref name="total"/> aplicando <paramref name="applied"/> a la cuota de compras (300).</summary>
+    private RegisterSupplierPaymentCommand OverpaymentCommand(decimal total, decimal applied, DateOnly paymentDate, bool confirm) =>
+        new(
+            _supplierId,
+            paymentDate,
+            total,
+            null,
+            new[] { new SupplierPaymentMethodLineRequest(_transferMethodId, _companyBankAccountId, null, total, $"OP-{Guid.NewGuid():N}"[..12], TransactionDate: paymentDate) },
+            new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, applied) },
+            new[] { new SupplierPaymentAllocationLineRequest(0, 0, applied) },
+            confirm
+        );
+
+    [Fact]
+    public async Task Excedente_confirmado_aplica_la_CxP_crea_SupplierCredit_por_el_remanente_y_postea_Anticipos_una_sola_vez()
+    {
+        var paymentDate = new DateOnly(2026, 8, 28);
+        var (db, _) = BuildWiredContext();
+        var advanceAccountId = await SeedAdvanceRulesAndPeriodAsync(db, paymentDate);
+
+        // CxP 300, pago 320 → aplicado 300, anticipo 20.
+        var result = await BuildHandler(db).Handle(OverpaymentCommand(320m, 300m, paymentDate, confirm: true), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.AppliedAmount.Should().Be(300m);
+        result.Value.UnappliedAmount.Should().Be(20m);
+        result.Value.SupplierCreditId.Should().NotBeNull();
+
+        await using var verifyDb = CreateContext();
+        var credit = await verifyDb.SupplierCredits.AsNoTracking().Include(c => c.Movements).SingleAsync();
+        credit.Id.Should().Be(result.Value.SupplierCreditId!.Value);
+        credit.SourceType.Should().Be(SupplierCreditSourceType.SupplierPayment);
+        credit.SourceSupplierPaymentId.Should().Be(result.Value.Id);
+        credit.SourcePurchaseReturnId.Should().BeNull();
+        credit.OriginalAmount.Should().Be(20m, "exactamente el remanente no aplicado");
+        credit.AvailableAmount.Should().Be(20m);
+        credit.BranchId.Should().Be(_branchId);
+        credit.SupplierId.Should().Be(_supplierId);
+        credit.CompanyId.Should().Be(_companyId);
+        credit.Movements.Should().BeEmpty();
+
+        var installment = await verifyDb.AccountsPayableInstallments.AsNoTracking().FirstAsync(x => x.Id == _purchaseInstallmentId);
+        installment.PaidAmount.Should().Be(300m);
+
+        var entries = await verifyDb.JournalEntries.AsNoTracking().Include(x => x.Lines).ToListAsync();
+        entries.Should().ContainSingle("SupplierPayment es el único posting; SupplierCredit no contabiliza al crearse");
+        var lines = entries[0].Lines;
+        lines.Single(l => l.AccountId == _payablesAccountId).Debit.Should().Be(300m);
+        lines.Single(l => l.AccountId == advanceAccountId).Debit.Should().Be(20m);
+        lines.Single(l => l.AccountId == _bankAccountId).Credit.Should().Be(320m);
+        lines.Sum(l => l.Debit).Should().Be(lines.Sum(l => l.Credit));
+    }
+
+    [Fact]
+    public async Task Excedente_sin_confirmar_no_persiste_pago_credito_asiento_ni_toca_CxP()
+    {
+        var paymentDate = new DateOnly(2026, 8, 28);
+        var (db, _) = BuildWiredContext();
+        await SeedAdvanceRulesAndPeriodAsync(db, paymentDate);
+
+        var result = await BuildHandler(db).Handle(OverpaymentCommand(320m, 300m, paymentDate, confirm: false), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        await using var verifyDb = CreateContext();
+        (await verifyDb.SupplierPayments.AsNoTracking().CountAsync()).Should().Be(0);
+        (await verifyDb.SupplierCredits.AsNoTracking().CountAsync()).Should().Be(0);
+        (await verifyDb.JournalEntries.AsNoTracking().CountAsync()).Should().Be(0);
+        (await verifyDb.AccountsPayableInstallments.AsNoTracking().FirstAsync(x => x.Id == _purchaseInstallmentId))
+            .PaidAmount.Should().Be(0m);
+    }
+
+    [Fact]
+    public async Task Pago_mixto_caja_y_banco_con_remanente_postea_balanceado_y_la_matriz_no_distribuye_el_remanente()
+    {
+        var paymentDate = new DateOnly(2026, 8, 28);
+        var (db, _) = BuildWiredContext();
+        var advanceAccountId = await SeedAdvanceRulesAndPeriodAsync(db, paymentDate);
+
+        // Caja 100 + banco 250 = 350; cuota 300 aplicada (caja 100 + banco 200); remanente 50 (banco).
+        var result = await BuildHandler(db).Handle(
+            new RegisterSupplierPaymentCommand(
+                _supplierId,
+                paymentDate,
+                350m,
+                null,
+                new[]
+                {
+                    new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 100m),
+                    new SupplierPaymentMethodLineRequest(_transferMethodId, _companyBankAccountId, null, 250m, "OP-350", TransactionDate: paymentDate),
+                },
+                new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m) },
+                new[]
+                {
+                    new SupplierPaymentAllocationLineRequest(0, 0, 100m),
+                    new SupplierPaymentAllocationLineRequest(1, 0, 200m),
+                },
+                ConfirmUnappliedAmount: true
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        await using var verifyDb = CreateContext();
+        var payment = await verifyDb.SupplierPayments.AsNoTracking()
+            .Include(p => p.MethodLines).Include(p => p.ApplicationLines).Include(p => p.AllocationLines)
+            .SingleAsync();
+        payment.UnappliedAmount.Should().Be(50m);
+        // Qué medio financió el anticipo: MethodLine.Amount − Σ allocations(medio).
+        var bankLine = payment.MethodLines.Single(l => l.CompanyBankAccountId is not null);
+        (bankLine.Amount - payment.AllocationLines.Where(a => a.SupplierPaymentMethodLineId == bankLine.Id).Sum(a => a.Amount))
+            .Should().Be(50m);
+        (await verifyDb.SupplierCredits.AsNoTracking().SingleAsync()).OriginalAmount.Should().Be(50m);
+
+        var lines = (await verifyDb.JournalEntries.AsNoTracking().Include(x => x.Lines).SingleAsync()).Lines;
+        lines.Single(l => l.AccountId == _payablesAccountId).Debit.Should().Be(300m);
+        lines.Single(l => l.AccountId == advanceAccountId).Debit.Should().Be(50m);
+        lines.Single(l => l.AccountId == _cashAccountId).Credit.Should().Be(100m);
+        lines.Single(l => l.AccountId == _bankAccountId).Credit.Should().Be(250m);
+        lines.Sum(l => l.Debit).Should().Be(350m);
+        lines.Sum(l => l.Credit).Should().Be(350m);
+    }
+
+    [Fact]
+    public async Task Setting_ON_pago_sin_CxP_confirmado_genera_SupplierCredit_por_el_total_y_no_toca_CxP()
+    {
+        var paymentDate = new DateOnly(2026, 8, 28);
+        await SetAllowWithoutPayableAsync(_companyId, true);
+        var (db, _) = BuildWiredContext();
+        var advanceAccountId = await SeedAdvanceRulesAndPeriodAsync(db, paymentDate);
+
+        var result = await BuildHandler(db).Handle(
+            new RegisterSupplierPaymentCommand(
+                _supplierId,
+                paymentDate,
+                200m,
+                null,
+                new[] { new SupplierPaymentMethodLineRequest(_transferMethodId, _companyBankAccountId, null, 200m, "OP-ANT", TransactionDate: paymentDate) },
+                [],
+                [],
+                ConfirmUnappliedAmount: true
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.AppliedAmount.Should().Be(0m);
+        result.Value.UnappliedAmount.Should().Be(200m);
+
+        await using var verifyDb = CreateContext();
+        (await verifyDb.SupplierCredits.AsNoTracking().SingleAsync()).OriginalAmount.Should().Be(200m);
+        (await verifyDb.AccountsPayableInstallments.AsNoTracking().SumAsync(i => i.PaidAmount)).Should().Be(0m);
+        var lines = (await verifyDb.JournalEntries.AsNoTracking().Include(x => x.Lines).SingleAsync()).Lines;
+        lines.Should().HaveCount(2, "sin línea de CxP en cero: Debe Anticipos + Haber Banco");
+        lines.Single(l => l.AccountId == advanceAccountId).Debit.Should().Be(200m);
+        lines.Single(l => l.AccountId == _bankAccountId).Credit.Should().Be(200m);
+    }
+
+    [Fact]
+    public async Task Setting_OFF_pago_sin_CxP_se_rechaza_sin_efectos()
+    {
+        var paymentDate = new DateOnly(2026, 8, 28);
+        var (db, _) = BuildWiredContext();
+        await SeedAdvanceRulesAndPeriodAsync(db, paymentDate);
+
+        var result = await BuildHandler(db).Handle(
+            new RegisterSupplierPaymentCommand(
+                _supplierId,
+                paymentDate,
+                200m,
+                null,
+                new[] { new SupplierPaymentMethodLineRequest(_transferMethodId, _companyBankAccountId, null, 200m, "OP-X", TransactionDate: paymentDate) },
+                [],
+                [],
+                ConfirmUnappliedAmount: true
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        await using var verifyDb = CreateContext();
+        (await verifyDb.SupplierPayments.AsNoTracking().CountAsync()).Should().Be(0);
+        (await verifyDb.SupplierCredits.AsNoTracking().CountAsync()).Should().Be(0);
+        (await verifyDb.JournalEntries.AsNoTracking().CountAsync()).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Setting_ON_de_otra_empresa_no_habilita_pago_sin_CxP_en_esta_empresa()
+    {
+        var paymentDate = new DateOnly(2026, 8, 28);
+        await using (var seedDb = CreateContext())
+        {
+            var other = Company.CreateManaged(_tenantId, "1790099999001", "Otra S.A.", createdBy: _createdBy);
+            seedDb.Companies.Add(other);
+            await seedDb.SaveChangesAsync();
+            await SetAllowWithoutPayableAsync(other.Id, true);
+        }
+        var (db, _) = BuildWiredContext();
+        await SeedAdvanceRulesAndPeriodAsync(db, paymentDate);
+
+        var result = await BuildHandler(db).Handle(
+            new RegisterSupplierPaymentCommand(
+                _supplierId,
+                paymentDate,
+                200m,
+                null,
+                new[] { new SupplierPaymentMethodLineRequest(_transferMethodId, _companyBankAccountId, null, 200m, "OP-Y", TransactionDate: paymentDate) },
+                [],
+                [],
+                ConfirmUnappliedAmount: true
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse("la política se resuelve por la empresa del contexto, nunca de otra");
+        await using var verifyDb = CreateContext();
+        (await verifyDb.SupplierPayments.AsNoTracking().CountAsync()).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Regla_con_forma_previa_rechaza_pago_con_remanente_fail_closed()
+    {
+        var paymentDate = new DateOnly(2026, 8, 28);
+        var (db, _) = BuildWiredContext();
+        await SeedPostingRuleAndPeriodAsync(db, paymentDate); // forma previa: 1 línea GrandTotal
+
+        var result = await BuildHandler(db).Handle(OverpaymentCommand(320m, 300m, paymentDate, confirm: true), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse("nunca se debita CxP por dinero no aplicado");
+        await using var verifyDb = CreateContext();
+        (await verifyDb.SupplierPayments.AsNoTracking().CountAsync()).Should().Be(0);
+        (await verifyDb.SupplierCredits.AsNoTracking().CountAsync()).Should().Be(0);
+        (await verifyDb.JournalEntries.AsNoTracking().CountAsync()).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Reversa_con_anticipo_intacto_anula_el_credito_y_postea_inverso_exacto()
+    {
+        var paymentDate = new DateOnly(2026, 8, 28);
+        var (db, _) = BuildWiredContext();
+        var advanceAccountId = await SeedAdvanceRulesAndPeriodAsync(db, paymentDate);
+        var register = await BuildHandler(db).Handle(OverpaymentCommand(320m, 300m, paymentDate, confirm: true), CancellationToken.None);
+        register.IsSuccess.Should().BeTrue(register.Error);
+
+        var (reverseDb, _) = BuildWiredContext();
+        var result = await BuildReverseHandler(reverseDb).Handle(
+            new ReverseSupplierPaymentCommand(register.Value!.Id, "Transferencia no ejecutada", BankReversalReason: SupplierPaymentBankReversalReason.NotExecuted),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        await using var verifyDb = CreateContext();
+        var credit = await verifyDb.SupplierCredits.AsNoTracking().Include(c => c.Movements).SingleAsync();
+        credit.AvailableAmount.Should().Be(0m);
+        credit.OriginalAmount.Should().Be(20m, "trazabilidad: el crédito nunca se borra");
+        credit.Movements.Should().ContainSingle(m => m.MovementType == SupplierCreditMovementType.SourcePaymentReversed && m.Amount == 20m);
+        (await verifyDb.AccountsPayableInstallments.AsNoTracking().FirstAsync(x => x.Id == _purchaseInstallmentId))
+            .PaidAmount.Should().Be(0m);
+
+        var reversal = await verifyDb.JournalEntries.AsNoTracking().Include(x => x.Lines)
+            .SingleAsync(e => e.SourceEventType == "SupplierPaymentReversed");
+        reversal.Lines.Single(l => l.AccountId == _payablesAccountId).Credit.Should().Be(300m);
+        reversal.Lines.Single(l => l.AccountId == advanceAccountId).Credit.Should().Be(20m);
+        reversal.Lines.Single(l => l.AccountId == _bankAccountId).Debit.Should().Be(320m);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Reversa_con_anticipo_ya_aplicado_o_reembolsado_se_rechaza_sin_efectos(bool applied)
+    {
+        var paymentDate = new DateOnly(2026, 8, 28);
+        var (db, _) = BuildWiredContext();
+        await SeedAdvanceRulesAndPeriodAsync(db, paymentDate);
+        var register = await BuildHandler(db).Handle(OverpaymentCommand(320m, 300m, paymentDate, confirm: true), CancellationToken.None);
+        register.IsSuccess.Should().BeTrue(register.Error);
+
+        // El anticipo se usa (a nivel de agregado; los casos de uso de aplicar/reembolsar tienen su
+        // propia cobertura) — contexto sin publisher: solo interesa el estado del crédito.
+        await using (var useDb = CreateContext())
+        {
+            var credit = await useDb.SupplierCredits.Include(c => c.Movements).SingleAsync();
+            if (applied)
+                credit.ApplyToPayable(_expensePayableId, 5m, _createdBy, Guid.NewGuid(), "hash-apply");
+            else
+                credit.RegisterRefund(5m, _createdBy, Guid.NewGuid(), "hash-refund");
+            await useDb.SaveChangesAsync();
+        }
+
+        var (reverseDb, _) = BuildWiredContext();
+        var result = await BuildReverseHandler(reverseDb).Handle(
+            new ReverseSupplierPaymentCommand(register.Value!.Id, "Intento de reversa", BankReversalReason: SupplierPaymentBankReversalReason.NotExecuted),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("anticipo");
+        await using var verifyDb = CreateContext();
+        (await verifyDb.SupplierPayments.AsNoTracking().SingleAsync()).Status.Should().Be(SupplierPaymentStatus.Confirmed);
+        (await verifyDb.SupplierCredits.AsNoTracking().SingleAsync()).AvailableAmount.Should().Be(15m);
+        (await verifyDb.AccountsPayableInstallments.AsNoTracking().FirstAsync(x => x.Id == _purchaseInstallmentId))
+            .PaidAmount.Should().Be(300m);
+        (await verifyDb.JournalEntries.AsNoTracking().CountAsync(e => e.SourceEventType == "SupplierPaymentReversed")).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Detalle_y_listado_de_SupplierCredit_identifican_el_pago_de_origen()
+    {
+        var paymentDate = new DateOnly(2026, 8, 28);
+        var (db, _) = BuildWiredContext();
+        await SeedAdvanceRulesAndPeriodAsync(db, paymentDate);
+        var register = await BuildHandler(db).Handle(OverpaymentCommand(320m, 300m, paymentDate, confirm: true), CancellationToken.None);
+        register.IsSuccess.Should().BeTrue(register.Error);
+
+        await using var queryDb = CreateContext();
+        var repo = new SupplierCreditRepository(queryDb, new FixedCurrentCompany(_companyId));
+        var list = await new ERP.Application.Modules.Finance.UseCases.GetSupplierCreditListHandler(repo, new FixedCurrentTenant(_tenantId))
+            .Handle(new ERP.Application.Modules.Finance.UseCases.GetSupplierCreditListQuery(), CancellationToken.None);
+
+        list.IsSuccess.Should().BeTrue(list.Error);
+        var dto = list.Value!.Items.Single();
+        dto.SourceType.Should().Be("SupplierPayment");
+        dto.SourceSupplierPaymentId.Should().Be(register.Value!.Id);
+        dto.SourcePurchaseReturnId.Should().BeNull();
+        dto.SourceDocumentNumber.Should().Be(register.Value.DisplayNumber);
     }
 }
 

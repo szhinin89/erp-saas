@@ -2,6 +2,29 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-26** · Kernel refactor: **2026-06-05**.
 
+## ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — Remanente no aplicado como anticipo (2026-09-26)
+
+**Estado: COMPLETADO (sin commit).** [ADR-035](docs/decisions/ADR-035-supplier-payment-unapplied-advance.md). `SupplierCredit` = SSOT del anticipo; sin `SupplierAdvance` ni otro libro.
+
+- **SupplierPayment**: Σ aplicaciones ≤ total; `AppliedAmount`/`UnappliedAmount` derivados (no persistidos). Remanente ⇒ `ConfirmUnappliedAmount` obligatorio (Application rechaza antes de abrir transacción; dominio revalida). Matriz: aplicaciones cubiertas al 100%, ningún medio sobre-distribuido; el remanente de cada medio = `Amount − Σ allocations`.
+- **Setting** `payables.allow_supplier_payment_without_payable` (org_settings, default false, pipeline OperationalPreferences + toggle en /settings/operations → Cuentas por pagar): solo gobierna cero aplicaciones; el anticipo por sobrepago existe siempre. Expuesto al formulario por `GET /api/v1/supplier-payments/policy` (permiso `supplier-payments.create`).
+- **SupplierCredit generalizado**: `SourcePurchaseReturnId?` XOR `SourceSupplierPaymentId?` (CHECK `chk_supplier_credits_exactly_one_source`, índice único filtrado por pago), `SourceType` derivado; nace por exactamente el remanente en la misma transacción, sin evento contable. DTO: `SourceType`/`SourceSupplierPaymentId`/`SourceDocumentNumber`. Nuevo movimiento de sistema `SourcePaymentReversed`.
+- **Posting**: `Payables/SupplierPaymentConfirmed` = CxP `AppliedToPayable` + `1.1.03.004` `SupplierCredit` (Reversed espejo). Corrección de la forma previa exacta en `AccountingBootstrapStep` (conserva Id de línea). Regla sin línea de anticipos + remanente ⇒ rechazo fail-closed (`IsAmountKindConfiguredAsync`). **Production no corre el backfill**: los pagos con remanente se rechazan con mensaje claro hasta actualizar la regla; los pagos exactos no cambian.
+- **Reversa**: con anticipo íntegro (`SupplierCredit.IsIntact`) → Lock B antes de caja, anula el crédito (`SourcePaymentReversed`) + asiento inverso exacto; aplicado/reembolsado → rechazo sin efectos.
+- **Migración** `SupplierPaymentUnappliedAdvance` (columna nullable + FK Restrict + CHECK + índice; sin SQL de datos).
+- **Frontend**: resumen Total/Aplicado/Anticipo, aviso "Este pago quedará pendiente de aplicar.", modal "El pago supera el saldo que puede aplicarse en $X" con Aplicado a CxP / Anticipo proveedor y "Confirmar pago"; detalle del pago con enlace al anticipo; listado/detalle de créditos con columna Origen.
+- **02C-PROD-CLOSE**:
+  - Setting movido a `payables.allow_supplier_payment_without_payable`: grupo `Payables` propio (`PayablesPreferences`/`PayablesPreferencesDto`/`PayablesPreferencesInput`, `PayablesConfigurationDefinitions`), tab "Cuentas por pagar". Una sola key, sin alias.
+  - Empresa nueva: nace canónica (test).
+  - Production: comando `backfill-supplier-payment-posting-rules [apply]`, mismo mecanismo que `backfill-sales-invoice-posting-rule`. Diagnóstico `Canonical`/`Legacy`/`Custom`/`MissingRule`; solo `Legacy` exacto se actualiza, con Ids preservados y de forma idempotente. Las reglas personalizadas no se tocan y quedan como warning.
+  - Dev: migraciones 02A/02B/02C aplicadas. Schema verificado (FK Restrict, CHECK `chk_supplier_credits_exactly_one_source`, índice único filtrado).
+  - Dev: comando ejecutado — `Legacy -> Canonical: applied` y, en la segunda corrida, `Canonical`.
+  - Dev: smoke real A–E con handlers reales sobre la BD dev (datos `SMOKE-02C`: 3 pagos, 2 créditos de 20/150, asientos balanceados con `1.1.03.004`); setting dejado en `false`.
+- **Evidencia (PROD-CLOSE)**: Domain 1206 · Application 2262 · Infrastructure focalizadas 245/245 + mantenimiento 10/10 (Postgres real) · API 485/486 (1 fallo preexistente `PG_unique_business_partner_identification_enforced`) · Architecture 116 · vitest 2464/2465 (1 flaky no relacionado, `PermissionsAssignmentPage`, 3/3 aislado) · `tsc -b`, lint 0 errores, build OK · `architecture:check` 243 = `HEAD`.
+- **Preexistente (sin cambio)**: `ERP.Infrastructure.Tests` no compila en `HEAD` por `PurchaseExpenseExclusivityTests` (se apartó temporalmente solo para ejecutar la suite).
+
+---
+
 ## ZH-SUPPLIER-PAYMENT-CASH-OWNERSHIP-02B — Autoridad sobre CashSession (2026-09-26)
 
 **Estado: COMPLETADO (sin commit).** Regla SSOT `CashSession.IsControlledBy(userId)`: sesión `Open` y `UserId == ICurrentUser.UserId` (nunca por rol). El permiso decide QUÉ acción; la propiedad decide SOBRE QUÉ sesión — se exigen ambas.

@@ -3,6 +3,7 @@ import {
   cashPreferencesSchema,
   electronicDocumentsPreferencesSchema,
   printingPreferencesSchema,
+  payablesPreferencesSchema,
   purchasesPreferencesSchema,
   salesPosPreferencesSchema,
 } from "./operationalPreferencesSchemas";
@@ -91,6 +92,12 @@ describe("purchasesPreferencesSchema", () => {
       purchasesPreferencesSchema.safeParse({ allowConfirmWithoutReceptionXml: false })
         .success,
     ).toBe(true);
+  });
+});
+
+describe("payablesPreferencesSchema", () => {
+  it("acepta un booleano válido", () => {
+    expect(payablesPreferencesSchema.safeParse({ allowSupplierPaymentWithoutPayable: true }).success).toBe(true);
   });
 });
 

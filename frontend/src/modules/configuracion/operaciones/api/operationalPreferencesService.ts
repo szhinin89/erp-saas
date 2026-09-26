@@ -34,6 +34,11 @@ export type PurchasesPreferencesDto = {
   requireReasonForCostChange: boolean;
 };
 
+/** ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — Cuentas por pagar / Pagos a proveedores. */
+export type PayablesPreferencesDto = {
+  allowSupplierPaymentWithoutPayable: boolean;
+};
+
 export type InventoryPreferencesDto = {
   allowNegativeStock: boolean;
   requireReasonForAdjustment: boolean;
@@ -72,6 +77,7 @@ export type OperationalPreferencesDto = {
   printing: PrintingPreferencesDto;
   electronicDocuments: ElectronicDocumentsPreferencesDto;
   notifications: NotificationsPreferencesDto;
+  payables: PayablesPreferencesDto;
 };
 
 /**
@@ -88,6 +94,7 @@ export type UpdateOperationalPreferencesRequest = {
   printing?: PrintingPreferencesDto;
   electronicDocuments?: ElectronicDocumentsPreferencesDto;
   notifications?: NotificationsPreferencesDto;
+  payables?: PayablesPreferencesDto;
 };
 
 const BASE_URL = "/api/v1/settings/operations";

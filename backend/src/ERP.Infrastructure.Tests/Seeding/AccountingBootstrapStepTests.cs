@@ -318,38 +318,25 @@ public sealed class AccountingBootstrapStepTests
                 }
             );
 
-        // Las 7 reglas "clásicas" (incluida "Expenses"/"DocumentConfirmed" desde
-        // ERP-POSTING-RULES-EXPENSES-RETENTIONS-SEED-01) tienen todas sus líneas fijas (>=2). Las 2
-        // reglas de Pagos a Proveedores (SUPPLIER-PAYMENTS-POSTING-15D/SUPPLIER-PAYMENTS-REVERSE-16)
-        // solo fijan la línea de CxP — el Haber/Debe por cada medio de pago es dinámico vía
-        // PostingFact.Allocations, no representable como PostingRuleLine, así que cada una tiene
-        // exactamente 1 línea fija.
-        var rulesWithFixedTwoOrMoreLines = rules.Where(r =>
-            r.SourceModule != "Payables"
-        );
-        rulesWithFixedTwoOrMoreLines.Should().OnlyContain(r => r.Lines.Count >= 2);
+        // Todas las reglas tienen sus líneas fijas (>=2). Las 2 reglas de Pagos a Proveedores
+        // (ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C, ADR-035) fijan CxP (AppliedToPayable) +
+        // "Anticipos a proveedores" (SupplierCredit); el Haber/Debe por cada medio de pago sigue
+        // siendo dinámico vía PostingFact.Allocations.
+        rules.Should().OnlyContain(r => r.Lines.Count >= 2);
 
-        var supplierPaymentConfirmed = rules.Single(r =>
-            r.SourceModule == "Payables" && r.FactType == "SupplierPaymentConfirmed"
-        );
-        supplierPaymentConfirmed.Lines.Should().ContainSingle();
-        var confirmedLine = supplierPaymentConfirmed.Lines.Single();
-        confirmedLine.Nature.Should().Be(AccountNature.Debit);
-        confirmedLine.AmountKind.Should().Be(PostingAmountKind.GrandTotal);
-        (await db.Accounts.SingleAsync(a => a.Id == confirmedLine.AccountId)).Code.Value
-            .Should()
-            .Be("2.1.01.001");
+        async Task AssertSupplierPaymentRuleAsync(string factType, AccountNature nature)
+        {
+            var rule = rules.Single(r => r.SourceModule == "Payables" && r.FactType == factType);
+            rule.Lines.Should().HaveCount(2);
+            rule.Lines.Should().OnlyContain(l => l.Nature == nature);
+            var applied = rule.Lines.Single(l => l.AmountKind == PostingAmountKind.AppliedToPayable);
+            (await db.Accounts.SingleAsync(a => a.Id == applied.AccountId)).Code.Value.Should().Be("2.1.01.001");
+            var advance = rule.Lines.Single(l => l.AmountKind == PostingAmountKind.SupplierCredit);
+            (await db.Accounts.SingleAsync(a => a.Id == advance.AccountId)).Code.Value.Should().Be("1.1.03.004");
+        }
 
-        var supplierPaymentReversed = rules.Single(r =>
-            r.SourceModule == "Payables" && r.FactType == "SupplierPaymentReversed"
-        );
-        supplierPaymentReversed.Lines.Should().ContainSingle();
-        var reversedLine = supplierPaymentReversed.Lines.Single();
-        reversedLine.Nature.Should().Be(AccountNature.Credit);
-        reversedLine.AmountKind.Should().Be(PostingAmountKind.GrandTotal);
-        (await db.Accounts.SingleAsync(a => a.Id == reversedLine.AccountId)).Code.Value
-            .Should()
-            .Be("2.1.01.001");
+        await AssertSupplierPaymentRuleAsync("SupplierPaymentConfirmed", AccountNature.Debit);
+        await AssertSupplierPaymentRuleAsync("SupplierPaymentReversed", AccountNature.Credit);
 
         // PAYABLES-PAYMENTS-LEGACY-CLEANUP-14 — "Finance"/"SupplierPaymentApplied" ya no se siembra
         // (sin RegisterPaymentCommand/traductor que lo dispare, sería configuración muerta).
@@ -1170,6 +1157,90 @@ public sealed class AccountingBootstrapStepTests
     /// <c>ExecuteAsync</c> — queda con 2 líneas de Debe (Caja/CashApplied, CxC/PendingBalance) en
     /// vez de 1, sin tocar las 3 líneas de Haber (Subtotal/TaxVat/TaxIce).
     /// </summary>
+    /// <summary>
+    /// ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C (ADR-035) — una company con la forma previa exacta
+    /// de "Payables"/"SupplierPaymentConfirmed"/"SupplierPaymentReversed" (UNA línea CxP GrandTotal)
+    /// recibe la corrección: esa línea conserva su Id y pasa a AppliedToPayable, y se agrega
+    /// "1.1.03.004 Anticipos a proveedores" con SupplierCredit, misma naturaleza.
+    /// </summary>
+    [Fact]
+    public async Task Empresa_con_reglas_legacy_de_SupplierPayment_recibe_linea_de_anticipos()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        var legacyLineIds = new Dictionary<string, Guid>();
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+        }
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var payablesAccountId = (
+                await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "2.1.01.001")
+            ).Id;
+            foreach (var (factType, nature) in new[]
+            {
+                ("SupplierPaymentConfirmed", AccountNature.Debit),
+                ("SupplierPaymentReversed", AccountNature.Credit),
+            })
+            {
+                var current = await db.PostingRules.Include(r => r.Lines)
+                    .SingleAsync(r => r.CompanyId == _companyId && r.SourceModule == "Payables" && r.FactType == factType);
+                db.PostingRules.Remove(current);
+                await db.SaveChangesAsync();
+
+                var legacy = ERP.Domain.Modules.Accounting.Entities.PostingRule.Create(
+                    _tenantId, _companyId, "Payables", factType, null, null, null, _actorId
+                );
+                legacy.AddLine(payablesAccountId, nature, PostingAmountKind.GrandTotal);
+                db.PostingRules.Add(legacy);
+                await db.SaveChangesAsync();
+                legacyLineIds[factType] = legacy.Lines.Single().Id;
+            }
+        }
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+        }
+
+        await using var verifyDb = NewDbContext(dbName);
+        var advanceAccountId = (
+            await verifyDb.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "1.1.03.004")
+        ).Id;
+        foreach (var (factType, nature) in new[]
+        {
+            ("SupplierPaymentConfirmed", AccountNature.Debit),
+            ("SupplierPaymentReversed", AccountNature.Credit),
+        })
+        {
+            var corrected = await verifyDb.PostingRules.Include(r => r.Lines)
+                .SingleAsync(r => r.CompanyId == _companyId && r.SourceModule == "Payables" && r.FactType == factType);
+            corrected.Lines.Should().HaveCount(2);
+            var applied = corrected.Lines.Single(l => l.Id == legacyLineIds[factType]);
+            applied.AmountKind.Should().Be(PostingAmountKind.AppliedToPayable, "la línea histórica conserva su Id");
+            applied.Nature.Should().Be(nature);
+            var advance = corrected.Lines.Single(l => l.AmountKind == PostingAmountKind.SupplierCredit);
+            advance.AccountId.Should().Be(advanceAccountId);
+            advance.Nature.Should().Be(nature);
+        }
+
+        // Idempotente: una segunda corrida no agrega líneas.
+        await using (var db = NewDbContext(dbName))
+        {
+            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+        }
+        await using var againDb = NewDbContext(dbName);
+        (await againDb.PostingRules.Include(r => r.Lines)
+            .Where(r => r.CompanyId == _companyId && r.SourceModule == "Payables")
+            .SelectMany(r => r.Lines)
+            .CountAsync()).Should().Be(4);
+    }
+
     [Fact]
     public async Task Empresa_con_regla_legacy_de_SalesInvoiceIssued_recibe_correccion_a_Caja_y_CxC()
     {

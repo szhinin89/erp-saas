@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FormProvider, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { NoAccessPage, PageShell } from "../../../components/PageShell";
 import { ZHCard } from "../../../components/zh/ZHCard";
-import { ZHBtn, ZHFormActions, ZHFormAlert } from "../../../components/zh/ZHForm";
+import { ZHBtn, ZHField, ZHFormActions, ZHFormAlert } from "../../../components/zh/ZHForm";
+import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
+import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { message } from "../../../lib/messages";
 import { formatMoney } from "../../../lib/sanitizers";
@@ -28,7 +30,7 @@ import { SupplierPayablesPortfolio } from "../components/SupplierPayablesPortfol
 import { SupplierPaymentMethodLinesEditor } from "../components/SupplierPaymentMethodLinesEditor";
 import { SupplierPaymentAllocationPreview } from "../components/SupplierPaymentAllocationPreview";
 import { SupplierPaymentConfirmModal } from "../components/SupplierPaymentConfirmModal";
-import { computeAutomaticAllocations } from "../utils/allocation";
+import { computeAutomaticAllocations, computePaymentSplit } from "../utils/allocation";
 import {
   buildRegisterSupplierPaymentSchema,
   type RegisterSupplierPaymentFormValues,
@@ -73,9 +75,17 @@ export function SupplierPaymentFormPage() {
   const [saving, setSaving] = useState(false);
   const [pageError, setPageError] = useState<string | null>(null);
   const [modalError, setModalError] = useState<string | null>(null);
+  // ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — política de empresa "pago sin CxP". Fail-closed:
+  // si no puede leerse queda en false (el backend la aplica igual; esto es solo UX).
+  const [allowWithoutPayable, setAllowWithoutPayable] = useState(false);
+  const allowWithoutPayableRef = useRef(false);
 
   const form = useForm<RegisterSupplierPaymentFormValues>({
-    resolver: zodResolver(buildRegisterSupplierPaymentSchema(moneyDecimals)),
+    resolver: zodResolver(
+      buildRegisterSupplierPaymentSchema(moneyDecimals, {
+        allowWithoutPayable: () => allowWithoutPayableRef.current,
+      }),
+    ),
     defaultValues: {
       supplierId: "",
       paymentDate: todayIso(),
@@ -86,8 +96,21 @@ export function SupplierPaymentFormPage() {
   });
   const { handleSubmit, watch, setValue, setError } = form;
   const supplierId = watch("supplierId");
+  const watchedMethodLines = watch("methodLines") ?? [];
+  const watchedApplicationLines = watch("applicationLines") ?? [];
+  const split = computePaymentSplit(watchedMethodLines, watchedApplicationLines);
 
   useEffect(() => {
+    supplierPaymentService
+      .getPolicy()
+      .then((policy) => {
+        allowWithoutPayableRef.current = policy.allowWithoutPayable;
+        setAllowWithoutPayable(policy.allowWithoutPayable);
+      })
+      .catch(() => {
+        allowWithoutPayableRef.current = false;
+        setAllowWithoutPayable(false);
+      });
     paymentMethodLookupFacade.list(true).then(setMethods).catch(() => setMethods([]));
     bankAccountService.list(true).then(setBankAccounts).catch(() => setBankAccounts([]));
     cajaService.getCashRegisters(true).then(setCashRegisters).catch(() => setCashRegisters([]));
@@ -227,7 +250,10 @@ export function SupplierPaymentFormPage() {
         pendingValues.methodLines,
         validApplicationLines,
       );
-      const totalAmount = pendingValues.methodLines.reduce((sum, l) => sum + (l.amount || 0), 0);
+      const { total: totalAmount, unapplied } = computePaymentSplit(
+        pendingValues.methodLines,
+        validApplicationLines,
+      );
 
       const dto = await supplierPaymentService.register({
         supplierId: pendingValues.supplierId,
@@ -255,6 +281,9 @@ export function SupplierPaymentFormPage() {
           amountApplied: l.amountApplied,
         })),
         allocations,
+        // 02C — el usuario acaba de aceptar el modal que le mostró el remanente como anticipo:
+        // esa es la confirmación explícita (el backend la exige y la revalida).
+        confirmUnappliedAmount: unapplied > 0,
       });
 
       message.success(`Pago ${dto.displayNumber} registrado correctamente.`);
@@ -312,6 +341,29 @@ export function SupplierPaymentFormPage() {
 
         <ZHCard title="Distribución medio ↔ cuota (automática)">
           <SupplierPaymentAllocationPreview methods={methods} installments={installments} />
+        </ZHCard>
+
+        <ZHCard title="Resumen del pago">
+          <div className="sp-detail-summary">
+            <ZHField label="Total pago" readOnly>
+              <ZHMoneyValue value={split.total} precision="money" emphasis="strong" />
+            </ZHField>
+            <ZHField label="Aplicado a CxP" readOnly>
+              <ZHMoneyValue value={split.applied} precision="money" />
+            </ZHField>
+            <ZHField label="Anticipo generado" readOnly>
+              <ZHMoneyValue value={split.unapplied > 0 ? split.unapplied : 0} precision="money" />
+            </ZHField>
+          </div>
+          {split.total > 0 && split.applied === 0 && allowWithoutPayable && (
+            <ZHPageNotice variant="info" message="Este pago quedará pendiente de aplicar." />
+          )}
+          {split.applied > 0 && split.unapplied > 0 && (
+            <ZHPageNotice
+              variant="warning"
+              message="El excedente sobre las cuotas seleccionadas quedará como anticipo a favor del proveedor."
+            />
+          )}
         </ZHCard>
 
         {pageError && <ZHFormAlert type="error" message="No se pudo continuar" detail={pageError} />}

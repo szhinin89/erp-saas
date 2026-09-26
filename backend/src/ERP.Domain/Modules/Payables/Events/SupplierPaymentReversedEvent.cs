@@ -39,6 +39,15 @@ public sealed class SupplierPaymentReversedEvent : BaseDomainEvent, IAuditEvent
     public IReadOnlyList<SupplierPaymentConfirmedMethodLine> MethodLines { get; }
     public IReadOnlyList<SupplierPaymentReversedApplicationLine> ApplicationLines { get; }
 
+    /// <summary>
+    /// ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — porción aplicada a CxP que se revierte. Aditivo:
+    /// sin valor explícito equivale a <see cref="TotalAmount"/> (forma previa a 02C).
+    /// </summary>
+    public decimal AppliedAmount { get; }
+
+    /// <summary>ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — anticipo originado por el pago que se revierte.</summary>
+    public decimal UnappliedAmount => TotalAmount - AppliedAmount;
+
     public SupplierPaymentReversedEvent(
         Guid tenantId,
         Guid supplierPaymentId,
@@ -48,9 +57,11 @@ public sealed class SupplierPaymentReversedEvent : BaseDomainEvent, IAuditEvent
         DateOnly paymentDate,
         string reverseReason,
         IReadOnlyList<SupplierPaymentConfirmedMethodLine> methodLines,
-        IReadOnlyList<SupplierPaymentReversedApplicationLine> applicationLines
+        IReadOnlyList<SupplierPaymentReversedApplicationLine> applicationLines,
+        decimal? appliedAmount = null
     )
     {
+        AppliedAmount = appliedAmount ?? totalAmount;
         TenantId = tenantId;
         SupplierPaymentId = supplierPaymentId;
         CompanyId = companyId;

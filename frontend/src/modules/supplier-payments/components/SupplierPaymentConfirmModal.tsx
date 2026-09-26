@@ -1,7 +1,8 @@
 import { ZHModal } from "../../../components/zh/ZHModal";
 import { ZHFormAlert, ZHFormActions } from "../../../components/zh/ZHForm";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
-import { formatMoney } from "../../../lib/sanitizers";
+import { formatMoney, formatMoneyWithSymbol } from "../../../lib/sanitizers";
+import { computePaymentSplit } from "../utils/allocation";
 import type { PaymentMethodDto } from "../../sales/facades/paymentMethodLookupFacade";
 import type { PendingInstallmentOption } from "../api/pendingPayablesFacade";
 import type { RegisterSupplierPaymentFormValues } from "../../../schemas/supplier-payments/registerSupplierPaymentSchema";
@@ -24,6 +25,9 @@ interface Props {
  * directa reemplaza al borrador — ver `project_draft_vs_direct_confirmation_rule`). Muestra
  * exactamente lo que el ticket pide: proveedor, fecha, número de recibo manual (si existe), total,
  * medios de pago, cuotas afectadas y la advertencia de impacto contable/saldos.
+ * ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — si queda remanente sin aplicar, este modal ES la
+ * confirmación explícita: muestra Aplicado a CxP / Anticipo proveedor y solo "Confirmar pago"
+ * envía `confirmUnappliedAmount`. Cancelar no crea pago, crédito, movimiento de caja ni asiento.
  */
 export function SupplierPaymentConfirmModal({
   open,
@@ -41,7 +45,11 @@ export function SupplierPaymentConfirmModal({
 
   const methodsById = new Map(methods.map((m) => [m.id, m]));
   const installmentsById = new Map(installments.map((i) => [i.installmentId, i]));
-  const total = values.methodLines.reduce((sum, l) => sum + (l.amount || 0), 0);
+  const { total, applied, unapplied } = computePaymentSplit(
+    values.methodLines,
+    values.applicationLines.filter((l) => l.amountApplied > 0),
+  );
+  const money = (value: number) => formatMoneyWithSymbol(value, moneyDecimals);
 
   return (
     <ZHModal
@@ -56,7 +64,10 @@ export function SupplierPaymentConfirmModal({
           onSave={onConfirm}
           hideDraft
           disableSave={saving}
-          labels={{ cancel: "Cancelar", save: saving ? "Registrando..." : "Confirmar y registrar" }}
+          labels={{
+            cancel: "Cancelar",
+            save: saving ? "Registrando..." : unapplied > 0 ? "Confirmar pago" : "Confirmar y registrar",
+          }}
         />
       }
     >
@@ -70,7 +81,26 @@ export function SupplierPaymentConfirmModal({
           <dd>{values.receiptNumber?.trim() || "Se asignará un número de sistema automático"}</dd>
           <dt>Total</dt>
           <dd>{formatMoney(total, moneyDecimals)}</dd>
+          <dt>Aplicado a CxP</dt>
+          <dd>{formatMoney(applied, moneyDecimals)}</dd>
+          <dt>Anticipo proveedor</dt>
+          <dd>{formatMoney(unapplied > 0 ? unapplied : 0, moneyDecimals)}</dd>
         </dl>
+
+        {unapplied > 0 && applied > 0 && (
+          <ZHFormAlert
+            type="warning"
+            message={`El pago supera el saldo que puede aplicarse en ${money(unapplied)}.`}
+            detail={`Se registrará: Aplicado a CxP: ${money(applied)} · Anticipo proveedor: ${money(unapplied)}. ¿Desea continuar?`}
+          />
+        )}
+        {unapplied > 0 && applied === 0 && (
+          <ZHFormAlert
+            type="warning"
+            message="Este pago quedará pendiente de aplicar."
+            detail={`Se registrará un anticipo a favor del proveedor por ${money(unapplied)}. ¿Desea continuar?`}
+          />
+        )}
 
         <h4 className="sp-confirm-subtitle">Medios de pago</h4>
         <ul className="sp-confirm-list">
@@ -82,6 +112,7 @@ export function SupplierPaymentConfirmModal({
         </ul>
 
         <h4 className="sp-confirm-subtitle">Cuotas afectadas</h4>
+        {values.applicationLines.length === 0 && <p className="sp-line-hint">Sin cuotas: el pago no se aplica a ninguna CxP.</p>}
         <ul className="sp-confirm-list">
           {values.applicationLines.map((line, idx) => {
             const installment = installmentsById.get(line.accountsPayableInstallmentId);

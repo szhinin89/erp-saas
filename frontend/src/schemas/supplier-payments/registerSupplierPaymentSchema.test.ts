@@ -19,15 +19,42 @@ describe("buildRegisterSupplierPaymentSchema — representación de las sumas (0
 
   it("money 2 vs 3: mismo rechazo, solo cambia la representación", () => {
     expect(sumMessage(2)).toBe(
-      "La suma de los medios de pago (15.00) debe ser igual a la suma de las cuotas aplicadas (20.50).",
+      "La suma de las cuotas aplicadas (20.50) no puede superar la suma de los medios de pago (15.00).",
     );
     expect(sumMessage(3)).toBe(
-      "La suma de los medios de pago (15.000) debe ser igual a la suma de las cuotas aplicadas (20.500).",
+      "La suma de las cuotas aplicadas (20.500) no puede superar la suma de los medios de pago (15.000).",
     );
   });
 
   it("dentro de la tolerancia no hay error de sumas (regla intacta)", () => {
     const ok = { ...base, methodLines: [{ paymentMethodId: "pm-1", destination: "bank:fd-1", amount: 20.504 }] };
     expect(sumMessage(3, ok)).toBeNull();
+  });
+});
+
+// ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — Σaplicaciones ≤ Σmedios: el remanente es anticipo.
+describe("buildRegisterSupplierPaymentSchema — remanente no aplicado (02C)", () => {
+  const base = {
+    supplierId: "sup-1",
+    paymentDate: "2026-09-25",
+    receiptNumber: null,
+    methodLines: [{ paymentMethodId: "pm-1", destination: "bank:fd-1", amount: 200 }],
+  };
+
+  it("acepta un pago mayor que lo aplicado (excedente → anticipo)", () => {
+    const r = buildRegisterSupplierPaymentSchema(2).safeParse({
+      ...base,
+      applicationLines: [{ accountsPayableInstallmentId: "inst-1", amountApplied: 180 }],
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it("cero cuotas solo con la política de empresa activa (getter leído en cada validación)", () => {
+    let allow = false;
+    const schema = buildRegisterSupplierPaymentSchema(2, { allowWithoutPayable: () => allow });
+    expect(schema.safeParse({ ...base, applicationLines: [] }).success).toBe(false);
+    allow = true;
+    expect(schema.safeParse({ ...base, applicationLines: [] }).success).toBe(true);
+    expect(buildRegisterSupplierPaymentSchema(2).safeParse({ ...base, applicationLines: [] }).success).toBe(false);
   });
 });

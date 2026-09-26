@@ -7,7 +7,8 @@ public sealed record OperationalPreferencesDto(
     InventoryPreferencesDto Inventory,
     PrintingPreferencesDto Printing,
     ElectronicDocumentsPreferencesDto ElectronicDocuments,
-    NotificationsPreferencesDto Notifications
+    NotificationsPreferencesDto Notifications,
+    PayablesPreferencesDto Payables
 );
 
 public sealed record SalesPosPreferencesDto(
@@ -38,6 +39,9 @@ public sealed record PurchasesPreferencesDto(
     bool AllowManualCostChange,
     bool RequireReasonForCostChange
 );
+
+/// <summary>ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — Cuentas por pagar / Pagos a proveedores.</summary>
+public sealed record PayablesPreferencesDto(bool AllowSupplierPaymentWithoutPayable);
 
 public sealed record InventoryPreferencesDto(
     bool AllowNegativeStock,

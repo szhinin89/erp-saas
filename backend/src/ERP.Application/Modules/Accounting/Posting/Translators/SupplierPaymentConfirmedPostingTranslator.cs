@@ -25,6 +25,16 @@ namespace ERP.Application.Modules.Accounting.Posting.Translators;
 /// <see cref="SupplierPaymentPostingFailedException"/> — nunca solo un log — para que la
 /// transacción completa del registro del pago se revierta (ADR-026 §8: Publish() ocurre dentro de
 /// <c>ErpDbContext.SaveChangesAsync</c>, antes del commit).
+///
+/// ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C (ADR-035) — el Debe se separa en dos montos ya
+/// resueltos por Payables: <c>AppliedToPayableAmount</c> (Debe CxP proveedores, Σ aplicaciones) y
+/// <c>SupplierCreditAmount</c> (Debe "1.1.03.004 Anticipos a proveedores", remanente no aplicado),
+/// cada uno con su <c>PostingRuleLine</c> propia (<c>PostingAmountKind.AppliedToPayable</c>/
+/// <c>SupplierCredit</c>); el Haber por medio no cambia (Σ = total). <c>GrandTotal</c> sigue siendo
+/// el total para la forma de regla previa a 02C (1 línea GrandTotal), que solo es correcta cuando
+/// no hay remanente: si hay remanente y la regla de la empresa no declara la línea
+/// <c>SupplierCredit</c>, se rechaza fail-closed — nunca se debita CxP por dinero no aplicado.
+/// SupplierCredit NO postea al crearse: este es el único asiento financiero del anticipo.
 /// </summary>
 public sealed class SupplierPaymentConfirmedPostingTranslator
     : INotificationHandler<SupplierPaymentConfirmedEvent>
@@ -77,7 +87,19 @@ public sealed class SupplierPaymentConfirmedPostingTranslator
             TotalIce: 0m,
             TotalDiscount: 0m,
             GrandTotal: e.TotalAmount,
+            AppliedToPayableAmount: e.AppliedAmount,
+            SupplierCreditAmount: e.UnappliedAmount,
             Allocations: allocations
+        );
+
+        await SupplierPaymentAdvancePostingGuard.EnsureAdvanceLineConfiguredAsync(
+            _postingEngine,
+            tenantId,
+            e.CompanyId,
+            SourceModuleName,
+            FactTypeName,
+            e.UnappliedAmount,
+            ct
         );
 
         var result = await _postingEngine.PostAsync(fact, ct);

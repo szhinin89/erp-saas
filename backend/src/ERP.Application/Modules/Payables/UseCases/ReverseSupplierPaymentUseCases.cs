@@ -7,8 +7,12 @@ using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
+using ERP.Domain.Modules.Purchases.Entities;
+using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentValidation;
 using MediatR;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace ERP.Application.Modules.Payables.UseCases;
 
@@ -37,6 +41,10 @@ public sealed record ReverseSupplierPaymentRequest(
 /// explícita (si algo falla, nada queda parcial: el pago sigue <c>Confirmed</c>, los saldos no
 /// cambian, no hay asiento parcial). Independiente de <c>ReverseCollectionCommand</c>
 /// (Payment/PaymentApplicationLine, Collections/CxC) — no lo reutiliza ni lo toca.
+/// ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — si el pago originó un anticipo
+/// (<c>SupplierCredit</c>), la reversa solo procede mientras ese crédito siga íntegro
+/// (<c>AvailableAmount == OriginalAmount</c>) y lo anula en la misma transacción con un movimiento
+/// de sistema <c>SourcePaymentReversed</c> (nunca se borra).
 /// </summary>
 public sealed record ReverseSupplierPaymentCommand(
     Guid SupplierPaymentId,
@@ -66,6 +74,7 @@ public sealed class ReverseSupplierPaymentCommandHandler
     private readonly ISupplierPaymentRepository _supplierPayments;
     private readonly IAccountsPayableRepository _accountsPayables;
     private readonly ICashSessionRepository _cashSessions;
+    private readonly ISupplierCreditRepository _supplierCredits;
     private readonly IUnitOfWork _uow;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
@@ -77,6 +86,7 @@ public sealed class ReverseSupplierPaymentCommandHandler
         ISupplierPaymentRepository supplierPayments,
         IAccountsPayableRepository accountsPayables,
         ICashSessionRepository cashSessions,
+        ISupplierCreditRepository supplierCredits,
         IUnitOfWork uow,
         ICurrentTenant t,
         ICurrentCompany c,
@@ -88,6 +98,7 @@ public sealed class ReverseSupplierPaymentCommandHandler
         _supplierPayments = supplierPayments;
         _accountsPayables = accountsPayables;
         _cashSessions = cashSessions;
+        _supplierCredits = supplierCredits;
         _uow = uow;
         _t = t;
         _c = c;
@@ -113,6 +124,36 @@ public sealed class ReverseSupplierPaymentCommandHandler
             {
                 await _uow.RollbackAsync(ct);
                 return Result<SupplierPaymentDto>.NotFound("Pago a proveedor no encontrado.");
+            }
+
+            // ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — anticipo originado por el remanente. Lock B
+            // (SupplierCredit.Lock) ANTES de cualquier lock de caja — mismo orden que
+            // RegisterSupplierCreditRefund (Lock B → CashSession FOR UPDATE), nunca deadlock en
+            // cruz. Descubrimiento sin tracking + recarga tras el lock = lectura fresca real.
+            SupplierCredit? advance = null;
+            if (payment.UnappliedAmount > 0)
+            {
+                var advanceId = await _supplierCredits.GetIdBySourceSupplierPaymentIdAsync(
+                    tenantId,
+                    payment.Id,
+                    ct
+                );
+                if (advanceId is null)
+                {
+                    await _uow.RollbackAsync(ct);
+                    return Result<SupplierPaymentDto>.ValidationFailure(
+                        "No se encontró el anticipo generado por este pago: no puede reversarse."
+                    );
+                }
+                await _supplierCredits.AcquireLockAsync(tenantId, advanceId.Value, ct);
+                advance = await _supplierCredits.GetByIdAsync(tenantId, advanceId.Value, ct);
+                if (advance is null || !advance.IsIntact)
+                {
+                    await _uow.RollbackAsync(ct);
+                    return Result<SupplierPaymentDto>.ValidationFailure(
+                        "No se puede reversar el pago porque el anticipo que generó ya fue aplicado o reembolsado. Revierta primero esas operaciones del crédito de proveedor."
+                    );
+                }
             }
 
             // Dominio valida: Status debe ser Confirmed (bloquea doble reversa) y el motivo no
@@ -235,6 +276,25 @@ public sealed class ReverseSupplierPaymentCommandHandler
                 }
             }
 
+            if (advance is not null)
+            {
+                try
+                {
+                    // ClientRequestId = Id del pago: la propia reversa (Confirmed → Reversed, una sola
+                    // vez) garantiza unicidad; huella determinista del movimiento de sistema.
+                    advance.RegisterSourcePaymentReversal(
+                        userId,
+                        payment.Id,
+                        ComputeSourcePaymentReversalHash(advance.Id, payment.Id)
+                    );
+                }
+                catch (InvalidOperationException ex)
+                {
+                    await _uow.RollbackAsync(ct);
+                    return Result<SupplierPaymentDto>.ValidationFailure(ex.Message);
+                }
+            }
+
             // Revierte, cuota por cuota, exactamente lo que esa línea aplicó — nunca por FIFO.
             foreach (var appLine in payment.ApplicationLines)
             {
@@ -290,7 +350,9 @@ public sealed class ReverseSupplierPaymentCommandHandler
             }
 
             await _uow.CommitAsync(ct);
-            return Result<SupplierPaymentDto>.Success(SupplierPaymentDtoMapper.ToDto(payment));
+            return Result<SupplierPaymentDto>.Success(
+                SupplierPaymentDtoMapper.ToDto(payment, supplierCreditId: advance?.Id)
+            );
         }
         catch (InvalidOperationException ex)
         {
@@ -302,5 +364,17 @@ public sealed class ReverseSupplierPaymentCommandHandler
             await _uow.RollbackAsync(ct);
             throw;
         }
+    }
+
+    /// <summary>Huella determinista del movimiento de sistema <c>SourcePaymentReversed</c>.</summary>
+    private static string ComputeSourcePaymentReversalHash(Guid supplierCreditId, Guid supplierPaymentId)
+    {
+        var canonical = string.Join(
+            "",
+            "SourcePaymentReversal",
+            supplierCreditId.ToString("D"),
+            supplierPaymentId.ToString("D")
+        );
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(canonical)));
     }
 }

@@ -112,8 +112,8 @@ public sealed class SupplierPaymentsControllerTests
                     request.TotalAmount,
                     request.ReceiptNumber,
                     request.MethodLines,
-                    request.ApplicationLines,
-                    request.Allocations
+                    request.ApplicationLines!,
+                    request.Allocations!
                 )
             );
     }

@@ -43,6 +43,11 @@ export interface RegisterSupplierPaymentRequest {
   methodLines: SupplierPaymentMethodLineRequest[];
   applicationLines: SupplierPaymentApplicationLineRequest[];
   allocations: SupplierPaymentAllocationLineRequest[];
+  /**
+   * ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — confirmación explícita del usuario de que el
+   * remanente no aplicado quedará como anticipo a favor del proveedor. El backend la revalida.
+   */
+  confirmUnappliedAmount?: boolean;
 }
 
 // ── DTOs (GET / respuesta de POST) ──────────────────────────────────────
@@ -114,6 +119,11 @@ export interface SupplierPaymentDto {
   reversalBankReason?: SupplierPaymentBankReversalReason | null;
   /** 02B-FINAL — confirmación registrada de que el efectivo no se entregó (null si no aplica). */
   reversalCashNotDeliveredConfirmed?: boolean | null;
+  /** 02C — derivados del backend (nunca persistidos): Σ aplicaciones y remanente (anticipo). */
+  appliedAmount: number;
+  unappliedAmount: number;
+  /** 02C — crédito de proveedor (anticipo) originado por el remanente; null si no hubo remanente. */
+  supplierCreditId?: string | null;
 }
 
 /** Espejo exacto de ReverseSupplierPaymentRequest — backend (POST /{id}/reverse). */
@@ -158,9 +168,19 @@ export interface SupplierPaymentsListFilters {
   status?: SupplierPaymentStatus | "";
 }
 
+/**
+ * ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — espejo de SupplierPaymentPolicyDto (GET /policy):
+ * política de empresa "pagos sin CxP", expuesta por el propio módulo con permiso de registro.
+ */
+export interface SupplierPaymentPolicyDto {
+  allowWithoutPayable: boolean;
+}
+
 export const supplierPaymentService = {
   register: (payload: RegisterSupplierPaymentRequest) =>
     apiPost<SupplierPaymentDto>(BASE, payload),
+
+  getPolicy: () => apiGet<SupplierPaymentPolicyDto>(`${BASE}/policy`),
 
   list: (filters: SupplierPaymentsListFilters, page = 1, pageSize = 25) => {
     const params = new URLSearchParams();

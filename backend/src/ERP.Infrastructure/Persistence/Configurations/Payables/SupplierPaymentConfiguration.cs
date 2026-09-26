@@ -48,6 +48,9 @@ public sealed class SupplierPaymentConfiguration : IEntityTypeConfiguration<Supp
             .HasColumnName("reversal_cash_not_delivered_confirmed");
 
         builder.Ignore(x => x.DisplayNumber);
+        // ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — derivados de ApplicationLines, nunca columnas.
+        builder.Ignore(x => x.AppliedAmount);
+        builder.Ignore(x => x.UnappliedAmount);
 
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");

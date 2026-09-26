@@ -5,13 +5,19 @@ using ERP.Domain.Modules.Purchases.Events;
 namespace ERP.Domain.Modules.Purchases.Entities;
 
 /// <summary>
-/// Crédito a favor frente a un proveedor, originado exclusivamente por una
-/// <see cref="PurchaseReturn"/> (diseño §6.1 — <c>SourceType</c> fue eliminado explícitamente,
-/// <see cref="SourcePurchaseReturnId"/> es la única referencia de origen). <see cref="IsOpen"/> no
-/// es un campo persistido — se deriva siempre de <see cref="AvailableAmount"/> (§7.4). Una única
-/// colección de movimientos (<see cref="SupplierCreditMovement"/>) es la fuente de verdad completa
-/// del saldo (§13.2, §13.5) — nunca dos tablas separadas para aplicación/reembolso.
+/// Crédito a favor frente a un proveedor. <see cref="IsOpen"/> no es un campo persistido — se
+/// deriva siempre de <see cref="AvailableAmount"/> (§7.4). Una única colección de movimientos
+/// (<see cref="SupplierCreditMovement"/>) es la fuente de verdad completa del saldo (§13.2, §13.5)
+/// — nunca dos tablas separadas para aplicación/reembolso.
 /// </summary>
+/// <remarks>
+/// ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — origen generalizado SIN crear otro agregado ni otro
+/// libro de saldo: una <see cref="PurchaseReturn"/> (<see cref="SourcePurchaseReturnId"/>) o el
+/// remanente no aplicado de un <c>SupplierPayment</c> (<see cref="SourceSupplierPaymentId"/>, el
+/// anticipo). Exactamente uno de los dos (invariante de dominio + CHECK en BD).
+/// <see cref="SourceType"/> se DERIVA de cuál está informado — sigue sin persistirse (diseño §6.1:
+/// nunca un discriminador que pueda contradecir las FKs).
+/// </remarks>
 public sealed class SupplierCredit : AuditableEntity, ITenantScopedEntity, ICompanyOperationalEntity
 {
     public Guid CompanyId { get; private set; }
@@ -28,7 +34,17 @@ public sealed class SupplierCredit : AuditableEntity, ITenantScopedEntity, IComp
 
     public Guid SupplierId { get; private set; }
     public string CurrencyCode { get; private set; } = null!;
-    public Guid SourcePurchaseReturnId { get; private set; }
+    public Guid? SourcePurchaseReturnId { get; private set; }
+
+    /// <summary>ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — pago a proveedor cuyo remanente no aplicado originó este crédito (anticipo).</summary>
+    public Guid? SourceSupplierPaymentId { get; private set; }
+
+    /// <summary>Derivado de la FK de origen informada — nunca persistido.</summary>
+    public SupplierCreditSourceType SourceType =>
+        SourceSupplierPaymentId is not null
+            ? SupplierCreditSourceType.SupplierPayment
+            : SupplierCreditSourceType.PurchaseReturn;
+
     public decimal OriginalAmount { get; private set; }
     public decimal AvailableAmount { get; private set; }
 
@@ -41,9 +57,9 @@ public sealed class SupplierCredit : AuditableEntity, ITenantScopedEntity, IComp
     private SupplierCredit() { }
 
     /// <summary>
-    /// Único punto de creación — invocado desde <c>PurchaseReturn.Authorize()</c> cuando el
-    /// excedente sobre el saldo pendiente de la CxP es mayor a cero (§6.2, §11.2). Nunca se crea
-    /// un <see cref="SupplierCredit"/> con monto cero.
+    /// Creación desde <c>PurchaseReturn.Authorize()</c> cuando el excedente sobre el saldo
+    /// pendiente de la CxP es mayor a cero (§6.2, §11.2). Nunca se crea un
+    /// <see cref="SupplierCredit"/> con monto cero.
     /// </summary>
     public static SupplierCredit CreateFromReturn(
         Guid tenantId,
@@ -56,16 +72,86 @@ public sealed class SupplierCredit : AuditableEntity, ITenantScopedEntity, IComp
         Guid createdBy
     )
     {
+        if (sourcePurchaseReturnId == Guid.Empty)
+            throw new ArgumentException(
+                "La devolución de origen es obligatoria.",
+                nameof(sourcePurchaseReturnId)
+            );
+
+        return CreateCore(
+            tenantId,
+            companyId,
+            branchId,
+            supplierId,
+            currencyCode,
+            sourcePurchaseReturnId,
+            sourceSupplierPaymentId: null,
+            originalAmount,
+            createdBy
+        );
+    }
+
+    /// <summary>
+    /// ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — creación desde el remanente no aplicado de un
+    /// <c>SupplierPayment</c> confirmado (anticipo / saldo a favor). <paramref name="originalAmount"/>
+    /// es exactamente <c>SupplierPayment.UnappliedAmount</c>; <paramref name="branchId"/> se hereda
+    /// literalmente de <c>SupplierPayment.BranchId</c> (Branch Ownership Rule). No levanta ningún
+    /// evento: el único posting financiero es el del propio <c>SupplierPayment</c> (Debe Anticipos
+    /// a proveedores por el remanente) — contabilizar aquí duplicaría ese Debe.
+    /// </summary>
+    public static SupplierCredit CreateFromSupplierPayment(
+        Guid tenantId,
+        Guid companyId,
+        Guid branchId,
+        Guid supplierId,
+        string currencyCode,
+        Guid sourceSupplierPaymentId,
+        decimal originalAmount,
+        Guid createdBy
+    )
+    {
+        if (sourceSupplierPaymentId == Guid.Empty)
+            throw new ArgumentException(
+                "El pago a proveedor de origen es obligatorio.",
+                nameof(sourceSupplierPaymentId)
+            );
+
+        return CreateCore(
+            tenantId,
+            companyId,
+            branchId,
+            supplierId,
+            currencyCode,
+            sourcePurchaseReturnId: null,
+            sourceSupplierPaymentId,
+            originalAmount,
+            createdBy
+        );
+    }
+
+    private static SupplierCredit CreateCore(
+        Guid tenantId,
+        Guid companyId,
+        Guid branchId,
+        Guid supplierId,
+        string currencyCode,
+        Guid? sourcePurchaseReturnId,
+        Guid? sourceSupplierPaymentId,
+        decimal originalAmount,
+        Guid createdBy
+    )
+    {
+        if (companyId == Guid.Empty)
+            throw new ArgumentException("La empresa es obligatoria.", nameof(companyId));
         if (branchId == Guid.Empty)
             throw new ArgumentException("La sucursal es obligatoria.", nameof(branchId));
         if (supplierId == Guid.Empty)
             throw new ArgumentException("El proveedor es obligatorio.", nameof(supplierId));
         if (string.IsNullOrWhiteSpace(currencyCode))
             throw new ArgumentException("La moneda es obligatoria.", nameof(currencyCode));
-        if (sourcePurchaseReturnId == Guid.Empty)
+        if ((sourcePurchaseReturnId is null) == (sourceSupplierPaymentId is null))
             throw new ArgumentException(
-                "La devolución de origen es obligatoria.",
-                nameof(sourcePurchaseReturnId)
+                "El crédito de proveedor debe tener exactamente un origen (devolución de compra o pago a proveedor)."
             );
         if (originalAmount <= 0)
             throw new ArgumentException(
@@ -82,6 +168,7 @@ public sealed class SupplierCredit : AuditableEntity, ITenantScopedEntity, IComp
             SupplierId = supplierId,
             CurrencyCode = currencyCode.Trim().ToUpperInvariant(),
             SourcePurchaseReturnId = sourcePurchaseReturnId,
+            SourceSupplierPaymentId = sourceSupplierPaymentId,
             OriginalAmount = originalAmount,
             AvailableAmount = originalAmount,
         };
@@ -279,15 +366,69 @@ public sealed class SupplierCredit : AuditableEntity, ITenantScopedEntity, IComp
         string requestPayloadHash
     )
     {
-        if (AvailableAmount != OriginalAmount)
+        if (SourceType != SupplierCreditSourceType.PurchaseReturn)
             throw new InvalidOperationException(
-                "No se puede cancelar el origen de este crédito porque ya tiene aplicaciones o reembolsos activos."
+                "Este crédito no se originó en una devolución de compra."
             );
+        EnsureIntact(
+            "No se puede cancelar el origen de este crédito porque ya tiene aplicaciones o reembolsos activos."
+        );
+        return AddSourceCancellationMovement(
+            SupplierCreditMovementType.SourceReturnCancelled,
+            actorId,
+            clientRequestId,
+            requestPayloadHash
+        );
+    }
 
+    /// <summary>
+    /// ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — efecto atómico de
+    /// <c>SupplierPayment.Reverse()</c> sobre el anticipo íntegro que originó: mismo criterio
+    /// exacto que <see cref="RegisterSourceReturnCancellation"/> (solo si
+    /// <see cref="AvailableAmount"/> == <see cref="OriginalAmount"/>, movimiento de sistema
+    /// <see cref="SupplierCreditMovementType.SourcePaymentReversed"/>, saldo a 0, nunca borra).
+    /// No levanta evento contable: el asiento inverso del <c>SupplierPayment</c> ya acredita
+    /// "Anticipos a proveedores" por el remanente.
+    /// </summary>
+    public SupplierCreditMovement RegisterSourcePaymentReversal(
+        Guid actorId,
+        Guid clientRequestId,
+        string requestPayloadHash
+    )
+    {
+        if (SourceType != SupplierCreditSourceType.SupplierPayment)
+            throw new InvalidOperationException("Este crédito no se originó en un pago a proveedor.");
+        EnsureIntact(
+            "No se puede reversar el pago porque el anticipo que generó ya fue aplicado o reembolsado."
+        );
+        return AddSourceCancellationMovement(
+            SupplierCreditMovementType.SourcePaymentReversed,
+            actorId,
+            clientRequestId,
+            requestPayloadHash
+        );
+    }
+
+    /// <summary>Guarda oficial de "crédito íntegro": sin aplicaciones ni reembolsos activos (§9.3).</summary>
+    public bool IsIntact => AvailableAmount == OriginalAmount;
+
+    private void EnsureIntact(string message)
+    {
+        if (!IsIntact)
+            throw new InvalidOperationException(message);
+    }
+
+    private SupplierCreditMovement AddSourceCancellationMovement(
+        SupplierCreditMovementType movementType,
+        Guid actorId,
+        Guid clientRequestId,
+        string requestPayloadHash
+    )
+    {
         var movement = SupplierCreditMovement.Create(
             Id,
             TenantId,
-            SupplierCreditMovementType.SourceReturnCancelled,
+            movementType,
             AvailableAmount,
             targetPurchasePayableId: null,
             reversalOfMovementId: null,
@@ -355,7 +496,11 @@ public sealed class SupplierCredit : AuditableEntity, ITenantScopedEntity, IComp
                 .Where(m => m.MovementType == SupplierCreditMovementType.ReversalOfRefund)
                 .Sum(m => m.Amount)
             - _movements
-                .Where(m => m.MovementType == SupplierCreditMovementType.SourceReturnCancelled)
+                .Where(m =>
+                    m.MovementType
+                        is SupplierCreditMovementType.SourceReturnCancelled
+                            or SupplierCreditMovementType.SourcePaymentReversed
+                )
                 .Sum(m => m.Amount);
 
         if (available < 0 || available > OriginalAmount)

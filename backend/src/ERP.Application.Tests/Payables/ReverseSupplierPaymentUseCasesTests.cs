@@ -8,6 +8,9 @@ using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
+using ERP.Domain.Modules.Purchases.Entities;
+using ERP.Domain.Modules.Purchases.Enums;
+using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentAssertions;
 using Moq;
 
@@ -32,6 +35,7 @@ public sealed class ReverseSupplierPaymentUseCasesTests
         Mock<ISupplierPaymentRepository> SupplierPayments,
         Mock<IAccountsPayableRepository> AccountsPayables,
         Mock<ICashSessionRepository> CashSessions,
+        Mock<ISupplierCreditRepository> SupplierCredits,
         Mock<IUnitOfWork> Uow,
         Mock<ICurrentTenant> Tenant,
         Mock<ICurrentCompany> Company,
@@ -65,7 +69,18 @@ public sealed class ReverseSupplierPaymentUseCasesTests
                 )
             );
 
-        return new Mocks(supplierPayments, accountsPayables, cashSessions, uow, tenant, company, user, branch, branchAccess);
+        return new Mocks(
+            supplierPayments,
+            accountsPayables,
+            cashSessions,
+            new Mock<ISupplierCreditRepository>(),
+            uow,
+            tenant,
+            company,
+            user,
+            branch,
+            branchAccess
+        );
     }
 
     private static ReverseSupplierPaymentCommandHandler BuildHandler(Mocks m) =>
@@ -73,6 +88,7 @@ public sealed class ReverseSupplierPaymentUseCasesTests
             m.SupplierPayments.Object,
             m.AccountsPayables.Object,
             m.CashSessions.Object,
+            m.SupplierCredits.Object,
             m.Uow.Object,
             m.Tenant.Object,
             m.Company.Object,
@@ -798,5 +814,112 @@ public sealed class ReverseSupplierPaymentUseCasesTests
         result.Error.Should().StartWith("Debe indicar el motivo de la reversa bancaria");
         session.Movements.Should().HaveCount(2, "apertura + egreso original, sin compensación");
         payable.Installments[0].PaidAmount.Should().Be(200m);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — reversa de un pago que generó anticipo
+    // ══════════════════════════════════════════════════════════════════════
+
+    /// <summary>Transferencia de 200 aplicando 180 a la cuota (anticipo 20) + su SupplierCredit.</summary>
+    private static (SupplierPayment payment, SupplierCredit credit) CreateOverpayment(AccountsPayable payable, Guid installmentId)
+    {
+        var payment = SupplierPayment.Create(
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            new DateOnly(2026, 8, 28),
+            200m,
+            "00000002",
+            null,
+            new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 200m, TransactionDate: new DateOnly(2026, 8, 28)) },
+            new[] { new SupplierPaymentApplicationLineInput(installmentId, 180m) },
+            new[] { new SupplierPaymentAllocationInput(0, 0, 180m) },
+            UserId,
+            unappliedAmountConfirmed: true
+        );
+        payable.RegisterPaymentToInstallment(installmentId, 180m, UserId);
+        var credit = SupplierCredit.CreateFromSupplierPayment(
+            TenantId, CompanyId, BranchId, SupplierId, "USD", payment.Id, payment.UnappliedAmount, UserId
+        );
+        return (payment, credit);
+    }
+
+    private static void SetupCredit(Mocks m, SupplierPayment payment, SupplierCredit credit)
+    {
+        m.SupplierCredits
+            .Setup(r => r.GetIdBySourceSupplierPaymentIdAsync(TenantId, payment.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(credit.Id);
+        m.SupplierCredits
+            .Setup(r => r.GetByIdAsync(TenantId, credit.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(credit);
+    }
+
+    [Fact]
+    public async Task Reversa_con_anticipo_intacto_bloquea_el_credito_lo_anula_y_revierte_la_CxP()
+    {
+        var m = BuildMocks();
+        var payable = CreatePayableWithInstallment(180m, out var installmentId);
+        var (payment, credit) = CreateOverpayment(payable, installmentId);
+        SetupPayment(m, payment);
+        SetupPayable(m, payable, installmentId);
+        SetupCredit(m, payment, credit);
+
+        var result = await BuildHandler(m).Handle(ValidReversal(payment.Id, "No ejecutada"), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.SupplierCreditId.Should().Be(credit.Id);
+        payment.Status.Should().Be(SupplierPaymentStatus.Reversed);
+        credit.AvailableAmount.Should().Be(0m);
+        credit.OriginalAmount.Should().Be(20m);
+        credit.Movements.Should().ContainSingle(mv => mv.MovementType == SupplierCreditMovementType.SourcePaymentReversed);
+        payable.Installments[0].PaidAmount.Should().Be(0m);
+        m.SupplierCredits.Verify(r => r.AcquireLockAsync(TenantId, credit.Id, It.IsAny<CancellationToken>()), Times.Once);
+        m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Reversa_con_anticipo_aplicado_o_reembolsado_se_rechaza_sin_tocar_pago_CxP_ni_credito(bool applied)
+    {
+        var m = BuildMocks();
+        var payable = CreatePayableWithInstallment(180m, out var installmentId);
+        var (payment, credit) = CreateOverpayment(payable, installmentId);
+        if (applied)
+            credit.ApplyToPayable(Guid.NewGuid(), 5m, UserId, Guid.NewGuid(), "h");
+        else
+            credit.RegisterRefund(20m, UserId, Guid.NewGuid(), "h");
+        var availableBefore = credit.AvailableAmount;
+        SetupPayment(m, payment);
+        SetupPayable(m, payable, installmentId);
+        SetupCredit(m, payment, credit);
+
+        var result = await BuildHandler(m).Handle(ValidReversal(payment.Id, "Intento"), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("anticipo que generó ya fue aplicado o reembolsado");
+        payment.Status.Should().Be(SupplierPaymentStatus.Confirmed);
+        payable.Installments[0].PaidAmount.Should().Be(180m);
+        credit.AvailableAmount.Should().Be(availableBefore);
+        m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Reversa_de_pago_sin_remanente_no_consulta_SupplierCredit()
+    {
+        var m = BuildMocks();
+        var payable = CreatePayableWithInstallment(300m, out var installmentId);
+        var payment = CreateConfirmedPayment(payable, installmentId, 300m);
+        SetupPayment(m, payment);
+        SetupPayable(m, payable, installmentId);
+
+        var result = await BuildHandler(m).Handle(ValidReversal(payment.Id, "Duplicado"), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        m.SupplierCredits.Verify(
+            r => r.GetIdBySourceSupplierPaymentIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 }

@@ -40,6 +40,16 @@ public sealed class SupplierPaymentConfirmedEvent : BaseDomainEvent, IAuditEvent
     public DateOnly PaymentDate { get; }
     public IReadOnlyList<SupplierPaymentConfirmedMethodLine> MethodLines { get; }
 
+    /// <summary>
+    /// ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — porción del pago aplicada a CxP (Σ aplicaciones).
+    /// Aditivo: sin valor explícito equivale a <see cref="TotalAmount"/> (forma previa a 02C, pago
+    /// 100% aplicado).
+    /// </summary>
+    public decimal AppliedAmount { get; }
+
+    /// <summary>ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — remanente no aplicado (anticipo): <see cref="TotalAmount"/> − <see cref="AppliedAmount"/>.</summary>
+    public decimal UnappliedAmount => TotalAmount - AppliedAmount;
+
     public SupplierPaymentConfirmedEvent(
         Guid tenantId,
         Guid supplierPaymentId,
@@ -47,7 +57,8 @@ public sealed class SupplierPaymentConfirmedEvent : BaseDomainEvent, IAuditEvent
         Guid supplierId,
         decimal totalAmount,
         DateOnly paymentDate,
-        IReadOnlyList<SupplierPaymentConfirmedMethodLine> methodLines
+        IReadOnlyList<SupplierPaymentConfirmedMethodLine> methodLines,
+        decimal? appliedAmount = null
     )
     {
         TenantId = tenantId;
@@ -57,6 +68,7 @@ public sealed class SupplierPaymentConfirmedEvent : BaseDomainEvent, IAuditEvent
         TotalAmount = totalAmount;
         PaymentDate = paymentDate;
         MethodLines = methodLines;
+        AppliedAmount = appliedAmount ?? totalAmount;
     }
 
     Guid IAuditEvent.EntityId => SupplierPaymentId;

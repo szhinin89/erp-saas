@@ -218,7 +218,25 @@ export function SupplierPaymentDetailPage() {
               <ZHField label="Total" readOnly>
                 <ZHMoneyValue value={payment.totalAmount} precision="money" emphasis="strong" />
               </ZHField>
+              <ZHField label="Aplicado a CxP" readOnly>
+                <ZHMoneyValue value={payment.appliedAmount} precision="money" />
+              </ZHField>
+              <ZHField label="Anticipo generado" readOnly>
+                <ZHMoneyValue value={payment.unappliedAmount} precision="money" />
+              </ZHField>
             </div>
+            {payment.supplierCreditId && (
+              <div className="sp-detail-actions">
+                <ZHBtn
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate(`/suppliers/credits/${payment.supplierCreditId}`)}
+                >
+                  Ver anticipo (crédito de proveedor)
+                </ZHBtn>
+              </div>
+            )}
           </ZHCard>
 
           <ZHCard title="Medios de pago">

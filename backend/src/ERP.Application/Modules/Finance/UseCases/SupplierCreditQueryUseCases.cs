@@ -44,9 +44,13 @@ public sealed class GetSupplierCreditByIdHandler
     )
     {
         var credit = await _repo.GetByIdAsync(_t.TenantId, q.Id, ct);
-        return credit is null
-            ? Result<SupplierCreditDto>.NotFound("Crédito de proveedor no encontrado.")
-            : Result<SupplierCreditDto>.Success(Map.ToDto(credit));
+        if (credit is null)
+            return Result<SupplierCreditDto>.NotFound("Crédito de proveedor no encontrado.");
+
+        var sourceNumbers = await _repo.GetSourceDocumentNumbersAsync(_t.TenantId, [credit.Id], ct);
+        return Result<SupplierCreditDto>.Success(
+            Map.ToDto(credit, sourceNumbers.GetValueOrDefault(credit.Id))
+        );
     }
 }
 
@@ -71,9 +75,19 @@ public sealed class GetSupplierCreditListHandler
         var pageSize = q.PageSize is < 1 or > 200 ? 20 : q.PageSize;
 
         var (items, total) = await _repo.GetPagedAsync(_t.TenantId, page, pageSize, ct);
+        var sourceNumbers = await _repo.GetSourceDocumentNumbersAsync(
+            _t.TenantId,
+            items.Select(c => c.Id).ToList(),
+            ct
+        );
 
         return Result<SupplierCreditListResultDto>.Success(
-            new SupplierCreditListResultDto(items.Select(Map.ToDto).ToList(), total, page, pageSize)
+            new SupplierCreditListResultDto(
+                items.Select(c => Map.ToDto(c, sourceNumbers.GetValueOrDefault(c.Id))).ToList(),
+                total,
+                page,
+                pageSize
+            )
         );
     }
 }

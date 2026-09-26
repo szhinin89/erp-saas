@@ -3,7 +3,12 @@ using ERP.Application.Modules.Payables.Exceptions;
 using ERP.Application.Modules.Payables.UseCases;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Enums;
+using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Caja.Interfaces;
+using ERP.Domain.Modules.Company.Interfaces;
+using ERP.Domain.Modules.Purchases.Entities;
+using ERP.Domain.Modules.Purchases.Interfaces;
+using CompanyEntity = ERP.Domain.Modules.Company.Entities.Company;
 using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Finance.Enums;
 using ERP.Domain.Modules.Finance.Interfaces;
@@ -43,6 +48,9 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         Mock<ICompanyBankAccountRepository> BankAccounts,
         Mock<ICashRegisterRepository> CashRegisters,
         Mock<ICashSessionRepository> CashSessions,
+        Mock<ISupplierCreditRepository> SupplierCredits,
+        Mock<IOperationalPreferencesResolver> Preferences,
+        Mock<ICompanyRepository> Companies,
         Mock<IUnitOfWork> Uow,
         Mock<ICurrentTenant> Tenant,
         Mock<ICurrentCompany> Company,
@@ -59,7 +67,14 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         var bankAccounts = new Mock<ICompanyBankAccountRepository>();
         var cashRegisters = new Mock<ICashRegisterRepository>();
         var cashSessions = new Mock<ICashSessionRepository>();
+        var supplierCredits = new Mock<ISupplierCreditRepository>();
+        var preferences = new Mock<IOperationalPreferencesResolver>();
+        var companies = new Mock<ICompanyRepository>();
         var uow = new Mock<IUnitOfWork>();
+        companies
+            .Setup(c => c.GetByIdAsync(CompanyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CompanyEntity { Id = CompanyId, TenantId = TenantId, CurrencyCode = "USD" });
+        SetAllowWithoutPayable(preferences, false);
         var tenant = new Mock<ICurrentTenant>();
         var company = new Mock<ICurrentCompany>();
         var branch = new Mock<ICurrentBranch>();
@@ -92,6 +107,9 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             bankAccounts,
             cashRegisters,
             cashSessions,
+            supplierCredits,
+            preferences,
+            companies,
             uow,
             tenant,
             company,
@@ -99,6 +117,23 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             user
         );
     }
+
+    /// <summary>ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — política de empresa payables.allow_supplier_payment_without_payable.</summary>
+    private static void SetAllowWithoutPayable(Mock<IOperationalPreferencesResolver> preferences, bool allow) =>
+        preferences
+            .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new OperationalPreferences(
+                    null!,
+                    null!,
+                    new PurchasesPreferences(null, true, true, true, false),
+                    null!,
+                    null!,
+                    null!,
+                    null!,
+                    new PayablesPreferences(allow)
+                )
+            );
 
     private static RegisterSupplierPaymentCommandHandler BuildHandler(Mocks m) =>
         new(
@@ -109,6 +144,9 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             m.BankAccounts.Object,
             m.CashRegisters.Object,
             m.CashSessions.Object,
+            m.SupplierCredits.Object,
+            m.Preferences.Object,
+            m.Companies.Object,
             m.Uow.Object,
             m.Tenant.Object,
             m.Company.Object,
@@ -710,7 +748,7 @@ public sealed class RegisterSupplierPaymentUseCasesTests
     }
 
     [Fact]
-    public async Task Bloquea_desbalance_entre_medios_y_aplicaciones_y_hace_rollback()
+    public async Task Excedente_sin_confirmar_se_rechaza_sin_ningun_efecto()
     {
         var m = BuildMocks();
         var method = ActivePaymentMethod();
@@ -720,7 +758,9 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         SetupPayable(m, payable);
 
         var handler = BuildHandler(m);
-        // Medios suman 300, aplicación solo 250 — el agregado de dominio rechaza el desbalance.
+        // ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — medios 300, aplicación 250: 50 sin aplicar
+        // SIN confirmación explícita ⇒ rechazo antes de cualquier efecto (ni transacción, ni
+        // secuencia, ni SupplierPayment, ni SupplierCredit, ni CxP).
         var cmd = new RegisterSupplierPaymentCommand(
             SupplierId,
             new DateOnly(2026, 8, 28),
@@ -735,11 +775,20 @@ public sealed class RegisterSupplierPaymentUseCasesTests
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        result.Error.Should().Contain("50.00");
         m.SupplierPayments.Verify(
             r => r.AddAsync(It.IsAny<SupplierPayment>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
-        m.Uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+        m.SupplierCredits.Verify(
+            r => r.AddAsync(It.IsAny<SupplierCredit>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        m.Sequences.Verify(
+            s => s.CaptureNextAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        m.Uow.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
         m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
         payable.Installments[0].PaidAmount.Should().Be(0m);
     }
@@ -1274,5 +1323,177 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("La caja seleccionada no pertenece a la sucursal activa.");
         m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C
+    // ══════════════════════════════════════════════════════════════════════
+
+    /// <summary>Pago en efectivo de <paramref name="total"/> aplicando <paramref name="applied"/> (0 = sin CxP).</summary>
+    private static RegisterSupplierPaymentCommand AdvanceCommand(
+        PaymentMethod method,
+        CashRegister destination,
+        AccountsPayable? payable,
+        decimal total,
+        decimal applied,
+        bool confirm
+    ) =>
+        new(
+            SupplierId,
+            new DateOnly(2026, 8, 28),
+            total,
+            null,
+            new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, total) },
+            payable is null || applied == 0
+                ? []
+                : new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, applied) },
+            payable is null || applied == 0 ? [] : new[] { new SupplierPaymentAllocationLineRequest(0, 0, applied) },
+            confirm
+        );
+
+    private (Mocks m, PaymentMethod method, CashRegister destination, AccountsPayable payable) ArrangeAdvance(
+        decimal outstanding,
+        bool allowWithoutPayable
+    )
+    {
+        var m = BuildMocks();
+        SetAllowWithoutPayable(m.Preferences, allowWithoutPayable);
+        var method = ActivePaymentMethod();
+        var destination = ActiveDestination(CompanyId);
+        var payable = CreatePayableWithInstallment(outstanding);
+        SetupMethodAndDestination(m, method, destination);
+        SetupPayable(m, payable);
+        return (m, method, destination, payable);
+    }
+
+    [Fact]
+    public async Task Setting_OFF_pago_exacto_contra_CxP_confirma_sin_SupplierCredit_ni_consultar_la_politica()
+    {
+        var (m, method, destination, payable) = ArrangeAdvance(180m, allowWithoutPayable: false);
+
+        var result = await BuildHandler(m).Handle(AdvanceCommand(method, destination, payable, 180m, 180m, confirm: false), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.UnappliedAmount.Should().Be(0m);
+        result.Value.SupplierCreditId.Should().BeNull();
+        m.SupplierCredits.Verify(r => r.AddAsync(It.IsAny<SupplierCredit>(), It.IsAny<CancellationToken>()), Times.Never);
+        m.Preferences.Verify(p => p.ResolveAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Setting_OFF_pago_parcial_confirma_y_deja_la_cuota_parcialmente_pagada()
+    {
+        var (m, method, destination, payable) = ArrangeAdvance(180m, allowWithoutPayable: false);
+
+        var result = await BuildHandler(m).Handle(AdvanceCommand(method, destination, payable, 100m, 100m, confirm: false), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        payable.Installments[0].OutstandingAmount.Should().Be(80m);
+        m.SupplierCredits.Verify(r => r.AddAsync(It.IsAny<SupplierCredit>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Excedente_confirmado_crea_SupplierCredit_por_exactamente_el_remanente_con_o_sin_setting(bool setting)
+    {
+        var (m, method, destination, payable) = ArrangeAdvance(180m, allowWithoutPayable: setting);
+        SupplierCredit? added = null;
+        m.SupplierCredits
+            .Setup(r => r.AddAsync(It.IsAny<SupplierCredit>(), It.IsAny<CancellationToken>()))
+            .Callback<SupplierCredit, CancellationToken>((c, _) => added = c)
+            .Returns(Task.CompletedTask);
+
+        var result = await BuildHandler(m).Handle(AdvanceCommand(method, destination, payable, 200m, 180m, confirm: true), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.AppliedAmount.Should().Be(180m);
+        result.Value.UnappliedAmount.Should().Be(20m);
+        added.Should().NotBeNull();
+        added!.OriginalAmount.Should().Be(20m);
+        added.AvailableAmount.Should().Be(20m);
+        added.SourceSupplierPaymentId.Should().Be(result.Value.Id);
+        added.SourcePurchaseReturnId.Should().BeNull();
+        added.BranchId.Should().Be(BranchId);
+        added.SupplierId.Should().Be(SupplierId);
+        added.CompanyId.Should().Be(CompanyId);
+        added.DomainEvents.Should().BeEmpty("SupplierCredit no contabiliza al crearse desde un pago");
+        result.Value.SupplierCreditId.Should().Be(added.Id);
+        payable.Installments[0].OutstandingAmount.Should().Be(0m);
+        // El setting solo gobierna el pago SIN CxP: el anticipo por sobrepago no lo consulta.
+        m.Preferences.Verify(p => p.ResolveAsync(It.IsAny<CancellationToken>()), Times.Never);
+        m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Setting_OFF_cero_aplicaciones_se_rechaza_sin_ningun_efecto()
+    {
+        var (m, method, destination, _) = ArrangeAdvance(180m, allowWithoutPayable: false);
+
+        var result = await BuildHandler(m).Handle(AdvanceCommand(method, destination, null, 200m, 0m, confirm: true), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("sin una cuenta por pagar");
+        m.Uow.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+        m.SupplierPayments.Verify(r => r.AddAsync(It.IsAny<SupplierPayment>(), It.IsAny<CancellationToken>()), Times.Never);
+        m.SupplierCredits.Verify(r => r.AddAsync(It.IsAny<SupplierCredit>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Setting_ON_cero_aplicaciones_confirmado_crea_pago_y_SupplierCredit_por_el_total()
+    {
+        var (m, method, destination, _) = ArrangeAdvance(180m, allowWithoutPayable: true);
+        SupplierCredit? added = null;
+        m.SupplierCredits
+            .Setup(r => r.AddAsync(It.IsAny<SupplierCredit>(), It.IsAny<CancellationToken>()))
+            .Callback<SupplierCredit, CancellationToken>((c, _) => added = c)
+            .Returns(Task.CompletedTask);
+
+        var result = await BuildHandler(m).Handle(AdvanceCommand(method, destination, null, 200m, 0m, confirm: true), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.AppliedAmount.Should().Be(0m);
+        result.Value.UnappliedAmount.Should().Be(200m);
+        added!.OriginalAmount.Should().Be(200m);
+        m.AccountsPayables.Verify(
+            a => a.GetByInstallmentIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Setting_ON_cero_aplicaciones_sin_confirmar_se_rechaza_sin_efectos()
+    {
+        var (m, method, destination, _) = ArrangeAdvance(180m, allowWithoutPayable: true);
+
+        var result = await BuildHandler(m).Handle(AdvanceCommand(method, destination, null, 200m, 0m, confirm: false), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        m.Uow.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+        m.SupplierCredits.Verify(r => r.AddAsync(It.IsAny<SupplierCredit>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public void Validator_acepta_cero_aplicaciones_pero_rechaza_aplicaciones_mayores_al_total()
+    {
+        var validator = new RegisterSupplierPaymentCommandValidator();
+        var methods = new[] { new SupplierPaymentMethodLineRequest(Guid.NewGuid(), null, Guid.NewGuid(), 100m) };
+
+        validator
+            .Validate(new RegisterSupplierPaymentCommand(SupplierId, new DateOnly(2026, 8, 28), 100m, null, methods, [], [], true))
+            .IsValid.Should().BeTrue();
+        validator
+            .Validate(
+                new RegisterSupplierPaymentCommand(
+                    SupplierId,
+                    new DateOnly(2026, 8, 28),
+                    100m,
+                    null,
+                    methods,
+                    new[] { new SupplierPaymentApplicationLineRequest(Guid.NewGuid(), 120m) },
+                    new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) }
+                )
+            )
+            .IsValid.Should().BeFalse();
     }
 }

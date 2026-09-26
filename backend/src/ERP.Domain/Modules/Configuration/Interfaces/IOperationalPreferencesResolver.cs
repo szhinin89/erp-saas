@@ -32,7 +32,10 @@ public sealed record OperationalPreferences(
     InventoryPreferences Inventory,
     PrintingPreferences Printing,
     ElectronicDocumentsPreferences ElectronicDocuments,
-    NotificationsPreferences Notifications
+    NotificationsPreferences Notifications,
+    // ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — aditivo al final: el resolver real siempre lo
+    // informa; null (construcciones anteriores/tests) equivale a la política por defecto (false).
+    PayablesPreferences? Payables = null
 );
 
 public sealed record SalesPosPreferences(
@@ -63,6 +66,9 @@ public sealed record PurchasesPreferences(
     bool AllowManualCostChange,
     bool RequireReasonForCostChange
 );
+
+/// <summary>ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — Cuentas por pagar / Pagos a proveedores.</summary>
+public sealed record PayablesPreferences(bool AllowSupplierPaymentWithoutPayable);
 
 public sealed record InventoryPreferences(
     bool AllowNegativeStock,

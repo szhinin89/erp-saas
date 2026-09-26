@@ -89,6 +89,49 @@ public sealed class SupplierCreditRepository : ISupplierCreditRepository
             .Select(x => (Guid?)x.Id)
             .FirstOrDefaultAsync(ct);
 
+    public Task<Guid?> GetIdBySourceSupplierPaymentIdAsync(
+        Guid tenantId,
+        Guid sourceSupplierPaymentId,
+        CancellationToken ct = default
+    ) =>
+        _db
+            .SupplierCredits.ForOperationalScope(tenantId, _company)
+            .AsNoTracking()
+            .Where(x => x.SourceSupplierPaymentId == sourceSupplierPaymentId)
+            .Select(x => (Guid?)x.Id)
+            .FirstOrDefaultAsync(ct);
+
+    public async Task<IReadOnlyDictionary<Guid, string>> GetSourceDocumentNumbersAsync(
+        Guid tenantId,
+        IReadOnlyCollection<Guid> supplierCreditIds,
+        CancellationToken ct = default
+    )
+    {
+        if (supplierCreditIds.Count == 0)
+            return new Dictionary<Guid, string>();
+
+        var credits = _db
+            .SupplierCredits.ForOperationalScope(tenantId, _company)
+            .AsNoTracking()
+            .Where(c => supplierCreditIds.Contains(c.Id));
+
+        var fromReturns = await (
+            from c in credits
+            join r in _db.PurchaseReturns.AsNoTracking() on c.SourcePurchaseReturnId equals r.Id
+            where r.TenantId == tenantId && r.ReturnNumber != null
+            select new { c.Id, Number = r.ReturnNumber! }
+        ).ToListAsync(ct);
+
+        var fromPayments = await (
+            from c in credits
+            join p in _db.SupplierPayments.AsNoTracking() on c.SourceSupplierPaymentId equals p.Id
+            where p.TenantId == tenantId
+            select new { c.Id, Number = p.ReceiptNumber ?? p.SystemNumber }
+        ).ToListAsync(ct);
+
+        return fromReturns.Concat(fromPayments).ToDictionary(x => x.Id, x => x.Number);
+    }
+
     public async Task<(IReadOnlyList<SupplierCredit> Items, int Total)> GetPagedAsync(
         Guid tenantId,
         int page,

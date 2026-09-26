@@ -197,6 +197,7 @@ function buildOperationalPreferences(
       allowManualCostChange: true,
       requireReasonForCostChange: false,
     },
+    payables: { allowSupplierPaymentWithoutPayable: false },
     inventory: {
       allowNegativeStock: false,
       requireReasonForAdjustment: true,

@@ -6,7 +6,11 @@ import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
-import { supplierCreditService, type SupplierCreditDto } from "../api/supplierCreditService";
+import {
+  supplierCreditService,
+  type SupplierCreditDto,
+} from "../api/supplierCreditService";
+import { formatSupplierCreditOrigin } from "../utils/supplierCreditOrigin";
 import { ZHNumberValue } from "../../../components/zh/ZHNumberValue";
 
 const PAGE_SIZE = 25;
@@ -52,6 +56,11 @@ export function SupplierCreditListPage() {
       render: (row) => row.supplierId,
     },
     {
+      key: "origin",
+      header: "Origen",
+      render: (row) => formatSupplierCreditOrigin(row),
+    },
+    {
       key: "currencyCode",
       header: "Moneda",
       render: (row) => row.currencyCode,
@@ -95,7 +104,7 @@ export function SupplierCreditListPage() {
   return (
     <PageShell
       title="Créditos de Proveedor"
-      subtitle="Saldo disponible originado por devoluciones de compra — aplicación y reembolso"
+      subtitle="Saldo a favor originado por devoluciones de compra o anticipos de pagos a proveedores — aplicación y reembolso"
       action={
         <ZHBtn
           type="button"

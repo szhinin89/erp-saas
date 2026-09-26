@@ -8,13 +8,13 @@ Este documento **nunca se borra**. Los hallazgos resueltos se marcan como `Resue
 
 ## Dashboard Health Summary
 
-- Hallazgos abiertos: 2
+- Hallazgos abiertos: 3
 - Hallazgos resueltos: 0
-- Hallazgos críticos: 0
+- Hallazgos críticos: 1
 - Hallazgos importantes: 2
 - Hallazgos menores: 0
-- Última auditoría: 2026-07-24
-- Estado general: Advertencia
+- Última auditoría: 2026-09-26
+- Estado general: Crítico
 
 ---
 
@@ -43,6 +43,18 @@ Este documento **nunca se borra**. Los hallazgos resueltos se marcan como `Resue
 - **Responsable:** Decisión conjunta
 - **Fecha de resolución:** —
 - **Observaciones:** Ninguna corrección automática — requiere decisión explícita del usuario sobre documentar vs. archivar/eliminar.
+
+### DH-003 — `render-dashboard.ps1` falla: lee `docs/adr`, eliminado al consolidar la documentación
+
+- **Fecha de detección:** 2026-09-26 (entrega ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C-PROD-CLOSE)
+- **Estado:** Abierto
+- **Prioridad:** 🟥 Crítico
+- **Descripción:** `tools/dashboard/render-dashboard.ps1` (línea ~2936) hace `Get-ChildItem (Join-Path $ProjectRoot "docs\adr")`. Esa carpeta se eliminó en `8e925b70` (docs: consolidate project rules…); los ADR viven hoy en `docs/decisions/`. `run-dashboard-final.ps1` aborta con "render-dashboard.ps1 failed" después de actualizar los JSON de `data/`, sin generar `index.html`.
+- **Impacto:** El Dashboard no puede regenerarse. Una corrida deja los `data/*.json` actualizados y el `index.html` viejo: estado inconsistente. En esta entrega se revirtieron las salidas parciales, así que el repo queda coherente, sin regenerar.
+- **Recomendación:** Apuntar el renderer a `docs/decisions` (o hacer opcional la lectura de ADR) en una tarea propia del pipeline, y luego ejecutar `run-dashboard-final.ps1` completo. Eso también cerraría DH-001.
+- **Responsable:** Pipeline (tarea dedicada)
+- **Fecha de resolución:** —
+- **Observaciones:** No se corrigió en 02C (hallazgo Crítico preexistente, fuera de alcance). Bloquea la regeneración pedida tras 02C.
 
 ---
 

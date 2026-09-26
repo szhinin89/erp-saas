@@ -42,6 +42,28 @@ public interface ISupplierCreditRepository
         CancellationToken ct = default
     );
 
+    /// <summary>
+    /// ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — mismo patrón exacto que
+    /// <see cref="GetIdBySourcePurchaseReturnIdAsync"/> (descubrimiento sin tracking antes de Lock
+    /// B), para el anticipo originado por un <c>SupplierPayment</c>.
+    /// </summary>
+    Task<Guid?> GetIdBySourceSupplierPaymentIdAsync(
+        Guid tenantId,
+        Guid sourceSupplierPaymentId,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
+    /// ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — número visible del documento de origen de cada
+    /// crédito (número de devolución o número del pago a proveedor), solo lectura para los DTOs.
+    /// Créditos cuyo origen no puede resolverse simplemente no aparecen en el diccionario.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, string>> GetSourceDocumentNumbersAsync(
+        Guid tenantId,
+        IReadOnlyCollection<Guid> supplierCreditIds,
+        CancellationToken ct = default
+    );
+
     /// <summary>P0-02 Fase 11 — listado paginado para <c>GetSupplierCreditListQuery</c>, mismo patrón que <c>IPurchaseReturnRepository.GetPagedAsync</c>.</summary>
     Task<(IReadOnlyList<SupplierCredit> Items, int Total)> GetPagedAsync(
         Guid tenantId,

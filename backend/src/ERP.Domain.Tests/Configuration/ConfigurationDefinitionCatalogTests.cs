@@ -65,6 +65,7 @@ public sealed class ConfigurationDefinitionCatalogTests
         yield return new object[] { OrgSettingKeys.Purchases.UpdateCostOnConfirm };
         yield return new object[] { OrgSettingKeys.Purchases.AllowManualCostChange };
         yield return new object[] { OrgSettingKeys.Purchases.RequireReasonForCostChange };
+        yield return new object[] { OrgSettingKeys.Payables.AllowSupplierPaymentWithoutPayable };
         yield return new object[] { OrgSettingKeys.Inventory.AllowNegativeStock };
         yield return new object[] { OrgSettingKeys.Inventory.RequireReasonForAdjustment };
         yield return new object[] { OrgSettingKeys.Inventory.RequireApprovalForLargeAdjustment };

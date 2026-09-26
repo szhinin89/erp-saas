@@ -59,6 +59,20 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
     /// </summary>
     public bool? ReversalCashNotDeliveredConfirmed { get; private set; }
 
+    /// <summary>
+    /// ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — derivado, nunca persistido: Σ
+    /// <see cref="SupplierPaymentApplicationLine.AmountApplied"/>.
+    /// </summary>
+    public decimal AppliedAmount => _applicationLines.Sum(l => l.AmountApplied);
+
+    /// <summary>
+    /// ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — derivado, nunca persistido:
+    /// <see cref="TotalAmount"/> − <see cref="AppliedAmount"/>. Es exactamente el
+    /// <c>SupplierCredit.OriginalAmount</c> que Application crea con origen en este pago (SSOT del
+    /// anticipo — nunca se duplica en otra tabla).
+    /// </summary>
+    public decimal UnappliedAmount => TotalAmount - AppliedAmount;
+
     /// <summary>Número visible en pantallas/reportes: <see cref="ReceiptNumber"/> si existe, si no <see cref="SystemNumber"/>.</summary>
     public string DisplayNumber => string.IsNullOrWhiteSpace(ReceiptNumber) ? SystemNumber : ReceiptNumber;
 
@@ -75,12 +89,20 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
 
     /// <summary>
     /// Construye y confirma un pago a proveedor completo en una sola llamada. Valida, en orden:
-    /// campos obligatorios de cabecera; al menos un medio, una aplicación y una allocation; que la
-    /// suma de medios, la suma de aplicaciones y la suma de allocations sean todas exactamente
-    /// <paramref name="totalAmount"/>; que cada medio quede distribuido al 100% entre allocations; y
-    /// que cada aplicación quede cubierta al 100% entre allocations. Cualquier violación lanza antes
-    /// de construir el agregado — nunca devuelve un <see cref="SupplierPayment"/> a medias.
+    /// campos obligatorios de cabecera; al menos un medio; que la suma de medios sea exactamente
+    /// <paramref name="totalAmount"/>; que la suma de aplicaciones no lo supere; que cada aplicación
+    /// quede cubierta al 100% entre allocations y que ningún medio se distribuya por encima de su
+    /// monto. Cualquier violación lanza antes de construir el agregado — nunca devuelve un
+    /// <see cref="SupplierPayment"/> a medias.
     /// </summary>
+    /// <remarks>
+    /// ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — Σ aplicaciones ≤ total. El remanente
+    /// (<see cref="UnappliedAmount"/>) exige <paramref name="unappliedAmountConfirmed"/> = true
+    /// (confirmación explícita del usuario, revalidada aquí — el backend nunca confía solo en el
+    /// frontend). Un pago sin ninguna aplicación exige además <paramref name="allowWithoutPayable"/>
+    /// = true (política de la empresa, resuelta por Application desde <c>org_settings</c>). El
+    /// sobrepago con aplicaciones NO depende de esa política: el anticipo existe siempre.
+    /// </remarks>
     public static SupplierPayment Create(
         Guid tenantId,
         Guid companyId,
@@ -93,7 +115,9 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
         IReadOnlyList<SupplierPaymentMethodLineInput> methodLines,
         IReadOnlyList<SupplierPaymentApplicationLineInput> applicationLines,
         IReadOnlyList<SupplierPaymentAllocationInput> allocations,
-        Guid createdBy
+        Guid createdBy,
+        bool unappliedAmountConfirmed = false,
+        bool allowWithoutPayable = false
     )
     {
         if (tenantId == Guid.Empty)
@@ -113,14 +137,21 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
                 "El pago debe tener al menos un medio de pago.",
                 nameof(methodLines)
             );
-        if (applicationLines is null || applicationLines.Count == 0)
+        applicationLines ??= [];
+        allocations ??= [];
+        if (applicationLines.Count == 0 && !allowWithoutPayable)
             throw new ArgumentException(
-                "El pago debe tener al menos una aplicación a cuota.",
+                "La empresa no permite registrar pagos a proveedores sin una cuenta por pagar: seleccione al menos una cuota.",
                 nameof(applicationLines)
             );
-        if (allocations is null || allocations.Count == 0)
+        if (applicationLines.Count > 0 && allocations.Count == 0)
             throw new ArgumentException(
                 "El pago debe tener al menos una distribución medio↔cuota.",
+                nameof(allocations)
+            );
+        if (applicationLines.Count == 0 && allocations.Count > 0)
+            throw new ArgumentException(
+                "Un pago sin aplicaciones a cuota no puede tener distribuciones medio↔cuota.",
                 nameof(allocations)
             );
 
@@ -193,6 +224,10 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
         }
 
         payment.EnsureBalanced();
+        if (payment.UnappliedAmount > 0 && !unappliedAmountConfirmed)
+            throw new InvalidOperationException(
+                $"El pago deja {payment.UnappliedAmount.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)} sin aplicar: debe confirmar explícitamente que ese saldo quedará como anticipo a favor del proveedor."
+            );
         payment.SetCreated(createdBy);
 
         payment.RaiseDomainEvent(
@@ -209,7 +244,8 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
                         l.CashRegisterId,
                         l.Amount
                     ))
-                    .ToList()
+                    .ToList(),
+                payment.AppliedAmount
             )
         );
 
@@ -317,15 +353,19 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
                         l.AccountsPayableInstallmentId,
                         l.AmountApplied
                     ))
-                    .ToList()
+                    .ToList(),
+                AppliedAmount
             )
         );
     }
 
     /// <summary>
-    /// Invariante de agregado completo: suma de medios, suma de aplicaciones y suma de allocations
-    /// deben ser todas exactamente <see cref="TotalAmount"/>; cada medio debe quedar distribuido al
-    /// 100% entre allocations; cada aplicación debe quedar cubierta al 100% entre allocations.
+    /// Invariante de agregado completo. ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C: Σ medios ==
+    /// <see cref="TotalAmount"/>; Σ aplicaciones ≤ <see cref="TotalAmount"/>; Σ allocations == Σ
+    /// aplicaciones; cada aplicación cubierta al 100% entre allocations; ningún medio distribuido
+    /// por encima de su monto. La porción de cada medio que NO se distribuye a ninguna cuota es la
+    /// que financió el remanente no aplicado (anticipo) — derivable sin otra tabla:
+    /// <c>MethodLine.Amount − Σ allocations(medio)</c>.
     /// </summary>
     private void EnsureBalanced()
     {
@@ -336,15 +376,15 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
             );
 
         var totalApplications = _applicationLines.Sum(l => l.AmountApplied);
-        if (totalApplications != TotalAmount)
+        if (totalApplications > TotalAmount)
             throw new InvalidOperationException(
-                $"La suma de las aplicaciones a cuota ({totalApplications:F2}) no coincide con el total del pago ({TotalAmount:F2})."
+                $"La suma de las aplicaciones a cuota ({totalApplications:F2}) supera el total del pago ({TotalAmount:F2})."
             );
 
         var totalAllocations = _allocationLines.Sum(l => l.Amount);
-        if (totalAllocations != TotalAmount)
+        if (totalAllocations != totalApplications)
             throw new InvalidOperationException(
-                $"La suma de las distribuciones medio↔cuota ({totalAllocations:F2}) no coincide con el total del pago ({TotalAmount:F2})."
+                $"La suma de las distribuciones medio↔cuota ({totalAllocations:F2}) no coincide con la suma aplicada a cuotas ({totalApplications:F2})."
             );
 
         foreach (var methodLine in _methodLines)
@@ -352,9 +392,9 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
             var distributed = _allocationLines
                 .Where(a => a.SupplierPaymentMethodLineId == methodLine.Id)
                 .Sum(a => a.Amount);
-            if (distributed != methodLine.Amount)
+            if (distributed > methodLine.Amount)
                 throw new InvalidOperationException(
-                    $"El medio de pago {methodLine.Id} no está distribuido al 100% entre las cuotas aplicadas."
+                    $"El medio de pago {methodLine.Id} está distribuido por encima de su monto."
                 );
         }
 

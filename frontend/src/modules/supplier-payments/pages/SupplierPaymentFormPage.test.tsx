@@ -25,7 +25,7 @@ vi.mock("../api/pendingPayablesFacade", () => ({
 }));
 
 vi.mock("../api/supplierPaymentService", () => ({
-  supplierPaymentService: { register: vi.fn() },
+  supplierPaymentService: { register: vi.fn(), getPolicy: vi.fn() },
 }));
 
 vi.mock("../../sales/facades/paymentMethodLookupFacade", () => ({
@@ -142,7 +142,12 @@ function registerPayload() {
   return vi.mocked(supplierPaymentService.register).mock.calls.at(-1)?.[0];
 }
 
+function mockAllowWithoutPayable(allow: boolean) {
+  vi.mocked(supplierPaymentService.getPolicy).mockResolvedValue({ allowWithoutPayable: allow });
+}
+
 beforeEach(() => {
+  mockAllowWithoutPayable(false);
   vi.mocked(cajaService.getCashRegisters).mockResolvedValue([{ id: "cash-1", name: "Caja Principal", isActive: true, accountingAccountId: "acc-2" } as CashRegisterDto]);
   vi.mocked(usePermissionsUi).mockReturnValue({
     canShow: () => true,
@@ -316,12 +321,87 @@ describe("SupplierPaymentFormPage — cartera como única fuente de applicationL
 
     fireEvent.click(screen.getByText("Registrar pago"));
 
-    // La validación Zod (superRefine: Σmedios === Σcuotas) bloquea el submit — deja tiempo a que
+    // La validación Zod (superRefine: Σcuotas ≤ Σmedios, 02C) bloquea el submit — deja tiempo a que
     // el resolver async resuelva y luego confirma que el modal de confirmación nunca se abre y
     // el backend nunca se llama con montos descuadrados.
     await new Promise((resolve) => setTimeout(resolve, 100));
     expect(screen.queryByText("Confirmar y registrar")).toBeNull();
     expect(supplierPaymentService.register).not.toHaveBeenCalled();
+  });
+});
+
+describe("SupplierPaymentFormPage — 02C remanente no aplicado (anticipo)", () => {
+  it("excedente: el modal muestra aplicado/anticipo y solo al confirmar envía confirmUnappliedAmount", async () => {
+    vi.mocked(pendingPayablesFacade.listPendingInstallments).mockResolvedValue([
+      installment({ outstandingAmount: 180 }),
+    ]);
+    renderPage();
+    await selectSupplier();
+
+    fireEvent.click(await screen.findByText("Aplicar saldo completo"));
+    await fillMethodLine("pm-1", "200");
+    fireEvent.click(screen.getByText("Registrar pago"));
+
+    expect(await screen.findByText("El pago supera el saldo que puede aplicarse en $20.00.")).toBeTruthy();
+    fireEvent.click(screen.getByText("Confirmar pago"));
+
+    await waitFor(() => expect(supplierPaymentService.register).toHaveBeenCalled());
+    const payload = registerPayload();
+    expect(payload?.totalAmount).toBe(200);
+    expect(payload?.applicationLines).toEqual([{ accountsPayableInstallmentId: "inst-1", amountApplied: 180 }]);
+    expect(payload?.allocations).toEqual([{ methodLineIndex: 0, applicationLineIndex: 0, amount: 180 }]);
+    expect(payload?.confirmUnappliedAmount).toBe(true);
+  });
+
+  it("excedente: cancelar el modal no registra nada", async () => {
+    vi.mocked(pendingPayablesFacade.listPendingInstallments).mockResolvedValue([
+      installment({ outstandingAmount: 180 }),
+    ]);
+    renderPage();
+    await selectSupplier();
+
+    fireEvent.click(await screen.findByText("Aplicar saldo completo"));
+    await fillMethodLine("pm-1", "200");
+    fireEvent.click(screen.getByText("Registrar pago"));
+    await screen.findByText("Confirmar pago");
+    const cancelButtons = screen.getAllByText("Cancelar");
+    fireEvent.click(cancelButtons[cancelButtons.length - 1]);
+
+    await waitFor(() => expect(screen.queryByText("Confirmar pago")).toBeNull());
+    expect(supplierPaymentService.register).not.toHaveBeenCalled();
+  });
+
+  it("pago exacto no pide confirmación de anticipo ni envía confirmUnappliedAmount", async () => {
+    vi.mocked(pendingPayablesFacade.listPendingInstallments).mockResolvedValue([installment({ outstandingAmount: 180 })]);
+    renderPage();
+    await selectSupplier();
+
+    fireEvent.click(await screen.findByText("Aplicar saldo completo"));
+    await fillMethodLine("pm-1", "180");
+    fireEvent.click(screen.getByText("Registrar pago"));
+    fireEvent.click(await screen.findByText("Confirmar y registrar"));
+
+    await waitFor(() => expect(supplierPaymentService.register).toHaveBeenCalled());
+    expect(registerPayload()?.confirmUnappliedAmount).toBe(false);
+  });
+
+  it("setting ON: permite registrar sin cuotas, avisa que queda pendiente de aplicar y confirma", async () => {
+    mockAllowWithoutPayable(true);
+    vi.mocked(pendingPayablesFacade.listPendingInstallments).mockResolvedValue([]);
+    renderPage();
+    await selectSupplier();
+    await waitFor(() => expect(supplierPaymentService.getPolicy).toHaveBeenCalled());
+
+    await fillMethodLine("pm-1", "200");
+    expect((await screen.findAllByText("Este pago quedará pendiente de aplicar.")).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByText("Registrar pago"));
+    fireEvent.click(await screen.findByText("Confirmar pago"));
+
+    await waitFor(() => expect(supplierPaymentService.register).toHaveBeenCalled());
+    const payload = registerPayload();
+    expect(payload?.applicationLines).toEqual([]);
+    expect(payload?.allocations).toEqual([]);
+    expect(payload?.confirmUnappliedAmount).toBe(true);
   });
 });
 

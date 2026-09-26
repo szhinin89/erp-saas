@@ -168,6 +168,21 @@ public static class OrgSettingKeys
     }
 
     /// <summary>
+    /// ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — preferencias operativas de Cuentas por pagar /
+    /// Pagos a proveedores. Propietario: Empresa (scope=Company).
+    /// </summary>
+    public static class Payables
+    {
+        /// <summary>
+        /// "Permitir registrar pagos a proveedores sin una CxP existente". Ausencia de fila → false.
+        /// Solo gobierna el pago SIN ninguna aplicación a cuota; el anticipo por sobrepago existe
+        /// siempre, con o sin esta política.
+        /// </summary>
+        public const string AllowSupplierPaymentWithoutPayable =
+            "payables.allow_supplier_payment_without_payable";
+    }
+
+    /// <summary>
     /// CONFIG-DYNAMIC-OPERATIONS-01: preferencias operativas de Inventario. Propietario: Empresa
     /// (scope=Company).
     /// </summary>

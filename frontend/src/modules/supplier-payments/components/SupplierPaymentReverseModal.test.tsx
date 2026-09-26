@@ -27,6 +27,8 @@ function samplePayment(): SupplierPaymentDto {
     branchId: "br-1",
     paymentDate: "2026-08-28",
     totalAmount: 300,
+    appliedAmount: 300,
+    unappliedAmount: 0,
     systemNumber: "00000001",
     receiptNumber: null,
     displayNumber: "00000001",

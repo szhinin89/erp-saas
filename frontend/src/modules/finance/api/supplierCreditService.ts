@@ -18,12 +18,24 @@ export interface SupplierCreditDto {
   supplierId: string;
   branchId: string;
   currencyCode: string;
-  sourcePurchaseReturnId: string;
+  /**
+   * ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — origen generalizado (exactamente uno):
+   * devolución de compra o remanente no aplicado de un pago a proveedor (anticipo).
+   */
+  sourceType: SupplierCreditSourceType;
+  sourcePurchaseReturnId: string | null;
+  sourceSupplierPaymentId: string | null;
+  /** Número visible del documento de origen (solo en consultas; null en respuestas de comandos). */
+  sourceDocumentNumber: string | null;
   originalAmount: number;
   availableAmount: number;
   isOpen: boolean;
   movements: SupplierCreditMovementDto[];
 }
+
+/** Espejo exacto de SupplierCreditSourceType — backend (derivado, nunca persistido). */
+export type SupplierCreditSourceType = "PurchaseReturn" | "SupplierPayment";
+
 
 export interface SupplierCreditListResultDto {
   items: SupplierCreditDto[];

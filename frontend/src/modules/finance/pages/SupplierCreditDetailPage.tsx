@@ -14,6 +14,7 @@ import {
   type SupplierCreditDto,
   type SupplierCreditMovementDto,
 } from "../api/supplierCreditService";
+import { formatSupplierCreditOrigin } from "../utils/supplierCreditOrigin";
 import { ApplySupplierCreditModal } from "../components/ApplySupplierCreditModal";
 import { RegisterSupplierCreditRefundModal } from "../components/RegisterSupplierCreditRefundModal";
 import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
@@ -25,6 +26,7 @@ const MOVEMENT_TYPE_LABEL: Record<string, string> = {
   Refund: "Reembolso",
   ReversalOfRefund: "Reversa de reembolso",
   SourceReturnCancelled: "Anulación del origen",
+  SourcePaymentReversed: "Reversa del pago de origen",
 };
 
 /**
@@ -162,7 +164,8 @@ export function SupplierCreditDetailPage() {
         const isReversal =
           m.movementType === "ReversalOfApplication" ||
           m.movementType === "ReversalOfRefund" ||
-          m.movementType === "SourceReturnCancelled";
+          m.movementType === "SourceReturnCancelled" ||
+          m.movementType === "SourcePaymentReversed";
         if (m.movementType === "Application" && !alreadyReversed) {
           return (
             <ZHBtn
@@ -200,7 +203,7 @@ export function SupplierCreditDetailPage() {
   return (
     <PageShell
       title={`Crédito de proveedor — ${credit.supplierId}`}
-      subtitle={`Moneda: ${credit.currencyCode}`}
+      subtitle={`Origen: ${formatSupplierCreditOrigin(credit)} · Moneda: ${credit.currencyCode}`}
       action={
         <ZHBtn type="button" variant="ghost" onClick={() => navigate("/suppliers/credits")}>
           Volver al listado

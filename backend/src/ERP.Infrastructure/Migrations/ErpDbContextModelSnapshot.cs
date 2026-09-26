@@ -11628,9 +11628,13 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("original_amount");
 
-                    b.Property<Guid>("SourcePurchaseReturnId")
+                    b.Property<Guid?>("SourcePurchaseReturnId")
                         .HasColumnType("uuid")
                         .HasColumnName("source_purchase_return_id");
+
+                    b.Property<Guid?>("SourceSupplierPaymentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_supplier_payment_id");
 
                     b.Property<Guid>("SupplierId")
                         .HasColumnType("uuid")
@@ -11662,6 +11666,8 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasIndex("SourcePurchaseReturnId");
 
+                    b.HasIndex("SourceSupplierPaymentId");
+
                     b.HasIndex("SupplierId");
 
                     b.HasIndex("TenantId", "CompanyId")
@@ -11671,10 +11677,18 @@ namespace ERP.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("uq_supplier_credits_tenant_source_purchase_return");
 
+                    b.HasIndex("TenantId", "SourceSupplierPaymentId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_supplier_credits_tenant_source_supplier_payment")
+                        .HasFilter("\"source_supplier_payment_id\" IS NOT NULL");
+
                     b.HasIndex("TenantId", "SupplierId")
                         .HasDatabaseName("ix_supplier_credits_tenant_supplier");
 
-                    b.ToTable("supplier_credits", (string)null);
+                    b.ToTable("supplier_credits", null, t =>
+                        {
+                            t.HasCheckConstraint("chk_supplier_credits_exactly_one_source", "(\"source_purchase_return_id\" IS NOT NULL AND \"source_supplier_payment_id\" IS NULL) OR (\"source_purchase_return_id\" IS NULL AND \"source_supplier_payment_id\" IS NOT NULL)");
+                        });
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.SupplierCreditAudit", b =>
@@ -17930,8 +17944,12 @@ namespace ERP.Infrastructure.Migrations
                     b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchaseReturn", null)
                         .WithMany()
                         .HasForeignKey("SourcePurchaseReturnId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP.Domain.Modules.Payables.Entities.SupplierPayment", null)
+                        .WithMany()
+                        .HasForeignKey("SourceSupplierPaymentId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("ERP.Domain.MasterData.Entities.BusinessPartner", null)
                         .WithMany()

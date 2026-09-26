@@ -150,6 +150,13 @@ public sealed class OperationalPreferencesResolver : IOperationalPreferencesReso
             )
         );
 
+        var payables = new PayablesPreferences(
+            AllowSupplierPaymentWithoutPayable: Bool(
+                OrgSettingKeys.Payables.AllowSupplierPaymentWithoutPayable,
+                false
+            )
+        );
+
         var inventory = new InventoryPreferences(
             AllowNegativeStock: Bool(OrgSettingKeys.Inventory.AllowNegativeStock, false),
             RequireReasonForAdjustment: Bool(
@@ -217,7 +224,8 @@ public sealed class OperationalPreferencesResolver : IOperationalPreferencesReso
             inventory,
             printing,
             electronicDocuments,
-            notifications
+            notifications,
+            payables
         );
     }
 

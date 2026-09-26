@@ -575,6 +575,23 @@ if (args.Contains("backfill-sales-invoice-posting-rule"))
     return;
 }
 
+// ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C-PROD-CLOSE (ADR-035): same explicit maintenance as
+// backfill-sales-invoice-posting-rule, including Production. Dry-run by default; add `apply` to
+// update only the exact previous canonical Payables/SupplierPayment* rules. Custom rules are
+// reported (never overwritten) and stay fail-closed for payments with an unapplied amount.
+// `dotnet run -- backfill-supplier-payment-posting-rules [apply]`. Exits without starting the host.
+if (args.Contains("backfill-supplier-payment-posting-rules"))
+{
+    using var scope = app.Services.CreateScope();
+    var service = scope.ServiceProvider.GetRequiredService<ERP.Infrastructure.Seeding.AccountingChartBackfillService>();
+    var apply = args.Contains("apply");
+    var rows = await service.RunSupplierPaymentRuleMaintenanceAsync(apply);
+    Console.WriteLine($"[backfill-supplier-payment-posting-rules] Mode={(apply ? "APPLY" : "DRY-RUN")} Rules={rows.Count}");
+    foreach (var row in rows)
+        Console.WriteLine($"Tenant={row.TenantId} Company={row.CompanyId} Payables/{row.FactType}: {row.Diagnostic}");
+    return;
+}
+
 // Bootstrap global: único flujo oficial para datos de instalación (navegación + InstallData).
 // Ver ERP.Infrastructure.Seeding.Global.GlobalBootstrapOrchestrator.
 using (var globalBootstrapScope = app.Services.CreateScope())

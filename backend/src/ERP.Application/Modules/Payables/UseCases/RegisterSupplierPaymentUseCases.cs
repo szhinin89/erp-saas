@@ -3,11 +3,15 @@ using ERP.Application.Modules.Caja;
 using ERP.Application.Modules.Payables.Exceptions;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Enums;
+using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Caja.Interfaces;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Finance.Interfaces;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
+using ERP.Domain.Modules.Purchases.Entities;
+using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Interfaces;
@@ -57,6 +61,9 @@ public sealed record SupplierPaymentAllocationLineRequest(
 /// SUPPLIER-PAYMENTS-REGISTER-15C — contrato HTTP de <c>POST /api/v1/supplier-payments</c>. Nunca
 /// incluye TenantId/CompanyId/BranchId — vienen del contexto autenticado, nunca del body (regla
 /// global de multi-tenant). El controller lo mapea 1:1 a <see cref="RegisterSupplierPaymentCommand"/>.
+/// ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — <see cref="ConfirmUnappliedAmount"/>: confirmación
+/// explícita del usuario de que el remanente no aplicado (TotalAmount − Σ aplicaciones) quedará como
+/// anticipo a favor del proveedor. Obligatoria si hay remanente; el backend la revalida siempre.
 /// </summary>
 public sealed record RegisterSupplierPaymentRequest(
     Guid SupplierId,
@@ -64,8 +71,9 @@ public sealed record RegisterSupplierPaymentRequest(
     decimal TotalAmount,
     string? ReceiptNumber,
     IReadOnlyList<SupplierPaymentMethodLineRequest> MethodLines,
-    IReadOnlyList<SupplierPaymentApplicationLineRequest> ApplicationLines,
-    IReadOnlyList<SupplierPaymentAllocationLineRequest> Allocations
+    IReadOnlyList<SupplierPaymentApplicationLineRequest>? ApplicationLines,
+    IReadOnlyList<SupplierPaymentAllocationLineRequest>? Allocations,
+    bool ConfirmUnappliedAmount = false
 );
 
 // ── DTO de salida ─────────────────────────────────────────────────────────
@@ -132,7 +140,11 @@ public sealed record SupplierPaymentDto(
     Guid? ReversedBy = null,
     string? ReverseReason = null,
     string? ReversalBankReason = null,
-    bool? ReversalCashNotDeliveredConfirmed = null
+    bool? ReversalCashNotDeliveredConfirmed = null,
+    // ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — derivados (nunca persistidos) + anticipo originado.
+    decimal AppliedAmount = 0m,
+    decimal UnappliedAmount = 0m,
+    Guid? SupplierCreditId = null
 );
 
 // ── Command ─────────────────────────────────────────────────────────────
@@ -151,6 +163,12 @@ public sealed record SupplierPaymentDto(
 /// company-level. No mueve caja/banco por sucursal — ningún dato se filtra ni se restringe por
 /// <c>BranchId</c>.
 /// </summary>
+/// <remarks>
+/// ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — Σ aplicaciones ≤ TotalAmount. El remanente exige
+/// <see cref="ConfirmUnappliedAmount"/> y genera un <c>SupplierCredit</c> (origen SupplierPayment)
+/// por exactamente ese monto, en la misma transacción. Cero aplicaciones solo si la empresa tiene
+/// activa <c>payables.allow_supplier_payment_without_payable</c>.
+/// </remarks>
 public sealed record RegisterSupplierPaymentCommand(
     Guid SupplierId,
     DateOnly PaymentDate,
@@ -158,7 +176,8 @@ public sealed record RegisterSupplierPaymentCommand(
     string? ReceiptNumber,
     IReadOnlyList<SupplierPaymentMethodLineRequest> MethodLines,
     IReadOnlyList<SupplierPaymentApplicationLineRequest> ApplicationLines,
-    IReadOnlyList<SupplierPaymentAllocationLineRequest> Allocations
+    IReadOnlyList<SupplierPaymentAllocationLineRequest> Allocations,
+    bool ConfirmUnappliedAmount = false
 ) : IRequest<Result<SupplierPaymentDto>>, IBranchScopedRequest;
 
 // ── Validators ──────────────────────────────────────────────────────────
@@ -217,12 +236,18 @@ public sealed class RegisterSupplierPaymentCommandValidator
         RuleFor(x => x.MethodLines)
             .NotEmpty()
             .WithMessage("El pago debe tener al menos un medio de pago.");
-        RuleFor(x => x.ApplicationLines)
-            .NotEmpty()
-            .WithMessage("El pago debe tener al menos una aplicación a cuota.");
+        // ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — cero aplicaciones es válido en forma; si la
+        // empresa lo permite lo decide el handler (política por empresa, no regla de formato).
+        RuleFor(x => x.ApplicationLines).NotNull();
+        RuleFor(x => x.Allocations).NotNull();
         RuleFor(x => x.Allocations)
             .NotEmpty()
+            .When(x => x.ApplicationLines is { Count: > 0 })
             .WithMessage("El pago debe tener al menos una distribución medio↔cuota.");
+        RuleFor(x => x.ApplicationLines)
+            .Must((cmd, lines) => lines.Sum(l => l.AmountApplied) <= cmd.TotalAmount)
+            .When(x => x.ApplicationLines is not null)
+            .WithMessage("La suma aplicada a cuotas no puede superar el total del pago.");
         RuleForEach(x => x.MethodLines).SetValidator(new SupplierPaymentMethodLineRequestValidator());
         RuleForEach(x => x.ApplicationLines)
             .SetValidator(new SupplierPaymentApplicationLineRequestValidator());
@@ -242,6 +267,9 @@ public sealed class RegisterSupplierPaymentCommandHandler
     private readonly ICompanyBankAccountRepository _bankAccounts;
     private readonly ICashRegisterRepository _cashRegisters;
     private readonly ICashSessionRepository _cashSessions;
+    private readonly ISupplierCreditRepository _supplierCredits;
+    private readonly IOperationalPreferencesResolver _preferences;
+    private readonly ICompanyRepository _companies;
     private readonly IUnitOfWork _uow;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
@@ -256,6 +284,9 @@ public sealed class RegisterSupplierPaymentCommandHandler
         ICompanyBankAccountRepository bankAccounts,
         ICashRegisterRepository cashRegisters,
         ICashSessionRepository cashSessions,
+        ISupplierCreditRepository supplierCredits,
+        IOperationalPreferencesResolver preferences,
+        ICompanyRepository companies,
         IUnitOfWork uow,
         ICurrentTenant t,
         ICurrentCompany c,
@@ -263,6 +294,9 @@ public sealed class RegisterSupplierPaymentCommandHandler
         ICurrentUser u
     )
     {
+        _supplierCredits = supplierCredits;
+        _preferences = preferences;
+        _companies = companies;
         _supplierPayments = supplierPayments;
         _sequences = sequences;
         _accountsPayables = accountsPayables;
@@ -288,6 +322,28 @@ public sealed class RegisterSupplierPaymentCommandHandler
         var userId = _u.UserId;
 
         var receiptNumber = string.IsNullOrWhiteSpace(cmd.ReceiptNumber) ? null : cmd.ReceiptNumber.Trim();
+
+        // ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — remanente sin confirmación explícita: rechazo
+        // ANTES de cualquier efecto (sin transacción, sin secuencia, sin caja, sin asiento). El
+        // dominio lo revalida de todas formas (defensa en profundidad).
+        var unappliedAmount = cmd.TotalAmount - cmd.ApplicationLines.Sum(l => l.AmountApplied);
+        if (unappliedAmount > 0 && !cmd.ConfirmUnappliedAmount)
+            return Result<SupplierPaymentDto>.ValidationFailure(
+                $"El pago supera el saldo que puede aplicarse en ${FormatMoney(unappliedAmount)}. Confirme que ese saldo quedará como anticipo a favor del proveedor."
+            );
+
+        // Política por empresa: solo gobierna el pago SIN ninguna CxP. Se resuelve únicamente
+        // cuando aplica — el anticipo por sobrepago no depende de ella.
+        var allowWithoutPayable = false;
+        if (cmd.ApplicationLines.Count == 0)
+        {
+            var preferences = await _preferences.ResolveAsync(ct);
+            allowWithoutPayable = preferences.Payables?.AllowSupplierPaymentWithoutPayable ?? false;
+            if (!allowWithoutPayable)
+                return Result<SupplierPaymentDto>.ValidationFailure(
+                    "La empresa no permite registrar pagos a proveedores sin una cuenta por pagar: seleccione al menos una cuota."
+                );
+        }
 
         await _uow.BeginTransactionAsync(ct);
         try
@@ -556,7 +612,9 @@ public sealed class RegisterSupplierPaymentCommandHandler
                             a.Amount
                         ))
                         .ToList(),
-                    userId
+                    userId,
+                    cmd.ConfirmUnappliedAmount,
+                    allowWithoutPayable
                 );
             }
             catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
@@ -609,7 +667,34 @@ public sealed class RegisterSupplierPaymentCommandHandler
                 }
             }
 
+            // ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — el remanente no aplicado vive SOLO en
+            // SupplierCredit (SSOT del anticipo), por exactamente UnappliedAmount, misma transacción.
+            // SupplierCredit NO contabiliza al crearse: el Debe "Anticipos a proveedores" lo genera
+            // el asiento del propio SupplierPayment (único posting financiero).
+            SupplierCredit? advance = null;
+            if (payment.UnappliedAmount > 0)
+            {
+                var company = await _companies.GetByIdAsync(companyId, ct);
+                if (company is null)
+                {
+                    await _uow.RollbackAsync(ct);
+                    return Result<SupplierPaymentDto>.NotFound("Empresa no encontrada.");
+                }
+                advance = SupplierCredit.CreateFromSupplierPayment(
+                    tenantId,
+                    companyId,
+                    payment.BranchId,
+                    payment.SupplierId,
+                    company.CurrencyCode,
+                    payment.Id,
+                    payment.UnappliedAmount,
+                    userId
+                );
+            }
+
             await _supplierPayments.AddAsync(payment, ct);
+            if (advance is not null)
+                await _supplierCredits.AddAsync(advance, ct);
 
             try
             {
@@ -636,7 +721,7 @@ public sealed class RegisterSupplierPaymentCommandHandler
 
             await _uow.CommitAsync(ct);
             return Result<SupplierPaymentDto>.Success(
-                SupplierPaymentDtoMapper.ToDto(payment),
+                SupplierPaymentDtoMapper.ToDto(payment, supplierCreditId: advance?.Id),
                 ApiResponseCodes.Common.Created
             );
         }
@@ -726,7 +811,8 @@ internal static class SupplierPaymentDtoMapper
     /// </summary>
     public static SupplierPaymentDto ToDto(
         SupplierPayment p,
-        IReadOnlyDictionary<Guid, InstallmentDisplayInfo>? installmentDisplayInfo = null
+        IReadOnlyDictionary<Guid, InstallmentDisplayInfo>? installmentDisplayInfo = null,
+        Guid? supplierCreditId = null
     ) =>
         new(
             p.Id,
@@ -784,6 +870,9 @@ internal static class SupplierPaymentDtoMapper
             p.ReversedBy,
             p.ReverseReason,
             p.ReversalBankReason?.ToString(),
-            p.ReversalCashNotDeliveredConfirmed
+            p.ReversalCashNotDeliveredConfirmed,
+            p.AppliedAmount,
+            p.UnappliedAmount,
+            supplierCreditId
         );
 }

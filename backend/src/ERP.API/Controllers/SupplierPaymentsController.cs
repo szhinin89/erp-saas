@@ -38,12 +38,19 @@ public sealed class SupplierPaymentsController : ControllerBase
                     body.TotalAmount,
                     body.ReceiptNumber,
                     body.MethodLines,
-                    body.ApplicationLines,
-                    body.Allocations
+                    body.ApplicationLines ?? [],
+                    body.Allocations ?? [],
+                    body.ConfirmUnappliedAmount
                 ),
                 ct
             )
         );
+
+    /// <summary>ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — política de empresa que necesita el formulario (solo UX).</summary>
+    [HttpGet("policy")]
+    [Authorize(Policy = $"perm:{SupplierPaymentsPermissions.Create}")]
+    public async Task<IActionResult> GetPolicy(CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new GetSupplierPaymentPolicyQuery(), ct), "OK");
 
     [HttpGet("{id:guid}")]
     [Authorize(Policy = $"perm:{SupplierPaymentsPermissions.View}")]

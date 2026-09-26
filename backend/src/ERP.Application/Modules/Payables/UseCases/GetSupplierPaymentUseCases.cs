@@ -3,6 +3,7 @@ using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
+using ERP.Domain.Modules.Purchases.Interfaces;
 using MediatR;
 
 namespace ERP.Application.Modules.Payables.UseCases;
@@ -59,16 +60,19 @@ public sealed class GetSupplierPaymentByIdHandler
     private readonly ISupplierPaymentRepository _repo;
     private readonly IAccountsPayableRepository _accountsPayables;
     private readonly ICurrentTenant _t;
+    private readonly ISupplierCreditRepository? _supplierCredits;
 
     public GetSupplierPaymentByIdHandler(
         ISupplierPaymentRepository repo,
         IAccountsPayableRepository accountsPayables,
-        ICurrentTenant t
+        ICurrentTenant t,
+        ISupplierCreditRepository? supplierCredits = null
     )
     {
         _repo = repo;
         _accountsPayables = accountsPayables;
         _t = t;
+        _supplierCredits = supplierCredits;
     }
 
     public async Task<Result<SupplierPaymentDto>> Handle(
@@ -81,7 +85,15 @@ public sealed class GetSupplierPaymentByIdHandler
             return Result<SupplierPaymentDto>.NotFound("Pago a proveedor no encontrado.");
 
         var displayInfo = await ResolveInstallmentDisplayInfoAsync(payment, ct);
-        return Result<SupplierPaymentDto>.Success(SupplierPaymentDtoMapper.ToDto(payment, displayInfo));
+        // ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — anticipo (SupplierCredit) originado por el
+        // remanente no aplicado, para enlazarlo desde el detalle.
+        var supplierCreditId =
+            payment.UnappliedAmount > 0 && _supplierCredits is not null
+                ? await _supplierCredits.GetIdBySourceSupplierPaymentIdAsync(_t.TenantId, payment.Id, ct)
+                : null;
+        return Result<SupplierPaymentDto>.Success(
+            SupplierPaymentDtoMapper.ToDto(payment, displayInfo, supplierCreditId)
+        );
     }
 
     /// <summary>

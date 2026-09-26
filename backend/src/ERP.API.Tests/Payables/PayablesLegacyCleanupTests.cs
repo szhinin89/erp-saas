@@ -63,6 +63,8 @@ public sealed class PayablesLegacyCleanupTests
     /// la ruta genérica <c>/api/v1/supplier-payments</c> — nunca anidado bajo <c>/finance/</c> ni bajo
     /// <c>/payables/</c> (que sigue siendo solo lectura de <c>AccountsPayable</c>). Ningún endpoint de
     /// edición/reversa todavía — "sin Draft, sin edición posterior".
+    /// ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — <c>GetPolicy</c> (solo lectura de la política
+    /// "pago sin CxP" para el formulario) se agrega deliberadamente; la lista sigue siendo exacta.
     /// </summary>
     [Fact]
     public void SupplierPaymentsController_expone_unicamente_registro_y_lectura()
@@ -81,6 +83,6 @@ public sealed class PayablesLegacyCleanupTests
             .Where(m => !m.IsSpecialName)
             .Select(m => m.Name)
             .ToList();
-        publicMethods.Should().BeEquivalentTo(new[] { "Register", "GetById", "GetList", "Reverse" });
+        publicMethods.Should().BeEquivalentTo(new[] { "Register", "GetById", "GetList", "Reverse", "GetPolicy" });
     }
 }

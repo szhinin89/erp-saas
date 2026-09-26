@@ -31,6 +31,7 @@ public static class ConfigurationDefinitionCatalog
             .Concat(SalesPosConfigurationDefinitions.All())
             .Concat(CashConfigurationDefinitions.All())
             .Concat(PurchasesConfigurationDefinitions.All())
+            .Concat(PayablesConfigurationDefinitions.All())
             .Concat(InventoryConfigurationDefinitions.All())
             .Concat(PrintingConfigurationDefinitions.All())
             .Concat(ElectronicDocumentsConfigurationDefinitions.All())

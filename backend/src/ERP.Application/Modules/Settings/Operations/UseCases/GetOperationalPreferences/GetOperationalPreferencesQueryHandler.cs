@@ -73,6 +73,9 @@ public sealed class GetOperationalPreferencesQueryHandler
                     p.Notifications.SalesInvoiceAuthorizedEnabled,
                     p.Notifications.SendCopyToCompanyEmail,
                     p.Notifications.DefaultLanguage
+                ),
+                Payables: new PayablesPreferencesDto(
+                    p.Payables?.AllowSupplierPaymentWithoutPayable ?? false
                 )
             )
         );
