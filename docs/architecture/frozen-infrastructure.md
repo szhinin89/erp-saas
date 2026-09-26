@@ -325,6 +325,7 @@ A partir de este cierre, cualquier cambio al núcleo de `ElectronicDocuments` de
 
 - Todo cambio, incluso bajo una de las 4 causas permitidas, sigue el protocolo de gate ya establecido: ¿es un bug real? ¿existe evidencia? ¿es reproducible? ¿cuál es el riesgo? ¿qué impacto tiene? ¿rompe compatibilidad? — antes de tocar código.
 - Detalle completo de responsabilidades, límites, dependencias, interfaces públicas, estados, pipeline, eventos y deuda aceptada conscientemente: ver ADR-023.
+- **Extensión 2026-09-25 (ADR-034, causa n.º 2 — bug demostrado):** filtro por día del Monitor (`dateFrom`/`dateTo` → `DateOnly` + rango UTC del día de empresa), `IssueDate` de `ElectronicDocumentData` como `DateOnly`, y `fechaEmision` de la NC de venta desde el día de empresa (`ICompanyClock`). Máquina de estados, pipeline, firma y clientes SOAP sin cambios.
 
 ### Frontera: proveedor tecnológico global vs. empresa emisora (SRI-ELECTRONIC-DOCUMENTS-QA-FIX-01)
 

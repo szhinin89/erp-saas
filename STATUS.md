@@ -1,6 +1,24 @@
 # Project Status
 
-**Single source of truth** for delivery state. Updated: **2026-09-15** · Kernel refactor: **2026-06-05**.
+**Single source of truth** for delivery state. Updated: **2026-09-25** · Kernel refactor: **2026-06-05**.
+
+## ZH-TEMPORAL-CONTRACT-SINGLE-SOURCE-02 — Contrato temporal único (2026-09-25)
+
+**Estado: COMPLETADO (sin commit).** Regla: [`data-standards.md § Contrato temporal`](docs/architecture/data-standards.md) · [ADR-034](docs/decisions/ADR-034-temporal-contract-single-source.md). Fecha de negocio = `DateOnly`/`date`/`"YYYY-MM-DD"`; instante = UTC `"...Z"` presentado en `Company.Timezone`.
+
+- **02A Gastos**: `authorizationDate` ya no acumula +5 h por edición (conversión única hora empresa ⇄ UTC).
+- **02B "Hoy"**: 9 usos de `toISOString().slice(0,10)` → `todayIso()` (hoy de `Company.Timezone`); vencimientos con `addDaysIso`.
+- **02C AuthorizationDate**: TXT SRI y `datetime-local` convierten hora Ecuador → UTC vía `ICompanyClock.CompanyLocalToUtcAsync`; `UtcDateTime.EnsureUtc` rechaza horas sin zona. Datos históricos **no** autocorregidos → [plan de remediación](docs/operations/AUTHORIZATION-DATE-REMEDIATION-PLAN-02.md) (66 recepciones solo-TXT en dev).
+- **02D Filtros**: Kardex, movimientos, Monitor SRI y ajustes filtran por `DateOnly`; día de empresa → `[inicioUtc, finUtc)` con `ICompanyClock.DayUtcRangeAsync`. Instantes por query exigen zona (`UtcInstantModelBinder`); JSON exige/emite `Z` (`UtcInstantJsonConverter`).
+- **02E Inventario**: `TransferDate`/`AdjustmentDate` → `DateOnly`/`date` (migración `TemporalContractInventoryBusinessDates02`, con guard de medianoche y reversible). `KardexSnapshot` eliminado (sin consumidores).
+- **02F**: `ElectronicDocumentData.IssueDate`, `Dashboard.AsOf` → `DateOnly`; `SriCatalogClock` unificado en `CompanyTimeZone`; `fechaEmision` de la NC de venta desde el día de empresa.
+- **02G Frontend**: `formatDateTime` presenta en `Company.Timezone` (`session.tenant.timezone`), no UTC crudo.
+- **02I Segundos**: `formatDateTime` es la única salida visual de instantes — `dd/MM/yyyy HH:mm:ss` siempre; `formatDateTimeSeconds` eliminado; 13 consumidores migrados (incl. 4 "Última carga" que usaban `toTimeString()` del navegador — auditoría 03); `datetime-local` conserva segundos reales; guard `F-DT-instant-as-date`.
+- **02J Cierre estricto**: Ventas `TransferDate`/`CashDate` → `DateOnly` (sin parseo por cultura); `ApiResponse.Meta.Timestamp` → `DateTime` UTC con `Z` (antes `DateTimeOffset` `+00:00`). Solo quedan dos representaciones temporales productivas.
+- **Guards**: backend `DateTimeCompanyClockGuardrailTests` extendido (+7 reglas); frontend nuevo check `frontend-datetime` en `run-all`.
+- **Evidencia**: Domain 1175/1175 · Application 2198/2198 · Infrastructure 813/813 (Postgres real, migración aplicada) · API 477/477 · Architecture.Tests 107/107 · vitest 237 archivos/2411 · `tsc -b`, lint (0 errores), build OK · `architecture:check` sin nuevas violaciones (5 checks rojos preexistentes, idénticos a `HEAD`).
+
+---
 
 ## DESTINOS-CONTABLES-COBROS-VENTAS-01 — Cuenta contable por forma de pago (2026-09-15)
 
