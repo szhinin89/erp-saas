@@ -1,92 +1,122 @@
+using ERP.Application.Modules.Finance.Exceptions;
+using ERP.Domain.Modules.Accounting.Enums;
+using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Finance.Interfaces;
 using ERP.Domain.Modules.Purchases.Events;
 using MediatR;
-using Microsoft.Extensions.Logging;
 
 namespace ERP.Application.Modules.Accounting.Posting.Translators;
 
 /// <summary>
-/// Traduce <see cref="SupplierCreditRefundedEvent"/> (P0-02 Fase 8) al hecho contable de §19.1ter
-/// (débito <c>SupplierCreditRefundTransaction.AccountingAccountId</c> congelado, crédito "Crédito a
-/// favor frente a proveedores"). El evento no transporta la cuenta congelada — este traductor la
-/// resuelve mediante <see cref="ISupplierCreditRefundTransactionRepository.GetBySupplierCreditMovementIdAsync"/>
-/// (misma técnica de lectura vía repositorio ya usada en <c>SupplierCreditAuditHandler</c>, Fase 7).
+/// Traduce <see cref="SupplierCreditRefundedEvent"/> (P0-02 Fase 8) al hecho contable del
+/// reembolso: el proveedor devuelve el saldo a favor → Debe Caja/Banco que recibe el dinero, Haber
+/// "1.1.03.004 Anticipos a proveedores" (reduce el saldo a favor reconocido como activo).
 ///
-/// Desviación documentada respecto al mecanismo genérico de <c>PostingRule</c> (una cuenta fija
-/// por <c>FactType</c>): dado que la cuenta bancaria/caja destino puede tener una cuenta contable
-/// distinta cada una y el Posting Engine actual (<c>PostingRuleLine.AccountId</c>) no admite una
-/// cuenta dinámica por transacción sin modificar infraestructura FROZEN (<c>PostingEngine.cs</c>/
-/// <c>PostingRule.cs</c>/<c>JournalFactory.cs</c>, fuera del alcance autorizado de esta fase), el
-/// <c>FactType</c> incorpora el código del destino (<c>"SupplierCreditRefunded:{DestinationCodeSnapshot}"</c>)
-/// — permite a cada tenant configurar una <c>PostingRule</c> por destino con su propia cuenta de
-/// débito, sin tocar ningún archivo de la infraestructura de Posting. Limitación conocida: si la
-/// cuenta contable del destino cambia DESPUÉS de que existan reembolsos ya contabilizados con la
-/// <c>PostingRule</c> anterior, el administrador debe actualizar esa <c>PostingRule</c> para que
-/// los reembolsos NUEVOS usen la cuenta correcta — los asientos ya posteados no se ven afectados
-/// (inmutables), consistente con el congelamiento histórico exigido por §6.4bis a nivel de
-/// <see cref="Domain.Modules.Finance.Entities.SupplierCreditRefundTransaction"/>.
+/// ZH-SUPPLIER-CREDIT-REFUND-POSTING-02D-B — reemplaza la desviación anterior
+/// (<c>FactType="SupplierCreditRefunded:{DestinationCodeSnapshot}"</c>, una <c>PostingRule</c> por
+/// cada caja/banco que ninguna company tenía sembrada → "RULE_NOT_FOUND" + warning silencioso, el
+/// dinero entraba sin asiento). Ahora usa el patrón vigente de <c>SupplierPaymentConfirmed</c>:
+/// FactType canónico único <c>"Purchases"/"SupplierCreditRefunded"</c> con UNA línea fija (Haber
+/// Anticipos, <see cref="PostingAmountKind.GrandTotal"/>) y el Debe dinámico vía
+/// <see cref="PostingAllocation"/> contra
+/// <see cref="SupplierCreditRefundTransaction.AccountingAccountId"/> — la cuenta de la caja/banco
+/// congelada al registrar el reembolso (§6.4bis), nunca resuelta de nuevo aquí. Fail-closed: si no
+/// hay asiento lanza <see cref="SupplierCreditRefundPostingFailedException"/> y la transacción
+/// completa del reembolso se revierte (nunca solo un log).
 /// </summary>
 public sealed class SupplierCreditRefundedPostingTranslator
     : INotificationHandler<SupplierCreditRefundedEvent>
 {
-    private const string SourceModuleName = "Purchases";
+    internal const string SourceModuleName = "Purchases";
+    internal const string FactTypeName = "SupplierCreditRefunded";
 
     private readonly IPostingEngine _postingEngine;
     private readonly ISupplierCreditRefundTransactionRepository _txRepo;
-    private readonly ILogger<SupplierCreditRefundedPostingTranslator> _logger;
 
     public SupplierCreditRefundedPostingTranslator(
         IPostingEngine postingEngine,
-        ISupplierCreditRefundTransactionRepository txRepo,
-        ILogger<SupplierCreditRefundedPostingTranslator> logger
+        ISupplierCreditRefundTransactionRepository txRepo
     )
     {
         _postingEngine = postingEngine;
         _txRepo = txRepo;
-        _logger = logger;
     }
 
     public async Task Handle(SupplierCreditRefundedEvent e, CancellationToken ct)
     {
-        var transaction = await _txRepo.GetBySupplierCreditMovementIdAsync(
-            e.TenantId!.Value,
+        var tenantId = e.TenantId!.Value;
+        var transaction =
+            await _txRepo.GetBySupplierCreditMovementIdAsync(
+                tenantId,
+                e.SupplierCreditMovementId,
+                ct
+            )
+            ?? throw new SupplierCreditRefundPostingFailedException(
+                "No se encontró la transacción del reembolso: no se puede contabilizar."
+            );
+
+        await SupplierCreditRefundPosting.PostAsync(
+            _postingEngine,
+            tenantId,
+            e.CompanyId,
+            FactTypeName,
             e.SupplierCreditMovementId,
+            transaction,
+            destinationNature: AccountNature.Debit,
+            "No se pudo contabilizar el reembolso del saldo a favor del proveedor.",
             ct
         );
-        if (transaction is null)
-        {
-            _logger.LogWarning(
-                "SupplierCreditRefundTransaction no encontrada para el movimiento {MovementId} — posting omitido.",
-                e.SupplierCreditMovementId
-            );
-            return;
-        }
+    }
+}
 
+/// <summary>
+/// ZH-SUPPLIER-CREDIT-REFUND-POSTING-02D-B — construcción compartida del <see cref="PostingFact"/>
+/// de reembolso/reversa (mismo hecho, naturaleza de la línea dinámica invertida). La línea de
+/// Anticipos la aporta la <c>PostingRule</c> canónica (<see cref="PostingAmountKind.GrandTotal"/>);
+/// la de Caja/Banco es la allocation con la cuenta congelada de la transacción.
+/// </summary>
+internal static class SupplierCreditRefundPosting
+{
+    public static async Task PostAsync(
+        IPostingEngine postingEngine,
+        Guid tenantId,
+        Guid companyId,
+        string factType,
+        Guid sourceEventId,
+        SupplierCreditRefundTransaction transaction,
+        AccountNature destinationNature,
+        string genericError,
+        CancellationToken ct
+    )
+    {
         var fact = new PostingFact(
-            e.TenantId!.Value,
-            e.CompanyId,
-            SourceModuleName,
-            $"SupplierCreditRefunded:{transaction.DestinationCodeSnapshot}",
-            e.SupplierCreditMovementId,
+            tenantId,
+            companyId,
+            SupplierCreditRefundedPostingTranslator.SourceModuleName,
+            factType,
+            sourceEventId,
             transaction.EffectiveDate,
             Subtotal: 0m,
             TotalVat: 0m,
             TotalIce: 0m,
             TotalDiscount: 0m,
-            GrandTotal: e.Amount
+            GrandTotal: transaction.Amount,
+            Allocations:
+            [
+                new PostingAllocation(
+                    transaction.AccountingAccountId,
+                    transaction.Amount,
+                    destinationNature,
+                    transaction.DestinationNameSnapshot
+                ),
+            ]
         );
 
-        var result = await _postingEngine.PostAsync(fact, ct);
-
+        var result = await postingEngine.PostAsync(fact, ct);
         if (!result.IsSuccess)
-        {
-            _logger.LogWarning(
-                "Posting failed for SupplierCredit {SupplierCreditId} refund {MovementId}: {Code} — {Error}",
-                e.SupplierCreditId,
-                e.SupplierCreditMovementId,
-                result.Code,
-                result.Error
+            throw new SupplierCreditRefundPostingFailedException(
+                result.Error ?? genericError,
+                result.Code
             );
-        }
     }
 }

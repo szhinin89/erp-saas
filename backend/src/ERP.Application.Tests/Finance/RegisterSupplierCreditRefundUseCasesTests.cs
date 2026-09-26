@@ -7,6 +7,7 @@ using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Accounting.ValueObjects;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Interfaces;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Finance.Enums;
 using ERP.Domain.Modules.Finance.Interfaces;
@@ -22,8 +23,10 @@ namespace ERP.Application.Tests.Finance;
 /// <summary>
 /// FINANCIAL-DESTINATION-TO-BANK-ACCOUNT-MIGRATION-01 — RegisterSupplierCreditRefundHandler:
 /// reembolso feliz banco/caja, SC-001, SC-020, SC-021, SC-024, SC-015, SC-027, SC-003,
-/// idempotencia (SC-006). CompanyBankAccount/CashRegister reemplazan a legacy treasury destination
-/// — no hay validación de moneda (ninguno de los dos modelos tiene CurrencyCode propio).
+/// idempotencia (SC-006). CompanyBankAccount/CashRegister reemplazan a legacy treasury destination.
+/// ZH-SUPPLIER-CREDIT-REFUND-POSTING-02D-B: medio ↔ destino (efectivo ⇒ caja, bancario ⇒ banco) y
+/// moneda del crédito = moneda de la empresa (CompanyBankAccount/CashRegister no tienen moneda
+/// propia; Company.CurrencyCode es el SSOT).
 /// </summary>
 public sealed class RegisterSupplierCreditRefundUseCasesTests
 {
@@ -111,6 +114,9 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
         return pm;
     }
 
+    private static PaymentMethod BuildCashPaymentMethod() =>
+        PaymentMethod.Create(TenantId, "CASH", "Efectivo", false, false, 2, UserId, affectsPhysicalCash: true);
+
     private static CashSession BuildOpenCashSession() =>
         CashSession.Open(
             TenantId,
@@ -135,6 +141,7 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
         public Mock<IAccountRepository> AccountRepo { get; } = new();
         public Mock<IPaymentMethodRepository> PaymentMethodRepo { get; } = new();
         public Mock<ICashSessionRepository> CashSessionRepo { get; } = new();
+        public Mock<ICompanyRepository> CompanyRepo { get; } = new();
         public Mock<IUnitOfWork> Uow { get; } = new();
         public Mock<IDatabaseExceptionTranslator> DbEx { get; } = new();
 
@@ -144,6 +151,19 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
                 .Setup(r => r.GetByIdAsync(TenantId, credit.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(credit);
             Uow.SetupGet(u => u.HasActiveTransaction).Returns(true);
+            CompanyRepo
+                .Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(
+                    ERP.Domain.Modules.Company.Entities.Company.CreateManaged(
+                        TenantId,
+                        "1790012345001",
+                        "Test S.A.",
+                        createdBy: UserId
+                    )
+                );
+            PaymentMethodRepo
+                .Setup(r => r.GetByCodeAsync(TenantId, "CASH", It.IsAny<CancellationToken>()))
+                .ReturnsAsync(BuildCashPaymentMethod());
         }
 
         public RegisterSupplierCreditRefundHandler BuildHandler() =>
@@ -155,6 +175,7 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
                 AccountRepo.Object,
                 PaymentMethodRepo.Object,
                 CashSessionRepo.Object,
+                CompanyRepo.Object,
                 Uow.Object,
                 DbEx.Object,
                 new FixedCurrentTenant(),
@@ -190,7 +211,7 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
             supplierCreditId,
             null,
             CashRegisterId,
-            "TRANSFER",
+            "CASH",
             amount,
             effectiveDate ?? DateOnly.FromDateTime(DateTime.UtcNow),
             null,
@@ -568,6 +589,85 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
         credit.AvailableAmount.Should().Be(60m);
     }
 
+    // ══════════════════════════════════════════════════════════════════════
+    // ZH-SUPPLIER-CREDIT-REFUND-POSTING-02D-B — medio ↔ destino y moneda
+    // ══════════════════════════════════════════════════════════════════════
+
+    [Fact]
+    public async Task Medio_efectivo_hacia_cuenta_bancaria_se_rechaza_sin_consumir_el_credito()
+    {
+        var credit = BuildCredit(100m);
+        var m = new Mocks(credit);
+        m.BankAccountRepo.Setup(r =>
+                r.GetByIdForShareAsync(TenantId, BankAccountId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(BuildBankAccount());
+        m.AccountRepo.Setup(r =>
+                r.GetByIdForShareAsync(TenantId, CompanyId, AccountId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(BuildAccount());
+        var command = BankCommand(credit.Id, 40m) with { PaymentMethodCode = "CASH" };
+
+        var result = await m.BuildHandler().Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("mueve efectivo físico");
+        credit.AvailableAmount.Should().Be(100m);
+        m.TxRepo.Verify(
+            r => r.AddAsync(It.IsAny<SupplierCreditRefundTransaction>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Medio_bancario_hacia_caja_se_rechaza_sin_crear_movimiento_de_caja()
+    {
+        var credit = BuildCredit(100m);
+        var m = new Mocks(credit);
+        var session = BuildOpenCashSession();
+        m.CashRegisterRepo.Setup(r =>
+                r.GetByIdForShareAsync(TenantId, CashRegisterId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(BuildCashRegister());
+        m.AccountRepo.Setup(r =>
+                r.GetByIdForShareAsync(TenantId, CompanyId, AccountId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(BuildAccount());
+        m.PaymentMethodRepo.Setup(r =>
+                r.GetByCodeAsync(TenantId, "TRANSFER", It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(BuildPaymentMethod());
+        m.CashSessionRepo.Setup(r =>
+                r.GetOpenByCashRegisterForUpdateAsync(TenantId, CashRegisterId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(session);
+        var command = CashCommand(credit.Id, 40m) with { PaymentMethodCode = "TRANSFER" };
+
+        var result = await m.BuildHandler().Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("es bancario");
+        credit.AvailableAmount.Should().Be(100m);
+        session.Movements.Should().ContainSingle("solo el movimiento de apertura; ningún ingreso");
+    }
+
+    [Fact]
+    public async Task Moneda_del_credito_distinta_a_la_de_la_empresa_se_rechaza()
+    {
+        var credit = BuildCredit(100m, currency: "EUR");
+        var m = new Mocks(credit);
+
+        var result = await m.BuildHandler().Handle(BankCommand(credit.Id, 40m), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("moneda");
+        credit.AvailableAmount.Should().Be(100m);
+        m.BankAccountRepo.Verify(
+            r => r.GetByIdForShareAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
     private sealed class FixedCurrentTenant : ICurrentTenant
     {
         public Guid TenantId => RegisterSupplierCreditRefundUseCasesTests.TenantId;
@@ -614,7 +714,7 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
             credit.Id,
             null,
             CashRegisterId,
-            "TRANSFER",
+            "CASH",
             40m,
             DateOnly.FromDateTime(DateTime.UtcNow),
             "REC-0042",

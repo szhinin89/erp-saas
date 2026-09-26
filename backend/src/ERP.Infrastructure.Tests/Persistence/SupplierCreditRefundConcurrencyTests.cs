@@ -274,6 +274,10 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
             _userId
         );
         db.Set<PaymentMethod>().Add(paymentMethod);
+        // 02D-B — medio ↔ destino: la caja solo admite un medio de efectivo físico.
+        db.Set<PaymentMethod>().Add(
+            PaymentMethod.Create(_tenantId, "CASH", "Efectivo", false, false, 2, _userId, affectsPhysicalCash: true)
+        );
         await db.SaveChangesAsync();
         _paymentMethodId = paymentMethod.Id;
     }
@@ -420,6 +424,7 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
             new AccountRepository(db),
             new PaymentMethodRepository(db),
             new CashSessionRepository(db, new FixedCurrentCompany(() => _companyId)),
+            new ERP.Infrastructure.Persistence.Repositories.CompanyRepository(db),
             new UnitOfWork(db),
             new RealDatabaseExceptionTranslator(),
             new FixedCurrentTenant(() => _tenantId),
@@ -619,7 +624,7 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
             creditId,
             null,
             _cashRegisterId,
-            "TRANSFER",
+            "CASH",
             40m,
             Guid.NewGuid()
         );
@@ -644,7 +649,7 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
             creditId,
             null,
             _cashRegisterId,
-            "TRANSFER",
+            "CASH",
             40m,
             Guid.NewGuid()
         );
@@ -925,7 +930,7 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
             creditId,
             null,
             _cashRegisterId,
-            "TRANSFER",
+            "CASH",
             40m,
             Guid.NewGuid()
         );
@@ -1133,8 +1138,8 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
         await using (blocker)
         await using (blockerTx)
         {
-            var refundA = Task.Run(() => ExecuteRegisterAsync(creditA, null, _cashRegisterId, "TRANSFER", 40m, Guid.NewGuid()));
-            var refundB = Task.Run(() => ExecuteRegisterAsync(creditB, null, _cashRegisterId, "TRANSFER", 40m, Guid.NewGuid()));
+            var refundA = Task.Run(() => ExecuteRegisterAsync(creditA, null, _cashRegisterId, "CASH", 40m, Guid.NewGuid()));
+            var refundB = Task.Run(() => ExecuteRegisterAsync(creditB, null, _cashRegisterId, "CASH", 40m, Guid.NewGuid()));
             await WaitForLockWaitersAsync(2);
             await blockerTx.CommitAsync();
             var results = await Task.WhenAll(refundA, refundB);
@@ -1163,7 +1168,7 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
         var creditA = await SeedCreditAsync(100m);
         var creditB = await SeedCreditAsync(100m);
         var sessionId = await OpenCashSessionAsync(0m);
-        var original = await ExecuteRegisterAsync(creditA, null, _cashRegisterId, "TRANSFER", 40m, Guid.NewGuid());
+        var original = await ExecuteRegisterAsync(creditA, null, _cashRegisterId, "CASH", 40m, Guid.NewGuid());
         original.Success.Should().BeTrue(original.Error);
 
         var (blocker, blockerTx) = await HoldSessionLockAsync(sessionId);
@@ -1171,7 +1176,7 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
         await using (blockerTx)
         {
             var reversal = Task.Run(() => ExecuteReverseAsync(creditA, original.Value!.Id, "Reembolso duplicado", Guid.NewGuid()));
-            var refundB = Task.Run(() => ExecuteRegisterAsync(creditB, null, _cashRegisterId, "TRANSFER", 25m, Guid.NewGuid()));
+            var refundB = Task.Run(() => ExecuteRegisterAsync(creditB, null, _cashRegisterId, "CASH", 25m, Guid.NewGuid()));
             await WaitForLockWaitersAsync(2);
             await blockerTx.CommitAsync();
             var results = await Task.WhenAll(reversal, refundB);

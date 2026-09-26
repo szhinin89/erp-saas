@@ -48,8 +48,12 @@ public sealed class AccountingBootstrapStepTests
     /// PURCHASE-SUPPLIER-CREDIT-APPLICATION-REVERSED-POSTING-RULE-01: pasa de 13 a 14 — agrega
     /// "Purchases"/"SupplierCreditApplicationReversed", mismo tipo de gap (traductor real desde
     /// P0-02 Fase 7, regla nunca sembrada).
+    ///
+    /// ZH-SUPPLIER-CREDIT-REFUND-POSTING-02D-B: pasa de 14 a 16 — agrega
+    /// "Purchases"/"SupplierCreditRefunded" y "Purchases"/"SupplierCreditRefundReversed" (antes un
+    /// FactType por destino sin regla sembrada → reembolsos sin asiento).
     /// </summary>
-    private const int ExpectedPostingRulesCount = 14;
+    private const int ExpectedPostingRulesCount = 16;
 
     private readonly Guid _tenantId = Guid.NewGuid();
     private readonly Guid _companyId = Guid.NewGuid();
@@ -315,14 +319,33 @@ public sealed class AccountingBootstrapStepTests
                     ("Purchases", "PurchaseReturnCancelled"),
                     ("Purchases", "SupplierCreditApplied"),
                     ("Purchases", "SupplierCreditApplicationReversed"),
+                    ("Purchases", "SupplierCreditRefunded"),
+                    ("Purchases", "SupplierCreditRefundReversed"),
                 }
             );
 
-        // Todas las reglas tienen sus líneas fijas (>=2). Las 2 reglas de Pagos a Proveedores
+        // ZH-SUPPLIER-CREDIT-REFUND-POSTING-02D-B — las 2 reglas de reembolso de SupplierCredit
+        // tienen UNA sola línea fija (Anticipos a proveedores, GrandTotal): la contrapartida
+        // Caja/Banco es siempre dinámica vía PostingFact.Allocations (cuenta real del destino).
+        var refundRules = rules.Where(r => r.FactType.StartsWith("SupplierCreditRefund")).ToList();
+        refundRules.Should().HaveCount(2);
+        foreach (var (factType, nature) in new[]
+        {
+            ("SupplierCreditRefunded", AccountNature.Credit),
+            ("SupplierCreditRefundReversed", AccountNature.Debit),
+        })
+        {
+            var line = refundRules.Single(r => r.FactType == factType).Lines.Should().ContainSingle().Which;
+            line.Nature.Should().Be(nature);
+            line.AmountKind.Should().Be(PostingAmountKind.GrandTotal);
+            (await db.Accounts.SingleAsync(a => a.Id == line.AccountId)).Code.Value.Should().Be("1.1.03.004");
+        }
+
+        // El resto de reglas tiene sus líneas fijas (>=2). Las 2 reglas de Pagos a Proveedores
         // (ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C, ADR-035) fijan CxP (AppliedToPayable) +
         // "Anticipos a proveedores" (SupplierCredit); el Haber/Debe por cada medio de pago sigue
         // siendo dinámico vía PostingFact.Allocations.
-        rules.Should().OnlyContain(r => r.Lines.Count >= 2);
+        rules.Except(refundRules).Should().OnlyContain(r => r.Lines.Count >= 2);
 
         async Task AssertSupplierPaymentRuleAsync(string factType, AccountNature nature)
         {

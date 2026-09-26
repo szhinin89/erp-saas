@@ -299,6 +299,10 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
             _userId
         );
         db.Set<PaymentMethod>().Add(paymentMethod);
+        // 02D-B — medio ↔ destino: la caja solo admite un medio de efectivo físico.
+        db.Set<PaymentMethod>().Add(
+            PaymentMethod.Create(_tenantId, "CASH", "Efectivo", false, false, 2, _userId, affectsPhysicalCash: true)
+        );
         await db.SaveChangesAsync();
     }
 
@@ -499,6 +503,7 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
             new AccountRepository(db),
             new PaymentMethodRepository(db),
             new CashSessionRepository(db, new FixedCurrentCompany(() => _companyId)),
+            new ERP.Infrastructure.Persistence.Repositories.CompanyRepository(db),
             new UnitOfWork(db),
             new RealDatabaseExceptionTranslator(),
             new FixedCurrentTenant(() => _tenantId),
@@ -826,7 +831,7 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
                     credit.Id,
                     null,
                     _cashRegisterId,
-                    "TRANSFER",
+                    "CASH",
                     credit.AvailableAmount,
                     DateOnly.FromDateTime(DateTime.UtcNow),
                     null,

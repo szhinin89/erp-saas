@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Caja;
+using ERP.Application.Modules.Finance;
 using ERP.Application.Modules.Payables.Exceptions;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Enums;
@@ -752,18 +753,14 @@ public sealed class RegisterSupplierPaymentCommandHandler
         PaymentMethod method
     )
     {
-        if (method.IsCreditAllowed)
-            return $"El medio de pago {method.Name} es de crédito y no puede usarse para pagar a un proveedor.";
-
-        if (method.AffectsPhysicalCash)
-        {
-            if (line.CompanyBankAccountId is not null || line.CashRegisterId is null)
-                return $"El medio de pago {method.Name} mueve efectivo físico: el destino debe ser una caja, no una cuenta bancaria.";
-            return null;
-        }
-
-        if (line.CashRegisterId is not null || line.CompanyBankAccountId is null)
-            return $"El medio de pago {method.Name} es bancario: el destino debe ser una cuenta bancaria, no una caja.";
+        // 02D-B — regla medio ↔ destino compartida con el reembolso de SupplierCredit.
+        var destinationError = PaymentMethodDestinationPolicy.Validate(
+            method,
+            hasBankAccount: line.CompanyBankAccountId is not null,
+            hasCashRegister: line.CashRegisterId is not null
+        );
+        if (destinationError is not null || method.AffectsPhysicalCash)
+            return destinationError;
 
         // 02A-FINAL — fecha real del extracto, explícita; nunca se completa con PaymentDate.
         if (line.TransactionDate is null)

@@ -203,6 +203,36 @@ public sealed class ReverseSupplierCreditRefundUseCasesTests
         f.Credit.AvailableAmount.Should().Be(100m);
     }
 
+    /// <summary>
+    /// ZH-SUPPLIER-CREDIT-REFUND-POSTING-02D-B — la ruta pública es /refund/{movementId}/reverse y
+    /// la UI envía el Id del SupplierCreditMovement(Refund): debe resolver la misma transacción.
+    /// </summary>
+    [Fact]
+    public async Task Reversa_por_Id_del_movimiento_de_reembolso_resuelve_la_transaccion_original()
+    {
+        var f = BuildBankFixture(creditAmount: 100m, refundAmount: 40m);
+        var m = new Mocks(f);
+        m.TxRepo.Setup(r =>
+                r.GetBySupplierCreditMovementIdAsync(TenantId, f.RefundMovementId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(f.OriginalTx);
+
+        var result = await m.BuildHandler().Handle(
+            new ReverseSupplierCreditRefundCommand(
+                f.Credit.Id,
+                f.RefundMovementId,
+                "Reembolso duplicado por error",
+                DateOnly.FromDateTime(DateTime.UtcNow),
+                Guid.NewGuid()
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.OriginalTransactionId.Should().Be(f.OriginalTx.Id);
+        f.Credit.AvailableAmount.Should().Be(100m);
+    }
+
     [Fact]
     public async Task Reversa_hereda_campo_por_campo_del_original()
     {

@@ -133,11 +133,25 @@ public sealed class ReverseSupplierCreditRefundHandler
             }
 
             // 2. Cargar y bloquear (FOR SHARE) el REFUND_RECEIVED original.
+            // 02D-B — la ruta pública es /refund/{movementId}/reverse y la UI envía el Id del
+            // SupplierCreditMovement(Refund) (lo único que ve en el historial); antes solo se
+            // aceptaba el Id de la transacción y la reversa desde la UI nunca encontraba el
+            // original. Se acepta cualquiera de los dos: ambos identifican 1:1 al mismo reembolso.
             var original = await _txRepo.GetByIdForShareAsync(
                 tid,
                 cmd.OriginalRefundTransactionId,
                 ct
             );
+            if (original is null)
+            {
+                var byMovement = await _txRepo.GetBySupplierCreditMovementIdAsync(
+                    tid,
+                    cmd.OriginalRefundTransactionId,
+                    ct
+                );
+                if (byMovement is not null)
+                    original = await _txRepo.GetByIdForShareAsync(tid, byMovement.Id, ct);
+            }
             if (original is null || original.SupplierCreditId != cmd.SupplierCreditId)
             {
                 await _uow.RollbackAsync(ct);

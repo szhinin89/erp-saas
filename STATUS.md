@@ -2,6 +2,18 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-26** · Kernel refactor: **2026-06-05**.
 
+## ZH-SUPPLIER-CREDIT-REFUND-POSTING-02D-B — Asiento fail-closed del reembolso de SupplierCredit (2026-09-26)
+
+**Estado: COMPLETADO (sin commit).** Cierra el 6.º gap de PostingRule (traductor real sin regla sembrada).
+- **Causa raíz**: `SupplierCreditRefunded(Reversed)PostingTranslator` publicaban `FactType="SupplierCreditRefunded:{DestinationCodeSnapshot}"` (una regla por caja/banco) que nadie sembraba → `RULE_NOT_FOUND` + `LogWarning`; el saldo bajaba y la caja/banco recibía el dinero **sin asiento**.
+- **Posting**: FactType canónico único `Purchases/SupplierCreditRefunded` (regla: Haber `1.1.03.004` `GrandTotal`; Debe Caja/Banco dinámico vía `PostingFact.Allocations` con `SupplierCreditRefundTransaction.AccountingAccountId`, congelada desde `CashRegister`/`CompanyBankAccount.AccountingAccountId`). Reversa `Purchases/SupplierCreditRefundReversed` = espejo exacto con la cuenta heredada (nunca la vigente del destino).
+- **Fail-closed**: fallo de posting o transacción inexistente ⇒ `SupplierCreditRefundPostingFailedException` ⇒ rollback total (movimiento, transacción, `CashMovement`, asiento). Sin warning silencioso.
+- **Validaciones**: medio ↔ destino (efectivo ⇒ caja, bancario ⇒ banco, crédito prohibido) vía `PaymentMethodDestinationPolicy` (extraída de 02A, compartida con `RegisterSupplierPayment`, mismos mensajes); moneda del crédito = `Company.CurrencyCode` (banco/caja no tienen moneda propia).
+- **Reversa desde la UI**: la ruta `/refund/{movementId}/reverse` recibía el Id del movimiento pero el handler solo buscaba por Id de transacción (la UI nunca podía reversar); ahora acepta ambos.
+- **Reglas**: seed de empresa nueva + backfill automático (no Production) vía `MinimalPostingRules`. Production: `dotnet run -- backfill-supplier-credit-refund-posting-rules [apply]` (dry-run por defecto; solo CREA faltantes; nunca modifica reglas existentes; reglas obsoletas `SupplierCreditRefunded:{código}` se reportan, no se borran). Sin migraciones.
+- **Evidencia**: Domain 1206 · Application 2270 · Architecture 116 · Infrastructure 847/855 (6 fallos preexistentes, idénticos en `HEAD` limpio: migraciones de precisión y triggers compra/gasto; 2 intermitentes bajo carga que pasan 9/9 aislados) · focalizadas 02D-B 49/49 (PostgreSQL real) · API 485/486 (mismo fallo preexistente `PG_unique_business_partner_identification_enforced`) · `architecture:check` 243 = `HEAD`.
+- **Deuda detectada (no corregida, fuera de alcance)**: `ERP.Infrastructure.Tests/Persistence/Purchases/PurchaseExpenseExclusivityTests.cs` referencia la migración `ExpensesFromPurchaseReception`, eliminada por el squash `4cbc4b12` → `ERP.Infrastructure.Tests` no compila en `main`.
+
 ## ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — Remanente no aplicado como anticipo (2026-09-26)
 
 **Estado: COMPLETADO (sin commit).** [ADR-035](docs/decisions/ADR-035-supplier-payment-unapplied-advance.md). `SupplierCredit` = SSOT del anticipo; sin `SupplierAdvance` ni otro libro.

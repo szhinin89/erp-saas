@@ -592,6 +592,24 @@ if (args.Contains("backfill-supplier-payment-posting-rules"))
     return;
 }
 
+// ZH-SUPPLIER-CREDIT-REFUND-POSTING-02D-B: same explicit maintenance as
+// backfill-supplier-payment-posting-rules, including Production. Dry-run by default; add `apply`
+// to CREATE only missing canonical Purchases/SupplierCreditRefunded + SupplierCreditRefundReversed
+// rules. Existing rules (canonical or custom) are never modified; obsolete per-destination rules
+// ("SupplierCreditRefunded:{code}") are reported, never deleted.
+// `dotnet run -- backfill-supplier-credit-refund-posting-rules [apply]`. Exits without starting the host.
+if (args.Contains("backfill-supplier-credit-refund-posting-rules"))
+{
+    using var scope = app.Services.CreateScope();
+    var service = scope.ServiceProvider.GetRequiredService<ERP.Infrastructure.Seeding.AccountingChartBackfillService>();
+    var apply = args.Contains("apply");
+    var rows = await service.RunSupplierCreditRefundRuleMaintenanceAsync(apply);
+    Console.WriteLine($"[backfill-supplier-credit-refund-posting-rules] Mode={(apply ? "APPLY" : "DRY-RUN")} Rules={rows.Count}");
+    foreach (var row in rows)
+        Console.WriteLine($"Tenant={row.TenantId} Company={row.CompanyId} Purchases/{row.FactType}: {row.Diagnostic}");
+    return;
+}
+
 // Bootstrap global: único flujo oficial para datos de instalación (navegación + InstallData).
 // Ver ERP.Infrastructure.Seeding.Global.GlobalBootstrapOrchestrator.
 using (var globalBootstrapScope = app.Services.CreateScope())

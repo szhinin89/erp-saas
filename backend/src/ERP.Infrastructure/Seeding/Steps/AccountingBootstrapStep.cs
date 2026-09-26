@@ -477,6 +477,25 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
                 new("2.1.01.001", AccountNature.Credit, PostingAmountKind.GrandTotal),
             ]
         ),
+        // ZH-SUPPLIER-CREDIT-REFUND-POSTING-02D-B — "Purchases"/"SupplierCreditRefunded": el
+        // proveedor devuelve el saldo a favor. Antes el traductor usaba un FactType por destino
+        // ("SupplierCreditRefunded:{código}") que nunca tuvo regla → reembolsos sin asiento. Única
+        // línea fija: Haber "1.1.03.004 Anticipos a proveedores" (GrandTotal); el Debe Caja/Banco es
+        // dinámico vía PostingFact.Allocations (cuenta congelada de la transacción de reembolso,
+        // tomada de CashRegister/CompanyBankAccount.AccountingAccountId) — nunca una regla por
+        // caja/banco. Mismo patrón que "Payables"/"SupplierPaymentConfirmed".
+        new(
+            "Purchases",
+            "SupplierCreditRefunded",
+            [new("1.1.03.004", AccountNature.Credit, PostingAmountKind.GrandTotal)]
+        ),
+        // ZH-SUPPLIER-CREDIT-REFUND-POSTING-02D-B — espejo exacto: Debe Anticipos (GrandTotal), Haber
+        // la misma Caja/Banco del reembolso original vía Allocations (cuenta heredada congelada).
+        new(
+            "Purchases",
+            "SupplierCreditRefundReversed",
+            [new("1.1.03.004", AccountNature.Debit, PostingAmountKind.GrandTotal)]
+        ),
         new(
             "Finance",
             "CollectionApplied",

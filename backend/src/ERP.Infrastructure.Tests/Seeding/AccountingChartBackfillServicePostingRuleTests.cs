@@ -526,6 +526,68 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
         untouchedReversedIds.Should().BeEquivalentTo(otherRuleIds, because: "el backfill no debe tocar las reglas que ya estaban completas");
     }
 
+    /// <summary>
+    /// ZH-SUPPLIER-CREDIT-REFUND-POSTING-02D-B — una company activa sembrada ANTES de que
+    /// "Purchases"/"SupplierCreditRefunded"/"SupplierCreditRefundReversed" existieran (simulado
+    /// quitando ambas) recibe solo esas dos vía el backfill automático (fuera de Production); una
+    /// regla obsoleta por destino ("SupplierCreditRefunded:{código}") configurada a mano no se toca.
+    /// </summary>
+    [Fact]
+    public async Task EnsureAsync_siembra_solo_las_reglas_de_reembolso_de_supplier_credit_y_preserva_las_obsoletas_por_destino()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        List<Guid> otherRuleIds;
+
+        await using (var db = NewDbContext(dbName))
+        {
+            await SeedActiveCompanyAsync(db);
+            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+        }
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var refundRules = await db.PostingRules
+                .Where(r =>
+                    r.CompanyId == _companyId
+                    && r.SourceModule == "Purchases"
+                    && (r.FactType == "SupplierCreditRefunded" || r.FactType == "SupplierCreditRefundReversed")
+                )
+                .ToListAsync();
+            refundRules.Should().HaveCount(2);
+            db.PostingRules.RemoveRange(refundRules);
+
+            var bankAccount = await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "1.1.02.001");
+            var obsolete = ERP.Domain.Modules.Accounting.Entities.PostingRule.Create(
+                _tenantId, _companyId, "Purchases", "SupplierCreditRefunded:2200123456", null, null, null, _actorId);
+            obsolete.AddLine(bankAccount.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
+            db.PostingRules.Add(obsolete);
+            await db.SaveChangesAsync();
+
+            otherRuleIds = await db.PostingRules
+                .Where(r => r.CompanyId == _companyId)
+                .Select(r => r.Id)
+                .OrderBy(id => id)
+                .ToListAsync();
+        }
+
+        await using (var db = NewDbContext(dbName))
+        {
+            await NewService(db).EnsureAsync();
+        }
+
+        await using var verifyDb = NewDbContext(dbName);
+        var rules = await verifyDb.PostingRules.Where(r => r.CompanyId == _companyId).ToListAsync();
+        rules.Should().ContainSingle(r => r.SourceModule == "Purchases" && r.FactType == "SupplierCreditRefunded");
+        rules.Should().ContainSingle(r => r.SourceModule == "Purchases" && r.FactType == "SupplierCreditRefundReversed");
+        rules
+            .Where(r => r.FactType is not ("SupplierCreditRefunded" or "SupplierCreditRefundReversed"))
+            .Select(r => r.Id)
+            .OrderBy(id => id)
+            .Should()
+            .BeEquivalentTo(otherRuleIds, because: "el backfill no toca reglas existentes, incluida la obsoleta por destino");
+    }
+
     private sealed class FakeHostEnvironment(bool isProduction) : IHostEnvironment
     {
         public string EnvironmentName { get; set; } = isProduction ? "Production" : "Development";

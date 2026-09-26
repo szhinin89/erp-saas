@@ -4,6 +4,7 @@ using ERP.Application.Modules.Caja;
 using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Caja.Interfaces;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Finance.Interfaces;
 using ERP.Domain.Modules.Purchases.Enums;
@@ -87,6 +88,7 @@ public sealed class RegisterSupplierCreditRefundHandler
     private readonly IAccountRepository _accountRepo;
     private readonly IPaymentMethodRepository _paymentMethodRepo;
     private readonly ICashSessionRepository _cashSessionRepo;
+    private readonly ICompanyRepository _companyRepo;
     private readonly IUnitOfWork _uow;
     private readonly IDatabaseExceptionTranslator _dbEx;
     private readonly ICurrentTenant _t;
@@ -100,6 +102,7 @@ public sealed class RegisterSupplierCreditRefundHandler
         IAccountRepository accountRepo,
         IPaymentMethodRepository paymentMethodRepo,
         ICashSessionRepository cashSessionRepo,
+        ICompanyRepository companyRepo,
         IUnitOfWork uow,
         IDatabaseExceptionTranslator dbEx,
         ICurrentTenant t,
@@ -113,6 +116,7 @@ public sealed class RegisterSupplierCreditRefundHandler
         _accountRepo = accountRepo;
         _paymentMethodRepo = paymentMethodRepo;
         _cashSessionRepo = cashSessionRepo;
+        _companyRepo = companyRepo;
         _uow = uow;
         _dbEx = dbEx;
         _t = t;
@@ -175,6 +179,31 @@ public sealed class RegisterSupplierCreditRefundHandler
                 );
                 return Result<SupplierCreditRefundTransactionDto>.Success(
                     RefundMap.ToDto(existingTx!)
+                );
+            }
+
+            // 02D-B — moneda: CompanyBankAccount/CashRegister no tienen moneda propia; operan en la
+            // moneda de la empresa (Company.CurrencyCode, SSOT — misma fuente que SupplierPayment).
+            // Un saldo a favor en otra moneda no puede reembolsarse contra esos destinos.
+            var company = await _companyRepo.GetByIdAsync(credit.CompanyId, ct);
+            if (company is null)
+            {
+                await _uow.RollbackAsync(ct);
+                return Result<SupplierCreditRefundTransactionDto>.NotFound(
+                    "La empresa del crédito de proveedor no fue encontrada."
+                );
+            }
+            if (
+                !string.Equals(
+                    company.CurrencyCode,
+                    credit.CurrencyCode,
+                    StringComparison.OrdinalIgnoreCase
+                )
+            )
+            {
+                await _uow.RollbackAsync(ct);
+                return Result<SupplierCreditRefundTransactionDto>.ValidationFailure(
+                    $"La moneda del crédito de proveedor ({credit.CurrencyCode}) no coincide con la moneda de las cuentas bancarias y cajas de la empresa ({company.CurrencyCode})."
                 );
             }
 
@@ -278,6 +307,18 @@ public sealed class RegisterSupplierCreditRefundHandler
                 return Result<SupplierCreditRefundTransactionDto>.ValidationFailure(
                     "El método de pago indicado no está activo."
                 );
+            }
+            // 02D-B — medio ↔ destino (misma regla 02A que SupplierPayment): efectivo ⇒ caja,
+            // bancario ⇒ cuenta bancaria, medio de crédito prohibido.
+            var destinationError = PaymentMethodDestinationPolicy.Validate(
+                paymentMethod,
+                hasBankAccount: cmd.CompanyBankAccountId is not null,
+                hasCashRegister: cmd.CashRegisterId is not null
+            );
+            if (destinationError is not null)
+            {
+                await _uow.RollbackAsync(ct);
+                return Result<SupplierCreditRefundTransactionDto>.ValidationFailure(destinationError);
             }
             if (paymentMethod.RequiresReference && string.IsNullOrWhiteSpace(cmd.ExternalReference))
             {
