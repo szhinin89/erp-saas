@@ -803,7 +803,14 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
             inv.Subtotal,
             inv.TotalVat,
             inv.TotalIce,
-            inv.TotalDiscount
+            inv.TotalDiscount,
+            // ZH-SALES-CONCURRENCY-POSTING-AUDIT-01 — sin efectivo físico: la redistribución solo
+            // ejercita la idempotencia del Posting (advisory lock por SourceEventId), que es lo que
+            // este test protege. Con efectivo, el handler de Caja (no idempotente ante re-entrega,
+            // que producción no hace: el evento se publica una sola vez, dentro de la transacción
+            // que lo origina) registraría un segundo SaleIncome o chocaría — correctamente — con el
+            // xmin de la CashSession: ese era el origen del fallo intermitente.
+            physicalCashApplied: 0m
         );
 
         // Dos redistribuciones concurrentes del mismo evento — cada una en su propio
@@ -838,7 +845,7 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
         await act.Should()
             .NotThrowAsync(
                 because: "el advisory lock debe serializar las dos publicaciones concurrentes sin "
-                    + "DbUpdateConcurrencyException ni violación UNIQUE — Caja y Accounting deben completar ambas ejecuciones sin error"
+                    + "DbUpdateConcurrencyException ni violación UNIQUE — ambas ejecuciones del Posting completan sin error"
             );
 
         await using var verifyDb = CreateContext();
@@ -849,6 +856,9 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
                 1,
                 because: "un único JournalEntry, sin importar cuántas veces se redistribuya el mismo evento concurrentemente"
             );
+        (await verifyDb.Set<ERP.Domain.Modules.Caja.Entities.CashMovement>().CountAsync(m => m.ReferenceId == inv.Id))
+            .Should()
+            .Be(1, because: "solo la autorización real registra efectivo; la redistribución no toca la caja");
     }
 
     // ── COMPRAS-METODO-ZH-01A2: Kardex sequence retry keeps domain events exactly once ─────────
@@ -913,6 +923,61 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
     private ERP.Infrastructure.Persistence.Repositories.Inventory.StockRepository RetryStockRepository(ErpDbContext db) =>
         new(db, new FixedCurrentCompany(_companyId), new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator(),
             ERP.Infrastructure.Tests.TestData.StandardPrecisionPolicyProvider.Instance);
+
+    // ── ZH-SALES-CONCURRENCY-POSTING-AUDIT-01 ─────────────────────────────────────
+    /// <summary>
+    /// ZH-SALES-CONCURRENCY-POSTING-AUDIT-01 — un fallo en la escritura de los efectos del evento (aquí,
+    /// la CashSession que otro escritor dejó obsoleta: xmin) ocurre DESPUÉS de publicar: el reintento de
+    /// secuencia de Kardex no lo repite (LastSaveFailureIsRetryable) y la venta se revierte entera —
+    /// factura en Draft, sin Kardex, asiento ni movimiento de caja (fail-closed, sin estado parcial).
+    /// </summary>
+    [Fact]
+    public async Task Fallo_tras_publicar_el_evento_no_se_reintenta_ni_deja_efectos_parciales()
+    {
+        var issueDate = new DateOnly(2026, 7, 25);
+        var productId = Guid.NewGuid();
+        Guid warehouseId;
+        await using (var seed = CreateContext())
+        {
+            var wh = ERP.Domain.Modules.Inventory.Entities.Warehouse.Create(_tenantId, _branchId, "Bodega", "B1",
+                null, null, null, null, null, null, null, null, null, _createdBy, _companyId);
+            seed.Set<ERP.Domain.Modules.Inventory.Entities.Warehouse>().Add(wh);
+            await seed.SaveChangesAsync();
+            warehouseId = wh.Id;
+        }
+
+        var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
+        await SeedRuleAndPeriodAsync(db, issueDate);
+        var inv = BuildAuthorizableInvoice(issueDate, "001-001-000000098");
+        db.SalesInvoices.Add(inv);
+        await db.SaveChangesAsync();
+
+        // La sesión queda trackeada en A con un xmin que otro escritor deja obsoleto.
+        _ = await db.CashSessions.SingleAsync(x => x.Id == _cashSessionId);
+        {
+            // Contexto con el interceptor oficial (hijo nuevo en agregado trackeado, ADR-020).
+            var (other, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
+            var s2 = await other.CashSessions.SingleAsync(x => x.Id == _cashSessionId);
+            s2.RecordMovement(ERP.Domain.Modules.Caja.Enums.CashMovementType.SaleIncome, 5m, "otra venta", _createdBy);
+            await other.SaveChangesAsync();
+        }
+
+        var repoA = RetryStockRepository(db);
+        await repoA.AppendMovementAsync(_tenantId, _companyId, productId, warehouseId,
+            ERP.Domain.Modules.Inventory.Enums.StockMovementType.PositiveAdjust, 10m, "UNIT", issueDate,
+            inv.InvoiceNumber, inv.Id, "SalesInvoice", _createdBy, unitCost: 1m);
+        inv.Authorize(_createdBy);
+
+        Exception? thrown = null;
+        try { await repoA.SaveChangesWithSequenceRetryAsync(); } catch (Exception ex) { thrown = ex; }
+
+        await using var verify = CreateContext();
+        var status = (await verify.SalesInvoices.AsNoTracking().SingleAsync(x => x.Id == inv.Id)).Status.ToString();
+        var stock = await verify.Set<ERP.Domain.Modules.Inventory.Entities.StockMovement>().CountAsync(m => m.SourceDocId == inv.Id);
+        var journals = await verify.JournalEntries.CountAsync(x => x.SourceEventId == inv.Id);
+        var cash = await verify.Set<ERP.Domain.Modules.Caja.Entities.CashMovement>().CountAsync(m => m.ReferenceId == inv.Id);
+        (thrown?.GetType().Name, status, stock, journals, cash).Should().Be(("DbUpdateConcurrencyException", "Draft", 0, 0, 0));
+    }
 
 
     private sealed class DeferredPublisher : IPublisher
