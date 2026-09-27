@@ -851,6 +851,70 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
             );
     }
 
+    // ── COMPRAS-METODO-ZH-01A2: Kardex sequence retry keeps domain events exactly once ─────────
+    [Fact]
+    public async Task Kardex_sequence_retry_authorizes_sale_with_every_effect_exactly_once()
+    {
+        var issueDate = new DateOnly(2026, 7, 25);
+        var productId = Guid.NewGuid();
+        Guid warehouseId;
+        await using (var seed = CreateContext())
+        {
+            var wh = ERP.Domain.Modules.Inventory.Entities.Warehouse.Create(_tenantId, _branchId, "Bodega R", "BR",
+                null, null, null, null, null, null, null, null, null, _createdBy, _companyId);
+            seed.Set<ERP.Domain.Modules.Inventory.Entities.Warehouse>().Add(wh);
+            await seed.SaveChangesAsync();
+            warehouseId = wh.Id;
+            var seedRepo = RetryStockRepository(seed);
+            await seedRepo.AppendMovementAsync(_tenantId, _companyId, productId, warehouseId,
+                ERP.Domain.Modules.Inventory.Enums.StockMovementType.PositiveAdjust, 100m, "UNIT", issueDate,
+                "Stock inicial", null, null, _createdBy, unitCost: 1m);
+            await seedRepo.SaveChangesWithSequenceRetryAsync();
+        }
+
+        var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
+        await SeedRuleAndPeriodAsync(db, issueDate);
+        var inv = BuildAuthorizableInvoice(issueDate, "001-001-000000301");
+        db.SalesInvoices.Add(inv);
+        await db.SaveChangesAsync();
+        var stock = RetryStockRepository(db);
+        await stock.AppendMovementAsync(_tenantId, _companyId, productId, warehouseId,
+            ERP.Domain.Modules.Inventory.Enums.StockMovementType.SaleExit, -1m, "UNIT", issueDate,
+            inv.InvoiceNumber, inv.Id, "SalesInvoice", _createdBy);
+        inv.Authorize(_createdBy);
+
+        // Another sale of the same product/warehouse commits first: our first save collides.
+        await using (var other = CreateContext())
+        {
+            var otherRepo = RetryStockRepository(other);
+            await otherRepo.AppendMovementAsync(_tenantId, _companyId, productId, warehouseId,
+                ERP.Domain.Modules.Inventory.Enums.StockMovementType.SaleExit, -1m, "UNIT", issueDate,
+                "otra venta", null, null, _createdBy);
+            await otherRepo.SaveChangesWithSequenceRetryAsync();
+        }
+
+        await stock.SaveChangesWithSequenceRetryAsync();
+
+        await using var verify = CreateContext();
+        (await verify.SalesInvoices.AsNoTracking().SingleAsync(x => x.Id == inv.Id)).Status.ToString()
+            .Should().Be("Authorized");
+        var entryTypes = await verify.JournalEntries.Where(x => x.SourceEventId == inv.Id)
+            .Select(x => x.SourceEventType).ToListAsync();
+        entryTypes.Should().Contain("InvoiceIssued").And.OnlyHaveUniqueItems();
+        (await verify.Set<ERP.Domain.Modules.Caja.Entities.CashMovement>().CountAsync(m => m.ReferenceId == inv.Id)).Should().Be(1);
+        var movements = await verify.Set<ERP.Domain.Modules.Inventory.Entities.StockMovement>()
+            .Where(m => m.ProductId == productId).OrderBy(m => m.SequenceNumber).ToListAsync();
+        movements.Select(m => m.SequenceNumber).Should().Equal(1L, 2L, 3L);
+        movements.Should().ContainSingle(m => m.SourceDocId == inv.Id).Which.SequenceNumber.Should().Be(3L);
+        (await verify.OutboxMessages.CountAsync(m => m.EventName.Contains("SalesInvoiceAuthorized")
+            && m.Payload.Contains(inv.Id.ToString()))).Should().Be(1);
+    }
+
+    private ERP.Infrastructure.Persistence.Repositories.Inventory.StockRepository RetryStockRepository(ErpDbContext db) =>
+        new(db, new FixedCurrentCompany(_companyId), new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator(),
+            ERP.Infrastructure.Tests.TestData.StandardPrecisionPolicyProvider.Instance);
+
+
     private sealed class DeferredPublisher : IPublisher
     {
         public IPublisher? Inner { get; set; }

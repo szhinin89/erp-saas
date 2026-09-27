@@ -47,6 +47,54 @@ public sealed class ConfirmPurchaseHandlerTests
         return repo;
     }
 
+    [Fact]
+    public async Task Confirm_preserves_reviewed_freight_and_other_cost_allocations()
+    {
+        var inv = CreateDraftInvoice(2);
+        inv.DistributeAdditionalCost(ERP.Domain.Modules.Purchases.Enums.PurchaseCostType.Freight,
+            13.123456m, new[] { inv.Lines[0].Id }, UserId);
+        inv.DistributeAdditionalCost(ERP.Domain.Modules.Purchases.Enums.PurchaseCostType.OtherCost,
+            4m, new[] { inv.Lines[1].Id }, UserId);
+        var reviewed = inv.Lines.Select(l => (l.FreightAllocated, l.OtherCostsAllocated, l.LandedUnitCost)).ToArray();
+        var (handler, _, _, _) = BuildHandler(inv);
+        var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id), CancellationToken.None);
+        result.IsSuccess.Should().BeTrue(result.Error);
+        inv.Lines.Select(l => (l.FreightAllocated, l.OtherCostsAllocated, l.LandedUnitCost))
+            .Should().Equal(reviewed);
+    }
+
+    [Fact]
+    public async Task Xml_reconciliation_failure_blocks_before_any_inventory_payable_or_save_effect()
+    {
+        var inv = CreateDraftInvoice();
+        var guard = new Mock<ERP.Application.Modules.Purchases.Services.IPurchaseXmlConfirmationGuard>();
+        guard.Setup(g => g.ValidateAsync(inv, It.IsAny<CancellationToken>()))
+            .ReturnsAsync("Hay líneas XML omitidas");
+        var (handler, repo, stock, payables) = BuildHandler(inv, xmlGuard: guard.Object);
+
+        var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be("PURCHASE_XML_RECONCILIATION_REQUIRED");
+        inv.Status.Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Draft);
+        stock.Verify(s => s.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()), Times.Never);
+        stock.Invocations.Should().NotContain(i => i.Method.Name == nameof(IStockRepository.AppendMovementAsync));
+        repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        payables.Invocations.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Posting_failure_returns_validation_failure_instead_of_success()
+    {
+        var inv = CreateDraftInvoice();
+        var (handler, _, stock, _) = BuildHandler(inv);
+        stock.Setup(s => s.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new ERP.Application.Modules.Purchases.Exceptions.PurchasePostingFailedException("Posting failed", "RULE_NOT_FOUND"));
+        var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id), CancellationToken.None);
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be("RULE_NOT_FOUND");
+    }
+
     private static PurchaseInvoice CreateDraftInvoice(int lineCount = 1, bool sameItem = false)
     {
         var inv = PurchaseInvoice.CreateDraft(
@@ -246,7 +294,8 @@ public sealed class ConfirmPurchaseHandlerTests
         Item? itemForMarginGuard = null,
         decimal? marginGuardSalePrice = null,
         bool allowConfirmWithoutReceptionXml = true,
-        Guid? activeBranchId = null
+        Guid? activeBranchId = null,
+        ERP.Application.Modules.Purchases.Services.IPurchaseXmlConfirmationGuard? xmlGuard = null
     )
     {
         var repo = new Mock<IPurchaseInvoiceRepository>();
@@ -500,7 +549,8 @@ public sealed class ConfirmPurchaseHandlerTests
             branch.Object,
             user.Object,
             preferences.Object,
-            PrecisionPolicyTestDouble.Mock()
+            PrecisionPolicyTestDouble.Mock(),
+            xmlGuard ?? Mock.Of<ERP.Application.Modules.Purchases.Services.IPurchaseXmlConfirmationGuard>()
         );
 
         return (handler, repo, stockRepo, payables);
@@ -577,7 +627,8 @@ public sealed class ConfirmPurchaseHandlerTests
                     It.IsAny<decimal?>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
-                    It.IsAny<CancellationToken>()
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<Guid?>()
                 ),
             Times.Once
         );
@@ -677,7 +728,8 @@ public sealed class ConfirmPurchaseHandlerTests
                     0.774167m,
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
-                    It.IsAny<CancellationToken>()
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<Guid?>()
                 ),
             Times.Once
         );
@@ -794,7 +846,8 @@ public sealed class ConfirmPurchaseHandlerTests
                     It.IsAny<decimal?>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
-                    It.IsAny<CancellationToken>()
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<Guid?>()
                 ),
             Times.Exactly(2)
         );
@@ -835,7 +888,8 @@ public sealed class ConfirmPurchaseHandlerTests
                     It.IsAny<decimal?>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
-                    It.IsAny<CancellationToken>()
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<Guid?>()
                 ),
             Times.Once
         );
@@ -857,7 +911,8 @@ public sealed class ConfirmPurchaseHandlerTests
                     It.IsAny<decimal?>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
-                    It.IsAny<CancellationToken>()
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<Guid?>()
                 ),
             Times.Once
         );
@@ -1047,7 +1102,8 @@ public sealed class ConfirmPurchaseHandlerTests
             branch.Object,
             user.Object,
             Mock.Of<IOperationalPreferencesResolver>(),
-            PrecisionPolicyTestDouble.Mock()
+            PrecisionPolicyTestDouble.Mock(),
+            Mock.Of<ERP.Application.Modules.Purchases.Services.IPurchaseXmlConfirmationGuard>()
         );
 
         var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id), CancellationToken.None);
@@ -1102,7 +1158,8 @@ public sealed class ConfirmPurchaseHandlerTests
             branch.Object,
             user.Object,
             preferencesOverride.Object,
-            PrecisionPolicyTestDouble.Mock()
+            PrecisionPolicyTestDouble.Mock(),
+            Mock.Of<ERP.Application.Modules.Purchases.Services.IPurchaseXmlConfirmationGuard>()
         );
 
         var result = await h.Handle(new ConfirmPurchaseCommand(fakeId), CancellationToken.None);
@@ -1281,7 +1338,8 @@ public sealed class ConfirmPurchaseHandlerTests
                     It.IsAny<decimal?>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
-                    It.IsAny<CancellationToken>()
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<Guid?>()
                 ),
             Times.Exactly(3)
         );
@@ -1305,7 +1363,8 @@ public sealed class ConfirmPurchaseHandlerTests
                     It.IsAny<decimal?>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
-                    It.IsAny<CancellationToken>()
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<Guid?>()
                 ),
             Times.Exactly(2)
         );
@@ -1329,7 +1388,8 @@ public sealed class ConfirmPurchaseHandlerTests
                     It.IsAny<decimal?>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
-                    It.IsAny<CancellationToken>()
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<Guid?>()
                 ),
             Times.Once
         );
@@ -1451,7 +1511,8 @@ public sealed class ConfirmPurchaseHandlerTests
                     It.IsAny<decimal?>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
-                    It.IsAny<CancellationToken>()
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<Guid?>()
                 ),
             Times.Once
         );

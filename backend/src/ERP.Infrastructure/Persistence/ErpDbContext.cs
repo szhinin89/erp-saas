@@ -74,6 +74,15 @@ public class ErpDbContext : DbContext
 
     internal bool WasTrackedFromQuery(object entity) => _queryTrackedEntities.Contains(entity);
 
+    /// <summary>
+    /// COMPRAS-METODO-ZH-01A2 — true when the last failed <see cref="SaveChangesAsync(bool, CancellationToken)"/>
+    /// failed before publishing its domain events: the change tracker is then exactly as before the
+    /// call (events still on their aggregates, no outbox rows of that attempt), so the same unit of
+    /// work can be saved again. After publishing, handler effects and accepted changes of a
+    /// rolled-back transaction make the tracker unsafe to retry.
+    /// </summary>
+    internal bool LastSaveFailureIsRetryable { get; private set; } = true;
+
     internal Guid FilterTenantId => _currentTenant.TenantId;
     internal Guid FilterCompanyId => _currentCompany.CompanyId;
     internal bool FilterHasCompanyContext => _currentCompany.HasCompanyContext;
@@ -91,6 +100,7 @@ public class ErpDbContext : DbContext
         CancellationToken cancellationToken = default
     )
     {
+        LastSaveFailureIsRetryable = true;
         var entitiesWithEvents = ChangeTracker
             .Entries<IHasDomainEvents>()
             .Where(e => e.Entity.DomainEvents.Count > 0)
@@ -98,14 +108,14 @@ public class ErpDbContext : DbContext
             .ToList();
 
         var domainEvents = entitiesWithEvents.SelectMany(e => e.DomainEvents).ToList();
-        foreach (var entity in entitiesWithEvents)
-            entity.ClearDomainEvents();
 
+        var outboxMessages = new List<OutboxMessage>(domainEvents.Count);
         foreach (var @event in domainEvents)
         {
             var metadataJson = OutboxMetadataFactory.Build(@event);
-            OutboxMessages.Add(OutboxMessage.From(@event, metadataJson));
+            outboxMessages.Add(OutboxMessage.From(@event, metadataJson));
         }
+        var published = false;
 
         // Ambas escrituras (estado inicial + side-effects de domain event handlers
         // publicados in-process) deben ser atómicas: si la segunda falla, la
@@ -122,7 +132,14 @@ public class ErpDbContext : DbContext
         // necesidad de invocación manual aquí. Ver ADR correspondiente.
         try
         {
+            OutboxMessages.AddRange(outboxMessages);
             int result = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+
+            // Events leave their aggregates only once the state and its outbox rows are written:
+            // a failure before this point keeps them for a retry (never lost, never re-queued).
+            foreach (var entity in entitiesWithEvents)
+                entity.ClearDomainEvents();
+            published = true;
 
             foreach (var @event in domainEvents)
                 await _publisher.Publish((INotification)@event, cancellationToken);
@@ -139,6 +156,14 @@ public class ErpDbContext : DbContext
         {
             if (ownsTransaction)
                 await tx!.RollbackAsync(cancellationToken);
+            if (!published)
+            {
+                // Nothing was accepted by EF: dropping this attempt's outbox rows restores the unit
+                // of work, so a retry re-queues and publishes each event exactly once.
+                foreach (var message in outboxMessages)
+                    Entry(message).State = EntityState.Detached;
+            }
+            LastSaveFailureIsRetryable = !published;
             throw;
         }
         finally

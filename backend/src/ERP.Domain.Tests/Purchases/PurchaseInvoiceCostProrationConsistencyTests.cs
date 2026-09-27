@@ -53,6 +53,24 @@ public sealed class PurchaseInvoiceCostProrationConsistencyTests
         return inv;
     }
 
+    [Fact]
+    public void Confirmation_event_uses_frozen_costing_with_discount_and_selected_freight()
+    {
+        var inv = CreateDraftWithLines((2m, 50m), (1m, 100m));
+        inv.ApplyGlobalDiscount(10m, UserId);
+        inv.DistributeAdditionalCost(PurchaseCostType.Freight, 12m, [inv.Lines[0].Id], UserId);
+        inv.DistributeAdditionalCost(PurchaseCostType.OtherCost, 3m, [inv.Lines[1].Id], UserId);
+        inv.Confirm(UserId);
+        var e = inv.DomainEvents.OfType<ERP.Domain.Modules.Purchases.Events.PurchaseInvoiceConfirmedEvent>().Single();
+        e.Subtotal.Should().Be(200m);
+        e.TotalDiscount.Should().Be(20m);
+        e.CostSubtotal.Should().Be(195m);
+        e.CostSubtotal.Should().Be(inv.Lines.Sum(l => l.TotalLineCost));
+        e.GrandTotal.Should().Be(195m);
+        inv.Lines[0].LandedUnitCost.Should().Be(51m);
+        inv.Lines[1].LandedUnitCost.Should().Be(93m);
+    }
+
     // ── Caso 1/2: ambas rutas usan la misma precisión y producen el mismo resultado ─────────
 
     [Fact]

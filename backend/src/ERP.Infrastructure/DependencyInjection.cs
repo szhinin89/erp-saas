@@ -855,6 +855,10 @@ public static class DependencyInjection
             ERP.Application.Modules.Purchases.PurchaseReception.XmlParsing.IPurchaseXmlDraftParser,
             ERP.Application.Modules.Purchases.PurchaseReception.XmlParsing.PurchaseXmlDraftParser
         >();
+        services.AddScoped<
+            ERP.Application.Modules.Purchases.Services.IPurchaseXmlConfirmationGuard,
+            ERP.Application.Modules.Purchases.Services.PurchaseXmlConfirmationGuard
+        >();
         // Única implementación de "XML -> líneas + Item Matching" — compartida por la descarga
         // inicial y la reconstrucción transparente del snapshot dentro de CreatePurchaseReceptionDraft.
         services.AddScoped<

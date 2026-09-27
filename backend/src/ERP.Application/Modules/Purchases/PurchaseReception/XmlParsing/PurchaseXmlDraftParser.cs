@@ -81,7 +81,8 @@ public sealed record ParsedPurchaseXml(
     DateOnly IssueDate,
     string? SriPaymentMethodCode,
     IReadOnlyList<ParsedPurchaseXmlLine> Lines,
-    IReadOnlyList<ParsedPurchaseXmlLineError> LineErrors
+    IReadOnlyList<ParsedPurchaseXmlLineError> LineErrors,
+    decimal? TotalWithoutTaxes = null
 );
 
 public interface IPurchaseXmlDraftParser
@@ -169,7 +170,8 @@ public sealed class PurchaseXmlDraftParser : IPurchaseXmlDraftParser
                 IssueDate: issueDate,
                 SriPaymentMethodCode: sriPaymentMethodCode,
                 Lines: lines,
-                LineErrors: lineErrors
+                LineErrors: lineErrors,
+                TotalWithoutTaxes: OptionalText(infoFactura, "totalSinImpuestos") is { } net ? ParseDecimal(net) : null
             );
 
             return Result<ParsedPurchaseXml>.Success(header);

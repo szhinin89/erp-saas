@@ -1,3 +1,4 @@
+using ERP.Application.Modules.Purchases.Exceptions;
 using ERP.Domain.Modules.Purchases.Events;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -8,6 +9,13 @@ namespace ERP.Application.Modules.Accounting.Posting.Translators;
 /// Traduce PurchaseInvoiceConfirmedEvent (Purchases) a PostingFact e invoca IPostingEngine — no crea
 /// JournalEntry, no resuelve cuentas, no contiene lógica financiera (ADR-026 §8, Fase 3.4).
 /// </summary>
+/// <remarks>
+/// COMPRAS-METODO-ZH-01A — el asiento InvoiceReceived es obligatorio: un fallo lanza
+/// <see cref="PurchasePostingFailedException"/> para revertir Compra/Kardex/CxP juntos (mismo criterio
+/// que SalesInvoiceAuthorizedPostingTranslator). Subtotal = <c>CostSubtotal</c>: base neta de
+/// descuentos + flete/otros costos ya congelados por Compras, para que Debe (Subtotal+impuestos)
+/// cuadre con Haber (GrandTotal) sin una segunda fórmula de costos.
+/// </remarks>
 public sealed class PurchaseInvoiceConfirmedPostingTranslator
     : INotificationHandler<PurchaseInvoiceConfirmedEvent>
 {
@@ -35,7 +43,7 @@ public sealed class PurchaseInvoiceConfirmedPostingTranslator
             FactTypeName,
             e.InvoiceId,
             e.IssueDate,
-            e.Subtotal,
+            e.CostSubtotal,
             e.TotalVat,
             e.TotalIce,
             e.TotalDiscount,
@@ -54,6 +62,8 @@ public sealed class PurchaseInvoiceConfirmedPostingTranslator
                 result.Code,
                 result.Error
             );
+            throw new PurchasePostingFailedException(
+                result.Error ?? "No se pudo contabilizar la compra.", result.Code);
         }
     }
 }

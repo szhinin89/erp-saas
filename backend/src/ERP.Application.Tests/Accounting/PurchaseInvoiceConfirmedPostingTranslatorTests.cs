@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Modules.Purchases.Exceptions;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
 using ERP.Domain.Modules.Purchases.Events;
@@ -26,6 +27,7 @@ public sealed class PurchaseInvoiceConfirmedPostingTranslatorTests
             115m,
             CompanyId,
             issueDate ?? new DateOnly(2026, 7, 25),
+            100m,
             100m,
             15m,
             0m,
@@ -110,7 +112,7 @@ public sealed class PurchaseInvoiceConfirmedPostingTranslatorTests
     }
 
     [Fact]
-    public async Task Posting_failure_genera_warning_y_no_lanza_excepcion()
+    public async Task Posting_failure_aborta_la_transaccion()
     {
         var m = new Mocks();
         m.PostingEngine.Setup(e =>
@@ -126,7 +128,7 @@ public sealed class PurchaseInvoiceConfirmedPostingTranslatorTests
         var translator = m.BuildTranslator();
         var act = async () => await translator.Handle(Event(), CancellationToken.None);
 
-        await act.Should().NotThrowAsync();
+        await act.Should().ThrowAsync<PurchasePostingFailedException>();
         m.VerifyWarningLogged(Times.Once());
     }
 
@@ -157,6 +159,7 @@ public sealed class PurchaseInvoiceConfirmedPostingTranslatorTests
             Guid.Empty,
             default,
             10m,
+            10m,
             0m,
             0m,
             0m
@@ -165,7 +168,7 @@ public sealed class PurchaseInvoiceConfirmedPostingTranslatorTests
         var translator = m.BuildTranslator();
         var act = async () => await translator.Handle(evt, CancellationToken.None);
 
-        await act.Should().NotThrowAsync();
+        await act.Should().ThrowAsync<PurchasePostingFailedException>();
         captured!.CompanyId.Should().Be(Guid.Empty);
         m.VerifyWarningLogged(Times.Once());
     }

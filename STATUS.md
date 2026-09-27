@@ -1,6 +1,23 @@
 # Project Status
 
-**Single source of truth** for delivery state. Updated: **2026-09-26** · Kernel refactor: **2026-06-05**.
+**Single source of truth** for delivery state. Updated: **2026-09-27** · Kernel refactor: **2026-06-05**.
+
+## COMPRAS-METODO-ZH-01A2 — Atomicidad de domain events ante reintentos de Kardex (2026-09-27)
+
+**Estado: COMPLETADO (sin commit).** Infraestructura compartida; sin cambios de reglas de negocio.
+- **Causa**: `ErpDbContext.SaveChangesAsync` retiraba los domain events de los agregados ANTES del primer guardado; ante un conflicto de secuencia de Kardex el rollback dejaba los eventos borrados y el reintento de `StockRepository` guardaba documento + Kardex + outbox sin publicar → documento Authorized/Confirmed sin asiento, caja ni efectos de handlers (evidencia `TEMPDIAG_R1`).
+- **Fix**: los eventos se retiran solo tras el primer guardado exitoso; un fallo previo a publicar desvincula los `OutboxMessages` del intento (unidad de trabajo restaurada: reintento = 1 outbox + 1 publicación). `ErpDbContext.LastSaveFailureIsRetryable` indica si el fallo fue previo a publicar; `SaveChangesWithSequenceRetryAsync` solo reintenta en ese caso — un fallo posterior (cambios ya aceptados de una transacción revertida) se propaga, nunca se reintenta a medias.
+- Evidencia: tests nuevos Ventas/Compras (retry con todos los efectos exactamente una vez) y fallo post-publicación no reintentado — los 3 fallan sin el fix; `TEMPDIAG_R1` pasa · Domain 1221 · Application 2310 · Architecture 116 · API 499/500 (baseline) · Infrastructure 915/922 (7 preexistentes/ajenos: 4 migraciones del squash, 2 trigger compra↔gasto, `TEMPDIAG_R2` por diseño).
+
+## COMPRAS-METODO-ZH-01A — Integridad de compra confirmada (2026-09-27)
+
+**Estado: COMPLETADO (sin commit).** Sin cambios de UX, esquema ni frontend.
+- **Atomicidad**: el asiento `Purchases/InvoiceReceived` es obligatorio — un fallo lanza `PurchasePostingFailedException` y `ErpDbContext` revierte Compra + Kardex + CxP + Contabilidad juntos; Confirm devuelve error de validación con el código del motor (mismo criterio que Ventas/Gastos/Pagos).
+- **Costo SSOT**: Confirm ya no reprorratea flete/otros costos sobre todas las líneas (preserva la distribución revisada); el evento expone `CostSubtotal` (= Σ `TotalLineCost`, neto de descuentos + flete/otros) y la regla contable lo usa como Subtotal — Debe cuadra con GrandTotal con descuentos y flete, sin segunda fórmula.
+- **Kardex**: varias líneas del mismo ítem/bodega en una compra encadenan secuencia/costo promedio con los movimientos pendientes; `SourceDocLineId` por línea; el reintento de secuencia no duplica `CurrentStock` nuevo.
+- **Conciliación XML** (`PurchaseXmlConfirmationGuard`, antes de cualquier efecto): bloquea recepción ajena (empresa/sucursal/proveedor/comprobante), XML con líneas sin procesar o con errores, Σ bases ≠ `totalSinImpuestos`, snapshot ≠ XML, líneas XML omitidas/duplicadas/sin vínculo (incluye "eliminar línea y repartirla como flete") y líneas con cantidad/precio/descuento/impuestos distintos. Informativo (no bloquea): advertencias de matching, diferencia `importeTotal` vs líneas (redondeo/propina, ya visible como RoundingDifference). Acepta la recepción `Processed` por esta misma compra (flujo real).
+- Evidencia: Domain 1221 · Application 2310 · Architecture 116 · API 499/500 (baseline `PG_unique_business_partner_identification_enforced`) · Infrastructure 901/919 antes de ajustar fixtures → 10 tests con fixture corregido (29/29 focalizados); restantes 8 preexistentes/ajenos (4 migraciones eliminadas en el squash, 2 trigger compra↔gasto ausente tras el squash, 2 TEMP-DIAG de ZH-SALES-CONCURRENCY-POSTING-AUDIT-01) · `architecture:check` 244 = `HEAD`.
+- GAPs abiertos: ~~reintento de secuencia de Kardex pierde los domain events~~ (cerrado en 01A2); trigger `uq_purchase_expense_access_key` ausente del baseline; flete desde línea XML requiere conciliación trazable (modelo) — hoy se bloquea.
 
 ## ZH-CASH-FUNDING-REQUEST-UI-FINAL-02E-EF — UI de solicitudes de efectivo + integración con Pago a proveedor — SPAY-02E CLOSED (2026-09-26)
 

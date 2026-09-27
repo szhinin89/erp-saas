@@ -144,7 +144,10 @@ public sealed class StockRepository : IStockRepository
                 _pending.Clear();
                 return result;
             }
-            catch (Exception ex) when (attempt < MaxSequenceRetryAttempts && IsSequenceConflict(ex))
+            // COMPRAS-METODO-ZH-01A2: retry only from a restored unit of work (failure before domain
+            // events were published); a later failure is surfaced, never replayed half-applied.
+            catch (Exception ex) when (attempt < MaxSequenceRetryAttempts && IsSequenceConflict(ex)
+                && _db.LastSaveFailureIsRetryable)
             {
                 await RecoverFromConflictAndRetrackAsync(ct);
             }
@@ -167,6 +170,7 @@ public sealed class StockRepository : IStockRepository
                 .Select(e => e.Entity)
                 .FirstOrDefault(s =>
                     s.TenantId == r.TenantId
+                    && s.CompanyId == r.CompanyId
                     && s.WarehouseId == r.WarehouseId
                     && s.ProductId == r.ProductId
                 );
@@ -199,6 +203,18 @@ public sealed class StockRepository : IStockRepository
                 m.RunningStockValue,
             })
             .FirstOrDefaultAsync(ct);
+
+        // Earlier lines in this unit of work have not reached the database yet.
+        var pendingLast = _db.ChangeTracker.Entries<StockMovement>()
+            .Where(e => e.State == EntityState.Added)
+            .Select(e => e.Entity)
+            .Where(m => m.TenantId == r.TenantId && m.CompanyId == r.CompanyId
+                && m.ProductId == r.ProductId && m.WarehouseId == r.WarehouseId)
+            .OrderByDescending(m => m.SequenceNumber)
+            .Select(m => new { m.SequenceNumber, m.RunningAverageCost, m.RunningStockValue })
+            .FirstOrDefault();
+        if (pendingLast is not null && (last is null || pendingLast.SequenceNumber > last.SequenceNumber))
+            last = pendingLast;
 
         var nextSeq = (last?.SequenceNumber ?? 0) + 1;
         var lastRunningValue = last?.RunningStockValue ?? 0m;
@@ -291,8 +307,12 @@ public sealed class StockRepository : IStockRepository
                 entry.State = EntityState.Detached;
 
         foreach (var entry in _db.ChangeTracker.Entries<CurrentStock>().ToList())
-            if (entry.State == EntityState.Modified)
+        {
+            if (entry.State == EntityState.Added)
+                entry.State = EntityState.Detached;
+            else if (entry.State == EntityState.Modified)
                 await entry.ReloadAsync(ct);
+        }
 
         foreach (var r in toRetry)
         {

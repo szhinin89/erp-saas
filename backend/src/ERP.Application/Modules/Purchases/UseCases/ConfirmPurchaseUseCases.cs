@@ -4,6 +4,7 @@ using ERP.Application.Modules.Companies;
 using ERP.Application.Modules.Payables.UseCases;
 using ERP.Application.Modules.Pricing.Services;
 using ERP.Application.Modules.Purchases.DTOs;
+using ERP.Application.Modules.Purchases.Exceptions;
 using ERP.Application.Modules.Purchases.Services;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.MasterData.Interfaces;
@@ -55,6 +56,7 @@ public sealed class ConfirmPurchaseHandler
     private readonly ICurrentUser _u;
     private readonly IOperationalPreferencesResolver _preferences;
     private readonly ICompanyPrecisionPolicyProvider _precision;
+    private readonly IPurchaseXmlConfirmationGuard _xmlGuard;
 
     public ConfirmPurchaseHandler(
         IPurchaseInvoiceRepository repo,
@@ -72,10 +74,12 @@ public sealed class ConfirmPurchaseHandler
         ICurrentBranch b,
         ICurrentUser u,
         IOperationalPreferencesResolver preferences,
-        ICompanyPrecisionPolicyProvider precision
+        ICompanyPrecisionPolicyProvider precision,
+        IPurchaseXmlConfirmationGuard xmlGuard
     )
     {
         _precision = precision;
+        _xmlGuard = xmlGuard;
         _repo = repo;
         _stockRepo = stockRepo;
         _itemRepo = itemRepo;
@@ -182,10 +186,10 @@ public sealed class ConfirmPurchaseHandler
         }
 
         // ── STEP 0: Guard IRBPNR (FLOW-READY-02F.2) ──────────────────────
-        // El posting nunca revierte una confirmación ya persistida (ver PurchaseInvoiceConfirmedPostingTranslator
-        // — un Result fallido de IPostingEngine.PostAsync solo se registra en log, jamás lanza) — por
-        // eso la única forma confiable de exigir configuración contable es esta precondición, antes
-        // de inv.Confirm()/SaveChanges. GrandTotal/PurchasePayable/el evento SÍ incluyen IRBPNR desde
+        // COMPRAS-METODO-ZH-01A: un fallo de posting ahora lanza PurchasePostingFailedException y revierte
+        // toda la confirmación (ver PurchaseInvoiceConfirmedPostingTranslator); esta precondición se
+        // conserva para devolver un mensaje específico antes de inv.Confirm()/SaveChanges, en lugar
+        // del error genérico de asiento descuadrado. GrandTotal/PurchasePayable/el evento SÍ incluyen IRBPNR desde
         // esta fase, así que confirmar sin una PostingRuleLine para TaxIrbpnr generaría un asiento
         // descuadrado (línea de crédito GrandTotal sin su contrapartida de débito) — se bloquea.
         if (inv.Lines.Any(l => l.IrbpnrAmount > 0))
@@ -254,7 +258,11 @@ public sealed class ConfirmPurchaseHandler
                 iceExactAmount
             );
         }
-        inv.DistributeCosts(inv.TotalFreight, inv.TotalOtherCosts, uid);
+        var xmlError = await _xmlGuard.ValidateAsync(inv, ct);
+        if (xmlError is not null)
+            return Result<PurchaseInvoiceDto>.ValidationFailure(xmlError, "PURCHASE_XML_RECONCILIATION_REQUIRED");
+
+        // Preserve the reviewed allocations, including lines deliberately excluded from freight.
 
         // ── STEP 1b: Guard de presentación/costo sospechoso (PURCHASE-BACKEND-SUSPICIOUS-PACKAGING-COST-GUARD-01) ──
         // Defensa en profundidad del guard equivalente en frontend
@@ -263,7 +271,7 @@ public sealed class ConfirmPurchaseHandler
         // encima del precio de venta vigente. Confirmar así arrastra ese costo erróneo a
         // StockMovement/Kardex/costo promedio de forma irreversible, así que se bloquea aquí,
         // antes de STEP 2 (Confirm/FreezeCosts) y de STEP 3 (movimientos de inventario).
-        // LandedUnitCost ya está calculado por inv.DistributeCosts()/RecalcCosts() en este punto.
+        // LandedUnitCost ya está calculado por RecalcCosts() en este punto.
         foreach (var line in inv.Lines)
         {
             if (line.ItemId is not { } marginItemId || line.LandedUnitCost <= 0)
@@ -369,7 +377,8 @@ public sealed class ConfirmPurchaseHandler
                 "PurchaseInvoice",
                 uid,
                 line.LandedUnitCost,
-                cancellationToken: ct
+                cancellationToken: ct,
+                sourceDocLineId: line.Id
             );
         }
 
@@ -463,7 +472,15 @@ public sealed class ConfirmPurchaseHandler
             inv.GrandTotal
         );
 
-        await _stockRepo.SaveChangesWithSequenceRetryAsync(ct);
+        try
+        {
+            await _stockRepo.SaveChangesWithSequenceRetryAsync(ct);
+        }
+        catch (PurchasePostingFailedException ex)
+        {
+            // ErpDbContext has already rolled back Purchase, Stock, AP and Accounting.
+            return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message, ex.Code);
+        }
 
         _logger.LogInformation(
             "Purchase {InvoiceNumber} ({InvoiceId}) confirmed successfully",

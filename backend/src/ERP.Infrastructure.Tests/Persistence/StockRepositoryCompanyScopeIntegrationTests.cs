@@ -233,6 +233,37 @@ public sealed class StockRepositoryCompanyScopeIntegrationTests : IAsyncLifetime
             );
     }
 
+    [Fact]
+    public async Task Multiple_purchase_lines_for_same_item_chain_pending_kardex_values()
+    {
+        var productId = Guid.NewGuid();
+        var documentId = Guid.NewGuid();
+        var firstLineId = Guid.NewGuid();
+        var secondLineId = Guid.NewGuid();
+        await using (var db = CreateContext(_companyBId))
+        {
+            var repo = new StockRepository(db, new FixedCurrentCompany(_companyBId),
+                new PostgresDatabaseExceptionTranslator(), new FixedPrecisionProvider(6));
+            foreach (var (qty, cost, lineId) in new[] { (3m, 10m, firstLineId), (2m, 20m, secondLineId) })
+                await repo.AppendMovementAsync(_tenantId, _companyBId, productId, _warehouseBId,
+                    StockMovementType.PurchaseEntry, qty, "UNIT", new DateOnly(2026, 9, 27),
+                    "COMPRAS-METODO-ZH-01A", documentId, "PurchaseInvoice", _userId,
+                    unitCost: cost, sourceDocLineId: lineId);
+            await repo.SaveChangesWithSequenceRetryAsync();
+        }
+        await using var readDb = CreateContext(_companyBId);
+        var movements = await readDb.Set<StockMovement>().Where(m => m.ProductId == productId)
+            .OrderBy(m => m.SequenceNumber).ToListAsync();
+        movements.Select(m => m.SequenceNumber).Should().Equal(1L, 2L);
+        movements.Select(m => m.RunningStockValue).Should().Equal(30m, 70m);
+        movements.Select(m => m.RunningAverageCost).Should().Equal(10m, 14m);
+        movements.Select(m => m.SourceDocLineId).Should().Equal(firstLineId, secondLineId);
+        movements.Should().OnlyContain(m => m.SourceDocId == documentId);
+        var stock = await readDb.Set<CurrentStock>().SingleAsync(s => s.ProductId == productId);
+        stock.Quantity.Should().Be(5m);
+        stock.AverageCost.Should().Be(14m);
+    }
+
     private async Task<decimal> AppendTwoMovementsAndReadRunningAverageAsync(ICompanyPrecisionPolicyProvider precision)
     {
         var productId = Guid.NewGuid();

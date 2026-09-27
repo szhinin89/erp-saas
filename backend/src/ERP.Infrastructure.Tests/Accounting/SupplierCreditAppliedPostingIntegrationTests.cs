@@ -306,6 +306,9 @@ public sealed class SupplierCreditAppliedPostingIntegrationTests : IAsyncLifetim
         );
         inv.ReplaceLines(new[] { line }, _createdBy);
         inv.Confirm(_createdBy);
+        // Fixture: a previously confirmed purchase. Its mandatory InvoiceReceived posting
+        // (COMPRAS-METODO-ZH-01A) is covered by PurchaseInvoiceConfirmedPostingIntegrationTests.
+        inv.ClearDomainEvents();
         db.PurchaseInvoices.Add(inv);
         await db.SaveChangesAsync();
 

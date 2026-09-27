@@ -521,6 +521,7 @@ public sealed class PurchaseInvoice
                 CompanyId,
                 IssueDate,
                 Subtotal,
+                _lines.Sum(l => l.TotalLineCost),
                 TotalVat,
                 TotalIce,
                 TotalDiscount,
