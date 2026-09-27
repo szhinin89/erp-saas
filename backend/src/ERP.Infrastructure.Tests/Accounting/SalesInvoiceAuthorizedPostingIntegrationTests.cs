@@ -765,7 +765,15 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
             inv.TotalIce,
             inv.TotalDiscount
         );
-        await publisher.Publish(repeated, CancellationToken.None);
+        // ZH-SALES-CASH-CONCURRENCY-HARDENING-01 — la re-entrega se procesa como en producción:
+        // dentro de una transacción y con SaveChanges real, de modo que cualquier efecto duplicado
+        // que un handler stageara quedaría persistido (antes el test nunca guardaba).
+        await using (var tx = await db.Database.BeginTransactionAsync())
+        {
+            await publisher.Publish(repeated, CancellationToken.None);
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
 
         await using var verifyDb = CreateContext();
         var count = await verifyDb.JournalEntries.CountAsync(x => x.SourceEventId == inv.Id);
@@ -775,6 +783,10 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
                 1,
                 because: "el Posting Engine ya garantiza idempotencia por SourceEventId (Fase 3.1)"
             );
+        (await verifyDb.Set<ERP.Domain.Modules.Caja.Entities.CashMovement>().CountAsync(m => m.ReferenceId == inv.Id))
+            .Should()
+            .Be(1, because: "Caja es idempotente por origen: una factura, a lo sumo un SaleIncome");
+        (await SessionBalanceAsync(verifyDb)).Should().Be(100m, because: "ningún efectivo duplicado");
     }
 
     [Fact]
@@ -924,27 +936,33 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
         new(db, new FixedCurrentCompany(_companyId), new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator(),
             ERP.Infrastructure.Tests.TestData.StandardPrecisionPolicyProvider.Instance);
 
-    // ── ZH-SALES-CONCURRENCY-POSTING-AUDIT-01 ─────────────────────────────────────
+    // ── ZH-SALES-CASH-CONCURRENCY-HARDENING-01 ───────────────────────────────────
+
+    private async Task<decimal> SessionBalanceAsync(ErpDbContext db) =>
+        (await db.CashSessions.AsNoTracking().Include(x => x.Movements).SingleAsync(x => x.Id == _cashSessionId)).CurrentBalance;
+
+    private async Task<Guid> SeedWarehouseAsync()
+    {
+        await using var seed = CreateContext();
+        var wh = ERP.Domain.Modules.Inventory.Entities.Warehouse.Create(_tenantId, _branchId, "Bodega", $"B{Random.Shared.Next(100, 999)}",
+            null, null, null, null, null, null, null, null, null, _createdBy, _companyId);
+        seed.Set<ERP.Domain.Modules.Inventory.Entities.Warehouse>().Add(wh);
+        await seed.SaveChangesAsync();
+        return wh.Id;
+    }
+
     /// <summary>
-    /// ZH-SALES-CONCURRENCY-POSTING-AUDIT-01 — un fallo en la escritura de los efectos del evento (aquí,
-    /// la CashSession que otro escritor dejó obsoleta: xmin) ocurre DESPUÉS de publicar: el reintento de
-    /// secuencia de Kardex no lo repite (LastSaveFailureIsRetryable) y la venta se revierte entera —
-    /// factura en Draft, sin Kardex, asiento ni movimiento de caja (fail-closed, sin estado parcial).
+    /// Antes del lock, la autorización cargaba la CashSession al validar el pago en efectivo y el
+    /// handler de Caja la reutilizaba tal cual: si otro flujo registraba un movimiento en medio, el
+    /// xmin obsoleto hacía fallar la venta (409). Ahora el handler la bloquea y recarga (FOR UPDATE):
+    /// la venta completa con el saldo vigente.
     /// </summary>
     [Fact]
-    public async Task Fallo_tras_publicar_el_evento_no_se_reintenta_ni_deja_efectos_parciales()
+    public async Task Sesion_obsoleta_en_el_contexto_se_bloquea_y_recarga_sin_conflicto()
     {
         var issueDate = new DateOnly(2026, 7, 25);
+        var warehouseId = await SeedWarehouseAsync();
         var productId = Guid.NewGuid();
-        Guid warehouseId;
-        await using (var seed = CreateContext())
-        {
-            var wh = ERP.Domain.Modules.Inventory.Entities.Warehouse.Create(_tenantId, _branchId, "Bodega", "B1",
-                null, null, null, null, null, null, null, null, null, _createdBy, _companyId);
-            seed.Set<ERP.Domain.Modules.Inventory.Entities.Warehouse>().Add(wh);
-            await seed.SaveChangesAsync();
-            warehouseId = wh.Id;
-        }
 
         var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
         await SeedRuleAndPeriodAsync(db, issueDate);
@@ -952,33 +970,210 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
         db.SalesInvoices.Add(inv);
         await db.SaveChangesAsync();
 
-        // La sesión queda trackeada en A con un xmin que otro escritor deja obsoleto.
+        // Igual que AuthorizeSalesInvoiceHandler: la sesión queda trackeada antes de guardar…
         _ = await db.CashSessions.SingleAsync(x => x.Id == _cashSessionId);
         {
-            // Contexto con el interceptor oficial (hijo nuevo en agregado trackeado, ADR-020).
+            // …y otro escritor (contexto con el interceptor oficial, ADR-020) la modifica en medio.
             var (other, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
             var s2 = await other.CashSessions.SingleAsync(x => x.Id == _cashSessionId);
             s2.RecordMovement(ERP.Domain.Modules.Caja.Enums.CashMovementType.SaleIncome, 5m, "otra venta", _createdBy);
             await other.SaveChangesAsync();
         }
 
-        var repoA = RetryStockRepository(db);
-        await repoA.AppendMovementAsync(_tenantId, _companyId, productId, warehouseId,
+        var stock = RetryStockRepository(db);
+        await stock.AppendMovementAsync(_tenantId, _companyId, productId, warehouseId,
             ERP.Domain.Modules.Inventory.Enums.StockMovementType.PositiveAdjust, 10m, "UNIT", issueDate,
             inv.InvoiceNumber, inv.Id, "SalesInvoice", _createdBy, unitCost: 1m);
         inv.Authorize(_createdBy);
 
-        Exception? thrown = null;
-        try { await repoA.SaveChangesWithSequenceRetryAsync(); } catch (Exception ex) { thrown = ex; }
+        await stock.SaveChangesWithSequenceRetryAsync();
 
         await using var verify = CreateContext();
-        var status = (await verify.SalesInvoices.AsNoTracking().SingleAsync(x => x.Id == inv.Id)).Status.ToString();
-        var stock = await verify.Set<ERP.Domain.Modules.Inventory.Entities.StockMovement>().CountAsync(m => m.SourceDocId == inv.Id);
-        var journals = await verify.JournalEntries.CountAsync(x => x.SourceEventId == inv.Id);
-        var cash = await verify.Set<ERP.Domain.Modules.Caja.Entities.CashMovement>().CountAsync(m => m.ReferenceId == inv.Id);
-        (thrown?.GetType().Name, status, stock, journals, cash).Should().Be(("DbUpdateConcurrencyException", "Draft", 0, 0, 0));
+        (await verify.SalesInvoices.AsNoTracking().SingleAsync(x => x.Id == inv.Id)).Status.ToString().Should().Be("Authorized");
+        (await verify.JournalEntries.CountAsync(x => x.SourceEventId == inv.Id)).Should().Be(1);
+        (await verify.Set<ERP.Domain.Modules.Caja.Entities.CashMovement>().CountAsync(m => m.ReferenceId == inv.Id)).Should().Be(1);
+        (await verify.Set<ERP.Domain.Modules.Inventory.Entities.StockMovement>().CountAsync(m => m.SourceDocId == inv.Id)).Should().Be(1);
+        (await SessionBalanceAsync(verify)).Should().Be(105m, because: "5 del otro flujo + 100 de esta venta");
     }
 
+    /// <summary>
+    /// D — un fallo del posting ocurre DESPUÉS de publicar: el reintento de Kardex no lo repite
+    /// (LastSaveFailureIsRetryable) y la venta se revierte entera — Draft, sin Kardex, asiento,
+    /// movimiento de caja ni fila de outbox (sin estado parcial).
+    /// </summary>
+    [Fact]
+    public async Task Fallo_de_posting_tras_publicar_revierte_Kardex_caja_y_outbox()
+    {
+        var issueDate = new DateOnly(2026, 7, 25);
+        var warehouseId = await SeedWarehouseAsync();
+        var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
+        // Sin PostingRule sembrada — RULE_NOT_FOUND dentro del pipeline, después del lock de Caja.
+        var inv = BuildAuthorizableInvoice(issueDate, "001-001-000000097");
+        db.SalesInvoices.Add(inv);
+        await db.SaveChangesAsync();
+
+        var stock = RetryStockRepository(db);
+        await stock.AppendMovementAsync(_tenantId, _companyId, Guid.NewGuid(), warehouseId,
+            ERP.Domain.Modules.Inventory.Enums.StockMovementType.PositiveAdjust, 10m, "UNIT", issueDate,
+            inv.InvoiceNumber, inv.Id, "SalesInvoice", _createdBy, unitCost: 1m);
+        inv.Authorize(_createdBy);
+
+        var act = async () => await stock.SaveChangesWithSequenceRetryAsync();
+        await act.Should().ThrowAsync<ERP.Application.Modules.Sales.Exceptions.SalesInvoicePostingFailedException>();
+
+        await using var verify = CreateContext();
+        (await verify.SalesInvoices.AsNoTracking().SingleAsync(x => x.Id == inv.Id)).Status.ToString().Should().Be("Draft");
+        (await verify.Set<ERP.Domain.Modules.Inventory.Entities.StockMovement>().CountAsync(m => m.SourceDocId == inv.Id)).Should().Be(0);
+        (await verify.JournalEntries.CountAsync(x => x.SourceEventId == inv.Id)).Should().Be(0);
+        (await verify.Set<ERP.Domain.Modules.Caja.Entities.CashMovement>().CountAsync(m => m.ReferenceId == inv.Id)).Should().Be(0);
+        (await verify.OutboxMessages.CountAsync(m => m.Payload.Contains(inv.Id.ToString()))).Should().Be(0);
+        (await SessionBalanceAsync(verify)).Should().Be(0m);
+    }
+
+    private async Task<SalesInvoice> LoadInvoiceAsync(ErpDbContext db, Guid id) =>
+        (await new ERP.Infrastructure.Persistence.Repositories.Sales.SalesInvoiceRepository(db, new FixedCurrentCompany(_companyId))
+            .GetByIdAsync(_tenantId, id))!;
+
+    /// <summary>
+    /// A — dos ventas DISTINTAS autorizadas a la vez sobre la misma CashSession (cada una en su
+    /// propio contexto/transacción): el FOR UPDATE las serializa — ambas completan, cada una con su
+    /// asiento y su SaleIncome, y el saldo final es la suma exacta. Varias rondas.
+    /// </summary>
+    [Fact]
+    public async Task Dos_ventas_distintas_concurrentes_en_la_misma_sesion_se_serializan()
+    {
+        var issueDate = new DateOnly(2026, 7, 25);
+        var (seedDb, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
+        await SeedRuleAndPeriodAsync(seedDb, issueDate);
+        const int rounds = 5;
+        var invoiceIds = new List<Guid>();
+
+        for (var round = 0; round < rounds; round++)
+        {
+            var ids = new Guid[2];
+            await using (var draftDb = CreateContext())
+            {
+                for (var k = 0; k < 2; k++)
+                {
+                    var draft = BuildAuthorizableInvoice(issueDate, $"001-002-{round:D4}{k:D5}");
+                    draftDb.SalesInvoices.Add(draft);
+                    ids[k] = draft.Id;
+                }
+                await draftDb.SaveChangesAsync();
+            }
+
+            var go = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            Task AuthorizeAsync(Guid id) =>
+                Task.Run(async () =>
+                {
+                    var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
+                    var inv = await LoadInvoiceAsync(db, id);
+                    // Igual que la autorización real: la sesión ya está trackeada antes de guardar.
+                    _ = await db.CashSessions.SingleAsync(x => x.Id == _cashSessionId);
+                    await go.Task.ConfigureAwait(false);
+                    inv.Authorize(_createdBy);
+                    await db.SaveChangesAsync();
+                });
+
+            var tasks = ids.Select(AuthorizeAsync).ToArray();
+            go.SetResult(true);
+            await FluentActions.Awaiting(() => Task.WhenAll(tasks)).Should().NotThrowAsync(
+                because: $"ronda {round}: la sesión se bloquea y recarga, no hay conflicto por xmin");
+            invoiceIds.AddRange(ids);
+        }
+
+        await using var verify = CreateContext();
+        foreach (var id in invoiceIds)
+        {
+            (await verify.JournalEntries.CountAsync(x => x.SourceEventId == id)).Should().Be(1);
+            (await verify.Set<ERP.Domain.Modules.Caja.Entities.CashMovement>().CountAsync(m => m.ReferenceId == id)).Should().Be(1);
+        }
+        (await SessionBalanceAsync(verify)).Should().Be(100m * 2 * rounds);
+    }
+
+    /// <summary>B — la misma autorización re-entregada dos veces a la vez, con efectivo: un asiento y un SaleIncome.</summary>
+    [Fact]
+    public async Task Republicacion_concurrente_con_efectivo_registra_un_solo_movimiento()
+    {
+        var issueDate = new DateOnly(2026, 7, 25);
+        var (seedDb, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
+        await SeedRuleAndPeriodAsync(seedDb, issueDate);
+        var inv = BuildAuthorizableInvoice(issueDate, "001-001-000000096");
+        seedDb.SalesInvoices.Add(inv);
+        await seedDb.SaveChangesAsync();
+        inv.Authorize(_createdBy);
+        await seedDb.SaveChangesAsync();
+
+        var evt = new SalesInvoiceAuthorizedEvent(inv.Id, inv.InvoiceNumber, inv.AuthorizedGrandTotal!.Value,
+            _createdBy, _cashSessionId, _tenantId, _companyId, issueDate, inv.Subtotal, inv.TotalVat, inv.TotalIce,
+            inv.TotalDiscount, physicalCashApplied: 100m);
+
+        var go = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        Task RedeliverAsync() =>
+            Task.Run(async () =>
+            {
+                await go.Task.ConfigureAwait(false);
+                var (db, publisher) = BuildWiredContext(_tenantId, _companyId, _postgres);
+                await using var tx = await db.Database.BeginTransactionAsync();
+                await publisher.Publish(evt, CancellationToken.None);
+                await db.SaveChangesAsync();
+                await tx.CommitAsync();
+            });
+        var a = RedeliverAsync();
+        var b = RedeliverAsync();
+        go.SetResult(true);
+        await FluentActions.Awaiting(() => Task.WhenAll(a, b)).Should().NotThrowAsync();
+
+        await using var verify = CreateContext();
+        (await verify.JournalEntries.CountAsync(x => x.SourceEventId == inv.Id)).Should().Be(1);
+        (await verify.Set<ERP.Domain.Modules.Caja.Entities.CashMovement>().CountAsync(m => m.ReferenceId == inv.Id)).Should().Be(1);
+        (await SessionBalanceAsync(verify)).Should().Be(100m);
+    }
+
+    /// <summary>C — la misma factura autorizada a la vez desde dos contextos: gana una sola (xmin de SalesInvoice).</summary>
+    [Fact]
+    public async Task Doble_autorizacion_concurrente_de_la_misma_factura_solo_una_gana()
+    {
+        var issueDate = new DateOnly(2026, 7, 25);
+        var (seedDb, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
+        await SeedRuleAndPeriodAsync(seedDb, issueDate);
+        var draft = BuildAuthorizableInvoice(issueDate, "001-001-000000095");
+        seedDb.SalesInvoices.Add(draft);
+        await seedDb.SaveChangesAsync();
+
+        var go = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        Task<Exception?> AuthorizeAsync() =>
+            Task.Run(async () =>
+            {
+                var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
+                var inv = await LoadInvoiceAsync(db, draft.Id);
+                await go.Task.ConfigureAwait(false);
+                try
+                {
+                    inv.Authorize(_createdBy);
+                    await db.SaveChangesAsync();
+                    return (Exception?)null;
+                }
+                catch (Exception ex)
+                {
+                    return ex;
+                }
+            });
+        var a = AuthorizeAsync();
+        var b = AuthorizeAsync();
+        go.SetResult(true);
+        var outcomes = await Task.WhenAll(a, b);
+
+        outcomes.Count(e => e is null).Should().Be(1, because: "una sola transición Draft → Authorized");
+        outcomes.Single(e => e is not null).Should().BeOfType<DbUpdateConcurrencyException>();
+
+        await using var verify = CreateContext();
+        (await verify.SalesInvoices.AsNoTracking().SingleAsync(x => x.Id == draft.Id)).Status.ToString().Should().Be("Authorized");
+        (await verify.JournalEntries.CountAsync(x => x.SourceEventId == draft.Id)).Should().Be(1);
+        (await verify.Set<ERP.Domain.Modules.Caja.Entities.CashMovement>().CountAsync(m => m.ReferenceId == draft.Id)).Should().Be(1);
+        (await verify.OutboxMessages.CountAsync(m => m.Payload.Contains(draft.Id.ToString()))).Should().Be(1);
+        (await SessionBalanceAsync(verify)).Should().Be(100m);
+    }
 
     private sealed class DeferredPublisher : IPublisher
     {
