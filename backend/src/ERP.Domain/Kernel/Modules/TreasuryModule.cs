@@ -21,7 +21,7 @@ public static class TreasuryModule
         LabelKey = "app.nav.item.caja.operation",
         SortOrder = 10,
         Id = "f5000000-0000-4000-9000-000000000010",
-        PermissionsAnyCsv = CajaPermissions.View
+        PermissionsAnyCsv = CajaPermissions.View + "," + CajaPermissions.FundingRequestsView
     )]
     public const string CajaGroup = "/treasury/cash/group";
 
@@ -53,6 +53,20 @@ public static class TreasuryModule
         RelatedActionPermissionsCsv = CajaPermissions.Manage
     )]
     public const string CashMovementReasons = "/treasury/cash/movement-reasons";
+
+    // ZH-CASH-FUNDING-REQUEST-API-02E-D: bandeja independiente de solicitudes de efectivo (no se
+    // sobrecarga "Turno de Caja"). El solicitante sin este permiso llega a SU solicitud desde el
+    // flujo de pago a proveedor, sin ver el menú. Entregar/rechazar exige además controlar la sesión.
+    [NavItem(
+        "Solicitudes de efectivo",
+        Permission = CajaPermissions.FundingRequestsView,
+        LabelKey = "app.nav.item.caja.fundingRequests",
+        SortOrder = 12,
+        Id = "f5000000-0000-4000-9000-000000000012",
+        ParentId = "f5000000-0000-4000-9000-000000000010",
+        RelatedActionPermissionsCsv = CajaPermissions.FundingRequestsFulfill
+    )]
+    public const string CashFundingRequests = "/treasury/cash/funding-requests";
 
     [NavItem(
         "Configuración",

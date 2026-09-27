@@ -27,6 +27,7 @@ import type {
 } from "../api/cajaService";
 import { cashMovementTypeLabel } from "../constants/cashMovementTypes";
 import { ManualCashMovementModal } from "../components/ManualCashMovementModal";
+import { CashFundingRequestsPendingNotice } from "../components/CashFundingRequestsPendingNotice";
 import "../../../styles/shared/erp-form-core.css";
 import "../../../styles/shared/items-catalog.css";
 import "./CajaPage.css";
@@ -289,6 +290,8 @@ export function CajaPage() {
         {ctx.saveError && (
           <ZHPageNotice variant="error" message={ctx.saveError} />
         )}
+
+        {ctx.tab === "listado" && <CashFundingRequestsPendingNotice />}
 
         {/* ═══════════════════════ LISTADO ═══════════════════════════ */}
         {ctx.tab === "listado" && (

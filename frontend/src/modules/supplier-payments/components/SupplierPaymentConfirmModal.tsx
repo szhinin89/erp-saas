@@ -18,6 +18,13 @@ interface Props {
   submitError: string | null;
   onCancel: () => void;
   onConfirm: () => void;
+  /**
+   * ZH-CASH-FUNDING-REQUEST-UI-FINAL-02E-EF — `request`: el efectivo sale de una caja operada por
+   * otro usuario; confirmar crea una solicitud de efectivo (mismo contenido), nunca el pago.
+   */
+  mode?: "direct" | "request";
+  /** Solo en `request`: quién opera la caja (para el texto de confirmación). */
+  cashOperatorName?: string | null;
 }
 
 /**
@@ -39,6 +46,8 @@ export function SupplierPaymentConfirmModal({
   submitError,
   onCancel,
   onConfirm,
+  mode = "direct",
+  cashOperatorName = null,
 }: Props) {
   const moneyDecimals = usePrecisionDecimals("money"); // presentación (04F)
   if (!open || !values) return null;
@@ -50,24 +59,35 @@ export function SupplierPaymentConfirmModal({
     values.applicationLines.filter((l) => l.amountApplied > 0),
   );
   const money = (value: number) => formatMoneyWithSymbol(value, moneyDecimals);
+  const isRequest = mode === "request";
+  const saveLabel = isRequest
+    ? saving
+      ? "Enviando solicitud..."
+      : "Solicitar efectivo"
+    : saving
+      ? "Registrando..."
+      : unapplied > 0
+        ? "Confirmar pago"
+        : "Confirmar y registrar";
 
   return (
     <ZHModal
       open={open}
       onClose={saving ? () => {} : onCancel}
       size="md"
-      title="Confirmar registro de pago"
-      subtitle="Revise los datos antes de confirmar — el pago quedará confirmado de inmediato, sin borrador."
+      title={isRequest ? "Confirmar solicitud de efectivo" : "Confirmar registro de pago"}
+      subtitle={
+        isRequest
+          ? `El efectivo sale de una caja operada por ${cashOperatorName || "otro usuario"}: se enviará una solicitud y el pago se registrará cuando entregue el efectivo.`
+          : "Revise los datos antes de confirmar — el pago quedará confirmado de inmediato, sin borrador."
+      }
       footer={
         <ZHFormActions
           onCancel={onCancel}
           onSave={onConfirm}
           hideDraft
           disableSave={saving}
-          labels={{
-            cancel: "Cancelar",
-            save: saving ? "Registrando..." : unapplied > 0 ? "Confirmar pago" : "Confirmar y registrar",
-          }}
+          labels={{ cancel: "Cancelar", save: saveLabel }}
         />
       }
     >
@@ -127,12 +147,26 @@ export function SupplierPaymentConfirmModal({
           })}
         </ul>
 
-        <ZHFormAlert
-          type="warning"
-          message="Se actualizarán saldos de CxP y se generará asiento contable."
-        />
+        {isRequest ? (
+          <ZHFormAlert
+            type="info"
+            message="Todavía no se registra ningún pago."
+            detail="Al entregar el efectivo el cajero registra este mismo pago: se actualizarán saldos de CxP y se generará asiento contable."
+          />
+        ) : (
+          <ZHFormAlert
+            type="warning"
+            message="Se actualizarán saldos de CxP y se generará asiento contable."
+          />
+        )}
 
-        {submitError && <ZHFormAlert type="error" message="No se pudo registrar el pago" detail={submitError} />}
+        {submitError && (
+          <ZHFormAlert
+            type="error"
+            message={isRequest ? "No se pudo crear la solicitud de efectivo" : "No se pudo registrar el pago"}
+            detail={submitError}
+          />
+        )}
       </div>
     </ZHModal>
   );

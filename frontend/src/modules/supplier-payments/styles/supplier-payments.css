@@ -93,3 +93,11 @@
   gap: 8px;
   cursor: pointer;
 }
+
+/* ZH-CASH-FUNDING-REQUEST-UI-FINAL-02E-EF — acciones tras crear una solicitud de efectivo. */
+.sp-request-created-actions {
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+  margin-top: var(--space-4);
+}

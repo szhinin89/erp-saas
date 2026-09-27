@@ -359,12 +359,37 @@ public sealed class KernelRegistryTests
             "/treasury/cash",
             // TREASURY-CASH-MOVEMENT-REASONS-ADMIN-03
             "/treasury/cash/movement-reasons",
+            // ZH-CASH-FUNDING-REQUEST-API-02E-D
+            "/treasury/cash/funding-requests",
             "/treasury/cash/configuration-group",
             "/treasury/cash/registers",
             "/settings/operations?tab=cash",
             "/treasury/banks/group",
             // TREASURY-BANK-ACCOUNTS-01
             "/treasury/banks/accounts",
+        });
+    }
+
+    [Fact]
+    public void Navigation_cash_funding_requests_lives_under_Caja_with_its_own_permission()
+    {
+        // ZH-CASH-FUNDING-REQUEST-API-02E-D — bandeja propia bajo Caja (no bajo Cuentas por pagar),
+        // visible con caja.funding-requests.view; entregar/rechazar es una acción relacionada.
+        var navigation = KernelRegistry.Navigation;
+        var item = navigation.Single(n => n.RoutePath == "/treasury/cash/funding-requests");
+        var cajaGroup = navigation.Single(n => n.RoutePath == "/treasury/cash/group");
+
+        item.PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.CajaPermissions.FundingRequestsView);
+        item.RelatedActionPermissionKeys.Should()
+            .BeEquivalentTo(new[] { ERP.Domain.Kernel.Permissions.CajaPermissions.FundingRequestsFulfill });
+        item.ParentItemId.Should().Be(cajaGroup.Id);
+        item.LabelKey.Should().Be("app.nav.item.caja.fundingRequests");
+        cajaGroup.PermissionKeysAnyJson.Should().Contain(ERP.Domain.Kernel.Permissions.CajaPermissions.FundingRequestsView);
+        navigation.Where(n => n.GroupCode == "suppliers").Should().NotContain(n => n.RoutePath.Contains("funding"));
+        KernelRegistry.Permissions.Should().Contain(new[]
+        {
+            ERP.Domain.Kernel.Permissions.CajaPermissions.FundingRequestsView,
+            ERP.Domain.Kernel.Permissions.CajaPermissions.FundingRequestsFulfill,
         });
     }
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FormProvider, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { NoAccessPage, PageShell } from "../../../components/PageShell";
@@ -24,7 +24,14 @@ import {
   pendingPayablesFacade,
   type PendingInstallmentOption,
 } from "../api/pendingPayablesFacade";
-import { supplierPaymentService } from "../api/supplierPaymentService";
+import {
+  supplierPaymentService,
+  type RegisterSupplierPaymentRequest,
+} from "../api/supplierPaymentService";
+import {
+  cashFundingRequestFacade,
+  cashFundingRequestRoute,
+} from "../../caja/facades/cashFundingRequestFacade";
 import { SupplierPaymentHeader } from "../components/SupplierPaymentHeader";
 import { SupplierPayablesPortfolio } from "../components/SupplierPayablesPortfolio";
 import { SupplierPaymentMethodLinesEditor } from "../components/SupplierPaymentMethodLinesEditor";
@@ -79,6 +86,10 @@ export function SupplierPaymentFormPage() {
   // si no puede leerse queda en false (el backend la aplica igual; esto es solo UX).
   const [allowWithoutPayable, setAllowWithoutPayable] = useState(false);
   const allowWithoutPayableRef = useRef(false);
+  // ZH-CASH-FUNDING-REQUEST-UI-FINAL-02E-EF — solicitud creada (efectivo de caja ajena) y clave de
+  // idempotencia estable por intento de confirmación (un reintento tras error de red no duplica).
+  const [createdRequestId, setCreatedRequestId] = useState<string | null>(null);
+  const clientRequestIdRef = useRef<string | null>(null);
 
   const form = useForm<RegisterSupplierPaymentFormValues>({
     resolver: zodResolver(
@@ -142,6 +153,20 @@ export function SupplierPaymentFormPage() {
     [installments],
   );
   const methodsById = useMemo(() => new Map(methods.map((m) => [m.id, m])), [methods]);
+  const cashRegistersById = useMemo(
+    () => new Map(cashRegisters.map((r) => [r.id, r])),
+    [cashRegisters],
+  );
+
+  // ZH-CASH-FUNDING-REQUEST-UI-FINAL-02E-EF — efectivo de una caja con sesión abierta de OTRO
+  // usuario ⇒ no se intenta el pago directo: se crea una solicitud de efectivo con el mismo pago.
+  // Dato del servidor (listado de cajas de la sucursal activa); el backend revalida el ownership.
+  const cashLineRegisters = watchedMethodLines
+    .filter((l) => l.destination?.startsWith("cash:"))
+    .map((l) => cashRegistersById.get(l.destination.slice(5)));
+  const foreignCashRegister =
+    cashLineRegisters.find((r) => r?.hasOpenSession && !r.openSessionControlledByCurrentUser) ?? null;
+  const requestMode = foreignCashRegister !== null;
 
   const validateRuntimeRules = useCallback(
     (values: RegisterSupplierPaymentFormValues): boolean => {
@@ -208,6 +233,26 @@ export function SupplierPaymentFormPage() {
         }
       });
 
+      // Una solicitud de efectivo lleva exactamente una línea de efectivo (una sola caja); el resto
+      // debe ser bancario. El backend lo valida igual.
+      const cashLineIndexes = values.methodLines
+        .map((line, idx) => (line.destination.startsWith("cash:") ? idx : -1))
+        .filter((idx) => idx >= 0);
+      const wantsRequest = cashLineIndexes.some((idx) => {
+        const register = cashRegistersById.get(values.methodLines[idx].destination.slice(5));
+        return register?.hasOpenSession && !register.openSessionControlledByCurrentUser;
+      });
+      if (wantsRequest && cashLineIndexes.length > 1) {
+        cashLineIndexes.slice(1).forEach((idx) =>
+          setError(`methodLines.${idx}.destination`, {
+            type: "manual",
+            message:
+              "La solicitud de efectivo admite una sola línea de efectivo (una sola caja); las demás deben ser bancarias.",
+          }),
+        );
+        ok = false;
+      }
+
       values.applicationLines.forEach((line, idx) => {
         const installment = line.accountsPayableInstallmentId
           ? installmentsById.get(line.accountsPayableInstallmentId)
@@ -223,7 +268,7 @@ export function SupplierPaymentFormPage() {
 
       return ok;
     },
-    [methodsById, installmentsById, setError, moneyDecimals],
+    [methodsById, installmentsById, cashRegistersById, setError, moneyDecimals],
   );
 
   const onValid = handleSubmit((values) => {
@@ -231,6 +276,7 @@ export function SupplierPaymentFormPage() {
     if (!validateRuntimeRules(values)) return;
     setModalError(null);
     setPendingValues(values);
+    clientRequestIdRef.current = crypto.randomUUID();
     setConfirmOpen(true);
   });
 
@@ -255,7 +301,7 @@ export function SupplierPaymentFormPage() {
         validApplicationLines,
       );
 
-      const dto = await supplierPaymentService.register({
+      const payload: RegisterSupplierPaymentRequest = {
         supplierId: pendingValues.supplierId,
         paymentDate: pendingValues.paymentDate,
         totalAmount,
@@ -284,8 +330,20 @@ export function SupplierPaymentFormPage() {
         // 02C — el usuario acaba de aceptar el modal que le mostró el remanente como anticipo:
         // esa es la confirmación explícita (el backend la exige y la revalida).
         confirmUnappliedAmount: unapplied > 0,
-      });
+      };
 
+      if (requestMode) {
+        const request = await cashFundingRequestFacade.create({
+          ...payload,
+          clientRequestId: clientRequestIdRef.current ?? crypto.randomUUID(),
+        });
+        message.success("Solicitud de efectivo creada.");
+        setConfirmOpen(false);
+        setCreatedRequestId(request.id);
+        return;
+      }
+
+      const dto = await supplierPaymentService.register(payload);
       message.success(`Pago ${dto.displayNumber} registrado correctamente.`);
       setConfirmOpen(false);
       navigate(`/supplier-payments/${dto.id}`);
@@ -303,6 +361,28 @@ export function SupplierPaymentFormPage() {
   };
 
   if (!canCreate) return <NoAccessPage title="Registrar pago a proveedor" />;
+
+  if (createdRequestId) {
+    return (
+      <PageShell kicker="Finanzas" title="Registrar pago a proveedor">
+        <ZHCard>
+          <ZHPageNotice
+            variant="success"
+            message="Solicitud de efectivo creada"
+            detail="El pago se registrará cuando el cajero entregue el efectivo. Puede seguir su estado en Solicitudes de efectivo."
+          />
+          <div className="sp-request-created-actions">
+            <Link to={cashFundingRequestRoute(createdRequestId)} className="zh-link">
+              Ver solicitud
+            </Link>
+            <ZHBtn type="button" variant="ghost" onClick={() => navigate("/supplier-payments")}>
+              Volver a pagos
+            </ZHBtn>
+          </div>
+        </ZHCard>
+      </PageShell>
+    );
+  }
 
   return (
     <PageShell
@@ -337,6 +417,13 @@ export function SupplierPaymentFormPage() {
             cashRegisters={cashRegisters}
             disabled={saving}
           />
+          {foreignCashRegister && (
+            <ZHPageNotice
+              variant="info"
+              message={`La caja ${foreignCashRegister.name} la opera ${foreignCashRegister.openSessionUserName || "otro usuario"}.`}
+              detail="Se enviará una solicitud de efectivo con este mismo pago; el pago se registrará cuando el cajero entregue el efectivo."
+            />
+          )}
         </ZHCard>
 
         <ZHCard title="Distribución medio ↔ cuota (automática)">
@@ -373,7 +460,7 @@ export function SupplierPaymentFormPage() {
           onSave={() => void onValid()}
           hideDraft
           disableSave={saving}
-          labels={{ cancel: "Cancelar", save: "Registrar pago" }}
+          labels={{ cancel: "Cancelar", save: requestMode ? "Solicitar efectivo" : "Pagar" }}
         />
       </FormProvider>
 
@@ -390,6 +477,8 @@ export function SupplierPaymentFormPage() {
           setConfirmOpen(false);
         }}
         onConfirm={() => void handleConfirm()}
+        mode={requestMode ? "request" : "direct"}
+        cashOperatorName={foreignCashRegister?.openSessionUserName ?? null}
       />
     </PageShell>
   );

@@ -12,44 +12,23 @@ using MediatR;
 
 namespace ERP.Application.Modules.Caja.FundingRequests;
 
-// ── DTO ────────────────────────────────────────────────────────────────
+// ── Request HTTP ─────────────────────────────────────────────────────────
 
-/// <summary>ZH-CASH-FUNDING-REQUEST-WORKFLOW-02E-C — estado de una solicitud de efectivo.</summary>
-public sealed record CashFundingRequestDto(
-    Guid Id,
-    string Status,
-    Guid BranchId,
-    Guid CashRegisterId,
-    Guid CashSessionId,
+/// <summary>
+/// ZH-CASH-FUNDING-REQUEST-API-02E-D — cuerpo de <c>POST /api/v1/cash-funding-requests</c>: exactamente
+/// el mismo pago que <see cref="RegisterSupplierPaymentRequest"/> + la clave de idempotencia.
+/// </summary>
+public sealed record CreateCashFundingRequestRequest(
     Guid SupplierId,
+    DateOnly PaymentDate,
     decimal TotalAmount,
-    decimal CashAmount,
-    Guid RequestedByUserId,
-    DateTime RequestedAtUtc,
-    Guid? ResolvedByUserId,
-    DateTime? ResolvedAtUtc,
-    string? ResolutionReason,
-    Guid? SupplierPaymentId
-)
-{
-    public static CashFundingRequestDto From(CashFundingRequest r) =>
-        new(
-            r.Id,
-            r.Status.ToString(),
-            r.BranchId,
-            r.CashRegisterId,
-            r.CashSessionId,
-            r.SupplierId,
-            r.TotalAmount,
-            r.CashAmount,
-            r.RequestedByUserId,
-            r.RequestedAtUtc,
-            r.ResolvedByUserId,
-            r.ResolvedAtUtc,
-            r.ResolutionReason,
-            r.SupplierPaymentId
-        );
-}
+    string? ReceiptNumber,
+    IReadOnlyList<SupplierPaymentMethodLineRequest> MethodLines,
+    IReadOnlyList<SupplierPaymentApplicationLineRequest>? ApplicationLines,
+    IReadOnlyList<SupplierPaymentAllocationLineRequest>? Allocations,
+    Guid ClientRequestId,
+    bool ConfirmUnappliedAmount = false
+);
 
 // ── Commands ─────────────────────────────────────────────────────────────
 

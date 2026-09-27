@@ -231,7 +231,13 @@ public sealed record CashRegisterDto(
     string? DefaultCustomerName,
     Guid? AccountingAccountId,
     DateTime CreatedAt,
-    DateTime? UpdatedAt
+    DateTime? UpdatedAt,
+    // ZH-CASH-FUNDING-REQUEST-UI-FINAL-02E-EF — solo en el listado de la sucursal activa: estado de
+    // la sesión abierta de la caja (el formulario de pago decide pago directo vs. solicitud de
+    // efectivo). Informativo: el backend revalida el ownership al pagar/solicitar.
+    bool HasOpenSession = false,
+    bool OpenSessionControlledByCurrentUser = false,
+    string? OpenSessionUserName = null
 );
 
 public sealed record EmissionPointLookupForBranchDto(

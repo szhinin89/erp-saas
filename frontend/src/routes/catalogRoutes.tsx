@@ -162,6 +162,14 @@ const CashRegistersPage = lazyNamedPage(
   () => import("../modules/cashRegisters/pages/CashRegistersPage"),
   "CashRegistersPage",
 );
+const CashFundingRequestsPage = lazyNamedPage(
+  () => import("../modules/caja/pages/CashFundingRequestsPage"),
+  "CashFundingRequestsPage",
+);
+const CashFundingRequestDetailPage = lazyNamedPage(
+  () => import("../modules/caja/pages/CashFundingRequestDetailPage"),
+  "CashFundingRequestDetailPage",
+);
 const CashMovementReasonsAdminPage = lazyNamedPage(
   () => import("../modules/caja/pages/CashMovementReasonsAdminPage"),
   "CashMovementReasonsAdminPage",
@@ -350,6 +358,17 @@ export const catalogRoutes = [
     key="treasury-cash-movement-reasons"
     path="/treasury/cash/movement-reasons"
     element={<CashMovementReasonsAdminPage />}
+  />,
+  // ZH-CASH-FUNDING-REQUEST-UI-FINAL-02E-EF — solicitudes de efectivo (bandeja + detalle).
+  <Route
+    key="treasury-cash-funding-requests"
+    path="/treasury/cash/funding-requests"
+    element={<CashFundingRequestsPage />}
+  />,
+  <Route
+    key="treasury-cash-funding-requests-detail"
+    path="/treasury/cash/funding-requests/:id"
+    element={<CashFundingRequestDetailPage />}
   />,
   <Route
     key="cash-legacy"

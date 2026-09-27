@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-09-21T21:43:38.227Z",
+  "generatedAt": "2026-09-27T00:12:19.569Z",
   "summary": {
-    "total": 132,
-    "allowed": 132,
+    "total": 134,
+    "allowed": 134,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
@@ -22,6 +22,7 @@
     "/api/electronic-invoicing",
     "/api/electronic-documents",
     "/api/cash",
+    "/api/cash-funding-requests",
     "/api/cash-movement-reasons",
     "/api/cash-registers",
     "/api/cash-sessions",
@@ -233,6 +234,14 @@
       "endpoint": "/api/v1/auth/switch-company",
       "files": [
         "frontend/src/modules/auth/api/authService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/cash-funding-requests",
+      "files": [
+        "frontend/src/modules/caja/api/cashFundingRequestService.ts"
       ],
       "legacy": false,
       "allowed": true
@@ -479,6 +488,7 @@
     {
       "endpoint": "/api/v1/config/precision-policy",
       "files": [
+        "frontend/src/lib/config/precisionPolicy.config.test.ts",
         "frontend/src/lib/config/precisionPolicy.config.ts"
       ],
       "legacy": false,
@@ -642,6 +652,14 @@
       "endpoint": "/api/v1/finance/supplier-credits",
       "files": [
         "frontend/src/modules/finance/api/supplierCreditService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/finance/supplier-credits?page=2&pageSize=10",
+      "files": [
+        "frontend/src/modules/finance/api/supplierCreditService.test.ts"
       ],
       "legacy": false,
       "allowed": true

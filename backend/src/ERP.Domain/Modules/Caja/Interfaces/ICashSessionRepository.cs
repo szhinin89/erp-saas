@@ -17,6 +17,16 @@ public interface ICashSessionRepository
     );
 
     /// <summary>
+    /// ZH-CASH-FUNDING-REQUEST-UI-FINAL-02E-EF — sesiones abiertas (sin tracking, sin movimientos) de
+    /// un lote de cajas, en una sola consulta: quién opera cada caja para el listado de cajas.
+    /// </summary>
+    Task<IReadOnlyList<CashSession>> GetOpenByCashRegisterIdsAsync(
+        Guid tenantId,
+        IReadOnlyCollection<Guid> cashRegisterIds,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
     /// Único lock oficial de la sesión de caja activa para todo flujo que registra movimientos en
     /// ella (pago a proveedor y su reversa, reembolso de crédito de proveedor y su reversa):
     /// <c>SELECT ... FOR UPDATE</c> adquirido dentro de la transacción ambiente ya abierta, liberado

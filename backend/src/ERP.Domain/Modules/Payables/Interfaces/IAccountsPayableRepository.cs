@@ -60,6 +60,18 @@ public interface IAccountsPayableRepository
         CancellationToken ct = default
     );
 
+    /// <summary>
+    /// ZH-CASH-FUNDING-REQUEST-API-02E-D — CxP dueña de un lote de cuotas (una sola consulta, sin
+    /// tracking, acotada a tenant + empresa): documento, origen y número de cuota, para mostrar las
+    /// aplicaciones de una solicitud de efectivo. Cuotas ajenas o inexistentes no aparecen.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, (Guid AccountsPayableId, string DocumentNumber, AccountsPayableOriginType OriginType, int InstallmentNumber)>> GetInstallmentRefsByIdsAsync(
+        Guid tenantId,
+        Guid companyId,
+        IReadOnlyCollection<Guid> installmentIds,
+        CancellationToken ct = default
+    );
+
     Task<(AccountsPayableOriginType OriginType, Guid OriginId)?> GetOriginAsync(
         Guid tenantId,
         Guid id,

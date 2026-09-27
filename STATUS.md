@@ -2,6 +2,25 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-26** · Kernel refactor: **2026-06-05**.
 
+## ZH-CASH-FUNDING-REQUEST-UI-FINAL-02E-EF — UI de solicitudes de efectivo + integración con Pago a proveedor — SPAY-02E CLOSED (2026-09-26)
+
+**Estado: COMPLETADO (sin commit).**
+- **Pantalla** `/treasury/cash/funding-requests` (Caja > Solicitudes de efectivo): pestañas por permiso — Pendientes/Historial (`caja.funding-requests.view`, bandeja de la sucursal activa) y Mis solicitudes (`supplier-payments.create`); filtros estado/caja y paginación en servidor. Detalle `/treasury/cash/funding-requests/:id`: resumen (proveedor, solicitante, caja, sucursal, fecha, estado), origen de fondos (caja/banco con medio, cuenta, fecha, referencia), aplicaciones a CxP (Compra/Gasto, documento, cuota) y resolución con enlace al pago generado. Acciones solo por `canFulfill/canReject/canCancel` del servidor; motivo obligatorio en rechazar/cancelar; confirmación "Confirmo que estoy entregando $X…". Sin GUIDs visibles.
+- **Pago a proveedor**: mismo formulario. Efectivo de una caja con sesión abierta de OTRO usuario ⇒ botón "Solicitar efectivo" (si no, "Pagar") y la confirmación crea UNA solicitud con el pago completo (banco + caja), con ClientRequestId estable por intento; nunca el pago. Una sola línea de efectivo por solicitud. Tras crear: "Solicitud de efectivo creada" + [Ver solicitud].
+- **Detección de caja ajena**: ampliación mínima del listado existente de cajas de la sucursal activa (`GET /cash-registers`): `HasOpenSession`, `OpenSessionControlledByCurrentUser`, `OpenSessionUserName` (1 consulta de sesiones + 1 de usuarios). El backend revalida siempre.
+- **Caja**: aviso "Solicitudes de efectivo: N [Ver]" con el `totalCount` de la bandeja filtrada por Pending (sin endpoint de conteo).
+- Detalle de solicitud ahora incluye `BranchName`. `/api/cash-funding-requests` añadido a la allowlist del Platform guard (`tools/ci/platform-guard-config.json`).
+- Evidencia: Domain 1220 · Application 2290 · Architecture 116 · API 499/500 (baseline `PG_unique_business_partner_identification_enforced`) · PostgreSQL focalizado (solicitudes/pagos/caja/saldos/posting/concurrencia) 263/264 — `SalesInvoiceAuthorizedPostingIntegrationTests.Dos_publicaciones_concurrentes…` intermitente bajo carga (3/3 verde aislado, fuera de 02E) · vitest 2516/2516 · `tsc -b`/build OK · lint 0 errores (35 warnings preexistentes) · `architecture:check` 244 = `HEAD`.
+- Limitación preexistente: el formulario de pago obtiene las cajas con `caja.view`; un solicitante sin ese permiso no puede elegir caja (igual que antes para pagos en efectivo).
+
+## ZH-CASH-FUNDING-REQUEST-API-02E-D — API, modelo de lectura y permisos de solicitudes de efectivo (2026-09-26)
+
+**Estado: COMPLETADO (sin commit).** Sin UI. Lógica financiera de 02E-C sin cambios.
+- **Endpoints** `api/v1/cash-funding-requests`: `POST` (`supplier-payments.create`), `GET` bandeja (`caja.funding-requests.view`, empresa + sucursal activa), `GET mine` (`supplier-payments.create`, solicitante forzado al usuario autenticado), `GET {id}` (solicitante O `view` sobre la sucursal activa, resuelto en Application con `IRuntimePermissionAuthorizer`; si no → 404), `POST {id}/fulfill|reject` (`caja.funding-requests.fulfill` + control real de la sesión), `POST {id}/cancel` (`supplier-payments.create` + solicitante). Los comandos responden el detalle re-leído.
+- **Modelo de lectura**: `CashFundingRequestListItemDto` + `CashFundingRequestDto` (detalle con origen efectivo/banco, aplicaciones a CxP con documento/origen/cuota, `CanFulfill/CanReject/CanCancel` derivados en servidor). Nunca expone payload, huella ni ClientRequestId. Nombres en lote (proveedores, usuarios, cajas, cuentas, formas de pago, cuotas vía `IAccountsPayableRepository.GetInstallmentRefsByIdsAsync`). Orden `RequestedAt` desc, `Id` desc; contador = `TotalCount` con filtro `Pending`.
+- **Permisos/menú**: `caja.funding-requests.view|fulfill` vía NavItem "Solicitudes de efectivo" (`/treasury/cash/funding-requests`) bajo Caja; nada bajo Cuentas por pagar. La ruta frontend llega con la UI (fase siguiente).
+- Evidencia: PostgreSQL solicitudes 43/43 (13 nuevas de modelo de lectura) · Application focalizadas 404/404 · API focalizadas 36/36 · Domain Kernel 44/44 · Architecture 116/116 · `architecture:check` 244 = `HEAD`.
+
 ## ZH-CASH-FUNDING-REQUEST-WORKFLOW-02E-C — Workflow de solicitudes de efectivo (2026-09-26)
 
 **Estado: COMPLETADO (sin commit).** Sin endpoints, permisos, menú ni UI.

@@ -53,5 +53,22 @@ public interface ICashFundingRequestRepository
         CancellationToken ct = default
     );
 
+    /// <summary>
+    /// ZH-CASH-FUNDING-REQUEST-API-02E-D — listado paginado de solo lectura (sin tracking) de la
+    /// empresa operativa. <paramref name="branchId"/> acota la bandeja del cajero a la sucursal
+    /// activa; <paramref name="requestedByUserId"/> acota "Mis solicitudes". Orden estable:
+    /// <c>RequestedAtUtc</c> desc, <c>Id</c> desc.
+    /// </summary>
+    Task<(IReadOnlyList<CashFundingRequest> Items, int Total)> SearchAsync(
+        Guid tenantId,
+        Guid? branchId,
+        Guid? requestedByUserId,
+        CashFundingRequestStatus? status,
+        Guid? cashRegisterId,
+        int page,
+        int pageSize,
+        CancellationToken ct = default
+    );
+
     Task AddAsync(CashFundingRequest request, CancellationToken ct = default);
 }

@@ -73,6 +73,27 @@ public sealed class AccountsPayableRepository : IAccountsPayableRepository
         return rows.ToDictionary(x => x.Id, x => (x.DocumentNumber, x.OriginType));
     }
 
+    public async Task<IReadOnlyDictionary<Guid, (Guid AccountsPayableId, string DocumentNumber, AccountsPayableOriginType OriginType, int InstallmentNumber)>> GetInstallmentRefsByIdsAsync(
+        Guid tenantId,
+        Guid companyId,
+        IReadOnlyCollection<Guid> installmentIds,
+        CancellationToken ct = default
+    )
+    {
+        if (installmentIds.Count == 0)
+            return new Dictionary<Guid, (Guid, string, AccountsPayableOriginType, int)>();
+        var rows = await (
+            from i in _db.AccountsPayableInstallments.AsNoTracking()
+            join p in _db.AccountsPayables.AsNoTracking() on i.AccountsPayableId equals p.Id
+            where i.TenantId == tenantId
+                && p.TenantId == tenantId
+                && p.CompanyId == companyId
+                && installmentIds.Contains(i.Id)
+            select new { i.Id, PayableId = p.Id, p.DocumentNumber, p.OriginType, i.InstallmentNumber }
+        ).ToListAsync(ct);
+        return rows.ToDictionary(x => x.Id, x => (x.PayableId, x.DocumentNumber, x.OriginType, x.InstallmentNumber));
+    }
+
     public async Task<(AccountsPayableOriginType OriginType, Guid OriginId)?> GetOriginAsync(
         Guid tenantId,
         Guid id,

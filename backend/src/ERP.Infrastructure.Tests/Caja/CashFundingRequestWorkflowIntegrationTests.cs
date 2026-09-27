@@ -55,7 +55,7 @@ namespace ERP.Infrastructure.Tests.Caja;
 /// SupplierCredit residual y rollback completo ante fallo de posting.
 /// </summary>
 [Trait("Category", "PostgreSql")]
-public sealed class CashFundingRequestWorkflowIntegrationTests : IAsyncLifetime
+public sealed partial class CashFundingRequestWorkflowIntegrationTests : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
         .WithImage("postgres:16-alpine")
@@ -86,6 +86,7 @@ public sealed class CashFundingRequestWorkflowIntegrationTests : IAsyncLifetime
         await _postgres.StartAsync();
         await using var db = PlainContext();
         await db.Database.MigrateAsync();
+        await SeedUsersAsync(db);
 
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _cashier);
         var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _cashier);

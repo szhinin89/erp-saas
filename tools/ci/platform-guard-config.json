@@ -49,6 +49,7 @@
     "/api/electronic-invoicing",
     "/api/electronic-documents",
     "/api/cash",
+    "/api/cash-funding-requests",
     "/api/cash-movement-reasons",
     "/api/cash-registers",
     "/api/cash-sessions",

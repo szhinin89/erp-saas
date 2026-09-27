@@ -28,6 +28,12 @@ import { operationalPreferencesService } from "../../configuracion/operaciones/a
 import type { OperationalPreferencesDto } from "../../configuracion/operaciones/api/operationalPreferencesService";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 
+// ZH-CASH-FUNDING-REQUEST-UI-FINAL-02E-EF — el aviso de solicitudes pendientes tiene su propio test
+// (CashFundingRequestsPendingNotice.test.tsx); aquí se aísla para no depender del Router.
+vi.mock("../components/CashFundingRequestsPendingNotice", () => ({
+  CashFundingRequestsPendingNotice: () => null,
+}));
+
 vi.mock("../api/cajaService", () => ({
   cajaService: {
     getCashRegisters: vi.fn(),

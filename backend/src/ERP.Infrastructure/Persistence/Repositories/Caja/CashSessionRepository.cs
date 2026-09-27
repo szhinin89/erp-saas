@@ -51,6 +51,20 @@ public sealed class CashSessionRepository : ICashSessionRepository
                 ct
             );
 
+    public async Task<IReadOnlyList<CashSession>> GetOpenByCashRegisterIdsAsync(
+        Guid tenantId,
+        IReadOnlyCollection<Guid> cashRegisterIds,
+        CancellationToken ct = default
+    )
+    {
+        if (cashRegisterIds.Count == 0)
+            return Array.Empty<CashSession>();
+        return await Scoped(tenantId)
+            .AsNoTracking()
+            .Where(x => cashRegisterIds.Contains(x.CashRegisterId) && x.Status == CashSessionStatus.Open)
+            .ToListAsync(ct);
+    }
+
     public async Task<CashSession?> GetOpenByCashRegisterForUpdateAsync(
         Guid tenantId,
         Guid cashRegisterId,

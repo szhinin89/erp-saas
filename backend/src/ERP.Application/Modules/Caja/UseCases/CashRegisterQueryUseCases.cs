@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Caja.DTOs;
+using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
 using MediatR;
@@ -49,20 +50,29 @@ public sealed class GetCashRegistersByCurrentBranchHandler
 {
     private readonly ICashRegisterRepository _repo;
     private readonly ICashRegisterUsageGuard _usageGuard;
+    private readonly ICashSessionRepository _sessions;
+    private readonly IAccessRepository _access;
     private readonly ICurrentTenant _t;
     private readonly ICurrentBranch _b;
+    private readonly ICurrentUser _u;
 
     public GetCashRegistersByCurrentBranchHandler(
         ICashRegisterRepository repo,
         ICashRegisterUsageGuard usageGuard,
+        ICashSessionRepository sessions,
+        IAccessRepository access,
         ICurrentTenant t,
-        ICurrentBranch b
+        ICurrentBranch b,
+        ICurrentUser u
     )
     {
         _repo = repo;
         _usageGuard = usageGuard;
+        _sessions = sessions;
+        _access = access;
         _t = t;
         _b = b;
+        _u = u;
     }
 
     public async Task<Result<IReadOnlyList<CashRegisterDto>>> Handle(
@@ -76,8 +86,32 @@ public sealed class GetCashRegistersByCurrentBranchHandler
             registers.Select(r => r.Id).ToList(),
             ct
         );
+        // ZH-CASH-FUNDING-REQUEST-UI-FINAL-02E-EF — sesión abierta de cada caja (1 consulta) y
+        // nombre de su operador (1 consulta): nunca N+1.
+        var registerIds = registers.Select(r => r.Id).ToList();
+        var openByRegister = (await _sessions.GetOpenByCashRegisterIdsAsync(_t.TenantId, registerIds, ct))
+            .GroupBy(s => s.CashRegisterId)
+            .ToDictionary(g => g.Key, g => g.First());
+        var operatorIds = openByRegister.Values.Select(s => s.UserId).Distinct().ToList();
+        var operatorNames = operatorIds.Count == 0
+            ? new Dictionary<Guid, string>()
+            : (await _access.GetUsersByIdsAsync(operatorIds, ct)).ToDictionary(u => u.Id, u => u.FullName);
+
         return Result<IReadOnlyList<CashRegisterDto>>.Success(
-            registers.Select(r => CajaMapper.ToDto(r, usedIds.Contains(r.Id))).ToList()
+            registers
+                .Select(r =>
+                {
+                    var dto = CajaMapper.ToDto(r, usedIds.Contains(r.Id));
+                    if (!openByRegister.TryGetValue(r.Id, out var open))
+                        return dto;
+                    return dto with
+                    {
+                        HasOpenSession = true,
+                        OpenSessionControlledByCurrentUser = open.IsControlledBy(_u.UserId),
+                        OpenSessionUserName = operatorNames.GetValueOrDefault(open.UserId),
+                    };
+                })
+                .ToList()
         );
     }
 }

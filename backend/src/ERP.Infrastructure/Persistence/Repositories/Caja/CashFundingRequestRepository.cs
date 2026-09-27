@@ -99,6 +99,36 @@ public sealed class CashFundingRequestRepository : ICashFundingRequestRepository
         return pending.Where(r => r.IsPending).ToList();
     }
 
+    public async Task<(IReadOnlyList<CashFundingRequest> Items, int Total)> SearchAsync(
+        Guid tenantId,
+        Guid? branchId,
+        Guid? requestedByUserId,
+        CashFundingRequestStatus? status,
+        Guid? cashRegisterId,
+        int page,
+        int pageSize,
+        CancellationToken ct = default
+    )
+    {
+        var q = Scoped(tenantId).AsNoTracking();
+        if (branchId is not null)
+            q = q.Where(x => x.BranchId == branchId.Value);
+        if (requestedByUserId is not null)
+            q = q.Where(x => x.RequestedByUserId == requestedByUserId.Value);
+        if (status is not null)
+            q = q.Where(x => x.Status == status.Value);
+        if (cashRegisterId is not null)
+            q = q.Where(x => x.CashRegisterId == cashRegisterId.Value);
+
+        var total = await q.CountAsync(ct);
+        var items = await q.OrderByDescending(x => x.RequestedAtUtc)
+            .ThenByDescending(x => x.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+        return (items, total);
+    }
+
     public Task AddAsync(CashFundingRequest request, CancellationToken ct = default) =>
         _db.CashFundingRequests.AddAsync(request, ct).AsTask();
 }

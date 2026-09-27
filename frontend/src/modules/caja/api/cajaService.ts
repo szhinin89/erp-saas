@@ -165,6 +165,12 @@ export interface CashRegisterDto {
   defaultCustomerName: string | null;
   createdAt: string;
   updatedAt: string | null;
+  /** ZH-CASH-FUNDING-REQUEST-UI-FINAL-02E-EF — solo en el listado de la sucursal activa: la caja
+   * tiene sesión abierta, si la controla el usuario actual y quién la opera. Informativo (decide
+   * pago directo vs. solicitud de efectivo); el backend revalida el ownership siempre. */
+  hasOpenSession?: boolean;
+  openSessionControlledByCurrentUser?: boolean;
+  openSessionUserName?: string | null;
 }
 
 export interface EmissionPointLookupForBranchDto {

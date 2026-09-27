@@ -38,6 +38,11 @@ vi.mock("../../finance/api/bankAccountService", () => ({
 
 vi.mock("../../caja/api/cajaService", () => ({ cajaService: { getCashRegisters: vi.fn() } }));
 
+vi.mock("../../caja/facades/cashFundingRequestFacade", () => ({
+  cashFundingRequestFacade: { create: vi.fn() },
+  cashFundingRequestRoute: (id: string) => `/treasury/cash/funding-requests/${id}`,
+}));
+
 vi.mock("../../masterData/api/businessPartnerFacade", () => ({
   businessPartnerFacade: { getBusinessPartner: vi.fn() },
 }));
@@ -191,7 +196,7 @@ describe("SupplierPaymentFormPage — cartera como única fuente de applicationL
     )) as HTMLInputElement;
     expect(amountInput.value).toBe("");
 
-    fireEvent.click(screen.getByText("Registrar pago"));
+    fireEvent.click(screen.getByText("Pagar"));
     expect(await screen.findByText("Debe seleccionar al menos una cuota.")).toBeTruthy();
     expect(supplierPaymentService.register).not.toHaveBeenCalled();
   });
@@ -205,7 +210,7 @@ describe("SupplierPaymentFormPage — cartera como única fuente de applicationL
       await screen.findByText("Este proveedor no tiene cuentas por pagar pendientes."),
     ).toBeTruthy();
 
-    fireEvent.click(screen.getByText("Registrar pago"));
+    fireEvent.click(screen.getByText("Pagar"));
     expect(await screen.findByText("Debe seleccionar al menos una cuota.")).toBeTruthy();
     expect(supplierPaymentService.register).not.toHaveBeenCalled();
   });
@@ -219,7 +224,7 @@ describe("SupplierPaymentFormPage — cartera como única fuente de applicationL
     fireEvent.change(amountInput, { target: { value: "20.50" } });
 
     await fillMethodLine("pm-1", "20.50");
-    fireEvent.click(screen.getByText("Registrar pago"));
+    fireEvent.click(screen.getByText("Pagar"));
     fireEvent.click(await screen.findByText("Confirmar y registrar"));
 
     await waitFor(() => expect(supplierPaymentService.register).toHaveBeenCalled());
@@ -238,7 +243,7 @@ describe("SupplierPaymentFormPage — cartera como única fuente de applicationL
     fireEvent.change(amountInput, { target: { value: "30" } });
     fireEvent.change(amountInput, { target: { value: "" } });
 
-    fireEvent.click(screen.getByText("Registrar pago"));
+    fireEvent.click(screen.getByText("Pagar"));
     expect(await screen.findByText("Debe seleccionar al menos una cuota.")).toBeTruthy();
     expect(supplierPaymentService.register).not.toHaveBeenCalled();
   });
@@ -252,7 +257,7 @@ describe("SupplierPaymentFormPage — cartera como única fuente de applicationL
 
     fireEvent.click(await screen.findByText("Aplicar saldo completo"));
     await fillMethodLine("pm-1", "43.53");
-    fireEvent.click(screen.getByText("Registrar pago"));
+    fireEvent.click(screen.getByText("Pagar"));
     fireEvent.click(await screen.findByText("Confirmar y registrar"));
 
     await waitFor(() => expect(supplierPaymentService.register).toHaveBeenCalled());
@@ -290,7 +295,7 @@ describe("SupplierPaymentFormPage — cartera como única fuente de applicationL
     fireEvent.change(financialSelects[1], { target: { value: "cash:cash-1" } });
     fireEvent.change(amountInputs[1], { target: { value: "30" } });
 
-    fireEvent.click(screen.getByText("Registrar pago"));
+    fireEvent.click(screen.getByText("Pagar"));
     fireEvent.click(await screen.findByText("Confirmar y registrar"));
 
     await waitFor(() => expect(supplierPaymentService.register).toHaveBeenCalled());
@@ -319,7 +324,7 @@ describe("SupplierPaymentFormPage — cartera como única fuente de applicationL
     });
     await fillMethodLine("pm-1", "15");
 
-    fireEvent.click(screen.getByText("Registrar pago"));
+    fireEvent.click(screen.getByText("Pagar"));
 
     // La validación Zod (superRefine: Σcuotas ≤ Σmedios, 02C) bloquea el submit — deja tiempo a que
     // el resolver async resuelva y luego confirma que el modal de confirmación nunca se abre y
@@ -340,7 +345,7 @@ describe("SupplierPaymentFormPage — 02C remanente no aplicado (anticipo)", () 
 
     fireEvent.click(await screen.findByText("Aplicar saldo completo"));
     await fillMethodLine("pm-1", "200");
-    fireEvent.click(screen.getByText("Registrar pago"));
+    fireEvent.click(screen.getByText("Pagar"));
 
     expect(await screen.findByText("El pago supera el saldo que puede aplicarse en $20.00.")).toBeTruthy();
     fireEvent.click(screen.getByText("Confirmar pago"));
@@ -362,7 +367,7 @@ describe("SupplierPaymentFormPage — 02C remanente no aplicado (anticipo)", () 
 
     fireEvent.click(await screen.findByText("Aplicar saldo completo"));
     await fillMethodLine("pm-1", "200");
-    fireEvent.click(screen.getByText("Registrar pago"));
+    fireEvent.click(screen.getByText("Pagar"));
     await screen.findByText("Confirmar pago");
     const cancelButtons = screen.getAllByText("Cancelar");
     fireEvent.click(cancelButtons[cancelButtons.length - 1]);
@@ -378,7 +383,7 @@ describe("SupplierPaymentFormPage — 02C remanente no aplicado (anticipo)", () 
 
     fireEvent.click(await screen.findByText("Aplicar saldo completo"));
     await fillMethodLine("pm-1", "180");
-    fireEvent.click(screen.getByText("Registrar pago"));
+    fireEvent.click(screen.getByText("Pagar"));
     fireEvent.click(await screen.findByText("Confirmar y registrar"));
 
     await waitFor(() => expect(supplierPaymentService.register).toHaveBeenCalled());
@@ -394,7 +399,7 @@ describe("SupplierPaymentFormPage — 02C remanente no aplicado (anticipo)", () 
 
     await fillMethodLine("pm-1", "200");
     expect((await screen.findAllByText("Este pago quedará pendiente de aplicar.")).length).toBeGreaterThan(0);
-    fireEvent.click(screen.getByText("Registrar pago"));
+    fireEvent.click(screen.getByText("Pagar"));
     fireEvent.click(await screen.findByText("Confirmar pago"));
 
     await waitFor(() => expect(supplierPaymentService.register).toHaveBeenCalled());
@@ -474,7 +479,7 @@ describe("SupplierPaymentFormPage — 02A medio ↔ destino y datos bancarios", 
       target: { value: "000987654" },
     });
 
-    fireEvent.click(screen.getByText("Registrar pago"));
+    fireEvent.click(screen.getByText("Pagar"));
     fireEvent.click(await screen.findByText("Confirmar y registrar"));
 
     await waitFor(() => expect(supplierPaymentService.register).toHaveBeenCalled());
@@ -508,7 +513,7 @@ describe("SupplierPaymentFormPage — 02A medio ↔ destino y datos bancarios", 
     });
     fireEvent.change(screen.getAllByLabelText(/^Monto\*$/)[1], { target: { value: "30" } });
 
-    fireEvent.click(screen.getByText("Registrar pago"));
+    fireEvent.click(screen.getByText("Pagar"));
     fireEvent.click(await screen.findByText("Confirmar y registrar"));
 
     await waitFor(() => expect(supplierPaymentService.register).toHaveBeenCalled());
@@ -528,7 +533,7 @@ describe("SupplierPaymentFormPage — 02A medio ↔ destino y datos bancarios", 
     await waitFor(() => expect(bankDateInput.value).not.toBe(""));
     fireEvent.change(bankDateInput, { target: { value: "" } });
 
-    fireEvent.click(screen.getByText("Registrar pago"));
+    fireEvent.click(screen.getByText("Pagar"));
 
     expect(await screen.findByText("La fecha de la transacción bancaria es obligatoria.")).toBeTruthy();
     expect(bankDateInput.value).toBe("");
@@ -543,7 +548,7 @@ describe("SupplierPaymentFormPage — 02A medio ↔ destino y datos bancarios", 
     });
     await fillMethodLine("pm-ref", "20");
 
-    fireEvent.click(screen.getByText("Registrar pago"));
+    fireEvent.click(screen.getByText("Pagar"));
 
     expect(
       await screen.findByText("El número de operación bancaria es obligatorio para este medio de pago."),

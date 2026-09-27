@@ -53,6 +53,10 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
             Guid tenantId, Guid companyId, IReadOnlyCollection<Guid> ids, CancellationToken ct = default) =>
             throw new NotImplementedException();
 
+        public Task<IReadOnlyDictionary<Guid, (Guid AccountsPayableId, string DocumentNumber, AccountsPayableOriginType OriginType, int InstallmentNumber)>> GetInstallmentRefsByIdsAsync(
+            Guid tenantId, Guid companyId, IReadOnlyCollection<Guid> installmentIds, CancellationToken ct = default) =>
+            throw new NotImplementedException();
+
         public Task<(AccountsPayableOriginType OriginType, Guid OriginId)?> GetOriginAsync(
             Guid tenantId, Guid id, CancellationToken ct = default) =>
             throw new NotImplementedException();
