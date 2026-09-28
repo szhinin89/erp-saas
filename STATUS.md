@@ -1,6 +1,16 @@
 # Project Status
 
-**Single source of truth** for delivery state. Updated: **2026-09-27** · Kernel refactor: **2026-06-05**.
+**Single source of truth** for delivery state. Updated: **2026-09-28** · Kernel refactor: **2026-06-05**.
+
+## ZH-ARCHITECTURE-GATE-RECOVERY-01 — Resolución masiva XML y recuperación del baseline del gate (2026-09-28)
+
+**Estado: cambio modular corregido; gate absoluto BLOQUEADO por baseline histórico.** La resolución masiva XML de productos queda en `b2041a06`; esta revisión no crea commit.
+
+- **Baseline medido** en el padre `1db7108` frente al HEAD final: 244 violaciones en ambos; el commit original `b2041a06` elevaba temporalmente el total a 245 por un único `F-module-boundary` nuevo en `ResolvePendingProductsModal.tsx` (`purchases` importaba directamente `items/api/itemService`). Se reemplazó por `items/facades/itemLookupFacade`, la superficie pública read-only existente y ya usada por `ProductPicker`. No se añadió excepción ni se duplicó servicio.
+- **Comparación por check**: `module-boundaries` 61→61 (delta 0); `css-prefixes` 112→112 (0); `design-system` 26→26 (0); `backend-subscriber-rules` (`IgnoreQueryFilters()`) 43→43 (0); `duplicate-services` 2→2 (0). No hay archivos nuevos con violaciones en el HEAD final. Las categorías históricas permanecen sin cambios.
+- **Gate**: `npm run architecture:check` termina con 5 checks fallidos y 244 violaciones, las mismas del baseline (`architectureScore` 0; 21 warnings). El runner no admite baseline conocido; el gate exige cero absoluto. No se corrigieron usos históricos de `IgnoreQueryFilters()`, CSS, Design System ni servicios duplicados.
+- **Pruebas**: modal/utilidades frontend 35/35; `ResolvePurchaseReceptionLinesHandlerTests` 8/8; `npm run lint` 0 errores (35 warnings); `npm run build` correcto. No se declaran pruebas PostgreSQL verdes: el intento de `ResolvePurchaseReceptionLinesIntegrationTests` no pudo ejecutar sus 8 casos porque Docker Desktop no estaba disponible (falta el pipe `dockerDesktopLinuxEngine`). Queda **pendiente de validación de integración**.
+- **FRONTEND-BUNDLE-SPLIT-01 (deuda separada, sin optimizar en esta tarea)**: el build midió el chunk principal `index` en 699.69 kB (gzip 177.62 kB), `PurchasesPage` 168.63 kB y `SalesPage` 111.23 kB. Hay lazy loading en `main.tsx` y `routes/lazyPage.tsx`; Vite aún advierte que un chunk supera 500 kB.
 
 ## COMPRAS-METODO-ZH-01A2 — Atomicidad de domain events ante reintentos de Kardex (2026-09-27)
 

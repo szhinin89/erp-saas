@@ -19,7 +19,7 @@ import { useI18n } from "../../../i18n/i18n";
 import { formatMoney } from "../../../lib/sanitizers";
 import { formatApiRequestError } from "../../lib/apiError";
 import { applyServerErrors } from "../../lib/validationErrors";
-import { itemService } from "../../items/api/itemService";
+import { itemLookupFacade } from "../../items/facades/itemLookupFacade";
 import type { ItemPackagingLevelDto } from "../../../types/items";
 import {
   purchaseReceptionService,
@@ -138,7 +138,7 @@ export function ResolvePendingProductsModal({
     try {
       const levels =
         levelsByItem[itemId] ??
-        (await itemService.getById(itemId).then((i) => i.packagingLevels.filter((p) => p.isActive)));
+        (await itemLookupFacade.getById(itemId).then((i) => i.packagingLevels.filter((p) => p.isActive)));
       setLevelsByItem((prev) => ({ ...prev, [itemId]: levels }));
       const preferred =
         levels.find((l) => l.isPurchaseDefault) ?? levels.find((l) => l.isBaseUnit);
