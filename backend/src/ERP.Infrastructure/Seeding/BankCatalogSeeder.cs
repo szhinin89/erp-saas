@@ -39,7 +39,7 @@ public sealed partial class BankCatalogSeeder
     public async Task<int> SeedAsync(Guid tenantId, Guid actorId, CancellationToken ct = default)
     {
         var existingCodes = await _db
-            .Banks.IgnoreQueryFilters()
+            .Banks
             .Where(b => b.TenantId == tenantId && b.CountryCode == Bank.DefaultCountryCode)
             .Select(b => b.Code)
             .ToListAsync(ct);

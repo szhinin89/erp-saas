@@ -1,4 +1,5 @@
 using ERP.Infrastructure.Persistence;
+using ERP.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -45,6 +46,7 @@ public sealed class BankCatalogBackfillService
         var totalAdded = 0;
         foreach (var tenantId in tenantIds)
         {
+            using var _ = JobExecutionContext.Begin(tenantId);
             var added = await _seeder.SeedAsync(tenantId, SystemActor, ct);
             totalAdded += added;
             _logger.LogInformation(

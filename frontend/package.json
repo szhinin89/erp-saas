@@ -15,7 +15,7 @@
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "architecture:check": "node --test ../tools/architecture/ratchet.test.mjs && node ../tools/architecture/run-all.mjs",
+    "architecture:check": "node --test ../tools/architecture/ratchet.test.mjs ../tools/architecture/shared/backend-utils.test.mjs && node ../tools/architecture/run-all.mjs",
     "architecture:pages": "node ../tools/architecture/check-pages-wrapper.mjs",
     "architecture:imports": "node ../tools/architecture/check-import-boundaries.mjs",
     "architecture:modules": "node ../tools/architecture/check-module-boundaries.mjs",

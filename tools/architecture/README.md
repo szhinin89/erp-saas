@@ -33,7 +33,7 @@ Cada ejecución completa de `run-all.mjs` produce:
 
 ## Ratchet
 
-`npm run architecture:check` ejecuta primero las pruebas del comparador y luego el conjunto completo de checks. La única fuente versionada de baseline es [`architecture-baseline.json`](./architecture-baseline.json): 244 ocurrencias agrupadas por identidad estable `(check, rule, file, message)`. La línea no forma parte de la identidad; ocurrencias idénticas sí cuentan con multiplicidad.
+`npm run architecture:check` ejecuta primero las pruebas del comparador y del scanner y luego el conjunto completo de checks. La única fuente versionada de baseline es [`architecture-baseline.json`](./architecture-baseline.json): 217 ocurrencias agrupadas por identidad estable `(check, rule, file, message)`. La línea no forma parte de la identidad; ocurrencias idénticas sí cuentan con multiplicidad. El baseline se reduce solo por findings auditados y validados; nunca se incrementa automáticamente.
 
 El baseline no se genera ni se incrementa desde el código. Una violación nueva siempre falla, incluso si el total no cambia por una violación histórica resuelta. Resolver deuda pasa y se informa; reducir el snapshot requiere editarlo explícitamente después de revisar la resolución. Baseline inválido/ausente falla cerrado. Un gate PASS significa “sin regresiones nuevas”, no que las violaciones históricas estén aprobadas; el score y los checks crudos continúan mostrándolas.
 
@@ -78,6 +78,8 @@ Ejemplo anotación GitHub:
 | `check-backend-clean-architecture.mjs` | B-domain/app | `using` prohibidos en Domain/Application |
 | `check-backend-controller-thin.mjs` | B-controller | Líneas máx.; EF/SQL inline = error; líneas altas = warning |
 | `check-backend-subscriber-rules.mjs` | B-subscriber | `IgnoreQueryFilters()` allowlist; entidades tenant |
+
+`backend-subscriber-rules` es el único check que omite proyectos `*.Tests`: sus fixtures verifican estado persistido sin filtros runtime. El resto del gate continúa escaneando tests. El detector omite comentarios C#/XML y solo reconoce como wrapper la expresión canónica de `PlatformQueryAccessor.AsPlatformQuery`; no infiere que sus callers sean seguros.
 
 ## Architecture score
 

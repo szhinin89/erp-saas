@@ -97,10 +97,11 @@ public sealed partial class PurchaseReturnPostingRemediationService
             using var _ = JobExecutionContext.Begin(r.TenantId, r.CompanyId);
 
             var alreadyPosted = await _db
-                .JournalEntries.IgnoreQueryFilters()
+                .JournalEntries
                 .AnyAsync(
                     j =>
-                        j.CompanyId == r.CompanyId
+                        j.TenantId == r.TenantId
+                        && j.CompanyId == r.CompanyId
                         && j.SourceModule == "Purchases"
                         && j.SourceEventType == "PurchaseReturn"
                         && j.SourceEventId == r.Id,

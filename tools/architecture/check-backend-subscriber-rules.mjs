@@ -9,16 +9,15 @@ import { readBackendText, scanIgnoreQueryFilters } from './shared/backend-utils.
  * backend/src/ERP.Infrastructure.Tests/Persistence/IgnoreQueryFiltersAuditTests.cs — that
  * xUnit test is the backend team's own reviewed, per-file, per-reason source of truth for
  * legitimate `.IgnoreQueryFilters()` usage (multi-tenant "subscriber" scoping bypass). The
- * xUnit test additionally excludes `.Tests` projects from its own scan (integration tests
- * legitimately need to read raw DB state in a fresh DbContext for fixture verification); this
- * checker mirrors that by listing the same test files explicitly here (no directory-wide
- * `.Tests` exclusion, to keep every entry a named, auditable file — never a wildcard).
+ * xUnit test excludes `.Tests` projects from its scan, and this runtime-isolation rule does the
+ * same: test fixtures must inspect raw persisted state. No other architecture check excludes
+ * tests; production callers remain individually visible and require reviewed scope predicates.
  */
 export const CHECK_NAME = 'backend-subscriber-rules';
 
 /** @param {string} rel @param {string[]} globs */
 function isExempt(rel, globs) {
-  const norm = rel.replace(/\\/g, '/');
+  const norm = rel.replaceAll('\\', '/');
   return globs.some((g) => matchGlob(g, norm) || matchGlob(`**/${g}`, norm));
 }
 

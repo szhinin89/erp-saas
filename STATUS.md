@@ -2,6 +2,15 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-28** · Kernel refactor: **2026-06-05**.
 
+## ZH-ARCHITECTURE-DEBT-IGNOREQUERYFILTERS-02 — Scope seguro y precisión del scanner (2026-09-28)
+
+**Estado: COMPLETADO.** Se validó con PostgreSQL 16 real vía Testcontainers; no se modificaron los usos productivos legítimos ni se hizo commit.
+- Reemplazos: `BankCatalogSeeder` consulta con filtro tenant normal; el backfill de cajas entra a contexto tenant/company, revalida TenantId+CompanyId y `AccountingAccountId == null`; la deduplicación de PurchaseReturn exige TenantId+CompanyId. Dry-run/apply se conserva.
+- Scanner: ignora comentarios C#/XML preservando líneas, no se acusa a sí mismo por la expresión exacta de `PlatformQueryAccessor.AsPlatformQuery`, pero detecta llamadas adicionales en ese archivo. Solo `backend-subscriber-rules` excluye proyectos `*.Tests`; otros checks no cambian. Se retiró la entrada stale de `BankCatalogSeeder` en la allowlist de auditoría.
+- Baseline: 244 → 217 por 25 findings de test de esta regla y 2 falsos positivos; PostgreSQL aprobó los 4 reemplazos productivos y el snapshot bajó 217 → 213. `backend-subscriber-rules` quedó en baseline 12; otras categorías no cambiaron.
+- PostgreSQL: 1/1 suite focalizada con Tenant A/Companies A-B y Tenant B/Company C. Bancos 9 por tenant; cajas con cuenta exclusiva de su company; asignación concurrente entre scan y reconsulta preservada; remediación dry-run no escribe, apply postea dentro del scope y segunda corrida deduplica idempotentemente.
+- Verificación final: tests Node checker/ratchet 13/13; `IgnoreQueryFiltersAuditTests` 1/1; `npm run architecture:check` PASS, baseline/current 213, 0 nuevas, 0 resueltas; `duplicate-services` permanece en 2; `git diff --check` limpio.
+
 ## ZH-ARCHITECTURE-RATCHET-01 — Ratchet del gate de arquitectura (2026-09-28)
 
 **Estado: COMPLETADO.** `npm run architecture:check` es el gate único: PASS si no aparecen violaciones nuevas frente a `tools/architecture/architecture-baseline.json`; la deuda histórica sigue visible y no se aprueba. El baseline inicial versionado es 244 (module-boundaries 61, css-prefixes 112, design-system 26, backend-subscriber-rules 43, duplicate-services 2). No existe actualización automática del snapshot.

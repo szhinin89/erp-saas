@@ -115,11 +115,11 @@ test('baseline malformado falla cerrado', () => {
   }
 });
 
-test('baseline versionado conserva los 244 hallazgos y el desglose aprobado', () => {
+test('baseline versionado conserva los 213 hallazgos y el desglose aprobado', () => {
   const checkedIn = loadArchitectureBaseline();
-  assert.equal(checkedIn.summary.violations, 244);
+  assert.equal(checkedIn.summary.violations, 213);
   assert.deepEqual(checkedIn.summary.byCheck, {
-    'backend-subscriber-rules': 43,
+    'backend-subscriber-rules': 12,
     'css-prefixes': 112,
     'design-system': 26,
     'duplicate-services': 2,

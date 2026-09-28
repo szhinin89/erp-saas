@@ -1,5 +1,6 @@
 using ERP.Domain.Modules.Accounting.ValueObjects;
 using ERP.Infrastructure.Persistence;
+using ERP.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -66,10 +67,11 @@ public sealed class CashRegisterAccountingAccountBackfillService
 
         foreach (var group in cashRegistersWithoutAccount.GroupBy(x => (x.TenantId, x.CompanyId)))
         {
+            using var _ = JobExecutionContext.Begin(group.Key.TenantId, group.Key.CompanyId);
             companiesProcessed++;
 
             var cajaGeneral = await _db
-                .Accounts.IgnoreQueryFilters()
+                .Accounts
                 .Where(a =>
                     a.TenantId == group.Key.TenantId
                     && a.CompanyId == group.Key.CompanyId
@@ -91,8 +93,13 @@ public sealed class CashRegisterAccountingAccountBackfillService
             }
 
             var cashRegisters = await _db
-                .CashRegisters.IgnoreQueryFilters()
-                .Where(cr => group.Select(g => g.Id).Contains(cr.Id))
+                .CashRegisters
+                .Where(cr =>
+                    cr.TenantId == group.Key.TenantId
+                    && cr.CompanyId == group.Key.CompanyId
+                    && cr.AccountingAccountId == null
+                    && group.Select(g => g.Id).Contains(cr.Id)
+                )
                 .ToListAsync(ct);
             foreach (var cashRegister in cashRegisters)
             {

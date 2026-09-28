@@ -124,7 +124,9 @@ Fuente: [`tools/architecture/README.md`](../../tools/architecture/README.md)
 | `backend-layering` | B-layering | Referencias de proyecto/paquetes por capa (.csproj) |
 | `backend-clean-architecture` | B-domain / B-application | `using` prohibidos en Domain/Application |
 | `backend-controller-thin` | B-controller | Líneas máx., patrones EF/SQL inline (error); líneas > umbral warning |
-| `backend-subscriber-rules` | B-subscriber | `IgnoreQueryFilters()` fuera de allowlist; entidades sin `TenantId`/marker |
+| `backend-subscriber-rules` | B-subscriber | `IgnoreQueryFilters()` en producción fuera de allowlist; entidades sin `TenantId`/marker. Excluye proyectos `*.Tests` solo en este check de aislamiento runtime. |
+
+El scanner ignora comentarios C#/XML conservando números de línea y no cuenta la expresión canónica de `PlatformQueryAccessor.AsPlatformQuery`; sus callers productivos siguen auditándose individualmente y no se consideran automáticamente seguros.
 
 Umbrales y allowlists: `tools/architecture/config/architecture-rules.json` → `backend`.
 
@@ -145,7 +147,7 @@ Penalizaciones: violations (−8), warnings (−2), entradas grandfather (−1).
 
 La identidad estable de cada finding es `(check, rule, file, message)`; los números de línea se excluyen para tolerar movimientos de código y las ocurrencias idénticas conservan multiplicidad. El parser valida el schema y el desglose antes de comparar; baseline ausente o malformado falla cerrado.
 
-Snapshot inicial: **244** violaciones — `module-boundaries` 61, `css-prefixes` 112, `design-system` 26, `backend-subscriber-rules` 43 y `duplicate-services` 2. Es deuda visible, no aprobación arquitectónica: `architecture-report.json` conserva findings/checks crudos y score/status de salud; su bloque `ratchet` distingue baseline histórico, nuevas y resueltas. Las reglas de aislamiento multi-tenant (`IgnoreQueryFilters`) y límites de módulo siguen siendo violaciones visibles.
+Baseline versionado actual: **213** ocurrencias — `module-boundaries` 61, `css-prefixes` 112, `design-system` 26, `backend-subscriber-rules` 12 y `duplicate-services` 2. El snapshot inicial fue 244; se retiraron 25 hallazgos de proyectos `*.Tests` solo para la regla runtime, 2 falsos positivos de comentarios/wrapper y 4 llamadas productivas después de validación PostgreSQL real. El baseline es deuda visible, no aprobación arquitectónica: `architecture-report.json` conserva findings/checks crudos y score/status de salud; su bloque `ratchet` distingue baseline histórico, nuevas y resueltas. Las reglas de aislamiento multi-tenant (`IgnoreQueryFilters`) y límites de módulo siguen siendo violaciones visibles.
 
 #### PR annotations (GitHub Actions)
 

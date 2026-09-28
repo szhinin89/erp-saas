@@ -10,9 +10,9 @@
     "lineNumber": "excluded to keep identity stable across unrelated edits"
   },
   "summary": {
-    "violations": 244,
+    "violations": 213,
     "byCheck": {
-      "backend-subscriber-rules": 43,
+      "backend-subscriber-rules": 12,
       "css-prefixes": 112,
       "design-system": 26,
       "duplicate-services": 2,
@@ -23,84 +23,7 @@
     {
       "check": "backend-subscriber-rules",
       "rule": "B-subscriber",
-      "file": "backend/src/ERP.API.Tests/Integration/SalesReturnEndToEndTests.cs",
-      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
-      "count": 1
-    },
-    {
-      "check": "backend-subscriber-rules",
-      "rule": "B-subscriber",
-      "file": "backend/src/ERP.Infrastructure.Tests/Accounting/SupplierCreditApplyPayablesIntegrationTests.cs",
-      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
-      "count": 1
-    },
-    {
-      "check": "backend-subscriber-rules",
-      "rule": "B-subscriber",
-      "file": "backend/src/ERP.Infrastructure.Tests/Persistence/Configuration/CompanyPrecisionPolicyMigrationTests.cs",
-      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
-      "count": 2
-    },
-    {
-      "check": "backend-subscriber-rules",
-      "rule": "B-subscriber",
-      "file": "backend/src/ERP.Infrastructure.Tests/Persistence/Configuration/ConfigurationChangeLogTransactionalIntegrityTests.cs",
-      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
-      "count": 2
-    },
-    {
-      "check": "backend-subscriber-rules",
-      "rule": "B-subscriber",
-      "file": "backend/src/ERP.Infrastructure.Tests/Persistence/Configuration/OrgSettingsRepositoryConfigurationGuardrailTests.cs",
-      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
-      "count": 2
-    },
-    {
-      "check": "backend-subscriber-rules",
-      "rule": "B-subscriber",
-      "file": "backend/src/ERP.Infrastructure.Tests/Persistence/SalesPaymentScheduleRepositoryTests.cs",
-      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
-      "count": 2
-    },
-    {
-      "check": "backend-subscriber-rules",
-      "rule": "B-subscriber",
-      "file": "backend/src/ERP.Infrastructure.Tests/Seeding/AccountingChartBackfillServiceHierarchyTests.cs",
-      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
-      "count": 1
-    },
-    {
-      "check": "backend-subscriber-rules",
-      "rule": "B-subscriber",
-      "file": "backend/src/ERP.Infrastructure.Tests/Seeding/PaymentMethodSriMappingBackfillServiceTests.cs",
-      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
-      "count": 9
-    },
-    {
-      "check": "backend-subscriber-rules",
-      "rule": "B-subscriber",
-      "file": "backend/src/ERP.Infrastructure.Tests/Seeding/SalesInvoiceRuleMaintenanceTests.cs",
-      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
-      "count": 5
-    },
-    {
-      "check": "backend-subscriber-rules",
-      "rule": "B-subscriber",
-      "file": "backend/src/ERP.Infrastructure/Persistence/PlatformQueryAccessor.cs",
-      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
-      "count": 2
-    },
-    {
-      "check": "backend-subscriber-rules",
-      "rule": "B-subscriber",
       "file": "backend/src/ERP.Infrastructure/Seeding/BankCatalogBackfillService.cs",
-      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
-      "count": 1
-    },
-    {
-      "check": "backend-subscriber-rules",
-      "rule": "B-subscriber",
-      "file": "backend/src/ERP.Infrastructure/Seeding/BankCatalogSeeder.cs",
       "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
       "count": 1
     },
@@ -109,7 +32,7 @@
       "rule": "B-subscriber",
       "file": "backend/src/ERP.Infrastructure/Seeding/CashRegisterAccountingAccountBackfillService.cs",
       "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
-      "count": 3
+      "count": 1
     },
     {
       "check": "backend-subscriber-rules",
@@ -137,7 +60,7 @@
       "rule": "B-subscriber",
       "file": "backend/src/ERP.Infrastructure/Seeding/PurchaseReturnPostingRemediationService.cs",
       "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
-      "count": 2
+      "count": 1
     },
     {
       "check": "backend-subscriber-rules",
