@@ -105,7 +105,7 @@ cd frontend && npx tsc --noEmit && npm run build && npm run architecture:check
 
 | Script | Comando | Qué valida |
 |--------|---------|------------|
-| Runner | `npm run architecture:check` (desde `frontend/`) | 9 checks + score + JSON report |
+| Runner | `npm run architecture:check` (desde `frontend/`) | Ratchet tests + 18 checks + score + JSON report |
 | Pages wrapper | `npm run architecture:pages` | `pages/**/*.tsx` ≤15 líneas, sin hooks/api |
 | Import boundaries | `npm run architecture:imports` | Imports prohibidos, profundidad relativa |
 | Module boundaries | `npm run architecture:modules` | Cross-imports entre módulos |
@@ -138,6 +138,14 @@ Umbrales y allowlists: `tools/architecture/config/architecture-rules.json` → `
 - `adrs` — índice de ADRs vigentes
 
 Penalizaciones: violations (−8), warnings (−2), entradas grandfather (−1). Solo afecta reporte/CI; **cero impacto runtime**.
+
+#### Architecture ratchet
+
+`npm run architecture:check` es el único gate oficial y compara findings con el snapshot versionado [`tools/architecture/architecture-baseline.json`](../../tools/architecture/architecture-baseline.json). La deuda histórica no puede crecer: cualquier finding nuevo falla, aunque desaparezca otro finding en el mismo cambio. Resolver deuda pasa y se informa; el baseline solo baja mediante una edición revisada del snapshot, nunca se regenera ni aumenta automáticamente.
+
+La identidad estable de cada finding es `(check, rule, file, message)`; los números de línea se excluyen para tolerar movimientos de código y las ocurrencias idénticas conservan multiplicidad. El parser valida el schema y el desglose antes de comparar; baseline ausente o malformado falla cerrado.
+
+Snapshot inicial: **244** violaciones — `module-boundaries` 61, `css-prefixes` 112, `design-system` 26, `backend-subscriber-rules` 43 y `duplicate-services` 2. Es deuda visible, no aprobación arquitectónica: `architecture-report.json` conserva findings/checks crudos y score/status de salud; su bloque `ratchet` distingue baseline histórico, nuevas y resueltas. Las reglas de aislamiento multi-tenant (`IgnoreQueryFilters`) y límites de módulo siguen siendo violaciones visibles.
 
 #### PR annotations (GitHub Actions)
 

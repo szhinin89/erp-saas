@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { ARCH_DIR, loadGrandfather, loadConfig } from './fs-utils.mjs';
+import { ARCH_DIR } from './fs-utils.mjs';
 
 /** @typedef {{ rule: string, file: string, message: string, line?: number }} Violation */
 
@@ -23,7 +23,6 @@ export function addWarning(result, v) {
 
 /** @param {CheckResult} result */
 export function printCheckResult(result) {
-  const lines = [];
   if (result.violations.length === 0 && result.warnings.length === 0) {
     console.log(`[PASS] ${result.name}`);
     return true;
@@ -62,13 +61,14 @@ export function printSummary(results) {
   return 1;
 }
 
-/** @param {CheckResult[]} results @param {object} [score] */
-export function toJsonReport(results, score) {
+/** @param {CheckResult[]} results @param {object} [score] @param {object} [ratchet] */
+export function toJsonReport(results, score, ratchet) {
   const failed = results.filter((r) => r.violations.length > 0);
   const warnings = results.reduce((n, r) => n + r.warnings.length, 0);
   const report = {
     generatedAt: new Date().toISOString(),
-    passed: failed.length === 0,
+    passed: ratchet ? ratchet.passed : failed.length === 0,
+    rawPassed: failed.length === 0,
     architectureScore: score?.architectureScore ?? null,
     status: score?.status ?? (failed.length === 0 ? 'healthy' : 'critical'),
     driftRisk: score?.driftRisk ?? 'unknown',
@@ -85,6 +85,7 @@ export function toJsonReport(results, score) {
       violations: r.violations,
       warnings: r.warnings,
     })),
+    ...(ratchet ? { ratchet } : {}),
     modules: score?.modules ?? {},
     adrs: score?.adrs ?? [],
   };

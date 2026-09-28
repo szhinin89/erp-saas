@@ -26,7 +26,13 @@ import { runCheckI18nKeys } from './check-i18n-keys.mjs';
 import { calculateArchitectureScore } from './calculate-score.mjs';
 import { emitGithubAnnotations } from './github-annotations.mjs';
 import { toJsonReport, writeJsonReport } from './shared/report-utils.mjs';
-import { formatConsoleCheck, formatConsoleSummary } from './formatters/console-formatter.mjs';
+import { loadArchitectureBaseline, compareArchitectureBaseline } from './ratchet.mjs';
+import {
+  formatConsoleCheck,
+  formatConsoleSummary,
+  formatRatchetCheck,
+  formatRatchetSummary,
+} from './formatters/console-formatter.mjs';
 
 export const CHECKS = [
   { name: 'pages-wrapper', run: runCheckPagesWrapper },
@@ -79,13 +85,22 @@ if (isMain) {
   const annotate = args.has('--annotate') || process.env.GITHUB_ACTIONS === 'true';
   const only = args.has('--only') ? process.argv[process.argv.indexOf('--only') + 1] : null;
 
-  const results = runAllChecks({ only, silent: jsonOut && !annotate });
+  const results = runAllChecks({ only, silent: true });
   const score = calculateArchitectureScore(results);
-  const report = toJsonReport(results, score);
+  let ratchet = null;
+  if (!only) {
+    try {
+      ratchet = compareArchitectureBaseline(results, loadArchitectureBaseline());
+    } catch (error) {
+      console.error(`Architecture baseline invalid (fail closed): ${error.message}`);
+      process.exit(1);
+    }
+  }
+  const report = toJsonReport(results, score, ratchet);
   writeJsonReport(report);
 
   if (annotate) {
-    emitGithubAnnotations(results);
+    emitGithubAnnotations(results, ratchet ? { newViolations: ratchet.newViolations } : {});
   }
 
   if (jsonOut) {
@@ -93,9 +108,15 @@ if (isMain) {
     process.exit(report.passed ? 0 : 1);
   }
 
-  for (const line of formatConsoleSummary(results, score)) {
+  const formatted = ratchet
+    ? [...results.flatMap((result) => formatRatchetCheck(result, ratchet)), ...formatRatchetSummary(ratchet, score)]
+    : [...results.flatMap(formatConsoleCheck), ...formatConsoleSummary(results, score)];
+  for (const line of formatted) {
     console.log(line);
   }
 
-  process.exit(results.some((r) => r.violations.length > 0) ? 1 : 0);
+  const shouldFail = ratchet
+    ? !ratchet.passed
+    : results.some((result) => result.violations.length > 0);
+  process.exit(shouldFail ? 1 : 0);
 }

@@ -4,11 +4,12 @@ import { formatGithubAnnotations } from './formatters/github-formatter.mjs';
 /**
  * Emit GitHub Actions annotations to stdout.
  * @param {import('./shared/report-utils.mjs').CheckResult[]} results
- * @param {{ warnings?: boolean }} [opts]
+ * @param {{ warnings?: boolean, newViolations?: object[] }} [opts]
  */
 export function emitGithubAnnotations(results, opts = {}) {
   const { violations, warnings } = collectAllFindings(results);
-  const lines = [...formatGithubAnnotations(violations, 'error')];
+  const errorFindings = opts.newViolations ?? violations;
+  const lines = [...formatGithubAnnotations(errorFindings, 'error')];
   if (opts.warnings !== false) {
     lines.push(...formatGithubAnnotations(warnings, 'warning'));
   }

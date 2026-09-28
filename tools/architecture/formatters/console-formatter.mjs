@@ -1,28 +1,15 @@
 /** @param {{ name: string, violations: object[], warnings?: object[] }} result */
 export function formatConsoleCheck(result) {
-  const lines = [];
   const errors = result.violations.length;
   const warns = result.warnings?.length ?? 0;
-  if (errors === 0 && warns === 0) {
-    lines.push(`[PASS] ${result.name}`);
-    return lines;
-  }
-  if (errors === 0) {
-    lines.push(`[WARN] ${result.name}`);
-  } else {
-    lines.push(`[FAIL] ${result.name}`);
-  }
-  for (const v of result.violations) {
-    const loc = v.line != null ? `:${v.line}` : '';
-    lines.push(`  - ${v.file}${loc}`);
-    lines.push(`    ${v.rule}: ${v.message}`);
-  }
-  for (const w of result.warnings ?? []) {
-    const loc = w.line != null ? `:${w.line}` : '';
-    lines.push(`  ~ ${w.file}${loc}`);
-    lines.push(`    ${w.rule}: ${w.message}`);
-  }
-  return lines;
+  let heading = `[PASS] ${result.name}`;
+  if (errors > 0) heading = `[FAIL] ${result.name}`;
+  else if (warns > 0) heading = `[WARN] ${result.name}`;
+  return [
+    heading,
+    ...formatFindingLines(result.violations, '-'),
+    ...formatFindingLines(result.warnings ?? [], '~'),
+  ];
 }
 
 /** @param {object[]} results @param {object} [scoreReport] */
@@ -50,4 +37,51 @@ export function formatConsoleSummary(results, scoreReport) {
     );
   }
   return lines;
+}
+
+function formatFindingLines(findings, marker) {
+  return findings.flatMap((item) => {
+    const line = item.line ?? item.lines?.[0];
+    const location = line == null ? '' : `:${line}`;
+    const count = item.count > 1 ? ` (x${item.count})` : '';
+    return [`  ${marker} ${item.file}${location}${count}`, `    ${item.rule}: ${item.message}`];
+  });
+}
+
+function formatRatchetHeading(result, counts) {
+  if (counts.new > 0) return `[FAIL] ${result.name} (${counts.historical} historical, ${counts.new} new)`;
+  if (counts.historical > 0) return `[BASELINE] ${result.name} (${counts.historical} historical)`;
+  if (result.warnings?.length > 0) return `[WARN] ${result.name}`;
+  return `[PASS] ${result.name}`;
+}
+
+/** @param {object} result @param {object} ratchet */
+export function formatRatchetCheck(result, ratchet) {
+  const counts = ratchet.checks[result.name] ?? { historical: 0, new: 0 };
+  return [
+    formatRatchetHeading(result, counts),
+    ...formatFindingLines(ratchet.historicalFindings.filter((item) => item.check === result.name), '='),
+    ...formatFindingLines(ratchet.newViolations.filter((item) => item.check === result.name), '+'),
+    ...formatFindingLines(result.warnings ?? [], '~'),
+  ];
+}
+
+/** @param {object} ratchet @param {object} [scoreReport] */
+export function formatRatchetSummary(ratchet, scoreReport) {
+  const status = ratchet.passed
+    ? `Architecture gate PASS: ${ratchet.newViolationCount} new violations.`
+    : `Architecture gate FAILED: ${ratchet.newViolationCount} new violation(s).`;
+  const score = scoreReport
+    ? `Architecture score: ${scoreReport.architectureScore}/100 (${scoreReport.status}, drift: ${scoreReport.driftRisk})`
+    : null;
+  return [
+    '',
+    status,
+    `Historical baseline: ${ratchet.baselineViolations}`,
+    `Historical violations remaining: ${ratchet.historicalViolations}`,
+    `New violations: ${ratchet.newViolationCount}`,
+    `Resolved violations: ${ratchet.resolvedViolationCount}`,
+    ...formatFindingLines(ratchet.resolvedViolations.map((item) => ({ ...item, file: `${item.check} ${item.file}` })), '-'),
+    ...(score ? [score] : []),
+  ];
 }

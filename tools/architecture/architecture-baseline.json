@@ -1,0 +1,1207 @@
+{
+  "schemaVersion": 1,
+  "identity": {
+    "fields": [
+      "check",
+      "rule",
+      "file",
+      "message"
+    ],
+    "lineNumber": "excluded to keep identity stable across unrelated edits"
+  },
+  "summary": {
+    "violations": 244,
+    "byCheck": {
+      "backend-subscriber-rules": 43,
+      "css-prefixes": 112,
+      "design-system": 26,
+      "duplicate-services": 2,
+      "module-boundaries": 61
+    }
+  },
+  "violations": [
+    {
+      "check": "backend-subscriber-rules",
+      "rule": "B-subscriber",
+      "file": "backend/src/ERP.API.Tests/Integration/SalesReturnEndToEndTests.cs",
+      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
+      "count": 1
+    },
+    {
+      "check": "backend-subscriber-rules",
+      "rule": "B-subscriber",
+      "file": "backend/src/ERP.Infrastructure.Tests/Accounting/SupplierCreditApplyPayablesIntegrationTests.cs",
+      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
+      "count": 1
+    },
+    {
+      "check": "backend-subscriber-rules",
+      "rule": "B-subscriber",
+      "file": "backend/src/ERP.Infrastructure.Tests/Persistence/Configuration/CompanyPrecisionPolicyMigrationTests.cs",
+      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
+      "count": 2
+    },
+    {
+      "check": "backend-subscriber-rules",
+      "rule": "B-subscriber",
+      "file": "backend/src/ERP.Infrastructure.Tests/Persistence/Configuration/ConfigurationChangeLogTransactionalIntegrityTests.cs",
+      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
+      "count": 2
+    },
+    {
+      "check": "backend-subscriber-rules",
+      "rule": "B-subscriber",
+      "file": "backend/src/ERP.Infrastructure.Tests/Persistence/Configuration/OrgSettingsRepositoryConfigurationGuardrailTests.cs",
+      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
+      "count": 2
+    },
+    {
+      "check": "backend-subscriber-rules",
+      "rule": "B-subscriber",
+      "file": "backend/src/ERP.Infrastructure.Tests/Persistence/SalesPaymentScheduleRepositoryTests.cs",
+      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
+      "count": 2
+    },
+    {
+      "check": "backend-subscriber-rules",
+      "rule": "B-subscriber",
+      "file": "backend/src/ERP.Infrastructure.Tests/Seeding/AccountingChartBackfillServiceHierarchyTests.cs",
+      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
+      "count": 1
+    },
+    {
+      "check": "backend-subscriber-rules",
+      "rule": "B-subscriber",
+      "file": "backend/src/ERP.Infrastructure.Tests/Seeding/PaymentMethodSriMappingBackfillServiceTests.cs",
+      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
+      "count": 9
+    },
+    {
+      "check": "backend-subscriber-rules",
+      "rule": "B-subscriber",
+      "file": "backend/src/ERP.Infrastructure.Tests/Seeding/SalesInvoiceRuleMaintenanceTests.cs",
+      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
+      "count": 5
+    },
+    {
+      "check": "backend-subscriber-rules",
+      "rule": "B-subscriber",
+      "file": "backend/src/ERP.Infrastructure/Persistence/PlatformQueryAccessor.cs",
+      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
+      "count": 2
+    },
+    {
+      "check": "backend-subscriber-rules",
+      "rule": "B-subscriber",
+      "file": "backend/src/ERP.Infrastructure/Seeding/BankCatalogBackfillService.cs",
+      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
+      "count": 1
+    },
+    {
+      "check": "backend-subscriber-rules",
+      "rule": "B-subscriber",
+      "file": "backend/src/ERP.Infrastructure/Seeding/BankCatalogSeeder.cs",
+      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
+      "count": 1
+    },
+    {
+      "check": "backend-subscriber-rules",
+      "rule": "B-subscriber",
+      "file": "backend/src/ERP.Infrastructure/Seeding/CashRegisterAccountingAccountBackfillService.cs",
+      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
+      "count": 3
+    },
+    {
+      "check": "backend-subscriber-rules",
+      "rule": "B-subscriber",
+      "file": "backend/src/ERP.Infrastructure/Seeding/DocumentFlowPolicyBackfillService.cs",
+      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
+      "count": 1
+    },
+    {
+      "check": "backend-subscriber-rules",
+      "rule": "B-subscriber",
+      "file": "backend/src/ERP.Infrastructure/Seeding/ExpensesCatalogBackfillService.cs",
+      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
+      "count": 1
+    },
+    {
+      "check": "backend-subscriber-rules",
+      "rule": "B-subscriber",
+      "file": "backend/src/ERP.Infrastructure/Seeding/PaymentMethodSriMappingBackfillService.cs",
+      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
+      "count": 1
+    },
+    {
+      "check": "backend-subscriber-rules",
+      "rule": "B-subscriber",
+      "file": "backend/src/ERP.Infrastructure/Seeding/PurchaseReturnPostingRemediationService.cs",
+      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
+      "count": 2
+    },
+    {
+      "check": "backend-subscriber-rules",
+      "rule": "B-subscriber",
+      "file": "backend/src/ERP.Infrastructure/Seeding/Steps/DocumentFlowPolicyBootstrapStep.cs",
+      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
+      "count": 1
+    },
+    {
+      "check": "backend-subscriber-rules",
+      "rule": "B-subscriber",
+      "file": "backend/src/ERP.Infrastructure/Seeding/Steps/ExpensesCatalogBootstrapStep.cs",
+      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
+      "count": 4
+    },
+    {
+      "check": "backend-subscriber-rules",
+      "rule": "B-subscriber",
+      "file": "backend/src/ERP.Infrastructure/Seeding/Steps/PrecisionPolicyBootstrapStep.cs",
+      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/access/pages/ProfilesPage.css",
+      "message": "class \".pa-action-tile--access\" must use prefix \"acc-\" or \"access-\" or \"prf-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/access/pages/ProfilesPage.css",
+      "message": "class \".pa-action-tile--action\" must use prefix \"acc-\" or \"access-\" or \"prf-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/access/pages/ProfilesPage.css",
+      "message": "class \".pa-action-tile\" must use prefix \"acc-\" or \"access-\" or \"prf-\" or global zh-ui/pg-* token",
+      "count": 2
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/access/pages/ProfilesPage.css",
+      "message": "class \".pa-actions-grid\" must use prefix \"acc-\" or \"access-\" or \"prf-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/access/pages/ProfilesPage.css",
+      "message": "class \".pa-category-header\" must use prefix \"acc-\" or \"access-\" or \"prf-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/access/pages/ProfilesPage.css",
+      "message": "class \".pa-category-title\" must use prefix \"acc-\" or \"access-\" or \"prf-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/access/pages/ProfilesPage.css",
+      "message": "class \".pa-category\" must use prefix \"acc-\" or \"access-\" or \"prf-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/access/pages/ProfilesPage.css",
+      "message": "class \".pa-filter-input\" must use prefix \"acc-\" or \"access-\" or \"prf-\" or global zh-ui/pg-* token",
+      "count": 2
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/access/pages/ProfilesPage.css",
+      "message": "class \".pa-group-title\" must use prefix \"acc-\" or \"access-\" or \"prf-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/access/pages/ProfilesPage.css",
+      "message": "class \".pa-group\" must use prefix \"acc-\" or \"access-\" or \"prf-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/access/pages/ProfilesPage.css",
+      "message": "class \".pa-header-field\" must use prefix \"acc-\" or \"access-\" or \"prf-\" or global zh-ui/pg-* token",
+      "count": 3
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/access/pages/ProfilesPage.css",
+      "message": "class \".pa-header-toolbar\" must use prefix \"acc-\" or \"access-\" or \"prf-\" or global zh-ui/pg-* token",
+      "count": 2
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/access/pages/ProfilesPage.css",
+      "message": "class \".pa-item-card\" must use prefix \"acc-\" or \"access-\" or \"prf-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/access/pages/ProfilesPage.css",
+      "message": "class \".pa-item-chevron\" must use prefix \"acc-\" or \"access-\" or \"prf-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/access/pages/ProfilesPage.css",
+      "message": "class \".pa-item-header-left\" must use prefix \"acc-\" or \"access-\" or \"prf-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/access/pages/ProfilesPage.css",
+      "message": "class \".pa-item-header\" must use prefix \"acc-\" or \"access-\" or \"prf-\" or global zh-ui/pg-* token",
+      "count": 2
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/access/pages/ProfilesPage.css",
+      "message": "class \".pa-item-title-wrap\" must use prefix \"acc-\" or \"access-\" or \"prf-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/access/pages/ProfilesPage.css",
+      "message": "class \".pa-item-title\" must use prefix \"acc-\" or \"access-\" or \"prf-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/access/pages/ProfilesPage.css",
+      "message": "class \".pa-legend-dot--access\" must use prefix \"acc-\" or \"access-\" or \"prf-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/access/pages/ProfilesPage.css",
+      "message": "class \".pa-legend-dot--action\" must use prefix \"acc-\" or \"access-\" or \"prf-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/access/pages/ProfilesPage.css",
+      "message": "class \".pa-legend-dot\" must use prefix \"acc-\" or \"access-\" or \"prf-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/access/pages/ProfilesPage.css",
+      "message": "class \".pa-legend-item\" must use prefix \"acc-\" or \"access-\" or \"prf-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/access/pages/ProfilesPage.css",
+      "message": "class \".pa-legend\" must use prefix \"acc-\" or \"access-\" or \"prf-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/access/pages/ProfilesPage.css",
+      "message": "class \".pa-quick-actions-label\" must use prefix \"acc-\" or \"access-\" or \"prf-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/access/pages/ProfilesPage.css",
+      "message": "class \".pa-quick-actions\" must use prefix \"acc-\" or \"access-\" or \"prf-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/access/pages/ProfilesPage.css",
+      "message": "class \".pa-summary-bar\" must use prefix \"acc-\" or \"access-\" or \"prf-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/access/pages/ProfilesPage.css",
+      "message": "class \".pa-summary-icon\" must use prefix \"acc-\" or \"access-\" or \"prf-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/access/pages/ProfilesPage.css",
+      "message": "class \".pa-summary-text\" must use prefix \"acc-\" or \"access-\" or \"prf-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/accounting/pages/ChartOfAccountsPage.css",
+      "message": "class \".coa-chip--active\" must use prefix \"acc-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/accounting/pages/ChartOfAccountsPage.css",
+      "message": "class \".coa-chip\" must use prefix \"acc-\" or global zh-ui/pg-* token",
+      "count": 2
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/accounting/pages/ChartOfAccountsPage.css",
+      "message": "class \".coa-list-card\" must use prefix \"acc-\" or global zh-ui/pg-* token",
+      "count": 5
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/accounting/pages/ChartOfAccountsPage.css",
+      "message": "class \".coa-list-filters\" must use prefix \"acc-\" or global zh-ui/pg-* token",
+      "count": 6
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/accounting/pages/ChartOfAccountsPage.css",
+      "message": "class \".coa-list-secondary-row\" must use prefix \"acc-\" or global zh-ui/pg-* token",
+      "count": 2
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/accounting/pages/ChartOfAccountsPage.css",
+      "message": "class \".coa-list-summary-text\" must use prefix \"acc-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/accounting/pages/ChartOfAccountsPage.css",
+      "message": "class \".coa-quick-filters\" must use prefix \"acc-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/accounting/pages/ChartOfAccountsPage.css",
+      "message": "class \".coa-tree-name__guide--branch\" must use prefix \"acc-\" or global zh-ui/pg-* token",
+      "count": 2
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/accounting/pages/ChartOfAccountsPage.css",
+      "message": "class \".coa-tree-name__guide\" must use prefix \"acc-\" or global zh-ui/pg-* token",
+      "count": 2
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/accounting/pages/ChartOfAccountsPage.css",
+      "message": "class \".coa-tree-name__guides\" must use prefix \"acc-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/accounting/pages/ChartOfAccountsPage.css",
+      "message": "class \".coa-tree-name__label\" must use prefix \"acc-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/accounting/pages/ChartOfAccountsPage.css",
+      "message": "class \".coa-tree-name--group\" must use prefix \"acc-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/accounting/pages/ChartOfAccountsPage.css",
+      "message": "class \".coa-tree-name\" must use prefix \"acc-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/auth/pages/CompanySelectPage.css",
+      "message": "class \".cs-bg-copy--left\" must use prefix \"auth-\" or \"lp-\" or \"fp-\" or \"pr-\" or \"rp-\" or \"ts-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/auth/pages/CompanySelectPage.css",
+      "message": "class \".cs-bg-copy--right\" must use prefix \"auth-\" or \"lp-\" or \"fp-\" or \"pr-\" or \"rp-\" or \"ts-\" or global zh-ui/pg-* token",
+      "count": 2
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/auth/pages/CompanySelectPage.css",
+      "message": "class \".cs-bg-copy-accent\" must use prefix \"auth-\" or \"lp-\" or \"fp-\" or \"pr-\" or \"rp-\" or \"ts-\" or global zh-ui/pg-* token",
+      "count": 2
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/auth/pages/CompanySelectPage.css",
+      "message": "class \".cs-bg-copy\" must use prefix \"auth-\" or \"lp-\" or \"fp-\" or \"pr-\" or \"rp-\" or \"ts-\" or global zh-ui/pg-* token",
+      "count": 2
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/auth/pages/CompanySelectPage.css",
+      "message": "class \".cs-card\" must use prefix \"auth-\" or \"lp-\" or \"fp-\" or \"pr-\" or \"rp-\" or \"ts-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/auth/pages/CompanySelectPage.css",
+      "message": "class \".cs-chip--error\" must use prefix \"auth-\" or \"lp-\" or \"fp-\" or \"pr-\" or \"rp-\" or \"ts-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/auth/pages/CompanySelectPage.css",
+      "message": "class \".cs-chip--neutral\" must use prefix \"auth-\" or \"lp-\" or \"fp-\" or \"pr-\" or \"rp-\" or \"ts-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/auth/pages/CompanySelectPage.css",
+      "message": "class \".cs-chip--success\" must use prefix \"auth-\" or \"lp-\" or \"fp-\" or \"pr-\" or \"rp-\" or \"ts-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/auth/pages/CompanySelectPage.css",
+      "message": "class \".cs-chip--warning\" must use prefix \"auth-\" or \"lp-\" or \"fp-\" or \"pr-\" or \"rp-\" or \"ts-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/auth/pages/CompanySelectPage.css",
+      "message": "class \".cs-chip\" must use prefix \"auth-\" or \"lp-\" or \"fp-\" or \"pr-\" or \"rp-\" or \"ts-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/auth/pages/CompanySelectPage.css",
+      "message": "class \".cs-company-card\" must use prefix \"auth-\" or \"lp-\" or \"fp-\" or \"pr-\" or \"rp-\" or \"ts-\" or global zh-ui/pg-* token",
+      "count": 3
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/auth/pages/CompanySelectPage.css",
+      "message": "class \".cs-company-meta\" must use prefix \"auth-\" or \"lp-\" or \"fp-\" or \"pr-\" or \"rp-\" or \"ts-\" or global zh-ui/pg-* token",
+      "count": 2
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/auth/pages/CompanySelectPage.css",
+      "message": "class \".cs-empty\" must use prefix \"auth-\" or \"lp-\" or \"fp-\" or \"pr-\" or \"rp-\" or \"ts-\" or global zh-ui/pg-* token",
+      "count": 2
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/auth/pages/CompanySelectPage.css",
+      "message": "class \".cs-footer-help\" must use prefix \"auth-\" or \"lp-\" or \"fp-\" or \"pr-\" or \"rp-\" or \"ts-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/auth/pages/CompanySelectPage.css",
+      "message": "class \".cs-list\" must use prefix \"auth-\" or \"lp-\" or \"fp-\" or \"pr-\" or \"rp-\" or \"ts-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/auth/pages/CompanySelectPage.css",
+      "message": "class \".cs-loading\" must use prefix \"auth-\" or \"lp-\" or \"fp-\" or \"pr-\" or \"rp-\" or \"ts-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/auth/pages/CompanySelectPage.css",
+      "message": "class \".cs-search\" must use prefix \"auth-\" or \"lp-\" or \"fp-\" or \"pr-\" or \"rp-\" or \"ts-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/auth/pages/CompanySelectPage.css",
+      "message": "class \".cs-spinner\" must use prefix \"auth-\" or \"lp-\" or \"fp-\" or \"pr-\" or \"rp-\" or \"ts-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/auth/pages/CompanySelectPage.css",
+      "message": "class \".cs-summary-hint\" must use prefix \"auth-\" or \"lp-\" or \"fp-\" or \"pr-\" or \"rp-\" or \"ts-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/auth/pages/CompanySelectPage.css",
+      "message": "class \".cs-summary-item--secure\" must use prefix \"auth-\" or \"lp-\" or \"fp-\" or \"pr-\" or \"rp-\" or \"ts-\" or global zh-ui/pg-* token",
+      "count": 4
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/auth/pages/CompanySelectPage.css",
+      "message": "class \".cs-summary-item\" must use prefix \"auth-\" or \"lp-\" or \"fp-\" or \"pr-\" or \"rp-\" or \"ts-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/auth/pages/CompanySelectPage.css",
+      "message": "class \".cs-summary-value\" must use prefix \"auth-\" or \"lp-\" or \"fp-\" or \"pr-\" or \"rp-\" or \"ts-\" or global zh-ui/pg-* token",
+      "count": 4
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/auth/pages/CompanySelectPage.css",
+      "message": "class \".cs-summary\" must use prefix \"auth-\" or \"lp-\" or \"fp-\" or \"pr-\" or \"rp-\" or \"ts-\" or global zh-ui/pg-* token",
+      "count": 2
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/auth/pages/CompanySelectPage.css",
+      "message": "class \".cs-wrapper\" must use prefix \"auth-\" or \"lp-\" or \"fp-\" or \"pr-\" or \"rp-\" or \"ts-\" or global zh-ui/pg-* token",
+      "count": 3
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/configuracion/documentFlows/pages/document-flow-policies-page.css",
+      "message": "class \".dfp-effects\" must use prefix \"cfg-\" or \"sri-\" or \"bill-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/configuracion/empresa/sections/operational-readiness.css",
+      "message": "class \".opreadiness-capabilities\" must use prefix \"cfg-\" or \"sri-\" or \"bill-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/configuracion/empresa/sections/operational-readiness.css",
+      "message": "class \".opreadiness-item-action\" must use prefix \"cfg-\" or \"sri-\" or \"bill-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/configuracion/empresa/sections/operational-readiness.css",
+      "message": "class \".opreadiness-item-label\" must use prefix \"cfg-\" or \"sri-\" or \"bill-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/configuracion/empresa/sections/operational-readiness.css",
+      "message": "class \".opreadiness-item-list\" must use prefix \"cfg-\" or \"sri-\" or \"bill-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/configuracion/empresa/sections/operational-readiness.css",
+      "message": "class \".opreadiness-item-message\" must use prefix \"cfg-\" or \"sri-\" or \"bill-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/configuracion/empresa/sections/operational-readiness.css",
+      "message": "class \".opreadiness-item-row\" must use prefix \"cfg-\" or \"sri-\" or \"bill-\" or global zh-ui/pg-* token",
+      "count": 3
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/configuracion/empresa/sections/operational-readiness.css",
+      "message": "class \".opreadiness-item-text\" must use prefix \"cfg-\" or \"sri-\" or \"bill-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/configuracion/empresa/sections/operational-readiness.css",
+      "message": "class \".opreadiness-root\" must use prefix \"cfg-\" or \"sri-\" or \"bill-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "css-prefixes",
+      "rule": "F-css-prefix",
+      "file": "frontend/src/modules/configuracion/empresa/sections/operational-readiness.css",
+      "message": "class \".opreadiness-sections\" must use prefix \"cfg-\" or \"sri-\" or \"bill-\" or global zh-ui/pg-* token",
+      "count": 1
+    },
+    {
+      "check": "design-system",
+      "rule": "F-04-badge",
+      "file": "frontend/src/modules/purchases/pages/PurchaseCreditNoteDetailPage.tsx",
+      "message": "Badge crudo con className=\"badge badge--...\" — usar <Badge label=\"...\" variant=\"green|gray|red|blue|orange\" /> (components/PageShell.tsx).",
+      "count": 1
+    },
+    {
+      "check": "design-system",
+      "rule": "F-04-badge",
+      "file": "frontend/src/modules/purchases/pages/PurchaseCreditNoteFormPage.tsx",
+      "message": "Badge crudo con className=\"badge badge--...\" — usar <Badge label=\"...\" variant=\"green|gray|red|blue|orange\" /> (components/PageShell.tsx).",
+      "count": 1
+    },
+    {
+      "check": "design-system",
+      "rule": "F-04-token",
+      "file": "frontend/src/components/zh/progress/zh-batch-progress.css",
+      "message": "Token '--batch-progress' no está definido en design-tokens.css — corregir el nombre o agregarlo ahí (no crear tokens sueltos en otros archivos).",
+      "count": 1
+    },
+    {
+      "check": "design-system",
+      "rule": "F-04-token",
+      "file": "frontend/src/modules/accounting/pages/ChartOfAccountsPage.css",
+      "message": "Token '--account-tree-elbow' no está definido en design-tokens.css — corregir el nombre o agregarlo ahí (no crear tokens sueltos en otros archivos).",
+      "count": 3
+    },
+    {
+      "check": "design-system",
+      "rule": "F-04-token",
+      "file": "frontend/src/modules/accounting/pages/ChartOfAccountsPage.css",
+      "message": "Token '--account-tree-line-color' no está definido en design-tokens.css — corregir el nombre o agregarlo ahí (no crear tokens sueltos en otros archivos).",
+      "count": 2
+    },
+    {
+      "check": "design-system",
+      "rule": "F-04-token",
+      "file": "frontend/src/modules/accounting/pages/ChartOfAccountsPage.css",
+      "message": "Token '--account-tree-step' no está definido en design-tokens.css — corregir el nombre o agregarlo ahí (no crear tokens sueltos en otros archivos).",
+      "count": 4
+    },
+    {
+      "check": "design-system",
+      "rule": "F-04-token",
+      "file": "frontend/src/modules/caja/pages/CajaPage.css",
+      "message": "Token '--color-surface-subtle' no está definido en design-tokens.css — corregir el nombre o agregarlo ahí (no crear tokens sueltos en otros archivos).",
+      "count": 1
+    },
+    {
+      "check": "design-system",
+      "rule": "F-04-token",
+      "file": "frontend/src/modules/expenses/styles/expense-documents.css",
+      "message": "Token '--text-title-md-size' no está definido en design-tokens.css — corregir el nombre o agregarlo ahí (no crear tokens sueltos en otros archivos).",
+      "count": 1
+    },
+    {
+      "check": "design-system",
+      "rule": "F-04-token",
+      "file": "frontend/src/modules/expenses/styles/expense-documents.css",
+      "message": "Token '--text-title-md-weight' no está definido en design-tokens.css — corregir el nombre o agregarlo ahí (no crear tokens sueltos en otros archivos).",
+      "count": 1
+    },
+    {
+      "check": "design-system",
+      "rule": "F-04-token",
+      "file": "frontend/src/modules/purchases/styles/purchase-reception.css",
+      "message": "Token '--color-danger' no está definido en design-tokens.css — corregir el nombre o agregarlo ahí (no crear tokens sueltos en otros archivos).",
+      "count": 1
+    },
+    {
+      "check": "design-system",
+      "rule": "F-04-token",
+      "file": "frontend/src/modules/purchases/styles/purchase-reception.css",
+      "message": "Token '--color-surface-secondary' no está definido en design-tokens.css — corregir el nombre o agregarlo ahí (no crear tokens sueltos en otros archivos).",
+      "count": 1
+    },
+    {
+      "check": "design-system",
+      "rule": "F-04-token",
+      "file": "frontend/src/modules/purchases/styles/purchases-invoice.css",
+      "message": "Token '--color-danger' no está definido en design-tokens.css — corregir el nombre o agregarlo ahí (no crear tokens sueltos en otros archivos).",
+      "count": 1
+    },
+    {
+      "check": "design-system",
+      "rule": "F-04-token",
+      "file": "frontend/src/modules/sales/styles/sales-product-card.css",
+      "message": "Token '--sfl-col-gap' no está definido en design-tokens.css — corregir el nombre o agregarlo ahí (no crear tokens sueltos en otros archivos).",
+      "count": 4
+    },
+    {
+      "check": "design-system",
+      "rule": "F-04-token",
+      "file": "frontend/src/modules/sales/styles/sales-product-card.css",
+      "message": "Token '--sfl-cols' no está definido en design-tokens.css — corregir el nombre o agregarlo ahí (no crear tokens sueltos en otros archivos).",
+      "count": 4
+    },
+    {
+      "check": "duplicate-services",
+      "rule": "B-duplicate-di",
+      "file": "backend/src/ERP.Infrastructure.Tests/Ride/RetentionWiringDependencyInjectionTests.cs",
+      "message": "IRideTemplate registrado 2 veces en DI — puede causar comportamiento inesperado",
+      "count": 1
+    },
+    {
+      "check": "duplicate-services",
+      "rule": "B-duplicate-di",
+      "file": "backend/src/ERP.Infrastructure.Tests/Ride/RetentionWiringDependencyInjectionTests.cs",
+      "message": "IRideXmlParser registrado 2 veces en DI — puede causar comportamiento inesperado",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/admin/access-sessions/pages/AdminUserSessionsPage.tsx",
+      "message": "cross-module import \"admin\" → \"company-management\" via \"../../../company-management/api/companyManagementService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/auth/pages/CompanySelectPage.test.tsx",
+      "message": "cross-module import \"auth\" → \"company-management\" via \"../../company-management/api/companyManagementService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/auth/syncCompanySelection.test.ts",
+      "message": "cross-module import \"auth\" → \"company-management\" via \"../company-management/api/companyManagementService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/auth/syncCompanySelection.ts",
+      "message": "cross-module import \"auth\" → \"company-management\" via \"../company-management/api/companyManagementService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/caja/hooks/useCajaPage.test.tsx",
+      "message": "cross-module import \"caja\" → \"configuracion\" via \"../../configuracion/operaciones/api/operationalPreferencesService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 2
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/caja/hooks/useManualCashMovementFlow.tsx",
+      "message": "cross-module import \"caja\" → \"configuracion\" via \"../../configuracion/operaciones/api/operationalPreferencesService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/configuracion/empresa/sections/CompanySalesSettingsSection.tsx",
+      "message": "cross-module import \"configuracion\" → \"pricing\" via \"../../../pricing/api/pricingService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/documentSequences/hooks/useDocumentSequencesPage.test.tsx",
+      "message": "cross-module import \"documentSequences\" → \"emissionPoints\" via \"../../emissionPoints/api/emissionPointsService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/documentSequences/hooks/useDocumentSequencesPage.test.tsx",
+      "message": "cross-module import \"documentSequences\" → \"items\" via \"../../items/catalog/api/catalogService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/documentSequences/hooks/useDocumentSequencesPage.ts",
+      "message": "cross-module import \"documentSequences\" → \"emissionPoints\" via \"../../emissionPoints/api/emissionPointsService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/documentSequences/hooks/useDocumentSequencesPage.ts",
+      "message": "cross-module import \"documentSequences\" → \"items\" via \"../../items/catalog/api/catalogService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/documentSequences/pages/DocumentSequencesPage.test.tsx",
+      "message": "cross-module import \"documentSequences\" → \"emissionPoints\" via \"../../emissionPoints/api/emissionPointsService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/documentSequences/pages/DocumentSequencesPage.test.tsx",
+      "message": "cross-module import \"documentSequences\" → \"items\" via \"../../items/catalog/api/catalogService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/expenses/components/ExpenseCategoryAccountSelector.tsx",
+      "message": "cross-module import \"expenses\" → \"accounting\" via \"../../accounting/api/accountingApi\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/expenses/components/ExpenseCategoryFormPanel.tsx",
+      "message": "cross-module import \"expenses\" → \"accounting\" via \"../../accounting/api/accountingApi\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/expenses/components/ExpenseCategoryTree.tsx",
+      "message": "cross-module import \"expenses\" → \"accounting\" via \"../../accounting/api/accountingApi\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/expenses/components/ExpenseDocumentHeader.tsx",
+      "message": "cross-module import \"expenses\" → \"masterData\" via \"../../masterData/api/businessPartnerFacade\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/expenses/components/ExpenseDocumentHeader.tsx",
+      "message": "cross-module import \"expenses\" → \"masterData\" via \"../../masterData/api/paymentTermService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/expenses/components/ExpenseDocumentLinesEditor.tsx",
+      "message": "cross-module import \"expenses\" → \"accounting\" via \"../../accounting/api/accountingApi\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/expenses/components/ExpenseRetentionSection.test.tsx",
+      "message": "cross-module import \"expenses\" → \"emissionPoints\" via \"../../emissionPoints/api/emissionPointsService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/expenses/components/ExpenseRetentionSection.tsx",
+      "message": "cross-module import \"expenses\" → \"emissionPoints\" via \"../../emissionPoints/api/emissionPointsService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/expenses/components/ExpenseSubcategorySelector.tsx",
+      "message": "cross-module import \"expenses\" → \"accounting\" via \"../../accounting/api/accountingApi\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/expenses/pages/ExpenseCategoriesPage.test.tsx",
+      "message": "cross-module import \"expenses\" → \"accounting\" via \"../../accounting/api/accountingApi\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/expenses/pages/ExpenseCategoriesPage.tsx",
+      "message": "cross-module import \"expenses\" → \"accounting\" via \"../../accounting/api/accountingApi\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.retention.test.tsx",
+      "message": "cross-module import \"expenses\" → \"accounting\" via \"../../accounting/api/accountingApi\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.retention.test.tsx",
+      "message": "cross-module import \"expenses\" → \"emissionPoints\" via \"../../emissionPoints/api/emissionPointsService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.retention.test.tsx",
+      "message": "cross-module import \"expenses\" → \"masterData\" via \"../../masterData/api/paymentTermService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.tsx",
+      "message": "cross-module import \"expenses\" → \"accounting\" via \"../../accounting/api/accountingApi\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.tsx",
+      "message": "cross-module import \"expenses\" → \"masterData\" via \"../../masterData/api/paymentTermService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.tsx",
+      "message": "cross-module import \"expenses\" → \"purchases\" via \"../../purchases/api/purchaseReceptionService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/expenses/utils/expenseDocumentDraftModel.ts",
+      "message": "cross-module import \"expenses\" → \"accounting\" via \"../../accounting/api/accountingApi\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/finance/components/ApplySupplierCreditModal.tsx",
+      "message": "cross-module import \"finance\" → \"payables\" via \"../../payables/api/payablesService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/finance/components/RegisterCollectionModal.tsx",
+      "message": "cross-module import \"finance\" → \"caja\" via \"../../caja/api/cajaService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/finance/components/RegisterSupplierCreditRefundModal.tsx",
+      "message": "cross-module import \"finance\" → \"caja\" via \"../../caja/api/cajaService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/finance/pages/BankAccountsPage.tsx",
+      "message": "cross-module import \"finance\" → \"settings\" via \"../../settings/banks/api/bankService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/purchases/hooks/usePurchasesPage.retention.test.ts",
+      "message": "cross-module import \"purchases\" → \"retentions\" via \"../../retentions/api/retentionsService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
+      "message": "cross-module import \"purchases\" → \"retentions\" via \"../../retentions/api/retentionsService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/sales/components/SalesIssueModal.tsx",
+      "message": "cross-module import \"sales\" → \"configuracion\" via \"../../configuracion/operaciones/api/operationalPreferencesService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/sales/hooks/useSalesPage.sriConnectivity.test.ts",
+      "message": "cross-module import \"sales\" → \"configuracion\" via \"../../configuracion/facturacionElectronica/api/electronicInvoicingService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/sales/hooks/useSalesPage.ts",
+      "message": "cross-module import \"sales\" → \"configuracion\" via \"../../configuracion/facturacionElectronica/api/electronicInvoicingService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/sales/hooks/useSalesPage.ts",
+      "message": "cross-module import \"sales\" → \"finance\" via \"../../finance/api/bankAccountService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 2
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/sales/hooks/useSalesPage.ts",
+      "message": "cross-module import \"sales\" → \"settings\" via \"../../settings/banks/api/bankService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 2
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/sales/pages/PaymentMethodsPage.tsx",
+      "message": "cross-module import \"sales\" → \"accounting\" via \"../../accounting/api/accountingApi\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/supplier-payments/api/pendingPayablesFacade.ts",
+      "message": "cross-module import \"supplier-payments\" → \"payables\" via \"../../payables/api/payablesService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/supplier-payments/components/SupplierPaymentMethodLinesEditor.tsx",
+      "message": "cross-module import \"supplier-payments\" → \"caja\" via \"../../caja/api/cajaService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/supplier-payments/components/SupplierPaymentMethodLinesEditor.tsx",
+      "message": "cross-module import \"supplier-payments\" → \"finance\" via \"../../finance/api/bankAccountService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/supplier-payments/pages/SupplierPaymentDetailPage.test.tsx",
+      "message": "cross-module import \"supplier-payments\" → \"caja\" via \"../../caja/api/cajaService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/supplier-payments/pages/SupplierPaymentDetailPage.test.tsx",
+      "message": "cross-module import \"supplier-payments\" → \"finance\" via \"../../finance/api/bankAccountService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/supplier-payments/pages/SupplierPaymentDetailPage.test.tsx",
+      "message": "cross-module import \"supplier-payments\" → \"masterData\" via \"../../masterData/api/businessPartnerFacade\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/supplier-payments/pages/SupplierPaymentDetailPage.tsx",
+      "message": "cross-module import \"supplier-payments\" → \"caja\" via \"../../caja/api/cajaService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/supplier-payments/pages/SupplierPaymentDetailPage.tsx",
+      "message": "cross-module import \"supplier-payments\" → \"finance\" via \"../../finance/api/bankAccountService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/supplier-payments/pages/SupplierPaymentDetailPage.tsx",
+      "message": "cross-module import \"supplier-payments\" → \"masterData\" via \"../../masterData/api/businessPartnerFacade\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/supplier-payments/pages/SupplierPaymentFormPage.test.tsx",
+      "message": "cross-module import \"supplier-payments\" → \"caja\" via \"../../caja/api/cajaService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/supplier-payments/pages/SupplierPaymentFormPage.test.tsx",
+      "message": "cross-module import \"supplier-payments\" → \"finance\" via \"../../finance/api/bankAccountService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/supplier-payments/pages/SupplierPaymentFormPage.test.tsx",
+      "message": "cross-module import \"supplier-payments\" → \"masterData\" via \"../../masterData/api/businessPartnerFacade\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/supplier-payments/pages/SupplierPaymentFormPage.tsx",
+      "message": "cross-module import \"supplier-payments\" → \"caja\" via \"../../caja/api/cajaService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/supplier-payments/pages/SupplierPaymentFormPage.tsx",
+      "message": "cross-module import \"supplier-payments\" → \"finance\" via \"../../finance/api/bankAccountService\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    },
+    {
+      "check": "module-boundaries",
+      "rule": "F-module-boundary",
+      "file": "frontend/src/modules/supplier-payments/pages/SupplierPaymentFormPage.tsx",
+      "message": "cross-module import \"supplier-payments\" → \"masterData\" via \"../../masterData/api/businessPartnerFacade\" not in allowedCrossImports; use shared contract or extend config",
+      "count": 1
+    }
+  ]
+}

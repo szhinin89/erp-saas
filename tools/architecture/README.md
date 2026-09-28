@@ -18,18 +18,24 @@ node tools/architecture/run-all.mjs --only backend-layering
 Desde `frontend/`:
 
 ```bash
-npm run architecture:check      # 9 checks + score + report + annotations en CI
+npm run architecture:check      # ratchet tests + checks + score + report + annotations en CI
 npm run architecture:backend    # solo checks .NET
 npm run architecture:report     # regenera architecture-report.json
 ```
 
 ## Salida unificada
 
-Cada ejecución de `run-all.mjs` produce:
+Cada ejecución completa de `run-all.mjs` produce:
 
-1. **Consola** — `[PASS]` / `[FAIL]` / `[WARN]` por check + score
-2. **JSON** — `tools/architecture/architecture-report.json`
-3. **GitHub annotations** — cuando `GITHUB_ACTIONS=true` o `--annotate`
+1. **Consola** — `[PASS]` / `[BASELINE]` / `[FAIL]` / `[WARN]` por check + resumen ratchet y score
+2. **JSON** — `tools/architecture/architecture-report.json`, incluyendo findings históricos, novedades y resueltas
+3. **GitHub annotations** — solo findings nuevos como errores; warnings conservan su nivel
+
+## Ratchet
+
+`npm run architecture:check` ejecuta primero las pruebas del comparador y luego el conjunto completo de checks. La única fuente versionada de baseline es [`architecture-baseline.json`](./architecture-baseline.json): 244 ocurrencias agrupadas por identidad estable `(check, rule, file, message)`. La línea no forma parte de la identidad; ocurrencias idénticas sí cuentan con multiplicidad.
+
+El baseline no se genera ni se incrementa desde el código. Una violación nueva siempre falla, incluso si el total no cambia por una violación histórica resuelta. Resolver deuda pasa y se informa; reducir el snapshot requiere editarlo explícitamente después de revisar la resolución. Baseline inválido/ausente falla cerrado. Un gate PASS significa “sin regresiones nuevas”, no que las violaciones históricas estén aprobadas; el score y los checks crudos continúan mostrándolas.
 
 Ejemplo consola:
 

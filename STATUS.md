@@ -2,6 +2,12 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-28** · Kernel refactor: **2026-06-05**.
 
+## ZH-ARCHITECTURE-RATCHET-01 — Ratchet del gate de arquitectura (2026-09-28)
+
+**Estado: COMPLETADO.** `npm run architecture:check` es el gate único: PASS si no aparecen violaciones nuevas frente a `tools/architecture/architecture-baseline.json`; la deuda histórica sigue visible y no se aprueba. El baseline inicial versionado es 244 (module-boundaries 61, css-prefixes 112, design-system 26, backend-subscriber-rules 43, duplicate-services 2). No existe actualización automática del snapshot.
+- Tests del ratchet 9/9; gate real 244 históricas, 0 nuevas, 0 resueltas; score/status de arquitectura permanece crítico. Baseline inválido falla cerrado.
+- Incluye caso de regresión de archivo nuevo, swap de finding, reducción de deuda y baseline malformado.
+
 ## ZH-ARCHITECTURE-GATE-RECOVERY-01 — Resolución masiva XML y recuperación del baseline del gate (2026-09-28)
 
 **Estado: cambio modular corregido; gate absoluto BLOQUEADO por baseline histórico.** La resolución masiva XML de productos queda en `b2041a06`; esta revisión no crea commit.
