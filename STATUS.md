@@ -2,12 +2,19 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-28** · Kernel refactor: **2026-06-05**.
 
+## ZH-ARCH-DUPLICATE-SERVICES-SCANNER-01/02 — Scanner DI con namespace completo (2026-09-28)
+
+**Estado: COMPLETADO.** Resuelve el hallazgo pendiente de ZH-ARCH-DUPLICATE-SERVICES-01: el checker ahora escanea el `DependencyInjection.cs` productivo (registros con namespace completo). Sin cambios en DI productivo.
+- Identidad: cada registro conserva `fullName` + `simpleName`. Simple y calificado de la misma interfaz cuentan juntos; homónimas en namespaces distintos cuentan por separado; registro sin calificar junto a ≥2 homónimas falla cerrado (ambigüedad). Allowlist por nombre simple, cerrada.
+- Auditoría: 8 hallazgos nuevos → 7 strategy/plugin intencionales (consumidor `IEnumerable<T>` confirmado) agregados a `allowedMultiRegistration`: `IJournalEntrySourceModuleResolver`, `IElectronicDocumentDataProvider`, `ISalesInvoiceEmissionStrategy`, `IElectronicDocumentXmlBuilder`, `IElectronicDocumentSchemaValidator`, `IPricingAdjustmentStrategy`, `IGlobalBootstrapStep`; 1 falso positivo (`ISriTaxResolver`: dos interfaces distintas Common/Purchases) eliminado por la nueva identidad. 0 duplicaciones reales.
+- Baseline sin cambios (198): los hallazgos nunca estuvieron en el snapshot. `check-duplicate-services.test.mjs` (9 tests) se agregó a `npm run architecture:check`.
+
 ## ZH-ARCH-DUPLICATE-SERVICES-01 — `duplicate-services` en 0 (2026-09-28)
 
 **Estado: COMPLETADO.** Las 2 violaciones (`IRideTemplate`/`IRideXmlParser` ×2 en `RetentionWiringDependencyInjectionTests`) eran multi-registro intencional: patrón strategy/plugin consumido vía `IEnumerable<T>` por `RideTemplateResolver`/`RideXmlParserResolver`, espejo exacto del wiring productivo (Invoice + CreditNote). Sin cambios de código productivo ni de test.
 - Corrección: ambas interfaces se agregaron por nombre explícito a `backend.duplicateServices.allowedMultiRegistration` (mismo mecanismo que `ICompanyBootstrapStep`/`IImportProcessor`); la regla sigue activa para el resto.
 - Baseline: 200 → 198; `duplicate-services` 2 → 0 (se retiró solo esas 2 identidades).
-- Hallazgo pendiente (no corregido): el regex del checker no detecta registros con nombre calificado (`AddScoped<ERP.Application...IFoo, ...>`), por lo que `DependencyInjection.cs` productivo no se escanea de hecho. Endurecerlo expondría multi-registros hoy invisibles (p. ej. `IJournalEntrySourceModuleResolver`, `IPricingAdjustmentStrategy`, `ISriTaxResolver`) que requieren clasificación caso a caso.
+- Hallazgo (resuelto en ZH-ARCH-DUPLICATE-SERVICES-SCANNER-01/02): el regex del checker no detecta registros con nombre calificado (`AddScoped<ERP.Application...IFoo, ...>`), por lo que `DependencyInjection.cs` productivo no se escanea de hecho. Endurecerlo expondría multi-registros hoy invisibles (p. ej. `IJournalEntrySourceModuleResolver`, `IPricingAdjustmentStrategy`, `ISriTaxResolver`) que requieren clasificación caso a caso.
 - Verificación: tests Node 32/32; `npm run architecture:check` PASS, 198/198, 0 nuevas; `ERP.Infrastructure.Tests` Ride 92/92; `ERP.Architecture.Tests` 116/116.
 
 ## ZH-ARCHITECTURE-DEBT-IGNOREQUERYFILTERS-02 — Scope seguro y precisión del scanner (2026-09-28)

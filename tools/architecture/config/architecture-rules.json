@@ -202,7 +202,14 @@
         "ICompanyBootstrapStep",
         "IImportProcessor",
         "IRideXmlParser",
-        "IRideTemplate"
+        "IRideTemplate",
+        "IJournalEntrySourceModuleResolver",
+        "IElectronicDocumentDataProvider",
+        "ISalesInvoiceEmissionStrategy",
+        "IElectronicDocumentXmlBuilder",
+        "IElectronicDocumentSchemaValidator",
+        "IPricingAdjustmentStrategy",
+        "IGlobalBootstrapStep"
       ]
     },
     "subscriber": {
