@@ -6,8 +6,8 @@ import {
   documentSequencesService,
   type DocumentSequenceDto,
 } from "../api/documentSequencesService";
-import { emissionPointsService } from "../../emissionPoints/api/emissionPointsService";
-import { sriLookupService } from "../../items/catalog/api/catalogService";
+import { emissionPointLookupFacade } from "../../emissionPoints/facades/emissionPointLookupFacade";
+import { sriLookupFacade } from "../../items/facades/sriLookupFacade";
 import { message } from "../../../lib/messages";
 
 /**
@@ -25,14 +25,14 @@ vi.mock("../api/documentSequencesService", () => ({
   },
 }));
 
-vi.mock("../../emissionPoints/api/emissionPointsService", () => ({
-  emissionPointsService: {
+vi.mock("../../emissionPoints/facades/emissionPointLookupFacade", () => ({
+  emissionPointLookupFacade: {
     list: vi.fn(),
   },
 }));
 
-vi.mock("../../items/catalog/api/catalogService", () => ({
-  sriLookupService: {
+vi.mock("../../items/facades/sriLookupFacade", () => ({
+  sriLookupFacade: {
     docTypes: vi.fn(),
   },
 }));
@@ -87,8 +87,8 @@ function sequenceDto(
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(emissionPointsService.list).mockResolvedValue([EMISSION_POINT]);
-  vi.mocked(sriLookupService.docTypes).mockResolvedValue(DOC_TYPES);
+  vi.mocked(emissionPointLookupFacade.list).mockResolvedValue([EMISSION_POINT]);
+  vi.mocked(sriLookupFacade.docTypes).mockResolvedValue(DOC_TYPES);
   vi.mocked(documentSequencesService.list).mockResolvedValue([]);
   vi.mocked(message.confirm).mockResolvedValue(true);
 });
@@ -105,7 +105,7 @@ async function renderLoaded() {
 describe("useDocumentSequencesPage — carga inicial", () => {
   it("carga puntos de emisión y selecciona el primero automáticamente", async () => {
     const result = await renderLoaded();
-    expect(emissionPointsService.list).toHaveBeenCalledWith("active");
+    expect(emissionPointLookupFacade.list).toHaveBeenCalledWith("active");
     expect(result.current.emissionPoints).toEqual([EMISSION_POINT]);
   });
 

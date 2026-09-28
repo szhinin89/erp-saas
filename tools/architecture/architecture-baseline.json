@@ -10,13 +10,13 @@
     "lineNumber": "excluded to keep identity stable across unrelated edits"
   },
   "summary": {
-    "violations": 213,
+    "violations": 200,
     "byCheck": {
       "backend-subscriber-rules": 12,
       "css-prefixes": 112,
       "design-system": 26,
       "duplicate-services": 2,
-      "module-boundaries": 61
+      "module-boundaries": 48
     }
   },
   "violations": [
@@ -772,48 +772,6 @@
     {
       "check": "module-boundaries",
       "rule": "F-module-boundary",
-      "file": "frontend/src/modules/documentSequences/hooks/useDocumentSequencesPage.test.tsx",
-      "message": "cross-module import \"documentSequences\" → \"emissionPoints\" via \"../../emissionPoints/api/emissionPointsService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/documentSequences/hooks/useDocumentSequencesPage.test.tsx",
-      "message": "cross-module import \"documentSequences\" → \"items\" via \"../../items/catalog/api/catalogService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/documentSequences/hooks/useDocumentSequencesPage.ts",
-      "message": "cross-module import \"documentSequences\" → \"emissionPoints\" via \"../../emissionPoints/api/emissionPointsService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/documentSequences/hooks/useDocumentSequencesPage.ts",
-      "message": "cross-module import \"documentSequences\" → \"items\" via \"../../items/catalog/api/catalogService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/documentSequences/pages/DocumentSequencesPage.test.tsx",
-      "message": "cross-module import \"documentSequences\" → \"emissionPoints\" via \"../../emissionPoints/api/emissionPointsService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/documentSequences/pages/DocumentSequencesPage.test.tsx",
-      "message": "cross-module import \"documentSequences\" → \"items\" via \"../../items/catalog/api/catalogService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
       "file": "frontend/src/modules/expenses/components/ExpenseCategoryAccountSelector.tsx",
       "message": "cross-module import \"expenses\" → \"accounting\" via \"../../accounting/api/accountingApi\" not in allowedCrossImports; use shared contract or extend config",
       "count": 1
@@ -835,36 +793,8 @@
     {
       "check": "module-boundaries",
       "rule": "F-module-boundary",
-      "file": "frontend/src/modules/expenses/components/ExpenseDocumentHeader.tsx",
-      "message": "cross-module import \"expenses\" → \"masterData\" via \"../../masterData/api/businessPartnerFacade\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/expenses/components/ExpenseDocumentHeader.tsx",
-      "message": "cross-module import \"expenses\" → \"masterData\" via \"../../masterData/api/paymentTermService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
       "file": "frontend/src/modules/expenses/components/ExpenseDocumentLinesEditor.tsx",
       "message": "cross-module import \"expenses\" → \"accounting\" via \"../../accounting/api/accountingApi\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/expenses/components/ExpenseRetentionSection.test.tsx",
-      "message": "cross-module import \"expenses\" → \"emissionPoints\" via \"../../emissionPoints/api/emissionPointsService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/expenses/components/ExpenseRetentionSection.tsx",
-      "message": "cross-module import \"expenses\" → \"emissionPoints\" via \"../../emissionPoints/api/emissionPointsService\" not in allowedCrossImports; use shared contract or extend config",
       "count": 1
     },
     {
@@ -898,29 +828,8 @@
     {
       "check": "module-boundaries",
       "rule": "F-module-boundary",
-      "file": "frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.retention.test.tsx",
-      "message": "cross-module import \"expenses\" → \"emissionPoints\" via \"../../emissionPoints/api/emissionPointsService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.retention.test.tsx",
-      "message": "cross-module import \"expenses\" → \"masterData\" via \"../../masterData/api/paymentTermService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
       "file": "frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.tsx",
       "message": "cross-module import \"expenses\" → \"accounting\" via \"../../accounting/api/accountingApi\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.tsx",
-      "message": "cross-module import \"expenses\" → \"masterData\" via \"../../masterData/api/paymentTermService\" not in allowedCrossImports; use shared contract or extend config",
       "count": 1
     },
     {

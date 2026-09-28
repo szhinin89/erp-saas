@@ -9,9 +9,9 @@ import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import {
-  emissionPointsService,
+  emissionPointLookupFacade,
   type EmissionPointListItemDto,
-} from "../../emissionPoints/api/emissionPointsService";
+} from "../../emissionPoints/facades/emissionPointLookupFacade";
 import {
   expenseDocumentService,
   type ExpenseStatus,
@@ -134,7 +134,7 @@ export function ExpenseRetentionSection({
   useEffect(() => {
     if (!canReadEmissionPoints || !isDraftDocument) return;
     let cancelled = false;
-    emissionPointsService
+    emissionPointLookupFacade
       .list("active")
       .then((rows) => {
         if (!cancelled) setEmissionPoints(rows);

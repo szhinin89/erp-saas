@@ -5,7 +5,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.config";
 import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 import { ExpenseRetentionSection } from "./ExpenseRetentionSection";
-import { emissionPointsService } from "../../emissionPoints/api/emissionPointsService";
+import { emissionPointLookupFacade } from "../../emissionPoints/facades/emissionPointLookupFacade";
 import { expenseDocumentService } from "../api/expenseDocumentService";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { emptyRetentionIntentState, newRetentionIntentLine } from "../utils/expenseRetentionModel";
@@ -20,8 +20,8 @@ import type { RetentionEligibilityResult } from "../api/expenseDocumentService";
  * funcionando sin cambios.
  */
 
-vi.mock("../../emissionPoints/api/emissionPointsService", () => ({
-  emissionPointsService: { list: vi.fn() },
+vi.mock("../../emissionPoints/facades/emissionPointLookupFacade", () => ({
+  emissionPointLookupFacade: { list: vi.fn() },
 }));
 
 vi.mock("../api/expenseDocumentService", () => ({
@@ -68,7 +68,7 @@ beforeEach(() => {
     has: () => true,
     isAdminRole: true,
   });
-  vi.mocked(emissionPointsService.list).mockResolvedValue([EMISSION_POINT]);
+  vi.mocked(emissionPointLookupFacade.list).mockResolvedValue([EMISSION_POINT]);
   vi.mocked(expenseDocumentService.getRetentionEligibility).mockResolvedValue(ELIGIBLE_RESULT);
   vi.mocked(expenseDocumentService.getExpenseRetention).mockResolvedValue(null);
 });

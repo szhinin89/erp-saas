@@ -19,8 +19,12 @@ const bpFacade = vi.hoisted(() => ({
   searchBusinessPartners: vi.fn(),
   getBusinessPartner: vi.fn(),
 }));
+const purchaseSettingsFacade = vi.hoisted(() => ({ getPurchaseSettings: vi.fn() }));
 vi.mock("../../masterData/api/businessPartnerFacade", () => ({
   businessPartnerFacade: bpFacade,
+}));
+vi.mock("../../masterData/facades/businessPartnerPurchaseSettingsFacade", () => ({
+  businessPartnerPurchaseSettingsFacade: purchaseSettingsFacade,
 }));
 
 afterEach(() => {

@@ -7,13 +7,13 @@ import {
   type DocumentSequenceDto,
 } from "../api/documentSequencesService";
 import {
-  emissionPointsService,
+  emissionPointLookupFacade,
   type EmissionPointListItemDto,
-} from "../../emissionPoints/api/emissionPointsService";
+} from "../../emissionPoints/facades/emissionPointLookupFacade";
 import {
-  sriLookupService,
+  sriLookupFacade,
   type SriDocTypeLookup,
-} from "../../items/catalog/api/catalogService";
+} from "../../items/facades/sriLookupFacade";
 import {
   documentSequenceConfigureSchema,
   emptyDocumentSequenceConfigureForm,
@@ -78,8 +78,8 @@ export function useDocumentSequencesPage() {
     setLoading(true);
     try {
       const [epList, docTypeList, sequenceList] = await Promise.all([
-        emissionPointsService.list("active"),
-        sriLookupService.docTypes(),
+        emissionPointLookupFacade.list("active"),
+        sriLookupFacade.docTypes(),
         documentSequencesService.list(),
       ]);
       setEmissionPoints(epList);

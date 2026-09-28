@@ -31,7 +31,7 @@ import {
   type SriTaxSupportLookup,
   type SriVatRateLookup,
 } from "../../items/facades/sriLookupFacade";
-import { paymentTermService, type PaymentTermDto } from "../../masterData/api/paymentTermService";
+import { paymentTermLookupFacade, type PaymentTermDto } from "../../masterData/facades/paymentTermLookupFacade";
 import type { SupplierPickerRow } from "../../masterData/types/businessPartner.types";
 import {
   expenseCategoryService,
@@ -194,7 +194,7 @@ export function ExpenseDocumentFormPage() {
       const requests = [
         canReadCatalog ? expenseCategoryService.getTree(false) : Promise.resolve([]),
         accountingApi.listAccounts(),
-        paymentTermService.list(),
+        paymentTermLookupFacade.list(),
         sriLookupFacade.docTypes(),
         sriLookupFacade.taxSupportCodes(),
         sriLookupFacade.vatRates(),

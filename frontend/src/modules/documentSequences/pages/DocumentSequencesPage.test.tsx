@@ -8,8 +8,8 @@ import {
   documentSequencesService,
   type DocumentSequenceDto,
 } from "../api/documentSequencesService";
-import { emissionPointsService } from "../../emissionPoints/api/emissionPointsService";
-import { sriLookupService } from "../../items/catalog/api/catalogService";
+import { emissionPointLookupFacade } from "../../emissionPoints/facades/emissionPointLookupFacade";
+import { sriLookupFacade } from "../../items/facades/sriLookupFacade";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { message } from "../../../lib/messages";
 
@@ -25,12 +25,12 @@ vi.mock("../api/documentSequencesService", () => ({
   documentSequencesService: { list: vi.fn(), configure: vi.fn() },
 }));
 
-vi.mock("../../emissionPoints/api/emissionPointsService", () => ({
-  emissionPointsService: { list: vi.fn() },
+vi.mock("../../emissionPoints/facades/emissionPointLookupFacade", () => ({
+  emissionPointLookupFacade: { list: vi.fn() },
 }));
 
-vi.mock("../../items/catalog/api/catalogService", () => ({
-  sriLookupService: { docTypes: vi.fn() },
+vi.mock("../../items/facades/sriLookupFacade", () => ({
+  sriLookupFacade: { docTypes: vi.fn() },
 }));
 
 vi.mock("../../../access/usePermissionsUi", () => ({
@@ -99,8 +99,8 @@ afterEach(() => cleanup());
 beforeEach(() => {
   vi.clearAllMocks();
   grant();
-  vi.mocked(emissionPointsService.list).mockResolvedValue([EMISSION_POINT]);
-  vi.mocked(sriLookupService.docTypes).mockResolvedValue(DOC_TYPES);
+  vi.mocked(emissionPointLookupFacade.list).mockResolvedValue([EMISSION_POINT]);
+  vi.mocked(sriLookupFacade.docTypes).mockResolvedValue(DOC_TYPES);
   vi.mocked(documentSequencesService.list).mockResolvedValue([]);
   vi.mocked(message.confirm).mockResolvedValue(true);
 });
@@ -113,7 +113,7 @@ describe("DocumentSequencesPage — renderizado y carga", () => {
 
   it("carga los puntos de emisión activos y los muestra en el selector", async () => {
     renderPage();
-    await waitFor(() => expect(emissionPointsService.list).toHaveBeenCalledWith("active"));
+    await waitFor(() => expect(emissionPointLookupFacade.list).toHaveBeenCalledWith("active"));
     expect(await screen.findByText(/001-001/)).toBeTruthy();
   });
 

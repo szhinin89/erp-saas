@@ -4,8 +4,8 @@ import { ZhDateTimeInput } from "../../../components/zh/inputs/ZhDateTimeInput";
 import { ZhSelect } from "../../../components/zh/inputs/ZhSelect";
 import { ZhTextarea } from "../../../components/zh/inputs/ZhTextarea";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
-import { businessPartnerFacade } from "../../masterData/api/businessPartnerFacade";
-import type { PaymentTermDto } from "../../masterData/api/paymentTermService";
+import { businessPartnerPurchaseSettingsFacade } from "../../masterData/facades/businessPartnerPurchaseSettingsFacade";
+import type { PaymentTermDto } from "../../masterData/facades/paymentTermLookupFacade";
 import type { SupplierPickerRow } from "../../masterData/types/businessPartner.types";
 import { SupplierSearchSelect } from "../../masterData/components/SupplierSearchSelect";
 import type { SriDocTypeLookup, SriTaxSupportLookup } from "../../items/facades/sriLookupFacade";
@@ -86,7 +86,7 @@ export function ExpenseDocumentHeader({
               // ADR-033: la condición de pago default de compras/gastos vive en
               // CompanyBpPurchaseSettings (empresa activa) — SupplierRoleConfig ya no la tiene.
               if (next && prefillPaymentTerm) {
-                businessPartnerFacade
+                businessPartnerPurchaseSettingsFacade
                   .getPurchaseSettings(next.id)
                   .then((settings) => {
                     if (settings.paymentTermId) {

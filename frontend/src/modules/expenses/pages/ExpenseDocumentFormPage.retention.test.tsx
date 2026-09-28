@@ -13,8 +13,8 @@ import { ExpenseDocumentFormPage } from "./ExpenseDocumentFormPage";
 import { expenseDocumentService } from "../api/expenseDocumentService";
 import { expenseCategoryService } from "../api/expenseCategoryService";
 import { accountingApi } from "../../accounting/api/accountingApi";
-import { paymentTermService } from "../../masterData/api/paymentTermService";
-import { emissionPointsService } from "../../emissionPoints/api/emissionPointsService";
+import { paymentTermLookupFacade } from "../../masterData/facades/paymentTermLookupFacade";
+import { emissionPointLookupFacade } from "../../emissionPoints/facades/emissionPointLookupFacade";
 import { sriLookupFacade } from "../../items/facades/sriLookupFacade";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { message } from "../../../lib/messages";
@@ -71,12 +71,12 @@ vi.mock("../../accounting/api/accountingApi", () => ({
   accountingApi: { listAccounts: vi.fn() },
 }));
 
-vi.mock("../../masterData/api/paymentTermService", () => ({
-  paymentTermService: { list: vi.fn() },
+vi.mock("../../masterData/facades/paymentTermLookupFacade", () => ({
+  paymentTermLookupFacade: { list: vi.fn() },
 }));
 
-vi.mock("../../emissionPoints/api/emissionPointsService", () => ({
-  emissionPointsService: {
+vi.mock("../../emissionPoints/facades/emissionPointLookupFacade", () => ({
+  emissionPointLookupFacade: {
     list: vi.fn(),
     establishmentLookups: vi.fn(),
     create: vi.fn(),
@@ -262,9 +262,9 @@ beforeEach(() => {
   routeParams.id = "exp-1";
   grantAll();
   vi.mocked(accountingApi.listAccounts).mockResolvedValue([]);
-  vi.mocked(paymentTermService.list).mockResolvedValue([]);
+  vi.mocked(paymentTermLookupFacade.list).mockResolvedValue([]);
   vi.mocked(expenseCategoryService.getTree).mockResolvedValue([]);
-  vi.mocked(emissionPointsService.list).mockResolvedValue([EMISSION_POINT]);
+  vi.mocked(emissionPointLookupFacade.list).mockResolvedValue([EMISSION_POINT]);
   vi.mocked(sriLookupFacade.taxSupportCodes).mockResolvedValue([]);
   vi.mocked(sriLookupFacade.vatRates).mockResolvedValue([]);
   vi.mocked(expenseDocumentService.getExpenseRetention).mockResolvedValue(null);
