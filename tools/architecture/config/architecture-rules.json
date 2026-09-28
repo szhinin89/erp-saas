@@ -198,7 +198,12 @@
       ]
     },
     "duplicateServices": {
-      "allowedMultiRegistration": ["ICompanyBootstrapStep", "IImportProcessor"]
+      "allowedMultiRegistration": [
+        "ICompanyBootstrapStep",
+        "IImportProcessor",
+        "IRideXmlParser",
+        "IRideTemplate"
+      ]
     },
     "subscriber": {
       "scanPath": "backend/src",

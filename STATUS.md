@@ -2,6 +2,14 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-28** · Kernel refactor: **2026-06-05**.
 
+## ZH-ARCH-DUPLICATE-SERVICES-01 — `duplicate-services` en 0 (2026-09-28)
+
+**Estado: COMPLETADO.** Las 2 violaciones (`IRideTemplate`/`IRideXmlParser` ×2 en `RetentionWiringDependencyInjectionTests`) eran multi-registro intencional: patrón strategy/plugin consumido vía `IEnumerable<T>` por `RideTemplateResolver`/`RideXmlParserResolver`, espejo exacto del wiring productivo (Invoice + CreditNote). Sin cambios de código productivo ni de test.
+- Corrección: ambas interfaces se agregaron por nombre explícito a `backend.duplicateServices.allowedMultiRegistration` (mismo mecanismo que `ICompanyBootstrapStep`/`IImportProcessor`); la regla sigue activa para el resto.
+- Baseline: 200 → 198; `duplicate-services` 2 → 0 (se retiró solo esas 2 identidades).
+- Hallazgo pendiente (no corregido): el regex del checker no detecta registros con nombre calificado (`AddScoped<ERP.Application...IFoo, ...>`), por lo que `DependencyInjection.cs` productivo no se escanea de hecho. Endurecerlo expondría multi-registros hoy invisibles (p. ej. `IJournalEntrySourceModuleResolver`, `IPricingAdjustmentStrategy`, `ISriTaxResolver`) que requieren clasificación caso a caso.
+- Verificación: tests Node 32/32; `npm run architecture:check` PASS, 198/198, 0 nuevas; `ERP.Infrastructure.Tests` Ride 92/92; `ERP.Architecture.Tests` 116/116.
+
 ## ZH-ARCHITECTURE-DEBT-IGNOREQUERYFILTERS-02 — Scope seguro y precisión del scanner (2026-09-28)
 
 **Estado: COMPLETADO.** Se validó con PostgreSQL 16 real vía Testcontainers; no se modificaron los usos productivos legítimos ni se hizo commit.

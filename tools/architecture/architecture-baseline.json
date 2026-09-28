@@ -10,12 +10,11 @@
     "lineNumber": "excluded to keep identity stable across unrelated edits"
   },
   "summary": {
-    "violations": 200,
+    "violations": 198,
     "byCheck": {
       "backend-subscriber-rules": 12,
       "css-prefixes": 112,
       "design-system": 26,
-      "duplicate-services": 2,
       "module-boundaries": 48
     }
   },
@@ -705,20 +704,6 @@
       "file": "frontend/src/modules/sales/styles/sales-product-card.css",
       "message": "Token '--sfl-cols' no está definido en design-tokens.css — corregir el nombre o agregarlo ahí (no crear tokens sueltos en otros archivos).",
       "count": 4
-    },
-    {
-      "check": "duplicate-services",
-      "rule": "B-duplicate-di",
-      "file": "backend/src/ERP.Infrastructure.Tests/Ride/RetentionWiringDependencyInjectionTests.cs",
-      "message": "IRideTemplate registrado 2 veces en DI — puede causar comportamiento inesperado",
-      "count": 1
-    },
-    {
-      "check": "duplicate-services",
-      "rule": "B-duplicate-di",
-      "file": "backend/src/ERP.Infrastructure.Tests/Ride/RetentionWiringDependencyInjectionTests.cs",
-      "message": "IRideXmlParser registrado 2 veces en DI — puede causar comportamiento inesperado",
-      "count": 1
     },
     {
       "check": "module-boundaries",
