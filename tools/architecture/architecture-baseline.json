@@ -10,9 +10,9 @@
     "lineNumber": "excluded to keep identity stable across unrelated edits"
   },
   "summary": {
-    "violations": 198,
+    "violations": 187,
     "byCheck": {
-      "backend-subscriber-rules": 12,
+      "backend-subscriber-rules": 1,
       "css-prefixes": 112,
       "design-system": 26,
       "module-boundaries": 48
@@ -22,63 +22,7 @@
     {
       "check": "backend-subscriber-rules",
       "rule": "B-subscriber",
-      "file": "backend/src/ERP.Infrastructure/Seeding/BankCatalogBackfillService.cs",
-      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
-      "count": 1
-    },
-    {
-      "check": "backend-subscriber-rules",
-      "rule": "B-subscriber",
-      "file": "backend/src/ERP.Infrastructure/Seeding/CashRegisterAccountingAccountBackfillService.cs",
-      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
-      "count": 1
-    },
-    {
-      "check": "backend-subscriber-rules",
-      "rule": "B-subscriber",
-      "file": "backend/src/ERP.Infrastructure/Seeding/DocumentFlowPolicyBackfillService.cs",
-      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
-      "count": 1
-    },
-    {
-      "check": "backend-subscriber-rules",
-      "rule": "B-subscriber",
-      "file": "backend/src/ERP.Infrastructure/Seeding/ExpensesCatalogBackfillService.cs",
-      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
-      "count": 1
-    },
-    {
-      "check": "backend-subscriber-rules",
-      "rule": "B-subscriber",
       "file": "backend/src/ERP.Infrastructure/Seeding/PaymentMethodSriMappingBackfillService.cs",
-      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
-      "count": 1
-    },
-    {
-      "check": "backend-subscriber-rules",
-      "rule": "B-subscriber",
-      "file": "backend/src/ERP.Infrastructure/Seeding/PurchaseReturnPostingRemediationService.cs",
-      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
-      "count": 1
-    },
-    {
-      "check": "backend-subscriber-rules",
-      "rule": "B-subscriber",
-      "file": "backend/src/ERP.Infrastructure/Seeding/Steps/DocumentFlowPolicyBootstrapStep.cs",
-      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
-      "count": 1
-    },
-    {
-      "check": "backend-subscriber-rules",
-      "rule": "B-subscriber",
-      "file": "backend/src/ERP.Infrastructure/Seeding/Steps/ExpensesCatalogBootstrapStep.cs",
-      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
-      "count": 4
-    },
-    {
-      "check": "backend-subscriber-rules",
-      "rule": "B-subscriber",
-      "file": "backend/src/ERP.Infrastructure/Seeding/Steps/PrecisionPolicyBootstrapStep.cs",
       "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
       "count": 1
     },

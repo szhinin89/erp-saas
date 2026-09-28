@@ -21,7 +21,7 @@ namespace ERP.Infrastructure.Seeding;
 ///   completa las que están en null.
 /// - Solo actúa si la company tiene la cuenta "1.1.01.001" activa y postable — si no la tiene
 ///   (plan de cuentas atípico), se omite esa caja y se reporta, nunca se inventa una cuenta.
-/// - Multi-tenant/multi-company seguro: itera vía IgnoreQueryFilters() porque corre fuera de
+/// - Multi-tenant/multi-company seguro: itera vía AsPlatformQuery() porque corre fuera de
 ///   cualquier contexto de tenant autenticado (operación de despliegue).
 ///
 /// Invocación: <c>dotnet run -- backfill-cash-register-accounting-account</c> (ver Program.cs). No
@@ -51,7 +51,7 @@ public sealed class CashRegisterAccountingAccountBackfillService
     )
     {
         var cashRegistersWithoutAccount = await _db
-            .CashRegisters.IgnoreQueryFilters()
+            .CashRegisters.AsPlatformQuery()
             .Where(cr => cr.AccountingAccountId == null)
             .Select(cr => new
             {

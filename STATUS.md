@@ -2,6 +2,14 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-28** · Kernel refactor: **2026-06-05**.
 
+## ZH-ARCH-BACKEND-SUBSCRIBER-02 — `IgnoreQueryFilters()` directo → `AsPlatformQuery()` (2026-09-28)
+
+**Estado: COMPLETADO.** 12 violaciones `backend-subscriber-rules` auditadas: 11 A (reemplazables), 1 B (legítima, pendiente), 0 C. Sin cambio funcional: `AsPlatformQuery()` es exactamente `IgnoreQueryFilters()` sobre el `DbSet` (mismo SQL); ningún filtro TenantId/CompanyId se quitó.
+- A (11 en 8 archivos, `Seeding/`): `BankCatalogBackfillService`, `CashRegisterAccountingAccountBackfillService`, `DocumentFlowPolicyBackfillService`, `ExpensesCatalogBackfillService`, `PurchaseReturnPostingRemediationService` (scan de descubrimiento cross-tenant seguido de `JobExecutionContext.Begin` y/o revalidación TenantId+CompanyId antes de escribir); `DocumentFlowPolicyBootstrapStep`, `ExpensesCatalogBootstrapStep` ×4, `PrecisionPolicyBootstrapStep` (`Where` explícito TenantId+CompanyId del `CompanyBootstrapContext`). Se retiraron sus 8 entradas stale de la allowlist de `IgnoreQueryFiltersAuditTests` (reintroducir `IgnoreQueryFilters()` ahí vuelve a fallar).
+- B (1, sin tocar): `PaymentMethodSriMappingBackfillService` carga entidades trackeadas de todos los tenants y las guarda sin scope por tenant; migrarla requiere refactor con `JobExecutionContext.Begin` por tenant + validación PostgreSQL — ticket aparte.
+- Baseline: 198 → 187; `backend-subscriber-rules` 12 → 1. Otras categorías sin cambios.
+- Verificación: Infrastructure focalizados 52/52 (incluye `IgnoreQueryFiltersScopeIntegrationTests` PostgreSQL, `IgnoreQueryFiltersAuditTests`, `ExpensesCatalogBootstrapStepTests`); `CajaVentasEndToEndTests` 5/5; `ERP.Architecture.Tests` 116/116; `npm run architecture:check` PASS, 187, 0 nuevas.
+
 ## ZH-ARCH-DUPLICATE-SERVICES-SCANNER-01/02 — Scanner DI con namespace completo (2026-09-28)
 
 **Estado: COMPLETADO.** Resuelve el hallazgo pendiente de ZH-ARCH-DUPLICATE-SERVICES-01: el checker ahora escanea el `DependencyInjection.cs` productivo (registros con namespace completo). Sin cambios en DI productivo.

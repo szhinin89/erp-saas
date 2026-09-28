@@ -62,7 +62,7 @@ public sealed partial class PurchaseReturnPostingRemediationService
     )
     {
         var authorizedReturns = await _db
-            .PurchaseReturns.IgnoreQueryFilters()
+            .PurchaseReturns.AsPlatformQuery()
             .Where(r => r.Status == PurchaseReturnStatus.Authorized)
             .Select(r => new
             {

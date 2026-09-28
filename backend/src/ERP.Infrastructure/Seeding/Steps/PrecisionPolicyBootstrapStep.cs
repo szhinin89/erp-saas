@@ -26,7 +26,7 @@ public sealed class PrecisionPolicyBootstrapStep : ICompanyBootstrapStep
         var (tenantId, companyId, actorId) = context;
 
         var exists = await _db
-            .CompanyPrecisionPolicies.IgnoreQueryFilters()
+            .CompanyPrecisionPolicies.AsPlatformQuery()
             .AnyAsync(p => p.TenantId == tenantId && p.CompanyId == companyId, cancellationToken);
         if (exists)
             return;

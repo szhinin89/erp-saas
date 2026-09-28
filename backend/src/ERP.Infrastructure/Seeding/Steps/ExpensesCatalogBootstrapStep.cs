@@ -166,7 +166,7 @@ public sealed partial class ExpensesCatalogBootstrapStep : ICompanyBootstrapStep
         var (tenantId, companyId, actorId) = context;
 
         var accountByCode = await _db
-            .Accounts.IgnoreQueryFilters()
+            .Accounts.AsPlatformQuery()
             .Where(a => a.TenantId == tenantId && a.CompanyId == companyId)
             .Select(a => new
             {
@@ -184,7 +184,7 @@ public sealed partial class ExpensesCatalogBootstrapStep : ICompanyBootstrapStep
             );
 
         var nodes = await _db
-            .ExpenseCategoryNodes.IgnoreQueryFilters()
+            .ExpenseCategoryNodes.AsPlatformQuery()
             .Where(n => n.TenantId == tenantId && n.CompanyId == companyId)
             .ToListAsync(cancellationToken);
         var nodesByKey = BuildNodeLookup(nodes);
@@ -303,7 +303,7 @@ public sealed partial class ExpensesCatalogBootstrapStep : ICompanyBootstrapStep
         var (tenantId, companyId, actorId) = context;
 
         var accountByCode = await _db
-            .Accounts.IgnoreQueryFilters()
+            .Accounts.AsPlatformQuery()
             .Where(a => a.TenantId == tenantId && a.CompanyId == companyId)
             .Select(a => new
             {
@@ -321,7 +321,7 @@ public sealed partial class ExpensesCatalogBootstrapStep : ICompanyBootstrapStep
             );
 
         var allNodes = await _db
-            .ExpenseCategoryNodes.IgnoreQueryFilters()
+            .ExpenseCategoryNodes.AsPlatformQuery()
             .Where(n => n.TenantId == tenantId && n.CompanyId == companyId)
             .ToListAsync(cancellationToken);
         var nodeById = allNodes.ToDictionary(n => n.Id);

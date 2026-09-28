@@ -38,7 +38,7 @@ public sealed class BankCatalogBackfillService
     public async Task<BankCatalogBackfillResult> RunAsync(CancellationToken ct = default)
     {
         var tenantIds = await _db
-            .Companies.IgnoreQueryFilters()
+            .Companies.AsPlatformQuery()
             .Select(c => c.TenantId)
             .Distinct()
             .ToListAsync(ct);

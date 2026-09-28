@@ -47,7 +47,7 @@ public sealed partial class ExpensesCatalogBackfillService
             return;
 
         var activeCompanies = await _db
-            .Companies.IgnoreQueryFilters()
+            .Companies.AsPlatformQuery()
             .Where(c => c.IsActive)
             .Select(c => new { c.Id, c.TenantId })
             .ToListAsync(cancellationToken);

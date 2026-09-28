@@ -45,7 +45,7 @@ public sealed partial class DocumentFlowPolicyBootstrapStep : ICompanyBootstrapS
         foreach (var docTypeCode in docTypeCodes)
         {
             var exists = await _db
-                .DocumentFlowPolicies.IgnoreQueryFilters()
+                .DocumentFlowPolicies.AsPlatformQuery()
                 .AnyAsync(
                     p => p.TenantId == tenantId && p.CompanyId == companyId && p.DocumentTypeCode == docTypeCode,
                     cancellationToken
