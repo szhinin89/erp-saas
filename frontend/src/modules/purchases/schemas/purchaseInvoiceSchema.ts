@@ -55,6 +55,7 @@ export const createPurchaseLineSchema = (t: TFunction) => z.object({
     .enum(["PENDING", "NEEDS_REVIEW", "AUTO_MATCHED", "MANUALLY_MATCHED"])
     .optional(),
   xmlSupplierCode: z.string().optional(),
+  xmlDescription: z.string().optional(),
   xmlSupplierAuxCode: z.string().nullable().optional(),
   // PURCHASE-LINE-PACKAGING-XML-SNAPSHOT-IMMUTABLE-01 — cantidad/precio del comprobante tal como
   // llegó del XML, congelados al cargar el draft. Nunca se sobrescriben por `ctx.updateLine` (esa

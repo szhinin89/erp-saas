@@ -9,17 +9,12 @@ import {
 } from "../../zh/ZHForm";
 import { ZhDecimalInput } from "../../zh/inputs/ZhDecimalInput";
 import { Badge } from "../../PageShell";
-import { useAsync } from "../../../hooks/useAsync";
-import { apiGet } from "../../../modules/lib/apiEnvelope";
 import { applyServerErrors } from "../../../modules/lib/validationErrors";
 import { formatApiRequestError } from "../../../modules/lib/apiError";
 import { normalizeOptionalCode } from "../../../lib/sanitizers";
-import { useItemTypeOptions } from "../../../modules/items/hooks/useItemTypeOptions";
 import { itemService } from "../../../modules/items/api/itemService";
-import {
-  sriLookupService,
-  type SriVatRateLookup,
-} from "../../../modules/items/catalog/api/catalogService";
+import type { SriVatRateLookup } from "../../../modules/items/catalog/api/catalogService";
+import { useItemCreationCatalogs } from "./useItemCreationCatalogs";
 import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { formatMoney, formatMoneyWithSymbol } from "../../../lib/sanitizers";
 import { calcMarginAmount, calcMarginPercent } from "../../../lib/margin";
@@ -30,29 +25,6 @@ import type {
   ItemCreatedResult,
 } from "./types";
 import type { ItemDetailDto } from "../../../types/items";
-
-// CONTRACT: mismos catálogos ya consumidos por ItemFormTabs.tsx (formulario completo de Items) —
-// no se crea un segundo contrato, solo se reutilizan los GET ya existentes.
-interface BrandOption {
-  id: string;
-  name: string;
-}
-interface CategoryNodeApi {
-  id: string;
-  name: string;
-  path: string;
-  parentId: string | null;
-  isActive: boolean;
-}
-interface UomOption {
-  code: string;
-  name: string;
-  abbrev: string | null;
-}
-interface BarcodeTypeOption {
-  code: string;
-  name: string;
-}
 
 type Props = {
   mode: ItemEditorMode;
@@ -79,61 +51,20 @@ export function ItemEditorForm({
   } = useFormContext<ItemEditorFormValues>();
   const isUpdate = mode === "update";
 
-  const itemTypesState = useItemTypeOptions();
-  const itemTypeOptions = itemTypesState.data ?? [];
-
-  const brandsState = useAsync(() =>
-    apiGet<BrandOption[]>("/api/v1/catalog/brands").catch(
-      () => [] as BrandOption[],
-    ),
-  );
-  const brandOptions = brandsState.data ?? [];
-
-  const categoriesState = useAsync(() =>
-    apiGet<{ nodes: CategoryNodeApi[] }>(
-      "/api/v1/catalog/category-nodes",
-    ).catch(() => ({ nodes: [] })),
-  );
-  const allNodes = categoriesState.data?.nodes ?? [];
-  const nodesById = new Map(allNodes.map((n) => [n.id, n]));
-  const parentIds = new Set(
-    allNodes
-      .filter((n) => n.isActive)
-      .map((n) => n.parentId)
-      .filter(Boolean),
-  );
-  const breadcrumb = (node: CategoryNodeApi) =>
-    node.path
-      .split("/")
-      .filter(Boolean)
-      .map((id) => nodesById.get(id)?.name)
-      .filter(Boolean)
-      .join(" > ") || node.name;
-  const categoryOptions = allNodes
-    .filter((n) => n.isActive && !parentIds.has(n.id))
-    .map((n) => ({ id: n.id, name: breadcrumb(n) }));
-
-  const uomState = useAsync(() =>
-    apiGet<UomOption[]>("/api/v1/catalog/sri-uom").catch(
-      () => [] as UomOption[],
-    ),
-  );
-  const uomOptions = uomState.data ?? [];
-
-  const barcodeTypeState = useAsync(() =>
-    apiGet<BarcodeTypeOption[]>("/api/v1/catalog/barcode-types").catch(
-      () => [] as BarcodeTypeOption[],
-    ),
-  );
-  const barcodeTypeOptions = barcodeTypeState.data ?? [];
-
-  // Único catálogo de IVA — resuelve a la vez las opciones del selector "IVA del Item" y el
-  // porcentaje de referencia "IVA XML" (misma fuente, sin duplicar el lookup).
-  const vatRatesState = useAsync(() =>
-    sriLookupService.vatRates().catch(() => [] as SriVatRateLookup[]),
-  );
-  const vatRateOptions = vatRatesState.data ?? [];
-  const vatRateByCode = new Map(vatRateOptions.map((v) => [v.code, v]));
+  const {
+    itemTypesState,
+    itemTypeOptions,
+    brandsState,
+    brandOptions,
+    categoriesState,
+    categoryOptions,
+    uomState,
+    uomOptions,
+    barcodeTypeOptions,
+    vatRatesState,
+    vatRateOptions,
+    vatRateByCode,
+  } = useItemCreationCatalogs();
 
   // El <select> de IVA solo puede reflejar seleccionada una opción que ya exista en el DOM — como
   // el catálogo de IVA carga async (useAsync más arriba) y siempre después de que ItemEditorModal

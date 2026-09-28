@@ -52,9 +52,12 @@ public sealed class ItemMatchConfirmationService : IItemMatchConfirmationService
     {
         if (document.SupplierId is { } supplierId && !string.IsNullOrWhiteSpace(line.SupplierCode))
         {
+            // Match finders normalize supplier codes; persist learned codes with the same rule.
+            // The reception line keeps the original XML value.
+            var supplierCode = line.SupplierCode.Trim().ToUpperInvariant();
             var alreadyExists = await _itemRepo.SupplierCodeExistsAsync(
                 supplierId,
-                line.SupplierCode,
+                supplierCode,
                 document.TenantId,
                 cancellationToken
             );
@@ -63,7 +66,7 @@ public sealed class ItemMatchConfirmationService : IItemMatchConfirmationService
                 await _itemRepo.UpdateSupplierCodePackagingLevelAsync(
                     itemId,
                     supplierId,
-                    line.SupplierCode,
+                    supplierCode,
                     packagingLevelId,
                     document.TenantId,
                     matchedBy,
@@ -81,7 +84,7 @@ public sealed class ItemMatchConfirmationService : IItemMatchConfirmationService
                 if (item is not null)
                 {
                     item.AddSupplierCode(
-                        line.SupplierCode,
+                        supplierCode,
                         isPrimary: false,
                         supplierId,
                         matchedBy,
@@ -115,7 +118,10 @@ public sealed class ItemMatchConfirmationService : IItemMatchConfirmationService
             );
             if (item is not null)
             {
-                item.DisableSupplierCode(supplierId, line.SupplierCode, unmatchedBy);
+                var normalizedCode = line.SupplierCode.Trim().ToUpperInvariant();
+                var learnedCode = item.SupplierCodes.Any(c => c.SupplierId == supplierId && c.Code == normalizedCode && c.IsActive)
+                    ? normalizedCode : line.SupplierCode;
+                item.DisableSupplierCode(supplierId, learnedCode, unmatchedBy);
                 await _itemRepo.SaveChangesAsync(cancellationToken);
             }
         }

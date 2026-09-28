@@ -413,7 +413,85 @@ export const purchaseReceptionService = {
       matches,
     );
   },
+
+  /**
+   * COMPRAS-METODO-ZH-01B — resolución masiva (crear productos + vincular existentes) de líneas XML
+   * de UNA recepción. Todo o nada: si `applied` es false no se persistió nada y `errors` trae cada
+   * fila con problema.
+   */
+  resolveLines(
+    request: ResolveReceptionLinesRequest,
+  ): Promise<ResolveReceptionLinesResult> {
+    return apiPost<ResolveReceptionLinesResult>(
+      `${BASE}/matching/resolve`,
+      request,
+    );
+  },
 };
+
+/** Producto nuevo del lote — mismos campos obligatorios que la creación de Items. */
+export interface ResolveReceptionNewItem {
+  key: string;
+  sku: string;
+  shortName: string;
+  description: string;
+  itemTypeId: string;
+  categoryNodeId: string;
+  brandId: string;
+  defaultUomCode: string;
+  barcode: string;
+  barcodeType: string;
+  saleVatCode: string | null;
+  purchaseVatCode: string | null;
+  exciseTaxCode: string | null;
+  baseSalePrice: number;
+}
+
+/** Una línea XML: vincular Item existente (itemId) o producto nuevo del lote (newItemKey). */
+export interface ResolveReceptionLine {
+  purchaseReceptionLineId: string;
+  itemId?: string | null;
+  newItemKey?: string | null;
+  packagingLevelId?: string | null;
+  presentationFactor?: number;
+  presentationName?: string | null;
+  presentationUomCode?: string | null;
+}
+
+export interface ResolveReceptionLinesRequest {
+  newItems: ResolveReceptionNewItem[];
+  lines: ResolveReceptionLine[];
+}
+
+export interface ResolveReceptionRowError {
+  purchaseReceptionLineId: string | null;
+  newItemKey: string | null;
+  message: string;
+}
+
+export interface ResolvedReceptionLine {
+  purchaseReceptionLineId: string;
+  itemId: string;
+  itemSku: string;
+  itemName: string;
+  matchStatus: ItemMatchStatus;
+  packagingLevelId: string | null;
+  uomCode: string;
+  baseUomCode: string;
+  conversionFactor: number;
+  equivalenceLearned: boolean;
+}
+
+export interface ResolveReceptionLinesResult {
+  applied: boolean;
+  errors: ResolveReceptionRowError[];
+  /** Includes selected lines and any unselected lines automatically matched by the batch. */
+  lines: ResolvedReceptionLine[];
+  itemsCreated: number;
+  linesLinked: number;
+  equivalencesLearned: number;
+  linesAutoMatched: number;
+}
 
 export interface ExpenseReceptionDraft {
   receptionDocumentId: string;

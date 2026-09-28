@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-27T00:12:19.569Z",
+  "generatedAt": "2026-09-28T17:16:01.465Z",
   "summary": {
     "total": 134,
     "allowed": 134,
@@ -281,7 +281,7 @@
     {
       "endpoint": "/api/v1/catalog/barcode-types",
       "files": [
-        "frontend/src/components/items/ItemEditorModal/ItemEditorForm.tsx",
+        "frontend/src/components/items/ItemEditorModal/useItemCreationCatalogs.ts",
         "frontend/src/modules/items/components/ItemForm/ItemFormTabs.tsx",
         "frontend/src/modules/items/detail/components/VariantsSection.tsx"
       ],
@@ -291,7 +291,7 @@
     {
       "endpoint": "/api/v1/catalog/brands",
       "files": [
-        "frontend/src/components/items/ItemEditorModal/ItemEditorForm.tsx",
+        "frontend/src/components/items/ItemEditorModal/useItemCreationCatalogs.ts",
         "frontend/src/modules/items/components/ItemForm/ItemFormTabs.tsx"
       ],
       "legacy": false,
@@ -300,7 +300,7 @@
     {
       "endpoint": "/api/v1/catalog/category-nodes",
       "files": [
-        "frontend/src/components/items/ItemEditorModal/ItemEditorForm.tsx",
+        "frontend/src/components/items/ItemEditorModal/useItemCreationCatalogs.ts",
         "frontend/src/modules/items/catalog/api/categoryNodeService.ts",
         "frontend/src/modules/items/components/ItemForm/ItemFormTabs.tsx"
       ],
@@ -350,7 +350,7 @@
     {
       "endpoint": "/api/v1/catalog/sri-uom",
       "files": [
-        "frontend/src/components/items/ItemEditorModal/ItemEditorForm.tsx",
+        "frontend/src/components/items/ItemEditorModal/useItemCreationCatalogs.ts",
         "frontend/src/modules/items/components/ItemForm/ItemFormTabs.tsx"
       ],
       "legacy": false,

@@ -20,7 +20,12 @@ import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import {
   purchaseReceptionService,
   type PurchaseDraftDto,
+  type ResolveReceptionLinesResult,
 } from "../api/purchaseReceptionService";
+import {
+  selectPendingProductSources,
+  summarizeXmlLines,
+} from "../utils/pendingProductsResolution";
 import { toDateTimeLocalInputValue } from "../../../lib/formatters/dateFormatters";
 import { itemLookupFacade } from "../../items/facades/itemLookupFacade";
 import { useItemTypeOptions } from "../../items/hooks/useItemTypeOptions";
@@ -74,6 +79,7 @@ import {
   type SupplierProfile,
 } from "../utils/supplierProfile";
 import {
+  buildPurchaseItemLabel,
   buildPurchaseLineFromItem,
   normalizePurchaseLinePresentation,
 } from "../utils/purchaseItemProfile";
@@ -198,6 +204,8 @@ export function usePurchasesPage() {
   const [modalRetentionCancel, setModalRetentionCancel] = useState(false);
   // PURCHASE-FREIGHT-DISTRIBUTION-MODAL-01
   const [modalDistributeCost, setModalDistributeCost] = useState(false);
+  // COMPRAS-METODO-ZH-01B — resolución masiva de líneas XML sin producto.
+  const [modalPendingProducts, setModalPendingProducts] = useState(false);
 
   // ── Collapsible sections ───────────────────────────────────────────
   const [showElectronic, setShowElectronic] = useState(false);
@@ -290,6 +298,13 @@ export function usePurchasesPage() {
     ] as const);
     return Object.fromEntries(entries);
   }, [formWatch.globalWarehouseId, iceRatesMap, lines, precisionPolicy, t, vatRatesMap]);
+
+  // COMPRAS-METODO-ZH-01B — orientación a excepciones: resueltas / pendientes / con advertencias.
+  const pendingProductSources = useMemo(() => selectPendingProductSources(lines), [lines]);
+  const xmlLinesSummary = useMemo(
+    () => summarizeXmlLines(lines, lineReadinessByKey),
+    [lines, lineReadinessByKey],
+  );
 
   const lineReadinessBlockers = useMemo(
     () =>
@@ -897,6 +912,49 @@ export function usePurchasesPage() {
     [getValues, setValue],
   );
 
+  /**
+   * COMPRAS-METODO-ZH-01B — aplica al formulario el lote ya persistido por el backend (producto,
+   * presentación y conversión aprendidos por línea). Igual que la vinculación individual, solo
+   * actualiza el formulario local; la compra se guarda con "Guardar".
+   */
+  const applyResolvedLines = useCallback(
+    async (result: ResolveReceptionLinesResult) => {
+      const resolved = new Map(result.lines.map((r) => [r.purchaseReceptionLineId, r]));
+      const updated = getValues("lines").map((l) => {
+        const r = l.purchaseReceptionLineId ? resolved.get(l.purchaseReceptionLineId) : undefined;
+        if (!r) return l;
+        return {
+          ...l,
+          itemId: r.itemId,
+          itemMatchStatus: r.matchStatus,
+          description: buildPurchaseItemLabel({ sku: r.itemSku, name: r.itemName }),
+          packagingLevelId: r.packagingLevelId,
+          uomCode: r.uomCode,
+          baseUomCode: r.baseUomCode,
+          conversionFactor: r.conversionFactor,
+          quantityInBaseUom: l.quantity * r.conversionFactor,
+          _readinessIssue: undefined,
+        };
+      });
+      setValue("lines", updated, { shouldValidate: true });
+      setModalPendingProducts(false);
+      const globalWarehouseId = getValues("globalWarehouseId");
+      for (const l of updated) {
+        const warehouseId = l.warehouseId || globalWarehouseId;
+        if (l.itemId && warehouseId && l.purchaseReceptionLineId && !l.context)
+          void fetchItemContext(l._key, l.itemId, warehouseId);
+      }
+      message.success(
+        t("purchases.pendingProducts.done", {
+          created: result.itemsCreated,
+          linked: result.linesLinked,
+          learned: result.equivalencesLearned,
+        }),
+      );
+    },
+    [getValues, setValue, fetchItemContext, t],
+  );
+
   const addLineWithItem = useCallback(
     async (item: ItemDto) => {
       setGlobalOpen(false);
@@ -1275,6 +1333,7 @@ export function usePurchasesPage() {
             ...normalizePurchaseLinePresentation(l),
             itemMatchStatus: l.itemMatchStatus,
             xmlSupplierCode: l.supplierCode ?? undefined,
+            xmlDescription: l.description,
             xmlSupplierAuxCode: l.supplierAuxCode,
             // PURCHASE-LINE-PACKAGING-XML-SNAPSHOT-IMMUTABLE-01 — copia congelada de
             // quantity/unitPrice tal como vino del draft, ANTES de que el usuario edite la
@@ -2073,6 +2132,11 @@ export function usePurchasesPage() {
     setModalRetentionCancel,
     modalDistributeCost,
     setModalDistributeCost,
+    modalPendingProducts,
+    setModalPendingProducts,
+    pendingProductSources,
+    xmlLinesSummary,
+    applyResolvedLines,
 
     // UI toggles
     showElectronic,

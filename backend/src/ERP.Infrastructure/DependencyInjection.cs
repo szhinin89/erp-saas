@@ -876,6 +876,10 @@ public static class DependencyInjection
             ERP.Application.Modules.Inventory.ItemMatching.Services.IItemMatchConfirmationService,
             ERP.Application.Modules.Inventory.ItemMatching.Services.ItemMatchConfirmationService
         >();
+        services.AddScoped<
+            ERP.Application.Modules.Inventory.ItemMatching.Services.IPurchaseReceptionAutoMatcher,
+            ERP.Application.Modules.Inventory.ItemMatching.Services.PurchaseReceptionAutoMatcher
+        >();
 
         // ── Sales BC ─────────────────────────────────────────────────────────
         services.AddScoped<

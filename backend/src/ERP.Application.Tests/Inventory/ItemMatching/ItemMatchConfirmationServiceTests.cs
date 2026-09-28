@@ -83,6 +83,23 @@ public sealed class ItemMatchConfirmationServiceTests
     }
 
     [Fact]
+    public async Task ConfirmAsync_normalizes_learned_code_but_keeps_original_XML()
+    {
+        var document = CreateDocument();
+        var line = CreateLine(document.Id, "prov-caja");
+        var item = CreateItem();
+        var repo = new Mock<IItemRepository>();
+        repo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>())).ReturnsAsync(item);
+        await new ItemMatchConfirmationService(repo.Object).ConfirmAsync(document, line, item.Id, UserId, DateTime.UtcNow);
+        repo.Verify(r => r.SupplierCodeExistsAsync(SupplierId, "PROV-CAJA", TenantId, It.IsAny<CancellationToken>()), Times.Once);
+        item.SupplierCodes.Should().ContainSingle(c => c.Code == "PROV-CAJA");
+        line.SupplierCode.Should().Be("prov-caja");
+        await new ItemMatchConfirmationService(repo.Object).UnconfirmAsync(document, line, UserId);
+        item.SupplierCodes.Should().OnlyContain(c => !c.IsActive);
+        line.ItemId.Should().BeNull();
+    }
+
+    [Fact]
     public async Task ConfirmAsync_creates_a_new_ItemSupplierCode_when_none_exists_for_the_supplier()
     {
         var document = CreateDocument();

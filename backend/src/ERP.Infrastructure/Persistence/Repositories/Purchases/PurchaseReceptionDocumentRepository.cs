@@ -71,7 +71,10 @@ public sealed class PurchaseReceptionDocumentRepository : IPurchaseReceptionDocu
         Guid tenantId,
         string accessKey,
         CancellationToken ct = default
-    ) => Scoped(tenantId).FirstOrDefaultAsync(x => x.AccessKey == accessKey, ct);
+    ) => Scoped(tenantId)
+        .Include(x => x.Lines)
+        .ThenInclude(l => l.Taxes)
+        .FirstOrDefaultAsync(x => x.AccessKey == accessKey, ct);
 
     public Task SaveChangesAsync(CancellationToken ct = default) => _db.SaveChangesAsync(ct);
 }

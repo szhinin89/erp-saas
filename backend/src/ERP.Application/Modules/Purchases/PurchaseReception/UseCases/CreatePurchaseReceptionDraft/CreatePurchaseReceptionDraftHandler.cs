@@ -44,6 +44,7 @@ public sealed class CreatePurchaseReceptionDraftHandler
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentUser _user;
     private readonly ILogger<CreatePurchaseReceptionDraftHandler> _logger;
+    private readonly ERP.Application.Modules.Inventory.ItemMatching.Services.IPurchaseReceptionAutoMatcher _autoMatcher;
 
     public CreatePurchaseReceptionDraftHandler(
         IPurchaseReceptionDocumentRepository documentRepo,
@@ -55,9 +56,11 @@ public sealed class CreatePurchaseReceptionDraftHandler
         IPurchaseXmlDraftParser xmlParser,
         ICurrentTenant tenant,
         ICurrentUser user,
-        ILogger<CreatePurchaseReceptionDraftHandler> logger
+        ILogger<CreatePurchaseReceptionDraftHandler> logger,
+        ERP.Application.Modules.Inventory.ItemMatching.Services.IPurchaseReceptionAutoMatcher autoMatcher
     )
     {
+        _autoMatcher = autoMatcher;
         _documentRepo = documentRepo;
         _purchaseRepo = purchaseRepo;
         _expenseRepo = expenseRepo;
@@ -152,6 +155,11 @@ public sealed class CreatePurchaseReceptionDraftHandler
                     + "El XML autorizado quedó conservado como evidencia fiscal; contacte soporte para revisión manual."
             );
         }
+
+        // COMPRAS-METODO-ZH-01B: equivalencias Proveedor + Código aprendidas después de descargar
+        // este XML (p. ej. resueltas en otra factura del mismo lote) resuelven sus líneas pendientes.
+        if (await _autoMatcher.RefreshAsync(document, cancellationToken) > 0)
+            await _documentRepo.SaveChangesAsync(cancellationToken);
 
         var mergedLines = BuildMergedLines(document);
         var draft = DraftModel.FromMergedLines(document, mergedLines);

@@ -6,6 +6,7 @@ using ERP.Application.Modules.Inventory.ItemMatching.UseCases.BulkMatchItems;
 using ERP.Application.Modules.Inventory.ItemMatching.UseCases.FindItemMatches;
 using ERP.Application.Modules.Inventory.ItemMatching.UseCases.GetLineMatch;
 using ERP.Application.Modules.Inventory.ItemMatching.UseCases.MatchItem;
+using ERP.Application.Modules.Inventory.ItemMatching.UseCases.ResolveLines;
 using ERP.Application.Modules.Inventory.ItemMatching.UseCases.UnmatchItem;
 using ERP.Application.Modules.Purchases.PurchaseReception.DTOs;
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.BatchDownloadPurchaseReceptionXml;
@@ -189,7 +190,34 @@ public sealed class PurchaseReceptionController : ControllerBase
         [FromBody] IReadOnlyList<BulkMatchItemEntry> matches,
         CancellationToken ct
     ) => this.ToOkOrBadRequest(await _mediator.Send(new BulkMatchItemsCommand(matches), ct));
+
+    /// <summary>
+    /// COMPRAS-METODO-ZH-01B — resolución masiva de líneas XML pendientes: crear productos nuevos
+    /// (con presentaciones) y/o vincular existentes, aprendiendo Proveedor + Código → Item +
+    /// Presentación. Todo o nada; crear productos exige además items.create (validado en Application).
+    /// </summary>
+    [HttpPost("matching/resolve")]
+    [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
+    [ProducesResponseType(
+        typeof(Contracts.ApiResponse<ResolvePurchaseReceptionLinesResultDto>),
+        StatusCodes.Status200OK
+    )]
+    public async Task<IActionResult> ResolveLines(
+        [FromBody] ResolvePurchaseReceptionLinesRequest body,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(
+                new ResolvePurchaseReceptionLinesCommand(body.NewItems ?? [], body.Lines ?? []),
+                ct
+            )
+        );
 }
+
+public sealed record ResolvePurchaseReceptionLinesRequest(
+    IReadOnlyList<ResolveReceptionNewItemInput>? NewItems,
+    IReadOnlyList<ResolveReceptionLineInput>? Lines
+);
 
 public sealed record MatchItemRequest(Guid ItemId, Guid? PackagingLevelId = null);
 

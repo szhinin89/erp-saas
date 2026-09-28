@@ -1112,3 +1112,55 @@
 .pdc-totals__row .zh-money-value {
   font-size: inherit;
 }
+
+/* ── Resolver productos pendientes (modal masivo) — COMPRAS-METODO-ZH-01B ── */
+.prl-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+.prl-bulk {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  align-items: end;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.prl-scroll {
+  overflow-x: auto;
+}
+.prl-table td {
+  vertical-align: top;
+}
+.prl-stack {
+  min-width: 190px;
+}
+.prl-stack > * + * {
+  margin-top: var(--space-2);
+}
+.prl-xml {
+  min-width: 220px;
+  max-width: 320px;
+}
+.prl-xml__desc {
+  margin: 2px 0;
+  color: var(--color-text-primary);
+}
+.prl-muted {
+  color: var(--color-text-secondary);
+  font-size: var(--text-body-sm-size);
+}
+.prl-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.prl-row--error {
+  background: var(--color-error-container);
+}
+.prl-row__error {
+  margin-top: var(--space-1);
+  color: var(--color-error);
+  font-size: var(--text-body-sm-size);
+}

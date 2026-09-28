@@ -108,7 +108,8 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
             new PurchaseXmlDraftParser(),
             tenant.Object,
             user.Object,
-            NullLogger<CreatePurchaseReceptionDraftHandler>.Instance
+            NullLogger<CreatePurchaseReceptionDraftHandler>.Instance,
+            new ERP.Application.Modules.Inventory.ItemMatching.Services.PurchaseReceptionAutoMatcher(itemRepo.Object)
         );
         SetupSupplierMock(bpRepo);
         return (handler, repo, purchaseRepo, bpRepo, detailProcessor, itemRepo);
@@ -173,6 +174,34 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Solo una factura");
         processor.Verify(p => p.ProcessAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_resolves_pending_lines_whose_supplier_code_was_learned_after_download()
+    {
+        // COMPRAS-METODO-ZH-01B: the code was resolved on another invoice after this XML was downloaded.
+        var document = SampleDocument(SupplierId);
+        var line = SampleLine(document.Id, supplierCode: "CJ-12");
+        document.AttachSriAuthorization("1234567890", DateTime.UtcNow, "<factura>irrelevante</factura>",
+            DateTime.UtcNow, [line], UserId, docTypeCode: "01", sriPaymentMethodCode: "01",
+            processing: new PurchaseReceptionProcessingOutcome(PurchaseReceptionProcessingStatus.Processed, 1, 1, null));
+        var learnedItemId = Guid.NewGuid();
+        var boxLevelId = Guid.NewGuid();
+        var (handler, repo, _, _, _, itemRepo) = BuildHandler();
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>())).ReturnsAsync(document);
+        itemRepo.Setup(r => r.FindItemIdBySupplierCodeAsync(SupplierId, "CJ-12", TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(learnedItemId);
+        itemRepo.Setup(r => r.GetSupplierCodeMatchAsync(SupplierId, "CJ-12", TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ERP.Domain.Modules.Items.Models.ItemSupplierCodeMatch(learnedItemId, boxLevelId, "02", 12m, "19"));
+
+        var result = await handler.Handle(new CreatePurchaseReceptionDraftCommand(document.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var dto = result.Value!.Lines.Single();
+        (dto.ItemId, dto.ItemMatchStatus).Should().Be((learnedItemId, "AUTO_MATCHED"));
+        (dto.PackagingLevelId, dto.UomCode, dto.ConversionFactor, dto.QuantityInBaseUom)
+            .Should().Be((boxLevelId, "02", 12m, 24m));
+        repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

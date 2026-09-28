@@ -18,6 +18,7 @@ import { ZHInfoRow } from "../../../components/zh/ZHInfoRow";
 import { ZHInputGroup } from "../../../components/zh/ZHInputGroup";
 import { SupplierSearchSelect } from "../../masterData/components/SupplierSearchSelect";
 import { DistributeCostModal } from "../components/DistributeCostModal";
+import { ResolvePendingProductsModal } from "../components/ResolvePendingProductsModal";
 import { ProductPicker } from "../components/ProductPicker";
 import type { ProductProfile } from "../components/ProductPicker";
 import { ItemEditorModal } from "../../../components/items/ItemEditorModal/ItemEditorModal";
@@ -909,7 +910,51 @@ export function PurchasesPage() {
                     </span>
                     {t("purchases.distributeCost.trigger", "Distribuir flete/gasto")}
                   </ZHBtn>
+                  {ctx.pendingProductSources.length > 0 && !ctx.fieldDisabled && (
+                    <ZHBtn
+                      type="button"
+                      variant="primary"
+                      onClick={() => ctx.setModalPendingProducts(true)}
+                    >
+                      <span className="material-symbols-outlined zh-icon-md">
+                        playlist_add_check
+                      </span>
+                      {t("purchases.pendingProducts.trigger", {
+                        count: ctx.pendingProductSources.length,
+                      })}
+                    </ZHBtn>
+                  )}
                 </div>
+
+                {/* COMPRAS-METODO-ZH-01B — resumen orientado a excepciones de las líneas XML. */}
+                {ctx.xmlLinesSummary.total > 0 && (
+                  <div className="prl-summary" aria-live="polite">
+                    <Badge
+                      variant="neutral"
+                      label={t("purchases.pendingProducts.summary.total", {
+                        count: ctx.xmlLinesSummary.total,
+                      })}
+                    />
+                    <Badge
+                      variant="success"
+                      label={t("purchases.pendingProducts.summary.resolved", {
+                        count: ctx.xmlLinesSummary.resolved,
+                      })}
+                    />
+                    <Badge
+                      variant={ctx.xmlLinesSummary.pending > 0 ? "error" : "neutral"}
+                      label={t("purchases.pendingProducts.summary.pending", {
+                        count: ctx.xmlLinesSummary.pending,
+                      })}
+                    />
+                    <Badge
+                      variant={ctx.xmlLinesSummary.warnings > 0 ? "warning" : "neutral"}
+                      label={t("purchases.pendingProducts.summary.warnings", {
+                        count: ctx.xmlLinesSummary.warnings,
+                      })}
+                    />
+                  </div>
+                )}
 
                 {/* Line Cards */}
                 <div className="pdl-lines">
@@ -1130,6 +1175,13 @@ export function PurchasesPage() {
       {/* PURCHASE-DISTRIBUTE-COST-BEFORE-SAVE-01 — dos orígenes de datos según si la compra ya
           existe persistida (ctx.editing) o es nueva sin guardar (ctx.lines del formulario):
           mismo modal, mismo cálculo, distinto destino al aplicar (backend vs. formulario). */}
+      <ResolvePendingProductsModal
+        open={ctx.modalPendingProducts}
+        sources={ctx.pendingProductSources}
+        supplierName={ctx.supplierProfile?.name ?? ""}
+        onClose={() => ctx.setModalPendingProducts(false)}
+        onResolved={(result) => void ctx.applyResolvedLines(result)}
+      />
       <DistributeCostModal
         open={ctx.modalDistributeCost}
         lines={
