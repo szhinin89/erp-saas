@@ -10,22 +10,14 @@
     "lineNumber": "excluded to keep identity stable across unrelated edits"
   },
   "summary": {
-    "violations": 187,
+    "violations": 186,
     "byCheck": {
-      "backend-subscriber-rules": 1,
       "css-prefixes": 112,
       "design-system": 26,
       "module-boundaries": 48
     }
   },
   "violations": [
-    {
-      "check": "backend-subscriber-rules",
-      "rule": "B-subscriber",
-      "file": "backend/src/ERP.Infrastructure/Seeding/PaymentMethodSriMappingBackfillService.cs",
-      "message": "IgnoreQueryFilters() outside allowlist; use IPlatformQueryAccessor",
-      "count": 1
-    },
     {
       "check": "css-prefixes",
       "rule": "F-css-prefix",

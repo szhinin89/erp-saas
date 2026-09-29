@@ -5,8 +5,10 @@ using ERP.Domain.Modules.SriCatalogs.Entities;
 using ERP.Domain.Modules.SriCatalogs.Interfaces;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Seeding;
+using ERP.Infrastructure.Services;
 using FluentAssertions;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -33,7 +35,9 @@ public sealed class PaymentMethodSriMappingBackfillServiceTests
                 .UseInMemoryDatabase(dbName)
                 .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
                 .Options,
-            new FixedCurrentTenant(TenantA),
+            // Igual que el comando CLI real: sin HttpContext, el tenant sale de JobTenantContext
+            // (lo fija el backfill por tenant con JobExecutionContext.Begin).
+            new CurrentTenantService(new HttpContextAccessor()),
             new NoOpPublisher(),
             new FixedCurrentCompany(Guid.NewGuid())
         );
@@ -219,12 +223,6 @@ public sealed class PaymentMethodSriMappingBackfillServiceTests
 
         first.RowsUpdated.Should().Be(1);
         second.RowsUpdated.Should().Be(0, because: "ya no quedan filas con SriPaymentMethodCode null");
-    }
-
-    private sealed class FixedCurrentTenant(Guid tenantId) : ICurrentTenant
-    {
-        public Guid TenantId => tenantId;
-        public string? Slug => null;
     }
 
     private sealed class FixedCurrentCompany(Guid companyId) : ICurrentCompany

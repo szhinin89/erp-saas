@@ -2,11 +2,20 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-28** · Kernel refactor: **2026-06-05**.
 
+## ZH-ARCH-BACKEND-SUBSCRIBER-03 — Backfill SRI de PaymentMethod por tenant (2026-09-28)
+
+**Estado: COMPLETADO.** Última violación `backend-subscriber-rules` resuelta rediseñando el scope, no solo el nombre del bypass.
+- Antes: `PaymentMethods.IgnoreQueryFilters()` cargaba filas trackeadas de TODOS los tenants y un único `SaveChanges` las persistía juntas.
+- Después: `AsPlatformQuery()` solo para descubrir `TenantId`s con filas pendientes (proyección `Distinct`, sin tracking); por cada tenant `JobExecutionContext.Begin(tenantId)` → lectura con filtro global + `TenantId` explícito → `SaveChanges` por tenant → `ChangeTracker.Clear()`. TenantId nunca viene de input externo; reglas funcionales intactas (no pisa mapeos manuales, valida contra catálogo activo, idempotente). Entrada retirada de la allowlist de `IgnoreQueryFiltersAuditTests`.
+- PostgreSQL (Testcontainers, Tenant A/B): interceptor de `SaveChanges` exige un único tenant por guardado e igual al `JobTenantContext` activo; A y B solo actualizan sus filas; mapeo manual preservado; segunda corrida 0 escrituras. El mismo test falla contra la implementación anterior ("un SaveChanges nunca mezcla tenants").
+- `PaymentMethodSriMappingBackfillServiceTests`: fixture pasó de `ICurrentTenant` fijo en Tenant A a `CurrentTenantService` sin HttpContext (idéntico al CLI real); aserciones sin cambios.
+- Baseline: 187 → 186; `backend-subscriber-rules` 1 → 0.
+
 ## ZH-ARCH-BACKEND-SUBSCRIBER-02 — `IgnoreQueryFilters()` directo → `AsPlatformQuery()` (2026-09-28)
 
 **Estado: COMPLETADO.** 12 violaciones `backend-subscriber-rules` auditadas: 11 A (reemplazables), 1 B (legítima, pendiente), 0 C. Sin cambio funcional: `AsPlatformQuery()` es exactamente `IgnoreQueryFilters()` sobre el `DbSet` (mismo SQL); ningún filtro TenantId/CompanyId se quitó.
 - A (11 en 8 archivos, `Seeding/`): `BankCatalogBackfillService`, `CashRegisterAccountingAccountBackfillService`, `DocumentFlowPolicyBackfillService`, `ExpensesCatalogBackfillService`, `PurchaseReturnPostingRemediationService` (scan de descubrimiento cross-tenant seguido de `JobExecutionContext.Begin` y/o revalidación TenantId+CompanyId antes de escribir); `DocumentFlowPolicyBootstrapStep`, `ExpensesCatalogBootstrapStep` ×4, `PrecisionPolicyBootstrapStep` (`Where` explícito TenantId+CompanyId del `CompanyBootstrapContext`). Se retiraron sus 8 entradas stale de la allowlist de `IgnoreQueryFiltersAuditTests` (reintroducir `IgnoreQueryFilters()` ahí vuelve a fallar).
-- B (1, sin tocar): `PaymentMethodSriMappingBackfillService` carga entidades trackeadas de todos los tenants y las guarda sin scope por tenant; migrarla requiere refactor con `JobExecutionContext.Begin` por tenant + validación PostgreSQL — ticket aparte.
+- B (1, sin tocar): `PaymentMethodSriMappingBackfillService` carga entidades trackeadas de todos los tenants y las guarda sin scope por tenant; migrarla requiere refactor con `JobExecutionContext.Begin` por tenant + validación PostgreSQL — resuelto en ZH-ARCH-BACKEND-SUBSCRIBER-03.
 - Baseline: 198 → 187; `backend-subscriber-rules` 12 → 1. Otras categorías sin cambios.
 - Verificación: Infrastructure focalizados 52/52 (incluye `IgnoreQueryFiltersScopeIntegrationTests` PostgreSQL, `IgnoreQueryFiltersAuditTests`, `ExpensesCatalogBootstrapStepTests`); `CajaVentasEndToEndTests` 5/5; `ERP.Architecture.Tests` 116/116; `npm run architecture:check` PASS, 187, 0 nuevas.
 

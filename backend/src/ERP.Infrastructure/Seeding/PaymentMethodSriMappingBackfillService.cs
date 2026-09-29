@@ -1,6 +1,7 @@
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.SriCatalogs.Interfaces;
 using ERP.Infrastructure.Persistence;
+using ERP.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -22,10 +23,12 @@ namespace ERP.Infrastructure.Seeding;
 /// - Solo aplica el código sugerido de <see cref="DefaultPaymentMethodSeedData"/> si ese código
 ///   existe y está activo en el catálogo real <c>global.sri_payment_method</c> — nunca escribe un
 ///   código a ciegas.
-/// - Multi-tenant seguro: cada fila conserva su propio TenantId (no se reasigna nada entre
-///   tenants); se itera sobre TODOS los PaymentMethod vía IgnoreQueryFilters() porque esto corre
-///   fuera de cualquier contexto de tenant autenticado (operación de despliegue), igual que
-///   MasterDataClassificationBackfillService.
+/// - Multi-tenant seguro (ZH-ARCH-BACKEND-SUBSCRIBER-03): corre fuera de cualquier contexto de
+///   tenant autenticado (operación de despliegue), así que solo el descubrimiento de TenantIds con
+///   filas pendientes usa <c>AsPlatformQuery()</c> (proyección de solo lectura, sin tracking).
+///   Cada tenant se procesa dentro de <see cref="JobExecutionContext.Begin"/>: la lectura usa el
+///   filtro global normal + TenantId explícito, solo se modifican filas de ese tenant y se guarda
+///   con un SaveChanges por tenant. El TenantId nunca viene de input externo.
 ///
 /// Invocación: <c>dotnet run -- backfill-payment-method-sri-mapping</c> (ver Program.cs). No
 /// expone endpoint HTTP — operación de despliegue de una sola vez, re-ejecutable sin riesgo.
@@ -52,9 +55,12 @@ public sealed class PaymentMethodSriMappingBackfillService
 
     public async Task<PaymentMethodSriMappingBackfillResult> RunAsync(CancellationToken ct = default)
     {
-        var candidates = await _db
-            .PaymentMethods.IgnoreQueryFilters()
+        // Descubrimiento cross-tenant de solo lectura: únicamente TenantIds con filas pendientes.
+        var tenantIds = await _db
+            .PaymentMethods.AsPlatformQuery()
             .Where(pm => pm.SriPaymentMethodCode == null)
+            .Select(pm => pm.TenantId)
+            .Distinct()
             .ToListAsync(ct);
 
         var activePaymentMethodCodes = (
@@ -63,40 +69,57 @@ public sealed class PaymentMethodSriMappingBackfillService
             .Select(c => c.Code)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
+        var candidatesFound = 0;
         var updated = 0;
         var skippedNoMapping = 0;
         var skippedInactiveCatalog = 0;
 
-        foreach (var pm in candidates)
+        foreach (var tenantId in tenantIds)
         {
-            var suggestedCode = DefaultPaymentMethodSeedData.SriCodeFor(pm.Code);
-            if (suggestedCode is null)
+            using var _ = JobExecutionContext.Begin(tenantId);
+
+            // Filtro global de tenant (JobTenantContext) + TenantId explícito: re-lee el estado
+            // actual, así una fila mapeada entre el descubrimiento y esta lectura ya no aparece.
+            var candidates = await _db
+                .PaymentMethods.Where(pm => pm.TenantId == tenantId && pm.SriPaymentMethodCode == null)
+                .ToListAsync(ct);
+            candidatesFound += candidates.Count;
+
+            var updatedInTenant = 0;
+            foreach (var pm in candidates)
             {
-                skippedNoMapping++;
-                continue;
+                var suggestedCode = DefaultPaymentMethodSeedData.SriCodeFor(pm.Code);
+                if (suggestedCode is null)
+                {
+                    skippedNoMapping++;
+                    continue;
+                }
+
+                if (!activePaymentMethodCodes.Contains(suggestedCode))
+                {
+                    skippedInactiveCatalog++;
+                    _logger.LogWarning(
+                        "Backfill PaymentMethod.SriPaymentMethodCode: código sugerido {SuggestedCode} para {Code} (tenant {TenantId}) no existe o está inactivo en global.sri_payment_method — se omite.",
+                        suggestedCode,
+                        pm.Code,
+                        pm.TenantId
+                    );
+                    continue;
+                }
+
+                if (pm.BackfillSriPaymentMethodCode(suggestedCode, SystemActor))
+                    updatedInTenant++;
             }
 
-            if (!activePaymentMethodCodes.Contains(suggestedCode))
-            {
-                skippedInactiveCatalog++;
-                _logger.LogWarning(
-                    "Backfill PaymentMethod.SriPaymentMethodCode: código sugerido {SuggestedCode} para {Code} (tenant {TenantId}) no existe o está inactivo en global.sri_payment_method — se omite.",
-                    suggestedCode,
-                    pm.Code,
-                    pm.TenantId
-                );
-                continue;
-            }
-
-            if (pm.BackfillSriPaymentMethodCode(suggestedCode, SystemActor))
-                updated++;
+            if (updatedInTenant > 0)
+                await _db.SaveChangesAsync(ct);
+            // Ninguna entidad de este tenant sigue trackeada al pasar al siguiente.
+            _db.ChangeTracker.Clear();
+            updated += updatedInTenant;
         }
 
-        if (updated > 0)
-            await _db.SaveChangesAsync(ct);
-
         var result = new PaymentMethodSriMappingBackfillResult(
-            candidates.Count,
+            candidatesFound,
             updated,
             skippedNoMapping,
             skippedInactiveCatalog

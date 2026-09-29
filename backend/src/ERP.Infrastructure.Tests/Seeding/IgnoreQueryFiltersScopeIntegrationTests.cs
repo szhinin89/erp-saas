@@ -12,8 +12,10 @@ using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.ValueObjects;
 using ERP.Domain.Modules.Purchases.Entities;
+using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Persistence;
+using ERP.Infrastructure.Persistence.Repositories.SriCatalogs;
 using ERP.Infrastructure.Seeding;
 using ERP.Infrastructure.Services;
 using ERP.Infrastructure.Tests.Seeding;
@@ -188,6 +190,62 @@ public sealed class IgnoreQueryFiltersScopeIntegrationTests : IAsyncLifetime
         secondApply.AlreadyPostedCount.Should().Be(3);
         secondApply.PostedNowCount.Should().Be(0);
         postingEngine.Facts.Should().HaveCount(3, "deduplication is scoped and idempotent");
+    }
+
+    [Fact]
+    public async Task PaymentMethod_sri_backfill_writes_each_tenant_inside_its_own_scope_and_is_idempotent()
+    {
+        var tenantA = _scopes[0].TenantId;
+        var tenantB = _scopes[2].TenantId;
+        await using (var seedDb = CreateContext())
+        {
+            seedDb.PaymentMethods.AddRange(
+                PaymentMethod.Create(tenantA, "EFECTIVO", "Efectivo", false, false, 1, _actorId),
+                PaymentMethod.Create(tenantA, "TARJETA", "Tarjeta", true, false, 2, _actorId),
+                PaymentMethod.Create(tenantA, "CREDITO", "Crédito", false, true, 5, _actorId),
+                PaymentMethod.Create(tenantA, "CHEQUE", "Cheque", true, false, 4, _actorId, sriPaymentMethodCode: "01"),
+                PaymentMethod.Create(tenantB, "EFECTIVO", "Efectivo", false, false, 1, _actorId),
+                PaymentMethod.Create(tenantB, "TRANSFERENCIA", "Transferencia", true, false, 3, _actorId)
+            );
+            await seedDb.SaveChangesAsync();
+        }
+
+        var saveScope = new PaymentMethodSaveScopeInterceptor();
+        await using var db = CreateContext(saveScope);
+        var backfill = new PaymentMethodSriMappingBackfillService(
+            db,
+            new SriCatalogLookupRepository(db),
+            NullLogger<PaymentMethodSriMappingBackfillService>.Instance
+        );
+
+        var first = await backfill.RunAsync();
+        first.CandidatesFound.Should().Be(5);
+        first.RowsUpdated.Should().Be(4);
+        first.SkippedNoMapping.Should().Be(1, "CREDITO no tiene código SRI sugerido");
+        first.SkippedInactiveCatalog.Should().Be(0);
+        JobTenantContext.Current.Should().Be(Guid.Empty, "el contexto de job se restaura al terminar");
+
+        saveScope.SavedTenants.Should().BeEquivalentTo(
+            new[] { tenantA, tenantB },
+            "un SaveChanges por tenant, cada uno dentro de su propio JobExecutionContext"
+        );
+
+        var codes = await db.PaymentMethods
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(pm => pm.TenantId == tenantA || pm.TenantId == tenantB)
+            .ToDictionaryAsync(pm => (pm.TenantId, pm.Code), pm => pm.SriPaymentMethodCode);
+        codes[(tenantA, "EFECTIVO")].Should().Be("01");
+        codes[(tenantA, "TARJETA")].Should().Be("19");
+        codes[(tenantA, "CREDITO")].Should().BeNull();
+        codes[(tenantA, "CHEQUE")].Should().Be("01", "un mapeo manual nunca se sobrescribe");
+        codes[(tenantB, "EFECTIVO")].Should().Be("01");
+        codes[(tenantB, "TRANSFERENCIA")].Should().Be("20");
+
+        var second = await backfill.RunAsync();
+        second.CandidatesFound.Should().Be(1, "solo CREDITO sigue sin mapeo");
+        second.RowsUpdated.Should().Be(0);
+        saveScope.SavedTenants.Should().HaveCount(2, "la segunda corrida no escribe nada");
     }
 
     private ErpDbContext CreateContext(params IInterceptor[] interceptors)
@@ -533,6 +591,37 @@ public sealed class IgnoreQueryFiltersScopeIntegrationTests : IAsyncLifetime
             }
 
             return result;
+        }
+    }
+
+    /// <summary>
+    /// Falla si un SaveChanges escribe PaymentMethods fuera del tenant del JobExecutionContext
+    /// activo, o de más de un tenant a la vez; registra el tenant de cada SaveChanges con cambios.
+    /// </summary>
+    private sealed class PaymentMethodSaveScopeInterceptor : SaveChangesInterceptor
+    {
+        public List<Guid> SavedTenants { get; } = [];
+
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData,
+            InterceptionResult<int> result,
+            CancellationToken cancellationToken = default
+        )
+        {
+            var writtenTenants = eventData.Context!.ChangeTracker
+                .Entries<PaymentMethod>()
+                .Where(entry => entry.State is not EntityState.Unchanged and not EntityState.Detached)
+                .Select(entry => entry.Entity.TenantId)
+                .Distinct()
+                .ToList();
+            if (writtenTenants.Count > 0)
+            {
+                writtenTenants.Should().ContainSingle("un SaveChanges nunca mezcla tenants");
+                writtenTenants[0].Should().Be(JobTenantContext.Current, "solo se escribe el tenant del scope activo");
+                SavedTenants.Add(writtenTenants[0]);
+            }
+
+            return base.SavingChangesAsync(eventData, result, cancellationToken);
         }
     }
 
