@@ -2,6 +2,12 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-29** · Kernel refactor: **2026-06-05**.
 
+## ZH-API-THIN-MEDIA-UPLOAD-01 — Conversión IFormFile → MediaUploadContent unificada (2026-09-29)
+
+**Estado: COMPLETADO.** La conversión (buffer en memoria + rebobinar + `MediaUploadContent(stream, FileName, ContentType, Length)`) estaba copiada en 5 endpoints multipart: Companies `profile/logo` y `profile/logo-alt`, ElectronicInvoicing `sri-configuration/certificate`, InitialLoad `batches/{id}/upload`, PurchaseReception `import`. Ahora es `ERP.API/Uploads/BufferedFormFile` (IAsyncDisposable, solo capa API). Cada endpoint conserva explícito su 400 por archivo ausente/vacío (mensajes distintos) y sigue liberando el buffer con `await using` después del `mediator.Send` (los handlers consumen el stream dentro del Send). Sin cambios en rutas, permisos, Swagger, AppFeature, DTOs ni validaciones de tipo/tamaño (viven en los validators de Application).
+- Nota: se descartó `ERP.API/Files/` porque en Windows coincide con `ERP.API/files/` (almacenamiento runtime, gitignored).
+- Evidencia: contrato `MediaUploadEndpointsContractTests` 15/15 antes y después (nombre, ContentType, tamaño, bytes, stream legible en posición 0 durante el Send y liberado al final, 400 propio sin llamar al mediator, error del handler igual) · `BufferedFormFileTests` 3/3 (copia fallida no deja el buffer abierto) · API 582/582 · Architecture 118 · `architecture:check` sin cambios (60/100, 20 warnings, 0 nuevas).
+
 ## ZH-API-THIN-DEVCACHE-01 — Sonda de cache extraída de DevCacheController (2026-09-29)
 
 **Estado: COMPLETADO.** La sonda de `/api/dev/redis-health` (Redis configurado, conexión + PING, round-trip set/get/remove sobre `IDistributedCache`) pasa de inline en el controller a `ERP.API/Diagnostics/CacheHealthProbe` (servicio técnico de ERP.API, scoped). Controller: guard Development → probe → respuesta; 152 → 85 líneas. `/api/dev/cache-metrics` sin cambios (solo proyección de snapshots).

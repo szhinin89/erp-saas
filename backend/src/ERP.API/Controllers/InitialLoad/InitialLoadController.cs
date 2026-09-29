@@ -1,7 +1,7 @@
 using ERP.API.Attributes;
 using ERP.API.Extensions;
+using ERP.API.Uploads;
 using ERP.Application.Common;
-using ERP.Application.Common.Models;
 using ERP.Application.Modules.InitialLoad.DTOs;
 using ERP.Application.Modules.InitialLoad.UseCases.CancelImportBatch;
 using ERP.Application.Modules.InitialLoad.UseCases.ConfirmImportBatch;
@@ -56,12 +56,8 @@ public sealed class InitialLoadController : ControllerBase
         if (file is null || file.Length == 0)
             return this.ApiBadRequest("Debe adjuntar un archivo.");
 
-        await using var stream = new MemoryStream();
-        await file.CopyToAsync(stream, ct);
-        stream.Position = 0;
-
-        var content = new MediaUploadContent(stream, file.FileName, file.ContentType, file.Length);
-        var result = await _mediator.Send(new UploadImportFileCommand(id, content), ct);
+        await using var upload = await BufferedFormFile.CreateAsync(file, ct);
+        var result = await _mediator.Send(new UploadImportFileCommand(id, upload.Content), ct);
         return this.ToOkOrBadRequest(result);
     }
 

@@ -1,6 +1,6 @@
 using ERP.API.Attributes;
 using ERP.API.Extensions;
-using ERP.Application.Common.Models;
+using ERP.API.Uploads;
 using ERP.Application.Modules.Inventory.ItemMatching.DTOs;
 using ERP.Application.Modules.Inventory.ItemMatching.UseCases.BulkMatchItems;
 using ERP.Application.Modules.Inventory.ItemMatching.UseCases.FindItemMatches;
@@ -52,12 +52,8 @@ public sealed class PurchaseReceptionController : ControllerBase
         if (file is null || file.Length == 0)
             return this.ApiBadRequest("Debe adjuntar un archivo.");
 
-        await using var stream = new MemoryStream();
-        await file.CopyToAsync(stream, ct);
-        stream.Position = 0;
-
-        var content = new MediaUploadContent(stream, file.FileName, file.ContentType, file.Length);
-        var result = await _mediator.Send(new ImportPurchaseReceptionCommand(content), ct);
+        await using var upload = await BufferedFormFile.CreateAsync(file, ct);
+        var result = await _mediator.Send(new ImportPurchaseReceptionCommand(upload.Content), ct);
         return this.ToOkOrBadRequest(result);
     }
 

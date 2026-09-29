@@ -1,7 +1,7 @@
 using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
-using ERP.Application.Common.Models;
+using ERP.API.Uploads;
 using ERP.Application.Modules.Companies.DTOs;
 using ERP.Application.Modules.Companies.UseCases.CreateCompany;
 using ERP.Application.Modules.Companies.UseCases.GetCompanyBranding;
@@ -104,12 +104,8 @@ public sealed class CompaniesController : ControllerBase
         if (file is null || file.Length == 0)
             return this.ApiBadRequest("Debe adjuntar un archivo de imagen.");
 
-        await using var stream = new MemoryStream();
-        await file.CopyToAsync(stream, cancellationToken);
-        stream.Position = 0;
-
-        var content = new MediaUploadContent(stream, file.FileName, file.ContentType, file.Length);
-        var result = await _mediator.Send(new UploadCompanyLogoCommand(content), cancellationToken);
+        await using var upload = await BufferedFormFile.CreateAsync(file, cancellationToken);
+        var result = await _mediator.Send(new UploadCompanyLogoCommand(upload.Content), cancellationToken);
         return this.ToOkOrBadRequest(result);
     }
 
@@ -194,13 +190,9 @@ public sealed class CompaniesController : ControllerBase
         if (file is null || file.Length == 0)
             return this.ApiBadRequest("Debe adjuntar un archivo de imagen.");
 
-        await using var stream = new MemoryStream();
-        await file.CopyToAsync(stream, cancellationToken);
-        stream.Position = 0;
-
-        var content = new MediaUploadContent(stream, file.FileName, file.ContentType, file.Length);
+        await using var upload = await BufferedFormFile.CreateAsync(file, cancellationToken);
         var result = await _mediator.Send(
-            new UploadCompanyLogoAltCommand(content),
+            new UploadCompanyLogoAltCommand(upload.Content),
             cancellationToken
         );
         return this.ToOkOrBadRequest(result);

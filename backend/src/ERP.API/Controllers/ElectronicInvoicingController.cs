@@ -1,7 +1,7 @@
 using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
-using ERP.Application.Common.Models;
+using ERP.API.Uploads;
 using ERP.Application.Modules.ElectronicInvoicing.DTOs;
 using ERP.Application.Modules.ElectronicInvoicing.UseCases.GetElectronicInvoicingStatus;
 using ERP.Application.Modules.ElectronicInvoicing.UseCases.GetSriConfiguration;
@@ -129,13 +129,9 @@ public sealed class ElectronicInvoicingController : ControllerBase
         if (file is null || file.Length == 0)
             return this.ApiBadRequest("Debe adjuntar el archivo del certificado.");
 
-        await using var stream = new MemoryStream();
-        await file.CopyToAsync(stream, cancellationToken);
-        stream.Position = 0;
-
-        var content = new MediaUploadContent(stream, file.FileName, file.ContentType, file.Length);
+        await using var upload = await BufferedFormFile.CreateAsync(file, cancellationToken);
         var result = await _mediator.Send(
-            new UploadSriCertificateCommand(content),
+            new UploadSriCertificateCommand(upload.Content),
             cancellationToken
         );
         return this.ToOkOrBadRequest(result);
