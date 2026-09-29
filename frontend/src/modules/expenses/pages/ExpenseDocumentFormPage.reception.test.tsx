@@ -7,8 +7,8 @@ import { ExpenseDocumentFormPage } from "./ExpenseDocumentFormPage";
 import type { ExpenseDraftLineState } from "../components/ExpenseDocumentLinesEditor";
 
 const mocks = vi.hoisted(() => ({ preview: vi.fn(), create: vi.fn() }));
-vi.mock("../../purchases/api/purchaseReceptionService", () => ({
-  purchaseReceptionService: { createExpenseDraft: mocks.preview },
+vi.mock("../../purchases/facades/purchaseReceptionExpenseFacade", () => ({
+  purchaseReceptionExpenseFacade: { prepareExpenseDraft: mocks.preview },
 }));
 vi.mock("../api/expenseDocumentService", () => ({
   expenseDocumentService: { create: mocks.create },

@@ -2,6 +2,14 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-28** · Kernel refactor: **2026-06-05**.
 
+## ZH-ARCH-MODULE-BOUNDARIES-05-EXPENSE-PURCHASE — Precarga de Gasto desde recepción (2026-09-28)
+
+**Estado: COMPLETADO.** Resuelta la violación expenses → purchases con una facade pública explícita en el módulo propietario (Purchases); backend, API, payload y UX sin cambios.
+- Auditoría: `createExpenseDraft` → `POST /purchases/reception/{id}/create-expense-draft` (`CreateExpenseDraftFromReceptionQuery`, permiso `purchases.view`). Valida elegibilidad sobre `PurchaseReceptionDocument` (factura Verified con XML, sin compra/gasto con la misma clave, proveedor activo con rol) y devuelve `ExpenseReceptionDraftDto` para precargar el formulario. No crea `ExpenseDocument` (eso lo hace `CreateExpenseDraftCommand` al guardar en Gastos). Efecto persistente: si la recepción no tenía `SupplierId`, `ReceptionSupplierResolver` lo vincula (`AssignSupplier` + `SaveChanges`) — estado de Purchases.
+- Owner: Purchases (fuente de datos, reglas de elegibilidad y único efecto persistente son de la recepción). Facade `purchases/facades/purchaseReceptionExpenseFacade.prepareExpenseDraft` (nombre semántico: prepara precarga; documentado como POST con efecto, no lookup) + tipo `ExpenseReceptionDraft`.
+- Observación (sin cambio): el nombre backend `create-expense-draft`/`CreateExpenseDraftFromReceptionQuery` sugiere creación y "Query" oculta el vínculo de proveedor persistido; renombrar/separar sería un cambio de contrato → decisión aparte.
+- Queda 1 D (2 ocurrencias): purchases → retentions. Baseline: 115 → 114; `module-boundaries` 3 → 2.
+
 ## ZH-ARCH-MODULE-BOUNDARIES-04-PAYABLES — Contrato público de payables (2026-09-28)
 
 **Estado: COMPLETADO.** Las 2 violaciones hacia payables resueltas con el contrato en el módulo propietario; sin cambios de backend, API, pagos ni SupplierCredit.

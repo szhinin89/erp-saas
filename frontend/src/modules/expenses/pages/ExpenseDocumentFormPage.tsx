@@ -1,6 +1,6 @@
 import { formatDecimalDisplay } from "../../../lib/sanitizers";
 import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
-import { purchaseReceptionService, type ExpenseReceptionDraft } from "../../purchases/api/purchaseReceptionService";
+import { purchaseReceptionExpenseFacade, type ExpenseReceptionDraft } from "../../purchases/facades/purchaseReceptionExpenseFacade";
 import {
   useCallback,
   useEffect,
@@ -224,7 +224,7 @@ export function ExpenseDocumentFormPage() {
       } else {
         setDocument(null);
         const source = fromReceptionId
-          ? await purchaseReceptionService.createExpenseDraft(fromReceptionId) : null;
+          ? await purchaseReceptionExpenseFacade.prepareExpenseDraft(fromReceptionId) : null;
         setReception(source);
         setHeader(source ? {
           ...EMPTY_HEADER,
