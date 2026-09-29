@@ -1,6 +1,15 @@
 # Project Status
 
-**Single source of truth** for delivery state. Updated: **2026-09-28** · Kernel refactor: **2026-06-05**.
+**Single source of truth** for delivery state. Updated: **2026-09-29** · Kernel refactor: **2026-06-05**.
+
+## ZH-PURCHASE-EXPENSE-EXCLUSIVITY-RESTORE-01 — Exclusividad Compra↔Gasto por AccessKey restaurada (2026-09-29)
+
+**Estado: COMPLETADO.** Purchases sigue CLOSED: solo se reabrió esta garantía de integridad en BD; sin cambios de UX, endpoints ni flujo.
+- Regla vigente recuperada de `20260911023601_ReceptionReprocessAfterCancelStandard` (versión que ignora Cancelled; la original de `20260908175033_ExpensesFromPurchaseReception` no miraba status): una factura (tenant + AccessKey) no puede estar activa como compra (`status <> 3`) y como gasto (`status <> 2`) a la vez; triggers `BEFORE INSERT OR UPDATE OF tenant_id, access_key` en `purchase_invoices`/`expense_documents`, candado consultivo por tenant+AccessKey, `23505` con CONSTRAINT `uq_purchase_expense_access_key` (lo traducen `PurchaseDraftUseCases`/`ExpenseDocumentDraftUseCases`). Sin AccessKey no participa. La unicidad dentro de cada tabla (índices parciales EF) sí sobrevivió.
+- Causa histórica: raw SQL fuera del modelo EF; la consolidación `4cbc4b12` (2026-09-25) lo perdió junto con `uq_mbp_identification`.
+- Migración `20260929105048_RestorePurchaseExpenseAccessKeyExclusivity` al final de la cadena (snapshot intacto): `LOCK TABLE` + pre-check que falla listando cada par tenant/AccessKey/compra/gasto activos (no anula ni borra nada) + `CREATE OR REPLACE FUNCTION` + `DROP TRIGGER IF EXISTS`/`CREATE TRIGGER`. BD local `dberpsaas`: 0 conflictos — aplica limpio.
+- Anti-regresión: `RawSqlDatabaseObjectsSurviveMigrationSquashTests` ahora exige función (incluidos los filtros de status) y ambos triggers.
+- Evidencia: `PurchaseExpenseReprocessAfterCancelConstraintsTests` 20/20 (los 2 históricos vuelven a pasar + 6 nuevos) · Infra Purchase/Expense/Reception/MasterData 208/208 · API 515/515 · Application 2358 · Architecture 117 · `architecture:check` sin cambios (58/100, 21 warnings, 0 nuevas); baseline/grandfather intactos.
 
 ## ZH-BP-IDENTIFICATION-UNIQUE-01 — Índice único de identificación de Business Partner restaurado (2026-09-28)
 
@@ -8,7 +17,7 @@
 - Causa (B): el índice es raw SQL (EF no puede indexar columna del owner + owned type) y se perdió por TERCERA vez al consolidar migraciones — `4cbc4b12` (2026-09-25) borró `20260914034857_AddBusinessPartnerIdentificationUniqueIndex` y la nueva `InitialEnterpriseBaseline` se regeneró desde el snapshot, que no lo conoce. Create/Update/bootstrap de Consumidor Final confiaban en él como barrera real.
 - Corrección: migración `20260929034558_AddBusinessPartnerIdentificationUniqueIndex` al final de la cadena (sin cambio de modelo; snapshot intacto) con pre-check que detiene la migración listando duplicados si una BD los acumuló. BD local `dberpsaas`: 0 duplicados, índice ausente — aplica limpio.
 - Anti-regresión: `RawSqlDatabaseObjectsSurviveMigrationSquashTests` (Architecture, sin Docker) falla si una consolidación deja fuera un objeto raw SQL registrado.
-- **Hallazgo abierto (no corregido, fuera de alcance — Purchases/Expenses):** la misma consolidación perdió `enforce_purchase_expense_exclusivity` + triggers `tr_expense_purchase_exclusivity`/`tr_purchase_expense_exclusivity` (origen `20260908175033_ExpensesFromPurchaseReception`); 2 tests de `PurchaseExpenseReprocessAfterCancelConstraintsTests` fallan por eso. Al restaurarlos, registrarlos en el test anti-regresión.
+- **Hallazgo (RESUELTO 2026-09-29 en ZH-PURCHASE-EXPENSE-EXCLUSIVITY-RESTORE-01):** la misma consolidación perdió `enforce_purchase_expense_exclusivity` + triggers `tr_expense_purchase_exclusivity`/`tr_purchase_expense_exclusivity` (origen `20260908175033_ExpensesFromPurchaseReception`); 2 tests de `PurchaseExpenseReprocessAfterCancelConstraintsTests` fallan por eso. Al restaurarlos, registrarlos en el test anti-regresión.
 - Evidencia: PostgreSQL unicidad 9/9 · Infra MasterData 24/24 · API 515/515 · Application 2358 · Architecture 117 · `architecture:check` sin cambios (58/100, 21 warnings, 0 nuevas).
 
 ## ZH-BP-NESTED-RESOURCE-OWNERSHIP-01 — Ownership de rutas anidadas de Business Partners (2026-09-28)

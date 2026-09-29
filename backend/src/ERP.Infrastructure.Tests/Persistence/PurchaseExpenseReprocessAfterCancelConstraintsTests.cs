@@ -19,6 +19,9 @@ using ERP.Infrastructure.Persistence.Repositories.Expenses;
 using ERP.Infrastructure.Persistence.Repositories.Purchases;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql;
 using Testcontainers.PostgreSql;
 
 namespace ERP.Infrastructure.Tests.Persistence;
@@ -752,6 +755,199 @@ public sealed class PurchaseExpenseReprocessAfterCancelConstraintsTests : IAsync
         var act = async () => await db2.SaveChangesAsync();
 
         await act.Should().ThrowAsync<DbUpdateException>();
+    }
+
+    // ── ZH-PURCHASE-EXPENSE-EXCLUSIVITY-RESTORE-01 ─────────────────────────
+    // El trigger se perdió al consolidar migraciones (4cbc4b12) y lo restaura
+    // 20260929105048_RestorePurchaseExpenseAccessKeyExclusivity. Estos casos exigen que el bloqueo
+    // venga de ESE trigger (constraint uq_purchase_expense_access_key), no de otro índice.
+
+    private const string MigrationBeforeExclusivityRestore =
+        "20260929034558_AddBusinessPartnerIdentificationUniqueIndex";
+
+    private static async Task<PostgresException> SaveExpectingExclusivityViolation(ErpDbContext db, string message)
+    {
+        var ex = await FluentActions.Invoking(() => db.SaveChangesAsync()).Should().ThrowAsync<DbUpdateException>();
+        return AssertExclusivityViolation(ex.Which.InnerException, message);
+    }
+
+    private static PostgresException AssertExclusivityViolation(Exception? exception, string message)
+    {
+        var pg = exception.Should().BeOfType<PostgresException>().Subject;
+        pg.SqlState.Should().Be(PostgresErrorCodes.UniqueViolation);
+        pg.ConstraintName.Should().Be("uq_purchase_expense_access_key");
+        pg.MessageText.Should().Be(message);
+        return pg;
+    }
+
+    [Fact]
+    public async Task Exclusividad_bloquea_ambos_sentidos_con_el_constraint_que_traducen_los_handlers()
+    {
+        var ctx = await SeedTenantAsync();
+        var purchaseKey = $"AK-{Guid.NewGuid():N}";
+        var expenseKey = $"AK-{Guid.NewGuid():N}";
+
+        await using (var db = CreateContext(ctx.TenantId, ctx.CompanyId))
+        {
+            db.PurchaseInvoices.Add(BuildConfirmedInvoice(ctx, "001-001-000000701", purchaseKey));
+            db.ExpenseDocuments.Add(BuildConfirmedExpense(ctx, "001-001-000000702", expenseKey));
+            await db.SaveChangesAsync();
+        }
+
+        await using (var dbExpense = CreateContext(ctx.TenantId, ctx.CompanyId))
+        {
+            dbExpense.ExpenseDocuments.Add(BuildConfirmedExpense(ctx, "001-001-000000703", purchaseKey));
+            await SaveExpectingExclusivityViolation(dbExpense, "La factura ya fue registrada como compra.");
+        }
+
+        await using var dbPurchase = CreateContext(ctx.TenantId, ctx.CompanyId);
+        dbPurchase.PurchaseInvoices.Add(BuildConfirmedInvoice(ctx, "001-001-000000704", expenseKey));
+        await SaveExpectingExclusivityViolation(dbPurchase, "La factura ya fue registrada como gasto.");
+    }
+
+    [Fact]
+    public async Task Reproceso_tras_anular_cambia_de_compra_a_gasto_y_el_gasto_activo_vuelve_a_bloquear_compras()
+    {
+        var ctx = await SeedTenantAsync();
+        var accessKey = $"AK-{Guid.NewGuid():N}";
+
+        Guid invoiceId;
+        await using (var db = CreateContext(ctx.TenantId, ctx.CompanyId))
+        {
+            var invoice = BuildConfirmedInvoice(ctx, "001-001-000000711", accessKey);
+            db.PurchaseInvoices.Add(invoice);
+            await db.SaveChangesAsync();
+            invoiceId = invoice.Id;
+        }
+        await using (var dbCancel = CreateContext(ctx.TenantId, ctx.CompanyId))
+        {
+            (await dbCancel.PurchaseInvoices.SingleAsync(x => x.Id == invoiceId)).Cancel("Era un gasto", _userId);
+            await dbCancel.SaveChangesAsync();
+        }
+        await using (var dbExpense = CreateContext(ctx.TenantId, ctx.CompanyId))
+        {
+            dbExpense.ExpenseDocuments.Add(BuildConfirmedExpense(ctx, "001-001-000000712", accessKey));
+            await FluentActions.Invoking(() => dbExpense.SaveChangesAsync()).Should().NotThrowAsync();
+        }
+
+        await using var dbRepurchase = CreateContext(ctx.TenantId, ctx.CompanyId);
+        dbRepurchase.PurchaseInvoices.Add(BuildConfirmedInvoice(ctx, "001-001-000000713", accessKey));
+        await SaveExpectingExclusivityViolation(dbRepurchase, "La factura ya fue registrada como gasto.");
+    }
+
+    [Fact]
+    public async Task Mismo_AccessKey_en_tenants_distintos_no_interfiere()
+    {
+        var tenantA = await SeedTenantAsync();
+        var tenantB = await SeedTenantAsync();
+        var accessKey = $"AK-{Guid.NewGuid():N}";
+
+        await using (var dbA = CreateContext(tenantA.TenantId, tenantA.CompanyId))
+        {
+            dbA.PurchaseInvoices.Add(BuildConfirmedInvoice(tenantA, "001-001-000000721", accessKey));
+            await dbA.SaveChangesAsync();
+        }
+
+        await using var dbB = CreateContext(tenantB.TenantId, tenantB.CompanyId);
+        dbB.ExpenseDocuments.Add(BuildConfirmedExpense(tenantB, "001-001-000000722", accessKey));
+        await FluentActions.Invoking(() => dbB.SaveChangesAsync()).Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task Documentos_sin_AccessKey_no_participan_de_la_exclusividad()
+    {
+        var ctx = await SeedTenantAsync();
+
+        await using var db = CreateContext(ctx.TenantId, ctx.CompanyId);
+        db.PurchaseInvoices.Add(BuildConfirmedInvoice(ctx, "001-001-000000731", accessKey: null));
+        db.ExpenseDocuments.Add(BuildConfirmedExpense(ctx, "001-001-000000732", accessKey: null));
+
+        await FluentActions.Invoking(() => db.SaveChangesAsync()).Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task Update_hacia_un_AccessKey_conflictivo_se_bloquea_en_ambas_tablas()
+    {
+        var ctx = await SeedTenantAsync();
+        var purchaseKey = $"AK-{Guid.NewGuid():N}";
+        var expenseKey = $"AK-{Guid.NewGuid():N}";
+        var purchase = BuildConfirmedInvoice(ctx, "001-001-000000741", purchaseKey);
+        var expense = BuildConfirmedExpense(ctx, "001-001-000000742", expenseKey);
+
+        await using (var db = CreateContext(ctx.TenantId, ctx.CompanyId))
+        {
+            db.PurchaseInvoices.Add(purchase);
+            db.ExpenseDocuments.Add(expense);
+            await db.SaveChangesAsync();
+        }
+
+        // UPDATE directo: la garantía vive en BD (trigger BEFORE UPDATE OF tenant_id, access_key),
+        // independiente de qué flujo de la app cambie la clave.
+        await using var dbUpdate = CreateContext(ctx.TenantId, ctx.CompanyId);
+        var toExpenseKey = await FluentActions
+            .Invoking(() => dbUpdate.Database.ExecuteSqlInterpolatedAsync(
+                $"UPDATE purchase_invoices SET access_key = {expenseKey} WHERE id = {purchase.Id}"))
+            .Should()
+            .ThrowAsync<PostgresException>();
+        AssertExclusivityViolation(toExpenseKey.Which, "La factura ya fue registrada como gasto.");
+
+        var toPurchaseKey = await FluentActions
+            .Invoking(() => dbUpdate.Database.ExecuteSqlInterpolatedAsync(
+                $"UPDATE expense_documents SET access_key = {purchaseKey} WHERE id = {expense.Id}"))
+            .Should()
+            .ThrowAsync<PostgresException>();
+        AssertExclusivityViolation(toPurchaseKey.Which, "La factura ya fue registrada como compra.");
+
+        (await dbUpdate.PurchaseInvoices.AsNoTracking().SingleAsync(x => x.Id == purchase.Id)).AccessKey.Should().Be(purchaseKey);
+        (await dbUpdate.ExpenseDocuments.AsNoTracking().SingleAsync(x => x.Id == expense.Id)).AccessKey.Should().Be(expenseKey);
+    }
+
+    [Fact]
+    public async Task Migracion_con_conflicto_preexistente_falla_cerrada_sin_tocar_documentos_ni_crear_triggers()
+    {
+        // Estado real de una BD migrada sin el trigger: se puede registrar el conflicto.
+        await using (var dbDown = CreateContext())
+            await dbDown.GetService<IMigrator>().MigrateAsync(MigrationBeforeExclusivityRestore);
+
+        var ctx = await SeedTenantAsync();
+        var accessKey = $"AK-{Guid.NewGuid():N}";
+        var purchase = BuildConfirmedInvoice(ctx, "001-001-000000751", accessKey);
+        var expense = BuildConfirmedExpense(ctx, "001-001-000000752", accessKey);
+        await using (var db = CreateContext(ctx.TenantId, ctx.CompanyId))
+        {
+            db.PurchaseInvoices.Add(purchase);
+            db.ExpenseDocuments.Add(expense);
+            await db.SaveChangesAsync();
+        }
+
+        await using var dbUp = CreateContext();
+        var ex = await FluentActions
+            .Invoking(() => dbUp.GetService<IMigrator>().MigrateAsync())
+            .Should()
+            .ThrowAsync<PostgresException>();
+
+        ex.Which.MessageText.Should().Contain("uq_purchase_expense_access_key: existen facturas activas registradas a la vez como compra y como gasto");
+        ex.Which.MessageText.Should().Contain($"access_key={accessKey} purchase_invoice={purchase.Id} expense_document={expense.Id}");
+
+        await using var check = CreateContext(ctx.TenantId, ctx.CompanyId);
+        (await check.PurchaseInvoices.AsNoTracking().SingleAsync(x => x.Id == purchase.Id)).Status.Should().Be(PurchaseStatus.Confirmed);
+        (await check.ExpenseDocuments.AsNoTracking().CountAsync(x => x.Id == expense.Id)).Should().Be(1);
+        (await check.Database.SqlQuery<int>(
+                $"SELECT count(*)::int AS \"Value\" FROM pg_trigger WHERE tgname IN ('tr_expense_purchase_exclusivity', 'tr_purchase_expense_exclusivity')")
+            .SingleAsync())
+            .Should()
+            .Be(0, "la migración es transaccional: si el pre-check falla no queda nada a medias");
+        (await check.Database.GetAppliedMigrationsAsync()).Should().NotContain(m => m.EndsWith("_RestorePurchaseExpenseAccessKeyExclusivity"));
+
+        // Resuelto el conflicto (anular uno), la misma migración aplica y el trigger queda activo.
+        (await check.PurchaseInvoices.SingleAsync(x => x.Id == purchase.Id)).Cancel("Duplicada con gasto", _userId);
+        await check.SaveChangesAsync();
+        await FluentActions.Invoking(() => dbUp.GetService<IMigrator>().MigrateAsync()).Should().NotThrowAsync();
+        (await check.Database.SqlQuery<int>(
+                $"SELECT count(*)::int AS \"Value\" FROM pg_trigger WHERE tgname IN ('tr_expense_purchase_exclusivity', 'tr_purchase_expense_exclusivity')")
+            .SingleAsync())
+            .Should()
+            .Be(2);
     }
 
     // ── Test doubles mínimos ─────────────────────────────────────────────

@@ -10,17 +10,40 @@ namespace ERP.Architecture.Tests;
 /// se perdió así tres veces. Este test (sin Docker) falla en cuanto una consolidación los deja
 /// fuera de ERP.Infrastructure/Migrations.
 /// Al consolidar: copiar el raw SQL de cada objeto listado aquí a la nueva cadena de migraciones.
-/// Todo objeto de BD creado con migrationBuilder.Sql debe registrarse aquí.
+/// Cada objeto de BD creado con migrationBuilder.Sql debe registrarse aquí.
 /// </summary>
 public sealed partial class RawSqlDatabaseObjectsSurviveMigrationSquashTests
 {
-    /// <summary>Nombre del objeto → sentencia que debe existir (se compara con espacios normalizados).</summary>
-    private static readonly IReadOnlyDictionary<string, string> RequiredRawSqlObjects =
-        new Dictionary<string, string>
+    /// <summary>
+    /// Nombre del objeto → fragmentos que deben existir en alguna migración (se comparan con espacios
+    /// normalizados). Varios fragmentos cuando la definición vigente importa, no solo el nombre.
+    /// </summary>
+    private static readonly IReadOnlyDictionary<string, string[]> RequiredRawSqlObjects =
+        new Dictionary<string, string[]>
         {
             // ADR-BP-03: identificación única e incondicional por tenant.
             ["uq_mbp_identification"] =
+            [
                 "CREATE UNIQUE INDEX IF NOT EXISTS uq_mbp_identification ON master_business_partners (tenant_id, identification_type, identification_number)",
+            ],
+            // Exclusividad Compra↔Gasto por AccessKey — versión vigente que ignora Cancelled
+            // (ReceptionReprocessAfterCancelStandard); la original sin filtro de status bloqueaba
+            // para siempre tras anular.
+            ["enforce_purchase_expense_exclusivity"] =
+            [
+                "CREATE OR REPLACE FUNCTION enforce_purchase_expense_exclusivity() RETURNS trigger",
+                "WHERE tenant_id = NEW.tenant_id AND access_key = NEW.access_key AND status <> 3",
+                "WHERE tenant_id = NEW.tenant_id AND access_key = NEW.access_key AND status <> 2",
+                "CONSTRAINT = 'uq_purchase_expense_access_key'",
+            ],
+            ["tr_expense_purchase_exclusivity"] =
+            [
+                "CREATE TRIGGER tr_expense_purchase_exclusivity BEFORE INSERT OR UPDATE OF tenant_id, access_key ON expense_documents FOR EACH ROW EXECUTE FUNCTION enforce_purchase_expense_exclusivity()",
+            ],
+            ["tr_purchase_expense_exclusivity"] =
+            [
+                "CREATE TRIGGER tr_purchase_expense_exclusivity BEFORE INSERT OR UPDATE OF tenant_id, access_key ON purchase_invoices FOR EACH ROW EXECUTE FUNCTION enforce_purchase_expense_exclusivity()",
+            ],
         };
 
     [Fact]
@@ -41,8 +64,11 @@ public sealed partial class RawSqlDatabaseObjectsSurviveMigrationSquashTests
         );
 
         var missing = RequiredRawSqlObjects
-            .Where(kv => !migrationsSql.Contains(Normalize(kv.Value), StringComparison.OrdinalIgnoreCase))
-            .Select(kv => kv.Key)
+            .SelectMany(kv =>
+                kv.Value
+                    .Where(fragment => !migrationsSql.Contains(Normalize(fragment), StringComparison.OrdinalIgnoreCase))
+                    .Select(fragment => $"{kv.Key}: {fragment}")
+            )
             .ToList();
 
         missing
