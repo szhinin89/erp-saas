@@ -2,6 +2,15 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-29** · Kernel refactor: **2026-06-05**.
 
+## ZH-FRONTEND-GEOGRAPHY-SSOT-01 — Un solo cliente HTTP de geografía (2026-09-29)
+
+**Estado: COMPLETADO.** Toda consulta geográfica del frontend pasa por `branches/facades/geographyLookupFacade` → `branchService` → `GET /api/v1/settings/geography/{countries|provinces|cantons|parishes}`. Sin cambios de backend, endpoints, parámetros, UX ni CSS.
+- Owner: Branches — los casos de uso `GetGeoCountries/Provinces/Cantons/Parishes` y `GeographyItemDto` viven en `ERP.Application/Modules/Branches`; Settings solo aporta ruta/permiso/menú (`settings.geography.view`, página consumidora) y masterData es consumidor (direcciones de socios).
+- Eliminado `masterData/api/geographyService.ts` (cliente duplicado de provincias/cantones/parroquias) y su tipo `GeoOption`; tipo único `GeographyItemDto { id, name }`. El normalizador canónico (branches) es superconjunto del eliminado: acepta además tuplas `[id, name]` y tolera filas `null` (el anterior lanzaba `TypeError`); el backend devuelve `{ id, name }`, así que el contrato vigente no cambia.
+- `MasterDataBusinessPartnerDetailPage` (+ test) migrada a la facade; `settings/GeographyPage` ya la usaba.
+- Tests: contrato del cliente (4 endpoints, parámetros codificados, DTO/normalización, propagación de errores, facade = mismas funciones) y guard `geographyClientSingleSource.test.ts`: el endpoint de geografía solo puede aparecer en `branches/api/branchService.ts`.
+- Frontend completo 2562/2562; `tsc -b`, lint (0 errores), build, `architecture:check` (0 nuevas, baseline 0) y `git diff --check` en verde.
+
 ## ZH-FRONTEND-SUBSCRIBER-NAMING-RESTORE-01 — Contrato owner → subscriber entre módulos frontend (2026-09-29)
 
 **Estado: COMPLETADO.** `frontend-subscriber-naming` reactivado en `architecture:check` como guard de contratos públicos: 0 violaciones, baseline 0, grandfather 0, sin excepciones. Sin cambios de backend, API, payload, permisos ni UX.
@@ -10,7 +19,7 @@
 - Facades extendidas: `businessPartnerLookupFacade` (+locations/contacts/salesSettings), `paymentTermLookupFacade` (+getById), `salesLookupFacade` (+dailyReport), `purchaseLookupFacade` (+supplierReport). Nuevas (mínimas): `masterData/businessPartnerRegistrationFacade`, `masterData/supplierPickerFacade`, `inventory/stockLookupFacade`, `branches/geographyLookupFacade`, `caja/manualCashMovementFacade`, `items/itemTypeLookupFacade`, `items/itemDetailNavigationFacade` (reemplaza `useViewMatchedItem`, que tocaba el store privado de items), `sales/customerPickerFacade`, `auth/globalAdminAuthFacade`, `company-management/companyRegistrationFacade`.
 - Utilidad duplicada sin dominio: `ride/utils/downloadBlob` + `electronicDocuments/monitor/utils/download` → única `src/lib/download.ts`.
 - `module-boundaries` queda solo con pares prohibidos (`forbiddenCrossImports`); se retiró su rama api/pages + `allowedCrossImports` (subconjunto de esta regla y lista blanca por pares).
-- Pendiente fuera de alcance (estilos, ola DS/visual): 5 imports CSS cross-módulo — `sales/styles/sales-return.css` en 3 páginas de purchases, `auth/pages/LoginPage.css` en `AdminCoreLoginPage`, `electronic-documents-monitor.css` en `SalesPage` (lo requieren componentes `components/zh/electronicDocuments/*` por `.edm-hint-sm`). Registrado también: geografía con dos clientes HTTP (`branchService` y `masterData/api/geographyService`).
+- Pendiente fuera de alcance (estilos, ola DS/visual): 5 imports CSS cross-módulo — `sales/styles/sales-return.css` en 3 páginas de purchases, `auth/pages/LoginPage.css` en `AdminCoreLoginPage`, `electronic-documents-monitor.css` en `SalesPage` (lo requieren componentes `components/zh/electronicDocuments/*` por `.edm-hint-sm`). Registrado también: geografía con dos clientes HTTP (`branchService` y `masterData/api/geographyService`) — resuelto en ZH-FRONTEND-GEOGRAPHY-SSOT-01.
 - Frontend completo 2552/2552; `tsc -b`, lint (0 errores), build y `architecture:check` (56 tests + 20 checks) en verde.
 
 ## ZH-DOMAIN-RULE-ERROR-SSOT-01B — Validación de atomicidad, pipeline y compatibilidad (2026-09-29)

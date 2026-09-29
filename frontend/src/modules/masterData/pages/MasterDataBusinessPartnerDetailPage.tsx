@@ -26,7 +26,10 @@ import { applyServerErrors } from "../../lib/validationErrors";
 import { formatApiRequestError } from "../../lib/apiError";
 import { businessPartnerFacade } from "../api/businessPartnerFacade";
 import { formatDateTime } from "../../../lib/formatters/dateFormatters";
-import { geographyService, type GeoOption } from "../api/geographyService";
+import {
+  geographyLookupFacade,
+  type GeographyItemDto,
+} from "../../branches/facades/geographyLookupFacade";
 import { useSriIdTypes, getSriIdTypeName } from "../api/useSriIdTypes";
 import { useLegalEntityTypes } from "../api/useLegalEntityTypes";
 import {
@@ -152,9 +155,9 @@ export function MasterDataBusinessPartnerDetailPage() {
   const [locFilter, setLocFilter] = useState<"all" | "active" | "inactive">(
     "active",
   );
-  const [geoProvinces, setGeoProvinces] = useState<GeoOption[]>([]);
-  const [geoCantons, setGeoCantons] = useState<GeoOption[]>([]);
-  const [geoParishes, setGeoParishes] = useState<GeoOption[]>([]);
+  const [geoProvinces, setGeoProvinces] = useState<GeographyItemDto[]>([]);
+  const [geoCantons, setGeoCantons] = useState<GeographyItemDto[]>([]);
+  const [geoParishes, setGeoParishes] = useState<GeographyItemDto[]>([]);
 
   const reload = useCallback(
     async (showLoading = false) => {
@@ -198,7 +201,7 @@ export function MasterDataBusinessPartnerDetailPage() {
 
   const loadProvinces = async () => {
     try {
-      setGeoProvinces(await geographyService.provinces("EC"));
+      setGeoProvinces(await geographyLookupFacade.provinces("EC"));
     } catch {
       /* empty */
     }
@@ -210,7 +213,7 @@ export function MasterDataBusinessPartnerDetailPage() {
       return;
     }
     try {
-      setGeoCantons(await geographyService.cantons(provinceId));
+      setGeoCantons(await geographyLookupFacade.cantons(provinceId));
     } catch {
       /* empty */
     }
@@ -222,7 +225,7 @@ export function MasterDataBusinessPartnerDetailPage() {
       return;
     }
     try {
-      setGeoParishes(await geographyService.parishes(cantonId));
+      setGeoParishes(await geographyLookupFacade.parishes(cantonId));
     } catch {
       /* empty */
     }

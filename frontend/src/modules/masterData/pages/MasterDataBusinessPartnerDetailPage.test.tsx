@@ -32,8 +32,8 @@ vi.mock("../api/businessPartnerFacade", () => ({
   },
 }));
 
-vi.mock("../api/geographyService", () => ({
-  geographyService: {
+vi.mock("../../branches/facades/geographyLookupFacade", () => ({
+  geographyLookupFacade: {
     provinces: vi.fn().mockResolvedValue([]),
     cantons: vi.fn().mockResolvedValue([]),
     parishes: vi.fn().mockResolvedValue([]),
