@@ -16,13 +16,14 @@ import { message } from "../../../../lib/messages";
 import { orgConfigService } from "../api/orgConfigService";
 import { sriLookupFacade } from "../../../items/facades/sriLookupFacade";
 import { paymentTermLookupFacade } from "../../../masterData/facades/paymentTermLookupFacade";
-import { priceListService } from "../../../pricing/api/pricingService";
+import { priceListLookupFacade } from "../../../pricing/facades/priceListLookupFacade";
+import { priceListDefaultFacade } from "../../../pricing/facades/priceListDefaultFacade";
 
 // ── Schema ─────────────────────────────────────────────────────────────────
 // Propietario Empresa: DocTypeCode, PaymentMethodCode, PaymentTermId, PriceList.IsDefault.
 // DefaultWarehouseId → Sucursal. DefaultEmissionPointId → EmissionPoint.IsDefault.
 // Lista de precios predeterminada: fuente de verdad única = PriceList.IsDefault (backend),
-// esta sección solo la reasigna vía priceListService.setDefault — nunca crea un OrgSetting
+// esta sección solo la reasigna vía priceListDefaultFacade.setDefault — nunca crea un OrgSetting
 // paralelo (evitaría dos fuentes de verdad para el mismo default, ver auditoría
 // COMPANY-SETTINGS-SALES-SECTION-01).
 const schema = z.object({
@@ -56,7 +57,7 @@ export function CompanySalesSettingsSection() {
   const docTypesState = useAsync(() => sriLookupFacade.docTypes());
   const paymentMethodsState = useAsync(() => sriLookupFacade.paymentMethods());
   const paymentTermsState = useAsync(() => paymentTermLookupFacade.list());
-  const priceListsState = useAsync(() => priceListService.list(true));
+  const priceListsState = useAsync(() => priceListLookupFacade.list(true));
 
   // ── Valores actuales ─────────────────────────────────────────────────────
   const settingsState = useAsync(() =>
@@ -110,7 +111,7 @@ export function CompanySalesSettingsSection() {
         values.defaultPriceListId &&
         values.defaultPriceListId !== currentDefaultPriceListId
       ) {
-        await priceListService.setDefault(values.defaultPriceListId);
+        await priceListDefaultFacade.setDefault(values.defaultPriceListId);
       }
       message.success("Configuración de ventas guardada.");
       settingsState.refetch();

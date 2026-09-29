@@ -13,7 +13,7 @@ import { formatMoney } from "../../../lib/sanitizers";
 import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { applyServerErrors } from "../../lib/validationErrors";
 import { formatApiRequestError, readApiErrorMessage } from "../../lib/apiError";
-import { businessPartnerFacade } from "../../masterData/api/businessPartnerFacade";
+import { businessPartnerLookupFacade } from "../../masterData/facades/businessPartnerLookupFacade";
 import {
   paymentMethodLookupFacade,
   type PaymentMethodDto,
@@ -141,7 +141,7 @@ export function SupplierPaymentFormPage() {
       .catch(() => setInstallments([]))
       .finally(() => setInstallmentsLoading(false));
     setValue("applicationLines", []);
-    businessPartnerFacade
+    businessPartnerLookupFacade
       .getBusinessPartner(supplierId)
       .then((bp) => setSupplierName(bp.tradeName?.trim() || bp.legalName))
       .catch(() => setSupplierName(""));

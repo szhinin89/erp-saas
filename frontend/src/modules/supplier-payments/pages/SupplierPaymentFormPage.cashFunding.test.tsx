@@ -45,8 +45,8 @@ vi.mock("../../caja/facades/cashFundingRequestFacade", () => ({
   cashFundingRequestRoute: (id: string) => `/treasury/cash/funding-requests/${id}`,
 }));
 
-vi.mock("../../masterData/api/businessPartnerFacade", () => ({
-  businessPartnerFacade: { getBusinessPartner: external.getBusinessPartner },
+vi.mock("../../masterData/facades/businessPartnerLookupFacade", () => ({
+  businessPartnerLookupFacade: { getBusinessPartner: external.getBusinessPartner },
 }));
 
 vi.mock("../../../access/usePermissionsUi", () => ({ usePermissionsUi: vi.fn() }));

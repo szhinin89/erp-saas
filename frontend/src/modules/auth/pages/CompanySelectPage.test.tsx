@@ -10,7 +10,7 @@ import {
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { I18nProvider } from "../../../i18n/i18n";
 import { loadPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
-import { companyManagementService } from "../../company-management/api/companyManagementService";
+import { companyLookupFacade } from "../../company-management/facades/companyLookupFacade";
 import { useAuthStore } from "../../../store/authStore";
 import { useActiveBranchStore } from "../../../store/activeBranchStore";
 import { useElectronicInvoicingStatusStore } from "../../../store/electronicInvoicingStatusStore";
@@ -27,8 +27,8 @@ vi.mock("../api/authService", () => ({
   },
 }));
 
-vi.mock("../../company-management/api/companyManagementService", () => ({
-  companyManagementService: {
+vi.mock("../../company-management/facades/companyLookupFacade", () => ({
+  companyLookupFacade: {
     getCurrent: vi.fn(),
   },
 }));
@@ -137,7 +137,7 @@ describe("CompanySelectPage", () => {
 
     vi.mocked(authService.listMyCompanies).mockResolvedValue([baseCompany()]);
     vi.mocked(authService.switchCompany).mockResolvedValue(authResponse);
-    vi.mocked(companyManagementService.getCurrent).mockResolvedValue(null);
+    vi.mocked(companyLookupFacade.getCurrent).mockResolvedValue(null);
     vi.mocked(loadPrecisionPolicy).mockResolvedValue({
       profileType: "StandardCommercial",
       salesUnitPriceDecimals: 2,
@@ -198,7 +198,7 @@ describe("CompanySelectPage", () => {
     expect(
       useElectronicInvoicingStatusStore.getState().refresh,
     ).toHaveBeenCalledTimes(1);
-    expect(companyManagementService.getCurrent).toHaveBeenCalledTimes(1);
+    expect(companyLookupFacade.getCurrent).toHaveBeenCalledTimes(1);
 
     expect(await screen.findByText("Dashboard listo")).toBeTruthy();
     expect(useAuthStore.getState().user?.companyId).toBe("company-2");

@@ -2,6 +2,13 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-28** · Kernel refactor: **2026-06-05**.
 
+## ZH-ARCH-MODULE-BOUNDARIES-02 — Facades públicas para lookups seguros (2026-09-28)
+
+**Estado: COMPLETADO (parcial por diseño).** 48 ocurrencias clasificadas: A 42 · B 1 · C 0 · D 5 · E 0. Corregidas 10 (prioridades sin módulo protegido + lookup read-only de masterData); API/payload sin cambios, facades solo delegan.
+- Facades nuevas: `company-management/facades/companyLookupFacade` (`list`, `getCurrent` → admin sesiones, auth `syncCompanySelection` + tests), `pricing/facades/priceListDefaultFacade` (`setDefault`, mutación nombrada explícitamente; `list` sale de la existente `priceListLookupFacade` → `CompanySalesSettingsSection`), `settings/banks/facades/bankLookupFacade` (`list` → `BankAccountsPage`), `masterData/facades/businessPartnerLookupFacade` (`getBusinessPartner` → páginas de pago a proveedor + tests, incluido el mock de `SupplierPaymentFormPage.cashFunding.test`).
+- Pendientes A (lookups read-only con módulo protegido, requieren aprobación): caja `cajaService.getCashRegisters` (finance ×2, supplier-payments ×5), finance `bankAccountService.list` (sales ×2, supplier-payments ×5), accounting `listAccounts`/`AccountDto` (expenses ×10, sales ×1), configuracion `getPreferences` (caja ×3, sales ×1) y `ElectronicInvoicingStatusDto` (sales ×2), settings/banks `list` (sales ×2). D (rediseño): expenses→purchases `createExpenseDraft`, purchases→retentions (emitir/anular), finance→payables, supplier-payments `pendingPayablesFacade`→payables.
+- Baseline: 160 → 150; `module-boundaries` 48 → 38. Frontend completo 2551/2551.
+
 ## ZH-ARCH-DESIGN-SYSTEM-03 — Últimos tokens `design-system` (2026-09-28)
 
 **Estado: COMPLETADO (3 de 3).** Sin tokens nuevos, sin inline, sin cambios de checker.

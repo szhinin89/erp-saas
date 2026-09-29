@@ -8,7 +8,7 @@ import { SupplierPaymentDetailPage } from "./SupplierPaymentDetailPage";
 import { supplierPaymentService, type SupplierPaymentDto } from "../api/supplierPaymentService";
 import { paymentMethodLookupFacade } from "../../sales/facades/paymentMethodLookupFacade";
 import { bankAccountService, type CompanyBankAccountDto } from "../../finance/api/bankAccountService";
-import { businessPartnerFacade } from "../../masterData/api/businessPartnerFacade";
+import { businessPartnerLookupFacade } from "../../masterData/facades/businessPartnerLookupFacade";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 
 const routeParams: { id?: string } = { id: "sp-1" };
@@ -33,8 +33,8 @@ vi.mock("../../finance/api/bankAccountService", () => ({
 
 vi.mock("../../caja/api/cajaService", () => ({ cajaService: { getCashRegisters: vi.fn() } }));
 
-vi.mock("../../masterData/api/businessPartnerFacade", () => ({
-  businessPartnerFacade: { getBusinessPartner: vi.fn() },
+vi.mock("../../masterData/facades/businessPartnerLookupFacade", () => ({
+  businessPartnerLookupFacade: { getBusinessPartner: vi.fn() },
 }));
 
 vi.mock("../../../access/usePermissionsUi", () => ({
@@ -116,10 +116,10 @@ beforeEach(() => {
   grant(["supplier-payments.view", "supplier-payments.reverse"]);
   vi.mocked(paymentMethodLookupFacade.list).mockResolvedValue([]);
   vi.mocked(bankAccountService.list).mockResolvedValue([]);
-  vi.mocked(businessPartnerFacade.getBusinessPartner).mockResolvedValue({
+  vi.mocked(businessPartnerLookupFacade.getBusinessPartner).mockResolvedValue({
     legalName: "Proveedor Test",
     tradeName: null,
-  } as Awaited<ReturnType<typeof businessPartnerFacade.getBusinessPartner>>);
+  } as Awaited<ReturnType<typeof businessPartnerLookupFacade.getBusinessPartner>>);
 });
 
 afterEach(() => {

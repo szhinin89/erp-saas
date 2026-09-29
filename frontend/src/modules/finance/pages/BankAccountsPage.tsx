@@ -13,7 +13,7 @@ import { message } from "../../../lib/messages";
 import { applyServerErrors } from "../../lib/validationErrors";
 import { formatApiRequestError } from "../../lib/apiError";
 import { apiGet } from "../../lib/apiEnvelope";
-import { bankService, type BankDto } from "../../settings/banks/api/bankService";
+import { bankLookupFacade, type BankDto } from "../../settings/banks/facades/bankLookupFacade";
 import { bankAccountService, type CompanyBankAccountDto } from "../api/bankAccountService";
 import {
   createBankAccountSchema,
@@ -82,7 +82,7 @@ export function BankAccountsPage() {
 
   useEffect(() => {
     void fetchItems();
-    bankService
+    bankLookupFacade
       .list(true)
       .then(setBanks)
       .catch(() => setBanks([]));

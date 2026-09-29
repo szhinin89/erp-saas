@@ -5,13 +5,13 @@ import { useActiveBranchStore } from "../../store/activeBranchStore";
 import { useSessionStore } from "../../store/sessionStore";
 import { useElectronicInvoicingStatusStore } from "../../store/electronicInvoicingStatusStore";
 import type { AuthResponse } from "../../types/auth";
-import { companyManagementService } from "../company-management/api/companyManagementService";
+import { companyLookupFacade } from "../company-management/facades/companyLookupFacade";
 import { loadPrecisionPolicy } from "../../lib/config/precisionPolicy.config";
 import { clearOperationalContext } from "./clearOperationalContext";
 import { syncCompanySelection } from "./syncCompanySelection";
 
-vi.mock("../company-management/api/companyManagementService", () => ({
-  companyManagementService: { getCurrent: vi.fn() },
+vi.mock("../company-management/facades/companyLookupFacade", () => ({
+  companyLookupFacade: { getCurrent: vi.fn() },
 }));
 
 vi.mock("../../lib/config/precisionPolicy.config", () => ({
@@ -90,8 +90,8 @@ describe("syncCompanySelection", () => {
     vi.mocked(clearOperationalContext).mockImplementation(() => {
       order.push("clearOperationalContext");
     });
-    vi.mocked(companyManagementService.getCurrent).mockImplementation(async () => {
-      order.push("companyManagementService.getCurrent");
+    vi.mocked(companyLookupFacade.getCurrent).mockImplementation(async () => {
+      order.push("companyLookupFacade.getCurrent");
       return null;
     });
     vi.mocked(loadPrecisionPolicy).mockImplementation(async () => {
@@ -143,7 +143,7 @@ describe("syncCompanySelection", () => {
     expect(order[1]).toBe("clearOperationalContext");
     expect(order.slice(2).sort()).toEqual(
       [
-        "companyManagementService.getCurrent",
+        "companyLookupFacade.getCurrent",
         "electronicInvoicingStatusStore.refresh",
         "loadPrecisionPolicy",
         "sessionStore.refresh",

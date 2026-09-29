@@ -17,7 +17,7 @@ import {
   type SessionStatisticsDto,
   type UserSessionAdminDto,
 } from "../../api/userSessionAdminService";
-import { companyManagementService } from "../../../company-management/api/companyManagementService";
+import { companyLookupFacade } from "../../../company-management/facades/companyLookupFacade";
 import type { CompanyListItem } from "../../../../types/companyManagement";
 import { formatApiError } from "../../../lib/formatApiError";
 import { usePermissionsUi } from "../../../../access/usePermissionsUi";
@@ -37,7 +37,7 @@ export function AdminUserSessionsPage() {
   const { canShow } = usePermissionsUi();
   const canView = canShow("access.sessions.view");
   const canClose = canShow("access.sessions.close");
-  // Reutiliza companyManagementService (ya usado por /companies) para reemplazar el filtro de
+  // Reutiliza companyLookupFacade (ya usado por /companies) para reemplazar el filtro de
   // empresa por un selector real en vez de un GUID crudo — solo si el usuario tiene el permiso
   // que ese servicio exige (erp.companies.view); si no lo tiene, el filtro degrada a texto libre
   // en vez de romper la pantalla con un 403 al cargar.
@@ -94,7 +94,7 @@ export function AdminUserSessionsPage() {
 
   useEffect(() => {
     if (!canView || !canPickCompany) return;
-    companyManagementService
+    companyLookupFacade
       .list(false)
       .then(setCompanies)
       .catch(() => setCompanies([]));

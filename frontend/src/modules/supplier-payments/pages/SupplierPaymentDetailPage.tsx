@@ -9,7 +9,7 @@ import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { formatDate, formatDateTime } from "../../../lib/formatters/dateFormatters";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError, readApiErrorMessage } from "../../lib/apiError";
-import { businessPartnerFacade } from "../../masterData/api/businessPartnerFacade";
+import { businessPartnerLookupFacade } from "../../masterData/facades/businessPartnerLookupFacade";
 import {
   paymentMethodLookupFacade,
   type PaymentMethodDto,
@@ -82,7 +82,7 @@ export function SupplierPaymentDetailPage() {
       setBankAccounts(bankAccountsList);
       setCashRegisters(cashRegistersList);
       try {
-        const supplier = await businessPartnerFacade.getBusinessPartner(detail.supplierId);
+        const supplier = await businessPartnerLookupFacade.getBusinessPartner(detail.supplierId);
         setSupplierName(supplier.tradeName?.trim() || supplier.legalName);
       } catch {
         setSupplierName("");

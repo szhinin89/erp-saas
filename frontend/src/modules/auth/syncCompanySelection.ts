@@ -1,4 +1,4 @@
-import { companyManagementService } from "../company-management/api/companyManagementService";
+import { companyLookupFacade } from "../company-management/facades/companyLookupFacade";
 import { clearPrecisionPolicy, loadPrecisionPolicy } from "../../lib/config/precisionPolicy.config";
 import { bumpCompanyOperationalSession } from "../../lib/session/companySession";
 import { logDevSessionContext } from "../../lib/session/devSessionLog";
@@ -19,7 +19,7 @@ export async function syncCompanySelection(auth: AuthResponse): Promise<void> {
   // Un fallo al cargar la política NO se traga: SessionBootstrap la vuelve a exigir para la empresa
   // activa y, si falla, bloquea la app con error + reintentar (sin valores por defecto).
   await Promise.allSettled([
-    companyManagementService.getCurrent(),
+    companyLookupFacade.getCurrent(),
     useSessionStore.getState().refresh(),
     loadPrecisionPolicy(),
     useElectronicInvoicingStatusStore.getState().refresh(),
