@@ -130,7 +130,9 @@ public partial class ExceptionMiddleware
                 or ERP.Domain.Exceptions.CompanyScopeException
                 or ERP.Domain.Exceptions.BranchScopeException
                 or CompanyRucAlreadyExistsException
-                    when !string.IsNullOrWhiteSpace(exception.Message) => new[]
+                    when !string.IsNullOrWhiteSpace(exception.Message)
+                        // 500/503 nunca exponen el texto de la excepción (misma regla que Result).
+                        && ApiErrorStatus.ExposesDetail(code) => new[]
                 {
                     exception.Message.Trim(),
                 },

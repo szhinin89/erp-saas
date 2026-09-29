@@ -96,10 +96,7 @@ public sealed class CompanyAccessGuard : ICompanyAccessGuard
                 || company.OperationalStatus != CompanyOperationalStatus.Operational
             )
         )
-            return Result<CompanyAccessContext>.Failure(
-                "Empresa no disponible para operar.",
-                ApiResponseCodes.Common.CompanyScopeForbidden
-            );
+            return Result<CompanyAccessContext>.Forbidden("Empresa no disponible para operar.");
 
         var membership = await _access.GetCompanyUserMembershipAsync(
             companyId,
@@ -129,10 +126,7 @@ public sealed class CompanyAccessGuard : ICompanyAccessGuard
             );
 
         _metrics.RecordMembershipValidationFailed();
-        return Result<CompanyAccessContext>.Failure(
-            "No tiene acceso a esta empresa.",
-            ApiResponseCodes.Common.CompanyScopeForbidden
-        );
+        return Result<CompanyAccessContext>.Forbidden("No tiene acceso a esta empresa.");
     }
 
     private async Task<Result<CompanyAccessContext>> BuildSuccessAsync(
@@ -157,25 +151,35 @@ public sealed class CompanyAccessGuard : ICompanyAccessGuard
         );
     }
 
-    public Task<Result<CompanyAccessContext>> RequireCurrentCompanyAsync(
+    public async Task<Result<CompanyAccessContext>> RequireCurrentCompanyAsync(
         CancellationToken cancellationToken = default
     )
     {
         if (!_currentCompany.HasCompanyContext)
         {
             _metrics.RecordInvalidCompanyContext();
-            return Task.FromResult(
-                Result<CompanyAccessContext>.Failure(
-                    "No hay empresa operativa seleccionada.",
-                    ApiResponseCodes.Common.CompanyScopeForbidden
-                )
+            return Result<CompanyAccessContext>.Failure(
+                "No hay empresa operativa seleccionada.",
+                ApiResponseCodes.Common.CompanyScopeForbidden
             );
         }
 
-        return RequireMembershipAsync(
+        var access = await RequireMembershipAsync(
             _currentCompany.CompanyId,
             requireActiveCompany: true,
             cancellationToken
         );
+
+        // La empresa operativa es CONTEXTO, no un recurso pedido: su rechazo (ajena, inexistente,
+        // no operativa, sin membership) es COMPANY_SCOPE_FORBIDDEN, igual que en
+        // CompanyScopeBehavior. Se decide por código; el mensaje se conserva tal cual.
+        return access.IsSuccess
+            || access.Code
+                is not (ApiResponseCodes.Common.NotFound or ApiResponseCodes.Common.Forbidden)
+            ? access
+            : Result<CompanyAccessContext>.Failure(
+                access.Error!,
+                ApiResponseCodes.Common.CompanyScopeForbidden
+            );
     }
 }

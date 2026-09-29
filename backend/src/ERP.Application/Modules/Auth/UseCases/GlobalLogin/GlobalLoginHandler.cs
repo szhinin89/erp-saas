@@ -1,4 +1,4 @@
-﻿using ERP.Application.Auth.DTOs;
+using ERP.Application.Auth.DTOs;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Interfaces;
@@ -42,14 +42,15 @@ public sealed class GlobalLoginHandler
             cancellationToken
         );
 
-        if (identityUser is null)
+        // Sin enumeración: el estado de la cuenta solo se revela tras verificar la contraseña.
+        if (
+            identityUser is null
+            || !_passwordHasher.VerifyPassword(command.Password, identityUser.PasswordHash)
+        )
             return Result<AuthResponseDto>.Failure("Credenciales inválidas.");
 
         if (!identityUser.IsActive)
             return Result<AuthResponseDto>.Failure("Usuario inactivo.");
-
-        if (!_passwordHasher.VerifyPassword(command.Password, identityUser.PasswordHash))
-            return Result<AuthResponseDto>.Failure("Credenciales inválidas.");
 
         var globalRole = await _accessRepository.GetActiveGlobalUserRoleAsync(
             identityUser.Id,

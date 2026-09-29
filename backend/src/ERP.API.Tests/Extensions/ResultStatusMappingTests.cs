@@ -54,6 +54,10 @@ public sealed class ResultStatusMappingTests
         return (obj.StatusCode ?? 200, json.GetProperty("Code").GetString(), errors);
     }
 
+    /// <summary>data.errors esperado: el mensaje, salvo 500/503 (ZH-SCOPE-ERROR-SEMANTICS-01: sin detalle técnico).</summary>
+    private static string[] Expected(string code, string message) =>
+        ApiErrorStatus.ExposesDetail(code) ? [message] : [];
+
     /// <summary>Códigos canónicos usados hoy en Result → status esperado (tabla única).</summary>
     public static TheoryData<string, int> CodedFailures =>
         new()
@@ -84,9 +88,9 @@ public sealed class ResultStatusMappingTests
     {
         var failure = Result<string>.Failure("mensaje de dominio", code);
 
-        Read(Controller().ToOkOrBadRequest(failure)).Should().BeEquivalentTo((status, code, new[] { "mensaje de dominio" }));
-        Read(Controller().ToCreatedOrBadRequest(failure)).Should().BeEquivalentTo((status, code, new[] { "mensaje de dominio" }));
-        Read(Controller().ApiFailure(failure)).Should().BeEquivalentTo((status, code, new[] { "mensaje de dominio" }));
+        Read(Controller().ToOkOrBadRequest(failure)).Should().BeEquivalentTo((status, code, Expected(code, "mensaje de dominio")));
+        Read(Controller().ToCreatedOrBadRequest(failure)).Should().BeEquivalentTo((status, code, Expected(code, "mensaje de dominio")));
+        Read(Controller().ApiFailure(failure)).Should().BeEquivalentTo((status, code, Expected(code, "mensaje de dominio")));
     }
 
     [Fact]
@@ -115,7 +119,7 @@ public sealed class ResultStatusMappingTests
     {
         var result = Controller().ToOkOrNotFound(Result<string>.Failure("mensaje de dominio", code));
 
-        Read(result).Should().BeEquivalentTo((status, code, new[] { "mensaje de dominio" }));
+        Read(result).Should().BeEquivalentTo((status, code, Expected(code, "mensaje de dominio")));
     }
 
     [Theory]
@@ -124,7 +128,7 @@ public sealed class ResultStatusMappingTests
     {
         var result = Controller().ToFileOrNotFound(Result<string>.Failure("mensaje", code), _ => new EmptyResult());
 
-        Read(result).Should().BeEquivalentTo((status, code, new[] { "mensaje" }));
+        Read(result).Should().BeEquivalentTo((status, code, Expected(code, "mensaje")));
     }
 
     [Fact]

@@ -62,7 +62,7 @@ public sealed class ConfirmStockTransferCommandHandler
             ct
         );
         if (!access.IsSuccess)
-            return Result<StockTransferDto>.Failure(access.Error!);
+            return Result<StockTransferDto>.Failure(access.Error!, access.Code);
 
         var effectiveDate = await _companyClock.TodayAsync(cid, tid, ct);
 

@@ -24,6 +24,10 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
     /// </summary>
     internal const string UnresolvedTerminalId = "terminal-unresolved";
 
+    /// <summary>Única respuesta para usuario inexistente y contraseña incorrecta (sin enumeración).</summary>
+    public const string InvalidCredentialsMessage =
+        "Credenciales inválidas. Si olvidaste tus datos, comunícate con el administrador.";
+
     private readonly ITenantRepository _tenantRepository;
     private readonly ICompanyRepository _companyRepository;
     private readonly IAccessRepository _accessRepository;
@@ -74,18 +78,18 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
             username,
             cancellationToken
         );
-        if (identityUser is null)
-            return Result<AuthResponseDto>.Failure(
-                "No estás registrado a una empresa. Comunícate con el administrador."
-            );
+        // ZH-SCOPE-ERROR-SEMANTICS-01 — sin enumeración de usuarios: usuario inexistente y
+        // contraseña incorrecta devuelven exactamente el mismo fallo, y el estado de la cuenta
+        // (inactiva) solo se revela a quien ya probó la contraseña. Antes el texto distinguía
+        // "no registrado" / "credenciales inválidas" / "inactivo" sin exigir la contraseña.
+        if (
+            identityUser is null
+            || !_passwordHasher.VerifyPassword(command.Password, identityUser.PasswordHash)
+        )
+            return Result<AuthResponseDto>.Failure(InvalidCredentialsMessage);
 
         if (!identityUser.IsActive)
             return Result<AuthResponseDto>.Failure("Usuario inactivo.");
-
-        if (!_passwordHasher.VerifyPassword(command.Password, identityUser.PasswordHash))
-            return Result<AuthResponseDto>.Failure(
-                "Credenciales inválidas. Si olvidaste tus datos, comunícate con el administrador."
-            );
 
         var memberships = await _accessRepository.GetActiveCompanyUserMembershipsForUserSystemAsync(
             identityUser.Id,

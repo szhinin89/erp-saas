@@ -51,7 +51,7 @@ public sealed class CreateStockTransferCommandHandler
             ct
         );
         if (!access.IsSuccess)
-            return Result<StockTransferDto>.Failure(access.Error!);
+            return Result<StockTransferDto>.Failure(access.Error!, access.Code);
 
         var ctx = access.Value!;
         var seq = await _repo.GetNextSequentialAsync(ctx.TenantId, ctx.CompanyId, ct);

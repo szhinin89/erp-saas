@@ -2,6 +2,7 @@ using ERP.Application.Access.DTOs;
 using ERP.Application.Access.UseCases.CreateAuthenticatedSession;
 using ERP.Application.Access.UseCases.GetCompanyUserPreferences;
 using ERP.Application.Access.UseCases.UpdateCompanyUserPreferences;
+using ERP.Application.Auth.DTOs;
 using ERP.Application.Auth.UseCases.Login;
 using ERP.Application.Common;
 using ERP.Application.Common.Config;
@@ -854,5 +855,44 @@ public sealed class LoginHandlerTests
                 ),
             Times.Never
         );
+    }
+
+    // ── ZH-SCOPE-ERROR-SEMANTICS-01: login sin enumeración de usuarios ──
+
+    private static async Task<Result<AuthResponseDto>> LoginAs(IdentityUser? user, bool passwordOk)
+    {
+        var f = new Fixture();
+        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        f.PasswordHasher.Setup(h => h.VerifyPassword(Password, PasswordHash)).Returns(passwordOk);
+        return await f.BuildHandler().Handle(new LoginCommand(Username, Password), CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task Usuario_inexistente_contrasena_incorrecta_e_inactivo_sin_contrasena_son_indistinguibles()
+    {
+        var inactive = NewUser();
+        inactive.Deactivate(CreatedBy);
+
+        var nonexistent = await LoginAs(null, passwordOk: false);
+        var wrongPassword = await LoginAs(NewUser(), passwordOk: false);
+        var inactiveWrongPassword = await LoginAs(inactive, passwordOk: false);
+
+        nonexistent.IsSuccess.Should().BeFalse();
+        nonexistent.Error.Should().Be(LoginHandler.InvalidCredentialsMessage);
+        nonexistent.Code.Should().BeNull("sin código → 401 UNAUTHORIZED por el fallback de AuthController");
+        (wrongPassword.Error, wrongPassword.Code).Should().Be((nonexistent.Error, nonexistent.Code));
+        (inactiveWrongPassword.Error, inactiveWrongPassword.Code).Should().Be((nonexistent.Error, nonexistent.Code));
+    }
+
+    [Fact]
+    public async Task Cuenta_inactiva_solo_se_revela_con_la_contrasena_correcta()
+    {
+        var inactive = NewUser();
+        inactive.Deactivate(CreatedBy);
+
+        var result = await LoginAs(inactive, passwordOk: true);
+
+        result.Error.Should().Be("Usuario inactivo.");
     }
 }

@@ -105,7 +105,10 @@ public static class ApiResultExtensions
     /// usa <paramref name="uncodedFallbackCode"/> — el único punto que el endpoint decide, y solo
     /// para fallos que el handler no clasificó (BAD_REQUEST por defecto; NOT_FOUND en lecturas de
     /// recurso para no revelar existencia; UNAUTHORIZED en autenticación). Para endpoints cuyo
-    /// éxito no es un envelope (archivos, cookies) y solo necesitan la rama de fallo.
+    /// éxito no es un envelope (archivos, cookies) y solo necesitan la rama de fallo. Para
+    /// INTERNAL_ERROR / DATABASE_UNAVAILABLE (y cualquier código de esas categorías) el
+    /// <c>Error</c> nunca sale al cliente: se registra en el log y la respuesta lleva solo el
+    /// mensaje canónico del catálogo (<see cref="ApiErrorStatus.ExposesDetail"/>).
     /// </summary>
     public static IActionResult ApiFailure<T>(
         this ControllerBase controller,
@@ -113,9 +116,26 @@ public static class ApiResultExtensions
         string uncodedFallbackCode = ApiResponseCodes.Common.BadRequest
     )
     {
-        var errors = string.IsNullOrWhiteSpace(result.Error) ? null : new[] { result.Error };
-        return ApiError(controller, result.Code ?? uncodedFallbackCode, errors);
+        var code = result.Code ?? uncodedFallbackCode;
+        if (string.IsNullOrWhiteSpace(result.Error))
+            return ApiError(controller, code, null);
+
+        if (ApiErrorStatus.ExposesDetail(code))
+            return ApiError(controller, code, result.Error);
+
+        var logger = controller.HttpContext.RequestServices.GetService<ILoggerFactory>()
+            ?.CreateLogger(typeof(ApiResultExtensions));
+        if (logger is not null)
+            LogSuppressedDetail(logger, code, controller.HttpContext.Request.Path, result.Error, null);
+        return ApiError(controller, code, null);
     }
+
+    private static readonly Action<ILogger, string, PathString, string, Exception?> LogSuppressedDetail =
+        LoggerMessage.Define<string, PathString, string>(
+            LogLevel.Error,
+            new EventId(1, nameof(LogSuppressedDetail)),
+            "Fallo {Code} en {Path} (detalle no expuesto al cliente): {Detail}"
+        );
 
     /// <summary>
     /// Lectura de un recurso: éxito → 200. Un fallo CON <c>Code</c> se traduce con la tabla única
@@ -159,7 +179,7 @@ public static class ApiResultExtensions
             ? toFile(result.Value!)
             : controller.ApiFailure(result, ApiResponseCodes.Common.NotFound);
 
-    private static IActionResult ApiError(
+    private static ObjectResult ApiError(
         ControllerBase controller,
         string code,
         params string[]? errors

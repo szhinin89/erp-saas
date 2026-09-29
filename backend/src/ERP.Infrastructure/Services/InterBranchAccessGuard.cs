@@ -33,13 +33,24 @@ public sealed class InterBranchAccessGuard : IInterBranchAccessGuard
     {
         var companyAccess = await _companyAccessGuard.RequireCurrentCompanyAsync(cancellationToken);
         if (!companyAccess.IsSuccess)
-            return Result<InterBranchAccessContext>.Failure(companyAccess.Error!);
+            return Result<InterBranchAccessContext>.Failure(companyAccess.Error!, companyAccess.Code);
 
         var company = companyAccess.Value!;
 
         if (!_currentBranch.HasBranchContext)
             return Result<InterBranchAccessContext>.Failure(
-                "Debe seleccionar una sucursal activa."
+                "Debe seleccionar una sucursal activa.",
+                ApiResponseCodes.Common.BranchScopeForbidden
+            );
+
+        // La sucursal activa se persiste como OperationBranchId: antes solo se exigía el header,
+        // nunca se validaba (fail-open). Ahora pasa por la misma validación de contexto que
+        // BranchScopeBehavior (existencia, empresa, estado, CompanyUserBranch).
+        var operatingBranch = await _branchAccessGuard.RequireCurrentBranchAsync(cancellationToken);
+        if (!operatingBranch.IsSuccess)
+            return Result<InterBranchAccessContext>.Failure(
+                operatingBranch.Error!,
+                operatingBranch.Code
             );
 
         var sourceWarehouse = await _warehouseRepository.GetByIdAsync(
@@ -47,33 +58,30 @@ public sealed class InterBranchAccessGuard : IInterBranchAccessGuard
             sourceWarehouseId,
             cancellationToken
         );
-        if (sourceWarehouse is null)
-            return Result<InterBranchAccessContext>.Failure("Bodega origen no encontrada.");
-
         var targetWarehouse = await _warehouseRepository.GetByIdAsync(
             company.TenantId,
             targetWarehouseId,
             cancellationToken
         );
-        if (targetWarehouse is null)
-            return Result<InterBranchAccessContext>.Failure("Bodega destino no encontrada.");
+
+        // Inexistente y de otra empresa del tenant son indistinguibles (mismo NOT_FOUND y mismo
+        // texto) y la pertenencia se valida ANTES que el estado: una bodega ajena deshabilitada
+        // nunca revela que existe. Antes: "no pertenece a la empresa operativa actual" /
+        // "está deshabilitada" permitían enumerar bodegas de otras empresas.
+        if (sourceWarehouse is null || sourceWarehouse.CompanyId != company.CompanyId)
+            return Result<InterBranchAccessContext>.NotFound("Bodega origen no encontrada.");
+
+        if (targetWarehouse is null || targetWarehouse.CompanyId != company.CompanyId)
+            return Result<InterBranchAccessContext>.NotFound("Bodega destino no encontrada.");
 
         if (!sourceWarehouse.IsActive)
-            return Result<InterBranchAccessContext>.Failure("La bodega origen está deshabilitada.");
+            return Result<InterBranchAccessContext>.ValidationFailure(
+                "La bodega origen está deshabilitada."
+            );
 
         if (!targetWarehouse.IsActive)
-            return Result<InterBranchAccessContext>.Failure(
+            return Result<InterBranchAccessContext>.ValidationFailure(
                 "La bodega destino está deshabilitada."
-            );
-
-        if (sourceWarehouse.CompanyId != company.CompanyId)
-            return Result<InterBranchAccessContext>.Failure(
-                "La bodega origen no pertenece a la empresa operativa actual."
-            );
-
-        if (targetWarehouse.CompanyId != company.CompanyId)
-            return Result<InterBranchAccessContext>.Failure(
-                "La bodega destino no pertenece a la empresa operativa actual."
             );
 
         var sourceBranchAccess = await _branchAccessGuard.RequireBranchAsync(
@@ -82,7 +90,8 @@ public sealed class InterBranchAccessGuard : IInterBranchAccessGuard
         );
         if (!sourceBranchAccess.IsSuccess)
             return Result<InterBranchAccessContext>.Failure(
-                $"Sucursal de origen: {sourceBranchAccess.Error}"
+                $"Sucursal de origen: {sourceBranchAccess.Error}",
+                sourceBranchAccess.Code
             );
 
         var targetBranchAccess = await _branchAccessGuard.RequireBranchAsync(
@@ -91,7 +100,8 @@ public sealed class InterBranchAccessGuard : IInterBranchAccessGuard
         );
         if (!targetBranchAccess.IsSuccess)
             return Result<InterBranchAccessContext>.Failure(
-                $"Sucursal de destino: {targetBranchAccess.Error}"
+                $"Sucursal de destino: {targetBranchAccess.Error}",
+                targetBranchAccess.Code
             );
 
         return Result<InterBranchAccessContext>.Success(

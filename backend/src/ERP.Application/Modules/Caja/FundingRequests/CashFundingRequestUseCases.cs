@@ -201,7 +201,7 @@ public sealed class CreateCashFundingRequestHandler
                 return await FailAsync(Result<CashFundingRequestDto>.ValidationFailure(CashFundingRequestMessages.OtherBranch), ct);
             var branchAccess = await _branchAccess.RequireBranchAsync(session.BranchId, ct);
             if (!branchAccess.IsSuccess)
-                return await FailAsync(Result<CashFundingRequestDto>.Forbidden(branchAccess.Error!), ct);
+                return await FailAsync(Result<CashFundingRequestDto>.Failure(branchAccess.Error!, branchAccess.Code), ct);
 
             // Validación completa del pago, ejecutado por quien controla hoy la sesión (el cajero
             // que atenderá): medios, destinos, referencia, CxP, proveedor, comprobante, sucursal y
@@ -599,7 +599,7 @@ internal static class CashFundingRequestLocks
             return Result<CashFundingRequestDto>.ValidationFailure(CashFundingRequestMessages.OtherBranch);
         var access = await branchAccess.RequireBranchAsync(session.BranchId, ct);
         if (!access.IsSuccess)
-            return Result<CashFundingRequestDto>.Forbidden(access.Error!);
+            return Result<CashFundingRequestDto>.Failure(access.Error!, access.Code);
         if (!session.IsControlledBy(userId))
             return Result<CashFundingRequestDto>.ValidationFailure(CashSessionOwnership.RejectionMessage(session));
         return null;

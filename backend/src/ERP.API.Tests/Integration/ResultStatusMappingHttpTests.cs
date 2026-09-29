@@ -118,14 +118,16 @@ public sealed class ResultStatusMappingHttpTests : IAsyncLifetime
     [Theory]
     [InlineData("/api/v1/companies/profile/logo/content")]
     [InlineData("/api/v1/companies/profile/logo-alt/content")]
-    public async Task Logo_sin_empresa_operativa_responde_403_FORBIDDEN(string url)
+    public async Task Logo_sin_empresa_operativa_responde_403_COMPANY_SCOPE_FORBIDDEN(string url)
     {
         _factory.MutableCompany.CompanyId = Guid.Empty;
 
         var (status, code, errors) = await Get(url);
 
+        // ZH-SCOPE-ERROR-SEMANTICS-01: el handler propaga el código del guard — mismo 403 y mismo
+        // COMPANY_SCOPE_FORBIDDEN que CompanyScopeBehavior (antes FORBIDDEN genérico).
         status.Should().Be(HttpStatusCode.Forbidden);
-        code.Should().Be("FORBIDDEN");
+        code.Should().Be("COMPANY_SCOPE_FORBIDDEN");
         errors.Should().Equal("No hay empresa operativa seleccionada.");
     }
 

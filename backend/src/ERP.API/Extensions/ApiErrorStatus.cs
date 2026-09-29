@@ -18,6 +18,15 @@ public static class ApiErrorStatus
     public static int For(string code) =>
         For(MessageCatalog.Resolve(code).Category ?? ApiErrorCategory.BusinessRule);
 
+    /// <summary>
+    /// ¿Puede el detalle del error viajar al cliente en <c>data.errors</c>? No para InternalError e
+    /// Infrastructure (500/503): ahí el detalle es técnico (excepción, SQL, conexión) y se queda en
+    /// logs; el cliente recibe solo el mensaje canónico del catálogo.
+    /// </summary>
+    public static bool ExposesDetail(string code) =>
+        (MessageCatalog.Resolve(code).Category ?? ApiErrorCategory.BusinessRule)
+            is not (ApiErrorCategory.InternalError or ApiErrorCategory.Infrastructure);
+
     public static int For(ApiErrorCategory category) =>
         category switch
         {

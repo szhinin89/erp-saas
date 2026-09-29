@@ -33,7 +33,7 @@ public sealed class SwitchBranchHandler
             cancellationToken
         );
         if (!access.IsSuccess)
-            return Result<SessionBranchDto>.Failure(access.Error!);
+            return Result<SessionBranchDto>.Failure(access.Error!, access.Code);
 
         var branch = access.Value!;
 

@@ -104,7 +104,7 @@ public sealed class BranchOwnershipCommandsScopeTests
             .Should()
             .BeFalse("el handler de creación nunca debe ejecutarse sin sucursal activa");
         f.Guard.Verify(
-            g => g.RequireBranchAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            g => g.RequireCurrentBranchAsync(It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
@@ -117,7 +117,7 @@ public sealed class BranchOwnershipCommandsScopeTests
         var branchId = Guid.NewGuid();
         f.Branch.Setup(b => b.HasBranchContext).Returns(true);
         f.Branch.Setup(b => b.BranchId).Returns(branchId);
-        f.Guard.Setup(g => g.RequireBranchAsync(branchId, It.IsAny<CancellationToken>()))
+        f.Guard.Setup(g => g.RequireCurrentBranchAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(
                 Result<BranchAccessContext>.Success(
                     new BranchAccessContext(

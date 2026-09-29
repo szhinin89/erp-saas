@@ -241,4 +241,22 @@ public sealed class SwitchBranchHandlerTests
         created.IdentityUserId.Should().Be(userId);
         created.BranchId.Should().Be(branchId);
     }
+
+    // ZH-SCOPE-ERROR-SEMANTICS-01: el código del guard llega intacto al Result (antes se perdía → 400).
+    [Theory]
+    [InlineData(ApiResponseCodes.Common.NotFound)]
+    [InlineData(ApiResponseCodes.Common.Forbidden)]
+    [InlineData(ApiResponseCodes.Common.CompanyScopeForbidden)]
+    [InlineData(ApiResponseCodes.Common.Unauthorized)]
+    public async Task El_codigo_del_guard_se_propaga_sin_cambios(string code)
+    {
+        var f = new Fixture();
+        var branchId = Guid.NewGuid();
+        f.Guard.Setup(g => g.RequireBranchAsync(branchId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<BranchAccessContext>.Failure("rechazo", code));
+
+        var result = await f.BuildHandler().Handle(new SwitchBranchCommand(branchId), CancellationToken.None);
+
+        (result.Code, result.Error).Should().Be((code, "rechazo"));
+    }
 }

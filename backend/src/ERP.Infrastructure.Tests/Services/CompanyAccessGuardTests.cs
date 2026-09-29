@@ -94,7 +94,7 @@ public sealed class CompanyAccessGuardTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("No tiene acceso a esta empresa.");
-        result.Code.Should().Be(ApiResponseCodes.Common.CompanyScopeForbidden);
+        result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
         f.Metrics.Verify(m => m.RecordMembershipValidationFailed(null), Times.Once);
     }
 
@@ -117,7 +117,7 @@ public sealed class CompanyAccessGuardTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("No tiene acceso a esta empresa.");
-        result.Code.Should().Be(ApiResponseCodes.Common.CompanyScopeForbidden);
+        result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
     }
 
     [Fact]
@@ -227,7 +227,7 @@ public sealed class CompanyAccessGuardTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("No tiene acceso a esta empresa.");
-        result.Code.Should().Be(ApiResponseCodes.Common.CompanyScopeForbidden);
+        result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
         f.Metrics.Verify(m => m.RecordMembershipValidationFailed(null), Times.Once);
     }
 
@@ -250,7 +250,7 @@ public sealed class CompanyAccessGuardTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Empresa no disponible para operar.");
-        result.Code.Should().Be(ApiResponseCodes.Common.CompanyScopeForbidden);
+        result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
         company.OperationalStatus.Should().Be(CompanyOperationalStatus.Suspended);
         f.Access.Verify(
             a =>
@@ -309,7 +309,7 @@ public sealed class CompanyAccessGuardTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Empresa no disponible para operar.");
-        result.Code.Should().Be(ApiResponseCodes.Common.CompanyScopeForbidden);
+        result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
         f.Access.Verify(
             a =>
                 a.GetCompanyUserMembershipAsync(
@@ -371,5 +371,64 @@ public sealed class CompanyAccessGuardTests
                 ),
             Times.Never
         );
+    }
+
+    // ── ZH-SCOPE-ERROR-SEMANTICS-01: semántica por código, sin enumeración ──
+
+    [Fact]
+    public async Task RequireMembershipAsync_tenant_A_contra_empresa_de_tenant_B_es_identico_a_empresa_inexistente()
+    {
+        var (f, _, _, _) = BuildAuthenticatedContext();
+        var tenantB = Tenant.Create("Tenant B", $"tb-{Guid.NewGuid():N}"[..16], CreatedBy);
+        var companyB = Company.CreateManaged(tenantB.Id, "1790012345009", "Empresa B S.A.", createdBy: CreatedBy);
+        f.Companies.Setup(c => c.GetByIdAsync(companyB.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(companyB);
+        var guard = f.BuildGuard();
+
+        var foreign = await guard.RequireMembershipAsync(companyB.Id);
+        var nonexistent = await guard.RequireMembershipAsync(Guid.NewGuid());
+
+        foreign.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        (foreign.Code, foreign.Error).Should().Be((nonexistent.Code, nonexistent.Error));
+    }
+
+    [Fact]
+    public async Task RequireCurrentCompanyAsync_empresa_de_contexto_ajena_inexistente_o_sin_membership_es_COMPANY_SCOPE_FORBIDDEN()
+    {
+        var (f, _, company, _) = BuildAuthenticatedContext();
+        var tenantB = Tenant.Create("Tenant B", $"tb-{Guid.NewGuid():N}"[..16], CreatedBy);
+        var companyB = Company.CreateManaged(tenantB.Id, "1790012345009", "Empresa B S.A.", createdBy: CreatedBy);
+        f.Companies.Setup(c => c.GetByIdAsync(companyB.Id, It.IsAny<CancellationToken>())).ReturnsAsync(companyB);
+        f.Companies.Setup(c => c.GetByIdAsync(company.Id, It.IsAny<CancellationToken>())).ReturnsAsync(company);
+        f.CurrentCompany.Setup(c => c.HasCompanyContext).Returns(true);
+        var guard = f.BuildGuard();
+
+        async Task<Result<ERP.Application.Modules.Companies.CompanyAccessContext>> WithHeader(Guid id)
+        {
+            f.CurrentCompany.Setup(c => c.CompanyId).Returns(id);
+            return await guard.RequireCurrentCompanyAsync();
+        }
+
+        var foreign = await WithHeader(companyB.Id);
+        var nonexistent = await WithHeader(Guid.NewGuid());
+        var withoutMembership = await WithHeader(company.Id);
+
+        foreign.Code.Should().Be(ApiResponseCodes.Common.CompanyScopeForbidden);
+        (foreign.Code, foreign.Error).Should().Be((nonexistent.Code, nonexistent.Error));
+        withoutMembership.Code.Should().Be(ApiResponseCodes.Common.CompanyScopeForbidden);
+    }
+
+    [Fact]
+    public async Task Sin_sesion_es_UNAUTHORIZED_en_todos_los_metodos()
+    {
+        var f = new Fixture();
+        f.CurrentUser.Setup(u => u.IsAuthenticated).Returns(false);
+        f.CurrentCompany.Setup(c => c.HasCompanyContext).Returns(true);
+        f.CurrentCompany.Setup(c => c.CompanyId).Returns(Guid.NewGuid());
+        var guard = f.BuildGuard();
+
+        (await guard.RequireActiveTenantAsync()).Code.Should().Be(ApiResponseCodes.Common.Unauthorized);
+        (await guard.RequireMembershipAsync(Guid.NewGuid())).Code.Should().Be(ApiResponseCodes.Common.Unauthorized);
+        (await guard.RequireCurrentCompanyAsync()).Code.Should().Be(ApiResponseCodes.Common.Unauthorized);
     }
 }

@@ -34,8 +34,13 @@ public sealed class UpdateCompanyHandler
             requireActiveCompany: false,
             cancellationToken
         );
+        // Empresa pedida por id: inexistente, de otro tenant, sin membership o no operativa son la
+        // MISMA respuesta (NOT_FOUND, mismo texto) — no se revela qué empresas existen. Se decide
+        // por código: solo UNAUTHORIZED se propaga tal cual.
         if (!access.IsSuccess)
-            return Result<CompanyDetailDto>.Failure(access.Error!);
+            return access.Code == ApiResponseCodes.Common.Unauthorized
+                ? Result<CompanyDetailDto>.Failure(access.Error!, access.Code)
+                : Result<CompanyDetailDto>.NotFound("Empresa no encontrada.");
 
         var entity = await _companies.GetTrackedByIdForTenantAsync(
             command.Id,
@@ -43,7 +48,7 @@ public sealed class UpdateCompanyHandler
             cancellationToken
         );
         if (entity is null)
-            return Result<CompanyDetailDto>.Failure("Empresa no encontrada.");
+            return Result<CompanyDetailDto>.NotFound("Empresa no encontrada.");
 
         return await UpdateEntityAsync(command, entity, _companies, _currentUser.UserId, cancellationToken);
     }

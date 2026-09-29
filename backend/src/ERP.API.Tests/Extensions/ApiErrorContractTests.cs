@@ -118,7 +118,10 @@ public sealed class ApiErrorContractTests
         obj.StatusCode.Should().Be(status);
         var json = JsonSerializer.SerializeToElement(obj.Value);
         json.GetProperty("Code").GetString().Should().Be(code);
-        json.GetProperty("Data").GetProperty("errors")[0].GetString().Should().Be("detalle");
+        if (ApiErrorStatus.ExposesDetail(code))
+            json.GetProperty("Data").GetProperty("errors")[0].GetString().Should().Be("detalle");
+        else
+            json.GetProperty("Data").ValueKind.Should().Be(JsonValueKind.Null, "500/503 no exponen detalle");
     }
 
     /// <summary>Misma condición lógica por excepción o por Result → mismo status y mismo code.</summary>
@@ -162,10 +165,78 @@ public sealed class ApiErrorContractTests
         viaResult.StatusCode.Should().Be(context.Response.StatusCode);
     }
 
-    private static TestController Controller()
+    // ── ZH-SCOPE-ERROR-SEMANTICS-01: 500/503 nunca exponen detalle técnico ──
+
+    private const string Secret =
+        "Npgsql: Host=db.internal;Password=s3cr3t; SELECT * FROM identity_users WHERE id = @p0";
+
+    [Theory]
+    [InlineData(ApiResponseCodes.Common.InternalError, 500, "Production")]
+    [InlineData(ApiResponseCodes.Common.InternalError, 500, "Development")]
+    [InlineData(ApiResponseCodes.Common.DatabaseUnavailable, 503, "Production")]
+    [InlineData(ApiResponseCodes.Common.DatabaseUnavailable, 503, "Development")]
+    [InlineData(ApiResponseCodes.Common.InvalidDateTimeKind, 500, "Development")]
+    public void Result_500_503_no_filtra_el_detalle_tecnico(string code, int status, string environment)
+    {
+        var result = Controller(environment).ApiFailure(Result<string>.Failure(Secret, code));
+
+        var obj = result.Should().BeAssignableTo<ObjectResult>().Subject;
+        obj.StatusCode.Should().Be(status);
+        var json = JsonSerializer.Serialize(obj.Value);
+        json.Should().Contain(code);
+        json.Should().NotContain("Password").And.NotContain("SELECT").And.NotContain("db.internal");
+    }
+
+    [Fact]
+    public void Solo_InternalError_e_Infrastructure_ocultan_el_detalle()
+    {
+        foreach (var (code, _) in Matrix)
+            ApiErrorStatus.ExposesDetail(code).Should().Be(
+                code is not (ApiResponseCodes.Common.InternalError
+                    or ApiResponseCodes.Common.InvalidDateTimeKind
+                    or ApiResponseCodes.Common.DatabaseUnavailable),
+                code
+            );
+    }
+
+    public static TheoryData<Exception, int, string> TechnicalExceptions =>
+        new()
+        {
+            { new Exception(Secret), 500, "Production" },
+            { new Exception(Secret), 500, "Development" },
+            { new TimeoutException(Secret), 500, "Development" },
+            { new DbUpdateException("An error occurred while saving the entity changes.", new Exception(Secret)), 503, "Production" },
+            { new DbUpdateException(Secret), 503, "Development" },
+        };
+
+    [Theory]
+    [MemberData(nameof(TechnicalExceptions))]
+    public async Task Excepcion_500_503_no_filtra_detalle_ni_stack_trace(Exception exception, int status, string environment)
+    {
+        var context = new DefaultHttpContext();
+        context.Response.Body = new MemoryStream();
+        var middleware = new ExceptionMiddleware(
+            _ => throw exception,
+            NullLogger<ExceptionMiddleware>.Instance,
+            new StubWebHostEnvironment { EnvironmentName = environment }
+        );
+
+        await middleware.InvokeAsync(context);
+
+        context.Response.StatusCode.Should().Be(status);
+        context.Response.Body.Position = 0;
+        var body = await new StreamReader(context.Response.Body).ReadToEndAsync();
+        body.Should().NotContain("Password").And.NotContain("SELECT").And.NotContain("db.internal")
+            .And.NotContain(" at ").And.NotContain("Exception");
+        using var doc = JsonDocument.Parse(body);
+        doc.RootElement.TryGetProperty("data", out var data).Should().BeTrue();
+        data.ValueKind.Should().Be(JsonValueKind.Null);
+    }
+
+    private static TestController Controller(string environment = "Production")
     {
         var services = new ServiceCollection();
-        services.AddSingleton<IWebHostEnvironment>(new StubWebHostEnvironment());
+        services.AddSingleton<IWebHostEnvironment>(new StubWebHostEnvironment { EnvironmentName = environment });
         return new TestController
         {
             ControllerContext = new ControllerContext

@@ -71,7 +71,7 @@ public sealed class SalesBranchScopeTests
         await act.Should().ThrowAsync<BranchScopeException>();
         nextCalled.Should().BeFalse();
         f.Guard.Verify(
-            g => g.RequireBranchAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            g => g.RequireCurrentBranchAsync(It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
@@ -84,7 +84,7 @@ public sealed class SalesBranchScopeTests
         var branchId = Guid.NewGuid();
         f.Branch.Setup(b => b.HasBranchContext).Returns(true);
         f.Branch.Setup(b => b.BranchId).Returns(branchId);
-        f.Guard.Setup(g => g.RequireBranchAsync(branchId, It.IsAny<CancellationToken>()))
+        f.Guard.Setup(g => g.RequireCurrentBranchAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(
                 Result<BranchAccessContext>.Success(
                     new BranchAccessContext(
@@ -111,7 +111,7 @@ public sealed class SalesBranchScopeTests
         result.Should().Be(expected);
         nextCalled.Should().BeTrue();
         f.Guard.Verify(
-            g => g.RequireBranchAsync(branchId, It.IsAny<CancellationToken>()),
+            g => g.RequireCurrentBranchAsync(It.IsAny<CancellationToken>()),
             Times.Once
         );
     }

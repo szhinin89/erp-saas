@@ -41,6 +41,11 @@ public sealed class ApiErrorContractHttpTests : IAsyncLifetime
     private Guid _companyId;
     private Guid _branchId;
     private Guid _foreignBranchId;
+    private Guid _unauthorizedBranchId;
+    private Guid _foreignCompanyId;
+    private Guid _otherTenantCompanyId;
+    private string _username = null!;
+    private const string UserPassword = "Correcta#2026";
     private Guid _documentId;
     private Guid _foreignDocumentId;
     private Guid _userId;
@@ -72,24 +77,34 @@ public sealed class ApiErrorContractHttpTests : IAsyncLifetime
         {
             var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
             var tenant = Tenant.Create("ZH-ErrorContract", $"zh-ec-{Guid.NewGuid():N}", _adminId);
-            db.Tenants.Add(tenant);
+            var otherTenant = Tenant.Create("ZH-ErrorContract-B", $"zh-eb-{Guid.NewGuid():N}", _adminId);
+            db.Tenants.AddRange(tenant, otherTenant);
             await db.SaveChangesAsync();
             _tenantId = tenant.Id;
+            var otherTenantCompany = Company.CreateManaged(otherTenant.Id, $"179{Guid.NewGuid():N}"[..13], "Empresa Tenant B", createdBy: _adminId);
+            db.Companies.Add(otherTenantCompany);
+            await db.SaveChangesAsync();
+            _otherTenantCompanyId = otherTenantCompany.Id;
 
             var company = Company.CreateManaged(_tenantId, $"179{Guid.NewGuid():N}"[..13], "Empresa A", createdBy: _adminId);
             var foreignCompany = Company.CreateManaged(_tenantId, $"179{Guid.NewGuid():N}"[..13], "Empresa B", createdBy: _adminId);
             db.Companies.AddRange(company, foreignCompany);
             await db.SaveChangesAsync();
             _companyId = company.Id;
+            _foreignCompanyId = foreignCompany.Id;
 
             var branch = NewBranch(company.Id, "Matriz A", "SUC-A");
             var foreignBranch = NewBranch(foreignCompany.Id, "Matriz B", "SUC-B");
-            db.Branches.AddRange(branch, foreignBranch);
+            var unauthorizedBranch = NewBranch(company.Id, "Sucursal A2", "SUC-A2", isMainBranch: false);
+            db.Branches.AddRange(branch, foreignBranch, unauthorizedBranch);
             await db.SaveChangesAsync();
             _branchId = branch.Id;
             _foreignBranchId = foreignBranch.Id;
+            _unauthorizedBranchId = unauthorizedBranch.Id;
 
-            var user = IdentityUser.Create($"ec-{Guid.NewGuid():N}", "Usuario", "Prueba", $"ec-{Guid.NewGuid():N}@test.com", "hash", _adminId);
+            _username = $"ec-{Guid.NewGuid():N}";
+            var hash = scope.ServiceProvider.GetRequiredService<ERP.Application.Common.Interfaces.IPasswordHasher>().HashPassword(UserPassword);
+            var user = IdentityUser.Create(_username, "Usuario", "Prueba", $"ec-{Guid.NewGuid():N}@test.com", hash, _adminId);
             db.IdentityUsers.Add(user);
             await db.SaveChangesAsync();
             _userId = user.Id;
@@ -203,10 +218,108 @@ public sealed class ApiErrorContractHttpTests : IAsyncLifetime
         last.Code.Should().Be("RATE_LIMITED");
     }
 
-    private async Task<(HttpStatusCode Status, string? Code, string[] Errors)> SendAsync(HttpMethod method, string url, Guid? branchId)
+
+    // ── ZH-SCOPE-ERROR-SEMANTICS-01 ─────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Empresa_por_id_de_otro_tenant_de_otra_empresa_sin_membership_e_inexistente_son_el_mismo_404()
+    {
+        var otherTenant = await SendAsync(HttpMethod.Get, $"/api/v1/companies/{_otherTenantCompanyId}", branchId: null);
+        var sameTenantNoMembership = await SendAsync(HttpMethod.Get, $"/api/v1/companies/{_foreignCompanyId}", branchId: null);
+        var nonexistent = await SendAsync(HttpMethod.Get, $"/api/v1/companies/{Guid.NewGuid()}", branchId: null);
+
+        nonexistent.Status.Should().Be(HttpStatusCode.NotFound);
+        nonexistent.Code.Should().Be("NOT_FOUND");
+        otherTenant.Should().BeEquivalentTo(nonexistent);
+        sameTenantNoMembership.Should().BeEquivalentTo(nonexistent);
+    }
+
+    [Fact]
+    public async Task Empresa_de_contexto_sin_acceso_es_403_COMPANY_SCOPE_FORBIDDEN_igual_en_handler_y_en_behavior()
+    {
+        var handler = await SendAsync(HttpMethod.Get, "/api/v1/companies/current", branchId: null, companyId: _foreignCompanyId);
+        var handlerOtherTenant = await SendAsync(HttpMethod.Get, "/api/v1/companies/current", branchId: null, companyId: _otherTenantCompanyId);
+        var handlerNonexistent = await SendAsync(HttpMethod.Get, "/api/v1/companies/current", branchId: null, companyId: Guid.NewGuid());
+        var behavior = await SendAsync(HttpMethod.Get, "/api/v1/cash-registers", _branchId, companyId: _foreignCompanyId);
+
+        handler.Status.Should().Be(HttpStatusCode.Forbidden);
+        handler.Code.Should().Be("COMPANY_SCOPE_FORBIDDEN");
+        (handlerOtherTenant.Status, handlerOtherTenant.Code).Should().Be((handler.Status, handler.Code));
+        handlerNonexistent.Should().BeEquivalentTo(handlerOtherTenant, "ajena de otro tenant e inexistente son indistinguibles");
+        (behavior.Status, behavior.Code).Should().Be((handler.Status, handler.Code));
+    }
+
+    [Fact]
+    public async Task Sucursal_propia_no_autorizada_es_403_explicito()
+    {
+        var context = await SendAsync(HttpMethod.Get, "/api/v1/cash-registers", _unauthorizedBranchId);
+        var switchTo = await SendJsonAsync("/api/v1/session/switch-branch", $"{{\"branchId\":\"{_unauthorizedBranchId}\"}}");
+
+        context.Status.Should().Be(HttpStatusCode.Forbidden);
+        context.Code.Should().Be("BRANCH_SCOPE_FORBIDDEN");
+        // Sucursal pedida (no la activa): FORBIDDEN, no BRANCH_SCOPE_FORBIDDEN — el frontend reserva
+        // ese código para resetear la sucursal activa.
+        switchTo.Status.Should().Be(HttpStatusCode.Forbidden);
+        switchTo.Code.Should().Be("FORBIDDEN");
+    }
+
+    [Fact]
+    public async Task Cambiar_a_sucursal_de_otra_empresa_o_inexistente_es_el_mismo_404()
+    {
+        var foreign = await SendJsonAsync("/api/v1/session/switch-branch", $"{{\"branchId\":\"{_foreignBranchId}\"}}");
+        var nonexistent = await SendJsonAsync("/api/v1/session/switch-branch", $"{{\"branchId\":\"{Guid.NewGuid()}\"}}");
+
+        nonexistent.Status.Should().Be(HttpStatusCode.NotFound);
+        nonexistent.Code.Should().Be("NOT_FOUND");
+        foreign.Should().BeEquivalentTo(nonexistent);
+    }
+
+    [Fact]
+    public async Task Sin_sesion_es_401()
+    {
+        using var anonymous = _app.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/companies/current");
+        request.Headers.Add("X-Company-Id", _companyId.ToString());
+
+        using var response = await anonymous.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Login_usuario_inexistente_y_contrasena_incorrecta_son_indistinguibles()
+    {
+        using var anonymous = _app.CreateClient();
+        async Task<(HttpStatusCode Status, string? Code, string[] Errors)> Login(string user, string password)
+        {
+            using var response = await anonymous.PostAsync(
+                "/api/v1/auth/login",
+                JsonContent($"{{\"username\":\"{user}\",\"password\":\"{password}\"}}")
+            );
+            return await ReadAsync(response);
+        }
+
+        var nonexistent = await Login($"no-existe-{Guid.NewGuid():N}", "Cualquiera#1");
+        var wrongPassword = await Login(_username, "Incorrecta#1");
+
+        nonexistent.Status.Should().Be(HttpStatusCode.Unauthorized);
+        nonexistent.Code.Should().Be("UNAUTHORIZED");
+        wrongPassword.Should().BeEquivalentTo(nonexistent);
+    }
+
+    private async Task<(HttpStatusCode Status, string? Code, string[] Errors)> SendJsonAsync(string url, string json)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = JsonContent(json) };
+        request.Headers.Add("X-Company-Id", _companyId.ToString());
+        request.Headers.Add("X-Branch-Id", _branchId.ToString());
+        using var response = await _client.SendAsync(request);
+        return await ReadAsync(response);
+    }
+
+    private async Task<(HttpStatusCode Status, string? Code, string[] Errors)> SendAsync(HttpMethod method, string url, Guid? branchId, Guid? companyId = null)
     {
         using var request = new HttpRequestMessage(method, url);
-        request.Headers.Add("X-Company-Id", _companyId.ToString());
+        request.Headers.Add("X-Company-Id", (companyId ?? _companyId).ToString());
         if (branchId is Guid b)
             request.Headers.Add("X-Branch-Id", b.ToString());
         if (method == HttpMethod.Post)
@@ -251,7 +364,7 @@ public sealed class ApiErrorContractHttpTests : IAsyncLifetime
             _adminId
         );
 
-    private Branch NewBranch(Guid companyId, string name, string code) =>
+    private Branch NewBranch(Guid companyId, string name, string code, bool isMainBranch = true) =>
         Branch.Create(
             _tenantId,
             name,
@@ -276,7 +389,7 @@ public sealed class ApiErrorContractHttpTests : IAsyncLifetime
             null,
             null,
             null,
-            isMainBranch: true,
+            isMainBranch: isMainBranch,
             _adminId,
             companyId: companyId
         );

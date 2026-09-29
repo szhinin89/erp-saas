@@ -38,7 +38,7 @@ public sealed class UploadCompanyLogoAltHandler
     {
         var access = await _accessGuard.RequireCurrentCompanyAsync(cancellationToken);
         if (!access.IsSuccess)
-            return Result<CompanyProfileDto>.Failure(access.Error!);
+            return Result<CompanyProfileDto>.Failure(access.Error!, access.Code);
 
         var company = await _companies.GetByIdAsync(access.Value!.CompanyId, cancellationToken);
         if (company is null)

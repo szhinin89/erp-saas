@@ -24,7 +24,7 @@ public sealed class GetCurrentCompanyHandler
     {
         var access = await _accessGuard.RequireCurrentCompanyAsync(cancellationToken);
         if (!access.IsSuccess)
-            return Result<CompanyDetailDto>.Failure(access.Error!);
+            return Result<CompanyDetailDto>.Failure(access.Error!, access.Code);
 
         var company = await _companies.GetByIdAsync(access.Value!.CompanyId, cancellationToken);
         if (company is null)

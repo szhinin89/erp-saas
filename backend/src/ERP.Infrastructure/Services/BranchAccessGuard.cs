@@ -14,13 +14,15 @@ public sealed class BranchAccessGuard : IBranchAccessGuard
     private readonly ICompanyUserBranchRepository _companyUserBranchRepository;
     private readonly IAccessRepository _accessRepository;
     private readonly IOperatorCompanyAccessPolicy _operatorAccessPolicy;
+    private readonly ICurrentBranch _currentBranch;
 
     public BranchAccessGuard(
         ICompanyAccessGuard companyAccessGuard,
         IBranchRepository branchRepository,
         ICompanyUserBranchRepository companyUserBranchRepository,
         IAccessRepository accessRepository,
-        IOperatorCompanyAccessPolicy operatorAccessPolicy
+        IOperatorCompanyAccessPolicy operatorAccessPolicy,
+        ICurrentBranch currentBranch
     )
     {
         _companyAccessGuard = companyAccessGuard;
@@ -28,6 +30,32 @@ public sealed class BranchAccessGuard : IBranchAccessGuard
         _companyUserBranchRepository = companyUserBranchRepository;
         _accessRepository = accessRepository;
         _operatorAccessPolicy = operatorAccessPolicy;
+        _currentBranch = currentBranch;
+    }
+
+    public async Task<Result<BranchAccessContext>> RequireCurrentBranchAsync(
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (!_currentBranch.HasBranchContext)
+            return Result<BranchAccessContext>.Failure(
+                "No hay sucursal operativa seleccionada.",
+                ApiResponseCodes.Common.BranchScopeForbidden
+            );
+
+        var access = await RequireBranchAsync(_currentBranch.BranchId, cancellationToken);
+
+        // La sucursal activa es CONTEXTO: inexistente, ajena, deshabilitada o no autorizada →
+        // BRANCH_SCOPE_FORBIDDEN (mismo status y código para las cuatro, sin enumeración). Se
+        // decide por código; UNAUTHORIZED y COMPANY_SCOPE_FORBIDDEN pasan intactos.
+        return access.IsSuccess
+            || access.Code
+                is not (ApiResponseCodes.Common.NotFound or ApiResponseCodes.Common.Forbidden)
+            ? access
+            : Result<BranchAccessContext>.Failure(
+                access.Error!,
+                ApiResponseCodes.Common.BranchScopeForbidden
+            );
     }
 
     public async Task<Result<BranchAccessContext>> RequireBranchAsync(
@@ -53,10 +81,7 @@ public sealed class BranchAccessGuard : IBranchAccessGuard
             return Result<BranchAccessContext>.NotFound("Sucursal no encontrada.");
 
         if (!branch.IsActive)
-            return Result<BranchAccessContext>.Failure(
-                "La sucursal está deshabilitada.",
-                ApiResponseCodes.Common.BranchScopeForbidden
-            );
+            return Result<BranchAccessContext>.Forbidden("La sucursal está deshabilitada.");
 
         var membership = await _accessRepository.GetCompanyUserMembershipAsync(
             company.CompanyId,
@@ -89,9 +114,8 @@ public sealed class BranchAccessGuard : IBranchAccessGuard
             return BuildSuccess(company, branch);
 
         return hasActiveMembership
-            ? Result<BranchAccessContext>.Failure(
-                "No tiene autorización para operar en esta sucursal.",
-                ApiResponseCodes.Common.BranchScopeForbidden
+            ? Result<BranchAccessContext>.Forbidden(
+                "No tiene autorización para operar en esta sucursal."
             )
             : Result<BranchAccessContext>.Failure(
                 "No tiene acceso a esta empresa.",

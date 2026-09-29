@@ -26,10 +26,10 @@ public sealed class GetCompanyLogoAltContentHandler
     )
     {
         var access = await _accessGuard.RequireCurrentCompanyAsync(cancellationToken);
-        // ZH-API-RESULT-STATUS-MAPPING-01: sin empresa operativa o sin acceso a ella es Forbidden
-        // (403, mismo criterio que CompanyScopeBehavior), no "logo inexistente" (404).
+        // Sin empresa operativa o sin acceso a ella: el código del guard (COMPANY_SCOPE_FORBIDDEN,
+        // 403, mismo criterio que CompanyScopeBehavior), nunca "logo inexistente" (404).
         if (!access.IsSuccess)
-            return Result<CompanyLogoContent>.Forbidden(access.Error!);
+            return Result<CompanyLogoContent>.Failure(access.Error!, access.Code);
 
         var logo = await _media.GetActivePrimaryAsync(
             access.Value!.TenantId,

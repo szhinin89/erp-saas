@@ -157,6 +157,10 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
         guard.Setup(g => g.RequireBranchAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<BranchAccessContext>.Success(
                 new BranchAccessContext(_userId, _tenantId, _companyId, _branchId, "Matriz", true)));
+        // BranchScopeBehavior valida la sucursal activa vía RequireCurrentBranchAsync.
+        guard.Setup(g => g.RequireCurrentBranchAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<BranchAccessContext>.Success(
+                new BranchAccessContext(_userId, _tenantId, _companyId, _branchId, "Matriz", true)));
         return guard.Object;
     }
 

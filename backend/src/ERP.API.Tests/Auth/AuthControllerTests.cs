@@ -302,4 +302,52 @@ public sealed class AuthControllerTests
         setCookieHeaders.Should()
             .Contain(h => h.Contains("erp_refresh_token="), "la cookie debe limpiarse aunque el comando falle");
     }
+
+    // ── ZH-SCOPE-ERROR-SEMANTICS-01: contrato HTTP de login (sin enumeración, 409 solo tras autenticar) ──
+
+    private static (int Status, string Code, string Body) Read(IActionResult response)
+    {
+        var obj = response.Should().BeAssignableTo<ObjectResult>().Subject;
+        var body = obj.Value.Should().BeOfType<ERP.API.Contracts.ApiResponse<object>>().Subject;
+        return (obj.StatusCode!.Value, body.Code, System.Text.Json.JsonSerializer.Serialize(body.Data));
+    }
+
+    [Fact]
+    public async Task Login_fallido_sin_codigo_siempre_es_401_UNAUTHORIZED_con_el_mismo_cuerpo()
+    {
+        // LoginHandler devuelve el MISMO Failure sin código para usuario inexistente, contraseña
+        // incorrecta e inactivo sin contraseña (LoginHandlerTests); aquí se fija que ese fallo sale
+        // siempre 401 con cuerpo idéntico, sin importar qué credencial falló.
+        var failure = Result<AuthResponseDto>.Failure(ERP.Application.Auth.UseCases.Login.LoginHandler.InvalidCredentialsMessage);
+
+        var a = await BuildController(_ => failure).Login(new ERP.Application.Auth.UseCases.Login.LoginCommand("no-existe", "x"), CancellationToken.None);
+        var b = await BuildController(_ => failure).Login(new ERP.Application.Auth.UseCases.Login.LoginCommand("ana.perez", "mala"), CancellationToken.None);
+
+        Read(a).Should().Be(Read(b));
+        Read(a).Status.Should().Be(401);
+        Read(a).Code.Should().Be(ApiResponseCodes.Common.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Login_con_conflicto_de_sesion_tras_credenciales_validas_es_409_CONFLICT()
+    {
+        var conflict = Result<AuthResponseDto>.Conflict("No se pudo iniciar la sesión. Intenta nuevamente.");
+
+        var response = await BuildController(_ => conflict).Login(new ERP.Application.Auth.UseCases.Login.LoginCommand("ana.perez", "ok"), CancellationToken.None);
+
+        Read(response).Status.Should().Be(409);
+        Read(response).Code.Should().Be(ApiResponseCodes.Common.Conflict);
+    }
+
+    [Fact]
+    public async Task Login_con_VALIDATION_ERROR_posterior_a_autenticar_es_422()
+    {
+        // CompanyUserPreferencesLoginResolver (sucursal preferida ya no autorizada) — solo corre
+        // después de VerifyPassword; su código sale por la tabla única.
+        var failure = Result<AuthResponseDto>.ValidationFailure("La sucursal preferida ya no está autorizada.");
+
+        var response = await BuildController(_ => failure).Login(new ERP.Application.Auth.UseCases.Login.LoginCommand("ana.perez", "ok"), CancellationToken.None);
+
+        Read(response).Status.Should().Be(422);
+    }
 }

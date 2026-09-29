@@ -40,6 +40,8 @@ public sealed class CompanyScopeBehaviorTests
             Guard
                 .Setup(g => g.RequireActiveTenantAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Result<Guid>.Success(Guid.NewGuid()));
+            // Hay header X-Company-Id por defecto; los escenarios "sin contexto" lo apagan.
+            Company.Setup(c => c.HasCompanyContext).Returns(true);
         }
 
         public CompanyScopeBehavior<FakeCompanyScopedRequest, Result<string>> BuildBehavior() =>
@@ -148,10 +150,7 @@ public sealed class CompanyScopeBehaviorTests
     public async Task Sin_contexto_de_empresa_activa_no_permite_acceso()
     {
         var f = new Fixture();
-        f.Guard.Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(
-                Result<CompanyAccessContext>.Failure("No hay empresa operativa seleccionada.")
-            );
+        f.Company.Setup(c => c.HasCompanyContext).Returns(false);
 
         var behavior = f.BuildBehavior();
         var act = async () =>
@@ -161,7 +160,79 @@ public sealed class CompanyScopeBehaviorTests
                 CancellationToken.None
             );
 
-        await act.Should().ThrowAsync<CompanyScopeException>();
+        (await act.Should().ThrowAsync<CompanyScopeException>())
+            .Which.Code.Should().Be("company_context_required");
+        f.Guard.Verify(
+            g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    // ── ZH-SCOPE-ERROR-SEMANTICS-01: la decisión nunca depende del texto del error ──
+
+    [Fact]
+    public async Task El_texto_del_error_no_decide_la_excepcion_aunque_mencione_empresa_operativa()
+    {
+        // Antes: Contains("empresa operativa") convertía este rechazo de membership en
+        // NoCompanyContext. Ahora solo cuenta el estado explícito (hay contexto) y el Code.
+        var f = new Fixture();
+        f.Guard.Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                Result<CompanyAccessContext>.Failure(
+                    "No hay empresa operativa seleccionada.",
+                    ApiResponseCodes.Common.CompanyScopeForbidden
+                )
+            );
+
+        var act = async () =>
+            await f.BuildBehavior().Handle(
+                new FakeCompanyScopedRequest(),
+                NextReturning(Result<string>.Success("no-debe-llegar")),
+                CancellationToken.None
+            );
+
+        (await act.Should().ThrowAsync<CompanyScopeException>())
+            .Which.Code.Should().Be("company_access_denied");
+    }
+
+    [Theory]
+    [InlineData("texto cualquiera")]
+    [InlineData("No hay empresa operativa seleccionada.")]
+    [InlineData("")]
+    public async Task Mismo_Code_con_distinto_texto_produce_la_misma_excepcion(string message)
+    {
+        var f = new Fixture();
+        f.Guard.Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                Result<CompanyAccessContext>.Failure(message, ApiResponseCodes.Common.CompanyScopeForbidden)
+            );
+
+        var act = async () =>
+            await f.BuildBehavior().Handle(
+                new FakeCompanyScopedRequest(),
+                NextReturning(Result<string>.Success("no-debe-llegar")),
+                CancellationToken.None
+            );
+
+        (await act.Should().ThrowAsync<CompanyScopeException>())
+            .Which.Code.Should().Be("company_access_denied");
+    }
+
+    [Fact]
+    public async Task Guard_UNAUTHORIZED_produce_401_no_403()
+    {
+        var f = new Fixture();
+        f.Guard.Setup(g => g.RequireActiveTenantAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<Guid>.Failure("No autenticado.", ApiResponseCodes.Common.Unauthorized));
+
+        var act = async () =>
+            await f.BuildBehavior().Handle(
+                new FakeCompanyScopedRequest(),
+                NextReturning(Result<string>.Success("no-debe-llegar")),
+                CancellationToken.None
+            );
+
+        await act.Should().ThrowAsync<UnauthorizedAccessException>();
     }
 
     [Fact]

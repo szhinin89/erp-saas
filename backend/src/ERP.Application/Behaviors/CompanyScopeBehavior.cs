@@ -8,6 +8,9 @@ namespace ERP.Application.Behaviors;
 /// <summary>
 /// Valida centralmente contexto tenant + empresa + membership para módulos ERP operativos.
 /// ICompanyScopedRequest / IRequiresCompanyContext son la única fuente de verdad para scope de empresa.
+/// Decide solo por estado explícito (<see cref="ICurrentCompany.HasCompanyContext"/>) y por el
+/// <c>Code</c> del guard — nunca por el texto del error (ZH-SCOPE-ERROR-SEMANTICS-01): UNAUTHORIZED →
+/// 401, cualquier otro rechazo → CompanyScopeException (403 COMPANY_SCOPE_FORBIDDEN).
 /// </summary>
 public sealed class CompanyScopeBehavior<TRequest, TResponse>
     : IPipelineBehavior<TRequest, TResponse>
@@ -35,7 +38,7 @@ public sealed class CompanyScopeBehavior<TRequest, TResponse>
         {
             var subOnly = await _accessGuard.RequireActiveTenantAsync(cancellationToken);
             if (!subOnly.IsSuccess)
-                throw CompanyScopeException.TenantInactive();
+                throw Denied(subOnly, CompanyScopeException.TenantInactive());
             return await next(cancellationToken);
         }
 
@@ -46,7 +49,7 @@ public sealed class CompanyScopeBehavior<TRequest, TResponse>
 
         var subResult = await _accessGuard.RequireActiveTenantAsync(cancellationToken);
         if (!subResult.IsSuccess)
-            throw CompanyScopeException.TenantInactive();
+            throw Denied(subResult, CompanyScopeException.TenantInactive());
 
         if (request is ICompanyScopedRequest scoped && scoped.ExplicitCompanyId is Guid explicitId)
         {
@@ -59,20 +62,27 @@ public sealed class CompanyScopeBehavior<TRequest, TResponse>
                 cancellationToken
             );
             if (!explicitAccess.IsSuccess)
-                throw CompanyScopeException.AccessDenied(explicitAccess.Error);
+                throw Denied(explicitAccess, CompanyScopeException.AccessDenied(explicitAccess.Error));
+        }
+        else if (!_company.HasCompanyContext)
+        {
+            throw CompanyScopeException.NoCompanyContext();
         }
         else
         {
             var ctx = await _accessGuard.RequireCurrentCompanyAsync(cancellationToken);
             if (!ctx.IsSuccess)
-                throw ctx.Error?.Contains("empresa operativa", StringComparison.OrdinalIgnoreCase)
-                == true
-                    ? CompanyScopeException.NoCompanyContext()
-                    : CompanyScopeException.AccessDenied(ctx.Error);
+                throw Denied(ctx, CompanyScopeException.AccessDenied(ctx.Error));
         }
 
         return await next(cancellationToken);
     }
+
+    /// <summary>Sin sesión → 401 (UnauthorizedAccessException); cualquier otro rechazo del guard → <paramref name="scopeDenied"/>.</summary>
+    private static Exception Denied<T>(Result<T> guardResult, CompanyScopeException scopeDenied) =>
+        guardResult.Code == ApiResponseCodes.Common.Unauthorized
+            ? new UnauthorizedAccessException(guardResult.Error)
+            : scopeDenied;
 
     private static bool RequiresCompanyScope(TRequest request) =>
         request is ICompanyScopedRequest or IRequiresCompanyContext;

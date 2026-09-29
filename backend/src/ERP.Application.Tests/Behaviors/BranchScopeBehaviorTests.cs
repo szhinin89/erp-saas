@@ -45,7 +45,7 @@ public sealed class BranchScopeBehaviorTests
         var branchId = Guid.NewGuid();
         f.Branch.Setup(b => b.HasBranchContext).Returns(true);
         f.Branch.Setup(b => b.BranchId).Returns(branchId);
-        f.Guard.Setup(g => g.RequireBranchAsync(branchId, It.IsAny<CancellationToken>()))
+        f.Guard.Setup(g => g.RequireCurrentBranchAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(
                 Result<BranchAccessContext>.Success(
                     new BranchAccessContext(
@@ -72,7 +72,7 @@ public sealed class BranchScopeBehaviorTests
         result.Should().Be(expected);
         nextCalled.Should().BeTrue();
         f.Guard.Verify(
-            g => g.RequireBranchAsync(branchId, It.IsAny<CancellationToken>()),
+            g => g.RequireCurrentBranchAsync(It.IsAny<CancellationToken>()),
             Times.Once
         );
     }
@@ -100,7 +100,7 @@ public sealed class BranchScopeBehaviorTests
                 "el handler nunca debe ejecutarse sin contexto de sucursal (header X-Branch-Id ausente)"
             );
         f.Guard.Verify(
-            g => g.RequireBranchAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            g => g.RequireCurrentBranchAsync(It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
@@ -112,7 +112,7 @@ public sealed class BranchScopeBehaviorTests
         var branchId = Guid.NewGuid();
         f.Branch.Setup(b => b.HasBranchContext).Returns(true);
         f.Branch.Setup(b => b.BranchId).Returns(branchId);
-        f.Guard.Setup(g => g.RequireBranchAsync(branchId, It.IsAny<CancellationToken>()))
+        f.Guard.Setup(g => g.RequireCurrentBranchAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(
                 Result<BranchAccessContext>.Failure(
                     "No tiene autorización para operar en esta sucursal."
@@ -150,9 +150,35 @@ public sealed class BranchScopeBehaviorTests
         result.Should().Be(expected);
         nextCalled.Should().BeTrue();
         f.Guard.Verify(
-            g => g.RequireBranchAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            g => g.RequireCurrentBranchAsync(It.IsAny<CancellationToken>()),
             Times.Never,
             "una request que no es IBranchScopedRequest jamás debe disparar IBranchAccessGuard"
         );
+    }
+
+    // ── ZH-SCOPE-ERROR-SEMANTICS-01: la excepción la decide el Code del guard, nunca el texto ──
+
+    [Theory]
+    [InlineData(ApiResponseCodes.Common.BranchScopeForbidden, typeof(BranchScopeException))]
+    [InlineData(ApiResponseCodes.Common.CompanyScopeForbidden, typeof(CompanyScopeException))]
+    [InlineData(ApiResponseCodes.Common.Unauthorized, typeof(UnauthorizedAccessException))]
+    public async Task El_Code_del_guard_elige_la_excepcion(string code, Type expected)
+    {
+        foreach (var message in new[] { "Sucursal no encontrada.", "No tiene acceso a esta empresa.", "x" })
+        {
+            var f = new Fixture();
+            f.Branch.Setup(b => b.HasBranchContext).Returns(true);
+            f.Guard.Setup(g => g.RequireCurrentBranchAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result<BranchAccessContext>.Failure(message, code));
+
+            var act = async () =>
+                await f.BuildBehavior<FakeBranchScopedRequest>().Handle(
+                    new FakeBranchScopedRequest(),
+                    NextReturning(Result<string>.Success("no-debe-llegar")),
+                    CancellationToken.None
+                );
+
+            (await act.Should().ThrowAsync<Exception>()).Which.Should().BeOfType(expected, message);
+        }
     }
 }

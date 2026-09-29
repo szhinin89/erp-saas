@@ -466,7 +466,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             new FixedCurrentTenant(_tenantId),
             new FixedCurrentCompany(_companyId),
             new FixedCurrentBranch(_branchId),
-            new AllowActiveBranchGuard(_tenantId, _companyId, _createdBy),
+            new AllowActiveBranchGuard(_tenantId, _companyId, _createdBy, _branchId),
             new FixedCurrentUser(_createdBy)
         );
 
@@ -2158,9 +2158,13 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
 /// rechazo del guard están cubiertas en Application (ReverseSupplierPaymentUseCasesTests) y en
 /// BranchScopeBehaviorTests.
 /// </summary>
-file sealed class AllowActiveBranchGuard(Guid tenantId, Guid companyId, Guid userId)
+file sealed class AllowActiveBranchGuard(Guid tenantId, Guid companyId, Guid userId, Guid activeBranchId)
     : ERP.Application.Modules.Branches.IBranchAccessGuard
 {
+    public Task<Result<ERP.Application.Modules.Branches.BranchAccessContext>> RequireCurrentBranchAsync(
+        CancellationToken cancellationToken = default
+    ) => RequireBranchAsync(activeBranchId, cancellationToken);
+
     public Task<Result<ERP.Application.Modules.Branches.BranchAccessContext>> RequireBranchAsync(
         Guid branchId,
         CancellationToken cancellationToken = default

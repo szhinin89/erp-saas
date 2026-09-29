@@ -38,7 +38,7 @@ public sealed class UpdateCompanyBrandingHandler
     {
         var access = await _accessGuard.RequireCurrentCompanyAsync(cancellationToken);
         if (!access.IsSuccess)
-            return Result<CompanyBrandingDto>.Failure(access.Error!);
+            return Result<CompanyBrandingDto>.Failure(access.Error!, access.Code);
 
         var tenantId = access.Value!.TenantId;
         var companyId = access.Value!.CompanyId;

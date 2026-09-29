@@ -40,9 +40,18 @@ public sealed class BranchScopeBehavior<TRequest, TResponse>
         if (!_branch.HasBranchContext)
             throw BranchScopeException.NoBranchContext();
 
-        var result = await _accessGuard.RequireBranchAsync(_branch.BranchId, cancellationToken);
+        // La traducción contexto → código vive en RequireCurrentBranchAsync; aquí solo se elige la
+        // excepción por Code (nunca por el texto): 401 sin sesión, 403 COMPANY_SCOPE_FORBIDDEN si
+        // falló la empresa, 403 BRANCH_SCOPE_FORBIDDEN para todo rechazo de la sucursal.
+        var result = await _accessGuard.RequireCurrentBranchAsync(cancellationToken);
         if (!result.IsSuccess)
-            throw BranchScopeException.AccessDenied(result.Error);
+            throw result.Code switch
+            {
+                ApiResponseCodes.Common.Unauthorized => new UnauthorizedAccessException(result.Error),
+                ApiResponseCodes.Common.CompanyScopeForbidden =>
+                    CompanyScopeException.AccessDenied(result.Error),
+                _ => BranchScopeException.AccessDenied(result.Error),
+            };
 
         return await next(cancellationToken);
     }

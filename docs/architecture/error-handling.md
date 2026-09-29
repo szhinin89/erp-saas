@@ -59,6 +59,23 @@ Frontend          → Axios (transporte puro)
 | RateLimit | 429 |
 | InternalError | 500 |
 
+### Semántica de scope (ZH-SCOPE-ERROR-SEMANTICS-01, 2026-09-29)
+
+Ningún flujo decide por `Error`/`Message` (texto = presentación); la semántica viaja en `Code` y se propaga intacta hasta `ApiErrorStatus` (`Result.Failure(x.Error!, x.Code)`, nunca `Failure(x.Error!)`). Guard arquitectónico: `ScopeErrorSemanticsTests`.
+
+| Método | Semántica | Códigos |
+|---|---|---|
+| `ICompanyAccessGuard.RequireActiveTenantAsync` | contexto | UNAUTHORIZED · COMPANY_SCOPE_FORBIDDEN |
+| `ICompanyAccessGuard.RequireMembershipAsync(id)` | recurso | UNAUTHORIZED · NOT_FOUND (inexistente = otro tenant) · FORBIDDEN (no operativa / sin membership) |
+| `ICompanyAccessGuard.RequireCurrentCompanyAsync` | contexto | UNAUTHORIZED · COMPANY_SCOPE_FORBIDDEN (todo rechazo) |
+| `IBranchAccessGuard.RequireBranchAsync(id)` | recurso | los de empresa · NOT_FOUND (inexistente = otra empresa) · FORBIDDEN (deshabilitada / sin CompanyUserBranch) |
+| `IBranchAccessGuard.RequireCurrentBranchAsync` | contexto | los de empresa · BRANCH_SCOPE_FORBIDDEN (sin sucursal o todo rechazo) |
+| `IInterBranchAccessGuard` | recurso | los anteriores · NOT_FOUND (bodega inexistente = de otra empresa, también deshabilitada) · VALIDATION_ERROR (bodega propia deshabilitada) |
+
+`CompanyScopeBehavior`/`BranchScopeBehavior` eligen la excepción por estado explícito (`HasCompanyContext`/`HasBranchContext`) y por `Code`: UNAUTHORIZED → 401, rechazo de empresa → `CompanyScopeException` (403 COMPANY_SCOPE_FORBIDDEN), rechazo de sucursal → `BranchScopeException` (403 BRANCH_SCOPE_FORBIDDEN).
+
+500/503 (categorías InternalError e Infrastructure) nunca exponen detalle: `ApiErrorStatus.ExposesDetail` suprime `data.errors` tanto en `ApiFailure` (el detalle se registra en el log) como en `ExceptionMiddleware`; `message.dev` sale siempre del catálogo.
+
 ### Implementación vigente (ZH-API-ERROR-CONTRACT-HARDENING-01, 2026-09-29)
 
 - `ApiErrorCategory` (Application) + `CatalogMessage.Category`: cada código de error de `ApiResponseCodes` declara su categoría en `MessageCatalog`; los de éxito no tienen.
@@ -72,7 +89,8 @@ Excepciones intencionales (documentadas y cubiertas por tests):
 | `DOMAIN_RULE_VIOLATION` (`InvalidOperationException`) es Validation → 422, no BusinessRule → 400 | Contrato histórico de `ExceptionMiddleware` y de `Result.ValidationFailure` (regla de negocio → 422); reclasificarlo cambia el status de todo el ERP y requiere ADR. |
 | Fallo de `Result` **sin** `Code`: el endpoint elige el fallback (`ApiFailure(result, fallback)`) — `BAD_REQUEST` por defecto, `NOT_FOUND` en `ToOkOrNotFound`/`ToFileOrNotFound`, `UNAUTHORIZED` en autenticación | Anti existence-leakage en lecturas (inexistente = ajeno) y anti-enumeración en login/refresh/reautenticación. Un fallo **con** `Code` siempre usa la tabla. |
 | Código no catalogado (literal de módulo: `SKU_DUPLICATE`, `PERIOD_NOT_OPEN`, …) → fallback del catálogo: BusinessRule → 400 con su propio `code` | Deuda de ADR-027 Fase 1 (registrar códigos de módulo); registrarlos cambia status de módulos FROZEN/CLOSED y se hace por módulo. |
-| Guards (`CompanyAccessGuard`/`BranchAccessGuard`) devuelven códigos canónicos (NOT_FOUND para inexistente o ajeno; `*_SCOPE_FORBIDDEN` para acceso prohibido) pero sus consumidores re-envuelven el mensaje | Cada consumidor fija su propio contrato: `CompanyScopeBehavior`/`BranchScopeBehavior` → excepción 403; `GetCompanyById` → 404 sin código. Propagar el código cambiaría 404 → 403 (leakage). |
+| Empresa pedida por id (`GetCompanyById`, `UpdateCompany`): todo rechazo del guard salvo UNAUTHORIZED → `NOT_FOUND` "Empresa no encontrada." | No-enumeración: ajena de otro tenant, del mismo tenant sin membership, inexistente o con tenant inactivo son la misma respuesta. Se decide por `Code`, nunca por el texto. |
+| `BRANCH_SCOPE_FORBIDDEN` / `COMPANY_SCOPE_FORBIDDEN` solo para el **contexto** (headers X-Company-Id / X-Branch-Id); una sucursal/empresa pedida o de un documento usa `NOT_FOUND`/`FORBIDDEN` | El frontend resetea la sucursal activa ante `BRANCH_SCOPE_FORBIDDEN`: un rechazo sobre una sucursal que no es la activa (cambio de sucursal, sucursal de una bodega o de una sesión de caja) no debe borrarla. |
 
 ---
 

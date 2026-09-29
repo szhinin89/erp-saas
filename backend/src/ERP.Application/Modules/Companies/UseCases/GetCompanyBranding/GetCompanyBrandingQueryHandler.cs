@@ -27,7 +27,7 @@ public sealed class GetCompanyBrandingQueryHandler
     {
         var access = await _accessGuard.RequireCurrentCompanyAsync(cancellationToken);
         if (!access.IsSuccess)
-            return Result<CompanyBrandingDto>.Failure(access.Error!);
+            return Result<CompanyBrandingDto>.Failure(access.Error!, access.Code);
 
         var settings = await _brandingResolver.GetAsync(
             access.Value!.TenantId,

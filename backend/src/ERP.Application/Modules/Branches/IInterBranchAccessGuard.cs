@@ -25,10 +25,11 @@ public interface IInterBranchAccessGuard
 {
     /// <summary>
     /// Valida, en orden: empresa operativa activa → sucursal activa del caller (contexto de
-    /// operación) → bodega origen existe/activa/pertenece a la empresa → bodega destino
-    /// existe/activa/pertenece a la empresa → usuario con acceso a la sucursal de origen →
-    /// usuario con acceso a la sucursal de destino. Ambas autorizaciones de sucursal son
-    /// bloqueantes.
+    /// operación, vía <c>IBranchAccessGuard.RequireCurrentBranchAsync</c>) → bodegas origen y
+    /// destino existen y pertenecen a la empresa (NOT_FOUND indistinguible si no) → están activas
+    /// (VALIDATION_ERROR) → usuario con acceso a la sucursal de origen → usuario con acceso a la
+    /// sucursal de destino (códigos de <c>IBranchAccessGuard.RequireBranchAsync</c>). Ambas
+    /// autorizaciones de sucursal son bloqueantes. Todo fallo lleva código; los handlers lo propagan.
     /// </summary>
     Task<Result<InterBranchAccessContext>> RequireInterBranchAccessAsync(
         Guid sourceWarehouseId,

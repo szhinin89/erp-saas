@@ -62,7 +62,7 @@ public sealed class ReverseSupplierPaymentUseCasesTests
         branch.Setup(b => b.HasBranchContext).Returns(true);
         var branchAccess = new Mock<IBranchAccessGuard>();
         branchAccess
-            .Setup(g => g.RequireBranchAsync(BranchId, It.IsAny<CancellationToken>()))
+            .Setup(g => g.RequireCurrentBranchAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(
                 Result<BranchAccessContext>.Success(
                     new BranchAccessContext(UserId, TenantId, CompanyId, BranchId, "Matriz", true)
@@ -538,7 +538,7 @@ public sealed class ReverseSupplierPaymentUseCasesTests
     {
         var (m, payment, _) = CashReversalScenario(sessionBranchId: BranchId);
         m.BranchAccess
-            .Setup(g => g.RequireBranchAsync(BranchId, It.IsAny<CancellationToken>()))
+            .Setup(g => g.RequireCurrentBranchAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<BranchAccessContext>.Forbidden("No tiene acceso a esta sucursal."));
 
         var result = await BuildHandler(m).Handle(ValidReversal(payment.Id, "Error"), CancellationToken.None);

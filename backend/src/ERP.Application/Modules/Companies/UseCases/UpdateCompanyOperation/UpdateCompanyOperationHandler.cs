@@ -30,7 +30,7 @@ public sealed class UpdateCompanyOperationHandler
     {
         var access = await _accessGuard.RequireCurrentCompanyAsync(cancellationToken);
         if (!access.IsSuccess)
-            return Result<CompanyProfileDto>.Failure(access.Error!);
+            return Result<CompanyProfileDto>.Failure(access.Error!, access.Code);
 
         var entity = await _companies.GetTrackedByIdForTenantAsync(
             access.Value!.CompanyId,

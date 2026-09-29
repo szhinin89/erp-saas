@@ -194,13 +194,13 @@ public sealed class ReverseSupplierPaymentCommandHandler
                         "La reversa devuelve efectivo a una caja: seleccione la sucursal activa de esa caja."
                     );
                 }
-                var branchAccess = await _branchAccess.RequireBranchAsync(_b.BranchId, ct);
+                // Misma validación de contexto que BranchScopeBehavior: rechazo de la sucursal
+                // activa → BRANCH_SCOPE_FORBIDDEN (403), con el código del guard intacto.
+                var branchAccess = await _branchAccess.RequireCurrentBranchAsync(ct);
                 if (!branchAccess.IsSuccess)
                 {
                     await _uow.RollbackAsync(ct);
-                    return Result<SupplierPaymentDto>.ValidationFailure(
-                        branchAccess.Error ?? "No tiene acceso a la sucursal activa."
-                    );
+                    return Result<SupplierPaymentDto>.Failure(branchAccess.Error!, branchAccess.Code);
                 }
             }
 

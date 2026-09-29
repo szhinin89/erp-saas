@@ -29,6 +29,7 @@ public sealed class BranchAccessGuardTests
         public Mock<ICompanyUserBranchRepository> CompanyUserBranchRepo { get; } = new();
         public Mock<IAccessRepository> AccessRepo { get; } = new();
         public Mock<IOperatorCompanyAccessPolicy> OperatorAccessPolicy { get; } = new();
+        public Mock<ICurrentBranch> CurrentBranch { get; } = new();
 
         public Fixture()
         {
@@ -45,7 +46,8 @@ public sealed class BranchAccessGuardTests
                 BranchRepo.Object,
                 CompanyUserBranchRepo.Object,
                 AccessRepo.Object,
-                OperatorAccessPolicy.Object
+                OperatorAccessPolicy.Object,
+                CurrentBranch.Object
             );
     }
 
@@ -222,7 +224,7 @@ public sealed class BranchAccessGuardTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("No tiene autorización para operar en esta sucursal.");
-        result.Code.Should().Be(ApiResponseCodes.Common.BranchScopeForbidden);
+        result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
     }
 
     [Fact]
@@ -432,7 +434,7 @@ public sealed class BranchAccessGuardTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("La sucursal está deshabilitada.");
-        result.Code.Should().Be(ApiResponseCodes.Common.BranchScopeForbidden);
+        result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
         f.OperatorAccessPolicy.Verify(
             o => o.IsAuthorizedOperatorAsync(It.IsAny<CancellationToken>()),
             Times.Never,
@@ -476,5 +478,87 @@ public sealed class BranchAccessGuardTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Sucursal no encontrada.");
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+    }
+
+    // ── ZH-SCOPE-ERROR-SEMANTICS-01: RequireCurrentBranchAsync (contexto) ──
+
+    [Fact]
+    public async Task RequireCurrentBranchAsync_sin_header_es_BRANCH_SCOPE_FORBIDDEN_sin_consultar_nada()
+    {
+        var f = new Fixture();
+        f.CurrentBranch.Setup(b => b.HasBranchContext).Returns(false);
+
+        var result = await f.BuildGuard().RequireCurrentBranchAsync();
+
+        result.Code.Should().Be(ApiResponseCodes.Common.BranchScopeForbidden);
+        f.CompanyGuard.Verify(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RequireCurrentBranchAsync_sucursal_A_contra_sucursal_de_empresa_B_es_identico_a_inexistente()
+    {
+        var f = new Fixture();
+        var userId = Guid.NewGuid();
+        var tenantId = Guid.NewGuid();
+        var companyAId = Guid.NewGuid();
+        var branchDeEmpresaB = NewBranch(tenantId, Guid.NewGuid(), "Sucursal B", isMainBranch: true);
+        f.CompanyGuard.Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<CompanyAccessContext>.Success(ActiveCompanyA(userId, tenantId, companyAId)));
+        // El repositorio filtra por empresa A: la sucursal de B nunca aparece (igual que una inexistente).
+        f.BranchRepo.Setup(r => r.GetByIdForCompanyAsync(tenantId, companyAId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Branch?)null);
+        f.CurrentBranch.Setup(b => b.HasBranchContext).Returns(true);
+        var guard = f.BuildGuard();
+
+        f.CurrentBranch.Setup(b => b.BranchId).Returns(branchDeEmpresaB.Id);
+        var foreign = await guard.RequireCurrentBranchAsync();
+        f.CurrentBranch.Setup(b => b.BranchId).Returns(Guid.NewGuid());
+        var nonexistent = await guard.RequireCurrentBranchAsync();
+
+        foreign.Code.Should().Be(ApiResponseCodes.Common.BranchScopeForbidden);
+        (foreign.Code, foreign.Error).Should().Be((nonexistent.Code, nonexistent.Error));
+    }
+
+    [Fact]
+    public async Task RequireCurrentBranchAsync_sucursal_no_autorizada_FORBIDDEN_pasa_a_BRANCH_SCOPE_FORBIDDEN()
+    {
+        var f = new Fixture();
+        var userId = Guid.NewGuid();
+        var tenantId = Guid.NewGuid();
+        var companyAId = Guid.NewGuid();
+        var branch = NewBranch(tenantId, companyAId, "Sucursal A", isMainBranch: false);
+        var membership = CompanyUserMembership.Create(companyAId, userId, "Admin", null, CreatedBy);
+        f.CompanyGuard.Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<CompanyAccessContext>.Success(ActiveCompanyA(userId, tenantId, companyAId)));
+        f.BranchRepo.Setup(r => r.GetByIdForCompanyAsync(tenantId, companyAId, branch.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(branch);
+        f.AccessRepo.Setup(a => a.GetCompanyUserMembershipAsync(companyAId, userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(membership);
+        f.CompanyUserBranchRepo.Setup(r => r.ExistsAsync(membership.Id, branch.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+        f.CurrentBranch.Setup(b => b.HasBranchContext).Returns(true);
+        f.CurrentBranch.Setup(b => b.BranchId).Returns(branch.Id);
+        var guard = f.BuildGuard();
+
+        (await guard.RequireBranchAsync(branch.Id)).Code.Should().Be(ApiResponseCodes.Common.Forbidden);
+        var current = await guard.RequireCurrentBranchAsync();
+        current.Code.Should().Be(ApiResponseCodes.Common.BranchScopeForbidden);
+        current.Error.Should().Be("No tiene autorización para operar en esta sucursal.");
+    }
+
+    [Theory]
+    [InlineData(ApiResponseCodes.Common.Unauthorized)]
+    [InlineData(ApiResponseCodes.Common.CompanyScopeForbidden)]
+    public async Task Codigos_de_empresa_o_sesion_pasan_intactos_por_ambos_metodos(string code)
+    {
+        var f = new Fixture();
+        f.CompanyGuard.Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<CompanyAccessContext>.Failure("rechazo de empresa", code));
+        f.CurrentBranch.Setup(b => b.HasBranchContext).Returns(true);
+        f.CurrentBranch.Setup(b => b.BranchId).Returns(Guid.NewGuid());
+        var guard = f.BuildGuard();
+
+        (await guard.RequireBranchAsync(Guid.NewGuid())).Code.Should().Be(code);
+        (await guard.RequireCurrentBranchAsync()).Code.Should().Be(code);
     }
 }

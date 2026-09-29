@@ -668,6 +668,10 @@ public sealed partial class CashFundingRequestWorkflowIntegrationTests : IAsyncL
             Task.FromResult(branchId == allowedBranchId
                 ? Result<BranchAccessContext>.Success(new BranchAccessContext(userId, tenantId, companyId, branchId, "Matriz", true))
                 : Result<BranchAccessContext>.Forbidden("Sin acceso a la sucursal."));
+
+        // Los handlers de fondeo validan la sucursal del documento (RequireBranchAsync), no la activa.
+        public Task<Result<BranchAccessContext>> RequireCurrentBranchAsync(CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
     }
 
     private sealed class FixedBranch(Guid branchId) : ICurrentBranch
