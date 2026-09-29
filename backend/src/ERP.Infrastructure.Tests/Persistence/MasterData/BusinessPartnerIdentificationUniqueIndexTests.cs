@@ -6,8 +6,6 @@ using ERP.Infrastructure.Tests.Audit;
 using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Moq;
 using Npgsql;
 using Testcontainers.PostgreSql;
@@ -25,8 +23,6 @@ namespace ERP.Infrastructure.Tests.Persistence.MasterData;
 [Trait("Category", "PostgreSql")]
 public sealed class BusinessPartnerIdentificationUniqueIndexTests : IAsyncLifetime
 {
-    private const string MigrationBeforeIndex = "20260926215819_CashFundingRequestFoundation";
-
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
         .WithImage("postgres:16-alpine")
         .WithDatabase("erp_bp_identification_unique_test")
@@ -195,26 +191,4 @@ public sealed class BusinessPartnerIdentificationUniqueIndexTests : IAsyncLifeti
         info.ConstraintName.Should().Be("uq_mbp_identification");
     }
 
-    [Fact]
-    public async Task Migracion_se_detiene_con_detalle_si_la_BD_ya_tiene_duplicados()
-    {
-        var connectionString = new NpgsqlConnectionStringBuilder(_postgres.GetConnectionString())
-        {
-            Database = "erp_bp_identification_precheck",
-        }.ConnectionString;
-
-        await using var db = CreateContext(connectionString, _tenantA);
-        var migrator = db.GetService<IMigrator>();
-        await migrator.MigrateAsync(MigrationBeforeIndex);
-
-        // Estado de una BD que corrió sin el índice: duplicados acumulados.
-        db.BusinessPartners.Add(Bp(_tenantA, "04", "1790016919001", "Duplicado 1"));
-        db.BusinessPartners.Add(Bp(_tenantA, "04", "1790016919001", "Duplicado 2"));
-        await db.SaveChangesAsync();
-
-        var ex = await FluentActions.Invoking(() => migrator.MigrateAsync()).Should().ThrowAsync<PostgresException>();
-
-        ex.Which.MessageText.Should().Contain("uq_mbp_identification: existen BusinessPartners duplicados");
-        ex.Which.MessageText.Should().Contain("04/1790016919001 (x2)");
-    }
 }

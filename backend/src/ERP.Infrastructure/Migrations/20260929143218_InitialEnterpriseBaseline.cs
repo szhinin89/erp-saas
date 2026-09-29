@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -3690,9 +3690,12 @@ namespace ERP.Infrastructure.Migrations
                     system_number = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
                     receipt_number = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
                     status = table.Column<int>(type: "integer", nullable: false),
+                    confirmed_by_user_id = table.Column<Guid>(type: "uuid", nullable: false),
                     reversed_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     reversed_by = table.Column<Guid>(type: "uuid", nullable: true),
                     reverse_reason = table.Column<string>(type: "text", nullable: true),
+                    reversal_bank_reason = table.Column<int>(type: "integer", nullable: true),
+                    reversal_cash_not_delivered_confirmed = table.Column<bool>(type: "boolean", nullable: true),
                     xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
                     tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -4286,52 +4289,6 @@ namespace ERP.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "supplier_payment_methods",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    supplier_payment_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    payment_method_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    company_bank_account_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    cash_register_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
-                    reference_number = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
-                    check_number = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
-                    check_date = table.Column<DateOnly>(type: "date", nullable: true),
-                    notes = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_supplier_payment_methods", x => x.id);
-                    table.CheckConstraint("chk_supplier_payment_methods_destination_xor", "(\"company_bank_account_id\" IS NOT NULL AND \"cash_register_id\" IS NULL) OR (\"company_bank_account_id\" IS NULL AND \"cash_register_id\" IS NOT NULL)");
-                    table.ForeignKey(
-                        name: "FK_supplier_payment_methods_cash_registers_cash_register_id",
-                        column: x => x.cash_register_id,
-                        principalTable: "cash_registers",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_supplier_payment_methods_company_bank_accounts_company_bank~",
-                        column: x => x.company_bank_account_id,
-                        principalTable: "company_bank_accounts",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_supplier_payment_methods_payment_methods_payment_method_id",
-                        column: x => x.payment_method_id,
-                        principalTable: "payment_methods",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_supplier_payment_methods_supplier_payments_supplier_payment~",
-                        column: x => x.supplier_payment_id,
-                        principalTable: "supplier_payments",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "purchase_invoice_details",
                 columns: table => new
                 {
@@ -4584,6 +4541,66 @@ namespace ERP.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "cash_funding_requests",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    branch_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    cash_register_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    cash_session_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    supplier_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    total_amount = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    cash_amount = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    requested_by_user_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    requested_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    status = table.Column<int>(type: "integer", nullable: false),
+                    resolved_by_user_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    resolved_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    resolution_reason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    supplier_payment_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    payment_payload = table.Column<string>(type: "jsonb", nullable: false),
+                    payload_version = table.Column<int>(type: "integer", nullable: false),
+                    payload_hash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    client_request_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_cash_funding_requests", x => x.id);
+                    table.CheckConstraint("chk_cash_funding_requests_cash_amount_positive", "\"cash_amount\" > 0");
+                    table.CheckConstraint("chk_cash_funding_requests_payload_version", "\"payload_version\" >= 1");
+                    table.CheckConstraint("chk_cash_funding_requests_payment_only_when_fulfilled", "(\"status\" = 2) = (\"supplier_payment_id\" IS NOT NULL)");
+                    table.CheckConstraint("chk_cash_funding_requests_resolution_consistency", "(\"status\" = 1 AND \"resolved_by_user_id\" IS NULL AND \"resolved_at_utc\" IS NULL) OR (\"status\" <> 1 AND \"resolved_by_user_id\" IS NOT NULL AND \"resolved_at_utc\" IS NOT NULL)");
+                    table.CheckConstraint("chk_cash_funding_requests_total_covers_cash", "\"total_amount\" >= \"cash_amount\"");
+                    table.ForeignKey(
+                        name: "FK_cash_funding_requests_cash_registers_cash_register_id",
+                        column: x => x.cash_register_id,
+                        principalTable: "cash_registers",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_cash_funding_requests_cash_sessions_cash_session_id",
+                        column: x => x.cash_session_id,
+                        principalTable: "cash_sessions",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_cash_funding_requests_company_company_id",
+                        column: x => x.company_id,
+                        principalTable: "company",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_cash_funding_requests_supplier_payments_supplier_payment_id",
+                        column: x => x.supplier_payment_id,
+                        principalTable: "supplier_payments",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "cash_movements",
                 columns: table => new
                 {
@@ -4699,40 +4716,6 @@ namespace ERP.Infrastructure.Migrations
                         principalTable: "price_lists",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "supplier_payment_allocations",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    supplier_payment_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    supplier_payment_method_line_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    supplier_payment_application_line_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_supplier_payment_allocations", x => x.id);
-                    table.ForeignKey(
-                        name: "FK_supplier_payment_allocations_supplier_payment_applications_~",
-                        column: x => x.supplier_payment_application_line_id,
-                        principalTable: "supplier_payment_applications",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_supplier_payment_allocations_supplier_payment_methods_suppl~",
-                        column: x => x.supplier_payment_method_line_id,
-                        principalTable: "supplier_payment_methods",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_supplier_payment_allocations_supplier_payments_supplier_pay~",
-                        column: x => x.supplier_payment_id,
-                        principalTable: "supplier_payments",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -4958,6 +4941,68 @@ namespace ERP.Infrastructure.Migrations
                         principalTable: "purchase_reception_documents",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "supplier_payment_methods",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    supplier_payment_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    payment_method_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_bank_account_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    cash_register_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
+                    reference_number = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
+                    transaction_date = table.Column<DateOnly>(type: "date", nullable: true),
+                    cash_session_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    cash_movement_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    check_number = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
+                    check_date = table.Column<DateOnly>(type: "date", nullable: true),
+                    notes = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_supplier_payment_methods", x => x.id);
+                    table.CheckConstraint("chk_supplier_payment_methods_bank_transaction_date", "\"company_bank_account_id\" IS NULL OR \"transaction_date\" IS NOT NULL");
+                    table.CheckConstraint("chk_supplier_payment_methods_destination_xor", "(\"company_bank_account_id\" IS NOT NULL AND \"cash_register_id\" IS NULL) OR (\"company_bank_account_id\" IS NULL AND \"cash_register_id\" IS NOT NULL)");
+                    table.ForeignKey(
+                        name: "FK_supplier_payment_methods_cash_movements_cash_movement_id",
+                        column: x => x.cash_movement_id,
+                        principalTable: "cash_movements",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_supplier_payment_methods_cash_registers_cash_register_id",
+                        column: x => x.cash_register_id,
+                        principalTable: "cash_registers",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_supplier_payment_methods_cash_sessions_cash_session_id",
+                        column: x => x.cash_session_id,
+                        principalTable: "cash_sessions",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_supplier_payment_methods_company_bank_accounts_company_bank~",
+                        column: x => x.company_bank_account_id,
+                        principalTable: "company_bank_accounts",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_supplier_payment_methods_payment_methods_payment_method_id",
+                        column: x => x.payment_method_id,
+                        principalTable: "payment_methods",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_supplier_payment_methods_supplier_payments_supplier_payment~",
+                        column: x => x.supplier_payment_id,
+                        principalTable: "supplier_payments",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -5409,7 +5454,8 @@ namespace ERP.Infrastructure.Migrations
                     branch_id = table.Column<Guid>(type: "uuid", nullable: false),
                     supplier_id = table.Column<Guid>(type: "uuid", nullable: false),
                     currency_code = table.Column<string>(type: "character varying(3)", maxLength: 3, nullable: false),
-                    source_purchase_return_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    source_purchase_return_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    source_supplier_payment_id = table.Column<Guid>(type: "uuid", nullable: true),
                     original_amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
                     available_amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
                     xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
@@ -5422,6 +5468,7 @@ namespace ERP.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_supplier_credits", x => x.id);
+                    table.CheckConstraint("chk_supplier_credits_exactly_one_source", "(\"source_purchase_return_id\" IS NOT NULL AND \"source_supplier_payment_id\" IS NULL) OR (\"source_purchase_return_id\" IS NULL AND \"source_supplier_payment_id\" IS NOT NULL)");
                     table.ForeignKey(
                         name: "FK_supplier_credits_branches_branch_id",
                         column: x => x.branch_id,
@@ -5446,6 +5493,46 @@ namespace ERP.Infrastructure.Migrations
                         principalTable: "purchase_returns",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_supplier_credits_supplier_payments_source_supplier_payment_~",
+                        column: x => x.source_supplier_payment_id,
+                        principalTable: "supplier_payments",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "supplier_payment_allocations",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    supplier_payment_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    supplier_payment_method_line_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    supplier_payment_application_line_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_supplier_payment_allocations", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_supplier_payment_allocations_supplier_payment_applications_~",
+                        column: x => x.supplier_payment_application_line_id,
+                        principalTable: "supplier_payment_applications",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_supplier_payment_allocations_supplier_payment_methods_suppl~",
+                        column: x => x.supplier_payment_method_line_id,
+                        principalTable: "supplier_payment_methods",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_supplier_payment_allocations_supplier_payments_supplier_pay~",
+                        column: x => x.supplier_payment_id,
+                        principalTable: "supplier_payments",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -6542,6 +6629,44 @@ namespace ERP.Infrastructure.Migrations
                 name: "ix_cash_closing_counts_tenant_session",
                 table: "cash_closing_counts",
                 columns: new[] { "tenant_id", "cash_session_id" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_cash_funding_requests_cash_register_id",
+                table: "cash_funding_requests",
+                column: "cash_register_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_cash_funding_requests_cash_session_id",
+                table: "cash_funding_requests",
+                column: "cash_session_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_cash_funding_requests_company_id",
+                table: "cash_funding_requests",
+                column: "company_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_cash_funding_requests_tenant_company_requester_status",
+                table: "cash_funding_requests",
+                columns: new[] { "tenant_id", "company_id", "requested_by_user_id", "status" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_cash_funding_requests_tenant_company_session_status",
+                table: "cash_funding_requests",
+                columns: new[] { "tenant_id", "company_id", "cash_session_id", "status" });
+
+            migrationBuilder.CreateIndex(
+                name: "uq_cash_funding_requests_supplier_payment",
+                table: "cash_funding_requests",
+                column: "supplier_payment_id",
+                unique: true,
+                filter: "\"supplier_payment_id\" IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "uq_cash_funding_requests_tenant_client_request_id",
+                table: "cash_funding_requests",
+                columns: new[] { "tenant_id", "client_request_id" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "ix_cash_movement_reasons_tenant_company_type_active",
@@ -9202,6 +9327,11 @@ namespace ERP.Infrastructure.Migrations
                 column: "source_purchase_return_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_supplier_credits_source_supplier_payment_id",
+                table: "supplier_credits",
+                column: "source_supplier_payment_id");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_supplier_credits_supplier_id",
                 table: "supplier_credits",
                 column: "supplier_id");
@@ -9221,6 +9351,13 @@ namespace ERP.Infrastructure.Migrations
                 table: "supplier_credits",
                 columns: new[] { "tenant_id", "source_purchase_return_id" },
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "uq_supplier_credits_tenant_source_supplier_payment",
+                table: "supplier_credits",
+                columns: new[] { "tenant_id", "source_supplier_payment_id" },
+                unique: true,
+                filter: "\"source_supplier_payment_id\" IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "ix_supplier_payment_allocations_application_line",
@@ -9263,9 +9400,20 @@ namespace ERP.Infrastructure.Migrations
                 column: "company_bank_account_id");
 
             migrationBuilder.CreateIndex(
+                name: "ix_supplier_payment_methods_bank_reconciliation",
+                table: "supplier_payment_methods",
+                columns: new[] { "tenant_id", "company_bank_account_id", "transaction_date", "reference_number" },
+                filter: "company_bank_account_id IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_supplier_payment_methods_cash_register",
                 table: "supplier_payment_methods",
                 column: "cash_register_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_supplier_payment_methods_cash_session",
+                table: "supplier_payment_methods",
+                column: "cash_session_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_supplier_payment_methods_payment_method",
@@ -9281,6 +9429,13 @@ namespace ERP.Infrastructure.Migrations
                 name: "ix_supplier_payment_methods_tenant_payment",
                 table: "supplier_payment_methods",
                 columns: new[] { "tenant_id", "supplier_payment_id" });
+
+            migrationBuilder.CreateIndex(
+                name: "ux_supplier_payment_methods_cash_movement",
+                table: "supplier_payment_methods",
+                column: "cash_movement_id",
+                unique: true,
+                filter: "cash_movement_id IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "uq_supplier_payment_sequences_tenant_company",
@@ -9429,11 +9584,100 @@ namespace ERP.Infrastructure.Migrations
                 columns: new[] { "tenant_id", "company_id", "branch_id" },
                 unique: true,
                 filter: "is_main = true");
+            // ── Objetos de BD fuera del modelo EF (raw SQL) ─────────────────────────────
+            // El model snapshot no los conoce: al regenerar una línea base desaparecen en silencio.
+            // Registrados en ERP.Architecture.Tests/RawSqlDatabaseObjectsSurviveMigrationSquashTests;
+            // al consolidar de nuevo, copiarlos aquí sin cambios.
+
+            // ADR-BP-03 — identificación única e incondicional por tenant. Combina una columna del
+            // owner (tenant_id) con columnas del owned type Identification, que EF no puede
+            // expresar en un índice compuesto (ver BusinessPartnerConfiguration).
+            migrationBuilder.Sql(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS uq_mbp_identification
+                ON master_business_partners (tenant_id, identification_type, identification_number);
+                """
+            );
+
+            // Exclusividad Compra↔Gasto por AccessKey: una factura SRI no puede estar activa como
+            // compra y como gasto a la vez (trigger cruzado entre dos tablas; EF no lo modela).
+            // Ignora documentos Cancelled (PurchaseStatus.Cancelled = 3, ExpenseStatus.Cancelled = 2)
+            // para permitir el reproceso tras anular. SQLSTATE 23505 + CONSTRAINT
+            // 'uq_purchase_expense_access_key' los traducen PurchaseDraftUseCases y
+            // ExpenseDocumentDraftUseCases a su mensaje de UX.
+            migrationBuilder.Sql(
+                """
+                CREATE OR REPLACE FUNCTION enforce_purchase_expense_exclusivity() RETURNS trigger
+                LANGUAGE plpgsql AS $$
+                BEGIN
+                    IF NEW.access_key IS NULL THEN RETURN NEW; END IF;
+                    PERFORM pg_advisory_xact_lock(hashtextextended(
+                        'purchase-expense:' || NEW.tenant_id::text || ':' || NEW.access_key, 0));
+                    IF TG_TABLE_NAME = 'expense_documents' THEN
+                        IF EXISTS (SELECT 1 FROM purchase_invoices
+                            WHERE tenant_id = NEW.tenant_id AND access_key = NEW.access_key
+                                AND status <> 3) THEN
+                            RAISE EXCEPTION 'La factura ya fue registrada como compra.'
+                                USING ERRCODE = '23505', CONSTRAINT = 'uq_purchase_expense_access_key';
+                        END IF;
+                    ELSE
+                        IF EXISTS (SELECT 1 FROM expense_documents
+                            WHERE tenant_id = NEW.tenant_id AND access_key = NEW.access_key
+                                AND status <> 2) THEN
+                            RAISE EXCEPTION 'La factura ya fue registrada como gasto.'
+                                USING ERRCODE = '23505', CONSTRAINT = 'uq_purchase_expense_access_key';
+                        END IF;
+                    END IF;
+                    RETURN NEW;
+                END;
+                $$;
+                """
+            );
+
+            migrationBuilder.Sql(
+                """
+                CREATE TRIGGER tr_expense_purchase_exclusivity
+                    BEFORE INSERT OR UPDATE OF tenant_id, access_key ON expense_documents
+                    FOR EACH ROW EXECUTE FUNCTION enforce_purchase_expense_exclusivity();
+                CREATE TRIGGER tr_purchase_expense_exclusivity
+                    BEFORE INSERT OR UPDATE OF tenant_id, access_key ON purchase_invoices
+                    FOR EACH ROW EXECUTE FUNCTION enforce_purchase_expense_exclusivity();
+                """
+            );
+
+            // Item Matching (Purchase Reception): ItemRepository.SearchBySimilarityAsync usa
+            // EF.Functions.TrigramsSimilarity (similarity() de pg_trgm) sobre description/short_name.
+            // pg_trgm es extensión trusted (PG13+): la crea el dueño de la BD sin superusuario.
+            migrationBuilder.Sql(
+                """
+                CREATE EXTENSION IF NOT EXISTS pg_trgm;
+                """
+            );
+
+            migrationBuilder.Sql(
+                """
+                CREATE INDEX IF NOT EXISTS ix_items_short_name_trgm ON items USING gin (short_name gin_trgm_ops);
+                CREATE INDEX IF NOT EXISTS ix_items_description_trgm ON items USING gin (description gin_trgm_ops);
+                """
+            );
+
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.Sql(
+                """
+                DROP INDEX IF EXISTS ix_items_description_trgm;
+                DROP INDEX IF EXISTS ix_items_short_name_trgm;
+                DROP EXTENSION IF EXISTS pg_trgm;
+                DROP TRIGGER IF EXISTS tr_purchase_expense_exclusivity ON purchase_invoices;
+                DROP TRIGGER IF EXISTS tr_expense_purchase_exclusivity ON expense_documents;
+                DROP FUNCTION IF EXISTS enforce_purchase_expense_exclusivity();
+                DROP INDEX IF EXISTS uq_mbp_identification;
+                """
+            );
+
             migrationBuilder.DropTable(
                 name: "access_profile_permissions");
 
@@ -9448,6 +9692,9 @@ namespace ERP.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "cash_closing_counts");
+
+            migrationBuilder.DropTable(
+                name: "cash_funding_requests");
 
             migrationBuilder.DropTable(
                 name: "cash_movement_reasons");
@@ -9888,9 +10135,6 @@ namespace ERP.Infrastructure.Migrations
                 name: "stock_transfers");
 
             migrationBuilder.DropTable(
-                name: "cash_movements");
-
-            migrationBuilder.DropTable(
                 name: "supplier_credit_movements");
 
             migrationBuilder.DropTable(
@@ -9936,13 +10180,13 @@ namespace ERP.Infrastructure.Migrations
                 name: "accounts_payable_installments");
 
             migrationBuilder.DropTable(
+                name: "cash_movements");
+
+            migrationBuilder.DropTable(
                 name: "company_bank_accounts");
 
             migrationBuilder.DropTable(
                 name: "payment_methods");
-
-            migrationBuilder.DropTable(
-                name: "supplier_payments");
 
             migrationBuilder.DropTable(
                 name: "items");
@@ -9952,6 +10196,9 @@ namespace ERP.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "purchase_returns");
+
+            migrationBuilder.DropTable(
+                name: "supplier_payments");
 
             migrationBuilder.DropTable(
                 name: "accounts_payables");

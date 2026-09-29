@@ -116,8 +116,8 @@ public sealed class BusinessPartnerConfiguration : IEntityTypeConfiguration<Busi
         // Creado via SQL raw en la migracion: EF Core no puede expresar un indice
         // compuesto sobre columnas del owner + un owned type (probado: tanto la
         // lambda x => new { x.TenantId, x.Identification.Type, ... } como el
-        // overload de HasIndex(string[]) fallan en tiempo de diseno). Ver migracion
-        // AddBusinessPartnerIdentificationUniqueIndex. Al no estar en el modelo, una
+        // overload de HasIndex(string[]) fallan en tiempo de diseno). Ver el bloque raw SQL de
+        // InitialEnterpriseBaseline. Al no estar en el modelo, una
         // consolidacion de migraciones lo pierde (ya ocurrio 3 veces): al squashear, copiar
         // su raw SQL a la nueva cadena. Lo vigila RawSqlDatabaseObjectsSurviveMigrationSquashTests.
         //   CREATE UNIQUE INDEX uq_mbp_identification

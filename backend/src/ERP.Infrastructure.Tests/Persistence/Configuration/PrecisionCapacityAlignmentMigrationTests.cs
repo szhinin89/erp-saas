@@ -3,8 +3,6 @@ using ERP.Infrastructure.Persistence;
 using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql;
 using System.Globalization;
 using Testcontainers.PostgreSql;
@@ -12,16 +10,13 @@ using Testcontainers.PostgreSql;
 namespace ERP.Infrastructure.Tests.Persistence.Configuration;
 
 /// <summary>
-/// ERP-PRECISION-CAPACITY-05A (PostgreSQL 16 real vía Testcontainers). Verifica la migración
-/// PrecisionCapacityAlignment05A: capacidad de columnas (numeric(p,s) del mapa aprobado),
-/// round-trip de 10 decimales internos / 6 en cantidades, normalización de policies de venta &gt; 6
-/// y CHECK constraints nuevos. Requiere Docker.
+/// ERP-PRECISION-CAPACITY-05A (PostgreSQL 16 real vía Testcontainers). Verifica sobre la cadena de
+/// migraciones vigente: capacidad de columnas (numeric(p,s) del mapa aprobado), round-trip de 10
+/// decimales internos / 6 en cantidades y CHECK constraints de capacidad por columna. Requiere Docker.
 /// </summary>
 [Trait("Category", "PostgreSql")]
 public sealed class PrecisionCapacityAlignmentMigrationTests : IAsyncLifetime
 {
-    private const string MigrationBefore = "20260921142248_PrecisionPolicyBackfillAndLegacyCleanup04";
-
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
         .WithImage("postgres:16-alpine")
         .WithDatabase("erp_precision_capacity_test")
@@ -309,52 +304,29 @@ public sealed class PrecisionCapacityAlignmentMigrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Policy_de_venta_mayor_a_6_se_normaliza_a_6_y_CHECK_nuevos_rigen()
+    public async Task CHECK_de_capacidad_por_columna_rigen()
     {
-        await using (var db = CreateContext())
-            await db.Database.GetService<IMigrator>().MigrateAsync(MigrationBefore);
-
-        await using (var conn = await OpenAsync())
-        {
-            await ExecAsync(conn, "SET session_replication_role = replica");
-            await InsertAsync(
-                conn,
-                "company_precision_policy",
-                new()
-                {
-                    ["profile_type"] = "'custom'",
-                    ["sales_unit_price_decimals"] = "8",
-                    ["purchase_unit_price_decimals"] = "8",
-                    ["quantity_decimals"] = "6",
-                    ["percentage_decimals"] = "6",
-                    ["unit_cost_decimals"] = "8",
-                    ["average_cost_decimals"] = "8",
-                    ["conversion_factor_decimals"] = "8",
-                    ["settlement_tolerance_amount"] = "0.01",
-                }
-            );
-        }
-
         await using (var db = CreateContext())
             await db.Database.MigrateAsync();
 
-        await using var conn2 = await OpenAsync();
-        await ExecAsync(conn2, "SET session_replication_role = replica");
-        Convert
-            .ToInt32(
-                await ScalarAsync(conn2, "SELECT sales_unit_price_decimals FROM company_precision_policy"),
-                CultureInfo.InvariantCulture
-            )
-            .Should()
-            .Be(6);
-        // Los demás valores (≤ 10) se preservan.
-        Convert
-            .ToInt32(
-                await ScalarAsync(conn2, "SELECT purchase_unit_price_decimals FROM company_precision_policy"),
-                CultureInfo.InvariantCulture
-            )
-            .Should()
-            .Be(8);
+        await using var conn = await OpenAsync();
+        await ExecAsync(conn, "SET session_replication_role = replica");
+        await InsertAsync(
+            conn,
+            "company_precision_policy",
+            new()
+            {
+                ["profile_type"] = "'custom'",
+                ["sales_unit_price_decimals"] = "6",
+                ["purchase_unit_price_decimals"] = "8",
+                ["quantity_decimals"] = "6",
+                ["percentage_decimals"] = "6",
+                ["unit_cost_decimals"] = "8",
+                ["average_cost_decimals"] = "8",
+                ["conversion_factor_decimals"] = "8",
+                ["settlement_tolerance_amount"] = "0.01",
+            }
+        );
 
         // Ventas rechaza > 6; compra/costo/promedio/factor aceptan hasta 10 y rechazan 11.
         var limits = new (string Col, int Ok, int Bad)[]
@@ -369,8 +341,8 @@ public sealed class PrecisionCapacityAlignmentMigrationTests : IAsyncLifetime
         };
         foreach (var (col, ok, bad) in limits)
         {
-            await ExecAsync(conn2, $"UPDATE company_precision_policy SET {col} = {ok}");
-            var act = async () => await ExecAsync(conn2, $"UPDATE company_precision_policy SET {col} = {bad}");
+            await ExecAsync(conn, $"UPDATE company_precision_policy SET {col} = {ok}");
+            var act = async () => await ExecAsync(conn, $"UPDATE company_precision_policy SET {col} = {bad}");
             await act.Should().ThrowAsync<PostgresException>($"{col} > {ok} debe violar el CHECK");
         }
     }

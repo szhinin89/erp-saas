@@ -49,9 +49,21 @@ Conexión: `ConnectionStrings:DefaultConnection`. En Development, `Database.Migr
 
 ### Baseline EF (desarrollo)
 
-Una sola migración: `20260611112647_InitialEnterpriseBaseline`. Detalle: [`backend/src/ERP.Infrastructure/Migrations/README.md`](../backend/src/ERP.Infrastructure/Migrations/README.md).
+Una sola migración: `20260929143218_InitialEnterpriseBaseline` (consolidación ZH-DB-FINAL-BASELINE-SQUASH-01, 2026-09-29). Una instalación nueva aplica solo esa migración; no existe upgrade-path desde cadenas anteriores (todas eran BD de desarrollo recreables).
 
-Cambios de schema posteriores: solo migraciones forward con `dotnet ef migrations add`.
+Cambios de schema posteriores: solo migraciones forward con `dotnet ef migrations add`. No regenerar la baseline desde el modelo para "limpiar historial" sin copiar antes el raw SQL (tabla siguiente).
+
+#### Objetos raw SQL (fuera del modelo EF)
+
+El model snapshot no los conoce: una baseline regenerada con `dotnet ef migrations add` los omite en silencio. Viven al final del `Up` de la baseline y los vigilan `ERP.Architecture.Tests/RawSqlDatabaseObjectsSurviveMigrationSquashTests` (existen en las migraciones, y todo objeto raw está registrado) y `ERP.Infrastructure.Tests/Persistence/RawSqlDatabaseObjectsBaselineIntegrationTests` (existen físicamente en una BD recién migrada).
+
+| Objeto | Tipo | Motivo |
+|--------|------|--------|
+| `uq_mbp_identification` | Índice único | ADR-BP-03; columna del owner + owned type, EF no lo expresa |
+| `enforce_purchase_expense_exclusivity()` | Función plpgsql | Exclusividad Compra↔Gasto por AccessKey (ignora Cancelled) |
+| `tr_expense_purchase_exclusivity` / `tr_purchase_expense_exclusivity` | Triggers | Invocan la función en `expense_documents` / `purchase_invoices` |
+| `pg_trgm` | Extensión | `EF.Functions.TrigramsSimilarity` en Item Matching |
+| `ix_items_short_name_trgm` / `ix_items_description_trgm` | Índices GIN trigram | Item Matching por similitud |
 
 Reset local recomendado:
 

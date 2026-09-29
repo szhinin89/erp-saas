@@ -2,6 +2,16 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-29** · Kernel refactor: **2026-06-05**.
 
+## ZH-DB-FINAL-BASELINE-SQUASH-01 — Una sola `InitialEnterpriseBaseline` instalable desde cero (2026-09-29)
+
+**Estado: COMPLETADO.** Las 7 migraciones de desarrollo (`20260926002259_InitialEnterpriseBaseline` … `20260929105048_RestorePurchaseExpenseAccessKeyExclusivity`) se reemplazan por `20260929143218_InitialEnterpriseBaseline` (UTF-8 sin BOM, LF). Sin upgrade-path: no hay producción y las BD eran recreables. Snapshot regenerado idéntico al anterior (sin drift de modelo).
+- Raw SQL fuera del modelo EF, incorporado al final del `Up`: `uq_mbp_identification`, `enforce_purchase_expense_exclusivity()` + `tr_expense_purchase_exclusivity`/`tr_purchase_expense_exclusivity`, y **restaurados** `pg_trgm` + `ix_items_short_name_trgm`/`ix_items_description_trgm` (perdidos en una consolidación anterior: `ItemRepository.SearchBySimilarityAsync` fallaba en toda BD nueva por falta de `similarity()`). No vigentes (no se incorporan): políticas RLS (ADR-005/015: no implementado), `ck_identity_users_platform_no_subscriber` (columnas eliminadas), `mv_saldos_diarios` e `ix_inventario_movimientos_kardex` (tabla `inventario_movimientos` inexistente; lector degrada con gracia). Pre-checks `DO $$`, `LOCK TABLE` y backfills de datos no aplican a BD vacía.
+- DB_A (cadena histórica) vs DB_B (baseline): 194 tablas, 2586 columnas, 463 constraints, índices, función (md5 idéntico) y triggers iguales. Diferencias: + `pg_trgm` y sus 2 índices (restauración intencional); `supplier_payments.confirmed_by_user_id` sin `DEFAULT '0000…'` (artefacto del `AddColumn` de backfill; el dominio siempre lo asigna); orden físico de columnas. Ninguna pérdida de esquema.
+- Causa raíz de las pérdidas: `scripts/dev-launcher.ps1` opción 2 (reset) borraba `Migrations/` y regeneraba la baseline desde el snapshot en cada reset. Ahora el reset solo borra la BD y aplica las migraciones versionadas.
+- Anti-regresión: `RawSqlDatabaseObjectsSurviveMigrationSquashTests` registra los 7 objetos y exige que todo `CREATE …` raw de las migraciones esté registrado; nuevo `RawSqlDatabaseObjectsBaselineIntegrationTests` (PostgreSQL) verifica su existencia física y la búsqueda por similitud. Eliminados los tests de upgrade-path que migraban a migraciones intermedias (backfills de precisión, pre-checks de duplicados/conflictos); `PrecisionCapacityAlignmentMigrationTests` conserva la verificación de CHECKs sobre la baseline.
+- Instalación local desde cero: `dberpsaas` eliminada y recreada con `dotnet ef database update` → solo `20260929143218_InitialEnterpriseBaseline` en `__EFMigrationsHistory`; bootstrap/InstallData, token first-run, `POST /setup/admin`, login, empresa `Principal` accesible (`companies/current` 200).
+- Evidencia: Infrastructure 960/960 (en `HEAD`: 952/957 — 4 tests apuntaban a migraciones ya borradas + 1 timeout de Docker) · API 638/638 · Application 2398 · Domain 1221 · Architecture 119 · `architecture:check` sin cambios (62/100, 0 nuevas).
+
 ## ZH-PURCHASES-RETENTION-OWNERSHIP-01 — Pertenencia de retenciones de compra en Application (2026-09-29)
 
 **Estado: COMPLETADO. Purchases vuelve a CLOSED** (reapertura acotada a la garantía de pertenencia de retenciones).

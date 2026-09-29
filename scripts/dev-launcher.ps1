@@ -414,56 +414,9 @@ function Ensure-FrontendDependencies {
 # MIGRACIONES EF CORE
 # =============================================================================
 
-function Remove-MigrationFiles {
-
-    Write-Step "Eliminando carpeta de migraciones EF Core"
-
-    $migrationsPath = Join-Path `
-        $BackendPath `
-        "src/ERP.Infrastructure/Migrations"
-
-    if (-not (Test-Path $migrationsPath)) {
-        Write-Ok "No existe la carpeta de migraciones"
-        return
-    }
-
-    Remove-Item `
-        -Path $migrationsPath `
-        -Recurse `
-        -Force
-
-    New-Item `
-        -ItemType Directory `
-        -Path $migrationsPath | Out-Null
-
-    Write-Ok "Carpeta de migraciones reiniciada"
-}
-
-
-function Invoke-NewInitialMigration {
-
-    Write-Step "Generando migración inicial desde el modelo actual"
-
-    Push-Location $BackendPath
-
-    try {
-
-        dotnet ef migrations add InitialEnterpriseBaseline `
-            --project $InfrastructureProject `
-            --startup-project $ApiProject `
-            --context ErpDbContext
-
-        if ($LASTEXITCODE -ne 0) {
-            throw "Falló la generación de la migración inicial"
-        }
-
-        Write-Ok "Migración inicial generada"
-    }
-    finally {
-        Pop-Location
-    }
-}
-
+# El reset NO borra ni regenera migraciones: la línea base versionada contiene raw SQL
+# (índices, función y triggers, pg_trgm) que el model snapshot no conoce, y regenerarla desde
+# el modelo los pierde en silencio. Ver RawSqlDatabaseObjectsSurviveMigrationSquashTests.
 
 function Invoke-DatabaseUpdate {
 
@@ -1033,9 +986,8 @@ function Invoke-FullReset {
 
     Write-Title "RESET COMPLETO DEL SISTEMA"
 
-    Write-Warn "Esta operación ELIMINA la base de datos actual, todos sus datos"
-    Write-Warn "y TODOS los archivos de migración EF Core."
-    Write-Warn "Se regenerará una migración inicial y un nuevo administrador desde cero."
+    Write-Warn "Esta operación ELIMINA la base de datos actual y todos sus datos."
+    Write-Warn "Se recreará desde las migraciones versionadas y con un nuevo administrador desde cero."
 
     $confirm = Read-Host "Escriba RESETEAR para confirmar"
 
@@ -1050,8 +1002,6 @@ function Invoke-FullReset {
     Invoke-Clean
     Invoke-DotnetRestore
     Invoke-DatabaseDrop
-    Remove-MigrationFiles
-    Invoke-NewInitialMigration
     Invoke-DatabaseUpdate
     Invoke-BackendBuild
     Start-Backend

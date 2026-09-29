@@ -7,25 +7,18 @@ using ERP.Infrastructure.Persistence;
 using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Testcontainers.PostgreSql;
 
 namespace ERP.Infrastructure.Tests.Persistence.Configuration;
 
 /// <summary>
-/// COMPANY-PRECISION-POLICY-SSOT-01 (PostgreSQL 16 real vía Testcontainers). Cubre: (1) el
-/// backfill de la migración AddCompanyPrecisionPolicy crea una fila por empresa existente con el
-/// perfil Estándar comercial por defecto; (2) si existían valores previos en org_settings
-/// (namespace Presentation), se mapean y clampean a los nuevos rangos; (3) unique(tenant_id,
-/// company_id); (4) el filtro por tenant_id/company_id no fuga entre empresas. Requiere Docker.
+/// COMPANY-PRECISION-POLICY-SSOT-01 (PostgreSQL 16 real vía Testcontainers). Cubre sobre la cadena
+/// de migraciones vigente: (1) unique(tenant_id, company_id); (2) el filtro por
+/// tenant_id/company_id no fuga entre empresas. Requiere Docker.
 /// </summary>
 [Trait("Category", "PostgreSql")]
 public sealed class CompanyPrecisionPolicyMigrationTests : IAsyncLifetime
 {
-    private const string MigrationBeforeCompanyPrecisionPolicy =
-        "20260913131221_AddSalesInvoiceDetailHistoricalPricingFields";
-
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
         .WithImage("postgres:16-alpine")
         .WithDatabase("erp_precision_policy_migration_test")
@@ -44,224 +37,6 @@ public sealed class CompanyPrecisionPolicyMigrationTests : IAsyncLifetime
             new NoOpPublisher(),
             new FixedCurrentCompany(companyId)
         );
-
-    [Fact]
-    public async Task Backfill_crea_fila_StandardCommercial_para_empresa_sin_org_settings_previos()
-    {
-        Guid tenantId;
-        Guid companyId;
-
-        await using (var db = CreateContext())
-        {
-            await db.Database.GetService<IMigrator>().MigrateAsync(MigrationBeforeCompanyPrecisionPolicy);
-
-            var createdBy = Guid.NewGuid();
-            var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], createdBy);
-            var company = Company.CreateManaged(
-                tenant.Id,
-                "1790012345001",
-                "Test S.A.",
-                createdBy: createdBy
-            );
-            db.Tenants.Add(tenant);
-            db.Companies.Add(company);
-            await db.SaveChangesAsync();
-            tenantId = tenant.Id;
-            companyId = company.Id;
-        }
-
-        await using (var db = CreateContext())
-        {
-            await db.Database.GetService<IMigrator>().MigrateAsync();
-        }
-
-        await using (var db = CreateContext(tenantId, companyId))
-        {
-            var policy = await db.CompanyPrecisionPolicies.SingleAsync(p =>
-                p.TenantId == tenantId && p.CompanyId == companyId
-            );
-
-            policy.ProfileType.Should().Be(PrecisionProfileType.StandardCommercial);
-            policy.SalesUnitPriceDecimals.Should().Be(2);
-            policy.PurchaseUnitPriceDecimals.Should().Be(4);
-            policy.QuantityDecimals.Should().Be(4);
-            policy.PercentageDecimals.Should().Be(2);
-            policy.UnitCostDecimals.Should().Be(6);
-            policy.AverageCostDecimals.Should().Be(6);
-            policy.ConversionFactorDecimals.Should().Be(6);
-            policy.SettlementToleranceAmount.Should().Be(0.01m);
-            policy.IsLocked.Should().BeFalse();
-        }
-    }
-
-    [Fact]
-    public async Task Backfill_mapea_y_clampea_valores_previos_de_org_settings_Presentation()
-    {
-        Guid tenantId;
-        Guid companyId;
-
-        await using (var db = CreateContext())
-        {
-            await db.Database.GetService<IMigrator>().MigrateAsync(MigrationBeforeCompanyPrecisionPolicy);
-
-            var createdBy = Guid.NewGuid();
-            var tenant = Tenant.Create("Test Tenant 2", $"test-{Guid.NewGuid():N}"[..16], createdBy);
-            var company = Company.CreateManaged(
-                tenant.Id,
-                "1790012345002",
-                "Test S.A. 2",
-                createdBy: createdBy
-            );
-            db.Tenants.Add(tenant);
-            db.Companies.Add(company);
-            await db.SaveChangesAsync();
-            tenantId = tenant.Id;
-            companyId = company.Id;
-
-            // sales_unit_price = 6 (dentro del rango nuevo 2-8, no se clampea).
-            // purchase_unit_price = 0 (fuera del rango nuevo 2-8 → clampea a 2).
-            // quantity = 4 (dentro de 0-6, no se clampea).
-            // percentage = 6 (límite superior exacto del rango nuevo 2-6, no requiere clamp).
-            db.OrgSettings.Add(
-                OrgSetting.Create(
-                    tenantId,
-                    companyId,
-                    OrgScope.Company,
-                    companyId,
-                    "presentation.decimal.sales_unit_price",
-                    "6",
-                    SettingDataType.Int,
-                    createdBy
-                )
-            );
-            db.OrgSettings.Add(
-                OrgSetting.Create(
-                    tenantId,
-                    companyId,
-                    OrgScope.Company,
-                    companyId,
-                    "presentation.decimal.purchase_unit_price",
-                    "0",
-                    SettingDataType.Int,
-                    createdBy
-                )
-            );
-            db.OrgSettings.Add(
-                OrgSetting.Create(
-                    tenantId,
-                    companyId,
-                    OrgScope.Company,
-                    companyId,
-                    "presentation.decimal.quantity",
-                    "4",
-                    SettingDataType.Int,
-                    createdBy
-                )
-            );
-            db.OrgSettings.Add(
-                OrgSetting.Create(
-                    tenantId,
-                    companyId,
-                    OrgScope.Company,
-                    companyId,
-                    "presentation.decimal.percentage",
-                    "6",
-                    SettingDataType.Int,
-                    createdBy
-                )
-            );
-            await db.SaveChangesAsync();
-        }
-
-        await using (var db = CreateContext())
-        {
-            await db.Database.GetService<IMigrator>().MigrateAsync();
-        }
-
-        await using (var db = CreateContext(tenantId, companyId))
-        {
-            var policy = await db.CompanyPrecisionPolicies.SingleAsync(p =>
-                p.TenantId == tenantId && p.CompanyId == companyId
-            );
-
-            policy.SalesUnitPriceDecimals.Should().Be(6);
-            policy.PurchaseUnitPriceDecimals.Should().Be(2, because: "0 está fuera de [2,8] y se clampea al mínimo");
-            policy.QuantityDecimals.Should().Be(4);
-            policy.PercentageDecimals.Should().Be(6);
-            // unit_cost/average_cost/conversion_factor/tolerance nunca existieron en Presentation:
-            // siempre toman el default de Estándar comercial.
-            policy.UnitCostDecimals.Should().Be(6);
-            policy.AverageCostDecimals.Should().Be(6);
-            policy.ConversionFactorDecimals.Should().Be(6);
-            policy.SettlementToleranceAmount.Should().Be(0.01m);
-        }
-    }
-
-    private const string MigrationBeforeCleanup04 = "20260913230202_AddCompanyPrecisionPolicy";
-
-    [Fact]
-    public async Task Cleanup04_backfillea_empresas_sin_policy_con_las_definiciones_y_elimina_keys_legacy()
-    {
-        // ERP-PRECISION-POLICY-SSOT-CLEANUP-04: una empresa creada DESPUÉS del backfill original
-        // (sin fila) recibe la política Estándar comercial de PrecisionPolicyDefinitions, y las filas
-        // huérfanas presentation.decimal.* de org_settings se eliminan.
-        Guid tenantId;
-        Guid companyId;
-
-        await using (var db = CreateContext())
-        {
-            await db.Database.GetService<IMigrator>().MigrateAsync(MigrationBeforeCleanup04);
-
-            var createdBy = Guid.NewGuid();
-            var tenant = Tenant.Create("Test Tenant 4", $"test-{Guid.NewGuid():N}"[..16], createdBy);
-            var company = Company.CreateManaged(tenant.Id, "1790012345004", "Test S.A. 4", createdBy: createdBy);
-            db.Tenants.Add(tenant);
-            db.Companies.Add(company);
-            db.OrgSettings.Add(
-                OrgSetting.Create(
-                    tenant.Id,
-                    company.Id,
-                    OrgScope.Company,
-                    company.Id,
-                    "presentation.decimal.quantity",
-                    "5",
-                    SettingDataType.Int,
-                    createdBy
-                )
-            );
-            await db.SaveChangesAsync();
-            tenantId = tenant.Id;
-            companyId = company.Id;
-
-            (await db.CompanyPrecisionPolicies.IgnoreQueryFilters().AnyAsync(p => p.CompanyId == companyId))
-                .Should()
-                .BeFalse("la migración original ya corrió: esta empresa nace sin política");
-        }
-
-        await using (var db = CreateContext(tenantId, companyId))
-        {
-            await db.Database.GetService<IMigrator>().MigrateAsync();
-
-            var policy = await db.CompanyPrecisionPolicies.SingleAsync(p =>
-                p.TenantId == tenantId && p.CompanyId == companyId
-            );
-            var std = PrecisionPolicyDefinitions.Standard;
-            policy.ProfileType.Should().Be(PrecisionProfileType.StandardCommercial);
-            policy.SalesUnitPriceDecimals.Should().Be(std.SalesUnitPriceDecimals);
-            policy.PurchaseUnitPriceDecimals.Should().Be(std.PurchaseUnitPriceDecimals);
-            policy.QuantityDecimals.Should().Be(std.QuantityDecimals);
-            policy.PercentageDecimals.Should().Be(std.PercentageDecimals);
-            policy.UnitCostDecimals.Should().Be(std.UnitCostDecimals);
-            policy.AverageCostDecimals.Should().Be(std.AverageCostDecimals);
-            policy.ConversionFactorDecimals.Should().Be(std.ConversionFactorDecimals);
-            policy.SettlementToleranceAmount.Should().Be(std.SettlementToleranceAmount);
-            policy.IsLocked.Should().BeFalse();
-
-            (await db.OrgSettings.IgnoreQueryFilters().AnyAsync(s => s.Key.StartsWith("presentation.decimal.")))
-                .Should()
-                .BeFalse("las keys legacy ya no tienen definición ni consumidores");
-        }
-    }
 
     [Fact]
     public async Task Unique_tenant_company_se_respeta()
