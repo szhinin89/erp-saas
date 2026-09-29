@@ -116,7 +116,7 @@ describe("ChartOfAccountsPage — activar/desactivar cuenta: confirmación y fee
     const { container } = renderPage();
     await waitFor(() => expect(screen.getByText("Caja chica")).toBeTruthy());
 
-    const compactFilterBar = container.querySelector(".coa-list-filters");
+    const compactFilterBar = container.querySelector(".acc-coa-list-filters");
     expect(compactFilterBar).toBeTruthy();
     expect(screen.getByPlaceholderText("Buscar por código o nombre...")).toBeTruthy();
     expect(screen.getByText("Todos los tipos")).toBeTruthy();

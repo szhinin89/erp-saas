@@ -437,7 +437,7 @@ export function ChartOfAccountsPage() {
           className="acc-coa-list-card"
           title="Listado"
           actions={
-            <div className="coa-list-filters">
+            <div className="acc-coa-list-filters">
               <ZhTextInput
                 placeholder="Buscar por código o nombre..."
                 value={search}

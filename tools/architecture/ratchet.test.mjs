@@ -115,12 +115,21 @@ test('baseline malformado falla cerrado', () => {
   }
 });
 
-test('baseline versionado conserva los 6 hallazgos y el desglose aprobado', () => {
+test('baseline versionado vacío: deuda histórica en 0 y desglose vacío', () => {
   const checkedIn = loadArchitectureBaseline();
-  assert.equal(checkedIn.summary.violations, 6);
-  assert.deepEqual(checkedIn.summary.byCheck, {
-    'css-prefixes': 6,
-  });
+  assert.equal(checkedIn.summary.violations, 0);
+  assert.deepEqual(checkedIn.summary.byCheck, {});
+  assert.deepEqual(checkedIn.violations, []);
+});
+
+test('con baseline vacío: sin hallazgos pasa y cualquier hallazgo es nuevo', () => {
+  // El baseline versionado real (vacío), no un fixture: el gate debe funcionar con 0 identidades.
+  const empty = loadArchitectureBaseline();
+  assert.equal(compareArchitectureBaseline(results([]), empty).passed, true);
+
+  const comparison = compareArchitectureBaseline(results([finding('frontend/src/modules/a/file.tsx', 'new')]), empty);
+  assert.equal(comparison.passed, false);
+  assert.equal(comparison.newViolationCount, 1);
 });
 
 test('un duplicado idéntico cuenta como ocurrencia nueva', () => {

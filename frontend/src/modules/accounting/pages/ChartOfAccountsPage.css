@@ -13,7 +13,7 @@
   min-width: 0;
 }
 
-.coa-list-filters {
+.acc-coa-list-filters {
   display: grid;
   grid-template-columns: minmax(280px, 1fr) 180px 180px auto;
   align-items: center;
@@ -23,12 +23,12 @@
   margin-left: auto;
 }
 
-.coa-list-filters input,
-.coa-list-filters select {
+.acc-coa-list-filters input,
+.acc-coa-list-filters select {
   width: 100%;
 }
 
-.coa-list-filters button {
+.acc-coa-list-filters button {
   white-space: nowrap;
 }
 
@@ -160,14 +160,14 @@
     flex-basis: 100%;
   }
 
-  .coa-list-filters {
+  .acc-coa-list-filters {
     grid-template-columns: 1fr;
     max-width: none;
     margin-left: 0;
     width: 100%;
   }
 
-  .coa-list-filters button {
+  .acc-coa-list-filters button {
     justify-self: flex-start;
   }
 

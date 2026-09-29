@@ -1,0 +1,34 @@
+/* ZH-ARCH-CSS-PREFIXES-02 — barra de búsqueda + "Actualizar" en las acciones del listado de
+   Bancos. Antes reutilizaba .coa-list-filters de ChartOfAccountsPage.css sin importarlo (solo
+   tenía estilo si Contabilidad ya se había cargado). Mismas reglas, con la grilla ajustada a sus
+   dos elementos: campo de búsqueda (mín. 280px) + botón de 180px. */
+.banks-list-filters {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) 180px;
+  align-items: center;
+  justify-content: end;
+  gap: var(--space-2);
+  max-width: 900px;
+  margin-left: auto;
+}
+
+.banks-list-filters input {
+  width: 100%;
+}
+
+.banks-list-filters button {
+  white-space: nowrap;
+}
+
+@media (max-width: 920px) {
+  .banks-list-filters {
+    grid-template-columns: 1fr;
+    max-width: none;
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .banks-list-filters button {
+    justify-self: flex-start;
+  }
+}

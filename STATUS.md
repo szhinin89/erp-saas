@@ -2,6 +2,15 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-28** · Kernel refactor: **2026-06-05**.
 
+## ZH-ARCH-CSS-PREFIXES-02 — Barra de filtros propia de Bancos; baseline en 0 (2026-09-28)
+
+**Estado: COMPLETADO.** Últimas 6 `css-prefixes` resueltas; el baseline versionado queda vacío (`violations: []`, `byCheck: {}`).
+- Causa: `settings/banks/BanksPage.tsx` usaba `.coa-list-filters` de `ChartOfAccountsPage.css` sin importarlo — solo tenía estilo si Contabilidad ya se había cargado (en carga directa de `/settings/banks` la barra no tenía grilla).
+- Solución: `ZHFilterBar` descartado (panel con borde/padding/fondo propio, pensado fuera de tarjetas; en las acciones de `ZHCard` cambiaría la UX). Nueva `BanksPage.css` (importada por la página) con `.banks-list-filters`: mismas reglas (grid, gap, `max-width` 900, alineación a la derecha, input 100%, botón `nowrap`, colapso a 1 columna ≤920px) con la grilla ajustada a sus 2 elementos (`minmax(280px, 1fr) 180px`, antes 4 columnas con 2 vacías). En Contabilidad `.coa-list-filters` → `.acc-coa-list-filters` (CSS, página y test).
+- Ratchet: test del baseline versionado vacío + test de que con baseline vacío el gate pasa sin hallazgos y falla ante cualquiera nuevo.
+- Resultado real de `npm run architecture:check`: gate PASS, 18 checks (17 PASS, `backend-controller-thin` WARN con 21 controllers >150 líneas), baseline 0, nuevas 0. Score reportado 0/100 (critical, drift high): 100 − 21 warnings×2 − 164 entradas grandfather×1 (162 `namingConventionsGrandfathered` + 2 `designSystemGrandfathered`); no es deuda del ratchet sino de esas dos fuentes.
+- Hallazgo aparte (sin corregir): `OperationalReadinessSection.tsx` usa `cfg-opreadiness-section` (antes `opreadiness-section`) sin ninguna regla CSS — preexistente.
+
 ## ZH-ARCH-CSS-PREFIXES-01 — Prefijos CSS de página (2026-09-28)
 
 **Estado: COMPLETADO (106 de 112; 6 requieren migración coordinada).** 112 ocurrencias clasificadas: A 106 · B 0 · C 6 · D 0. Renombre por prefijo (CSS + TSX + tests), manteniendo el segmento semántico y los modifiers BEM; estilos y layout sin cambios (mismo set de clases que HEAD, solo con prefijo permitido); checker intacto.

@@ -21,6 +21,7 @@ import {
 } from "../schemas/bankSchema";
 
 import "../../../../styles/shared/items-catalog.css";
+import "./BanksPage.css";
 
 type Mode = "list" | "create" | "edit";
 
@@ -208,7 +209,7 @@ export function BanksPage() {
         <ZHCard
           title="Listado"
           actions={
-            <div className="coa-list-filters">
+            <div className="banks-list-filters">
               <ZhTextInput
                 placeholder="Buscar por código o nombre..."
                 value={search}
