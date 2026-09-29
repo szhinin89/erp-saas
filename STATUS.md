@@ -2,6 +2,15 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-28** · Kernel refactor: **2026-06-05**.
 
+## ZH-BP-IDENTIFICATION-UNIQUE-01 — Índice único de identificación de Business Partner restaurado (2026-09-28)
+
+**Estado: COMPLETADO.** `PG_unique_business_partner_identification_enforced` fallaba porque la BD no tenía `uq_mbp_identification` (ADR-BP-03: UNIQUE incondicional `tenant_id + identification_type + identification_number`; BP tenant-scoped, sin company_id, un BP por identificación con todos sus roles). El test era correcto.
+- Causa (B): el índice es raw SQL (EF no puede indexar columna del owner + owned type) y se perdió por TERCERA vez al consolidar migraciones — `4cbc4b12` (2026-09-25) borró `20260914034857_AddBusinessPartnerIdentificationUniqueIndex` y la nueva `InitialEnterpriseBaseline` se regeneró desde el snapshot, que no lo conoce. Create/Update/bootstrap de Consumidor Final confiaban en él como barrera real.
+- Corrección: migración `20260929034558_AddBusinessPartnerIdentificationUniqueIndex` al final de la cadena (sin cambio de modelo; snapshot intacto) con pre-check que detiene la migración listando duplicados si una BD los acumuló. BD local `dberpsaas`: 0 duplicados, índice ausente — aplica limpio.
+- Anti-regresión: `RawSqlDatabaseObjectsSurviveMigrationSquashTests` (Architecture, sin Docker) falla si una consolidación deja fuera un objeto raw SQL registrado.
+- **Hallazgo abierto (no corregido, fuera de alcance — Purchases/Expenses):** la misma consolidación perdió `enforce_purchase_expense_exclusivity` + triggers `tr_expense_purchase_exclusivity`/`tr_purchase_expense_exclusivity` (origen `20260908175033_ExpensesFromPurchaseReception`); 2 tests de `PurchaseExpenseReprocessAfterCancelConstraintsTests` fallan por eso. Al restaurarlos, registrarlos en el test anti-regresión.
+- Evidencia: PostgreSQL unicidad 9/9 · Infra MasterData 24/24 · API 515/515 · Application 2358 · Architecture 117 · `architecture:check` sin cambios (58/100, 21 warnings, 0 nuevas).
+
 ## ZH-BP-NESTED-RESOURCE-OWNERSHIP-01 — Ownership de rutas anidadas de Business Partners (2026-09-28)
 
 **Estado: COMPLETADO.** Las 15 rutas `/business-partners/{bpId}/(roles|contacts|locations)/{childId}` descartaban `bpId` (`_ = bpId`) y los handlers solo recibían el id hijo: dentro del mismo tenant, un hijo de BP-B se consultaba/modificaba con el bpId de BP-A.

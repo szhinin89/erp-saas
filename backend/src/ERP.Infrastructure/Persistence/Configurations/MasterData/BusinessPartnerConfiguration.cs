@@ -117,7 +117,9 @@ public sealed class BusinessPartnerConfiguration : IEntityTypeConfiguration<Busi
         // compuesto sobre columnas del owner + un owned type (probado: tanto la
         // lambda x => new { x.TenantId, x.Identification.Type, ... } como el
         // overload de HasIndex(string[]) fallan en tiempo de diseno). Ver migracion
-        // AddBusinessPartnerIdentificationUniqueIndex.
+        // AddBusinessPartnerIdentificationUniqueIndex. Al no estar en el modelo, una
+        // consolidacion de migraciones lo pierde (ya ocurrio 3 veces): al squashear, copiar
+        // su raw SQL a la nueva cadena. Lo vigila RawSqlDatabaseObjectsSurviveMigrationSquashTests.
         //   CREATE UNIQUE INDEX uq_mbp_identification
         //   ON master_business_partners (tenant_id, identification_type, identification_number);
     }
