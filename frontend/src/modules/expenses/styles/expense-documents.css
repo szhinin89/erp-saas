@@ -156,8 +156,8 @@
 .exp-doc-total-row--grand {
   border-bottom: 0;
   color: var(--color-text-primary);
-  font-size: var(--text-title-md-size);
-  font-weight: var(--text-title-md-weight);
+  font-size: var(--text-headline-sm-size);
+  font-weight: var(--text-headline-sm-weight);
 }
 
 .exp-doc-retention-hint {

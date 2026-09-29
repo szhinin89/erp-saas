@@ -2,6 +2,13 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-28** · Kernel refactor: **2026-06-05**.
 
+## ZH-ARCH-DESIGN-SYSTEM-03 — Últimos tokens `design-system` (2026-09-28)
+
+**Estado: COMPLETADO (3 de 3).** Sin tokens nuevos, sin inline, sin cambios de checker.
+- `CajaPage.css` `.cj-collection-detail-wrap`: `var(--color-surface-subtle, transparent)` → `var(--color-surface-container-low)`. Evidencia: los bloques resumen/informativos con borde + radius + padding usan `--color-surface-container-low` (20 usos: `.sales-summary-box`, `.sales-cash-box`, `.cs-summary`, …); el nombre `surface-subtle` expresa esa intención y `transparent` era solo fallback. Efecto: el panel expandido de sesión de caja muestra fondo sutil `#f2f4f6`.
+- `expense-documents.css` `.exp-doc-total-row--grand` (`--text-title-md-size`/`-weight`): decisión visual aprobada → `--text-headline-sm-size`/`--text-headline-sm-weight` (18px/600; el monto sigue dominante con `ZHMoneyValue emphasis="grand"` 20px/800). Contexto de la decisión: No existe escala `title-md` (solo `headline-sm` 18px/600 y `title-sm` 16px) y los totales equivalentes no tienen patrón único (Ventas factura `headline-lg`/800, Compras factura `headline-md`/800, Devolución venta `headline-sm`, Caja arqueo/Ventas caja 700 con tamaño heredado). El monto ya lo dimensiona `ZHMoneyValue emphasis="grand"`; solo afecta la etiqueta "Total".
+- Baseline: 163 → 160; `design-system` 3 → 0.
+
 ## ZH-ARCH-DESIGN-SYSTEM-02 — Custom properties locales en `F-04-token` (2026-09-28)
 
 **Estado: COMPLETADO.** El checker `design-system` distingue custom properties locales legítimas de tokens globales sin allowlist por archivo ni wildcard. Sin cambios en CSS/TSX.

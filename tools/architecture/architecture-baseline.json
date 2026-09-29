@@ -10,10 +10,9 @@
     "lineNumber": "excluded to keep identity stable across unrelated edits"
   },
   "summary": {
-    "violations": 163,
+    "violations": 160,
     "byCheck": {
       "css-prefixes": 112,
-      "design-system": 3,
       "module-boundaries": 48
     }
   },
@@ -541,27 +540,6 @@
       "rule": "F-css-prefix",
       "file": "frontend/src/modules/configuracion/empresa/sections/operational-readiness.css",
       "message": "class \".opreadiness-sections\" must use prefix \"cfg-\" or \"sri-\" or \"bill-\" or global zh-ui/pg-* token",
-      "count": 1
-    },
-    {
-      "check": "design-system",
-      "rule": "F-04-token",
-      "file": "frontend/src/modules/caja/pages/CajaPage.css",
-      "message": "Token '--color-surface-subtle' no está definido en design-tokens.css — corregir el nombre o agregarlo ahí (no crear tokens sueltos en otros archivos).",
-      "count": 1
-    },
-    {
-      "check": "design-system",
-      "rule": "F-04-token",
-      "file": "frontend/src/modules/expenses/styles/expense-documents.css",
-      "message": "Token '--text-title-md-size' no está definido en design-tokens.css — corregir el nombre o agregarlo ahí (no crear tokens sueltos en otros archivos).",
-      "count": 1
-    },
-    {
-      "check": "design-system",
-      "rule": "F-04-token",
-      "file": "frontend/src/modules/expenses/styles/expense-documents.css",
-      "message": "Token '--text-title-md-weight' no está definido en design-tokens.css — corregir el nombre o agregarlo ahí (no crear tokens sueltos en otros archivos).",
       "count": 1
     },
     {
