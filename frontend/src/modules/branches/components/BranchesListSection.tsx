@@ -1,6 +1,5 @@
-﻿import { Link } from "react-router-dom";
 import { EmptyState, LoadingState, Badge } from "../../../components/PageShell";
-import { ZHBtn } from "../../../components/zh/ZHForm";
+import { ZHBtn, ZHLinkButton } from "../../../components/zh/ZHForm";
 import { ZhTextInput } from "../../../components/zh/inputs";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { ReportKpiCard } from "../../../components/ReportPageTemplate";
@@ -84,13 +83,14 @@ export function BranchesListSection({
             align: "right" as const,
             render: (row: BranchRow) => (
               <div className="br-actions-tight">
-                <Link
+                <ZHLinkButton
                   to={`/settings/branches/${row.id}`}
-                  className="zh-btn zh-btn--ghost zh-btn--sm"
+                  variant="ghost"
+                  size="sm"
                   title="Ver detalle completo"
                 >
                   <span className="material-symbols-outlined">open_in_new</span>
-                </Link>
+                </ZHLinkButton>
                 {canUpdate && (
                   <ZHBtn
                     type="button"

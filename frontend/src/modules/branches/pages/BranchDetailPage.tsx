@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { NoAccessPage, LoadingState } from "../../../components/PageShell";
+import { ZHLinkButton } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { branchService, type BranchDetailDto } from "../api/branchService";
@@ -49,9 +50,9 @@ export function BranchDetailPage() {
           message="Error"
           detail={error || "Sucursal no encontrada."}
         />
-        <Link to="/settings/branches" className="zh-btn zh-btn--ghost">
+        <ZHLinkButton to="/settings/branches" variant="ghost">
           ← Volver a sucursales
-        </Link>
+        </ZHLinkButton>
       </ErpPageTemplate>
     );
   }
@@ -62,10 +63,10 @@ export function BranchDetailPage() {
       title={branch.name}
       subtitle={branch.address}
       action={
-        <Link to="/settings/branches" className="zh-btn zh-btn--ghost">
+        <ZHLinkButton to="/settings/branches" variant="ghost">
           <span className="material-symbols-outlined">arrow_back</span>
           Volver
-        </Link>
+        </ZHLinkButton>
       }
     >
       <div className="prd-tabs" role="tablist">
@@ -126,15 +127,16 @@ export function BranchDetailPage() {
               el módulo de Establecimientos para crear, editar y asignar
               establecimientos a esta sucursal.
             </p>
-            <Link
+            <ZHLinkButton
               to={`/settings/establishments?branchId=${id}`}
-              className="zh-btn zh-btn--primary zh-btn--md"
+              variant="primary"
+              size="md"
             >
               <span className="material-symbols-outlined zh-icon-md">
                 receipt_long
               </span>
               Ver establecimientos de esta sucursal
-            </Link>
+            </ZHLinkButton>
           </div>
         </div>
       )}
