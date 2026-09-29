@@ -2,6 +2,12 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-29** · Kernel refactor: **2026-06-05**.
 
+## ZH-API-THIN-AUTH-01 — Emisión de la cookie de refresh unificada (2026-09-29)
+
+**Estado: COMPLETADO.** El bloque "si la respuesta trae RefreshToken y RefreshTokenExpiry → emitir cookie" estaba copiado 7 veces (6 en `AuthController`: Login, GlobalLogin, CompletePasswordReset, Refresh, Reauthenticate, SwitchCompany; 1 en `GlobalAuthController.CompleteAuthResponse`: operate-company/return). Ahora es una sola operación `AuthRefreshCookieHelper.SetRefreshCookieIfIssued(HttpContext, AuthResponseDto?)` (solo transporte HTTP; `SetRefreshCookie` pasa a privado). Sin cambios en JWT, rotación, ventana absoluta, claims, permisos, rutas, payloads, status ni política de cookie (`AuthRefreshCookie`). `AuthController` 292 → 238 líneas (sigue sobre 150).
+- Contrato fijado ANTES del refactor (`AuthRefreshCookieContractTests`, 31 casos sobre el header Set-Cookie real, http y https): éxito con token → una cookie `erp_refresh_token` HttpOnly, SameSite=Strict, Path=/api, Expires=RefreshTokenExpiry, Secure=Request.IsHttps; éxito sin token/expiración/valor → ninguna; fallo (incl. 429) → ninguna y mismo status; forgot/reset-password y my-companies nunca la tocan; logout borra /api y /api/auth aunque el comando falle.
+- Evidencia: contrato 31/31 antes y después · API 551/551 · Architecture 118 (incl. `AuthAttackSurfaceGuardTests`) · `architecture:check` sin cambios (58/100, 21 warnings, 0 nuevas).
+
 ## ZH-API-THIN-BP-ROLES-01 — Config de roles de BP construida en Application (2026-09-29)
 
 **Estado: COMPLETADO.** `BusinessPartnerRolesController` construía `SupplierRoleConfig`/`CarrierRoleConfig`/`CustomerRoleConfig` (Domain) y traducía su `ArgumentException` a 400 en los 3 PATCH de config y en `AssignRole`. Ahora es Request → Command → mediator → ApiResult; sin `ERP.Domain.MasterData.ValueObjects` ni try/catch (269 → 207 líneas; sigue sobre 150, el warning se mantiene — no se dividió).

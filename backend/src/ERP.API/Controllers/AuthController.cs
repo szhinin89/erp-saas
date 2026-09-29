@@ -51,16 +51,7 @@ public sealed class AuthController : ControllerBase
         var result = await _mediator.Send(command, cancellationToken);
         if (result.IsSuccess)
         {
-            if (
-                result.Value?.RefreshToken is not null
-                && result.Value.RefreshTokenExpiry is not null
-            )
-                AuthRefreshCookieHelper.SetRefreshCookie(
-                    HttpContext,
-                    result.Value.RefreshToken,
-                    result.Value.RefreshTokenExpiry.Value
-                );
-
+            AuthRefreshCookieHelper.SetRefreshCookieIfIssued(HttpContext, result.Value);
             return this.ApiOk(result.Value);
         }
 
@@ -84,16 +75,7 @@ public sealed class AuthController : ControllerBase
         var result = await _mediator.Send(command, cancellationToken);
         if (result.IsSuccess)
         {
-            if (
-                result.Value?.RefreshToken is not null
-                && result.Value.RefreshTokenExpiry is not null
-            )
-                AuthRefreshCookieHelper.SetRefreshCookie(
-                    HttpContext,
-                    result.Value.RefreshToken,
-                    result.Value.RefreshTokenExpiry.Value
-                );
-
+            AuthRefreshCookieHelper.SetRefreshCookieIfIssued(HttpContext, result.Value);
             return this.ApiOk(result.Value);
         }
 
@@ -110,16 +92,7 @@ public sealed class AuthController : ControllerBase
         var result = await _mediator.Send(command, cancellationToken);
         if (result.IsSuccess)
         {
-            if (
-                result.Value?.RefreshToken is not null
-                && result.Value.RefreshTokenExpiry is not null
-            )
-                AuthRefreshCookieHelper.SetRefreshCookie(
-                    HttpContext,
-                    result.Value.RefreshToken,
-                    result.Value.RefreshTokenExpiry.Value
-                );
-
+            AuthRefreshCookieHelper.SetRefreshCookieIfIssued(HttpContext, result.Value);
             return this.ApiOk(result.Value);
         }
 
@@ -142,16 +115,7 @@ public sealed class AuthController : ControllerBase
         var result = await _mediator.Send(new RefreshTokenCommand(rawToken), cancellationToken);
         if (result.IsSuccess)
         {
-            if (
-                result.Value?.RefreshToken is not null
-                && result.Value.RefreshTokenExpiry is not null
-            )
-                AuthRefreshCookieHelper.SetRefreshCookie(
-                    HttpContext,
-                    result.Value.RefreshToken,
-                    result.Value.RefreshTokenExpiry.Value
-                );
-
+            AuthRefreshCookieHelper.SetRefreshCookieIfIssued(HttpContext, result.Value);
             return this.ApiOk(result.Value);
         }
 
@@ -187,16 +151,7 @@ public sealed class AuthController : ControllerBase
         );
         if (result.IsSuccess)
         {
-            if (
-                result.Value?.RefreshToken is not null
-                && result.Value.RefreshTokenExpiry is not null
-            )
-                AuthRefreshCookieHelper.SetRefreshCookie(
-                    HttpContext,
-                    result.Value.RefreshToken,
-                    result.Value.RefreshTokenExpiry.Value
-                );
-
+            AuthRefreshCookieHelper.SetRefreshCookieIfIssued(HttpContext, result.Value);
             return this.ApiOk(result.Value);
         }
 
@@ -271,16 +226,7 @@ public sealed class AuthController : ControllerBase
         );
         if (result.IsSuccess)
         {
-            if (
-                result.Value?.RefreshToken is not null
-                && result.Value.RefreshTokenExpiry is not null
-            )
-                AuthRefreshCookieHelper.SetRefreshCookie(
-                    HttpContext,
-                    result.Value.RefreshToken,
-                    result.Value.RefreshTokenExpiry.Value
-                );
-
+            AuthRefreshCookieHelper.SetRefreshCookieIfIssued(HttpContext, result.Value);
             return this.ApiOk(result.Value);
         }
 

@@ -60,16 +60,7 @@ public sealed class GlobalAuthController : ControllerBase
     {
         if (result.IsSuccess)
         {
-            if (
-                result.Value?.RefreshToken is not null
-                && result.Value.RefreshTokenExpiry is not null
-            )
-                AuthRefreshCookieHelper.SetRefreshCookie(
-                    HttpContext,
-                    result.Value.RefreshToken,
-                    result.Value.RefreshTokenExpiry.Value
-                );
-
+            AuthRefreshCookieHelper.SetRefreshCookieIfIssued(HttpContext, result.Value);
             return this.ApiOk(result.Value);
         }
 
