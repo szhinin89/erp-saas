@@ -5,7 +5,7 @@ import { FormProvider, useForm } from "react-hook-form";
 import { SupplierPayablesPortfolio } from "./SupplierPayablesPortfolio";
 import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.config";
 import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
-import type { PendingInstallmentOption } from "../api/pendingPayablesFacade";
+import type { PendingInstallmentOption } from "../../payables/facades/pendingPayablesFacade";
 import type { RegisterSupplierPaymentFormValues } from "../../../schemas/supplier-payments/registerSupplierPaymentSchema";
 
 const TODAY = new Date().toISOString().slice(0, 10);

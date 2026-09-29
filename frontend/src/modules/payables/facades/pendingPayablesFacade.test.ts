@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const listMock = vi.fn();
 const getByIdMock = vi.fn();
 
-vi.mock("../../payables/api/payablesService", () => ({
+vi.mock("../api/payablesService", () => ({
   payablesService: {
     list: (...args: unknown[]) => listMock(...args),
     getById: (...args: unknown[]) => getByIdMock(...args),

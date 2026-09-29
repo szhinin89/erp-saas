@@ -23,7 +23,7 @@ import { cashRegisterLookupFacade, type CashRegisterDto } from "../../caja/facad
 import {
   pendingPayablesFacade,
   type PendingInstallmentOption,
-} from "../api/pendingPayablesFacade";
+} from "../../payables/facades/pendingPayablesFacade";
 import {
   supplierPaymentService,
   type RegisterSupplierPaymentRequest,

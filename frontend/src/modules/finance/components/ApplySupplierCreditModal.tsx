@@ -13,9 +13,9 @@ import type { SupplierCreditDto } from "../api/supplierCreditService";
 import { supplierCreditService } from "../api/supplierCreditService";
 import {
   payableOriginLabel,
-  payablesService,
+  payableLookupFacade,
   type PayableListItemDto,
-} from "../../payables/api/payablesService";
+} from "../../payables/facades/payableLookupFacade";
 import {
   buildApplySupplierCreditSchema,
   type ApplySupplierCreditFormValues,
@@ -33,7 +33,7 @@ interface Props {
 
 /**
  * Aplica el crédito de proveedor contra una CxP destino del mismo proveedor. El selector de CxP
- * se resuelve exclusivamente vía `payablesService.list(...)` (filtro server-side — nunca
+ * se resuelve exclusivamente vía `payableLookupFacade.list(...)` (filtro server-side — nunca
  * client-side sobre una lista completa, diseño Fase 13 cambio exacto #2).
  * ZH-SUPPLIER-CREDIT-APPLY-PAYABLES-02D-C: CxP de Compra y de Gasto (el backend resuelve el lock
  * según el origen); pendientes y parcialmente pagadas (el filtro de estado es de un solo valor →
@@ -67,7 +67,7 @@ export function ApplySupplierCreditModal({ open, credit, onClose, onApplied, def
     setLoadingPayables(true);
     Promise.all(
       (["pending", "partiallypaid"] as const).map((status) =>
-        payablesService.list({ supplierId: credit.supplierId, status }, 1, 100),
+        payableLookupFacade.list({ supplierId: credit.supplierId, status }, 1, 100),
       ),
     )
       .then((results) =>

@@ -4,7 +4,7 @@ import { formatDate } from "../../../lib/formatters/dateFormatters";
 import { formatMoney, formatMoneyWithSymbol } from "../../../lib/sanitizers";
 import { computePaymentSplit } from "../utils/allocation";
 import type { PaymentMethodDto } from "../../sales/facades/paymentMethodLookupFacade";
-import type { PendingInstallmentOption } from "../api/pendingPayablesFacade";
+import type { PendingInstallmentOption } from "../../payables/facades/pendingPayablesFacade";
 import type { RegisterSupplierPaymentFormValues } from "../../../schemas/supplier-payments/registerSupplierPaymentSchema";
 import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 

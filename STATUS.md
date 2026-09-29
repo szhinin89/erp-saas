@@ -2,6 +2,14 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-28** · Kernel refactor: **2026-06-05**.
 
+## ZH-ARCH-MODULE-BOUNDARIES-04-PAYABLES — Contrato público de payables (2026-09-28)
+
+**Estado: COMPLETADO.** Las 2 violaciones hacia payables resueltas con el contrato en el módulo propietario; sin cambios de backend, API, pagos ni SupplierCredit.
+- `payables/facades/payableLookupFacade` (nueva): `list` (delegado a `payablesService.list`), `PayableListItemDto`, `payableOriginLabel` → consumido por `finance/ApplySupplierCreditModal`.
+- `pendingPayablesFacade` (+ su test) movido con `git mv` de `supplier-payments/api/` a `payables/facades/` sin cambiar su lógica (lectura de cuotas pendientes vía `payablesService.list/getById`); supplier-payments (página de pago, cartera, preview, modal de confirmación y tests) lo importa desde payables. El adaptador en el consumidor quedó eliminado.
+- Quedan 3 D (rediseño): expenses→purchases `createExpenseDraft`, purchases→retentions ×2.
+- Baseline: 117 → 115; `module-boundaries` 5 → 3. Frontend completo 2551/2551.
+
 ## ZH-ARCH-MODULE-BOUNDARIES-03 — Lookups read-only restantes vía facades del owner (2026-09-28)
 
 **Estado: COMPLETADO.** Las 33 violaciones A de `module-boundaries` resueltas con facades en el módulo propietario que solo delegan al servicio existente; API/payload/comportamiento sin cambios, backend intacto.

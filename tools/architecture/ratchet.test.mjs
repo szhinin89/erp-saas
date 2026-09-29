@@ -115,12 +115,12 @@ test('baseline malformado falla cerrado', () => {
   }
 });
 
-test('baseline versionado conserva los 117 hallazgos y el desglose aprobado', () => {
+test('baseline versionado conserva los 115 hallazgos y el desglose aprobado', () => {
   const checkedIn = loadArchitectureBaseline();
-  assert.equal(checkedIn.summary.violations, 117);
+  assert.equal(checkedIn.summary.violations, 115);
   assert.deepEqual(checkedIn.summary.byCheck, {
     'css-prefixes': 112,
-    'module-boundaries': 5,
+    'module-boundaries': 3,
   });
 });
 

@@ -1,6 +1,9 @@
-import { payablesService } from "../../payables/api/payablesService";
+import { payablesService } from "../api/payablesService";
 
 /**
+ * Contrato público de payables (ZH-ARCH-MODULE-BOUNDARIES-04): vive en el módulo propietario;
+ * supplier-payments lo consume desde aquí.
+ *
  * SUPPLIER-PAYMENTS-FRONTEND-15E — cuotas pendientes de un proveedor, exclusivamente desde
  * `/api/v1/payables` (AccountsPayable/Installments) — nunca desde Compras/Gastos origen. El
  * listado (`GET /api/v1/payables`) solo trae totales por cabecera; el detalle

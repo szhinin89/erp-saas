@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useFormContext } from "react-hook-form";
 import { formatMoney } from "../../../lib/sanitizers";
 import type { PaymentMethodDto } from "../../sales/facades/paymentMethodLookupFacade";
-import type { PendingInstallmentOption } from "../api/pendingPayablesFacade";
+import type { PendingInstallmentOption } from "../../payables/facades/pendingPayablesFacade";
 import { computeAutomaticAllocations } from "../utils/allocation";
 import type { RegisterSupplierPaymentFormValues } from "../../../schemas/supplier-payments/registerSupplierPaymentSchema";
 import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";

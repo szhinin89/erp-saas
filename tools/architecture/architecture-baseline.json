@@ -10,10 +10,10 @@
     "lineNumber": "excluded to keep identity stable across unrelated edits"
   },
   "summary": {
-    "violations": 117,
+    "violations": 115,
     "byCheck": {
       "css-prefixes": 112,
-      "module-boundaries": 5
+      "module-boundaries": 3
     }
   },
   "violations": [
@@ -552,13 +552,6 @@
     {
       "check": "module-boundaries",
       "rule": "F-module-boundary",
-      "file": "frontend/src/modules/finance/components/ApplySupplierCreditModal.tsx",
-      "message": "cross-module import \"finance\" → \"payables\" via \"../../payables/api/payablesService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
       "file": "frontend/src/modules/purchases/hooks/usePurchasesPage.retention.test.ts",
       "message": "cross-module import \"purchases\" → \"retentions\" via \"../../retentions/api/retentionsService\" not in allowedCrossImports; use shared contract or extend config",
       "count": 1
@@ -568,13 +561,6 @@
       "rule": "F-module-boundary",
       "file": "frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
       "message": "cross-module import \"purchases\" → \"retentions\" via \"../../retentions/api/retentionsService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/supplier-payments/api/pendingPayablesFacade.ts",
-      "message": "cross-module import \"supplier-payments\" → \"payables\" via \"../../payables/api/payablesService\" not in allowedCrossImports; use shared contract or extend config",
       "count": 1
     }
   ]

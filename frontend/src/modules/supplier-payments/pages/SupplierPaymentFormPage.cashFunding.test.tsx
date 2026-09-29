@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { MemoryRouter } from "react-router-dom";
 import { I18nProvider } from "../../../i18n/i18n";
 import { SupplierPaymentFormPage } from "./SupplierPaymentFormPage";
-import { pendingPayablesFacade, type PendingInstallmentOption } from "../api/pendingPayablesFacade";
+import { pendingPayablesFacade, type PendingInstallmentOption } from "../../payables/facades/pendingPayablesFacade";
 import { supplierPaymentService } from "../api/supplierPaymentService";
 import { paymentMethodLookupFacade, type PaymentMethodDto } from "../../sales/facades/paymentMethodLookupFacade";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
@@ -15,7 +15,7 @@ vi.mock("react-router-dom", async () => {
   return { ...actual, useNavigate: () => vi.fn() };
 });
 
-vi.mock("../api/pendingPayablesFacade", () => ({
+vi.mock("../../payables/facades/pendingPayablesFacade", () => ({
   pendingPayablesFacade: { listPendingInstallments: vi.fn() },
 }));
 

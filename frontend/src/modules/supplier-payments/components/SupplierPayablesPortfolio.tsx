@@ -6,7 +6,7 @@ import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { ZhDecimalInput } from "../../../components/zh/inputs";
 import { formatDate, todayIso } from "../../../lib/formatters/dateFormatters";
-import type { PendingInstallmentOption } from "../api/pendingPayablesFacade";
+import type { PendingInstallmentOption } from "../../payables/facades/pendingPayablesFacade";
 import type { RegisterSupplierPaymentFormValues } from "../../../schemas/supplier-payments/registerSupplierPaymentSchema";
 import { ZHNumberValue } from "../../../components/zh/ZHNumberValue";
 
