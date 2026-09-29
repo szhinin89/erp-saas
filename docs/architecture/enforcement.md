@@ -105,7 +105,7 @@ cd frontend && npx tsc --noEmit && npm run build && npm run architecture:check
 
 | Script | Comando | Qué valida |
 |--------|---------|------------|
-| Runner | `npm run architecture:check` (desde `frontend/`) | Ratchet tests + 18 checks + score + JSON report |
+| Runner | `npm run architecture:check` (desde `frontend/`) | Ratchet tests + 19 checks + score + JSON report |
 | Pages wrapper | `npm run architecture:pages` | `pages/**/*.tsx` ≤15 líneas, sin hooks/api |
 | Import boundaries | `npm run architecture:imports` | Imports prohibidos, profundidad relativa |
 | Module boundaries | `npm run architecture:modules` | Cross-imports entre módulos |
@@ -199,6 +199,8 @@ Auto-emite en CI cuando `GITHUB_ACTIONS=true` (integrado en `run-all.mjs`).
 **Excepciones:** añadir path a `architecture-grandfather.json` o `architecture-rules.json` → `exemptions`. Requiere ADR o nota en PR. No silenciar checks en código.
 
 Grandfather legacy: `tools/architecture/architecture-grandfather.json`
+
+**Integridad del grandfather (bloqueante):** `check-grandfather-integrity.mjs` hace fallar `architecture:check` si una entrada apunta a un archivo inexistente (mayúsculas exactas), queda fuera del alcance de la regla que la consume (p. ej. regla F-04 que no aplica al tipo de archivo), está malformada o pertenece a una lista sin checker consumidor registrado. El mensaje identifica lista + ruta. Listas vacías son válidas. Al corregir o mover un archivo grandfathered, eliminar su entrada en el mismo PR. Toda lista nueva se registra con su consumidor en `defaultListSpecs()`.
 
 Ramas y CI: ver [architecture.md § CI y ramas](./architecture.md#ci-y-ramas) (cuerpo normativo único — no duplicado aquí).
 

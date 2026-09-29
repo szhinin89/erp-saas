@@ -21,6 +21,25 @@ const _gfSet = new Set(
 
 const PASCAL = /^[A-Z][A-Za-z0-9]*$/;
 
+/**
+ * Regla B-naming-* que aplica a un archivo backend (repo-relativo posix), o null si ninguna aplica.
+ * Fuente única del alcance: la usa este check y check-grandfather-integrity.mjs.
+ * @param {string} rel
+ * @returns {'B-naming-controller' | 'B-naming-handler' | 'B-naming-cqrs' | null}
+ */
+export function backendNamingRuleFor(rel) {
+  if (!rel.startsWith('backend/src/') || !rel.endsWith('.cs')) return null;
+  const filename = path.posix.basename(rel, '.cs');
+  if (/\/Controllers\//.test(rel) && filename.endsWith('Controller') && !rel.includes('Tests')) {
+    return 'B-naming-controller';
+  }
+  if (/\/UseCases\//.test(rel) && filename.endsWith('Handler')) return 'B-naming-handler';
+  if (/\/UseCases\//.test(rel) && (filename.endsWith('Command') || filename.endsWith('Query'))) {
+    return 'B-naming-cqrs';
+  }
+  return null;
+}
+
 export function runCheckNamingConventions() {
   const result = createCheckResult(CHECK_NAME);
 
@@ -33,41 +52,14 @@ export function runCheckNamingConventions() {
     if (_gfSet.has(rel)) continue;
     const filename = path.basename(abs, '.cs');
 
-    // Controllers: archivos *Controller.cs deben declarar tipo con ese nombre
-    if (/\/Controllers\//.test(rel) && filename.endsWith('Controller') && !rel.includes('Tests')) {
-      const text = readText(rel);
-      if (!text.includes(filename)) {
-        addViolation(result, {
-          rule: 'B-naming-controller',
-          file: rel,
-          message: `"${filename}.cs" must declare type ${filename}`,
-        });
-      }
-    }
-
-    // UseCases: *Handler.cs debe tener su tipo en el archivo
-    if (/\/UseCases\//.test(rel) && filename.endsWith('Handler')) {
-      const text = readText(rel);
-      if (!text.includes(filename)) {
-        addViolation(result, {
-          rule: 'B-naming-handler',
-          file: rel,
-          message: `"${filename}.cs" must declare type ${filename}`,
-        });
-      }
-    }
-
-    // UseCases: *Command.cs o *Query.cs
-    if (/\/UseCases\//.test(rel) &&
-        (filename.endsWith('Command') || filename.endsWith('Query'))) {
-      const text = readText(rel);
-      if (!text.includes(filename)) {
-        addViolation(result, {
-          rule: 'B-naming-cqrs',
-          file: rel,
-          message: `"${filename}.cs" must declare type ${filename}`,
-        });
-      }
+    // Controllers/*Controller.cs, UseCases/*Handler.cs, UseCases/*Command|Query.cs deben declarar su tipo
+    const rule = backendNamingRuleFor(rel);
+    if (rule && !readText(rel).includes(filename)) {
+      addViolation(result, {
+        rule,
+        file: rel,
+        message: `"${filename}.cs" must declare type ${filename}`,
+      });
     }
   }
 

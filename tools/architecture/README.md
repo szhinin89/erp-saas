@@ -106,7 +106,7 @@ Estados: `healthy` (≥90), `warning` (≥70), `critical` (<70). Warnings no fal
 | `config/css-prefixes.json` | Mapa path → prefijos CSS + globales |
 | `config/design-system.json` | Clases deprecadas y patrones F-04 (Design System) |
 | `config/scoring-rules.json` | Penalizaciones y umbrales de score |
-| `architecture-grandfather.json` | Legacy permitido (`backendControllerMaxLines`, `designSystemGrandfathered`, …) |
+| `architecture-grandfather.json` | Legacy permitido (`backendControllerMaxLines`, `designSystemGrandfathered`, …). Integridad validada por `check-grandfather-integrity.mjs` (entradas muertas/fuera de alcance → FAIL; tests: `check-grandfather-integrity.test.mjs`) |
 
 **Extender reglas:** editar JSON → `npm run architecture:check`. Documentar en [`docs/architecture/enforcement.md`](../../docs/architecture/enforcement.md).
 

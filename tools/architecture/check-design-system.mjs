@@ -14,6 +14,31 @@ import { createCheckResult, addViolation } from './shared/report-utils.mjs';
 
 export const CHECK_NAME = 'design-system';
 
+const CSS_HEX_RULE = 'F-04-color';
+const CSS_TOKEN_RULE = 'F-04-token';
+const TOKENS_DEF_PATH = 'frontend/src/styles/design-tokens.css';
+
+/**
+ * Reglas F-04-* que este check puede reportar sobre un archivo (repo-relativo posix).
+ * Fuente única del alcance: la usa este check y check-grandfather-integrity.mjs.
+ * @param {{ scanGlobs: string[], deprecatedClassPatterns: { rule: string }[], iconInlineStyleRule: string, cssHexExcludeFiles?: string[] }} cfg
+ * @param {string} rel
+ * @returns {Set<string>}
+ */
+export function designSystemRulesFor(cfg, rel) {
+  const rules = new Set();
+  if (!rel.startsWith('frontend/src/')) return rules;
+  if (rel.endsWith('.tsx') && cfg.scanGlobs.some((g) => matchGlob(g, rel))) {
+    for (const { rule } of cfg.deprecatedClassPatterns) rules.add(rule);
+    rules.add(cfg.iconInlineStyleRule);
+  }
+  if (rel.endsWith('.css')) {
+    if (!cfg.cssHexExcludeFiles?.includes(rel)) rules.add(CSS_HEX_RULE);
+    if (rel !== TOKENS_DEF_PATH) rules.add(CSS_TOKEN_RULE);
+  }
+  return rules;
+}
+
 /** @param {object} grandfather @returns {Map<string, Set<string>>} */
 function buildGrandfatherMap(grandfather) {
   const map = new Map();
@@ -80,7 +105,7 @@ function findCssHexViolations(cfg, rel, content) {
   let m;
   while ((m = hexRe.exec(content)) !== null) {
     found.push({
-      rule: 'F-04-color',
+      rule: CSS_HEX_RULE,
       file: rel,
       message: `Color hexadecimal '${m[0]}' fuera de design-tokens.css — usar var(--color-*).`,
       line: lineOf(content, m.index),
@@ -168,7 +193,7 @@ export function findUndefinedTokenViolations(definedTokens, rel, content, dynami
     const name = m[1];
     if (definedTokens.has(name) || localProperties.has(name) || dynamicProperties.has(name)) continue;
     found.push({
-      rule: 'F-04-token',
+      rule: CSS_TOKEN_RULE,
       file: rel,
       message: `Token '--${name}' no está definido en design-tokens.css — corregir el nombre o agregarlo ahí (no crear tokens sueltos en otros archivos).`,
       line: lineOf(content, m.index),
@@ -197,8 +222,7 @@ export function runCheckDesignSystem() {
     }
   }
 
-  const tokensDefPath = 'frontend/src/styles/design-tokens.css';
-  const definedTokens = buildDefinedTokenSet(tokensDefPath);
+  const definedTokens = buildDefinedTokenSet(TOKENS_DEF_PATH);
   const dynamicByCss = collectDynamicCustomProperties(
     walkFiles(path.join(REPO_ROOT, 'frontend/src'), { extensions: ['.ts', '.tsx'] }).map((abs) => {
       const rel = toRepoRel(abs);
@@ -217,7 +241,7 @@ export function runCheckDesignSystem() {
       addViolation(result, v);
     }
 
-    if (rel !== tokensDefPath) {
+    if (rel !== TOKENS_DEF_PATH) {
       for (const v of findUndefinedTokenViolations(definedTokens, rel, content, dynamicByCss.get(rel))) {
         if (allowed?.has(v.rule)) continue;
         addViolation(result, v);

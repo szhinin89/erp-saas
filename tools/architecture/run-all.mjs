@@ -23,6 +23,7 @@ import { runCheckFrontendPermissionsRules } from './check-frontend-permissions-r
 import { runCheckDuplicateServices } from './check-duplicate-services.mjs';
 import { runCheckNamingConventions } from './check-naming-conventions.mjs';
 import { runCheckI18nKeys } from './check-i18n-keys.mjs';
+import { runCheckGrandfatherIntegrity } from './check-grandfather-integrity.mjs';
 import { calculateArchitectureScore } from './calculate-score.mjs';
 import { emitGithubAnnotations } from './github-annotations.mjs';
 import { toJsonReport, writeJsonReport } from './shared/report-utils.mjs';
@@ -54,6 +55,7 @@ export const CHECKS = [
   { name: 'duplicate-services', run: runCheckDuplicateServices },
   { name: 'naming-conventions', run: runCheckNamingConventions },
   { name: 'i18n-keys', run: runCheckI18nKeys },
+  { name: 'grandfather-integrity', run: runCheckGrandfatherIntegrity },
 ];
 
 /**
