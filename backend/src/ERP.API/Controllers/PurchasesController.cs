@@ -279,10 +279,9 @@ public sealed class PurchasesController : ControllerBase
     /// PURCHASES-RETENTIONS-CANCEL-05D — anula la retención transversal (<c>RetentionDocument</c>)
     /// de esta compra: reversa la <c>AccountsPayable</c> ya reducida al emitirla (si tenía monto
     /// retenido real) y el asiento contable original (vía <c>RetentionDocumentCancelledPostingTranslator</c>,
-    /// genérico, sin cambios). Reutiliza <see cref="CancelRetentionCommand"/> tal cual — este
-    /// controller solo valida que <paramref name="retentionId"/> sea realmente la retención activa
-    /// de <paramref name="purchaseId"/> (nunca confía en que el cliente no se equivocó de Id) antes
-    /// de delegar.
+    /// genérico, sin cambios). <see cref="CancelRetentionCommand"/> recibe la compra de la RUTA como
+    /// documento origen y es el handler quien exige que <paramref name="retentionId"/> sea la
+    /// retención activa de <paramref name="purchaseId"/> (si no, el mismo 404 que una inexistente).
     /// </summary>
     [HttpPost("{purchaseId:guid}/retention/{retentionId:guid}/cancel")]
     [Authorize(Policy = $"perm:{PurchasePermissions.Update}")]
@@ -291,22 +290,19 @@ public sealed class PurchasesController : ControllerBase
         Guid retentionId,
         [FromBody] CancelPurchaseRetentionRequest request,
         CancellationToken ct
-    )
-    {
-        var existing = await _mediator.Send(
-            new GetRetentionBySourceQuery(RetentionSourceDocumentType.PurchaseInvoice, purchaseId),
-            ct
-        );
-        if (!existing.IsSuccess)
-            return this.ToOkOrBadRequest(existing);
-        if (existing.Value is null || existing.Value.Id != retentionId)
-            return this.ApiNotFound("La retención no existe o no pertenece a esta compra.");
-
-        return this.ToOkOrBadRequest(
-            await _mediator.Send(new CancelRetentionCommand(retentionId, request.Reason), ct),
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(
+                new CancelRetentionCommand(
+                    RetentionSourceDocumentType.PurchaseInvoice,
+                    purchaseId,
+                    retentionId,
+                    request.Reason
+                ),
+                ct
+            ),
             "OK"
         );
-    }
 
     // ══════════════════════════════════════════════════════════════════════
     // RESUMEN FISCAL POR IMPUESTO (FLOW-READY-02D.1)

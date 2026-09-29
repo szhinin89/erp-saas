@@ -2,6 +2,15 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-29** · Kernel refactor: **2026-06-05**.
 
+## ZH-PURCHASES-RETENTION-OWNERSHIP-01 — Pertenencia de retenciones de compra en Application (2026-09-29)
+
+**Estado: COMPLETADO. Purchases vuelve a CLOSED** (reapertura acotada a la garantía de pertenencia de retenciones).
+- Causa: `POST /purchases/{purchaseId}/retention/{retentionId}/cancel` validaba la pertenencia en el controller (check-then-act: `GetRetentionBySourceQuery` → comparar Id → `CancelRetentionCommand`); el handler solo miraba tenant+sucursal, así que la regla no existía en Application.
+- Contrato: `CancelRetentionCommand(SourceDocumentType, SourceDocumentId, RetentionDocumentId, Reason)` — el origen (de la RUTA) es obligatorio; el handler solo anula la retención ACTIVA de ese origen en la sucursal actual. Inexistente, de otra compra, de un gasto, de otra sucursal, de otro tenant o ya anulada → mismo 404 `NOT_FOUND` "La retención no existe o no pertenece a esta compra." (contrato HTTP previo intacto). Controller: route → command → respuesta.
+- Mismo tipo de hallazgo corregido: `GET /purchases/{id}/retention-preview` (`CalculateRetentionHandler`) no validaba la sucursal (a diferencia de `GetPurchaseByIdHandler`) y exponía el cálculo de retención de compras de otra sucursal → ahora el mismo NotFound que una compra inexistente. `GET`/`POST retention` ya filtraban por el origen de la ruta y sucursal.
+- No se separó `PurchaseRetentionsController`: los 4 endpoints ya están delimitados, la lógica es transversal en Application, Purchases seguiría >150 líneas y hay una decisión documentada de mantenerlos en `PurchasesController`.
+- Evidencia: `CancelRetentionOwnershipIntegrationTests` (PostgreSQL: caso válido + 6 inválidos sin modificar filas) · `CancelRetentionHandlerTests` 14 · `CalculateRetentionBranchScopeTests` 2 · `PurchasesControllerCancelRetentionTests` 5 · Application 2398 · API 638/638 · Infra Retention/Purchase 194/194 · Architecture 118 · `architecture:check` sin cambios (62/100, 19 warnings, 0 nuevas).
+
 ## ZH-API-RESULT-STATUS-MAPPING-01 — `ToOkOrNotFound` deja de convertir todo fallo en 404 (2026-09-29)
 
 **Estado: COMPLETADO.** `ToOkOrNotFound` devolvía 404 para cualquier `Result` fallido (FORBIDDEN, VALIDATION_ERROR, CONFLICT…), ignorando la tabla única de `MapFailure` que ya usan `ToOkOrBadRequest`/`ToCreatedOrBadRequest`.

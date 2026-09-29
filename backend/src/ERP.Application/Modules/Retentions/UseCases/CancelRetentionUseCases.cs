@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Retentions.DTOs;
 using ERP.Application.Modules.Retentions.Services;
 using ERP.Domain.Modules.Retentions.Entities;
+using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Domain.Modules.Retentions.Interfaces;
 using FluentValidation;
 using MediatR;
@@ -19,9 +20,16 @@ namespace ERP.Application.Modules.Retentions.UseCases;
 /// reversa el impacto en CxP si el <c>ExpenseDocument</c> origen tiene una <c>AccountsPayable</c>
 /// con la retención aplicada (<see cref="IRetentionCanceller"/> lo detecta y revierte por su
 /// cuenta) — antes de esta fase no reversaba nada porque la integración con CxP no existía aún.
+/// ZH-PURCHASES-RETENTION-OWNERSHIP-01: el documento origen (<paramref name="SourceDocumentType"/>
+/// + <paramref name="SourceDocumentId"/>, siempre de la RUTA) es obligatorio — el handler solo anula
+/// la retención ACTIVA de ese origen. Antes esa regla vivía como check-then-act en el controller.
 /// </summary>
-public sealed record CancelRetentionCommand(Guid RetentionDocumentId, string Reason)
-    : IRequest<Result<RetentionDocumentDto>>, IBranchScopedRequest;
+public sealed record CancelRetentionCommand(
+    RetentionSourceDocumentType SourceDocumentType,
+    Guid SourceDocumentId,
+    Guid RetentionDocumentId,
+    string Reason
+) : IRequest<Result<RetentionDocumentDto>>, IBranchScopedRequest;
 
 // ── Validator ───────────────────────────────────────────────────────────
 
@@ -29,6 +37,8 @@ public sealed class CancelRetentionValidator : AbstractValidator<CancelRetention
 {
     public CancelRetentionValidator()
     {
+        RuleFor(x => x.SourceDocumentType).IsInEnum();
+        RuleFor(x => x.SourceDocumentId).NotEmpty();
         RuleFor(x => x.RetentionDocumentId).NotEmpty();
         RuleFor(x => x.Reason).NotEmpty();
     }
@@ -67,9 +77,20 @@ public sealed class CancelRetentionHandler : IRequestHandler<CancelRetentionComm
         // GetByIdAsync ya filtra por tenant+company (ForOperationalScope); el branch se valida
         // explícitamente porque el repositorio no lo filtra — mismo patrón fail-closed usado en
         // IssueRetentionHandler/GetRetentionEligibilityHandler, nunca IgnoreQueryFilters.
+        //
+        // Ownership (ZH-PURCHASES-RETENTION-OWNERSHIP-01): solo la retención ACTIVA del documento
+        // origen de la ruta — mismo criterio que GetRetentionBySourceQuery, que el controller usaba
+        // antes como check-then-act. Inexistente, de otro origen (otra compra, un gasto), de otra
+        // sucursal o ya anulada responden el MISMO NotFound: no revela si la retención existe.
         var document = await _repo.GetByIdAsync(_tenant.TenantId, cmd.RetentionDocumentId, ct);
-        if (document is null || document.BranchId != _branch.BranchId)
-            return Result<RetentionDocumentDto>.NotFound("Retención no encontrada.");
+        if (
+            document is null
+            || document.BranchId != _branch.BranchId
+            || document.SourceDocumentType != cmd.SourceDocumentType
+            || document.SourceDocumentId != cmd.SourceDocumentId
+            || document.Status == RetentionStatus.Cancelled
+        )
+            return Result<RetentionDocumentDto>.NotFound(NotFoundMessage(cmd.SourceDocumentType));
 
         // RETENTIONS-EXPENSES-INTEGRATION-01D-3: delega en la operación interna común (staged, sin
         // SaveChanges) — cancelledBy sale siempre de ICurrentUser, nunca del body. Si la CxP del
@@ -83,4 +104,13 @@ public sealed class CancelRetentionHandler : IRequestHandler<CancelRetentionComm
 
         return Result<RetentionDocumentDto>.Success(RetentionDocumentMapper.ToDto(document));
     }
+
+    /// <summary>Mensaje público vigente (el que devolvía el controller de Compras).</summary>
+    private static string NotFoundMessage(RetentionSourceDocumentType sourceType) =>
+        sourceType switch
+        {
+            RetentionSourceDocumentType.PurchaseInvoice => "La retención no existe o no pertenece a esta compra.",
+            RetentionSourceDocumentType.ExpenseDocument => "La retención no existe o no pertenece a este gasto.",
+            _ => "La retención no existe o no pertenece a este documento.",
+        };
 }

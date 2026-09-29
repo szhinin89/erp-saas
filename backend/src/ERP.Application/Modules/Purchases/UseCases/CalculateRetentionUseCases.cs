@@ -57,13 +57,15 @@ public sealed class CalculateRetentionHandler
     private readonly ISupplierRetentionDefaultRepository _retentionDefaultRepo;
     private readonly IRetentionCodeResolver _retCodeResolver;
     private readonly ICurrentTenant _t;
+    private readonly ICurrentBranch _b;
 
     public CalculateRetentionHandler(
         IPurchaseInvoiceRepository repo,
         IBusinessPartnerRoleRepository roleRepo,
         ISupplierRetentionDefaultRepository retentionDefaultRepo,
         IRetentionCodeResolver retCodeResolver,
-        ICurrentTenant t
+        ICurrentTenant t,
+        ICurrentBranch b
     )
     {
         _repo = repo;
@@ -71,6 +73,7 @@ public sealed class CalculateRetentionHandler
         _retentionDefaultRepo = retentionDefaultRepo;
         _retCodeResolver = retCodeResolver;
         _t = t;
+        _b = b;
     }
 
     public async Task<Result<RetentionPreviewDto>> Handle(
@@ -78,8 +81,11 @@ public sealed class CalculateRetentionHandler
         CancellationToken ct
     )
     {
+        // GetByIdAsync filtra tenant+company; el branch se valida explícitamente, igual que
+        // GetPurchaseByIdHandler (ZH-PURCHASES-RETENTION-OWNERSHIP-01: el preview no lo hacía y
+        // exponía el cálculo de retención de compras de otra sucursal).
         var inv = await _repo.GetByIdAsync(_t.TenantId, q.PurchaseInvoiceId, ct);
-        if (inv is null)
+        if (inv is null || inv.BranchId != _b.BranchId)
             return Result<RetentionPreviewDto>.NotFound("Compra no encontrada.");
 
         if (inv.Status != ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Confirmed)

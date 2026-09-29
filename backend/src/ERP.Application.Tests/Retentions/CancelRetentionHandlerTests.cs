@@ -58,7 +58,7 @@ public sealed class CancelRetentionHandlerTests
         fx.SetupDocument(document);
 
         var result = await fx.Handler.Handle(
-            new CancelRetentionCommand(document.Id, "Error en el cálculo"),
+            new CancelRetentionCommand(RetentionSourceDocumentType.ExpenseDocument, SourceDocumentId, document.Id, "Error en el cálculo"),
             CancellationToken.None
         );
 
@@ -74,7 +74,7 @@ public sealed class CancelRetentionHandlerTests
     public void Validator_rechaza_motivo_vacio()
     {
         var result = new CancelRetentionValidator().Validate(
-            new CancelRetentionCommand(Guid.NewGuid(), "")
+            new CancelRetentionCommand(RetentionSourceDocumentType.ExpenseDocument, SourceDocumentId, Guid.NewGuid(), "")
         );
 
         result.IsValid.Should().BeFalse();
@@ -91,7 +91,7 @@ public sealed class CancelRetentionHandlerTests
         fx.SetupDocument(document);
 
         var result = await fx.Handler.Handle(
-            new CancelRetentionCommand(document.Id, "Motivo cualquiera"),
+            new CancelRetentionCommand(RetentionSourceDocumentType.ExpenseDocument, SourceDocumentId, document.Id, "Motivo cualquiera"),
             CancellationToken.None
         );
 
@@ -100,6 +100,10 @@ public sealed class CancelRetentionHandlerTests
     }
 
     // ── 19) Rechaza cancelar Cancelled (dos veces) ────────────────────────
+    // ZH-PURCHASES-RETENTION-OWNERSHIP-01: solo se anula la retención ACTIVA del origen, así que una
+    // ya anulada responde el mismo NotFound que una inexistente — es el contrato HTTP que ya tenía
+    // Compras (el controller consultaba solo la retención activa). La guarda de Domain sigue siendo
+    // la última barrera ante carreras.
 
     [Fact]
     public async Task Rechaza_cancelar_retencion_ya_cancelada()
@@ -111,12 +115,12 @@ public sealed class CancelRetentionHandlerTests
         fx.SetupDocument(document);
 
         var result = await fx.Handler.Handle(
-            new CancelRetentionCommand(document.Id, "Segunda anulación"),
+            new CancelRetentionCommand(RetentionSourceDocumentType.ExpenseDocument, SourceDocumentId, document.Id, "Segunda anulación"),
             CancellationToken.None
         );
 
         result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
     }
 
     // ── 20) cancelledBy viene del usuario actual, no del body ─────────────
@@ -129,7 +133,7 @@ public sealed class CancelRetentionHandlerTests
         fx.SetupDocument(document);
 
         var result = await fx.Handler.Handle(
-            new CancelRetentionCommand(document.Id, "Motivo"),
+            new CancelRetentionCommand(RetentionSourceDocumentType.ExpenseDocument, SourceDocumentId, document.Id, "Motivo"),
             CancellationToken.None
         );
 
@@ -148,7 +152,7 @@ public sealed class CancelRetentionHandlerTests
         fx.SetupDocument(document);
 
         var result = await fx.Handler.Handle(
-            new CancelRetentionCommand(document.Id, "Motivo"),
+            new CancelRetentionCommand(RetentionSourceDocumentType.ExpenseDocument, SourceDocumentId, document.Id, "Motivo"),
             CancellationToken.None
         );
 
@@ -165,12 +169,78 @@ public sealed class CancelRetentionHandlerTests
             .ReturnsAsync((RetentionDocument?)null);
 
         var result = await fx.Handler.Handle(
-            new CancelRetentionCommand(Guid.NewGuid(), "Motivo"),
+            new CancelRetentionCommand(RetentionSourceDocumentType.ExpenseDocument, SourceDocumentId, Guid.NewGuid(), "Motivo"),
             CancellationToken.None
         );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+    }
+
+    // ── ZH-PURCHASES-RETENTION-OWNERSHIP-01: la retención debe ser del documento origen ─────
+
+    public static TheoryData<RetentionSourceDocumentType, bool> ForeignSources =>
+        new()
+        {
+            // mismo tipo, otro documento (p. ej. otra compra/otro gasto del mismo tenant)
+            { RetentionSourceDocumentType.ExpenseDocument, true },
+            // otro tipo de documento con el mismo Id (una compra apuntando a la retención de un gasto)
+            { RetentionSourceDocumentType.PurchaseInvoice, false },
+        };
+
+    [Theory]
+    [MemberData(nameof(ForeignSources))]
+    public async Task Retencion_de_otro_documento_origen_responde_el_mismo_NotFound_y_no_se_toca(
+        RetentionSourceDocumentType sourceType,
+        bool otherSourceId
+    )
+    {
+        var fx = new Fixture();
+        var document = IssuedDocument(BranchId, UserId);
+        fx.SetupDocument(document);
+        var sourceId = otherSourceId ? Guid.NewGuid() : SourceDocumentId;
+
+        var foreign = await fx.Handler.Handle(
+            new CancelRetentionCommand(sourceType, sourceId, document.Id, "Motivo"),
+            CancellationToken.None
+        );
+        var missing = await fx.Handler.Handle(
+            new CancelRetentionCommand(sourceType, sourceId, Guid.NewGuid(), "Motivo"),
+            CancellationToken.None
+        );
+
+        foreign.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        (foreign.Code, foreign.Error).Should().Be((missing.Code, missing.Error), "no revela si la retención existe");
+        document.Status.Should().Be(RetentionStatus.Issued);
+        document.CancelReason.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData(RetentionSourceDocumentType.PurchaseInvoice, "La retención no existe o no pertenece a esta compra.")]
+    [InlineData(RetentionSourceDocumentType.ExpenseDocument, "La retención no existe o no pertenece a este gasto.")]
+    public async Task Mensaje_de_NotFound_por_tipo_de_origen(RetentionSourceDocumentType sourceType, string message)
+    {
+        var fx = new Fixture();
+        fx.RetentionRepo
+            .Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((RetentionDocument?)null);
+
+        var result = await fx.Handler.Handle(
+            new CancelRetentionCommand(sourceType, Guid.NewGuid(), Guid.NewGuid(), "Motivo"),
+            CancellationToken.None
+        );
+
+        result.Error.Should().Be(message);
+    }
+
+    [Fact]
+    public async Task Validator_exige_el_documento_origen()
+    {
+        var result = await new CancelRetentionValidator().ValidateAsync(
+            new CancelRetentionCommand(RetentionSourceDocumentType.PurchaseInvoice, Guid.Empty, Guid.NewGuid(), "Motivo")
+        );
+
+        result.Errors.Should().Contain(e => e.PropertyName == nameof(CancelRetentionCommand.SourceDocumentId));
     }
 
     // ── 9) RETENTIONS-EXPENSES-INTEGRATION-01D-3 — CancelRetentionHandler (aislado) sigue
@@ -198,7 +268,7 @@ public sealed class CancelRetentionHandlerTests
             .ReturnsAsync(payable);
 
         var result = await fx.Handler.Handle(
-            new CancelRetentionCommand(document.Id, "Error en el cálculo"),
+            new CancelRetentionCommand(RetentionSourceDocumentType.ExpenseDocument, SourceDocumentId, document.Id, "Error en el cálculo"),
             CancellationToken.None
         );
 
@@ -229,7 +299,7 @@ public sealed class CancelRetentionHandlerTests
             .ReturnsAsync(payable);
 
         var result = await fx.Handler.Handle(
-            new CancelRetentionCommand(document.Id, "Error en el cálculo"),
+            new CancelRetentionCommand(RetentionSourceDocumentType.ExpenseDocument, SourceDocumentId, document.Id, "Error en el cálculo"),
             CancellationToken.None
         );
 

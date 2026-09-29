@@ -16,13 +16,12 @@ using System.Reflection;
 namespace ERP.API.Tests.Purchases;
 
 /// <summary>
-/// PURCHASES-RETENTIONS-CANCEL-05D — cubre el wiring HTTP de <see cref="PurchasesController.CancelRetention"/>:
-/// valida que la retención pertenece realmente a la compra de la ruta ANTES de delegar en
-/// <see cref="CancelRetentionCommand"/> (transversal, sin cambios), y que la policy de permiso es
-/// la misma que ya protege el resto de acciones de Compras (sin permiso nuevo de Retenciones). Las
-/// reglas de negocio de la cancelación en sí (CxP, posting, estados) están cubiertas en
-/// <c>CancelRetentionHandlerTests</c>/<c>RetentionCancellerTests</c> — este controller es un
-/// pass-through delgado con una única validación propia (pertenencia).
+/// PURCHASES-RETENTIONS-CANCEL-05D — wiring HTTP de <see cref="PurchasesController.CancelRetention"/>.
+/// ZH-PURCHASES-RETENTION-OWNERSHIP-01: el controller ya no consulta la retención activa antes de
+/// delegar (check-then-act); envía un único <see cref="CancelRetentionCommand"/> con la compra de la
+/// RUTA como documento origen, y la pertenencia la exige el handler (ver
+/// <c>CancelRetentionHandlerTests</c> y la integración PostgreSQL en ERP.Infrastructure.Tests). La
+/// policy de permiso sigue siendo la de Compras.
 /// </summary>
 public sealed class PurchasesControllerCancelRetentionTests
 {
@@ -60,109 +59,71 @@ public sealed class PurchasesControllerCancelRetentionTests
             new DateOnly(2026, 8, 27), null, null, 100m, 115m
         );
 
-    private static PurchasesController BuildControllerWithFlow(
+    private static async Task<(IActionResult Response, List<object> Sent)> Cancel(
         Guid purchaseId,
-        RetentionDocumentDto? existingRetention,
-        Func<CancelRetentionCommand, object>? onCancel = null
-    ) =>
-        BuildController(req =>
-        {
-            if (req is GetRetentionBySourceQuery q)
-            {
-                q.SourceDocumentType.Should().Be(RetentionSourceDocumentType.PurchaseInvoice);
-                q.SourceDocumentId.Should().Be(purchaseId);
-                return Result<RetentionDocumentDto?>.Success(existingRetention);
-            }
-            if (req is CancelRetentionCommand cmd)
-            {
-                return onCancel?.Invoke(cmd)
-                    ?? Result<RetentionDocumentDto>.Success(existingRetention!);
-            }
-            throw new InvalidOperationException($"Unexpected request: {req.GetType().Name}");
-        });
-
-    [Fact]
-    public async Task CancelRetention_delega_en_CancelRetentionCommand_cuando_la_retencion_pertenece_a_la_compra()
+        Guid retentionId,
+        Func<CancelRetentionCommand, object> reply
+    )
     {
-        var purchaseId = Guid.NewGuid();
-        var retentionId = Guid.NewGuid();
-        var existing = BuildRetentionDto(retentionId, purchaseId);
-        CancelRetentionCommand? captured = null;
-        var controller = BuildControllerWithFlow(
-            purchaseId,
-            existing,
-            cmd =>
-            {
-                captured = cmd;
-                return Result<RetentionDocumentDto>.Success(existing with { Status = RetentionStatus.Cancelled });
-            }
-        );
-
+        var sent = new List<object>();
+        var controller = BuildController(req =>
+        {
+            sent.Add(req);
+            return req is CancelRetentionCommand cmd
+                ? reply(cmd)
+                : throw new InvalidOperationException($"Unexpected request: {req.GetType().Name}");
+        });
         var response = await controller.CancelRetention(
             purchaseId,
             retentionId,
             new CancelPurchaseRetentionRequest("Error en el cálculo"),
             CancellationToken.None
         );
-
-        response.Should().BeOfType<OkObjectResult>();
-        captured.Should().NotBeNull();
-        captured!.RetentionDocumentId.Should().Be(retentionId);
-        captured.Reason.Should().Be("Error en el cálculo");
+        return (response, sent);
     }
 
     [Fact]
-    public async Task CancelRetention_rechaza_con_NotFound_si_la_retencion_no_pertenece_a_esa_compra()
+    public async Task CancelRetention_envia_un_unico_command_con_la_compra_de_la_ruta_como_origen()
     {
         var purchaseId = Guid.NewGuid();
         var retentionId = Guid.NewGuid();
-        var otherPurchaseRetention = BuildRetentionDto(Guid.NewGuid(), Guid.NewGuid());
-        var cancelCalled = false;
-        var controller = BuildControllerWithFlow(
-            purchaseId,
-            otherPurchaseRetention, // Id distinto de retentionId
-            _ =>
-            {
-                cancelCalled = true;
-                return Result<RetentionDocumentDto>.Success(otherPurchaseRetention);
-            }
-        );
+        var cancelled = BuildRetentionDto(retentionId, purchaseId) with { Status = RetentionStatus.Cancelled };
 
-        var response = await controller.CancelRetention(
-            purchaseId,
-            retentionId,
-            new CancelPurchaseRetentionRequest("Motivo"),
-            CancellationToken.None
-        );
+        var (response, sent) = await Cancel(purchaseId, retentionId, _ => Result<RetentionDocumentDto>.Success(cancelled));
 
-        response.Should().BeOfType<NotFoundObjectResult>();
-        cancelCalled.Should().BeFalse("nunca debe delegar la cancelación si la retención no es la de esta compra");
+        response.Should().BeOfType<OkObjectResult>();
+        sent.Should().ContainSingle("sin consulta previa: la pertenencia la valida el handler");
+        sent[0].Should().Be(
+            new CancelRetentionCommand(RetentionSourceDocumentType.PurchaseInvoice, purchaseId, retentionId, "Error en el cálculo")
+        );
     }
 
     [Fact]
-    public async Task CancelRetention_rechaza_con_NotFound_si_la_compra_no_tiene_ninguna_retencion()
+    public async Task CancelRetention_NotFound_de_Application_responde_404_con_el_mensaje_vigente()
     {
-        var purchaseId = Guid.NewGuid();
-        var cancelCalled = false;
-        var controller = BuildControllerWithFlow(
-            purchaseId,
-            existingRetention: null,
-            onCancel: _ =>
-            {
-                cancelCalled = true;
-                return Result<RetentionDocumentDto>.Success(null!);
-            }
-        );
-
-        var response = await controller.CancelRetention(
-            purchaseId,
+        var (response, _) = await Cancel(
             Guid.NewGuid(),
-            new CancelPurchaseRetentionRequest("Motivo"),
-            CancellationToken.None
+            Guid.NewGuid(),
+            _ => Result<RetentionDocumentDto>.NotFound("La retención no existe o no pertenece a esta compra.")
         );
 
-        response.Should().BeOfType<NotFoundObjectResult>();
-        cancelCalled.Should().BeFalse();
+        var notFound = response.Should().BeOfType<NotFoundObjectResult>().Subject;
+        var json = System.Text.Json.JsonSerializer.SerializeToElement(notFound.Value);
+        json.GetProperty("Code").GetString().Should().Be(ApiResponseCodes.Common.NotFound);
+        json.GetProperty("Data").GetProperty("errors").EnumerateArray().Select(e => e.GetString())
+            .Should().Equal("La retención no existe o no pertenece a esta compra.");
+    }
+
+    [Fact]
+    public async Task CancelRetention_fallo_de_negocio_de_Application_conserva_su_status()
+    {
+        var (response, _) = await Cancel(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            _ => Result<RetentionDocumentDto>.ValidationFailure("La CxP ya tiene pagos aplicados.")
+        );
+
+        response.Should().BeOfType<UnprocessableEntityObjectResult>();
     }
 
     [Fact]
