@@ -1,0 +1,528 @@
+{
+  "paths": {
+    "/api/v1/inventory/stock": {
+      "get": {
+        "parameters": [
+          {
+            "in": "query",
+            "name": "itemId",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "warehouseId",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[System.Collections.Generic.IReadOnlyList\u00601[[ERP.Application.Modules.Inventory.Stock.DTOs.CurrentStockDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Consulta stock actual por item y/o bodega.",
+        "tags": [
+          "Stock"
+        ]
+      }
+    },
+    "/api/v1/inventory/stock/adjustments": {
+      "get": {
+        "parameters": [
+          {
+            "in": "query",
+            "name": "warehouseId",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "reasonId",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "movementType",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "startDate",
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "endDate",
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageNumber",
+            "schema": {
+              "default": 1,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Common.PagedResult\u00601[[ERP.Application.Modules.Inventory.Stock.DTOs.StockAdjustmentDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Lista ajustes de inventario paginados, con filtros.",
+        "tags": [
+          "Stock"
+        ]
+      },
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Inventory.Stock.UseCases.CreateStockAdjustment.CreateStockAdjustmentCommand"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Inventory.Stock.UseCases.CreateStockAdjustment.CreateStockAdjustmentCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Inventory.Stock.UseCases.CreateStockAdjustment.CreateStockAdjustmentCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Inventory.Stock.DTOs.StockAdjustmentDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                }
+              }
+            },
+            "description": "Created"
+          }
+        },
+        "summary": "Crea un ajuste de inventario en estado Draft.",
+        "tags": [
+          "Stock"
+        ]
+      }
+    },
+    "/api/v1/inventory/stock/adjustments/{id}": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Inventory.Stock.DTOs.StockAdjustmentDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Obtiene un ajuste de inventario por Id (cabecera \u002B l\u00EDneas).",
+        "tags": [
+          "Stock"
+        ]
+      },
+      "put": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Inventory.Stock.UseCases.UpdateStockAdjustment.UpdateStockAdjustmentCommand"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Inventory.Stock.UseCases.UpdateStockAdjustment.UpdateStockAdjustmentCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Inventory.Stock.UseCases.UpdateStockAdjustment.UpdateStockAdjustmentCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Inventory.Stock.DTOs.StockAdjustmentDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Actualiza un ajuste en Draft (cabecera \u002B reemplazo total de l\u00EDneas).",
+        "tags": [
+          "Stock"
+        ]
+      }
+    },
+    "/api/v1/inventory/stock/adjustments/{id}/cancel": {
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.API.Controllers.CancelStockAdjustmentRequest"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.API.Controllers.CancelStockAdjustmentRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.API.Controllers.CancelStockAdjustmentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "summary": "Anula un ajuste Ejecutado posteando movimientos inversos de Kardex.",
+        "tags": [
+          "Stock"
+        ]
+      }
+    },
+    "/api/v1/inventory/stock/adjustments/{id}/execute": {
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "summary": "Ejecuta un ajuste Draft: aplica el/los movimiento(s) de stock.",
+        "tags": [
+          "Stock"
+        ]
+      }
+    },
+    "/api/v1/inventory/stock/aggregated/{itemId}": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "itemId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Inventory.Stock.DTOs.AggregatedStockDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Stock agregado de un item a trav\u00E9s de todas las bodegas.",
+        "tags": [
+          "Stock"
+        ]
+      }
+    },
+    "/api/v1/inventory/stock/items/{itemId}/warehouse-availability": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "itemId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[System.Collections.Generic.IReadOnlyList\u00601[[ERP.Application.Modules.Inventory.Stock.DTOs.ItemWarehouseAvailabilityDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Disponibilidad de un item por bodega (para selectores de bodega en documentos de venta).",
+        "tags": [
+          "Stock"
+        ]
+      }
+    },
+    "/api/v1/inventory/stock/movements": {
+      "get": {
+        "parameters": [
+          {
+            "in": "query",
+            "name": "itemId",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "warehouseId",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[System.Collections.Generic.IReadOnlyList\u00601[[ERP.Application.Modules.Inventory.Stock.DTOs.StockMovementDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Consulta movimientos de stock por item y bodega.",
+        "tags": [
+          "Stock"
+        ]
+      }
+    },
+    "/api/v1/inventory/stock/report": {
+      "get": {
+        "parameters": [
+          {
+            "in": "query",
+            "name": "warehouseId",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[System.Collections.Generic.IReadOnlyList\u00601[[ERP.Application.Modules.Inventory.Stock.UseCases.GetCurrentStockReport.StockReportRowDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Reporte b\u00E1sico de stock actual por bodega (piloto Sumak). Sin warehouseId, incluye\r\ntodas las bodegas de la empresa activa.",
+        "tags": [
+          "Stock"
+        ]
+      }
+    },
+    "/api/v1/inventory/stock/transfers": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Inventory.Stock.UseCases.CreateStockTransfer.CreateStockTransferCommand"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Inventory.Stock.UseCases.CreateStockTransfer.CreateStockTransferCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Inventory.Stock.UseCases.CreateStockTransfer.CreateStockTransferCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Inventory.Stock.DTOs.StockTransferDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                }
+              }
+            },
+            "description": "Created"
+          }
+        },
+        "summary": "Crea una transferencia entre bodegas en estado Draft. \u00DAnico punto de entrada de men\u00FA de\r\n\u0022Stock\u0022 (P1-INVENTORY-WAREHOUSE-TRANSFER-UI-01): la clase no tiene [AppFeature] (ver\r\ncomentario de cabecera \u2014 Stock en general no es men\u00FA-visible), pero Transferencias s\u00ED es\r\nuna pantalla propia \u2014 [AppFeature] a nivel de m\u00E9todo (soportado por el atributo) le da\r\nentrada de men\u00FA dedicada sin exponer Ajustes/consultas de Stock como \u00EDtems de men\u00FA.\r\nReutiliza el mismo permiso que ya protege este endpoint \u2014 no crea uno nuevo.",
+        "tags": [
+          "Stock"
+        ]
+      }
+    },
+    "/api/v1/inventory/stock/transfers/{id}/confirm": {
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "summary": "Confirma una transferencia Draft: mueve stock entre bodegas.",
+        "tags": [
+          "Stock"
+        ]
+      }
+    }
+  },
+  "stockDocumentTags": []
+}

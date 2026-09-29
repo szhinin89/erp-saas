@@ -1,20 +1,10 @@
-using ERP.API.Attributes;
 using ERP.API.Extensions;
-using ERP.Application.Common;
 using ERP.Application.Modules.Inventory.Stock.DTOs;
-using ERP.Application.Modules.Inventory.Stock.UseCases.CancelStockAdjustment;
-using ERP.Application.Modules.Inventory.Stock.UseCases.ConfirmStockTransfer;
-using ERP.Application.Modules.Inventory.Stock.UseCases.CreateStockAdjustment;
-using ERP.Application.Modules.Inventory.Stock.UseCases.CreateStockTransfer;
-using ERP.Application.Modules.Inventory.Stock.UseCases.ExecuteStockAdjustment;
 using ERP.Application.Modules.Inventory.Stock.UseCases.GetAggregatedStock;
 using ERP.Application.Modules.Inventory.Stock.UseCases.GetCurrentStockReport;
 using ERP.Application.Modules.Inventory.Stock.UseCases.GetItemWarehouseAvailability;
 using ERP.Application.Modules.Inventory.Stock.UseCases.GetStock;
-using ERP.Application.Modules.Inventory.Stock.UseCases.GetStockAdjustment;
 using ERP.Application.Modules.Inventory.Stock.UseCases.GetStockMovements;
-using ERP.Application.Modules.Inventory.Stock.UseCases.ListStockAdjustments;
-using ERP.Application.Modules.Inventory.Stock.UseCases.UpdateStockAdjustment;
 using ERP.Domain.Kernel.Permissions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -22,12 +12,15 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ERP.API.Controllers;
 
-// Sin [AppFeature]: "Stock" es un concepto interno (ajustes/transferencias/consulta de saldo
-// actual), no una funcionalidad visible en el menú. El acceso operativo del usuario es
-// "Inventario → Kardex" (ver KardexController), que compone el historial completo.
+// Consultas de existencias (saldo actual, reporte, movimientos, agregado por item, disponibilidad
+// por bodega). Sin [AppFeature]: "Stock" es un concepto interno, no una funcionalidad visible en el
+// menú; el acceso operativo del usuario es "Inventario → Kardex" (ver KardexController).
+// ZH-API-THIN-STOCK-01: ajustes y transferencias viven en StockAdjustmentsController y
+// StockTransfersController, bajo la misma ruta base y el mismo tag OpenAPI "Stock".
 [ApiController]
 [Route("api/v1/inventory/stock")]
 [Authorize]
+[Tags("Stock")]
 [Produces("application/json")]
 public sealed class StockController : ControllerBase
 {
@@ -126,156 +119,4 @@ public sealed class StockController : ControllerBase
             () => Array.Empty<ItemWarehouseAvailabilityDto>()
         );
     }
-
-    /// <summary>Lista ajustes de inventario paginados, con filtros.</summary>
-    [AppFeature(
-        "Ajustes de inventario",
-        $"perm:{InventoryPermissions.AdjustmentsView}",
-        "tune",
-        "/inventory/adjustments",
-        null,
-        23
-    )]
-    [HttpGet("adjustments")]
-    [Authorize(Policy = $"perm:{InventoryPermissions.AdjustmentsView}")]
-    [ProducesResponseType(
-        typeof(Contracts.ApiResponse<PagedResult<StockAdjustmentDto>>),
-        StatusCodes.Status200OK
-    )]
-    public async Task<IActionResult> ListAdjustments(
-        [FromQuery] Guid? warehouseId,
-        [FromQuery] string? status,
-        [FromQuery] Guid? reasonId,
-        [FromQuery] string? movementType,
-        [FromQuery] DateOnly? startDate,
-        [FromQuery] DateOnly? endDate,
-        [FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 20,
-        CancellationToken ct = default
-    )
-    {
-        var result = await _mediator.Send(
-            new ListStockAdjustmentsQuery(
-                warehouseId,
-                status,
-                reasonId,
-                movementType,
-                startDate,
-                endDate,
-                pageNumber,
-                pageSize
-            ),
-            ct
-        );
-        return this.ToOkOrBadRequest(result);
-    }
-
-    /// <summary>Obtiene un ajuste de inventario por Id (cabecera + líneas).</summary>
-    [HttpGet("adjustments/{id:guid}")]
-    [Authorize(Policy = $"perm:{InventoryPermissions.AdjustmentsView}")]
-    [ProducesResponseType(typeof(Contracts.ApiResponse<StockAdjustmentDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAdjustment(Guid id, CancellationToken ct = default)
-    {
-        var result = await _mediator.Send(new GetStockAdjustmentByIdQuery(id), ct);
-        return this.ToOkOrBadRequest(result);
-    }
-
-    /// <summary>Crea un ajuste de inventario en estado Draft.</summary>
-    [HttpPost("adjustments")]
-    [Authorize(Policy = $"perm:{InventoryPermissions.AdjustmentsCreate}")]
-    [ProducesResponseType(
-        typeof(Contracts.ApiResponse<StockAdjustmentDto>),
-        StatusCodes.Status201Created
-    )]
-    public async Task<IActionResult> CreateAdjustment(
-        [FromBody] CreateStockAdjustmentCommand command,
-        CancellationToken ct = default
-    )
-    {
-        var result = await _mediator.Send(command, ct);
-        return this.ToCreatedOrBadRequest(result);
-    }
-
-    /// <summary>Actualiza un ajuste en Draft (cabecera + reemplazo total de líneas).</summary>
-    [HttpPut("adjustments/{id:guid}")]
-    [Authorize(Policy = $"perm:{InventoryPermissions.AdjustmentsUpdate}")]
-    [ProducesResponseType(typeof(Contracts.ApiResponse<StockAdjustmentDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> UpdateAdjustment(
-        Guid id,
-        [FromBody] UpdateStockAdjustmentCommand command,
-        CancellationToken ct = default
-    )
-    {
-        if (id != command.Id)
-            return BadRequest();
-        var result = await _mediator.Send(command, ct);
-        return this.ToOkOrBadRequest(result);
-    }
-
-    /// <summary>Ejecuta un ajuste Draft: aplica el/los movimiento(s) de stock.</summary>
-    [HttpPost("adjustments/{id:guid}/execute")]
-    [Authorize(Policy = $"perm:{InventoryPermissions.AdjustmentsConfirm}")]
-    public async Task<IActionResult> ExecuteAdjustment(Guid id, CancellationToken ct = default)
-    {
-        var result = await _mediator.Send(new ExecuteStockAdjustmentCommand(id), ct);
-        return this.ToOkOrBadRequest(result);
-    }
-
-    /// <summary>Anula un ajuste Ejecutado posteando movimientos inversos de Kardex.</summary>
-    [HttpPost("adjustments/{id:guid}/cancel")]
-    [Authorize(Policy = $"perm:{InventoryPermissions.AdjustmentsCancel}")]
-    public async Task<IActionResult> CancelAdjustment(
-        Guid id,
-        [FromBody] CancelStockAdjustmentRequest request,
-        CancellationToken ct = default
-    )
-    {
-        var result = await _mediator.Send(
-            new CancelStockAdjustmentCommand(id, request.Reason),
-            ct
-        );
-        return this.ToOkOrBadRequest(result);
-    }
-
-    /// <summary>
-    /// Crea una transferencia entre bodegas en estado Draft. Único punto de entrada de menú de
-    /// "Stock" (P1-INVENTORY-WAREHOUSE-TRANSFER-UI-01): la clase no tiene [AppFeature] (ver
-    /// comentario de cabecera — Stock en general no es menú-visible), pero Transferencias sí es
-    /// una pantalla propia — [AppFeature] a nivel de método (soportado por el atributo) le da
-    /// entrada de menú dedicada sin exponer Ajustes/consultas de Stock como ítems de menú.
-    /// Reutiliza el mismo permiso que ya protege este endpoint — no crea uno nuevo.
-    /// </summary>
-    [AppFeature(
-        "Transferencias entre bodegas",
-        $"perm:{InventoryPermissions.StockManage}",
-        "swap_horiz",
-        "/inventory/transfers",
-        null,
-        22
-    )]
-    [HttpPost("transfers")]
-    [Authorize(Policy = $"perm:{InventoryPermissions.StockManage}")]
-    [ProducesResponseType(
-        typeof(Contracts.ApiResponse<StockTransferDto>),
-        StatusCodes.Status201Created
-    )]
-    public async Task<IActionResult> CreateTransfer(
-        [FromBody] CreateStockTransferCommand command,
-        CancellationToken ct = default
-    )
-    {
-        var result = await _mediator.Send(command, ct);
-        return this.ToCreatedOrBadRequest(result);
-    }
-
-    /// <summary>Confirma una transferencia Draft: mueve stock entre bodegas.</summary>
-    [HttpPost("transfers/{id:guid}/confirm")]
-    [Authorize(Policy = $"perm:{InventoryPermissions.StockManage}")]
-    public async Task<IActionResult> ConfirmTransfer(Guid id, CancellationToken ct = default)
-    {
-        var result = await _mediator.Send(new ConfirmStockTransferCommand(id), ct);
-        return this.ToOkOrBadRequest(result);
-    }
 }
-
-public sealed record CancelStockAdjustmentRequest(string Reason);

@@ -1,0 +1,5 @@
+perm:inventory.adjustment-reasons.view | Motivos de ajuste | list_alt | /inventory/adjustment-reasons | parent= | sort=24 | menu=True
+perm:inventory.adjustments.view | Ajustes de inventario | tune | /inventory/adjustments | parent= | sort=23 | menu=True
+perm:inventory.stock.manage | Transferencias entre bodegas | swap_horiz | /inventory/transfers | parent= | sort=22 | menu=True
+perm:inventory.stock.view | Kardex | history | /inventory/kardex | parent= | sort=21 | menu=True
+perm:inventory.warehouses.view | Bodegas | warehouse | /inventory/warehouses | parent= | sort=20 | menu=True
