@@ -675,7 +675,7 @@
 }
 
 .pf-confirm-checklist__item--danger .pf-confirm-checklist__icon {
-  color: var(--color-danger);
+  color: var(--color-error);
 }
 
 .pf-confirm-checklist__item--neutral .pf-confirm-checklist__icon {

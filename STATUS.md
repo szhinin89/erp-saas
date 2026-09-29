@@ -2,6 +2,14 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-28** · Kernel refactor: **2026-06-05**.
 
+## ZH-ARCH-DESIGN-SYSTEM-01 — Auditoría `design-system` (2026-09-28)
+
+**Estado: COMPLETADO (parcial por diseño).** 26 ocurrencias clasificadas: A 2 · B 3 · C 0 · D 21 · E 0. Solo se corrigieron A/B inequívocas; sin tokens nuevos, sin estilos inline, checker intacto.
+- A (2): badge crudo `badge badge--neutral` → `<Badge variant="neutral">` en `PurchaseCreditNoteDetailPage`/`PurchaseCreditNoteFormPage` (DOM idéntico).
+- B (3): `--color-danger` → `--color-error` (`purchase-reception.css`, `purchases-invoice.css`); `--color-surface-secondary` → `--color-surface-container-low` (`purchase-reception.css`, mismo token del bloque XML crudo del monitor de comprobantes). Efecto visual: el color/fondo previsto vuelve a aplicarse (antes el `var()` indefinido lo anulaba).
+- D (21, pendientes): custom properties locales de componente — `--account-tree-*` ×9 (`ChartOfAccountsPage.css`), `--sfl-*` ×8 (`sales-product-card.css`, contrato de grid probado), `--batch-progress` ×1 (valor dinámico de `ZhBatchProgress`) — requieren decisión de regla sobre custom properties locales; `--color-surface-subtle` ×1 (`CajaPage.css`, fallback `transparent` explícito) y `--text-title-md-*` ×2 (`expense-documents.css`, sin escala `title-md`; los totales de otros módulos usan tamaños distintos) requieren decisión visual.
+- Baseline: 186 → 181; `design-system` 26 → 21.
+
 ## ZH-ARCH-BACKEND-SUBSCRIBER-03 — Backfill SRI de PaymentMethod por tenant (2026-09-28)
 
 **Estado: COMPLETADO.** Última violación `backend-subscriber-rules` resuelta rediseñando el scope, no solo el nombre del bypass.

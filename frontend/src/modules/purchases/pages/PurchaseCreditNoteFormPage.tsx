@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { PageShell } from "../../../components/PageShell";
+import { PageShell, Badge } from "../../../components/PageShell";
 import { ZHCard } from "../../../components/zh/ZHCard";
 import { ZHBtn, ZHField, ZHFormActions } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
@@ -586,9 +586,10 @@ export function PurchaseCreditNoteFormPage() {
             <ZHCard
               title={t("purchases.creditNote.xmlDetail.title", "Detalle XML recibido")}
             >
-              <span className="badge badge--neutral">
-                {t("purchases.creditNote.xmlDetail.badge", "Referencia del proveedor")}
-              </span>
+              <Badge
+                variant="neutral"
+                label={t("purchases.creditNote.xmlDetail.badge", "Referencia del proveedor")}
+              />
               <p className="pcn-hint">
                 {t(
                   "purchases.creditNote.xmlDetail.help",

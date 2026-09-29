@@ -215,7 +215,7 @@
 
 .pur-xmlview-error {
   margin: 0;
-  color: var(--color-danger);
+  color: var(--color-error);
 }
 
 .pur-xmlview-muted {
@@ -285,7 +285,7 @@
   word-break: break-all;
   font-size: var(--text-help-size);
   padding: var(--space-3);
-  background: var(--color-surface-secondary);
+  background: var(--color-surface-container-low);
   border-radius: var(--radius-md);
 }
 

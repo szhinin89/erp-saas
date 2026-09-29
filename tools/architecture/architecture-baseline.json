@@ -10,10 +10,10 @@
     "lineNumber": "excluded to keep identity stable across unrelated edits"
   },
   "summary": {
-    "violations": 186,
+    "violations": 181,
     "byCheck": {
       "css-prefixes": 112,
-      "design-system": 26,
+      "design-system": 21,
       "module-boundaries": 48
     }
   },
@@ -545,20 +545,6 @@
     },
     {
       "check": "design-system",
-      "rule": "F-04-badge",
-      "file": "frontend/src/modules/purchases/pages/PurchaseCreditNoteDetailPage.tsx",
-      "message": "Badge crudo con className=\"badge badge--...\" — usar <Badge label=\"...\" variant=\"green|gray|red|blue|orange\" /> (components/PageShell.tsx).",
-      "count": 1
-    },
-    {
-      "check": "design-system",
-      "rule": "F-04-badge",
-      "file": "frontend/src/modules/purchases/pages/PurchaseCreditNoteFormPage.tsx",
-      "message": "Badge crudo con className=\"badge badge--...\" — usar <Badge label=\"...\" variant=\"green|gray|red|blue|orange\" /> (components/PageShell.tsx).",
-      "count": 1
-    },
-    {
-      "check": "design-system",
       "rule": "F-04-token",
       "file": "frontend/src/components/zh/progress/zh-batch-progress.css",
       "message": "Token '--batch-progress' no está definido en design-tokens.css — corregir el nombre o agregarlo ahí (no crear tokens sueltos en otros archivos).",
@@ -604,27 +590,6 @@
       "rule": "F-04-token",
       "file": "frontend/src/modules/expenses/styles/expense-documents.css",
       "message": "Token '--text-title-md-weight' no está definido en design-tokens.css — corregir el nombre o agregarlo ahí (no crear tokens sueltos en otros archivos).",
-      "count": 1
-    },
-    {
-      "check": "design-system",
-      "rule": "F-04-token",
-      "file": "frontend/src/modules/purchases/styles/purchase-reception.css",
-      "message": "Token '--color-danger' no está definido en design-tokens.css — corregir el nombre o agregarlo ahí (no crear tokens sueltos en otros archivos).",
-      "count": 1
-    },
-    {
-      "check": "design-system",
-      "rule": "F-04-token",
-      "file": "frontend/src/modules/purchases/styles/purchase-reception.css",
-      "message": "Token '--color-surface-secondary' no está definido en design-tokens.css — corregir el nombre o agregarlo ahí (no crear tokens sueltos en otros archivos).",
-      "count": 1
-    },
-    {
-      "check": "design-system",
-      "rule": "F-04-token",
-      "file": "frontend/src/modules/purchases/styles/purchases-invoice.css",
-      "message": "Token '--color-danger' no está definido en design-tokens.css — corregir el nombre o agregarlo ahí (no crear tokens sueltos en otros archivos).",
       "count": 1
     },
     {

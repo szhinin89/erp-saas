@@ -609,9 +609,10 @@ export function PurchaseCreditNoteDetailPage() {
 
       {editing.receptionDocumentId && (
         <ZHCard title={t("purchases.creditNote.xmlDetail.title", "Detalle XML recibido")}>
-          <span className="badge badge--neutral">
-            {t("purchases.creditNote.xmlDetail.badge", "Referencia del proveedor")}
-          </span>
+          <Badge
+            variant="neutral"
+            label={t("purchases.creditNote.xmlDetail.badge", "Referencia del proveedor")}
+          />
           <p className="pcn-hint">
             {t(
               "purchases.creditNote.xmlDetail.help",
