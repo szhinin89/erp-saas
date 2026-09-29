@@ -7,6 +7,8 @@ import { MasterDataBusinessPartnerDetailPage } from "./MasterDataBusinessPartner
 import { businessPartnerFacade } from "../api/businessPartnerFacade";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { message } from "../../../lib/messages";
+import { geographyLookupFacade } from "../../branches/facades/geographyLookupFacade";
+import { PHYSICAL_ADDRESS_GEO_COUNTRY_ID } from "../constants/physicalAddressGeography";
 
 /**
  * CRITICAL-CONFIRMATIONS-BUSINESS-PARTNERS-04 — cubre "Revocar rol", "Activar/desactivar
@@ -326,5 +328,69 @@ describe("MasterDataBusinessPartnerDetailPage — sin diálogos nativos", () => 
     confirmSpy.mockRestore();
     promptSpy.mockRestore();
     alertSpy.mockRestore();
+  });
+});
+
+describe("MasterDataBusinessPartnerDetailPage — geografía INEC de ubicaciones", () => {
+  async function goToLocationsTab() {
+    renderPage();
+    await waitFor(() => expect(screen.getAllByText("Cliente Uno")[0]).toBeTruthy());
+    fireEvent.click(screen.getByRole("button", { name: /^Ubicaciones/ }));
+    await waitFor(() => expect(screen.getByText("Matriz Quito")).toBeTruthy());
+  }
+
+  it("nueva ubicación: provincias del país de la dirección INEC (fuente central), no del país del socio", async () => {
+    vi.mocked(businessPartnerFacade.getBusinessPartner).mockResolvedValue({ ...BP, countryCode: "US" });
+    await goToLocationsTab();
+
+    fireEvent.click(screen.getByRole("button", { name: /Nueva ubicación/ }));
+
+    await waitFor(() =>
+      expect(geographyLookupFacade.provinces).toHaveBeenCalledWith(PHYSICAL_ADDRESS_GEO_COUNTRY_ID),
+    );
+    expect(geographyLookupFacade.provinces).not.toHaveBeenCalledWith("US");
+  });
+
+  it("editar ubicación: recarga cantones/parroquias de los códigos guardados", async () => {
+    vi.mocked(businessPartnerFacade.getLocations).mockResolvedValue([
+      { ...ACTIVE_LOCATION, provinceCode: "17", cantonCode: "1701", parishCode: "170150" },
+    ]);
+    await goToLocationsTab();
+
+    fireEvent.click(screen.getByRole("button", { name: "Editar" }));
+
+    await waitFor(() => expect(geographyLookupFacade.parishes).toHaveBeenCalledWith("1701"));
+    expect(geographyLookupFacade.provinces).toHaveBeenCalledWith(PHYSICAL_ADDRESS_GEO_COUNTRY_ID);
+    expect(geographyLookupFacade.cantons).toHaveBeenCalledWith("17");
+  });
+
+  it("cambiar provincia carga sus cantones y limpia cantón/parroquia anteriores", async () => {
+    vi.mocked(geographyLookupFacade.provinces).mockResolvedValue([
+      { id: "01", name: "AZUAY" },
+      { id: "17", name: "PICHINCHA" },
+    ]);
+    vi.mocked(geographyLookupFacade.cantons).mockImplementation(async (provinceId: string) =>
+      provinceId === "17" ? [{ id: "1701", name: "QUITO" }] : [{ id: "0101", name: "CUENCA" }],
+    );
+    vi.mocked(geographyLookupFacade.parishes).mockResolvedValue([{ id: "170150", name: "LA MAGDALENA" }]);
+    vi.mocked(businessPartnerFacade.getLocations).mockResolvedValue([
+      { ...ACTIVE_LOCATION, provinceCode: "17", cantonCode: "1701", parishCode: "170150" },
+    ]);
+    await goToLocationsTab();
+    fireEvent.click(screen.getByRole("button", { name: "Editar" }));
+
+    const province = (await screen.findByDisplayValue("PICHINCHA")) as HTMLSelectElement;
+    await waitFor(() => expect(screen.getByDisplayValue("QUITO")).toBeTruthy());
+    expect(screen.getByDisplayValue("LA MAGDALENA")).toBeTruthy();
+
+    fireEvent.change(province, { target: { value: "01" } });
+
+    await waitFor(() => expect(geographyLookupFacade.cantons).toHaveBeenLastCalledWith("01"));
+    await waitFor(() => expect(screen.getByRole("option", { name: "CUENCA" })).toBeTruthy());
+    expect(screen.queryByRole("option", { name: "QUITO" })).toBeNull();
+    const selects = screen.getAllByRole("combobox") as HTMLSelectElement[];
+    const canton = selects.find((s) => [...s.options].some((o) => o.text === "CUENCA"));
+    expect(canton?.value).toBe("");
+    expect(screen.queryByDisplayValue("LA MAGDALENA")).toBeNull();
   });
 });

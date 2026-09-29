@@ -2,6 +2,16 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-29** · Kernel refactor: **2026-06-05**.
 
+## ZH-GEOGRAPHY-COUNTRY-CONTEXT-01 — País de la dirección INEC de socios de negocio (2026-09-29)
+
+**Estado: COMPLETADO (Caso B: restricción deliberada del dominio, centralizada).** Sin cambios de backend, endpoints, UX ni CSS.
+- `countryId` de `provinces()` = ISO-3166 alpha-2 (`GetGeoCountries` expone `SriCountry.Iso2`; filtra `global.geo_provinces.country_id`). El catálogo `geo_*` solo tiene la DPA INEC de Ecuador (25 provincias `EC`).
+- SSOT: `PhysicalAddress` (dominio MasterData) es "dirección física con codificación geográfica INEC Ecuador", sin campo país y con FK a `geo_*`. Descartadas como fuente: `BusinessPartner.countryCode` (país del socio, no de la ubicación — un socio extranjero puede tener sede con dirección INEC), `Company.CountryCode` (`ECU`, alpha-3 SRI: otro sistema y otro concepto); no existe configuración operativa de país de direcciones.
+- `"EC"` de `MasterDataBusinessPartnerDetailPage` → `masterData/constants/physicalAddressGeography.ts` (`PHYSICAL_ADDRESS_GEO_COUNTRY_ID`, documentado con la restricción). Flujo Provincia → Cantón → Parroquia sin selector de país (la dirección no tiene país); la cascada existente ya limpia hijos. Restricción documentada en `docs/architecture/architecture.md` (catálogos globales).
+- Tests: provincias con la fuente central aunque el socio sea `US`, recarga de cantones/parroquias al editar, cambio de provincia limpia cantón/parroquia y descarta opciones previas; guard: ningún consumidor pasa un país literal a `provinces()`.
+- Fuera de alcance (otro concepto, reportado): `"EC"` como default/fallback de `BusinessPartner.countryCode` (`MasterDataPartnerWizard`, `MasterDataBpFormFields`, fila "País" del detalle), país de banco (`BanksPage`, `Bank.DefaultCountryCode`) y país inicial de sucursal (`useBranchesPage`).
+- Frontend completo 2566/2566; `tsc -b`, lint (0 errores), build, `architecture:check` (0 nuevas, baseline 0) y `git diff --check` en verde.
+
 ## ZH-FRONTEND-GEOGRAPHY-SSOT-01 — Un solo cliente HTTP de geografía (2026-09-29)
 
 **Estado: COMPLETADO.** Toda consulta geográfica del frontend pasa por `branches/facades/geographyLookupFacade` → `branchService` → `GET /api/v1/settings/geography/{countries|provinces|cantons|parishes}`. Sin cambios de backend, endpoints, parámetros, UX ni CSS.

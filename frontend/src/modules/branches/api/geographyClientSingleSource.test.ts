@@ -29,4 +29,16 @@ describe("geografía — un solo cliente HTTP", () => {
 
     expect(hits).toEqual([SINGLE_CLIENT]);
   });
+
+  // ZH-GEOGRAPHY-COUNTRY-CONTEXT-01 — el país viene del contexto (selección del usuario o la
+  // fuente central del owner, p. ej. masterData PHYSICAL_ADDRESS_GEO_COUNTRY_ID), nunca de un
+  // literal disperso en un consumidor.
+  it("ningún consumidor pasa un país literal a provinces()", () => {
+    const literalCountry = /\.provinces\(\s*["'`]/;
+    const hits = walk(SRC_ROOT)
+      .filter((file) => literalCountry.test(readFileSync(file, "utf8")))
+      .map((file) => relative(SRC_ROOT, file).split(sep).join("/"));
+
+    expect(hits).toEqual([]);
+  });
 });

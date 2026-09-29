@@ -389,6 +389,8 @@ El sistema tiene **3 scopes** con responsabilidades exclusivas. Ningún scope pu
 | `global.geo_cantons` | Cantones Ecuador (INEC) |
 | `global.geo_parishes` | Parroquias Ecuador (INEC) |
 
+**Geografía (restricción vigente):** `geo_*` solo contiene la DPA INEC de Ecuador (`country_id = 'EC'`, ISO-3166 alpha-2). La dirección de ubicaciones de socios de negocio (`PhysicalAddress`) no tiene país: guarda códigos INEC con FK a `geo_*`, así que su país de catálogo es Ecuador por diseño, no un default configurable. En frontend ese valor vive una sola vez en el owner (`masterData/constants/physicalAddressGeography.ts`) y se consume vía `branches/facades/geographyLookupFacade` (único cliente HTTP: `branchService`); ningún consumidor pasa un país literal a `provinces()` (guard `geographyClientSingleSource.test.ts`). `BusinessPartner.countryCode` es el país del socio, no el de la dirección. Admitir direcciones fuera de Ecuador requiere agregar país a `PhysicalAddress` y cargar su DPA — decisión funcional pendiente, no implícita.
+
 **Regla GLOBAL:** Sin `tenant_id`. Sin `company_id`. Sin lógica de negocio. Referencia histórica (Control Plane SaaS, no vigente): [docs/archive/SUBSCRIBER-SCOPE-SEALED.md](../archive/SUBSCRIBER-SCOPE-SEALED.md)
 
 ## COMPANY (ERP Operativo)

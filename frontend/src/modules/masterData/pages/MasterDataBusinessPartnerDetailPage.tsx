@@ -30,6 +30,7 @@ import {
   geographyLookupFacade,
   type GeographyItemDto,
 } from "../../branches/facades/geographyLookupFacade";
+import { PHYSICAL_ADDRESS_GEO_COUNTRY_ID } from "../constants/physicalAddressGeography";
 import { useSriIdTypes, getSriIdTypeName } from "../api/useSriIdTypes";
 import { useLegalEntityTypes } from "../api/useLegalEntityTypes";
 import {
@@ -201,7 +202,9 @@ export function MasterDataBusinessPartnerDetailPage() {
 
   const loadProvinces = async () => {
     try {
-      setGeoProvinces(await geographyLookupFacade.provinces("EC"));
+      setGeoProvinces(
+        await geographyLookupFacade.provinces(PHYSICAL_ADDRESS_GEO_COUNTRY_ID),
+      );
     } catch {
       /* empty */
     }
