@@ -321,14 +321,7 @@ public sealed class EnableAccountHandler : IRequestHandler<EnableAccountCommand,
         // Account.Activate() — el Command se llama "Enable" por consistencia de vocabulario
         // REST con PostingRule.Enable(); el método de dominio conserva su nombre original de
         // Fase 1 (Account.Activate()), con su evento AccountActivatedEvent ya existente.
-        try
-        {
-            account.Activate(_u.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<AccountDto>.ValidationFailure(ex.Message);
-        }
+        account.Activate(_u.UserId);
 
         await _repo.SaveChangesAsync(ct);
         var byId = (await _repo.GetByCompanyAsync(tenantId, companyId, ct)).ToDictionary(a => a.Id);
@@ -389,14 +382,7 @@ public sealed class DisableAccountHandler
                 "No se puede desactivar: la cuenta está referenciada por una Regla de Contabilización activa."
             );
 
-        try
-        {
-            account.Disable(_u.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<AccountDto>.ValidationFailure(ex.Message);
-        }
+        account.Disable(_u.UserId);
 
         await _repo.SaveChangesAsync(ct);
         var byId = (await _repo.GetByCompanyAsync(tenantId, companyId, ct)).ToDictionary(a => a.Id);

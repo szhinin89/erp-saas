@@ -4,6 +4,7 @@ using ERP.Application.Modules.Companies;
 using ERP.Application.Modules.Companies.UseCases.PrecisionPolicy;
 using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Application.Modules.Purchases.Services;
+using ERP.Domain.Exceptions;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Items.Entities;
@@ -158,7 +159,7 @@ file static class PurchaseLinePackagingResolver
     private static PurchaseLinePackagingSnapshot ToSnapshot(Item item, ItemPackagingLevel packaging)
     {
         if (packaging.BaseQuantity <= 0)
-            throw new InvalidOperationException("La cantidad base del empaque debe ser mayor a cero.");
+            throw new ERP.Domain.Exceptions.DomainRuleViolationException("La cantidad base del empaque debe ser mayor a cero.");
 
         return new PurchaseLinePackagingSnapshot(
             packaging.Id,
@@ -1044,200 +1045,193 @@ public sealed class UpdatePurchaseDraftHandler
                 return whCheck.Error;
         }
 
-        try
+        string? pmName = null;
+        if (!string.IsNullOrWhiteSpace(cmd.SriPaymentMethodCode))
+            pmName = await _tax.GetPaymentMethodNameAsync(cmd.SriPaymentMethodCode.Trim(), ct);
+
+        inv.UpdateDraft(
+            cmd.SupplierId,
+            supplier.Name.LegalName,
+            supplier.Identification.Number,
+            cmd.DocTypeCode,
+            cmd.InvoiceNumber,
+            cmd.IssueDate,
+            _u.UserId,
+            cmd.AccessKey,
+            cmd.AuthorizationNumber,
+            cmd.AuthorizationDate,
+            cmd.TaxSupportCode,
+            cmd.SriPaymentMethodCode,
+            pmName,
+            cmd.GlobalWarehouseId,
+            cmd.DueDate,
+            cmd.Notes
+        );
+
+        var lines = new List<PurchaseInvoiceDetail>();
+        // ERP-PRECISION-OPERATIONAL-05B: cantidad/costo unitario/factor según la política de la empresa.
+        var precision = await _precision.GetEffectiveAsync(ct);
+        foreach (var l in cmd.Lines)
         {
-            string? pmName = null;
-            if (!string.IsNullOrWhiteSpace(cmd.SriPaymentMethodCode))
-                pmName = await _tax.GetPaymentMethodNameAsync(cmd.SriPaymentMethodCode.Trim(), ct);
+            var vatCode = l.VatCode;
+            var iceCode = l.IceCode;
+            string? snapshotSku = null;
+            string? snapshotItemName = null;
+            string? snapshotSupplierCode = null;
+            var packaging = new PurchaseLinePackagingSnapshot(null, "UNIT", "UNIT", 1m);
 
-            inv.UpdateDraft(
-                cmd.SupplierId,
-                supplier.Name.LegalName,
-                supplier.Identification.Number,
-                cmd.DocTypeCode,
-                cmd.InvoiceNumber,
-                cmd.IssueDate,
-                _u.UserId,
-                cmd.AccessKey,
-                cmd.AuthorizationNumber,
-                cmd.AuthorizationDate,
-                cmd.TaxSupportCode,
-                cmd.SriPaymentMethodCode,
-                pmName,
-                cmd.GlobalWarehouseId,
-                cmd.DueDate,
-                cmd.Notes
-            );
-
-            var lines = new List<PurchaseInvoiceDetail>();
-            // ERP-PRECISION-OPERATIONAL-05B: cantidad/costo unitario/factor según la política de la empresa.
-            var precision = await _precision.GetEffectiveAsync(ct);
-            foreach (var l in cmd.Lines)
+            if (l.ItemId.HasValue)
             {
-                var vatCode = l.VatCode;
-                var iceCode = l.IceCode;
-                string? snapshotSku = null;
-                string? snapshotItemName = null;
-                string? snapshotSupplierCode = null;
-                var packaging = new PurchaseLinePackagingSnapshot(null, "UNIT", "UNIT", 1m);
-
-                if (l.ItemId.HasValue)
+                var item = await _itemRepo.GetByIdAsync(l.ItemId.Value, _t.TenantId, ct);
+                if (item is not null)
                 {
-                    var item = await _itemRepo.GetByIdAsync(l.ItemId.Value, _t.TenantId, ct);
-                    if (item is not null)
-                    {
-                        snapshotSku = item.Code.SKU;
-                        snapshotItemName = item.Code.Description;
-                        snapshotSupplierCode = await SupplierCodeResolver.ResolveAsync(
-                            _itemRepo,
-                            l.ItemId.Value,
-                            _t.TenantId,
-                            cmd.SupplierId,
-                            ct
-                        );
-                        var packagingResult = await PurchaseLinePackagingResolver.ResolveAsync(
-                            _itemRepo,
-                            _receptionRepo,
-                            item,
-                            l,
-                            cmd.SupplierId,
-                            _t.TenantId,
-                            ct
-                        );
-                        if (packagingResult.Error is not null)
-                            return packagingResult.Error;
-                        packaging = packagingResult.Packaging!;
-                        packaging = packaging with
-                        {
-                            ConversionFactor = Math.Round(
-                                packaging.ConversionFactor,
-                                precision.ConversionFactorDecimals,
-                                MidpointRounding.AwayFromZero
-                            ),
-                        };
-                        if (packaging.ConversionFactor <= 0m)
-                            return (
-                                Result<PurchaseInvoiceDto>.ValidationFailure(
-                                    $"Línea '{l.Description}': el factor de conversión de la presentación no es representable con {precision.ConversionFactorDecimals} decimales."
-                                )
-                            );
-
-                        if (string.IsNullOrWhiteSpace(vatCode))
-                            vatCode = item.TaxConfig.PurchaseVatCode ?? vatCode;
-                        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.2/Fase 3) — ICE se resuelve desde
-                        // ItemSpecialTaxConfiguration, no desde TaxConfig.ExciseTaxCode (legacy
-                        // compatibility mirror, ya no se lee para decisiones nuevas).
-                        if (string.IsNullOrWhiteSpace(iceCode))
-                            iceCode = item
-                                .SpecialTaxConfigurations.FirstOrDefault(c =>
-                                    c.IsActive && c.SriTaxCategoryCode == SriTaxCategoryCodes.Ice
-                                )
-                                ?.TaxCatalogCode;
-                    }
-                }
-
-                if (string.IsNullOrWhiteSpace(vatCode))
-                    return Result<PurchaseInvoiceDto>.ValidationFailure(
-                        $"Línea '{l.Description}': código IVA obligatorio."
-                    );
-
-                string? snapshotWhCode = null;
-                var whId = l.WarehouseId ?? cmd.GlobalWarehouseId;
-                if (whId.HasValue)
-                {
-                    var whCheck = await WarehouseBranchGuard.ValidateAsync(
-                        _whRepo,
+                    snapshotSku = item.Code.SKU;
+                    snapshotItemName = item.Code.Description;
+                    snapshotSupplierCode = await SupplierCodeResolver.ResolveAsync(
+                        _itemRepo,
+                        l.ItemId.Value,
                         _t.TenantId,
-                        whId.Value,
-                        inv.BranchId,
+                        cmd.SupplierId,
                         ct
                     );
-                    if (whCheck.Error is not null)
-                        return whCheck.Error;
-                    snapshotWhCode = whCheck.Warehouse?.Code;
-                }
+                    var packagingResult = await PurchaseLinePackagingResolver.ResolveAsync(
+                        _itemRepo,
+                        _receptionRepo,
+                        item,
+                        l,
+                        cmd.SupplierId,
+                        _t.TenantId,
+                        ct
+                    );
+                    if (packagingResult.Error is not null)
+                        return packagingResult.Error;
+                    packaging = packagingResult.Packaging!;
+                    packaging = packaging with
+                    {
+                        ConversionFactor = Math.Round(
+                            packaging.ConversionFactor,
+                            precision.ConversionFactorDecimals,
+                            MidpointRounding.AwayFromZero
+                        ),
+                    };
+                    if (packaging.ConversionFactor <= 0m)
+                        return (
+                            Result<PurchaseInvoiceDto>.ValidationFailure(
+                                $"Línea '{l.Description}': el factor de conversión de la presentación no es representable con {precision.ConversionFactorDecimals} decimales."
+                            )
+                        );
 
-                var normalizedLine = await PurchaseLineNormalizer.NormalizeAsync(
-                    l,
-                    precision,
-                    _receptionRepo,
+                    if (string.IsNullOrWhiteSpace(vatCode))
+                        vatCode = item.TaxConfig.PurchaseVatCode ?? vatCode;
+                    // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.2/Fase 3) — ICE se resuelve desde
+                    // ItemSpecialTaxConfiguration, no desde TaxConfig.ExciseTaxCode (legacy
+                    // compatibility mirror, ya no se lee para decisiones nuevas).
+                    if (string.IsNullOrWhiteSpace(iceCode))
+                        iceCode = item
+                            .SpecialTaxConfigurations.FirstOrDefault(c =>
+                                c.IsActive && c.SriTaxCategoryCode == SriTaxCategoryCodes.Ice
+                            )
+                            ?.TaxCatalogCode;
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(vatCode))
+                return Result<PurchaseInvoiceDto>.ValidationFailure(
+                    $"Línea '{l.Description}': código IVA obligatorio."
+                );
+
+            string? snapshotWhCode = null;
+            var whId = l.WarehouseId ?? cmd.GlobalWarehouseId;
+            if (whId.HasValue)
+            {
+                var whCheck = await WarehouseBranchGuard.ValidateAsync(
+                    _whRepo,
                     _t.TenantId,
+                    whId.Value,
+                    inv.BranchId,
                     ct
                 );
+                if (whCheck.Error is not null)
+                    return whCheck.Error;
+                snapshotWhCode = whCheck.Warehouse?.Code;
+            }
 
-                var line = PurchaseInvoiceDetail.Create(
-                    inv.Id,
+            var normalizedLine = await PurchaseLineNormalizer.NormalizeAsync(
+                l,
+                precision,
+                _receptionRepo,
+                _t.TenantId,
+                ct
+            );
+
+            var line = PurchaseInvoiceDetail.Create(
+                inv.Id,
+                _t.TenantId,
+                l.Description,
+                l.Quantity,
+                normalizedLine.UnitPrice,
+                vatCode,
+                packaging.UomCode,
+                l.ItemId,
+                l.WarehouseId,
+                l.Notes,
+                normalizedLine.DiscountPct,
+                iceCode,
+                snapshotSku,
+                snapshotItemName,
+                snapshotSupplierCode,
+                conversionFactor: packaging.ConversionFactor,
+                snapshotWarehouseCode: snapshotWhCode,
+                purchaseOrderDetailId: l.PurchaseOrderDetailId,
+                orderedQuantity: l.OrderedQuantity,
+                purchaseReceptionLineId: l.PurchaseReceptionLineId,
+                baseUomCode: packaging.BaseUomCode,
+                packagingLevelId: packaging.PackagingLevelId,
+                quantityDecimals: precision.QuantityDecimals,
+                unitCostDecimals: precision.UnitCostDecimals,
+                exactDiscountAmount: normalizedLine.ExactDiscountAmount
+            );
+            if (l.FreightAllocated.HasValue)
+                line.SetFreightAllocated(l.FreightAllocated.Value);
+            if (l.OtherCostsAllocated.HasValue)
+                line.SetOtherCostsAllocated(l.OtherCostsAllocated.Value);
+
+            Result<PurchaseInvoiceDto>? taxResult = null;
+            if (l.PurchaseReceptionLineId.HasValue)
+            {
+                var receptionTaxes = await ReceptionTaxLookup.LoadAsync(
+                    _receptionRepo,
                     _t.TenantId,
-                    l.Description,
-                    l.Quantity,
-                    normalizedLine.UnitPrice,
-                    vatCode,
-                    packaging.UomCode,
-                    l.ItemId,
-                    l.WarehouseId,
-                    l.Notes,
-                    normalizedLine.DiscountPct,
-                    iceCode,
-                    snapshotSku,
-                    snapshotItemName,
-                    snapshotSupplierCode,
-                    conversionFactor: packaging.ConversionFactor,
-                    snapshotWarehouseCode: snapshotWhCode,
-                    purchaseOrderDetailId: l.PurchaseOrderDetailId,
-                    orderedQuantity: l.OrderedQuantity,
-                    purchaseReceptionLineId: l.PurchaseReceptionLineId,
-                    baseUomCode: packaging.BaseUomCode,
-                    packagingLevelId: packaging.PackagingLevelId,
-                    quantityDecimals: precision.QuantityDecimals,
-                    unitCostDecimals: precision.UnitCostDecimals,
-                    exactDiscountAmount: normalizedLine.ExactDiscountAmount
+                    l.PurchaseReceptionLineId.Value,
+                    ct
                 );
-                if (l.FreightAllocated.HasValue)
-                    line.SetFreightAllocated(l.FreightAllocated.Value);
-                if (l.OtherCostsAllocated.HasValue)
-                    line.SetOtherCostsAllocated(l.OtherCostsAllocated.Value);
-
-                Result<PurchaseInvoiceDto>? taxResult = null;
-                if (l.PurchaseReceptionLineId.HasValue)
-                {
-                    var receptionTaxes = await ReceptionTaxLookup.LoadAsync(
-                        _receptionRepo,
-                        _t.TenantId,
-                        l.PurchaseReceptionLineId.Value,
+                if (receptionTaxes.Count > 0)
+                    taxResult = await ReceptionTaxHelper.ApplyReceptionTaxesAsync(
+                        line,
+                        receptionTaxes,
+                        _tax,
                         ct
                     );
-                    if (receptionTaxes.Count > 0)
-                        taxResult = await ReceptionTaxHelper.ApplyReceptionTaxesAsync(
-                            line,
-                            receptionTaxes,
-                            _tax,
-                            ct
-                        );
-                    else
-                        taxResult = await TaxHelper.ResolveTaxesAsync(line, _tax, ct);
-                }
                 else
-                {
                     taxResult = await TaxHelper.ResolveTaxesAsync(line, _tax, ct);
-                }
-                if (taxResult is not null)
-                    return taxResult;
-                lines.Add(line);
             }
-            await _repo.RemoveLinesByInvoiceAsync(inv.Id, lines, ct);
-            inv.ReplaceLines(lines, _u.UserId);
-            // PURCHASE-DISTRIBUTE-COST-BEFORE-SAVE-01 — mismo criterio que CreatePurchaseDraftHandler:
-            // no reprorratear si el cliente ya envió FreightAllocated/OtherCostsAllocated explícitos.
-            var hasExplicitLineCosts = cmd.Lines.Any(l =>
-                l.FreightAllocated.HasValue || l.OtherCostsAllocated.HasValue
-            );
-            if (!hasExplicitLineCosts && (cmd.FreightCost > 0 || cmd.OtherCosts > 0))
-                inv.DistributeCosts(cmd.FreightCost, cmd.OtherCosts, _u.UserId);
+            else
+            {
+                taxResult = await TaxHelper.ResolveTaxesAsync(line, _tax, ct);
+            }
+            if (taxResult is not null)
+                return taxResult;
+            lines.Add(line);
         }
-        catch (InvalidOperationException ex)
-        {
-            return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message);
-        }
+        await _repo.RemoveLinesByInvoiceAsync(inv.Id, lines, ct);
+        inv.ReplaceLines(lines, _u.UserId);
+        // PURCHASE-DISTRIBUTE-COST-BEFORE-SAVE-01 — mismo criterio que CreatePurchaseDraftHandler:
+        // no reprorratear si el cliente ya envió FreightAllocated/OtherCostsAllocated explícitos.
+        var hasExplicitLineCosts = cmd.Lines.Any(l =>
+            l.FreightAllocated.HasValue || l.OtherCostsAllocated.HasValue
+        );
+        if (!hasExplicitLineCosts && (cmd.FreightCost > 0 || cmd.OtherCosts > 0))
+            inv.DistributeCosts(cmd.FreightCost, cmd.OtherCosts, _u.UserId);
 
         try
         {

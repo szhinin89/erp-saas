@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Pricing.Entities;
 using ERP.Domain.Modules.Pricing.Enums;
 using FluentAssertions;
@@ -55,7 +56,7 @@ public sealed class PricingRuleTests
         var rule = CreateRule();
         rule.Disable(Guid.NewGuid());
         var act = () => rule.Disable(Guid.NewGuid());
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -72,7 +73,7 @@ public sealed class PricingRuleTests
     {
         var rule = CreateRule();
         var act = () => rule.Enable(Guid.NewGuid());
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]

@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using System.Globalization;
 using ERP.Application.Modules.Finance.UseCases.CreditTerms;
 using ERP.Domain.Modules.Finance.Entities;
@@ -120,6 +121,6 @@ public sealed class CreditTermInstallmentPercentageScaleTests
                 Guid.NewGuid(),
                 new[] { (1, 30, 33.33m), (2, 60, 33.33m), (3, 90, 33.33m) }
             );
-        act.Should().Throw<InvalidOperationException>().WithMessage("*exactamente 100%*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*exactamente 100%*");
     }
 }

@@ -75,23 +75,16 @@ public sealed class UpdateItemSupplierCodePackagingCommandHandler
             );
         }
 
-        try
-        {
-            await _repository.UpdateSupplierCodePackagingLevelAsync(
-                request.ItemId,
-                request.SupplierId,
-                request.Code,
-                request.PackagingLevelId,
-                _currentTenant.TenantId,
-                _currentUser.UserId,
-                cancellationToken
-            );
-            await _repository.SaveChangesAsync(cancellationToken);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<ItemDetailDto>.ValidationFailure(ex.Message);
-        }
+        await _repository.UpdateSupplierCodePackagingLevelAsync(
+            request.ItemId,
+            request.SupplierId,
+            request.Code,
+            request.PackagingLevelId,
+            _currentTenant.TenantId,
+            _currentUser.UserId,
+            cancellationToken
+        );
+        await _repository.SaveChangesAsync(cancellationToken);
 
         var updated = await _repository.GetByIdAsync(
             request.ItemId,

@@ -3,6 +3,7 @@ using ERP.Application.Common.Services;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Sales.UseCases;
 using ERP.Application.Tests.TestSupport;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Caja.Interfaces;
@@ -264,15 +265,11 @@ public sealed class SalesReturnRefundHandlerTests
         );
         var (handler, _, _, _) = BuildHandler(openSession: null, receivable);
 
-        var error = await handler.ExecuteAsync(
-            salesReturn,
-            TenantId,
-            UserId,
-            CancellationToken.None
-        );
+        // ZH-DOMAIN-RULE-ERROR-SSOT-01B: la regla de la CxC sube como DomainRuleViolationException
+        // (el handler de autorización revierte y DomainRuleBehavior traduce) — mismo mensaje.
+        var act = () => handler.ExecuteAsync(salesReturn, TenantId, UserId, CancellationToken.None);
 
-        error.Should().NotBeNull();
-        error.Should().Contain("excede el saldo pendiente");
+        await act.Should().ThrowAsync<DomainRuleViolationException>().WithMessage("*excede el saldo pendiente*");
         receivable
             .OriginalAmount.Should()
             .Be(100m, because: "no debe mutar si la validación falla");
@@ -293,14 +290,9 @@ public sealed class SalesReturnRefundHandlerTests
         );
         var (handler, _, _, _) = BuildHandler(openSession: null, receivable);
 
-        var error = await handler.ExecuteAsync(
-            salesReturn,
-            TenantId,
-            UserId,
-            CancellationToken.None
-        );
+        var act = () => handler.ExecuteAsync(salesReturn, TenantId, UserId, CancellationToken.None);
 
-        error.Should().NotBeNull();
+        await act.Should().ThrowAsync<DomainRuleViolationException>();
         receivable.OriginalAmount.Should().Be(100m);
         receivable.BalanceDue.Should().Be(0m);
     }

@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 
 namespace ERP.Domain.Modules.Inventory.Entities;
 
@@ -47,7 +48,7 @@ public sealed class CurrentStock : AuditableEntity, ITenantScopedEntity, ICompan
     {
         var newQty = Quantity + delta;
         if (newQty < 0)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Movement would leave stock at {newQty}. Insufficient stock."
             );
 
@@ -60,7 +61,7 @@ public sealed class CurrentStock : AuditableEntity, ITenantScopedEntity, ICompan
     public void Reserve(decimal quantity, Guid updatedBy)
     {
         if (quantity > AvailableQuantity)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Insufficient available stock. Available: {AvailableQuantity}, requested: {quantity}."
             );
         ReservedQuantity += quantity;

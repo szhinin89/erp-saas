@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Accounting.Entities;
 
 namespace ERP.Application.Modules.Accounting.Posting;
@@ -66,7 +67,7 @@ internal sealed class JournalValidator
         {
             entry.EnsureBalanced();
         }
-        catch (InvalidOperationException ex)
+        catch (DomainRuleViolationException ex)
         {
             return Result<JournalEntry>.ValidationFailure(ex.Message, ValidationFailedCode);
         }

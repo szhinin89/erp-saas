@@ -6,6 +6,7 @@ using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Accounting.ValueObjects;
 using FluentAssertions;
 using Moq;
+using ERP.Application.Tests.Common;
 
 namespace ERP.Application.Tests.Accounting;
 
@@ -286,7 +287,7 @@ public sealed class ReverseJournalEntryCommandHandlerTests
             .ReturnsAsync(period);
 
         var handler = m.BuildHandler();
-        var result = await handler.Handle(
+        var result = await handler.HandleWithDomainRules(
             new ReverseJournalEntryCommand(draft.Id, "Motivo"),
             CancellationToken.None
         );
@@ -316,7 +317,7 @@ public sealed class ReverseJournalEntryCommandHandlerTests
             .ReturnsAsync(period);
 
         var handler = m.BuildHandler();
-        var result = await handler.Handle(
+        var result = await handler.HandleWithDomainRules(
             new ReverseJournalEntryCommand(original.Id, "Segundo intento"),
             CancellationToken.None
         );

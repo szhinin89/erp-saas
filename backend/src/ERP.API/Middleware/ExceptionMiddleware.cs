@@ -19,10 +19,10 @@ public partial class ExceptionMiddleware
     };
 
     /// <summary>
-    /// Capas cuyo texto de excepción es un mensaje de negocio curado (reglas de dominio y de casos de
-    /// uso). Un <see cref="InvalidOperationException"/>/<see cref="ArgumentException"/> lanzado desde
-    /// cualquier otro código (framework: LINQ, EF Core, Nullable…; Infrastructure; API) es un error de
-    /// programación o de estado interno: su texto puede nombrar entidades, SQL o configuración.
+    /// Capas cuyo texto de <see cref="ArgumentException"/> es un mensaje de validación curado (Domain y
+    /// Application). Lanzada desde cualquier otro código (framework, Infrastructure, API) su texto
+    /// puede nombrar parámetros o configuración: conserva el 400 pero no se expone. Las reglas de
+    /// negocio NO dependen de esto: viajan como <see cref="DomainRuleViolationException"/>.
     /// </summary>
     private static readonly Assembly[] CuratedMessageAssemblies =
     [
@@ -102,15 +102,17 @@ public partial class ExceptionMiddleware
             BranchScopeException => ApiResponseCodes.Common.BranchScopeForbidden,
             CompanyRucAlreadyExistsException => ApiResponseCodes.Common.CompanyRucAlreadyExists,
             UnauthorizedAccessException => ApiResponseCodes.Common.Unauthorized,
+            // ZH-DOMAIN-RULE-ERROR-SSOT-01: la única representación de una regla de negocio. Llega aquí
+            // solo si no pasó por DomainRuleBehavior (request cuya respuesta no es Result<T>, o código
+            // fuera de MediatR): mismo código y mensaje que Result.FromDomainRule.
+            DomainRuleViolationException => ApiResponseCodes.Common.DomainRuleViolation,
             // Base de datos: único punto de clasificación técnica (IDatabaseExceptionTranslator):
             // no disponible → 503; UNIQUE/integridad/concurrencia → 409; SQL inesperado → 500.
             _ when _databaseExceptions.ClassifyFailureCode(exception) is { } databaseCode =>
                 databaseCode,
             ArgumentException => ApiResponseCodes.Common.BadRequest,
-            // Regla de negocio curada (Domain/Application) → 422; cualquier otro
-            // InvalidOperationException es un defecto interno → 500 sin texto.
-            InvalidOperationException when IsCuratedMessage(exception) =>
-                ApiResponseCodes.Common.DomainRuleViolation,
+            // InvalidOperationException = error interno / estado imposible / framework → 500 sin texto
+            // (cae aquí junto con cualquier otra excepción no clasificada).
             _ => ApiResponseCodes.Common.InternalError,
         };
 
@@ -123,12 +125,13 @@ public partial class ExceptionMiddleware
             CompanyScopeException
             or BranchScopeException
             or CompanyRucAlreadyExistsException
-            or SriCommunicationException => true,
-            ArgumentException or InvalidOperationException => IsCuratedMessage(exception),
+            or SriCommunicationException
+            or DomainRuleViolationException => true,
+            ArgumentException => IsCuratedMessage(exception),
             _ => false,
         };
 
-    /// <summary>Origen del <c>throw</c> (primer frame): Domain o Application.</summary>
+    /// <summary>Origen del <c>throw</c> de un ArgumentException (primer frame): Domain o Application.</summary>
     private static bool IsCuratedMessage(Exception exception) =>
         exception.TargetSite?.DeclaringType?.Assembly is { } origin
         && CuratedMessageAssemblies.Contains(origin);

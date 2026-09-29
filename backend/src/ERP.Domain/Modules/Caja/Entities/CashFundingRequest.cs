@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Caja.Enums;
 
 namespace ERP.Domain.Modules.Caja.Entities;
@@ -170,7 +171,7 @@ public sealed class CashFundingRequest : ICompanyOperationalEntity
     private void EnsurePending()
     {
         if (!IsPending)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "La solicitud de efectivo ya fue resuelta y no puede volver a usarse."
             );
     }

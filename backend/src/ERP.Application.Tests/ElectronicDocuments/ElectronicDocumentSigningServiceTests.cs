@@ -8,6 +8,7 @@ using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Security.Cryptography;
+using ERP.Domain.Exceptions;
 
 namespace ERP.Application.Tests.ElectronicDocuments;
 
@@ -214,7 +215,7 @@ public sealed class ElectronicDocumentSigningServiceTests
             new PassthroughSecretProtector(),
             new FakeSigner(
                 (_, _, _) =>
-                    throw new InvalidOperationException(
+                    throw new DomainRuleViolationException(
                         "El certificado no contiene clave privada RSA."
                     )
             ),

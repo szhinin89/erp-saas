@@ -242,14 +242,8 @@ public sealed class EnableAttributeDefinitionCommandHandler
         var def = await _repo.GetByIdAsync(cmd.Id, _currentTenant.TenantId, cancellationToken);
         if (def is null)
             return Result<bool>.NotFound("Atributo no encontrado.");
-        try
-        {
-            def.Enable(_user.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<bool>.ValidationFailure(ex.Message);
-        }
+        def.Enable(_user.UserId);
+
         await _repo.SaveChangesAsync(cancellationToken);
         return Result<bool>.Success(true);
     }
@@ -281,14 +275,8 @@ public sealed class DisableAttributeDefinitionCommandHandler
         var def = await _repo.GetByIdAsync(cmd.Id, _currentTenant.TenantId, cancellationToken);
         if (def is null)
             return Result<bool>.NotFound("Atributo no encontrado.");
-        try
-        {
-            def.Disable(_user.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<bool>.ValidationFailure(ex.Message);
-        }
+        def.Disable(_user.UserId);
+
         await _repo.SaveChangesAsync(cancellationToken);
         return Result<bool>.Success(true);
     }

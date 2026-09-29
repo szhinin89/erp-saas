@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Events;
 
@@ -231,7 +232,7 @@ public sealed class PurchaseInvoice
     )
     {
         if (Status != PurchaseStatus.Draft)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Solo se pueden editar compras en estado borrador."
             );
         if (string.IsNullOrWhiteSpace(docTypeCode))
@@ -363,7 +364,7 @@ public sealed class PurchaseInvoice
                 nameof(includedLineIds)
             );
         if (included.Any(l => l.QuantityInBaseUom <= 0))
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Todas las líneas incluidas deben tener cantidad base mayor a cero."
             );
 
@@ -429,7 +430,7 @@ public sealed class PurchaseInvoice
     )
     {
         if (lines.Count == 0)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No hay líneas elegibles para prorratear el costo."
             );
 
@@ -465,20 +466,20 @@ public sealed class PurchaseInvoice
     {
         EnsureDraft();
         if (_lines.Count == 0)
-            throw new InvalidOperationException("No se puede confirmar una compra sin líneas.");
+            throw new DomainRuleViolationException("No se puede confirmar una compra sin líneas.");
 
         foreach (var line in _lines)
         {
             if (line.Quantity <= 0)
-                throw new InvalidOperationException(
+                throw new DomainRuleViolationException(
                     $"Línea '{line.Description}': cantidad debe ser mayor a cero."
                 );
             if (string.IsNullOrWhiteSpace(line.VatCode))
-                throw new InvalidOperationException(
+                throw new DomainRuleViolationException(
                     $"Línea '{line.Description}': código IVA es obligatorio."
                 );
             if (line.ItemId.HasValue && line.WarehouseId is null && GlobalWarehouseId is null)
-                throw new InvalidOperationException(
+                throw new DomainRuleViolationException(
                     $"Línea '{line.Description}': el producto requiere una bodega destino."
                 );
         }
@@ -494,7 +495,7 @@ public sealed class PurchaseInvoice
         if (unresolved.Count > 0)
         {
             var names = string.Join(", ", unresolved.Select(l => l.Description));
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"No se puede confirmar la compra: hay productos pendientes de vinculación ({names})."
             );
         }
@@ -558,7 +559,7 @@ public sealed class PurchaseInvoice
         EnsureDraft();
         var line =
             _lines.FirstOrDefault(l => l.Id == lineId)
-            ?? throw new InvalidOperationException("Línea no encontrada.");
+            ?? throw new DomainRuleViolationException("Línea no encontrada.");
 
         var oldPvp = line.SnapshotItemPvp;
         line.SetItemPvpSnapshot(newPvp);
@@ -587,7 +588,7 @@ public sealed class PurchaseInvoice
     public void Cancel(string reason, Guid cancelledBy)
     {
         if (Status != PurchaseStatus.Confirmed)
-            throw new InvalidOperationException("Solo se pueden anular compras confirmadas.");
+            throw new DomainRuleViolationException("Solo se pueden anular compras confirmadas.");
         if (string.IsNullOrWhiteSpace(reason))
             throw new ArgumentException("El motivo de anulación es obligatorio.", nameof(reason));
 
@@ -617,7 +618,7 @@ public sealed class PurchaseInvoice
     {
         EnsureDraft();
         if (_paymentSchedules.Count > 0)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No se puede cambiar la condición de pago después de generar el cronograma."
             );
 
@@ -630,17 +631,17 @@ public sealed class PurchaseInvoice
     public void GeneratePaymentSchedule()
     {
         if (_paymentSchedules.Count > 0)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "El cronograma de pagos ya fue generado. No se permite regeneración."
             );
 
         if (GrandTotal <= 0)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No se puede generar cronograma para una compra con total cero o negativo."
             );
 
         if (PaymentTermInstallments < 1)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "La condición de pago debe tener al menos 1 cuota."
             );
 
@@ -669,7 +670,7 @@ public sealed class PurchaseInvoice
 
         var total = GrandTotal;
         if (total <= 0)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No se puede generar cronograma para una compra con total cero o negativo."
             );
 
@@ -694,7 +695,7 @@ public sealed class PurchaseInvoice
 
         var sum = installments.Sum(i => i.Amount);
         if (sum != total)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"La suma de las cuotas ({sum:F2}) no coincide con el total de la compra ({total:F2})."
             );
 
@@ -718,7 +719,7 @@ public sealed class PurchaseInvoice
     {
         var sum = _paymentSchedules.Sum(s => s.Amount);
         if (sum != expectedTotal)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"La suma de las cuotas ({sum:F2}) no coincide con el total de la compra ({expectedTotal:F2})."
             );
     }
@@ -726,7 +727,7 @@ public sealed class PurchaseInvoice
     private void EnsureDraft()
     {
         if (Status != PurchaseStatus.Draft)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Solo se pueden editar compras en estado borrador."
             );
     }

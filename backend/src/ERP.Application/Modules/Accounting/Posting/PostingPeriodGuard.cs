@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Accounting.Entities;
 
 namespace ERP.Application.Modules.Accounting.Posting;
@@ -13,7 +14,7 @@ internal sealed class PostingPeriodGuard
             period.EnsureOpenForPosting();
             return Result<AccountingPeriod>.Success(period);
         }
-        catch (InvalidOperationException ex)
+        catch (DomainRuleViolationException ex)
         {
             return Result<AccountingPeriod>.ValidationFailure(ex.Message, "PERIOD_NOT_OPEN");
         }

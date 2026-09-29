@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Accounting.Enums;
 
 namespace ERP.Domain.Modules.Accounting.Entities;
@@ -166,7 +167,7 @@ public sealed class JournalEntry : AuditableEntity, ITenantScopedEntity, ICompan
         var totalDebit = _lines.Sum(l => l.Debit);
         var totalCredit = _lines.Sum(l => l.Credit);
         if (totalDebit != totalCredit)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"El asiento no está balanceado: Débitos ({totalDebit:F2}) distintos de Créditos ({totalCredit:F2})."
             );
     }
@@ -185,7 +186,7 @@ public sealed class JournalEntry : AuditableEntity, ITenantScopedEntity, ICompan
     public void Post(Guid postedBy, int entryNumber)
     {
         if (Status != JournalEntryStatus.Draft)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Solo un asiento en estado Draft puede publicarse (estado actual: {Status})."
             );
         if (entryNumber < 1)
@@ -221,7 +222,7 @@ public sealed class JournalEntry : AuditableEntity, ITenantScopedEntity, ICompan
     public JournalEntry Reverse(Guid reversedBy, int reverseEntryNumber, string reason)
     {
         if (Status != JournalEntryStatus.Posted)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Solo un asiento Posted puede reversarse (estado actual: {Status})."
             );
         if (string.IsNullOrWhiteSpace(reason))

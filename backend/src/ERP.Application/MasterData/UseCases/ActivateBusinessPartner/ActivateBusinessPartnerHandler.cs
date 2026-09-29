@@ -24,14 +24,7 @@ public sealed class ActivateBusinessPartnerHandler
         if (bp is null)
             return Result<bool>.NotFound("BusinessPartner no encontrado.");
 
-        try
-        {
-            bp.Activate(_ctx.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<bool>.ValidationFailure(ex.Message);
-        }
+        bp.Activate(_ctx.UserId);
 
         await _bpRepo.SaveChangesAsync(cancellationToken);
         return Result<bool>.Success(true);

@@ -300,20 +300,7 @@ public sealed class ConfirmPurchaseHandler
         }
 
         // ── STEP 2: Confirmar (cambia estado, valida invariantes, congela costos) ─
-        try
-        {
-            inv.Confirm(uid);
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogWarning(
-                "Confirm rejected for invoice {InvoiceId} tenant {TenantId}: {Reason}",
-                cmd.InvoiceId,
-                tid,
-                ex.Message
-            );
-            return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message);
-        }
+        inv.Confirm(uid);
 
         // ── STEP 2b: Generar calendario de pagos ────────────────────────
         await _repo.ClearScheduleTrackingAsync(inv.Id, ct);
@@ -331,7 +318,7 @@ public sealed class ConfirmPurchaseHandler
                 inv.GeneratePaymentSchedule();
             }
         }
-        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+        catch (ArgumentException ex)
         {
             _logger.LogWarning(
                 "Payment schedule rejected for invoice {InvoiceId}: {Reason}",
@@ -418,7 +405,7 @@ public sealed class ConfirmPurchaseHandler
                     ct
                 );
             }
-            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+            catch (ArgumentException ex)
             {
                 _logger.LogWarning(
                     ex,

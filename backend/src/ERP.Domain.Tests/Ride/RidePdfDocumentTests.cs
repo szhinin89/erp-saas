@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Ride.Entities;
 using ERP.Domain.Modules.Ride.Enums;
 using ERP.Domain.Modules.Ride.Events;
@@ -103,7 +104,7 @@ public sealed class RidePdfDocumentTests
 
         var act = () => document.MarkGenerated("ride/path/v2.pdf", DateTime.UtcNow, Guid.NewGuid());
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*MarkRegenerated*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*MarkRegenerated*");
     }
 
     [Fact]
@@ -128,7 +129,7 @@ public sealed class RidePdfDocumentTests
         var act = () =>
             document.MarkRegenerated("ride/path/v1.pdf", DateTime.UtcNow, Guid.NewGuid());
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -152,7 +153,7 @@ public sealed class RidePdfDocumentTests
 
         var act = () => document.MarkFailed("motivo cualquiera", Guid.NewGuid());
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -174,7 +175,7 @@ public sealed class RidePdfDocumentTests
 
         var act = () => document.MarkPendingSource(Guid.NewGuid());
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]

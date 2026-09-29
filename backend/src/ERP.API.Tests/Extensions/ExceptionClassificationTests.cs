@@ -83,7 +83,7 @@ public sealed class ExceptionClassificationTests
     // ── InvalidOperationException / ArgumentException ──
 
     [Fact]
-    public async Task IOE_del_dominio_es_422_con_su_mensaje_curado()
+    public async Task Regla_del_dominio_es_422_DOMAIN_RULE_VIOLATION_con_su_mensaje_curado()
     {
         var (status, code, body) = await Run(ApiErrorContractTests.DomainRuleException());
 
@@ -94,7 +94,7 @@ public sealed class ExceptionClassificationTests
     }
 
     [Fact]
-    public async Task El_origen_se_conserva_a_traves_de_un_await_real_del_pipeline()
+    public async Task Regla_del_dominio_a_traves_de_un_await_real_del_pipeline_es_422()
     {
         var context = new DefaultHttpContext();
         context.Response.Body = new MemoryStream();
@@ -121,6 +121,15 @@ public sealed class ExceptionClassificationTests
     public static TheoryData<string, Exception> InternalInvalidOperations =>
         new()
         {
+            // ZH-DOMAIN-RULE-ERROR-SSOT-01: una invariante interna del DOMINIO también es técnica
+            // (InvalidOperationException ya no significa regla de negocio en ninguna capa).
+            {
+                "Domain: invariante interna",
+                Capture(() => ERP.Domain.Modules.Inventory.Entities.StockMovement.Create(
+                    Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
+                    ERP.Domain.Modules.Inventory.Enums.StockMovementType.SaleExit, 1m, "UND", 0m,
+                    sequenceNumber: 0, 0m, 0m, new DateOnly(2026, 1, 1), null, null, null, Guid.NewGuid(), Guid.NewGuid()))
+            },
             // LINQ, Nullable y la infraestructura propia: errores de programación / estado interno.
             { "LINQ Single()", Capture(() => Enumerable.Empty<int>().Single()) },
             { "Nullable.Value", Capture(() => _ = ((int?)null).Value) },
@@ -135,7 +144,8 @@ public sealed class ExceptionClassificationTests
         var (status, code, body) = await Run(exception);
 
         (status, code).Should().Be((500, "INTERNAL_ERROR"), origin);
-        body.Should().NotContain(exception.Message).And.NotContain("Sequence").And.NotContain("tenantId");
+        body.Should().NotContain(exception.Message).And.NotContain("Sequence").And.NotContain("tenantId")
+            .And.NotContain("Invariante");
     }
 
     [Fact]

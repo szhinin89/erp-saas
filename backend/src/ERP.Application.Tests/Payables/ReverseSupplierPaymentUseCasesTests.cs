@@ -13,6 +13,7 @@ using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentAssertions;
 using Moq;
+using ERP.Application.Tests.Common;
 
 namespace ERP.Application.Tests.Payables;
 
@@ -233,7 +234,7 @@ public sealed class ReverseSupplierPaymentUseCasesTests
         SetupPayable(m, payable, installmentId);
 
         var handler = BuildHandler(m);
-        var result = await handler.Handle(
+        var result = await handler.HandleWithDomainRules(
             ValidReversal(payment.Id, "Segundo intento"),
             CancellationToken.None
         );
@@ -677,7 +678,7 @@ public sealed class ReverseSupplierPaymentUseCasesTests
             .Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(session);
 
-        var result = await BuildHandler(m).Handle(
+        var result = await BuildHandler(m).HandleWithDomainRules(
             new ReverseSupplierPaymentCommand(payment.Id, "Pago duplicado", CashNotDeliveredConfirmed: false),
             CancellationToken.None
         );
@@ -723,7 +724,7 @@ public sealed class ReverseSupplierPaymentUseCasesTests
         SetupPayment(m, payment);
         SetupPayable(m, payable, installmentId);
 
-        var result = await BuildHandler(m).Handle(
+        var result = await BuildHandler(m).HandleWithDomainRules(
             new ReverseSupplierPaymentCommand(payment.Id, "Error"),
             CancellationToken.None
         );
@@ -805,7 +806,7 @@ public sealed class ReverseSupplierPaymentUseCasesTests
             .Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(session);
 
-        var result = await BuildHandler(m).Handle(
+        var result = await BuildHandler(m).HandleWithDomainRules(
             new ReverseSupplierPaymentCommand(payment.Id, "Pago duplicado", CashNotDeliveredConfirmed: true),
             CancellationToken.None
         );

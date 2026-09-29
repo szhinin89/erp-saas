@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Purchases;
 using ERP.Domain.Modules.SriCatalogs.Enums;
 
@@ -323,7 +324,7 @@ public sealed class SalesReturnDetail : IMustHaveTenant
     private void EnsureNotFrozen()
     {
         if (IsFrozen)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "La línea de devolución de venta ya fue autorizada y no puede modificarse."
             );
     }

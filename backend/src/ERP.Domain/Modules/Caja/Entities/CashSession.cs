@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Caja.Enums;
 
 namespace ERP.Domain.Modules.Caja.Entities;
@@ -186,7 +187,7 @@ public sealed class CashSession : AuditableEntity, ITenantScopedEntity, ICompany
     {
         EnsureOpen();
         if (movementType == CashMovementType.Opening)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No se puede registrar un movimiento de apertura manualmente."
             );
         // TREASURY-CASH-MANUAL-MOVEMENTS-01 — "el motivo es obligatorio para movimientos
@@ -250,7 +251,7 @@ public sealed class CashSession : AuditableEntity, ITenantScopedEntity, ICompany
     private void EnsureOpen()
     {
         if (Status != CashSessionStatus.Open)
-            throw new InvalidOperationException("La caja no está abierta.");
+            throw new DomainRuleViolationException("La caja no está abierta.");
     }
 
     private static bool IsIncome(CashMovementType type) =>

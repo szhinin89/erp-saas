@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Finance.Enums;
 using ERP.Domain.Modules.Finance.Events;
@@ -141,7 +142,7 @@ public sealed class PaymentTests
 
         var act = () => payment.AddApplicationLine(Guid.NewGuid(), null, 1m);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*Draft*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*Draft*");
     }
 
     // ── Apply ───────────────────────────────────────────────────────────
@@ -177,7 +178,7 @@ public sealed class PaymentTests
 
         var act = () => payment.Apply(CreatedBy);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*al menos una línea*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*al menos una línea*");
         payment.Status.Should().Be(PaymentStatus.Draft);
     }
 
@@ -189,7 +190,7 @@ public sealed class PaymentTests
 
         var act = () => payment.Apply(CreatedBy);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*no está balanceado*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*no está balanceado*");
         payment.Status.Should().Be(PaymentStatus.Draft);
         payment.DomainEvents.Should().BeEmpty();
     }
@@ -203,7 +204,7 @@ public sealed class PaymentTests
 
         var act = () => payment.Apply(CreatedBy);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*Draft*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*Draft*");
         payment.Status.Should().Be(PaymentStatus.Applied);
     }
 
@@ -232,7 +233,7 @@ public sealed class PaymentTests
 
         var act = () => payment.Reverse(CreatedBy, "Motivo");
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*Applied*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*Applied*");
     }
 
     [Fact]
@@ -245,7 +246,7 @@ public sealed class PaymentTests
 
         var act = () => payment.Reverse(CreatedBy, "Segundo intento");
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*Applied*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*Applied*");
         payment.ReverseReason.Should().Be("Primer reverso");
     }
 

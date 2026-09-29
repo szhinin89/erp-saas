@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Expenses.Enums;
 using FluentAssertions;
@@ -24,7 +25,7 @@ public sealed class ExpenseCategoryNodeTests
 
         var act = () => type.ChangeSubcategoryAccount(ExpenseAccountId, UserId);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*subcategoría*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*subcategoría*");
         type.Level.Should().Be(ExpenseCategoryNodeLevel.Type);
         type.AccountingAccountId.Should().BeNull();
     }

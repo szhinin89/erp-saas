@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.DTOs;
 using ERP.Application.Modules.Accounting.Posting;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Interfaces;
 using FluentValidation;
@@ -108,10 +109,6 @@ public sealed class ReverseJournalEntryCommandHandler
         try
         {
             reversal = original.Reverse(_u.UserId, entryNumber, cmd.Reason);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<JournalEntryDto>.ValidationFailure(ex.Message);
         }
         catch (ArgumentException ex)
         {

@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.MasterData.DTOs;
 using ERP.Application.MasterData.Services;
+using ERP.Domain.Exceptions;
 using ERP.Domain.MasterData.Interfaces;
 using MediatR;
 
@@ -36,10 +37,6 @@ public sealed class UpdateSupplierRoleConfigHandler
             role.UpdateSupplierConfig(config.Config!, _ctx.UserId);
         }
         catch (ArgumentException ex)
-        {
-            return Result<BusinessPartnerRoleDto>.ValidationFailure(ex.Message);
-        }
-        catch (InvalidOperationException ex)
         {
             return Result<BusinessPartnerRoleDto>.ValidationFailure(ex.Message);
         }
@@ -82,10 +79,6 @@ public sealed class UpdateCarrierRoleConfigHandler
         {
             return Result<BusinessPartnerRoleDto>.ValidationFailure(ex.Message);
         }
-        catch (InvalidOperationException ex)
-        {
-            return Result<BusinessPartnerRoleDto>.ValidationFailure(ex.Message);
-        }
 
         await _roleRepo.SaveChangesAsync(cancellationToken);
         return Result<BusinessPartnerRoleDto>.Success(BusinessPartnerRoleDto.From(role));
@@ -125,10 +118,6 @@ public sealed class UpdateCustomerRoleConfigHandler
         {
             return Result<BusinessPartnerRoleDto>.ValidationFailure(ex.Message);
         }
-        catch (InvalidOperationException ex)
-        {
-            return Result<BusinessPartnerRoleDto>.ValidationFailure(ex.Message);
-        }
 
         await _roleRepo.SaveChangesAsync(cancellationToken);
         return Result<BusinessPartnerRoleDto>.Success(BusinessPartnerRoleDto.From(role));
@@ -159,10 +148,6 @@ public sealed class UpdateRoleNotesHandler : IRequestHandler<UpdateRoleNotesComm
             role.UpdateNotes(cmd.Notes, _ctx.UserId);
         }
         catch (ArgumentException ex)
-        {
-            return Result<bool>.ValidationFailure(ex.Message);
-        }
-        catch (InvalidOperationException ex)
         {
             return Result<bool>.ValidationFailure(ex.Message);
         }

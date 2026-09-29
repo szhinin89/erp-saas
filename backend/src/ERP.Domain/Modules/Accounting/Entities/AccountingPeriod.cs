@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Events;
 using ERP.Domain.Modules.Accounting.ValueObjects;
@@ -68,7 +69,7 @@ public sealed class AccountingPeriod
     public void EnsureOpenForPosting()
     {
         if (Status != PeriodStatus.Open)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"El período {FiscalYear}-{PeriodNumber} no admite contabilización en estado {Status}."
             );
     }
@@ -87,7 +88,7 @@ public sealed class AccountingPeriod
         if (!readiness.IsReady)
         {
             var reasons = string.Join("; ", readiness.BuildBlockingReasons());
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"El período {FiscalYear}-{PeriodNumber} no puede cerrarse: {reasons}."
             );
         }
@@ -102,7 +103,7 @@ public sealed class AccountingPeriod
     public void Lock(Guid lockedBy)
     {
         if (Status != PeriodStatus.Closed)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Solo un período en estado Closed puede pasar a Locked."
             );
         Status = PeriodStatus.Locked;

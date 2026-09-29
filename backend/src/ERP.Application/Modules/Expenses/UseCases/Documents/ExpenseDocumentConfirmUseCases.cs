@@ -230,10 +230,6 @@ public sealed class ConfirmExpenseDocumentHandler
         {
             return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message);
         }
-        catch (InvalidOperationException ex)
-        {
-            return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message);
-        }
 
         // RETENTIONS-EXPENSES-INTEGRATION-01D-1/01D-2: si el usuario marcó la intención de generar
         // retención, se construye/emite AQUÍ — ANTES del SaveChangesAsync de abajo y sin llamarlo
@@ -311,7 +307,7 @@ public sealed class ConfirmExpenseDocumentHandler
                     );
                     payable.ApplyRetention(retentionDocument.TotalRetained, _user.UserId);
                 }
-                catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+                catch (ArgumentException ex)
                 {
                     // A diferencia del bloque post-SaveChanges (donde un fallo de CxP no revierte
                     // la confirmación ya persistida), aquí SÍ debe fallar toda la operación: el
@@ -364,7 +360,7 @@ public sealed class ConfirmExpenseDocumentHandler
                     ct
                 );
             }
-            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+            catch (ArgumentException ex)
             {
                 return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message);
             }
@@ -622,10 +618,6 @@ public sealed class CreateConfirmedExpenseHandler
         {
             return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message);
         }
-        catch (InvalidOperationException ex)
-        {
-            return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message);
-        }
 
         // RETENTIONS-EXPENSES-INTEGRATION-01D-1/01D-2: mismo criterio y mismos comentarios que
         // ConfirmExpenseDocumentHandler — se emite ANTES del SaveChangesAsync de abajo (staging vía
@@ -687,7 +679,7 @@ public sealed class CreateConfirmedExpenseHandler
                     );
                     payable.ApplyRetention(retentionDocument.TotalRetained, _user.UserId);
                 }
-                catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+                catch (ArgumentException ex)
                 {
                     // Mismo criterio que ConfirmExpenseDocumentHandler: aquí SÍ debe fallar toda la
                     // operación — el usuario pidió explícitamente retención, nunca un estado
@@ -733,7 +725,7 @@ public sealed class CreateConfirmedExpenseHandler
                     ct
                 );
             }
-            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+            catch (ArgumentException ex)
             {
                 return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message);
             }

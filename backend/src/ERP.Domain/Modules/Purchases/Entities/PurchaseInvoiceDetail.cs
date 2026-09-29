@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.SriCatalogs.Enums;
 
@@ -455,7 +456,7 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
     private void EnsureNotFrozen()
     {
         if (IsFrozen)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "La línea de compra está confirmada y no puede ser modificada."
             );
     }

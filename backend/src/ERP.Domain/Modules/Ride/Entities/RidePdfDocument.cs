@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Ride.Enums;
 using ERP.Domain.Modules.Ride.Events;
 using ERP.Domain.Modules.Ride.ValueObjects;
@@ -128,7 +129,7 @@ public sealed class RidePdfDocument
         if (
             State is not (RidePdfState.Pending or RidePdfState.Failed or RidePdfState.PendingSource)
         )
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Solo se puede marcar como generado desde Pending, Failed o PendingSource (estado actual: {State}). "
                     + "Una huella ya Generated se actualiza con MarkRegenerated."
             );
@@ -149,7 +150,7 @@ public sealed class RidePdfDocument
     public void MarkRegenerated(string storagePath, DateTime generatedAtUtc, Guid updatedBy)
     {
         if (State != RidePdfState.Generated)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Solo se puede regenerar una huella que ya esté Generated (estado actual: {State}). "
                     + "Un primer éxito se registra con MarkGenerated."
             );
@@ -177,7 +178,7 @@ public sealed class RidePdfDocument
         if (
             State is not (RidePdfState.Pending or RidePdfState.Failed or RidePdfState.PendingSource)
         )
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Solo se puede marcar como fallido desde Pending, Failed o PendingSource (estado actual: {State}). "
                     + "Una huella Generated nunca se degrada a Failed."
             );
@@ -215,7 +216,7 @@ public sealed class RidePdfDocument
         if (
             State is not (RidePdfState.Pending or RidePdfState.Failed or RidePdfState.PendingSource)
         )
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Solo se puede marcar como pendiente de fuente desde Pending, Failed o PendingSource (estado actual: {State}). "
                     + "Una huella Generated nunca se degrada a PendingSource."
             );

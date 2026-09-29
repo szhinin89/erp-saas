@@ -3,11 +3,10 @@ namespace ERP.Domain.Exceptions;
 /// <summary>
 /// Se lanza cuando una operación viola la política de flujo documental
 /// (<c>ERP.Domain.Modules.DocTypes.Entities.DocumentFlowPolicy</c>) de una company — nunca un
-/// permiso de usuario, que se valida por separado y antes de llegar aquí. Subclase de
-/// <see cref="InvalidOperationException"/> para que <c>ExceptionMiddleware</c> la traduzca a HTTP
-/// 422 sin requerir un caso nuevo.
+/// permiso de usuario, que se valida por separado y antes de llegar aquí. Regla de negocio:
+/// subclase de <see cref="DomainRuleViolationException"/> (→ DOMAIN_RULE_VIOLATION, 422).
 /// </summary>
-public sealed class DocumentFlowPolicyViolationException : InvalidOperationException
+public sealed class DocumentFlowPolicyViolationException : DomainRuleViolationException
 {
     public string Code { get; }
 

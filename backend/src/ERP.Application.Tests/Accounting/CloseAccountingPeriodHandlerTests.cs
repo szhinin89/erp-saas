@@ -6,6 +6,7 @@ using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Accounting.ValueObjects;
 using FluentAssertions;
 using Moq;
+using ERP.Application.Tests.Common;
 
 namespace ERP.Application.Tests.Accounting;
 
@@ -100,7 +101,7 @@ public sealed class CloseAccountingPeriodHandlerTests
             .ReturnsAsync(Ready with { HasDraftOrNonFinalEntries = true });
 
         var result = await m.BuildHandler()
-            .Handle(new CloseAccountingPeriodCommand(period.Id), CancellationToken.None);
+            .HandleWithDomainRules(new CloseAccountingPeriodCommand(period.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("sin publicar");
@@ -128,7 +129,7 @@ public sealed class CloseAccountingPeriodHandlerTests
             .ReturnsAsync(Ready with { HasEntriesWithoutEntryNumber = true });
 
         var result = await m.BuildHandler()
-            .Handle(new CloseAccountingPeriodCommand(period.Id), CancellationToken.None);
+            .HandleWithDomainRules(new CloseAccountingPeriodCommand(period.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("número de asiento");
@@ -155,7 +156,7 @@ public sealed class CloseAccountingPeriodHandlerTests
             .ReturnsAsync(Ready with { HasIncompleteReversals = true });
 
         var result = await m.BuildHandler()
-            .Handle(new CloseAccountingPeriodCommand(period.Id), CancellationToken.None);
+            .HandleWithDomainRules(new CloseAccountingPeriodCommand(period.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("reversos contables incompletos");

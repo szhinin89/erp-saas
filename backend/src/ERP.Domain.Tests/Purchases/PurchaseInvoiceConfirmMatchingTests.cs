@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Purchases.Entities;
 using FluentAssertions;
 
@@ -60,7 +61,7 @@ public sealed class PurchaseInvoiceConfirmMatchingTests
         var act = () => inv.Confirm(UserId);
 
         act.Should()
-            .Throw<InvalidOperationException>()
+            .Throw<DomainRuleViolationException>()
             .WithMessage("*productos pendientes de vinculación*Producto sin vincular*");
     }
 

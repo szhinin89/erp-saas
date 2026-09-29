@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using FluentAssertions;
@@ -103,7 +104,7 @@ public sealed class JournalEntryTests
 
         var act = () => entry.EnsureBalanced();
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*no está balanceado*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*no está balanceado*");
     }
 
     /// <summary>
@@ -123,7 +124,7 @@ public sealed class JournalEntryTests
 
         var act = () => entry.EnsureBalanced();
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*no está balanceado*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*no está balanceado*");
     }
 
     // Fase 3.5.6 — endurecimiento: AddLine() es el único punto público de entrada para agregar
@@ -138,7 +139,7 @@ public sealed class JournalEntryTests
         var act = () => entry.AddLine(DebitAccountId, null, 100m, 50m);
 
         act.Should()
-            .Throw<InvalidOperationException>()
+            .Throw<DomainRuleViolationException>()
             .WithMessage("*Débito y Crédito simultáneamente*");
     }
 
@@ -149,7 +150,7 @@ public sealed class JournalEntryTests
 
         var act = () => entry.AddLine(DebitAccountId, null, 0m, 0m);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*Débito o en Crédito*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*Débito o en Crédito*");
     }
 
     [Fact]
@@ -187,7 +188,7 @@ public sealed class JournalEntryTests
 
         var act = () => entry.Post(CreatedBy, 1);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*no está balanceado*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*no está balanceado*");
         entry.Status.Should().Be(JournalEntryStatus.Draft);
         entry.PostedAtUtc.Should().BeNull();
         entry.EntryNumber.Should().BeNull();
@@ -203,7 +204,7 @@ public sealed class JournalEntryTests
 
         var act = () => entry.Post(CreatedBy, 2);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*Draft*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*Draft*");
         entry.Status.Should().Be(JournalEntryStatus.Posted);
         entry
             .EntryNumber.Should()
@@ -357,7 +358,7 @@ public sealed class JournalEntryTests
 
         var act = () => entry.Reverse(CreatedBy, 1, "Ajuste");
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*Posted*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*Posted*");
     }
 
     [Fact]
@@ -368,7 +369,7 @@ public sealed class JournalEntryTests
 
         var act = () => original.Reverse(CreatedBy, 3, "Segundo intento");
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*Posted*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*Posted*");
         original
             .ReverseReason.Should()
             .Be(

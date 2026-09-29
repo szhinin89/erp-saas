@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 
 namespace ERP.Domain.Modules.Payables.Entities;
 
@@ -113,11 +114,11 @@ public sealed class SupplierPaymentMethodLine : IMustHaveTenant
     internal void LinkCashMovement(Guid cashSessionId, Guid cashMovementId)
     {
         if (CashRegisterId is null)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Solo un medio de pago en caja puede vincularse a un movimiento de caja."
             );
         if (CashMovementId is not null)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "El medio de pago ya está vinculado a un movimiento de caja."
             );
         if (cashSessionId == Guid.Empty)

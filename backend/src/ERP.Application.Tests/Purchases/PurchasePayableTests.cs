@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
 using FluentAssertions;
@@ -132,7 +133,7 @@ public sealed class PurchasePayableTests
 
         var act = () => payable.RegisterPayment(60m, UserId);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*excede el saldo pendiente*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*excede el saldo pendiente*");
         payable.PaidAmount.Should().Be(60m);
     }
 
@@ -156,7 +157,7 @@ public sealed class PurchasePayableTests
 
         var act = () => payable.RegisterPayment(10m, UserId);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*anulada*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*anulada*");
     }
 
     [Fact]
@@ -179,7 +180,7 @@ public sealed class PurchasePayableTests
 
         var act = () => payable.ReversePayment(31m, UserId);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*excede el monto*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*excede el monto*");
         payable.PaidAmount.Should().Be(30m);
     }
 

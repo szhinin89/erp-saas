@@ -978,12 +978,16 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
 
         await using var db3 = CreateContext();
         var authHandler = BuildAuthorizeHandler(db3);
-        var result = await authHandler.Handle(
-            new AuthorizePurchaseReturnCommand(draft.Value!.Id, Guid.NewGuid()),
-            CancellationToken.None
-        );
+        // Igual que el pipeline MediatR real: la regla de dominio la traduce DomainRuleBehavior.
+        var command = new AuthorizePurchaseReturnCommand(draft.Value!.Id, Guid.NewGuid());
+        var result = await new ERP.Application.Behaviors.DomainRuleBehavior<
+            AuthorizePurchaseReturnCommand,
+            Result<PurchaseReturnDto>
+        >(Microsoft.Extensions.Logging.Abstractions.NullLogger<ERP.Application.Behaviors.DomainRuleBehavior<AuthorizePurchaseReturnCommand, Result<PurchaseReturnDto>>>.Instance)
+            .Handle(command, ct => authHandler.Handle(command, ct), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.DomainRuleViolation);
         result.Error.Should().Contain("retención");
 
         await using var verify = CreateContext();

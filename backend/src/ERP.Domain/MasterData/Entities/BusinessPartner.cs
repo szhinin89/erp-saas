@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.MasterData.Events;
 using ERP.Domain.MasterData.ValueObjects;
 
@@ -131,7 +132,7 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
     )
     {
         if (!IsActive)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No se puede actualizar un BusinessPartner inactivo."
             );
 
@@ -163,7 +164,7 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
     {
         this.EnsureEditable("La identificación tributaria de este tercero", "modificarse");
         if (!IsActive)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No se puede modificar la identificación de un BusinessPartner inactivo."
             );
 
@@ -191,7 +192,7 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
     {
         this.EnsureEditable("Este tercero", "desactivarse");
         if (!IsActive)
-            throw new InvalidOperationException("El BusinessPartner ya está inactivo.");
+            throw new DomainRuleViolationException("El BusinessPartner ya está inactivo.");
         IsActive = false;
         SetUpdated(updatedBy);
         RaiseDomainEvent(
@@ -207,7 +208,7 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
     public void Activate(Guid updatedBy)
     {
         if (IsActive)
-            throw new InvalidOperationException("El BusinessPartner ya está activo.");
+            throw new DomainRuleViolationException("El BusinessPartner ya está activo.");
         IsActive = true;
         SetUpdated(updatedBy);
         RaiseDomainEvent(

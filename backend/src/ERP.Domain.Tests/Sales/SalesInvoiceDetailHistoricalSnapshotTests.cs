@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Sales.Entities;
 using FluentAssertions;
 
@@ -120,7 +121,7 @@ public sealed class SalesInvoiceDetailHistoricalSnapshotTests
             );
 
         act.Should()
-            .Throw<InvalidOperationException>()
+            .Throw<DomainRuleViolationException>()
             .WithMessage("*autorizada*");
     }
 }

@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.InitialLoad.Entities;
 using ERP.Domain.Modules.InitialLoad.Enums;
 using FluentAssertions;
@@ -37,7 +38,7 @@ public sealed class ImportBatchTests
     {
         var batch = CreateDraftBatch();
         var act = () => batch.MarkUploaded(Guid.NewGuid());
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -75,7 +76,7 @@ public sealed class ImportBatchTests
 
         var act = () => batch.Cancel(Guid.NewGuid());
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -96,6 +97,6 @@ public sealed class ImportBatchTests
 
         var act = () => batch.BeginConfirming(Guid.NewGuid());
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 }

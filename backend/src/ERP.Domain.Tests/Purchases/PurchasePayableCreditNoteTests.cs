@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
 using FluentAssertions;
@@ -77,7 +78,7 @@ public sealed class PurchasePayableCreditNoteTests
 
         var act = () => payable.ApplyCreditNote(100m, UserId);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
         payable.CreditNoteAmount.Should().Be(0m);
         payable.OutstandingAmount.Should().Be(50m);
     }
@@ -90,7 +91,7 @@ public sealed class PurchasePayableCreditNoteTests
 
         var act = () => payable.ApplyCreditNote(100m, UserId);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -123,7 +124,7 @@ public sealed class PurchasePayableCreditNoteTests
 
         var act = () => payable.ReverseCreditNote(301m, UserId);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]

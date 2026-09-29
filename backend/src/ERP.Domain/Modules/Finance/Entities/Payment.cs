@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Finance.Enums;
 using ERP.Domain.Modules.Finance.Events;
 
@@ -119,7 +120,7 @@ public sealed class Payment : AuditableEntity, ITenantScopedEntity, ICompanyOper
     public void AddApplicationLine(Guid documentId, Guid? installmentId, decimal appliedAmount)
     {
         if (Status != PaymentStatus.Draft)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Solo se pueden agregar líneas de aplicación mientras el pago está en Draft (estado actual: {Status})."
             );
 
@@ -156,7 +157,7 @@ public sealed class Payment : AuditableEntity, ITenantScopedEntity, ICompanyOper
     {
         var totalApplied = _lines.Sum(l => l.AppliedAmount);
         if (totalApplied != Amount)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"El pago no está balanceado: aplicado ({totalApplied:F2}) distinto del monto del pago ({Amount:F2})."
             );
     }
@@ -169,11 +170,11 @@ public sealed class Payment : AuditableEntity, ITenantScopedEntity, ICompanyOper
     public void Apply(Guid appliedBy)
     {
         if (Status != PaymentStatus.Draft)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Solo un pago en estado Draft puede aplicarse (estado actual: {Status})."
             );
         if (_lines.Count == 0)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "El pago debe tener al menos una línea de aplicación."
             );
 
@@ -220,7 +221,7 @@ public sealed class Payment : AuditableEntity, ITenantScopedEntity, ICompanyOper
     public void Reverse(Guid reversedBy, string reason)
     {
         if (Status != PaymentStatus.Applied)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Solo un pago Applied puede reversarse (estado actual: {Status})."
             );
         if (string.IsNullOrWhiteSpace(reason))

@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Events;
 
@@ -367,7 +368,7 @@ public sealed class SupplierCredit : AuditableEntity, ITenantScopedEntity, IComp
     )
     {
         if (SourceType != SupplierCreditSourceType.PurchaseReturn)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Este crédito no se originó en una devolución de compra."
             );
         EnsureIntact(
@@ -397,7 +398,7 @@ public sealed class SupplierCredit : AuditableEntity, ITenantScopedEntity, IComp
     )
     {
         if (SourceType != SupplierCreditSourceType.SupplierPayment)
-            throw new InvalidOperationException("Este crédito no se originó en un pago a proveedor.");
+            throw new DomainRuleViolationException("Este crédito no se originó en un pago a proveedor.");
         EnsureIntact(
             "No se puede reversar el pago porque el anticipo que generó ya fue aplicado o reembolsado."
         );
@@ -415,7 +416,7 @@ public sealed class SupplierCredit : AuditableEntity, ITenantScopedEntity, IComp
     private void EnsureIntact(string message)
     {
         if (!IsIntact)
-            throw new InvalidOperationException(message);
+            throw new DomainRuleViolationException(message);
     }
 
     private SupplierCreditMovement AddSourceCancellationMovement(
@@ -448,7 +449,7 @@ public sealed class SupplierCredit : AuditableEntity, ITenantScopedEntity, IComp
         if (amount <= 0)
             throw new ArgumentException("El monto debe ser mayor a cero.", nameof(amount));
         if (amount > AvailableAmount)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "El monto solicitado excede el saldo disponible del crédito de proveedor."
             );
     }
@@ -460,11 +461,11 @@ public sealed class SupplierCredit : AuditableEntity, ITenantScopedEntity, IComp
     {
         var movement = _movements.FirstOrDefault(m => m.Id == movementId);
         if (movement is null)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "El movimiento indicado no pertenece a este crédito de proveedor."
             );
         if (movement.MovementType != expectedType)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"El movimiento indicado no es de tipo {expectedType} y no puede revertirse por esta vía."
             );
         return movement;
@@ -473,7 +474,7 @@ public sealed class SupplierCredit : AuditableEntity, ITenantScopedEntity, IComp
     private void EnsureNotAlreadyReversed(Guid movementId)
     {
         if (_movements.Any(m => m.ReversalOfMovementId == movementId))
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Este movimiento ya fue revertido anteriormente — no se puede revertir dos veces."
             );
     }

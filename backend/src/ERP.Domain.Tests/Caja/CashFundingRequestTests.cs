@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Enums;
 using FluentAssertions;
@@ -107,9 +108,9 @@ public sealed class CashFundingRequestTests
         request.ResolutionReason.Should().BeNull();
 
         FluentActions.Invoking(() => request.Fulfill(Cashier, Guid.NewGuid()))
-            .Should().Throw<InvalidOperationException>("una solicitud atendida no puede reutilizarse");
-        FluentActions.Invoking(() => request.Reject(Cashier, "x")).Should().Throw<InvalidOperationException>();
-        FluentActions.Invoking(() => request.Cancel(Requester, "x")).Should().Throw<InvalidOperationException>();
+            .Should().Throw<DomainRuleViolationException>("una solicitud atendida no puede reutilizarse");
+        FluentActions.Invoking(() => request.Reject(Cashier, "x")).Should().Throw<DomainRuleViolationException>();
+        FluentActions.Invoking(() => request.Cancel(Requester, "x")).Should().Throw<DomainRuleViolationException>();
         request.SupplierPaymentId.Should().Be(paymentId, "el pago original nunca se reemplaza");
     }
 
@@ -131,8 +132,8 @@ public sealed class CashFundingRequestTests
         request.Status.Should().Be(CashFundingRequestStatus.Rejected);
         (request.ResolvedByUserId, request.ResolutionReason, request.SupplierPaymentId)
             .Should().Be(((Guid?)Cashier, "Sin efectivo suficiente", (Guid?)null));
-        FluentActions.Invoking(() => request.Fulfill(Cashier, Guid.NewGuid())).Should().Throw<InvalidOperationException>();
-        FluentActions.Invoking(() => request.Cancel(Requester, "x")).Should().Throw<InvalidOperationException>();
+        FluentActions.Invoking(() => request.Fulfill(Cashier, Guid.NewGuid())).Should().Throw<DomainRuleViolationException>();
+        FluentActions.Invoking(() => request.Cancel(Requester, "x")).Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -146,8 +147,8 @@ public sealed class CashFundingRequestTests
         request.Status.Should().Be(CashFundingRequestStatus.Cancelled);
         (request.ResolvedByUserId, request.ResolutionReason, request.SupplierPaymentId)
             .Should().Be(((Guid?)Requester, "Ya no se necesita", (Guid?)null));
-        FluentActions.Invoking(() => request.Fulfill(Cashier, Guid.NewGuid())).Should().Throw<InvalidOperationException>();
-        FluentActions.Invoking(() => request.Reject(Cashier, "x")).Should().Throw<InvalidOperationException>();
+        FluentActions.Invoking(() => request.Fulfill(Cashier, Guid.NewGuid())).Should().Throw<DomainRuleViolationException>();
+        FluentActions.Invoking(() => request.Reject(Cashier, "x")).Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]

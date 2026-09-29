@@ -10,6 +10,7 @@ using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Testcontainers.PostgreSql;
+using ERP.Infrastructure.Tests.Common;
 
 namespace ERP.Infrastructure.Tests.Accounting;
 
@@ -211,7 +212,7 @@ public sealed class CloseAccountingPeriodIntegrationTests : IAsyncLifetime
 
         await using var db = CreateContext();
         var result = await BuildHandler(db, _tenantId, _companyId, _createdBy)
-            .Handle(new CloseAccountingPeriodCommand(period.Id), CancellationToken.None);
+            .HandleWithDomainRules(new CloseAccountingPeriodCommand(period.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("sin publicar");

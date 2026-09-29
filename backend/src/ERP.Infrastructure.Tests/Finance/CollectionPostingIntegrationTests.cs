@@ -4,6 +4,7 @@ using ERP.Application.Modules.Accounting.Posting.Translators;
 using ERP.Application.Modules.Finance.DTOs;
 using ERP.Application.Modules.Finance.UseCases.Payments;
 using ERP.Domain.Branches.Entities;
+using ERP.Domain.Exceptions;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
@@ -509,7 +510,7 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
         var act = () => BuildHandler(db, _tenantId, _companyId, _createdBy).Handle(command, CancellationToken.None);
         if (!postable)
         {
-            await act.Should().ThrowAsync<InvalidOperationException>();
+            await act.Should().ThrowAsync<DomainRuleViolationException>();
             await using var verify = CreateContext();
             (await verify.Payments.CountAsync()).Should().Be(0);
             (await verify.SalesReceivables.SingleAsync()).PaidAmount.Should().Be(0m);

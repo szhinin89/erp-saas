@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.MasterData.DTOs;
+using ERP.Domain.Exceptions;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.SriCatalogs.Enums;
@@ -41,10 +42,6 @@ public sealed class UpdateBusinessPartnerHandler
             );
         }
         catch (ArgumentException ex)
-        {
-            return Result<BusinessPartnerSummaryDto>.ValidationFailure(ex.Message);
-        }
-        catch (InvalidOperationException ex)
         {
             return Result<BusinessPartnerSummaryDto>.ValidationFailure(ex.Message);
         }
@@ -135,10 +132,6 @@ public sealed class UpdateBusinessPartnerIdentificationHandler
             bp.UpdateIdentification(cmd.IdentificationType, cmd.IdentificationNumber, _ctx.UserId);
         }
         catch (ArgumentException ex)
-        {
-            return Result<BusinessPartnerSummaryDto>.ValidationFailure(ex.Message);
-        }
-        catch (InvalidOperationException ex)
         {
             return Result<BusinessPartnerSummaryDto>.ValidationFailure(ex.Message);
         }

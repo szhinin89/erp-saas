@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common;
+using ERP.Application.Common;
 using ERP.Application.Modules.Companies.DTOs;
 using ERP.Domain.Kernel.Security;
 using ERP.Domain.Tenants.Interfaces;
@@ -39,24 +39,17 @@ public sealed class CreateCompanyHandler
         if (tenant is null || !tenant.IsActive)
             return Result<CompanyDetailDto>.Failure("Tenant no válido o inactivo.");
 
-        try
-        {
-            var company = await _provisioning.CreateManagedCompanyAsync(
-                command.TenantId,
-                command.TaxId,
-                command.LegalName,
-                mainAddress: "—",
-                _currentUser.UserId,
-                creatorRole: SecurityRoles.Admin,
-                command.TradeName,
-                cancellationToken: cancellationToken
-            );
+        var company = await _provisioning.CreateManagedCompanyAsync(
+            command.TenantId,
+            command.TaxId,
+            command.LegalName,
+            mainAddress: "—",
+            _currentUser.UserId,
+            creatorRole: SecurityRoles.Admin,
+            command.TradeName,
+            cancellationToken: cancellationToken
+        );
 
-            return Result<CompanyDetailDto>.Success(CompanyDetailDto.FromEntity(company));
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<CompanyDetailDto>.Failure(ex.Message);
-        }
+        return Result<CompanyDetailDto>.Success(CompanyDetailDto.FromEntity(company));
     }
 }

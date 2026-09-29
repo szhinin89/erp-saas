@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Enums;
 using FluentAssertions;
@@ -72,7 +73,7 @@ public sealed class SalesReturnSettlementToleranceTests
 
         var act = () => ret.Authorize(UserId);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
         ret.Status.Should().Be(SalesReturnStatus.Draft);
     }
 }

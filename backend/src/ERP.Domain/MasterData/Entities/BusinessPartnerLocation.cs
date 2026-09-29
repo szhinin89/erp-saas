@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Events;
 using ERP.Domain.MasterData.ValueObjects;
@@ -105,7 +106,7 @@ public sealed class BusinessPartnerLocation : AuditableEntity, ITenantScopedEnti
     )
     {
         if (!IsActive)
-            throw new InvalidOperationException("No se puede actualizar una ubicación inactiva.");
+            throw new DomainRuleViolationException("No se puede actualizar una ubicación inactiva.");
 
         Name = NormalizeName(name);
         Type = type;
@@ -133,7 +134,7 @@ public sealed class BusinessPartnerLocation : AuditableEntity, ITenantScopedEnti
     public void SetPrimary(Guid updatedBy)
     {
         if (!IsActive)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No se puede marcar como principal una ubicación inactiva."
             );
 
@@ -164,9 +165,9 @@ public sealed class BusinessPartnerLocation : AuditableEntity, ITenantScopedEnti
     public void Deactivate(Guid updatedBy)
     {
         if (!IsActive)
-            throw new InvalidOperationException("La ubicación ya está inactiva.");
+            throw new DomainRuleViolationException("La ubicación ya está inactiva.");
         if (IsPrimary)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No se puede desactivar la ubicación principal. Asigne otra ubicación como principal primero."
             );
 
@@ -186,7 +187,7 @@ public sealed class BusinessPartnerLocation : AuditableEntity, ITenantScopedEnti
     public void Activate(Guid updatedBy)
     {
         if (IsActive)
-            throw new InvalidOperationException("La ubicación ya está activa.");
+            throw new DomainRuleViolationException("La ubicación ya está activa.");
         IsActive = true;
         SetUpdated(updatedBy);
     }

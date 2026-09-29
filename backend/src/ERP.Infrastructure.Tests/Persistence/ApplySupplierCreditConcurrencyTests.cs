@@ -22,6 +22,7 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.PostgreSql;
+using ERP.Infrastructure.Tests.Common;
 
 namespace ERP.Infrastructure.Tests.Persistence;
 
@@ -554,7 +555,7 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
             new FixedCurrentUser(_userId)
         );
 
-        var result = await reverseHandler.Handle(
+        var result = await reverseHandler.HandleWithDomainRules(
             new ReverseSupplierCreditApplicationCommand(
                 creditId,
                 movementId,
@@ -671,7 +672,7 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
             new FixedCurrentTenant(() => _tenantId),
             new FixedCurrentUser(_userId)
         );
-        var result = await handler.Handle(
+        var result = await handler.HandleWithDomainRules(
             new ReverseSupplierCreditApplicationCommand(
                 creditId,
                 originalMovementId,
@@ -695,7 +696,7 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
         await SeedRuleAsync(db, "SupplierCreditApplied");
 
         var handler = BuildWiredApplyHandler(db);
-        var result = await handler.Handle(
+        var result = await handler.HandleWithDomainRules(
             new ApplySupplierCreditCommand(creditId, payableId, 40m, Guid.NewGuid()),
             CancellationToken.None
         );
@@ -728,7 +729,7 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
         await SeedRuleAsync(db, "SupplierCreditApplicationReversed");
 
         var applyHandler = BuildWiredApplyHandler(db);
-        var applyResult = await applyHandler.Handle(
+        var applyResult = await applyHandler.HandleWithDomainRules(
             new ApplySupplierCreditCommand(creditId, payableId, 40m, Guid.NewGuid()),
             CancellationToken.None
         );
@@ -746,7 +747,7 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
             new FixedCurrentTenant(() => _tenantId),
             new FixedCurrentUser(_userId)
         );
-        var reverseResult = await reverseHandler.Handle(
+        var reverseResult = await reverseHandler.HandleWithDomainRules(
             new ReverseSupplierCreditApplicationCommand(
                 creditId,
                 movementId,
@@ -947,7 +948,7 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
             new FixedCurrentTenant(() => _tenantId),
             new FixedCurrentUser(_userId)
         );
-        var result = await handler.Handle(
+        var result = await handler.HandleWithDomainRules(
             new ApplySupplierCreditCommand(creditId, targetPayableId, amount, cri),
             CancellationToken.None
         );

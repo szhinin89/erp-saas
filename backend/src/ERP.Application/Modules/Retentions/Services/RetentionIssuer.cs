@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Retentions.UseCases;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Retentions.Entities;
@@ -279,9 +280,9 @@ public sealed class RetentionIssuer : IRetentionIssuer
         {
             return Result<RetentionDocument>.ValidationFailure(ex.Message);
         }
-        catch (InvalidOperationException ex)
+        catch (DomainRuleViolationException ex)
         {
-            return Result<RetentionDocument>.ValidationFailure(ex.Message);
+            return Result<RetentionDocument>.FromDomainRule(ex);
         }
 
         // NO SaveChangesAsync aquí — solo staging. El llamador decide cuándo persistir (ver

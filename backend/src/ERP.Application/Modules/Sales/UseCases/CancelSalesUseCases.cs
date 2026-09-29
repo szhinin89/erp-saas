@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Sales.DTOs;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Sales.Interfaces;
@@ -65,22 +66,15 @@ public sealed class CancelSalesInvoiceHandler
             {
                 receivable.Cancel(_u.UserId);
             }
-            catch (InvalidOperationException ex)
+            catch (DomainRuleViolationException ex)
             {
-                return Result<SalesInvoiceDto>.ValidationFailure(
-                    $"No se puede anular: {ex.Message}"
-                );
+                // Mismo mensaje público de siempre, con el contexto de la anulación; la traducción a
+                // Result sigue siendo la única (DomainRuleBehavior → DOMAIN_RULE_VIOLATION).
+                throw new DomainRuleViolationException($"No se puede anular: {ex.Message}", ex);
             }
         }
 
-        try
-        {
-            inv.Cancel(cmd.Reason, _u.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<SalesInvoiceDto>.ValidationFailure(ex.Message);
-        }
+        inv.Cancel(cmd.Reason, _u.UserId);
 
         // ── Revertir inventario (Kardex) ────────────────────────────
         // WarehouseId solo está poblado en líneas que sí generaron egreso al autorizar.

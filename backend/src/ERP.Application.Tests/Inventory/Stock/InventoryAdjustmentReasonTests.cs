@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Inventory.AdjustmentReasons.UseCases.CreateInventoryAdjustmentReason;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using FluentAssertions;
@@ -96,7 +97,7 @@ public sealed class InventoryAdjustmentReasonTests
         reason.IsActive.Should().BeFalse();
 
         var act = () => reason.Disable(UserId);
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
 
         reason.Enable(UserId);
         reason.IsActive.Should().BeTrue();

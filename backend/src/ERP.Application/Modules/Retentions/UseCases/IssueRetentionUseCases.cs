@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Retentions.DTOs;
 using ERP.Application.Modules.Retentions.Services;
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Expenses.Interfaces;
 using ERP.Domain.Modules.Payables.Enums;
@@ -313,11 +314,6 @@ public sealed class IssueRetentionHandler : IRequestHandler<IssueRetentionComman
             await _uow.CommitAsync(ct);
 
             return Result<RetentionDocumentDto>.Success(RetentionDocumentMapper.ToDto(issued.Value!));
-        }
-        catch (InvalidOperationException ex)
-        {
-            await _uow.RollbackAsync(ct);
-            return Result<RetentionDocumentDto>.ValidationFailure(ex.Message);
         }
         catch
         {

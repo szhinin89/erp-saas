@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Events;
@@ -171,7 +172,7 @@ public sealed class SalesReturnTests
 
         var act = () => salesReturn.RemoveLine(Guid.NewGuid(), UserId);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     // ── AddRefundAllocation / RemoveRefundAllocation ──────────────────────
@@ -194,7 +195,7 @@ public sealed class SalesReturnTests
 
         var act = () => salesReturn.RemoveRefundAllocation(Guid.NewGuid(), UserId);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     // ── Authorize ─────────────────────────────────────────────────────
@@ -248,7 +249,7 @@ public sealed class SalesReturnTests
 
         var act = () => salesReturn.Authorize(UserId);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*líneas agregadas*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*líneas agregadas*");
     }
 
     [Fact]
@@ -259,7 +260,7 @@ public sealed class SalesReturnTests
 
         var act = () => salesReturn.Authorize(UserId);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*reembolsará*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*reembolsará*");
     }
 
     [Fact]
@@ -272,7 +273,7 @@ public sealed class SalesReturnTests
         var act = () => salesReturn.Authorize(UserId);
 
         act.Should()
-            .Throw<InvalidOperationException>()
+            .Throw<DomainRuleViolationException>()
             .WithMessage("*asignaciones de reembolso*no coincide*");
     }
 
@@ -305,7 +306,7 @@ public sealed class SalesReturnTests
 
         var act = () => salesReturn.Authorize(UserId);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -320,8 +321,8 @@ public sealed class SalesReturnTests
         var addAct = () => salesReturn.AddLine(CreateLine(), UserId);
         var removeAct = () => salesReturn.RemoveLine(line.Id, UserId);
 
-        addAct.Should().Throw<InvalidOperationException>();
-        removeAct.Should().Throw<InvalidOperationException>();
+        addAct.Should().Throw<DomainRuleViolationException>();
+        removeAct.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -400,7 +401,7 @@ public sealed class SalesReturnTests
 
         var act = () => salesReturn.Cancel(UserId);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -411,7 +412,7 @@ public sealed class SalesReturnTests
 
         var act = () => salesReturn.Cancel(UserId);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     // ══════════════════════════════ SetCreditNoteDocumentNumber (P0-01 Fase 8) ══════════════════════════════
@@ -434,7 +435,7 @@ public sealed class SalesReturnTests
 
         var act = () => salesReturn.SetCreditNoteDocumentNumber("001-001-000000002");
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
         salesReturn.CreditNoteDocumentNumber.Should().Be("001-001-000000001");
     }
 

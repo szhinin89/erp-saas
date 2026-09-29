@@ -356,14 +356,7 @@ public sealed class EnablePostingRuleHandler
         if (rule is null)
             return Result<PostingRuleDto>.NotFound("Regla de contabilización no encontrada.");
 
-        try
-        {
-            rule.Enable(_u.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<PostingRuleDto>.ValidationFailure(ex.Message);
-        }
+        rule.Enable(_u.UserId);
 
         await _repo.SaveChangesAsync(ct);
         var accounts = await _accountRepo.GetByCompanyAsync(_t.TenantId, _c.CompanyId, ct);
@@ -404,14 +397,7 @@ public sealed class DisablePostingRuleHandler
         if (rule is null)
             return Result<PostingRuleDto>.NotFound("Regla de contabilización no encontrada.");
 
-        try
-        {
-            rule.Disable(_u.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<PostingRuleDto>.ValidationFailure(ex.Message);
-        }
+        rule.Disable(_u.UserId);
 
         await _repo.SaveChangesAsync(ct);
         var accounts = await _accountRepo.GetByCompanyAsync(_t.TenantId, _c.CompanyId, ct);

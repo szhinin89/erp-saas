@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Models;
 
@@ -188,7 +189,7 @@ public sealed class PurchaseReceptionDocument
     private void EnsureImported()
     {
         if (Status != PurchaseReceptionDocumentStatus.Imported)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Solo se puede operar sobre documentos en estado Importado."
             );
     }
@@ -196,7 +197,7 @@ public sealed class PurchaseReceptionDocument
     private void EnsureVerified()
     {
         if (Status != PurchaseReceptionDocumentStatus.Verified)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Solo se puede operar sobre documentos en estado Verificado."
             );
     }
@@ -233,7 +234,7 @@ public sealed class PurchaseReceptionDocument
     public void UnmarkProcessed(Guid updatedBy)
     {
         if (Status != PurchaseReceptionDocumentStatus.Processed)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Solo se puede revertir un documento que esté en estado Procesado."
             );
         PurchaseId = null;
@@ -244,9 +245,9 @@ public sealed class PurchaseReceptionDocument
     public void Cancel(Guid updatedBy)
     {
         if (Status == PurchaseReceptionDocumentStatus.Processed)
-            throw new InvalidOperationException("No se puede anular un documento ya procesado.");
+            throw new DomainRuleViolationException("No se puede anular un documento ya procesado.");
         if (Status == PurchaseReceptionDocumentStatus.Cancelled)
-            throw new InvalidOperationException("El documento ya está anulado.");
+            throw new DomainRuleViolationException("El documento ya está anulado.");
         Status = PurchaseReceptionDocumentStatus.Cancelled;
         SetUpdated(updatedBy);
     }
@@ -323,11 +324,11 @@ public sealed class PurchaseReceptionDocument
     {
         EnsureVerified();
         if (string.IsNullOrWhiteSpace(XmlContent))
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "El documento no tiene XML guardado para reprocesar."
             );
         if (ProcessingStatus != PurchaseReceptionProcessingStatus.Failed)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Solo se puede reprocesar un documento cuyo procesamiento anterior fue Failed — evita sobrescribir Item Matching ya resuelto."
             );
         ValidateProcessingOutcome(processing);

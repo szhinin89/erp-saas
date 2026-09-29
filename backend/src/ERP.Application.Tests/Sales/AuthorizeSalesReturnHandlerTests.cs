@@ -27,6 +27,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Testcontainers.PostgreSql;
+using ERP.Application.Tests.Common;
 
 namespace ERP.Application.Tests.Sales;
 
@@ -731,13 +732,13 @@ public sealed class AuthorizeSalesReturnHandlerTests
         salesReturn.Cancel(UserId);
         var (handler, _, _) = BuildHandler(invoice, salesReturn);
 
-        var result = await handler.Handle(
+        var result = await handler.HandleWithDomainRules(
             FullRefundCashCommand(salesReturn.Id, 4m),
             CancellationToken.None
         );
 
         result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        result.Code.Should().Be(ApiResponseCodes.Common.DomainRuleViolation);
     }
 
     [Fact]
@@ -757,13 +758,13 @@ public sealed class AuthorizeSalesReturnHandlerTests
         salesReturn.Authorize(UserId);
         var (handler, _, _) = BuildHandler(invoice, salesReturn);
 
-        var result = await handler.Handle(
+        var result = await handler.HandleWithDomainRules(
             FullRefundCashCommand(salesReturn.Id, salesReturn.GrandTotal),
             CancellationToken.None
         );
 
         result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        result.Code.Should().Be(ApiResponseCodes.Common.DomainRuleViolation);
     }
 
     [Fact]
@@ -790,7 +791,7 @@ public sealed class AuthorizeSalesReturnHandlerTests
         var salesReturn = BuildDraftReturn(invoice.Id, new[] { (lines[0], 4m) });
         var (handler, _, _) = BuildHandler(invoice, salesReturn);
 
-        var result = await handler.Handle(
+        var result = await handler.HandleWithDomainRules(
             new AuthorizeSalesReturnCommand(
                 salesReturn.Id,
                 new List<AuthorizeSalesReturnRefundAllocationInput>()
@@ -799,7 +800,7 @@ public sealed class AuthorizeSalesReturnHandlerTests
         );
 
         result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        result.Code.Should().Be(ApiResponseCodes.Common.DomainRuleViolation);
         salesReturn
             .Status.Should()
             .Be(SalesReturnStatus.Draft, "no debe autorizarse sin reembolso");
@@ -812,13 +813,13 @@ public sealed class AuthorizeSalesReturnHandlerTests
         var salesReturn = BuildDraftReturn(invoice.Id, new[] { (lines[0], 4m) }); // total = 20
         var (handler, _, _) = BuildHandler(invoice, salesReturn);
 
-        var result = await handler.Handle(
+        var result = await handler.HandleWithDomainRules(
             FullRefundCashCommand(salesReturn.Id, 5m), // no coincide con GrandTotal (20)
             CancellationToken.None
         );
 
         result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        result.Code.Should().Be(ApiResponseCodes.Common.DomainRuleViolation);
         salesReturn.Status.Should().Be(SalesReturnStatus.Draft);
     }
 

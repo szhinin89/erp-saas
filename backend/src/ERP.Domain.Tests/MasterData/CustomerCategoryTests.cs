@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.MasterData.Entities;
 using FluentAssertions;
 
@@ -104,7 +105,7 @@ public sealed class CustomerCategoryTests
 
         var act = () => entity.Update("Otro nombre", 2, ActorId);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -138,6 +139,6 @@ public sealed class CustomerCategoryTests
 
         var act = () => entity.Disable(ActorId);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 }

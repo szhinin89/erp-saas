@@ -25,6 +25,7 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Testcontainers.PostgreSql;
+using ERP.Infrastructure.Tests.Common;
 
 namespace ERP.Infrastructure.Tests.Persistence;
 
@@ -430,7 +431,7 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
             new FixedCurrentTenant(() => _tenantId),
             new FixedCurrentUser(_userId)
         );
-        var result = await handler.Handle(
+        var result = await handler.HandleWithDomainRules(
             new RegisterSupplierCreditRefundCommand(
                 creditId,
                 companyBankAccountId,
@@ -469,7 +470,7 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
             new FixedCurrentTenant(() => _tenantId),
             new FixedCurrentUser(_userId)
         );
-        var result = await handler.Handle(
+        var result = await handler.HandleWithDomainRules(
             new ReverseSupplierCreditRefundCommand(
                 creditId,
                 originalTxId,

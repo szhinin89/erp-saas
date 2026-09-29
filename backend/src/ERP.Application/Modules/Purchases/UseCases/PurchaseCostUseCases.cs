@@ -118,14 +118,7 @@ public sealed class ApplyGlobalDiscountHandler
         if (inv.Lines.Count == 0)
             return Result<PurchaseInvoiceDto>.ValidationFailure("La compra no tiene líneas.");
 
-        try
-        {
-            inv.ApplyGlobalDiscount(cmd.DiscountPct, _u.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message);
-        }
+        inv.ApplyGlobalDiscount(cmd.DiscountPct, _u.UserId);
 
         await _repo.SaveChangesAsync(ct);
         return Result<PurchaseInvoiceDto>.Success(PurchaseMapper.ToDto(inv));
@@ -169,14 +162,7 @@ public sealed class AllocateFreightHandler
         if (inv.Lines.Count == 0)
             return Result<PurchaseInvoiceDto>.ValidationFailure("La compra no tiene líneas.");
 
-        try
-        {
-            inv.DistributeCosts(inv.TotalFreight, inv.TotalOtherCosts, _u.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message);
-        }
+        inv.DistributeCosts(inv.TotalFreight, inv.TotalOtherCosts, _u.UserId);
 
         await _repo.SaveChangesAsync(ct);
         return Result<PurchaseInvoiceDto>.Success(PurchaseMapper.ToDto(inv));
@@ -227,64 +213,57 @@ public sealed class RecalculatePurchaseHandler
         if (inv.Lines.Count == 0)
             return Result<PurchaseInvoiceDto>.ValidationFailure("La compra no tiene líneas.");
 
-        try
+        foreach (var line in inv.Lines)
         {
-            foreach (var line in inv.Lines)
-            {
-                var vatResult = await _tax.GetVatRateWithNameAsync(line.VatCode, ct);
-                if (vatResult is null)
-                    return Result<PurchaseInvoiceDto>.ValidationFailure(
-                        $"Código IVA '{line.VatCode}' no encontrado."
-                    );
-
-                decimal iceRate = 0;
-                string? iceName = null;
-                var iceCalculationType = ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Percentage;
-                decimal? iceExactAmount = null;
-                if (!string.IsNullOrWhiteSpace(line.IceCode))
-                {
-                    // FLOW-READY-02F.1 — catalog-aware (no el legacy GetIceRateWithNameAsync, que exige
-                    // Percentage y por eso nunca resuelve ICE "específico" como el código 3053). Mismo
-                    // criterio que ConfirmPurchaseUseCases.
-                    var iceEntry = await _tax.GetIceCatalogEntryAsync(line.IceCode, ct);
-                    if (iceEntry is null)
-                        return Result<PurchaseInvoiceDto>.ValidationFailure(
-                            $"Código ICE '{line.IceCode}' no encontrado."
-                        );
-                    iceName = iceEntry.Name;
-                    iceCalculationType = iceEntry.CalculationType;
-                    if (iceEntry.CalculationType
-                        == ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific)
-                    {
-                        // El monto ya fue fijado al valor exacto (XML o catálogo) al crear/actualizar
-                        // la línea — Recalculate lo preserva, igual que Confirm, nunca lo recalcula
-                        // desde una tarifa porcentual.
-                        iceExactAmount = line.IceAmount;
-                    }
-                    else
-                    {
-                        iceRate = iceEntry.Percentage ?? 0m;
-                    }
-                }
-
-                line.ApplyTaxes(
-                    line.VatCode,
-                    vatResult.Rate,
-                    vatResult.Name,
-                    line.IceCode,
-                    iceRate,
-                    iceName,
-                    iceCalculationType,
-                    iceExactAmount
+            var vatResult = await _tax.GetVatRateWithNameAsync(line.VatCode, ct);
+            if (vatResult is null)
+                return Result<PurchaseInvoiceDto>.ValidationFailure(
+                    $"Código IVA '{line.VatCode}' no encontrado."
                 );
+
+            decimal iceRate = 0;
+            string? iceName = null;
+            var iceCalculationType = ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Percentage;
+            decimal? iceExactAmount = null;
+            if (!string.IsNullOrWhiteSpace(line.IceCode))
+            {
+                // FLOW-READY-02F.1 — catalog-aware (no el legacy GetIceRateWithNameAsync, que exige
+                // Percentage y por eso nunca resuelve ICE "específico" como el código 3053). Mismo
+                // criterio que ConfirmPurchaseUseCases.
+                var iceEntry = await _tax.GetIceCatalogEntryAsync(line.IceCode, ct);
+                if (iceEntry is null)
+                    return Result<PurchaseInvoiceDto>.ValidationFailure(
+                        $"Código ICE '{line.IceCode}' no encontrado."
+                    );
+                iceName = iceEntry.Name;
+                iceCalculationType = iceEntry.CalculationType;
+                if (iceEntry.CalculationType
+                    == ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific)
+                {
+                    // El monto ya fue fijado al valor exacto (XML o catálogo) al crear/actualizar
+                    // la línea — Recalculate lo preserva, igual que Confirm, nunca lo recalcula
+                    // desde una tarifa porcentual.
+                    iceExactAmount = line.IceAmount;
+                }
+                else
+                {
+                    iceRate = iceEntry.Percentage ?? 0m;
+                }
             }
 
-            inv.DistributeCosts(inv.TotalFreight, inv.TotalOtherCosts, _u.UserId);
+            line.ApplyTaxes(
+                line.VatCode,
+                vatResult.Rate,
+                vatResult.Name,
+                line.IceCode,
+                iceRate,
+                iceName,
+                iceCalculationType,
+                iceExactAmount
+            );
         }
-        catch (InvalidOperationException ex)
-        {
-            return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message);
-        }
+
+        inv.DistributeCosts(inv.TotalFreight, inv.TotalOtherCosts, _u.UserId);
 
         await _repo.SaveChangesAsync(ct);
         return Result<PurchaseInvoiceDto>.Success(PurchaseMapper.ToDto(inv));
@@ -332,7 +311,7 @@ public sealed class DistributePurchaseCostHandler
         {
             inv.DistributeAdditionalCost(cmd.CostType, cmd.Amount, cmd.IncludedLineIds, _u.UserId);
         }
-        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+        catch (ArgumentException ex)
         {
             return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message);
         }

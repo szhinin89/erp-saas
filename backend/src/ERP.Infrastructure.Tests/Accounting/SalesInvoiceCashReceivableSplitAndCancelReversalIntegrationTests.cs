@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
 using ERP.Domain.Branches.Entities;
+using ERP.Domain.Exceptions;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
@@ -564,7 +565,7 @@ public sealed class SalesInvoiceCashReceivableSplitAndCancelReversalIntegrationT
         await db.SaveChangesAsync();
 
         var act = () => inv.Cancel("Segunda anulación", _createdBy);
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
 
         await using var verifyDb = CreateContext();
         var entries = await verifyDb.JournalEntries

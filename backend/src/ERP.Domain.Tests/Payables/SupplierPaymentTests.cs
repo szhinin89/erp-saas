@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Events;
@@ -178,7 +179,7 @@ public sealed class SupplierPaymentTests
 
         var act = () => CreatePayment(300m, methods, applications, allocations);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -190,7 +191,7 @@ public sealed class SupplierPaymentTests
 
         var act = () => CreatePayment(300m, methods, applications, allocations);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -212,7 +213,7 @@ public sealed class SupplierPaymentTests
 
         var act = () => CreatePayment(300m, methods, applications, allocations);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -234,7 +235,7 @@ public sealed class SupplierPaymentTests
 
         var act = () => CreatePayment(300m, methods, applications, allocations);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Theory]
@@ -406,7 +407,7 @@ public sealed class SupplierPaymentTests
 
         var act = () => payment.Reverse("Segundo intento", Guid.NewGuid(), DateTime.UtcNow, bankReversalReason: SupplierPaymentBankReversalReason.NotExecuted);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -477,7 +478,7 @@ public sealed class SupplierPaymentTests
         line.CashSessionId.Should().Be(sessionId);
         line.CashMovementId.Should().Be(movementId);
         var again = () => payment.LinkCashMovement(line.Id, Guid.NewGuid(), Guid.NewGuid());
-        again.Should().Throw<InvalidOperationException>();
+        again.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -487,7 +488,7 @@ public sealed class SupplierPaymentTests
 
         var act = () => payment.LinkCashMovement(payment.MethodLines[0].Id, Guid.NewGuid(), Guid.NewGuid());
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -508,7 +509,7 @@ public sealed class SupplierPaymentTests
 
         var act = () => payment.Reverse("Duplicado", Guid.NewGuid(), DateTime.UtcNow, cashNotDeliveredConfirmed: false);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
         payment.Status.Should().Be(SupplierPaymentStatus.Confirmed);
     }
 
@@ -519,7 +520,7 @@ public sealed class SupplierPaymentTests
 
         var act = () => payment.Reverse("Duplicado", Guid.NewGuid(), DateTime.UtcNow, cashNotDeliveredConfirmed: true);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -528,7 +529,7 @@ public sealed class SupplierPaymentTests
         var payment = CreateSingle(new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 50m, "OP-1", TransactionDate: PaymentDate));
 
         var withoutReason = () => payment.Reverse("Error", Guid.NewGuid(), DateTime.UtcNow);
-        withoutReason.Should().Throw<InvalidOperationException>();
+        withoutReason.Should().Throw<DomainRuleViolationException>();
 
         payment.Reverse("Error", Guid.NewGuid(), DateTime.UtcNow, bankReversalReason: SupplierPaymentBankReversalReason.RejectedByBank);
         payment.ReversalBankReason.Should().Be(SupplierPaymentBankReversalReason.RejectedByBank);

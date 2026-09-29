@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 
 namespace ERP.Domain.Modules.Items.Entities;
 
@@ -72,7 +73,7 @@ public sealed class ItemVariant : MasterEntity, ITenantScopedEntity
     )
     {
         if (_barcodes.Any(b => b.IsActive && b.Code == code))
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"El código de barras '{code}' ya existe en esta variante."
             );
 
@@ -85,7 +86,7 @@ public sealed class ItemVariant : MasterEntity, ITenantScopedEntity
     {
         var bc = _barcodes.FirstOrDefault(b => b.Id == barcodeId);
         if (bc is null)
-            throw new InvalidOperationException("Código de barras no encontrado en esta variante.");
+            throw new DomainRuleViolationException("Código de barras no encontrado en esta variante.");
         bc.Disable(updatedBy);
     }
 

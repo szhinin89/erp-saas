@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Events;
 using ERP.Domain.Modules.Accounting.ValueObjects;
@@ -73,7 +74,7 @@ public sealed class Account : AuditableEntity, ITenantScopedEntity, ICompanyOper
     public void Activate(Guid updatedBy)
     {
         if (IsActive)
-            throw new InvalidOperationException("La cuenta ya está activa.");
+            throw new DomainRuleViolationException("La cuenta ya está activa.");
         IsActive = true;
         SetUpdated(updatedBy);
         RaiseDomainEvent(new AccountActivatedEvent(TenantId, Id, CompanyId));
@@ -83,7 +84,7 @@ public sealed class Account : AuditableEntity, ITenantScopedEntity, ICompanyOper
     public void Disable(Guid updatedBy)
     {
         if (!IsActive)
-            throw new InvalidOperationException("La cuenta ya está deshabilitada.");
+            throw new DomainRuleViolationException("La cuenta ya está deshabilitada.");
         IsActive = false;
         SetUpdated(updatedBy);
         RaiseDomainEvent(new AccountDisabledEvent(TenantId, Id, CompanyId));

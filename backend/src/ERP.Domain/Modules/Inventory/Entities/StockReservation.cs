@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 
 namespace ERP.Domain.Modules.Inventory.Entities;
 
@@ -63,7 +64,7 @@ public sealed class StockReservation : AuditableEntity, ITenantScopedEntity
     public void Fulfill(Guid userId)
     {
         if (Status != StatusPending)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Only Pending reservations can be fulfilled (current: {Status})."
             );
         Status = StatusFulfilled;
@@ -73,9 +74,9 @@ public sealed class StockReservation : AuditableEntity, ITenantScopedEntity
     public void Cancel(Guid userId)
     {
         if (Status == StatusCancelled)
-            throw new InvalidOperationException("Reservation is already cancelled.");
+            throw new DomainRuleViolationException("Reservation is already cancelled.");
         if (Status == StatusFulfilled)
-            throw new InvalidOperationException("Cannot cancel a fulfilled reservation.");
+            throw new DomainRuleViolationException("Cannot cancel a fulfilled reservation.");
         Status = StatusCancelled;
         SetUpdated(userId);
     }

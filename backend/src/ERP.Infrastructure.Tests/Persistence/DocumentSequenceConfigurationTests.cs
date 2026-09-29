@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Tenants.Entities;
@@ -180,7 +181,7 @@ public sealed class DocumentSequenceConfigurationTests : IAsyncLifetime
 
         var act = () => existing.ConfigureNextNumber(9000);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     // ── Infraestructura ──────────────────────────────────────────────────────────────────────

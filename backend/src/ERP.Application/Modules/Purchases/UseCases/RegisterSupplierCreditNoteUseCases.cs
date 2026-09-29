@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
@@ -282,16 +283,7 @@ public sealed class RegisterAndLinkSupplierCreditNoteHandler
 
             var hash = ComputeLinkPayloadHash(cmd, purchaseReturn.Id, document.Id);
 
-            try
-            {
-                purchaseReturn.LinkSupplierCreditNote(document.Id, uid, cmd.ClientRequestId, hash);
-            }
-            catch (InvalidOperationException ex)
-            {
-                await _uow.RollbackAsync(ct);
-                // SC-009 (dominio) u otro guard
-                return Result<SupplierCreditNoteLinkDto>.ValidationFailure(ex.Message);
-            }
+            purchaseReturn.LinkSupplierCreditNote(document.Id, uid, cmd.ClientRequestId, hash);
 
             if (isNewDocument)
                 await _receptionRepo.AddAsync(document, ct);
@@ -331,11 +323,6 @@ public sealed class RegisterAndLinkSupplierCreditNoteHandler
 
             await _uow.CommitAsync(ct);
             return Result<SupplierCreditNoteLinkDto>.Success(Map(purchaseReturn, document));
-        }
-        catch (InvalidOperationException ex)
-        {
-            await _uow.RollbackAsync(ct);
-            return Result<SupplierCreditNoteLinkDto>.ValidationFailure(ex.Message);
         }
         catch
         {

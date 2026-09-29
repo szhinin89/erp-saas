@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using static ERP.Domain.Common.FiscalPrecision;
 
 namespace ERP.Domain.Modules.Sales.Entities;
@@ -114,7 +115,7 @@ public sealed class SalesReceivable
     public void Cancel(Guid updatedBy)
     {
         if (PaidAmount > 0)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No se puede cancelar una cuenta por cobrar con pagos registrados."
             );
 
@@ -138,11 +139,11 @@ public sealed class SalesReceivable
                 nameof(amount)
             );
         if (Status == "cancelled")
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No se puede registrar un cobro sobre una cuenta por cobrar cancelada."
             );
         if (amount > BalanceDue)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "El monto del cobro excede el saldo pendiente de la cuenta por cobrar."
             );
 
@@ -163,7 +164,7 @@ public sealed class SalesReceivable
                 nameof(amount)
             );
         if (amount > PaidAmount)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "El monto a reversar excede el monto cobrado registrado en la cuenta por cobrar."
             );
 
@@ -187,11 +188,11 @@ public sealed class SalesReceivable
                 nameof(amount)
             );
         if (Status == "cancelled")
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No se puede aplicar un crédito de devolución sobre una cuenta por cobrar cancelada."
             );
         if (amount > BalanceDue)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "El monto del crédito excede el saldo pendiente de la cuenta por cobrar."
             );
 

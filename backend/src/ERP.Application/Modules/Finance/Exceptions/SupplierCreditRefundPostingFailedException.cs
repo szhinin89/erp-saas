@@ -8,10 +8,10 @@ namespace ERP.Application.Modules.Finance.Exceptions;
 /// lanzar dentro del <c>Handle</c> de un <c>INotificationHandler</c> publicado por
 /// <c>ErpDbContext.SaveChangesAsync</c> ANTES del commit aborta la transacción completa (movimiento
 /// de <c>SupplierCredit</c>, <c>SupplierCreditRefundTransaction</c> y <c>CashMovement</c> nunca se
-/// persisten). Hereda de <see cref="InvalidOperationException"/> para que los handlers de
-/// reembolso/reversa la traduzcan a <c>Result&lt;T&gt;.ValidationFailure</c> tras el rollback.
+/// persisten). Regla de negocio: deriva de <c>DomainRuleViolationException</c>, así que tras el
+/// rollback se traduce a DOMAIN_RULE_VIOLATION (DomainRuleBehavior / Result.FromDomainRule).
 /// </summary>
-public sealed class SupplierCreditRefundPostingFailedException : InvalidOperationException
+public sealed class SupplierCreditRefundPostingFailedException : ERP.Domain.Exceptions.DomainRuleViolationException
 {
     public string? Code { get; }
 

@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.SriCatalogs.Enums;
@@ -238,6 +239,6 @@ public sealed class PurchaseInvoiceDetailMultiTaxTests
 
         var act = () => line.ReplaceTaxes([]);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 }

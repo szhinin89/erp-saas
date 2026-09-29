@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Purchases.DTOs;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
@@ -197,22 +198,14 @@ public sealed class AuthorizePurchaseCreditNoteHandler
                 }
             }
 
-            try
-            {
-                // Ajuste obligatorio §4.2 del diseño: bloquea si TotalAmount > BalanceDue — nunca
-                // trunca ni genera SupplierCredit. El dominio ya valida esto en Authorize().
-                creditNote.Authorize(
-                    balanceDueBeforeApplication,
-                    uid,
-                    cmd.ClientRequestId,
-                    authorizeHash
-                );
-            }
-            catch (InvalidOperationException ex)
-            {
-                await _uow.RollbackAsync(ct);
-                return Result<PurchaseCreditNoteDto>.ValidationFailure(ex.Message);
-            }
+            // Ajuste obligatorio §4.2 del diseño: bloquea si TotalAmount > BalanceDue — nunca
+            // trunca ni genera SupplierCredit. El dominio ya valida esto en Authorize().
+            creditNote.Authorize(
+                balanceDueBeforeApplication,
+                uid,
+                cmd.ClientRequestId,
+                authorizeHash
+            );
 
             payable.ApplyCreditNote(creditNote.AppliedToPayableAmount!.Value, uid);
 
@@ -235,11 +228,13 @@ public sealed class AuthorizePurchaseCreditNoteHandler
                 {
                     receptionDoc.MarkProcessed(invoice.Id, uid);
                 }
-                catch (InvalidOperationException ex)
+                catch (DomainRuleViolationException ex)
                 {
-                    await _uow.RollbackAsync(ct);
-                    return Result<PurchaseCreditNoteDto>.ValidationFailure(
-                        $"No se pudo marcar el documento de recepción como procesado: {ex.Message}"
+                    // Mismo mensaje público con contexto; el catch externo hace rollback y
+                    // DomainRuleBehavior traduce (DOMAIN_RULE_VIOLATION).
+                    throw new DomainRuleViolationException(
+                        $"No se pudo marcar el documento de recepción como procesado: {ex.Message}",
+                        ex
                     );
                 }
             }
@@ -288,11 +283,6 @@ public sealed class AuthorizePurchaseCreditNoteHandler
             return Result<PurchaseCreditNoteDto>.Success(
                 CreditNoteMap.ToDto(creditNote, invoice.InvoiceNumber, invoice.SupplierName, payable.OutstandingAmount)
             );
-        }
-        catch (InvalidOperationException ex)
-        {
-            await _uow.RollbackAsync(ct);
-            return Result<PurchaseCreditNoteDto>.ValidationFailure(ex.Message);
         }
         catch
         {

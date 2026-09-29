@@ -1,3 +1,5 @@
+using ERP.Domain.Exceptions;
+
 namespace ERP.Domain.Configuration.Entities;
 
 /// <summary>
@@ -73,7 +75,7 @@ public sealed class SystemProviderSettings
             );
 
         if (enabled && (normalizedRuc is null || normalizedLegalName is null || normalizedCiiu is null))
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No se puede habilitar el proveedor de sistema sin RUC, razón social y CIIU completos."
             );
 

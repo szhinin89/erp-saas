@@ -149,26 +149,19 @@ public sealed class CreateCreditTermHandler
 
         var installments = cmd.Installments?.Select(i => (i.Number, i.DaysOffset, i.Percentage));
 
-        try
-        {
-            var term = CreditTerm.Create(
-                tid,
-                _c.CompanyId,
-                cmd.Code,
-                cmd.Name,
-                cmd.Mode,
-                cmd.TotalDays,
-                _u.UserId,
-                installments
-            );
-            await _repo.AddAsync(term, ct);
-            await _repo.SaveChangesAsync(ct);
-            return Result<CreditTermDto>.Success(Map.ToDto(term));
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<CreditTermDto>.ValidationFailure(ex.Message);
-        }
+        var term = CreditTerm.Create(
+            tid,
+            _c.CompanyId,
+            cmd.Code,
+            cmd.Name,
+            cmd.Mode,
+            cmd.TotalDays,
+            _u.UserId,
+            installments
+        );
+        await _repo.AddAsync(term, ct);
+        await _repo.SaveChangesAsync(ct);
+        return Result<CreditTermDto>.Success(Map.ToDto(term));
     }
 }
 
@@ -197,16 +190,9 @@ public sealed class UpdateCreditTermHandler
 
         var installments = cmd.Installments?.Select(i => (i.Number, i.DaysOffset, i.Percentage));
 
-        try
-        {
-            term.Update(cmd.Name, cmd.Mode, cmd.TotalDays, _u.UserId, installments);
-            await _repo.SaveChangesAsync(ct);
-            return Result<CreditTermDto>.Success(Map.ToDto(term));
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<CreditTermDto>.ValidationFailure(ex.Message);
-        }
+        term.Update(cmd.Name, cmd.Mode, cmd.TotalDays, _u.UserId, installments);
+        await _repo.SaveChangesAsync(ct);
+        return Result<CreditTermDto>.Success(Map.ToDto(term));
     }
 }
 
@@ -228,14 +214,8 @@ public sealed class EnableCreditTermHandler : IRequestHandler<EnableCreditTermCo
         var term = await _repo.GetByIdAsync(_t.TenantId, cmd.Id, ct);
         if (term is null)
             return Result<bool>.NotFound("No encontrada.");
-        try
-        {
-            term.Enable(_u.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<bool>.ValidationFailure(ex.Message);
-        }
+        term.Enable(_u.UserId);
+
         await _repo.SaveChangesAsync(ct);
         return Result<bool>.Success(true);
     }
@@ -260,14 +240,8 @@ public sealed class DisableCreditTermHandler
         var term = await _repo.GetByIdAsync(_t.TenantId, cmd.Id, ct);
         if (term is null)
             return Result<bool>.NotFound("No encontrada.");
-        try
-        {
-            term.Disable(_u.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<bool>.ValidationFailure(ex.Message);
-        }
+        term.Disable(_u.UserId);
+
         await _repo.SaveChangesAsync(ct);
         return Result<bool>.Success(true);
     }

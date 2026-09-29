@@ -1,3 +1,5 @@
+using ERP.Domain.Exceptions;
+
 namespace ERP.Domain.Setup;
 
 /// <summary>
@@ -23,7 +25,7 @@ public sealed class SystemSetupState
     public void IssueSetupToken(string tokenHash, DateTime expiryUtc)
     {
         if (IsInitialized)
-            throw new InvalidOperationException("El sistema ya ha sido inicializado.");
+            throw new DomainRuleViolationException("El sistema ya ha sido inicializado.");
 
         SetupTokenHash = tokenHash;
         SetupTokenExpiryUtc = expiryUtc;

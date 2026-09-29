@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Payables.Services;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Payables.Entities;
 using FluentValidation;
 using MediatR;
@@ -307,11 +308,6 @@ public sealed class RegisterSupplierPaymentCommandHandler
                 SupplierPaymentDtoMapper.ToDto(payment, supplierCreditId: supplierCreditId),
                 ApiResponseCodes.Common.Created
             );
-        }
-        catch (InvalidOperationException ex)
-        {
-            await _uow.RollbackAsync(ct);
-            return Result<SupplierPaymentDto>.ValidationFailure(ex.Message);
         }
         catch
         {

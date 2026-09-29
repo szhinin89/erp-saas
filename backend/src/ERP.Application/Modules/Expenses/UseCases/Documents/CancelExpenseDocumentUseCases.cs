@@ -214,20 +214,7 @@ public sealed class CancelExpenseDocumentHandler
 
             if (payable is not null)
             {
-                try
-                {
-                    payable.Cancel(uid);
-                }
-                catch (InvalidOperationException ex)
-                {
-                    _logger.LogWarning(
-                        "Cannot cancel payable for expense document {ExpenseDocumentId}: {Reason}",
-                        document.Id,
-                        ex.Message
-                    );
-                    await _uow.RollbackAsync(ct);
-                    return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message);
-                }
+                payable.Cancel(uid);
             }
 
             try
@@ -235,11 +222,6 @@ public sealed class CancelExpenseDocumentHandler
                 document.Cancel(cmd.Reason, uid);
             }
             catch (ArgumentException ex)
-            {
-                await _uow.RollbackAsync(ct);
-                return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message);
-            }
-            catch (InvalidOperationException ex)
             {
                 await _uow.RollbackAsync(ct);
                 return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message);

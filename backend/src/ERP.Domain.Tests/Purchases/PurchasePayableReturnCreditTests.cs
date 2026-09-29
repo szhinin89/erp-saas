@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
 using FluentAssertions;
@@ -84,7 +85,7 @@ public sealed class PurchasePayableReturnCreditTests
 
         var act = () => payable.ApplyReturnCredit(100m, UserId);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -117,7 +118,7 @@ public sealed class PurchasePayableReturnCreditTests
 
         var act = () => payable.ReverseReturnCredit(301m, UserId);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     // ── ApplySupplierCredit ────────────────────────────────────────────
@@ -130,7 +131,7 @@ public sealed class PurchasePayableReturnCreditTests
 
         var act = () => payable.ApplySupplierCredit(150m, UserId);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
         payable.SupplierCreditAmount.Should().Be(0m);
     }
 
@@ -142,7 +143,7 @@ public sealed class PurchasePayableReturnCreditTests
 
         var act = () => payable.ApplySupplierCredit(100m, UserId);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -165,6 +166,6 @@ public sealed class PurchasePayableReturnCreditTests
 
         var act = () => payable.ReverseSupplierCredit(201m, UserId);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 }

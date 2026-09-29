@@ -43,14 +43,7 @@ public sealed class DisableCashRegisterHandler
             );
         }
 
-        try
-        {
-            entity.Disable(_u.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<bool>.ValidationFailure(ex.Message);
-        }
+        entity.Disable(_u.UserId);
 
         await _repo.SaveChangesAsync(ct);
         return Result<bool>.Success(true);

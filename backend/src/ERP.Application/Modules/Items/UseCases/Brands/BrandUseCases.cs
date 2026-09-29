@@ -157,14 +157,8 @@ public sealed class EnableBrandCommandHandler : IRequestHandler<EnableBrandComma
         var b = await _c.GetBrandByIdAsync(cmd.Id, cancellationToken);
         if (b is null)
             return Result<bool>.NotFound("No encontrada.");
-        try
-        {
-            b.Enable(_u.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<bool>.ValidationFailure(ex.Message);
-        }
+        b.Enable(_u.UserId);
+
         await _c.SaveChangesAsync(cancellationToken);
         return Result<bool>.Success(true);
     }
@@ -189,14 +183,8 @@ public sealed class DisableBrandCommandHandler : IRequestHandler<DisableBrandCom
         var b = await _c.GetBrandByIdAsync(cmd.Id, cancellationToken);
         if (b is null)
             return Result<bool>.NotFound("No encontrada.");
-        try
-        {
-            b.Disable(_u.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<bool>.ValidationFailure(ex.Message);
-        }
+        b.Disable(_u.UserId);
+
         await _c.SaveChangesAsync(cancellationToken);
         return Result<bool>.Success(true);
     }

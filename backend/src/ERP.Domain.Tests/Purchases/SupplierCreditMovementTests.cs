@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
 using FluentAssertions;
@@ -109,7 +110,7 @@ public sealed class SupplierCreditMovementTests
 
         var act = () => credit.ReverseApplication(applied.Id, UserId, Guid.NewGuid(), "hash-009");
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     // ── ClientRequestId / RequestPayloadHash (§7.5, §16.2 — Enmienda DOMAIN_AMENDMENT_01) ──

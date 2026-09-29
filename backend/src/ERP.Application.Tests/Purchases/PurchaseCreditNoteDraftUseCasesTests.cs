@@ -13,6 +13,7 @@ using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 using FluentAssertions;
 using Moq;
+using ERP.Application.Tests.Common;
 
 namespace ERP.Application.Tests.Purchases;
 
@@ -823,7 +824,7 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
             .ReturnsAsync(creditNote);
         var handler = m.BuildUpdateHandler();
 
-        var result = await handler.Handle(
+        var result = await handler.HandleWithDomainRules(
             new UpdatePurchaseCreditNoteDraftCommand(
                 creditNote.Id,
                 "001-001-000000011",

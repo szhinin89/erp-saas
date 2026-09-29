@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Domain.Modules.Retentions.Events;
 
@@ -201,7 +202,7 @@ public sealed class RetentionDocument : AuditableEntity, ITenantScopedEntity, IC
     {
         EnsureDraft();
         if (_lines.Count == 0)
-            throw new InvalidOperationException("No se puede emitir una retención sin líneas.");
+            throw new DomainRuleViolationException("No se puede emitir una retención sin líneas.");
         if (string.IsNullOrWhiteSpace(retentionNumber))
             throw new ArgumentException(
                 "El número de retención es obligatorio.",
@@ -210,7 +211,7 @@ public sealed class RetentionDocument : AuditableEntity, ITenantScopedEntity, IC
         if (issueDate == default)
             throw new ArgumentException("La fecha de emisión es obligatoria.", nameof(issueDate));
         if (TotalRetained <= 0)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "El total retenido debe ser mayor a cero para emitir la retención."
             );
 
@@ -250,7 +251,7 @@ public sealed class RetentionDocument : AuditableEntity, ITenantScopedEntity, IC
     public void Cancel(string reason, Guid cancelledBy)
     {
         if (Status != RetentionStatus.Issued)
-            throw new InvalidOperationException("Solo se pueden anular retenciones emitidas.");
+            throw new DomainRuleViolationException("Solo se pueden anular retenciones emitidas.");
         if (string.IsNullOrWhiteSpace(reason))
             throw new ArgumentException("El motivo de anulación es obligatorio.", nameof(reason));
         if (cancelledBy == Guid.Empty)
@@ -287,7 +288,7 @@ public sealed class RetentionDocument : AuditableEntity, ITenantScopedEntity, IC
     private void EnsureDraft()
     {
         if (Status != RetentionStatus.Draft)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Solo se pueden modificar retenciones en estado borrador."
             );
     }

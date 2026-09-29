@@ -19,6 +19,7 @@ using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Domain.Modules.Retentions.Interfaces;
 using FluentAssertions;
 using Moq;
+using ERP.Application.Tests.Common;
 
 namespace ERP.Application.Tests.Purchases;
 
@@ -387,7 +388,7 @@ public sealed class AuthorizePurchaseReturnHandlerTests
         m.ReceptionRepo.Setup(r => r.GetByIdAsync(TenantId, doc.Id, It.IsAny<CancellationToken>())).ReturnsAsync(doc);
         var before = f.Payable.OutstandingAmount;
         var command = new AuthorizePurchaseReturnCommand(f.Return.Id, Guid.NewGuid());
-        var result = await m.BuildHandler().Handle(command, CancellationToken.None);
+        var result = await m.BuildHandler().HandleWithDomainRules(command, CancellationToken.None);
         result.IsSuccess.Should().Be(!xmlMismatch);
         if (xmlMismatch)
         {
@@ -404,7 +405,7 @@ public sealed class AuthorizePurchaseReturnHandlerTests
         m.AppendedItemWarehouses.Should().HaveCount(1);
         f.Return.DomainEvents.Should().ContainSingle(e => e is ERP.Domain.Modules.Purchases.Events.PurchaseReturnAuthorizedEvent);
         note.DomainEvents.Should().NotContain(e => e is ERP.Domain.Modules.Purchases.Events.PurchaseCreditNoteAuthorizedEvent);
-        var retry = await m.BuildHandler().Handle(command, CancellationToken.None);
+        var retry = await m.BuildHandler().HandleWithDomainRules(command, CancellationToken.None);
         retry.IsSuccess.Should().BeTrue();
         m.AppendedItemWarehouses.Should().HaveCount(1);
         f.Payable.OutstandingAmount.Should().Be(before - 336m);
@@ -747,7 +748,7 @@ public sealed class AuthorizePurchaseReturnHandlerTests
             .ReturnsAsync(retention);
         var handler = m.BuildHandler();
 
-        var result = await handler.Handle(
+        var result = await handler.HandleWithDomainRules(
             new AuthorizePurchaseReturnCommand(f.Return.Id, Guid.NewGuid()),
             CancellationToken.None
         );

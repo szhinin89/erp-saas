@@ -2,6 +2,7 @@ using ClosedXML.Excel;
 using ERP.Application.Modules.InitialLoad.DTOs;
 using ERP.Application.Modules.InitialLoad.Interfaces;
 using ERP.Application.Modules.InitialLoad.Processors;
+using ERP.Domain.Exceptions;
 
 namespace ERP.Infrastructure.InitialLoad;
 
@@ -21,17 +22,16 @@ public sealed class ClosedXmlInitialStockImportSheetReader : IInitialStockImport
         }
         catch (Exception ex)
         {
-            throw new InvalidOperationException(
-                $"El archivo no es un Excel (.xlsx) válido: {ex.Message}",
-                ex
-            );
+            // ZH-DOMAIN-RULE-ERROR-SSOT-01: archivo inválido es una regla pública; el detalle
+            // técnico de ClosedXML queda en la InnerException (log), nunca en el mensaje.
+            throw new DomainRuleViolationException("El archivo no es un Excel (.xlsx) válido.", ex);
         }
 
         using (workbook)
         {
             var sheet = workbook.Worksheets.FirstOrDefault(w => !IsInstructionsSheet(w.Name));
             if (sheet is null)
-                throw new InvalidOperationException("El archivo no contiene ninguna hoja de datos.");
+                throw new DomainRuleViolationException("El archivo no contiene ninguna hoja de datos.");
 
             var headerRow = sheet.Row(1);
             var columnIndexes = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);

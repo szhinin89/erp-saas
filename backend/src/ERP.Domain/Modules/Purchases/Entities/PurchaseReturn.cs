@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Events;
 
@@ -300,11 +301,11 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
                 nameof(returnNumber)
             );
         if (_lines.Count == 0)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No puedes autorizar esta devolución porque no tiene líneas agregadas."
             );
         if (hasIssuedRetention)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No puedes autorizar esta devolución porque la factura de compra tiene una retención emitida."
             );
         if (balanceDueBeforeApplication < 0)
@@ -330,11 +331,11 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
             if (
                 !originalLinesByDetailId.TryGetValue(line.OriginalInvoiceDetailId, out var original)
             )
-                throw new InvalidOperationException(
+                throw new DomainRuleViolationException(
                     "Falta el snapshot de la línea de factura original para poder autorizar la devolución."
                 );
             if (original.OriginalQuantity <= 0)
-                throw new InvalidOperationException(
+                throw new DomainRuleViolationException(
                     "La cantidad de la línea de factura original debe ser mayor a cero."
                 );
 
@@ -448,11 +449,11 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
     )
     {
         if (Status != PurchaseReturnStatus.Authorized)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Solo se puede vincular una Nota de Crédito a una devolución autorizada."
             );
         if (FiscalStatus != PurchaseReturnFiscalStatus.PendingSupplierCreditNote)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Esta devolución ya tiene una Nota de Crédito vinculada."
             );
         if (supplierCreditNoteDocumentId == Guid.Empty)
@@ -514,7 +515,7 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
     )
     {
         if (Status == PurchaseReturnStatus.Cancelled)
-            throw new InvalidOperationException("Esta devolución ya está cancelada.");
+            throw new DomainRuleViolationException("Esta devolución ya está cancelada.");
         if (string.IsNullOrWhiteSpace(reason))
             throw new ArgumentException(
                 "El motivo de la cancelación es obligatorio.",
@@ -568,7 +569,7 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
         if (Status != PurchaseReturnStatus.Authorized
             || creditNote.Status != PurchaseCreditNoteStatus.Authorized
             || creditNote.LinkedPurchaseReturnId != Id)
-            throw new InvalidOperationException("La NC no corresponde a esta devolución autorizada.");
+            throw new DomainRuleViolationException("La NC no corresponde a esta devolución autorizada.");
         // The fiscal reference is PurchaseCreditNote.LinkedPurchaseReturnId. The legacy
         // SupplierCreditNoteDocumentId belongs to the separate supplier-document workflow.
         FiscalStatus = PurchaseReturnFiscalStatus.SupplierCreditNoteRegistered;
@@ -578,7 +579,7 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
     private void EnsureDraft()
     {
         if (Status != PurchaseReturnStatus.Draft)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Esta devolución ya no está en borrador (fue autorizada o cancelada), por lo que no se puede modificar."
             );
     }

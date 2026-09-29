@@ -1,10 +1,12 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.InitialLoad.DTOs;
 using ERP.Application.Modules.InitialLoad.Interfaces;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.InitialLoad.Entities;
 using ERP.Domain.Modules.InitialLoad.Enums;
 using ERP.Domain.Modules.InitialLoad.Interfaces;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace ERP.Application.Modules.InitialLoad.UseCases.ConfirmImportBatch;
 
@@ -15,7 +17,7 @@ namespace ERP.Application.Modules.InitialLoad.UseCases.ConfirmImportBatch;
 /// registra como <see cref="ImportBatchIssue"/> (código <c>CONFIRM_FAILED</c>) y continúa con la
 /// siguiente.
 /// </summary>
-public sealed class ConfirmImportBatchHandler
+public sealed partial class ConfirmImportBatchHandler
     : IRequestHandler<ConfirmImportBatchCommand, Result<ImportBatchConfirmResultDto>>
 {
     private readonly IImportBatchRepository _batchRepo;
@@ -23,13 +25,15 @@ public sealed class ConfirmImportBatchHandler
     private readonly IImportBatchIssueRepository _issueRepo;
     private readonly IReadOnlyDictionary<ImportType, IImportProcessor> _processors;
     private readonly IOperationalContext _ctx;
+    private readonly ILogger<ConfirmImportBatchHandler> _logger;
 
     public ConfirmImportBatchHandler(
         IImportBatchRepository batchRepo,
         IImportBatchRowRepository rowRepo,
         IImportBatchIssueRepository issueRepo,
         IReadOnlyDictionary<ImportType, IImportProcessor> processors,
-        IOperationalContext ctx
+        IOperationalContext ctx,
+        ILogger<ConfirmImportBatchHandler> logger
     )
     {
         _batchRepo = batchRepo;
@@ -37,6 +41,7 @@ public sealed class ConfirmImportBatchHandler
         _issueRepo = issueRepo;
         _processors = processors;
         _ctx = ctx;
+        _logger = logger;
     }
 
     public async Task<Result<ImportBatchConfirmResultDto>> Handle(
@@ -58,15 +63,8 @@ public sealed class ConfirmImportBatchHandler
                 "No hay un procesador disponible para este tipo de importación."
             );
 
-        try
-        {
-            batch.BeginConfirming(_ctx.UserId);
-            await _batchRepo.SaveChangesAsync(cancellationToken);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<ImportBatchConfirmResultDto>.ValidationFailure(ex.Message);
-        }
+        batch.BeginConfirming(_ctx.UserId);
+        await _batchRepo.SaveChangesAsync(cancellationToken);
 
         var importedRows = 0;
         var failedRows = 0;
@@ -115,9 +113,17 @@ public sealed class ConfirmImportBatchHandler
                         businessPartnerId = confirmResult.BusinessPartnerId;
                         errorMessage = confirmResult.Error;
                     }
+                    catch (DomainRuleViolationException ex)
+                    {
+                        // ZH-DOMAIN-RULE-ERROR-SSOT-01: regla de negocio → fila inválida con su
+                        // mensaje público (mismo mecanismo semántico que HTTP).
+                        errorMessage = ex.Message;
+                    }
                     catch (Exception ex) when (ex is not OperationCanceledException)
                     {
-                        errorMessage = ex.Message;
+                        // Error técnico: la fila falla igual, pero el detalle queda solo en el log.
+                        LogRowFailed(ex, batch.Id, row.RowNumber);
+                        errorMessage = RowInternalErrorMessage;
                     }
 
                     if (confirmed)
@@ -152,15 +158,23 @@ public sealed class ConfirmImportBatchHandler
                     break;
             }
         }
+        catch (DomainRuleViolationException ex)
+        {
+            // Regla de negocio fuera del bucle por fila: el lote falla con el mensaje público.
+            batch.Fail(ex.Message, _ctx.UserId);
+            await _batchRepo.SaveChangesAsync(cancellationToken);
+            return Result<ImportBatchConfirmResultDto>.FromDomainRule(ex);
+        }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             // Fallo inesperado fuera del bucle por fila (p. ej. la propia paginación) — el lote no
             // puede quedar en Confirming sin salida: se marca Failed con el motivo y se reporta,
             // en vez de dejarlo bloqueado para siempre.
-            batch.Fail(ex.Message, _ctx.UserId);
+            LogBatchFailed(ex, batch.Id);
+            batch.Fail(BatchInternalErrorMessage, _ctx.UserId);
             await _batchRepo.SaveChangesAsync(cancellationToken);
             return Result<ImportBatchConfirmResultDto>.Failure(
-                $"La confirmación del lote falló de forma inesperada: {ex.Message}"
+                $"La confirmación del lote falló de forma inesperada: {BatchInternalErrorMessage}"
             );
         }
 
@@ -171,4 +185,15 @@ public sealed class ConfirmImportBatchHandler
             new ImportBatchConfirmResultDto(batch.Id, batch.Status, importedRows, failedRows)
         );
     }
+
+    private const string RowInternalErrorMessage =
+        "Error interno al confirmar la fila. Revise el registro del sistema.";
+
+    private const string BatchInternalErrorMessage = "Error interno del sistema.";
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Fila {RowNumber} del lote {BatchId} falló por un error interno")]
+    private partial void LogRowFailed(Exception ex, Guid batchId, int rowNumber);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Confirmación del lote {BatchId} falló por un error interno")]
+    private partial void LogBatchFailed(Exception ex, Guid batchId);
 }

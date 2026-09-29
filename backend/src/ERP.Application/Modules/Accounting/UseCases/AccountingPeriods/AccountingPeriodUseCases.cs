@@ -185,14 +185,7 @@ public sealed class CloseAccountingPeriodHandler
             ct
         );
 
-        try
-        {
-            period.Close(_u.UserId, readiness);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<AccountingPeriodDto>.ValidationFailure(ex.Message);
-        }
+        period.Close(_u.UserId, readiness);
 
         await _repo.SaveChangesAsync(ct);
         return Result<AccountingPeriodDto>.Success(Map.ToDto(period));
@@ -229,14 +222,7 @@ public sealed class LockAccountingPeriodHandler
         if (period is null)
             return Result<AccountingPeriodDto>.NotFound("Período contable no encontrado.");
 
-        try
-        {
-            period.Lock(_u.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<AccountingPeriodDto>.ValidationFailure(ex.Message);
-        }
+        period.Lock(_u.UserId);
 
         await _repo.SaveChangesAsync(ct);
         return Result<AccountingPeriodDto>.Success(Map.ToDto(period));

@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Enums;
@@ -181,17 +182,8 @@ public sealed class ReverseSupplierCreditApplicationHandler
 
             var hash = ComputeReversePayloadHash(cmd.OriginalMovementId);
 
-            try
-            {
-                credit.ReverseApplication(cmd.OriginalMovementId, uid, cmd.ClientRequestId, hash);
-                payable.ReverseSupplierCredit(original.Amount, uid);
-            }
-            catch (InvalidOperationException ex)
-            {
-                await _uow.RollbackAsync(ct);
-                // SC-011 (movimiento ya revertido) u otro guard de dominio.
-                return Result<SupplierCreditDto>.ValidationFailure(ex.Message);
-            }
+            credit.ReverseApplication(cmd.OriginalMovementId, uid, cmd.ClientRequestId, hash);
+            payable.ReverseSupplierCredit(original.Amount, uid);
 
             try
             {
@@ -220,11 +212,6 @@ public sealed class ReverseSupplierCreditApplicationHandler
 
             await _uow.CommitAsync(ct);
             return Result<SupplierCreditDto>.Success(Map.ToDto(credit));
-        }
-        catch (InvalidOperationException ex)
-        {
-            await _uow.RollbackAsync(ct);
-            return Result<SupplierCreditDto>.ValidationFailure(ex.Message);
         }
         catch
         {

@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Expenses.Events;
 
@@ -240,7 +241,7 @@ public sealed class ExpenseDocument : AuditableEntity, ITenantScopedEntity, ICom
         if (installments.Count == 0)
             throw new ArgumentException("Debe incluir al menos una cuota.", nameof(installments));
         if (GrandTotal <= 0)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No se puede generar cronograma para un gasto con total cero o negativo."
             );
 
@@ -263,7 +264,7 @@ public sealed class ExpenseDocument : AuditableEntity, ITenantScopedEntity, ICom
         var total = GrandTotal;
         var sum = installments.Sum(i => i.Amount);
         if (sum != total)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"La suma de las cuotas ({sum:F2}) no coincide con el total del gasto ({total:F2})."
             );
 
@@ -290,14 +291,14 @@ public sealed class ExpenseDocument : AuditableEntity, ITenantScopedEntity, ICom
     {
         EnsureDraft();
         if (_lines.Count == 0)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "El gasto debe tener al menos una línea para confirmarse."
             );
 
         foreach (var line in _lines)
         {
             if (!lineAccountSnapshots.TryGetValue(line.Id, out var snapshot))
-                throw new InvalidOperationException(
+                throw new DomainRuleViolationException(
                     "Falta la cuenta contable resuelta para una línea del gasto."
                 );
             line.RefreshAccountSnapshot(snapshot.AccountId, snapshot.Code, snapshot.Name);
@@ -344,7 +345,7 @@ public sealed class ExpenseDocument : AuditableEntity, ITenantScopedEntity, ICom
     public void Cancel(string reason, Guid cancelledBy)
     {
         if (Status != ExpenseStatus.Confirmed)
-            throw new InvalidOperationException("Solo se pueden anular gastos confirmados.");
+            throw new DomainRuleViolationException("Solo se pueden anular gastos confirmados.");
         if (string.IsNullOrWhiteSpace(reason))
             throw new ArgumentException("El motivo de anulación es obligatorio.", nameof(reason));
 
@@ -369,6 +370,6 @@ public sealed class ExpenseDocument : AuditableEntity, ITenantScopedEntity, ICom
     private void EnsureDraft()
     {
         if (Status != ExpenseStatus.Draft)
-            throw new InvalidOperationException("Solo se pueden editar gastos en estado borrador.");
+            throw new DomainRuleViolationException("Solo se pueden editar gastos en estado borrador.");
     }
 }

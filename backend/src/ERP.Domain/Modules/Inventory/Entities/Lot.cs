@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Inventory.Enums;
 
 namespace ERP.Domain.Modules.Inventory.Entities;
@@ -75,9 +76,9 @@ public sealed class Lot : AuditableEntity, ITenantScopedEntity, ICompanyOperatio
     public void ConsumeQty(decimal qty)
     {
         if (Status == LotStatus.Depleted)
-            throw new InvalidOperationException($"El lote '{LotNumber}' está agotado.");
+            throw new DomainRuleViolationException($"El lote '{LotNumber}' está agotado.");
         if (qty > CurrentQty)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Stock insuficiente en lote '{LotNumber}'. Disponible: {CurrentQty}, requerido: {qty}."
             );
 
@@ -90,7 +91,7 @@ public sealed class Lot : AuditableEntity, ITenantScopedEntity, ICompanyOperatio
     public void RegisterEntry(decimal qty)
     {
         if (Status == LotStatus.Depleted)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"No se puede agregar stock a un lote agotado '{LotNumber}'."
             );
 
@@ -100,7 +101,7 @@ public sealed class Lot : AuditableEntity, ITenantScopedEntity, ICompanyOperatio
     public void ChangeStatus(LotStatus newStatus, Guid updatedBy)
     {
         if (newStatus == LotStatus.Active && Status == LotStatus.Depleted)
-            throw new InvalidOperationException("No se puede reactivar un lote agotado.");
+            throw new DomainRuleViolationException("No se puede reactivar un lote agotado.");
 
         Status = newStatus;
         SetUpdated(updatedBy);

@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 
 namespace ERP.Domain.Modules.Expenses.Entities;
 
@@ -141,7 +142,7 @@ public sealed class ExpenseLine : IMustHaveTenant
                 MidpointRounding.AwayFromZero
             );
             if (DiscountAmount > LineSubtotal)
-                throw new InvalidOperationException(
+                throw new DomainRuleViolationException(
                     "El descuento no puede superar el subtotal de la línea."
                 );
             DiscountPct =
@@ -166,7 +167,7 @@ public sealed class ExpenseLine : IMustHaveTenant
         }
 
         if (TaxableBase < 0)
-            throw new InvalidOperationException("La base imponible de la línea no puede ser negativa.");
+            throw new DomainRuleViolationException("La base imponible de la línea no puede ser negativa.");
 
         VatAmount =
             VatRate > 0
@@ -178,7 +179,7 @@ public sealed class ExpenseLine : IMustHaveTenant
                 : 0m;
 
         if (LineSubtotal < 0 || DiscountAmount < 0 || VatAmount < 0 || TaxInclusiveTotal < 0)
-            throw new InvalidOperationException("Los totales de la línea de gasto no pueden ser negativos.");
+            throw new DomainRuleViolationException("Los totales de la línea de gasto no pueden ser negativos.");
     }
 
     private static string? Normalize(string? value) => value?.Trim() is { Length: > 0 } text ? text : null;

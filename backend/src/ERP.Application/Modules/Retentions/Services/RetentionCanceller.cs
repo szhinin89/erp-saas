@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
@@ -133,9 +134,9 @@ public sealed class RetentionCanceller : IRetentionCanceller
         {
             return Result<RetentionDocument>.ValidationFailure(ex.Message);
         }
-        catch (InvalidOperationException ex)
+        catch (DomainRuleViolationException ex)
         {
-            return Result<RetentionDocument>.ValidationFailure(ex.Message);
+            return Result<RetentionDocument>.FromDomainRule(ex);
         }
 
         if (payable is not null && payable.RetainedAmount > 0)
@@ -144,9 +145,9 @@ public sealed class RetentionCanceller : IRetentionCanceller
             {
                 payable.ReverseRetention(cancelledBy);
             }
-            catch (InvalidOperationException ex)
+            catch (DomainRuleViolationException ex)
             {
-                return Result<RetentionDocument>.ValidationFailure(ex.Message);
+                return Result<RetentionDocument>.FromDomainRule(ex);
             }
         }
 

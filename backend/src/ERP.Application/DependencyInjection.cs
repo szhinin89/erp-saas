@@ -67,6 +67,9 @@ public static class DependencyInjection
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CompanyScopeBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(BranchScopeBehavior<,>));
+        // ZH-DOMAIN-RULE-ERROR-SSOT-01: antes de Caching (más externo) para que un fallo por regla
+        // de negocio nunca se guarde en caché. Solo se aplica a respuestas IDomainRuleResult (Result<T>).
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(DomainRuleBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CachingBehavior<,>));
 
         // Carga Inicial (INITIAL-LOAD-ARCH-01): un IImportProcessor por ImportType, resuelto

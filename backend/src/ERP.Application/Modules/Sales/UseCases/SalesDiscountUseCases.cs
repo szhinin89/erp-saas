@@ -64,14 +64,7 @@ public sealed class ApplySalesDiscountHandler
             );
         }
 
-        try
-        {
-            inv.ApplyGlobalDiscount(cmd.DiscountPct, _u.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<SalesInvoiceDto>.ValidationFailure(ex.Message);
-        }
+        inv.ApplyGlobalDiscount(cmd.DiscountPct, _u.UserId);
 
         await _repo.SaveChangesAsync(ct);
         return Result<SalesInvoiceDto>.Success(SalesMapper.ToDto(inv));

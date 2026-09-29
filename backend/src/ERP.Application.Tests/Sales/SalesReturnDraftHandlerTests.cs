@@ -7,6 +7,7 @@ using ERP.Domain.Modules.Sales.Interfaces;
 using ERP.Domain.Modules.Sales.ValueObjects;
 using FluentAssertions;
 using Moq;
+using ERP.Application.Tests.Common;
 
 namespace ERP.Application.Tests.Sales;
 
@@ -463,7 +464,7 @@ public sealed class SalesReturnDraftHandlerTests
             PrecisionPolicyTestDouble.Mock()
         );
 
-        var result = await handler.Handle(
+        var result = await handler.HandleWithDomainRules(
             new UpdateSalesReturnDraftCommand(
                 salesReturn.Id,
                 new List<SalesReturnLineInput> { new(lines[0].Id, 1m) }
@@ -472,7 +473,7 @@ public sealed class SalesReturnDraftHandlerTests
         );
 
         result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        result.Code.Should().Be(ApiResponseCodes.Common.DomainRuleViolation);
     }
 
     [Fact]
@@ -494,7 +495,7 @@ public sealed class SalesReturnDraftHandlerTests
             PrecisionPolicyTestDouble.Mock()
         );
 
-        var result = await handler.Handle(
+        var result = await handler.HandleWithDomainRules(
             new UpdateSalesReturnDraftCommand(
                 salesReturn.Id,
                 new List<SalesReturnLineInput> { new(lines[0].Id, 1m) }
@@ -503,7 +504,7 @@ public sealed class SalesReturnDraftHandlerTests
         );
 
         result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        result.Code.Should().Be(ApiResponseCodes.Common.DomainRuleViolation);
     }
 
     // ══════════════════════════════ CancelSalesReturnDraft ══════════════════════════════
@@ -575,13 +576,13 @@ public sealed class SalesReturnDraftHandlerTests
             User()
         );
 
-        var result = await handler.Handle(
+        var result = await handler.HandleWithDomainRules(
             new CancelSalesReturnDraftCommand(salesReturn.Id),
             CancellationToken.None
         );
 
         result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        result.Code.Should().Be(ApiResponseCodes.Common.DomainRuleViolation);
     }
 
     [Fact]
@@ -601,12 +602,12 @@ public sealed class SalesReturnDraftHandlerTests
             User()
         );
 
-        var result = await handler.Handle(
+        var result = await handler.HandleWithDomainRules(
             new CancelSalesReturnDraftCommand(salesReturn.Id),
             CancellationToken.None
         );
 
         result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        result.Code.Should().Be(ApiResponseCodes.Common.DomainRuleViolation);
     }
 }

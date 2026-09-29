@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Events;
 
@@ -422,12 +423,12 @@ public sealed class PurchaseCreditNote : AuditableEntity, ITenantScopedEntity, I
         // de aplicación (inventario/CxP/SupplierCredit) es exclusivamente PurchaseReturn.Authorize(),
         // vinculado vía LinkPurchaseReturn(). Autorizar aquí duplicaría la aplicación contra la CxP.
         if (ApplicationType == PurchaseCreditNoteApplicationType.Return)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Esta nota de crédito es de tipo Devolución: se aplica mediante la devolución de compra vinculada, no se autoriza aquí."
             );
         EnsureDraft();
         if (_lines.Count == 0 && _taxSummaries.Count == 0)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No puedes autorizar esta nota de crédito porque no tiene líneas ni resumen fiscal agregado."
             );
         if (balanceDueBeforeApplication < 0)
@@ -446,7 +447,7 @@ public sealed class PurchaseCreditNote : AuditableEntity, ITenantScopedEntity, I
                 nameof(authorizeRequestPayloadHash)
             );
         if (TotalAmount > balanceDueBeforeApplication)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No puedes autorizar esta nota de crédito porque el total excede el saldo pendiente de la factura afectada."
             );
 
@@ -487,7 +488,7 @@ public sealed class PurchaseCreditNote : AuditableEntity, ITenantScopedEntity, I
     )
     {
         if (Status == PurchaseCreditNoteStatus.Cancelled)
-            throw new InvalidOperationException("Esta nota de crédito ya está cancelada.");
+            throw new DomainRuleViolationException("Esta nota de crédito ya está cancelada.");
         if (string.IsNullOrWhiteSpace(reason))
             throw new ArgumentException(
                 "El motivo de la cancelación es obligatorio.",
@@ -542,7 +543,7 @@ public sealed class PurchaseCreditNote : AuditableEntity, ITenantScopedEntity, I
     public void LinkPurchaseReturn(Guid purchaseReturnId, Guid updatedBy)
     {
         if (ApplicationType != PurchaseCreditNoteApplicationType.Return)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Solo una nota de crédito de tipo Devolución se puede vincular a una devolución de compra."
             );
         EnsureDraft();
@@ -552,7 +553,7 @@ public sealed class PurchaseCreditNote : AuditableEntity, ITenantScopedEntity, I
                 nameof(purchaseReturnId)
             );
         if (LinkedPurchaseReturnId is not null)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Esta nota de crédito ya está vinculada a una devolución de compra."
             );
 
@@ -566,7 +567,7 @@ public sealed class PurchaseCreditNote : AuditableEntity, ITenantScopedEntity, I
         if (ApplicationType != PurchaseCreditNoteApplicationType.Return
             || LinkedPurchaseReturnId != purchaseReturn.Id
             || purchaseReturn.Status != PurchaseReturnStatus.Cancelled)
-            throw new InvalidOperationException("La devolución cancelada no corresponde a esta NC.");
+            throw new DomainRuleViolationException("La devolución cancelada no corresponde a esta NC.");
         Status = PurchaseCreditNoteStatus.Cancelled;
         CancelledAtUtc = purchaseReturn.CancelledAtUtc;
         CancelledByUserId = userId;
@@ -581,7 +582,7 @@ public sealed class PurchaseCreditNote : AuditableEntity, ITenantScopedEntity, I
             || LinkedPurchaseReturnId != purchaseReturn.Id
             || purchaseReturn.Status != PurchaseReturnStatus.Authorized
             || purchaseReturn.AuthorizedGrandTotal != TotalAmount)
-            throw new InvalidOperationException("La devolución autorizada no coincide con la nota de crédito.");
+            throw new DomainRuleViolationException("La devolución autorizada no coincide con la nota de crédito.");
         Status = PurchaseCreditNoteStatus.Authorized;
         AppliedToPayableAmount = purchaseReturn.AppliedToPayableAmount;
         AuthorizedAtUtc = purchaseReturn.AuthorizedAtUtc;
@@ -592,7 +593,7 @@ public sealed class PurchaseCreditNote : AuditableEntity, ITenantScopedEntity, I
     private void EnsureDraft()
     {
         if (Status != PurchaseCreditNoteStatus.Draft)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Esta nota de crédito ya no está en borrador (fue autorizada o cancelada), por lo que no se puede modificar."
             );
     }

@@ -27,14 +27,7 @@ public sealed class RevokeBusinessPartnerRoleHandler
         if (role is null || role.BusinessPartnerId != cmd.BusinessPartnerId)
             return Result<bool>.NotFound("Rol no encontrado.");
 
-        try
-        {
-            role.Revoke(_ctx.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<bool>.ValidationFailure(ex.Message);
-        }
+        role.Revoke(_ctx.UserId);
 
         await _roleRepo.SaveChangesAsync(cancellationToken);
         return Result<bool>.Success(true);

@@ -4,6 +4,7 @@ using ERP.Application.Modules.Finance;
 using ERP.Application.Modules.Payables.Exceptions;
 using ERP.Application.Modules.Payables.UseCases;
 using ERP.Domain.Configuration.Interfaces;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Caja.Interfaces;
@@ -394,7 +395,11 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
                 confirmedBy: executorId
             );
         }
-        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+        catch (DomainRuleViolationException ex)
+        {
+            return Result<SupplierPaymentRegistration>.FromDomainRule(ex);
+        }
+        catch (ArgumentException ex)
         {
             return Result<SupplierPaymentRegistration>.ValidationFailure(ex.Message);
         }
@@ -410,9 +415,9 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
                     executorId
                 );
             }
-            catch (InvalidOperationException ex)
+            catch (DomainRuleViolationException ex)
             {
-                return Result<SupplierPaymentRegistration>.ValidationFailure(ex.Message);
+                return Result<SupplierPaymentRegistration>.FromDomainRule(ex);
             }
         }
 
@@ -435,9 +440,9 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
                 );
                 payment.LinkCashMovement(methodLine.Id, session.Id, movement.Id);
             }
-            catch (InvalidOperationException ex)
+            catch (DomainRuleViolationException ex)
             {
-                return Result<SupplierPaymentRegistration>.ValidationFailure(ex.Message);
+                return Result<SupplierPaymentRegistration>.FromDomainRule(ex);
             }
         }
 

@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Events;
 using ERP.Domain.Modules.Sales.Policies;
@@ -140,7 +141,7 @@ public sealed class SalesReturn : AuditableEntity, ITenantScopedEntity, ICompany
         EnsureDraft();
         var line = _lines.FirstOrDefault(l => l.Id == lineId);
         if (line is null)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "La línea indicada no pertenece a esta devolución."
             );
 
@@ -163,7 +164,7 @@ public sealed class SalesReturn : AuditableEntity, ITenantScopedEntity, ICompany
         EnsureDraft();
         var allocation = _refundAllocations.FirstOrDefault(a => a.Id == allocationId);
         if (allocation is null)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "La asignación de reembolso indicada no pertenece a esta devolución."
             );
 
@@ -181,11 +182,11 @@ public sealed class SalesReturn : AuditableEntity, ITenantScopedEntity, ICompany
     {
         EnsureDraft();
         if (_lines.Count == 0)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No puedes autorizar esta devolución porque no tiene líneas agregadas. Agrega al menos una línea antes de autorizar."
             );
         if (_refundAllocations.Count == 0)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No puedes autorizar esta devolución porque no has indicado cómo se reembolsará. Agrega al menos una asignación de reembolso (efectivo o crédito) antes de autorizar."
             );
 
@@ -199,7 +200,7 @@ public sealed class SalesReturn : AuditableEntity, ITenantScopedEntity, ICompany
         AuthorizedGrandTotal = _lines.Sum(l => l.TaxInclusiveTotal);
 
         if (AuthorizedGrandTotal <= 0)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No puedes autorizar esta devolución porque su total es $0 o negativo. Revisa las cantidades de las líneas antes de autorizar."
             );
 
@@ -208,7 +209,7 @@ public sealed class SalesReturn : AuditableEntity, ITenantScopedEntity, ICompany
         var allocationSum = _refundAllocations.Sum(a => a.Amount);
         var effectiveTolerance = settlementTolerance ?? SalesSettlementPolicy.Tolerance;
         if (Math.Abs(allocationSum - AuthorizedGrandTotal.Value) > effectiveTolerance)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"El total de las asignaciones de reembolso (${allocationSum:F2}) no coincide con el total devuelto (${AuthorizedGrandTotal.Value:F2}). "
                     + "Ajusta las asignaciones de reembolso hasta que coincidan con el total."
             );
@@ -239,7 +240,7 @@ public sealed class SalesReturn : AuditableEntity, ITenantScopedEntity, ICompany
     public void SetCreditNoteDocumentNumber(string documentNumber)
     {
         if (!string.IsNullOrWhiteSpace(CreditNoteDocumentNumber))
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "El número de Nota de Crédito ya fue asignado y no puede modificarse."
             );
         if (string.IsNullOrWhiteSpace(documentNumber))
@@ -283,7 +284,7 @@ public sealed class SalesReturn : AuditableEntity, ITenantScopedEntity, ICompany
     private void EnsureDraft()
     {
         if (Status != SalesReturnStatus.Draft)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Esta devolución ya no está en borrador (fue autorizada o cancelada), por lo que no se puede modificar."
             );
     }

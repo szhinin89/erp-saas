@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Events;
 using ERP.Domain.MasterData.ValueObjects;
@@ -113,7 +114,7 @@ public sealed class BusinessPartnerContact : AuditableEntity, ITenantScopedEntit
     )
     {
         if (!IsActive)
-            throw new InvalidOperationException("No se puede actualizar un contacto inactivo.");
+            throw new DomainRuleViolationException("No se puede actualizar un contacto inactivo.");
 
         LocationId = locationId;
         FirstName = NormalizeName(firstName, FirstNameMaxLen, nameof(firstName));
@@ -141,7 +142,7 @@ public sealed class BusinessPartnerContact : AuditableEntity, ITenantScopedEntit
     public void SetPrimary(Guid updatedBy)
     {
         if (!IsActive)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No se puede marcar como principal un contacto inactivo."
             );
 
@@ -167,7 +168,7 @@ public sealed class BusinessPartnerContact : AuditableEntity, ITenantScopedEntit
     public void Deactivate(Guid updatedBy)
     {
         if (!IsActive)
-            throw new InvalidOperationException("El contacto ya está inactivo.");
+            throw new DomainRuleViolationException("El contacto ya está inactivo.");
         IsActive = false;
         SetUpdated(updatedBy);
         RaiseDomainEvent(
@@ -184,7 +185,7 @@ public sealed class BusinessPartnerContact : AuditableEntity, ITenantScopedEntit
     public void Activate(Guid updatedBy)
     {
         if (IsActive)
-            throw new InvalidOperationException("El contacto ya está activo.");
+            throw new DomainRuleViolationException("El contacto ya está activo.");
         IsActive = true;
         SetUpdated(updatedBy);
     }

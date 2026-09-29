@@ -25,6 +25,8 @@ using ERP.Domain.Modules.Retentions.Enums;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
+using ERP.Domain.Exceptions;
+using ERP.Application.Tests.Common;
 
 namespace ERP.Application.Tests.Expenses;
 
@@ -117,9 +119,9 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
                     It.IsAny<CancellationToken>()
                 )
             )
-            .ThrowsAsync(new InvalidOperationException("Ya existe una cuota con el número 1."));
+            .ThrowsAsync(new DomainRuleViolationException("Ya existe una cuota con el número 1."));
 
-        var result = await fx.Handler.Handle(new ConfirmExpenseDocumentCommand(document.Id), CancellationToken.None);
+        var result = await fx.Handler.HandleWithDomainRules(new ConfirmExpenseDocumentCommand(document.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -738,9 +740,9 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
             .ReturnsAsync(Result<RetentionDocument>.Success(issuedRetention));
         fx.Payables
             .Setup(p => p.StageFromOriginAsync(It.IsAny<CreateAccountsPayableFromOriginRequest>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new InvalidOperationException("Ya existe una cuota con el número 1."));
+            .ThrowsAsync(new DomainRuleViolationException("Ya existe una cuota con el número 1."));
 
-        var result = await fx.Handler.Handle(
+        var result = await fx.Handler.HandleWithDomainRules(
             new ConfirmExpenseDocumentCommand(document.Id, AppliesRetentionIntent()),
             CancellationToken.None
         );

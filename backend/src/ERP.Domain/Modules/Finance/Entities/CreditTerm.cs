@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Finance.Enums;
 
 namespace ERP.Domain.Modules.Finance.Entities;
@@ -84,7 +85,7 @@ public sealed class CreditTerm : MasterEntity, ITenantScopedEntity, ICompanyOper
         if (list is null || list.Count == 0)
         {
             if (Mode == CreditTermMode.FinancialStrict)
-                throw new InvalidOperationException(
+                throw new DomainRuleViolationException(
                     "El modo FinancialStrict requiere al menos una cuota."
                 );
 
@@ -97,7 +98,7 @@ public sealed class CreditTerm : MasterEntity, ITenantScopedEntity, ICompanyOper
 
         var sum = _installments.Sum(i => i.Percentage);
         if (sum != 100.00m)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"La suma de porcentajes de cuotas debe ser exactamente 100%. Actual: {sum}%."
             );
     }

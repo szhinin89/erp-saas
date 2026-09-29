@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
@@ -223,23 +224,14 @@ public sealed class ApplySupplierCreditHandler
                 cmd.Amount
             );
 
-            try
-            {
-                credit.ApplyToPayable(
-                    cmd.TargetPurchasePayableId,
-                    cmd.Amount,
-                    uid,
-                    cmd.ClientRequestId,
-                    hash
-                );
-                payable.ApplySupplierCredit(cmd.Amount, uid);
-            }
-            catch (InvalidOperationException ex)
-            {
-                await _uow.RollbackAsync(ct);
-                // SC-003 (sobreaplicación defensiva) u otro guard de dominio.
-                return Result<SupplierCreditDto>.ValidationFailure(ex.Message);
-            }
+            credit.ApplyToPayable(
+                cmd.TargetPurchasePayableId,
+                cmd.Amount,
+                uid,
+                cmd.ClientRequestId,
+                hash
+            );
+            payable.ApplySupplierCredit(cmd.Amount, uid);
 
             try
             {
@@ -274,11 +266,6 @@ public sealed class ApplySupplierCreditHandler
 
             await _uow.CommitAsync(ct);
             return Result<SupplierCreditDto>.Success(Map.ToDto(credit));
-        }
-        catch (InvalidOperationException ex)
-        {
-            await _uow.RollbackAsync(ct);
-            return Result<SupplierCreditDto>.ValidationFailure(ex.Message);
         }
         catch
         {

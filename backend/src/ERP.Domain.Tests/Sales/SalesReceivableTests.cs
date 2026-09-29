@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Sales.Entities;
 using FluentAssertions;
 
@@ -45,7 +46,7 @@ public sealed class SalesReceivableTests
 
         var act = () => receivable.RegisterCollection(60m, UserId);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*excede el saldo pendiente*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*excede el saldo pendiente*");
         receivable.PaidAmount.Should().Be(60m);
     }
 
@@ -69,7 +70,7 @@ public sealed class SalesReceivableTests
 
         var act = () => receivable.RegisterCollection(10m, UserId);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*cancelada*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*cancelada*");
     }
 
     [Fact]
@@ -92,7 +93,7 @@ public sealed class SalesReceivableTests
 
         var act = () => receivable.ReverseCollection(31m, UserId);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*excede el monto cobrado*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*excede el monto cobrado*");
         receivable.PaidAmount.Should().Be(30m);
     }
 
@@ -158,7 +159,7 @@ public sealed class SalesReceivableTests
 
         var act = () => receivable.ApplyReturnCredit(61m, UserId);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*excede el saldo pendiente*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*excede el saldo pendiente*");
         receivable.OriginalAmount.Should().Be(100m);
         receivable.PaidAmount.Should().Be(40m);
     }
@@ -183,7 +184,7 @@ public sealed class SalesReceivableTests
 
         var act = () => receivable.ApplyReturnCredit(10m, UserId);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*cancelada*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*cancelada*");
     }
 
     // ── RebuildInstallments (P0-01) ────────────────────────────────────

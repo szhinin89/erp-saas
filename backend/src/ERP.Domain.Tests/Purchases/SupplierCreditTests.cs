@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Events;
@@ -100,7 +101,7 @@ public sealed class SupplierCreditTests
         var act = () =>
             credit.ApplyToPayable(TargetPayableId, 200m, UserId, Guid.NewGuid(), "hash-a2");
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
         credit.AvailableAmount.Should().Be(150m);
     }
 
@@ -141,7 +142,7 @@ public sealed class SupplierCreditTests
 
         var act = () => credit.ReverseApplication(applied.Id, UserId, Guid.NewGuid(), "hash-a7");
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -152,7 +153,7 @@ public sealed class SupplierCreditTests
         var act = () =>
             credit.ReverseApplication(Guid.NewGuid(), UserId, Guid.NewGuid(), "hash-a8");
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     // ── RegisterRefund / ReverseRefund ────────────────────────────────
@@ -178,7 +179,7 @@ public sealed class SupplierCreditTests
 
         var act = () => credit.RegisterRefund(151m, UserId, Guid.NewGuid(), "hash-r2");
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -216,7 +217,7 @@ public sealed class SupplierCreditTests
 
         var act = () => credit.RegisterSourceReturnCancellation(UserId, Guid.NewGuid(), "hash-s3");
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     // ── Fórmula de §13.5 con los 5 tipos de movimiento combinados ─────

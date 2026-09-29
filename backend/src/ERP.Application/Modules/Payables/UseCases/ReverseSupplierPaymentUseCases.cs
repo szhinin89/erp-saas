@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Branches;
 using ERP.Application.Modules.Caja;
 using ERP.Application.Modules.Payables.Exceptions;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Caja.Interfaces;
@@ -168,7 +169,7 @@ public sealed class ReverseSupplierPaymentCommandHandler
                     cmd.BankReversalReason
                 );
             }
-            catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
+            catch (ArgumentException ex)
             {
                 await _uow.RollbackAsync(ct);
                 return Result<SupplierPaymentDto>.ValidationFailure(ex.Message);
@@ -257,42 +258,26 @@ public sealed class ReverseSupplierPaymentCommandHandler
             foreach (var methodLine in payment.MethodLines.Where(l => l.CashRegisterId is not null))
             {
                 var session = originalSessions[methodLine.CashSessionId!.Value];
-                try
-                {
-                    session.RecordMovement(
-                        CashMovementType.SupplierPaymentReversal,
-                        methodLine.Amount,
-                        $"Reversa de pago a proveedor {payment.SystemNumber}",
-                        userId,
-                        CashReferenceType.SupplierPayment,
-                        payment.Id,
-                        payment.SystemNumber
-                    );
-                }
-                catch (InvalidOperationException ex)
-                {
-                    await _uow.RollbackAsync(ct);
-                    return Result<SupplierPaymentDto>.ValidationFailure(ex.Message);
-                }
+                session.RecordMovement(
+                    CashMovementType.SupplierPaymentReversal,
+                    methodLine.Amount,
+                    $"Reversa de pago a proveedor {payment.SystemNumber}",
+                    userId,
+                    CashReferenceType.SupplierPayment,
+                    payment.Id,
+                    payment.SystemNumber
+                );
             }
 
             if (advance is not null)
             {
-                try
-                {
-                    // ClientRequestId = Id del pago: la propia reversa (Confirmed → Reversed, una sola
-                    // vez) garantiza unicidad; huella determinista del movimiento de sistema.
-                    advance.RegisterSourcePaymentReversal(
-                        userId,
-                        payment.Id,
-                        ComputeSourcePaymentReversalHash(advance.Id, payment.Id)
-                    );
-                }
-                catch (InvalidOperationException ex)
-                {
-                    await _uow.RollbackAsync(ct);
-                    return Result<SupplierPaymentDto>.ValidationFailure(ex.Message);
-                }
+                // ClientRequestId = Id del pago: la propia reversa (Confirmed → Reversed, una sola
+                // vez) garantiza unicidad; huella determinista del movimiento de sistema.
+                advance.RegisterSourcePaymentReversal(
+                    userId,
+                    payment.Id,
+                    ComputeSourcePaymentReversalHash(advance.Id, payment.Id)
+                );
             }
 
             // Revierte, cuota por cuota, exactamente lo que esa línea aplicó — nunca por FIFO.
@@ -311,19 +296,11 @@ public sealed class ReverseSupplierPaymentCommandHandler
                     );
                 }
 
-                try
-                {
-                    payable.ReversePaymentToInstallment(
-                        appLine.AccountsPayableInstallmentId,
-                        appLine.AmountApplied,
-                        userId
-                    );
-                }
-                catch (InvalidOperationException ex)
-                {
-                    await _uow.RollbackAsync(ct);
-                    return Result<SupplierPaymentDto>.ValidationFailure(ex.Message);
-                }
+                payable.ReversePaymentToInstallment(
+                    appLine.AccountsPayableInstallmentId,
+                    appLine.AmountApplied,
+                    userId
+                );
             }
 
             try
@@ -353,11 +330,6 @@ public sealed class ReverseSupplierPaymentCommandHandler
             return Result<SupplierPaymentDto>.Success(
                 SupplierPaymentDtoMapper.ToDto(payment, supplierCreditId: advance?.Id)
             );
-        }
-        catch (InvalidOperationException ex)
-        {
-            await _uow.RollbackAsync(ct);
-            return Result<SupplierPaymentDto>.ValidationFailure(ex.Message);
         }
         catch
         {

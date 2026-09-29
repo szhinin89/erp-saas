@@ -3,6 +3,7 @@ using ERP.Application.Common.Interfaces;
 using ERP.Application.Common.Interfaces.SRI;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Domain.Configuration.Interfaces;
+using ERP.Domain.Exceptions;
 using Microsoft.Extensions.Logging;
 using System.Security.Cryptography;
 using System.Text;
@@ -114,7 +115,7 @@ public sealed partial class ElectronicDocumentSigningService : IElectronicDocume
                 $"Error criptográfico al firmar el documento electrónico: {ex.Message}"
             );
         }
-        catch (InvalidOperationException ex)
+        catch (DomainRuleViolationException ex)
         {
             // XadesBesSigner lanza esta excepción cuando el certificado no tiene clave privada
             // RSA utilizable — un problema del certificado, no de los datos del documento.

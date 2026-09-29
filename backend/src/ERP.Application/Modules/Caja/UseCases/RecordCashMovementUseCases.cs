@@ -152,42 +152,35 @@ public sealed class RecordCashMovementHandler
                 "El motivo seleccionado no corresponde a este tipo de movimiento."
             );
 
-        try
-        {
-            var movement = session.RecordMovement(
-                movementType,
-                cmd.Amount,
-                cmd.Description,
-                _u.UserId,
-                referenceType,
-                cmd.ReferenceId,
-                cmd.ReferenceNumber,
-                reason.Id,
-                reason.Name
-            );
+        var movement = session.RecordMovement(
+            movementType,
+            cmd.Amount,
+            cmd.Description,
+            _u.UserId,
+            referenceType,
+            cmd.ReferenceId,
+            cmd.ReferenceNumber,
+            reason.Id,
+            reason.Name
+        );
 
-            await _repo.SaveChangesAsync(ct);
+        await _repo.SaveChangesAsync(ct);
 
-            return Result<CashMovementDto>.Success(
-                new CashMovementDto(
-                    movement.Id,
-                    movement.MovementType.ToString(),
-                    movement.Amount,
-                    movement.Description,
-                    movement.CreatedAt,
-                    movement.CreatedBy,
-                    _u.FullName,
-                    movement.ReferenceType.ToString(),
-                    movement.ReferenceId,
-                    movement.ReferenceNumber,
-                    movement.ReasonId,
-                    movement.ReasonName
-                )
-            );
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<CashMovementDto>.ValidationFailure(ex.Message);
-        }
+        return Result<CashMovementDto>.Success(
+            new CashMovementDto(
+                movement.Id,
+                movement.MovementType.ToString(),
+                movement.Amount,
+                movement.Description,
+                movement.CreatedAt,
+                movement.CreatedBy,
+                _u.FullName,
+                movement.ReferenceType.ToString(),
+                movement.ReferenceId,
+                movement.ReferenceNumber,
+                movement.ReasonId,
+                movement.ReasonName
+            )
+        );
     }
 }

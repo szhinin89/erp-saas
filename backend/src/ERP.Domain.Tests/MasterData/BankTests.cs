@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.MasterData.Entities;
 using FluentAssertions;
 
@@ -149,6 +150,6 @@ public sealed class BankTests
 
         var act = () => bank.Disable(UserId);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 }

@@ -45,6 +45,7 @@ using Npgsql;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.PostgreSql;
+using ERP.Infrastructure.Tests.Common;
 
 namespace ERP.Infrastructure.Tests.Payables;
 
@@ -968,7 +969,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
         await SeedConfirmedAndReversedRulesAndPeriodAsync(db, paymentDate);
 
         var registerResult = await BuildHandler(db)
-            .Handle(
+            .HandleWithDomainRules(
                 new RegisterSupplierPaymentCommand(
                     _supplierId,
                     paymentDate,
@@ -984,12 +985,12 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
 
         var (dbFirstReverse, _) = BuildWiredContext();
         var firstReverse = await BuildReverseHandler(dbFirstReverse)
-            .Handle(new ReverseSupplierPaymentCommand(paymentId, "Motivo 1", CashNotDeliveredConfirmed: true, BankReversalReason: SupplierPaymentBankReversalReason.NotExecuted), CancellationToken.None);
+            .HandleWithDomainRules(new ReverseSupplierPaymentCommand(paymentId, "Motivo 1", CashNotDeliveredConfirmed: true, BankReversalReason: SupplierPaymentBankReversalReason.NotExecuted), CancellationToken.None);
         firstReverse.IsSuccess.Should().BeTrue(because: firstReverse.Error);
 
         var (dbSecondReverse, _) = BuildWiredContext();
         var secondReverse = await BuildReverseHandler(dbSecondReverse)
-            .Handle(new ReverseSupplierPaymentCommand(paymentId, "Motivo 2", CashNotDeliveredConfirmed: true, BankReversalReason: SupplierPaymentBankReversalReason.NotExecuted), CancellationToken.None);
+            .HandleWithDomainRules(new ReverseSupplierPaymentCommand(paymentId, "Motivo 2", CashNotDeliveredConfirmed: true, BankReversalReason: SupplierPaymentBankReversalReason.NotExecuted), CancellationToken.None);
 
         secondReverse.IsSuccess.Should().BeFalse("un pago ya Reversed no puede reversarse otra vez");
 

@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Infrastructure.Services.Sri;
 using FluentAssertions;
 using System.Globalization;
@@ -81,7 +82,7 @@ public sealed class XadesBesSignerTests
             var act = () =>
                 XadesBesSigner.Sign(SampleXml, p12Path, TestP12CertificateFactory.Password);
 
-            act.Should().Throw<InvalidOperationException>().WithMessage("*no está vigente*");
+            act.Should().Throw<DomainRuleViolationException>().WithMessage("*no está vigente*");
         }
         finally
         {
@@ -98,7 +99,7 @@ public sealed class XadesBesSignerTests
             var act = () =>
                 XadesBesSigner.Sign(SampleXml, p12Path, TestP12CertificateFactory.Password);
 
-            act.Should().Throw<InvalidOperationException>().WithMessage("*no está vigente*");
+            act.Should().Throw<DomainRuleViolationException>().WithMessage("*no está vigente*");
         }
         finally
         {

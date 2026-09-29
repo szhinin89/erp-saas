@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.ElectronicDocuments.ValueObjects;
@@ -44,7 +45,7 @@ public sealed class ElectronicDocumentEntityTests
         var act = () =>
             document.MarkXmlGenerated("path/draft2.xml", "1.1.0", "1.1.0", Guid.NewGuid());
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -59,7 +60,7 @@ public sealed class ElectronicDocumentEntityTests
                 Guid.NewGuid()
             );
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -122,7 +123,7 @@ public sealed class ElectronicDocumentEntityTests
 
         var act = () => document.MarkSent(Guid.NewGuid());
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -143,7 +144,7 @@ public sealed class ElectronicDocumentEntityTests
 
         var act = () => document.MarkReceived(Guid.NewGuid());
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -192,7 +193,7 @@ public sealed class ElectronicDocumentEntityTests
                 Guid.NewGuid()
             );
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -224,7 +225,7 @@ public sealed class ElectronicDocumentEntityTests
 
         var act = () => document.MarkRejected("motivo", Guid.NewGuid());
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -269,7 +270,7 @@ public sealed class ElectronicDocumentEntityTests
 
         var act = () => document.MarkDeadLetter("motivo", Guid.NewGuid());
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -291,7 +292,7 @@ public sealed class ElectronicDocumentEntityTests
 
         var act = () => document.MarkRetryAttempted(Guid.NewGuid());
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -315,7 +316,7 @@ public sealed class ElectronicDocumentEntityTests
 
         var act = () => document.Reactivate(Guid.NewGuid());
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -343,6 +344,6 @@ public sealed class ElectronicDocumentEntityTests
 
         var act = () => document.MarkCancelled("motivo", Guid.NewGuid());
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 }

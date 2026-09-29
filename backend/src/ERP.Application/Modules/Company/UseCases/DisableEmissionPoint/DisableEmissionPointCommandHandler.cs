@@ -38,14 +38,8 @@ public sealed class DisableEmissionPointCommandHandler
         );
         if (entity is null)
             return Result<bool>.Failure("Punto de emisión no encontrado.");
-        try
-        {
-            entity.Disable(_user.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<bool>.Failure(ex.Message);
-        }
+        entity.Disable(_user.UserId);
+
         await _repo.SaveChangesAsync(cancellationToken);
         return Result<bool>.Success(true);
     }

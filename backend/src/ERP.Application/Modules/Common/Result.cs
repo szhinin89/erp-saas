@@ -2,8 +2,20 @@
 // would break the fluent API used across all use cases.
 #pragma warning disable CA1000
 using System.Text.Json.Serialization;
+using ERP.Domain.Exceptions;
 
 namespace ERP.Application.Common;
+
+/// <summary>
+/// Respuesta de MediatR que sabe representar una regla de negocio rechazada
+/// (<see cref="DomainRuleViolationException"/>). Miembro estático abstracto: permite a
+/// <c>DomainRuleBehavior</c> construir la respuesta de forma type-safe, sin reflexión.
+/// </summary>
+public interface IDomainRuleResult<TSelf>
+    where TSelf : IDomainRuleResult<TSelf>
+{
+    static abstract TSelf FromDomainRule(DomainRuleViolationException violation);
+}
 
 /// <summary>
 /// Encapsula el resultado de un caso de uso, discriminando entre éxito y fallo
@@ -20,7 +32,7 @@ namespace ERP.Application.Common;
 /// Uso en controllers:
 ///   return result.ToOkOrBadRequest(...);
 /// </summary>
-public class Result<T>
+public class Result<T> : IDomainRuleResult<Result<T>>
 {
     public bool IsSuccess { get; }
     public T? Value { get; }
@@ -60,6 +72,16 @@ public class Result<T>
     /// <summary>Entidad no encontrada (HTTP 404).</summary>
     public static Result<T> NotFound(string error) =>
         new(false, default, error, ApiResponseCodes.Common.NotFound);
+
+    /// <summary>
+    /// Regla de negocio del dominio rechazada → DOMAIN_RULE_VIOLATION (HTTP 422) con el mensaje
+    /// público curado. ÚNICA traducción regla de dominio → Result (ZH-DOMAIN-RULE-ERROR-SSOT-01): la
+    /// usa <c>DomainRuleBehavior</c> para toda request MediatR y, solo donde el contrato exige
+    /// capturar localmente (servicios internos que devuelven Result a su llamador), el propio servicio.
+    /// Se construye desde la excepción semántica, nunca desde un texto.
+    /// </summary>
+    public static Result<T> FromDomainRule(DomainRuleViolationException violation) =>
+        new(false, default, violation.Message, ApiResponseCodes.Common.DomainRuleViolation);
 
     /// <summary>Acceso denegado (HTTP 403).</summary>
     public static Result<T> Forbidden(string error) =>

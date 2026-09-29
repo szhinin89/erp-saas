@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 
 namespace ERP.Domain.Modules.InitialLoad.Entities;
 
@@ -61,7 +62,7 @@ public sealed class ImportBatchRow : AuditableEntity, ICompanyOperationalEntity
     public void MarkImported(Guid createdBusinessPartnerId, Guid updatedBy)
     {
         if (HasBlockingIssue)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No se puede marcar como importada una fila con error bloqueante."
             );
         IsImported = true;

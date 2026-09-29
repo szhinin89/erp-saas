@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Caja;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Caja.Interfaces;
@@ -370,16 +371,7 @@ public sealed class RegisterSupplierCreditRefundHandler
 
             // 9. Crear SupplierCreditMovement(Refund) — SC-003 (sobreaplicación) guardado por dominio.
             Domain.Modules.Purchases.Entities.SupplierCreditMovement movement;
-            try
-            {
-                movement = credit.RegisterRefund(cmd.Amount, uid, cmd.ClientRequestId, hash);
-            }
-            catch (InvalidOperationException ex)
-            {
-                await _uow.RollbackAsync(ct);
-                // SC-003
-                return Result<SupplierCreditRefundTransactionDto>.ValidationFailure(ex.Message);
-            }
+            movement = credit.RegisterRefund(cmd.Amount, uid, cmd.ClientRequestId, hash);
 
             // CashMovement real (factory ya existente, esquema sin modificar, §24) — dentro de la
             // sesión ya bloqueada, antes de construir la transacción para poder congelar su Id.
@@ -450,11 +442,6 @@ public sealed class RegisterSupplierCreditRefundHandler
 
             await _uow.CommitAsync(ct);
             return Result<SupplierCreditRefundTransactionDto>.Success(RefundMap.ToDto(transaction));
-        }
-        catch (InvalidOperationException ex)
-        {
-            await _uow.RollbackAsync(ct);
-            return Result<SupplierCreditRefundTransactionDto>.ValidationFailure(ex.Message);
         }
         catch
         {

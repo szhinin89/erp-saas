@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Finance.Enums;
 using FluentAssertions;
@@ -236,7 +237,7 @@ public sealed class SupplierCreditRefundTransactionTests
                 "hash-reversal-005"
             );
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]

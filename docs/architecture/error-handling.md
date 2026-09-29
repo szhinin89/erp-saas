@@ -59,9 +59,30 @@ Frontend          → Axios (transporte puro)
 | RateLimit | 429 |
 | InternalError | 500 |
 
+### Reglas de negocio (ZH-DOMAIN-RULE-ERROR-SSOT-01, 2026-09-29)
+
+Un solo mecanismo representa y transporta una regla de negocio:
+
+```
+Domain/Application rechaza una regla ──► DomainRuleViolationException (mensaje público curado)
+        │ request MediatR con respuesta Result<T>
+        ├──► DomainRuleBehavior ──► Result<T>.FromDomainRule(ex) ──► DOMAIN_RULE_VIOLATION · 422
+        │ cualquier otro camino (respuesta no Result, fuera de MediatR)
+        └──► ExceptionMiddleware ─────────────────────────────────► DOMAIN_RULE_VIOLATION · 422
+Error interno / estado imposible / framework ──► InvalidOperationException (u otra técnica) ──► INTERNAL_ERROR · 500 sin texto
+```
+
+- `ERP.Domain.Exceptions.DomainRuleViolationException` (deriva de `Exception`, **no** de `InvalidOperationException`) es la única excepción de regla de negocio. Subclases: `SystemSeededRecordException`, `DocumentFlowPolicyViolationException` y las `*PostingFailedException` de Application (conservan su `Code` en los catch tipados de posting existentes).
+- `Result<T>.FromDomainRule(ex)` es la única traducción regla → `Result` (se construye desde la excepción, nunca desde un texto). `DomainRuleBehavior` la aplica a toda request cuya respuesta implementa `IDomainRuleResult<TSelf>` (miembro estático abstracto; el contenedor omite el behavior para otras respuestas). Se registra antes de `CachingBehavior`: un rechazo nunca se guarda en caché.
+- Handlers: no capturan reglas para devolver `ValidationFailure(ex.Message)`. Si necesitan deshacer una transacción: `catch (DomainRuleViolationException) { rollback; throw; }` (o el `catch { rollback; throw; }` genérico ya existente). Servicios internos que devuelven `Result` a su llamador usan `FromDomainRule`. Contratos explícitos distintos (409 Conflict de secuencia/código de barras, 404, `PERIOD_NOT_OPEN`, texto compuesto) capturan el tipo semántico y conservan su factory.
+- Importadores: fila/archivo inválido desde `DomainRuleViolationException` (mensaje público); un error técnico marca la fila/lote con un mensaje genérico y el detalle va al log.
+- Atomicidad (01B): no hay TransactionBehavior; la transacción vive en el handler, que hace `rollback` y relanza — DomainRuleBehavior convierte después del rollback (probado en `DomainRulePipelineIntegrationTests`). Si un efecto externo ocurre antes de la regla (p. ej. archivo guardado), el handler compensa antes de relanzar. Para contextualizar un mensaje se relanza `new DomainRuleViolationException("<contexto>: " + ex.Message, ex)`, nunca se traduce localmente a `ValidationFailure`.
+- `InvalidOperationException` en Domain solo para invariantes internas con mensaje `Invariante violada: …`. Frontera declarada: los parsers de XML externo (`Parsers/`, `XmlParsing/`) interpretan excepciones del framework al leer el documento como "XML mal formado".
+- Guard: `DomainRuleErrorSemanticsTests` (Architecture) — sin catch/filtro de `InvalidOperationException` que produzca `Result` en Application, sin `InvalidOperationException` de negocio en Domain, sin re-traducir una regla desde `ex.Message`. Sin grandfather.
+
 ### Clasificación técnica de excepciones (ZH-BACKEND-SECURITY-ERROR-FINAL-HARDENING-01, 2026-09-29)
 
-- `InvalidOperationException` / `ArgumentException`: el texto es mensaje de negocio solo si el `throw` se originó en ERP.Domain o ERP.Application (primer frame; se conserva a través de `await`). IOE de otro origen (framework, EF Core, Infrastructure, API) → 500 `INTERNAL_ERROR` sin texto; `ArgumentException` de otro origen → 400 sin texto.
+- `ArgumentException`: conserva 400; su texto solo viaja si el `throw` se originó en ERP.Domain o ERP.Application (primer frame; se conserva a través de `await`). `InvalidOperationException`: ver *Reglas de negocio* (siempre técnica → 500 sin texto).
 - Base de datos: `IDatabaseExceptionTranslator.ClassifyFailureCode` es el único punto de clasificación técnica — no disponible (Npgsql transitorio, SQLSTATE 08/53/57P01-03/57014) → 503; 23505 → 409 `UNIQUE_VIOLATION`; otra clase 23 → 409 `CONFLICT`; concurrencia/40001/40P01 → 409 `CONCURRENCY_CONFLICT`; resto → 500. Nunca devuelve texto: SQL, tabla, constraint y conexión quedan en el log.
 - Login: usuario inexistente ejecuta `IPasswordHasher.SimulatePasswordVerification` (BCrypt, mismo costo, hash ficticio constante precomputado, 1 verificación y ninguna generación por request) — sin enumeración por tiempo.
 
@@ -92,7 +113,7 @@ Excepciones intencionales (documentadas y cubiertas por tests):
 
 | Excepción | Motivo |
 |---|---|
-| `DOMAIN_RULE_VIOLATION` (`InvalidOperationException`) es Validation → 422, no BusinessRule → 400 | Contrato histórico de `ExceptionMiddleware` y de `Result.ValidationFailure` (regla de negocio → 422); reclasificarlo cambia el status de todo el ERP y requiere ADR. |
+| `DOMAIN_RULE_VIOLATION` (`DomainRuleViolationException`) es Validation → 422, no BusinessRule → 400 | Contrato histórico de `ExceptionMiddleware` y de `Result.ValidationFailure` (regla de negocio → 422); reclasificarlo cambia el status de todo el ERP y requiere ADR. |
 | Fallo de `Result` **sin** `Code`: el endpoint elige el fallback (`ApiFailure(result, fallback)`) — `BAD_REQUEST` por defecto, `NOT_FOUND` en `ToOkOrNotFound`/`ToFileOrNotFound`, `UNAUTHORIZED` en autenticación | Anti existence-leakage en lecturas (inexistente = ajeno) y anti-enumeración en login/refresh/reautenticación. Un fallo **con** `Code` siempre usa la tabla. |
 | Código no catalogado (literal de módulo: `SKU_DUPLICATE`, `PERIOD_NOT_OPEN`, …) → fallback del catálogo: BusinessRule → 400 con su propio `code` | Deuda de ADR-027 Fase 1 (registrar códigos de módulo); registrarlos cambia status de módulos FROZEN/CLOSED y se hace por módulo. |
 | Empresa pedida por id (`GetCompanyById`, `UpdateCompany`): todo rechazo del guard salvo UNAUTHORIZED → `NOT_FOUND` "Empresa no encontrada." | No-enumeración: ajena de otro tenant, del mismo tenant sin membership, inexistente o con tenant inactivo son la misma respuesta. Se decide por `Code`, nunca por el texto. |

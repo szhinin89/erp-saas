@@ -1,3 +1,5 @@
+using ERP.Domain.Exceptions;
+
 namespace ERP.Domain.Common;
 
 /// <summary>
@@ -38,7 +40,7 @@ public abstract class DocumentEntity : AuditableEntity
     public void Post(Guid postedBy)
     {
         if (Status != DocumentStatus.Draft)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Solo se puede confirmar un documento en borrador. Estado actual: {Status}"
             );
 
@@ -55,7 +57,7 @@ public abstract class DocumentEntity : AuditableEntity
     public void Void(Guid voidedBy, string reason)
     {
         if (Status == DocumentStatus.Voided)
-            throw new InvalidOperationException("El documento ya está anulado.");
+            throw new DomainRuleViolationException("El documento ya está anulado.");
 
         if (string.IsNullOrWhiteSpace(reason))
             throw new ArgumentException("Se requiere un motivo de anulación.", nameof(reason));

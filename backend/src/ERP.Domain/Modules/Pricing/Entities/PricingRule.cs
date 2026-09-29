@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Pricing.Enums;
 using ERP.Domain.Modules.Pricing.Events;
 
@@ -85,7 +86,7 @@ public sealed class PricingRule : AuditableEntity, ITenantScopedEntity, ICompany
     public void Disable(Guid updatedBy)
     {
         if (!IsActive)
-            throw new InvalidOperationException("La regla ya está deshabilitada.");
+            throw new DomainRuleViolationException("La regla ya está deshabilitada.");
         IsActive = false;
         SetUpdated(updatedBy);
         RaiseDomainEvent(
@@ -96,7 +97,7 @@ public sealed class PricingRule : AuditableEntity, ITenantScopedEntity, ICompany
     public void Enable(Guid updatedBy)
     {
         if (IsActive)
-            throw new InvalidOperationException("La regla ya está activa.");
+            throw new DomainRuleViolationException("La regla ya está activa.");
         IsActive = true;
         SetUpdated(updatedBy);
         RaiseDomainEvent(

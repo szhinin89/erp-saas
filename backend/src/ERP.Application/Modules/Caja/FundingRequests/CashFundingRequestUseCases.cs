@@ -4,6 +4,7 @@ using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Branches;
 using ERP.Application.Modules.Payables.Services;
 using ERP.Application.Modules.Payables.UseCases;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Caja.Interfaces;
@@ -370,11 +371,6 @@ public sealed class FulfillCashFundingRequestHandler
             await _uow.SaveChangesAsync(ct);
             await _uow.CommitAsync(ct);
             return Result<CashFundingRequestDto>.Success(CashFundingRequestDto.From(request));
-        }
-        catch (InvalidOperationException ex)
-        {
-            await _uow.RollbackAsync(ct);
-            return Result<CashFundingRequestDto>.ValidationFailure(ex.Message);
         }
         catch
         {

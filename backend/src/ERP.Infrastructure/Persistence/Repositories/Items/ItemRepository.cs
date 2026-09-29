@@ -301,7 +301,7 @@ public sealed class ItemRepository : IItemRepository
     {
         var item = await GetByIdAsync(itemId, tenantId, cancellationToken);
         if (item is null)
-            throw new InvalidOperationException("Ítem no encontrado.");
+            throw new ERP.Domain.Exceptions.DomainRuleViolationException("Ítem no encontrado.");
 
         item.SetSupplierCodePackagingLevel(supplierId, code, packagingLevelId, updatedBy);
     }

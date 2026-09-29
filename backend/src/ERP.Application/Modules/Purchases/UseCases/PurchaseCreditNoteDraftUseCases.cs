@@ -761,7 +761,7 @@ public sealed class UpdatePurchaseCreditNoteDraftHandler
                 _u.UserId
             );
         }
-        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
+        catch (ArgumentException ex)
         {
             return Result<PurchaseCreditNoteDto>.ValidationFailure(ex.Message);
         }

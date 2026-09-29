@@ -45,7 +45,7 @@ public static class ConfigurationDefinitionCatalog
 
         if (duplicates.Count > 0)
             throw new InvalidOperationException(
-                $"ConfigurationDefinitionCatalog tiene keys duplicadas: {string.Join(", ", duplicates)}. "
+                $"Invariante violada: ConfigurationDefinitionCatalog tiene keys duplicadas: {string.Join(", ", duplicates)}. "
                     + "Cada key debe declararse en un único módulo de Definitions."
             );
 
@@ -53,12 +53,12 @@ public static class ConfigurationDefinitionCatalog
         {
             if (definition.AllowedScopes.Count == 0)
                 throw new InvalidOperationException(
-                    $"La definition '{definition.Key}' no declara ningún AllowedScope."
+                    $"Invariante violada: la definition '{definition.Key}' no declara ningún AllowedScope."
                 );
 
             if (!definition.AllowedScopes.Contains(definition.DefaultScope))
                 throw new InvalidOperationException(
-                    $"La definition '{definition.Key}' tiene DefaultScope '{definition.DefaultScope}' "
+                    $"Invariante violada: la definition '{definition.Key}' tiene DefaultScope '{definition.DefaultScope}' "
                         + "fuera de su propia lista de AllowedScopes."
                 );
         }

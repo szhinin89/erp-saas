@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Company.DTOs;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Interfaces;
 using MediatR;
@@ -77,7 +78,7 @@ public sealed class ConfigureDocumentSequenceCommandHandler
         {
             sequence.ConfigureNextNumber(command.NextNumber);
         }
-        catch (InvalidOperationException ex)
+        catch (DomainRuleViolationException ex)
         {
             // Secuencia ya usada — ajuste restringido fuera de alcance de esta fase.
             return Result<DocumentSequenceDto>.Conflict(ex.Message);

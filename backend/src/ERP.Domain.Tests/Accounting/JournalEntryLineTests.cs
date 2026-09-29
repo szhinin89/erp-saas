@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Accounting.Entities;
 using FluentAssertions;
 
@@ -44,7 +45,7 @@ public sealed class JournalEntryLineTests
         var act = () => CreateLine(100m, 50m);
 
         act.Should()
-            .Throw<InvalidOperationException>()
+            .Throw<DomainRuleViolationException>()
             .WithMessage("*Débito y Crédito simultáneamente*");
     }
 
@@ -53,7 +54,7 @@ public sealed class JournalEntryLineTests
     {
         var act = () => CreateLine(0m, 0m);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*Débito o en Crédito*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*Débito o en Crédito*");
     }
 
     [Fact]

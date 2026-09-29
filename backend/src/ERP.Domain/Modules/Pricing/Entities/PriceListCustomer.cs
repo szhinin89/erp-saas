@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Pricing.Events;
 
 namespace ERP.Domain.Modules.Pricing.Entities;
@@ -63,7 +64,7 @@ public sealed class PriceListCustomer : AuditableEntity, ITenantScopedEntity, IC
     public void Enable(Guid updatedBy)
     {
         if (IsActive)
-            throw new InvalidOperationException("La asignación ya está activa.");
+            throw new DomainRuleViolationException("La asignación ya está activa.");
         IsActive = true;
         SetUpdated(updatedBy);
         RaiseDomainEvent(
@@ -81,7 +82,7 @@ public sealed class PriceListCustomer : AuditableEntity, ITenantScopedEntity, IC
     public void Disable(Guid updatedBy)
     {
         if (!IsActive)
-            throw new InvalidOperationException("La asignación ya está deshabilitada.");
+            throw new DomainRuleViolationException("La asignación ya está deshabilitada.");
         IsActive = false;
         SetUpdated(updatedBy);
         RaiseDomainEvent(

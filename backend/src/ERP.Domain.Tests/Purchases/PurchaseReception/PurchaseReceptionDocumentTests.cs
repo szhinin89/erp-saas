@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Models;
@@ -412,7 +413,7 @@ public sealed class PurchaseReceptionDocumentTests
                 updatedBy: UserId
             );
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
         document.Lines.Should().ContainSingle();
         document.Lines[0].MatchStatus.Should().Be(ItemMatchStatus.ManuallyMatched);
     }
@@ -431,7 +432,7 @@ public sealed class PurchaseReceptionDocumentTests
                 updatedBy: UserId
             );
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     // ── MarkProcessed / UnmarkProcessed (PURCHASE-RECEPTION-CREDIT-NOTE-CANCELLED-REPROCESS-01) ──
@@ -498,6 +499,6 @@ public sealed class PurchaseReceptionDocumentTests
 
         var act = () => document.UnmarkProcessed(UserId);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 }

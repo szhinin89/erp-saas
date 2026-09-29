@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Inventory.Enums;
 
 namespace ERP.Domain.Modules.Inventory.Entities;
@@ -99,14 +100,14 @@ public sealed class StockMovement : AuditableEntity, ITenantScopedEntity, ICompa
         if (branchId == Guid.Empty)
             throw new ArgumentException("La sucursal es obligatoria.", nameof(branchId));
         if (movementType == StockMovementType.PurchaseEntry && (unitCost is null or <= 0))
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "El costo unitario es obligatorio y debe ser mayor a cero para entradas de compra."
             );
         if (sequenceNumber <= 0)
-            throw new InvalidOperationException("SequenceNumber debe ser mayor a cero.");
+            throw new InvalidOperationException("Invariante violada: SequenceNumber debe ser mayor a cero.");
         if (string.IsNullOrWhiteSpace(uomCode))
             throw new InvalidOperationException(
-                "UomCode es obligatorio para un movimiento de Kardex."
+                "Invariante violada: UomCode es obligatorio para un movimiento de Kardex."
             );
 
         var costForTotal = unitCost ?? valuationUnitCost;

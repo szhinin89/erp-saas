@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.MasterData.DTOs;
+using ERP.Domain.Exceptions;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Interfaces;
@@ -212,10 +213,6 @@ public sealed class UpdateBpLocationHandler
         {
             return Result<BpLocationDto>.ValidationFailure(ex.Message);
         }
-        catch (InvalidOperationException ex)
-        {
-            return Result<BpLocationDto>.ValidationFailure(ex.Message);
-        }
 
         await _locRepo.SaveChangesAsync(cancellationToken);
         return Result<BpLocationDto>.Success(BpLocationDto.From(loc));
@@ -244,14 +241,7 @@ public sealed class SetPrimaryBpLocationHandler
 
         await _locRepo.ClearPrimaryAsync(loc.BusinessPartnerId, cancellationToken);
 
-        try
-        {
-            loc.SetPrimary(_ctx.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<bool>.ValidationFailure(ex.Message);
-        }
+        loc.SetPrimary(_ctx.UserId);
 
         await _locRepo.SaveChangesAsync(cancellationToken);
         return Result<bool>.Success(true);
@@ -285,14 +275,7 @@ public sealed class DeactivateBpLocationHandler
                 "La ubicación tiene contactos activos. Reasigne o desactive los contactos antes de desactivar la ubicación."
             );
 
-        try
-        {
-            loc.Deactivate(_ctx.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<bool>.ValidationFailure(ex.Message);
-        }
+        loc.Deactivate(_ctx.UserId);
 
         await _locRepo.SaveChangesAsync(cancellationToken);
         return Result<bool>.Success(true);
@@ -319,14 +302,7 @@ public sealed class ActivateBpLocationHandler
         if (loc is null || loc.BusinessPartnerId != cmd.BusinessPartnerId)
             return Result<bool>.NotFound("Ubicación no encontrada.");
 
-        try
-        {
-            loc.Activate(_ctx.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<bool>.ValidationFailure(ex.Message);
-        }
+        loc.Activate(_ctx.UserId);
 
         await _locRepo.SaveChangesAsync(cancellationToken);
         return Result<bool>.Success(true);

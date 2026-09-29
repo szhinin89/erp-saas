@@ -36,14 +36,7 @@ public sealed class DisableItemCommandHandler : IRequestHandler<DisableItemComma
         if (item is null)
             return Result<bool>.NotFound("Ítem no encontrado.");
 
-        try
-        {
-            item.Disable(_user.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<bool>.ValidationFailure(ex.Message);
-        }
+        item.Disable(_user.UserId);
 
         await _repository.SaveChangesAsync(cancellationToken);
         return Result<bool>.Success(true);

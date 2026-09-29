@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Retentions.Entities;
 using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Domain.Modules.Retentions.Events;
@@ -272,7 +273,7 @@ public sealed class RetentionDocumentTests
 
         var act = () => document.Issue("001-001-000000001", new DateOnly(2026, 9, 3), UserId);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*sin líneas*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*sin líneas*");
     }
 
     // 13. Issue con número vacío falla.
@@ -317,7 +318,7 @@ public sealed class RetentionDocumentTests
 
         var act = () => document.Issue("001-001-000000002", new DateOnly(2026, 9, 3), UserId);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*borrador*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*borrador*");
     }
 
     // 16. AddLine después de Issued falla.
@@ -330,7 +331,7 @@ public sealed class RetentionDocumentTests
 
         var act = () => document.AddLine(CreateIncomeLine(document));
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*borrador*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*borrador*");
     }
 
     // 17. Cancel Draft falla.
@@ -342,7 +343,7 @@ public sealed class RetentionDocumentTests
 
         var act = () => document.Cancel("Error", UserId);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*emitidas*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*emitidas*");
     }
 
     // 18. Cancel Issued con motivo válido cambia a Cancelled y levanta RetentionDocumentCancelledEvent.
@@ -390,7 +391,7 @@ public sealed class RetentionDocumentTests
 
         var act = () => document.Cancel("Otro motivo", UserId);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*emitidas*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*emitidas*");
     }
 
     // 21. Issue sobre Cancelled falla.
@@ -404,7 +405,7 @@ public sealed class RetentionDocumentTests
 
         var act = () => document.Issue("001-001-000000002", new DateOnly(2026, 9, 3), UserId);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*borrador*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*borrador*");
     }
 
     // 22. Totales separan Vat/Income correctamente.

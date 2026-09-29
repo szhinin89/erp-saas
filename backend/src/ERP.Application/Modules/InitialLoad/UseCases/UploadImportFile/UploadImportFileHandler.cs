@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.InitialLoad.DTOs;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.InitialLoad.Interfaces;
 using MediatR;
 
@@ -61,12 +62,32 @@ public sealed class UploadImportFileHandler
             batch.AttachFile(storedPath, cmd.Content.FileName, cmd.Content.SizeBytes, _ctx.UserId);
             batch.MarkUploaded(_ctx.UserId);
         }
-        catch (InvalidOperationException ex)
+        catch (DomainRuleViolationException)
         {
-            return Result<ImportBatchDto>.ValidationFailure(ex.Message);
+            // ZH-DOMAIN-RULE-ERROR-SSOT-01B: el archivo ya se escribió en el almacenamiento antes de
+            // que el lote rechazara el adjunto (estado no admite archivos) — se compensa para no dejar
+            // un archivo huérfano y la regla sigue su camino (DomainRuleBehavior → 422).
+            await DeleteOrphanAsync(storedPath);
+            throw;
         }
 
         await _batchRepo.SaveChangesAsync(cancellationToken);
         return Result<ImportBatchDto>.Success(ImportBatchDto.From(batch));
+    }
+
+    /// <summary>
+    /// Compensación best-effort: si el borrado también fallara, prevalece el rechazo de negocio
+    /// (el usuario recibe el motivo real) y el archivo queda como huérfano, igual que antes.
+    /// </summary>
+    private async Task DeleteOrphanAsync(string storedPath)
+    {
+        try
+        {
+            await _fileStorage.DeleteAsync(storedPath, CancellationToken.None);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // El rechazo de negocio es el resultado relevante; nada más que hacer aquí.
+        }
     }
 }

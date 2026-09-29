@@ -51,13 +51,13 @@ public sealed class XadesBesSigner
         // después de un round-trip completo al SRI. Se valida antes de tocar la clave privada.
         var now = DateTime.Now;
         if (now < cert.NotBefore || now > cert.NotAfter)
-            throw new InvalidOperationException(
+            throw new ERP.Domain.Exceptions.DomainRuleViolationException(
                 $"El certificado no está vigente (válido del {cert.NotBefore:dd/MM/yyyy} al {cert.NotAfter:dd/MM/yyyy})."
             );
 
         using var rsa =
             cert.GetRSAPrivateKey()
-            ?? throw new InvalidOperationException("El certificado no contiene clave privada RSA.");
+            ?? throw new ERP.Domain.Exceptions.DomainRuleViolationException("El certificado no contiene clave privada RSA.");
 
         // 2. Cargar XML
         var xmlDoc = new XmlDocument { PreserveWhitespace = false };

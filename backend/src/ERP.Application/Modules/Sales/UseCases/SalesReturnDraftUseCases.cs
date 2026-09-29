@@ -226,17 +226,10 @@ public sealed class UpdateSalesReturnDraftHandler
         if (linesResult.Error is not null)
             return linesResult.Error;
 
-        try
-        {
-            foreach (var existing in salesReturn.Lines.ToList())
-                salesReturn.RemoveLine(existing.Id, _u.UserId);
-            foreach (var line in linesResult.Lines)
-                salesReturn.AddLine(line, _u.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<SalesReturnDto>.ValidationFailure(ex.Message);
-        }
+        foreach (var existing in salesReturn.Lines.ToList())
+            salesReturn.RemoveLine(existing.Id, _u.UserId);
+        foreach (var line in linesResult.Lines)
+            salesReturn.AddLine(line, _u.UserId);
 
         await _returnRepo.SaveChangesAsync(ct);
         return Result<SalesReturnDto>.Success(SalesReturnMapper.ToDto(salesReturn));
@@ -280,14 +273,7 @@ public sealed class CancelSalesReturnDraftHandler
         if (invoice is null || invoice.BranchId != _b.BranchId)
             return Result<SalesReturnDto>.NotFound("Devolución no encontrada.");
 
-        try
-        {
-            salesReturn.Cancel(_u.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<SalesReturnDto>.ValidationFailure(ex.Message);
-        }
+        salesReturn.Cancel(_u.UserId);
 
         await _repo.SaveChangesAsync(ct);
         return Result<SalesReturnDto>.Success(SalesReturnMapper.ToDto(salesReturn));

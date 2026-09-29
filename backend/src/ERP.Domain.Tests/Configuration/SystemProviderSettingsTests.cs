@@ -1,4 +1,5 @@
 using ERP.Domain.Configuration.Entities;
+using ERP.Domain.Exceptions;
 using FluentAssertions;
 
 namespace ERP.Domain.Tests.Configuration;
@@ -47,7 +48,7 @@ public sealed class SystemProviderSettingsTests
             settings.Configure(null, "ZH Technologies S.A.", "J62021002", null, enabled: true, UserId);
 
         act.Should()
-            .Throw<InvalidOperationException>()
+            .Throw<DomainRuleViolationException>()
             .WithMessage("*RUC, razón social y CIIU completos*");
     }
 

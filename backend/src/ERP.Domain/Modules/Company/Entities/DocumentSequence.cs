@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using System.Globalization;
 
 namespace ERP.Domain.Modules.Company.Entities;
@@ -102,7 +103,7 @@ public sealed class DocumentSequence : BaseEntity, ITenantScopedEntity, ICompany
     public void ConfigureNextNumber(int nextNumber)
     {
         if (HasBeenUsed)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Esta secuencia ya entregó al menos un número real; no se puede reconfigurar "
                     + "libremente. El ajuste posterior a la primera captura requiere permiso "
                     + "especial, motivo y auditoría — fuera de alcance de esta fase "

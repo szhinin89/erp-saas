@@ -167,14 +167,8 @@ public sealed class EnableAttributeGroupCommandHandler
         var g = await _r.GetByIdAsync(cmd.Id, _s.TenantId, cancellationToken);
         if (g is null)
             return Result<bool>.NotFound("No encontrado.");
-        try
-        {
-            g.Enable(_u.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<bool>.ValidationFailure(ex.Message);
-        }
+        g.Enable(_u.UserId);
+
         await _r.SaveChangesAsync(cancellationToken);
         return Result<bool>.Success(true);
     }
@@ -206,14 +200,8 @@ public sealed class DisableAttributeGroupCommandHandler
         var g = await _r.GetByIdAsync(cmd.Id, _s.TenantId, cancellationToken);
         if (g is null)
             return Result<bool>.NotFound("No encontrado.");
-        try
-        {
-            g.Disable(_u.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<bool>.ValidationFailure(ex.Message);
-        }
+        g.Disable(_u.UserId);
+
         await _r.SaveChangesAsync(cancellationToken);
         return Result<bool>.Success(true);
     }

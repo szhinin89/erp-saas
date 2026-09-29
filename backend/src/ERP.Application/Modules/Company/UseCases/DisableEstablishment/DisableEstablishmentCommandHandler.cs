@@ -51,14 +51,8 @@ public sealed class DisableEstablishmentCommandHandler
                     + "Desactive primero todos sus puntos de emisión."
             );
 
-        try
-        {
-            entity.Disable(_user.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<bool>.Failure(ex.Message);
-        }
+        entity.Disable(_user.UserId);
+
         await _repo.SaveChangesAsync(cancellationToken);
         return Result<bool>.Success(true);
     }

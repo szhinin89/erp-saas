@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Payables.Enums;
 
 namespace ERP.Domain.Modules.Payables.Entities;
@@ -109,7 +110,7 @@ public sealed class AccountsPayable : AuditableEntity, ITenantScopedEntity, ICom
     public AccountsPayableInstallment AddInstallment(int installmentNumber, DateOnly dueDate, decimal amount)
     {
         if (_installments.Any(i => i.InstallmentNumber == installmentNumber))
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Ya existe una cuota con el número {installmentNumber}."
             );
 
@@ -138,17 +139,17 @@ public sealed class AccountsPayable : AuditableEntity, ITenantScopedEntity, ICom
         if (amount <= 0)
             throw new ArgumentException("El monto del pago debe ser mayor a cero.", nameof(amount));
         if (Status == AccountsPayableStatus.Cancelled)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No se puede aplicar un pago sobre una cuenta por pagar anulada."
             );
 
         var installment = _installments.FirstOrDefault(i => i.Id == installmentId);
         if (installment is null)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "La cuota indicada no pertenece a esta cuenta por pagar."
             );
         if (amount > installment.OutstandingAmount)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "El monto del pago excede el saldo pendiente de la cuota."
             );
 
@@ -171,11 +172,11 @@ public sealed class AccountsPayable : AuditableEntity, ITenantScopedEntity, ICom
 
         var installment = _installments.FirstOrDefault(i => i.Id == installmentId);
         if (installment is null)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "La cuota indicada no pertenece a esta cuenta por pagar."
             );
         if (amount > installment.PaidAmount)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "El monto a reversar excede el monto pagado registrado en la cuota."
             );
 
@@ -198,7 +199,7 @@ public sealed class AccountsPayable : AuditableEntity, ITenantScopedEntity, ICom
                 nameof(recognizedAmount)
             );
         if (Status == AccountsPayableStatus.Cancelled)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No se puede aplicar una devolución sobre una cuenta por pagar anulada."
             );
 
@@ -257,7 +258,7 @@ public sealed class AccountsPayable : AuditableEntity, ITenantScopedEntity, ICom
     public void Cancel(Guid updatedBy)
     {
         if (PaidAmount > 0)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No se puede anular una cuenta por pagar con pagos registrados."
             );
 
@@ -272,11 +273,11 @@ public sealed class AccountsPayable : AuditableEntity, ITenantScopedEntity, ICom
         if (amount <= 0)
             throw new ArgumentException($"El monto {label} debe ser mayor a cero.", nameof(amount));
         if (Status == AccountsPayableStatus.Cancelled)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No se puede aplicar un ajuste sobre una cuenta por pagar anulada."
             );
         if (amount > OutstandingAmount)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"El monto {label} excede el saldo pendiente de la cuenta por pagar."
             );
 
@@ -292,7 +293,7 @@ public sealed class AccountsPayable : AuditableEntity, ITenantScopedEntity, ICom
 
         var totalApplied = _installments.Sum(i => i.GetApplied(type));
         if (amount > totalApplied)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"El monto a reversar excede el monto {label} registrado en la cuenta por pagar."
             );
 

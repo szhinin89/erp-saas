@@ -2,10 +2,12 @@ using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.InitialLoad.DTOs;
 using ERP.Application.Modules.InitialLoad.Interfaces;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.InitialLoad.Entities;
 using ERP.Domain.Modules.InitialLoad.Enums;
 using ERP.Domain.Modules.InitialLoad.Interfaces;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace ERP.Application.Modules.InitialLoad.UseCases.ValidateImportBatch;
 
@@ -14,7 +16,7 @@ namespace ERP.Application.Modules.InitialLoad.UseCases.ValidateImportBatch;
 /// (<c>ImportBatchConstants.AsyncThresholdRows</c>) queda construido pero sin carga real de
 /// prueba (ver INITIAL-LOAD-ARCH-01, la plantilla de Clientes no se espera que cruce el umbral).
 /// </summary>
-public sealed class ValidateImportBatchHandler
+public sealed partial class ValidateImportBatchHandler
     : IRequestHandler<ValidateImportBatchCommand, Result<ImportBatchDto>>
 {
     private readonly IImportBatchRepository _batchRepo;
@@ -23,6 +25,7 @@ public sealed class ValidateImportBatchHandler
     private readonly IFileStorage _fileStorage;
     private readonly IReadOnlyDictionary<ImportType, IImportProcessor> _processors;
     private readonly IOperationalContext _ctx;
+    private readonly ILogger<ValidateImportBatchHandler> _logger;
 
     public ValidateImportBatchHandler(
         IImportBatchRepository batchRepo,
@@ -30,7 +33,8 @@ public sealed class ValidateImportBatchHandler
         IImportBatchIssueRepository issueRepo,
         IFileStorage fileStorage,
         IReadOnlyDictionary<ImportType, IImportProcessor> processors,
-        IOperationalContext ctx
+        IOperationalContext ctx,
+        ILogger<ValidateImportBatchHandler> logger
     )
     {
         _batchRepo = batchRepo;
@@ -39,6 +43,7 @@ public sealed class ValidateImportBatchHandler
         _fileStorage = fileStorage;
         _processors = processors;
         _ctx = ctx;
+        _logger = logger;
     }
 
     public async Task<Result<ImportBatchDto>> Handle(
@@ -64,15 +69,8 @@ public sealed class ValidateImportBatchHandler
         if (file is null)
             return Result<ImportBatchDto>.ValidationFailure("El lote no tiene ningún archivo adjunto.");
 
-        try
-        {
-            batch.BeginValidating(_ctx.UserId);
-            await _batchRepo.SaveChangesAsync(cancellationToken);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<ImportBatchDto>.ValidationFailure(ex.Message);
-        }
+        batch.BeginValidating(_ctx.UserId);
+        await _batchRepo.SaveChangesAsync(cancellationToken);
 
         await using var stream = await _fileStorage.GetAsync(file.StoredPath, cancellationToken);
         if (stream is null)
@@ -83,13 +81,22 @@ public sealed class ValidateImportBatchHandler
         {
             readResult = await processor.ReadAsync(stream, cancellationToken);
         }
-        catch (Exception ex)
+        catch (DomainRuleViolationException ex)
         {
+            // ZH-DOMAIN-RULE-ERROR-SSOT-01: archivo inválido (regla pública del lector) → motivo visible.
             batch.Fail($"No se pudo leer el archivo: {ex.Message}", _ctx.UserId);
             await _batchRepo.SaveChangesAsync(cancellationToken);
             return Result<ImportBatchDto>.ValidationFailure(
                 $"No se pudo leer el archivo: {ex.Message}"
             );
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // Error técnico al leer: mismo resultado para el usuario, sin detalle interno.
+            LogReadFailed(ex, batch.Id);
+            batch.Fail("No se pudo leer el archivo.", _ctx.UserId);
+            await _batchRepo.SaveChangesAsync(cancellationToken);
+            return Result<ImportBatchDto>.ValidationFailure("No se pudo leer el archivo.");
         }
 
         var rows = new List<ImportBatchRow>();
@@ -164,4 +171,7 @@ public sealed class ValidateImportBatchHandler
 
         return Result<ImportBatchDto>.Success(ImportBatchDto.From(batch));
     }
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "No se pudo leer el archivo del lote {BatchId}")]
+    private partial void LogReadFailed(Exception ex, Guid batchId);
 }

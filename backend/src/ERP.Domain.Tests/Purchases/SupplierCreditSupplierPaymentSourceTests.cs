@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
 using FluentAssertions;
@@ -98,7 +99,7 @@ public sealed class SupplierCreditSupplierPaymentSourceTests
 
         var act = () => credit.RegisterSourcePaymentReversal(UserId, Guid.NewGuid(), "h2");
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*aplicado o reembolsado*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*aplicado o reembolsado*");
     }
 
     [Fact]
@@ -109,7 +110,7 @@ public sealed class SupplierCreditSupplierPaymentSourceTests
 
         var act = () => credit.RegisterSourcePaymentReversal(UserId, Guid.NewGuid(), "h2");
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -119,8 +120,8 @@ public sealed class SupplierCreditSupplierPaymentSourceTests
         var fromReturn = FromReturn();
 
         ((Action)(() => fromPayment.RegisterSourceReturnCancellation(UserId, Guid.NewGuid(), "h")))
-            .Should().Throw<InvalidOperationException>();
+            .Should().Throw<DomainRuleViolationException>();
         ((Action)(() => fromReturn.RegisterSourcePaymentReversal(UserId, Guid.NewGuid(), "h")))
-            .Should().Throw<InvalidOperationException>();
+            .Should().Throw<DomainRuleViolationException>();
     }
 }

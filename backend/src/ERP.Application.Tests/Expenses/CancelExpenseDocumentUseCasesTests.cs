@@ -18,6 +18,7 @@ using ERP.Domain.Modules.Retentions.Interfaces;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
+using ERP.Application.Tests.Common;
 
 namespace ERP.Application.Tests.Expenses;
 
@@ -95,13 +96,13 @@ public sealed class CancelExpenseDocumentUseCasesTests
         var payable = fx.SetupPayable(document.Id, document.GrandTotal);
         payable.RegisterPayment(50m, UserId);
 
-        var result = await fx.Handler.Handle(
+        var result = await fx.Handler.HandleWithDomainRules(
             new CancelExpenseDocumentCommand(document.Id, "Documento duplicado"),
             CancellationToken.None
         );
 
         result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        result.Code.Should().Be(ApiResponseCodes.Common.DomainRuleViolation);
         result.Error.Should().Contain("pagos registrados");
         document.Status.Should().Be(ExpenseStatus.Confirmed, "el gasto no debe anularse si la CxP no pudo anularse");
         fx.Uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -389,7 +390,7 @@ public sealed class CancelExpenseDocumentUseCasesTests
         );
 
         result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        result.Code.Should().Be(ApiResponseCodes.Common.DomainRuleViolation);
         result.Error.Should().Contain("emitidas");
         retention.Status.Should().Be(RetentionStatus.Draft);
         document.Status.Should().Be(ExpenseStatus.Confirmed);

@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Items.Events;
 using ERP.Domain.Modules.Items.ValueObjects;
 
@@ -212,7 +213,7 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
             );
 
         if (_variants.Any(v => v.IsActive && v.SKU == variantSku))
-            throw new InvalidOperationException($"Ya existe una variante con SKU '{variantSku}'.");
+            throw new DomainRuleViolationException($"Ya existe una variante con SKU '{variantSku}'.");
 
         // Validar unicidad de combinación de atributos de eje
         var newCombo = axisAttributes
@@ -228,7 +229,7 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
         );
 
         if (duplicate)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Ya existe una variante con la misma combinación de atributos."
             );
 
@@ -252,7 +253,7 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
     {
         var variant =
             _variants.FirstOrDefault(v => v.Id == variantId)
-            ?? throw new InvalidOperationException("Variante no encontrada.");
+            ?? throw new DomainRuleViolationException("Variante no encontrada.");
 
         variant.Disable(updatedBy);
         SetUpdated(updatedBy);
@@ -263,7 +264,7 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
     {
         var variant =
             _variants.FirstOrDefault(v => v.Id == variantId)
-            ?? throw new InvalidOperationException("Variante no encontrada.");
+            ?? throw new DomainRuleViolationException("Variante no encontrada.");
 
         variant.Enable(updatedBy);
         SetUpdated(updatedBy);
@@ -284,7 +285,7 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
     {
         var list = images.ToList();
         if (list.Count(i => i.IsMain) > 1)
-            throw new InvalidOperationException("Solo una imagen puede ser principal.");
+            throw new DomainRuleViolationException("Solo una imagen puede ser principal.");
 
         _images.Clear();
         foreach (var i in list.OrderBy(x => x.SortOrder))
@@ -405,15 +406,15 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
         var list = levels.ToList();
         var baseCount = list.Count(l => l.IsBaseUnit);
         if (StockConfig.TracksStock && baseCount != 1)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Debe existir exactamente un nivel base (IsBaseUnit=true)."
             );
         if (!StockConfig.TracksStock && baseCount > 1)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No puede existir más de un nivel base (IsBaseUnit=true)."
             );
         if (list.Any(l => l.IsBaseUnit && l.BaseQuantity != 1m))
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "La presentación base debe tener cantidad base 1."
             );
 
@@ -454,7 +455,7 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
             && !_packagingLevels.Any(p => p.Id == packagingLevelId.Value && p.IsActive)
         )
         {
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "El nivel de empaque asociado al código de proveedor no pertenece al ítem."
             );
         }
@@ -502,14 +503,14 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
             sc.SupplierId == supplierId && sc.Code == code.Trim() && sc.IsActive
         );
         if (supplierCode is null)
-            throw new InvalidOperationException("El código de proveedor no pertenece al ítem.");
+            throw new DomainRuleViolationException("El código de proveedor no pertenece al ítem.");
 
         if (
             packagingLevelId.HasValue
             && !_packagingLevels.Any(p => p.Id == packagingLevelId.Value && p.IsActive)
         )
         {
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "El nivel de empaque asociado al código de proveedor no pertenece al ítem."
             );
         }

@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Caja.Entities;
 using FluentAssertions;
 
@@ -176,7 +177,7 @@ public sealed class CashRegisterTests
 
         var act = () => register.Disable(CreatedBy);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]

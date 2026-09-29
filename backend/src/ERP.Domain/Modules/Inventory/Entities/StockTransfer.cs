@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 
 namespace ERP.Domain.Modules.Inventory.Entities;
 
@@ -76,7 +77,7 @@ public sealed class StockTransfer : AuditableEntity, ITenantScopedEntity, ICompa
     public void Confirm(Guid userId)
     {
         if (Status != "Draft")
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Only Draft transfers can be confirmed (current: {Status})."
             );
         Status = "Confirmed";
@@ -88,7 +89,7 @@ public sealed class StockTransfer : AuditableEntity, ITenantScopedEntity, ICompa
     public void Cancel(Guid userId)
     {
         if (Status != "Draft")
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Only Draft transfers can be cancelled (current: {Status})."
             );
         Status = "Cancelled";

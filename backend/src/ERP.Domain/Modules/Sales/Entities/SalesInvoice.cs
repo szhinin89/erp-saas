@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Events;
@@ -353,11 +354,11 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
         var total = amountOverride ?? GrandTotal;
 
         if (total <= 0)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No se puede generar cronograma para una venta con total cero o negativo."
             );
         if (PaymentTerm.Installments < 1)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "La condición de pago debe tener al menos 1 cuota."
             );
 
@@ -420,7 +421,7 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
 
         var total = amountOverride ?? GrandTotal;
         if (total <= 0)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No se puede generar cronograma para una venta con total cero o negativo."
             );
 
@@ -445,7 +446,7 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
 
         var sum = installments.Sum(i => i.Amount);
         if (sum != total)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"La suma de las cuotas ({sum:F2}) no coincide con el total de la venta ({total:F2})."
             );
 
@@ -494,22 +495,22 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
     {
         EnsureDraft();
         if (_lines.Count == 0)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No puedes emitir esta factura porque no tiene productos ni servicios agregados. Agrega al menos una línea antes de emitir."
             );
         if (_payments.Count == 0)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No puedes emitir esta factura porque todavía no has registrado una forma de pago. Ve a la sección 'Formas de pago' y agrega al menos un método (efectivo, tarjeta, transferencia o crédito) antes de emitir."
             );
 
         foreach (var line in _lines)
         {
             if (line.Quantity <= 0)
-                throw new InvalidOperationException(
+                throw new DomainRuleViolationException(
                     $"Línea '{line.Description}': cantidad debe ser mayor a cero."
                 );
             if (string.IsNullOrWhiteSpace(line.VatCode))
-                throw new InvalidOperationException(
+                throw new DomainRuleViolationException(
                     $"El producto '{line.Description}' no tiene un código de IVA configurado. Ve al maestro de productos y asigna una tarifa de IVA antes de venderlo."
                 );
         }
@@ -530,7 +531,7 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
         AuthorizedGrandTotal = _lines.Sum(l => l.TaxInclusiveTotal);
 
         if (AuthorizedGrandTotal <= 0)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No puedes emitir esta factura porque su total es $0 o negativo. Revisa las cantidades, precios y descuentos de las líneas antes de emitir."
             );
 
@@ -544,7 +545,7 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
         var paymentSum = _payments.Sum(p => p.Amount);
         var effectiveTolerance = settlementTolerance ?? SalesSettlementPolicy.Tolerance;
         if (Math.Abs(paymentSum - AuthorizedGrandTotal.Value) > effectiveTolerance)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"El total de los pagos ingresados (${paymentSum:F2}) no coincide con el total de la factura (${AuthorizedGrandTotal.Value:F2}). "
                     + "Ajusta los montos en 'Formas de pago' hasta que coincidan con el total, o agrega el valor faltante."
             );
@@ -585,7 +586,7 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
             && InvoiceNumber != PendingNumberPlaceholder
             && !InvoiceNumber.StartsWith(DraftNumberPrefix, StringComparison.Ordinal)
         )
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "El número de factura ya fue asignado y no puede modificarse."
             );
         if (string.IsNullOrWhiteSpace(invoiceNumber))
@@ -600,7 +601,7 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
     public void Cancel(string reason, Guid cancelledBy)
     {
         if (Status != SalesInvoiceStatus.Authorized)
-            throw new InvalidOperationException("Solo se pueden anular facturas autorizadas.");
+            throw new DomainRuleViolationException("Solo se pueden anular facturas autorizadas.");
         if (string.IsNullOrWhiteSpace(reason))
             throw new ArgumentException("El motivo de anulación es obligatorio.", nameof(reason));
 
@@ -631,7 +632,7 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
     private void EnsureDraft()
     {
         if (Status != SalesInvoiceStatus.Draft)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Esta factura ya no está en borrador (fue autorizada o anulada), por lo que no se puede modificar. "
                     + "Si necesitas corregir algo, contacta a administración o registra una factura nueva."
             );

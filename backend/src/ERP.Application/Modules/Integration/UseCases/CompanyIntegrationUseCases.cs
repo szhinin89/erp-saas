@@ -31,31 +31,24 @@ public sealed class CreateIntegrationCompanyHandler
     )
     {
         var request = command.Request;
-        try
-        {
-            var company = await _provisioning.CreateManagedCompanyAsync(
-                request.TenantId,
-                request.TaxId,
-                request.LegalName,
-                request.MainAddress,
-                request.CreatedByUserId,
-                request.CreatorRole,
-                request.TradeName,
-                request.Email,
-                request.Phone,
-                request.CountryCode,
-                request.Timezone,
-                request.CurrencyCode,
-                request.BrandingJson,
-                cancellationToken: cancellationToken
-            );
+        var company = await _provisioning.CreateManagedCompanyAsync(
+            request.TenantId,
+            request.TaxId,
+            request.LegalName,
+            request.MainAddress,
+            request.CreatedByUserId,
+            request.CreatorRole,
+            request.TradeName,
+            request.Email,
+            request.Phone,
+            request.CountryCode,
+            request.Timezone,
+            request.CurrencyCode,
+            request.BrandingJson,
+            cancellationToken: cancellationToken
+        );
 
-            return Result<IntegrationCompanyStatusDto>.Success(ToDto(company));
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<IntegrationCompanyStatusDto>.ValidationFailure(ex.Message);
-        }
+        return Result<IntegrationCompanyStatusDto>.Success(ToDto(company));
     }
 
     internal static IntegrationCompanyStatusDto ToDto(CompanyEntity company) =>

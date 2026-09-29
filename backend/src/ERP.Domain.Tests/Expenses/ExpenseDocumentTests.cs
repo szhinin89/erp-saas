@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Expenses.Events;
@@ -178,7 +179,7 @@ public sealed class ExpenseDocumentTests
                 UserId
             );
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*borrador*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*borrador*");
     }
 
     [Fact]
@@ -188,7 +189,7 @@ public sealed class ExpenseDocumentTests
 
         var act = () => document.Confirm(new Dictionary<Guid, (Guid, string?, string?)>(), UserId);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*al menos una línea*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*al menos una línea*");
     }
 
     [Fact]
@@ -227,7 +228,7 @@ public sealed class ExpenseDocumentTests
 
         var act = () => document.Cancel("Motivo", UserId);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*confirmados*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*confirmados*");
     }
 
     [Fact]
@@ -238,7 +239,7 @@ public sealed class ExpenseDocumentTests
 
         var act = () => document.Cancel("Segunda anulación", UserId);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*confirmados*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*confirmados*");
     }
 
     [Theory]

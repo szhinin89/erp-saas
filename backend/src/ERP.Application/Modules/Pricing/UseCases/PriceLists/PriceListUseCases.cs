@@ -235,14 +235,8 @@ public sealed class EnablePriceListHandler : IRequestHandler<EnablePriceListComm
         var pl = await _repo.GetByIdAsync(_t.TenantId, cmd.Id, ct);
         if (pl is null)
             return Result<bool>.NotFound("No encontrada.");
-        try
-        {
-            pl.Enable(_u.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<bool>.ValidationFailure(ex.Message);
-        }
+        pl.Enable(_u.UserId);
+
         await _repo.SaveChangesAsync(ct);
         return Result<bool>.Success(true);
     }
@@ -266,14 +260,8 @@ public sealed class DisablePriceListHandler : IRequestHandler<DisablePriceListCo
         var pl = await _repo.GetByIdAsync(_t.TenantId, cmd.Id, ct);
         if (pl is null)
             return Result<bool>.NotFound("No encontrada.");
-        try
-        {
-            pl.Disable(_u.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<bool>.ValidationFailure(ex.Message);
-        }
+        pl.Disable(_u.UserId);
+
         await _repo.SaveChangesAsync(ct);
         return Result<bool>.Success(true);
     }

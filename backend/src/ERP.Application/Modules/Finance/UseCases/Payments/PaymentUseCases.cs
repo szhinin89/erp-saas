@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Finance.DTOs;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Finance.Enums;
@@ -189,26 +190,12 @@ public sealed class RegisterCollectionCommandHandler
             }
         }
 
-        try
-        {
-            payment.Apply(_u.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<PaymentDto>.ValidationFailure(ex.Message);
-        }
+        payment.Apply(_u.UserId);
 
         foreach (var line in cmd.Lines)
         {
-            try
-            {
-                receivablesByDocId[line.DocumentId]
-                    .RegisterCollection(line.AppliedAmount, _u.UserId);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Result<PaymentDto>.ValidationFailure(ex.Message);
-            }
+            receivablesByDocId[line.DocumentId]
+                .RegisterCollection(line.AppliedAmount, _u.UserId);
         }
 
         await _payments.AddAsync(payment, ct);
@@ -257,10 +244,6 @@ public sealed class ReverseCollectionCommandHandler
         {
             payment.Reverse(_u.UserId, cmd.Reason);
         }
-        catch (InvalidOperationException ex)
-        {
-            return Result<PaymentDto>.ValidationFailure(ex.Message);
-        }
         catch (ArgumentException ex)
         {
             return Result<PaymentDto>.ValidationFailure(ex.Message);
@@ -278,14 +261,7 @@ public sealed class ReverseCollectionCommandHandler
                     $"Cuenta por cobrar {line.ReceivableId} no encontrada."
                 );
 
-            try
-            {
-                receivable.ReverseCollection(line.AppliedAmount, _u.UserId);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Result<PaymentDto>.ValidationFailure(ex.Message);
-            }
+            receivable.ReverseCollection(line.AppliedAmount, _u.UserId);
         }
 
         await _payments.SaveChangesAsync(ct);

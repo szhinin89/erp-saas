@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Finance.Entities;
@@ -170,7 +171,7 @@ public sealed class CollectionAppliedPostingTranslatorTests
                 CancellationToken.None
             );
 
-        await act.Should().ThrowAsync<InvalidOperationException>();
+        await act.Should().ThrowAsync<DomainRuleViolationException>();
         captured.Should().BeNull();
     }
 

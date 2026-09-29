@@ -123,15 +123,10 @@ public sealed class SalesReturnRefundHandler
         if (receivable is null)
             return "No existe una cuenta por cobrar asociada a la factura de esta devolución.";
 
-        try
-        {
-            receivable.ApplyReturnCredit(allocation.Amount, userId);
-            receivable.RebuildInstallments();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return ex.Message;
-        }
+        // Una regla de la CxC (DomainRuleViolationException) sube hasta el handler de autorización,
+        // que revierte la transacción; DomainRuleBehavior la traduce (sin traducción paralela aquí).
+        receivable.ApplyReturnCredit(allocation.Amount, userId);
+        receivable.RebuildInstallments();
 
         return null;
     }

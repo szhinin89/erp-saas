@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Events;
 using ERP.Domain.Modules.Sales.ValueObjects;
@@ -92,7 +93,7 @@ public sealed class SalesInvoiceCancelEventTests
 
         var act = () => inv.Cancel("Segunda anulación", UserId);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
         inv.DomainEvents.OfType<SalesInvoiceCancelledEvent>().Should().BeEmpty();
     }
 }

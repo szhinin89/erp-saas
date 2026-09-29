@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Company.Entities;
 using FluentAssertions;
 
@@ -97,7 +98,7 @@ public sealed class DocumentSequenceTests
 
         var act = () => sequence.ConfigureNextNumber(900);
         act.Should()
-            .Throw<InvalidOperationException>(
+            .Throw<DomainRuleViolationException>(
                 "una vez que hubo una captura real, el ajuste libre queda fuera de esta fase"
             );
         sequence.CurrentSeq.Should().Be(851, "el intento rechazado no debe mutar el estado");

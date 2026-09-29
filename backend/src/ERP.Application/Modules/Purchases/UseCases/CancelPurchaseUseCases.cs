@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Application.Modules.Retentions.Services;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Payables.Enums;
@@ -207,20 +208,7 @@ public sealed class CancelPurchaseHandler
             }
             if (payable is not null)
             {
-                try
-                {
-                    payable.Cancel(uid);
-                }
-                catch (InvalidOperationException ex)
-                {
-                    _logger.LogWarning(
-                        "Cannot cancel payable for invoice {InvoiceId}: {Reason}",
-                        inv.Id,
-                        ex.Message
-                    );
-                    await _uow.RollbackAsync(ct);
-                    return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message);
-                }
+                payable.Cancel(uid);
             }
 
             // ── 4. Revertir stock ──────────────────────────────────────────
@@ -256,20 +244,7 @@ public sealed class CancelPurchaseHandler
             }
 
             // ── 5. Cambiar estado compra ───────────────────────────────────
-            try
-            {
-                inv.Cancel(cmd.Reason, uid);
-            }
-            catch (InvalidOperationException ex)
-            {
-                _logger.LogWarning(
-                    "Cancel rejected for invoice {InvoiceId}: {Reason}",
-                    inv.Id,
-                    ex.Message
-                );
-                await _uow.RollbackAsync(ct);
-                return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message);
-            }
+            inv.Cancel(cmd.Reason, uid);
 
             // ── 5b. Liberar la recepción de origen (si la hay) ──────────────
             // RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — la recepción que originó esta compra
@@ -298,11 +273,6 @@ public sealed class CancelPurchaseHandler
             );
 
             return Result<PurchaseInvoiceDto>.Success(PurchaseMapper.ToDto(inv));
-        }
-        catch (InvalidOperationException ex)
-        {
-            await _uow.RollbackAsync(ct);
-            return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message);
         }
         catch
         {

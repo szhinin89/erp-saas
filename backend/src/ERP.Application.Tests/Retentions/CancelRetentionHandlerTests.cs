@@ -96,7 +96,7 @@ public sealed class CancelRetentionHandlerTests
         );
 
         result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        result.Code.Should().Be(ApiResponseCodes.Common.DomainRuleViolation);
     }
 
     // ── 19) Rechaza cancelar Cancelled (dos veces) ────────────────────────

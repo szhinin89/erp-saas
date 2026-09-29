@@ -14,6 +14,7 @@ using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 using FluentAssertions;
 using Moq;
+using ERP.Application.Tests.Common;
 
 namespace ERP.Application.Tests.Purchases;
 
@@ -314,7 +315,7 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
         var m = new Mocks(f);
         var handler = m.BuildHandler();
 
-        var result = await handler.Handle(
+        var result = await handler.HandleWithDomainRules(
             new AuthorizePurchaseCreditNoteCommand(f.CreditNote.Id, Guid.NewGuid()),
             CancellationToken.None
         );
@@ -335,7 +336,7 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
         var m = new Mocks(f);
         var handler = m.BuildHandler();
 
-        var result = await handler.Handle(
+        var result = await handler.HandleWithDomainRules(
             new AuthorizePurchaseCreditNoteCommand(f.CreditNote.Id, Guid.NewGuid()),
             CancellationToken.None
         );
@@ -440,7 +441,7 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
             .ReturnsAsync(doc);
         var handler = m.BuildHandler();
 
-        var result = await handler.Handle(
+        var result = await handler.HandleWithDomainRules(
             new AuthorizePurchaseCreditNoteCommand(f.CreditNote.Id, Guid.NewGuid()),
             CancellationToken.None
         );

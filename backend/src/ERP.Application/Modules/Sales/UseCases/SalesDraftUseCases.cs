@@ -8,6 +8,7 @@ using ERP.Application.Modules.Pricing.Services;
 using ERP.Application.Modules.Sales.DTOs;
 using ERP.Domain.Common;
 using ERP.Domain.Configuration.Interfaces;
+using ERP.Domain.Exceptions;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
@@ -590,7 +591,7 @@ public sealed class CreateSalesDraftHandler
                     inv.GeneratePaymentSchedule(settlement.PendingBalance);
             }
         }
-        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+        catch (ArgumentException ex)
         {
             return Result<SalesInvoiceDto>.ValidationFailure(ex.Message);
         }
@@ -952,7 +953,7 @@ public sealed class UpdateSalesDraftHandler
                 inv.ReplacePayments(newPaymentItems, _u.UserId);
             }
         }
-        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+        catch (ArgumentException ex)
         {
             return Result<SalesInvoiceDto>.ValidationFailure(ex.Message);
         }
@@ -1082,7 +1083,7 @@ file static class SalesLinePackagingResolver
             );
 
         if (selected.BaseQuantity <= 0)
-            throw new InvalidOperationException(
+            throw new ERP.Domain.Exceptions.DomainRuleViolationException(
                 "La cantidad base del empaque debe ser mayor a cero."
             );
 

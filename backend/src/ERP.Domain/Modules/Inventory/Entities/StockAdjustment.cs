@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 
 namespace ERP.Domain.Modules.Inventory.Entities;
 
@@ -123,11 +124,11 @@ public sealed class StockAdjustment
     public void Execute(Guid userId)
     {
         if (Status != "Draft")
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Only Draft adjustments can be executed (current: {Status})."
             );
         if (_lines.Count == 0)
-            throw new InvalidOperationException("El ajuste no tiene líneas.");
+            throw new DomainRuleViolationException("El ajuste no tiene líneas.");
         Status = "Executed";
         ExecutedAt = DateTime.UtcNow;
         ExecutedBy = userId;
@@ -142,7 +143,7 @@ public sealed class StockAdjustment
     public void Cancel(string reason, Guid userId)
     {
         if (Status != "Executed")
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Only Executed adjustments can be cancelled (current: {Status})."
             );
         if (string.IsNullOrWhiteSpace(reason))
@@ -158,7 +159,7 @@ public sealed class StockAdjustment
     private void EnsureEditable()
     {
         if (Status != "Draft")
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Solo un ajuste en Draft puede modificarse (actual: {Status})."
             );
     }

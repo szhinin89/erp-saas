@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 
 namespace ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
@@ -231,7 +232,7 @@ public sealed class PurchaseReceptionLine : IMustHaveTenant
             MatchStatus is not (ItemMatchStatus.AutoMatched or ItemMatchStatus.ManuallyMatched)
             || ItemId is null
         )
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "La línea no tiene un ítem asociado para desvincular."
             );
 

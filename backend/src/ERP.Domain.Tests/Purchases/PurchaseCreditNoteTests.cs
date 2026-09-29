@@ -1,4 +1,5 @@
 using ERP.Domain.Audit;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Events;
@@ -237,7 +238,7 @@ public sealed class PurchaseCreditNoteTests
 
         var act = () => creditNote.Authorize(100m, UserId, Guid.NewGuid(), "hash-authorize-003");
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*excede*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*excede*");
         creditNote.Status.Should().Be(PurchaseCreditNoteStatus.Draft);
         creditNote.AppliedToPayableAmount.Should().BeNull();
         creditNote.AuthorizedAtUtc.Should().BeNull();
@@ -275,7 +276,7 @@ public sealed class PurchaseCreditNoteTests
         var act = () =>
             creditNote.Authorize(1000m, UserId, Guid.NewGuid(), "hash-authorize-006");
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -596,7 +597,7 @@ public sealed class PurchaseCreditNoteTests
         var act = () =>
             creditNote.Cancel("Otro motivo", UserId, Guid.NewGuid(), "hash-cancel-004");
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -629,7 +630,7 @@ public sealed class PurchaseCreditNoteTests
 
         var act = () => creditNote.Authorize(100_000m, UserId, Guid.NewGuid(), "hash-authorize-return");
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
         creditNote.Status.Should().Be(PurchaseCreditNoteStatus.Draft);
         creditNote.AppliedToPayableAmount.Should().BeNull();
     }
@@ -645,7 +646,7 @@ public sealed class PurchaseCreditNoteTests
         creditNote.LinkedPurchaseReturnId.Should().Be(purchaseReturnId);
 
         var act = () => creditNote.LinkPurchaseReturn(Guid.NewGuid(), UserId);
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -655,7 +656,7 @@ public sealed class PurchaseCreditNoteTests
 
         var act = () => creditNote.LinkPurchaseReturn(Guid.NewGuid(), UserId);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]

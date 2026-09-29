@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Caja.DTOs;
 using ERP.Domain.Configuration.Interfaces;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
@@ -134,9 +135,9 @@ public sealed class CloseCashSessionHandler
         {
             session.Close(_u.UserId, closingCounts, cmd.CloseNotes);
         }
-        catch (InvalidOperationException ex)
+        catch (DomainRuleViolationException ex)
         {
-            return Result<CashSession>.ValidationFailure(ex.Message);
+            return Result<CashSession>.FromDomainRule(ex);
         }
 
         // CONFIG-DYNAMIC-OPERATIONS-01/02 (cash.allow_close_with_difference / max_allowed_difference /

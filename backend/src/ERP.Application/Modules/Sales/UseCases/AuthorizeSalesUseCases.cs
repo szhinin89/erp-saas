@@ -579,34 +579,21 @@ public sealed class AuthorizeSalesInvoiceHandler
         }
 
         // ── Autorizar (congela líneas + snapshot totales) ───────────
-        try
-        {
-            // SALES-CASH-REAL-MONEY-01 — propaga el mismo cashApplied ya calculado arriba (línea
-            // ~214-222, base de SalesSettlementPolicy) al evento de dominio, para que Caja registre
-            // el dinero real cobrado y nunca AuthorizedGrandTotal/GrandTotal.
-            // COMPANY-PRECISION-POLICY-SSOT-01: tolerancia de cuadre pago-vs-total resuelta desde
-            // CompanyPrecisionPolicy de la empresa activa (reemplaza el default hardcodeado
-            // SalesSettlementPolicy.Tolerance como fuente de cálculo — la constante sigue viviendo
-            // en Domain solo como fallback si la policy no pudiera resolverse).
-            var precision = await _precisionPolicyProvider.GetEffectiveAsync(ct);
-            inv.Authorize(
-                uid,
-                cashApplied,
-                precision.SettlementToleranceAmount,
-                cashByAccount,
-                physicalCashApplied
-            );
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogWarning(
-                "Authorize rejected for sales invoice {InvoiceId} tenant {TenantId}: {Reason}",
-                cmd.InvoiceId,
-                tid,
-                ex.Message
-            );
-            return Result<SalesInvoiceDto>.ValidationFailure(ex.Message);
-        }
+        // SALES-CASH-REAL-MONEY-01 — propaga el mismo cashApplied ya calculado arriba (línea
+        // ~214-222, base de SalesSettlementPolicy) al evento de dominio, para que Caja registre
+        // el dinero real cobrado y nunca AuthorizedGrandTotal/GrandTotal.
+        // COMPANY-PRECISION-POLICY-SSOT-01: tolerancia de cuadre pago-vs-total resuelta desde
+        // CompanyPrecisionPolicy de la empresa activa (reemplaza el default hardcodeado
+        // SalesSettlementPolicy.Tolerance como fuente de cálculo — la constante sigue viviendo
+        // en Domain solo como fallback si la policy no pudiera resolverse).
+        var precision = await _precisionPolicyProvider.GetEffectiveAsync(ct);
+        inv.Authorize(
+            uid,
+            cashApplied,
+            precision.SettlementToleranceAmount,
+            cashByAccount,
+            physicalCashApplied
+        );
 
         // ── Egreso de inventario (Kardex) — solo consume lo ya confirmado en el
         // documento; precio/descuento/IVA siguen siendo propiedad exclusiva de Ventas ──

@@ -1,3 +1,5 @@
+using ERP.Domain.Exceptions;
+
 namespace ERP.Domain.Common;
 
 /// <summary>
@@ -37,7 +39,7 @@ public abstract class MasterEntity : AuditableEntity, ISystemSeeded
     public virtual void Disable(Guid updatedBy)
     {
         if (!IsActive)
-            throw new InvalidOperationException("El registro ya está deshabilitado.");
+            throw new DomainRuleViolationException("El registro ya está deshabilitado.");
 
         IsActive = false;
         SetUpdated(updatedBy);
@@ -49,7 +51,7 @@ public abstract class MasterEntity : AuditableEntity, ISystemSeeded
     public void Enable(Guid updatedBy)
     {
         if (IsActive)
-            throw new InvalidOperationException("El registro ya está activo.");
+            throw new DomainRuleViolationException("El registro ya está activo.");
 
         IsActive = true;
         SetUpdated(updatedBy);

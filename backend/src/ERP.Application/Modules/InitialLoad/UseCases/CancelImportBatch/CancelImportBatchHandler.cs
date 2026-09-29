@@ -29,14 +29,7 @@ public sealed class CancelImportBatchHandler : IRequestHandler<CancelImportBatch
         if (batch is null)
             return Result<bool>.NotFound("Lote de importación no encontrado.");
 
-        try
-        {
-            batch.Cancel(_ctx.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<bool>.ValidationFailure(ex.Message);
-        }
+        batch.Cancel(_ctx.UserId);
 
         await _batchRepo.SaveChangesAsync(cancellationToken);
         return Result<bool>.Success(true);

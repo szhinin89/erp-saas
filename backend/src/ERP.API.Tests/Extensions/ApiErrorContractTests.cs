@@ -145,7 +145,7 @@ public sealed class ApiErrorContractTests
             { new NotSupportedException("x"), ApiResponseCodes.Common.InternalError },
         };
 
-    /// <summary>InvalidOperationException lanzado por el dominio real (regla de negocio curada).</summary>
+    /// <summary>Regla de negocio lanzada por el dominio real (DomainRuleViolationException, mensaje curado).</summary>
     internal static Exception DomainRuleException()
     {
         var warehouse = ERP.Domain.Modules.Inventory.Entities.Warehouse.Create(
@@ -156,7 +156,7 @@ public sealed class ApiErrorContractTests
         {
             warehouse.Disable(Guid.NewGuid());
         }
-        catch (InvalidOperationException ex)
+        catch (ERP.Domain.Exceptions.DomainRuleViolationException ex)
         {
             return ex;
         }

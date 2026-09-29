@@ -218,14 +218,7 @@ public sealed class EnablePricingRuleHandler
             );
 
         // La auditoría la registra PricingRuleAuditHandler al reaccionar a PricingRuleEnabledEvent.
-        try
-        {
-            rule.Enable(_u.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<PricingRuleDto>.ValidationFailure(ex.Message);
-        }
+        rule.Enable(_u.UserId);
 
         await _repo.SaveChangesAsync(ct);
         return Result<PricingRuleDto>.Success(Map.ToDto(rule));
@@ -253,14 +246,7 @@ public sealed class RemovePricingRuleHandler
             return Result<bool>.NotFound("Regla no encontrada.");
 
         // La auditoría la registra PricingRuleAuditHandler al reaccionar a PricingRuleDisabledEvent.
-        try
-        {
-            rule.Disable(_u.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<bool>.ValidationFailure(ex.Message);
-        }
+        rule.Disable(_u.UserId);
 
         await _repo.SaveChangesAsync(ct);
         return Result<bool>.Success(true);

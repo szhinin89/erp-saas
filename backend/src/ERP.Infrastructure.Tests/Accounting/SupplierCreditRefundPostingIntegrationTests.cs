@@ -37,6 +37,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Testcontainers.PostgreSql;
+using ERP.Infrastructure.Tests.Common;
 
 namespace ERP.Infrastructure.Tests.Accounting;
 
@@ -264,7 +265,7 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
         Guid creditId, decimal amount, bool cash, string? reference = "TRX-778899")
     {
         await using var db = BuildWiredContext();
-        return await RegisterHandler(db).Handle(
+        return await RegisterHandler(db).HandleWithDomainRules(
             new RegisterSupplierCreditRefundCommand(
                 creditId,
                 cash ? null : _companyBankAccountId,
@@ -282,7 +283,7 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
     private async Task<Result<SupplierCreditRefundTransactionDto>> ReverseAsync(Guid creditId, Guid refundId)
     {
         await using var db = BuildWiredContext();
-        return await ReverseHandler(db).Handle(
+        return await ReverseHandler(db).HandleWithDomainRules(
             new ReverseSupplierCreditRefundCommand(creditId, refundId, "Transferencia devuelta por el banco", _today, Guid.NewGuid()),
             CancellationToken.None
         );
@@ -452,7 +453,7 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
         var creditId = await SeedAdvanceAsync(100m);
         await using var db = BuildWiredContext();
 
-        var result = await RegisterHandler(db).Handle(
+        var result = await RegisterHandler(db).HandleWithDomainRules(
             new RegisterSupplierCreditRefundCommand(creditId, _companyBankAccountId, null, "CASH", 40m, _today, null, Guid.NewGuid()),
             CancellationToken.None
         );

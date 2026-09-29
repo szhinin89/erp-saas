@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Events;
 
@@ -82,7 +83,7 @@ public sealed class PostingRule : AuditableEntity, ITenantScopedEntity, ICompany
     public void Enable(Guid updatedBy)
     {
         if (IsActive)
-            throw new InvalidOperationException("La regla ya está activa.");
+            throw new DomainRuleViolationException("La regla ya está activa.");
         IsActive = true;
         SetUpdated(updatedBy);
     }
@@ -91,7 +92,7 @@ public sealed class PostingRule : AuditableEntity, ITenantScopedEntity, ICompany
     public void Disable(Guid updatedBy)
     {
         if (!IsActive)
-            throw new InvalidOperationException("La regla ya está deshabilitada.");
+            throw new DomainRuleViolationException("La regla ya está deshabilitada.");
         IsActive = false;
         SetUpdated(updatedBy);
     }

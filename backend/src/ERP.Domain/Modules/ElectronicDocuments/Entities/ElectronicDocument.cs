@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.ElectronicDocuments.Events;
 using ERP.Domain.Modules.ElectronicDocuments.ValueObjects;
@@ -150,7 +151,7 @@ public sealed class ElectronicDocument
     )
     {
         if (CurrentState is not (ElectronicDocumentState.Draft or ElectronicDocumentState.Failed))
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Solo se puede marcar el XML como generado desde Draft o Failed (estado actual: {CurrentState})."
             );
         if (string.IsNullOrWhiteSpace(xmlDraftPath))
@@ -192,7 +193,7 @@ public sealed class ElectronicDocument
     public void MarkFailed(string reason, Guid updatedBy)
     {
         if (CurrentState is not (ElectronicDocumentState.Draft or ElectronicDocumentState.Failed))
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Solo se puede marcar como fallido desde Draft o Failed (estado actual: {CurrentState})."
             );
         if (string.IsNullOrWhiteSpace(reason))
@@ -221,7 +222,7 @@ public sealed class ElectronicDocument
     public void MarkSigned(string signedXmlPath, AccessKey accessKey, Guid updatedBy)
     {
         if (CurrentState != ElectronicDocumentState.XmlGenerated)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Solo se puede marcar como firmado desde XmlGenerated (estado actual: {CurrentState})."
             );
         if (string.IsNullOrWhiteSpace(signedXmlPath))
@@ -251,7 +252,7 @@ public sealed class ElectronicDocument
     public void MarkSent(Guid updatedBy)
     {
         if (CurrentState != ElectronicDocumentState.Signed)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Solo se puede marcar como enviado desde Signed (estado actual: {CurrentState})."
             );
 
@@ -270,7 +271,7 @@ public sealed class ElectronicDocument
     public void MarkReceived(Guid updatedBy)
     {
         if (CurrentState != ElectronicDocumentState.Sent)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Solo se puede marcar como recibido desde Sent (estado actual: {CurrentState})."
             );
 
@@ -298,7 +299,7 @@ public sealed class ElectronicDocument
     )
     {
         if (CurrentState is not (ElectronicDocumentState.Sent or ElectronicDocumentState.Received))
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Solo se puede autorizar desde Sent o Received (estado actual: {CurrentState})."
             );
         if (authorizedXmlPath is not null && authorizedXmlPath.Length > PathMaxLen)
@@ -341,7 +342,7 @@ public sealed class ElectronicDocument
     )
     {
         if (CurrentState is not (ElectronicDocumentState.Sent or ElectronicDocumentState.Received))
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Solo se puede rechazar desde Sent o Received (estado actual: {CurrentState})."
             );
         if (string.IsNullOrWhiteSpace(reason))
@@ -383,7 +384,7 @@ public sealed class ElectronicDocument
                 or ElectronicDocumentState.Received
             )
         )
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Solo se puede marcar como DeadLetter desde Failed, Signed, Sent o Received (estado actual: {CurrentState})."
             );
         if (string.IsNullOrWhiteSpace(reason))
@@ -420,7 +421,7 @@ public sealed class ElectronicDocument
         if (
             CurrentState is not (ElectronicDocumentState.Signed or ElectronicDocumentState.Received)
         )
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Solo se puede reintentar desde Signed o Received (estado actual: {CurrentState})."
             );
 
@@ -447,11 +448,11 @@ public sealed class ElectronicDocument
     public void Reactivate(Guid updatedBy)
     {
         if (CurrentState != ElectronicDocumentState.DeadLetter)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Solo se puede reactivar un documento en DeadLetter (estado actual: {CurrentState})."
             );
         if (PreDeadLetterState is null)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "El documento no tiene un estado previo a DeadLetter registrado."
             );
 
@@ -479,7 +480,7 @@ public sealed class ElectronicDocument
     public void MarkCancelled(string reason, Guid updatedBy)
     {
         if (CurrentState != ElectronicDocumentState.Authorized)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Solo se puede anular un documento Authorized (estado actual: {CurrentState})."
             );
         if (string.IsNullOrWhiteSpace(reason))

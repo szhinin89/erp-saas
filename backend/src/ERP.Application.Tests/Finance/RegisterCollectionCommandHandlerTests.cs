@@ -9,6 +9,7 @@ using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Interfaces;
 using FluentAssertions;
 using Moq;
+using ERP.Application.Tests.Common;
 
 namespace ERP.Application.Tests.Finance;
 
@@ -225,7 +226,7 @@ public sealed class RegisterCollectionCommandHandlerTests
             new[] { new PaymentApplicationLineInput(receivable.Id, null, 50m) }
         );
 
-        var result = await handler.Handle(cmd, CancellationToken.None);
+        var result = await handler.HandleWithDomainRules(cmd, CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("excede el saldo pendiente");

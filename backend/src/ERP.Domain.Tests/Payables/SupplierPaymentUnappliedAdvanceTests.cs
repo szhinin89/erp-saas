@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Events;
@@ -94,7 +95,7 @@ public sealed class SupplierPaymentUnappliedAdvanceTests
     {
         var act = () => Create(200m, [Bank(200m)], [new(Guid.NewGuid(), 180m)], [new(0, 0, 180m)], confirm: false);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*20.00 sin aplicar*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*20.00 sin aplicar*");
     }
 
     [Fact]
@@ -102,7 +103,7 @@ public sealed class SupplierPaymentUnappliedAdvanceTests
     {
         var act = () => Create(100m, [Bank(100m)], [new(Guid.NewGuid(), 120m)], [new(0, 0, 100m)], confirm: true);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -129,7 +130,7 @@ public sealed class SupplierPaymentUnappliedAdvanceTests
     {
         var act = () => Create(200m, [Bank(200m)], [], [], confirm: false, allowWithoutPayable: true);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -153,7 +154,7 @@ public sealed class SupplierPaymentUnappliedAdvanceTests
                 confirm: true
             );
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*por encima de su monto*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*por encima de su monto*");
     }
 
     [Fact]

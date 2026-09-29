@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.ValueObjects;
 using FluentAssertions;
@@ -147,7 +148,7 @@ public sealed class ItemSupplierCodeTests
             );
 
         act.Should()
-            .Throw<InvalidOperationException>()
+            .Throw<DomainRuleViolationException>()
             .WithMessage("*nivel de empaque*no pertenece al ítem*");
     }
 
@@ -196,7 +197,7 @@ public sealed class ItemSupplierCodeTests
             item.SetSupplierCodePackagingLevel(supplierId, "PROV-001", otherPackagingId, updatedBy);
 
         act.Should()
-            .Throw<InvalidOperationException>()
+            .Throw<DomainRuleViolationException>()
             .WithMessage("*nivel de empaque*no pertenece al ítem*");
     }
 

@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Purchases.DTOs;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Enums;
@@ -205,15 +206,7 @@ public sealed class CancelPurchaseCreditNoteHandler
             }
 
             var cancelHash = ComputeCancelPayloadHash(creditNote.Id, cmd.ClientRequestId, cmd.Reason);
-            try
-            {
-                creditNote.Cancel(cmd.Reason, uid, cmd.ClientRequestId, cancelHash);
-            }
-            catch (InvalidOperationException ex)
-            {
-                await _uow.RollbackAsync(ct);
-                return Result<PurchaseCreditNoteDto>.ValidationFailure(ex.Message);
-            }
+            creditNote.Cancel(cmd.Reason, uid, cmd.ClientRequestId, cancelHash);
 
             try
             {
@@ -255,11 +248,6 @@ public sealed class CancelPurchaseCreditNoteHandler
             await _uow.CommitAsync(ct);
 
             return Result<PurchaseCreditNoteDto>.Success(CreditNoteMap.ToDto(creditNote));
-        }
-        catch (InvalidOperationException ex)
-        {
-            await _uow.RollbackAsync(ct);
-            return Result<PurchaseCreditNoteDto>.ValidationFailure(ex.Message);
         }
         catch
         {

@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Items.DTOs;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Items.Interfaces;
 using FluentValidation;
 using MediatR;
@@ -130,7 +131,7 @@ public sealed class AddItemVariantCommandHandler
                 )
             );
         }
-        catch (InvalidOperationException ex)
+        catch (DomainRuleViolationException ex)
         {
             return Result<ItemVariantDto>.Conflict(ex.Message);
         }

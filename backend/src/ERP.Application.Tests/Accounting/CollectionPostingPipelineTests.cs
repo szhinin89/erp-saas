@@ -1,5 +1,6 @@
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
@@ -347,7 +348,7 @@ public sealed class CollectionPostingPipelineTests
                 CancellationToken.None
             );
 
-        await act.Should().ThrowAsync<InvalidOperationException>();
+        await act.Should().ThrowAsync<DomainRuleViolationException>();
         m.Captured.Should().BeNull("la cuenta efectiva (override) es inválida — ningún asiento parcial");
         m.JournalEntries.Verify(
             r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()),

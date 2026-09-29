@@ -41,7 +41,7 @@ public sealed class UpsertSystemProviderSettingsCommandHandler
                 _currentUser.UserId
             );
         }
-        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+        catch (ArgumentException ex)
         {
             return Result<SystemProviderSettingsDto>.ValidationFailure(ex.Message);
         }

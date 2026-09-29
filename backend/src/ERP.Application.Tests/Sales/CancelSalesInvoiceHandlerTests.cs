@@ -10,6 +10,7 @@ using ERP.Domain.Modules.Sales.Interfaces;
 using ERP.Domain.Modules.Sales.ValueObjects;
 using FluentAssertions;
 using Moq;
+using ERP.Application.Tests.Common;
 
 namespace ERP.Application.Tests.Sales;
 
@@ -38,7 +39,8 @@ public sealed class CancelSalesInvoiceHandlerTests
         decimal conversionFactor,
         Guid itemId,
         Guid warehouseId,
-        Guid? activeBranchId = null
+        Guid? activeBranchId = null,
+        bool withPaidReceivable = false
     )
     {
         var customer = CustomerSnapshot.Create("Cliente Test", "1710034065", "05");
@@ -87,10 +89,17 @@ public sealed class CancelSalesInvoiceHandlerTests
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
 
+        Domain.Modules.Sales.Entities.SalesReceivable? receivable = null;
+        if (withPaidReceivable)
+        {
+            receivable = Domain.Modules.Sales.Entities.SalesReceivable.Create(TenantId, CompanyId, inv.Id, CustomerId, 100m, UserId);
+            receivable.RegisterCollection(40m, UserId);
+        }
+
         var receivableRepo = new Mock<ISalesReceivableRepository>();
         receivableRepo
             .Setup(r => r.GetByInvoiceIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Domain.Modules.Sales.Entities.SalesReceivable?)null);
+            .ReturnsAsync(receivable);
 
         var stockRepo = new Mock<IStockRepository>();
         stockRepo
@@ -289,5 +298,29 @@ public sealed class CancelSalesInvoiceHandlerTests
 
         result.IsSuccess.Should().BeTrue(result.Error);
         inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Cancelled);
+    }
+
+    // ZH-DOMAIN-RULE-ERROR-SSOT-01B: la regla de la CxC conserva su mensaje público con el prefijo
+    // de la anulación y se traduce por el mecanismo único (DOMAIN_RULE_VIOLATION), no por un
+    // ValidationFailure local.
+    [Fact]
+    public async Task CxC_con_cobros_rechaza_la_anulacion_con_mensaje_compuesto_y_DOMAIN_RULE_VIOLATION()
+    {
+        var (handler, _, inv) = BuildHandler(
+            quantity: 5m,
+            conversionFactor: 1m,
+            itemId: Guid.NewGuid(),
+            warehouseId: Guid.NewGuid(),
+            withPaidReceivable: true
+        );
+
+        var result = await handler.HandleWithDomainRules(
+            new CancelSalesInvoiceCommand(inv.Id, "Motivo de prueba"),
+            CancellationToken.None
+        );
+
+        result.Code.Should().Be(ApiResponseCodes.Common.DomainRuleViolation);
+        result.Error.Should().Be("No se puede anular: No se puede cancelar una cuenta por cobrar con pagos registrados.");
+        inv.Status.Should().NotBe(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Cancelled);
     }
 }

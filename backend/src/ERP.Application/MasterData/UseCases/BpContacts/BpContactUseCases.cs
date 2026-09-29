@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.MasterData.DTOs;
+using ERP.Domain.Exceptions;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Interfaces;
@@ -230,10 +231,6 @@ public sealed class UpdateBpContactHandler
         {
             return Result<BpContactDto>.ValidationFailure(ex.Message);
         }
-        catch (InvalidOperationException ex)
-        {
-            return Result<BpContactDto>.ValidationFailure(ex.Message);
-        }
 
         await _contactRepo.SaveChangesAsync(cancellationToken);
         return Result<BpContactDto>.Success(BpContactDto.From(contact));
@@ -262,14 +259,7 @@ public sealed class SetPrimaryBpContactHandler
 
         await _contactRepo.ClearPrimaryAsync(contact.BusinessPartnerId, cancellationToken);
 
-        try
-        {
-            contact.SetPrimary(_ctx.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<bool>.ValidationFailure(ex.Message);
-        }
+        contact.SetPrimary(_ctx.UserId);
 
         await _contactRepo.SaveChangesAsync(cancellationToken);
         return Result<bool>.Success(true);
@@ -296,14 +286,7 @@ public sealed class DeactivateBpContactHandler
         if (contact is null || contact.BusinessPartnerId != cmd.BusinessPartnerId)
             return Result<bool>.NotFound("Contacto no encontrado.");
 
-        try
-        {
-            contact.Deactivate(_ctx.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<bool>.ValidationFailure(ex.Message);
-        }
+        contact.Deactivate(_ctx.UserId);
 
         await _contactRepo.SaveChangesAsync(cancellationToken);
         return Result<bool>.Success(true);
@@ -330,14 +313,7 @@ public sealed class ActivateBpContactHandler
         if (contact is null || contact.BusinessPartnerId != cmd.BusinessPartnerId)
             return Result<bool>.NotFound("Contacto no encontrado.");
 
-        try
-        {
-            contact.Activate(_ctx.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<bool>.ValidationFailure(ex.Message);
-        }
+        contact.Activate(_ctx.UserId);
 
         await _contactRepo.SaveChangesAsync(cancellationToken);
         return Result<bool>.Success(true);

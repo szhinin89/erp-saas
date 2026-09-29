@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Items.DTOs;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Items.Interfaces;
 using FluentValidation;
 using MediatR;
@@ -84,7 +85,7 @@ public sealed class AddBarcodeHandler
         {
             variant.AddBarcode(code, cmd.BarcodeType, _t.TenantId, _u.UserId);
         }
-        catch (InvalidOperationException ex)
+        catch (DomainRuleViolationException ex)
         {
             return Result<VariantBarcodeDto>.Conflict(ex.Message);
         }
@@ -125,7 +126,7 @@ public sealed class DisableBarcodeHandler : IRequestHandler<DisableBarcodeComman
         {
             variant.DisableBarcode(cmd.BarcodeId, _u.UserId);
         }
-        catch (InvalidOperationException ex)
+        catch (DomainRuleViolationException ex)
         {
             return Result<bool>.NotFound(ex.Message);
         }

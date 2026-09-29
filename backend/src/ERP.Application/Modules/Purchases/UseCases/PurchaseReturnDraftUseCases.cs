@@ -446,15 +446,7 @@ public sealed class UpdatePurchaseReturnDraftHandler
                 creditNote.AuthorizationDate, creditNote.IssueDate, cmd.Reason, resolved.Fiscal, [], _u.UserId);
         }
 
-        try
-        {
-            purchaseReturn.UpdateDraft(cmd.Reason, lines, _u.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            // PR-009
-            return Result<PurchaseReturnDto>.ValidationFailure(ex.Message);
-        }
+        purchaseReturn.UpdateDraft(cmd.Reason, lines, _u.UserId);
 
         await _returnRepo.SaveChangesAsync(ct);
         return Result<PurchaseReturnDto>.Success(Map.ToDto(purchaseReturn));
@@ -510,15 +502,7 @@ public sealed class CancelPurchaseReturnDraftHandler
             );
 
         var cancelHash = ComputeCancelPayloadHash(purchaseReturn.Id, cmd.Reason);
-        try
-        {
-            purchaseReturn.Cancel(cmd.Reason, _u.UserId, cmd.ClientRequestId, cancelHash);
-        }
-        catch (InvalidOperationException ex)
-        {
-            // PR-009
-            return Result<PurchaseReturnDto>.ValidationFailure(ex.Message);
-        }
+        purchaseReturn.Cancel(cmd.Reason, _u.UserId, cmd.ClientRequestId, cancelHash);
 
         var creditNote = _creditNoteRepo is null ? null
             : await _creditNoteRepo.GetByLinkedPurchaseReturnIdAsync(_t.TenantId, purchaseReturn.Id, ct);

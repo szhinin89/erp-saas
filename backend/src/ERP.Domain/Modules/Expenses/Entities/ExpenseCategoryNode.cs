@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Expenses.Enums;
 
 namespace ERP.Domain.Modules.Expenses.Entities;
@@ -181,7 +182,7 @@ public sealed class ExpenseCategoryNode : AuditableEntity, ITenantScopedEntity, 
     )
     {
         if (Level != ExpenseCategoryNodeLevel.Subcategory)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Solo una subcategoría puede configurar reglas tributarias de gasto."
             );
 
@@ -193,7 +194,7 @@ public sealed class ExpenseCategoryNode : AuditableEntity, ITenantScopedEntity, 
     public void ChangeSubcategoryAccount(Guid accountingAccountId, Guid updatedBy)
     {
         if (Level != ExpenseCategoryNodeLevel.Subcategory)
-            throw new InvalidOperationException("Solo una subcategoría puede tener cuenta contable.");
+            throw new DomainRuleViolationException("Solo una subcategoría puede tener cuenta contable.");
         if (accountingAccountId == Guid.Empty)
             throw new ArgumentException("La cuenta contable es obligatoria.", nameof(accountingAccountId));
 

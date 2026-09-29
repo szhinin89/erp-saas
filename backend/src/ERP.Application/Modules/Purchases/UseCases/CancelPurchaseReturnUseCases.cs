@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Purchases.DTOs;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Payables.Enums;
@@ -250,20 +251,11 @@ public sealed class CancelPurchaseReturnHandler
                         purchaseReturn.Id,
                         cmd.ClientRequestId
                     );
-                    try
-                    {
-                        credit.RegisterSourceReturnCancellation(
-                            uid,
-                            cmd.ClientRequestId,
-                            movementHash
-                        );
-                    }
-                    catch (InvalidOperationException ex)
-                    {
-                        await _uow.RollbackAsync(ct);
-                        // PR-011 (defensa en profundidad del dominio)
-                        return Result<PurchaseReturnDto>.ValidationFailure(ex.Message);
-                    }
+                    credit.RegisterSourceReturnCancellation(
+                        uid,
+                        cmd.ClientRequestId,
+                        movementHash
+                    );
                 }
             }
 
@@ -272,29 +264,20 @@ public sealed class CancelPurchaseReturnHandler
                 cmd.ClientRequestId,
                 cmd.Reason
             );
-            try
-            {
-                purchaseReturn.Cancel(cmd.Reason, uid, cmd.ClientRequestId, cancelHash);
-                var creditNote = _creditNoteRepo is null ? null
-                    : await _creditNoteRepo.GetByLinkedPurchaseReturnIdAsync(tid, purchaseReturn.Id, ct);
-                creditNote?.CancelLinkedReturn(purchaseReturn, uid);
+            purchaseReturn.Cancel(cmd.Reason, uid, cmd.ClientRequestId, cancelHash);
+            var creditNote = _creditNoteRepo is null ? null
+                : await _creditNoteRepo.GetByLinkedPurchaseReturnIdAsync(tid, purchaseReturn.Id, ct);
+            creditNote?.CancelLinkedReturn(purchaseReturn, uid);
 
-                // PURCHASE-RECEPTION-CREDIT-NOTE-CANCELLED-REPROCESS-01 — la NC/XML de recepción que
-                // originó esta devolución queda libre para "Procesar NC" de nuevo (crea una NC/
-                // devolución nueva y limpia, nunca reutiliza la cancelada). Sin esto, el documento de
-                // recepción se quedaba permanentemente "Procesado" (PurchaseId apuntando a la factura
-                // afectada) aunque su única NC hubiera sido anulada — bloqueando cualquier reintento.
-                if (creditNote?.ReceptionDocumentId is { } receptionDocumentId && _receptionRepo is not null)
-                {
-                    var receptionDoc = await _receptionRepo.GetByIdAsync(tid, receptionDocumentId, ct);
-                    receptionDoc?.UnmarkProcessed(uid);
-                }
-            }
-            catch (InvalidOperationException ex)
+            // PURCHASE-RECEPTION-CREDIT-NOTE-CANCELLED-REPROCESS-01 — la NC/XML de recepción que
+            // originó esta devolución queda libre para "Procesar NC" de nuevo (crea una NC/
+            // devolución nueva y limpia, nunca reutiliza la cancelada). Sin esto, el documento de
+            // recepción se quedaba permanentemente "Procesado" (PurchaseId apuntando a la factura
+            // afectada) aunque su única NC hubiera sido anulada — bloqueando cualquier reintento.
+            if (creditNote?.ReceptionDocumentId is { } receptionDocumentId && _receptionRepo is not null)
             {
-                await _uow.RollbackAsync(ct);
-                // PR-009
-                return Result<PurchaseReturnDto>.ValidationFailure(ex.Message);
+                var receptionDoc = await _receptionRepo.GetByIdAsync(tid, receptionDocumentId, ct);
+                receptionDoc?.UnmarkProcessed(uid);
             }
 
             try
@@ -342,11 +325,6 @@ public sealed class CancelPurchaseReturnHandler
             await _uow.CommitAsync(ct);
 
             return Result<PurchaseReturnDto>.Success(Map.ToDto(purchaseReturn));
-        }
-        catch (InvalidOperationException ex)
-        {
-            await _uow.RollbackAsync(ct);
-            return Result<PurchaseReturnDto>.ValidationFailure(ex.Message);
         }
         catch
         {

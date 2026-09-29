@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Events;
 using ERP.Domain.MasterData.ValueObjects;
@@ -107,7 +108,7 @@ public sealed class BusinessPartnerRole : AuditableEntity, ITenantScopedEntity
     public void Reactivate(Guid reactivatedBy)
     {
         if (IsActive)
-            throw new InvalidOperationException($"El rol {RoleType} ya está activo.");
+            throw new DomainRuleViolationException($"El rol {RoleType} ya está activo.");
         if (reactivatedBy == Guid.Empty)
             throw new ArgumentException("ReactivatedBy es obligatorio.", nameof(reactivatedBy));
 
@@ -139,7 +140,7 @@ public sealed class BusinessPartnerRole : AuditableEntity, ITenantScopedEntity
     public void Revoke(Guid revokedBy)
     {
         if (!IsActive)
-            throw new InvalidOperationException($"El rol {RoleType} ya está revocado.");
+            throw new DomainRuleViolationException($"El rol {RoleType} ya está revocado.");
         if (revokedBy == Guid.Empty)
             throw new ArgumentException("RevokedBy es obligatorio.", nameof(revokedBy));
 
@@ -162,7 +163,7 @@ public sealed class BusinessPartnerRole : AuditableEntity, ITenantScopedEntity
     public void UpdateNotes(string? notes, Guid updatedBy)
     {
         if (!IsActive)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No se puede actualizar las notas de un rol revocado."
             );
 
@@ -186,11 +187,11 @@ public sealed class BusinessPartnerRole : AuditableEntity, ITenantScopedEntity
     public void UpdateSupplierConfig(SupplierRoleConfig config, Guid updatedBy)
     {
         if (RoleType != RoleType.Supplier)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"UpdateSupplierConfig solo aplica al rol Supplier. Rol actual: {RoleType}."
             );
         if (!IsActive)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No se puede actualizar la config de un rol revocado."
             );
 
@@ -215,11 +216,11 @@ public sealed class BusinessPartnerRole : AuditableEntity, ITenantScopedEntity
     public void UpdateCarrierConfig(CarrierRoleConfig config, Guid updatedBy)
     {
         if (RoleType != RoleType.Carrier)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"UpdateCarrierConfig solo aplica al rol Carrier. Rol actual: {RoleType}."
             );
         if (!IsActive)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No se puede actualizar la config de un rol revocado."
             );
 
@@ -244,11 +245,11 @@ public sealed class BusinessPartnerRole : AuditableEntity, ITenantScopedEntity
     public void UpdateCustomerConfig(CustomerRoleConfig config, Guid updatedBy)
     {
         if (RoleType != RoleType.Customer)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"UpdateCustomerConfig solo aplica al rol Customer. Rol actual: {RoleType}."
             );
         if (!IsActive)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "No se puede actualizar la config de un rol revocado."
             );
 

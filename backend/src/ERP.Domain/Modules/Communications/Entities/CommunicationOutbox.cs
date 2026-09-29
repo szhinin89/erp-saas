@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Communications.Enums;
 
 namespace ERP.Domain.Modules.Communications.Entities;
@@ -121,7 +122,7 @@ public sealed class CommunicationOutbox
     public void MarkProcessing(Guid updatedBy)
     {
         if (Status != CommunicationStatus.Pending)
-            throw new InvalidOperationException("Solo una comunicación pendiente puede marcarse en proceso.");
+            throw new DomainRuleViolationException("Solo una comunicación pendiente puede marcarse en proceso.");
 
         Status = CommunicationStatus.Processing;
         ProcessingStartedAtUtc = DateTime.UtcNow;
@@ -162,7 +163,7 @@ public sealed class CommunicationOutbox
     public void Cancel(Guid updatedBy)
     {
         if (Status == CommunicationStatus.Sent)
-            throw new InvalidOperationException("Una comunicación enviada no puede cancelarse.");
+            throw new DomainRuleViolationException("Una comunicación enviada no puede cancelarse.");
 
         Status = CommunicationStatus.Cancelled;
         SetUpdated(updatedBy);

@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.InitialLoad.Enums;
 
 namespace ERP.Domain.Modules.InitialLoad.Entities;
@@ -95,7 +96,7 @@ public sealed class ImportBatch : AuditableEntity, ICompanyOperationalEntity
     {
         EnsureStatus("marcar como subido", ImportStatus.Draft, ImportStatus.Uploaded);
         if (_files.Count == 0)
-            throw new InvalidOperationException("El lote no tiene ningún archivo adjunto.");
+            throw new DomainRuleViolationException("El lote no tiene ningún archivo adjunto.");
         Status = ImportStatus.Uploaded;
         SetUpdated(updatedBy);
     }
@@ -169,7 +170,7 @@ public sealed class ImportBatch : AuditableEntity, ICompanyOperationalEntity
     private void EnsureStatus(string action, params ImportStatus[] allowed)
     {
         if (!allowed.Contains(Status))
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"No se puede {action} un lote en estado '{Status}'."
             );
     }

@@ -17,6 +17,7 @@ using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Interfaces;
 using FluentAssertions;
 using Moq;
+using ERP.Application.Tests.Common;
 
 namespace ERP.Application.Tests.Finance;
 
@@ -507,7 +508,7 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
             .ReturnsAsync(BuildPaymentMethod());
         var handler = m.BuildHandler();
 
-        var result = await handler.Handle(BankCommand(credit.Id, 50m), CancellationToken.None);
+        var result = await handler.HandleWithDomainRules(BankCommand(credit.Id, 50m), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         credit.AvailableAmount.Should().Be(30m);

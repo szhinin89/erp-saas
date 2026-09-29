@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 
 namespace ERP.Domain.Modules.Accounting.Entities;
 
@@ -48,11 +49,11 @@ public sealed class JournalEntryLine : IMustHaveTenant
                 nameof(credit)
             );
         if (debit > 0 && credit > 0)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Una línea de asiento no puede tener Débito y Crédito simultáneamente."
             );
         if (debit == 0 && credit == 0)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Una línea de asiento debe tener un monto en Débito o en Crédito."
             );
 

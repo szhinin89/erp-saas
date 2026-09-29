@@ -39,15 +39,8 @@ public sealed class DisableItemVariantCommandHandler
         if (item is null)
             return Result<bool>.NotFound("Ítem no encontrado.");
 
-        try
-        {
-            item.DisableVariant(cmd.VariantId, _user.UserId);
-            await _repository.SaveChangesAsync(cancellationToken);
-            return Result<bool>.Success(true);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<bool>.ValidationFailure(ex.Message);
-        }
+        item.DisableVariant(cmd.VariantId, _user.UserId);
+        await _repository.SaveChangesAsync(cancellationToken);
+        return Result<bool>.Success(true);
     }
 }

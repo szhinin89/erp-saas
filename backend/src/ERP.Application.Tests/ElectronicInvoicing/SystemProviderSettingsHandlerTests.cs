@@ -5,6 +5,7 @@ using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Interfaces;
 using FluentAssertions;
 using Moq;
+using ERP.Application.Tests.Common;
 
 namespace ERP.Application.Tests.ElectronicInvoicing;
 
@@ -71,7 +72,7 @@ public sealed class SystemProviderSettingsHandlerTests
         f.Repo.Setup(r => r.GetAsync(It.IsAny<CancellationToken>())).ReturnsAsync((SystemProviderSettings?)null);
 
         var result = await f.BuildUpsertHandler()
-            .Handle(
+            .HandleWithDomainRules(
                 new UpsertSystemProviderSettingsCommand(null, null, null, null, Enabled: true),
                 CancellationToken.None
             );

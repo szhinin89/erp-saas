@@ -8,6 +8,7 @@ using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentAssertions;
 using Moq;
+using ERP.Application.Tests.Common;
 
 namespace ERP.Application.Tests.Finance;
 
@@ -227,7 +228,7 @@ public sealed class ReverseSupplierCreditApplicationUseCasesTests
         var m = new Mocks(f);
         var handler = m.BuildHandler();
 
-        var first = await handler.Handle(
+        var first = await handler.HandleWithDomainRules(
             new ReverseSupplierCreditApplicationCommand(
                 f.Credit.Id,
                 f.ApplicationMovementId,
@@ -238,7 +239,7 @@ public sealed class ReverseSupplierCreditApplicationUseCasesTests
         );
         first.IsSuccess.Should().BeTrue();
 
-        var second = await handler.Handle(
+        var second = await handler.HandleWithDomainRules(
             new ReverseSupplierCreditApplicationCommand(
                 f.Credit.Id,
                 f.ApplicationMovementId,

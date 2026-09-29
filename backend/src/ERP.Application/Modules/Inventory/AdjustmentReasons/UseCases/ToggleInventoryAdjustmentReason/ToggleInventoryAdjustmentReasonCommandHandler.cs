@@ -34,17 +34,10 @@ public sealed class ToggleInventoryAdjustmentReasonCommandHandler
         if (reason is null)
             return Result<InventoryAdjustmentReasonDto>.NotFound("Motivo no encontrado.");
 
-        try
-        {
-            if (request.Activate)
-                reason.Enable(_user.UserId);
-            else
-                reason.Disable(_user.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<InventoryAdjustmentReasonDto>.ValidationFailure(ex.Message);
-        }
+        if (request.Activate)
+            reason.Enable(_user.UserId);
+        else
+            reason.Disable(_user.UserId);
 
         await _repo.SaveChangesAsync(ct);
 

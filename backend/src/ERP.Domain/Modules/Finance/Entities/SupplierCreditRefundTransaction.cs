@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Finance.Enums;
 
 namespace ERP.Domain.Modules.Finance.Entities;
@@ -192,11 +193,11 @@ public sealed class SupplierCreditRefundTransaction : ICompanyOperationalEntity
     public void LinkCashMovement(Guid cashSessionId, Guid cashMovementId)
     {
         if (CashRegisterId is null)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Solo una transacción con caja destino puede vincularse a un movimiento de caja."
             );
         if (CashMovementId is not null)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "La transacción ya está vinculada a un movimiento de caja."
             );
         if (cashSessionId == Guid.Empty)
@@ -222,7 +223,7 @@ public sealed class SupplierCreditRefundTransaction : ICompanyOperationalEntity
     {
         ArgumentNullException.ThrowIfNull(original);
         if (original.TransactionTypeCode != RefundTransactionTypeCode.RefundReceived)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Solo se puede revertir una transacción de tipo ingreso de reembolso."
             );
         if (supplierCreditMovementId == Guid.Empty)

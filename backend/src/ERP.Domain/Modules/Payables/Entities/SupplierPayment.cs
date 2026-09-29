@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Events;
 
@@ -235,7 +236,7 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
 
         payment.EnsureBalanced();
         if (payment.UnappliedAmount > 0 && !unappliedAmountConfirmed)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"El pago deja {payment.UnappliedAmount.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)} sin aplicar: debe confirmar explícitamente que ese saldo quedará como anticipo a favor del proveedor."
             );
         payment.SetCreated(createdBy);
@@ -273,12 +274,12 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
     public void LinkCashMovement(Guid methodLineId, Guid cashSessionId, Guid cashMovementId)
     {
         if (Status != SupplierPaymentStatus.Confirmed)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Solo un pago Confirmed puede vincularse a un movimiento de caja."
             );
         var line =
             _methodLines.FirstOrDefault(l => l.Id == methodLineId)
-            ?? throw new InvalidOperationException("El medio de pago indicado no pertenece a este pago.");
+            ?? throw new DomainRuleViolationException("El medio de pago indicado no pertenece a este pago.");
         line.LinkCashMovement(cashSessionId, cashMovementId);
     }
 
@@ -311,7 +312,7 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
     )
     {
         if (Status != SupplierPaymentStatus.Confirmed)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Solo un pago Confirmed puede reversarse (estado actual: {Status})."
             );
         if (string.IsNullOrWhiteSpace(reason))
@@ -320,15 +321,15 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
         var cashLines = _methodLines.Where(l => l.CashRegisterId is not null).ToList();
         var hasBankLines = _methodLines.Any(l => l.CompanyBankAccountId is not null);
         if (cashLines.Any(l => l.CashSessionId is null || l.CashMovementId is null))
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "El pago tiene una fuente de efectivo sin sesión de caja registrada: no puede revertirse documentalmente."
             );
         if (cashLines.Count > 0 && !cashNotDeliveredConfirmed)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Debe confirmar que el efectivo no fue entregado al proveedor y permanece en la misma caja."
             );
         if (hasBankLines && bankReversalReason is null)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 "Debe indicar el motivo de la reversa bancaria: la transferencia no se ejecutó, fue rechazada por el banco o fue un error de registro."
             );
         if (bankReversalReason is { } bankReason && !Enum.IsDefined(bankReason))
@@ -383,19 +384,19 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
     {
         var totalMethods = _methodLines.Sum(l => l.Amount);
         if (totalMethods != TotalAmount)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"La suma de los medios de pago ({totalMethods:F2}) no coincide con el total del pago ({TotalAmount:F2})."
             );
 
         var totalApplications = _applicationLines.Sum(l => l.AmountApplied);
         if (totalApplications > TotalAmount)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"La suma de las aplicaciones a cuota ({totalApplications:F2}) supera el total del pago ({TotalAmount:F2})."
             );
 
         var totalAllocations = _allocationLines.Sum(l => l.Amount);
         if (totalAllocations != totalApplications)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"La suma de las distribuciones medio↔cuota ({totalAllocations:F2}) no coincide con la suma aplicada a cuotas ({totalApplications:F2})."
             );
 
@@ -405,7 +406,7 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
                 .Where(a => a.SupplierPaymentMethodLineId == methodLine.Id)
                 .Sum(a => a.Amount);
             if (distributed > methodLine.Amount)
-                throw new InvalidOperationException(
+                throw new DomainRuleViolationException(
                     $"El medio de pago {methodLine.Id} está distribuido por encima de su monto."
                 );
         }
@@ -416,7 +417,7 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
                 .Where(a => a.SupplierPaymentApplicationLineId == applicationLine.Id)
                 .Sum(a => a.Amount);
             if (covered != applicationLine.AmountApplied)
-                throw new InvalidOperationException(
+                throw new DomainRuleViolationException(
                     $"La aplicación {applicationLine.Id} no está cubierta al 100% entre los medios de pago."
                 );
         }

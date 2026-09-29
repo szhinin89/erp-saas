@@ -28,14 +28,7 @@ public sealed class EnableCashRegisterHandler
         if (entity is null)
             return Result<bool>.NotFound("Caja no encontrada.");
 
-        try
-        {
-            entity.Enable(_u.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<bool>.ValidationFailure(ex.Message);
-        }
+        entity.Enable(_u.UserId);
 
         await _repo.SaveChangesAsync(ct);
         return Result<bool>.Success(true);

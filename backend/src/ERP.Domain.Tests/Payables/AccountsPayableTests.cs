@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
 using FluentAssertions;
@@ -101,7 +102,7 @@ public sealed class AccountsPayableTests
 
         var act = () => payable.AddInstallment(1, new DateOnly(2026, 10, 26), 60m);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*cuota*1*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*cuota*1*");
     }
 
     [Fact]
@@ -200,7 +201,7 @@ public sealed class AccountsPayableTests
 
         var act = () => payable.ReversePaymentToInstallment(installment.Id, 150m, UserId);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
         installment.PaidAmount.Should().Be(100m, "el intento rechazado no debe mutar el saldo");
     }
 
@@ -212,7 +213,7 @@ public sealed class AccountsPayableTests
 
         var act = () => payable.ReversePaymentToInstallment(Guid.NewGuid(), 100m, UserId);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]

@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Inventory.Enums;
 
 namespace ERP.Domain.Modules.Inventory.Entities;
@@ -63,7 +64,7 @@ public sealed class SerialNumber : AuditableEntity, ITenantScopedEntity, ICompan
     public void Sell(string documentRef, Guid updatedBy)
     {
         if (Status != SerialStatus.InStock)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"El serial '{Serial}' no está disponible (estado: {Status})."
             );
 
@@ -76,7 +77,7 @@ public sealed class SerialNumber : AuditableEntity, ITenantScopedEntity, ICompan
     public void Return(Guid updatedBy)
     {
         if (Status != SerialStatus.Sold)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"El serial '{Serial}' no puede devolverse (estado: {Status})."
             );
 
@@ -88,7 +89,7 @@ public sealed class SerialNumber : AuditableEntity, ITenantScopedEntity, ICompan
     public void ReInstock(Guid updatedBy)
     {
         if (Status != SerialStatus.Returned)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Solo los seriales devueltos pueden re-ingresarse (estado: {Status})."
             );
 
@@ -99,7 +100,7 @@ public sealed class SerialNumber : AuditableEntity, ITenantScopedEntity, ICompan
     public void MarkDefective(Guid updatedBy)
     {
         if (Status is not (SerialStatus.InStock or SerialStatus.Returned))
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"No se puede marcar como defectuoso desde el estado {Status}."
             );
 
@@ -110,7 +111,7 @@ public sealed class SerialNumber : AuditableEntity, ITenantScopedEntity, ICompan
     public void MarkLost(Guid updatedBy)
     {
         if (Status != SerialStatus.InStock)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Solo los seriales en stock pueden marcarse como perdidos (estado: {Status})."
             );
 
@@ -121,7 +122,7 @@ public sealed class SerialNumber : AuditableEntity, ITenantScopedEntity, ICompan
     public void Dispose(Guid updatedBy)
     {
         if (Status != SerialStatus.Defective)
-            throw new InvalidOperationException(
+            throw new DomainRuleViolationException(
                 $"Solo los seriales defectuosos pueden darse de baja (estado: {Status})."
             );
 

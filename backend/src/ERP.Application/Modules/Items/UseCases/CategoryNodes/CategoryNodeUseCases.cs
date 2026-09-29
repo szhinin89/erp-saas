@@ -247,14 +247,7 @@ public sealed class DisableCategoryNodeCommandHandler
                 $"Tiene {items} ítem(s) asignado(s). Reasígnelos primero."
             );
 
-        try
-        {
-            node.Disable(_user.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<bool>.ValidationFailure(ex.Message);
-        }
+        node.Disable(_user.UserId);
 
         await _repo.SaveChangesAsync(ct);
         return Result<bool>.Success(true);
@@ -288,14 +281,7 @@ public sealed class EnableCategoryNodeCommandHandler
                 );
         }
 
-        try
-        {
-            node.Enable(_user.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<bool>.ValidationFailure(ex.Message);
-        }
+        node.Enable(_user.UserId);
 
         await _repo.SaveChangesAsync(ct);
         return Result<bool>.Success(true);

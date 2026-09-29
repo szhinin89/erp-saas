@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.ValueObjects;
 using FluentAssertions;
@@ -118,7 +119,7 @@ public sealed class SalesPaymentScheduleTests
 
         var act = () => inv.GeneratePaymentSchedule();
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     // ── ReplacePaymentSchedule ───────────────────────────────────────────
@@ -151,7 +152,7 @@ public sealed class SalesPaymentScheduleTests
                 new List<(int, DateOnly, decimal, string?)> { (1, inv.IssueDate, 90m, null) }
             );
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*no coincide*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*no coincide*");
     }
 
     [Fact]
@@ -202,6 +203,6 @@ public sealed class SalesPaymentScheduleTests
                 new List<(int, DateOnly, decimal, string?)> { (1, inv.IssueDate, inv.GrandTotal, null) }
             );
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 }

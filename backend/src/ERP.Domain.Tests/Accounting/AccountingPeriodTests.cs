@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.ValueObjects;
@@ -55,7 +56,7 @@ public sealed class AccountingPeriodTests
 
         var act = () => period.Close(CreatedBy, readiness);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*sin publicar*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*sin publicar*");
         period.Status.Should().Be(PeriodStatus.Open);
     }
 
@@ -67,7 +68,7 @@ public sealed class AccountingPeriodTests
 
         var act = () => period.Close(CreatedBy, readiness);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*número de asiento*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*número de asiento*");
         period.Status.Should().Be(PeriodStatus.Open);
     }
 
@@ -80,7 +81,7 @@ public sealed class AccountingPeriodTests
         var act = () => period.Close(CreatedBy, readiness);
 
         act.Should()
-            .Throw<InvalidOperationException>()
+            .Throw<DomainRuleViolationException>()
             .WithMessage("*reversos contables incompletos*");
         period.Status.Should().Be(PeriodStatus.Open);
     }
@@ -98,7 +99,7 @@ public sealed class AccountingPeriodTests
         var act = () => period.Close(CreatedBy, readiness);
 
         act.Should()
-            .Throw<InvalidOperationException>()
+            .Throw<DomainRuleViolationException>()
             .WithMessage("*sin publicar*")
             .WithMessage("*número de asiento*")
             .Which.Message.Should()
@@ -113,7 +114,7 @@ public sealed class AccountingPeriodTests
 
         var act = () => period.Close(CreatedBy, Ready);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*no admite contabilización*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*no admite contabilización*");
     }
 
     [Fact]

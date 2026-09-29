@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Caja;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Finance.Entities;
@@ -219,21 +220,12 @@ public sealed class ReverseSupplierCreditRefundHandler
             // 3/7. Crear SupplierCreditMovement(ReversalOfRefund) — SC-011 guardado por dominio
             // (EnsureNotAlreadyReversed).
             Domain.Modules.Purchases.Entities.SupplierCreditMovement reversalMovement;
-            try
-            {
-                reversalMovement = credit.ReverseRefund(
-                    original.SupplierCreditMovementId,
-                    uid,
-                    cmd.ClientRequestId,
-                    hash
-                );
-            }
-            catch (InvalidOperationException ex)
-            {
-                await _uow.RollbackAsync(ct);
-                // SC-011
-                return Result<SupplierCreditRefundTransactionDto>.ValidationFailure(ex.Message);
-            }
+            reversalMovement = credit.ReverseRefund(
+                original.SupplierCreditMovementId,
+                uid,
+                cmd.ClientRequestId,
+                hash
+            );
 
             // ZH-SUPPLIER-PAYMENT-CASH-TRANSFER-HARDENING-02A — la reversa deshace el INGRESO del
             // reembolso original: egreso compensatorio (antes ManualIncome, signo invertido). El
@@ -295,11 +287,6 @@ public sealed class ReverseSupplierCreditRefundHandler
             return Result<SupplierCreditRefundTransactionDto>.Success(
                 RefundMap.ToDto(reversalTransaction)
             );
-        }
-        catch (InvalidOperationException ex)
-        {
-            await _uow.RollbackAsync(ct);
-            return Result<SupplierCreditRefundTransactionDto>.ValidationFailure(ex.Message);
         }
         catch
         {

@@ -407,10 +407,6 @@ public sealed class CreateExpenseDraftHandler
         {
             return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message);
         }
-        catch (InvalidOperationException ex)
-        {
-            return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message);
-        }
     }
 }
 
@@ -551,10 +547,6 @@ public sealed class UpdateExpenseDraftHandler
             );
         }
         catch (ArgumentException ex)
-        {
-            return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message);
-        }
-        catch (InvalidOperationException ex)
         {
             return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message);
         }
@@ -829,10 +821,6 @@ internal static class ExpenseDraftRules
                 );
             }
             catch (ArgumentException ex)
-            {
-                return new LineResolution(null, Validation(ex.Message));
-            }
-            catch (InvalidOperationException ex)
             {
                 return new LineResolution(null, Validation(ex.Message));
             }

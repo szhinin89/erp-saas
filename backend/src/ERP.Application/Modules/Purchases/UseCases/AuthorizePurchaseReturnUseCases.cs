@@ -4,6 +4,7 @@ using ERP.Application.Common.Services;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Companies;
 using ERP.Application.Modules.Purchases.DTOs;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
@@ -340,22 +341,22 @@ public sealed class AuthorizePurchaseReturnHandler
             if (creditNote is not null)
             {
                 if (creditNote.Status != PurchaseCreditNoteStatus.Draft)
-                    throw new InvalidOperationException("La nota de crédito vinculada no está en borrador.");
+                    throw new ERP.Domain.Exceptions.DomainRuleViolationException("La nota de crédito vinculada no está en borrador.");
                 var resolved = await CreditNoteReturnLines.ResolveAsync(invoice,
                     purchaseReturn.Lines.Select(l => new PurchaseReturnDraftLineInput(l.OriginalInvoiceDetailId, l.Quantity)).ToList(),
                     _returnRepo, tid, (await _precision.GetEffectiveAsync(ct)).QuantityDecimals, ct);
                 if (resolved.Error is not null)
-                    throw new InvalidOperationException(resolved.Error);
+                    throw new ERP.Domain.Exceptions.DomainRuleViolationException(resolved.Error);
                 var total = resolved.Fiscal.Sum(l => l.Subtotal + l.VatAmount + l.IceAmount + l.IrbpnrAmount);
                 if (total != creditNote.TotalAmount || creditNote.Lines.Count != purchaseReturn.Lines.Count
                     || creditNote.Lines.Any(l => !purchaseReturn.Lines.Any(r =>
                         r.OriginalInvoiceDetailId == l.PurchaseInvoiceDetailId && r.Quantity == l.Quantity)))
-                    throw new InvalidOperationException("Las líneas o el total de la devolución no coinciden con la NC vinculada.");
+                    throw new ERP.Domain.Exceptions.DomainRuleViolationException("Las líneas o el total de la devolución no coinciden con la NC vinculada.");
                 if (creditNote.ReceptionDocumentId is { } receptionId)
                 {
                     reception = await _receptionRepo!.GetByIdAsync(tid, receptionId, ct);
                     if (reception is null || Math.Abs(total - reception.TotalAmount) > 0.01m)
-                        throw new InvalidOperationException("El total de la devolución no coincide con la NC/XML recibido.");
+                        throw new ERP.Domain.Exceptions.DomainRuleViolationException("El total de la devolución no coincide con la NC/XML recibido.");
                     if (reception.CompanyId != creditNote.CompanyId
                         || reception.SourceDocType != Domain.Modules.Purchases.PurchaseReception.Enums.PurchaseReceptionSourceDocType.CreditNote
                         || reception.Status != Domain.Modules.Purchases.PurchaseReception.Enums.PurchaseReceptionDocumentStatus.Verified
@@ -364,7 +365,7 @@ public sealed class AuthorizePurchaseReturnHandler
                         || reception.AccessKey != creditNote.AccessKey
                         || (!string.IsNullOrWhiteSpace(reception.ModifiedDocumentNumber)
                             && !string.Equals(reception.ModifiedDocumentNumber.Trim(), invoice.InvoiceNumber.Trim(), StringComparison.OrdinalIgnoreCase)))
-                        throw new InvalidOperationException("La recepción de la NC ya no es válida para esta factura.");
+                        throw new ERP.Domain.Exceptions.DomainRuleViolationException("La recepción de la NC ya no es válida para esta factura.");
                 }
             }
 
@@ -377,59 +378,41 @@ public sealed class AuthorizePurchaseReturnHandler
             var balanceDueBeforeApplication = payable.OutstandingAmount;
 
             SupplierCredit? credit;
-            try
-            {
-                credit = purchaseReturn.Authorize(
-                    returnNumber,
-                    originalLinesByDetailId,
-                    balanceDueBeforeApplication,
-                    invoice.CurrencyCode,
-                    hasIssuedRetention,
-                    uid,
-                    cmd.ClientRequestId,
-                    authorizeHash
-                );
-            }
-            catch (InvalidOperationException ex)
-            {
-                await _uow.RollbackAsync(ct);
-                // PR-006 (retención Issued) u otro guard de dominio
-                return Result<PurchaseReturnDto>.ValidationFailure(ex.Message);
-            }
+            credit = purchaseReturn.Authorize(
+                returnNumber,
+                originalLinesByDetailId,
+                balanceDueBeforeApplication,
+                invoice.CurrencyCode,
+                hasIssuedRetention,
+                uid,
+                cmd.ClientRequestId,
+                authorizeHash
+            );
 
-            try
+            var effectiveDate = await _companyClock.TodayAsync(
+                purchaseReturn.CompanyId,
+                tid,
+                ct
+            );
+            foreach (var line in purchaseReturn.Lines)
             {
-                var effectiveDate = await _companyClock.TodayAsync(
-                    purchaseReturn.CompanyId,
+                await _stockRepo.AppendMovementAsync(
                     tid,
-                    ct
+                    purchaseReturn.CompanyId,
+                    line.ItemId,
+                    line.WarehouseId,
+                    StockMovementType.PurchaseReturn,
+                    -line.Quantity,
+                    uomCodeByDetailId[line.OriginalInvoiceDetailId],
+                    effectiveDate,
+                    $"Devolución {purchaseReturn.ReturnNumber}",
+                    purchaseReturn.Id,
+                    "PurchaseReturn",
+                    uid,
+                    line.UnitCost,
+                    sourceDocLineId: line.Id,
+                    cancellationToken: ct
                 );
-                foreach (var line in purchaseReturn.Lines)
-                {
-                    await _stockRepo.AppendMovementAsync(
-                        tid,
-                        purchaseReturn.CompanyId,
-                        line.ItemId,
-                        line.WarehouseId,
-                        StockMovementType.PurchaseReturn,
-                        -line.Quantity,
-                        uomCodeByDetailId[line.OriginalInvoiceDetailId],
-                        effectiveDate,
-                        $"Devolución {purchaseReturn.ReturnNumber}",
-                        purchaseReturn.Id,
-                        "PurchaseReturn",
-                        uid,
-                        line.UnitCost,
-                        sourceDocLineId: line.Id,
-                        cancellationToken: ct
-                    );
-                }
-            }
-            catch (InvalidOperationException ex)
-            {
-                await _uow.RollbackAsync(ct);
-                // PR-005 (defensa autoritativa de CurrentStock.ApplyMovement)
-                return Result<PurchaseReturnDto>.ValidationFailure(ex.Message);
             }
 
             if (creditNote is not null)
@@ -487,11 +470,6 @@ public sealed class AuthorizePurchaseReturnHandler
             await _uow.CommitAsync(ct);
 
             return Result<PurchaseReturnDto>.Success(Map.ToDto(purchaseReturn));
-        }
-        catch (InvalidOperationException ex)
-        {
-            await _uow.RollbackAsync(ct);
-            return Result<PurchaseReturnDto>.ValidationFailure(ex.Message);
         }
         catch
         {

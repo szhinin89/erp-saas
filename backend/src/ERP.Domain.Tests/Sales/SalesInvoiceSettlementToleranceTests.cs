@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Policies;
 using ERP.Domain.Modules.Sales.ValueObjects;
@@ -85,7 +86,7 @@ public sealed class SalesInvoiceSettlementToleranceTests
 
         var act = () => inv.Authorize(UserId, cashApplied: 3.97m);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
         inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Draft);
     }
 

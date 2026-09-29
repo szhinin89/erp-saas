@@ -1,3 +1,4 @@
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Events;
@@ -209,7 +210,7 @@ public sealed class PurchaseReturnTests
 
         var act = () => purchaseReturn.UpdateDraft("Motivo", new[] { Line() }, UserId);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     // ── Authorize ─────────────────────────────────────────────────────
@@ -423,7 +424,7 @@ public sealed class PurchaseReturnTests
                 "hash-authorize-003"
             );
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*retención*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*retención*");
         purchaseReturn.Status.Should().Be(PurchaseReturnStatus.Draft);
     }
 
@@ -455,7 +456,7 @@ public sealed class PurchaseReturnTests
                 "hash-authorize-005"
             );
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -593,7 +594,7 @@ public sealed class PurchaseReturnTests
         var act = () =>
             purchaseReturn.Cancel("Otro motivo", UserId, Guid.NewGuid(), "hash-cancel-004");
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -671,7 +672,7 @@ public sealed class PurchaseReturnTests
                 "hash-link-002"
             );
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<DomainRuleViolationException>();
     }
 
     [Fact]

@@ -45,6 +45,7 @@ public sealed class ApiErrorContractHttpTests : IAsyncLifetime
     private Guid _foreignCompanyId;
     private Guid _otherTenantCompanyId;
     private string _username = null!;
+    private Guid _activePartnerId;
     private const string UserPassword = "Correcta#2026";
     private Guid _documentId;
     private Guid _foreignDocumentId;
@@ -113,6 +114,10 @@ public sealed class ApiErrorContractHttpTests : IAsyncLifetime
             db.CompanyUserMemberships.Add(membership);
             await db.SaveChangesAsync();
             db.CompanyUserBranches.Add(CompanyUserBranch.Create(_tenantId, company.Id, membership.Id, branch.Id, _adminId));
+
+            var partner = ERP.Domain.MasterData.Entities.BusinessPartner.Create(_tenantId, "05", "1710034065", 1, "Proveedor Activo", _adminId);
+            db.BusinessPartners.Add(partner);
+            _activePartnerId = partner.Id;
 
             var document = NewReceptionDocument(company.Id, branch.Id, AccessKey);
             var foreignDocument = NewReceptionDocument(foreignCompany.Id, foreignBranch.Id, AccessKey[..^1] + "2");
@@ -218,6 +223,22 @@ public sealed class ApiErrorContractHttpTests : IAsyncLifetime
         last.Code.Should().Be("RATE_LIMITED");
     }
 
+
+    // ── ZH-DOMAIN-RULE-ERROR-SSOT-01 ─────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Regla_de_dominio_por_HTTP_real_es_422_DOMAIN_RULE_VIOLATION_con_mensaje_publico()
+    {
+        // ActivateBusinessPartnerHandler ya no captura la regla: la traduce DomainRuleBehavior.
+        using var request = new HttpRequestMessage(HttpMethod.Patch, $"/api/v1/master/business-partners/{_activePartnerId}/activate");
+        request.Headers.Add("X-Company-Id", _companyId.ToString());
+        using var response = await _client.SendAsync(request);
+        var (status, code, errors) = await ReadAsync(response);
+
+        status.Should().Be(HttpStatusCode.UnprocessableEntity);
+        code.Should().Be("DOMAIN_RULE_VIOLATION");
+        errors.Should().Equal("El BusinessPartner ya está activo.");
+    }
 
     // ── ZH-SCOPE-ERROR-SEMANTICS-01 ─────────────────────────────────────────────────────────
 

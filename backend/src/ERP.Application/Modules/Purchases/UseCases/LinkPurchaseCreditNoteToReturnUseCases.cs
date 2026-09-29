@@ -129,14 +129,7 @@ public sealed class LinkPurchaseCreditNoteToReturnHandler
                 "Esta devolución de compra ya está vinculada a otra nota de crédito."
             );
 
-        try
-        {
-            creditNote.LinkPurchaseReturn(cmd.PurchaseReturnId, _u.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<PurchaseCreditNoteDto>.ValidationFailure(ex.Message);
-        }
+        creditNote.LinkPurchaseReturn(cmd.PurchaseReturnId, _u.UserId);
 
         try
         {
