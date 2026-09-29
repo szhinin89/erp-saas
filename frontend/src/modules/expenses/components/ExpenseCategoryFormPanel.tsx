@@ -2,7 +2,7 @@ import { Badge } from "../../../components/PageShell";
 import { ZHBtn, ZHField, ZHGrid } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZhTextarea, ZhTextInput } from "../../../components/zh/inputs";
-import type { AccountDto } from "../../accounting/api/accountingApi";
+import type { AccountDto } from "../../accounting/facades/accountLookupFacade";
 import type {
   ExpenseCategoryNodeLevel,
   ExpenseCategoryTreeNodeDto,

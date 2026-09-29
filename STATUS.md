@@ -2,6 +2,14 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-28** · Kernel refactor: **2026-06-05**.
 
+## ZH-ARCH-MODULE-BOUNDARIES-03 — Lookups read-only restantes vía facades del owner (2026-09-28)
+
+**Estado: COMPLETADO.** Las 33 violaciones A de `module-boundaries` resueltas con facades en el módulo propietario que solo delegan al servicio existente; API/payload/comportamiento sin cambios, backend intacto.
+- Facades nuevas: `caja/facades/cashRegisterLookupFacade` (`getCashRegisters`, `CashRegisterDto`), `finance/facades/bankAccountLookupFacade` (`list`, `CompanyBankAccountDto`), `accounting/facades/accountLookupFacade` (`listAccounts`, `AccountDto`), `configuracion/facades/operationalPreferencesLookupFacade` (`getPreferences`, `OperationalPreferencesDto`), `configuracion/facades/electronicInvoicingLookupFacade` (solo `export type ElectronicInvoicingStatusDto`). Reutilizada: `settings/banks/facades/bankLookupFacade` (sales).
+- Consumidores (27 archivos): caja, sales, finance, supplier-payments, expenses; mocks de tests movidos a la facade (incluidos `ExpenseDocumentFormPage.reception`/`.vatMismatch` y `SupplierPaymentFormPage.cashFunding`, que no importaban el servicio).
+- Quedan solo las 5 D (rediseño, sin tocar): expenses→purchases `createExpenseDraft`, purchases→retentions ×2, finance→payables `list`, supplier-payments `pendingPayablesFacade`→payables.
+- Baseline: 150 → 117; `module-boundaries` 38 → 5. Frontend completo 2551/2551.
+
 ## ZH-ARCH-MODULE-BOUNDARIES-02 — Facades públicas para lookups seguros (2026-09-28)
 
 **Estado: COMPLETADO (parcial por diseño).** 48 ocurrencias clasificadas: A 42 · B 1 · C 0 · D 5 · E 0. Corregidas 10 (prioridades sin módulo protegido + lookup read-only de masterData); API/payload sin cambios, facades solo delegan.

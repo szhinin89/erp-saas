@@ -3,7 +3,7 @@ import {
   shouldWarnSriUnavailable,
   SRI_UNAVAILABLE_ISSUE_WARNING,
 } from "./useSalesPage";
-import type { ElectronicInvoicingStatusDto } from "../../configuracion/facturacionElectronica/api/electronicInvoicingService";
+import type { ElectronicInvoicingStatusDto } from "../../configuracion/facades/electronicInvoicingLookupFacade";
 
 // ELECTRONIC-INVOICING-SRI-CONNECTIVITY-CHECK-SCOPE-01: shouldWarnSriUnavailable es la única
 // regla que decide si confirmIssue debe advertir al cajero antes de emitir — pura, no hace

@@ -34,11 +34,11 @@ const external = vi.hoisted(() => ({
   getBusinessPartner: vi.fn(),
 }));
 
-vi.mock("../../finance/api/bankAccountService", () => ({
-  bankAccountService: { list: external.listBankAccounts },
+vi.mock("../../finance/facades/bankAccountLookupFacade", () => ({
+  bankAccountLookupFacade: { list: external.listBankAccounts },
 }));
 
-vi.mock("../../caja/api/cajaService", () => ({ cajaService: { getCashRegisters: external.getCashRegisters } }));
+vi.mock("../../caja/facades/cashRegisterLookupFacade", () => ({ cashRegisterLookupFacade: { getCashRegisters: external.getCashRegisters } }));
 
 vi.mock("../../caja/facades/cashFundingRequestFacade", () => ({
   cashFundingRequestFacade: { create: vi.fn() },

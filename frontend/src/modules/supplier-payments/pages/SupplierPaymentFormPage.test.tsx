@@ -1,4 +1,4 @@
-import { cajaService, type CashRegisterDto } from "../../caja/api/cajaService";
+import { cashRegisterLookupFacade, type CashRegisterDto } from "../../caja/facades/cashRegisterLookupFacade";
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
@@ -9,9 +9,9 @@ import { pendingPayablesFacade, type PendingInstallmentOption } from "../api/pen
 import { supplierPaymentService } from "../api/supplierPaymentService";
 import { paymentMethodLookupFacade, type PaymentMethodDto } from "../../sales/facades/paymentMethodLookupFacade";
 import {
-  bankAccountService,
+  bankAccountLookupFacade,
   type CompanyBankAccountDto,
-} from "../../finance/api/bankAccountService";
+} from "../../finance/facades/bankAccountLookupFacade";
 import { businessPartnerLookupFacade } from "../../masterData/facades/businessPartnerLookupFacade";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 
@@ -32,11 +32,11 @@ vi.mock("../../sales/facades/paymentMethodLookupFacade", () => ({
   paymentMethodLookupFacade: { list: vi.fn() },
 }));
 
-vi.mock("../../finance/api/bankAccountService", () => ({
-  bankAccountService: { list: vi.fn() },
+vi.mock("../../finance/facades/bankAccountLookupFacade", () => ({
+  bankAccountLookupFacade: { list: vi.fn() },
 }));
 
-vi.mock("../../caja/api/cajaService", () => ({ cajaService: { getCashRegisters: vi.fn() } }));
+vi.mock("../../caja/facades/cashRegisterLookupFacade", () => ({ cashRegisterLookupFacade: { getCashRegisters: vi.fn() } }));
 
 vi.mock("../../caja/facades/cashFundingRequestFacade", () => ({
   cashFundingRequestFacade: { create: vi.fn() },
@@ -153,14 +153,14 @@ function mockAllowWithoutPayable(allow: boolean) {
 
 beforeEach(() => {
   mockAllowWithoutPayable(false);
-  vi.mocked(cajaService.getCashRegisters).mockResolvedValue([{ id: "cash-1", name: "Caja Principal", isActive: true, accountingAccountId: "acc-2" } as CashRegisterDto]);
+  vi.mocked(cashRegisterLookupFacade.getCashRegisters).mockResolvedValue([{ id: "cash-1", name: "Caja Principal", isActive: true, accountingAccountId: "acc-2" } as CashRegisterDto]);
   vi.mocked(usePermissionsUi).mockReturnValue({
     canShow: () => true,
     has: () => true,
     isAdminRole: false,
   } as unknown as ReturnType<typeof usePermissionsUi>);
   vi.mocked(paymentMethodLookupFacade.list).mockResolvedValue(methods);
-  vi.mocked(bankAccountService.list).mockResolvedValue(destinations);
+  vi.mocked(bankAccountLookupFacade.list).mockResolvedValue(destinations);
   vi.mocked(businessPartnerLookupFacade.getBusinessPartner).mockResolvedValue({
     legalName: "Proveedor Test",
     tradeName: null,

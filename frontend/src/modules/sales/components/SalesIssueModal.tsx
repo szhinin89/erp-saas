@@ -14,7 +14,7 @@ import {
   submitReceiptPrintJob,
   type PrintJobResponse,
 } from "../api/printAgentClient";
-import { operationalPreferencesService } from "../../configuracion/operaciones/api/operationalPreferencesService";
+import { operationalPreferencesLookupFacade } from "../../configuracion/facades/operationalPreferencesLookupFacade";
 import {
   ISSUE_STEPS,
   type IssuePhase,
@@ -129,7 +129,7 @@ export function SalesIssueModal({
 
   useEffect(() => {
     let cancelled = false;
-    operationalPreferencesService
+    operationalPreferencesLookupFacade
       .getPreferences()
       .then((dto) => {
         if (cancelled) return;

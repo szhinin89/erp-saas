@@ -21,8 +21,8 @@ function renderPage() {
  * mensaje real y ya no queda silencioso.
  */
 
-vi.mock("../../accounting/api/accountingApi", () => ({
-  accountingApi: {
+vi.mock("../../accounting/facades/accountLookupFacade", () => ({
+  accountLookupFacade: {
     listAccounts: vi.fn().mockResolvedValue([]),
   },
 }));

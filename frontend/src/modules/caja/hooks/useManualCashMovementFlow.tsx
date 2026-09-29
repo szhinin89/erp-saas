@@ -9,7 +9,7 @@ import {
   emptyMovementForm,
   type RecordMovementFormValues,
 } from "../schemas/cajaSchema";
-import { operationalPreferencesService } from "../../configuracion/operaciones/api/operationalPreferencesService";
+import { operationalPreferencesLookupFacade } from "../../configuracion/facades/operationalPreferencesLookupFacade";
 import { useI18n } from "../../../i18n/i18n";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { useAuthStore } from "../../../store/authStore";
@@ -64,7 +64,7 @@ export function useManualCashMovementFlow({
   useEffect(() => {
     let cancelled = false;
     setAllowManualMovements(false);
-    operationalPreferencesService
+    operationalPreferencesLookupFacade
       .getPreferences()
       .then((dto) => {
         if (!cancelled) setAllowManualMovements(dto.cash.allowManualInOutMovements);

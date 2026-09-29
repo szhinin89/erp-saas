@@ -1,4 +1,4 @@
-import { cajaService, type CashRegisterDto } from "../../caja/api/cajaService";
+import { cashRegisterLookupFacade, type CashRegisterDto } from "../../caja/facades/cashRegisterLookupFacade";
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
@@ -7,7 +7,7 @@ import { I18nProvider } from "../../../i18n/i18n";
 import { SupplierPaymentDetailPage } from "./SupplierPaymentDetailPage";
 import { supplierPaymentService, type SupplierPaymentDto } from "../api/supplierPaymentService";
 import { paymentMethodLookupFacade } from "../../sales/facades/paymentMethodLookupFacade";
-import { bankAccountService, type CompanyBankAccountDto } from "../../finance/api/bankAccountService";
+import { bankAccountLookupFacade, type CompanyBankAccountDto } from "../../finance/facades/bankAccountLookupFacade";
 import { businessPartnerLookupFacade } from "../../masterData/facades/businessPartnerLookupFacade";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 
@@ -27,11 +27,11 @@ vi.mock("../../sales/facades/paymentMethodLookupFacade", () => ({
   paymentMethodLookupFacade: { list: vi.fn() },
 }));
 
-vi.mock("../../finance/api/bankAccountService", () => ({
-  bankAccountService: { list: vi.fn() },
+vi.mock("../../finance/facades/bankAccountLookupFacade", () => ({
+  bankAccountLookupFacade: { list: vi.fn() },
 }));
 
-vi.mock("../../caja/api/cajaService", () => ({ cajaService: { getCashRegisters: vi.fn() } }));
+vi.mock("../../caja/facades/cashRegisterLookupFacade", () => ({ cashRegisterLookupFacade: { getCashRegisters: vi.fn() } }));
 
 vi.mock("../../masterData/facades/businessPartnerLookupFacade", () => ({
   businessPartnerLookupFacade: { getBusinessPartner: vi.fn() },
@@ -111,11 +111,11 @@ function renderPage() {
 }
 
 beforeEach(() => {
-  vi.mocked(cajaService.getCashRegisters).mockResolvedValue([]);
+  vi.mocked(cashRegisterLookupFacade.getCashRegisters).mockResolvedValue([]);
   routeParams.id = "sp-1";
   grant(["supplier-payments.view", "supplier-payments.reverse"]);
   vi.mocked(paymentMethodLookupFacade.list).mockResolvedValue([]);
-  vi.mocked(bankAccountService.list).mockResolvedValue([]);
+  vi.mocked(bankAccountLookupFacade.list).mockResolvedValue([]);
   vi.mocked(businessPartnerLookupFacade.getBusinessPartner).mockResolvedValue({
     legalName: "Proveedor Test",
     tradeName: null,
@@ -295,8 +295,8 @@ describe("Direct bank/cash identity display", () => {
     detail.methodLines[0].companyBankAccountId = cash ? null : "bank-1";
     detail.methodLines[0].cashRegisterId = cash ? "cash-1" : null;
     vi.mocked(supplierPaymentService.getById).mockResolvedValue(detail);
-    vi.mocked(bankAccountService.list).mockResolvedValue([{ id: "bank-1", displayName: "Bank 12345" } as CompanyBankAccountDto]);
-    vi.mocked(cajaService.getCashRegisters).mockResolvedValue([{ id: "cash-1", name: "Main cash" } as CashRegisterDto]);
+    vi.mocked(bankAccountLookupFacade.list).mockResolvedValue([{ id: "bank-1", displayName: "Bank 12345" } as CompanyBankAccountDto]);
+    vi.mocked(cashRegisterLookupFacade.getCashRegisters).mockResolvedValue([{ id: "cash-1", name: "Main cash" } as CashRegisterDto]);
     renderPage();
     expect(await screen.findByText(cash ? "Main cash" : "Bank 12345")).toBeTruthy();
   });

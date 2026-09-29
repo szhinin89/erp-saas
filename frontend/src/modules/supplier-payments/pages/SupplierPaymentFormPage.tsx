@@ -18,8 +18,8 @@ import {
   paymentMethodLookupFacade,
   type PaymentMethodDto,
 } from "../../sales/facades/paymentMethodLookupFacade";
-import { bankAccountService, type CompanyBankAccountDto } from "../../finance/api/bankAccountService";
-import { cajaService, type CashRegisterDto } from "../../caja/api/cajaService";
+import { bankAccountLookupFacade, type CompanyBankAccountDto } from "../../finance/facades/bankAccountLookupFacade";
+import { cashRegisterLookupFacade, type CashRegisterDto } from "../../caja/facades/cashRegisterLookupFacade";
 import {
   pendingPayablesFacade,
   type PendingInstallmentOption,
@@ -123,8 +123,8 @@ export function SupplierPaymentFormPage() {
         setAllowWithoutPayable(false);
       });
     paymentMethodLookupFacade.list(true).then(setMethods).catch(() => setMethods([]));
-    bankAccountService.list(true).then(setBankAccounts).catch(() => setBankAccounts([]));
-    cajaService.getCashRegisters(true).then(setCashRegisters).catch(() => setCashRegisters([]));
+    bankAccountLookupFacade.list(true).then(setBankAccounts).catch(() => setBankAccounts([]));
+    cashRegisterLookupFacade.getCashRegisters(true).then(setCashRegisters).catch(() => setCashRegisters([]));
   }, []);
 
   useEffect(() => {

@@ -3,8 +3,8 @@ import { useFieldArray, useFormContext } from "react-hook-form";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZhDateInput, ZhDecimalInput, ZhSelect, ZhTextInput } from "../../../components/zh/inputs";
 import type { PaymentMethodDto } from "../../sales/facades/paymentMethodLookupFacade";
-import type { CompanyBankAccountDto } from "../../finance/api/bankAccountService";
-import type { CashRegisterDto } from "../../caja/api/cajaService";
+import type { CompanyBankAccountDto } from "../../finance/facades/bankAccountLookupFacade";
+import type { CashRegisterDto } from "../../caja/facades/cashRegisterLookupFacade";
 import type { RegisterSupplierPaymentFormValues } from "../../../schemas/supplier-payments/registerSupplierPaymentSchema";
 
 interface Props {

@@ -9,7 +9,7 @@ import { Badge } from "../../../components/PageShell";
 import type { PaymentMethodDto } from "../api/paymentMethodService";
 import { paymentMethodService } from "../api/paymentMethodService";
 import { sriLookupFacade } from "../../items/facades/sriLookupFacade";
-import { accountingApi } from "../../accounting/api/accountingApi";
+import { accountLookupFacade } from "../../accounting/facades/accountLookupFacade";
 import { useAsync } from "../../../hooks/useAsync";
 import { formatApiRequestError } from "../../lib/apiError";
 import { message } from "../../../lib/messages";
@@ -41,10 +41,10 @@ export function PaymentMethodsPage() {
   const sriPaymentMethodsState = useAsync(() => sriLookupFacade.paymentMethods());
   const sriPaymentMethods = sriPaymentMethodsState.data ?? [];
 
-  // SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01 — reutiliza accountingApi.listAccounts() (ya usado
+  // SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01 — reutiliza accountLookupFacade.listAccounts() (ya usado
   // por ChartOfAccountsPage) en vez de crear un fetch nuevo. Solo cuentas postables/activas son
   // seleccionables — mismo criterio que PostingAccountGuard en backend.
-  const accountsState = useAsync(() => accountingApi.listAccounts());
+  const accountsState = useAsync(() => accountLookupFacade.listAccounts());
   const postableAccounts = (accountsState.data ?? []).filter(
     (a) => a.isActive && a.allowsPosting,
   );

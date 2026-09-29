@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { ZHField } from "../../../components/zh/ZHForm";
 import { ZhSelect } from "../../../components/zh/inputs/ZhSelect";
-import type { AccountDto } from "../../accounting/api/accountingApi";
+import type { AccountDto } from "../../accounting/facades/accountLookupFacade";
 import type { ExpenseCategoryTreeNodeDto } from "../api/expenseCategoryService";
 
 interface Props {

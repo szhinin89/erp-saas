@@ -6,7 +6,7 @@ import { ZhTextarea } from "../../../components/zh/inputs/ZhTextarea";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
-import type { AccountDto } from "../../accounting/api/accountingApi";
+import type { AccountDto } from "../../accounting/facades/accountLookupFacade";
 import type { SriVatRateLookup } from "../../items/facades/sriLookupFacade";
 import type { ExpenseCategoryTreeNodeDto } from "../api/expenseCategoryService";
 import {

@@ -13,7 +13,7 @@ import { todayIso } from "../../../lib/formatters/dateFormatters";
 import type { SupplierCreditDto } from "../api/supplierCreditService";
 import { supplierCreditService } from "../api/supplierCreditService";
 import { bankAccountService, type CompanyBankAccountDto } from "../api/bankAccountService";
-import { cajaService, type CashRegisterDto } from "../../caja/api/cajaService";
+import { cashRegisterLookupFacade, type CashRegisterDto } from "../../caja/facades/cashRegisterLookupFacade";
 import { paymentMethodLookupFacade, type PaymentMethodDto } from "../../sales/facades/paymentMethodLookupFacade";
 import {
   buildRegisterSupplierCreditRefundSchema,
@@ -86,7 +86,7 @@ export function RegisterSupplierCreditRefundModal({
       .list(true)
       .then(setBankAccounts)
       .catch(() => setBankAccounts([]));
-    cajaService
+    cashRegisterLookupFacade
       .getCashRegisters(true)
       .then(setCashRegisters)
       .catch(() => setCashRegisters([]));

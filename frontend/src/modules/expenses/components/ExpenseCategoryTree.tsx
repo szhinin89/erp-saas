@@ -1,7 +1,7 @@
 import { Badge } from "../../../components/PageShell";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
-import type { AccountDto } from "../../accounting/api/accountingApi";
+import type { AccountDto } from "../../accounting/facades/accountLookupFacade";
 import type {
   ExpenseCategoryNodeLevel,
   ExpenseCategoryTreeNodeDto,

@@ -14,8 +14,8 @@ import {
   paymentMethodLookupFacade,
   type PaymentMethodDto,
 } from "../../sales/facades/paymentMethodLookupFacade";
-import { bankAccountService, type CompanyBankAccountDto } from "../../finance/api/bankAccountService";
-import { cajaService, type CashRegisterDto } from "../../caja/api/cajaService";
+import { bankAccountLookupFacade, type CompanyBankAccountDto } from "../../finance/facades/bankAccountLookupFacade";
+import { cashRegisterLookupFacade, type CashRegisterDto } from "../../caja/facades/cashRegisterLookupFacade";
 import {
   supplierPaymentService,
   type ReverseSupplierPaymentRequest,
@@ -74,8 +74,8 @@ export function SupplierPaymentDetailPage() {
       const [detail, methodsList, bankAccountsList, cashRegistersList] = await Promise.all([
         supplierPaymentService.getById(id),
         paymentMethodLookupFacade.list(false),
-        bankAccountService.list(),
-        cajaService.getCashRegisters(),
+        bankAccountLookupFacade.list(),
+        cashRegisterLookupFacade.getCashRegisters(),
       ]);
       setPayment(detail);
       setMethods(methodsList);

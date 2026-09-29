@@ -10,10 +10,10 @@
     "lineNumber": "excluded to keep identity stable across unrelated edits"
   },
   "summary": {
-    "violations": 150,
+    "violations": 117,
     "byCheck": {
       "css-prefixes": 112,
-      "module-boundaries": 38
+      "module-boundaries": 5
     }
   },
   "violations": [
@@ -545,83 +545,6 @@
     {
       "check": "module-boundaries",
       "rule": "F-module-boundary",
-      "file": "frontend/src/modules/caja/hooks/useCajaPage.test.tsx",
-      "message": "cross-module import \"caja\" → \"configuracion\" via \"../../configuracion/operaciones/api/operationalPreferencesService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 2
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/caja/hooks/useManualCashMovementFlow.tsx",
-      "message": "cross-module import \"caja\" → \"configuracion\" via \"../../configuracion/operaciones/api/operationalPreferencesService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/expenses/components/ExpenseCategoryAccountSelector.tsx",
-      "message": "cross-module import \"expenses\" → \"accounting\" via \"../../accounting/api/accountingApi\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/expenses/components/ExpenseCategoryFormPanel.tsx",
-      "message": "cross-module import \"expenses\" → \"accounting\" via \"../../accounting/api/accountingApi\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/expenses/components/ExpenseCategoryTree.tsx",
-      "message": "cross-module import \"expenses\" → \"accounting\" via \"../../accounting/api/accountingApi\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/expenses/components/ExpenseDocumentLinesEditor.tsx",
-      "message": "cross-module import \"expenses\" → \"accounting\" via \"../../accounting/api/accountingApi\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/expenses/components/ExpenseSubcategorySelector.tsx",
-      "message": "cross-module import \"expenses\" → \"accounting\" via \"../../accounting/api/accountingApi\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/expenses/pages/ExpenseCategoriesPage.test.tsx",
-      "message": "cross-module import \"expenses\" → \"accounting\" via \"../../accounting/api/accountingApi\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/expenses/pages/ExpenseCategoriesPage.tsx",
-      "message": "cross-module import \"expenses\" → \"accounting\" via \"../../accounting/api/accountingApi\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.retention.test.tsx",
-      "message": "cross-module import \"expenses\" → \"accounting\" via \"../../accounting/api/accountingApi\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.tsx",
-      "message": "cross-module import \"expenses\" → \"accounting\" via \"../../accounting/api/accountingApi\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
       "file": "frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.tsx",
       "message": "cross-module import \"expenses\" → \"purchases\" via \"../../purchases/api/purchaseReceptionService\" not in allowedCrossImports; use shared contract or extend config",
       "count": 1
@@ -629,29 +552,8 @@
     {
       "check": "module-boundaries",
       "rule": "F-module-boundary",
-      "file": "frontend/src/modules/expenses/utils/expenseDocumentDraftModel.ts",
-      "message": "cross-module import \"expenses\" → \"accounting\" via \"../../accounting/api/accountingApi\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
       "file": "frontend/src/modules/finance/components/ApplySupplierCreditModal.tsx",
       "message": "cross-module import \"finance\" → \"payables\" via \"../../payables/api/payablesService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/finance/components/RegisterCollectionModal.tsx",
-      "message": "cross-module import \"finance\" → \"caja\" via \"../../caja/api/cajaService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/finance/components/RegisterSupplierCreditRefundModal.tsx",
-      "message": "cross-module import \"finance\" → \"caja\" via \"../../caja/api/cajaService\" not in allowedCrossImports; use shared contract or extend config",
       "count": 1
     },
     {
@@ -671,120 +573,8 @@
     {
       "check": "module-boundaries",
       "rule": "F-module-boundary",
-      "file": "frontend/src/modules/sales/components/SalesIssueModal.tsx",
-      "message": "cross-module import \"sales\" → \"configuracion\" via \"../../configuracion/operaciones/api/operationalPreferencesService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/sales/hooks/useSalesPage.sriConnectivity.test.ts",
-      "message": "cross-module import \"sales\" → \"configuracion\" via \"../../configuracion/facturacionElectronica/api/electronicInvoicingService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/sales/hooks/useSalesPage.ts",
-      "message": "cross-module import \"sales\" → \"configuracion\" via \"../../configuracion/facturacionElectronica/api/electronicInvoicingService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/sales/hooks/useSalesPage.ts",
-      "message": "cross-module import \"sales\" → \"finance\" via \"../../finance/api/bankAccountService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 2
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/sales/hooks/useSalesPage.ts",
-      "message": "cross-module import \"sales\" → \"settings\" via \"../../settings/banks/api/bankService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 2
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/sales/pages/PaymentMethodsPage.tsx",
-      "message": "cross-module import \"sales\" → \"accounting\" via \"../../accounting/api/accountingApi\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
       "file": "frontend/src/modules/supplier-payments/api/pendingPayablesFacade.ts",
       "message": "cross-module import \"supplier-payments\" → \"payables\" via \"../../payables/api/payablesService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/supplier-payments/components/SupplierPaymentMethodLinesEditor.tsx",
-      "message": "cross-module import \"supplier-payments\" → \"caja\" via \"../../caja/api/cajaService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/supplier-payments/components/SupplierPaymentMethodLinesEditor.tsx",
-      "message": "cross-module import \"supplier-payments\" → \"finance\" via \"../../finance/api/bankAccountService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/supplier-payments/pages/SupplierPaymentDetailPage.test.tsx",
-      "message": "cross-module import \"supplier-payments\" → \"caja\" via \"../../caja/api/cajaService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/supplier-payments/pages/SupplierPaymentDetailPage.test.tsx",
-      "message": "cross-module import \"supplier-payments\" → \"finance\" via \"../../finance/api/bankAccountService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/supplier-payments/pages/SupplierPaymentDetailPage.tsx",
-      "message": "cross-module import \"supplier-payments\" → \"caja\" via \"../../caja/api/cajaService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/supplier-payments/pages/SupplierPaymentDetailPage.tsx",
-      "message": "cross-module import \"supplier-payments\" → \"finance\" via \"../../finance/api/bankAccountService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/supplier-payments/pages/SupplierPaymentFormPage.test.tsx",
-      "message": "cross-module import \"supplier-payments\" → \"caja\" via \"../../caja/api/cajaService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/supplier-payments/pages/SupplierPaymentFormPage.test.tsx",
-      "message": "cross-module import \"supplier-payments\" → \"finance\" via \"../../finance/api/bankAccountService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/supplier-payments/pages/SupplierPaymentFormPage.tsx",
-      "message": "cross-module import \"supplier-payments\" → \"caja\" via \"../../caja/api/cajaService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/supplier-payments/pages/SupplierPaymentFormPage.tsx",
-      "message": "cross-module import \"supplier-payments\" → \"finance\" via \"../../finance/api/bankAccountService\" not in allowedCrossImports; use shared contract or extend config",
       "count": 1
     }
   ]

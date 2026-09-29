@@ -9,9 +9,9 @@ import {
   parseValidationErrors,
 } from "../../lib/apiError";
 import {
-  accountingApi,
+  accountLookupFacade,
   type AccountDto,
-} from "../../accounting/api/accountingApi";
+} from "../../accounting/facades/accountLookupFacade";
 import {
   expenseCategoryService,
   type ExpenseCategoryNodeLevel,
@@ -141,7 +141,7 @@ export function ExpenseCategoriesPage() {
     try {
       const [nodes, allAccounts] = await Promise.all([
         expenseCategoryService.getTree(true),
-        accountingApi.listAccounts(),
+        accountLookupFacade.listAccounts(),
       ]);
       setTree(nodes);
       setAccounts(allAccounts);

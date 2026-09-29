@@ -1,6 +1,6 @@
 import { ZHField } from "../../../components/zh/ZHForm";
 import { ZhSelect } from "../../../components/zh/inputs";
-import type { AccountDto } from "../../accounting/api/accountingApi";
+import type { AccountDto } from "../../accounting/facades/accountLookupFacade";
 
 interface Props {
   value: string;

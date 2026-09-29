@@ -44,10 +44,10 @@ import {
   applyRepricingPlanToLines,
   mapResolvedPricingToLineFields,
 } from "./useSalesCustomerRepricing";
-import { bankAccountService } from "../../finance/api/bankAccountService";
-import type { CompanyBankAccountDto } from "../../finance/api/bankAccountService";
-import { bankService } from "../../settings/banks/api/bankService";
-import type { BankDto } from "../../settings/banks/api/bankService";
+import { bankAccountLookupFacade } from "../../finance/facades/bankAccountLookupFacade";
+import type { CompanyBankAccountDto } from "../../finance/facades/bankAccountLookupFacade";
+import { bankLookupFacade } from "../../settings/banks/facades/bankLookupFacade";
+import type { BankDto } from "../../settings/banks/facades/bankLookupFacade";
 import {
   loadPrecisionPolicy,
   getPrecisionPolicy,
@@ -82,7 +82,7 @@ import type { CashSessionDto } from "../../caja/facades/cajaSessionLookupFacade"
 import { useManualCashMovementFlow } from "../../caja/hooks/useManualCashMovementFlow";
 import { useActiveBranchStore } from "../../../store/activeBranchStore";
 import { useElectronicInvoicingStatusStore } from "../../../store/electronicInvoicingStatusStore";
-import type { ElectronicInvoicingStatusDto } from "../../configuracion/facturacionElectronica/api/electronicInvoicingService";
+import type { ElectronicInvoicingStatusDto } from "../../configuracion/facades/electronicInvoicingLookupFacade";
 import { message } from "../../../lib/messages";
 import {
   salesInvoiceSchema,
@@ -713,11 +713,11 @@ export function useSalesPage() {
           .then(setRuntimeContext)
           .catch(() => {}),
         // SALES-TRANSFER-BANK-ACCOUNT-01
-        bankAccountService
+        bankAccountLookupFacade
           .list(true)
           .then(setBankAccounts)
           .catch(() => {}),
-        bankService
+        bankLookupFacade
           .list(true)
           .then(setBanks)
           .catch(() => {}),

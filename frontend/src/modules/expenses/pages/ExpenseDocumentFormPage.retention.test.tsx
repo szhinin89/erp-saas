@@ -12,7 +12,7 @@ import { I18nProvider } from "../../../i18n/i18n";
 import { ExpenseDocumentFormPage } from "./ExpenseDocumentFormPage";
 import { expenseDocumentService } from "../api/expenseDocumentService";
 import { expenseCategoryService } from "../api/expenseCategoryService";
-import { accountingApi } from "../../accounting/api/accountingApi";
+import { accountLookupFacade } from "../../accounting/facades/accountLookupFacade";
 import { paymentTermLookupFacade } from "../../masterData/facades/paymentTermLookupFacade";
 import { emissionPointLookupFacade } from "../../emissionPoints/facades/emissionPointLookupFacade";
 import { sriLookupFacade } from "../../items/facades/sriLookupFacade";
@@ -67,8 +67,8 @@ vi.mock("../api/expenseCategoryService", () => ({
   },
 }));
 
-vi.mock("../../accounting/api/accountingApi", () => ({
-  accountingApi: { listAccounts: vi.fn() },
+vi.mock("../../accounting/facades/accountLookupFacade", () => ({
+  accountLookupFacade: { listAccounts: vi.fn() },
 }));
 
 vi.mock("../../masterData/facades/paymentTermLookupFacade", () => ({
@@ -261,7 +261,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   routeParams.id = "exp-1";
   grantAll();
-  vi.mocked(accountingApi.listAccounts).mockResolvedValue([]);
+  vi.mocked(accountLookupFacade.listAccounts).mockResolvedValue([]);
   vi.mocked(paymentTermLookupFacade.list).mockResolvedValue([]);
   vi.mocked(expenseCategoryService.getTree).mockResolvedValue([]);
   vi.mocked(emissionPointLookupFacade.list).mockResolvedValue([EMISSION_POINT]);

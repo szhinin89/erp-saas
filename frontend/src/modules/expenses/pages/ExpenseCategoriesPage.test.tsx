@@ -4,7 +4,7 @@ import { render, screen, waitFor, fireEvent, cleanup } from "@testing-library/re
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { ExpenseCategoriesPage } from "./ExpenseCategoriesPage";
 import { expenseCategoryService } from "../api/expenseCategoryService";
-import { accountingApi } from "../../accounting/api/accountingApi";
+import { accountLookupFacade } from "../../accounting/facades/accountLookupFacade";
 import { message } from "../../../lib/messages";
 
 /**
@@ -24,8 +24,8 @@ vi.mock("../api/expenseCategoryService", () => ({
   },
 }));
 
-vi.mock("../../accounting/api/accountingApi", () => ({
-  accountingApi: {
+vi.mock("../../accounting/facades/accountLookupFacade", () => ({
+  accountLookupFacade: {
     listAccounts: vi.fn(),
   },
 }));
@@ -74,7 +74,7 @@ beforeEach(() => {
     has: () => true,
     isAdminRole: true,
   });
-  vi.mocked(accountingApi.listAccounts).mockResolvedValue([]);
+  vi.mocked(accountLookupFacade.listAccounts).mockResolvedValue([]);
   vi.mocked(expenseCategoryService.getTree).mockResolvedValue([
     ACTIVE_NODE,
     INACTIVE_NODE,

@@ -24,8 +24,8 @@ import type {
 } from "../api/cajaService";
 import { useCajaPage } from "./useCajaPage";
 import { message } from "../../../lib/messages";
-import { operationalPreferencesService } from "../../configuracion/operaciones/api/operationalPreferencesService";
-import type { OperationalPreferencesDto } from "../../configuracion/operaciones/api/operationalPreferencesService";
+import { operationalPreferencesLookupFacade } from "../../configuracion/facades/operationalPreferencesLookupFacade";
+import type { OperationalPreferencesDto } from "../../configuracion/facades/operationalPreferencesLookupFacade";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 
 // ZH-CASH-FUNDING-REQUEST-UI-FINAL-02E-EF — el aviso de solicitudes pendientes tiene su propio test
@@ -48,8 +48,8 @@ vi.mock("../api/cajaService", () => ({
   },
 }));
 
-vi.mock("../../configuracion/operaciones/api/operationalPreferencesService", () => ({
-  operationalPreferencesService: {
+vi.mock("../../configuracion/facades/operationalPreferencesLookupFacade", () => ({
+  operationalPreferencesLookupFacade: {
     getPreferences: vi.fn(),
   },
 }));
@@ -281,7 +281,7 @@ beforeEach(() => {
   });
   vi.mocked(cajaService.getCashMovementReasons).mockResolvedValue([]);
   vi.mocked(message.confirm).mockResolvedValue(true);
-  vi.mocked(operationalPreferencesService.getPreferences).mockResolvedValue(
+  vi.mocked(operationalPreferencesLookupFacade.getPreferences).mockResolvedValue(
     buildOperationalPreferences(true),
   );
   grantPermissions("all");
@@ -777,7 +777,7 @@ describe("useCajaPage — modal de registrar movimiento (TREASURY-CASH-MANUAL-MO
 
 describe("useCajaPage — AllowManualInOutMovements por empresa (TREASURY-CASH-COMPANY-SETTING-05A: fail-closed en frontend)", () => {
   it("true (ya resuelto) + turno abierto + permiso: expone allowManualMovements=true y permite abrir el modal", async () => {
-    vi.mocked(operationalPreferencesService.getPreferences).mockResolvedValue(
+    vi.mocked(operationalPreferencesLookupFacade.getPreferences).mockResolvedValue(
       buildOperationalPreferences(true),
     );
     const session = buildSession();
@@ -793,7 +793,7 @@ describe("useCajaPage — AllowManualInOutMovements por empresa (TREASURY-CASH-C
   });
 
   it("false (ya resuelto): expone allowManualMovements=false y openMovementModal no abre el modal", async () => {
-    vi.mocked(operationalPreferencesService.getPreferences).mockResolvedValue(
+    vi.mocked(operationalPreferencesLookupFacade.getPreferences).mockResolvedValue(
       buildOperationalPreferences(false),
     );
     const { result } = renderHook(() => useCajaPage(), { wrapper: I18nProvider });
@@ -805,7 +805,7 @@ describe("useCajaPage — AllowManualInOutMovements por empresa (TREASURY-CASH-C
 
   it("mientras carga: allowManualMovements empieza en false (oculto), nunca en true", async () => {
     let resolveFn: (dto: ReturnType<typeof buildOperationalPreferences>) => void;
-    vi.mocked(operationalPreferencesService.getPreferences).mockReturnValue(
+    vi.mocked(operationalPreferencesLookupFacade.getPreferences).mockReturnValue(
       new Promise((resolve) => {
         resolveFn = resolve;
       }),
@@ -823,12 +823,12 @@ describe("useCajaPage — AllowManualInOutMovements por empresa (TREASURY-CASH-C
   });
 
   it("si falla la carga de preferencias, queda oculto (false) — nunca se asume true", async () => {
-    vi.mocked(operationalPreferencesService.getPreferences).mockRejectedValue(
+    vi.mocked(operationalPreferencesLookupFacade.getPreferences).mockRejectedValue(
       new Error("network error"),
     );
     const { result } = renderHook(() => useCajaPage(), { wrapper: I18nProvider });
 
-    await waitFor(() => expect(operationalPreferencesService.getPreferences).toHaveBeenCalled());
+    await waitFor(() => expect(operationalPreferencesLookupFacade.getPreferences).toHaveBeenCalled());
     expect(result.current.allowManualMovements).toBe(false);
     act(() => result.current.openMovementModal());
     expect(result.current.movementModalOpen).toBe(false);
@@ -887,7 +887,7 @@ describe("useCajaPage — AllowManualInOutMovements por empresa (TREASURY-CASH-C
   }
 
   it("botón + Registrar movimiento visible en el detalle del turno cuando la empresa lo permite", async () => {
-    vi.mocked(operationalPreferencesService.getPreferences).mockResolvedValue(
+    vi.mocked(operationalPreferencesLookupFacade.getPreferences).mockResolvedValue(
       buildOperationalPreferences(true),
     );
 
@@ -897,14 +897,14 @@ describe("useCajaPage — AllowManualInOutMovements por empresa (TREASURY-CASH-C
   });
 
   it("botón + Registrar movimiento oculto cuando la empresa lo tiene deshabilitado", async () => {
-    vi.mocked(operationalPreferencesService.getPreferences).mockResolvedValue(
+    vi.mocked(operationalPreferencesLookupFacade.getPreferences).mockResolvedValue(
       buildOperationalPreferences(false),
     );
 
     await renderDetailView();
 
     await waitFor(() =>
-      expect(operationalPreferencesService.getPreferences).toHaveBeenCalled(),
+      expect(operationalPreferencesLookupFacade.getPreferences).toHaveBeenCalled(),
     );
     await waitFor(() => expect(screen.queryByText("Registrar movimiento")).toBeNull());
     // "Cerrar Caja" (otra acción del turno abierto) sigue disponible — solo se oculta el botón
@@ -913,13 +913,13 @@ describe("useCajaPage — AllowManualInOutMovements por empresa (TREASURY-CASH-C
   });
 
   it("cambiar de empresa (companySessionVersion) vuelve a pedir la preferencia", async () => {
-    vi.mocked(operationalPreferencesService.getPreferences)
+    vi.mocked(operationalPreferencesLookupFacade.getPreferences)
       .mockResolvedValueOnce(buildOperationalPreferences(true))
       .mockResolvedValueOnce(buildOperationalPreferences(false));
     const { result, rerender } = renderHook(() => useCajaPage(), { wrapper: I18nProvider });
 
     await waitFor(() => expect(result.current.allowManualMovements).toBe(true));
-    expect(operationalPreferencesService.getPreferences).toHaveBeenCalledTimes(1);
+    expect(operationalPreferencesLookupFacade.getPreferences).toHaveBeenCalledTimes(1);
 
     act(() => {
       useAuthStore.setState((s) => ({ companySessionVersion: s.companySessionVersion + 1 }));
@@ -927,11 +927,11 @@ describe("useCajaPage — AllowManualInOutMovements por empresa (TREASURY-CASH-C
     rerender();
 
     await waitFor(() => expect(result.current.allowManualMovements).toBe(false));
-    expect(operationalPreferencesService.getPreferences).toHaveBeenCalledTimes(2);
+    expect(operationalPreferencesLookupFacade.getPreferences).toHaveBeenCalledTimes(2);
   });
 
   it("botón oculto si el turno está cerrado, aunque la empresa lo permita", async () => {
-    vi.mocked(operationalPreferencesService.getPreferences).mockResolvedValue(
+    vi.mocked(operationalPreferencesLookupFacade.getPreferences).mockResolvedValue(
       buildOperationalPreferences(true),
     );
     const closedSession = buildSession({
@@ -1025,7 +1025,7 @@ describe("useCajaPage — permiso caja.record (TREASURY-CASH-MANUAL-MOVEMENTS-PE
 
   it("empresa NO permite + usuario CON caja.record: sigue oculto — ambas condiciones deben cumplirse", async () => {
     grantPermissions(["caja.record"]);
-    vi.mocked(operationalPreferencesService.getPreferences).mockResolvedValue(
+    vi.mocked(operationalPreferencesLookupFacade.getPreferences).mockResolvedValue(
       buildOperationalPreferences(false),
     );
     const session = buildSession();
@@ -1043,7 +1043,7 @@ describe("useCajaPage — permiso caja.record (TREASURY-CASH-MANUAL-MOVEMENTS-PE
 
   it("botón + Registrar movimiento oculto en el detalle si el usuario no tiene caja.record, aunque la empresa lo permita", async () => {
     grantPermissions([]);
-    vi.mocked(operationalPreferencesService.getPreferences).mockResolvedValue(
+    vi.mocked(operationalPreferencesLookupFacade.getPreferences).mockResolvedValue(
       buildOperationalPreferences(true),
     );
     const session = buildSession();

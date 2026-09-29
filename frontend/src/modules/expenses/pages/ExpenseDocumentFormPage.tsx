@@ -24,7 +24,7 @@ import {
   formatApiRequestError,
   parseValidationErrors,
 } from "../../lib/apiError";
-import { accountingApi, type AccountDto } from "../../accounting/api/accountingApi";
+import { accountLookupFacade, type AccountDto } from "../../accounting/facades/accountLookupFacade";
 import {
   sriLookupFacade,
   type SriDocTypeLookup,
@@ -193,7 +193,7 @@ export function ExpenseDocumentFormPage() {
     try {
       const requests = [
         canReadCatalog ? expenseCategoryService.getTree(false) : Promise.resolve([]),
-        accountingApi.listAccounts(),
+        accountLookupFacade.listAccounts(),
         paymentTermLookupFacade.list(),
         sriLookupFacade.docTypes(),
         sriLookupFacade.taxSupportCodes(),
