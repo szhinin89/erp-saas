@@ -216,6 +216,15 @@ public static class ApiResultExtensions
         );
     }
 
+    /// <summary>
+    /// Lectura de un recurso: éxito → 200. Un fallo CON <c>Code</c> se traduce con la tabla única
+    /// (<see cref="MapFailure{T}"/>, la misma de ToOkOrBadRequest/ToCreatedOrBadRequest): NOT_FOUND →
+    /// 404, FORBIDDEN → 403, VALIDATION_ERROR → 422, CONFLICT → 409, etc. Un fallo SIN <c>Code</c>
+    /// conserva su contrato histórico de 404: los handlers de "obtener por id" que devuelven
+    /// <c>Failure("X no encontrado")</c>, y los que ocultan a propósito la existencia de un recurso
+    /// ajeno (p. ej. GetCompanyById sin membresía). ZH-API-RESULT-STATUS-MAPPING-01: antes cualquier
+    /// fallo, con o sin código, salía como 404.
+    /// </summary>
     public static IActionResult ToOkOrNotFound<T>(
         this ControllerBase controller,
         Result<T> result,
@@ -232,6 +241,24 @@ public static class ApiResultExtensions
                     ResolveValue(result, successFallbackFactory)
                 )
             );
+
+        return MapFailureOrNotFound(controller, result);
+    }
+
+    /// <summary>
+    /// Contenido binario de un recurso (logo, archivo): éxito → <paramref name="toFile"/>; fallo →
+    /// misma regla que <see cref="ToOkOrNotFound{T}"/> (con Code: tabla única; sin Code: 404).
+    /// </summary>
+    public static IActionResult ToFileOrNotFound<T>(
+        this ControllerBase controller,
+        Result<T> result,
+        Func<T, IActionResult> toFile
+    ) => result.IsSuccess ? toFile(result.Value!) : MapFailureOrNotFound(controller, result);
+
+    private static IActionResult MapFailureOrNotFound<T>(ControllerBase controller, Result<T> result)
+    {
+        if (result.Code is not null)
+            return MapFailure(controller, result);
 
         var errors = string.IsNullOrWhiteSpace(result.Error) ? null : new[] { result.Error };
         return controller.NotFound(

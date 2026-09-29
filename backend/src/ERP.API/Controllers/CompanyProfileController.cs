@@ -83,11 +83,7 @@ public sealed class CompanyProfileController : ControllerBase
     public async Task<IActionResult> GetLogoContent(CancellationToken cancellationToken = default)
     {
         var result = await _mediator.Send(new GetCompanyLogoContentQuery(), cancellationToken);
-        if (!result.IsSuccess)
-            return this.ApiNotFound(result.Error ?? "Logo no encontrado.");
-
-        var content = result.Value!;
-        return File(content.Content, content.ContentType, content.FileName);
+        return this.ToFileOrNotFound(result, content => File(content.Content, content.ContentType, content.FileName));
     }
 
     [HttpPut("profile/fiscal")]
@@ -174,11 +170,7 @@ public sealed class CompanyProfileController : ControllerBase
     )
     {
         var result = await _mediator.Send(new GetCompanyLogoAltContentQuery(), cancellationToken);
-        if (!result.IsSuccess)
-            return this.ApiNotFound(result.Error ?? "Logo alternativo no encontrado.");
-
-        var content = result.Value!;
-        return File(content.Content, content.ContentType, content.FileName);
+        return this.ToFileOrNotFound(result, content => File(content.Content, content.ContentType, content.FileName));
     }
 
     [HttpGet("profile/fiscal-policy")]
