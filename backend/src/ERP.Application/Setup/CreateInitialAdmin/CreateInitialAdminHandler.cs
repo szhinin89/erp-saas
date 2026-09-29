@@ -57,7 +57,7 @@ public sealed class CreateInitialAdminHandler
             );
 
         if (state.IsInitialized)
-            return Result<string>.Failure("El sistema ya ha sido inicializado.");
+            return Result<string>.Conflict("El sistema ya ha sido inicializado.");
 
         if (string.IsNullOrWhiteSpace(state.SetupTokenHash) || state.SetupTokenExpiryUtc is null)
             return Result<string>.Failure(
@@ -70,7 +70,10 @@ public sealed class CreateInitialAdminHandler
             );
 
         if (!SetupTokenCrypto.Matches(cmd.SetupToken.Trim(), state.SetupTokenHash))
-            return Result<string>.Failure("Token de inicialización inválido.");
+            return Result<string>.Failure(
+                "Token de inicialización inválido.",
+                ApiResponseCodes.Common.Unauthorized
+            );
 
         var username = cmd.Username.Trim().ToLowerInvariant();
         if (await _access.AnyUserWithUsernameAsync(username, cancellationToken))

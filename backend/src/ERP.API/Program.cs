@@ -154,6 +154,28 @@ builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    // ZH-API-ERROR-CONTRACT-HARDENING-01: el rechazo del limitador usa el mismo contrato que
+    // cualquier otro error (envelope RATE_LIMITED, status de ApiErrorStatus) — antes era un 429
+    // sin cuerpo, distinto del RATE_LIMITED que devuelve /auth/refresh vía Result.
+    options.OnRejected = (context, cancellationToken) =>
+    {
+        var http = context.HttpContext;
+        var code = ERP.Application.Common.ApiResponseCodes.Common.RateLimited;
+        http.Response.StatusCode = ApiErrorStatus.For(code);
+        return new ValueTask(
+            http.Response.WriteAsJsonAsync(
+                ResponseFactory.Error(
+                    http,
+                    http.RequestServices.GetRequiredService<IWebHostEnvironment>(),
+                    code
+                ),
+                http.RequestServices
+                    .GetRequiredService<Microsoft.Extensions.Options.IOptions<Microsoft.AspNetCore.Mvc.JsonOptions>>()
+                    .Value.JsonSerializerOptions,
+                cancellationToken
+            )
+        );
+    };
     options.AddPolicy(
         "per-tenant",
         httpContext =>

@@ -66,7 +66,48 @@ public sealed class ResultStatusMappingTests
             { ApiResponseCodes.Common.UniqueViolation, 409 },
             { ApiResponseCodes.Common.CompanyRucAlreadyExists, 409 },
             { ApiResponseCodes.Common.BadRequest, 400 },
+            // ZH-API-ERROR-CONTRACT-HARDENING-01: antes caían al default 400 en Result.
+            { ApiResponseCodes.Common.RateLimited, 429 },
+            { ApiResponseCodes.Common.SriCommunicationError, 502 },
+            { ApiResponseCodes.Common.ConcurrencyConflict, 409 },
+            { ApiResponseCodes.Common.CompanyScopeForbidden, 403 },
+            { ApiResponseCodes.Common.BranchScopeForbidden, 403 },
+            { ApiResponseCodes.Common.DomainRuleViolation, 422 },
+            { ApiResponseCodes.Common.DatabaseUnavailable, 503 },
+            { ApiResponseCodes.Common.InternalError, 500 },
+            { ApiResponseCodes.Common.InvalidDateTimeKind, 500 },
         };
+
+    [Theory]
+    [MemberData(nameof(CodedFailures))]
+    public void ToOkOrBadRequest_y_ToCreatedOrBadRequest_usan_la_misma_tabla(string code, int status)
+    {
+        var failure = Result<string>.Failure("mensaje de dominio", code);
+
+        Read(Controller().ToOkOrBadRequest(failure)).Should().BeEquivalentTo((status, code, new[] { "mensaje de dominio" }));
+        Read(Controller().ToCreatedOrBadRequest(failure)).Should().BeEquivalentTo((status, code, new[] { "mensaje de dominio" }));
+        Read(Controller().ApiFailure(failure)).Should().BeEquivalentTo((status, code, new[] { "mensaje de dominio" }));
+    }
+
+    [Fact]
+    public void ApiFailure_sin_codigo_usa_el_fallback_del_endpoint_y_con_codigo_lo_ignora()
+    {
+        var uncoded = Result<string>.Failure("Refresh token inválido.");
+        var rateLimited = Result<string>.Failure("Demasiados intentos.", ApiResponseCodes.Common.RateLimited);
+
+        Read(Controller().ApiFailure(uncoded)).Should().BeEquivalentTo((400, ApiResponseCodes.Common.BadRequest, new[] { "Refresh token inválido." }));
+        Read(Controller().ApiFailure(uncoded, ApiResponseCodes.Common.Unauthorized)).Should().BeEquivalentTo((401, ApiResponseCodes.Common.Unauthorized, new[] { "Refresh token inválido." }));
+        Read(Controller().ApiFailure(rateLimited, ApiResponseCodes.Common.Unauthorized)).Should().BeEquivalentTo((429, ApiResponseCodes.Common.RateLimited, new[] { "Demasiados intentos." }));
+    }
+
+    [Fact]
+    public void Codigo_no_catalogado_conserva_400_con_su_propio_code()
+    {
+        // Deuda ADR-027 Fase 1 (códigos de módulo aún literales): documentada, no silenciosa.
+        var failure = Result<string>.ValidationFailure("Período cerrado.", "PERIOD_NOT_OPEN");
+
+        Read(Controller().ToOkOrBadRequest(failure)).Should().BeEquivalentTo((400, "PERIOD_NOT_OPEN", new[] { "Período cerrado." }));
+    }
 
     [Theory]
     [MemberData(nameof(CodedFailures))]

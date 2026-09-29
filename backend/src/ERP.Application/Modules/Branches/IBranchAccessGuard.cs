@@ -22,7 +22,9 @@ public interface IBranchAccessGuard
     /// <summary>
     /// Valida, en orden: empresa operativa activa (vía ICompanyAccessGuard) → la sucursal
     /// existe → está activa → pertenece a la empresa operativa actual → el usuario tiene una
-    /// CompanyUserBranch activa para esa sucursal.
+    /// CompanyUserBranch activa para esa sucursal. Códigos: los de ICompanyAccessGuard, NOT_FOUND
+    /// (sucursal inexistente o de otra empresa, indistinguibles) y BRANCH_SCOPE_FORBIDDEN
+    /// (deshabilitada o sin CompanyUserBranch).
     /// </summary>
     Task<Result<BranchAccessContext>> RequireBranchAsync(
         Guid branchId,

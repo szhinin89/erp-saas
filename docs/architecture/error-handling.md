@@ -59,6 +59,21 @@ Frontend          → Axios (transporte puro)
 | RateLimit | 429 |
 | InternalError | 500 |
 
+### Implementación vigente (ZH-API-ERROR-CONTRACT-HARDENING-01, 2026-09-29)
+
+- `ApiErrorCategory` (Application) + `CatalogMessage.Category`: cada código de error de `ApiResponseCodes` declara su categoría en `MessageCatalog`; los de éxito no tienen.
+- `ERP.API/Extensions/ApiErrorStatus` es la **única** tabla categoría → HTTP. La consultan `ApiResultExtensions` (todo fallo de `Result<T>`, vía `ApiFailure`) y `ExceptionMiddleware` (que solo decide el `code` de cada excepción) y el rechazo del rate limiter (envelope `RATE_LIMITED`).
+- Asignación de los códigos `Common`: Validation → `VALIDATION_ERROR`, `DOMAIN_RULE_VIOLATION` · BusinessRule → `BAD_REQUEST` · Duplicate → `CONFLICT`, `UNIQUE_VIOLATION`, `COMPANY_RUC_ALREADY_EXISTS`, `CONCURRENCY_CONFLICT` · NotFound → `NOT_FOUND` · Authentication → `UNAUTHORIZED` · Authorization → `FORBIDDEN`, `COMPANY_SCOPE_FORBIDDEN`, `BRANCH_SCOPE_FORBIDDEN` · Infrastructure → `DATABASE_UNAVAILABLE` · Integration → `SRI_COMMUNICATION_ERROR` · RateLimit → `RATE_LIMITED` · InternalError → `INTERNAL_ERROR`, `INVALID_DATETIME_KIND`.
+
+Excepciones intencionales (documentadas y cubiertas por tests):
+
+| Excepción | Motivo |
+|---|---|
+| `DOMAIN_RULE_VIOLATION` (`InvalidOperationException`) es Validation → 422, no BusinessRule → 400 | Contrato histórico de `ExceptionMiddleware` y de `Result.ValidationFailure` (regla de negocio → 422); reclasificarlo cambia el status de todo el ERP y requiere ADR. |
+| Fallo de `Result` **sin** `Code`: el endpoint elige el fallback (`ApiFailure(result, fallback)`) — `BAD_REQUEST` por defecto, `NOT_FOUND` en `ToOkOrNotFound`/`ToFileOrNotFound`, `UNAUTHORIZED` en autenticación | Anti existence-leakage en lecturas (inexistente = ajeno) y anti-enumeración en login/refresh/reautenticación. Un fallo **con** `Code` siempre usa la tabla. |
+| Código no catalogado (literal de módulo: `SKU_DUPLICATE`, `PERIOD_NOT_OPEN`, …) → fallback del catálogo: BusinessRule → 400 con su propio `code` | Deuda de ADR-027 Fase 1 (registrar códigos de módulo); registrarlos cambia status de módulos FROZEN/CLOSED y se hace por módulo. |
+| Guards (`CompanyAccessGuard`/`BranchAccessGuard`) devuelven códigos canónicos (NOT_FOUND para inexistente o ajeno; `*_SCOPE_FORBIDDEN` para acceso prohibido) pero sus consumidores re-envuelven el mensaje | Cada consumidor fija su propio contrato: `CompanyScopeBehavior`/`BranchScopeBehavior` → excepción 403; `GetCompanyById` → 404 sin código. Propagar el código cambiaría 404 → 403 (leakage). |
+
 ---
 
 ## Reglas obligatorias — Backend

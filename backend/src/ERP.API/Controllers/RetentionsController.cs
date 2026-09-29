@@ -57,9 +57,7 @@ public sealed class RetentionsController : ControllerBase
     {
         var result = await _mediator.Send(new GenerateRetentionXmlQuery(id), ct);
         if (!result.IsSuccess)
-            return this.ApiBadRequest(
-                result.Error ?? "No se pudo generar el XML de la retención."
-            );
+            return this.ApiFailure(result);
 
         var bytes = System.Text.Encoding.UTF8.GetBytes(result.Value!.Xml);
         return File(bytes, "application/xml; charset=utf-8", $"retencion-{id:N}.xml");
@@ -75,9 +73,7 @@ public sealed class RetentionsController : ControllerBase
     {
         var result = await _mediator.Send(new GenerateRetentionRidePdfQuery(id), ct);
         if (!result.IsSuccess)
-            return this.ApiBadRequest(
-                result.Error ?? "No se pudo generar el PDF de la retención."
-            );
+            return this.ApiFailure(result);
 
         return File(result.Value!, "application/pdf", $"retencion-{id:N}.pdf");
     }

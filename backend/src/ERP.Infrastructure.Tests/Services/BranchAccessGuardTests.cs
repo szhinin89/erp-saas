@@ -109,6 +109,7 @@ public sealed class BranchAccessGuardTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Sucursal no encontrada.");
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
         f.CompanyUserBranchRepo.Verify(
             r =>
                 r.ExistsAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
@@ -152,6 +153,7 @@ public sealed class BranchAccessGuardTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Sucursal no encontrada.");
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
     }
 
     [Fact]
@@ -160,13 +162,19 @@ public sealed class BranchAccessGuardTests
         var f = new Fixture();
         var branchId = Guid.NewGuid();
         f.CompanyGuard.Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<CompanyAccessContext>.Failure("No tiene acceso a esta empresa."));
+            .ReturnsAsync(
+                Result<CompanyAccessContext>.Failure(
+                    "No tiene acceso a esta empresa.",
+                    ApiResponseCodes.Common.CompanyScopeForbidden
+                )
+            );
 
         var guard = f.BuildGuard();
         var result = await guard.RequireBranchAsync(branchId);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("No tiene acceso a esta empresa.");
+        result.Code.Should().Be(ApiResponseCodes.Common.CompanyScopeForbidden);
         f.BranchRepo.Verify(
             r =>
                 r.GetByIdForCompanyAsync(
@@ -214,6 +222,7 @@ public sealed class BranchAccessGuardTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("No tiene autorización para operar en esta sucursal.");
+        result.Code.Should().Be(ApiResponseCodes.Common.BranchScopeForbidden);
     }
 
     [Fact]
@@ -386,6 +395,7 @@ public sealed class BranchAccessGuardTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("No tiene acceso a esta empresa.");
+        result.Code.Should().Be(ApiResponseCodes.Common.CompanyScopeForbidden);
     }
 
     /// <summary>
@@ -422,6 +432,7 @@ public sealed class BranchAccessGuardTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("La sucursal está deshabilitada.");
+        result.Code.Should().Be(ApiResponseCodes.Common.BranchScopeForbidden);
         f.OperatorAccessPolicy.Verify(
             o => o.IsAuthorizedOperatorAsync(It.IsAny<CancellationToken>()),
             Times.Never,
@@ -464,5 +475,6 @@ public sealed class BranchAccessGuardTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Sucursal no encontrada.");
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
     }
 }

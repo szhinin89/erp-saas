@@ -93,7 +93,7 @@ public sealed class RetentionsControllerTests
     }
 
     [Fact]
-    public async Task GetElectronicXml_failure_returns_400_with_the_error_never_a_file()
+    public async Task GetElectronicXml_validation_failure_returns_422_with_the_error_never_a_file()
     {
         var controller = BuildController(_ =>
             Result<ElectronicDocumentXml>.ValidationFailure(
@@ -103,24 +103,31 @@ public sealed class RetentionsControllerTests
 
         var response = await controller.GetElectronicXml(Guid.NewGuid(), CancellationToken.None);
 
-        var badRequest = response.Should().BeOfType<BadRequestObjectResult>().Subject;
-        badRequest.StatusCode.Should().Be(400);
-        var body = badRequest.Value.Should().BeOfType<ApiResponse<object>>().Subject;
+        // ZH-API-ERROR-CONTRACT-HARDENING-01: el status sale de la tabla única (VALIDATION_ERROR →
+        // 422), ya no de un ApiBadRequest manual que aplanaba todo fallo a 400.
+        var unprocessable = response.Should().BeOfType<UnprocessableEntityObjectResult>().Subject;
+        unprocessable.StatusCode.Should().Be(422);
+        var body = unprocessable.Value.Should().BeOfType<ApiResponse<object>>().Subject;
+        body.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
         System.Text.Json.JsonSerializer.Serialize(body.Data).Should().Contain("emitida");
     }
 
     [Fact]
-    public async Task GetElectronicXml_not_found_still_returns_400_never_enumerating_the_reason()
+    public async Task GetElectronicXml_not_found_returns_404_NOT_FOUND()
     {
-        // El controller es delgado y usa el mismo mapeo simple que RideController.GetContent —
-        // no distingue "no existe" de otros fallos de negocio, mismo criterio de no-enumeración.
+        // ZH-API-ERROR-CONTRACT-HARDENING-01: antes 400 "por no-enumeración", pero el cuerpo ya
+        // decía "La retención no existe." — el status aplanado no ocultaba nada. La protección real
+        // es que inexistente y de otro tenant/empresa producen el MISMO NotFound (data provider con
+        // scope de tenant + empresa); ambos salen 404 NOT_FOUND por la tabla única.
         var controller = BuildController(_ =>
             Result<ElectronicDocumentXml>.NotFound("La retención no existe.")
         );
 
         var response = await controller.GetElectronicXml(Guid.NewGuid(), CancellationToken.None);
 
-        response.Should().BeOfType<BadRequestObjectResult>();
+        response.Should().BeOfType<NotFoundObjectResult>()
+            .Which.Value.Should().BeOfType<ApiResponse<object>>()
+            .Which.Code.Should().Be(ApiResponseCodes.Common.NotFound);
     }
 
     // ── GET {id}/ride/pdf ─────────────────────────────────────────────────

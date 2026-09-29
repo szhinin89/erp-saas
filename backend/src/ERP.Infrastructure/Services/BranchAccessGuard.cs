@@ -37,7 +37,7 @@ public sealed class BranchAccessGuard : IBranchAccessGuard
     {
         var companyAccess = await _companyAccessGuard.RequireCurrentCompanyAsync(cancellationToken);
         if (!companyAccess.IsSuccess)
-            return Result<BranchAccessContext>.Failure(companyAccess.Error!);
+            return Result<BranchAccessContext>.Failure(companyAccess.Error!, companyAccess.Code);
 
         var company = companyAccess.Value!;
 
@@ -47,11 +47,16 @@ public sealed class BranchAccessGuard : IBranchAccessGuard
             branchId,
             cancellationToken
         );
+        // Inexistente y de otra empresa/tenant son indistinguibles (el repositorio ya filtra por
+        // empresa): NOT_FOUND, sin existence leakage.
         if (branch is null)
-            return Result<BranchAccessContext>.Failure("Sucursal no encontrada.");
+            return Result<BranchAccessContext>.NotFound("Sucursal no encontrada.");
 
         if (!branch.IsActive)
-            return Result<BranchAccessContext>.Failure("La sucursal está deshabilitada.");
+            return Result<BranchAccessContext>.Failure(
+                "La sucursal está deshabilitada.",
+                ApiResponseCodes.Common.BranchScopeForbidden
+            );
 
         var membership = await _accessRepository.GetCompanyUserMembershipAsync(
             company.CompanyId,
@@ -83,11 +88,15 @@ public sealed class BranchAccessGuard : IBranchAccessGuard
         if (await _operatorAccessPolicy.IsAuthorizedOperatorAsync(cancellationToken))
             return BuildSuccess(company, branch);
 
-        return Result<BranchAccessContext>.Failure(
-            hasActiveMembership
-                ? "No tiene autorización para operar en esta sucursal."
-                : "No tiene acceso a esta empresa."
-        );
+        return hasActiveMembership
+            ? Result<BranchAccessContext>.Failure(
+                "No tiene autorización para operar en esta sucursal.",
+                ApiResponseCodes.Common.BranchScopeForbidden
+            )
+            : Result<BranchAccessContext>.Failure(
+                "No tiene acceso a esta empresa.",
+                ApiResponseCodes.Common.CompanyScopeForbidden
+            );
     }
 
     private static Result<BranchAccessContext> BuildSuccess(

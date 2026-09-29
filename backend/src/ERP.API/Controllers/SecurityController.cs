@@ -48,7 +48,7 @@ public class SecurityController : ControllerBase
     {
         var result = await _mediator.Send(new GetSecurityAdminMatrixQuery(), cancellationToken);
         if (!result.IsSuccess)
-            return this.ApiBadRequest(result.Error ?? "Error");
+            return this.ApiFailure(result);
 
         return this.ApiOk(
             new { users = result.Value.Users, assignments = result.Value.Assignments }

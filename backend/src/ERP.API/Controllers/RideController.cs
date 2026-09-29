@@ -86,7 +86,7 @@ public sealed class RideController : ControllerBase
             ct
         );
         if (!result.IsSuccess)
-            return this.ApiBadRequest(result.Error ?? "No se pudo obtener el RIDE.");
+            return this.ApiFailure(result);
 
         var generation = result.Value!;
         if (

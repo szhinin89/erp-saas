@@ -35,14 +35,9 @@ public sealed class SetupController : ControllerBase
         CancellationToken cancellationToken
     )
     {
+        // El handler clasifica el fallo (CONFLICT ya inicializado, UNAUTHORIZED token inválido);
+        // el status sale de la tabla única, nunca de comparar el texto del error.
         var result = await _mediator.Send(command, cancellationToken);
-        if (!result.IsSuccess)
-        {
-            if (result.Error?.Contains("ya ha sido inicializado") == true)
-                return this.ApiConflict(result.Error);
-            if (result.Error?.Contains("Token de inicialización inválido") == true)
-                return this.ApiUnauthorized(result.Error);
-        }
         return this.ToOkOrBadRequest(result);
     }
 }

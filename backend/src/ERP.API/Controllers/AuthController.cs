@@ -55,7 +55,7 @@ public sealed class AuthController : ControllerBase
             return this.ApiOk(result.Value);
         }
 
-        return MapAuthFailure(result.Error);
+        return this.ApiFailure(result, ApiResponseCodes.Common.Unauthorized);
     }
 
     /// <summary>
@@ -79,7 +79,7 @@ public sealed class AuthController : ControllerBase
             return this.ApiOk(result.Value);
         }
 
-        return MapAuthFailure(result.Error);
+        return this.ApiFailure(result, ApiResponseCodes.Common.Unauthorized);
     }
     [HttpPost("complete-password-reset")]
     [AllowAnonymous]
@@ -96,7 +96,7 @@ public sealed class AuthController : ControllerBase
             return this.ApiOk(result.Value);
         }
 
-        return MapAuthFailure(result.Error);
+        return this.ApiFailure(result, ApiResponseCodes.Common.Unauthorized);
     }
 
     [HttpPost("refresh")]
@@ -119,10 +119,8 @@ public sealed class AuthController : ControllerBase
             return this.ApiOk(result.Value);
         }
 
-        if (result.Code == ApiResponseCodes.Common.RateLimited)
-            return this.ApiTooManyRequests(result.Error ?? "Demasiados intentos.");
-
-        return this.ApiUnauthorized(result.Error ?? "Refresh token inválido.");
+        // RATE_LIMITED → 429 por la tabla única; cualquier otro fallo de refresh sin código → 401.
+        return this.ApiFailure(result, ApiResponseCodes.Common.Unauthorized);
     }
 
     /// <summary>
@@ -155,7 +153,7 @@ public sealed class AuthController : ControllerBase
             return this.ApiOk(result.Value);
         }
 
-        return this.ApiUnauthorized(result.Error ?? "No se pudo reautenticar.");
+        return this.ApiFailure(result, ApiResponseCodes.Common.Unauthorized);
     }
 
     [HttpPost("logout")]
@@ -232,7 +230,4 @@ public sealed class AuthController : ControllerBase
 
         return this.ToOkOrBadRequest(result);
     }
-
-    private IActionResult MapAuthFailure(string? error) =>
-        this.ApiUnauthorized(error ?? "Unauthorized");
 }

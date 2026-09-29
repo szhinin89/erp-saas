@@ -5,7 +5,6 @@ using ERP.Application.Common.Exceptions;
 using ERP.Domain.Exceptions;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
-using System.Net;
 using System.Text.Json;
 
 namespace ERP.API.Middleware;
@@ -80,57 +79,31 @@ public partial class ExceptionMiddleware
 
         context.Response.ContentType = "application/json";
 
-        var (statusCode, code) = exception switch
+        // Este middleware solo decide el `code` de cada excepción; el HTTP status sale de la misma
+        // tabla única que usan los fallos de Result<T> (ApiErrorStatus, ADR-027 §9).
+        var code = exception switch
         {
-            ValidationException => (
-                HttpStatusCode.UnprocessableEntity,
-                ApiResponseCodes.Common.ValidationError
-            ),
+            ValidationException => ApiResponseCodes.Common.ValidationError,
             // FASE 7: Optimistic concurrency violation → 409 Conflict
-            DbUpdateConcurrencyException => (
-                HttpStatusCode.Conflict,
-                ApiResponseCodes.Common.ConcurrencyConflict
-            ),
+            DbUpdateConcurrencyException => ApiResponseCodes.Common.ConcurrencyConflict,
             // ZH-DATETIME-UTC-GUARDRAILS-01: violación de invariante (DateTime sin normalizar a
             // UTC) detectada por UtcDateTimeGuardInterceptor antes de tocar la base de datos — no
             // es una caída/timeout de PostgreSQL, nunca debe salir como DATABASE_UNAVAILABLE.
-            UnspecifiedDateTimeKindException => (
-                HttpStatusCode.InternalServerError,
-                ApiResponseCodes.Common.InvalidDateTimeKind
-            ),
-            DbUpdateException => (
-                HttpStatusCode.ServiceUnavailable,
-                ApiResponseCodes.Common.DatabaseUnavailable
-            ),
-            ArgumentException => (HttpStatusCode.BadRequest, ApiResponseCodes.Common.BadRequest),
-            InvalidOperationException => (
-                HttpStatusCode.UnprocessableEntity,
-                ApiResponseCodes.Common.DomainRuleViolation
-            ),
-            SriCommunicationException => (
-                HttpStatusCode.BadGateway,
-                ApiResponseCodes.Common.SriCommunicationError
-            ),
-            ERP.Domain.Exceptions.CompanyScopeException => (
-                HttpStatusCode.Forbidden,
-                ApiResponseCodes.Common.CompanyScopeForbidden
-            ),
-            ERP.Domain.Exceptions.BranchScopeException => (
-                HttpStatusCode.Forbidden,
-                ApiResponseCodes.Common.BranchScopeForbidden
-            ),
-            CompanyRucAlreadyExistsException => (
-                HttpStatusCode.Conflict,
-                ApiResponseCodes.Common.CompanyRucAlreadyExists
-            ),
-            UnauthorizedAccessException => (
-                HttpStatusCode.Unauthorized,
-                ApiResponseCodes.Common.Unauthorized
-            ),
-            _ => (HttpStatusCode.InternalServerError, ApiResponseCodes.Common.InternalError),
+            UnspecifiedDateTimeKindException => ApiResponseCodes.Common.InvalidDateTimeKind,
+            DbUpdateException => ApiResponseCodes.Common.DatabaseUnavailable,
+            ArgumentException => ApiResponseCodes.Common.BadRequest,
+            InvalidOperationException => ApiResponseCodes.Common.DomainRuleViolation,
+            SriCommunicationException => ApiResponseCodes.Common.SriCommunicationError,
+            ERP.Domain.Exceptions.CompanyScopeException =>
+                ApiResponseCodes.Common.CompanyScopeForbidden,
+            ERP.Domain.Exceptions.BranchScopeException =>
+                ApiResponseCodes.Common.BranchScopeForbidden,
+            CompanyRucAlreadyExistsException => ApiResponseCodes.Common.CompanyRucAlreadyExists,
+            UnauthorizedAccessException => ApiResponseCodes.Common.Unauthorized,
+            _ => ApiResponseCodes.Common.InternalError,
         };
 
-        context.Response.StatusCode = (int)statusCode;
+        context.Response.StatusCode = ApiErrorStatus.For(code);
 
         // Detalle dinámico de la instancia → data.errors.
         // ValidationException: mapa { campo: [mensajes] } (camelCase).

@@ -94,6 +94,7 @@ public sealed class CompanyAccessGuardTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("No tiene acceso a esta empresa.");
+        result.Code.Should().Be(ApiResponseCodes.Common.CompanyScopeForbidden);
         f.Metrics.Verify(m => m.RecordMembershipValidationFailed(null), Times.Once);
     }
 
@@ -116,6 +117,7 @@ public sealed class CompanyAccessGuardTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("No tiene acceso a esta empresa.");
+        result.Code.Should().Be(ApiResponseCodes.Common.CompanyScopeForbidden);
     }
 
     [Fact]
@@ -138,6 +140,7 @@ public sealed class CompanyAccessGuardTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Empresa no encontrada o no pertenece al tenant activo.");
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
         f.Metrics.Verify(m => m.RecordCrossCompanyDenied(null), Times.Once);
         f.Access.Verify(
             a =>
@@ -224,6 +227,7 @@ public sealed class CompanyAccessGuardTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("No tiene acceso a esta empresa.");
+        result.Code.Should().Be(ApiResponseCodes.Common.CompanyScopeForbidden);
         f.Metrics.Verify(m => m.RecordMembershipValidationFailed(null), Times.Once);
     }
 
@@ -246,6 +250,7 @@ public sealed class CompanyAccessGuardTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Empresa no disponible para operar.");
+        result.Code.Should().Be(ApiResponseCodes.Common.CompanyScopeForbidden);
         company.OperationalStatus.Should().Be(CompanyOperationalStatus.Suspended);
         f.Access.Verify(
             a =>
@@ -304,6 +309,7 @@ public sealed class CompanyAccessGuardTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Empresa no disponible para operar.");
+        result.Code.Should().Be(ApiResponseCodes.Common.CompanyScopeForbidden);
         f.Access.Verify(
             a =>
                 a.GetCompanyUserMembershipAsync(
@@ -326,6 +332,7 @@ public sealed class CompanyAccessGuardTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("No hay empresa operativa seleccionada.");
+        result.Code.Should().Be(ApiResponseCodes.Common.CompanyScopeForbidden);
         f.Metrics.Verify(m => m.RecordInvalidCompanyContext(null), Times.Once);
         f.Companies.Verify(
             c => c.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
@@ -354,6 +361,7 @@ public sealed class CompanyAccessGuardTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Empresa no disponible para operar.");
+        result.Code.Should().Be(ApiResponseCodes.Common.CompanyScopeForbidden);
         f.Access.Verify(
             a =>
                 a.GetCompanyUserMembershipAsync(

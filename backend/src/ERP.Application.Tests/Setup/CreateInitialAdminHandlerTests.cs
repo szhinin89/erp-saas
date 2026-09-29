@@ -284,6 +284,7 @@ public sealed class CreateInitialAdminHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("El sistema ya ha sido inicializado.");
+        result.Code.Should().Be(ApiResponseCodes.Common.Conflict);
         f.TenantRepo.Verify(
             r => r.AddAsync(It.IsAny<Tenant>(), It.IsAny<CancellationToken>()),
             Times.Never
@@ -305,6 +306,7 @@ public sealed class CreateInitialAdminHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Token de inicialización inválido.");
+        result.Code.Should().Be(ApiResponseCodes.Common.Unauthorized);
         state.IsInitialized.Should().BeFalse();
         f.TenantRepo.Verify(
             r => r.AddAsync(It.IsAny<Tenant>(), It.IsAny<CancellationToken>()),

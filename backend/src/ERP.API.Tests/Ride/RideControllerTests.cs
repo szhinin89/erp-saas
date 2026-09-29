@@ -238,4 +238,59 @@ public sealed class RideControllerTests
         captured!.SourceModule.Should().Be("Sales");
         captured.SourceEntityId.Should().Be(sourceEntityId);
     }
+
+    // ── ZH-API-ERROR-CONTRACT-HARDENING-01: GetContent usa el contrato único Error → HTTP ──
+
+    [Fact]
+    public async Task GetContent_failure_without_code_keeps_400_BAD_REQUEST()
+    {
+        var controller = BuildController(_ =>
+            Result<RideGenerationResultDto>.Failure("No se pudo consultar el cache de RIDE.")
+        );
+
+        var response = await controller.GetContent("Sales", Guid.NewGuid(), CancellationToken.None);
+
+        var obj = response.Should().BeAssignableTo<ObjectResult>().Subject;
+        obj.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
+        obj.Value.Should().BeOfType<ApiResponse<object>>()
+            .Which.Code.Should().Be(ApiResponseCodes.Common.BadRequest);
+    }
+
+    [Theory]
+    [InlineData(ApiResponseCodes.Common.NotFound, StatusCodes.Status404NotFound)]
+    [InlineData(ApiResponseCodes.Common.Forbidden, StatusCodes.Status403Forbidden)]
+    [InlineData(ApiResponseCodes.Common.SriCommunicationError, StatusCodes.Status502BadGateway)]
+    public async Task GetContent_coded_failure_maps_like_GetOrGenerate(string code, int status)
+    {
+        var controller = BuildController(_ => Result<RideGenerationResultDto>.Failure("detalle", code));
+
+        var content = await controller.GetContent("Sales", Guid.NewGuid(), CancellationToken.None);
+        var json = await controller.GetOrGenerate("Sales", Guid.NewGuid(), CancellationToken.None);
+
+        var contentObj = content.Should().BeAssignableTo<ObjectResult>().Subject;
+        contentObj.StatusCode.Should().Be(status);
+        contentObj.Value.Should().BeOfType<ApiResponse<object>>().Which.Code.Should().Be(code);
+        json.Should().BeAssignableTo<ObjectResult>().Which.StatusCode.Should().Be(status);
+    }
+
+    [Fact]
+    public async Task GetContent_nonexistent_and_other_company_are_the_same_404()
+    {
+        var controller = BuildController(_ =>
+            Result<RideGenerationResultDto>.Success(
+                new RideGenerationResultDto(RideOutcome.NotApplicable, null, null, null)
+            )
+        );
+
+        var nonexistent = await controller.GetContent("Sales", Guid.NewGuid(), CancellationToken.None);
+        var otherCompany = await controller.GetContent("Sales", Guid.NewGuid(), CancellationToken.None);
+
+        foreach (var response in new[] { nonexistent, otherCompany })
+        {
+            var obj = response.Should().BeAssignableTo<ObjectResult>().Subject;
+            obj.StatusCode.Should().Be(StatusCodes.Status404NotFound);
+            obj.Value.Should().BeOfType<ApiResponse<object>>()
+                .Which.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        }
+    }
 }

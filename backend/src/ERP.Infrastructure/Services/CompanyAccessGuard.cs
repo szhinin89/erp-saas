@@ -47,15 +47,21 @@ public sealed class CompanyAccessGuard : ICompanyAccessGuard
     )
     {
         if (!_currentUser.IsAuthenticated)
-            return Result<Guid>.Failure("No autenticado.");
+            return Result<Guid>.Failure("No autenticado.", ApiResponseCodes.Common.Unauthorized);
 
         var tenantId = _currentTenant.TenantId;
         if (tenantId == Guid.Empty)
-            return Result<Guid>.Failure("Contexto de tenant no establecido.");
+            return Result<Guid>.Failure(
+                "Contexto de tenant no establecido.",
+                ApiResponseCodes.Common.CompanyScopeForbidden
+            );
 
         var tenant = await _tenants.GetByIdAsync(tenantId, cancellationToken);
         if (tenant is null || !tenant.IsActive)
-            return Result<Guid>.Failure("Tenant no válido o inactivo.");
+            return Result<Guid>.Failure(
+                "Tenant no válido o inactivo.",
+                ApiResponseCodes.Common.CompanyScopeForbidden
+            );
 
         return Result<Guid>.Success(tenantId);
     }
@@ -68,7 +74,7 @@ public sealed class CompanyAccessGuard : ICompanyAccessGuard
     {
         var subResult = await RequireActiveTenantAsync(cancellationToken);
         if (!subResult.IsSuccess)
-            return Result<CompanyAccessContext>.Failure(subResult.Error!);
+            return Result<CompanyAccessContext>.Failure(subResult.Error!, subResult.Code);
 
         var tenantId = subResult.Value!;
 
@@ -76,7 +82,9 @@ public sealed class CompanyAccessGuard : ICompanyAccessGuard
         if (company is null || company.TenantId != tenantId)
         {
             _metrics.RecordCrossCompanyDenied();
-            return Result<CompanyAccessContext>.Failure(
+            // Inexistente y ajena al tenant son indistinguibles a propósito (sin existence
+            // leakage): ambas son NOT_FOUND, nunca un "prohibido" que confirme que existe.
+            return Result<CompanyAccessContext>.NotFound(
                 "Empresa no encontrada o no pertenece al tenant activo."
             );
         }
@@ -88,7 +96,10 @@ public sealed class CompanyAccessGuard : ICompanyAccessGuard
                 || company.OperationalStatus != CompanyOperationalStatus.Operational
             )
         )
-            return Result<CompanyAccessContext>.Failure("Empresa no disponible para operar.");
+            return Result<CompanyAccessContext>.Failure(
+                "Empresa no disponible para operar.",
+                ApiResponseCodes.Common.CompanyScopeForbidden
+            );
 
         var membership = await _access.GetCompanyUserMembershipAsync(
             companyId,
@@ -118,7 +129,10 @@ public sealed class CompanyAccessGuard : ICompanyAccessGuard
             );
 
         _metrics.RecordMembershipValidationFailed();
-        return Result<CompanyAccessContext>.Failure("No tiene acceso a esta empresa.");
+        return Result<CompanyAccessContext>.Failure(
+            "No tiene acceso a esta empresa.",
+            ApiResponseCodes.Common.CompanyScopeForbidden
+        );
     }
 
     private async Task<Result<CompanyAccessContext>> BuildSuccessAsync(
@@ -151,7 +165,10 @@ public sealed class CompanyAccessGuard : ICompanyAccessGuard
         {
             _metrics.RecordInvalidCompanyContext();
             return Task.FromResult(
-                Result<CompanyAccessContext>.Failure("No hay empresa operativa seleccionada.")
+                Result<CompanyAccessContext>.Failure(
+                    "No hay empresa operativa seleccionada.",
+                    ApiResponseCodes.Common.CompanyScopeForbidden
+                )
             );
         }
 

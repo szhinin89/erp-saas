@@ -1,7 +1,16 @@
 namespace ERP.Application.Common;
 
-/// <summary>Entrada del catálogo: severidad y mensajes (usuario/desarrollador) asociados a un <c>code</c>.</summary>
-public sealed record CatalogMessage(string Severity, string User, string Dev);
+/// <summary>
+/// Entrada del catálogo: severidad, mensajes (usuario/desarrollador) y, para códigos de error, su
+/// <see cref="ApiErrorCategory"/> (ADR-027 §8) — de la que ERP.API deriva el HTTP status. Los
+/// códigos de éxito (<c>OK</c>/<c>CREATED</c>) no tienen categoría.
+/// </summary>
+public sealed record CatalogMessage(
+    string Severity,
+    string User,
+    string Dev,
+    ApiErrorCategory? Category = null
+);
 
 /// <summary>
 /// Fuente única de mensajes del sistema. Cada <c>code</c> de <see cref="ApiResponseCodes"/>
@@ -26,94 +35,114 @@ public static class MessageCatalog
         [ApiResponseCodes.Common.ValidationError] = new(
             ApiSeverity.Error,
             "Datos inválidos. Revisa el formulario.",
-            "Validation failed."
+            "Validation failed.",
+            ApiErrorCategory.Validation
         ),
         [ApiResponseCodes.Common.NotFound] = new(
             ApiSeverity.Error,
             "El recurso solicitado no existe.",
-            "Entity not found."
+            "Entity not found.",
+            ApiErrorCategory.NotFound
         ),
         [ApiResponseCodes.Common.Conflict] = new(
             ApiSeverity.Error,
             "La operación no se puede completar por un conflicto con el estado actual.",
-            "Conflict with current state."
+            "Conflict with current state.",
+            ApiErrorCategory.Duplicate
         ),
         [ApiResponseCodes.Common.UniqueViolation] = new(
             ApiSeverity.Error,
             "Ya existe un registro con esos datos.",
-            "Unique constraint violation."
+            "Unique constraint violation.",
+            ApiErrorCategory.Duplicate
         ),
         [ApiResponseCodes.Common.Forbidden] = new(
             ApiSeverity.Error,
             "No tiene permisos para realizar esta acción.",
-            "Forbidden."
+            "Forbidden.",
+            ApiErrorCategory.Authorization
         ),
         [ApiResponseCodes.Common.Unauthorized] = new(
             ApiSeverity.Error,
             "No autorizado.",
-            "Unauthorized."
+            "Unauthorized.",
+            ApiErrorCategory.Authentication
         ),
         [ApiResponseCodes.Common.DomainRuleViolation] = new(
             ApiSeverity.Error,
             "No se puede completar la operación.",
-            "Domain rule violation."
+            "Domain rule violation.",
+            ApiErrorCategory.Validation
         ),
         [ApiResponseCodes.Common.ConcurrencyConflict] = new(
             ApiSeverity.Error,
             "El recurso fue modificado por otro proceso. Reintente la operación.",
-            "Optimistic concurrency violation."
+            "Optimistic concurrency violation.",
+            ApiErrorCategory.Duplicate
         ),
         [ApiResponseCodes.Common.DatabaseUnavailable] = new(
             ApiSeverity.Error,
             "Error temporal de base de datos. Reintente en unos segundos.",
-            "Database update exception."
+            "Database update exception.",
+            ApiErrorCategory.Infrastructure
         ),
         [ApiResponseCodes.Common.InvalidDateTimeKind] = new(
             ApiSeverity.Error,
             "Error interno del servidor.",
-            "Unspecified/Local DateTimeKind reached SaveChanges — invariant violation, not a database outage."
+            "Unspecified/Local DateTimeKind reached SaveChanges — invariant violation, not a database outage.",
+            ApiErrorCategory.InternalError
         ),
         [ApiResponseCodes.Common.SriCommunicationError] = new(
             ApiSeverity.Error,
             "Error de comunicación con el SRI. La operación quedó pendiente para reintentar.",
-            "SRI communication exception."
+            "SRI communication exception.",
+            ApiErrorCategory.Integration
         ),
         [ApiResponseCodes.Common.CompanyScopeForbidden] = new(
             ApiSeverity.Error,
             "Acceso denegado por contexto de empresa.",
-            "Company scope exception."
+            "Company scope exception.",
+            ApiErrorCategory.Authorization
         ),
         [ApiResponseCodes.Common.BranchScopeForbidden] = new(
             ApiSeverity.Error,
             "Acceso denegado por contexto de sucursal.",
-            "Branch scope exception."
+            "Branch scope exception.",
+            ApiErrorCategory.Authorization
         ),
         [ApiResponseCodes.Common.CompanyRucAlreadyExists] = new(
             ApiSeverity.Error,
             "El RUC ya está registrado en el sistema.",
-            "Unique RUC violation."
+            "Unique RUC violation.",
+            ApiErrorCategory.Duplicate
         ),
         [ApiResponseCodes.Common.BadRequest] = new(
             ApiSeverity.Error,
             "Solicitud inválida.",
-            "Bad request."
+            "Bad request.",
+            ApiErrorCategory.BusinessRule
         ),
         [ApiResponseCodes.Common.InternalError] = new(
             ApiSeverity.Error,
             "Error interno del servidor.",
-            "Unhandled exception."
+            "Unhandled exception.",
+            ApiErrorCategory.InternalError
         ),
         [ApiResponseCodes.Common.RateLimited] = new(
             ApiSeverity.Error,
             "Demasiados intentos. Intente más tarde.",
-            "Rate limit exceeded."
+            "Rate limit exceeded.",
+            ApiErrorCategory.RateLimit
         ),
     };
 
+    // Código no catalogado (deuda ADR-027 Fase 1: códigos de módulo aún como literales, p. ej.
+    // SKU_DUPLICATE, PERIOD_NOT_OPEN): BusinessRule → 400, el mismo status que siempre recibió.
     private static readonly CatalogMessage Fallback = new(
         ApiSeverity.Error,
         "Ocurrió un error inesperado.",
-        "Unmapped response code."
+        "Unmapped response code.",
+        ApiErrorCategory.BusinessRule
     );
 
     /// <summary>Resuelve la severidad y mensajes para un <c>code</c>. Devuelve un fallback genérico si no está catalogado.</summary>
