@@ -2,6 +2,9 @@ using System.Reflection;
 using ERP.API.Contracts.MasterData;
 using ERP.API.Controllers;
 using ERP.API.Tests.Support;
+using ERP.Application.MasterData.DTOs;
+using ERP.Application.MasterData.UseCases.AssignBusinessPartnerRole;
+using ERP.Application.MasterData.UseCases.UpdateRoleConfig;
 using ERP.Domain.MasterData.Enums;
 using FluentAssertions;
 using MediatR;
@@ -128,5 +131,45 @@ public sealed class BusinessPartnerNestedRoutesControllerTests
         type.GetProperty("BusinessPartnerId")!.GetValue(sent).Should().Be(BpId, $"{action} debe propagar el bpId de la ruta");
         type.GetProperty(childProperty)!.GetValue(sent).Should().Be(ChildId);
         response.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    /// <summary>
+    /// ZH-API-THIN-BP-ROLES-01 — el controller ya no construye el value object: reenvía los valores
+    /// tal como llegan (sin trim ni validación) y es Application quien normaliza y aplica los
+    /// invariantes. Antes, capacidad 0 cortaba en el controller con 400 sin llegar al mediator.
+    /// </summary>
+    [Fact]
+    public async Task RolesController_reenvia_la_config_cruda_a_Application_sin_construir_value_objects()
+    {
+        var sent = new List<object>();
+        var mediator = new StubMediator(request =>
+        {
+            sent.Add(request);
+            return NotFoundFor(request);
+        });
+        var roles = WithContext(new BusinessPartnerRolesController(mediator));
+
+        await roles.UpdateCarrierConfig(
+            BpId, ChildId, new CarrierConfigRequest { TransportAuthorizationNumber = "  AUT  ", VehicleCapacityTons = 0m });
+        await roles.UpdateSupplierConfig(
+            BpId, ChildId, new SupplierConfigRequest { DefaultTaxSupportCode = " 0123456 ", IsRetentionExempt = true });
+        await roles.UpdateCustomerConfig(
+            BpId, ChildId, new CustomerConfigRequest { SalesZone = "  Norte  ", CustomerClassification = "" });
+        await roles.AssignRole(
+            BpId,
+            new AssignRoleRequest
+            {
+                RoleType = RoleType.Carrier,
+                CarrierConfig = new CarrierConfigRequest { VehicleCapacityTons = -1m },
+            });
+
+        sent.Should().HaveCount(4, "ningún caso se corta en el controller");
+        ((UpdateCarrierRoleConfigCommand)sent[0]).Config.Should().Be(new CarrierRoleConfigDto("  AUT  ", 0m));
+        ((UpdateSupplierRoleConfigCommand)sent[1]).Config.Should().Be(new SupplierRoleConfigDto(" 0123456 ", null, null, true, false));
+        ((UpdateCustomerRoleConfigCommand)sent[2]).Config.Should().Be(new CustomerRoleConfigDto(null, null, "  Norte  ", null, null, null, ""));
+        var assign = (AssignBusinessPartnerRoleCommand)sent[3];
+        assign.CarrierConfig.Should().Be(new CarrierRoleConfigDto(null, -1m));
+        assign.SupplierConfig.Should().BeNull();
+        assign.CustomerConfig.Should().BeNull();
     }
 }

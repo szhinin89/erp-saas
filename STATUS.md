@@ -2,6 +2,13 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-29** · Kernel refactor: **2026-06-05**.
 
+## ZH-API-THIN-BP-ROLES-01 — Config de roles de BP construida en Application (2026-09-29)
+
+**Estado: COMPLETADO.** `BusinessPartnerRolesController` construía `SupplierRoleConfig`/`CarrierRoleConfig`/`CustomerRoleConfig` (Domain) y traducía su `ArgumentException` a 400 en los 3 PATCH de config y en `AssignRole`. Ahora es Request → Command → mediator → ApiResult; sin `ERP.Domain.MasterData.ValueObjects` ni try/catch (269 → 207 líneas; sigue sobre 150, el warning se mantiene — no se dividió).
+- Commands `Update{Supplier,Carrier,Customer}RoleConfigCommand.Config` y `AssignBusinessPartnerRoleCommand.*Config` reciben los DTOs primitivos ya existentes (`*RoleConfigDto`, sin tipos nuevos). `RoleConfigFactory` (Application/MasterData/Services) es el único punto DTO → VO; los handlers construyen la config ANTES de resolver rol/BP y devuelven `Result.ValidationFailure(mensaje de Domain, BAD_REQUEST)`.
+- Compatibilidad exacta: 400 `BAD_REQUEST` con `data.errors = [ArgumentException.Message]`, 404 idéntico para rol de otro BP/inexistente, config inválida responde 400 exista o no el rol. Validators validan la config normalizada por Domain (trim, vacío → null) con las mismas claves `Config.X`. Ownership (bpId + roleId) intacto. Importadores de clientes/proveedores envían el DTO.
+- Evidencia: contrato HTTP `BusinessPartnerRoleConfigHttpContractTests` 4/4 en `HEAD` (antes del cambio) y 4/4 después · Application 2391 · API 520 · Architecture 118 (guard `BusinessPartnerRolesControllerThinTests`) · Infra MasterData/InitialLoad 23 · `architecture:check` sin cambios (58/100, 21 warnings, 0 nuevas).
+
 ## ZH-PURCHASE-EXPENSE-EXCLUSIVITY-RESTORE-01 — Exclusividad Compra↔Gasto por AccessKey restaurada (2026-09-29)
 
 **Estado: COMPLETADO.** Purchases sigue CLOSED: solo se reabrió esta garantía de integridad en BD; sin cambios de UX, endpoints ni flujo.

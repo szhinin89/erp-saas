@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.MasterData.DTOs;
+using ERP.Application.MasterData.Services;
 using ERP.Domain.MasterData.Interfaces;
 using MediatR;
 
@@ -21,13 +22,18 @@ public sealed class UpdateSupplierRoleConfigHandler
         CancellationToken cancellationToken
     )
     {
+        // Primero la config (antes que el rol): un invariante violado responde igual exista o no el rol.
+        var config = RoleConfigFactory.Build(cmd.Config);
+        if (!config.IsValid)
+            return Result<BusinessPartnerRoleDto>.ValidationFailure(config.Error!, RoleConfigFactory.InvalidConfigCode);
+
         var role = await _roleRepo.GetByIdAsync(cmd.RoleId, cancellationToken);
         if (role is null || role.BusinessPartnerId != cmd.BusinessPartnerId)
             return Result<BusinessPartnerRoleDto>.NotFound("Rol no encontrado.");
 
         try
         {
-            role.UpdateSupplierConfig(cmd.Config, _ctx.UserId);
+            role.UpdateSupplierConfig(config.Config!, _ctx.UserId);
         }
         catch (ArgumentException ex)
         {
@@ -59,13 +65,18 @@ public sealed class UpdateCarrierRoleConfigHandler
         CancellationToken cancellationToken
     )
     {
+        // Primero la config (antes que el rol): un invariante violado responde igual exista o no el rol.
+        var config = RoleConfigFactory.Build(cmd.Config);
+        if (!config.IsValid)
+            return Result<BusinessPartnerRoleDto>.ValidationFailure(config.Error!, RoleConfigFactory.InvalidConfigCode);
+
         var role = await _roleRepo.GetByIdAsync(cmd.RoleId, cancellationToken);
         if (role is null || role.BusinessPartnerId != cmd.BusinessPartnerId)
             return Result<BusinessPartnerRoleDto>.NotFound("Rol no encontrado.");
 
         try
         {
-            role.UpdateCarrierConfig(cmd.Config, _ctx.UserId);
+            role.UpdateCarrierConfig(config.Config!, _ctx.UserId);
         }
         catch (ArgumentException ex)
         {
@@ -97,13 +108,18 @@ public sealed class UpdateCustomerRoleConfigHandler
         CancellationToken cancellationToken
     )
     {
+        // Primero la config (antes que el rol): un invariante violado responde igual exista o no el rol.
+        var config = RoleConfigFactory.Build(cmd.Config);
+        if (!config.IsValid)
+            return Result<BusinessPartnerRoleDto>.ValidationFailure(config.Error!, RoleConfigFactory.InvalidConfigCode);
+
         var role = await _roleRepo.GetByIdAsync(cmd.RoleId, cancellationToken);
         if (role is null || role.BusinessPartnerId != cmd.BusinessPartnerId)
             return Result<BusinessPartnerRoleDto>.NotFound("Rol no encontrado.");
 
         try
         {
-            role.UpdateCustomerConfig(cmd.Config, _ctx.UserId);
+            role.UpdateCustomerConfig(config.Config!, _ctx.UserId);
         }
         catch (ArgumentException ex)
         {

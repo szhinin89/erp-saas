@@ -1,9 +1,11 @@
 using ERP.Application.Common;
 using ERP.Application.MasterData.DTOs;
-using ERP.Domain.MasterData.ValueObjects;
 using MediatR;
 
 namespace ERP.Application.MasterData.UseCases.UpdateRoleConfig;
+
+// ZH-API-THIN-BP-ROLES-01: Config llega como datos primitivos (DTO de Application); el
+// handler construye el value object de Domain vía RoleConfigFactory.
 
 /// <summary>
 /// Actualiza la config SRI operativa del rol Supplier.
@@ -12,7 +14,7 @@ namespace ERP.Application.MasterData.UseCases.UpdateRoleConfig;
 public sealed record UpdateSupplierRoleConfigCommand(
     Guid BusinessPartnerId,
     Guid RoleId,
-    SupplierRoleConfig Config
+    SupplierRoleConfigDto Config
 )
     : IRequest<Result<BusinessPartnerRoleDto>>,
         ITenantScopedRequest;
@@ -21,7 +23,7 @@ public sealed record UpdateSupplierRoleConfigCommand(
 public sealed record UpdateCarrierRoleConfigCommand(
     Guid BusinessPartnerId,
     Guid RoleId,
-    CarrierRoleConfig Config
+    CarrierRoleConfigDto Config
 )
     : IRequest<Result<BusinessPartnerRoleDto>>,
         ITenantScopedRequest;
@@ -30,7 +32,7 @@ public sealed record UpdateCarrierRoleConfigCommand(
 public sealed record UpdateCustomerRoleConfigCommand(
     Guid BusinessPartnerId,
     Guid RoleId,
-    CustomerRoleConfig Config
+    CustomerRoleConfigDto Config
 )
     : IRequest<Result<BusinessPartnerRoleDto>>,
         ITenantScopedRequest;

@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.MasterData.DTOs;
 using ERP.Application.MasterData.UseCases.BpContacts;
 using ERP.Application.MasterData.UseCases.BpLocations;
 using ERP.Application.MasterData.UseCases.RevokeBusinessPartnerRole;
@@ -282,11 +283,11 @@ public sealed class BpNestedResourceOwnershipHandlerTests
             "revoke" => Outcome(await new RevokeBusinessPartnerRoleHandler(f.Repo.Object, _ctx.Object)
                 .Handle(new RevokeBusinessPartnerRoleCommand(bpId, roleId), default)),
             "supplier-config" => Outcome(await new UpdateSupplierRoleConfigHandler(f.Repo.Object, _ctx.Object)
-                .Handle(new UpdateSupplierRoleConfigCommand(bpId, roleId, SupplierRoleConfig.Create(isRetentionExempt: true)), default)),
+                .Handle(new UpdateSupplierRoleConfigCommand(bpId, roleId, SupplierRoleConfigDto.From(SupplierRoleConfig.Create(isRetentionExempt: true))), default)),
             "carrier-config" => Outcome(await new UpdateCarrierRoleConfigHandler(f.Repo.Object, _ctx.Object)
-                .Handle(new UpdateCarrierRoleConfigCommand(bpId, roleId, CarrierRoleConfig.Create("AUT-1", 10m)), default)),
+                .Handle(new UpdateCarrierRoleConfigCommand(bpId, roleId, CarrierRoleConfigDto.From(CarrierRoleConfig.Create("AUT-1", 10m))), default)),
             "customer-config" => Outcome(await new UpdateCustomerRoleConfigHandler(f.Repo.Object, _ctx.Object)
-                .Handle(new UpdateCustomerRoleConfigCommand(bpId, roleId, CustomerRoleConfig.Create(salesZone: "Norte")), default)),
+                .Handle(new UpdateCustomerRoleConfigCommand(bpId, roleId, CustomerRoleConfigDto.From(CustomerRoleConfig.Create(salesZone: "Norte"))), default)),
             "notes" => Outcome(await new UpdateRoleNotesHandler(f.Repo.Object, _ctx.Object)
                 .Handle(new UpdateRoleNotesCommand(bpId, roleId, "nota"), default)),
             _ => throw new ArgumentOutOfRangeException(nameof(op)),

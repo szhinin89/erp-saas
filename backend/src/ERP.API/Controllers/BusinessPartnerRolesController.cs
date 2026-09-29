@@ -7,7 +7,6 @@ using ERP.Application.MasterData.UseCases.GetBusinessPartnerRoles;
 using ERP.Application.MasterData.UseCases.RevokeBusinessPartnerRole;
 using ERP.Application.MasterData.UseCases.UpdateRoleConfig;
 using ERP.Domain.Kernel.Permissions;
-using ERP.Domain.MasterData.ValueObjects;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -76,41 +75,12 @@ public sealed class BusinessPartnerRolesController : ControllerBase
         CancellationToken cancellationToken = default
     )
     {
-        var supplierConfig = body.SupplierConfig is not null
-            ? SupplierRoleConfig.Create(
-                body.SupplierConfig.DefaultTaxSupportCode,
-                defaultPaymentMethodCode: body.SupplierConfig.DefaultPaymentMethodCode,
-                refundProviderTypeCode: body.SupplierConfig.RefundProviderTypeCode,
-                isRetentionExempt: body.SupplierConfig.IsRetentionExempt,
-                isRequiredToKeepAccounting: body.SupplierConfig.IsRequiredToKeepAccounting
-            )
-            : null;
-
-        var carrierConfig = body.CarrierConfig is not null
-            ? CarrierRoleConfig.Create(
-                body.CarrierConfig.TransportAuthorizationNumber,
-                body.CarrierConfig.VehicleCapacityTons
-            )
-            : null;
-
-        var customerConfig = body.CustomerConfig is not null
-            ? CustomerRoleConfig.Create(
-                body.CustomerConfig.CustomerCategory,
-                body.CustomerConfig.CustomerSegment,
-                body.CustomerConfig.SalesZone,
-                body.CustomerConfig.CreditRating,
-                body.CustomerConfig.LoyaltyTier,
-                body.CustomerConfig.PreferredInvoiceFormat,
-                body.CustomerConfig.CustomerClassification
-            )
-            : null;
-
         var cmd = new AssignBusinessPartnerRoleCommand(
             bpId,
             body.RoleType,
-            supplierConfig,
-            carrierConfig,
-            customerConfig
+            ToDto(body.SupplierConfig),
+            ToDto(body.CarrierConfig),
+            ToDto(body.CustomerConfig)
         );
 
         var result = await _mediator.Send(cmd, cancellationToken);
@@ -153,24 +123,8 @@ public sealed class BusinessPartnerRolesController : ControllerBase
         CancellationToken cancellationToken = default
     )
     {
-        SupplierRoleConfig config;
-        try
-        {
-            config = SupplierRoleConfig.Create(
-                body.DefaultTaxSupportCode,
-                defaultPaymentMethodCode: body.DefaultPaymentMethodCode,
-                refundProviderTypeCode: body.RefundProviderTypeCode,
-                isRetentionExempt: body.IsRetentionExempt,
-                isRequiredToKeepAccounting: body.IsRequiredToKeepAccounting
-            );
-        }
-        catch (ArgumentException ex)
-        {
-            return this.ApiBadRequest(ex.Message);
-        }
-
         var result = await _mediator.Send(
-            new UpdateSupplierRoleConfigCommand(bpId, roleId, config),
+            new UpdateSupplierRoleConfigCommand(bpId, roleId, ToDto(body)!),
             cancellationToken
         );
         return this.ToOkOrBadRequest(result);
@@ -188,21 +142,8 @@ public sealed class BusinessPartnerRolesController : ControllerBase
         CancellationToken cancellationToken = default
     )
     {
-        CarrierRoleConfig config;
-        try
-        {
-            config = CarrierRoleConfig.Create(
-                body.TransportAuthorizationNumber,
-                body.VehicleCapacityTons
-            );
-        }
-        catch (ArgumentException ex)
-        {
-            return this.ApiBadRequest(ex.Message);
-        }
-
         var result = await _mediator.Send(
-            new UpdateCarrierRoleConfigCommand(bpId, roleId, config),
+            new UpdateCarrierRoleConfigCommand(bpId, roleId, ToDto(body)!),
             cancellationToken
         );
         return this.ToOkOrBadRequest(result);
@@ -224,26 +165,8 @@ public sealed class BusinessPartnerRolesController : ControllerBase
         CancellationToken cancellationToken = default
     )
     {
-        CustomerRoleConfig config;
-        try
-        {
-            config = CustomerRoleConfig.Create(
-                body.CustomerCategory,
-                body.CustomerSegment,
-                body.SalesZone,
-                body.CreditRating,
-                body.LoyaltyTier,
-                body.PreferredInvoiceFormat,
-                body.CustomerClassification
-            );
-        }
-        catch (ArgumentException ex)
-        {
-            return this.ApiBadRequest(ex.Message);
-        }
-
         var result = await _mediator.Send(
-            new UpdateCustomerRoleConfigCommand(bpId, roleId, config),
+            new UpdateCustomerRoleConfigCommand(bpId, roleId, ToDto(body)!),
             cancellationToken
         );
         return this.ToOkOrBadRequest(result);
@@ -266,4 +189,19 @@ public sealed class BusinessPartnerRolesController : ControllerBase
         );
         return this.ToOkOrBadRequest(result);
     }
+
+    // ── Request → datos primitivos del command (sin value objects de Domain) ──────
+
+    private static SupplierRoleConfigDto? ToDto(SupplierConfigRequest? r) =>
+        r is null
+            ? null
+            : new(r.DefaultTaxSupportCode, r.DefaultPaymentMethodCode, r.RefundProviderTypeCode, r.IsRetentionExempt, r.IsRequiredToKeepAccounting);
+
+    private static CarrierRoleConfigDto? ToDto(CarrierConfigRequest? r) =>
+        r is null ? null : new(r.TransportAuthorizationNumber, r.VehicleCapacityTons);
+
+    private static CustomerRoleConfigDto? ToDto(CustomerConfigRequest? r) =>
+        r is null
+            ? null
+            : new(r.CustomerCategory, r.CustomerSegment, r.SalesZone, r.CreditRating, r.LoyaltyTier, r.PreferredInvoiceFormat, r.CustomerClassification);
 }

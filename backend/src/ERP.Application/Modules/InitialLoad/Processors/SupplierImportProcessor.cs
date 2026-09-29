@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.MasterData.DTOs;
 using ERP.Application.MasterData.UseCases.AssignBusinessPartnerRole;
 using ERP.Application.MasterData.UseCases.BpContacts;
 using ERP.Application.MasterData.UseCases.CreateBusinessPartner;
@@ -216,7 +217,7 @@ public sealed class SupplierImportProcessor : IImportProcessor
             new AssignBusinessPartnerRoleCommand(
                 businessPartnerId,
                 RoleType.Supplier,
-                SupplierConfig: SupplierRoleConfig.Create()
+                SupplierConfig: new SupplierRoleConfigDto(null, null, null, false, false)
             ),
             ct
         );

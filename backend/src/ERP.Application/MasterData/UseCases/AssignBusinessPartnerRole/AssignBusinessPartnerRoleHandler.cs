@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.MasterData.DTOs;
+using ERP.Application.MasterData.Services;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Interfaces;
@@ -48,6 +49,18 @@ public sealed class AssignBusinessPartnerRoleHandler
         CancellationToken cancellationToken
     )
     {
+        // Configs primero (mismo orden que antes aplicaba el controller: supplier, carrier,
+        // customer): un invariante violado responde el 400 histórico antes de cualquier lectura.
+        var supplierConfig = cmd.SupplierConfig is null ? default : RoleConfigFactory.Build(cmd.SupplierConfig);
+        if (!supplierConfig.IsValid)
+            return Result<BusinessPartnerRoleDto>.ValidationFailure(supplierConfig.Error!, RoleConfigFactory.InvalidConfigCode);
+        var carrierConfig = cmd.CarrierConfig is null ? default : RoleConfigFactory.Build(cmd.CarrierConfig);
+        if (!carrierConfig.IsValid)
+            return Result<BusinessPartnerRoleDto>.ValidationFailure(carrierConfig.Error!, RoleConfigFactory.InvalidConfigCode);
+        var customerConfig = cmd.CustomerConfig is null ? default : RoleConfigFactory.Build(cmd.CustomerConfig);
+        if (!customerConfig.IsValid)
+            return Result<BusinessPartnerRoleDto>.ValidationFailure(customerConfig.Error!, RoleConfigFactory.InvalidConfigCode);
+
         var bp = await _bpRepo.GetByIdAsync(cmd.BusinessPartnerId, cancellationToken);
         if (bp is null)
             return Result<BusinessPartnerRoleDto>.NotFound("BusinessPartner no encontrado.");
@@ -105,9 +118,9 @@ public sealed class AssignBusinessPartnerRoleHandler
                     cmd.BusinessPartnerId,
                     cmd.RoleType,
                     _ctx.UserId,
-                    cmd.SupplierConfig,
-                    cmd.CarrierConfig,
-                    cmd.CustomerConfig
+                    supplierConfig.Config,
+                    carrierConfig.Config,
+                    customerConfig.Config
                 );
             }
             catch (ArgumentException ex)

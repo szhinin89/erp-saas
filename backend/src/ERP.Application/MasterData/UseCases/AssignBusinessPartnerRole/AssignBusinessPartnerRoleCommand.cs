@@ -1,7 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.MasterData.DTOs;
 using ERP.Domain.MasterData.Enums;
-using ERP.Domain.MasterData.ValueObjects;
 using MediatR;
 
 namespace ERP.Application.MasterData.UseCases.AssignBusinessPartnerRole;
@@ -13,11 +12,13 @@ namespace ERP.Application.MasterData.UseCases.AssignBusinessPartnerRole;
 ///   - Si el rol existe activo → error descriptivo (no duplica)
 ///
 /// Las configs son opcionales. Se pueden actualizar después con UpdateRoleConfigCommand.
+/// Llegan como datos primitivos (ZH-API-THIN-BP-ROLES-01); el handler construye los value objects
+/// de Domain vía RoleConfigFactory.
 /// </summary>
 public sealed record AssignBusinessPartnerRoleCommand(
     Guid BusinessPartnerId,
     RoleType RoleType,
-    SupplierRoleConfig? SupplierConfig = null,
-    CarrierRoleConfig? CarrierConfig = null,
-    CustomerRoleConfig? CustomerConfig = null
+    SupplierRoleConfigDto? SupplierConfig = null,
+    CarrierRoleConfigDto? CarrierConfig = null,
+    CustomerRoleConfigDto? CustomerConfig = null
 ) : IRequest<Result<BusinessPartnerRoleDto>>, ITenantScopedRequest;

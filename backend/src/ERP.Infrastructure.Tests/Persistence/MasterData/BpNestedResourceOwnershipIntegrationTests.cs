@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.MasterData.DTOs;
 using ERP.Application.MasterData.UseCases.BpContacts;
 using ERP.Application.MasterData.UseCases.BpLocations;
 using ERP.Application.MasterData.UseCases.RevokeBusinessPartnerRole;
@@ -230,7 +231,7 @@ public sealed class BpNestedResourceOwnershipIntegrationTests : IAsyncLifetime
         var revokeCrossParent = await new RevokeBusinessPartnerRoleHandler(repo, Ctx(_tenantA))
             .Handle(new RevokeBusinessPartnerRoleCommand(_bpA1, _roleA2), default);
         var configCrossParent = await new UpdateSupplierRoleConfigHandler(repo, Ctx(_tenantA))
-            .Handle(new UpdateSupplierRoleConfigCommand(_bpA1, _roleA2, SupplierRoleConfig.Create(isRetentionExempt: true)), default);
+            .Handle(new UpdateSupplierRoleConfigCommand(_bpA1, _roleA2, SupplierRoleConfigDto.From(SupplierRoleConfig.Create(isRetentionExempt: true))), default);
         var revokeCrossTenant = await new RevokeBusinessPartnerRoleHandler(repo, Ctx(_tenantA))
             .Handle(new RevokeBusinessPartnerRoleCommand(_bpB, _roleB), default);
 

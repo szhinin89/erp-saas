@@ -1,3 +1,4 @@
+using ERP.Application.MasterData.DTOs;
 using ERP.Application.MasterData.UseCases.UpdateRoleConfig;
 using ERP.Domain.MasterData.ValueObjects;
 using ERP.Domain.Modules.SriCatalogs.Interfaces;
@@ -26,7 +27,7 @@ public sealed class UpdateSupplierRoleConfigValidatorTests
     private UpdateSupplierRoleConfigValidator CreateValidator() => new(_catalogRepo.Object);
 
     private static UpdateSupplierRoleConfigCommand CommandWith(SupplierRoleConfig config) =>
-        new(BpId, RoleId, config);
+        new(BpId, RoleId, SupplierRoleConfigDto.From(config));
 
     // ── DefaultTaxSupportCode ────────────────────────────────────────────────
 

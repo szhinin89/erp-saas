@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.MasterData.DTOs;
 using ERP.Application.MasterData.UseCases.UpdateRoleConfig;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
@@ -62,7 +63,7 @@ public sealed class UpdateCustomerRoleConfigValidatorTests
         var cmd = new UpdateCustomerRoleConfigCommand(
             BpId,
             RoleId,
-            CustomerRoleConfig.Create(customerCategory: "Retail")
+            CustomerRoleConfigDto.From(CustomerRoleConfig.Create(customerCategory: "Retail"))
         );
 
         var result = await CreateValidator().ValidateAsync(cmd);
@@ -80,7 +81,7 @@ public sealed class UpdateCustomerRoleConfigValidatorTests
         var cmd = new UpdateCustomerRoleConfigCommand(
             BpId,
             RoleId,
-            CustomerRoleConfig.Create(customerCategory: "NoExiste")
+            CustomerRoleConfigDto.From(CustomerRoleConfig.Create(customerCategory: "NoExiste"))
         );
 
         var result = await CreateValidator().ValidateAsync(cmd);
@@ -91,7 +92,7 @@ public sealed class UpdateCustomerRoleConfigValidatorTests
     [Fact]
     public async Task CustomerCategory_null_es_valido_sin_consultar_el_catalogo()
     {
-        var cmd = new UpdateCustomerRoleConfigCommand(BpId, RoleId, CustomerRoleConfig.Create());
+        var cmd = new UpdateCustomerRoleConfigCommand(BpId, RoleId, CustomerRoleConfigDto.From(CustomerRoleConfig.Create()));
 
         var result = await CreateValidator().ValidateAsync(cmd);
 
@@ -123,7 +124,7 @@ public sealed class UpdateCustomerRoleConfigValidatorTests
         var cmd = new UpdateCustomerRoleConfigCommand(
             BpId,
             RoleId,
-            CustomerRoleConfig.Create(customerClassification: "LegacyValue")
+            CustomerRoleConfigDto.From(CustomerRoleConfig.Create(customerClassification: "LegacyValue"))
         );
 
         var result = await CreateValidator().ValidateAsync(cmd);
@@ -160,7 +161,7 @@ public sealed class UpdateCustomerRoleConfigValidatorTests
         var cmd = new UpdateCustomerRoleConfigCommand(
             BpId,
             RoleId,
-            CustomerRoleConfig.Create(customerClassification: "OtroValor")
+            CustomerRoleConfigDto.From(CustomerRoleConfig.Create(customerClassification: "OtroValor"))
         );
 
         var result = await CreateValidator().ValidateAsync(cmd);
@@ -191,7 +192,7 @@ public sealed class UpdateCustomerRoleConfigValidatorTests
         var cmd = new UpdateCustomerRoleConfigCommand(
             BpId,
             RoleId,
-            CustomerRoleConfig.Create(customerClassification: "LegacyValue")
+            CustomerRoleConfigDto.From(CustomerRoleConfig.Create(customerClassification: "LegacyValue"))
         );
 
         var result = await CreateValidator().ValidateAsync(cmd);
