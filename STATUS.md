@@ -2,6 +2,13 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-28** · Kernel refactor: **2026-06-05**.
 
+## ZH-ARCH-DESIGN-SYSTEM-02 — Custom properties locales en `F-04-token` (2026-09-28)
+
+**Estado: COMPLETADO.** El checker `design-system` distingue custom properties locales legítimas de tokens globales sin allowlist por archivo ni wildcard. Sin cambios en CSS/TSX.
+- Regla: `var(--x)` válido si `--x` está en `design-tokens.css`, declarado en el mismo CSS (sin contar comentarios) o fijado en runtime por un componente que importa ese CSS (`"--x":` en `style` / `setProperty("--x")`). Siguen fallando tokens inexistentes, typos globales y custom properties declaradas solo en otro CSS.
+- Resueltos 18: `--account-tree-*` ×9 (`ChartOfAccountsPage.css`), `--sfl-cols`/`--sfl-col-gap` ×8 (`sales-product-card.css`), `--batch-progress` ×1 (fijado por `ZhBatchProgress`). Pendientes (decisión visual): `CajaPage.css --color-surface-subtle`, `expense-documents.css --text-title-md-*`.
+- `check-design-system.test.mjs` (9 tests) agregado a `npm run architecture:check`. Baseline: 181 → 163; `design-system` 21 → 3.
+
 ## ZH-ARCH-DESIGN-SYSTEM-01 — Auditoría `design-system` (2026-09-28)
 
 **Estado: COMPLETADO (parcial por diseño).** 26 ocurrencias clasificadas: A 2 · B 3 · C 0 · D 21 · E 0. Solo se corrigieron A/B inequívocas; sin tokens nuevos, sin estilos inline, checker intacto.

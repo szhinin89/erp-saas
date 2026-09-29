@@ -10,10 +10,10 @@
     "lineNumber": "excluded to keep identity stable across unrelated edits"
   },
   "summary": {
-    "violations": 181,
+    "violations": 163,
     "byCheck": {
       "css-prefixes": 112,
-      "design-system": 21,
+      "design-system": 3,
       "module-boundaries": 48
     }
   },
@@ -546,34 +546,6 @@
     {
       "check": "design-system",
       "rule": "F-04-token",
-      "file": "frontend/src/components/zh/progress/zh-batch-progress.css",
-      "message": "Token '--batch-progress' no está definido en design-tokens.css — corregir el nombre o agregarlo ahí (no crear tokens sueltos en otros archivos).",
-      "count": 1
-    },
-    {
-      "check": "design-system",
-      "rule": "F-04-token",
-      "file": "frontend/src/modules/accounting/pages/ChartOfAccountsPage.css",
-      "message": "Token '--account-tree-elbow' no está definido en design-tokens.css — corregir el nombre o agregarlo ahí (no crear tokens sueltos en otros archivos).",
-      "count": 3
-    },
-    {
-      "check": "design-system",
-      "rule": "F-04-token",
-      "file": "frontend/src/modules/accounting/pages/ChartOfAccountsPage.css",
-      "message": "Token '--account-tree-line-color' no está definido en design-tokens.css — corregir el nombre o agregarlo ahí (no crear tokens sueltos en otros archivos).",
-      "count": 2
-    },
-    {
-      "check": "design-system",
-      "rule": "F-04-token",
-      "file": "frontend/src/modules/accounting/pages/ChartOfAccountsPage.css",
-      "message": "Token '--account-tree-step' no está definido en design-tokens.css — corregir el nombre o agregarlo ahí (no crear tokens sueltos en otros archivos).",
-      "count": 4
-    },
-    {
-      "check": "design-system",
-      "rule": "F-04-token",
       "file": "frontend/src/modules/caja/pages/CajaPage.css",
       "message": "Token '--color-surface-subtle' no está definido en design-tokens.css — corregir el nombre o agregarlo ahí (no crear tokens sueltos en otros archivos).",
       "count": 1
@@ -591,20 +563,6 @@
       "file": "frontend/src/modules/expenses/styles/expense-documents.css",
       "message": "Token '--text-title-md-weight' no está definido en design-tokens.css — corregir el nombre o agregarlo ahí (no crear tokens sueltos en otros archivos).",
       "count": 1
-    },
-    {
-      "check": "design-system",
-      "rule": "F-04-token",
-      "file": "frontend/src/modules/sales/styles/sales-product-card.css",
-      "message": "Token '--sfl-col-gap' no está definido en design-tokens.css — corregir el nombre o agregarlo ahí (no crear tokens sueltos en otros archivos).",
-      "count": 4
-    },
-    {
-      "check": "design-system",
-      "rule": "F-04-token",
-      "file": "frontend/src/modules/sales/styles/sales-product-card.css",
-      "message": "Token '--sfl-cols' no está definido en design-tokens.css — corregir el nombre o agregarlo ahí (no crear tokens sueltos en otros archivos).",
-      "count": 4
     },
     {
       "check": "module-boundaries",

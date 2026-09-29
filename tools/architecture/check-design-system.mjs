@@ -106,18 +106,67 @@ function buildDefinedTokenSet(tokensDefPath) {
 }
 
 /**
+ * Custom properties declaradas (`--x:`) en el propio archivo CSS, ignorando comentarios.
+ * Son locales al archivo: una declaración en OTRO .css nunca habilita su uso aquí.
+ * @param {string} content
+ * @returns {Set<string>}
+ */
+export function collectLocalCustomProperties(content) {
+  const withoutComments = content.replace(/\/\*[\s\S]*?\*\//g, '');
+  const declared = new Set();
+  for (const [, name] of withoutComments.matchAll(/(?<![\w-])--([a-zA-Z0-9-]+)\s*:/g)) {
+    declared.add(name);
+  }
+  return declared;
+}
+
+/**
+ * Custom properties dinámicas que un componente TS/TSX fija en runtime
+ * (`style={{ "--x": valor }}` o `el.style.setProperty("--x", valor)`), asociadas SOLO a los .css
+ * que ese mismo componente importa con ruta relativa. Así el valor dinámico queda limitado al
+ * componente dueño del CSS — sin allowlist por archivo ni wildcard.
+ * @param {{ rel: string, content: string }[]} sourceFiles
+ * @returns {Map<string, Set<string>>} css repo-relativo → nombres (sin `--`)
+ */
+export function collectDynamicCustomProperties(sourceFiles) {
+  /** @type {Map<string, Set<string>>} */
+  const byCss = new Map();
+  for (const { rel, content } of sourceFiles) {
+    const names = [
+      ...content.matchAll(/["']--([a-zA-Z0-9-]+)["']\s*:/g),
+      ...content.matchAll(/setProperty\(\s*["']--([a-zA-Z0-9-]+)["']/g),
+    ].map(([, name]) => name);
+    if (names.length === 0) continue;
+
+    // El frontend importa CSS solo como side-effect (`import "./x.css";`).
+    for (const [, spec] of content.matchAll(/import\s+["'](\.{1,2}\/[^"']+\.css)["']/g)) {
+      const cssRel = path.posix.normalize(path.posix.join(path.posix.dirname(rel), spec));
+      const set = byCss.get(cssRel) ?? new Set();
+      for (const name of names) set.add(name);
+      byCss.set(cssRel, set);
+    }
+  }
+  return byCss;
+}
+
+/**
+ * Un var(--x) es válido si --x existe en design-tokens.css, está declarado en el mismo archivo
+ * (custom property local) o es una custom property dinámica fijada por un componente que
+ * importa este archivo. Cualquier otro caso (typo, token inexistente, local de otro .css) falla.
  * @param {Set<string>} definedTokens
  * @param {string} rel
  * @param {string} content
+ * @param {Set<string>} [dynamicProperties]
  */
-function findUndefinedTokenViolations(definedTokens, rel, content) {
+export function findUndefinedTokenViolations(definedTokens, rel, content, dynamicProperties = new Set()) {
   /** @type {{ rule: string, file: string, message: string, line: number }[]} */
   const found = [];
+  const localProperties = collectLocalCustomProperties(content);
   const varRe = /var\(\s*--([a-zA-Z0-9-]+)/g;
   let m;
   while ((m = varRe.exec(content)) !== null) {
     const name = m[1];
-    if (definedTokens.has(name)) continue;
+    if (definedTokens.has(name) || localProperties.has(name) || dynamicProperties.has(name)) continue;
     found.push({
       rule: 'F-04-token',
       file: rel,
@@ -150,6 +199,12 @@ export function runCheckDesignSystem() {
 
   const tokensDefPath = 'frontend/src/styles/design-tokens.css';
   const definedTokens = buildDefinedTokenSet(tokensDefPath);
+  const dynamicByCss = collectDynamicCustomProperties(
+    walkFiles(path.join(REPO_ROOT, 'frontend/src'), { extensions: ['.ts', '.tsx'] }).map((abs) => {
+      const rel = toRepoRel(abs);
+      return { rel, content: readText(rel) };
+    }),
+  );
 
   const cssFiles = walkFiles(path.join(REPO_ROOT, 'frontend/src'), { extensions: ['.css'] });
   for (const abs of cssFiles) {
@@ -163,7 +218,7 @@ export function runCheckDesignSystem() {
     }
 
     if (rel !== tokensDefPath) {
-      for (const v of findUndefinedTokenViolations(definedTokens, rel, content)) {
+      for (const v of findUndefinedTokenViolations(definedTokens, rel, content, dynamicByCss.get(rel))) {
         if (allowed?.has(v.rule)) continue;
         addViolation(result, v);
       }
