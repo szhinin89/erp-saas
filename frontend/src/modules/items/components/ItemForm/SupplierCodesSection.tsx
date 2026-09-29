@@ -5,7 +5,7 @@ import {
   ZHFormSection,
   ZHGrid,
 } from "../../../../components/zh/ZHForm";
-import { SupplierSearchSelect } from "../../../masterData/components/SupplierSearchSelect";
+import { SupplierSearchSelect } from "../../../masterData/facades/supplierPickerFacade";
 import { useMarkPrimaryField } from "../../hooks/useMarkPrimaryField";
 import type { CreateItemFormValues } from "../../schemas/createItemSchema";
 

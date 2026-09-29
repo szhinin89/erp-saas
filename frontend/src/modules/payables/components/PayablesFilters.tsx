@@ -2,7 +2,7 @@ import { ZHField } from "../../../components/zh/ZHForm";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { ZhSelect } from "../../../components/zh/inputs/ZhSelect";
 import { ZhDateInput } from "../../../components/zh/inputs/ZhDateInput";
-import { SupplierSearchSelect } from "../../masterData/components/SupplierSearchSelect";
+import { SupplierSearchSelect } from "../../masterData/facades/supplierPickerFacade";
 import type { PayableOriginType, PayableStatus } from "../api/payablesService";
 
 export interface PayablesFiltersValue {

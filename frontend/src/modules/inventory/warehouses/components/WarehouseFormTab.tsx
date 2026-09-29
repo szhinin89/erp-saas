@@ -11,7 +11,7 @@ import {
   ZhTextInput,
   ZhSelect,
 } from "../../../../components/zh/inputs";
-import type { BranchListItemDto } from "../../../branches/types";
+import type { BranchListItemDto } from "../../../branches/facades/branchLookupFacade";
 import {
   STORAGE_TYPES,
   type WarehouseFormValues,

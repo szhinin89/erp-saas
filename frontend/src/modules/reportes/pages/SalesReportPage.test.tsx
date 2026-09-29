@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { I18nProvider } from "../../../i18n/i18n";
 import { SalesReportPage } from "./SalesReportPage";
-import { salesService, type SalesReportRowDto } from "../../sales/api/salesService";
+import { salesLookupFacade, type SalesReportRowDto } from "../../sales/facades/salesLookupFacade";
 import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.config";
 import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 
@@ -13,7 +13,7 @@ import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
  * como antes, y reaccionan a la policy sin remount.
  */
 
-vi.mock("../../sales/api/salesService", () => ({ salesService: { dailyReport: vi.fn() } }));
+vi.mock("../../sales/facades/salesLookupFacade", () => ({ salesLookupFacade: { dailyReport: vi.fn() } }));
 vi.mock("../../../store/authStore", () => ({
   useAuthStore: (selector: (s: { companySessionVersion: number }) => unknown) =>
     selector({ companySessionVersion: 1 }),
@@ -41,10 +41,10 @@ afterEach(() => cleanup());
 describe("SalesReportPage — money vs tax (04F)", () => {
   it("IVA usa taxDecimals y el resto moneyDecimals; sin $; A → B sin remount", async () => {
     setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, moneyDecimals: 2, taxDecimals: 4 });
-    vi.mocked(salesService.dailyReport).mockResolvedValue({
+    vi.mocked(salesLookupFacade.dailyReport).mockResolvedValue({
       items: [ROW],
       totals: { count: 1, subtotal: 100.5, totalVat: 15.075, totalDiscount: 1.25, grandTotal: 114.325 },
-    } as Awaited<ReturnType<typeof salesService.dailyReport>>);
+    } as Awaited<ReturnType<typeof salesLookupFacade.dailyReport>>);
     const { container } = render(
       <I18nProvider>
         <SalesReportPage />

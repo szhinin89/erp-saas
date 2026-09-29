@@ -39,6 +39,7 @@ Antes de crear tablas: declarar scope — `docs/ARCHITECTURE.md#scopes`.
 | sessionStorage SaaS | prefijo `erp.saas.` |
 | Rutas páginas wrapper | `frontend/src/pages/` (≤15 líneas) |
 | Implementación | `modules/{dominio}/pages/` |
+| Contrato público cross-módulo | `modules/{owner}/[{área}/]facades/{concepto}{Propósito}Facade.ts` (camelCase; objeto exportado con el mismo nombre del archivo). Propósitos en uso: `Lookup` (lecturas), `Registration` (altas desde otro módulo), `Picker` (selector UI), `Navigation` (abrir pantalla del owner), `Admin`/`Access`/específico del flujo. Prohibidos nombres genéricos (`lookupFacade`, `publicFacade`, `index`) — ver [frontend.md § Contratos públicos](./frontend.md#contratos-públicos-entre-módulos-owner--subscriber) |
 
 ---
 

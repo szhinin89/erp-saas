@@ -1,9 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { businessPartnerFacade } from "../../masterData/api/businessPartnerFacade";
+import {
+  customerLookupFacade,
+  type CustomerPickerRow,
+} from "../../masterData/facades/customerLookupFacade";
+import { businessPartnerLookupFacade } from "../../masterData/facades/businessPartnerLookupFacade";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHPickerResultItem } from "../../../components/zh/ZHPickerResultItem";
 import { ZHPickerSelectedValue } from "../../../components/zh/ZHPickerSelectedValue";
-import type { CustomerPickerRow } from "../../masterData/types/businessPartner.types";
 
 type Props = {
   value: string | null;
@@ -44,7 +47,7 @@ export function CustomerPicker({
     }
     setLoading(true);
     try {
-      const rows = await businessPartnerFacade.searchCustomersForPicker(
+      const rows = await customerLookupFacade.searchCustomers(
         q.trim(),
       );
       setResults(rows);
@@ -64,7 +67,7 @@ export function CustomerPicker({
 
   useEffect(() => {
     if (value && !selected) {
-      businessPartnerFacade
+      businessPartnerLookupFacade
         .getBusinessPartner(value)
         .then((bp) => {
           setSelected({

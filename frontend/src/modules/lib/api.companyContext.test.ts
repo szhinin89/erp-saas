@@ -3,7 +3,6 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { AxiosHeaders, InternalAxiosRequestConfig } from "axios";
 import { useAuthStore } from "../../store/authStore";
 import { useActiveBranchStore } from "../../store/activeBranchStore";
-import { clearOperationalContext } from "../auth/clearOperationalContext";
 import { api } from "./api";
 
 function readHeader(
@@ -101,7 +100,9 @@ describe("api company context headers", () => {
       },
     });
 
-    clearOperationalContext();
+    // Mismo efecto que auth/clearOperationalContext (probado en auth/clearOperationalContext.test.ts);
+    // aquí solo interesa cómo reacciona el cliente HTTP a un contexto de sucursal limpio.
+    useActiveBranchStore.getState().clear();
     const config = await captureRequestHeaders(originalAdapter);
 
     expect(useActiveBranchStore.getState().branch).toBeNull();
@@ -137,7 +138,9 @@ describe("api company context headers", () => {
       user: state.user ? { ...state.user, companyId: "company-B" } : state.user,
       companySessionVersion: state.companySessionVersion + 1,
     }));
-    clearOperationalContext();
+    // Mismo efecto que auth/clearOperationalContext (probado en auth/clearOperationalContext.test.ts);
+    // aquí solo interesa cómo reacciona el cliente HTTP a un contexto de sucursal limpio.
+    useActiveBranchStore.getState().clear();
 
     const afterSwitch = await captureRequestHeaders(originalAdapter);
     expect(readHeader(afterSwitch.headers, "X-Company-Id")).toBe("company-B");

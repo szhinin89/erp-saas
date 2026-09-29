@@ -12,27 +12,27 @@ import type {
   ChequeDetailInput,
 } from "../api/salesService";
 import { salesService } from "../api/salesService";
-import { warehouseService } from "../../inventory/warehouses/api/warehouseService";
-import type { WarehouseDto } from "../../inventory/warehouses/api/warehouseService";
-import { stockService } from "../../inventory/stock/api/stockService";
-import type { ItemWarehouseAvailabilityDto } from "../../inventory/stock/api/stockService";
+import { warehouseLookupFacade } from "../../inventory/facades/warehouseLookupFacade";
+import type { WarehouseDto } from "../../inventory/facades/warehouseLookupFacade";
+import { stockLookupFacade } from "../../inventory/facades/stockLookupFacade";
+import type { ItemWarehouseAvailabilityDto } from "../../inventory/facades/stockLookupFacade";
 import { electronicDocumentAccessFacade } from "../../electronicDocuments/facades/electronicDocumentAccessFacade";
 import type { ElectronicDocumentXmlVariant } from "../../electronicDocuments/facades/electronicDocumentAccessFacade";
-import { downloadTextFile } from "../../electronicDocuments/monitor/utils/download";
+import { downloadTextFile } from "../../../lib/download";
 import type { InvoiceItemSearchResultDto } from "../api/invoiceItemSearchService";
-import type {
-  CustomerPickerRow,
-  LocationTypeValue,
-  ContactRoleValue,
-} from "../../masterData/types/businessPartner.types";
-import { RoleTypeEnum } from "../../masterData/types/businessPartner.types";
-import { businessPartnerFacade } from "../../masterData/api/businessPartnerFacade";
 import {
-  bpLocationService,
-  bpContactService,
-} from "../../masterData/api/businessPartnerService";
-import { paymentTermService } from "../../masterData/api/paymentTermService";
-import type { PaymentTermDto } from "../../masterData/api/paymentTermService";
+  customerLookupFacade,
+  type CustomerPickerRow,
+} from "../../masterData/facades/customerLookupFacade";
+import { businessPartnerLookupFacade } from "../../masterData/facades/businessPartnerLookupFacade";
+import {
+  businessPartnerRegistrationFacade,
+  RoleTypeEnum,
+  type LocationTypeValue,
+  type ContactRoleValue,
+} from "../../masterData/facades/businessPartnerRegistrationFacade";
+import { paymentTermLookupFacade } from "../../masterData/facades/paymentTermLookupFacade";
+import type { PaymentTermDto } from "../../masterData/facades/paymentTermLookupFacade";
 import { sriLookupFacade } from "../../items/facades/sriLookupFacade";
 import { salesDefaultsService } from "../api/salesDefaultsService";
 import type { SalesInvoiceDefaultsDto } from "../api/salesDefaultsService";
@@ -79,7 +79,7 @@ import {
 import { applyServerErrors } from "../../lib/validationErrors";
 import { cajaSessionLookupFacade } from "../../caja/facades/cajaSessionLookupFacade";
 import type { CashSessionDto } from "../../caja/facades/cajaSessionLookupFacade";
-import { useManualCashMovementFlow } from "../../caja/hooks/useManualCashMovementFlow";
+import { useManualCashMovementFlow } from "../../caja/facades/manualCashMovementFacade";
 import { useActiveBranchStore } from "../../../store/activeBranchStore";
 import { useElectronicInvoicingStatusStore } from "../../../store/electronicInvoicingStatusStore";
 import type { ElectronicInvoicingStatusDto } from "../../configuracion/facades/electronicInvoicingLookupFacade";
@@ -256,7 +256,7 @@ const CONSUMIDOR_FINAL_IDENTIFICATION_NUMBER = "9999999999999";
  * dejando el campo cliente vacío para selección manual, nunca fallando la pantalla. */
 async function resolveConsumidorFinal(): Promise<CustomerPickerRow | null> {
   try {
-    const rows = await businessPartnerFacade.searchCustomersForPicker(
+    const rows = await customerLookupFacade.searchCustomers(
       CONSUMIDOR_FINAL_IDENTIFICATION_NUMBER,
     );
     return (
@@ -661,7 +661,7 @@ export function useSalesPage() {
       // 1. Datos independientes en paralelo
       const [defaults, , , , , , whs, , mySession] = await Promise.allSettled([
         salesDefaultsService.get(),
-        paymentTermService
+        paymentTermLookupFacade
           .list()
           .then(setPaymentTermsList)
           .catch(() => {}),
@@ -684,7 +684,7 @@ export function useSalesPage() {
             setSriDocTypes(dts.map((d) => ({ code: d.code, name: d.name }))),
           )
           .catch(() => {}),
-        warehouseService.list("active"),
+        warehouseLookupFacade.list("active"),
         sriLookupFacade
           .vatRates()
           .then((rates) => {
@@ -801,10 +801,10 @@ export function useSalesPage() {
     async (bpId: string): Promise<CustomerProfile | null> => {
       try {
         const [bp, locations, contacts, trading] = await Promise.all([
-          businessPartnerFacade.getBusinessPartner(bpId),
-          bpLocationService.list(bpId, true).catch(() => []),
-          bpContactService.list(bpId, true).catch(() => []),
-          businessPartnerFacade.getSalesSettings(bpId),
+          businessPartnerLookupFacade.getBusinessPartner(bpId),
+          businessPartnerLookupFacade.getLocations(bpId, true).catch(() => []),
+          businessPartnerLookupFacade.getContacts(bpId, true).catch(() => []),
+          businessPartnerLookupFacade.getSalesSettings(bpId),
         ]);
 
         const {
@@ -1104,7 +1104,7 @@ export function useSalesPage() {
       void Promise.all(
         affected.map(async (l) => {
           try {
-            const options = await stockService.getWarehouseAvailability(
+            const options = await stockLookupFacade.getWarehouseAvailability(
               l.itemId!,
             );
             const match = options.find((o) => o.warehouseId === id);
@@ -1800,26 +1800,26 @@ export function useSalesPage() {
       };
 
       if (newCustIsEdit) {
-        await businessPartnerFacade.updateBusinessPartner(bpId, {
+        await businessPartnerRegistrationFacade.updateBusinessPartner(bpId, {
           legalName: newCustName.trim(),
           tradeName: null,
           countryCode: null,
         });
       } else {
-        const bp = await businessPartnerFacade.createBusinessPartner({
+        const bp = await businessPartnerRegistrationFacade.createBusinessPartner({
           identificationType: newCustIdType,
           identificationNumber: newCustId.trim(),
           legalName: newCustName.trim(),
         });
         bpId = bp.id;
-        await businessPartnerFacade.assignRole(bp.id, {
+        await businessPartnerRegistrationFacade.assignRole(bp.id, {
           roleType: RoleTypeEnum.Customer,
         });
       }
 
       const [locations, contacts] = await Promise.all([
-        bpLocationService.list(bpId, true).catch(() => []),
-        bpContactService.list(bpId, true).catch(() => []),
+        businessPartnerLookupFacade.getLocations(bpId, true).catch(() => []),
+        businessPartnerLookupFacade.getContacts(bpId, true).catch(() => []),
       ]);
 
       if (addr) {
@@ -1831,14 +1831,14 @@ export function useSalesPage() {
               (loc.purposes.includes("Fiscal") ? 4 : 0) |
               (loc.purposes.includes("Correspondencia") ? 8 : 0)
             : 5;
-          await businessPartnerFacade.updateLocation(bpId, loc.id, {
+          await businessPartnerRegistrationFacade.updateLocation(bpId, loc.id, {
             name: loc.name,
             type: locTypeMap[loc.locationType] ?? 1,
             purpose: purposeBits,
             addressLine: addr,
           });
         } else {
-          await businessPartnerFacade.createLocation(bpId, {
+          await businessPartnerRegistrationFacade.createLocation(bpId, {
             name: "Principal",
             type: 1,
             purpose: 5,
@@ -1850,14 +1850,14 @@ export function useSalesPage() {
       if (email || phone) {
         if (contacts.length > 0) {
           const ct = contacts[0];
-          await businessPartnerFacade.updateContact(bpId, ct.id, {
+          await businessPartnerRegistrationFacade.updateContact(bpId, ct.id, {
             firstName: ct.firstName,
             role: roleMap[ct.contactRole] ?? 1,
             phone,
             email,
           });
         } else {
-          await businessPartnerFacade.createContact(bpId, {
+          await businessPartnerRegistrationFacade.createContact(bpId, {
             firstName: newCustName.trim().split(" ")[0],
             role: 1,
             phone,

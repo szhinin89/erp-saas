@@ -2,14 +2,23 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { companyManagementService } from "../../company-management/api/companyManagementService";
 import { adminCoreService } from "../api/adminCoreService";
-import { accessService } from "../../auth/api/accessService";
-import { sessionService } from "../../session/api/sessionService";
 import { AdminCoreCompanyCreatePage } from "./AdminCoreCompanyCreatePage";
+import { companyRegistrationFacade } from "../../company-management/facades/companyRegistrationFacade";
 
-vi.mock("../../company-management/api/companyManagementService", () => ({
-  companyManagementService: { create: vi.fn() },
+// Espías del shell operativo (auth/session) — se configuran o se verifica que NO se
+// disparen; admin-core nunca los importa directamente.
+const shellSpies = vi.hoisted(() => ({
+  accessService: { getSessionMenu: vi.fn() },
+  sessionService: {
+    getAvailableBranches: vi.fn(),
+    switchBranch: vi.fn(),
+    getContext: vi.fn(),
+  },
+}));
+
+vi.mock("../../company-management/facades/companyRegistrationFacade", () => ({
+  companyRegistrationFacade: { create: vi.fn() },
 }));
 
 vi.mock("../api/adminCoreService", () => ({
@@ -17,17 +26,9 @@ vi.mock("../api/adminCoreService", () => ({
 }));
 
 // Fase B: espías sobre endpoints operativos que AdminGlobalCore nunca debe disparar.
-vi.mock("../../auth/api/accessService", () => ({
-  accessService: { getSessionMenu: vi.fn() },
-}));
+vi.mock("../../auth/api/accessService", () => ({ accessService: shellSpies.accessService }));
 
-vi.mock("../../session/api/sessionService", () => ({
-  sessionService: {
-    getAvailableBranches: vi.fn(),
-    switchBranch: vi.fn(),
-    getContext: vi.fn(),
-  },
-}));
+vi.mock("../../session/api/sessionService", () => ({ sessionService: shellSpies.sessionService }));
 
 const TENANT_A = { tenantId: "tenant-a", tenantName: "Tenant A", tenantIsActive: true };
 const TENANT_B = { tenantId: "tenant-b", tenantName: "Tenant B", tenantIsActive: true };
@@ -112,7 +113,7 @@ describe("AdminCoreCompanyCreatePage — selector de tenant", () => {
 
   it("al crear una empresa envía el tenantId seleccionado y muestra éxito", async () => {
     vi.mocked(adminCoreService.listTenants).mockResolvedValue([TENANT_A, TENANT_B]);
-    vi.mocked(companyManagementService.create).mockResolvedValue({
+    vi.mocked(companyRegistrationFacade.create).mockResolvedValue({
       id: "company-1",
       tenantId: "tenant-b",
       legalName: "Empresa Nueva",
@@ -148,7 +149,7 @@ describe("AdminCoreCompanyCreatePage — selector de tenant", () => {
     expect(screen.queryByText("COMPANIES_OPERATIVO")).toBeNull();
 
     await waitFor(() => {
-      expect(companyManagementService.create).toHaveBeenCalledWith({
+      expect(companyRegistrationFacade.create).toHaveBeenCalledWith({
         tenantId: "tenant-b",
         taxId: "1790012345001",
         legalName: "Empresa Nueva",
@@ -164,8 +165,8 @@ describe("AdminCoreCompanyCreatePage — selector de tenant", () => {
 
     await screen.findByLabelText("Tenant / grupo destino", { exact: false });
 
-    expect(accessService.getSessionMenu).not.toHaveBeenCalled();
-    expect(sessionService.getAvailableBranches).not.toHaveBeenCalled();
-    expect(sessionService.getContext).not.toHaveBeenCalled();
+    expect(shellSpies.accessService.getSessionMenu).not.toHaveBeenCalled();
+    expect(shellSpies.sessionService.getAvailableBranches).not.toHaveBeenCalled();
+    expect(shellSpies.sessionService.getContext).not.toHaveBeenCalled();
   });
 });

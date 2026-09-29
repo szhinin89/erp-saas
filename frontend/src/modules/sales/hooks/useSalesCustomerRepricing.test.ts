@@ -11,7 +11,7 @@ import {
 } from "./useSalesCustomerRepricing";
 import { salesRepricingPreviewService } from "../api/salesRepricingPreviewService";
 import type { SalesRepricingPreviewItemDto } from "../api/salesRepricingPreviewService";
-import type { CustomerPickerRow } from "../../masterData/types/businessPartner.types";
+import type { CustomerPickerRow } from "../../masterData/facades/customerLookupFacade";
 
 vi.mock("../api/salesRepricingPreviewService", () => ({
   salesRepricingPreviewService: { preview: vi.fn() },

@@ -9,7 +9,7 @@ import {
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { adminCoreService } from "../api/adminCoreService";
-import { authService } from "../../auth/api/authService";
+import { globalAdminAuthFacade } from "../../auth/facades/globalAdminAuthFacade";
 import { useAuthStore } from "../../../store/authStore";
 import { formatApiRequestError } from "../../lib/apiError";
 import type { AdminCoreCompany } from "../../../types/adminCore";
@@ -92,7 +92,7 @@ export function AdminCoreDashboardPage() {
     setError("");
     setOperatingCompanyId(companyId);
     try {
-      const payload = await authService.operateCompany(companyId);
+      const payload = await globalAdminAuthFacade.operateCompany(companyId);
       login(payload);
       navigate("/dashboard", { replace: true });
     } catch (e) {

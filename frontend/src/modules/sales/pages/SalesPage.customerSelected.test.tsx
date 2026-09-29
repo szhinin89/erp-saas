@@ -38,8 +38,14 @@ vi.mock("../hooks/useRideActions", () => ({
   }),
 }));
 
-vi.mock("../../masterData/api/businessPartnerFacade", () => ({
-  businessPartnerFacade: {
+vi.mock("../../masterData/facades/customerLookupFacade", () => ({
+  customerLookupFacade: {
+    searchCustomers: vi.fn().mockResolvedValue([]),
+  },
+}));
+
+vi.mock("../../masterData/facades/businessPartnerLookupFacade", () => ({
+  businessPartnerLookupFacade: {
     getBusinessPartner: vi.fn().mockResolvedValue({
       id: "cust-1",
       identificationNumber: "1710034065",
@@ -47,7 +53,6 @@ vi.mock("../../masterData/api/businessPartnerFacade", () => ({
       legalName: "Juan Pérez",
       isActive: true,
     }),
-    searchCustomersForPicker: vi.fn().mockResolvedValue([]),
   },
 }));
 
@@ -58,7 +63,7 @@ vi.mock("../hooks/useSalesPage", () => ({
 
 import { SalesPage } from "./SalesPage";
 
-vi.mock("../../caja/components/ManualCashMovementModal", () => ({
+vi.mock("../../caja/facades/manualCashMovementFacade", () => ({
   ManualCashMovementModal: () => null,
 }));
 

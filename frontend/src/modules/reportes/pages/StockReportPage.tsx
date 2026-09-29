@@ -14,14 +14,14 @@ import { ZHNumberValue } from "../../../components/zh/ZHNumberValue";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
 import {
-  stockService,
+  stockLookupFacade,
   type StockReportRowDto,
   type StockReportStatus,
-} from "../../inventory/stock/api/stockService";
+} from "../../inventory/facades/stockLookupFacade";
 import {
-  warehouseService,
+  warehouseLookupFacade,
   type WarehouseDto,
-} from "../../inventory/warehouses/api/warehouseService";
+} from "../../inventory/facades/warehouseLookupFacade";
 import { ZhSelect, ZhTextInput } from "../../../components/zh/inputs";
 
 const STATUS_LABEL: Record<StockReportStatus, string> = {
@@ -46,7 +46,7 @@ export function StockReportPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    warehouseService
+    warehouseLookupFacade
       .list("active")
       .then(setWarehouses)
       .catch(() => {
@@ -58,7 +58,7 @@ export function StockReportPage() {
     setLoading(true);
     setError(null);
     try {
-      const r = await stockService.getReport(
+      const r = await stockLookupFacade.getReport(
         warehouseId || undefined,
         search || undefined,
       );

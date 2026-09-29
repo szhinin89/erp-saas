@@ -1,7 +1,7 @@
 import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { formatDecimalDisplay, normalizeOptionalCode } from "../../../lib/sanitizers";
 import type { AccountDto } from "../../accounting/facades/accountLookupFacade";
-import type { SupplierPickerRow } from "../../masterData/types/businessPartner.types";
+import type { SupplierPickerRow } from "../../masterData/facades/supplierPickerFacade";
 import type { ExpenseCategoryTreeNodeDto } from "../api/expenseCategoryService";
 import type {
   CreateExpenseDraftPayload,

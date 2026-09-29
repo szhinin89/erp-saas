@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { roundToDecimals } from "../../../lib/sanitizers";
-import type { CustomerPickerRow } from "../../masterData/types/businessPartner.types";
+import type { CustomerPickerRow } from "../../masterData/facades/customerLookupFacade";
 import {
   salesRepricingPreviewService,
   type SalesRepricingPreviewItemDto,

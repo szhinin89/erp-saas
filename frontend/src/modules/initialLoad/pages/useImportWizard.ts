@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { initialLoadService } from "../api/initialLoadService";
-import { downloadBlob } from "../../ride/utils/downloadBlob";
+import { downloadBlob } from "../../../lib/download";
 import { formatApiRequestError } from "../../lib/apiError";
 import type {
   ImportBatchDto,

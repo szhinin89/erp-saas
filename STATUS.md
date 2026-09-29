@@ -2,6 +2,17 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-29** · Kernel refactor: **2026-06-05**.
 
+## ZH-FRONTEND-SUBSCRIBER-NAMING-RESTORE-01 — Contrato owner → subscriber entre módulos frontend (2026-09-29)
+
+**Estado: COMPLETADO.** `frontend-subscriber-naming` reactivado en `architecture:check` como guard de contratos públicos: 0 violaciones, baseline 0, grandfather 0, sin excepciones. Sin cambios de backend, API, payload, permisos ni UX.
+- Por qué estaba deshabilitado: validaba naming `Tenant → Subscriber` en `frontend/src`, con polaridad invertida respecto a `naming.md` (`Subscriber` retirado, `Tenant` canónico) → 278 falsos positivos. Reescrito: `F-subscriber-internal-import` (cross-módulo solo hacia archivos directos de `modules/<owner>/**/facades/`, incluidos `import type`/`import()`) y `F-subscriber-facade-naming` (`<concepto><Propósito>Facade.ts`, objeto exportado con el mismo nombre). 14 tests con fixtures POSIX/Windows.
+- Deuda real corregida (88 imports de código; el checker contra `HEAD` reporta exactamente esos 88): masterData ×46, inventory ×17, auth/session/company-management ×17 (admin-core), branches ×7, caja ×3, sales/purchases (reportes, cashRegisters) ×4, items ×2, payables ×1, más `modules/lib` → auth (test). Categoría C: `masterData/api/businessPartnerFacade` (facade interna usada como contrato) y `inventory|branches|caja/types.ts` (segunda superficie pública paralela a las facades, eliminadas).
+- Facades extendidas: `businessPartnerLookupFacade` (+locations/contacts/salesSettings), `paymentTermLookupFacade` (+getById), `salesLookupFacade` (+dailyReport), `purchaseLookupFacade` (+supplierReport). Nuevas (mínimas): `masterData/businessPartnerRegistrationFacade`, `masterData/supplierPickerFacade`, `inventory/stockLookupFacade`, `branches/geographyLookupFacade`, `caja/manualCashMovementFacade`, `items/itemTypeLookupFacade`, `items/itemDetailNavigationFacade` (reemplaza `useViewMatchedItem`, que tocaba el store privado de items), `sales/customerPickerFacade`, `auth/globalAdminAuthFacade`, `company-management/companyRegistrationFacade`.
+- Utilidad duplicada sin dominio: `ride/utils/downloadBlob` + `electronicDocuments/monitor/utils/download` → única `src/lib/download.ts`.
+- `module-boundaries` queda solo con pares prohibidos (`forbiddenCrossImports`); se retiró su rama api/pages + `allowedCrossImports` (subconjunto de esta regla y lista blanca por pares).
+- Pendiente fuera de alcance (estilos, ola DS/visual): 5 imports CSS cross-módulo — `sales/styles/sales-return.css` en 3 páginas de purchases, `auth/pages/LoginPage.css` en `AdminCoreLoginPage`, `electronic-documents-monitor.css` en `SalesPage` (lo requieren componentes `components/zh/electronicDocuments/*` por `.edm-hint-sm`). Registrado también: geografía con dos clientes HTTP (`branchService` y `masterData/api/geographyService`).
+- Frontend completo 2552/2552; `tsc -b`, lint (0 errores), build y `architecture:check` (56 tests + 20 checks) en verde.
+
 ## ZH-DOMAIN-RULE-ERROR-SSOT-01B — Validación de atomicidad, pipeline y compatibilidad (2026-09-29)
 
 **Estado: COMPLETADO.** Verificación del cambio masivo ZH-DOMAIN-RULE-ERROR-SSOT-01 antes de cerrarlo.

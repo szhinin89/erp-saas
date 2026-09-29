@@ -9,7 +9,7 @@ import {
   type CreateItemFormValues,
 } from "../../schemas/createItemSchema";
 
-vi.mock("../../../masterData/components/SupplierSearchSelect", () => ({
+vi.mock("../../../masterData/facades/supplierPickerFacade", () => ({
   SupplierSearchSelect: () => <input aria-label="Proveedor" />,
 }));
 

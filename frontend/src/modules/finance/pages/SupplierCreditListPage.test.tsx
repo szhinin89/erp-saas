@@ -16,7 +16,7 @@ const list = vi.fn();
 vi.mock("../api/supplierCreditService", () => ({
   supplierCreditService: { list: (...a: unknown[]) => list(...a) },
 }));
-vi.mock("../../masterData/components/SupplierSearchSelect", () => ({
+vi.mock("../../masterData/facades/supplierPickerFacade", () => ({
   SupplierSearchSelect: ({ onChange }: { onChange: (v: { id: string } | null) => void }) => (
     <button type="button" onClick={() => onChange({ id: "sup-2" })}>
       elegir proveedor

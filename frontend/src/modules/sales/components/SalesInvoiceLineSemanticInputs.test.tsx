@@ -6,7 +6,7 @@ import { SalesInvoiceLineGridRow } from "./SalesInvoiceLineGridRow";
 import { setPrecisionPolicyForTests, type PrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 import type { SalesLineFormValues } from "../schemas/salesInvoiceSchema";
-import type { WarehouseDto } from "../../inventory/types";
+import type { WarehouseDto } from "../../inventory/facades/warehouseLookupFacade";
 
 /**
  * ZH-DESIGN-SYSTEM-PRECISION-03E — piloto en Ventas: Dto. % → `precision="percentage"`, precio

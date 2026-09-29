@@ -47,6 +47,17 @@ frontend/src/modules/{dominio}/
 - Lógica de negocio en hooks/servicios, no en JSX complejo.
 - API desde capa `api/` del módulo, no inline en componentes.
 
+### Contratos públicos entre módulos (owner → subscriber)
+
+- **Owner** = módulo dueño de la funcionalidad; **subscriber** = cualquier otro módulo que la consume.
+- Un subscriber solo importa del owner archivos ubicados **directamente** en `modules/<owner>/[<área>/]facades/`. Nunca `api/`, services, `pages/`, `hooks/`, `components/`, `store/`, `types`, `utils/`, `constants/` ni barrels (`facades/index`). Aplica también a `import type` e `import()`.
+- La facade expone la superficie mínima que los subscribers usan: objeto `<nombre>Facade` que delega al service existente (sin lógica nueva) y, cuando el contrato es UI o un hook, re-export nombrado del componente/hook (`export { SupplierSearchSelect } from "../components/SupplierSearchSelect"`). Los tipos públicos se re-exportan desde la misma facade.
+- Antes de crear una facade, reutilizar/extender la del owner que ya cubre el concepto (p. ej. lecturas → `…LookupFacade`). Prohibido: facade duplicada, service proxy que solo renombra, `index.ts` que oculte el owner, mover al `shared` algo que tiene owner de dominio.
+- Utilidades genéricas sin dominio (p. ej. descarga de archivos `src/lib/download.ts`) viven en `src/lib/`, no en un módulo de dominio.
+- `modules/lib` y `modules/config` son shared (`architecture-rules.json` → `moduleBoundaries.sharedModules`); no dependen de módulos de dominio.
+- Naming: [naming.md § Frontend](./naming.md#frontend). Enforcement: `frontend-subscriber-naming` (`F-subscriber-internal-import`, `F-subscriber-facade-naming`); la dirección de dependencias prohibidas entre pares la valida `module-boundaries`.
+- Fuera de alcance del guard: imports de estilos/assets y rutas en `vi.mock()` (arnés de test). Un test de subscriber mockea la facade que su código consume.
+
 ---
 
 ## Permisos en UI (conveniencia — autorización real en backend)

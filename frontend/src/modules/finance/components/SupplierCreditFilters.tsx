@@ -1,7 +1,7 @@
 import { ZHField } from "../../../components/zh/ZHForm";
 import { ZhSelect } from "../../../components/zh/inputs/ZhSelect";
 import { ZHFilterBar } from "../../../components/zh/ZHFilterBar";
-import { SupplierSearchSelect } from "../../masterData/components/SupplierSearchSelect";
+import { SupplierSearchSelect } from "../../masterData/facades/supplierPickerFacade";
 import type { SupplierCreditSourceType } from "../api/supplierCreditService";
 import type {
   SupplierCreditFiltersValue,

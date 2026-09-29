@@ -15,7 +15,7 @@ import {
   type RetentionDocumentDto,
   type IssueRetentionLineRequest,
 } from "../../retentions/facades/purchaseRetentionFacade";
-import { downloadBlob } from "../../ride/utils/downloadBlob";
+import { downloadBlob } from "../../../lib/download";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import {
   purchaseReceptionService,
@@ -28,17 +28,16 @@ import {
 } from "../utils/pendingProductsResolution";
 import { toDateTimeLocalInputValue } from "../../../lib/formatters/dateFormatters";
 import { itemLookupFacade } from "../../items/facades/itemLookupFacade";
-import { useItemTypeOptions } from "../../items/hooks/useItemTypeOptions";
+import { useItemTypeOptions } from "../../items/facades/itemTypeLookupFacade";
 import type { ItemDto } from "../../../types/items";
-import type {
-  SupplierPickerRow,
-} from "../../masterData/types/businessPartner.types";
-import { businessPartnerFacade } from "../../masterData/api/businessPartnerFacade";
+import type { SupplierPickerRow } from "../../masterData/facades/supplierPickerFacade";
+import { businessPartnerLookupFacade } from "../../masterData/facades/businessPartnerLookupFacade";
+import { businessPartnerPurchaseSettingsFacade } from "../../masterData/facades/businessPartnerPurchaseSettingsFacade";
 import { warehouseLookupFacade } from "../../inventory/facades/warehouseLookupFacade";
 import type { WarehouseDto } from "../../inventory/facades/warehouseLookupFacade";
 import { useActiveBranchStore } from "../../../store/activeBranchStore";
-import { paymentTermService } from "../../masterData/api/paymentTermService";
-import type { PaymentTermDto } from "../../masterData/api/paymentTermService";
+import { paymentTermLookupFacade } from "../../masterData/facades/paymentTermLookupFacade";
+import type { PaymentTermDto } from "../../masterData/facades/paymentTermLookupFacade";
 import { sriLookupFacade } from "../../items/facades/sriLookupFacade";
 import type {
   SriDocTypeLookup,
@@ -506,7 +505,7 @@ export function usePurchasesPage() {
       .taxSupportCodes()
       .then(setSriTaxSupports)
       .catch(() => {});
-    paymentTermService
+    paymentTermLookupFacade
       .list()
       .then(setPaymentTermsList)
       .catch(() => {});
@@ -1004,7 +1003,7 @@ export function usePurchasesPage() {
       }
       if (!profile.purchaseDefaultPaymentTermId) return;
       try {
-        const pt = await paymentTermService.getById(
+        const pt = await paymentTermLookupFacade.getById(
           profile.purchaseDefaultPaymentTermId,
         );
         setValue("paymentTermId", pt.id);
@@ -1045,8 +1044,8 @@ export function usePurchasesPage() {
     if (cached && !options?.forceRefresh) return cached;
 
     const [bp, purchaseSettings] = await Promise.all([
-      businessPartnerFacade.getBusinessPartner(supplierId),
-      businessPartnerFacade
+      businessPartnerLookupFacade.getBusinessPartner(supplierId),
+      businessPartnerPurchaseSettingsFacade
         .getPurchaseSettings(supplierId)
         .catch(() => null),
     ]);

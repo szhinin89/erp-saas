@@ -1,7 +1,5 @@
-import { useNavigate } from "react-router-dom";
 import { Badge } from "../../../components/PageShell";
 import { useI18n } from "../../../i18n/i18n";
-import { useItemUiStore } from "../../items/store/itemUiStore";
 import type { ItemMatchStatus } from "../api/purchaseReceptionService";
 
 const STATUS_VARIANT: Record<
@@ -19,19 +17,4 @@ export function ItemMatchStatusBadge({ status }: { status: ItemMatchStatus }) {
   const label = t(`purchases.itemMatchStatus.${status}`, status);
 
   return <Badge variant={STATUS_VARIANT[status]} label={label} />;
-}
-
-/**
- * Navega a la ficha del producto ya conciliado — mismo patrón en PurchasesPage para no duplicar la
- * integración con useItemUiStore/react-router en cada lugar que muestra un producto emparejado.
- */
-export function useViewMatchedItem(onBeforeNavigate?: () => void) {
-  const navigate = useNavigate();
-  const startViewItem = useItemUiStore((s) => s.startView);
-
-  return (itemId: string) => {
-    startViewItem(itemId);
-    onBeforeNavigate?.();
-    navigate("/products/items");
-  };
 }

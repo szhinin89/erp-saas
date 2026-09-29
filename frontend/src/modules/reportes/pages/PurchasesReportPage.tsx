@@ -16,13 +16,13 @@ import { formatDate, todayIso } from "../../../lib/formatters/dateFormatters";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
 import {
-  purchaseService,
+  purchaseLookupFacade,
   type PurchasesReportRowDto,
   type PurchasesReportTotalsDto,
-} from "../../purchases/api/purchaseService";
-import { SupplierSearchSelect } from "../../masterData/components/SupplierSearchSelect";
+} from "../../purchases/facades/purchaseLookupFacade";
+import { SupplierSearchSelect } from "../../masterData/facades/supplierPickerFacade";
 import { ZhDateInput } from "../../../components/zh/inputs";
-import type { SupplierPickerRow } from "../../masterData/types/businessPartner.types";
+import type { SupplierPickerRow } from "../../masterData/facades/supplierPickerFacade";
 import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { ZHNumberValue } from "../../../components/zh/ZHNumberValue";
 
@@ -65,7 +65,7 @@ export function PurchasesReportPage() {
     setLoading(true);
     setError(null);
     try {
-      const r = await purchaseService.supplierReport(
+      const r = await purchaseLookupFacade.supplierReport(
         dateFrom,
         dateTo,
         supplier?.id,

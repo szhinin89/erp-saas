@@ -18,10 +18,10 @@ import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
 import { ZhDateInput } from "../../../components/zh/inputs";
 import {
-  salesService,
+  salesLookupFacade,
   type SalesReportRowDto,
   type SalesReportTotalsDto,
-} from "../../sales/api/salesService";
+} from "../../sales/facades/salesLookupFacade";
 import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { ZHNumberValue } from "../../../components/zh/ZHNumberValue";
 
@@ -68,7 +68,7 @@ export function SalesReportPage() {
     setLoading(true);
     setError(null);
     try {
-      const r = await salesService.dailyReport(dateFrom, dateTo);
+      const r = await salesLookupFacade.dailyReport(dateFrom, dateTo);
       setRows(r.items);
       setTotals(r.totals);
     } catch (err: unknown) {

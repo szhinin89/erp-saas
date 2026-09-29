@@ -10,11 +10,21 @@ import {
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { useAuthStore } from "../../../store/authStore";
 import { adminCoreService } from "../api/adminCoreService";
-import { authService } from "../../auth/api/authService";
-import { accessService } from "../../auth/api/accessService";
-import { sessionService } from "../../session/api/sessionService";
 import { AdminCoreLayout } from "../components/AdminCoreLayout";
 import { AdminCoreDashboardPage } from "./AdminCoreDashboardPage";
+import { globalAdminAuthFacade } from "../../auth/facades/globalAdminAuthFacade";
+
+// Espías del shell operativo (auth/session) — se configuran o se verifica que NO se
+// disparen; admin-core nunca los importa directamente.
+const shellSpies = vi.hoisted(() => ({
+  authService: { returnToGlobal: vi.fn() },
+  accessService: { getSessionMenu: vi.fn() },
+  sessionService: {
+    getAvailableBranches: vi.fn(),
+    switchBranch: vi.fn(),
+    getContext: vi.fn(),
+  },
+}));
 
 const GLOBAL_TENANT_ID = "00000000-0000-0000-0000-000000000000";
 
@@ -22,22 +32,16 @@ vi.mock("../api/adminCoreService", () => ({
   adminCoreService: { listCompanies: vi.fn(), updateCompany: vi.fn() },
 }));
 
-vi.mock("../../auth/api/authService", () => ({
-  authService: { operateCompany: vi.fn(), returnToGlobal: vi.fn() },
-}));
+vi.mock("../../auth/api/authService", () => ({ authService: shellSpies.authService }));
 
 // Fase B: espías sobre los endpoints operativos que AdminGlobalCore nunca debe disparar.
-vi.mock("../../auth/api/accessService", () => ({
-  accessService: { getSessionMenu: vi.fn() },
+vi.mock("../../auth/facades/globalAdminAuthFacade", () => ({
+  globalAdminAuthFacade: { operateCompany: vi.fn() },
 }));
 
-vi.mock("../../session/api/sessionService", () => ({
-  sessionService: {
-    getAvailableBranches: vi.fn(),
-    switchBranch: vi.fn(),
-    getContext: vi.fn(),
-  },
-}));
+vi.mock("../../auth/api/accessService", () => ({ accessService: shellSpies.accessService }));
+
+vi.mock("../../session/api/sessionService", () => ({ sessionService: shellSpies.sessionService }));
 
 function renderDashboard() {
   return render(
@@ -103,9 +107,9 @@ describe("AdminCoreDashboardPage", () => {
     expect(await screen.findByText("Tenant A")).toBeTruthy();
     expect(screen.getByText("Empresa Uno")).toBeTruthy();
 
-    expect(accessService.getSessionMenu).not.toHaveBeenCalled();
-    expect(sessionService.getAvailableBranches).not.toHaveBeenCalled();
-    expect(sessionService.getContext).not.toHaveBeenCalled();
+    expect(shellSpies.accessService.getSessionMenu).not.toHaveBeenCalled();
+    expect(shellSpies.sessionService.getAvailableBranches).not.toHaveBeenCalled();
+    expect(shellSpies.sessionService.getContext).not.toHaveBeenCalled();
   });
 
   it("cada grupo de tenant tiene una acción 'Crear empresa en este tenant' hacia /admin-core/companies/new con el tenantId", async () => {
@@ -146,7 +150,7 @@ describe("AdminCoreDashboardPage", () => {
         isActive: true,
       },
     ]);
-    vi.mocked(authService.operateCompany).mockResolvedValue({
+    vi.mocked(globalAdminAuthFacade.operateCompany).mockResolvedValue({
       userId: "admin-1",
       fullName: "Global Admin",
       username: "global",
@@ -167,7 +171,7 @@ describe("AdminCoreDashboardPage", () => {
     fireEvent.click(button);
 
     await waitFor(() => {
-      expect(authService.operateCompany).toHaveBeenCalledWith("company-1");
+      expect(globalAdminAuthFacade.operateCompany).toHaveBeenCalledWith("company-1");
     });
     expect(await screen.findByText("DASHBOARD_OPERATIVO")).toBeTruthy();
     expect(useAuthStore.getState().user?.companyId).toBe("company-1");

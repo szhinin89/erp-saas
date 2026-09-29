@@ -58,7 +58,7 @@ vi.mock("../../../lib/messages", () => ({
 // SUPPLIER-PAYMENT-REMOVE-DUPLICATED-APPLICATION-LINES-FLOW-01 — SupplierSearchSelect es un componente
 // de búsqueda async no relevante para este test; se sustituye por un botón que dispara la
 // selección de un proveedor fijo (mismo patrón que ItemCodeCreateSections.test.tsx).
-vi.mock("../../masterData/components/SupplierSearchSelect", () => ({
+vi.mock("../../masterData/facades/supplierPickerFacade", () => ({
   SupplierSearchSelect: ({ onChange }: { onChange: (s: { id: string } | null) => void }) => (
     <button type="button" onClick={() => onChange({ id: "sup-1" })}>
       Seleccionar proveedor

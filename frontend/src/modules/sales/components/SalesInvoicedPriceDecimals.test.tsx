@@ -14,7 +14,7 @@ import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.config";
 import { buildRepricingPlan, mapResolvedPricingToLineFields } from "../hooks/useSalesCustomerRepricing";
 import type { SalesLineFormValues } from "../schemas/salesInvoiceSchema";
-import type { WarehouseDto } from "../../inventory/types";
+import type { WarehouseDto } from "../../inventory/facades/warehouseLookupFacade";
 import type { SalesRepricingPreviewItemDto } from "../api/salesRepricingPreviewService";
 
 // SALES-INVOICED-PRICE-CONFIGURED-DECIMALS-07C3 — "Precio facturado" (UnitPrice) y el resto de

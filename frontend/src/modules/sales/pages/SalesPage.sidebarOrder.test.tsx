@@ -40,10 +40,15 @@ vi.mock("../hooks/useRideActions", () => ({
     handleRegenerateRide: vi.fn(),
   }),
 }));
-vi.mock("../../masterData/api/businessPartnerFacade", () => ({
-  businessPartnerFacade: {
+vi.mock("../../masterData/facades/customerLookupFacade", () => ({
+  customerLookupFacade: {
+    searchCustomers: vi.fn().mockResolvedValue([]),
+  },
+}));
+
+vi.mock("../../masterData/facades/businessPartnerLookupFacade", () => ({
+  businessPartnerLookupFacade: {
     getBusinessPartner: vi.fn().mockResolvedValue(null),
-    searchCustomersForPicker: vi.fn().mockResolvedValue([]),
   },
 }));
 
@@ -54,7 +59,7 @@ vi.mock("../hooks/useSalesPage", () => ({
 
 import { SalesPage } from "./SalesPage";
 
-vi.mock("../../caja/components/ManualCashMovementModal", () => ({
+vi.mock("../../caja/facades/manualCashMovementFacade", () => ({
   ManualCashMovementModal: () => null,
 }));
 

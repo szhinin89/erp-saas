@@ -1,7 +1,7 @@
 import type {
   BusinessPartnerDetailDto,
   SupplierRoleConfigDto,
-} from "../../masterData/types/businessPartner.types";
+} from "../../masterData/facades/businessPartnerLookupFacade";
 
 export type SupplierProfile = {
   ruc: string;

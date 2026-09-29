@@ -10,10 +10,20 @@ import { AdminCoreProtectedRoute } from "../../../components/AdminCoreProtectedR
 import { AppLayout } from "../../../components/AppLayout";
 import { AdminCoreLayout } from "../components/AdminCoreLayout";
 import { adminCoreService } from "../api/adminCoreService";
-import { authService } from "../../auth/api/authService";
-import { accessService } from "../../auth/api/accessService";
-import { sessionService } from "../../session/api/sessionService";
 import { AdminCoreDashboardPage } from "./AdminCoreDashboardPage";
+import { globalAdminAuthFacade } from "../../auth/facades/globalAdminAuthFacade";
+
+// Espías del shell operativo (auth/session) — se configuran o se verifica que NO se
+// disparen; admin-core nunca los importa directamente.
+const shellSpies = vi.hoisted(() => ({
+  authService: { returnToGlobal: vi.fn(), listMyCompanies: vi.fn() },
+  accessService: { getSessionMenu: vi.fn() },
+  sessionService: {
+    getAvailableBranches: vi.fn(),
+    switchBranch: vi.fn(),
+    getContext: vi.fn(),
+  },
+}));
 
 const GLOBAL_TENANT_ID = "00000000-0000-0000-0000-000000000000";
 
@@ -21,21 +31,15 @@ vi.mock("../api/adminCoreService", () => ({
   adminCoreService: { listCompanies: vi.fn() },
 }));
 
-vi.mock("../../auth/api/authService", () => ({
-  authService: { operateCompany: vi.fn(), returnToGlobal: vi.fn(), listMyCompanies: vi.fn() },
+vi.mock("../../auth/api/authService", () => ({ authService: shellSpies.authService }));
+
+vi.mock("../../auth/facades/globalAdminAuthFacade", () => ({
+  globalAdminAuthFacade: { operateCompany: vi.fn() },
 }));
 
-vi.mock("../../auth/api/accessService", () => ({
-  accessService: { getSessionMenu: vi.fn() },
-}));
+vi.mock("../../auth/api/accessService", () => ({ accessService: shellSpies.accessService }));
 
-vi.mock("../../session/api/sessionService", () => ({
-  sessionService: {
-    getAvailableBranches: vi.fn(),
-    switchBranch: vi.fn(),
-    getContext: vi.fn(),
-  },
-}));
+vi.mock("../../session/api/sessionService", () => ({ sessionService: shellSpies.sessionService }));
 
 /**
  * Reproduce el árbol REAL de App.tsx (ProtectedRoute/AppLayout como hermano de
@@ -70,9 +74,9 @@ function renderFullTree() {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(accessService.getSessionMenu).mockResolvedValue([]);
-  vi.mocked(authService.listMyCompanies).mockResolvedValue([]);
-  vi.mocked(sessionService.getAvailableBranches).mockResolvedValue({
+  vi.mocked(shellSpies.accessService.getSessionMenu).mockResolvedValue([]);
+  vi.mocked(shellSpies.authService.listMyCompanies).mockResolvedValue([]);
+  vi.mocked(shellSpies.sessionService.getAvailableBranches).mockResolvedValue({
     loginMode: "AskBranch",
     defaultBranchId: null,
     branches: [],
@@ -122,7 +126,7 @@ describe("AdminGlobalCore → Ingresar a esta empresa (árbol real de rutas)", (
         isActive: true,
       },
     ]);
-    vi.mocked(authService.operateCompany).mockResolvedValue({
+    vi.mocked(globalAdminAuthFacade.operateCompany).mockResolvedValue({
       userId: "admin-1",
       fullName: "Global Admin",
       username: "global",
@@ -142,7 +146,7 @@ describe("AdminGlobalCore → Ingresar a esta empresa (árbol real de rutas)", (
     fireEvent.click(button);
 
     await waitFor(() => {
-      expect(authService.operateCompany).toHaveBeenCalledWith("company-1");
+      expect(globalAdminAuthFacade.operateCompany).toHaveBeenCalledWith("company-1");
     });
 
     expect(await screen.findByText("DASHBOARD_OPERATIVO")).toBeTruthy();
@@ -169,7 +173,7 @@ describe("AdminGlobalCore → Ingresar a esta empresa (árbol real de rutas)", (
         isActive: true,
       },
     ]);
-    vi.mocked(authService.operateCompany).mockRejectedValue({
+    vi.mocked(globalAdminAuthFacade.operateCompany).mockRejectedValue({
       isAxiosError: true,
       response: {
         status: 403,

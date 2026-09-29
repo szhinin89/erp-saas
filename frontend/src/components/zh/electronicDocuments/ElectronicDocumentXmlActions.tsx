@@ -2,7 +2,7 @@ import { ZHBtn } from "../ZHForm";
 import { ZHPageNotice } from "../ZHPageNotice";
 import { LoadingState } from "../../PageShell";
 import { useI18n } from "../../../i18n/i18n";
-import { downloadTextFile } from "../../../modules/electronicDocuments/monitor/utils/download";
+import { downloadTextFile } from "../../../lib/download";
 import type { ElectronicDocumentXmlVariant } from "./electronicDocumentDiagnosticTypes";
 
 type Props = {

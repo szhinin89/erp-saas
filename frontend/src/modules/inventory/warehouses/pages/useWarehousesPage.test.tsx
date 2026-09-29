@@ -5,7 +5,7 @@ import React from "react";
 import { I18nProvider } from "../../../../i18n/i18n";
 import { useWarehousesPage } from "./useWarehousesPage";
 import { warehouseService, type WarehouseDto } from "../api/warehouseService";
-import { branchService } from "../../../branches/api/branchService";
+import { branchLookupFacade } from "../../../branches/facades/branchLookupFacade";
 import { message } from "../../../../lib/messages";
 
 /**
@@ -28,8 +28,8 @@ vi.mock("../api/warehouseService", () => ({
   },
 }));
 
-vi.mock("../../../branches/api/branchService", () => ({
-  branchService: { list: vi.fn().mockResolvedValue([]) },
+vi.mock("../../../branches/facades/branchLookupFacade", () => ({
+  branchLookupFacade: { list: vi.fn().mockResolvedValue([]) },
 }));
 
 vi.mock("../../../../access/usePermissionsUi", () => ({
@@ -68,7 +68,7 @@ function wrapper({ children }: { children: React.ReactNode }) {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(warehouseService.list).mockResolvedValue([ACTIVE_WAREHOUSE]);
-  vi.mocked(branchService.list).mockResolvedValue([]);
+  vi.mocked(branchLookupFacade.list).mockResolvedValue([]);
 });
 
 describe("useWarehousesPage — toggleStatus: sin falso éxito", () => {

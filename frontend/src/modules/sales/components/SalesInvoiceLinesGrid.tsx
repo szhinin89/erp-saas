@@ -1,6 +1,7 @@
 import type { SalesInvoiceDetailDto } from "../api/salesService";
 import type { SalesLineFormValues } from "../schemas/salesInvoiceSchema";
-import type { WarehouseDto, ItemWarehouseAvailabilityDto } from "../../inventory/types";
+import type { WarehouseDto } from "../../inventory/facades/warehouseLookupFacade";
+import type { ItemWarehouseAvailabilityDto } from "../../inventory/facades/stockLookupFacade";
 import { SalesInvoiceLineGridRow } from "./SalesInvoiceLineGridRow";
 
 interface SalesInvoiceLinesGridProps {

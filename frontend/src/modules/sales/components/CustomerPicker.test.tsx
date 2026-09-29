@@ -2,10 +2,16 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/react";
 import { CustomerPicker } from "./CustomerPicker";
-import { businessPartnerFacade } from "../../masterData/api/businessPartnerFacade";
+import { customerLookupFacade } from "../../masterData/facades/customerLookupFacade";
 
-vi.mock("../../masterData/api/businessPartnerFacade", () => ({
-  businessPartnerFacade: {
+vi.mock("../../masterData/facades/customerLookupFacade", () => ({
+  customerLookupFacade: {
+    searchCustomers: vi.fn().mockResolvedValue([]),
+  },
+}));
+
+vi.mock("../../masterData/facades/businessPartnerLookupFacade", () => ({
+  businessPartnerLookupFacade: {
     getBusinessPartner: vi.fn().mockResolvedValue({
       id: "cust-1",
       identificationNumber: "1710034065",
@@ -13,7 +19,6 @@ vi.mock("../../masterData/api/businessPartnerFacade", () => ({
       legalName: "Juan Pérez",
       isActive: true,
     }),
-    searchCustomersForPicker: vi.fn().mockResolvedValue([]),
   },
 }));
 
@@ -147,7 +152,7 @@ describe("CustomerPicker — onEditSelected/editLabel (SALES-DS-CUSTOMER-SELECTE
 
 describe("CustomerPicker — fila de resultado (ZHPickerResultItem, SALES-DS-PICKER-RESULT-05)", () => {
   it("renderiza los resultados de búsqueda usando ZHPickerResultItem", async () => {
-    vi.mocked(businessPartnerFacade.searchCustomersForPicker).mockResolvedValueOnce(
+    vi.mocked(customerLookupFacade.searchCustomers).mockResolvedValueOnce(
       [
         {
           id: "cust-2",
@@ -173,7 +178,7 @@ describe("CustomerPicker — fila de resultado (ZHPickerResultItem, SALES-DS-PIC
   });
 
   it("click en un resultado selecciona al cliente igual que antes", async () => {
-    vi.mocked(businessPartnerFacade.searchCustomersForPicker).mockResolvedValueOnce(
+    vi.mocked(customerLookupFacade.searchCustomers).mockResolvedValueOnce(
       [
         {
           id: "cust-2",
@@ -202,7 +207,7 @@ describe("CustomerPicker — fila de resultado (ZHPickerResultItem, SALES-DS-PIC
   });
 
   it("no queda ningún <button> local de fila de resultado fuera de ZHPickerResultItem", async () => {
-    vi.mocked(businessPartnerFacade.searchCustomersForPicker).mockResolvedValueOnce(
+    vi.mocked(customerLookupFacade.searchCustomers).mockResolvedValueOnce(
       [
         {
           id: "cust-2",
@@ -233,7 +238,7 @@ describe("CustomerPicker — fila de resultado (ZHPickerResultItem, SALES-DS-PIC
   });
 
   it("no hay estilos inline en la fila de resultado", async () => {
-    vi.mocked(businessPartnerFacade.searchCustomersForPicker).mockResolvedValueOnce(
+    vi.mocked(customerLookupFacade.searchCustomers).mockResolvedValueOnce(
       [
         {
           id: "cust-2",

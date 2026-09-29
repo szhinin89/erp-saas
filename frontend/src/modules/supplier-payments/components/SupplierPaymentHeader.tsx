@@ -1,7 +1,7 @@
 import { Controller, useFormContext } from "react-hook-form";
 import { ZHField } from "../../../components/zh/ZHForm";
 import { ZhDateInput, ZhTextInput } from "../../../components/zh/inputs";
-import { SupplierSearchSelect } from "../../masterData/components/SupplierSearchSelect";
+import { SupplierSearchSelect } from "../../masterData/facades/supplierPickerFacade";
 import type { RegisterSupplierPaymentFormValues } from "../../../schemas/supplier-payments/registerSupplierPaymentSchema";
 
 interface Props {

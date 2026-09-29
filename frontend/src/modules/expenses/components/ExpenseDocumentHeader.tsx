@@ -6,8 +6,8 @@ import { ZhTextarea } from "../../../components/zh/inputs/ZhTextarea";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { businessPartnerPurchaseSettingsFacade } from "../../masterData/facades/businessPartnerPurchaseSettingsFacade";
 import type { PaymentTermDto } from "../../masterData/facades/paymentTermLookupFacade";
-import type { SupplierPickerRow } from "../../masterData/types/businessPartner.types";
-import { SupplierSearchSelect } from "../../masterData/components/SupplierSearchSelect";
+import type { SupplierPickerRow } from "../../masterData/facades/supplierPickerFacade";
+import { SupplierSearchSelect } from "../../masterData/facades/supplierPickerFacade";
 import type { SriDocTypeLookup, SriTaxSupportLookup } from "../../items/facades/sriLookupFacade";
 
 export interface ExpenseDocumentHeaderState {

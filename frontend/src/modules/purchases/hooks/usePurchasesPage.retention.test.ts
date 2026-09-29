@@ -52,7 +52,7 @@ vi.mock("../../retentions/facades/purchaseRetentionFacade", () => ({
   },
 }));
 
-vi.mock("../../ride/utils/downloadBlob", () => ({
+vi.mock("../../../lib/download", () => ({
   downloadBlob: vi.fn(),
 }));
 
@@ -77,12 +77,12 @@ vi.mock("../../items/facades/itemLookupFacade", () => ({
   },
 }));
 
-vi.mock("../../items/hooks/useItemTypeOptions", () => ({
+vi.mock("../../items/facades/itemTypeLookupFacade", () => ({
   useItemTypeOptions: () => ({ data: [], loading: false, error: null }),
 }));
 
-vi.mock("../../masterData/api/businessPartnerFacade", () => ({
-  businessPartnerFacade: {
+vi.mock("../../masterData/facades/businessPartnerLookupFacade", () => ({
+  businessPartnerLookupFacade: {
     getBusinessPartner: vi.fn().mockRejectedValue(new Error("not needed")),
   },
 }));
@@ -93,8 +93,8 @@ vi.mock("../../inventory/facades/warehouseLookupFacade", () => ({
   },
 }));
 
-vi.mock("../../masterData/api/paymentTermService", () => ({
-  paymentTermService: {
+vi.mock("../../masterData/facades/paymentTermLookupFacade", () => ({
+  paymentTermLookupFacade: {
     list: vi.fn().mockResolvedValue([]),
   },
 }));

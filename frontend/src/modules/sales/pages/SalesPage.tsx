@@ -24,7 +24,7 @@ import { QuickCustomerModal } from "../components/QuickCustomerModal";
 import { SalesElectronicDiagnosticDrawer } from "../components/SalesElectronicDiagnosticDrawer";
 import { SalesIssueModal } from "../components/SalesIssueModal";
 import { CashSessionNotice } from "../components/CashSessionNotice";
-import { ManualCashMovementModal } from "../../caja/components/ManualCashMovementModal";
+import { ManualCashMovementModal } from "../../caja/facades/manualCashMovementFacade";
 import { SalesFormChecklist } from "../components/SalesFormChecklist";
 import { SalesEmissionConfigSection } from "../components/SalesEmissionConfigSection";
 import { EmitButton } from "../components/EmitButton";

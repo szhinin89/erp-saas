@@ -1,7 +1,7 @@
 import { Controller } from "react-hook-form";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHField, ZHGrid, ZHBtn } from "../../../components/zh/ZHForm";
-import { CustomerPicker } from "../../sales/components/CustomerPicker";
+import { CustomerPicker } from "../../sales/facades/customerPickerFacade";
 import {
   ZhSelect,
   ZhTextInput,

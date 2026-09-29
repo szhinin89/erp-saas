@@ -32,7 +32,7 @@ import {
   type SriVatRateLookup,
 } from "../../items/facades/sriLookupFacade";
 import { paymentTermLookupFacade, type PaymentTermDto } from "../../masterData/facades/paymentTermLookupFacade";
-import type { SupplierPickerRow } from "../../masterData/types/businessPartner.types";
+import type { SupplierPickerRow } from "../../masterData/facades/supplierPickerFacade";
 import {
   expenseCategoryService,
   type ExpenseCategoryTreeNodeDto,

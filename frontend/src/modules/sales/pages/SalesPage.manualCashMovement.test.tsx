@@ -52,7 +52,7 @@ vi.mock("../hooks/useSalesPage", () => ({
 // Mock del modal compartido: no reimplementa su UI real (ya cubierta por
 // ManualCashMovementModal.test.tsx). Solo expone lo necesario para verificar que
 // SalesPage le pasa exactamente los props de ctx.manualCashMovement.
-vi.mock("../../caja/components/ManualCashMovementModal", () => ({
+vi.mock("../../caja/facades/manualCashMovementFacade", () => ({
   ManualCashMovementModal: (props: {
     open: boolean;
     onSubmit: () => void;

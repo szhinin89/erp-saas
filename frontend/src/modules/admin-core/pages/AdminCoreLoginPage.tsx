@@ -2,9 +2,11 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
-import { authService } from "../../auth/api/authService";
+import {
+  completeLoginNavigation,
+  globalAdminAuthFacade,
+} from "../../auth/facades/globalAdminAuthFacade";
 import { useAuthStore } from "../../../store/authStore";
-import { completeLoginNavigation } from "../../auth/completeLoginNavigation";
 import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 import {
   loginSchema,
@@ -40,7 +42,7 @@ export function AdminCoreLoginPage() {
     setError("");
     setLoading(true);
     try {
-      const payload = await authService.globalLogin({
+      const payload = await globalAdminAuthFacade.globalLogin({
         username: form.username.trim().toLowerCase(),
         password: form.password,
       });

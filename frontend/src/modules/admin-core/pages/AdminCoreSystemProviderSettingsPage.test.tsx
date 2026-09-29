@@ -5,10 +5,19 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { useAuthStore } from "../../../store/authStore";
 import { AdminCoreProtectedRoute } from "../../../components/AdminCoreProtectedRoute";
 import { systemProviderSettingsService } from "../api/systemProviderSettingsService";
-import { accessService } from "../../auth/api/accessService";
-import { sessionService } from "../../session/api/sessionService";
 import { AdminCoreLayout } from "../components/AdminCoreLayout";
 import { AdminCoreSystemProviderSettingsPage } from "./AdminCoreSystemProviderSettingsPage";
+
+// Espías del shell operativo (auth/session) — se configuran o se verifica que NO se
+// disparen; admin-core nunca los importa directamente.
+const shellSpies = vi.hoisted(() => ({
+  accessService: { getSessionMenu: vi.fn() },
+  sessionService: {
+    getAvailableBranches: vi.fn(),
+    switchBranch: vi.fn(),
+    getContext: vi.fn(),
+  },
+}));
 
 const GLOBAL_TENANT_ID = "00000000-0000-0000-0000-000000000000";
 
@@ -17,17 +26,9 @@ vi.mock("../api/systemProviderSettingsService", () => ({
 }));
 
 // Fase B: espías sobre endpoints operativos que esta pantalla nunca debe disparar.
-vi.mock("../../auth/api/accessService", () => ({
-  accessService: { getSessionMenu: vi.fn() },
-}));
+vi.mock("../../auth/api/accessService", () => ({ accessService: shellSpies.accessService }));
 
-vi.mock("../../session/api/sessionService", () => ({
-  sessionService: {
-    getAvailableBranches: vi.fn(),
-    switchBranch: vi.fn(),
-    getContext: vi.fn(),
-  },
-}));
+vi.mock("../../session/api/sessionService", () => ({ sessionService: shellSpies.sessionService }));
 
 function renderRoute() {
   return render(
@@ -98,9 +99,9 @@ describe("AdminCoreSystemProviderSettingsPage", () => {
     expect(screen.getByDisplayValue("ZH Technologies")).toBeTruthy();
     expect(screen.getByDisplayValue("J6201")).toBeTruthy();
 
-    expect(accessService.getSessionMenu).not.toHaveBeenCalled();
-    expect(sessionService.getAvailableBranches).not.toHaveBeenCalled();
-    expect(sessionService.getContext).not.toHaveBeenCalled();
+    expect(shellSpies.accessService.getSessionMenu).not.toHaveBeenCalled();
+    expect(shellSpies.sessionService.getAvailableBranches).not.toHaveBeenCalled();
+    expect(shellSpies.sessionService.getContext).not.toHaveBeenCalled();
   });
 
   it("muestra el título 'Proveedor tecnológico SRI'", async () => {

@@ -7,7 +7,7 @@ import { SalesPriceListContext } from "./SalesPriceListContext";
 import { I18nProvider } from "../../../i18n/i18n";
 import { dictionaries } from "../../../i18n/dictionaries";
 import type { SalesLineFormValues } from "../schemas/salesInvoiceSchema";
-import type { WarehouseDto } from "../../inventory/types";
+import type { WarehouseDto } from "../../inventory/facades/warehouseLookupFacade";
 
 // SALES-PRICING-UX-TRACEABILITY-07C — presentación del origen del pricing (cabecera + línea).
 // La lógica de decisión vive en utils/pricingTraceability (testeada aparte); aquí se fija lo

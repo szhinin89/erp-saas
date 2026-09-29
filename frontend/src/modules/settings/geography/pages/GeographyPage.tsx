@@ -10,7 +10,7 @@ import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/ZHDataTable";
 import { ZhSelect } from "../../../../components/zh/inputs";
 import { useI18n } from "../../../../i18n/i18n";
-import { branchService } from "../../../branches/api/branchService";
+import { geographyLookupFacade } from "../../../branches/facades/geographyLookupFacade";
 import { usePermissionsUi } from "../../../../access/usePermissionsUi";
 
 type GeoItem = { id: string; name: string };
@@ -35,7 +35,7 @@ export function GeographyPage() {
   useEffect(() => {
     if (!canView) return;
     setLoading(true);
-    branchService
+    geographyLookupFacade
       .countries()
       .then((rows) => {
         setCountries(rows);
@@ -51,7 +51,7 @@ export function GeographyPage() {
       setProvinceId("");
       return;
     }
-    branchService
+    geographyLookupFacade
       .provinces(countryId)
       .then(setProvinces)
       .catch(() => setProvinces([]));
@@ -65,7 +65,7 @@ export function GeographyPage() {
       setCantonId("");
       return;
     }
-    branchService
+    geographyLookupFacade
       .cantons(provinceId)
       .then(setCantons)
       .catch(() => setCantons([]));
@@ -77,7 +77,7 @@ export function GeographyPage() {
       setParishes([]);
       return;
     }
-    branchService
+    geographyLookupFacade
       .parishes(cantonId)
       .then(setParishes)
       .catch(() => setParishes([]));

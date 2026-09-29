@@ -88,7 +88,7 @@ Constantes: `PLATFORM_UI` en `frontend/src/modules/platform/api/platformApiPaths
 - Literal `'SuperAdmin'` en cualquier capa del producto
 - Identificadores `Tenant*`, `TENANT_*`, `tenantId`, `variant="tenant"`, `shell-content-frame--tenant` en `frontend/src` (canónico: **Subscriber**)
 
-Guards: `tools/ci/platform-guard-config.json`, `tools/architecture/check-platform-legacy-surface.mjs`, `tools/architecture/check-frontend-subscriber-naming.mjs`, `PlatformControlPlaneGuardTests.cs`.
+Guards: `tools/ci/platform-guard-config.json`, `tools/architecture/check-platform-legacy-surface.mjs`, `PlatformControlPlaneGuardTests.cs`. (`check-frontend-subscriber-naming.mjs` ya no valida naming Tenant/Subscriber: en ERP Core `Tenant` es canónico — ver `docs/architecture/naming.md` — y el check valida contratos owner → subscriber entre módulos.)
 
 ---
 

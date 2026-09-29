@@ -19,7 +19,7 @@ vi.mock("../../ride/facades/rideGenerationFacade", () => ({
 }));
 
 const downloadBlobMock = vi.fn();
-vi.mock("../../ride/utils/downloadBlob", () => ({
+vi.mock("../../../lib/download", () => ({
   downloadBlob: (...a: unknown[]) => downloadBlobMock(...a),
 }));
 

@@ -11,13 +11,11 @@ import { extractImportSources, moduleFromPath, moduleFromImport } from './shared
 
 export const CHECK_NAME = 'module-boundaries';
 
-/** @param {{ from: string, to: string }} rule @param {string} fromMod @param {string} toMod */
-function pairMatches(rule, fromMod, toMod) {
-  const fromOk = rule.from === '*' || rule.from === fromMod;
-  const toOk = rule.to === '*' || rule.to === toMod;
-  return fromOk && toOk;
-}
-
+/**
+ * Dirección de dependencias entre módulos: pares `forbiddenCrossImports` que nunca pueden
+ * depender entre sí, ni siquiera vía facade. Por QUÉ superficie se consume otro módulo
+ * (solo `modules/<owner>/facades/`) lo valida `frontend-subscriber-naming`.
+ */
 export function runCheckModuleBoundaries() {
   const rules = loadConfig('architecture-rules.json');
   const cfg = rules.moduleBoundaries;
@@ -39,26 +37,12 @@ export function runCheckModuleBoundaries() {
 
       if (cfg.sharedModules.includes(toMod)) continue;
 
-      const allowed = cfg.allowedCrossImports.some((r) => pairMatches(r, fromMod, toMod));
-      if (allowed) continue;
-
       const forbidden = cfg.forbiddenCrossImports.some((r) => r.from === fromMod && r.to === toMod);
       if (forbidden) {
         addViolation(result, {
           rule: 'F-module-boundary',
           file: rel,
           message: `module "${fromMod}" must not import "${toMod}" via "${source}"`,
-        });
-        continue;
-      }
-
-      // Cross-module import not explicitly allowed — warn only for non-lib paths outside allowed list
-      // Strict mode: block any cross-module api/pages import unless whitelisted
-      if (source.includes('/api/') || source.includes('/pages/')) {
-        addViolation(result, {
-          rule: 'F-module-boundary',
-          file: rel,
-          message: `cross-module import "${fromMod}" → "${toMod}" via "${source}" not in allowedCrossImports; use shared contract or extend config`,
         });
       }
     }

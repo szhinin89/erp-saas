@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 import type { SalesInvoiceDetailDto } from "../api/salesService";
 import type { SalesLineFormValues } from "../schemas/salesInvoiceSchema";
-import type { WarehouseDto, ItemWarehouseAvailabilityDto } from "../../inventory/types";
+import type { WarehouseDto } from "../../inventory/facades/warehouseLookupFacade";
+import type { ItemWarehouseAvailabilityDto } from "../../inventory/facades/stockLookupFacade";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import { ZhSelect } from "../../../components/zh/inputs/ZhSelect";
 import { ZhWarehouseSelector } from "../../../components/zh/inputs/ZhWarehouseSelector";

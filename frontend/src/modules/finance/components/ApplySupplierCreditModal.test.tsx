@@ -30,9 +30,9 @@ const PAYABLES_BY_STATUS: Record<string, unknown[]> = {
 const list = vi.fn((filters: { status: string }) =>
   Promise.resolve({ items: PAYABLES_BY_STATUS[filters.status] ?? [] }),
 );
-vi.mock("../../payables/api/payablesService", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("../../payables/api/payablesService")>()),
-  payablesService: { list: (...a: unknown[]) => list(...(a as [{ status: string }])) },
+vi.mock("../../payables/facades/payableLookupFacade", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../payables/facades/payableLookupFacade")>()),
+  payableLookupFacade: { list: (...a: unknown[]) => list(...(a as [{ status: string }])) },
 }));
 vi.mock("../../../lib/messages", () => ({
   message: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },

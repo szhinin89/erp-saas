@@ -3,13 +3,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { useAuthStore } from "../../../store/authStore";
-import { authService } from "../../auth/api/authService";
 import { AdminCoreLoginPage } from "./AdminCoreLoginPage";
+import { globalAdminAuthFacade } from "../../auth/facades/globalAdminAuthFacade";
 
 const GLOBAL_TENANT_ID = "00000000-0000-0000-0000-000000000000";
 
-vi.mock("../../auth/api/authService", () => ({
-  authService: { globalLogin: vi.fn() },
+vi.mock("../../auth/facades/globalAdminAuthFacade", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../auth/facades/globalAdminAuthFacade")>()),
+  globalAdminAuthFacade: { globalLogin: vi.fn() },
 }));
 
 function renderPage() {
@@ -39,7 +40,7 @@ afterEach(() => {
 
 describe("AdminCoreLoginPage", () => {
   it("hace login global y navega a /admin-core/dashboard", async () => {
-    vi.mocked(authService.globalLogin).mockResolvedValue({
+    vi.mocked(globalAdminAuthFacade.globalLogin).mockResolvedValue({
       userId: "admin-1",
       fullName: "Global Admin",
       username: "global",
@@ -62,7 +63,7 @@ describe("AdminCoreLoginPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Ingresar" }));
 
     await waitFor(() => {
-      expect(authService.globalLogin).toHaveBeenCalledWith({
+      expect(globalAdminAuthFacade.globalLogin).toHaveBeenCalledWith({
         username: "global",
         password: "secret",
       });

@@ -4,7 +4,7 @@ import {
   rideGenerationFacade,
   type RideGenerationResultDto,
 } from "../../ride/facades/rideGenerationFacade";
-import { downloadBlob } from "../../ride/utils/downloadBlob";
+import { downloadBlob } from "../../../lib/download";
 
 const SOURCE_MODULE = "Sales";
 

@@ -19,7 +19,7 @@ vi.mock("../../../access/usePermissionsUi", () => ({
 vi.mock("../../accounting/facades/accountLookupFacade", () => ({
   accountLookupFacade: { listAccounts: async () => [{ id: "account" }] },
 }));
-vi.mock("../../masterData/api/paymentTermService", () => ({ paymentTermService: { list: async () => [] } }));
+vi.mock("../../masterData/facades/paymentTermLookupFacade", () => ({ paymentTermLookupFacade: { list: async () => [] } }));
 vi.mock("../../items/facades/sriLookupFacade", () => ({
   sriLookupFacade: {
     docTypes: async () => [{ code: "01", name: "Factura", shortName: "FAC", isElectronic: true }],

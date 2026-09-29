@@ -4,7 +4,7 @@ import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { SalesInvoiceDetailsSection } from "./SalesInvoiceDetailsSection";
 import type { SalesLineFormValues } from "../schemas/salesInvoiceSchema";
-import type { WarehouseDto } from "../../inventory/types";
+import type { WarehouseDto } from "../../inventory/facades/warehouseLookupFacade";
 
 // SALES-RETAIL-READY-01-FIX06 — jerarquía visual de la línea ya agregada a la factura: producto,
 // cantidad, total línea (dato más fuerte del bloque derecho), stock/bodega, precio facturado,

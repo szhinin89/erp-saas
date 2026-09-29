@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { ZHModal } from "../../../components/zh/ZHModal";
 import { message } from "../../../lib/messages";
-import { MasterDataPartnerWizard } from "../../masterData/components/MasterDataPartnerWizard";
-import { businessPartnerFacade } from "../../masterData/api/businessPartnerFacade";
-import { RoleTypeEnum } from "../../masterData/types/businessPartner.types";
-import type { CreateBusinessPartnerBody } from "../../masterData/types/businessPartner.types";
-import { SRI_ID_TYPE_RUC } from "../../masterData/constants/sriIdentificationCodes";
+import {
+  MasterDataPartnerWizard,
+  RoleTypeEnum,
+  SRI_ID_TYPE_RUC,
+  businessPartnerRegistrationFacade,
+  type CreateBusinessPartnerBody,
+} from "../../masterData/facades/businessPartnerRegistrationFacade";
 
 const DRAFT_KEY = "pur-reception-new-supplier-draft";
 
@@ -43,8 +45,8 @@ export function CreateSupplierModal({
   ): Promise<void> => {
     setSaving(true);
     try {
-      const created = await businessPartnerFacade.createBusinessPartner(body);
-      await businessPartnerFacade.assignRole(created.id, {
+      const created = await businessPartnerRegistrationFacade.createBusinessPartner(body);
+      await businessPartnerRegistrationFacade.assignRole(created.id, {
         roleType: RoleTypeEnum.Supplier,
         supplierConfig: supplierConfig
           ? {
@@ -62,7 +64,7 @@ export function CreateSupplierModal({
   const handleAssignRole = async (id: string): Promise<void> => {
     setSaving(true);
     try {
-      await businessPartnerFacade.assignRole(id, {
+      await businessPartnerRegistrationFacade.assignRole(id, {
         roleType: RoleTypeEnum.Supplier,
       });
       message.success("Rol de proveedor asignado correctamente.");

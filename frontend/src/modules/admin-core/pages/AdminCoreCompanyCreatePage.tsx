@@ -11,7 +11,7 @@ import {
   companyManagementFormSchema,
   type CompanyManagementFormValues,
 } from "../../../schemas/companyManagementSchema";
-import { companyManagementService } from "../../company-management/api/companyManagementService";
+import { companyRegistrationFacade } from "../../company-management/facades/companyRegistrationFacade";
 import { adminCoreService } from "../api/adminCoreService";
 import { formatApiRequestError } from "../../lib/apiError";
 import { applyServerErrors } from "../../lib/validationErrors";
@@ -104,7 +104,7 @@ export function AdminCoreCompanyCreatePage() {
         return;
       }
 
-      const detail = await companyManagementService.create({
+      const detail = await companyRegistrationFacade.create({
         tenantId,
         taxId: values.taxId.trim(),
         legalName: values.legalName.trim(),

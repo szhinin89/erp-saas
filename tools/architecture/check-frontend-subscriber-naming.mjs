@@ -1,83 +1,183 @@
 #!/usr/bin/env node
 /**
- * CI guard: falla si reaparece naming legacy Tenant en frontend/src.
- * Canónico: Subscriber / subscriber (NAMING.md).
+ * CI guard `frontend-subscriber-naming` — contrato owner → subscriber entre módulos frontend.
+ *
+ * Owner = módulo dueño de una funcionalidad (`frontend/src/modules/<owner>/`).
+ * Subscriber = cualquier otro módulo que la consume.
+ *
+ * Reglas (docs/architecture/frontend.md § Contratos públicos entre módulos):
+ *  - F-subscriber-internal-import: un subscriber solo importa del owner archivos ubicados
+ *    directamente en una carpeta `facades/` del owner (`modules/<owner>/[<área>/]facades/<x>Facade.ts`).
+ *    Nunca api/services, pages, hooks, components, store, types, utils, constants ni barrels.
+ *    Aplica también a `import type` (los tipos públicos se re-exportan desde la facade) y a
+ *    `import()` dinámico / `typeof import()`.
+ *  - F-subscriber-facade-naming: cada archivo de `facades/` se llama `<concepto><Propósito>Facade.ts`
+ *    (camelCase, dueño y propósito explícitos) y, si exporta un objeto `const …Facade`, este lleva
+ *    exactamente el nombre del archivo.
+ *
+ * Fuera de alcance (no son consumo de funcionalidad): módulos compartidos declarados en
+ * `architecture-rules.json` → `moduleBoundaries.sharedModules`, imports hacia fuera de
+ * `modules/` (src/lib, components, store…), specifiers de paquetes, imports de estilos/assets
+ * y rutas pasadas a `vi.mock()` (arnés de test, no dependencia de producción).
+ * El frontend no define aliases de import (sin `paths` en tsconfig ni `resolve.alias` en Vite):
+ * solo los specifiers relativos pueden apuntar a otro módulo.
  */
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { REPO_ROOT, loadConfig, toRepoRel, walkFiles, readText } from './shared/fs-utils.mjs';
 import { createCheckResult, addViolation } from './shared/report-utils.mjs';
 
 export const CHECK_NAME = 'frontend-subscriber-naming';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(__dirname, '../..');
-const SCAN_ROOT = path.join(REPO_ROOT, 'frontend/src');
+export const RULES = {
+  internalImport: 'F-subscriber-internal-import',
+  facadeNaming: 'F-subscriber-facade-naming',
+};
 
-/** @type {{ id: string, pattern: RegExp, hint: string }[]} */
-const FORBIDDEN = [
-  { id: 'tenant-module-keys', pattern: /\bTENANT_MODULE_KEYS\b/, hint: 'Use SUBSCRIBER_MODULE_KEYS' },
-  { id: 'tenant-module-key-type', pattern: /\bTenantModuleKey\b/, hint: 'Use SubscriberModuleKey' },
-  { id: 'zh-multi-tenant-header', pattern: /\bZHMultiTenantHeader\b/, hint: 'Use ZHSubscriberShellHeader' },
-  { id: 'zh-tenant-header-crumb', pattern: /\bZHTenantHeaderModuleCrumb\b/, hint: 'Use ZHSubscriberHeaderModuleCrumb' },
-  { id: 'definitive-tenant-login', pattern: /\bisDefinitiveTenantLoginError\b/, hint: 'Use isDefinitiveSubscriberLoginError' },
-  { id: 'same-tenant-context', pattern: /\bsameTenantAsContext\b/, hint: 'Use sameSubscriberAsContext' },
-  {
-    id: 'layout-frame-tenant-variant',
-    pattern: /LayoutFrameVariant\s*=\s*[^;]*'tenant'|variant\s*=\s*['"]tenant['"]|shell-content-frame--tenant/,
-    hint: "Use LayoutFrame variant 'subscriber'",
-  },
-  { id: 'tenant-id-identifier', pattern: /\btenantId\b/, hint: 'Use subscriberId' },
-  {
-    id: 'tenant-word-in-code',
-    pattern: /\b[Tt]enant\b/,
-    hint: 'Use subscriber/suscriptor naming (NAMING.md)',
-  },
-];
+const MODULES_PREFIX = 'frontend/src/modules/';
+const FACADES_DIR = 'facades';
+const ASSET_EXT = /\.(css|scss|sass|less|svg|png|jpe?g|gif|webp|ico|woff2?|ttf|otf)$/i;
+const TEST_FILE = /\.test\.tsx?$/;
+/** Nombres que no identifican propósito: `lookupFacade`, `publicFacade`… no dicen de qué owner ni para qué. */
+const GENERIC_FACADE_BASES = new Set(['', 'index', 'lookup', 'public', 'module', 'shared', 'common', 'api', 'service', 'main']);
 
-const ALLOW_FILES = new Set([
-  'tools/architecture/check-frontend-subscriber-naming.mjs',
-]);
+/** @param {string} p */
+export function toPosix(p) {
+  return p.replace(/\\/g, '/');
+}
 
-function walk(dir, out = []) {
-  for (const name of fs.readdirSync(dir)) {
-    const p = path.join(dir, name);
-    const st = fs.statSync(p);
-    if (st.isDirectory()) walk(p, out);
-    else if (/\.(ts|tsx|js|jsx|mjs|css|json)$/.test(name)) out.push(p);
+/** Blanquea líneas de comentario (JSDoc, //, bloques) preservando numeración de líneas. */
+function blankCommentLines(content) {
+  return content
+    .split(/\r?\n/)
+    .map((line) => {
+      const t = line.trim();
+      return t.startsWith('//') || t.startsWith('*') || t.startsWith('/*') ? '' : line;
+    })
+    .join('\n');
+}
+
+const IMPORT_RE =
+  /(?:^|[;\s])(?:import|export)\s+(?:type\s+)?(?:[\w*{}\s,$]+?\s+from\s+)?['"]([^'"\n]+)['"]|\bimport\s*(?:<[^>]*>)?\(\s*['"]([^'"\n]+)['"]\s*\)/g;
+
+/**
+ * Specifiers importados por un archivo (static, re-export, type-only, dynamic y `typeof import()`),
+ * con su número de línea. Ignora `vi.mock("…")`.
+ * @param {string} content
+ * @returns {{ source: string, line: number }[]}
+ */
+export function extractImportSpecifiers(content) {
+  const code = blankCommentLines(content);
+  const out = [];
+  let m;
+  IMPORT_RE.lastIndex = 0;
+  while ((m = IMPORT_RE.exec(code)) !== null) {
+    const source = m[1] ?? m[2];
+    const line = code.slice(0, m.index).split('\n').length + (code[m.index] === '\n' ? 1 : 0);
+    out.push({ source, line });
   }
   return out;
 }
 
-function isCommentLine(trimmed) {
-  return (
-    trimmed.startsWith('//') ||
-    trimmed.startsWith('*') ||
-    trimmed.startsWith('/*') ||
-    trimmed.startsWith('*/')
-  );
+/** @param {string} relFile repo-relative, cualquier separador */
+export function moduleOf(relFile) {
+  const posix = toPosix(relFile);
+  if (!posix.startsWith(MODULES_PREFIX)) return null;
+  return posix.slice(MODULES_PREFIX.length).split('/')[0] || null;
 }
 
-export function runCheckFrontendSubscriberNaming() {
-  const result = createCheckResult(CHECK_NAME);
-  for (const file of walk(SCAN_ROOT)) {
-    const rel = path.relative(REPO_ROOT, file).replace(/\\/g, '/');
-    if (ALLOW_FILES.has(rel)) continue;
-    const lines = fs.readFileSync(file, 'utf8').split(/\r?\n/);
-    lines.forEach((line, idx) => {
-      const trimmed = line.trim();
-      if (isCommentLine(trimmed)) return;
-      for (const rule of FORBIDDEN) {
-        if (rule.pattern.test(line)) {
-          addViolation(result, {
-            rule: rule.id,
-            file: rel,
-            line: idx + 1,
-            message: `${rule.hint} — ${trimmed.slice(0, 100)}`,
-          });
-        }
-      }
+/**
+ * Resuelve un specifier relativo contra el archivo que lo importa (repo-relative, POSIX).
+ * Specifiers no relativos (paquetes) → null.
+ * @param {string} fromFile
+ * @param {string} source
+ */
+export function resolveSpecifier(fromFile, source) {
+  const spec = toPosix(source);
+  if (!spec.startsWith('.')) return null;
+  return path.posix.normalize(path.posix.join(path.posix.dirname(toPosix(fromFile)), spec));
+}
+
+/**
+ * Clasifica un import:
+ *  own | shared | outside | package | asset | facade | internal
+ * @param {{ fromFile: string, source: string, sharedModules: string[] }} args
+ */
+export function classifyImport({ fromFile, source, sharedModules }) {
+  const subscriber = moduleOf(fromFile);
+  const resolved = resolveSpecifier(fromFile, source);
+  if (resolved === null) return { kind: 'package', subscriber, owner: null, resolved };
+  const owner = moduleOf(resolved);
+  if (!owner) return { kind: 'outside', subscriber, owner, resolved };
+  if (!subscriber || owner === subscriber) return { kind: 'own', subscriber, owner, resolved };
+  if (sharedModules.includes(owner)) return { kind: 'shared', subscriber, owner, resolved };
+  if (ASSET_EXT.test(resolved)) return { kind: 'asset', subscriber, owner, resolved };
+  const segments = resolved.slice(MODULES_PREFIX.length).split('/');
+  // el archivo debe estar DIRECTAMENTE dentro de facades/ (nunca `…/facades` como barrel ni subcarpetas)
+  const isFacade = segments.length >= 3 && segments[segments.length - 2] === FACADES_DIR;
+  return { kind: isFacade ? 'facade' : 'internal', subscriber, owner, resolved };
+}
+
+/**
+ * Naming de un archivo dentro de `facades/`: `<concepto><Propósito>Facade.ts(x)` y, si exporta
+ * `const <x>Facade`, coincide con el nombre del archivo. Devuelve mensajes de violación.
+ * @param {string} relFile
+ * @param {string} content
+ */
+export function checkFacadeFileNaming(relFile, content) {
+  const base = path.posix.basename(toPosix(relFile));
+  if (TEST_FILE.test(base)) return [];
+  const m = base.match(/^([a-z][A-Za-z0-9]*)\.tsx?$/);
+  if (!m || !m[1].endsWith('Facade')) {
+    return [`facade file "${base}" must be named <concept><Purpose>Facade.ts (camelCase, e.g. warehouseLookupFacade.ts)`];
+  }
+  const name = m[1];
+  if (GENERIC_FACADE_BASES.has(name.slice(0, -'Facade'.length).toLowerCase())) {
+    return [`facade file "${base}" is too generic — the name must state the owner concept and public purpose`];
+  }
+  const errors = [];
+  const code = blankCommentLines(content);
+  for (const exp of code.matchAll(/export\s+const\s+([A-Za-z0-9_]+Facade)\b/g)) {
+    if (exp[1] !== name) errors.push(`exported facade "${exp[1]}" must match file name "${name}"`);
+  }
+  return errors;
+}
+
+/**
+ * @param {{ files?: { rel: string, content: string }[], sharedModules?: string[] }} [opts]
+ *   files/sharedModules permiten ejecutar el guard sobre fixtures en memoria (tests).
+ */
+export function runCheckFrontendSubscriberNaming(opts = {}) {
+  const sharedModules = opts.sharedModules ?? loadConfig('architecture-rules.json').moduleBoundaries.sharedModules;
+  const files =
+    opts.files ??
+    walkFiles(path.join(REPO_ROOT, 'frontend/src/modules'), { extensions: ['.ts', '.tsx'] }).map((abs) => {
+      const rel = toRepoRel(abs);
+      return { rel, content: readText(rel) };
     });
+  const result = createCheckResult(CHECK_NAME);
+
+  for (const { rel: rawRel, content } of files) {
+    const rel = toPosix(rawRel);
+    if (!rel.startsWith(MODULES_PREFIX)) continue;
+
+    for (const { source, line } of extractImportSpecifiers(content)) {
+      const c = classifyImport({ fromFile: rel, source, sharedModules });
+      if (c.kind !== 'internal') continue;
+      addViolation(result, {
+        rule: RULES.internalImport,
+        file: rel,
+        line,
+        message: `subscriber "${c.subscriber}" imports owner "${c.owner}" internals via "${source}" — consume modules/${c.owner}/**/facades/<x>Facade.ts`,
+      });
+    }
+
+    const segments = rel.split('/');
+    if (segments[segments.length - 2] === FACADES_DIR) {
+      for (const message of checkFacadeFileNaming(rel, content)) {
+        addViolation(result, { rule: RULES.facadeNaming, file: rel, message });
+      }
+    }
   }
   return result;
 }
@@ -88,12 +188,6 @@ const isMain =
 
 if (isMain) {
   const result = runCheckFrontendSubscriberNaming();
-  if (result.violations.length > 0) {
-    console.error('Frontend subscriber naming guard FAILED:\n');
-    for (const v of result.violations) {
-      console.error(`  [${v.rule}] ${v.file}:${v.line} — ${v.message}`);
-    }
-    process.exit(1);
-  }
-  console.log('Frontend subscriber naming guard OK (frontend/src)');
+  const { printCheckResult } = await import('./shared/report-utils.mjs');
+  process.exit(printCheckResult(result) ? 0 : 1);
 }

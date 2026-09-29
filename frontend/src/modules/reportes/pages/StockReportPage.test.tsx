@@ -3,8 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import { I18nProvider } from "../../../i18n/i18n";
 import { StockReportPage } from "./StockReportPage";
-import { stockService, type StockReportRowDto } from "../../inventory/stock/api/stockService";
-import { warehouseService } from "../../inventory/warehouses/api/warehouseService";
+import { stockLookupFacade, type StockReportRowDto } from "../../inventory/facades/stockLookupFacade";
+import { warehouseLookupFacade } from "../../inventory/facades/warehouseLookupFacade";
 import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.config";
 import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 
@@ -15,12 +15,12 @@ import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
  * Promedio, Valor Inventario, Estado).
  */
 
-vi.mock("../../inventory/stock/api/stockService", () => ({
-  stockService: { getReport: vi.fn() },
+vi.mock("../../inventory/facades/stockLookupFacade", () => ({
+  stockLookupFacade: { getReport: vi.fn() },
 }));
 
-vi.mock("../../inventory/warehouses/api/warehouseService", () => ({
-  warehouseService: { list: vi.fn() },
+vi.mock("../../inventory/facades/warehouseLookupFacade", () => ({
+  warehouseLookupFacade: { list: vi.fn() },
 }));
 
 vi.mock("../../../store/authStore", () => ({
@@ -57,8 +57,8 @@ afterEach(() => cleanup());
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(warehouseService.list).mockResolvedValue([]);
-  vi.mocked(stockService.getReport).mockResolvedValue([ROW]);
+  vi.mocked(warehouseLookupFacade.list).mockResolvedValue([]);
+  vi.mocked(stockLookupFacade.getReport).mockResolvedValue([ROW]);
 });
 
 describe("StockReportPage — ZH-LISTING-COMPLIANCE-AUDIT-08", () => {
@@ -108,7 +108,7 @@ describe("StockReportPage — precisión semántica (02B)", () => {
 
   async function renderWithPolicy(quantityDecimals: number, averageCostDecimals: number) {
     setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, quantityDecimals, averageCostDecimals });
-    vi.mocked(stockService.getReport).mockResolvedValue([PRECISE_ROW]);
+    vi.mocked(stockLookupFacade.getReport).mockResolvedValue([PRECISE_ROW]);
     renderPage();
     await waitFor(() => expect(screen.getByText("SKU-001")).toBeTruthy());
     const row = screen.getByText("SKU-001").closest("tr")!;
@@ -142,7 +142,7 @@ describe("StockReportPage — precisión semántica (02B)", () => {
 describe("StockReportPage — valor de inventario money (04F)", () => {
   it("celda y KPI usan moneyDecimals, sin símbolo, y reaccionan A → B", async () => {
     setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, moneyDecimals: 2 });
-    vi.mocked(stockService.getReport).mockResolvedValue([{ ...ROW, stockValue: 150.125 }]);
+    vi.mocked(stockLookupFacade.getReport).mockResolvedValue([{ ...ROW, stockValue: 150.125 }]);
     const { container } = renderPage();
     await waitFor(() => expect(screen.getByText("SKU-001")).toBeTruthy());
     const row = screen.getByText("SKU-001").closest("tr")!;

@@ -16,7 +16,7 @@ import { ZHFieldLabel } from "../../../components/zh/ZHFieldLabel";
 import { ZHDataValue } from "../../../components/zh/ZHDataValue";
 import { ZHInfoRow } from "../../../components/zh/ZHInfoRow";
 import { ZHInputGroup } from "../../../components/zh/ZHInputGroup";
-import { SupplierSearchSelect } from "../../masterData/components/SupplierSearchSelect";
+import { SupplierSearchSelect } from "../../masterData/facades/supplierPickerFacade";
 import { DistributeCostModal } from "../components/DistributeCostModal";
 import { ResolvePendingProductsModal } from "../components/ResolvePendingProductsModal";
 import { ProductPicker } from "../components/ProductPicker";
@@ -54,10 +54,8 @@ import { buildWithholdingIssueMessage } from "../utils/withholdingMessages";
 import { usePurchasesPage, type Tab } from "../hooks/usePurchasesPage";
 import type { PurchaseListItemDto } from "../api/purchaseService";
 import { useI18n } from "../../../i18n/i18n";
-import {
-  ItemMatchStatusBadge,
-  useViewMatchedItem,
-} from "../components/ItemMatchStatusBadge";
+import { ItemMatchStatusBadge } from "../components/ItemMatchStatusBadge";
+import { useOpenItemDetail } from "../../items/facades/itemDetailNavigationFacade";
 import { CreateItemFromReceptionLineModal } from "../components/CreateItemFromReceptionLineModal";
 import type {
   PurchaseReceptionLineMatch,
@@ -1695,7 +1693,7 @@ function PurchaseLineCard({
 }) {
   const { t } = useI18n();
   const precisionPolicy = usePrecisionPolicy(); // presentación de línea (06)
-  const viewMatchedItem = useViewMatchedItem();
+  const viewMatchedItem = useOpenItemDetail();
   // Estado local de expandir/colapsar SOLO la banda inferior de detalle
   // (Producto recibido XML / Presentación e inventario / Información
   // comercial) — no se persiste (ni backend ni localStorage), vive por

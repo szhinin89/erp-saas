@@ -10,7 +10,7 @@ import {
 } from "../../../lib/config/precisionPolicy.config";
 import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 import type { SalesInvoiceDetailDto, SalesInvoiceDto } from "../api/salesService";
-import type { WarehouseDto } from "../../inventory/types";
+import type { WarehouseDto } from "../../inventory/facades/warehouseLookupFacade";
 
 // ZH-DESIGN-SYSTEM-PRECISION-02B — "Costo al vender" (snapshot histórico unitCostAtSale) se muestra
 // con la semántica unitCost de la PrecisionPolicy. Solo cambia la escala de DISPLAY: el valor

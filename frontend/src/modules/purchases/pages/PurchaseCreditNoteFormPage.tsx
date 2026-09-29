@@ -35,7 +35,7 @@ import { purchaseReturnPreview } from "../utils/purchaseReturnPreview";
 import { PurchaseReturnableLinesEditor } from "../components/PurchaseReturnableLinesEditor";
 import { PurchaseCreditNoteTaxSummaryLinesEditor } from "../components/PurchaseCreditNoteTaxSummaryLinesEditor";
 import { PurchaseInvoiceLinesDetailTable } from "../components/PurchaseInvoiceLinesDetailTable";
-import { SupplierSearchSelect } from "../../masterData/components/SupplierSearchSelect";
+import { SupplierSearchSelect } from "../../masterData/facades/supplierPickerFacade";
 import { PurchaseInvoicePicker } from "../components/PurchaseInvoicePicker";
 import {
   purchaseCreditNoteDraftSchema,

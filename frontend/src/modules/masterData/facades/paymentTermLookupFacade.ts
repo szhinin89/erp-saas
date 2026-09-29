@@ -1,10 +1,10 @@
 /**
  * paymentTermLookupFacade — superficie pública read-only de condiciones de
- * pago para consumidores externos (configuracion).
+ * pago para consumidores externos (configuracion, sales, purchases, expenses).
  *
- * Expone únicamente el listado; nunca las mutaciones de paymentTermService
- * (create/update) ni el detalle. Los módulos externos deben importar desde
- * aquí, nunca directamente de masterData/api/paymentTermService.
+ * Expone únicamente listado y detalle; nunca las mutaciones de
+ * paymentTermService (create/update). Los módulos externos deben importar
+ * desde aquí, nunca directamente de masterData/api/paymentTermService.
  */
 
 import { paymentTermService } from "../api/paymentTermService";
@@ -14,4 +14,5 @@ export type { PaymentTermDto };
 
 export const paymentTermLookupFacade = {
   list: paymentTermService.list,
+  getById: paymentTermService.getById,
 };

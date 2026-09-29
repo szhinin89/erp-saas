@@ -3,9 +3,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useI18n } from "../../../../i18n/i18n";
 import {
-  branchService,
+  branchLookupFacade,
   type BranchListItemDto,
-} from "../../../branches/api/branchService";
+} from "../../../branches/facades/branchLookupFacade";
 import { warehouseService, type WarehouseDto } from "../api/warehouseService";
 import { applyServerErrors } from "../../../lib/validationErrors";
 import { formatApiRequestError } from "../../../lib/apiError";
@@ -83,7 +83,7 @@ export function useWarehousesPage() {
   }, [fetchList]);
 
   useEffect(() => {
-    branchService
+    branchLookupFacade
       .list("active")
       .then(setBranches)
       .catch(() => setBranches([]));

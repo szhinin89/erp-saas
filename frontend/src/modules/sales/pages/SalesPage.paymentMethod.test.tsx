@@ -48,7 +48,7 @@ vi.mock("../hooks/useSalesPage", () => ({
 
 import { SalesPage } from "./SalesPage";
 
-vi.mock("../../caja/components/ManualCashMovementModal", () => ({
+vi.mock("../../caja/facades/manualCashMovementFacade", () => ({
   ManualCashMovementModal: () => null,
 }));
 

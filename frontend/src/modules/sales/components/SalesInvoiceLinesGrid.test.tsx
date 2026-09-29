@@ -4,7 +4,7 @@ import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { SalesInvoiceDetailsSection } from "./SalesInvoiceDetailsSection";
 import type { SalesLineFormValues } from "../schemas/salesInvoiceSchema";
-import type { WarehouseDto } from "../../inventory/types";
+import type { WarehouseDto } from "../../inventory/facades/warehouseLookupFacade";
 
 // SALES-INVOICE-LINES-GRID-UX-01B: las líneas ya agregadas a la factura pasan a ser una grilla
 // horizontal con cabecera de columnas visible — mismo patrón visual que el buscador de productos
