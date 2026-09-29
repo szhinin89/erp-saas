@@ -230,6 +230,7 @@ builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(d
 
 builder.Services.AddApplication();
 builder.Services.AddScoped<AppFeatureDiscoveryService>();
+builder.Services.AddScoped<ERP.API.Diagnostics.CacheHealthProbe>(); // DEV ONLY: /api/dev/redis-health
 
 // OpenTelemetry metrics (Prometheus scrape en /metrics cuando Observability:EnablePrometheus=true)
 var observabilityEnabled = builder.Configuration.GetValue("Observability:EnablePrometheus", true);

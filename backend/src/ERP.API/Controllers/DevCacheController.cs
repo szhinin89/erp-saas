@@ -1,11 +1,10 @@
 using ERP.API.Contracts;
+using ERP.API.Diagnostics;
 using ERP.API.Extensions;
 using ERP.Application.Access.Caching;
 using ERP.Application.Common.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Distributed;
-using StackExchange.Redis;
 
 namespace ERP.API.Controllers;
 
@@ -16,30 +15,27 @@ namespace ERP.API.Controllers;
 public sealed class DevCacheController : ControllerBase
 {
     private readonly IWebHostEnvironment _environment;
-    private readonly IConfiguration _configuration;
-    private readonly IDistributedCache _cache;
+    private readonly CacheHealthProbe _probe;
     private readonly ICacheProviderStatus _providerStatus;
     private readonly ICacheDiagnosticsMetrics _metrics;
     private readonly IPermissionsCacheDiagnostics _permissionsMetrics;
 
     public DevCacheController(
         IWebHostEnvironment environment,
-        IConfiguration configuration,
-        IDistributedCache cache,
+        CacheHealthProbe probe,
         ICacheProviderStatus providerStatus,
         ICacheDiagnosticsMetrics metrics,
         IPermissionsCacheDiagnostics permissionsMetrics
     )
     {
         _environment = environment;
-        _configuration = configuration;
-        _cache = cache;
+        _probe = probe;
         _providerStatus = providerStatus;
         _metrics = metrics;
         _permissionsMetrics = permissionsMetrics;
     }
 
-    /// <summary>Valida conexión Redis, write/read y latencia simple.</summary>
+    /// <summary>Valida conexión Redis, write/read y latencia simple (sonda: <see cref="CacheHealthProbe"/>).</summary>
     [HttpGet("/api/dev/redis-health")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -48,66 +44,7 @@ public sealed class DevCacheController : ControllerBase
         if (!_environment.IsDevelopment())
             return this.ApiNotFound("Endpoint disponible solo en Development.");
 
-        var redisConnection = ResolveRedisConnectionString();
-        var redisConfigured = !string.IsNullOrWhiteSpace(redisConnection);
-        var probeKey = "erp:health:probe";
-        var probeValue = Guid.NewGuid().ToString("N");
-
-        var writeReadOk = false;
-        long writeReadLatencyMs = -1;
-        long? redisPingMs = null;
-        var redisConnected = false;
-
-        if (redisConfigured)
-        {
-            try
-            {
-                var mux = await ConnectionMultiplexer.ConnectAsync(redisConnection!);
-                redisConnected = mux.IsConnected;
-                redisPingMs = (long)mux.GetDatabase().Ping().TotalMilliseconds;
-            }
-            catch
-            {
-                redisConnected = false;
-            }
-        }
-
-        try
-        {
-            var sw = System.Diagnostics.Stopwatch.StartNew();
-            await _cache.SetStringAsync(
-                probeKey,
-                probeValue,
-                new DistributedCacheEntryOptions
-                {
-                    AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(15),
-                },
-                cancellationToken
-            );
-            var read = await _cache.GetStringAsync(probeKey, cancellationToken);
-            sw.Stop();
-            writeReadLatencyMs = sw.ElapsedMilliseconds;
-            writeReadOk = string.Equals(read, probeValue, StringComparison.Ordinal);
-            await _cache.RemoveAsync(probeKey, cancellationToken);
-        }
-        catch
-        {
-            writeReadOk = false;
-        }
-
-        return this.ApiOk(
-            new
-            {
-                redisConfigured,
-                redisConnected = redisConfigured && redisConnected,
-                fallbackActive = _providerStatus.FallbackActive,
-                provider = _providerStatus.ProviderName,
-                writeReadOk,
-                latencyMs = writeReadLatencyMs,
-                redisPingMs,
-                instanceName = _configuration["Redis:InstanceName"] ?? "ERP_",
-            }
-        );
+        return this.ApiOk(await _probe.CheckAsync(cancellationToken));
     }
 
     /// <summary>Métricas in-process de cache (hits, misses, hit ratio).</summary>
@@ -145,7 +82,4 @@ public sealed class DevCacheController : ControllerBase
             }
         );
     }
-
-    private string? ResolveRedisConnectionString() =>
-        _configuration["Redis:ConnectionString"] ?? _configuration.GetConnectionString("Redis");
 }
