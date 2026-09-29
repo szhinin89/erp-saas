@@ -59,6 +59,12 @@ Frontend          → Axios (transporte puro)
 | RateLimit | 429 |
 | InternalError | 500 |
 
+### Clasificación técnica de excepciones (ZH-BACKEND-SECURITY-ERROR-FINAL-HARDENING-01, 2026-09-29)
+
+- `InvalidOperationException` / `ArgumentException`: el texto es mensaje de negocio solo si el `throw` se originó en ERP.Domain o ERP.Application (primer frame; se conserva a través de `await`). IOE de otro origen (framework, EF Core, Infrastructure, API) → 500 `INTERNAL_ERROR` sin texto; `ArgumentException` de otro origen → 400 sin texto.
+- Base de datos: `IDatabaseExceptionTranslator.ClassifyFailureCode` es el único punto de clasificación técnica — no disponible (Npgsql transitorio, SQLSTATE 08/53/57P01-03/57014) → 503; 23505 → 409 `UNIQUE_VIOLATION`; otra clase 23 → 409 `CONFLICT`; concurrencia/40001/40P01 → 409 `CONCURRENCY_CONFLICT`; resto → 500. Nunca devuelve texto: SQL, tabla, constraint y conexión quedan en el log.
+- Login: usuario inexistente ejecuta `IPasswordHasher.SimulatePasswordVerification` (BCrypt, mismo costo, hash ficticio constante precomputado, 1 verificación y ninguna generación por request) — sin enumeración por tiempo.
+
 ### Semántica de scope (ZH-SCOPE-ERROR-SEMANTICS-01, 2026-09-29)
 
 Ningún flujo decide por `Error`/`Message` (texto = presentación); la semántica viaja en `Code` y se propaga intacta hasta `ApiErrorStatus` (`Result.Failure(x.Error!, x.Code)`, nunca `Failure(x.Error!)`). Guard arquitectónico: `ScopeErrorSemanticsTests`.

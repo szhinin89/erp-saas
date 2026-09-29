@@ -573,6 +573,10 @@ public sealed class AuthorizePurchaseReturnSequenceConcurrencyTests : IAsyncLife
     /// <summary>Traductor real (no mock) contra el SqlState 23505 real de PostgreSQL.</summary>
     private sealed class RealDatabaseExceptionTranslator : IDatabaseExceptionTranslator
     {
+        // ZH-BACKEND-SECURITY-ERROR-FINAL-HARDENING-01: clasificación técnica real (único punto).
+        public string? ClassifyFailureCode(Exception exception) =>
+            new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator().ClassifyFailureCode(exception);
+
         public bool TryGetUniqueViolation(Exception exception, out DatabaseUniqueViolationInfo info)
         {
             for (var ex = exception; ex is not null; ex = ex.InnerException)

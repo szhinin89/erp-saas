@@ -43,7 +43,8 @@ public class ExceptionMiddlewareValidationTests
         var middleware = new ExceptionMiddleware(
             next,
             NullLogger<ExceptionMiddleware>.Instance,
-            environment
+            environment,
+            new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator()
         );
         var context = new DefaultHttpContext();
         context.Response.Body = new MemoryStream();
@@ -100,7 +101,8 @@ public class ExceptionMiddlewareValidationTests
         var middleware = new ExceptionMiddleware(
             next,
             NullLogger<ExceptionMiddleware>.Instance,
-            environment
+            environment,
+            new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator()
         );
         var context = new DefaultHttpContext();
         context.Response.Body = new MemoryStream();
@@ -117,18 +119,28 @@ public class ExceptionMiddlewareValidationTests
         doc.RootElement.GetProperty("code").GetString().Should().NotBe("DATABASE_UNAVAILABLE");
     }
 
-    // Control: un DbUpdateException genuino (fallo real de escritura en PostgreSQL) sigue
+    // Control: un DbUpdateException genuino por caída de PostgreSQL (causa Npgsql de conexión) sigue
     // clasificándose como DATABASE_UNAVAILABLE — el caso nuevo no debe desplazar este.
+    // ZH-BACKEND-SECURITY-ERROR-FINAL-HARDENING-01: la clasificación mira la causa real (antes todo
+    // DbUpdateException, incluso UNIQUE o SQL inválido, salía 503).
     [Fact]
     public async Task InvokeAsync_WhenGenuineDbUpdateException_StillReturnsDatabaseUnavailable()
     {
-        RequestDelegate next = _ => throw new DbUpdateException("Simulated write failure");
+        RequestDelegate next = _ =>
+            throw new DbUpdateException(
+                "Simulated write failure",
+                new Npgsql.NpgsqlException(
+                    "Failed to connect",
+                    new System.Net.Sockets.SocketException(10061)
+                )
+            );
 
         var environment = new FakeWebHostEnvironment();
         var middleware = new ExceptionMiddleware(
             next,
             NullLogger<ExceptionMiddleware>.Instance,
-            environment
+            environment,
+            new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator()
         );
         var context = new DefaultHttpContext();
         context.Response.Body = new MemoryStream();

@@ -20,4 +20,11 @@ public interface IPasswordHasher
     /// <param name="hash">Hash almacenado.</param>
     /// <returns>true si la contraseña es válida; false en caso contrario.</returns>
     bool VerifyPassword(string plainPassword, string hash);
+
+    /// <summary>
+    /// Ejecuta el mismo trabajo que <see cref="VerifyPassword"/> (mismo algoritmo y costo) contra un
+    /// hash ficticio y siempre falla. Para el login de un usuario inexistente: así ese camino tarda
+    /// lo mismo que una contraseña incorrecta y el tiempo de respuesta no revela qué usuarios existen.
+    /// </summary>
+    void SimulatePasswordVerification(string plainPassword);
 }

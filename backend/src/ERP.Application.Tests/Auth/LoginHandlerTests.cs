@@ -895,4 +895,44 @@ public sealed class LoginHandlerTests
 
         result.Error.Should().Be("Usuario inactivo.");
     }
+
+    // ── ZH-BACKEND-SECURITY-ERROR-FINAL-HARDENING-01: sin enumeración por tiempo ──
+
+    private static async Task<(Result<AuthResponseDto> Result, Fixture F)> LoginTracked(IdentityUser? user, bool passwordOk)
+    {
+        var f = new Fixture();
+        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        f.PasswordHasher.Setup(h => h.VerifyPassword(Password, PasswordHash)).Returns(passwordOk);
+        var result = await f.BuildHandler().Handle(new LoginCommand(Username, Password), CancellationToken.None);
+        return (result, f);
+    }
+
+    [Fact]
+    public async Task Usuario_inexistente_ejecuta_la_verificacion_simulada_y_nunca_consulta_mas()
+    {
+        var (result, f) = await LoginTracked(null, passwordOk: false);
+
+        f.PasswordHasher.Verify(h => h.SimulatePasswordVerification(Password), Times.Once);
+        f.PasswordHasher.Verify(h => h.VerifyPassword(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        result.Error.Should().Be(LoginHandler.InvalidCredentialsMessage);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Usuario_existente_con_contrasena_incorrecta_ejecuta_una_verificacion_real(bool active)
+    {
+        var user = NewUser();
+        if (!active)
+            user.Deactivate(CreatedBy);
+
+        var (result, f) = await LoginTracked(user, passwordOk: false);
+        var (nonexistent, _) = await LoginTracked(null, passwordOk: false);
+
+        f.PasswordHasher.Verify(h => h.VerifyPassword(Password, PasswordHash), Times.Once);
+        f.PasswordHasher.Verify(h => h.SimulatePasswordVerification(It.IsAny<string>()), Times.Never);
+        // Misma respuesta que el usuario inexistente → mismo 401 y mismo cuerpo en AuthController.
+        (result.Error, result.Code).Should().Be((nonexistent.Error, nonexistent.Code));
+    }
 }

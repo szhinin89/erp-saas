@@ -2,9 +2,10 @@ using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Common;
 using ERP.Application.Common.Exceptions;
+using ERP.Application.Common.Persistence;
 using ERP.Domain.Exceptions;
 using FluentValidation;
-using Microsoft.EntityFrameworkCore;
+using System.Reflection;
 using System.Text.Json;
 
 namespace ERP.API.Middleware;
@@ -17,19 +18,34 @@ public partial class ExceptionMiddleware
         Converters = { new ERP.API.Temporal.UtcInstantJsonConverter() },
     };
 
+    /// <summary>
+    /// Capas cuyo texto de excepción es un mensaje de negocio curado (reglas de dominio y de casos de
+    /// uso). Un <see cref="InvalidOperationException"/>/<see cref="ArgumentException"/> lanzado desde
+    /// cualquier otro código (framework: LINQ, EF Core, Nullable…; Infrastructure; API) es un error de
+    /// programación o de estado interno: su texto puede nombrar entidades, SQL o configuración.
+    /// </summary>
+    private static readonly Assembly[] CuratedMessageAssemblies =
+    [
+        typeof(CompanyScopeException).Assembly, // ERP.Domain
+        typeof(ApiResponseCodes).Assembly, // ERP.Application
+    ];
+
     private readonly RequestDelegate _next;
     private readonly ILogger<ExceptionMiddleware> _logger;
     private readonly IWebHostEnvironment _environment;
+    private readonly IDatabaseExceptionTranslator _databaseExceptions;
 
     public ExceptionMiddleware(
         RequestDelegate next,
         ILogger<ExceptionMiddleware> logger,
-        IWebHostEnvironment environment
+        IWebHostEnvironment environment,
+        IDatabaseExceptionTranslator databaseExceptions
     )
     {
         _next = next;
         _logger = logger;
         _environment = environment;
+        _databaseExceptions = databaseExceptions;
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -48,13 +64,14 @@ public partial class ExceptionMiddleware
         {
             // ValidationException es una condición esperada — no es un error del servidor.
             LogValidationError(ex.Errors.Count(), context.Request.Method, context.Request.Path);
-            await HandleExceptionAsync(context, ex, _environment);
+            await HandleExceptionAsync(context, ex);
         }
         catch (Exception ex)
         {
-            // Errores reales no controlados: loguear con nivel Error para alertas.
+            // Errores reales no controlados: loguear con nivel Error para alertas. El detalle
+            // técnico completo (SQL, conexión, stack, inner exceptions) queda SOLO aquí.
             LogUnhandledError(ex, context.Request.Method, context.Request.Path);
-            await HandleExceptionAsync(context, ex, _environment);
+            await HandleExceptionAsync(context, ex);
         }
     }
 
@@ -66,12 +83,59 @@ public partial class ExceptionMiddleware
         return ex is OperationCanceledException or TaskCanceledException;
     }
 
-    private static async Task HandleExceptionAsync(
-        HttpContext context,
-        Exception exception,
-        IWebHostEnvironment environment
-    )
+    /// <summary>
+    /// Clasificación única excepción → código (ZH-BACKEND-SECURITY-ERROR-FINAL-HARDENING-01). El
+    /// HTTP status sale de <see cref="ApiErrorStatus"/>; el texto solo viaja si <see cref="ExposesMessage"/>.
+    /// </summary>
+    internal string Classify(Exception exception) =>
+        exception switch
+        {
+            ValidationException => ApiResponseCodes.Common.ValidationError,
+            // ZH-DATETIME-UTC-GUARDRAILS-01: violación de invariante (DateTime sin normalizar a
+            // UTC) detectada por UtcDateTimeGuardInterceptor antes de tocar la base de datos — no
+            // es una caída/timeout de PostgreSQL, nunca debe salir como DATABASE_UNAVAILABLE.
+            UnspecifiedDateTimeKindException => ApiResponseCodes.Common.InvalidDateTimeKind,
+            // Excepciones semánticas antes que la clasificación técnica: CompanyRucAlreadyExists
+            // puede envolver la violación UNIQUE que la originó.
+            SriCommunicationException => ApiResponseCodes.Common.SriCommunicationError,
+            CompanyScopeException => ApiResponseCodes.Common.CompanyScopeForbidden,
+            BranchScopeException => ApiResponseCodes.Common.BranchScopeForbidden,
+            CompanyRucAlreadyExistsException => ApiResponseCodes.Common.CompanyRucAlreadyExists,
+            UnauthorizedAccessException => ApiResponseCodes.Common.Unauthorized,
+            // Base de datos: único punto de clasificación técnica (IDatabaseExceptionTranslator):
+            // no disponible → 503; UNIQUE/integridad/concurrencia → 409; SQL inesperado → 500.
+            _ when _databaseExceptions.ClassifyFailureCode(exception) is { } databaseCode =>
+                databaseCode,
+            ArgumentException => ApiResponseCodes.Common.BadRequest,
+            // Regla de negocio curada (Domain/Application) → 422; cualquier otro
+            // InvalidOperationException es un defecto interno → 500 sin texto.
+            InvalidOperationException when IsCuratedMessage(exception) =>
+                ApiResponseCodes.Common.DomainRuleViolation,
+            _ => ApiResponseCodes.Common.InternalError,
+        };
+
+    /// <summary>¿El texto de la excepción puede ir en <c>data.errors</c>? Solo si es un mensaje curado.</summary>
+    internal static bool ExposesMessage(Exception exception, string code) =>
+        !string.IsNullOrWhiteSpace(exception.Message)
+        && ApiErrorStatus.ExposesDetail(code)
+        && exception switch
+        {
+            CompanyScopeException
+            or BranchScopeException
+            or CompanyRucAlreadyExistsException
+            or SriCommunicationException => true,
+            ArgumentException or InvalidOperationException => IsCuratedMessage(exception),
+            _ => false,
+        };
+
+    /// <summary>Origen del <c>throw</c> (primer frame): Domain o Application.</summary>
+    private static bool IsCuratedMessage(Exception exception) =>
+        exception.TargetSite?.DeclaringType?.Assembly is { } origin
+        && CuratedMessageAssemblies.Contains(origin);
+
+    private async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
+        var environment = _environment;
         // Si la respuesta ya se inició (headers enviados), no podemos cambiar StatusCode ni ContentType.
         // Solo registrar en el log y abortar — el cliente recibirá lo que ya se envió.
         if (context.Response.HasStarted)
@@ -81,27 +145,7 @@ public partial class ExceptionMiddleware
 
         // Este middleware solo decide el `code` de cada excepción; el HTTP status sale de la misma
         // tabla única que usan los fallos de Result<T> (ApiErrorStatus, ADR-027 §9).
-        var code = exception switch
-        {
-            ValidationException => ApiResponseCodes.Common.ValidationError,
-            // FASE 7: Optimistic concurrency violation → 409 Conflict
-            DbUpdateConcurrencyException => ApiResponseCodes.Common.ConcurrencyConflict,
-            // ZH-DATETIME-UTC-GUARDRAILS-01: violación de invariante (DateTime sin normalizar a
-            // UTC) detectada por UtcDateTimeGuardInterceptor antes de tocar la base de datos — no
-            // es una caída/timeout de PostgreSQL, nunca debe salir como DATABASE_UNAVAILABLE.
-            UnspecifiedDateTimeKindException => ApiResponseCodes.Common.InvalidDateTimeKind,
-            DbUpdateException => ApiResponseCodes.Common.DatabaseUnavailable,
-            ArgumentException => ApiResponseCodes.Common.BadRequest,
-            InvalidOperationException => ApiResponseCodes.Common.DomainRuleViolation,
-            SriCommunicationException => ApiResponseCodes.Common.SriCommunicationError,
-            ERP.Domain.Exceptions.CompanyScopeException =>
-                ApiResponseCodes.Common.CompanyScopeForbidden,
-            ERP.Domain.Exceptions.BranchScopeException =>
-                ApiResponseCodes.Common.BranchScopeForbidden,
-            CompanyRucAlreadyExistsException => ApiResponseCodes.Common.CompanyRucAlreadyExists,
-            UnauthorizedAccessException => ApiResponseCodes.Common.Unauthorized,
-            _ => ApiResponseCodes.Common.InternalError,
-        };
+        var code = Classify(exception);
 
         context.Response.StatusCode = ApiErrorStatus.For(code);
 
@@ -122,22 +166,9 @@ public partial class ExceptionMiddleware
         }
         else
         {
-            var errors = exception switch
-            {
-                ArgumentException
-                or InvalidOperationException
-                or SriCommunicationException
-                or ERP.Domain.Exceptions.CompanyScopeException
-                or ERP.Domain.Exceptions.BranchScopeException
-                or CompanyRucAlreadyExistsException
-                    when !string.IsNullOrWhiteSpace(exception.Message)
-                        // 500/503 nunca exponen el texto de la excepción (misma regla que Result).
-                        && ApiErrorStatus.ExposesDetail(code) => new[]
-                {
-                    exception.Message.Trim(),
-                },
-                _ => Array.Empty<string>(),
-            };
+            var errors = ExposesMessage(exception, code)
+                ? new[] { exception.Message.Trim() }
+                : Array.Empty<string>();
             response = ResponseFactory.Error(context, environment, code, errors);
         }
 

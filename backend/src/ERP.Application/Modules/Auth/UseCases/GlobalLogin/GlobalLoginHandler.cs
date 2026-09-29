@@ -42,11 +42,15 @@ public sealed class GlobalLoginHandler
             cancellationToken
         );
 
-        // Sin enumeración: el estado de la cuenta solo se revela tras verificar la contraseña.
-        if (
-            identityUser is null
-            || !_passwordHasher.VerifyPassword(command.Password, identityUser.PasswordHash)
-        )
+        // Sin enumeración: el estado de la cuenta solo se revela tras verificar la contraseña, y el
+        // usuario inexistente ejecuta la misma verificación BCrypt contra un hash ficticio (tiempo).
+        if (identityUser is null)
+        {
+            _passwordHasher.SimulatePasswordVerification(command.Password);
+            return Result<AuthResponseDto>.Failure("Credenciales inválidas.");
+        }
+
+        if (!_passwordHasher.VerifyPassword(command.Password, identityUser.PasswordHash))
             return Result<AuthResponseDto>.Failure("Credenciales inválidas.");
 
         if (!identityUser.IsActive)

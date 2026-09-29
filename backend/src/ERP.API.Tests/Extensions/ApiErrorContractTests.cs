@@ -131,9 +131,12 @@ public sealed class ApiErrorContractTests
             { new ValidationException("x"), ApiResponseCodes.Common.ValidationError },
             { new DbUpdateConcurrencyException("x"), ApiResponseCodes.Common.ConcurrencyConflict },
             { new UnspecifiedDateTimeKindException("Entity", "At", DateTimeKind.Local), ApiResponseCodes.Common.InvalidDateTimeKind },
-            { new DbUpdateException("x"), ApiResponseCodes.Common.DatabaseUnavailable },
+            {
+                new DbUpdateException("x", new Npgsql.NpgsqlException("x", new System.Net.Sockets.SocketException(10061))),
+                ApiResponseCodes.Common.DatabaseUnavailable
+            },
             { new ArgumentException("x"), ApiResponseCodes.Common.BadRequest },
-            { new InvalidOperationException("x"), ApiResponseCodes.Common.DomainRuleViolation },
+            { DomainRuleException(), ApiResponseCodes.Common.DomainRuleViolation },
             { new SriCommunicationException("x"), ApiResponseCodes.Common.SriCommunicationError },
             { CompanyScopeException.AccessDenied(), ApiResponseCodes.Common.CompanyScopeForbidden },
             { BranchScopeException.AccessDenied(), ApiResponseCodes.Common.BranchScopeForbidden },
@@ -142,6 +145,24 @@ public sealed class ApiErrorContractTests
             { new NotSupportedException("x"), ApiResponseCodes.Common.InternalError },
         };
 
+    /// <summary>InvalidOperationException lanzado por el dominio real (regla de negocio curada).</summary>
+    internal static Exception DomainRuleException()
+    {
+        var warehouse = ERP.Domain.Modules.Inventory.Entities.Warehouse.Create(
+            Guid.NewGuid(), Guid.NewGuid(), "Bodega", "B1", null, null, null, null, null, null, null, null, null, Guid.NewGuid(), Guid.NewGuid()
+        );
+        warehouse.Disable(Guid.NewGuid());
+        try
+        {
+            warehouse.Disable(Guid.NewGuid());
+        }
+        catch (InvalidOperationException ex)
+        {
+            return ex;
+        }
+        throw new InvalidOperationException("El dominio debía rechazar la doble deshabilitación.");
+    }
+
     [Theory]
     [MemberData(nameof(ExceptionCodes))]
     public async Task Excepcion_y_Result_producen_el_mismo_status_y_code(Exception exception, string code)
@@ -149,9 +170,10 @@ public sealed class ApiErrorContractTests
         var context = new DefaultHttpContext();
         context.Response.Body = new MemoryStream();
         var middleware = new ExceptionMiddleware(
-            _ => throw exception,
+            _ => ExceptionClassificationTests.Rethrow(exception),
             NullLogger<ExceptionMiddleware>.Instance,
-            new StubWebHostEnvironment()
+            new StubWebHostEnvironment(),
+            new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator()
         );
 
         await middleware.InvokeAsync(context);
@@ -205,8 +227,10 @@ public sealed class ApiErrorContractTests
             { new Exception(Secret), 500, "Production" },
             { new Exception(Secret), 500, "Development" },
             { new TimeoutException(Secret), 500, "Development" },
-            { new DbUpdateException("An error occurred while saving the entity changes.", new Exception(Secret)), 503, "Production" },
-            { new DbUpdateException(Secret), 503, "Development" },
+            { new DbUpdateException("An error occurred while saving the entity changes.", new Npgsql.NpgsqlException(Secret, new TimeoutException(Secret))), 503, "Production" },
+            { new DbUpdateException(Secret, new Npgsql.NpgsqlException(Secret, new System.Net.Sockets.SocketException(10061))), 503, "Development" },
+            { new DbUpdateException(Secret), 500, "Development" },
+            { new InvalidOperationException(Secret), 500, "Development" },
         };
 
     [Theory]
@@ -216,9 +240,10 @@ public sealed class ApiErrorContractTests
         var context = new DefaultHttpContext();
         context.Response.Body = new MemoryStream();
         var middleware = new ExceptionMiddleware(
-            _ => throw exception,
+            _ => ExceptionClassificationTests.Rethrow(exception),
             NullLogger<ExceptionMiddleware>.Instance,
-            new StubWebHostEnvironment { EnvironmentName = environment }
+            new StubWebHostEnvironment { EnvironmentName = environment },
+            new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator()
         );
 
         await middleware.InvokeAsync(context);

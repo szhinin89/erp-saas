@@ -82,10 +82,15 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
         // contraseña incorrecta devuelven exactamente el mismo fallo, y el estado de la cuenta
         // (inactiva) solo se revela a quien ya probó la contraseña. Antes el texto distinguía
         // "no registrado" / "credenciales inválidas" / "inactivo" sin exigir la contraseña.
-        if (
-            identityUser is null
-            || !_passwordHasher.VerifyPassword(command.Password, identityUser.PasswordHash)
-        )
+        // ZH-BACKEND-SECURITY-ERROR-FINAL-HARDENING-01 — también sin enumeración por tiempo: el
+        // usuario inexistente ejecuta una verificación BCrypt equivalente contra un hash ficticio.
+        if (identityUser is null)
+        {
+            _passwordHasher.SimulatePasswordVerification(command.Password);
+            return Result<AuthResponseDto>.Failure(InvalidCredentialsMessage);
+        }
+
+        if (!_passwordHasher.VerifyPassword(command.Password, identityUser.PasswordHash))
             return Result<AuthResponseDto>.Failure(InvalidCredentialsMessage);
 
         if (!identityUser.IsActive)

@@ -134,13 +134,14 @@ public sealed class ResponseFactoryConsistencyTests
         string environmentName = "Production"
     )
     {
-        RequestDelegate next = _ => throw exceptionToThrow;
+        RequestDelegate next = _ => Extensions.ExceptionClassificationTests.Rethrow(exceptionToThrow);
 
         var environment = new FakeWebHostEnvironment { EnvironmentName = environmentName };
         var middleware = new ExceptionMiddleware(
             next,
             NullLogger<ExceptionMiddleware>.Instance,
-            environment
+            environment,
+            new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator()
         );
         var context = new DefaultHttpContext { TraceIdentifier = "trace-abc" };
         context.Response.Body = new MemoryStream();
@@ -169,9 +170,18 @@ public sealed class ResponseFactoryConsistencyTests
         };
         yield return new object[]
         {
-            new InvalidOperationException("Regla de negocio violada"),
+            // Regla de negocio lanzada por el dominio real (mensaje curado) → 422.
+            Extensions.ApiErrorContractTests.DomainRuleException(),
             (int)HttpStatusCode.UnprocessableEntity,
             ApiResponseCodes.Common.DomainRuleViolation,
+        };
+        yield return new object[]
+        {
+            // ZH-BACKEND-SECURITY-ERROR-FINAL-HARDENING-01: fuera de Domain/Application es un
+            // defecto interno → 500 sin texto.
+            new InvalidOperationException("Regla de negocio violada"),
+            (int)HttpStatusCode.InternalServerError,
+            ApiResponseCodes.Common.InternalError,
         };
         yield return new object[]
         {
