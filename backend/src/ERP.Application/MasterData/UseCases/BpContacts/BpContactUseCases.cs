@@ -31,6 +31,7 @@ public sealed record CreateBpContactCommand(
 ) : IRequest<Result<BpContactDto>>, ITenantScopedRequest;
 
 public sealed record UpdateBpContactCommand(
+    Guid BusinessPartnerId,
     Guid ContactId,
     string FirstName,
     ContactRole Role,
@@ -44,15 +45,15 @@ public sealed record UpdateBpContactCommand(
     string? OtherDescription = null
 ) : IRequest<Result<BpContactDto>>, ITenantScopedRequest;
 
-public sealed record SetPrimaryBpContactCommand(Guid ContactId)
+public sealed record SetPrimaryBpContactCommand(Guid BusinessPartnerId, Guid ContactId)
     : IRequest<Result<bool>>,
         ITenantScopedRequest;
 
-public sealed record DeactivateBpContactCommand(Guid ContactId)
+public sealed record DeactivateBpContactCommand(Guid BusinessPartnerId, Guid ContactId)
     : IRequest<Result<bool>>,
         ITenantScopedRequest;
 
-public sealed record ActivateBpContactCommand(Guid ContactId)
+public sealed record ActivateBpContactCommand(Guid BusinessPartnerId, Guid ContactId)
     : IRequest<Result<bool>>,
         ITenantScopedRequest;
 
@@ -62,7 +63,7 @@ public sealed record GetBpContactsQuery(Guid BusinessPartnerId, bool? OnlyActive
     : IRequest<Result<IReadOnlyList<BpContactDto>>>,
         ITenantScopedRequest;
 
-public sealed record GetBpContactByIdQuery(Guid ContactId)
+public sealed record GetBpContactByIdQuery(Guid BusinessPartnerId, Guid ContactId)
     : IRequest<Result<BpContactDto>>,
         ITenantScopedRequest;
 
@@ -98,6 +99,7 @@ public sealed class UpdateBpContactValidator : AbstractValidator<UpdateBpContact
 {
     public UpdateBpContactValidator()
     {
+        RuleFor(x => x.BusinessPartnerId).NotEmpty();
         RuleFor(x => x.ContactId).NotEmpty();
         RuleFor(x => x.FirstName).NotEmpty().MaximumLength(BusinessPartnerContact.FirstNameMaxLen);
         RuleFor(x => x.Role).IsInEnum();
@@ -111,19 +113,38 @@ public sealed class UpdateBpContactValidator : AbstractValidator<UpdateBpContact
 public sealed class CreateBpContactHandler
     : IRequestHandler<CreateBpContactCommand, Result<BpContactDto>>
 {
+    private readonly IBusinessPartnerRepository _bpRepo;
     private readonly IBusinessPartnerContactRepository _contactRepo;
+    private readonly IBusinessPartnerLocationRepository _locRepo;
     private readonly IOperationalContext _ctx;
 
     public CreateBpContactHandler(
+        IBusinessPartnerRepository bpRepo,
         IBusinessPartnerContactRepository contactRepo,
+        IBusinessPartnerLocationRepository locRepo,
         IOperationalContext ctx
-    ) => (_contactRepo, _ctx) = (contactRepo, ctx);
+    ) => (_bpRepo, _contactRepo, _locRepo, _ctx) = (bpRepo, contactRepo, locRepo, ctx);
 
     public async Task<Result<BpContactDto>> Handle(
         CreateBpContactCommand cmd,
         CancellationToken cancellationToken
     )
     {
+        // ZH-BP-NESTED-RESOURCE-OWNERSHIP-01: el bpId de la ruta debe ser un BP visible en el
+        // scope (el repositorio aplica el query filter de tenant) — nunca crear hijos colgando
+        // de un BP de otro tenant o inexistente.
+        if (await _bpRepo.GetByIdAsync(cmd.BusinessPartnerId, cancellationToken) is null)
+            return Result<BpContactDto>.NotFound("BusinessPartner no encontrado.");
+
+        var locationError = await BpContactLocationGuard.ValidateAsync(
+            _locRepo,
+            cmd.BusinessPartnerId,
+            cmd.LocationId,
+            cancellationToken
+        );
+        if (locationError is not null)
+            return Result<BpContactDto>.ValidationFailure(locationError);
+
         if (cmd.IsPrimary)
             await _contactRepo.ClearPrimaryAsync(cmd.BusinessPartnerId, cancellationToken);
 
@@ -162,12 +183,14 @@ public sealed class UpdateBpContactHandler
     : IRequestHandler<UpdateBpContactCommand, Result<BpContactDto>>
 {
     private readonly IBusinessPartnerContactRepository _contactRepo;
+    private readonly IBusinessPartnerLocationRepository _locRepo;
     private readonly IOperationalContext _ctx;
 
     public UpdateBpContactHandler(
         IBusinessPartnerContactRepository contactRepo,
+        IBusinessPartnerLocationRepository locRepo,
         IOperationalContext ctx
-    ) => (_contactRepo, _ctx) = (contactRepo, ctx);
+    ) => (_contactRepo, _locRepo, _ctx) = (contactRepo, locRepo, ctx);
 
     public async Task<Result<BpContactDto>> Handle(
         UpdateBpContactCommand cmd,
@@ -175,8 +198,17 @@ public sealed class UpdateBpContactHandler
     )
     {
         var contact = await _contactRepo.GetByIdAsync(cmd.ContactId, cancellationToken);
-        if (contact is null)
+        if (contact is null || contact.BusinessPartnerId != cmd.BusinessPartnerId)
             return Result<BpContactDto>.NotFound("Contacto no encontrado.");
+
+        var locationError = await BpContactLocationGuard.ValidateAsync(
+            _locRepo,
+            cmd.BusinessPartnerId,
+            cmd.LocationId,
+            cancellationToken
+        );
+        if (locationError is not null)
+            return Result<BpContactDto>.ValidationFailure(locationError);
 
         try
         {
@@ -225,7 +257,7 @@ public sealed class SetPrimaryBpContactHandler
     )
     {
         var contact = await _contactRepo.GetByIdAsync(cmd.ContactId, cancellationToken);
-        if (contact is null)
+        if (contact is null || contact.BusinessPartnerId != cmd.BusinessPartnerId)
             return Result<bool>.NotFound("Contacto no encontrado.");
 
         await _contactRepo.ClearPrimaryAsync(contact.BusinessPartnerId, cancellationToken);
@@ -261,7 +293,7 @@ public sealed class DeactivateBpContactHandler
     )
     {
         var contact = await _contactRepo.GetByIdAsync(cmd.ContactId, cancellationToken);
-        if (contact is null)
+        if (contact is null || contact.BusinessPartnerId != cmd.BusinessPartnerId)
             return Result<bool>.NotFound("Contacto no encontrado.");
 
         try
@@ -295,7 +327,7 @@ public sealed class ActivateBpContactHandler
     )
     {
         var contact = await _contactRepo.GetByIdAsync(cmd.ContactId, cancellationToken);
-        if (contact is null)
+        if (contact is null || contact.BusinessPartnerId != cmd.BusinessPartnerId)
             return Result<bool>.NotFound("Contacto no encontrado.");
 
         try
@@ -350,8 +382,35 @@ public sealed class GetBpContactByIdHandler
     )
     {
         var contact = await _contactRepo.GetByIdAsync(q.ContactId, cancellationToken);
-        return contact is null
+        return contact is null || contact.BusinessPartnerId != q.BusinessPartnerId
             ? Result<BpContactDto>.NotFound("Contacto no encontrado.")
             : Result<BpContactDto>.Success(BpContactDto.From(contact));
+    }
+}
+
+/// <summary>
+/// ZH-BP-NESTED-RESOURCE-OWNERSHIP-01 — la LocationId opcional de un contacto debe ser una
+/// ubicación del mismo BusinessPartner. Mismo mensaje si no existe o es de otro BP: no revela
+/// existencia cross-parent.
+/// </summary>
+internal static class BpContactLocationGuard
+{
+    internal const string InvalidLocationMessage =
+        "La ubicación indicada no pertenece a este BusinessPartner.";
+
+    internal static async Task<string?> ValidateAsync(
+        IBusinessPartnerLocationRepository locRepo,
+        Guid businessPartnerId,
+        Guid? locationId,
+        CancellationToken cancellationToken
+    )
+    {
+        if (locationId is not Guid id)
+            return null;
+
+        var location = await locRepo.GetByIdAsync(id, cancellationToken);
+        return location is null || location.BusinessPartnerId != businessPartnerId
+            ? InvalidLocationMessage
+            : null;
     }
 }

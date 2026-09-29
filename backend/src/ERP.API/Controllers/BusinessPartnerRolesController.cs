@@ -132,9 +132,8 @@ public sealed class BusinessPartnerRolesController : ControllerBase
         CancellationToken cancellationToken = default
     )
     {
-        _ = bpId; // el filtro de tenant garantiza que roleId pertenece al tenant
         var result = await _mediator.Send(
-            new RevokeBusinessPartnerRoleCommand(roleId),
+            new RevokeBusinessPartnerRoleCommand(bpId, roleId),
             cancellationToken
         );
         return this.ToOkOrBadRequest(result);
@@ -154,7 +153,6 @@ public sealed class BusinessPartnerRolesController : ControllerBase
         CancellationToken cancellationToken = default
     )
     {
-        _ = bpId;
         SupplierRoleConfig config;
         try
         {
@@ -172,7 +170,7 @@ public sealed class BusinessPartnerRolesController : ControllerBase
         }
 
         var result = await _mediator.Send(
-            new UpdateSupplierRoleConfigCommand(roleId, config),
+            new UpdateSupplierRoleConfigCommand(bpId, roleId, config),
             cancellationToken
         );
         return this.ToOkOrBadRequest(result);
@@ -190,7 +188,6 @@ public sealed class BusinessPartnerRolesController : ControllerBase
         CancellationToken cancellationToken = default
     )
     {
-        _ = bpId;
         CarrierRoleConfig config;
         try
         {
@@ -205,7 +202,7 @@ public sealed class BusinessPartnerRolesController : ControllerBase
         }
 
         var result = await _mediator.Send(
-            new UpdateCarrierRoleConfigCommand(roleId, config),
+            new UpdateCarrierRoleConfigCommand(bpId, roleId, config),
             cancellationToken
         );
         return this.ToOkOrBadRequest(result);
@@ -227,7 +224,6 @@ public sealed class BusinessPartnerRolesController : ControllerBase
         CancellationToken cancellationToken = default
     )
     {
-        _ = bpId;
         CustomerRoleConfig config;
         try
         {
@@ -247,7 +243,7 @@ public sealed class BusinessPartnerRolesController : ControllerBase
         }
 
         var result = await _mediator.Send(
-            new UpdateCustomerRoleConfigCommand(roleId, config),
+            new UpdateCustomerRoleConfigCommand(bpId, roleId, config),
             cancellationToken
         );
         return this.ToOkOrBadRequest(result);
@@ -264,9 +260,8 @@ public sealed class BusinessPartnerRolesController : ControllerBase
         CancellationToken cancellationToken = default
     )
     {
-        _ = bpId;
         var result = await _mediator.Send(
-            new UpdateRoleNotesCommand(roleId, body.Notes),
+            new UpdateRoleNotesCommand(bpId, roleId, body.Notes),
             cancellationToken
         );
         return this.ToOkOrBadRequest(result);

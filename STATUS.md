@@ -2,6 +2,14 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-28** · Kernel refactor: **2026-06-05**.
 
+## ZH-BP-NESTED-RESOURCE-OWNERSHIP-01 — Ownership de rutas anidadas de Business Partners (2026-09-28)
+
+**Estado: COMPLETADO.** Las 15 rutas `/business-partners/{bpId}/(roles|contacts|locations)/{childId}` descartaban `bpId` (`_ = bpId`) y los handlers solo recibían el id hijo: dentro del mismo tenant, un hijo de BP-B se consultaba/modificaba con el bpId de BP-A.
+- Application: `BusinessPartnerId` agregado a los 15 commands/queries; cada handler exige `child.BusinessPartnerId == bpId` y responde el mismo NotFound que un id inexistente (sin revelar existencia cross-parent). Validators con `BusinessPartnerId.NotEmpty()`; el bypass legacy de `CustomerClassification` ya no lee el valor de un rol de otro BP (evita oráculo 400/404).
+- Mismo tipo de hueco, también cerrado: `POST contacts|locations` valida que el BP de la ruta exista en el scope (antes creaba hijos colgando de un BP de otro tenant); la `LocationId` de un contacto (create/update) debe ser del mismo BP (el comentario decía "validado en handler" pero no lo estaba).
+- Controllers: usan el bpId real; URLs, payloads y permisos sin cambios. Único cambio público: el caso inválido responde 404 (400 para `LocationId` ajena).
+- Evidencia: Application 2358 · Architecture 116 · API 514/515 (falla preexistente `PG_unique_business_partner_identification_enforced`, falla igual en `HEAD`) · PostgreSQL MasterData 15/15 (incluye 5 nuevos de ownership) · `architecture:check` sin cambios (58/100, 21 warnings, 0 nuevas).
+
 ## ZH-ARCH-CSS-PREFIXES-02 — Barra de filtros propia de Bancos; baseline en 0 (2026-09-28)
 
 **Estado: COMPLETADO.** Últimas 6 `css-prefixes` resueltas; el baseline versionado queda vacío (`violations: []`, `byCheck: {}`).

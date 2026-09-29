@@ -32,6 +32,7 @@ public sealed record CreateBpLocationCommand(
 ) : IRequest<Result<BpLocationDto>>, ITenantScopedRequest;
 
 public sealed record UpdateBpLocationCommand(
+    Guid BusinessPartnerId,
     Guid LocationId,
     string Name,
     LocationType Type,
@@ -45,15 +46,15 @@ public sealed record UpdateBpLocationCommand(
     string? OtherDescription = null
 ) : IRequest<Result<BpLocationDto>>, ITenantScopedRequest;
 
-public sealed record SetPrimaryBpLocationCommand(Guid LocationId)
+public sealed record SetPrimaryBpLocationCommand(Guid BusinessPartnerId, Guid LocationId)
     : IRequest<Result<bool>>,
         ITenantScopedRequest;
 
-public sealed record DeactivateBpLocationCommand(Guid LocationId)
+public sealed record DeactivateBpLocationCommand(Guid BusinessPartnerId, Guid LocationId)
     : IRequest<Result<bool>>,
         ITenantScopedRequest;
 
-public sealed record ActivateBpLocationCommand(Guid LocationId)
+public sealed record ActivateBpLocationCommand(Guid BusinessPartnerId, Guid LocationId)
     : IRequest<Result<bool>>,
         ITenantScopedRequest;
 
@@ -63,7 +64,7 @@ public sealed record GetBpLocationsQuery(Guid BusinessPartnerId, bool? OnlyActiv
     : IRequest<Result<IReadOnlyList<BpLocationDto>>>,
         ITenantScopedRequest;
 
-public sealed record GetBpLocationByIdQuery(Guid LocationId)
+public sealed record GetBpLocationByIdQuery(Guid BusinessPartnerId, Guid LocationId)
     : IRequest<Result<BpLocationDto>>,
         ITenantScopedRequest;
 
@@ -101,6 +102,7 @@ public sealed class UpdateBpLocationValidator : AbstractValidator<UpdateBpLocati
 {
     public UpdateBpLocationValidator()
     {
+        RuleFor(x => x.BusinessPartnerId).NotEmpty();
         RuleFor(x => x.LocationId).NotEmpty();
         RuleFor(x => x.Name).NotEmpty().MaximumLength(BusinessPartnerLocation.NameMaxLen);
         RuleFor(x => x.Type).IsInEnum();
@@ -115,19 +117,27 @@ public sealed class UpdateBpLocationValidator : AbstractValidator<UpdateBpLocati
 public sealed class CreateBpLocationHandler
     : IRequestHandler<CreateBpLocationCommand, Result<BpLocationDto>>
 {
+    private readonly IBusinessPartnerRepository _bpRepo;
     private readonly IBusinessPartnerLocationRepository _locRepo;
     private readonly IOperationalContext _ctx;
 
     public CreateBpLocationHandler(
+        IBusinessPartnerRepository bpRepo,
         IBusinessPartnerLocationRepository locRepo,
         IOperationalContext ctx
-    ) => (_locRepo, _ctx) = (locRepo, ctx);
+    ) => (_bpRepo, _locRepo, _ctx) = (bpRepo, locRepo, ctx);
 
     public async Task<Result<BpLocationDto>> Handle(
         CreateBpLocationCommand cmd,
         CancellationToken cancellationToken
     )
     {
+        // ZH-BP-NESTED-RESOURCE-OWNERSHIP-01: el bpId de la ruta debe ser un BP visible en el
+        // scope (el repositorio aplica el query filter de tenant) — nunca crear hijos colgando
+        // de un BP de otro tenant o inexistente.
+        if (await _bpRepo.GetByIdAsync(cmd.BusinessPartnerId, cancellationToken) is null)
+            return Result<BpLocationDto>.NotFound("BusinessPartner no encontrado.");
+
         if (cmd.IsPrimary)
             await _locRepo.ClearPrimaryAsync(cmd.BusinessPartnerId, cancellationToken);
 
@@ -179,7 +189,7 @@ public sealed class UpdateBpLocationHandler
     )
     {
         var loc = await _locRepo.GetByIdAsync(cmd.LocationId, cancellationToken);
-        if (loc is null)
+        if (loc is null || loc.BusinessPartnerId != cmd.BusinessPartnerId)
             return Result<BpLocationDto>.NotFound("Ubicación no encontrada.");
 
         try
@@ -229,7 +239,7 @@ public sealed class SetPrimaryBpLocationHandler
     )
     {
         var loc = await _locRepo.GetByIdAsync(cmd.LocationId, cancellationToken);
-        if (loc is null)
+        if (loc is null || loc.BusinessPartnerId != cmd.BusinessPartnerId)
             return Result<bool>.NotFound("Ubicación no encontrada.");
 
         await _locRepo.ClearPrimaryAsync(loc.BusinessPartnerId, cancellationToken);
@@ -265,7 +275,7 @@ public sealed class DeactivateBpLocationHandler
     )
     {
         var loc = await _locRepo.GetByIdAsync(cmd.LocationId, cancellationToken);
-        if (loc is null)
+        if (loc is null || loc.BusinessPartnerId != cmd.BusinessPartnerId)
             return Result<bool>.NotFound("Ubicación no encontrada.");
 
         // Verificar contactos activos antes de desactivar (Problema 7, Fase 4)
@@ -306,7 +316,7 @@ public sealed class ActivateBpLocationHandler
     )
     {
         var loc = await _locRepo.GetByIdAsync(cmd.LocationId, cancellationToken);
-        if (loc is null)
+        if (loc is null || loc.BusinessPartnerId != cmd.BusinessPartnerId)
             return Result<bool>.NotFound("Ubicación no encontrada.");
 
         try
@@ -360,7 +370,7 @@ public sealed class GetBpLocationByIdHandler
     )
     {
         var loc = await _locRepo.GetByIdAsync(q.LocationId, cancellationToken);
-        return loc is null
+        return loc is null || loc.BusinessPartnerId != q.BusinessPartnerId
             ? Result<BpLocationDto>.NotFound("Ubicación no encontrada.")
             : Result<BpLocationDto>.Success(BpLocationDto.From(loc));
     }

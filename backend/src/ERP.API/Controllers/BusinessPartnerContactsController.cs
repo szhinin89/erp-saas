@@ -67,8 +67,7 @@ public sealed class BusinessPartnerContactsController : ControllerBase
         CancellationToken cancellationToken = default
     )
     {
-        _ = bpId;
-        var result = await _mediator.Send(new GetBpContactByIdQuery(contactId), cancellationToken);
+        var result = await _mediator.Send(new GetBpContactByIdQuery(bpId, contactId), cancellationToken);
         return this.ToOkOrBadRequest(result);
     }
 
@@ -119,8 +118,8 @@ public sealed class BusinessPartnerContactsController : ControllerBase
         CancellationToken cancellationToken = default
     )
     {
-        _ = bpId;
         var cmd = new UpdateBpContactCommand(
+            bpId,
             contactId,
             body.FirstName,
             body.Role,
@@ -152,9 +151,8 @@ public sealed class BusinessPartnerContactsController : ControllerBase
         CancellationToken cancellationToken = default
     )
     {
-        _ = bpId;
         var result = await _mediator.Send(
-            new SetPrimaryBpContactCommand(contactId),
+            new SetPrimaryBpContactCommand(bpId, contactId),
             cancellationToken
         );
         return this.ToOkOrBadRequest(result);
@@ -170,9 +168,8 @@ public sealed class BusinessPartnerContactsController : ControllerBase
         CancellationToken cancellationToken = default
     )
     {
-        _ = bpId;
         var result = await _mediator.Send(
-            new ActivateBpContactCommand(contactId),
+            new ActivateBpContactCommand(bpId, contactId),
             cancellationToken
         );
         return this.ToOkOrBadRequest(result);
@@ -189,9 +186,8 @@ public sealed class BusinessPartnerContactsController : ControllerBase
         CancellationToken cancellationToken = default
     )
     {
-        _ = bpId;
         var result = await _mediator.Send(
-            new DeactivateBpContactCommand(contactId),
+            new DeactivateBpContactCommand(bpId, contactId),
             cancellationToken
         );
         return this.ToOkOrBadRequest(result);

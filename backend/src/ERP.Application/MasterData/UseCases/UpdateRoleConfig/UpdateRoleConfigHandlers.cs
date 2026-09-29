@@ -22,7 +22,7 @@ public sealed class UpdateSupplierRoleConfigHandler
     )
     {
         var role = await _roleRepo.GetByIdAsync(cmd.RoleId, cancellationToken);
-        if (role is null)
+        if (role is null || role.BusinessPartnerId != cmd.BusinessPartnerId)
             return Result<BusinessPartnerRoleDto>.NotFound("Rol no encontrado.");
 
         try
@@ -60,7 +60,7 @@ public sealed class UpdateCarrierRoleConfigHandler
     )
     {
         var role = await _roleRepo.GetByIdAsync(cmd.RoleId, cancellationToken);
-        if (role is null)
+        if (role is null || role.BusinessPartnerId != cmd.BusinessPartnerId)
             return Result<BusinessPartnerRoleDto>.NotFound("Rol no encontrado.");
 
         try
@@ -98,7 +98,7 @@ public sealed class UpdateCustomerRoleConfigHandler
     )
     {
         var role = await _roleRepo.GetByIdAsync(cmd.RoleId, cancellationToken);
-        if (role is null)
+        if (role is null || role.BusinessPartnerId != cmd.BusinessPartnerId)
             return Result<BusinessPartnerRoleDto>.NotFound("Rol no encontrado.");
 
         try
@@ -135,7 +135,7 @@ public sealed class UpdateRoleNotesHandler : IRequestHandler<UpdateRoleNotesComm
     )
     {
         var role = await _roleRepo.GetByIdAsync(cmd.RoleId, cancellationToken);
-        if (role is null)
+        if (role is null || role.BusinessPartnerId != cmd.BusinessPartnerId)
             return Result<bool>.NotFound("Rol no encontrado.");
 
         try

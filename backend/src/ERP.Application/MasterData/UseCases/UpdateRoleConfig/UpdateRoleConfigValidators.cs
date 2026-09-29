@@ -21,6 +21,9 @@ public sealed class UpdateSupplierRoleConfigValidator
 {
     public UpdateSupplierRoleConfigValidator(ISriCatalogLookupRepository catalogRepo)
     {
+        RuleFor(x => x.BusinessPartnerId)
+            .NotEmpty()
+            .WithMessage("BusinessPartnerId es obligatorio.");
         RuleFor(x => x.RoleId).NotEmpty().WithMessage("RoleId es obligatorio.");
         RuleFor(x => x.Config).NotNull().WithMessage("Config es obligatoria.");
 
@@ -59,6 +62,9 @@ public sealed class UpdateCarrierRoleConfigValidator
 {
     public UpdateCarrierRoleConfigValidator()
     {
+        RuleFor(x => x.BusinessPartnerId)
+            .NotEmpty()
+            .WithMessage("BusinessPartnerId es obligatorio.");
         RuleFor(x => x.RoleId).NotEmpty().WithMessage("RoleId es obligatorio.");
         RuleFor(x => x.Config).NotNull().WithMessage("Config es obligatoria.");
 
@@ -104,6 +110,9 @@ public sealed class UpdateCustomerRoleConfigValidator
         ERP.Application.Common.ICurrentCompany company
     )
     {
+        RuleFor(x => x.BusinessPartnerId)
+            .NotEmpty()
+            .WithMessage("BusinessPartnerId es obligatorio.");
         RuleFor(x => x.RoleId).NotEmpty().WithMessage("RoleId es obligatorio.");
         RuleFor(x => x.Config).NotNull().WithMessage("Config es obligatoria.");
 
@@ -200,8 +209,13 @@ public sealed class UpdateCustomerRoleConfigValidator
                     .MustAsync(
                         async (cmd, v, ct) =>
                         {
+                            // Solo un rol del BP de la ruta aporta su valor actual: un rol de otro
+                            // BP se trata como inexistente (no revela existencia ni valor guardado).
                             var role = await roleRepo.GetByIdAsync(cmd.RoleId, ct);
-                            var currentValue = role?.CustomerConfig?.CustomerClassification;
+                            var currentValue =
+                                role?.BusinessPartnerId == cmd.BusinessPartnerId
+                                    ? role.CustomerConfig?.CustomerClassification
+                                    : null;
                             if (
                                 currentValue is not null
                                 && string.Equals(currentValue, v, StringComparison.Ordinal)

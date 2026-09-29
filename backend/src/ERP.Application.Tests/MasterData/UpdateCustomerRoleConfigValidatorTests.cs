@@ -19,6 +19,7 @@ public sealed class UpdateCustomerRoleConfigValidatorTests
 {
     private static readonly Guid TenantId = Guid.NewGuid();
     private static readonly Guid CompanyId = Guid.NewGuid();
+    private static readonly Guid BpId = Guid.NewGuid();
     private static readonly Guid RoleId = Guid.NewGuid();
     private static readonly Guid ActorId = Guid.NewGuid();
 
@@ -59,6 +60,7 @@ public sealed class UpdateCustomerRoleConfigValidatorTests
             .ReturnsAsync(true);
 
         var cmd = new UpdateCustomerRoleConfigCommand(
+            BpId,
             RoleId,
             CustomerRoleConfig.Create(customerCategory: "Retail")
         );
@@ -76,6 +78,7 @@ public sealed class UpdateCustomerRoleConfigValidatorTests
             .ReturnsAsync(false);
 
         var cmd = new UpdateCustomerRoleConfigCommand(
+            BpId,
             RoleId,
             CustomerRoleConfig.Create(customerCategory: "NoExiste")
         );
@@ -88,7 +91,7 @@ public sealed class UpdateCustomerRoleConfigValidatorTests
     [Fact]
     public async Task CustomerCategory_null_es_valido_sin_consultar_el_catalogo()
     {
-        var cmd = new UpdateCustomerRoleConfigCommand(RoleId, CustomerRoleConfig.Create());
+        var cmd = new UpdateCustomerRoleConfigCommand(BpId, RoleId, CustomerRoleConfig.Create());
 
         var result = await CreateValidator().ValidateAsync(cmd);
 
@@ -110,7 +113,7 @@ public sealed class UpdateCustomerRoleConfigValidatorTests
         // Valor legacy fuera del catálogo sembrado, pero el usuario NO lo está cambiando.
         var role = BusinessPartnerRole.Create(
             TenantId,
-            Guid.NewGuid(),
+            BpId,
             RoleType.Customer,
             ActorId,
             customerConfig: CustomerRoleConfig.Create(customerClassification: "LegacyValue")
@@ -118,6 +121,7 @@ public sealed class UpdateCustomerRoleConfigValidatorTests
         _roleRepo.Setup(r => r.GetByIdAsync(RoleId, It.IsAny<CancellationToken>())).ReturnsAsync(role);
 
         var cmd = new UpdateCustomerRoleConfigCommand(
+            BpId,
             RoleId,
             CustomerRoleConfig.Create(customerClassification: "LegacyValue")
         );
@@ -141,7 +145,7 @@ public sealed class UpdateCustomerRoleConfigValidatorTests
     {
         var role = BusinessPartnerRole.Create(
             TenantId,
-            Guid.NewGuid(),
+            BpId,
             RoleType.Customer,
             ActorId,
             customerConfig: CustomerRoleConfig.Create(customerClassification: "Nacional")
@@ -154,8 +158,40 @@ public sealed class UpdateCustomerRoleConfigValidatorTests
             .ReturnsAsync(false);
 
         var cmd = new UpdateCustomerRoleConfigCommand(
+            BpId,
             RoleId,
             CustomerRoleConfig.Create(customerClassification: "OtroValor")
+        );
+
+        var result = await CreateValidator().ValidateAsync(cmd);
+
+        result.Errors.Should().Contain(e => e.PropertyName.Contains("CustomerClassification"));
+    }
+
+    [Fact]
+    public async Task CustomerClassification_de_rol_de_otro_BP_no_usa_bypass_legacy()
+    {
+        // ZH-BP-NESTED-RESOURCE-OWNERSHIP-01: el valor guardado de un rol de OTRO BP no puede
+        // habilitar el bypass — si lo hiciera, la respuesta (400 vs 404) revelaría que el rol
+        // existe y cuál es su valor. Se valida contra el catálogo como si el rol no existiera.
+        var role = BusinessPartnerRole.Create(
+            TenantId,
+            Guid.NewGuid(),
+            RoleType.Customer,
+            ActorId,
+            customerConfig: CustomerRoleConfig.Create(customerClassification: "LegacyValue")
+        );
+        _roleRepo.Setup(r => r.GetByIdAsync(RoleId, It.IsAny<CancellationToken>())).ReturnsAsync(role);
+        _classificationRepo
+            .Setup(r =>
+                r.CodeExistsActiveAsync(TenantId, CompanyId, "LegacyValue", It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(false);
+
+        var cmd = new UpdateCustomerRoleConfigCommand(
+            BpId,
+            RoleId,
+            CustomerRoleConfig.Create(customerClassification: "LegacyValue")
         );
 
         var result = await CreateValidator().ValidateAsync(cmd);

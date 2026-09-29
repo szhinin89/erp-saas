@@ -24,7 +24,7 @@ public sealed class RevokeBusinessPartnerRoleHandler
         // cuando el módulo de documentos esté implementado.
 
         var role = await _roleRepo.GetByIdAsync(cmd.RoleId, cancellationToken);
-        if (role is null)
+        if (role is null || role.BusinessPartnerId != cmd.BusinessPartnerId)
             return Result<bool>.NotFound("Rol no encontrado.");
 
         try

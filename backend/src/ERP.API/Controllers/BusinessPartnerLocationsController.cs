@@ -63,9 +63,8 @@ public sealed class BusinessPartnerLocationsController : ControllerBase
         CancellationToken cancellationToken = default
     )
     {
-        _ = bpId;
         var result = await _mediator.Send(
-            new GetBpLocationByIdQuery(locationId),
+            new GetBpLocationByIdQuery(bpId, locationId),
             cancellationToken
         );
         return this.ToOkOrBadRequest(result);
@@ -119,8 +118,8 @@ public sealed class BusinessPartnerLocationsController : ControllerBase
         CancellationToken cancellationToken = default
     )
     {
-        _ = bpId;
         var cmd = new UpdateBpLocationCommand(
+            bpId,
             locationId,
             body.Name,
             body.Type,
@@ -152,9 +151,8 @@ public sealed class BusinessPartnerLocationsController : ControllerBase
         CancellationToken cancellationToken = default
     )
     {
-        _ = bpId;
         var result = await _mediator.Send(
-            new SetPrimaryBpLocationCommand(locationId),
+            new SetPrimaryBpLocationCommand(bpId, locationId),
             cancellationToken
         );
         return this.ToOkOrBadRequest(result);
@@ -170,9 +168,8 @@ public sealed class BusinessPartnerLocationsController : ControllerBase
         CancellationToken cancellationToken = default
     )
     {
-        _ = bpId;
         var result = await _mediator.Send(
-            new ActivateBpLocationCommand(locationId),
+            new ActivateBpLocationCommand(bpId, locationId),
             cancellationToken
         );
         return this.ToOkOrBadRequest(result);
@@ -192,9 +189,8 @@ public sealed class BusinessPartnerLocationsController : ControllerBase
         CancellationToken cancellationToken = default
     )
     {
-        _ = bpId;
         var result = await _mediator.Send(
-            new DeactivateBpLocationCommand(locationId),
+            new DeactivateBpLocationCommand(bpId, locationId),
             cancellationToken
         );
         return this.ToOkOrBadRequest(result);

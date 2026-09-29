@@ -18,6 +18,7 @@ namespace ERP.Application.Tests.MasterData;
 /// </summary>
 public sealed class UpdateSupplierRoleConfigValidatorTests
 {
+    private static readonly Guid BpId = Guid.NewGuid();
     private static readonly Guid RoleId = Guid.NewGuid();
 
     private readonly Mock<ISriCatalogLookupRepository> _catalogRepo = new();
@@ -25,7 +26,7 @@ public sealed class UpdateSupplierRoleConfigValidatorTests
     private UpdateSupplierRoleConfigValidator CreateValidator() => new(_catalogRepo.Object);
 
     private static UpdateSupplierRoleConfigCommand CommandWith(SupplierRoleConfig config) =>
-        new(RoleId, config);
+        new(BpId, RoleId, config);
 
     // ── DefaultTaxSupportCode ────────────────────────────────────────────────
 
