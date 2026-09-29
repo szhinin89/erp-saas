@@ -75,8 +75,8 @@ public sealed class MediaUploadEndpointsContractTests
         var mediator = new StubMediator(mediatorHandler);
         return endpoint switch
         {
-            "companies/logo" => WithContext(new CompaniesController(mediator)).UploadLogo(file),
-            "companies/logo-alt" => WithContext(new CompaniesController(mediator)).UploadLogoAlt(file),
+            "companies/logo" => WithContext(new CompanyProfileController(mediator)).UploadLogo(file),
+            "companies/logo-alt" => WithContext(new CompanyProfileController(mediator)).UploadLogoAlt(file),
             "sri/certificate" => WithContext(new ElectronicInvoicingController(mediator)).UploadCertificate(file),
             "initial-load/upload" => WithContext(new InitialLoadController(mediator)).Upload(Guid.NewGuid(), file, default),
             "purchase-reception/import" => WithContext(new PurchaseReceptionController(mediator)).Import(file, default),

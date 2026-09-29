@@ -1,0 +1,750 @@
+{
+  "paths": {
+    "/api/v1/companies": {
+      "get": {
+        "parameters": [
+          {
+            "in": "query",
+            "name": "activeOnly",
+            "schema": {
+              "default": true,
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[System.Collections.Generic.IReadOnlyList\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyListItemDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Companies"
+        ]
+      },
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.CreateCompany.CreateCompanyCommand"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.CreateCompany.CreateCompanyCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.CreateCompany.CreateCompanyCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyDetailDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                }
+              }
+            },
+            "description": "Created"
+          }
+        },
+        "tags": [
+          "Companies"
+        ]
+      }
+    },
+    "/api/v1/companies/current": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyDetailDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Companies"
+        ]
+      }
+    },
+    "/api/v1/companies/operational-readiness": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyOperationalReadinessDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "COMPANY-OPERATING-SETUP-01: checklist de preparaci\u00F3n operativa \u2014 orquesta fuentes/resolvers\r\nexistentes, no persiste nada. Ver ICompanyOperationalReadinessResolver.",
+        "tags": [
+          "Companies"
+        ]
+      }
+    },
+    "/api/v1/companies/profile": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyProfileDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Companies"
+        ]
+      },
+      "put": {
+        "requestBody": {
+          "content": {
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompanyProfile.UpdateCompanyProfileCommand"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompanyProfile.UpdateCompanyProfileCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompanyProfile.UpdateCompanyProfileCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyProfileDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Companies"
+        ]
+      }
+    },
+    "/api/v1/companies/profile/branding": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyBrandingDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Companies"
+        ]
+      },
+      "put": {
+        "requestBody": {
+          "content": {
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompanyBranding.UpdateCompanyBrandingCommand"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompanyBranding.UpdateCompanyBrandingCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompanyBranding.UpdateCompanyBrandingCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyBrandingDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Companies"
+        ]
+      }
+    },
+    "/api/v1/companies/profile/documents": {
+      "put": {
+        "requestBody": {
+          "content": {
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompanyDocuments.UpdateCompanyDocumentsCommand"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompanyDocuments.UpdateCompanyDocumentsCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompanyDocuments.UpdateCompanyDocumentsCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyProfileDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Companies"
+        ]
+      }
+    },
+    "/api/v1/companies/profile/fiscal": {
+      "put": {
+        "requestBody": {
+          "content": {
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompanyFiscal.UpdateCompanyFiscalCommand"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompanyFiscal.UpdateCompanyFiscalCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompanyFiscal.UpdateCompanyFiscalCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyProfileDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Companies"
+        ]
+      }
+    },
+    "/api/v1/companies/profile/fiscal-policy": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Sales.DTOs.SalesFiscalPolicyDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Companies"
+        ]
+      },
+      "put": {
+        "requestBody": {
+          "content": {
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateConsumerFinalMaxAmount.UpdateConsumerFinalMaxAmountCommand"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateConsumerFinalMaxAmount.UpdateConsumerFinalMaxAmountCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateConsumerFinalMaxAmount.UpdateConsumerFinalMaxAmountCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Sales.DTOs.SalesFiscalPolicyDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Companies"
+        ]
+      }
+    },
+    "/api/v1/companies/profile/logo": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "encoding": {
+                "file": {
+                  "style": "form"
+                }
+              },
+              "schema": {
+                "properties": {
+                  "file": {
+                    "format": "binary",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyProfileDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Companies"
+        ]
+      }
+    },
+    "/api/v1/companies/profile/logo-alt": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "encoding": {
+                "file": {
+                  "style": "form"
+                }
+              },
+              "schema": {
+                "properties": {
+                  "file": {
+                    "format": "binary",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyProfileDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Companies"
+        ]
+      }
+    },
+    "/api/v1/companies/profile/logo-alt/content": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Companies"
+        ]
+      }
+    },
+    "/api/v1/companies/profile/logo/content": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Companies"
+        ]
+      }
+    },
+    "/api/v1/companies/profile/operation": {
+      "put": {
+        "requestBody": {
+          "content": {
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompanyOperation.UpdateCompanyOperationCommand"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompanyOperation.UpdateCompanyOperationCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompanyOperation.UpdateCompanyOperationCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyProfileDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Companies"
+        ]
+      }
+    },
+    "/api/v1/companies/{id}": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyDetailDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "tags": [
+          "Companies"
+        ]
+      },
+      "put": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompany.UpdateCompanyCommand"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompany.UpdateCompanyCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompany.UpdateCompanyCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyDetailDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Companies"
+        ]
+      }
+    }
+  },
+  "documentTags": [
+    {
+      "description": "Auditor\u00EDa de actividad (\u00E1mbito del usuario o de una entidad en el tenant actual).",
+      "name": "Activity"
+    },
+    {
+      "description": "AdminGlobalCore: dashboard global de empresas por tenant. Solo accesible con token global\r\n(tenant_id == Guid.Empty \u002B rol Admin) \u2014 ver policy \u0022PlatformAdmin\u0022 en Program.cs. Nunca\r\nconsumido por el ERP operativo (AppLayout/men\u00FA de tenant).",
+      "name": "AdminCore"
+    },
+    {
+      "description": "ADMIN-PERMISSIONS-SSOT-KERNEL-02 \u2014 cat\u00E1logo de permisos asignables, derivado del Kernel\r\nRegistry. Controller propio (responsabilidad \u00FAnica) separado de\r\nERP.API.Controllers.AccessProfilesController, que ya tiene su propio prefijo de ruta\r\n(\u0060admin/iam\u0060) y su propia responsabilidad (CRUD de perfiles \u002B guardado de permisos).",
+      "name": "AdminPermissions"
+    },
+    {
+      "description": "Dashboard administrativo de sesiones (Fase 10) \u2014 operativo/de soporte, NO reemplaza ni\r\nmodifica el flujo de autenticaci\u00F3n (Login/SwitchCompany/Logout siguen en AuthController /\r\nUserSessionController). Controller separado a prop\u00F3sito: sigue la misma convenci\u00F3n ya\r\nestablecida por ActivityController/AccessSessionController/AccessProfilesController\r\n(\u00E1reas administrativas bajo api/v1/admin/*, con su propio permiso IAM).",
+      "name": "AdminUserSession"
+    },
+    {
+      "description": "Auth ERP \u00FAnico: login, refresh, sesi\u00F3n multi-empresa e impersonaci\u00F3n platform.\r\nFase S1 (hardening): se eliminaron \u0060POST /register\u0060 y \u0060POST /password-reset\u0060\r\n(endpoints an\u00F3nimos que aceptaban TenantId/Role o TenantId/Email/NewPassword directamente\r\ndel body, sin ning\u00FAn control de identidad \u2014 hallazgos 5A/5B de la auditor\u00EDa de cierre de\r\nAccess/IAM). El alta del primer usuario/tenant ya tiene un flujo seguro y dedicado:\r\n\u0060SetupController\u0060 (\u0060POST /api/v1/setup/admin\u0060, token de instalaci\u00F3n de un solo uso,\r\nnunca acepta TenantId/Role del cliente). El reseteo de contrase\u00F1a sigue disponible solo por el\r\nflujo oficial con token por email: M:ERP.API.Controllers.AuthController.ForgotPassword(ERP.Application.Auth.UseCases.PasswordReset.ForgotPasswordCommand,System.Threading.CancellationToken) \u002B M:ERP.API.Controllers.AuthController.ResetPasswordWithToken(ERP.Application.Auth.UseCases.PasswordReset.ResetPasswordWithTokenCommand,System.Threading.CancellationToken).",
+      "name": "Auth"
+    },
+    {
+      "description": "Gestiona los contactos de un BusinessPartner.\r\n            \r\nSCOPE: tenant-scoped \u2014 los contactos son datos maestros del tercero,\r\ncompartidos entre todas las empresas del tenant. Ver ADR-BP-02 (Fase 4).\r\n            \r\nCASOS DE USO T\u00CDPICOS:\r\n  - Registrar representante legal: Role=Legal (9)\r\n  - Registrar contacto de facturaci\u00F3n: Role=Billing (6)\r\n  - Registrar asesor comercial: Role=Commercial (1)\r\n            \r\nINVARIANTES:\r\n  - Solo un contacto puede ser primario (IsPrimary=true) por BP.\r\n  - Para ContactRole=Other, OtherDescription es obligatorio.",
+      "name": "MasterData \u2014 Business Partners"
+    },
+    {
+      "description": "ZH-CASH-FUNDING-REQUEST-API-02E-D \u2014 solicitudes de efectivo (\u0060CashFundingRequest\u0060, 02E-B/C).\r\nSolicitante (\u0060supplier-payments.create\u0060): crea, lista las suyas, ve su detalle y cancela la\r\nsuya pendiente. Cajero (\u0060caja.funding-requests.view\u0060/\u0060.fulfill\u0060): bandeja de la\r\nsucursal activa, detalle y entregar/rechazar SOLO si controla la sesi\u00F3n de caja (validado en\r\nApplication; el permiso nunca reemplaza el ownership). Los comandos responden el detalle re-le\u00EDdo.",
+      "name": "CashFundingRequests"
+    },
+    {
+      "description": "TREASURY-CASH-MANUAL-MOVEMENTS-01 \u2014 cat\u00E1logo administrable de motivos de movimiento manual de\r\ncaja (SSOT din\u00E1mico), scope obligatorio Tenant\u002BCompany. Consumido por el formulario \u0022Registrar\r\nmovimiento manual de efectivo\u0022 en /treasury/cash. No borra f\u00EDsico: Toggle solo activa/desactiva.",
+      "name": "CashMovementReasons"
+    },
+    {
+      "description": "Lectura de los 6 cat\u00E1logos de clasificaci\u00F3n de Customer (CLASS-BP-CATALOGS-01):\r\ncategor\u00EDa, segmento, rating de cr\u00E9dito, loyalty tier, formato de factura preferido y\r\nclasificaci\u00F3n tributaria/comercial. Reemplazan los arrays hardcodeados del frontend y los\r\nHashSet fijos de \u0060CustomerRoleConfig\u0060. Solo GET \u2014 CRUD administrativo queda fuera de\r\nalcance de este bloque (bloque futuro).",
+      "name": "CatalogClassifications"
+    },
+    {
+      "description": "Configuraci\u00F3n SMTP por empresa (OrgSettings, scope=Company) \u2014 CONFIG-AUDIT-01/\r\nCOMMUNICATIONS-SETTINGS-UI-01. La variable de entorno Communications:Email:* sigue\r\nfuncionando como fallback de infraestructura cuando la empresa no configur\u00F3 nada aqu\u00ED.",
+      "name": "CommunicationsEmailSettings"
+    },
+    {
+      "description": "TREASURY-BANK-ACCOUNTS-01: CRUD b\u00E1sico \u002B activar/desactivar de cuentas bancarias de empresa\r\n(Tesorer\u00EDa \u2192 Bancos \u2192 Cuentas bancarias). Alcance estricto: no posting, no caja, no\r\nconciliaci\u00F3n, no movimientos bancarios.",
+      "name": "CompanyBankAccount"
+    },
+    {
+      "description": "COMPANY-PRECISION-POLICY-SSOT-01. Nunca acepta tenantId/companyId desde body/query \u2014 siempre\r\ndel contexto autenticado (JWT v\u00EDa ICurrentTenant/ICurrentCompany, resuelto dentro de los\r\nhandlers). No expone endpoint de unlock: una policy bloqueada (IsLocked=true) solo puede\r\ndesbloquearse por soporte fuera de este ticket.",
+      "name": "CompanyPrecisionPolicy"
+    },
+    {
+      "description": "Fase I-B \u2014 administraci\u00F3n expl\u00EDcita de CompanyUserBranch (sucursales autorizadas de una\r\nCompanyUserMembership). CompanyUserBranch sigue siendo la \u00FAnica fuente de verdad de esa\r\nautorizaci\u00F3n \u2014 este controller no la duplica en Membership/Preferences/IdentityUser, solo la\r\nexpone. TenantId/CompanyId nunca viajan en el request: cada UseCase los resuelve del contexto\r\nautenticado. Reutiliza access.company_user_memberships.view (mismo criterio que\r\nCompanyUserPreferencesController/AccessProfilesController/CompanyUserMembershipsController) \u2014\r\nno se introduce un permiso nuevo en esta fase.",
+      "name": "CompanyUserBranches"
+    },
+    {
+      "description": "Fase I-A \u2014 wiring administrativo de \u0060CompanyUserMembership\u0060: expone los UseCases de Fase D\r\n(ERP.Application.Access.UseCases.UpsertCompanyUserMembershipAdmin.UpsertCompanyUserMembershipAdminCommand/ERP.Application.Access.UseCases.RevokeCompanyUserMembershipAdmin.RevokeCompanyUserMembershipAdminCommand,\r\nya probados) que hasta ahora no ten\u00EDan ning\u00FAn Controller/ruta \u2014 quedaban sin uso en producci\u00F3n.\r\nTenantId/CompanyId nunca viajan en el request: cada Admin command los resuelve del contexto\r\nautenticado (ver los handlers), nunca del body \u2014 mismo principio anti-IDOR documentado en\r\ndocs/IDENTITY.md a ra\u00EDz de la eliminaci\u00F3n del antiguo UserSessionController self-service.\r\nReutiliza access.company_user_memberships.view (mismo criterio que AccessProfilesController,\r\nque ya usa ProfilesView tanto para lectura como para mutaci\u00F3n de profiles, y que\r\nCompanyUserPreferencesController, que reutiliza MembershipsView para su PUT). No se introduce\r\nun permiso .manage nuevo en esta fase \u2014 ver docs/STATUS.md para la decisi\u00F3n documentada.\r\nCompanyUserBranch y CompanyUserPreferences siguen siendo fuente \u00FAnica de verdad de sus propios\r\ndatos: este controller no las toca directamente, solo reenv\u00EDa al UseCase de Fase D que ya las\r\norquesta v\u00EDa MediatR.",
+      "name": "CompanyUserMemberships"
+    },
+    {
+      "description": "Fase F \u2014 administraci\u00F3n expl\u00EDcita de CompanyUserPreferences (sucursal por defecto \u002B modo de\r\nlogin de un usuario dentro de la empresa activa). Reutiliza access.company_user_memberships.view\r\n(mismo criterio que AccessProfilesController, que ya usa ese permiso tanto para lectura como\r\npara mutaci\u00F3n de profiles) \u2014 no se introduce un permiso nuevo. Sin l\u00F3gica propia: cada acci\u00F3n\r\nsolo recibe el request, lo reenv\u00EDa a Application y traduce el Result a HTTP.",
+      "name": "CompanyUserPreferences"
+    },
+    {
+      "description": "CONFIG-FOUNDATION-P2-01: endpoint m\u00EDnimo de solo lectura sobre ConfigurationChangeLog \u2014 no\r\nhay UI de historial todav\u00EDa (fuera de alcance de este bloque), pero el historial debe ser\r\nconsultable por soporte/auditor\u00EDa. Gateado con SettingsPermissions.CompaniesUpdate (el mismo\r\npermiso administrativo que ya protege escribir las configuraciones que este endpoint audita)\r\n\u2014 no se inventa un permiso nuevo.",
+      "name": "ConfigurationChangeLog"
+    },
+    {
+      "description": "DOCUMENT-FLOW-POLICY-01 \u2014 Configuraci\u00F3n \u2192 Documentos y flujos. Administra C\u00D3MO se comporta\r\ncada tipo de documento por empresa (\u0060DocumentFlowPolicy\u0060). Los permisos de esta pantalla\r\nsolo controlan el acceso a la configuraci\u00F3n \u2014 nunca reemplazan los permisos de acci\u00F3n de cada\r\nm\u00F3dulo (p. ej. \u0060expenses.documents.cancel\u0060), que se administran en Roles y Permisos.",
+      "name": "DocumentFlowPolicies"
+    },
+    {
+      "description": "DOCUMENT-SEQUENCES-CONFIG-03 \u2014 administraci\u00F3n m\u00EDnima de \u0060DocumentSequence\u0060 (secuencias\r\ndocumentales SRI centralizadas, ADR-019).\r\n            \r\nDOCUMENT-SEQUENCES-CONFIG-UI-04 \u2014 agrega la pantalla de Settings (\u0022Secuencias documentales\u0022)\r\npara configurar el n\u00FAmero inicial por establecimiento/punto de emisi\u00F3n/tipo de documento SRI;\r\n\u0060IsVisibleInMenu\u0060 pasa a \u0060true\u0060 para que el \u00EDtem aparezca en el men\u00FA server-driven de\r\nSettings (antes registraba el permiso en el cat\u00E1logo sin \u00EDtem de navegaci\u00F3n real, ver\r\ndocs/decisions/DOCUMENT-SEQUENCES-DESIGN-02.md). Se agrega un \u00FAnico endpoint de lectura\r\n(M:ERP.API.Controllers.DocumentSequencesController.GetAll(System.Threading.CancellationToken)) \u2014 gap detectado al revisar esta fase: no exist\u00EDa ninguna forma de listar\r\nel estado de las secuencias ya configuradas/usadas, solo el PUT de configuraci\u00F3n. No cambia\r\nninguna regla de dominio.",
+      "name": "DocumentSequences"
+    },
+    {
+      "description": "Monitor de Documentos Electr\u00F3nicos \u2014 consola de consulta del ciclo electr\u00F3nico. No emite,\r\nno firma ni cancela documentos. Acciones de escritura: reintentar manualmente un documento\r\nvarado (Signed/Received/DeadLetter/Failed), o registrar el documento faltante de un origen ya\r\nautorizado comercialmente que nunca lleg\u00F3 a generar uno (backfill) \u2014 el resto de transiciones\r\nlas ejecuta \u0060ElectronicDocumentIssuer\u0060, invocado desde Ventas o desde el job autom\u00E1tico\r\nde reintentos.",
+      "name": "ElectronicDocuments"
+    },
+    {
+      "description": "P0-03 (ERP_CORE_SUMAK_READINESS_AUDIT.md) \u2014 expone la liquidaci\u00F3n de AR (\u0060Payment\u0060,\r\nFase 5.5.5.3). Controller delgado: solo recibe el command, lo env\u00EDa v\u00EDa MediatR y traduce el\r\n\u0060Result\u0060 \u2014 toda la l\u00F3gica de negocio (balance, l\u00EDmites de saldo, transiciones de estado)\r\nvive en \u0060Payment\u0060/\u0060SalesReceivable\u0060 (ERP.Application.Modules.Finance.UseCases.Payments.RegisterCollectionCommandHandler),\r\nreutilizada sin cambios.\r\nPAYABLES-PAYMENTS-LEGACY-CLEANUP-14 \u2014 el endpoint AP (\u0060POST /payments\u0060,\r\n\u0060RegisterPaymentCommand\u0060 contra \u0060AccountsPayable\u0060) fue eliminado junto con su \u00FAnica\r\nUI (\u0060AccountsPayablePage\u0060/\u0060RegisterPaymentModal\u0060, ya eliminadas): no debe quedar un\r\nendpoint activo de registro de pago a proveedor sin pantalla ni dise\u00F1o \u2014 cuando exista el\r\nm\u00F3dulo PagoCabecera/PagoDetalle, se implementar\u00E1 ah\u00ED desde cero, no reviviendo este endpoint.",
+      "name": "FinancePayments"
+    },
+    {
+      "description": "Cat\u00E1logo de ubicaci\u00F3n (solo lectura) para combos en cascada.",
+      "name": "Geography"
+    },
+    {
+      "description": "AdminGlobalCore \u2014 puente auditable entre el token global (tenant_id == Guid.Empty) y un token\r\noperativo scoped a una empresa concreta. El admin global nunca llama endpoints operativos con\r\nsu token global directo: primero pasa por M:ERP.API.Controllers.GlobalAuthController.OperateCompany(ERP.API.Contracts.OperateCompanyRequest,System.Threading.CancellationToken) para obtener un token\r\noperativo real, y puede volver con M:ERP.API.Controllers.GlobalAuthController.Return(System.Threading.CancellationToken).",
+      "name": "GlobalAuth"
+    },
+    {
+      "description": "\u00DAnico punto de creaci\u00F3n de un ERP.Domain.Access.Entities.IdentityUser nuevo fuera\r\ndel flujo de First Run. Permiso propio (ERP.Domain.Kernel.Permissions.AccessPermissions.IdentityUsersCreate) en\r\nun controller separado de ERP.API.Controllers.CompanyUserMembershipsController \u2014 los atributos\r\n[Authorize] de clase y de m\u00E9todo se combinan con AND en ASP.NET Core, as\u00ED que exigir aqu\u00ED\r\ntambi\u00E9n MembershipsView habr\u00EDa requerido ambos permisos a la vez. TenantId/CompanyId nunca\r\nviajan en el request: ERP.Application.Access.UseCases.CreateSystemUserAdmin.CreateSystemUserAdminHandler los resuelve del contexto\r\nautenticado, mismo principio anti-IDOR que ERP.API.Controllers.CompanyUserMembershipsController.",
+      "name": "IdentityUsers"
+    },
+    {
+      "description": "Cat\u00E1logo administrable de motivos de ajuste de inventario (INVENTORY-ADJUSTMENTS-02) \u2014 SSOT\r\ndin\u00E1mico consumido por CreateStockAdjustment/ExecuteStockAdjustment. No borra f\u00EDsico: Toggle\r\nsolo activa/desactiva (MasterEntity.Enable/Disable).",
+      "name": "InventoryAdjustmentReasons"
+    },
+    {
+      "description": "Expediente del Kardex: consulta de trazabilidad hist\u00F3rica de inventario.\r\nStockMovement es la fuente de verdad; el detalle de un movimiento se compone\r\n(sin duplicar datos) con el documento origen del m\u00F3dulo due\u00F1o (Purchases/Sales).",
+      "name": "Kardex"
+    },
+    {
+      "description": "Alias de sesi\u00F3n para el usuario autenticado (\u0060/api/me/*\u0060).",
+      "name": "Me"
+    },
+    {
+      "description": "CONFIG-DYNAMIC-OPERATIONS-01: preferencias operativas din\u00E1micas por empresa (Ventas/POS, Caja,\r\nCompras, Inventario, Impresi\u00F3n, Documentos Electr\u00F3nicos, Notificaciones) \u2014 OrgSettings,\r\nscope=Company. Cada grupo del PUT es opcional: solo se escribe el grupo enviado.",
+      "name": "OperationalPreferences"
+    },
+    {
+      "description": "PAYABLES-READ-API-11 \u2014 API de solo lectura sobre la CxP gen\u00E9rica (\u0060AccountsPayable\u0060),\r\n\u00FAnica fuente viva de saldo para Compras y Gastos desde PAYABLES-PURCHASE-MIGRATION-10. Sin\r\nendpoints de escritura: no hay abonos/pagos aqu\u00ED (eso queda para un ticket futuro de\r\nPagoCabecera/PagoDetalle) \u2014 mismo patr\u00F3n de solo-lectura que \u0060PurchasePayablesController\u0060/\r\n\u0060SalesReceivablesController\u0060. Sin \u0060[AppFeature]\u0060/\u0060[NavItem]\u0060 deliberadamente:\r\ntodav\u00EDa no existe una pantalla propia para esta API transversal.",
+      "name": "Payables"
+    },
+    {
+      "description": "Public configuration endpoint \u2014 no auth required. Consumed by the frontend to detect ERP mode.",
+      "name": "Public"
+    },
+    {
+      "description": "FLOW-READY-02C.2 \u2014 expone los casos de uso de \u0060PurchaseCreditNote\u0060 (nota de cr\u00E9dito de\r\ncompra por descuento/promoci\u00F3n, v1). Sin permisos nuevos: reutiliza ERP.Domain.Kernel.Permissions.PurchasePermissions,\r\nmismo criterio que ERP.API.Controllers.PurchaseReturnController. Controller delgado: solo mapea\r\nHTTP \u2192 MediatR \u2192 \u0060Result\u0060. La devoluci\u00F3n f\u00EDsica de productos sigue siendo responsabilidad\r\nexclusiva de \u0060/api/v1/purchases/returns\u0060 (ERP.API.Controllers.PurchaseReturnController) \u2014 este\r\ncontroller nunca la reimplementa (decisi\u00F3n de arquitectura, dise\u00F1o FLOW-READY-02C \u00A70.1).",
+      "name": "PurchaseCreditNote"
+    },
+    {
+      "description": "P0-02 Fase 11 \u2014 expone los casos de uso ya implementados de \u0060PurchaseReturn\u0060/\r\n\u0060SupplierCredit\u0060 v\u00EDnculo de NC (Fases 5, 6, 9, 10) \u2014 sin permisos nuevos: reutiliza\r\nERP.Domain.Kernel.Permissions.PurchasePermissions (mismo criterio ya resuelto en dise\u00F1o \u00A720.2, id\u00E9ntico al\r\nusado por ERP.API.Controllers.SalesReturnController para \u0060SalesReturn\u0060). Controller delgado:\r\nsolo mapea HTTP \u2192 MediatR \u2192 \u0060Result\u0060; toda la l\u00F3gica de negocio (locks, reversas,\r\nidempotencia) vive en los handlers ya construidos, reutilizados sin cambios. La aplicaci\u00F3n/\r\nreembolso de \u0060SupplierCredit\u0060 vive en ERP.API.Controllers.SupplierCreditController (separaci\u00F3n\r\nde riesgo Compras/Finance, dise\u00F1o \u00A720.2) \u2014 este controller nunca muta cr\u00E9dito financiero.",
+      "name": "PurchaseReturn"
+    },
+    {
+      "description": "RETENTIONS-ELECTRONIC-ENDPOINTS-03F \u2014 expone la generaci\u00F3n on-demand del XML/RIDE de\r\nComprobante de Retenci\u00F3n para QA/diagn\u00F3stico/vista previa. Controller delgado: recibe el\r\nrequest, delega \u00EDntegramente a MediatR (ERP.Application.Modules.Retentions.UseCases.GenerateRetentionXmlQuery/\r\nERP.Application.Modules.Retentions.UseCases.GenerateRetentionRidePdfQuery, RETENTIONS-ELECTRONIC-WIRING-03E) y solo decide el\r\ncontent-type de la respuesta \u2014 nunca consulta \u0060RetentionDocument\u0060 ni ning\u00FAn repositorio\r\ndirectamente.\r\n            \r\nSin permiso propio de Retentions todav\u00EDa (ver comentario de M:ERP.API.Controllers.ExpensesController.GetRetention(System.Guid,System.Threading.CancellationToken)):\r\nreutiliza ERP.Domain.Kernel.Permissions.ExpensePermissions.DocumentsView, el mismo permiso de solo lectura que\r\nya protege el resto de las consultas de retenci\u00F3n expuestas en \u0060ExpensesController\u0060.\r\nAgregar un permiso nuevo sin un \u0060[NavItem]\u0060 que lo referencie quedar\u00EDa inasignable desde\r\nel cat\u00E1logo de permisos (\u0060GetPermissionCatalogHandler\u0060 construye el cat\u00E1logo desde\r\n\u0060KernelRegistry.Navigation\u0060) \u2014 y esta fase expl\u00EDcitamente no agrega \u00EDtems de men\u00FA.\r\n            \r\nNo firma XML, no env\u00EDa al SRI, no persiste el XML como autorizado, no cachea el PDF \u2014\r\ncada llamada genera XML y PDF de nuevo a partir del estado actual de la retenci\u00F3n.\r\n            \r\nRETENTIONS-SRI-MANUAL-REGISTER-04E agrega M:ERP.API.Controllers.RetentionsController.Register(System.Guid,System.Threading.CancellationToken): disparo manual y expl\u00EDcito\r\ndel registro electr\u00F3nico real (firma \u002B SOAP \u002B autorizaci\u00F3n, v\u00EDa\r\nERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentIssuer) \u2014\r\ndeliberadamente separado de los dos endpoints de arriba, que siguen siendo preview/on-demand\r\ny nunca firman ni env\u00EDan nada. Usa ERP.Domain.Kernel.Permissions.ElectronicDocumentsPermissions.Retry (no un\r\npermiso nuevo): es el mismo permiso que ya protege la acci\u00F3n de registro/reintento manual\r\nequivalente para Factura/Nota de Cr\u00E9dito en \u0060ElectronicDocumentsController.Register\u0060/\r\n\u0060Retry\u0060, y ya es asignable desde el cat\u00E1logo de permisos (ligado al \u0060[NavItem]\u0060 del\r\nMonitor de Documentos Electr\u00F3nicos) \u2014 crear un permiso nuevo sin ese v\u00EDnculo quedar\u00EDa\r\ninasignable.",
+      "name": "Retentions"
+    },
+    {
+      "description": "Expone Ride (ADR-025) v\u00EDa HTTP \u2014 controller delgado: recibe el request, delega \u00EDntegramente a\r\nMediatR, transforma \u0060Result\u003CRideGenerationResultDto\u003E\u0060 a HTTP con el mismo patr\u00F3n ya\r\nusado por el resto del ERP (M:ERP.API.Extensions.ApiResultExtensions.ToOkOrBadRequest\u0060\u00601(Microsoft.AspNetCore.Mvc.ControllerBase,ERP.Application.Common.Result{\u0060\u00600},System.String,System.Func{\u0060\u00600})). Ninguna\r\nl\u00F3gica de negocio vive aqu\u00ED \u2014 Company/Tenant Scope se resuelven autom\u00E1ticamente v\u00EDa\r\n\u0060CompanyScopeBehavior\u0060 porque \u0060GetOrGenerateRideQuery\u0060/\u0060RegenerateRideCommand\u0060\r\n(Fase 3, congelados) ya implementan \u0060ICompanyScopedRequest\u0060.\r\n            \r\nM:ERP.API.Controllers.RideController.GetContent(System.String,System.Guid,System.Threading.CancellationToken) (Fase 12) es la \u00FAnica adici\u00F3n de superficie: ning\u00FAn contrato p\u00FAblico\r\nde Ride devuelve los bytes del PDF (\u0060RideGenerationResultDto.StoragePath\u0060 es solo la ruta\r\nde almacenamiento), as\u00ED que esta acci\u00F3n compone \u0060GetOrGenerateRideQuery\u0060 (sin modificarlo)\r\ncon ERP.Application.Common.Interfaces.IFileStorage (interfaz ya existente, sin modificarla) para servir el binario\r\n\u2014 mismo patr\u00F3n que \u0060CompaniesController.GetLogoContent\u0060. No introduce l\u00F3gica de negocio\r\nnueva ni toca \u0060RidePipeline\u0060.",
+      "name": "Ride"
+    },
+    {
+      "description": "P0-03 (ERP_CORE_SUMAK_READINESS_AUDIT.md, 2026-07-30): la pantalla de consulta de CxC\r\n(/finance/receivables) consume este controller. Sin [AppFeature]: AppFeatureDiscoveryService\r\nusa Permission como clave \u00FAnica de men\u00FA (Dictionary\u003Cstring, DiscoveryRow\u003E) \u2014 reutilizar\r\n$\u0022perm:{SalesPermissions.View}\u0022 (ya usado por SalesController para \u0022Ventas\u0022) colisionar\u00EDa y\r\nsilenciosamente ocultar\u00EDa uno de los dos \u00EDtems de men\u00FA. Registrar un permiso granular nuevo\r\n(p. ej. finance.receivables.view) queda fuera de este alcance \u2014 ver informe de cierre P0-03.\r\nLa pantalla es alcanzable hoy solo por URL directa. La liquidaci\u00F3n (registrar cobro) vive en\r\nFinancePaymentsController/RegisterCollectionCommand, no aqu\u00ED.",
+      "name": "SalesReceivables"
+    },
+    {
+      "description": "Devoluci\u00F3n de venta (P0-01). Expone los casos de uso ya implementados de\r\n\u0060SalesReturn\u0060 (Application) \u2014 Draft (crear/editar/cancelar), consulta y\r\nautorizaci\u00F3n \u2014 sin permisos nuevos: reutiliza ERP.Domain.Kernel.Permissions.SalesPermissions\r\n(mismo criterio que ERP.API.Controllers.SalesController para Factura). Controller delgado:\r\nsolo mapea HTTP \u2192 MediatR \u2192 \u0060Result\u0060; toda la l\u00F3gica de negocio (validaci\u00F3n de\r\nremanente, congelamiento de l\u00EDneas, asignaci\u00F3n de reembolso, reversi\u00F3n de inventario)\r\nvive en \u0060SalesReturn\u0060/\u0060AuthorizeSalesReturnHandler\u0060, reutilizada sin cambios.",
+      "name": "SalesReturn"
+    },
+    {
+      "description": "Delegaci\u00F3n de administraci\u00F3n (matriz manageRoles/manageModules/manageScreens/manageProcesses\r\npor usuario) \u2014 ver /admin/security. ADMIN-SECURITY-SPLIT-01: protegido por el sistema de\r\npol\u00EDticas perm: igual que el resto del ERP, ya no por [Authorize(Roles = SecurityRoles.Admin)]\r\ncomo \u00FAnica puerta \u2014 ese chequeo por rol literal era la excepci\u00F3n del grupo Administraci\u00F3n\r\n(los otros cinco controllers ya usaban perm:). El rol Admin sigue teniendo acceso total: el\r\nauthorizer de \u0022perm:\u0022 hace bypass autom\u00E1tico para SecurityRoles.Admin (mismo mecanismo que\r\nNavigationBuilder usa para el men\u00FA), as\u00ED que no se pierde compatibilidad con el rol.",
+      "name": "Security"
+    },
+    {
+      "description": "First-run ERP initialization endpoints. Both actions are anonymous and token-gated.",
+      "name": "Setup"
+    },
+    {
+      "description": "P0-02 Fase 11 \u2014 expone los casos de uso ya implementados de \u0060SupplierCredit\u0060 (Fases 2, 7,\r\n8) \u2014 sin permisos nuevos: reutiliza ERP.Domain.Kernel.Permissions.FinancePermissions (dise\u00F1o \u00A720.2: aplicar\r\ncr\u00E9dito a otra CxP, reembolsar y revertir son operaciones que mueven dinero/afectan CxP,\r\nseparadas deliberadamente de \u0022autorizar la devoluci\u00F3n f\u00EDsica\u0022 que vive en\r\nERP.API.Controllers.PurchaseReturnController con ERP.Domain.Kernel.Permissions.PurchasePermissions \u2014 mismo riesgo\r\noperativo que \u0060RegisterPayment\u0060, ya en Finance). Controller delgado: solo mapea\r\nHTTP \u2192 MediatR \u2192 \u0060Result\u0060; toda la l\u00F3gica de negocio (locks A\u2192B, idempotencia,\r\nrevalidaci\u00F3n de saldo) vive en los handlers ya construidos, reutilizados sin cambios.",
+      "name": "SupplierCredit"
+    },
+    {
+      "description": "SUPPLIER-PAYMENTS-REGISTER-15C \u2014 API del m\u00F3dulo independiente de Pagos a Proveedores\r\n(\u0060SupplierPayment\u0060), aprobado por SUPPLIER-PAYMENTS-AUDIT-15A. Sin Draft: el \u00FAnico endpoint\r\nde escritura registra y confirma el pago en una sola operaci\u00F3n. No es \u0060/api/v1/finance/payments\u0060\r\n(legacy, eliminado en PAYABLES-PAYMENTS-LEGACY-CLEANUP-14) ni afecta \u0060Payment\u0060/\r\n\u0060PaymentApplicationLine\u0060 (Collections/CxC).",
+      "name": "SupplierPayments"
+    },
+    {
+      "description": "ERP-CORE-CLOSEOUT-09 \u2014 datos del proveedor del sistema de facturaci\u00F3n electr\u00F3nica (qui\u00E9n\r\nconstruy\u00F3/mantiene el software). Deliberadamente NO company-scoped: es un dato \u00FAnico por\r\ninstancia del ERP, distinto del emisor de cada comprobante (\u0060Company\u0060/\u0060SriSettings\u0060,\r\nque s\u00ED son por empresa). Acceso: solo AdminGlobalCore (tenant_id == Guid.Empty \u002B rol Admin) \u2014\r\nun Admin de tenant/empresa normal NO debe leer ni modificar este singleton compartido por\r\ntodas las empresas del SaaS. Ver policy \u0022PlatformAdmin\u0022 en Program.cs.",
+      "name": "SystemProviderSettings"
+    },
+    {
+      "description": "Carga Inicial (INITIAL-LOAD-ARCH-01) \u2014 solo Clientes disponible en esta entrega.",
+      "name": "InitialLoad"
+    },
+    {
+      "description": "Administraci\u00F3n del Plan de Cuentas / Per\u00EDodos Contables / Reglas de Contabilizaci\u00F3n\r\n(ADR-026). Desde ACCOUNTING-LEDGER-VISIBILITY-01 tambi\u00E9n expone lectura de JournalEntry\r\n(listado paginado, detalle con l\u00EDneas, b\u00FAsqueda por documento de origen) \u2014 el Posting Engine\r\n(\u00A78) y el motor de contabilizaci\u00F3n ya existen y producen asientos reales (Post()/Reverse(),\r\nFase 5.2-5.4); esta fase solo agrega visibilidad, nunca Create/Update/Delete de JournalEntry.\r\nSin verbo DELETE \u2014 la baja l\u00F3gica (Enable/Disable) usa PATCH, decisi\u00F3n deliberada frente al\r\npatr\u00F3n de otros m\u00F3dulos que s\u00ED usan DELETE para baja l\u00F3gica (ver Architecture Review Board\r\nFase 2.2). Los reportes de solo lectura (Libro Diario/Mayor/Balance de Comprobaci\u00F3n/Estado de\r\nResultados/Balance General) viven en ERP.API.Controllers.Accounting.AccountingReportsController desde\r\nACCOUNTING-FINANCIAL-STATEMENTS-10 \u2014 split mec\u00E1nico para no seguir creciendo este archivo,\r\nmismo patr\u00F3n ya usado en Purchases.",
+      "name": "Accounting"
+    },
+    {
+      "description": "Reportes contables de solo lectura (ACCOUNTING-REPORTS-09 / ACCOUNTING-FINANCIAL-\r\nSTATEMENTS-10) \u2014 Libro Diario, Libro Mayor, Balance de Comprobaci\u00F3n, Estado de Resultados,\r\nBalance General. Extra\u00EDdo de ERP.API.Controllers.Accounting.AccountingController (que ya exced\u00EDa el umbral de\r\nadvertencia del guardrail de arquitectura) siguiendo el mismo patr\u00F3n de split ya establecido\r\npara Purchases (\u0060PurchasesController\u0060 \u002B \u0060PurchaseCreditNoteController\u0060 \u002B\r\n\u0060PurchaseReturnController\u0060) \u2014 mismo prefijo de ruta base, sin \u0060[AppFeature]\u0060 propio\r\n(el nav ya lo registra ERP.API.Controllers.Accounting.AccountingController, evitar una entrada duplicada). Solo\r\nlectura sobre \u0060JournalEntry\u0060/\u0060JournalEntryLine\u0060 ya \u0060Posted\u0060 \u2014 nunca recalcula\r\ndesde Ventas/Compras/Inventario/Finanzas, nunca modifica asientos hist\u00F3ricos.",
+      "name": "AccountingReports"
+    }
+  ]
+}

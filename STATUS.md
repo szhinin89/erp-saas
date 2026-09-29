@@ -2,6 +2,13 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-29** · Kernel refactor: **2026-06-05**.
 
+## ZH-API-THIN-COMPANIES-01 — CompaniesController separado por responsabilidad (2026-09-29)
+
+**Estado: COMPLETADO.** `CompaniesController` (19 endpoints, 300 líneas) mezclaba dos responsabilidades que el frontend ya consume desde módulos distintos: administración de empresas del tenant (`company-management`: listar, `current`, `{id}`, crear, editar) y configuración de la empresa activa (`configuracion/empresa`: `profile/*`, fiscal, operación, documentos, branding, logos, `fiscal-policy`, `operational-readiness`). Los 14 endpoints de la segunda se movieron tal cual a `CompanyProfileController`; `CompaniesController` conserva los 5 de administración y el `[AppFeature]` "Empresas operativas". Sin lógica nueva ni cambios en Application.
+- Compatibilidad demostrada con snapshots grabados en `HEAD` (`CompaniesApiSurfaceSnapshotTests`): rutas + métodos + policies efectivas (19 endpoints), documento OpenAPI de `/api/v1/companies*` + tags globales byte a byte (el nuevo controller usa `[Tags("Companies")]` y comentario no-XML: un `<summary>` de clase agregaría un tag al documento), y filas de AppFeature descubiertas.
+- Métricas (sin maquillar): 20 warnings y 60/100 sin cambios — `CompaniesController` 96 líneas sale del reporte, `CompanyProfileController` 232 entra.
+- Evidencia: snapshots 3/3 · uploads de logo 18/18 · API 585/585 · Architecture 118 · `architecture:check` 0 nuevas.
+
 ## ZH-API-THIN-MEDIA-UPLOAD-01 — Conversión IFormFile → MediaUploadContent unificada (2026-09-29)
 
 **Estado: COMPLETADO.** La conversión (buffer en memoria + rebobinar + `MediaUploadContent(stream, FileName, ContentType, Length)`) estaba copiada en 5 endpoints multipart: Companies `profile/logo` y `profile/logo-alt`, ElectronicInvoicing `sri-configuration/certificate`, InitialLoad `batches/{id}/upload`, PurchaseReception `import`. Ahora es `ERP.API/Uploads/BufferedFormFile` (IAsyncDisposable, solo capa API). Cada endpoint conserva explícito su 400 por archivo ausente/vacío (mensajes distintos) y sigue liberando el buffer con `await using` después del `mediator.Send` (los handlers consumen el stream dentro del Send). Sin cambios en rutas, permisos, Swagger, AppFeature, DTOs ni validaciones de tipo/tamaño (viven en los validators de Application).
