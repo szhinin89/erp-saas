@@ -92,22 +92,22 @@ function AccountTreeNameCell({ code, name, allowsPosting }: AccountTreeNameCellP
 
   return (
     <span
-      className={`coa-tree-name${allowsPosting ? "" : " coa-tree-name--group"}`}
+      className={`acc-coa-tree-name${allowsPosting ? "" : " acc-coa-tree-name--group"}`}
       data-depth={visualDepth}
     >
       {visualDepth > 0 && (
-        <span className="coa-tree-name__guides" aria-hidden="true">
+        <span className="acc-coa-tree-name__guides" aria-hidden="true">
           {guides.map((index) => (
             <span
               key={index}
-              className={`coa-tree-name__guide${
-                index === visualDepth - 1 ? " coa-tree-name__guide--branch" : ""
+              className={`acc-coa-tree-name__guide${
+                index === visualDepth - 1 ? " acc-coa-tree-name__guide--branch" : ""
               }`}
             />
           ))}
         </span>
       )}
-      <span className="coa-tree-name__label">{cleanAccountName(name)}</span>
+      <span className="acc-coa-tree-name__label">{cleanAccountName(name)}</span>
     </span>
   );
 }
@@ -434,7 +434,7 @@ export function ChartOfAccountsPage() {
 
       {mode === "list" && (
         <ZHCard
-          className="coa-list-card"
+          className="acc-coa-list-card"
           title="Listado"
           actions={
             <div className="coa-list-filters">
@@ -462,9 +462,9 @@ export function ChartOfAccountsPage() {
             </div>
           }
         >
-          <div className="coa-list-secondary-row">
+          <div className="acc-coa-list-secondary-row">
             <div
-              className="coa-quick-filters"
+              className="acc-coa-quick-filters"
               role="group"
               aria-label="Filtros rápidos de cuentas"
             >
@@ -472,7 +472,7 @@ export function ChartOfAccountsPage() {
                 <button
                   key={f.key}
                   type="button"
-                  className={`coa-chip${quickFilter === f.key ? " coa-chip--active" : ""}`}
+                  className={`acc-coa-chip${quickFilter === f.key ? " acc-coa-chip--active" : ""}`}
                   aria-pressed={quickFilter === f.key}
                   onClick={() => setQuickFilter(f.key)}
                 >
@@ -492,7 +492,7 @@ export function ChartOfAccountsPage() {
                 ))}
               </ZhSelect>
             </div>
-            <span className="coa-list-summary-text subtle">
+            <span className="acc-coa-list-summary-text subtle">
               Mostrando {filteredAccounts.length} de {accounts.length} cuentas
             </span>
           </div>

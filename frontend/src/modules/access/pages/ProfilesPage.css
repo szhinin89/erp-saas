@@ -17,7 +17,7 @@
    global `input,select,textarea{width:100%}` de zh-ui.css los haría crecer y
    envolver a dos líneas si no se fija un ancho aquí). Card sutil (superficie+borde)
    para que el bloque se lea como una unidad, no como controles sueltos flotando. */
-.pa-header-toolbar {
+.access-pa-header-toolbar {
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -30,42 +30,42 @@
 
 /* Label a la izquierda del control (en vez de arriba) — fila más corta, misma
    altura que el buscador. Solo dentro de esta toolbar: no toca .zh-field global. */
-.pa-header-field.zh-field {
+.access-pa-header-field.zh-field {
   flex-direction: row;
   align-items: center;
   gap: var(--space-2);
 }
 
-.pa-header-field .zh-field-label {
+.access-pa-header-field .zh-field-label {
   white-space: nowrap;
 }
 
-.pa-header-field .zh-field-control select {
+.access-pa-header-field .zh-field-control select {
   width: 200px;
 }
 
-.pa-filter-input {
+.access-pa-filter-input {
   width: 200px;
 }
 
 @media (max-width: 640px) {
-  .pa-header-toolbar {
+  .access-pa-header-toolbar {
     width: 100%;
     flex-direction: column;
     align-items: stretch;
   }
 
-  .pa-header-field .zh-field-control select,
-  .pa-filter-input {
+  .access-pa-header-field .zh-field-control select,
+  .access-pa-filter-input {
     width: 100%;
   }
 }
 
-.pa-group {
+.access-pa-group {
   margin-bottom: var(--space-5);
 }
 
-.pa-group-title {
+.access-pa-group-title {
   font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
@@ -75,7 +75,7 @@
 }
 
 /* ── Barra de acciones rápidas + leyenda ─────────────────────────────── */
-.pa-quick-actions {
+.access-pa-quick-actions {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -87,21 +87,21 @@
   border-radius: var(--radius-lg);
 }
 
-.pa-quick-actions-label {
+.access-pa-quick-actions-label {
   font-size: var(--text-label-sm-size);
   font-weight: var(--text-label-sm-weight);
   color: var(--color-text-secondary);
   margin-right: var(--space-1);
 }
 
-.pa-legend {
+.access-pa-legend {
   display: flex;
   align-items: center;
   gap: var(--space-3);
   margin-left: auto;
 }
 
-.pa-legend-item {
+.access-pa-legend-item {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -109,28 +109,28 @@
   color: var(--color-text-secondary);
 }
 
-.pa-legend-dot {
+.access-pa-legend-dot {
   width: 8px;
   height: 8px;
   border-radius: var(--radius-pill);
   flex-shrink: 0;
 }
 
-.pa-legend-dot--access {
+.access-pa-legend-dot--access {
   background: var(--color-primary);
 }
 
-.pa-legend-dot--action {
+.access-pa-legend-dot--action {
   background: var(--color-success);
 }
 
 /* ── Categoría (Nivel 2, NAV-HIERARCHY-UNIFY-01) — agrupa pantallas dentro de un grupo/módulo,
    misma jerarquía que ya usa el menú lateral. Header sutil + selector masivo por categoría. ── */
-.pa-category {
+.access-pa-category {
   margin-bottom: var(--space-4);
 }
 
-.pa-category-header {
+.access-pa-category-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -140,7 +140,7 @@
   margin-bottom: var(--space-2);
 }
 
-.pa-category-title {
+.access-pa-category-title {
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
@@ -149,11 +149,11 @@
 }
 
 /* ── Bloque por pantalla (card compacta) ─────────────────────────────── */
-.pa-item-card {
+.access-pa-item-card {
   margin-bottom: var(--space-3);
 }
 
-.pa-item-header {
+.access-pa-item-header {
   width: 100%;
   padding: var(--space-3) var(--space-4);
   background: none;
@@ -165,27 +165,27 @@
   color: inherit;
 }
 
-.pa-item-header:focus-visible {
+.access-pa-item-header:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: -2px;
 }
 
-.pa-item-header-left {
+.access-pa-item-header-left {
   min-width: 0;
 }
 
-.pa-item-chevron {
+.access-pa-item-chevron {
   color: var(--color-text-secondary);
 }
 
-.pa-item-title-wrap {
+.access-pa-item-title-wrap {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   min-width: 0;
 }
 
-.pa-item-title {
+.access-pa-item-title {
   font-size: var(--text-label-md-size);
   font-weight: var(--text-label-md-weight);
   color: var(--color-text-primary);
@@ -195,34 +195,34 @@
 }
 
 /* ── Grid de acciones — wrap automático, compacto ────────────────────── */
-.pa-actions-grid {
+.access-pa-actions-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
 }
 
-.pa-action-tile {
+.access-pa-action-tile {
   border-radius: var(--radius-lg);
   border-left: 3px solid transparent;
 }
 
-.pa-action-tile .zh-toggle {
+.access-pa-action-tile .zh-toggle {
   padding: 10px 12px;
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
 }
 
-.pa-action-tile--access {
+.access-pa-action-tile--access {
   border-left-color: var(--color-primary);
 }
 
-.pa-action-tile--action {
+.access-pa-action-tile--action {
   border-left-color: var(--color-success);
 }
 
 /* ── Resumen inferior ─────────────────────────────────────────────────── */
-.pa-summary-bar {
+.access-pa-summary-bar {
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -230,12 +230,12 @@
   padding: var(--space-3) 0;
 }
 
-.pa-summary-icon {
+.access-pa-summary-icon {
   font-size: 18px;
   color: var(--color-text-secondary);
 }
 
-.pa-summary-text {
+.access-pa-summary-text {
   margin-right: var(--space-2);
 }
 

@@ -223,7 +223,7 @@ export function DocumentFlowPoliciesPage() {
     const posting = accountingPostingModeOption(p.accountingPostingMode);
     const inventory = inventoryImpactModeOption(p.inventoryImpactMode);
     return (
-      <div className="prd-row-actions dfp-effects">
+      <div className="prd-row-actions cfg-dfp-effects">
         <Badge label={payable.summary} variant={payable.badgeVariant} size="md" />
         <Badge label={posting.summary} variant={posting.badgeVariant} size="md" />
         <Badge label={inventory.summary} variant={inventory.badgeVariant} size="md" />

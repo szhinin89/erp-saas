@@ -330,8 +330,8 @@ export function PermissionsAssignmentPage() {
       title={t("permissionsAssignment.title")}
       subtitle={t("permissionsAssignment.subtitle")}
       action={
-        <div className="pa-header-toolbar">
-          <ZHField className="pa-header-field" label={t("permissionsAssignment.selectProfile")}>
+        <div className="access-pa-header-toolbar">
+          <ZHField className="access-pa-header-field" label={t("permissionsAssignment.selectProfile")}>
             <ZhSelect
               className="zh-input"
               value={selectedProfileId}
@@ -347,7 +347,7 @@ export function PermissionsAssignmentPage() {
             </ZhSelect>
           </ZHField>
           <ZhTextInput
-            className="zh-input pa-filter-input"
+            className="zh-input access-pa-filter-input"
             placeholder={t("permissionsAssignment.filterPlaceholder")}
             value={filterText}
             onChange={(e) => setFilterText(e.target.value)}
@@ -373,8 +373,8 @@ export function PermissionsAssignmentPage() {
         <p className="subtle pg-state-pad">{t("permissionsAssignment.emptyCatalog")}</p>
       ) : (
         <>
-          <div className="pa-quick-actions">
-            <span className="pa-quick-actions-label">
+          <div className="access-pa-quick-actions">
+            <span className="access-pa-quick-actions-label">
               {t("permissionsAssignment.quickActions.label")}
             </span>
             <ZHBtn variant="secondary" size="xs" type="button" onClick={markAll}>
@@ -386,13 +386,13 @@ export function PermissionsAssignmentPage() {
             <ZHBtn variant="secondary" size="xs" type="button" onClick={onlyAccess}>
               {t("permissionsAssignment.quickActions.onlyAccess")}
             </ZHBtn>
-            <span className="pa-legend">
-              <span className="pa-legend-item">
-                <span className="pa-legend-dot pa-legend-dot--access" />
+            <span className="access-pa-legend">
+              <span className="access-pa-legend-item">
+                <span className="access-pa-legend-dot access-pa-legend-dot--access" />
                 {t("permissionsAssignment.legend.access")}
               </span>
-              <span className="pa-legend-item">
-                <span className="pa-legend-dot pa-legend-dot--action" />
+              <span className="access-pa-legend-item">
+                <span className="access-pa-legend-dot access-pa-legend-dot--action" />
                 {t("permissionsAssignment.legend.action")}
               </span>
             </span>
@@ -404,15 +404,15 @@ export function PermissionsAssignmentPage() {
             <p className="subtle pg-state-pad">{t("permissionsAssignment.noFilterMatches")}</p>
           ) : (
             visibleGroups.map((group) => (
-              <div key={group.code} className="pa-group">
-                <h4 className="pa-group-title">{t(group.labelKey)}</h4>
+              <div key={group.code} className="access-pa-group">
+                <h4 className="access-pa-group-title">{t(group.labelKey)}</h4>
                 {group.categories.map((category) => {
                   const selectionState = categorySelectionState(category);
                   const categoryLabel = t(category.labelKey);
                   return (
-                    <div key={category.id} className="pa-category">
-                      <div className="pa-category-header">
-                        <span className="pa-category-title">{categoryLabel}</span>
+                    <div key={category.id} className="access-pa-category">
+                      <div className="access-pa-category-header">
+                        <span className="access-pa-category-title">{categoryLabel}</span>
                         <ZHBtn
                           variant="ghost"
                           size="xs"
@@ -430,10 +430,10 @@ export function PermissionsAssignmentPage() {
                         const collapsed = collapsedIds.has(item.id);
                         const itemLabel = t(item.labelKey);
                         return (
-                          <div key={item.id} className="pg-section pa-item-card">
+                          <div key={item.id} className="pg-section access-pa-item-card">
                             <button
                               type="button"
-                              className="pg-section-header pa-item-header"
+                              className="pg-section-header access-pa-item-header"
                               onClick={() => toggleCollapsed(item.id)}
                               aria-expanded={!collapsed}
                               aria-label={t(
@@ -443,12 +443,12 @@ export function PermissionsAssignmentPage() {
                                 { name: itemLabel },
                               )}
                             >
-                              <span className="pg-section-header-left pa-item-header-left">
-                                <span className="material-symbols-outlined pg-section-icon pa-item-chevron">
+                              <span className="pg-section-header-left access-pa-item-header-left">
+                                <span className="material-symbols-outlined pg-section-icon access-pa-item-chevron">
                                   {collapsed ? "chevron_right" : "expand_more"}
                                 </span>
-                                <span className="pa-item-title-wrap">
-                                  <span className="pa-item-title">{itemLabel}</span>
+                                <span className="access-pa-item-title-wrap">
+                                  <span className="access-pa-item-title">{itemLabel}</span>
                                   <Badge label={item.route} variant="neutral" code />
                                 </span>
                               </span>
@@ -460,15 +460,15 @@ export function PermissionsAssignmentPage() {
                               />
                             </button>
                             {!collapsed && (
-                              <div className="pg-section-body pa-actions-grid">
+                              <div className="pg-section-body access-pa-actions-grid">
                                 {item.actions.map((action, index) => (
                                   <div
                                     key={action.code}
                                     title={action.code}
                                     className={
                                       index === 0
-                                        ? "pa-action-tile pa-action-tile--access"
-                                        : "pa-action-tile pa-action-tile--action"
+                                        ? "access-pa-action-tile access-pa-action-tile--access"
+                                        : "access-pa-action-tile access-pa-action-tile--action"
                                     }
                                   >
                                     <ZHToggle
@@ -491,9 +491,9 @@ export function PermissionsAssignmentPage() {
             ))
           )}
 
-          <div className="pa-summary-bar">
-            <span className="material-symbols-outlined pa-summary-icon">verified_user</span>
-            <span className="subtle pa-summary-text">
+          <div className="access-pa-summary-bar">
+            <span className="material-symbols-outlined access-pa-summary-icon">verified_user</span>
+            <span className="subtle access-pa-summary-text">
               {t("permissionsAssignment.summary.total", {
                 screens: accessCount,
                 permissions: totalActionsCount,

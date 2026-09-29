@@ -1,14 +1,14 @@
-.coa-list-card > .card-header {
+.acc-coa-list-card > .card-header {
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-3) var(--space-5);
 }
 
-.coa-list-card > .card-header > span {
+.acc-coa-list-card > .card-header > span {
   flex: 0 0 auto;
 }
 
-.coa-list-card > .card-header > div {
+.acc-coa-list-card > .card-header > div {
   flex: 1 1 620px;
   min-width: 0;
 }
@@ -35,7 +35,7 @@
 /* ACCOUNTING-CHART-LIST-INTERACTIVITY-01: fila secundaria (chips rápidos + nivel + "Mostrando
    X de Y") entre el header de filtros existente y la tabla — no reemplaza los filtros de
    búsqueda/tipo/estado, los complementa. */
-.coa-list-secondary-row {
+.acc-coa-list-secondary-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -44,18 +44,18 @@
   padding: 0 var(--space-5) var(--space-3);
 }
 
-.coa-quick-filters {
+.acc-coa-quick-filters {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-2);
 }
 
-.coa-list-summary-text {
+.acc-coa-list-summary-text {
   white-space: nowrap;
 }
 
-.coa-chip {
+.acc-coa-chip {
   display: inline-flex;
   align-items: center;
   padding: 6px var(--space-3);
@@ -73,18 +73,18 @@
     color var(--transition);
 }
 
-.coa-chip:hover {
+.acc-coa-chip:hover {
   border-color: var(--color-primary);
   color: var(--color-text-primary);
 }
 
-.coa-chip--active {
+.acc-coa-chip--active {
   border-color: var(--color-primary);
   background: var(--color-primary);
   color: var(--color-on-primary);
 }
 
-.coa-tree-name {
+.acc-coa-tree-name {
   --account-tree-step: 14px;
   --account-tree-elbow: 8px;
   --account-tree-line-color: var(--color-outline-variant);
@@ -97,18 +97,18 @@
   white-space: nowrap;
 }
 
-.coa-tree-name--group {
+.acc-coa-tree-name--group {
   font-weight: 600;
 }
 
-.coa-tree-name__guides {
+.acc-coa-tree-name__guides {
   display: inline-flex;
   align-items: stretch;
   flex: 0 0 auto;
   min-height: var(--text-body-md-height);
 }
 
-.coa-tree-name__guide {
+.acc-coa-tree-name__guide {
   position: relative;
   display: block;
   flex: 0 0 var(--account-tree-step);
@@ -116,12 +116,12 @@
   min-height: var(--text-body-md-height);
 }
 
-.coa-tree-name__guide--branch {
+.acc-coa-tree-name__guide--branch {
   flex-basis: calc(var(--account-tree-step) + var(--account-tree-elbow));
   width: calc(var(--account-tree-step) + var(--account-tree-elbow));
 }
 
-.coa-tree-name__guide::before {
+.acc-coa-tree-name__guide::before {
   content: "";
   position: absolute;
   top: calc(var(--space-1) * -1);
@@ -133,7 +133,7 @@
   transform: translateX(-50%);
 }
 
-.coa-tree-name__guide--branch::after {
+.acc-coa-tree-name__guide--branch::after {
   content: "";
   position: absolute;
   top: 50%;
@@ -145,18 +145,18 @@
   transform: translateY(-50%);
 }
 
-.coa-tree-name__label {
+.acc-coa-tree-name__label {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 @media (max-width: 920px) {
-  .coa-list-card > .card-header {
+  .acc-coa-list-card > .card-header {
     align-items: flex-start;
   }
 
-  .coa-list-card > .card-header > div {
+  .acc-coa-list-card > .card-header > div {
     flex-basis: 100%;
   }
 
@@ -171,7 +171,7 @@
     justify-self: flex-start;
   }
 
-  .coa-list-secondary-row {
+  .acc-coa-list-secondary-row {
     flex-direction: column;
     align-items: flex-start;
   }

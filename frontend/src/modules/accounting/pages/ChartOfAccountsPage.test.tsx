@@ -146,14 +146,14 @@ describe("ChartOfAccountsPage — activar/desactivar cuenta: confirmación y fee
       "Bancos",
     ]);
     expect(nameCells.map((cell) => cell.dataset.depth)).toEqual(["0", "1", "2", "3", "3", "2"]);
-    expect(nameCells[0].querySelector(".coa-tree-name__guides")).toBeNull();
+    expect(nameCells[0].querySelector(".acc-coa-tree-name__guides")).toBeNull();
 
-    const depthOneGuides = nameCells[1].querySelector(".coa-tree-name__guides");
-    const depthThreeGuides = nameCells[3].querySelector(".coa-tree-name__guides");
+    const depthOneGuides = nameCells[1].querySelector(".acc-coa-tree-name__guides");
+    const depthThreeGuides = nameCells[3].querySelector(".acc-coa-tree-name__guides");
     expect(depthOneGuides?.getAttribute("aria-hidden")).toBe("true");
-    expect(depthOneGuides?.querySelectorAll(".coa-tree-name__guide")).toHaveLength(1);
+    expect(depthOneGuides?.querySelectorAll(".acc-coa-tree-name__guide")).toHaveLength(1);
     expect(depthThreeGuides?.getAttribute("aria-hidden")).toBe("true");
-    expect(depthThreeGuides?.querySelectorAll(".coa-tree-name__guide")).toHaveLength(3);
+    expect(depthThreeGuides?.querySelectorAll(".acc-coa-tree-name__guide")).toHaveLength(3);
     expect(depthThreeGuides?.textContent).toBe("");
 
     rows.forEach((row) => {
@@ -457,7 +457,7 @@ describe("ChartOfAccountsPage — interactividad del listado (N°, resumen, chip
     rows.forEach((row) => {
       expect(row.querySelector('button[aria-label="Editar"]')).toBeTruthy();
     });
-    expect(container.querySelectorAll(".coa-tree-name__guides").length).toBeGreaterThan(0);
+    expect(container.querySelectorAll(".acc-coa-tree-name__guides").length).toBeGreaterThan(0);
     expect(screen.queryByText(/[│└├]/)).toBeNull();
   });
 });

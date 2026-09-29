@@ -58,17 +58,17 @@ function ReadinessItemRow({ item }: { item: CompanyOperationalReadinessItem }) {
   const actionRoute = getOperationalReadinessActionRoute(item.actionTarget);
 
   return (
-    <div className="opreadiness-item-row">
+    <div className="cfg-opreadiness-item-row">
       <Badge
         label={t(`operationalReadiness.statusBadge.${item.status.toLowerCase()}`, item.status)}
         variant={statusBadgeVariant(item.status)}
       />
-      <div className="opreadiness-item-text">
-        <p className="opreadiness-item-label">{label}</p>
-        <p className="opreadiness-item-message zh-text-muted zh-text-xs">{message}</p>
+      <div className="cfg-opreadiness-item-text">
+        <p className="cfg-opreadiness-item-label">{label}</p>
+        <p className="cfg-opreadiness-item-message zh-text-muted zh-text-xs">{message}</p>
       </div>
       {actionRoute && (
-        <Link to={actionRoute} className="zh-link opreadiness-item-action">
+        <Link to={actionRoute} className="zh-link cfg-opreadiness-item-action">
           {t(actionLabelKey)}
         </Link>
       )}
@@ -79,7 +79,7 @@ function ReadinessItemRow({ item }: { item: CompanyOperationalReadinessItem }) {
 function ReadinessSectionCard({ section }: { section: CompanyOperationalReadinessSection }) {
   const { t } = useI18n();
   return (
-    <div className="pg-section opreadiness-section">
+    <div className="pg-section cfg-opreadiness-section">
       <div className="pg-section-header">
         <div className="pg-section-header-left">
           <span className="material-symbols-outlined pg-section-icon">
@@ -94,7 +94,7 @@ function ReadinessSectionCard({ section }: { section: CompanyOperationalReadines
           variant={statusBadgeVariant(section.status)}
         />
       </div>
-      <div className="pg-section-body opreadiness-item-list">
+      <div className="pg-section-body cfg-opreadiness-item-list">
         {section.items.map((item) => (
           <ReadinessItemRow key={item.code} item={item} />
         ))}
@@ -137,14 +137,14 @@ export function OperationalReadinessSection() {
   ];
 
   return (
-    <div className="opreadiness-root">
+    <div className="cfg-opreadiness-root">
       <ZHPageNotice
         variant={overallNoticeVariant(readiness.overallStatus)}
         message={t(`operationalReadiness.overallStatus.${readiness.overallStatus.toLowerCase()}`)}
         detail={t("operationalReadiness.subtitle")}
       />
 
-      <div className="pg-kpis opreadiness-capabilities">
+      <div className="pg-kpis cfg-opreadiness-capabilities">
         {capabilities.map((cap) => (
           <ReportKpiCard
             key={cap.key}
@@ -161,7 +161,7 @@ export function OperationalReadinessSection() {
         ))}
       </div>
 
-      <div className="opreadiness-sections">
+      <div className="cfg-opreadiness-sections">
         {readiness.sections.map((section) => (
           <ReadinessSectionCard key={section.code} section={section} />
         ))}

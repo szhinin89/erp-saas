@@ -2,6 +2,13 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-28** · Kernel refactor: **2026-06-05**.
 
+## ZH-ARCH-CSS-PREFIXES-01 — Prefijos CSS de página (2026-09-28)
+
+**Estado: COMPLETADO (106 de 112; 6 requieren migración coordinada).** 112 ocurrencias clasificadas: A 106 · B 0 · C 6 · D 0. Renombre por prefijo (CSS + TSX + tests), manteniendo el segmento semántico y los modifiers BEM; estilos y layout sin cambios (mismo set de clases que HEAD, solo con prefijo permitido); checker intacto.
+- `ProfilesPage.css` + `PermissionsAssignmentPage.tsx`: `pa-` → `access-pa-` (34). `CompanySelectPage.css/.tsx`: `cs-` → `auth-cs-` (40; incluye el modifier dinámico `auth-cs-chip--${tone}`). `ChartOfAccountsPage.css/.tsx/.test`: `coa-` → `acc-coa-` (20). `operational-readiness.css` + `OperationalReadinessSection.tsx`: `opreadiness-` → `cfg-opreadiness-` (11). `document-flow-policies-page.css` + `DocumentFlowPoliciesPage.tsx`: `dfp-` → `cfg-dfp-` (1).
+- C pendiente (6): `.coa-list-filters` — definida en `ChartOfAccountsPage.css` pero usada también por `settings/banks/BanksPage.tsx`, que no importa ese CSS (solo recibe estilo si el chunk de Contabilidad ya se cargó). Resolverlo exige decidir el estilo propio de la barra de filtros de Bancos.
+- Baseline: 112 → 6; `css-prefixes` 112 → 6. Frontend completo 2551/2551.
+
 ## ZH-ARCH-MODULE-BOUNDARIES-06-RETENTIONS — Contrato público de retención de compra (2026-09-28)
 
 **Estado: COMPLETADO.** `module-boundaries` en 0. Purchases depende solo de la facade pública de Retentions; backend, API, payload, permisos y UX sin cambios.

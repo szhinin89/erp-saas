@@ -166,18 +166,18 @@ export function CompanySelectPage() {
       <div className="zh-auth-bg-orb zh-auth-bg-orb--bl" aria-hidden="true" />
       <div className="zh-auth-bg-grid" aria-hidden="true" />
 
-      <p className="cs-bg-copy cs-bg-copy--left" aria-hidden="true">
+      <p className="auth-cs-bg-copy auth-cs-bg-copy--left" aria-hidden="true">
         {t("subscriberSelect.bgLeft", "Soluciones que impulsan tu negocio")}
-        <span className="cs-bg-copy-accent" />
+        <span className="auth-cs-bg-copy-accent" />
       </p>
-      <p className="cs-bg-copy cs-bg-copy--right" aria-hidden="true">
+      <p className="auth-cs-bg-copy auth-cs-bg-copy--right" aria-hidden="true">
         {t("subscriberSelect.bgRightLabel", "ERP")}
         <br />
         ZH Technologies
-        <span className="cs-bg-copy-accent" />
+        <span className="auth-cs-bg-copy-accent" />
       </p>
 
-      <div className="zh-auth-wrapper cs-wrapper">
+      <div className="zh-auth-wrapper auth-cs-wrapper">
         <header className="zh-auth-brand">
           <div className="zh-auth-brand-icon" aria-hidden="true">
             <span className="material-symbols-outlined">apartment</span>
@@ -185,7 +185,7 @@ export function CompanySelectPage() {
           <h1 className="zh-auth-brand-name">ZH Technologies</h1>
         </header>
 
-        <div className="zh-auth-card cs-card">
+        <div className="zh-auth-card auth-cs-card">
           <div className="zh-auth-card-header">
             <h2 className="zh-auth-card-title">
               {t("subscriberSelect.title", "Selecciona una empresa")}
@@ -198,9 +198,9 @@ export function CompanySelectPage() {
             </p>
           </div>
 
-          <div className="cs-summary">
-            <div className="cs-summary-item">
-              <span className="cs-summary-value">
+          <div className="auth-cs-summary">
+            <div className="auth-cs-summary-item">
+              <span className="auth-cs-summary-value">
                 {!loadingList && !error ? (
                   <>
                     {companies.length} {countLabel}
@@ -209,21 +209,21 @@ export function CompanySelectPage() {
                   countLabel
                 )}
               </span>
-              <span className="cs-summary-hint">
+              <span className="auth-cs-summary-hint">
                 {t(
                   "subscriberSelect.summaryHint",
                   "Elija la empresa con la que desea trabajar hoy.",
                 )}
               </span>
             </div>
-            <div className="cs-summary-item cs-summary-item--secure">
-              <span className="cs-summary-value">
+            <div className="auth-cs-summary-item auth-cs-summary-item--secure">
+              <span className="auth-cs-summary-value">
                 <span className="material-symbols-outlined" aria-hidden="true">
                   lock
                 </span>
                 {t("subscriberSelect.secureAccess.title", "Acceso seguro")}
               </span>
-              <span className="cs-summary-hint">
+              <span className="auth-cs-summary-hint">
                 {t(
                   "subscriberSelect.secureAccess.text",
                   "Está usando una sesión autenticada.",
@@ -232,7 +232,7 @@ export function CompanySelectPage() {
             </div>
           </div>
 
-          <div className="zh-input-group cs-search">
+          <div className="zh-input-group auth-cs-search">
             <span className="zh-input-group__prefix" aria-hidden="true">
               <span className="material-symbols-outlined">search</span>
             </span>
@@ -261,7 +261,7 @@ export function CompanySelectPage() {
 
           {renderCompanyArea()}
 
-          <p className="cs-footer-help">
+          <p className="auth-cs-footer-help">
             {t(
               "subscriberSelect.footerHelp",
               "Si no encuentra su empresa, contacte al administrador.",
@@ -275,8 +275,8 @@ export function CompanySelectPage() {
   function renderCompanyArea() {
     if (loadingList) {
       return (
-        <div className="cs-loading">
-          <span className="cs-spinner" aria-hidden="true" />
+        <div className="auth-cs-loading">
+          <span className="auth-cs-spinner" aria-hidden="true" />
           <span>{t("subscriberSelect.loading", "Cargando empresas…")}</span>
         </div>
       );
@@ -299,12 +299,12 @@ export function CompanySelectPage() {
     }
 
     return (
-      <div className="cs-list" role="list">
+      <div className="auth-cs-list" role="list">
         {filtered.map((x, i) => {
           const statusChip = getCompanyStatusChip(x, t);
           const metaItems = getCompanyMetaItems(x, t);
           return (
-            <div key={x.companyId} className="zh-entity-item cs-company-card" role="listitem">
+            <div key={x.companyId} className="zh-entity-item auth-cs-company-card" role="listitem">
               <div
                 className={`zh-avatar zh-avatar--${AVATAR_VARIANTS[i % AVATAR_VARIANTS.length]}`}
                 aria-hidden="true"
@@ -314,16 +314,16 @@ export function CompanySelectPage() {
               <div className="zh-entity-item-info">
                 <span className="zh-entity-item-name-row">
                   <span className="zh-entity-item-name">{x.displayName}</span>
-                  <span className={`cs-chip cs-chip--${statusChip.tone}`}>
+                  <span className={`auth-cs-chip auth-cs-chip--${statusChip.tone}`}>
                     {statusChip.label}
                   </span>
                 </span>
                 <span className="zh-entity-item-sub mono">
                   {t("subscriberSelect.rucLabel", "RUC:")} {x.ruc}
                 </span>
-                <span className="cs-company-meta">
+                <span className="auth-cs-company-meta">
                   {metaItems.map((item) => (
-                    <span key={item} className="cs-chip cs-chip--neutral">
+                    <span key={item} className="auth-cs-chip auth-cs-chip--neutral">
                       {item}
                     </span>
                   ))}
@@ -349,7 +349,7 @@ export function CompanySelectPage() {
           );
         })}
         {filtered.length === 0 && (
-          <div className="cs-empty">
+          <div className="auth-cs-empty">
             <span className="material-symbols-outlined" aria-hidden="true">
               search_off
             </span>
