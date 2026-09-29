@@ -10,10 +10,9 @@
     "lineNumber": "excluded to keep identity stable across unrelated edits"
   },
   "summary": {
-    "violations": 114,
+    "violations": 112,
     "byCheck": {
-      "css-prefixes": 112,
-      "module-boundaries": 2
+      "css-prefixes": 112
     }
   },
   "violations": [
@@ -540,20 +539,6 @@
       "rule": "F-css-prefix",
       "file": "frontend/src/modules/configuracion/empresa/sections/operational-readiness.css",
       "message": "class \".opreadiness-sections\" must use prefix \"cfg-\" or \"sri-\" or \"bill-\" or global zh-ui/pg-* token",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/purchases/hooks/usePurchasesPage.retention.test.ts",
-      "message": "cross-module import \"purchases\" → \"retentions\" via \"../../retentions/api/retentionsService\" not in allowedCrossImports; use shared contract or extend config",
-      "count": 1
-    },
-    {
-      "check": "module-boundaries",
-      "rule": "F-module-boundary",
-      "file": "frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
-      "message": "cross-module import \"purchases\" → \"retentions\" via \"../../retentions/api/retentionsService\" not in allowedCrossImports; use shared contract or extend config",
       "count": 1
     }
   ]

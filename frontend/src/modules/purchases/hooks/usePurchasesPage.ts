@@ -11,10 +11,10 @@ import type {
 } from "../api/purchaseService";
 import { purchaseService } from "../api/purchaseService";
 import {
-  retentionsService,
+  purchaseRetentionFacade,
   type RetentionDocumentDto,
   type IssueRetentionLineRequest,
-} from "../../retentions/api/retentionsService";
+} from "../../retentions/facades/purchaseRetentionFacade";
 import { downloadBlob } from "../../ride/utils/downloadBlob";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import {
@@ -1246,7 +1246,7 @@ export function usePurchasesPage() {
         setRetention(null);
         if (inv.status === "Confirmed") {
           try {
-            const ret = await retentionsService.getForPurchase(inv.id);
+            const ret = await purchaseRetentionFacade.getForPurchase(inv.id);
             setRetention(ret);
           } catch {
             /* */
@@ -1803,7 +1803,7 @@ export function usePurchasesPage() {
       if (lines.length === 0) return;
       setWhLoading(true);
       try {
-        const ret = await retentionsService.issueForPurchase(editing.id, {
+        const ret = await purchaseRetentionFacade.issueForPurchase(editing.id, {
           emissionPointId: epId,
           issueDate: date,
           lines,
@@ -1843,7 +1843,7 @@ export function usePurchasesPage() {
       if (!editing || !retention || whLoading) return;
       setWhLoading(true);
       try {
-        const ret = await retentionsService.cancelForPurchase(editing.id, retention.id, reason);
+        const ret = await purchaseRetentionFacade.cancelForPurchase(editing.id, retention.id, reason);
         setRetention(ret);
         message.success(
           t("purchases.messages.retentionCancelled", "Retención anulada correctamente."),
@@ -1868,7 +1868,7 @@ export function usePurchasesPage() {
     if (!retention) return;
     setElectronicPending(true);
     try {
-      const blob = await retentionsService.getElectronicXmlBlob(retention.id);
+      const blob = await purchaseRetentionFacade.getElectronicXmlBlob(retention.id);
       downloadBlob(blob, `retencion-${retention.retentionNumber ?? retention.id}.xml`);
     } catch (err: unknown) {
       showSaveError(
@@ -1882,7 +1882,7 @@ export function usePurchasesPage() {
     if (!retention) return;
     setElectronicPending(true);
     try {
-      const blob = await retentionsService.getRidePdfBlob(retention.id);
+      const blob = await purchaseRetentionFacade.getRidePdfBlob(retention.id);
       downloadBlob(blob, `retencion-${retention.retentionNumber ?? retention.id}.pdf`);
     } catch (err: unknown) {
       showSaveError(
@@ -1896,7 +1896,7 @@ export function usePurchasesPage() {
     if (!retention || !canRegisterElectronic) return;
     setElectronicPending(true);
     try {
-      await retentionsService.registerElectronic(retention.id);
+      await purchaseRetentionFacade.registerElectronic(retention.id);
       message.success("Registro electrónico enviado correctamente.");
     } catch (err: unknown) {
       showSaveError(

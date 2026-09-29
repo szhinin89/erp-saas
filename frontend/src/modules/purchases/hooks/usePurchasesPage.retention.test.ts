@@ -7,16 +7,16 @@ import { useActiveBranchStore } from "../../../store/activeBranchStore";
 import { usePurchasesPage } from "./usePurchasesPage";
 import { purchaseService, type PurchaseInvoiceDto } from "../api/purchaseService";
 import {
-  retentionsService,
+  purchaseRetentionFacade,
   type RetentionDocumentDto,
-} from "../../retentions/api/retentionsService";
+} from "../../retentions/facades/purchaseRetentionFacade";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { message } from "../../../lib/messages";
 
 /**
  * PURCHASES-RETENTIONS-UI-MIGRATION-05C / PURCHASES-WITHHOLDING-LEGACY-REMOVAL-05E — la emisión
  * de retención desde Compras usa el modelo transversal `RetentionDocument` vía
- * `retentionsService` (`POST/GET /api/v1/purchases/{id}/retention`, que internamente reutilizan
+ * `purchaseRetentionFacade` (`POST/GET /api/v1/purchases/{id}/retention`, que internamente reutilizan
  * `IssueRetentionCommand`/`GetRetentionBySourceQuery`). Cubre: carga de la retención asociada,
  * payload exacto del endpoint, y el manejo de conflicto (RetentionDocument ya emitido).
  */
@@ -41,8 +41,8 @@ vi.mock("../api/purchaseService", () => ({
   },
 }));
 
-vi.mock("../../retentions/api/retentionsService", () => ({
-  retentionsService: {
+vi.mock("../../retentions/facades/purchaseRetentionFacade", () => ({
+  purchaseRetentionFacade: {
     getForPurchase: vi.fn(),
     issueForPurchase: vi.fn(),
     cancelForPurchase: vi.fn(),
@@ -215,7 +215,7 @@ beforeEach(() => {
     page: 1,
     pageSize: 25,
   });
-  vi.mocked(retentionsService.getForPurchase).mockResolvedValue(null);
+  vi.mocked(purchaseRetentionFacade.getForPurchase).mockResolvedValue(null);
   vi.mocked(usePermissionsUi).mockReturnValue({
     canShow: () => true,
     has: () => true,
@@ -236,12 +236,12 @@ async function setupWithLoadedInvoice() {
 }
 
 describe("usePurchasesPage — carga de la retención asociada (RetentionDocument)", () => {
-  it("carga la retención existente vía retentionsService.getForPurchase, no purchaseService.getWithholding", async () => {
-    vi.mocked(retentionsService.getForPurchase).mockResolvedValue(buildRetention());
+  it("carga la retención existente vía purchaseRetentionFacade.getForPurchase, no purchaseService.getWithholding", async () => {
+    vi.mocked(purchaseRetentionFacade.getForPurchase).mockResolvedValue(buildRetention());
     const result = await setupWithLoadedInvoice();
 
     await waitFor(() => expect(result.current.retention?.id).toBe("ret-1"));
-    expect(retentionsService.getForPurchase).toHaveBeenCalledWith("purchase-1");
+    expect(purchaseRetentionFacade.getForPurchase).toHaveBeenCalledWith("purchase-1");
   });
 
   it("sin retención emitida, retention queda null (estado normal, no error)", async () => {
@@ -278,29 +278,29 @@ describe("usePurchasesPage — emitir retención vía el modelo transversal Rete
     return result;
   }
 
-  it("llama al endpoint nuevo (retentionsService.issueForPurchase), nunca purchaseService.issueWithholding", async () => {
-    vi.mocked(retentionsService.issueForPurchase).mockResolvedValue(buildRetention());
+  it("llama al endpoint nuevo (purchaseRetentionFacade.issueForPurchase), nunca purchaseService.issueWithholding", async () => {
+    vi.mocked(purchaseRetentionFacade.issueForPurchase).mockResolvedValue(buildRetention());
     const result = await setupWithPreview();
 
     await act(async () => {
       await result.current.handleIssueRetention("ep-1");
     });
 
-    expect(retentionsService.issueForPurchase).toHaveBeenCalledTimes(1);
+    expect(purchaseRetentionFacade.issueForPurchase).toHaveBeenCalledTimes(1);
     expect(purchaseService as unknown as Record<string, unknown>).not.toHaveProperty(
       "issueWithholding",
     );
   });
 
   it("el payload usa emissionPointId/issueDate/lines con taxType Vat/Income — nunca retentionNumber", async () => {
-    vi.mocked(retentionsService.issueForPurchase).mockResolvedValue(buildRetention());
+    vi.mocked(purchaseRetentionFacade.issueForPurchase).mockResolvedValue(buildRetention());
     const result = await setupWithPreview();
 
     await act(async () => {
       await result.current.handleIssueRetention("ep-1");
     });
 
-    expect(retentionsService.issueForPurchase).toHaveBeenCalledWith(
+    expect(purchaseRetentionFacade.issueForPurchase).toHaveBeenCalledWith(
       "purchase-1",
       expect.objectContaining({
         emissionPointId: "ep-1",
@@ -316,13 +316,13 @@ describe("usePurchasesPage — emitir retención vía el modelo transversal Rete
         ],
       }),
     );
-    const payload = vi.mocked(retentionsService.issueForPurchase).mock.calls[0][1];
+    const payload = vi.mocked(purchaseRetentionFacade.issueForPurchase).mock.calls[0][1];
     expect(payload).not.toHaveProperty("retentionNumber");
     expect(payload.lines[0]).not.toHaveProperty("retentionNumber");
   });
 
   it("al emitir correctamente, actualiza retention y muestra message.success", async () => {
-    vi.mocked(retentionsService.issueForPurchase).mockResolvedValue(buildRetention());
+    vi.mocked(purchaseRetentionFacade.issueForPurchase).mockResolvedValue(buildRetention());
     const result = await setupWithPreview();
 
     await act(async () => {
@@ -334,7 +334,7 @@ describe("usePurchasesPage — emitir retención vía el modelo transversal Rete
   });
 
   it("409 por RetentionDocument ya emitido muestra el mensaje claro esperado", async () => {
-    vi.mocked(retentionsService.issueForPurchase).mockRejectedValue({
+    vi.mocked(purchaseRetentionFacade.issueForPurchase).mockRejectedValue({
       isAxiosError: true,
       response: {
         status: 409,
@@ -365,7 +365,7 @@ describe("usePurchasesPage — documento electrónico de la retención (XML/RIDE
   });
 
   it("handleRegisterRetentionElectronic no llama al backend si falta el permiso", async () => {
-    vi.mocked(retentionsService.getForPurchase).mockResolvedValue(buildRetention());
+    vi.mocked(purchaseRetentionFacade.getForPurchase).mockResolvedValue(buildRetention());
     vi.mocked(usePermissionsUi).mockReturnValue({
       canShow: () => false,
       has: () => true,
@@ -378,12 +378,12 @@ describe("usePurchasesPage — documento electrónico de la retención (XML/RIDE
       await result.current.handleRegisterRetentionElectronic();
     });
 
-    expect(retentionsService.registerElectronic).not.toHaveBeenCalled();
+    expect(purchaseRetentionFacade.registerElectronic).not.toHaveBeenCalled();
   });
 
   it("handleRegisterRetentionElectronic llama al backend cuando el permiso está concedido", async () => {
-    vi.mocked(retentionsService.getForPurchase).mockResolvedValue(buildRetention());
-    vi.mocked(retentionsService.registerElectronic).mockResolvedValue({
+    vi.mocked(purchaseRetentionFacade.getForPurchase).mockResolvedValue(buildRetention());
+    vi.mocked(purchaseRetentionFacade.registerElectronic).mockResolvedValue({
       id: "ed-1",
       documentType: "07",
       sourceModule: "Retentions",
@@ -404,7 +404,7 @@ describe("usePurchasesPage — documento electrónico de la retención (XML/RIDE
       await result.current.handleRegisterRetentionElectronic();
     });
 
-    expect(retentionsService.registerElectronic).toHaveBeenCalledWith("ret-1");
+    expect(purchaseRetentionFacade.registerElectronic).toHaveBeenCalledWith("ret-1");
   });
 });
 
@@ -414,8 +414,8 @@ describe("usePurchasesPage — anular retención (PURCHASES-RETENTIONS-CANCEL-05
   // a nivel de estado del hook (fuente de verdad de esa condición), no montando la página completa
   // (3200+ líneas, fuera de alcance — ver PurchasesPage.withholdingModal.test.tsx).
   it("retention.status refleja 'Cancelled' tras anular — la condición de mostrar el botón deja de cumplirse", async () => {
-    vi.mocked(retentionsService.getForPurchase).mockResolvedValue(buildRetention({ status: "Issued" }));
-    vi.mocked(retentionsService.cancelForPurchase).mockResolvedValue(
+    vi.mocked(purchaseRetentionFacade.getForPurchase).mockResolvedValue(buildRetention({ status: "Issued" }));
+    vi.mocked(purchaseRetentionFacade.cancelForPurchase).mockResolvedValue(
       buildRetention({ status: "Cancelled" }),
     );
     const result = await setupWithLoadedInvoice();
@@ -446,9 +446,9 @@ describe("usePurchasesPage — anular retención (PURCHASES-RETENTIONS-CANCEL-05
     expect(result.current.canUpdatePurchase).toBe(true);
   });
 
-  it("handleCancelRetention llama retentionsService.cancelForPurchase, nunca purchaseService.cancelWithholding", async () => {
-    vi.mocked(retentionsService.getForPurchase).mockResolvedValue(buildRetention());
-    vi.mocked(retentionsService.cancelForPurchase).mockResolvedValue(
+  it("handleCancelRetention llama purchaseRetentionFacade.cancelForPurchase, nunca purchaseService.cancelWithholding", async () => {
+    vi.mocked(purchaseRetentionFacade.getForPurchase).mockResolvedValue(buildRetention());
+    vi.mocked(purchaseRetentionFacade.cancelForPurchase).mockResolvedValue(
       buildRetention({ status: "Cancelled", cancelReason: "Error en el cálculo" }),
     );
     const result = await setupWithLoadedInvoice();
@@ -458,7 +458,7 @@ describe("usePurchasesPage — anular retención (PURCHASES-RETENTIONS-CANCEL-05
       await result.current.handleCancelRetention("Error en el cálculo");
     });
 
-    expect(retentionsService.cancelForPurchase).toHaveBeenCalledWith(
+    expect(purchaseRetentionFacade.cancelForPurchase).toHaveBeenCalledWith(
       "purchase-1",
       "ret-1",
       "Error en el cálculo",
@@ -469,8 +469,8 @@ describe("usePurchasesPage — anular retención (PURCHASES-RETENTIONS-CANCEL-05
   });
 
   it("al anular correctamente, refresca retention y muestra message.success", async () => {
-    vi.mocked(retentionsService.getForPurchase).mockResolvedValue(buildRetention());
-    vi.mocked(retentionsService.cancelForPurchase).mockResolvedValue(
+    vi.mocked(purchaseRetentionFacade.getForPurchase).mockResolvedValue(buildRetention());
+    vi.mocked(purchaseRetentionFacade.cancelForPurchase).mockResolvedValue(
       buildRetention({ status: "Cancelled", cancelReason: "Motivo" }),
     );
     const result = await setupWithLoadedInvoice();
@@ -491,12 +491,12 @@ describe("usePurchasesPage — anular retención (PURCHASES-RETENTIONS-CANCEL-05
       await result.current.handleCancelRetention("Motivo");
     });
 
-    expect(retentionsService.cancelForPurchase).not.toHaveBeenCalled();
+    expect(purchaseRetentionFacade.cancelForPurchase).not.toHaveBeenCalled();
   });
 
   it("si el backend falla, muestra el error real y no llama message.success", async () => {
-    vi.mocked(retentionsService.getForPurchase).mockResolvedValue(buildRetention());
-    vi.mocked(retentionsService.cancelForPurchase).mockRejectedValue({
+    vi.mocked(purchaseRetentionFacade.getForPurchase).mockResolvedValue(buildRetention());
+    vi.mocked(purchaseRetentionFacade.cancelForPurchase).mockRejectedValue({
       isAxiosError: true,
       response: {
         status: 422,

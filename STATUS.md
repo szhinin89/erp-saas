@@ -2,6 +2,13 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-28** · Kernel refactor: **2026-06-05**.
 
+## ZH-ARCH-MODULE-BOUNDARIES-06-RETENTIONS — Contrato público de retención de compra (2026-09-28)
+
+**Estado: COMPLETADO.** `module-boundaries` en 0. Purchases depende solo de la facade pública de Retentions; backend, API, payload, permisos y UX sin cambios.
+- Auditoría (consumo de Purchases): `getForPurchase` (GET `/purchases/{id}/retention`, `purchases.view`, `GetRetentionBySourceQuery`), `issueForPurchase` (POST `/purchases/{id}/retention`, `purchases.update`, `IssueRetentionCommand` — número por secuencia server-side), `cancelForPurchase` (POST `/purchases/{id}/retention/{rid}/cancel`, `purchases.update`, `CancelRetentionCommand` — reversa CxP + asiento), `getElectronicXmlBlob`/`getRidePdfBlob` (GET `/retentions/{id}/electronic/xml|ride/pdf`, `expenses.documents.view`, on-demand sin persistir), `registerElectronic` (POST `/retentions/{id}/electronic/register`, `electronic-documents.retry`, firma + SRI). Tipos: `RetentionDocumentDto`, `IssueRetentionLineRequest`. Todos los casos de uso viven en `ERP.Application/Modules/Retentions` → owner Retentions.
+- `retentions/facades/purchaseRetentionFacade`: delega las 6 operaciones en `retentionsService` (lectura / emitir / anular / registrar explícitas en su documentación) y re-exporta solo los 2 tipos consumidos. `usePurchasesPage` y su test de retención (mock) migrados.
+- Baseline: 114 → 112; `module-boundaries` 2 → 0. Frontend completo 2551/2551.
+
 ## ZH-ARCH-MODULE-BOUNDARIES-05-EXPENSE-PURCHASE — Precarga de Gasto desde recepción (2026-09-28)
 
 **Estado: COMPLETADO.** Resuelta la violación expenses → purchases con una facade pública explícita en el módulo propietario (Purchases); backend, API, payload y UX sin cambios.
