@@ -86,7 +86,7 @@ public sealed class CancelSalesInvoiceHandlerTests
         inv.Authorize(UserId);
 
         var repo = new Mock<ISalesInvoiceRepository>();
-        repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+        repo.Setup(r => r.GetByIdForUpdateAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
 
         Domain.Modules.Sales.Entities.SalesReceivable? receivable = null;
@@ -98,7 +98,7 @@ public sealed class CancelSalesInvoiceHandlerTests
 
         var receivableRepo = new Mock<ISalesReceivableRepository>();
         receivableRepo
-            .Setup(r => r.GetByInvoiceIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByInvoiceIdForUpdateAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(receivable);
 
         var stockRepo = new Mock<IStockRepository>();
@@ -133,7 +133,8 @@ public sealed class CancelSalesInvoiceHandlerTests
             company.Object,
             branch.Object,
             user.Object,
-            companyClock.Object
+            companyClock.Object,
+            Mock.Of<IUnitOfWork>()
         );
 
         return (handler, stockRepo, inv);

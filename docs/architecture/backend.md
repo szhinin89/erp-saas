@@ -278,7 +278,17 @@ La idempotencia protege **una** intención; dos intenciones **distintas** que co
 3. **Recién entonces** la regla de dominio decide si el monto cabe; el perdedor reevalúa contra el saldo ya consumido y recibe la regla canónica (`422 DOMAIN_RULE_VIOLATION`) sin ningún efecto.
 4. `SaveChanges` (estado + posting + outbox) y `Commit`; cualquier fallo → `Rollback` completo.
 
-Todo escritor del saldo de `SalesReceivable` lo lee por `GetByIdsForUpdateAsync`/`GetByInvoiceIdForUpdateAsync`: registrar cobro, reversar cobro (además bloquea el `Payment`) y crédito por devolución de venta. Orden canónico de locks (evita deadlocks): advisory de documento (devolución) → `Payment` (reversa) → `SalesReceivable` en orden ascendente de Id → secuencia documental → secuencia de asientos (posting en `SaveChanges`). El cobro no toma `CashSession`. Sin `advisory lock` adicional ni migración: la fila existente es el recurso compartido.
+Todo escritor del saldo **o del estado** de `SalesReceivable` lo lee por `GetByIdsForUpdateAsync`/`GetByInvoiceIdForUpdateAsync`: registrar cobro, reversar cobro (además bloquea el `Payment`), crédito por devolución de venta y anulación de factura (ZH-SALES-CANCEL-COLLECTION-CONCURRENCY-01: además bloquea la `SalesInvoice` con `ISalesInvoiceRepository.GetByIdForUpdateAsync`; decisión y efectos — CxC, Kardex, reverso contable, outbox — en una transacción).
+
+Orden canónico de locks (evita deadlocks; cada flujo toma solo un subconjunto, siempre en este orden):
+
+1. advisory de documento (autorización de devolución, por factura);
+2. `SalesInvoice` (anulación);
+3. `Payment` (reversa de cobro);
+4. `SalesReceivable` en orden ascendente de Id;
+5. secuencia documental → Kardex (`CurrentStock`, optimista con reintento) → secuencia de asientos (posting en `SaveChanges`).
+
+`SalesInvoice` y `Payment` nunca se toman en el mismo flujo; ningún flujo que tenga la CxC vuelve a pedir factura, pago o advisory. El cobro no toma `CashSession`. Sin `advisory lock` adicional ni migración: la fila existente es el recurso compartido.
 
 ---
 

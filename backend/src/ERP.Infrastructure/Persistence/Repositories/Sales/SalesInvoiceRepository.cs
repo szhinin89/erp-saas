@@ -20,6 +20,31 @@ public sealed class SalesInvoiceRepository : ISalesInvoiceRepository
     private IQueryable<SalesInvoice> Scoped(Guid tenantId) =>
         _db.SalesInvoices.ForOperationalScope(tenantId, _company);
 
+    public async Task<SalesInvoice?> GetByIdForUpdateAsync(
+        Guid tenantId,
+        Guid id,
+        CancellationToken ct = default
+    )
+    {
+        // Mismo patrón oficial que SalesReceivableRepository.GetByIdsForUpdateAsync (lock → lectura
+        // acotada → Reload).
+        if (_company.HasCompanyContext)
+            await _db.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT 1 FROM sales_invoices WHERE tenant_id = {tenantId} AND company_id = {_company.CompanyId} AND id = {id} FOR UPDATE",
+                ct
+            );
+        else
+            await _db.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT 1 FROM sales_invoices WHERE tenant_id = {tenantId} AND id = {id} FOR UPDATE",
+                ct
+            );
+
+        var invoice = await GetByIdAsync(tenantId, id, ct);
+        if (invoice is not null)
+            await _db.Entry(invoice).ReloadAsync(ct);
+        return invoice;
+    }
+
     public Task<SalesInvoice?> GetByIdAsync(
         Guid tenantId,
         Guid id,

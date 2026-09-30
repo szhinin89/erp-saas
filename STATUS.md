@@ -2,6 +2,15 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-30** · Kernel refactor: **2026-06-05**.
 
+## ZH-SALES-CANCEL-COLLECTION-CONCURRENCY-01 — Anulación de factura vs cobros concurrentes (2026-09-30)
+
+**Estado: COMPLETADO.** Cierra el pendiente de ZH-COLLECTIONS-RECEIVABLE-CONCURRENCY-01.
+- Regla vigente preservada (no se inventó ninguna): una factura solo se anula si su CxC no tiene cobros registrados (`SalesReceivable.Cancel`: `PaidAmount > 0` → rechazo); una CxC anulada no admite cobros ni créditos; tras reversar el cobro la anulación vuelve a ser posible. La anulación nunca reversa cobros automáticamente.
+- Reproducción antes del fix (HTTP + PostgreSQL reales, factura a crédito autorizada por el flujo oficial): anular + cobrar a la vez terminó en factura `Cancelled` + CxC `cancelled` con `PaidAmount` 50 y el cobro aplicado y contabilizado (Kardex y asientos de la factura reversados) — 1 de cada 3–4 rondas. Dos anulaciones simultáneas: la perdedora respondía 500 `INTERNAL_ERROR`. Causa: `CancelSalesInvoiceHandler` leía factura y CxC sin lock ni transacción explícita.
+- Fix: transacción explícita; `SalesInvoice` FOR UPDATE (`ISalesInvoiceRepository.GetByIdForUpdateAsync`, tenant+empresa) → CxC FOR UPDATE (`GetByInvoiceIdForUpdateAsync`) → validar → CxC, Kardex, reverso contable y outbox → commit. Orden global de locks ampliado en `docs/architecture/backend.md`. Sin migración, sin advisory nuevo, sin cambios de frontend.
+- Tests: 11 HTTP + PostgreSQL (`SalesCancelCollectionConcurrencyTests`): anulación→cobro, cobro→anulación, simultáneos ×8, orden forzado con el lock de la CxC retenido desde otra conexión (anulación primero / cobro primero, ×3 c/u), replay idempotente, reversa + anulación ×8, dos anulaciones ×8 (Kardex y asientos reversados una sola vez, perdedora 422), devolución con crédito + anulación ×8, factura sin cobros, otra empresa (fail-closed). Estado final leído desde otro DbContext.
+- Pendiente fuera de alcance: autorizar una devolución no revalida que la factura siga autorizada (con reembolso en efectivo se puede autorizar sobre una factura ya anulada; hallazgo por lectura de código, no reproducido) — ticket propio.
+
 ## ZH-COLLECTIONS-RECEIVABLE-CONCURRENCY-01 — Cobros distintos concurrentes sobre la misma CxC (2026-09-30)
 
 **Estado: COMPLETADO.** Cierra el pendiente de ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01 (actualización perdida de `SalesReceivable`).

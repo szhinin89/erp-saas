@@ -25,6 +25,7 @@ public sealed class CancelSalesInvoiceHandler
     private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
     private readonly ICompanyClock _companyClock;
+    private readonly IUnitOfWork _uow;
 
     public CancelSalesInvoiceHandler(
         ISalesInvoiceRepository repo,
@@ -35,7 +36,8 @@ public sealed class CancelSalesInvoiceHandler
         ICurrentCompany c,
         ICurrentBranch b,
         ICurrentUser u,
-        ICompanyClock companyClock
+        ICompanyClock companyClock,
+        IUnitOfWork uow
     )
     {
         _repo = repo;
@@ -47,19 +49,50 @@ public sealed class CancelSalesInvoiceHandler
         _b = b;
         _u = u;
         _companyClock = companyClock;
+        _uow = uow;
     }
 
+    /// <remarks>
+    /// ZH-SALES-CANCEL-COLLECTION-CONCURRENCY-01 — la decisión de anular y todos sus efectos (CxC,
+    /// Kardex, reverso contable, outbox) ocurren en UNA transacción, con la factura y su CxC
+    /// bloqueadas (FOR UPDATE) ANTES de validar. Regla vigente preservada: solo se anula si la CxC
+    /// no tiene cobros registrados. Un cobro concurrente espera el lock de la CxC y ve la CxC ya
+    /// anulada (rechazo canónico); una anulación que llega después de un cobro lo ve registrado.
+    /// Orden de locks: factura → CxC → secuencias (Kardex, asientos en SaveChanges).
+    /// </remarks>
     public async Task<Result<SalesInvoiceDto>> Handle(
         CancelSalesInvoiceCommand cmd,
         CancellationToken ct
     )
     {
-        var inv = await _repo.GetByIdAsync(_t.TenantId, cmd.InvoiceId, ct);
+        await _uow.BeginTransactionAsync(ct);
+        try
+        {
+            var result = await CancelAsync(cmd, ct);
+            if (result.IsSuccess)
+                await _uow.CommitAsync(ct);
+            else
+                await _uow.RollbackAsync(ct);
+            return result;
+        }
+        catch
+        {
+            await _uow.RollbackAsync(ct);
+            throw;
+        }
+    }
+
+    private async Task<Result<SalesInvoiceDto>> CancelAsync(
+        CancelSalesInvoiceCommand cmd,
+        CancellationToken ct
+    )
+    {
+        var inv = await _repo.GetByIdForUpdateAsync(_t.TenantId, cmd.InvoiceId, ct);
         if (inv is null || inv.BranchId != _b.BranchId)
             return Result<SalesInvoiceDto>.NotFound("Factura no encontrada.");
 
-        // ── Cancelar CxC asociada si existe ────────────────────────
-        var receivable = await _rxRepo.GetByInvoiceIdAsync(_t.TenantId, inv.Id, ct);
+        // ── Cancelar CxC asociada si existe (bloqueada antes de validar sus cobros) ──
+        var receivable = await _rxRepo.GetByInvoiceIdForUpdateAsync(_t.TenantId, inv.Id, ct);
         if (receivable is not null)
         {
             try
