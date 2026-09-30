@@ -266,9 +266,11 @@ public sealed class SalesReturnInvoiceStateConcurrencyTests : IClassFixture<Sale
             Log($"ronda {round}", after, authorize, cancel);
             authorize.Status.Should().Be(HttpStatusCode.OK);
             after.ReturnStatus.Should().Be(SalesReturnStatus.Authorized);
-            // La anulación reevalúa con la regla vigente de CancelSalesInvoice, que no considera
-            // devoluciones autorizadas (hallazgo P1 reportado, no cambiado en este ticket): procede.
-            cancel.Status.Should().Be(HttpStatusCode.OK);
+            // La anulación reevalúa bajo el mismo lock y ve la devolución ya autorizada
+            // (SalesInvoiceCancellationPolicy, ZH-SALES-CANCEL-AUTHORIZED-RETURN-RULE-01).
+            cancel.Status.Should().Be(HttpStatusCode.UnprocessableEntity);
+            cancel.Code.Should().Be("DOMAIN_RULE_VIOLATION");
+            after.InvoiceStatus.Should().Be(SalesInvoiceStatus.Authorized);
             AssertValid(after, s);
         }
     }

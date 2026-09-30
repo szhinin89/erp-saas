@@ -2,6 +2,15 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-30** · Kernel refactor: **2026-06-05**.
 
+## ZH-SALES-CANCEL-AUTHORIZED-RETURN-RULE-01 — Factura con devolución autorizada no se anula (2026-09-30)
+
+**Estado: COMPLETADO.** Cierra el hallazgo P1 de ZH-SALES-RETURN-INVOICE-STATE-CONCURRENCY-01.
+- Reproducción antes del fix (HTTP + PostgreSQL reales, 2 unidades vendidas): con devolución autorizada, anular respondía 200 y revertía la factura completa encima de la devolución — parcial 1/2: Kardex reingresado 1 + 2 = 3 (vendido 2); total 2/2: 2 + 2 = 4; asientos de la factura reversados completos además del asiento de la devolución; reembolso en efectivo o crédito a CxC conservado; Nota de Crédito emitida sobre una factura anulada.
+- Regla recuperada (no inventada): Compras ya la define — PI-CANC-01 "No se puede anular una compra que tiene una devolución de compra autorizada asociada. Cancele primero la devolución."; en Ventas una devolución autorizada es terminal (`SalesReturn.Cancel()` solo desde Draft) y la anulación siempre revierte la factura completa (no hay anulación neta de devoluciones). Política A: devolución `Authorized` bloquea la anulación; `Draft`/`Cancelled` no bloquean (sin efectos; el Draft queda inautorizable por la regla del ticket anterior).
+- SSOT: `SalesInvoiceCancellationPolicy` (Domain, "La factura tiene una devolución autorizada y no puede anularse." → 422 `DOMAIN_RULE_VIOLATION`) + `ISalesReturnRepository.ExistsAuthorizedBySalesInvoiceIdAsync` (alcance tenant+empresa), evaluada en `CancelSalesInvoiceHandler` bajo el lock de la factura y antes de cualquier efecto. Sin nuevo lock, sin migración, sin cambios de frontend. Camino único documentado en `docs/architecture/backend.md`.
+- Tests: 12 HTTP + PostgreSQL (`SalesCancelAuthorizedReturnRuleTests`): parcial/total × efectivo/crédito CxC (422 sin efectos, Kardex exacto), sin devoluciones, Draft (no bloquea, queda inautorizable y cancelable), Draft cancelado + autorizada, autorizar primero con lock forzado (×3), simultáneos ×8, doble anulación ×5, otra empresa. `SalesReturnInvoiceStateConcurrencyTests` actualizado: la anulación que espera a una devolución autorizada ahora se rechaza.
+- UX opcional no implementada: "Anular" sigue visible en toda factura autorizada (el DTO no expone devoluciones); el servidor rechaza con mensaje claro.
+
 ## ZH-SALES-RETURN-INVOICE-STATE-CONCURRENCY-01 — Devolución solo sobre factura autorizada, bajo lock (2026-09-30)
 
 **Estado: COMPLETADO.** Cierra el pendiente de ZH-SALES-CANCEL-COLLECTION-CONCURRENCY-01.
@@ -10,7 +19,7 @@
 - Fix: la regla pasa a una sola definición (`SalesReturnInvoiceEligibility`) usada por el Draft y por la autorización; la autorización bloquea la factura (`GetByIdForUpdateAsync`, después del advisory de la devolución y antes de CxC/secuencias) y la revalida antes de cualquier efecto, dentro de la transacción existente. Rechazo = mismo resultado canónico que el Draft (422 `VALIDATION_ERROR`). Sin migración, sin advisory nuevo, sin cambios de frontend.
 - Doble autorización de la misma devolución: ya protegida por el `xmin` de `SalesReturn` (una 200, otra 409 `CONCURRENCY_CONFLICT`, un solo conjunto de efectos) — demostrado, sin defensa nueva.
 - Tests: 9 HTTP + PostgreSQL (`SalesReturnInvoiceStateConcurrencyTests`): anular→autorizar (efectivo y crédito a CxC), orden forzado con el lock de la factura retenido (autorizar primero / anular primero, ×3), simultáneos ×8 (efectivo y crédito), doble autorización ×5, otra empresa. Estado final desde otro DbContext (Kardex, reembolso, CxC, asiento, outbox, Nota de Crédito).
-- **Hallazgo P1 (no cambiado, falta decidir la regla):** `CancelSalesInvoice` no considera devoluciones autorizadas. Anular una factura con una devolución ya autorizada procede y reingresa al Kardex y reversa en contabilidad la factura completa, además de lo que ya reingresó/reembolsó la devolución (reproducido: factura `Cancelled` + devolución `Authorized` con su reembolso y su Nota de Crédito). Ticket propio.
+- **Hallazgo P1 (cerrado en ZH-SALES-CANCEL-AUTHORIZED-RETURN-RULE-01):** `CancelSalesInvoice` no consideraba devoluciones autorizadas. Anular una factura con una devolución ya autorizada procede y reingresa al Kardex y reversa en contabilidad la factura completa, además de lo que ya reingresó/reembolsó la devolución (reproducido: factura `Cancelled` + devolución `Authorized` con su reembolso y su Nota de Crédito). Ticket propio.
 
 ## ZH-SALES-CANCEL-COLLECTION-CONCURRENCY-01 — Anulación de factura vs cobros concurrentes (2026-09-30)
 

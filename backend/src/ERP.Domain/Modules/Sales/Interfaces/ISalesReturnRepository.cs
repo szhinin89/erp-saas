@@ -37,6 +37,17 @@ public interface ISalesReturnRepository
     /// </summary>
     Task AcquireReturnLockAsync(Guid tenantId, Guid salesInvoiceId, CancellationToken ct = default);
 
+    /// <summary>
+    /// ZH-SALES-CANCEL-AUTHORIZED-RETURN-RULE-01 — ¿la factura tiene alguna devolución
+    /// <c>Authorized</c> dentro del alcance operativo? Insumo de
+    /// <c>SalesInvoiceCancellationPolicy</c>; se consulta bajo el lock de la factura.
+    /// </summary>
+    Task<bool> ExistsAuthorizedBySalesInvoiceIdAsync(
+        Guid tenantId,
+        Guid salesInvoiceId,
+        CancellationToken ct = default
+    );
+
     Task AddAsync(SalesReturn salesReturn, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
 }

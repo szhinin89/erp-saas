@@ -370,6 +370,12 @@ public sealed class GetReturnableLinesByInvoiceHandlerTests
             CancellationToken ct = default
         ) => throw new NotSupportedException();
 
+        public Task<bool> ExistsAuthorizedBySalesInvoiceIdAsync(
+            Guid tenantId,
+            Guid salesInvoiceId,
+            CancellationToken ct = default
+        ) => throw new NotSupportedException();
+
         public Task AddAsync(SalesReturn salesReturn, CancellationToken ct = default) =>
             throw new NotSupportedException();
 

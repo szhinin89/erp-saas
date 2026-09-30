@@ -86,6 +86,17 @@ public sealed class SalesReturnRepository : ISalesReturnRepository
             select d.Quantity
         ).SumAsync(ct);
 
+    public Task<bool> ExistsAuthorizedBySalesInvoiceIdAsync(
+        Guid tenantId,
+        Guid salesInvoiceId,
+        CancellationToken ct = default
+    ) =>
+        Scoped(tenantId)
+            .AnyAsync(
+                x => x.SalesInvoiceId == salesInvoiceId && x.Status == SalesReturnStatus.Authorized,
+                ct
+            );
+
     public async Task AcquireReturnLockAsync(
         Guid tenantId,
         Guid salesInvoiceId,

@@ -288,6 +288,20 @@ Orden canónico de locks (evita deadlocks; cada flujo toma solo un subconjunto, 
 4. `SalesReceivable` en orden ascendente de Id;
 5. secuencia documental → Kardex (`CurrentStock`, optimista con reintento) → secuencia de asientos (posting en `SaveChanges`).
 
+### Revertir una venta: un solo camino por factura (ZH-SALES-CANCEL-AUTHORIZED-RETURN-RULE-01)
+
+Una venta autorizada se revierte por **uno** de dos caminos excluyentes, decididos bajo el lock de la `SalesInvoice`:
+
+| Situación de la factura `Authorized` | Anular (`CancelSalesInvoice`) | Devolver (`AuthorizeSalesReturn`) |
+|---|---|---|
+| Sin devoluciones, CxC sin cobros | Permitido: revierte la factura completa (CxC, Kardex, asientos) | Permitido |
+| Con devolución `Draft` (o `Cancelled`) | Permitido; el Draft no tiene efectos, queda Draft y ya no puede autorizarse | Permitido mientras la factura siga `Authorized` |
+| Con devolución `Authorized` (parcial o total, efectivo o crédito a CxC) | **Rechazado** — `SalesInvoiceCancellationPolicy` (422 `DOMAIN_RULE_VIOLATION`) | Permitido por el remanente |
+| CxC con cobros | Rechazado (`SalesReceivable.Cancel`) | Permitido |
+| Factura `Cancelled` | Rechazado (ya anulada) | **Rechazado** — `SalesReturnInvoiceEligibility` |
+
+Una devolución autorizada es terminal y ya reingresó Kardex, reembolsó, contabilizó y emitió su Nota de Crédito; la anulación revierte la factura completa, así que nunca se combinan: Σ devuelto + Σ anulado ≤ vendido en cantidad, costo, reembolso/CxC e impuestos. Mismo criterio que Compras (PI-CANC-01). Ambas reglas se evalúan bajo el lock de la factura antes de cualquier efecto, por lo que la anulación y la autorización concurrentes se serializan y la segunda ve el resultado de la primera. La UI muestra "Anular" en toda factura autorizada; el servidor es la autoridad (ocultarlo requeriría exponer las devoluciones en el DTO — mejora de UX opcional, no implementada).
+
 `SalesInvoice` y `Payment` nunca se toman en el mismo flujo; ningún flujo que tenga la CxC vuelve a pedir factura, pago o advisory. El cobro no toma `CashSession`. Sin `advisory lock` adicional ni migración: la fila existente es el recurso compartido.
 
 ---

@@ -5,6 +5,7 @@ using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Sales.Interfaces;
+using ERP.Domain.Modules.Sales.Policies;
 using MediatR;
 
 namespace ERP.Application.Modules.Sales.UseCases;
@@ -18,6 +19,7 @@ public sealed class CancelSalesInvoiceHandler
 {
     private readonly ISalesInvoiceRepository _repo;
     private readonly ISalesReceivableRepository _rxRepo;
+    private readonly ISalesReturnRepository _returnRepo;
     private readonly IStockRepository _stockRepo;
     private readonly ERP.Domain.Modules.ElectronicDocuments.Interfaces.IElectronicDocumentRepository _edocRepo;
     private readonly ICurrentTenant _t;
@@ -30,6 +32,7 @@ public sealed class CancelSalesInvoiceHandler
     public CancelSalesInvoiceHandler(
         ISalesInvoiceRepository repo,
         ISalesReceivableRepository rxRepo,
+        ISalesReturnRepository returnRepo,
         IStockRepository stockRepo,
         ERP.Domain.Modules.ElectronicDocuments.Interfaces.IElectronicDocumentRepository edocRepo,
         ICurrentTenant t,
@@ -42,6 +45,7 @@ public sealed class CancelSalesInvoiceHandler
     {
         _repo = repo;
         _rxRepo = rxRepo;
+        _returnRepo = returnRepo;
         _stockRepo = stockRepo;
         _edocRepo = edocRepo;
         _t = t;
@@ -90,6 +94,13 @@ public sealed class CancelSalesInvoiceHandler
         var inv = await _repo.GetByIdForUpdateAsync(_t.TenantId, cmd.InvoiceId, ct);
         if (inv is null || inv.BranchId != _b.BranchId)
             return Result<SalesInvoiceDto>.NotFound("Factura no encontrada.");
+
+        // ── Devoluciones (ZH-SALES-CANCEL-AUTHORIZED-RETURN-RULE-01) — bajo el lock de la
+        // factura, antes de cualquier efecto: la autorización de una devolución toma el mismo lock,
+        // así que esta consulta ve toda devolución ya autorizada y ninguna puede autorizarse después.
+        SalesInvoiceCancellationPolicy.EnsureCanCancel(
+            await _returnRepo.ExistsAuthorizedBySalesInvoiceIdAsync(_t.TenantId, inv.Id, ct)
+        );
 
         // ── Cancelar CxC asociada si existe (bloqueada antes de validar sus cobros) ──
         var receivable = await _rxRepo.GetByInvoiceIdForUpdateAsync(_t.TenantId, inv.Id, ct);

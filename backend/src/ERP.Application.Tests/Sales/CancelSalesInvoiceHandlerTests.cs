@@ -127,6 +127,7 @@ public sealed class CancelSalesInvoiceHandlerTests
         var handler = new CancelSalesInvoiceHandler(
             repo.Object,
             receivableRepo.Object,
+            Mock.Of<ISalesReturnRepository>(),
             stockRepo.Object,
             edocRepo.Object,
             tenant.Object,
