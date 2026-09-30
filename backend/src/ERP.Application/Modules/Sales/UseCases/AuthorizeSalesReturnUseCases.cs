@@ -160,13 +160,25 @@ public sealed class AuthorizeSalesReturnHandler
             // sola.
             await _returnRepo.AcquireReturnLockAsync(tid, salesReturn.SalesInvoiceId, ct);
 
-            // 4. Revalidar remanente bajo lock — la validación al crear/editar el Draft (Fase 4)
-            // es solo preventiva (UX temprana); esta es la que garantiza consistencia real.
-            var invoice = await _invoiceRepo.GetByIdAsync(tid, salesReturn.SalesInvoiceId, ct);
+            // 4. Revalidar bajo lock — la validación al crear/editar el Draft (Fase 4) es solo
+            // preventiva (UX temprana); esta es la que garantiza consistencia real.
+            // ZH-SALES-RETURN-INVOICE-STATE-CONCURRENCY-01: la factura se bloquea (FOR UPDATE,
+            // mismo lock que toma CancelSalesInvoice) y su estado se revalida ANTES de cualquier
+            // efecto (Kardex, reembolso, CxC, asiento, Nota de Crédito). Una anulación concurrente
+            // espera a esta autorización, o esta ve la factura ya anulada y se rechaza sin efectos.
+            // Orden de locks: advisory de la devolución → factura → CxC → secuencias.
+            var invoice = await _invoiceRepo.GetByIdForUpdateAsync(tid, salesReturn.SalesInvoiceId, ct);
             if (invoice is null || invoice.BranchId != _b.BranchId)
             {
                 await _uow.RollbackAsync(ct);
                 return Result<SalesReturnDto>.NotFound("Factura no encontrada.");
+            }
+            if (!SalesReturnInvoiceEligibility.IsReturnable(invoice))
+            {
+                await _uow.RollbackAsync(ct);
+                return Result<SalesReturnDto>.ValidationFailure(
+                    SalesReturnInvoiceEligibility.NotReturnableMessage
+                );
             }
 
             foreach (var line in salesReturn.Lines)

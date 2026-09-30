@@ -2,6 +2,16 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-30** · Kernel refactor: **2026-06-05**.
 
+## ZH-SALES-RETURN-INVOICE-STATE-CONCURRENCY-01 — Devolución solo sobre factura autorizada, bajo lock (2026-09-30)
+
+**Estado: COMPLETADO.** Cierra el pendiente de ZH-SALES-CANCEL-COLLECTION-CONCURRENCY-01.
+- Regla vigente recuperada del código (no inventada): una devolución solo procede sobre una factura `Authorized` (`CreateSalesReturnDraft`: "Solo se pueden devolver facturas autorizadas."; `SalesInvoiceStatus` = Draft/Authorized/Cancelled, sin estados adicionales). El handler de autorización ya declaraba que la validación del Draft es solo preventiva y revalidaba el remanente bajo lock, pero no el estado de la factura.
+- Reproducción antes del fix (HTTP + PostgreSQL reales): Draft → anular factura → autorizar con reembolso en efectivo = 200: devolución `Authorized` sobre factura `Cancelled` con reingreso de Kardex, `CashMovement` SaleRefund, asiento, outbox y secuencial de Nota de Crédito consumido. Con crédito a CxC se rechazaba solo de forma incidental (CxC anulada). Simultáneos: 200 + 200 con la devolución autorizada después de la anulación.
+- Fix: la regla pasa a una sola definición (`SalesReturnInvoiceEligibility`) usada por el Draft y por la autorización; la autorización bloquea la factura (`GetByIdForUpdateAsync`, después del advisory de la devolución y antes de CxC/secuencias) y la revalida antes de cualquier efecto, dentro de la transacción existente. Rechazo = mismo resultado canónico que el Draft (422 `VALIDATION_ERROR`). Sin migración, sin advisory nuevo, sin cambios de frontend.
+- Doble autorización de la misma devolución: ya protegida por el `xmin` de `SalesReturn` (una 200, otra 409 `CONCURRENCY_CONFLICT`, un solo conjunto de efectos) — demostrado, sin defensa nueva.
+- Tests: 9 HTTP + PostgreSQL (`SalesReturnInvoiceStateConcurrencyTests`): anular→autorizar (efectivo y crédito a CxC), orden forzado con el lock de la factura retenido (autorizar primero / anular primero, ×3), simultáneos ×8 (efectivo y crédito), doble autorización ×5, otra empresa. Estado final desde otro DbContext (Kardex, reembolso, CxC, asiento, outbox, Nota de Crédito).
+- **Hallazgo P1 (no cambiado, falta decidir la regla):** `CancelSalesInvoice` no considera devoluciones autorizadas. Anular una factura con una devolución ya autorizada procede y reingresa al Kardex y reversa en contabilidad la factura completa, además de lo que ya reingresó/reembolsó la devolución (reproducido: factura `Cancelled` + devolución `Authorized` con su reembolso y su Nota de Crédito). Ticket propio.
+
 ## ZH-SALES-CANCEL-COLLECTION-CONCURRENCY-01 — Anulación de factura vs cobros concurrentes (2026-09-30)
 
 **Estado: COMPLETADO.** Cierra el pendiente de ZH-COLLECTIONS-RECEIVABLE-CONCURRENCY-01.

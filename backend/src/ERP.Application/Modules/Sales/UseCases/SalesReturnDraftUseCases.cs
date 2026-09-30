@@ -137,9 +137,9 @@ public sealed class CreateSalesReturnDraftHandler
         var invoice = await _invoiceRepo.GetByIdAsync(_t.TenantId, cmd.SalesInvoiceId, ct);
         if (invoice is null || invoice.BranchId != _b.BranchId)
             return Result<SalesReturnDto>.NotFound("Factura no encontrada.");
-        if (invoice.Status != SalesInvoiceStatus.Authorized)
+        if (!SalesReturnInvoiceEligibility.IsReturnable(invoice))
             return Result<SalesReturnDto>.ValidationFailure(
-                "Solo se pueden devolver facturas autorizadas."
+                SalesReturnInvoiceEligibility.NotReturnableMessage
             );
 
         var returnNumber = $"DEV-{Guid.NewGuid():N}"[..14];
@@ -278,6 +278,23 @@ public sealed class CancelSalesReturnDraftHandler
         await _repo.SaveChangesAsync(ct);
         return Result<SalesReturnDto>.Success(SalesReturnMapper.ToDto(salesReturn));
     }
+}
+
+// ── Shared invoice eligibility ─────────────────────────────────────────
+
+/// <summary>
+/// Única fuente de verdad de "qué factura admite una devolución": solo una factura
+/// <see cref="SalesInvoiceStatus.Authorized"/> (ni <c>Draft</c> ni <c>Cancelled</c>). Se evalúa al
+/// crear el <c>Draft</c> (UX temprana) y de nuevo al autorizar, bajo el lock de la factura e
+/// inmediatamente antes de producir efectos (ZH-SALES-RETURN-INVOICE-STATE-CONCURRENCY-01): la
+/// factura pudo anularse entre ambos momentos.
+/// </summary>
+internal static class SalesReturnInvoiceEligibility
+{
+    public const string NotReturnableMessage = "Solo se pueden devolver facturas autorizadas.";
+
+    public static bool IsReturnable(SalesInvoice invoice) =>
+        invoice.Status == SalesInvoiceStatus.Authorized;
 }
 
 // ── Shared remaining-quantity validation ───────────────────────────────

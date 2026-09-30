@@ -283,7 +283,7 @@ Todo escritor del saldo **o del estado** de `SalesReceivable` lo lee por `GetByI
 Orden canónico de locks (evita deadlocks; cada flujo toma solo un subconjunto, siempre en este orden):
 
 1. advisory de documento (autorización de devolución, por factura);
-2. `SalesInvoice` (anulación);
+2. `SalesInvoice` (anulación y autorización de devolución — ZH-SALES-RETURN-INVOICE-STATE-CONCURRENCY-01: la devolución revalida bajo este lock que la factura siga `Authorized` antes de cualquier efecto);
 3. `Payment` (reversa de cobro);
 4. `SalesReceivable` en orden ascendente de Id;
 5. secuencia documental → Kardex (`CurrentStock`, optimista con reintento) → secuencia de asientos (posting en `SaveChanges`).

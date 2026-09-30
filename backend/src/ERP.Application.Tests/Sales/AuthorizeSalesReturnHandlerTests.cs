@@ -226,7 +226,7 @@ public sealed class AuthorizeSalesReturnHandlerTests
     {
         var invoiceRepo = new Mock<ISalesInvoiceRepository>();
         invoiceRepo
-            .Setup(r => r.GetByIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByIdForUpdateAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(invoice);
 
         var returnRepo = new Mock<ISalesReturnRepository>();

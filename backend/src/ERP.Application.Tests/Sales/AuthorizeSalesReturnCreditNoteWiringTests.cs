@@ -171,7 +171,7 @@ public sealed class AuthorizeSalesReturnCreditNoteWiringTests
         )
         {
             InvoiceRepo
-                .Setup(r => r.GetByIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
+                .Setup(r => r.GetByIdForUpdateAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(invoice);
             ReturnRepo
                 .Setup(r => r.GetByIdAsync(TenantId, salesReturn.Id, It.IsAny<CancellationToken>()))
