@@ -10,4 +10,4 @@ public sealed record UpdateCompanyCommand(
     string? TradeName,
     bool IsActive,
     string? TaxId = null
-) : IRequest<Result<CompanyDetailDto>>;
+) : IRequest<Result<CompanyDetailDto>>, ICompanyIdentityInput;

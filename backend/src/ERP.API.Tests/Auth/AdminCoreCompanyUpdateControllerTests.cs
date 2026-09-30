@@ -54,13 +54,15 @@ public sealed class AdminCoreCompanyUpdateControllerTests
         result.Should().BeOfType<BadRequestObjectResult>();
     }
 
+    // ZH-COMPANY-IDENTITY-SSOT-01: un RUC inválido llega como VALIDATION_ERROR (pipeline, misma regla
+    // que PUT /companies/{id}) → 422; duplicado → 409. Contrato real: CompanyIdentityUpdateHttpTests.
     [Theory]
-    [InlineData(false, 400)]
+    [InlineData(false, 422)]
     [InlineData(true, 409)]
     public async Task Invalid_and_duplicate_RUC_return_client_errors(bool duplicate, int status)
     {
         var controller = Build(_ => Result<CompanyDetailDto>.Failure("RUC rechazado",
-            duplicate ? CompanyRucAlreadyExistsException.ErrorCode : null));
+            duplicate ? CompanyRucAlreadyExistsException.ErrorCode : ApiResponseCodes.Common.ValidationError));
         var id = Guid.NewGuid();
         var result = await controller.UpdateCompany(id, new(id, "Empresa", null, true, "123"), CancellationToken.None);
         ((ObjectResult)result).StatusCode.Should().Be(status);

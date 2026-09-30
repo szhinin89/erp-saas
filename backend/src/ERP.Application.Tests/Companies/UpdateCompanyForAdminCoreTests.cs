@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Companies;
 using ERP.Application.Modules.Companies.DTOs;
 using ERP.Application.Modules.Companies.UseCases.GetCompanyProfile;
+using ERP.Application.Modules.Companies.UseCases.UpdateCompany;
 using ERP.Application.Modules.Company.UseCases.UpdateCompanyForAdminCore;
 using ERP.Application.Modules.Media;
 using ERP.Domain.Modules.Company.Entities;
@@ -56,15 +57,37 @@ public sealed class UpdateCompanyForAdminCoreTests
         companies.Verify(x => x.AddAsync(It.IsAny<Company>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    /// <summary>
+    /// ZH-COMPANY-IDENTITY-SSOT-01 — el formato de la identidad lo valida el pipeline con la misma
+    /// regla (<c>CompanyIdentityRules</c>) para ambos comandos: mismas propiedades, mismos mensajes.
+    /// El rechazo HTTP (422 sin mutar) está cubierto en CompanyIdentityUpdateHttpTests.
+    /// </summary>
     [Theory]
-    [InlineData("1234567890123")]
-    [InlineData("1790016918001")]
-    [InlineData("TMP-EC-other")]
-    public async Task Invalid_RUC_does_not_mutate_or_save(string ruc)
+    [InlineData("1234567890123", "Nueva razon")]
+    [InlineData("1790016918001", "Nueva razon")]
+    [InlineData("TMP-EC-other", "Nueva razon")]
+    [InlineData("1790016919001", "   ")]
+    public void Invalid_identity_is_rejected_with_the_same_rule_from_both_contexts(string ruc, string legalName)
     {
-        (await Update(ruc)).IsSuccess.Should().BeFalse();
-        entity.LegalName.Should().Be("Original");
-        entity.TaxIdentificationNumber.Should().Be("TMP-EC-ceb18408");
+        var global = new UpdateCompanyForAdminCoreCommandValidator()
+            .Validate(new UpdateCompanyForAdminCoreCommand(entity.Id, legalName, "Comercial", true, ruc));
+        var tenantScoped = new UpdateCompanyCommandValidator()
+            .Validate(new UpdateCompanyCommand(entity.Id, legalName, "Comercial", true, ruc));
+
+        global.IsValid.Should().BeFalse();
+        global.Errors.Select(e => (e.PropertyName, e.ErrorMessage))
+            .Should().BeEquivalentTo(tenantScoped.Errors.Select(e => (e.PropertyName, e.ErrorMessage)));
+    }
+
+    [Fact]
+    public async Task Missing_company_is_NOT_FOUND_like_the_tenant_endpoint()
+    {
+        companies.Setup(x => x.GetTrackedByIdForAdminCoreAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Company?)null);
+
+        var result = await Update("1790016919001");
+
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
         companies.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 

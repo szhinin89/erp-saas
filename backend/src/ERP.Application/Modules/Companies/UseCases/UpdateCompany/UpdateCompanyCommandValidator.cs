@@ -7,20 +7,6 @@ public sealed class UpdateCompanyCommandValidator : AbstractValidator<UpdateComp
     public UpdateCompanyCommandValidator()
     {
         RuleFor(x => x.Id).NotEmpty();
-
-        RuleFor(x => x.LegalName)
-            .NotEmpty()
-            .WithMessage("La razón social es obligatoria.")
-            .MaximumLength(200);
-
-        RuleFor(x => x.TaxId)
-            .Must(ruc => ruc!.Trim().All(c => c is >= '0' and <= '9')
-                && ERP.Domain.Common.Validators.RucValidator.EsRucValido(ruc))
-            .WithMessage("El RUC ecuatoriano no es válido.")
-            .When(x => !string.IsNullOrWhiteSpace(x.TaxId));
-
-        RuleFor(x => x.TradeName)
-            .MaximumLength(200)
-            .When(x => !string.IsNullOrWhiteSpace(x.TradeName));
+        Include(new CompanyIdentityRules());
     }
 }

@@ -306,6 +306,22 @@ Una devolución autorizada es terminal y ya reingresó Kardex, reembolsó, conta
 
 ---
 
+## Una capacidad, varios contextos de autorización (ZH-COMPANY-IDENTITY-SSOT-01)
+
+Cuando la misma capacidad se expone a actores con fronteras de seguridad distintas, se mantienen endpoints y comandos separados (cada uno con su policy y su resolución de alcance) y **una sola** implementación de la regla: un validator de reglas compartidas incluido por cada comando (`Include`) y una operación de aplicación única que ambos handlers llaman tras resolver su alcance. Nunca Controller → Controller, ni un handler que construye el comando del otro o envía un request MediatR para reutilizarlo.
+
+Caso vigente — identidad de empresa (RUC, razón social, nombre comercial, activo):
+
+| | Operativo | Global |
+|---|---|---|
+| Endpoint | `PUT /api/v1/companies/{id}` | `PUT /api/v1/admin-core/companies/{id}` |
+| Autorización | `perm:erp.companies.update` + membership (`ICompanyAccessGuard`) | policy `PlatformAdmin` (token sin tenant + Admin) + chequeo en handler |
+| Alcance | empresa del tenant resuelto server-side (`GetTrackedByIdForTenantAsync`); ajena = 404 | empresa explícita de cualquier tenant (`GetTrackedByIdForAdminCoreAsync`) |
+| Comando | `UpdateCompanyCommand` | `UpdateCompanyForAdminCoreCommand` |
+| Regla común | `CompanyIdentityRules` (formato, RUC oficial Ecuador) + `CompanyIdentityUpdate.ApplyAsync` (unicidad global del RUC → `Company.UpdateTaxIdentification`/`UpdateAdminIdentity`, `UpdatedBy`) | ídem |
+
+Mismo dato → misma respuesta desde ambos: inválido 422 `VALIDATION_ERROR`, RUC duplicado 409 `COMPANY_RUC_ALREADY_EXISTS`, inexistente 404. Contacto/representante/regional se editan solo en Configuración → Empresa (`UpdateContactProfile`), que muestra la identidad de solo lectura.
+
 ## Estructura por módulo
 
 ```

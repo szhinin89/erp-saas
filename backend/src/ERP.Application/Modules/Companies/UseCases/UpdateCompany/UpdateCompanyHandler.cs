@@ -1,6 +1,5 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Companies.DTOs;
-using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
 using MediatR;
 
@@ -50,57 +49,13 @@ public sealed class UpdateCompanyHandler
         if (entity is null)
             return Result<CompanyDetailDto>.NotFound("Empresa no encontrada.");
 
-        return await UpdateEntityAsync(command, entity, _companies, _currentUser.UserId, cancellationToken);
-    }
-
-    internal static async Task<Result<CompanyDetailDto>> UpdateEntityAsync(
-        UpdateCompanyCommand command,
-        ERP.Domain.Modules.Company.Entities.Company entity,
-        ICompanyRepository companies,
-        Guid userId,
-        CancellationToken cancellationToken
-    )
-    {
-        var validation = await new UpdateCompanyCommandValidator().ValidateAsync(command, cancellationToken);
-        if (!validation.IsValid)
-            return Result<CompanyDetailDto>.Failure(validation.Errors[0].ErrorMessage);
-
-        if (
-            !string.IsNullOrWhiteSpace(command.TaxId)
-            && !string.Equals(
-                command.TaxId.Trim(),
-                entity.TaxIdentificationNumber,
-                StringComparison.Ordinal
-            )
-        )
-        {
-            var taken = await companies.GetByTaxIdentificationNumberAsync(
-                command.TaxId.Trim(),
-                cancellationToken
-            );
-            if (taken is not null && taken.Id != entity.Id)
-                return Result<CompanyDetailDto>.Failure(
-                    "El RUC ya está registrado en el sistema.",
-                    ERP.Domain.Exceptions.CompanyRucAlreadyExistsException.ErrorCode
-                );
-            var isProvisional = ProvisionalTaxIdGenerator.IsProvisional(command.TaxId);
-            entity.UpdateTaxIdentification(
-                command.TaxId,
-                isProvisional,
-                isProvisional ? TaxIdentificationStatus.Pending : TaxIdentificationStatus.Verified,
-                userId
-            );
-        }
-
-        entity.UpdateAdminIdentity(
-            command.LegalName,
-            command.TradeName,
+        return await CompanyIdentityUpdate.ApplyAsync(
+            entity,
+            command,
             command.IsActive,
-            userId
+            _companies,
+            _currentUser.UserId,
+            cancellationToken
         );
-
-        await companies.SaveChangesAsync(cancellationToken);
-
-        return Result<CompanyDetailDto>.Success(CompanyDetailDto.FromEntity(entity));
     }
 }
