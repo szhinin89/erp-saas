@@ -61,51 +61,51 @@ export function PurchaseReturnCreditNoteSection({ purchaseReturn, onLinked }: Pr
     return (
       <ZHCard title="Nota de Crédito del proveedor">
         {hasReadableInfo ? (
-          <div className="sr-general-grid">
+          <div className="zh-summary-grid">
             <div>
-              <span className="sr-general-grid__label">N.º NC proveedor</span>
-              <span className="sr-general-grid__value">
+              <span className="zh-summary-grid__label">N.º NC proveedor</span>
+              <span className="zh-summary-grid__value">
                 {purchaseReturn.supplierCreditNoteInvoiceNumber}
               </span>
             </div>
             <div>
-              <span className="sr-general-grid__label">Clave de acceso</span>
-              <span className="sr-general-grid__value">
+              <span className="zh-summary-grid__label">Clave de acceso</span>
+              <span className="zh-summary-grid__value">
                 {purchaseReturn.supplierCreditNoteAccessKey ?? "—"}
               </span>
             </div>
             <div>
-              <span className="sr-general-grid__label">Fecha de emisión</span>
-              <span className="sr-general-grid__value">
+              <span className="zh-summary-grid__label">Fecha de emisión</span>
+              <span className="zh-summary-grid__value">
                 {formatDate(purchaseReturn.supplierCreditNoteIssueDate)}
               </span>
             </div>
             {purchaseReturn.supplierCreditNoteAuthorizationDate && (
               <div>
-                <span className="sr-general-grid__label">Fecha de autorización</span>
-                <span className="sr-general-grid__value">
+                <span className="zh-summary-grid__label">Fecha de autorización</span>
+                <span className="zh-summary-grid__value">
                   {formatDateTime(purchaseReturn.supplierCreditNoteAuthorizationDate)}
                 </span>
               </div>
             )}
             {purchaseReturn.supplierCreditNoteTotalAmount !== null && (
               <div>
-                <span className="sr-general-grid__label">Total NC</span>
-                <span className="sr-general-grid__value">
+                <span className="zh-summary-grid__label">Total NC</span>
+                <span className="zh-summary-grid__value">
                   <ZHMoneyValue value={purchaseReturn.supplierCreditNoteTotalAmount} precision="money" />
                 </span>
               </div>
             )}
             <div>
-              <span className="sr-general-grid__label">Factura afectada</span>
-              <span className="sr-general-grid__value">
+              <span className="zh-summary-grid__label">Factura afectada</span>
+              <span className="zh-summary-grid__value">
                 {purchaseReturn.purchaseInvoiceNumber ?? purchaseReturn.purchaseInvoiceId}
               </span>
             </div>
             {purchaseReturn.linkedPurchaseCreditNoteId && (
               <div>
-                <span className="sr-general-grid__label">NC de compra (interna)</span>
-                <span className="sr-general-grid__value">
+                <span className="zh-summary-grid__label">NC de compra (interna)</span>
+                <span className="zh-summary-grid__value">
                   {purchaseReturn.linkedPurchaseCreditNoteStatus && (
                     <Badge
                       label={getPurchaseCreditNoteStatusLabel(
@@ -132,7 +132,7 @@ export function PurchaseReturnCreditNoteSection({ purchaseReturn, onLinked }: Pr
             )}
           </div>
         ) : (
-          <p className="sr-reason-readonly">
+          <p className="zh-readonly-text">
             {purchaseReturn.supplierCreditNoteDocumentId
               ? "Nota de Crédito vinculada — NC no encontrada."
               : "Sin nota de crédito vinculada."}
@@ -170,7 +170,7 @@ export function PurchaseReturnCreditNoteSection({ purchaseReturn, onLinked }: Pr
   return (
     <ZHCard title="Registrar Nota de Crédito del proveedor">
       <form onSubmit={(e) => void handleSubmit(onSubmit)(e)}>
-        <div className="sr-general-grid">
+        <div className="zh-summary-grid">
           <ZHField label="Clave de acceso" required fieldError={errors.accessKey?.message}>
             <ZhTextInput className="zh-input" {...register("accessKey")} />
           </ZHField>

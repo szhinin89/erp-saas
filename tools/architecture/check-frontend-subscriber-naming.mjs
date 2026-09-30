@@ -14,11 +14,14 @@
  *  - F-subscriber-facade-naming: cada archivo de `facades/` se llama `<concepto><Propósito>Facade.ts`
  *    (camelCase, dueño y propósito explícitos) y, si exporta un objeto `const …Facade`, este lleva
  *    exactamente el nombre del archivo.
+ *  - F-subscriber-css-import: un módulo nunca importa hojas de estilo privadas de otro módulo
+ *    (.css/.scss/.sass/.less bajo `modules/<owner>/`). Un estilo compartido pertenece al Design
+ *    System (`src/styles/`, `src/components/zh/`); uno propio del consumidor, a su propio módulo.
  *
- * Fuera de alcance (no son consumo de funcionalidad): módulos compartidos declarados en
- * `architecture-rules.json` → `moduleBoundaries.sharedModules`, imports hacia fuera de
- * `modules/` (src/lib, components, store…), specifiers de paquetes, imports de estilos/assets
- * y rutas pasadas a `vi.mock()` (arnés de test, no dependencia de producción).
+ * Fuera de alcance: módulos compartidos declarados en `architecture-rules.json` →
+ * `moduleBoundaries.sharedModules`, imports hacia fuera de `modules/` (src/lib, src/styles,
+ * components, store…), specifiers de paquetes, assets no-estilo (imágenes/fuentes) y rutas
+ * pasadas a `vi.mock()` (arnés de test, no dependencia de producción).
  * El frontend no define aliases de import (sin `paths` en tsconfig ni `resolve.alias` en Vite):
  * solo los specifiers relativos pueden apuntar a otro módulo.
  */
@@ -32,11 +35,13 @@ export const CHECK_NAME = 'frontend-subscriber-naming';
 export const RULES = {
   internalImport: 'F-subscriber-internal-import',
   facadeNaming: 'F-subscriber-facade-naming',
+  cssImport: 'F-subscriber-css-import',
 };
 
 const MODULES_PREFIX = 'frontend/src/modules/';
 const FACADES_DIR = 'facades';
-const ASSET_EXT = /\.(css|scss|sass|less|svg|png|jpe?g|gif|webp|ico|woff2?|ttf|otf)$/i;
+const STYLE_EXT = /\.(css|scss|sass|less)$/i;
+const ASSET_EXT = /\.(svg|png|jpe?g|gif|webp|ico|woff2?|ttf|otf)$/i;
 const TEST_FILE = /\.test\.tsx?$/;
 /** Nombres que no identifican propósito: `lookupFacade`, `publicFacade`… no dicen de qué owner ni para qué. */
 const GENERIC_FACADE_BASES = new Set(['', 'index', 'lookup', 'public', 'module', 'shared', 'common', 'api', 'service', 'main']);
@@ -100,7 +105,7 @@ export function resolveSpecifier(fromFile, source) {
 
 /**
  * Clasifica un import:
- *  own | shared | outside | package | asset | facade | internal
+ *  own | shared | outside | package | asset | style | facade | internal
  * @param {{ fromFile: string, source: string, sharedModules: string[] }} args
  */
 export function classifyImport({ fromFile, source, sharedModules }) {
@@ -111,6 +116,7 @@ export function classifyImport({ fromFile, source, sharedModules }) {
   if (!owner) return { kind: 'outside', subscriber, owner, resolved };
   if (!subscriber || owner === subscriber) return { kind: 'own', subscriber, owner, resolved };
   if (sharedModules.includes(owner)) return { kind: 'shared', subscriber, owner, resolved };
+  if (STYLE_EXT.test(resolved)) return { kind: 'style', subscriber, owner, resolved };
   if (ASSET_EXT.test(resolved)) return { kind: 'asset', subscriber, owner, resolved };
   const segments = resolved.slice(MODULES_PREFIX.length).split('/');
   // el archivo debe estar DIRECTAMENTE dentro de facades/ (nunca `…/facades` como barrel ni subcarpetas)
@@ -163,6 +169,15 @@ export function runCheckFrontendSubscriberNaming(opts = {}) {
 
     for (const { source, line } of extractImportSpecifiers(content)) {
       const c = classifyImport({ fromFile: rel, source, sharedModules });
+      if (c.kind === 'style') {
+        addViolation(result, {
+          rule: RULES.cssImport,
+          file: rel,
+          line,
+          message: `module "${c.subscriber}" imports private stylesheet of module "${c.owner}" via "${source}" — move shared styles to the Design System (src/styles, src/components/zh) or use own classes`,
+        });
+        continue;
+      }
       if (c.kind !== 'internal') continue;
       addViolation(result, {
         rule: RULES.internalImport,

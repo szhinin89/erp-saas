@@ -8,6 +8,8 @@ interface ZHFilterBarProps {
   onClear?: () => void;
   clearLabel?: string;
   disabled?: boolean;
+  /** Sin chrome (padding/fondo/borde): filtros que ya viven dentro de una card o listado. */
+  plain?: boolean;
 }
 
 /**
@@ -21,9 +23,10 @@ export function ZHFilterBar({
   onClear,
   clearLabel = "Limpiar filtros",
   disabled,
+  plain = false,
 }: ZHFilterBarProps) {
   return (
-    <div className="zh-filterbar">
+    <div className={plain ? "zh-filterbar zh-filterbar--plain" : "zh-filterbar"}>
       {chips && <div className="zh-filterbar__chips">{chips}</div>}
       {children}
       {onClear && (

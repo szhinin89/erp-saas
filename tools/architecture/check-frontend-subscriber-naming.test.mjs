@@ -50,7 +50,7 @@ test('pasa: subscriber consume la facade pública del owner (valor, tipo y re-ex
   );
 });
 
-test('pasa: módulos shared, código fuera de modules/, paquetes y estilos', () => {
+test('pasa: módulos shared, código fuera de modules/ y paquetes', () => {
   assert.deepEqual(
     guard(
       [
@@ -58,9 +58,24 @@ test('pasa: módulos shared, código fuera de modules/, paquetes y estilos', () 
         'import { downloadBlob } from "../../../lib/download";',
         'import { ZHBtn } from "../../../components/zh/ZHForm";',
         'import { useForm } from "react-hook-form";',
-        'import "../../sales/styles/sales-return.css";',
       ].join('\n'),
       'frontend/src/modules/purchases/pages/PurchaseReturnListPage.tsx',
+    ),
+    [],
+  );
+});
+
+test('pasa: CSS propio del módulo y CSS oficial del Design System (styles/, components/zh/)', () => {
+  assert.deepEqual(
+    guard(
+      [
+        'import "../styles/sales-return.css";',
+        'import "./SalesPage.css";',
+        'import "../../../styles/shared/items-catalog.css";',
+        'import "../../../components/zh/electronicDocuments/electronic-documents.css";',
+        'import logo from "../../auth/assets/logo.svg";',
+      ].join('\n'),
+      'frontend/src/modules/sales/pages/SalesReturnListPage.tsx',
     ),
     [],
   );
@@ -173,6 +188,20 @@ test('falla: naming de facade — sin sufijo, genérico o export que no coincide
   assert.deepEqual(checkFacadeFileNaming(rel('supplierPickerFacade.ts'), 'export { SupplierSearchSelect } from "../components/SupplierSearchSelect";'), []);
 });
 
+test('falla: un módulo importa la hoja de estilos privada de otro módulo (css/scss)', () => {
+  const v = guard(
+    [
+      'import "../../sales/styles/sales-return.css";',
+      'import "../../auth/pages/LoginPage.css";',
+      'import "../../electronicDocuments/monitor/components/electronic-documents-monitor.css";',
+      'import styles from "../../caja/pages/CajaPage.module.scss";',
+    ].join('\n'),
+    'frontend/src/modules/purchases/pages/PurchaseReturnListPage.tsx',
+  );
+  assert.deepEqual(rules(v), Array(4).fill(RULES.cssImport));
+  assert.match(v[0].message, /module "purchases" imports private stylesheet of module "sales"/);
+});
+
 // ── Rutas Windows / POSIX ────────────────────────────────────────────────────
 
 test('normaliza rutas Windows y POSIX del archivo y del specifier', () => {
@@ -188,6 +217,15 @@ test('normaliza rutas Windows y POSIX del archivo y del specifier', () => {
     );
     assert.equal(classifyImport({ fromFile, source: '../api/salesService', sharedModules: SHARED }).kind, 'own');
     assert.equal(classifyImport({ fromFile, source: '../../lib/apiError', sharedModules: SHARED }).kind, 'shared');
+    assert.equal(
+      classifyImport({ fromFile, source: '..\\..\\auth\\pages\\LoginPage.css', sharedModules: SHARED }).kind,
+      'style',
+    );
+    assert.equal(classifyImport({ fromFile, source: '../styles/sales-return.css', sharedModules: SHARED }).kind, 'own');
+    assert.equal(
+      classifyImport({ fromFile, source: '../../../components/zh/electronicDocuments/electronic-documents.css', sharedModules: SHARED }).kind,
+      'outside',
+    );
   }
   assert.deepEqual(
     rules(runCheckFrontendSubscriberNaming({
@@ -215,7 +253,7 @@ test('extrae specifiers estáticos, re-exports, type-only y dinámicos', () => {
 
 // ── Repositorio real ─────────────────────────────────────────────────────────
 
-test('el repositorio no tiene imports cross-módulo fuera de facades ni facades mal nombradas', () => {
+test('el repositorio no tiene imports cross-módulo fuera de facades, CSS de otro módulo ni facades mal nombradas', () => {
   const { violations } = runCheckFrontendSubscriberNaming();
   assert.deepEqual(violations, []);
 });

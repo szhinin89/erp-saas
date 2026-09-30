@@ -846,6 +846,11 @@ select.zh-input--compact {
 .zh-form-actions-row--lg {
   margin-top: var(--space-8);
 }
+/* Fila de acciones que ya es el contenido de una ZHCard (p. ej. card "Acciones" de un
+   documento): el card da el espaciado, sin margen superior propio. */
+.zh-form-actions-row--flush {
+  margin-top: 0;
+}
 
 @media (max-width: 440px) {
   .zh-actions {
@@ -1800,6 +1805,16 @@ select.zh-input--compact {
   border-radius: var(--radius-md);
   margin-bottom: var(--space-4);
 }
+/* Variante sin chrome (ZHFilterBar `plain`): los filtros ya viven dentro de una card/listado,
+   solo se conserva el wrap horizontal y la separación con la tabla. */
+.zh-filterbar--plain {
+  align-items: normal;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  margin-bottom: var(--space-3);
+}
 .zh-filterbar__field {
   min-width: 160px;
 }
@@ -2061,6 +2076,71 @@ select.zh-input--compact {
   font-size: 13px;
   color: var(--color-text-secondary);
   margin: 0;
+}
+/* Logo horizontal de acceso (icono + nombre en fila, subtítulo debajo) — pantallas de login
+   (/login, /setup, AdminGlobalCore). Variante visual distinta de .zh-auth-brand (apilada, con
+   gradiente) de recuperación de contraseña/selección de empresa; unificarlas es una decisión
+   visual pendiente, no un duplicado. */
+.zh-auth-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: center;
+}
+.zh-auth-logo-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+.zh-auth-logo-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--color-primary);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-on-primary);
+  flex-shrink: 0;
+}
+.zh-auth-logo-icon .material-symbols-outlined {
+  font-size: 22px;
+}
+.zh-auth-logo-name {
+  font-size: var(--text-headline-lg-size);
+  font-weight: var(--text-headline-lg-weight);
+  letter-spacing: var(--text-headline-lg-spacing);
+  color: var(--color-primary);
+  line-height: 1;
+  margin: 0;
+}
+.zh-auth-logo-sub {
+  font-size: var(--text-body-md-size);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+@media (max-width: 480px) {
+  .zh-auth-logo-name {
+    font-size: 22px;
+  }
+}
+/* Error de autenticación inline (credenciales, sesión) sobre el formulario de acceso. */
+.zh-auth-error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-error) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-error) 25%, transparent);
+  color: var(--color-error);
+  font-size: var(--text-body-md-size);
+}
+.zh-auth-error .material-symbols-outlined {
+  font-size: 18px;
+  flex-shrink: 0;
 }
 
 /* ── 21. AVATAR ──────────────────────────────────────────── */
@@ -3421,4 +3501,42 @@ select.zh-input--compact {
   50% {
     opacity: 0.5;
   }
+}
+
+/* ── 31. RESUMEN DE DOCUMENTO (solo lectura) ─────────────── */
+/* Grilla label/valor apilados de cabeceras y totales de documentos (devoluciones, notas de
+   crédito, solicitudes) — reemplaza a las copias locales .sr-general-grid (Ventas) y
+   .pcn-summary-grid (Compras). ZHMoneyValue hereda la tipografía del valor. */
+.zh-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-3);
+}
+.zh-summary-grid__label {
+  display: block;
+  font-size: var(--text-label-sm-size);
+  text-transform: uppercase;
+  letter-spacing: var(--text-label-sm-spacing);
+  color: var(--color-text-secondary);
+}
+.zh-summary-grid__value {
+  display: block;
+  font-size: var(--text-body-md-size);
+  font-weight: 600;
+}
+.zh-summary-grid__value .zh-money-value {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+}
+/* Texto libre de solo lectura que conserva saltos de línea (motivo, observaciones). */
+.zh-readonly-text {
+  font-size: var(--text-body-md-size);
+  white-space: pre-wrap;
+}
+/* Mensaje de "sin datos" dentro de una sección (no reemplaza a EmptyState de página). */
+.zh-inline-empty {
+  color: var(--color-text-secondary);
+  font-size: var(--text-body-md-size);
+  padding: var(--space-3) 0;
 }

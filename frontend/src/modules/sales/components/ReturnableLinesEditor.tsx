@@ -26,7 +26,7 @@ export function ReturnableLinesEditor({
 }: Props) {
 
   if (lines.length === 0) {
-    return <p className="sr-lines-empty">Esta factura no tiene líneas devolvibles.</p>;
+    return <p className="zh-inline-empty">Esta factura no tiene líneas devolvibles.</p>;
   }
 
   return (
@@ -92,7 +92,7 @@ export function ReturnableLinesEditor({
                     className={exceeds ? "sr-qty-input--error" : undefined}
                   />
                   {exceeds && (
-                    <div className="sr-lines-table__error">
+                    <div className="zh-field-hint zh-field-hint--error">
                       Excede el remanente ({line.remainingQuantity}).
                     </div>
                   )}

@@ -109,9 +109,9 @@ export function SetupPage() {
     return (
       <div className="zh-auth-bg">
         <div className="zh-auth-wrapper">
-          <div className="lp-brand">
-            <h1 className="lp-brand-name">ZH Technologies</h1>
-            <p className="lp-brand-sub">El sistema ya fue configurado.</p>
+          <div className="zh-auth-logo">
+            <h1 className="zh-auth-logo-name">ZH Technologies</h1>
+            <p className="zh-auth-logo-sub">El sistema ya fue configurado.</p>
           </div>
           <div className="zh-auth-card zh-auth-card--flush">
             <div className="zh-auth-card-body">
@@ -136,9 +136,9 @@ export function SetupPage() {
     return (
       <div className="zh-auth-bg">
         <div className="zh-auth-wrapper">
-          <div className="lp-brand">
-            <h1 className="lp-brand-name">ZH Technologies</h1>
-            <p className="lp-brand-sub">Configuración completada</p>
+          <div className="zh-auth-logo">
+            <h1 className="zh-auth-logo-name">ZH Technologies</h1>
+            <p className="zh-auth-logo-sub">Configuración completada</p>
           </div>
           <div className="zh-auth-card zh-auth-card--flush">
             <div className="zh-auth-card-body zh-auth-card-body--center">
@@ -157,22 +157,22 @@ export function SetupPage() {
       <div className="zh-auth-bg-grid" aria-hidden="true" />
 
       <div className="zh-auth-wrapper">
-        <div className="lp-brand">
-          <div className="lp-brand-row">
-            <div className="lp-brand-icon" aria-hidden="true">
+        <div className="zh-auth-logo">
+          <div className="zh-auth-logo-row">
+            <div className="zh-auth-logo-icon" aria-hidden="true">
               <span className="material-symbols-outlined">settings</span>
             </div>
-            <h1 className="lp-brand-name" data-testid="setup-title">
+            <h1 className="zh-auth-logo-name" data-testid="setup-title">
               ZH Technologies
             </h1>
           </div>
-          <p className="lp-brand-sub">Configuración inicial del sistema</p>
+          <p className="zh-auth-logo-sub">Configuración inicial del sistema</p>
         </div>
 
         <div className="zh-auth-card zh-auth-card--flush">
           <div className="zh-auth-card-body">
             {error && (
-              <div className="lp-error" role="alert">
+              <div className="zh-auth-error" role="alert">
                 <span className="material-symbols-outlined" aria-hidden="true">
                   error
                 </span>

@@ -14,6 +14,7 @@ import {
 } from "../utils/stateBadge";
 import { copyToClipboard } from "../utils/clipboard";
 import "./electronic-documents-monitor.css";
+import "../../../../components/zh/electronicDocuments/electronic-documents.css";
 
 type Props = {
   items: ElectronicDocumentListItemDto[];
@@ -65,7 +66,7 @@ export function ElectronicDocumentsTable({
         <Badge
           variant={electronicDocumentStateBadgeVariant(row.currentState)}
           label={
-            <span className="edm-state-badge-label">
+            <span className="zh-edoc-state-badge-label">
               <span className="material-symbols-outlined zh-icon-sm">
                 {electronicDocumentStateIcon(row.currentState)}
               </span>

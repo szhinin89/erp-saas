@@ -124,7 +124,7 @@ describe("PurchaseCreditNoteDetailPage — valores de solo lectura migrados a ZH
     await screen.findAllByText("NC-001", { exact: false });
 
     const values = container.querySelectorAll(
-      ".pcn-summary-grid__value .zh-money-value",
+      ".zh-summary-grid__value .zh-money-value",
     );
     // saldo pendiente (200.00), total crédito (115.00), reduce CxP (115.00)
     expect(values.length).toBeGreaterThanOrEqual(3);
@@ -144,7 +144,7 @@ describe("PurchaseCreditNoteDetailPage — valores de solo lectura migrados a ZH
     await screen.findAllByText("NC-001", { exact: false });
 
     const balanceValueContainer = Array.from(
-      container.querySelectorAll(".pcn-summary-grid__value"),
+      container.querySelectorAll(".zh-summary-grid__value"),
     )[1];
     expect(balanceValueContainer?.textContent).toBe("—");
   });

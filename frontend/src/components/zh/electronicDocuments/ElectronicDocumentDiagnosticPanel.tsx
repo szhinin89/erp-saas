@@ -12,6 +12,7 @@ import type {
   ElectronicDocumentDiagnosticDto,
   ElectronicDocumentXmlVariant,
 } from "./electronicDocumentDiagnosticTypes";
+import "./electronic-documents.css";
 
 type Props = {
   diagnostic: ElectronicDocumentDiagnosticDto;
@@ -64,44 +65,44 @@ export function ElectronicDocumentDiagnosticPanel({
           "Resumen del diagnóstico",
         )}
       >
-        <div className="edm-diagnostic-summary">
-          <div className="edm-diagnostic-summary__state">
+        <div className="zh-edoc-diagnostic-summary">
+          <div className="zh-edoc-diagnostic-summary__state">
             <ElectronicDocumentStatusBadge
               currentState={diagnostic.currentState}
             />
             {statusExtra}
           </div>
 
-          <div className="edm-diagnostic-summary__meta">
+          <div className="zh-edoc-diagnostic-summary__meta">
             <div>
-              <div className="edm-detail-item-label">
+              <div className="zh-edoc-detail-item-label">
                 {t(
                   "electronicDocuments.diagnostic.summaryEnvironment",
                   "Ambiente",
                 )}
               </div>
-              <div className="edm-detail-item-value">
+              <div className="zh-edoc-detail-item-value">
                 {diagnostic.environment ?? "—"}
               </div>
             </div>
             <div>
-              <div className="edm-detail-item-label">
+              <div className="zh-edoc-detail-item-label">
                 {t(
                   "electronicDocuments.diagnostic.summaryLastAttempt",
                   "Último intento",
                 )}
               </div>
-              <div className="edm-detail-item-value">
+              <div className="zh-edoc-detail-item-value">
                 {diagnostic.lastAttemptUtc
                   ? formatDateTime(diagnostic.lastAttemptUtc)
                   : "—"}
               </div>
             </div>
             <div>
-              <div className="edm-detail-item-label">
+              <div className="zh-edoc-detail-item-label">
                 {t("electronicDocuments.diagnostic.messagesSection")}
               </div>
-              <div className="edm-detail-item-value">
+              <div className="zh-edoc-detail-item-value">
                 <Badge
                   variant={sriMessagesCount > 0 ? "warning" : "neutral"}
                   label={String(sriMessagesCount)}
@@ -110,10 +111,10 @@ export function ElectronicDocumentDiagnosticPanel({
               </div>
             </div>
             <div>
-              <div className="edm-detail-item-label">
+              <div className="zh-edoc-detail-item-label">
                 {t("electronicDocuments.monitor.detail.xmlSection")}
               </div>
-              <div className="edm-detail-item-value">
+              <div className="zh-edoc-detail-item-value">
                 <Badge
                   variant={xmlAvailableCount > 0 ? "info" : "neutral"}
                   label={t(
@@ -132,7 +133,7 @@ export function ElectronicDocumentDiagnosticPanel({
         <ElectronicDocumentSriMessages messages={diagnostic.messages} />
       </ZHCard>
 
-      <div className="edm-diagnostic-secondary">
+      <div className="zh-edoc-diagnostic-secondary">
         <ZHCard title={t("electronicDocuments.monitor.detail.xmlSection")}>
           <ElectronicDocumentXmlActions
             xmlDraftAvailable={diagnostic.xmlDraftAvailable}

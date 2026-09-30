@@ -37,7 +37,6 @@ import { useRideActions } from "../hooks/useRideActions";
 import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 import "../styles/sales-invoice.css";
 import "../../../styles/shared/erp-form-core.css";
-import "../../electronicDocuments/monitor/components/electronic-documents-monitor.css";
 import "./SalesPage.css";
 
 /** ELECTRONIC-INVOICING-SRI-CONNECTIVITY-CHECK-SCOPE-01: solo presentación — el valor real

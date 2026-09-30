@@ -3,6 +3,7 @@ import { useI18n } from "../../../i18n/i18n";
 import { formatDateTime } from "../../../lib/formatters/dateFormatters";
 import { messageTypeBadgeVariant } from "./messageTypeBadge";
 import type { ElectronicDocumentMessageDto } from "./electronicDocumentDiagnosticTypes";
+import "./electronic-documents.css";
 
 type Props = { messages: ElectronicDocumentMessageDto[] };
 
@@ -15,30 +16,30 @@ export function ElectronicDocumentSriMessages({ messages }: Props) {
 
   if (messages.length === 0) {
     return (
-      <p className="edm-hint-sm">
+      <p className="zh-edoc-hint-sm">
         {t("electronicDocuments.diagnostic.messagesEmpty")}
       </p>
     );
   }
 
   return (
-    <div className="edm-messages">
+    <div className="zh-edoc-messages">
       {messages.map((m, idx) => (
-        <div key={idx} className="edm-message-card">
-          <div className="edm-message-header">
+        <div key={idx} className="zh-edoc-message-card">
+          <div className="zh-edoc-message-header">
             <Badge
               variant={messageTypeBadgeVariant(m.messageType)}
               label={m.messageType}
               upper
             />
-            {m.code && <span className="edm-message-code zh-code-value">#{m.code}</span>}
-            <span className="edm-hint-sm">
+            {m.code && <span className="zh-edoc-message-code zh-code-value">#{m.code}</span>}
+            <span className="zh-edoc-hint-sm">
               {formatDateTime(m.occurredAtUtc)}
             </span>
           </div>
-          <div className="edm-message-text">{m.message}</div>
+          <div className="zh-edoc-message-text">{m.message}</div>
           {m.additionalInfo && (
-            <div className="edm-message-additional">{m.additionalInfo}</div>
+            <div className="zh-edoc-message-additional">{m.additionalInfo}</div>
           )}
         </div>
       ))}

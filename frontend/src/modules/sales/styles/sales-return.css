@@ -1,12 +1,6 @@
-/* SalesReturn — estilos mínimos, reutiliza tokens/clases ya existentes
-   (.zh-input, .card, .badge, .table, .pg-*) para todo lo demás. */
-
-.sr-list-filters {
-  display: flex;
-  gap: var(--space-3);
-  flex-wrap: wrap;
-  margin-bottom: var(--space-3);
-}
+/* SalesReturn — solo estilos propios de Devoluciones de venta. Los patrones genéricos viven en
+   el Design System (zh-ui.css): ZHFilterBar plain, .zh-summary-grid, .zh-readonly-text,
+   .zh-inline-empty, .zh-field-hint--error y .zh-form-actions-row--flush. */
 
 .sr-invoice-picker {
   position: relative;
@@ -43,12 +37,6 @@
   color: var(--color-text-secondary);
 }
 
-.sr-lines-table__error {
-  font-size: var(--text-help-size);
-  color: var(--color-error);
-  margin-top: 2px;
-}
-
 /* SALES-PRESENTATIONS-04: equivalencia en unidad base (ej. "= 12 UND") bajo la cantidad en la
    presentación vendida — solo visible cuando ConversionFactor != 1. */
 .sr-lines-table__equivalence {
@@ -56,67 +44,23 @@
   color: var(--color-text-secondary);
 }
 
-.sr-lines-empty {
-  color: var(--color-text-secondary);
-  font-size: var(--text-body-md-size);
-  padding: var(--space-3) 0;
-}
-
 .sr-qty-input--error {
   border-color: var(--color-error) !important;
 }
 
-.sr-general-grid,
-.sr-totals-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: var(--space-3);
-}
-
-.sr-general-grid__label {
-  display: block;
-  font-size: var(--text-label-sm-size);
-  text-transform: uppercase;
-  letter-spacing: var(--text-label-sm-spacing);
-  color: var(--color-text-secondary);
-}
-
-.sr-general-grid__value {
-  display: block;
-  font-size: var(--text-body-md-size);
-  font-weight: 600;
-}
-
-.sr-totals-grid__grand .sr-general-grid__value {
+.sr-totals-grid__grand .zh-summary-grid__value {
   font-size: var(--text-headline-sm-size);
   color: var(--color-primary);
 }
 
 /* ZHMoneyValue (SALES-DS-MONEY-12) hereda la tipografía local en vez de
-   imponer su propio tamaño/peso/color por defecto — preserva el look
-   aprobado de este resumen (incluida la fila de total, más grande y en
-   color primario). Escopado a .sr-lines-table para no afectar otras tablas
-   .zh-table-cell--num fuera de Devoluciones de venta. */
-.sr-general-grid__value .zh-money-value {
-  font-size: inherit;
-  font-weight: inherit;
-  color: inherit;
-}
+   imponer su propio tamaño/peso/color por defecto (el resumen lo hace
+   .zh-summary-grid__value en el DS). Escopado a .sr-lines-table para no
+   afectar otras tablas .zh-table-cell--num fuera de Devoluciones de venta. */
 .sr-lines-table .zh-table-cell--num .zh-money-value {
   font-size: inherit;
   font-weight: inherit;
   color: inherit;
-}
-
-.sr-reason-readonly {
-  font-size: var(--text-body-md-size);
-  white-space: pre-wrap;
-}
-
-.sr-draft-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-2);
 }
 
 /* Fila de acciones RIDE junto al badge de estado en ElectronicDocumentDiagnosticPanel

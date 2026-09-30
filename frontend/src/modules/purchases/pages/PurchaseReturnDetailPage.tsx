@@ -33,7 +33,6 @@ import {
   getPurchaseReturnFiscalStatusLabel,
   PURCHASE_RETURN_STATUS_BADGE as STATUS_BADGE,
 } from "../utils/purchaseReturnStatus";
-import "../../sales/styles/sales-return.css";
 
 /**
  * Detalle de una devolución de compra: edición del borrador (Draft),
@@ -284,33 +283,33 @@ export function PurchaseReturnDetailPage() {
           />
         }
       >
-        <div className="sr-general-grid">
+        <div className="zh-summary-grid">
           <div>
-            <span className="sr-general-grid__label">N.º Devolución</span>
-            <span className="sr-general-grid__value">{editing.returnNumber ?? "—"}</span>
+            <span className="zh-summary-grid__label">N.º Devolución</span>
+            <span className="zh-summary-grid__value">{editing.returnNumber ?? "—"}</span>
           </div>
           <div>
-            <span className="sr-general-grid__label">Estado fiscal</span>
-            <span className="sr-general-grid__value">
+            <span className="zh-summary-grid__label">Estado fiscal</span>
+            <span className="zh-summary-grid__value">
               {getPurchaseReturnFiscalStatusLabel(editing.fiscalStatus, t)}
             </span>
           </div>
           <div>
-            <span className="sr-general-grid__label">Creada</span>
-            <span className="sr-general-grid__value">{formatDateTime(editing.createdAt)}</span>
+            <span className="zh-summary-grid__label">Creada</span>
+            <span className="zh-summary-grid__value">{formatDateTime(editing.createdAt)}</span>
           </div>
           {editing.authorizedGrandTotal !== null && (
             <div>
-              <span className="sr-general-grid__label">Total autorizado</span>
-              <span className="sr-general-grid__value">
+              <span className="zh-summary-grid__label">Total autorizado</span>
+              <span className="zh-summary-grid__value">
                 <ZHMoneyValue precision="money" value={editing.authorizedGrandTotal} currencySymbol="" />
               </span>
             </div>
           )}
           {editing.supplierCreditId && (
             <div>
-              <span className="sr-general-grid__label">Saldo a favor generado</span>
-              <span className="sr-general-grid__value">
+              <span className="zh-summary-grid__label">Saldo a favor generado</span>
+              <span className="zh-summary-grid__value">
                 <ZHMoneyValue precision="money" value={editing.supplierCreditAmount ?? 0} />{" "}
                 <ZHBtn
                   type="button"
@@ -341,7 +340,7 @@ export function PurchaseReturnDetailPage() {
             />
           </ZHField>
         ) : (
-          <p className="sr-reason-readonly">{editing.reason}</p>
+          <p className="zh-readonly-text">{editing.reason}</p>
         )}
       </ZHCard>
 
@@ -388,7 +387,7 @@ export function PurchaseReturnDetailPage() {
       {(isDraft || isAuthorized) && (
         <ZHCard title="Acciones">
           {!cancelling ? (
-            <div className="sr-draft-actions">
+            <div className="zh-form-actions-row zh-form-actions-row--end zh-form-actions-row--flush">
               <ZHBtn
                 type="button"
                 variant="destructive"

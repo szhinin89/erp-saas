@@ -109,7 +109,7 @@ cd frontend && npx tsc --noEmit && npm run build && npm run architecture:check
 | Pages wrapper | `npm run architecture:pages` | `pages/**/*.tsx` ≤15 líneas, sin hooks/api |
 | Import boundaries | `npm run architecture:imports` | Imports prohibidos, profundidad relativa |
 | Module boundaries | `npm run architecture:modules` | Pares de módulos que nunca pueden depender entre sí (`forbiddenCrossImports`) |
-| Subscriber contracts | `npm run architecture:subscriber` | `frontend-subscriber-naming`: cross-módulo solo vía `modules/<owner>/facades/<x>Facade.ts`; naming de facades. Tests: `node --test tools/architecture/check-frontend-subscriber-naming.test.mjs` |
+| Subscriber contracts | `npm run architecture:subscriber` | `frontend-subscriber-naming`: cross-módulo solo vía `modules/<owner>/facades/<x>Facade.ts`; naming de facades; sin CSS privado de otro módulo. Tests: `node --test tools/architecture/check-frontend-subscriber-naming.test.mjs` |
 | CSS prefixes | `npm run architecture:css` | Prefijos por área, clases ambiguas |
 | Cross-layer | `npm run architecture:cross-layer` | Pages/stores sin capas prohibidas |
 | Backend (4 checks) | `npm run architecture:backend` | Layering csproj, usings, controllers, tenant |

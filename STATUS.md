@@ -2,6 +2,15 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-29** · Kernel refactor: **2026-06-05**.
 
+## ZH-FRONTEND-CROSS-MODULE-CSS-01 — Sin CSS privado entre módulos (2026-09-29)
+
+**Estado: COMPLETADO.** 0 imports CSS entre `modules/`; guard `F-subscriber-css-import` en `frontend-subscriber-naming` (sin grandfather). Sin cambios de lógica, APIs ni rediseño: 49 reglas movidas con declaraciones idénticas (verificado HEAD vs ahora, incluidos media queries).
+- purchases → `sales-return.css` (3 páginas): `sr-list-filters`, `sr-general-grid*`, `sr-reason-readonly`, `sr-draft-actions` eran patrones genéricos (B) que además caja, finance y el editor de líneas de compra usaban **sin importar la hoja** (D: solo tenían estilo si el chunk de Ventas ya estaba cargado), y `pcn-summary-grid*` era una copia declarada de `sr-general-grid*`. Pasan al DS: `ZHFilterBar plain`, `.zh-summary-grid*`, `.zh-readonly-text`, `.zh-inline-empty` (zh-ui.css §31), `.zh-form-actions-row--flush`, y `sr-lines-table__error` → `.zh-field-hint--error` existente. `sales-return.css` queda solo con clases de Ventas; `pcn-summary-grid` eliminada.
+- admin-core → `LoginPage.css`: la pantalla ya usaba `zh-auth-*` del DS; solo tomaba `lp-brand*` y `lp-error`, compartidos con /login y /setup → `.zh-auth-logo*` y `.zh-auth-error` en zh-ui.css §20 (variante horizontal de `.zh-auth-brand`, documentada; unificar ambas es decisión visual pendiente). `lp-brand-desc` (solo /login) sigue local.
+- SalesPage → `electronic-documents-monitor.css`: lo importaba solo para vestir `components/zh/electronicDocuments/*` (ADR-024). 25 clases de esos componentes pasan a `components/zh/electronicDocuments/electronic-documents.css` como `zh-edoc-*`, importado por cada componente; el Monitor conserva solo `dashboard/retry/last-message/access-key/detail-grid`.
+- Diferencias mínimas por adoptar el DS existente (no rediseño): error inline de línea con margen 4px (antes 2px) y `line-height` de ayuda; fila de acciones con `align-items: center` y `flex-wrap`.
+- Tests: checker 16/16 (PASS: CSS propio, `src/styles/`, `src/components/zh/`, asset no-estilo; FAIL: css/scss de otro módulo; rutas Windows/POSIX); contra `HEAD` reporta exactamente los 5 imports. Frontend completo 2566/2566; `tsc -b`, lint (0 errores), build, `architecture:check` (58 tests, 0 nuevas, baseline 0) y `git diff --check` en verde.
+
 ## ZH-GEOGRAPHY-COUNTRY-CONTEXT-01 — País de la dirección INEC de socios de negocio (2026-09-29)
 
 **Estado: COMPLETADO (Caso B: restricción deliberada del dominio, centralizada).** Sin cambios de backend, endpoints, UX ni CSS.

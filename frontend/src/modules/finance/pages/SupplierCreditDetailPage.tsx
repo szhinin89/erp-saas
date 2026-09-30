@@ -298,7 +298,7 @@ export function SupplierCreditDetailPage() {
 
       {hasBalance && (
         <ZHCard title="Acciones">
-          <div className="sr-draft-actions">
+          <div className="zh-form-actions-row zh-form-actions-row--end zh-form-actions-row--flush">
             <ZHBtn type="button" variant="primary" onClick={() => setApplyOpen(true)}>
               Aplicar a CxP
             </ZHBtn>

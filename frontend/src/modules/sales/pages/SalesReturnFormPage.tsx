@@ -245,26 +245,26 @@ export function SalesReturnFormPage() {
             />
           }
         >
-          <div className="sr-general-grid">
+          <div className="zh-summary-grid">
             <div>
-              <span className="sr-general-grid__label">N.º Devolución</span>
-              <span className="sr-general-grid__value">{editing.returnNumber}</span>
+              <span className="zh-summary-grid__label">N.º Devolución</span>
+              <span className="zh-summary-grid__value">{editing.returnNumber}</span>
             </div>
             <div>
-              <span className="sr-general-grid__label">Factura origen</span>
-              <span className="sr-general-grid__value">
+              <span className="zh-summary-grid__label">Factura origen</span>
+              <span className="zh-summary-grid__value">
                 {invoice?.invoiceNumber ?? editing.salesInvoiceId}
               </span>
             </div>
             <div>
-              <span className="sr-general-grid__label">Cliente</span>
-              <span className="sr-general-grid__value">
+              <span className="zh-summary-grid__label">Cliente</span>
+              <span className="zh-summary-grid__value">
                 {invoice?.customerName ?? editing.customerId}
               </span>
             </div>
             <div>
-              <span className="sr-general-grid__label">Creada</span>
-              <span className="sr-general-grid__value">
+              <span className="zh-summary-grid__label">Creada</span>
+              <span className="zh-summary-grid__value">
                 {formatDateTime(editing.createdAt)}
               </span>
             </div>
@@ -280,7 +280,7 @@ export function SalesReturnFormPage() {
         )}
         <ZHField label="Motivo de la devolución" required readOnly={readOnly}>
           {readOnly ? (
-            <p className="sr-reason-readonly">{editing?.reason}</p>
+            <p className="zh-readonly-text">{editing?.reason}</p>
           ) : (
             <textarea
               className="zh-input"
@@ -335,7 +335,7 @@ export function SalesReturnFormPage() {
 
       {editing && editing.status === "Draft" && (
         <ZHCard title="Acciones">
-          <div className="sr-draft-actions">
+          <div className="zh-form-actions-row zh-form-actions-row--end zh-form-actions-row--flush">
             <ZHBtn
               type="button"
               variant="destructive"

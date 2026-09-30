@@ -4,6 +4,7 @@ import { LoadingState } from "../../PageShell";
 import { useI18n } from "../../../i18n/i18n";
 import { downloadTextFile } from "../../../lib/download";
 import type { ElectronicDocumentXmlVariant } from "./electronicDocumentDiagnosticTypes";
+import "./electronic-documents.css";
 
 type Props = {
   xmlDraftAvailable: boolean;
@@ -34,7 +35,7 @@ export function ElectronicDocumentXmlActions({
 
   return (
     <>
-      <div className="edm-xml-actions">
+      <div className="zh-edoc-xml-actions">
         <ZHBtn
           variant="secondary"
           size="sm"
@@ -64,7 +65,7 @@ export function ElectronicDocumentXmlActions({
         </ZHBtn>
       </div>
       {!xmlDraftAvailable && !xmlSignedAvailable && !xmlAuthorizedAvailable && (
-        <p className="edm-hint-sm">
+        <p className="zh-edoc-hint-sm">
           {t("electronicDocuments.monitor.detail.xmlNotAvailable")}
         </p>
       )}
@@ -78,8 +79,8 @@ export function ElectronicDocumentXmlActions({
       )}
       {xmlContent && xmlVariant && !xmlLoading && (
         <>
-          <div className="edm-xml-viewer-header">
-            <p className="edm-hint-sm">
+          <div className="zh-edoc-xml-viewer-header">
+            <p className="zh-edoc-hint-sm">
               {t(`electronicDocuments.monitor.detail.viewXml${xmlVariant}`)}
             </p>
             <ZHBtn
@@ -96,7 +97,7 @@ export function ElectronicDocumentXmlActions({
               {t("electronicDocuments.monitor.detail.downloadXml")}
             </ZHBtn>
           </div>
-          <pre className="edm-xml-viewer zh-code-value">{xmlContent}</pre>
+          <pre className="zh-edoc-xml-viewer zh-code-value">{xmlContent}</pre>
         </>
       )}
     </>

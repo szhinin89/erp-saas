@@ -56,7 +56,8 @@ frontend/src/modules/{dominio}/
 - Utilidades genéricas sin dominio (p. ej. descarga de archivos `src/lib/download.ts`) viven en `src/lib/`, no en un módulo de dominio.
 - `modules/lib` y `modules/config` son shared (`architecture-rules.json` → `moduleBoundaries.sharedModules`); no dependen de módulos de dominio.
 - Naming: [naming.md § Frontend](./naming.md#frontend). Enforcement: `frontend-subscriber-naming` (`F-subscriber-internal-import`, `F-subscriber-facade-naming`); la dirección de dependencias prohibidas entre pares la valida `module-boundaries`.
-- Fuera de alcance del guard: imports de estilos/assets y rutas en `vi.mock()` (arnés de test). Un test de subscriber mockea la facade que su código consume.
+- CSS: un módulo nunca importa la hoja de estilos de otro módulo (`F-subscriber-css-import`). Un patrón visual compartido pertenece al Design System (`src/styles/`, CSS del componente en `src/components/zh/`); uno propio del consumidor lleva clases del consumidor. Prohibido copiar el bloque CSS para "resolver" el import. Una clase usada sin importar su hoja (depende de que otro chunk ya la cargó) es deuda, no reutilización.
+- Fuera de alcance del guard: assets no-estilo (imágenes/fuentes) y rutas en `vi.mock()` (arnés de test). Un test de subscriber mockea la facade que su código consume.
 
 ---
 
@@ -126,6 +127,13 @@ y debe migrarse al tocar el archivo.
 | Tabs de formulario/catálogo | `.prd-tabs` / `.prd-tab-btn` / `.prd-tab-btn--active` (namespace compartido en `items-catalog.css`) | `.zh-form-tabs` |
 | Listado tabular de registros (administrativo, transaccional, de detalle o dentro de un formulario) | `ZHDataTable` (`components/zh/ZHDataTable.tsx`; columnas tipadas, `rowKey`, `loading`, `emptyMessage`, paginación opcional, `showRowNumber`/`rowNumberOffset` para columna "N°" auxiliar (ZH-DATATABLE-ROW-NUMBER-01), `rowClassName` por fila, `tableClassName`/`cellClassName` para variantes ya documentadas de `zh-ui.css` (`table--compact`, `table--neutral`, `table--align-top`, `table--matrix`, `table--sticky-column`, `zh-table-cell--num`) — usa internamente `.table`/`.table-scroll`) — ZH-LISTING-STANDARD-01, ampliado a todo el frontend por ZH-LISTING-GLOBAL-STANDARD-06 | `<table className="table">` armada a mano por página; `.md-table`, `.md-table-wrap`, `.prd-table-wrap` (eliminada 15A). Excepciones documentadas: fila de alta inline sin entidad real, tabla editable compleja por celda/fila (edición inline con RHF, `useFieldArray`), preview técnico calculado en vivo dentro de un formulario activo, matriz dinámica con columnas data-driven, reporte composable con columnas libres por consumidor (`ReportPageTemplate`), o necesidad de `<tfoot>`/comportamiento que `ZHDataTable` no expone (ej. `JournalEntryDetailPage`) — documentar el motivo puntual en el código; no ampliar `ZHDataTable` para cubrirlos sin evaluar impacto en sus consumidores existentes |
 | Bloque de "actividad reciente" | `.prd-activity__*` (`items-catalog.css`) | `.bod-activity__*` y equivalentes duplicados por módulo |
+| Barra de filtros de listado | `ZHFilterBar` (`plain` cuando ya vive dentro de una card/listado: sin padding/fondo/borde) | `.sr-list-filters` y filas de filtros locales por módulo |
+| Resumen label/valor de solo lectura de un documento (cabecera, totales) | `.zh-summary-grid` + `__label`/`__value` (`zh-ui.css` §31; `ZHMoneyValue` hereda la tipografía del valor) | `.sr-general-grid*`, `.pcn-summary-grid*` |
+| Texto libre de solo lectura multilínea (motivo, observaciones) / "sin datos" dentro de una sección | `.zh-readonly-text` / `.zh-inline-empty` | `.sr-reason-readonly` / `.sr-lines-empty` |
+| Fila de acciones dentro de una card "Acciones" | `.zh-form-actions-row .zh-form-actions-row--end .zh-form-actions-row--flush` | `.sr-draft-actions` |
+| Error inline bajo un control de línea | `.zh-field-hint .zh-field-hint--error` | `.sr-lines-table__error` |
+| Marca horizontal y error de pantallas de acceso (login, setup, AdminGlobalCore) | `.zh-auth-logo*` / `.zh-auth-error` (`zh-ui.css` §20; variante apilada: `.zh-auth-brand*`) | `.lp-brand*`, `.lp-error` |
+| Estilos de componentes de documento electrónico (`components/zh/electronicDocuments/*`) | `.zh-edoc-*` en `components/zh/electronicDocuments/electronic-documents.css`, importado por cada componente | `.edm-*` del Monitor usados fuera de él |
 | Input de texto simple | `ZhTextInput` (`components/zh/inputs/`) | `<input type="text">` crudo |
 | Input numérico entero | `ZhNumberInput` (`components/zh/inputs/`) | `<input type="number">` crudo (además prohibido por el Estándar de Precisión Numérica) |
 | Input decimal (montos/cantidades/precios) | `ZhDecimalInput` (`components/zh/inputs/`) | `<input type="number">`/`type="text"` con parseo manual |

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { PageShell, Badge } from "../../../components/PageShell";
 import { useI18n } from "../../../i18n/i18n";
 import { ZHCard } from "../../../components/zh/ZHCard";
+import { ZHFilterBar } from "../../../components/zh/ZHFilterBar";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { ZhSelect } from "../../../components/zh/inputs";
@@ -18,7 +19,6 @@ import {
   getPurchaseCreditNoteStatusLabel,
   PURCHASE_CREDIT_NOTE_STATUS_BADGE as STATUS_BADGE,
 } from "../utils/purchaseCreditNoteStatus";
-import "../../sales/styles/sales-return.css";
 
 const PAGE_SIZE = 25;
 
@@ -30,8 +30,8 @@ const APPLICATION_TYPE_LABEL: Record<string, string> = {
 /**
  * PURCHASE-CREDIT-NOTE-ENTRY-SCREEN-DUAL-MODE-01 — listado de notas de crédito de compra,
  * punto de entrada del menú ("Compras → Notas de Crédito de Compra"); mismo patrón que
- * `PurchaseReturnListPage.tsx` (PageShell + ZHCard + ZHDataTable con paginación integrada,
- * reutiliza `sales-return.css`). El botón "Nueva" navega a `/purchases/credit-notes/new` —
+ * `PurchaseReturnListPage.tsx` (PageShell + ZHCard + ZHFilterBar plain + ZHDataTable con paginación
+ * integrada, sin CSS de otro módulo). El botón "Nueva" navega a `/purchases/credit-notes/new` —
  * la MISMA pantalla (`PurchaseCreditNoteFormPage`) que abre "Procesar NC" desde Recepción, aquí
  * sin parámetros (modo manual). Solo lectura: consume `GET /api/v1/purchases/credit-notes`, ya
  * implementado; sin filtro de texto libre (la query solo admite status/supplierId/invoiceId/fechas
@@ -159,7 +159,7 @@ export function PurchaseCreditNoteListPage() {
           </ZHBtn>
         }
       >
-        <div className="sr-list-filters">
+        <ZHFilterBar plain>
           <ZHField label="Estado" density="compact">
             <ZhSelect
               className="zh-input"
@@ -175,7 +175,7 @@ export function PurchaseCreditNoteListPage() {
               <option value="Cancelled">Cancelada</option>
             </ZhSelect>
           </ZHField>
-        </div>
+        </ZHFilterBar>
 
         <ZHDataTable
           columns={columns}

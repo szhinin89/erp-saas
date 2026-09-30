@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageShell, Badge } from "../../../components/PageShell";
 import { ZHCard } from "../../../components/zh/ZHCard";
+import { ZHFilterBar } from "../../../components/zh/ZHFilterBar";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZhTextInput, ZhSelect } from "../../../components/zh/inputs";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
@@ -151,7 +152,7 @@ export function SalesReturnListPage() {
           </ZHBtn>
         }
       >
-        <div className="sr-list-filters">
+        <ZHFilterBar plain>
           <ZHField label="Buscar" density="compact">
             <ZhTextInput
               value={search}
@@ -177,7 +178,7 @@ export function SalesReturnListPage() {
               <option value="Cancelled">Cancelada</option>
             </ZhSelect>
           </ZHField>
-        </div>
+        </ZHFilterBar>
 
         <ZHDataTable
           columns={columns}

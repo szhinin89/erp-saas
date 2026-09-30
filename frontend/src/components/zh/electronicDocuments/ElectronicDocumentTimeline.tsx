@@ -1,6 +1,7 @@
 import { useI18n } from "../../../i18n/i18n";
 import { formatDateTime } from "../../../lib/formatters/dateFormatters";
 import type { ElectronicDocumentTimelineEventDto } from "./electronicDocumentDiagnosticTypes";
+import "./electronic-documents.css";
 
 type Props = { timeline: ElectronicDocumentTimelineEventDto[] };
 
@@ -10,19 +11,19 @@ export function ElectronicDocumentTimeline({ timeline }: Props) {
 
   if (timeline.length === 0) {
     return (
-      <p className="edm-hint-sm">
+      <p className="zh-edoc-hint-sm">
         {t("electronicDocuments.monitor.detail.timelineEmpty")}
       </p>
     );
   }
 
   return (
-    <ul className="edm-timeline">
+    <ul className="zh-edoc-timeline">
       {timeline.map((ev, idx) => (
-        <li key={idx} className="edm-timeline-item">
-          <span className="edm-timeline-dot" />
-          <div className="edm-timeline-body">
-            <div className="edm-detail-item-value">
+        <li key={idx} className="zh-edoc-timeline-item">
+          <span className="zh-edoc-timeline-dot" />
+          <div className="zh-edoc-timeline-body">
+            <div className="zh-edoc-detail-item-value">
               {t(`electronicDocuments.monitor.timelineAction.${ev.action}`)}
               {ev.fromState && (
                 <>
@@ -33,7 +34,7 @@ export function ElectronicDocumentTimeline({ timeline }: Props) {
                 </>
               )}
             </div>
-            <div className="edm-timeline-meta">
+            <div className="zh-edoc-timeline-meta">
               {formatDateTime(ev.occurredAtUtc)} · {ev.userName}
               {ev.durationSinceLastMinutes !== null && (
                 <>

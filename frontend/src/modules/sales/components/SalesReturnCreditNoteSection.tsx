@@ -13,6 +13,7 @@ import { electronicDocumentAccessFacade } from "../../electronicDocuments/facade
 import { formatApiError } from "../../lib/formatApiError";
 import { message } from "../../../lib/messages";
 import { useRideActions } from "../hooks/useRideActions";
+import "../../../components/zh/electronicDocuments/electronic-documents.css";
 
 // SalesReturn.Authorize()/AuthorizeSalesReturnHandler siempre registra el documento electrónico
 // bajo SourceModule="Sales" (mismo valor que usa Factura) — no es un código SRI, es el nombre del
@@ -143,7 +144,7 @@ export function SalesReturnCreditNoteSection({
       )}
 
       {notFound && !loading && (
-        <p className="edm-hint-sm">
+        <p className="zh-edoc-hint-sm">
           Todavía no se ha registrado un documento electrónico para esta
           devolución.
         </p>

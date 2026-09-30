@@ -11,6 +11,7 @@ import type {
   ElectronicDocumentXmlVariant,
 } from "../api/electronicDocumentsMonitorService";
 import "./electronic-documents-monitor.css";
+import "../../../../components/zh/electronicDocuments/electronic-documents.css";
 
 const RETRYABLE_STATES = new Set([
   "Signed",
@@ -93,42 +94,42 @@ export function ElectronicDocumentDetailPanel({
           <ZHCard title={t("electronicDocuments.monitor.detail.documentInfo")}>
             <div className="edm-detail-grid">
               <div>
-                <div className="edm-detail-item-label">
+                <div className="zh-edoc-detail-item-label">
                   {t("electronicDocuments.monitor.detail.company")}
                 </div>
-                <div className="edm-detail-item-value">
+                <div className="zh-edoc-detail-item-value">
                   {detail.companyName}
                 </div>
               </div>
               <div>
-                <div className="edm-detail-item-label">
+                <div className="zh-edoc-detail-item-label">
                   {t("electronicDocuments.monitor.detail.companyTaxId")}
                 </div>
-                <div className="edm-detail-item-value">
+                <div className="zh-edoc-detail-item-value">
                   {detail.companyTaxId}
                 </div>
               </div>
               <div>
-                <div className="edm-detail-item-label">
+                <div className="zh-edoc-detail-item-label">
                   {t("electronicDocuments.monitor.detail.counterparty")}
                 </div>
-                <div className="edm-detail-item-value">
+                <div className="zh-edoc-detail-item-value">
                   {detail.counterpartyName ?? "—"}
                 </div>
               </div>
               <div>
-                <div className="edm-detail-item-label">
+                <div className="zh-edoc-detail-item-label">
                   {t("electronicDocuments.monitor.detail.documentNumber")}
                 </div>
-                <div className="edm-detail-item-value">
+                <div className="zh-edoc-detail-item-value">
                   {detail.documentNumber ?? "—"}
                 </div>
               </div>
               <div>
-                <div className="edm-detail-item-label">
+                <div className="zh-edoc-detail-item-label">
                   {t("electronicDocuments.monitor.detail.observations")}
                 </div>
-                <div className="edm-detail-item-value">
+                <div className="zh-edoc-detail-item-value">
                   {detail.observations ??
                     t("electronicDocuments.monitor.detail.noObservations")}
                 </div>
@@ -165,7 +166,7 @@ export function ElectronicDocumentDetailPanel({
             <ZHCard
               title={t("electronicDocuments.monitor.detail.actionsSection")}
             >
-              <div className="edm-xml-actions">
+              <div className="zh-edoc-xml-actions">
                 <ZHBtn
                   variant="secondary"
                   size="sm"
@@ -191,7 +192,7 @@ export function ElectronicDocumentDetailPanel({
                   {t("electronicDocuments.monitor.detail.resendEmail")}
                 </ZHBtn>
               </div>
-              <p className="edm-hint-sm">
+              <p className="zh-edoc-hint-sm">
                 {t("electronicDocuments.monitor.detail.comingSoon")}
               </p>
             </ZHCard>

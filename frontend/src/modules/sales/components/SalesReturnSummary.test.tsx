@@ -100,7 +100,7 @@ describe("SalesReturnSummary — totales migrados a ZHMoneyValue (SALES-DS-MONEY
       <SalesReturnSummary salesReturn={buildSalesReturn({ totalDiscount: 5 })} />,
     );
 
-    const rows = container.querySelectorAll(".sr-general-grid__value");
+    const rows = container.querySelectorAll(".zh-summary-grid__value");
     const discountRow = Array.from(rows).find((r) =>
       r.textContent?.startsWith("-"),
     );

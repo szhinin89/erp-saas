@@ -13,13 +13,12 @@ import {
   type LoginFormValues,
 } from "../../../schemas/auth/loginSchema";
 import { formatApiRequestError } from "../../lib/apiError";
-import "../../auth/pages/LoginPage.css";
 
 /**
  * Login exclusivo de AdminGlobalCore — llama global-login y siempre navega al dashboard
- * global (nunca a /select-company ni a /dashboard operativo). Reutiliza los estilos
- * zh-auth-* de LoginPage (mismo Design System de pantallas de auth), sin arrastrar el
- * formulario ni la navegación de /login normal.
+ * global (nunca a /select-company ni a /dashboard operativo). Usa solo el Design System de
+ * pantallas de acceso (zh-auth-* en zh-ui.css), sin CSS privado de LoginPage ni su formulario
+ * o navegación de /login normal.
  */
 export function AdminCoreLoginPage() {
   const navigate = useNavigate();
@@ -66,20 +65,20 @@ export function AdminCoreLoginPage() {
       <div className="zh-auth-bg-grid" aria-hidden="true" />
 
       <div className="zh-auth-wrapper">
-        <div className="lp-brand">
-          <div className="lp-brand-row">
-            <div className="lp-brand-icon" aria-hidden="true">
+        <div className="zh-auth-logo">
+          <div className="zh-auth-logo-row">
+            <div className="zh-auth-logo-icon" aria-hidden="true">
               <span className="material-symbols-outlined">public</span>
             </div>
-            <h1 className="lp-brand-name">AdminGlobalCore</h1>
+            <h1 className="zh-auth-logo-name">AdminGlobalCore</h1>
           </div>
-          <p className="lp-brand-sub">Administración global del ERP</p>
+          <p className="zh-auth-logo-sub">Administración global del ERP</p>
         </div>
 
         <div className="zh-auth-card zh-auth-card--flush">
           <div className="zh-auth-card-body">
             {error && (
-              <div className="lp-error" role="alert">
+              <div className="zh-auth-error" role="alert">
                 <span className="material-symbols-outlined" aria-hidden="true">
                   error
                 </span>

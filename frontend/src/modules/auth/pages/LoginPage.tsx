@@ -90,16 +90,16 @@ export function LoginPage() {
 
       <div className="zh-auth-wrapper">
         {/* ── Brand ── */}
-        <div className="lp-brand">
-          <div className="lp-brand-row">
-            <div className="lp-brand-icon" aria-hidden="true">
+        <div className="zh-auth-logo">
+          <div className="zh-auth-logo-row">
+            <div className="zh-auth-logo-icon" aria-hidden="true">
               <span className="material-symbols-outlined">dashboard</span>
             </div>
-            <h1 className="lp-brand-name" data-testid="erp-brand-title">
+            <h1 className="zh-auth-logo-name" data-testid="erp-brand-title">
               {brandConfig.companyName}
             </h1>
           </div>
-          <p className="lp-brand-sub">{brandConfig.productSubtitle}</p>
+          <p className="zh-auth-logo-sub">{brandConfig.productSubtitle}</p>
           <p className="lp-brand-desc">
             Administra ventas, compras, inventario, caja y facturación
             electrónica en un solo lugar.
@@ -111,7 +111,7 @@ export function LoginPage() {
           <div className="zh-auth-card-body">
             {/* Error alert */}
             {error && (
-              <div className="lp-error" role="alert">
+              <div className="zh-auth-error" role="alert">
                 <span className="material-symbols-outlined" aria-hidden="true">
                   error
                 </span>

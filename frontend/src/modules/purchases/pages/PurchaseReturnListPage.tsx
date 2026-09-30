@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { PageShell, Badge } from "../../../components/PageShell";
 import { useI18n } from "../../../i18n/i18n";
 import { ZHCard } from "../../../components/zh/ZHCard";
+import { ZHFilterBar } from "../../../components/zh/ZHFilterBar";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { ZhSelect } from "../../../components/zh/inputs";
@@ -15,7 +16,6 @@ import {
   getPurchaseReturnStatusLabel,
   PURCHASE_RETURN_STATUS_BADGE as STATUS_BADGE,
 } from "../utils/purchaseReturnStatus";
-import "../../sales/styles/sales-return.css";
 
 const PAGE_SIZE = 25;
 
@@ -23,9 +23,8 @@ const PAGE_SIZE = 25;
  * Listado de devoluciones de compra — consume exclusivamente
  * `GET /api/v1/purchases/returns`. Mismo patrón de lista que
  * `SalesReturnListPage.tsx` (PageShell + ZHCard + ZHDataTable con paginación
- * integrada). Reutiliza `sales-return.css` (clases genéricas `sr-*`, sin
- * acoplamiento a dominio de Ventas) en vez de duplicar hojas de estilo — sin
- * filtro de texto libre: `GetPurchaseReturnListQuery` solo admite `status`.
+ * integrada). Filtros con ZHFilterBar plain del Design System (sin CSS de otro
+ * módulo ni hojas duplicadas) — sin filtro de texto libre: `GetPurchaseReturnListQuery` solo admite `status`.
  */
 export function PurchaseReturnListPage() {
   const { t } = useI18n();
@@ -132,7 +131,7 @@ export function PurchaseReturnListPage() {
           </ZHBtn>
         }
       >
-        <div className="sr-list-filters">
+        <ZHFilterBar plain>
           <ZHField label="Estado" density="compact">
             <ZhSelect
               className="zh-input"
@@ -148,7 +147,7 @@ export function PurchaseReturnListPage() {
               <option value="Cancelled">Cancelada</option>
             </ZhSelect>
           </ZHField>
-        </div>
+        </ZHFilterBar>
 
         <ZHDataTable
           columns={columns}

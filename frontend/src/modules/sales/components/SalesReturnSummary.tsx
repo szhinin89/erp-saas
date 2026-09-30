@@ -91,10 +91,10 @@ export function SalesReturnSummary({ salesReturn }: Readonly<Props>) {
       )}
 
       <ZHCard title="Resumen de impuestos y total">
-        <div className="sr-totals-grid">
+        <div className="zh-summary-grid">
           <div>
-            <span className="sr-general-grid__label">Subtotal</span>
-            <span className="sr-general-grid__value">
+            <span className="zh-summary-grid__label">Subtotal</span>
+            <span className="zh-summary-grid__value">
               <ZHMoneyValue
                 value={salesReturn.subtotal}
                 precision="money"
@@ -103,8 +103,8 @@ export function SalesReturnSummary({ salesReturn }: Readonly<Props>) {
             </span>
           </div>
           <div>
-            <span className="sr-general-grid__label">Descuento</span>
-            <span className="sr-general-grid__value">
+            <span className="zh-summary-grid__label">Descuento</span>
+            <span className="zh-summary-grid__value">
               -
               <ZHMoneyValue
                 value={salesReturn.totalDiscount}
@@ -114,8 +114,8 @@ export function SalesReturnSummary({ salesReturn }: Readonly<Props>) {
             </span>
           </div>
           <div>
-            <span className="sr-general-grid__label">IVA</span>
-            <span className="sr-general-grid__value">
+            <span className="zh-summary-grid__label">IVA</span>
+            <span className="zh-summary-grid__value">
               <ZHMoneyValue
                 value={salesReturn.totalVat}
                 precision="tax"
@@ -124,8 +124,8 @@ export function SalesReturnSummary({ salesReturn }: Readonly<Props>) {
             </span>
           </div>
           <div>
-            <span className="sr-general-grid__label">ICE</span>
-            <span className="sr-general-grid__value">
+            <span className="zh-summary-grid__label">ICE</span>
+            <span className="zh-summary-grid__value">
               <ZHMoneyValue
                 value={salesReturn.totalIce}
                 precision="tax"
@@ -134,8 +134,8 @@ export function SalesReturnSummary({ salesReturn }: Readonly<Props>) {
             </span>
           </div>
           <div className="sr-totals-grid__grand">
-            <span className="sr-general-grid__label">Total a reembolsar</span>
-            <span className="sr-general-grid__value">
+            <span className="zh-summary-grid__label">Total a reembolsar</span>
+            <span className="zh-summary-grid__value">
               <ZHMoneyValue
                 value={salesReturn.grandTotal}
                 precision="money"

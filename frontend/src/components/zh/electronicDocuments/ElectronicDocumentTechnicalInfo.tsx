@@ -3,6 +3,7 @@ import { message } from "../../../lib/messages";
 import { formatDateTime } from "../../../lib/formatters/dateFormatters";
 import { copyToClipboard } from "../../../modules/electronicDocuments/monitor/utils/clipboard";
 import type { ElectronicDocumentTechnicalInfoDto } from "./electronicDocumentDiagnosticTypes";
+import "./electronic-documents.css";
 
 type Props = { technicalInfo: ElectronicDocumentTechnicalInfoDto };
 
@@ -14,11 +15,11 @@ function CopyableValue({ value }: { value: string }) {
     else message.error(t("electronicDocuments.diagnostic.valueCopyFailed"));
   };
   return (
-    <span className="edm-tech-info-value">
+    <span className="zh-edoc-tech-info-value">
       {value}
       <button
         type="button"
-        className="edm-icon-btn"
+        className="zh-edoc-icon-btn"
         onClick={() => void handleCopy()}
         aria-label={t("electronicDocuments.diagnostic.copyValue")}
       >
@@ -71,15 +72,15 @@ export function ElectronicDocumentTechnicalInfo({ technicalInfo }: Props) {
   ];
 
   return (
-    <details className="edm-tech-info">
+    <details className="zh-edoc-tech-info">
       <summary>
         {t("electronicDocuments.diagnostic.technicalInfoSection")}
       </summary>
-      <div className="edm-tech-info-grid">
+      <div className="zh-edoc-tech-info-grid">
         {rows.map(([label, value]) => (
           <div key={label}>
-            <div className="edm-detail-item-label">{label}</div>
-            <div className="edm-detail-item-value">
+            <div className="zh-edoc-detail-item-label">{label}</div>
+            <div className="zh-edoc-detail-item-value">
               {value ? <CopyableValue value={value} /> : na}
             </div>
           </div>

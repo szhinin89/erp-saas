@@ -345,44 +345,44 @@ export function PurchaseCreditNoteFormPage() {
     >
       {/* Sección 1: Factura afectada */}
       <ZHCard title={t("purchases.creditNote.affectedInvoice.title", "Factura afectada")}>
-        <div className="pcn-summary-grid">
+        <div className="zh-summary-grid">
           <div>
-            <span className="pcn-summary-grid__label">
+            <span className="zh-summary-grid__label">
               {t("purchases.creditNote.affectedInvoice.supplier", "Proveedor")}
             </span>
-            <span className="pcn-summary-grid__value">{invoice.supplierName}</span>
+            <span className="zh-summary-grid__value">{invoice.supplierName}</span>
           </div>
           <div>
-            <span className="pcn-summary-grid__label">
+            <span className="zh-summary-grid__label">
               {t("purchases.creditNote.affectedInvoice.ruc", "RUC")}
             </span>
-            <span className="pcn-summary-grid__value">{invoice.supplierTaxId}</span>
+            <span className="zh-summary-grid__value">{invoice.supplierTaxId}</span>
           </div>
           <div>
-            <span className="pcn-summary-grid__label">
+            <span className="zh-summary-grid__label">
               {t("purchases.creditNote.affectedInvoice.invoiceNumber", "N.º factura")}
             </span>
-            <span className="pcn-summary-grid__value">{invoice.invoiceNumber}</span>
+            <span className="zh-summary-grid__value">{invoice.invoiceNumber}</span>
           </div>
           <div>
-            <span className="pcn-summary-grid__label">
+            <span className="zh-summary-grid__label">
               {t("purchases.creditNote.affectedInvoice.issueDate", "Fecha")}
             </span>
-            <span className="pcn-summary-grid__value">{formatDate(invoice.issueDate)}</span>
+            <span className="zh-summary-grid__value">{formatDate(invoice.issueDate)}</span>
           </div>
           <div>
-            <span className="pcn-summary-grid__label">
+            <span className="zh-summary-grid__label">
               {t("purchases.creditNote.affectedInvoice.total", "Total")}
             </span>
-            <span className="pcn-summary-grid__value">
+            <span className="zh-summary-grid__value">
               <ZHMoneyValue precision="money" value={invoice.grandTotal} currencySymbol="" />
             </span>
           </div>
           <div>
-            <span className="pcn-summary-grid__label">
+            <span className="zh-summary-grid__label">
               {t("purchases.creditNote.affectedInvoice.balanceDue", "Saldo pendiente")}
             </span>
-            <span className="pcn-summary-grid__value">—</span>
+            <span className="zh-summary-grid__value">—</span>
           </div>
         </div>
         <p className="pcn-hint">
@@ -515,62 +515,62 @@ export function PurchaseCreditNoteFormPage() {
           <ZHCard title={t("purchases.creditNote.summary.title", "Resumen de afectación")}>
             <div className="pcn-totals">
               <div>
-                <span className="pcn-summary-grid__label">
+                <span className="zh-summary-grid__label">
                   {t("purchases.creditNote.lines.subtotal", "Subtotal")}
                 </span>
-                <span className="pcn-summary-grid__value">
+                <span className="zh-summary-grid__value">
                   <ZHMoneyValue precision="money" value={subtotal} currencySymbol="" />
                 </span>
               </div>
               {(isDiscount || iceAmount > 0) && (
                 <div>
-                  <span className="pcn-summary-grid__label">
+                  <span className="zh-summary-grid__label">
                     {t("purchases.creditNote.taxSummaryLines.iceCredit", "ICE crédito")}
                   </span>
-                  <span className="pcn-summary-grid__value">
+                  <span className="zh-summary-grid__value">
                     <ZHMoneyValue precision="tax" value={iceAmount} currencySymbol="" />
                   </span>
                 </div>
               )}
               <div>
-                <span className="pcn-summary-grid__label">
+                <span className="zh-summary-grid__label">
                   {t("purchases.creditNote.lines.vatAmount", "IVA")}
                 </span>
-                <span className="pcn-summary-grid__value">
+                <span className="zh-summary-grid__value">
                   <ZHMoneyValue precision="tax" value={vatAmount} currencySymbol="" />
                 </span>
               </div>
               {!isDiscount && returnTotals.irbpnr > 0 && <div>
-                <span className="pcn-summary-grid__label">IRBPNR</span>
+                <span className="zh-summary-grid__label">IRBPNR</span>
                 <ZHMoneyValue precision="tax" value={returnTotals.irbpnr} currencySymbol="" />
               </div>}
               <div>
-                <span className="pcn-summary-grid__label">
+                <span className="zh-summary-grid__label">
                   {t("purchases.creditNote.lines.total", "Total crédito")}
                 </span>
-                <span className="pcn-summary-grid__value">
+                <span className="zh-summary-grid__value">
                   <ZHMoneyValue precision="money" value={totalAmount} currencySymbol="" />
                 </span>
               </div>
               <div>
-                <span className="pcn-summary-grid__label">
+                <span className="zh-summary-grid__label">
                   {t("purchases.creditNote.summary.reducesPayable", "Reduce CxP")}
                 </span>
-                <span className="pcn-summary-grid__value">{t("common.yes", "Sí")}</span>
+                <span className="zh-summary-grid__value">{t("common.yes", "Sí")}</span>
               </div>
               <div>
-                <span className="pcn-summary-grid__label">
+                <span className="zh-summary-grid__label">
                   {t("purchases.creditNote.summary.movesInventory", "Mueve inventario")}
                 </span>
-                <span className="pcn-summary-grid__value">
+                <span className="zh-summary-grid__value">
                   {creditNoteType === "Return" ? t("common.yes", "Sí") : t("common.no", "No")}
                 </span>
               </div>
               <div>
-                <span className="pcn-summary-grid__label">
+                <span className="zh-summary-grid__label">
                   {t("purchases.creditNote.summary.accounting", "Contabilidad")}
                 </span>
-                <span className="pcn-summary-grid__value">
+                <span className="zh-summary-grid__value">
                   {creditNoteType === "Return"
                     ? t(
                         "purchases.creditNote.summary.accountingGeneratedByReturn",

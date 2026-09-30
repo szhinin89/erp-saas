@@ -38,7 +38,7 @@ export function PurchaseReturnableLinesEditor({
   invoiceLines,
 }: Props) {
   if (returnableLines.length === 0) {
-    return <p className="sr-lines-empty">Esta factura no tiene líneas devolvibles.</p>;
+    return <p className="zh-inline-empty">Esta factura no tiene líneas devolvibles.</p>;
   }
 
   const indexOf = (invoiceDetailId: string) =>
@@ -73,7 +73,7 @@ export function PurchaseReturnableLinesEditor({
         <ZhDecimalInput aria-label={`Cantidad a devolver: ${line.description}`} aria-invalid={exceeds}
           precision="quantity" positiveOnly disabled={disabled || line.remainingQuantity <= 0}
           value={qty ? String(qty) : ""} onChange={(e) => handleQuantityChange(line, e.target.value)} />
-        {exceeds && <div role="alert" className="sr-lines-table__error">Excede lo disponible ({line.remainingQuantity}).</div>}
+        {exceeds && <div role="alert" className="zh-field-hint zh-field-hint--error">Excede lo disponible ({line.remainingQuantity}).</div>}
       </>;
     } },
   ];

@@ -216,7 +216,7 @@ export function CashFundingRequestDetailPage() {
 
       {hasActions && (
         <ZHCard title="Acciones">
-          <div className="sr-draft-actions">
+          <div className="zh-form-actions-row zh-form-actions-row--end zh-form-actions-row--flush">
             {request.canFulfill && (
               <ZHBtn type="button" variant="primary" disabled={running !== null} onClick={() => void handleFulfill()}>
                 Entregar efectivo

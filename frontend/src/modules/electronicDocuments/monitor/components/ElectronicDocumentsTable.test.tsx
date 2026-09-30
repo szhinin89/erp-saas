@@ -78,7 +78,7 @@ describe("ElectronicDocumentsTable — ZH-LISTING-COMPLIANCE-AUDIT-08", () => {
 
   it("no pierde el badge de estado ni el botón de copiar clave de acceso", () => {
     renderTable();
-    expect(document.querySelector(".edm-state-badge-label")).toBeTruthy();
+    expect(document.querySelector(".zh-edoc-state-badge-label")).toBeTruthy();
     expect(screen.getByRole("button", { name: /clave de acceso|copy/i })).toBeTruthy();
   });
 

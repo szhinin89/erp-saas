@@ -2,52 +2,9 @@
 /* Background/wrapper: zh-auth-bg, zh-auth-wrapper (zh-ui.css §20) */
 /* Field inputs: zh-auth-field, zh-auth-input, etc. (zh-ui.css §24) */
 
-/* ── Brand (horizontal row layout) ─────────────────────────── */
-.lp-brand {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-2);
-  text-align: center;
-}
-
-.lp-brand-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-}
-
-.lp-brand-icon {
-  width: 40px;
-  height: 40px;
-  background: var(--color-primary);
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-on-primary);
-  flex-shrink: 0;
-}
-.lp-brand-icon .material-symbols-outlined {
-  font-size: 22px;
-}
-
-.lp-brand-name {
-  font-size: var(--text-headline-lg-size);
-  font-weight: var(--text-headline-lg-weight);
-  letter-spacing: var(--text-headline-lg-spacing);
-  color: var(--color-primary);
-  line-height: 1;
-  margin: 0;
-}
-
-.lp-brand-sub {
-  font-size: var(--text-body-md-size);
-  color: var(--color-text-secondary);
-  margin: 0;
-}
-
+/* ── Brand ───────────────────────────────────────────────────── */
+/* .lp-brand/-row/-icon/-name/-sub movidos al Design System como .zh-auth-logo*
+   (zh-ui.css) — compartidos con /setup y el login de AdminGlobalCore. */
 .lp-brand-desc {
   font-size: var(--text-label-sm-size);
   color: var(--color-text-secondary);
@@ -65,21 +22,7 @@
    renderiza; sin construcción dinámica de clase). CSS muerto, no duplicado. */
 
 /* ── Auth error inline ───────────────────────────────────────── */
-.lp-error {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--color-error) 8%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-error) 25%, transparent);
-  color: var(--color-error);
-  font-size: var(--text-body-md-size);
-}
-.lp-error .material-symbols-outlined {
-  font-size: 18px;
-  flex-shrink: 0;
-}
+/* .lp-error movido al Design System como .zh-auth-error (zh-ui.css). */
 
 /* ── Form ────────────────────────────────────────────────────── */
 /* .lp-form/.lp-field-header/.lp-forgot ELIMINADOS (Bloque 5A) — consolidados
@@ -212,9 +155,6 @@
 @media (max-width: 480px) {
   .lp-card-footer {
     padding: var(--space-4) var(--space-6);
-  }
-  .lp-brand-name {
-    font-size: 22px;
   }
 }
 

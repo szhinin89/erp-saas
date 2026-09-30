@@ -4,6 +4,7 @@ import {
   electronicDocumentStateBadgeVariant,
   electronicDocumentStateIcon,
 } from "../../../modules/electronicDocuments/monitor/utils/stateBadge";
+import "./electronic-documents.css";
 
 type Props = { currentState: string };
 
@@ -14,7 +15,7 @@ export function ElectronicDocumentStatusBadge({ currentState }: Props) {
     <Badge
       variant={electronicDocumentStateBadgeVariant(currentState)}
       label={
-        <span className="edm-state-badge-label">
+        <span className="zh-edoc-state-badge-label">
           <span className="material-symbols-outlined zh-icon-sm">
             {electronicDocumentStateIcon(currentState)}
           </span>

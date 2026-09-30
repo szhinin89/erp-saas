@@ -372,35 +372,35 @@ export function PurchaseCreditNoteDetailPage() {
           />
         }
       >
-        <div className="pcn-summary-grid">
+        <div className="zh-summary-grid">
           <div>
-            <span className="pcn-summary-grid__label">
+            <span className="zh-summary-grid__label">
               {t("purchases.creditNote.fiscal.number", "Número NC")}
             </span>
-            <span className="pcn-summary-grid__value">{editing.creditNoteNumber}</span>
+            <span className="zh-summary-grid__value">{editing.creditNoteNumber}</span>
           </div>
           <div>
-            <span className="pcn-summary-grid__label">
+            <span className="zh-summary-grid__label">
               {t("purchases.creditNote.affectedInvoice.balanceDue", "Saldo pendiente")}
             </span>
-            <span className="pcn-summary-grid__value">
+            <span className="zh-summary-grid__value">
               <ZHMoneyValue precision="money" value={editing.invoiceBalanceDue} currencySymbol="" />
             </span>
           </div>
           <div>
-            <span className="pcn-summary-grid__label">
+            <span className="zh-summary-grid__label">
               {t("purchases.creditNote.lines.total", "Total crédito")}
             </span>
-            <span className="pcn-summary-grid__value">
+            <span className="zh-summary-grid__value">
               <ZHMoneyValue precision="money" value={editing.totalAmount} currencySymbol="" />
             </span>
           </div>
           {editing.appliedToPayableAmount !== null && (
             <div>
-              <span className="pcn-summary-grid__label">
+              <span className="zh-summary-grid__label">
                 {t("purchases.creditNote.summary.reducesPayable", "Reduce CxP")}
               </span>
-              <span className="pcn-summary-grid__value">
+              <span className="zh-summary-grid__value">
                 <ZHMoneyValue precision="money" value={editing.appliedToPayableAmount} currencySymbol="" />
               </span>
             </div>
@@ -432,19 +432,19 @@ export function PurchaseCreditNoteDetailPage() {
               <>
                 {/* PURCHASE-CREDIT-NOTE-SINGLE-REVIEW-SCREEN-01 — datos ya resueltos por el
                     backend de la PurchaseReturn vinculada, visibles sin salir de esta pantalla. */}
-                <div className="pcn-summary-grid">
+                <div className="zh-summary-grid">
                   {editing.linkedPurchaseReturnNumber && (
                     <div>
-                      <span className="pcn-summary-grid__label">N.º devolución</span>
-                      <span className="pcn-summary-grid__value">
+                      <span className="zh-summary-grid__label">N.º devolución</span>
+                      <span className="zh-summary-grid__value">
                         {editing.linkedPurchaseReturnNumber}
                       </span>
                     </div>
                   )}
                   {editing.linkedPurchaseReturnStatus && (
                     <div>
-                      <span className="pcn-summary-grid__label">Estado devolución</span>
-                      <span className="pcn-summary-grid__value">
+                      <span className="zh-summary-grid__label">Estado devolución</span>
+                      <span className="zh-summary-grid__value">
                         <Badge
                           label={getPurchaseReturnStatusLabel(editing.linkedPurchaseReturnStatus, t)}
                           variant={
@@ -457,8 +457,8 @@ export function PurchaseCreditNoteDetailPage() {
                   )}
                   {editing.linkedPurchaseReturnAuthorizedGrandTotal !== null && (
                     <div>
-                      <span className="pcn-summary-grid__label">Total devolución</span>
-                      <span className="pcn-summary-grid__value">
+                      <span className="zh-summary-grid__label">Total devolución</span>
+                      <span className="zh-summary-grid__value">
                         <ZHMoneyValue precision="money"
                           value={editing.linkedPurchaseReturnAuthorizedGrandTotal}
                           currencySymbol=""
@@ -520,24 +520,24 @@ export function PurchaseCreditNoteDetailPage() {
             </ZHField>
           </div>
         ) : (
-          <div className="pcn-summary-grid">
+          <div className="zh-summary-grid">
             <div>
-              <span className="pcn-summary-grid__label">
+              <span className="zh-summary-grid__label">
                 {t("purchases.creditNote.fiscal.accessKey", "Clave de acceso")}
               </span>
-              <span className="pcn-summary-grid__value">{editing.accessKey ?? "—"}</span>
+              <span className="zh-summary-grid__value">{editing.accessKey ?? "—"}</span>
             </div>
             <div>
-              <span className="pcn-summary-grid__label">
+              <span className="zh-summary-grid__label">
                 {t("purchases.creditNote.fiscal.authorizationNumber", "Autorización")}
               </span>
-              <span className="pcn-summary-grid__value">{editing.authorizationNumber ?? "—"}</span>
+              <span className="zh-summary-grid__value">{editing.authorizationNumber ?? "—"}</span>
             </div>
             <div>
-              <span className="pcn-summary-grid__label">
+              <span className="zh-summary-grid__label">
                 {t("purchases.creditNote.fiscal.issueDate", "Fecha emisión")}
               </span>
-              <span className="pcn-summary-grid__value">{formatDate(editing.issueDate)}</span>
+              <span className="zh-summary-grid__value">{formatDate(editing.issueDate)}</span>
             </div>
           </div>
         )}

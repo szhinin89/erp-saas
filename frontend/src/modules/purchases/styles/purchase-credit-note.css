@@ -1,36 +1,10 @@
 /* FLOW-READY-02C.3 — layout de PurchaseCreditNoteFormPage/PurchaseCreditNoteDetailPage.
    Prefijo propio del módulo (pcn-*), reutiliza tokens de design-tokens.css — nunca estilos
-   inline. Mismo patrón de grid que .sr-general-grid (sales-return.css), sin duplicar esa
-   hoja porque este módulo tiene su propio dominio (Purchases, no Sales). */
+   inline. El resumen label/valor usa .zh-summary-grid del Design System (zh-ui.css). */
 
-.pcn-summary-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: var(--space-3);
-}
-
-.pcn-summary-grid__label {
-  display: block;
-  font-size: var(--text-label-sm-size);
-  text-transform: uppercase;
-  letter-spacing: var(--text-label-sm-spacing);
-  color: var(--color-text-secondary);
-}
-
-.pcn-summary-grid__value {
-  display: block;
-  font-size: var(--text-body-md-size);
-  font-weight: 600;
-}
 /* ZHMoneyValue (PURCHASES-DS-MONEY-01) hereda tamaño/peso/color en vez de imponer
-   su propio look por defecto — preserva el look aprobado del resumen y de las
-   tablas de línea, mismo criterio que SALES-DS-MONEY-12 en Ventas
-   (.sr-general-grid__value / .sr-lines-table .zh-table-cell--num). */
-.pcn-summary-grid__value .zh-money-value {
-  font-size: inherit;
-  font-weight: inherit;
-  color: inherit;
-}
+   su propio look por defecto — preserva el look aprobado de las tablas de línea,
+   mismo criterio que SALES-DS-MONEY-12 en Ventas (.sr-lines-table .zh-table-cell--num). */
 .pcn-lines-table .zh-table-cell--num .zh-money-value {
   font-size: inherit;
   font-weight: inherit;

@@ -1,0 +1,206 @@
+/* Componentes compartidos de documento electrónico (components/zh/electronicDocuments/*):
+   diagnóstico SRI, timeline, mensajes, XML, info técnica y badge de estado (ADR-024).
+   Movido desde electronic-documents-monitor.css (prefijo edm-*): estos estilos pertenecen a los
+   componentes ZH, no al Monitor — cualquier módulo (Ventas, Monitor, Compras) que los renderice
+   los obtiene sin importar CSS privado de otro módulo. */
+
+.zh-edoc-state-badge-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.zh-edoc-icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  padding: 0;
+  line-height: 0;
+  display: inline-flex;
+}
+
+.zh-edoc-detail-item-label {
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+  margin-bottom: 2px;
+}
+
+.zh-edoc-detail-item-value {
+  font-size: var(--text-label-md-size);
+  word-break: break-word;
+}
+
+.zh-edoc-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.zh-edoc-timeline-item {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.zh-edoc-timeline-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+.zh-edoc-timeline-body {
+  flex: 1;
+}
+
+.zh-edoc-timeline-meta {
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+}
+
+.zh-edoc-xml-viewer {
+  max-height: 360px;
+  overflow: auto;
+  background: var(--color-surface-container-low);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  font-size: var(--text-help-size);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.zh-edoc-hint-sm {
+  margin-top: var(--space-3);
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+}
+
+.zh-edoc-xml-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-3);
+}
+
+.zh-edoc-xml-viewer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+/* ── Diagnóstico SRI reutilizable (ADR-024) ────────────────────────────── */
+
+.zh-edoc-diagnostic-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.zh-edoc-diagnostic-summary__state {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.zh-edoc-diagnostic-summary__meta {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3) var(--space-5);
+}
+
+.zh-edoc-diagnostic-secondary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.zh-edoc-messages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.zh-edoc-message-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+}
+
+.zh-edoc-message-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.zh-edoc-message-code {
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+}
+
+.zh-edoc-message-text {
+  font-size: var(--text-label-md-size);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.zh-edoc-message-additional {
+  margin-top: var(--space-2);
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.zh-edoc-tech-info summary {
+  cursor: pointer;
+  font-size: var(--text-label-md-size);
+  font-weight: var(--text-label-md-weight);
+  padding: var(--space-2) 0;
+}
+
+.zh-edoc-tech-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3) var(--space-5);
+  padding-top: var(--space-3);
+}
+
+.zh-edoc-tech-info-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  word-break: break-all;
+}
+
+@media (max-width: 1100px) {
+  .zh-edoc-diagnostic-summary__meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .zh-edoc-diagnostic-secondary {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .zh-edoc-diagnostic-summary__meta {
+    grid-template-columns: 1fr;
+  }
+
+  .zh-edoc-tech-info-grid {
+    grid-template-columns: 1fr;
+  }
+}
