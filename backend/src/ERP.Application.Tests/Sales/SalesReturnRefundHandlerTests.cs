@@ -125,7 +125,7 @@ public sealed class SalesReturnRefundHandlerTests
 
         var receivableRepo = new Mock<ISalesReceivableRepository>();
         receivableRepo
-            .Setup(r => r.GetByInvoiceIdAsync(TenantId, InvoiceId, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByInvoiceIdForUpdateAsync(TenantId, InvoiceId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(receivable);
 
         var cashSessionCtx = new Mock<ICurrentCashSession>();

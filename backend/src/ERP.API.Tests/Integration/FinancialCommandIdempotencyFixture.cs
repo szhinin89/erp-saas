@@ -196,13 +196,17 @@ public sealed class FinancialCommandIdempotencyFixture : IAsyncLifetime
         return installment.Id;
     }
 
-    /// <summary>CxC real (con factura ancla por FK) del cliente de prueba.</summary>
-    public async Task<Guid> CreateReceivableAsync(decimal amount)
+    /// <summary>
+    /// CxC real (con factura ancla por FK) del cliente de prueba. <paramref name="foreignCompany"/>:
+    /// la CxC (y su factura) pertenecen a OTRA empresa del mismo tenant — fuera del alcance del operador.
+    /// </summary>
+    public async Task<Guid> CreateReceivableAsync(decimal amount, bool foreignCompany = false)
     {
         using var scope = Factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        var companyId = foreignCompany ? await EnsureForeignCompanyAsync(db) : CompanyId;
         var invoice = SalesInvoice.CreateDraft(
-            TenantId, CompanyId, BranchId, CustomerId,
+            TenantId, companyId, BranchId, CustomerId,
             CustomerSnapshot.Create("Cliente Idempotencia", "1710034065", "05"),
             invoiceNumber: $"001-001-{Random.Shared.Next(1, 999_999_999):D9}",
             issueDate: Today,
@@ -216,10 +220,28 @@ public sealed class FinancialCommandIdempotencyFixture : IAsyncLifetime
         );
         db.SalesInvoices.Add(invoice);
         await db.SaveChangesAsync();
-        var receivable = SalesReceivable.Create(TenantId, CompanyId, invoice.Id, CustomerId, amount, _adminId);
+        var receivable = SalesReceivable.Create(TenantId, companyId, invoice.Id, CustomerId, amount, _adminId);
         db.SalesReceivables.Add(receivable);
         await db.SaveChangesAsync();
         return receivable.Id;
+    }
+
+    private Guid? _foreignCompanyId;
+
+    private async Task<Guid> EnsureForeignCompanyAsync(ErpDbContext db)
+    {
+        if (_foreignCompanyId is { } existing)
+            return existing;
+        var company = Company.CreateManaged(
+            TenantId,
+            taxIdentificationNumber: $"099{Guid.NewGuid():N}"[..13],
+            legalName: "Empresa Ajena S.A.",
+            createdBy: _adminId
+        );
+        db.Companies.Add(company);
+        await db.SaveChangesAsync();
+        _foreignCompanyId = company.Id;
+        return company.Id;
     }
 
     /// <summary>Caja activa SIN cuenta contable (un cobro que la elige se rechaza) — para probar que un fallo no consume la intención.</summary>

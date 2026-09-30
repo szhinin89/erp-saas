@@ -54,6 +54,25 @@ public sealed class RegisterCollectionCommandHandlerTests
         tenant.Setup(t => t.TenantId).Returns(TenantId);
         company.Setup(c => c.CompanyId).Returns(CompanyId);
         user.Setup(u => u.UserId).Returns(UserId);
+        // La lectura bajo lock resuelve contra las CxC configuradas en GetByIdAsync de cada test.
+        receivables
+            .Setup(r =>
+                r.GetByIdsForUpdateAsync(
+                    TenantId,
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .Returns(
+                async (Guid tid, IReadOnlyCollection<Guid> ids, CancellationToken ct) =>
+                {
+                    var found = new Dictionary<Guid, SalesReceivable>();
+                    foreach (var id in ids.Distinct())
+                        if (await receivables.Object.GetByIdAsync(tid, id, ct) is { } r)
+                            found[id] = r;
+                    return (IReadOnlyDictionary<Guid, SalesReceivable>)found;
+                }
+            );
 
         return (payments, receivables, bankAccounts, cashRegisters, tenant, company, user);
     }
@@ -72,6 +91,7 @@ public sealed class RegisterCollectionCommandHandlerTests
             receivables.Object,
             bankAccounts.Object,
             cashRegisters.Object,
+            Mock.Of<IUnitOfWork>(),
             tenant.Object,
             company.Object,
             user.Object

@@ -350,6 +350,7 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
             new SalesReceivableRepository(db, new FixedCurrentCompany(companyId)),
             new CompanyBankAccountRepository(db, new FixedCurrentCompany(companyId)),
             new CashRegisterRepository(db, new FixedCurrentCompany(companyId)),
+            new UnitOfWork(db),
             new FixedCurrentTenant(tenantId),
             new FixedCurrentCompany(companyId),
             new FixedCurrentUser(userId)
@@ -364,6 +365,7 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
         new(
             new PaymentRepository(db),
             new SalesReceivableRepository(db, new FixedCurrentCompany(companyId)),
+            new UnitOfWork(db),
             new FixedCurrentTenant(tenantId),
             new FixedCurrentCompany(companyId),
             new FixedCurrentUser(userId)

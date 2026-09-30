@@ -189,7 +189,7 @@ public sealed class AuthorizeSalesReturnHandlerTests
         if (receivable is not null)
             receivableRepo
                 .Setup(r =>
-                    r.GetByInvoiceIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+                    r.GetByInvoiceIdForUpdateAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>())
                 )
                 .ReturnsAsync(receivable);
 

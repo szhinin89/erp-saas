@@ -28,6 +28,51 @@ public sealed class SalesReceivableRepository : ISalesReceivableRepository
             .Include(x => x.Installments.OrderBy(i => i.InstallmentNumber))
             .FirstOrDefaultAsync(x => x.Id == id, ct);
 
+    public async Task<IReadOnlyDictionary<Guid, SalesReceivable>> GetByIdsForUpdateAsync(
+        Guid tenantId,
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken ct = default
+    )
+    {
+        // Mismo patrón oficial que CashSessionRepository.GetByIdForUpdateAsync (lock → lectura
+        // acotada → Reload). Orden ascendente por Id: dos cobros sobre las mismas CxC toman los
+        // locks en el mismo orden y nunca se bloquean mutuamente.
+        var result = new Dictionary<Guid, SalesReceivable>();
+        foreach (var id in ids.Distinct().OrderBy(x => x))
+        {
+            if (_company.HasCompanyContext)
+                await _db.Database.ExecuteSqlInterpolatedAsync(
+                    $"SELECT 1 FROM sales_receivables WHERE tenant_id = {tenantId} AND company_id = {_company.CompanyId} AND id = {id} FOR UPDATE",
+                    ct
+                );
+            else
+                await _db.Database.ExecuteSqlInterpolatedAsync(
+                    $"SELECT 1 FROM sales_receivables WHERE tenant_id = {tenantId} AND id = {id} FOR UPDATE",
+                    ct
+                );
+
+            var receivable = await GetByIdAsync(tenantId, id, ct);
+            if (receivable is null)
+                continue;
+            await _db.Entry(receivable).ReloadAsync(ct);
+            result[id] = receivable;
+        }
+        return result;
+    }
+
+    public async Task<SalesReceivable?> GetByInvoiceIdForUpdateAsync(
+        Guid tenantId,
+        Guid invoiceId,
+        CancellationToken ct = default
+    )
+    {
+        var id = await Scoped(tenantId).Where(x => x.InvoiceId == invoiceId).Select(x => (Guid?)x.Id).FirstOrDefaultAsync(ct);
+        if (id is null)
+            return null;
+        var locked = await GetByIdsForUpdateAsync(tenantId, [id.Value], ct);
+        return locked.GetValueOrDefault(id.Value);
+    }
+
     public Task<SalesReceivable?> GetByInvoiceIdAsync(
         Guid tenantId,
         Guid invoiceId,

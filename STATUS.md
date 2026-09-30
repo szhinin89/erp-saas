@@ -2,6 +2,14 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-30** · Kernel refactor: **2026-06-05**.
 
+## ZH-COLLECTIONS-RECEIVABLE-CONCURRENCY-01 — Cobros distintos concurrentes sobre la misma CxC (2026-09-30)
+
+**Estado: COMPLETADO.** Cierra el pendiente de ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01 (actualización perdida de `SalesReceivable`).
+- Reproducción antes del fix (HTTP + PostgreSQL reales, 2 corridas idénticas): 60+40 sobre 100 → ambos 201, 2 cobros, 2 asientos, 2 outbox, pero la CxC quedó con pagado 60 / saldo 40; 80+80 → ambos 201, 160 cobrado y posteado, CxC pagado 80 / saldo 20. Causa: lectura de `PaidAmount` sin lock ni token de concurrencia, regla de dominio evaluada contra saldo obsoleto y UPDATE absoluto que pisa el incremento concurrente.
+- Fix: patrón oficial `SELECT … FOR UPDATE` → lectura acotada → `Reload` dentro de transacción explícita, **antes** de decidir si el monto cabe. `ISalesReceivableRepository.GetByIdsForUpdateAsync` (orden ascendente por Id, alcance tenant+empresa, fail-closed) y `GetByInvoiceIdForUpdateAsync`; `IPaymentRepository.GetByIdForUpdateAsync`. Escritores cubiertos: registrar cobro, reversar cobro (lock pago → CxC) y crédito de devolución de venta. Idempotencia intacta (camino rápido, replay del ganador, la clave del perdedor no se consume). Sin migración, sin advisory lock nuevo, sin cambios de frontend. Orden de locks documentado en `docs/architecture/backend.md`.
+- Tests: 8 HTTP + PostgreSQL (`ReceivableCollectionConcurrencyTests`): 60+40 (saldo 0), 80+80 (uno 201, otro 422 `DOMAIN_RULE_VIOLATION`, saldo 20), 7×20 sobre 100 (exactamente 5), misma clave concurrente (1 cobro), perdedor reintentado con su clave (reevaluado; luego la misma clave registra 20), rechazo bajo lock no deja lock residual, destino caja (sin `CashMovement`), CxC de otra empresa (404 sin efectos). Verificación desde otro DbContext: Σ aplicaciones ≤ original y pagado = Σ aplicaciones.
+- Pendiente fuera de alcance: anular factura (`CancelSalesInvoice` → `SalesReceivable.Cancel`) lee la CxC sin lock ni transacción explícita; un cobro concurrente con la anulación puede dejar una CxC anulada con pagos — ticket propio.
+
 ## ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01 — Una intención financiera = como máximo un efecto (2026-09-30)
 
 **Estado: COMPLETADO.** Cierra P1-01 de la auditoría UX. Pago a proveedor, cobro de CxC y movimiento manual de caja son idempotentes por `ClientRequestId` con barrera en PostgreSQL.

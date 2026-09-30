@@ -127,6 +127,13 @@ public sealed class ReverseCollectionCommandValidator : AbstractValidator<Revers
 /// definitiva es el índice único (TenantId, ClientRequestId) dentro del mismo SaveChanges atómico
 /// que persiste cobro, CxC, asiento y outbox. Si el intento falla por cualquier motivo y la
 /// intención quedó registrada por un reintento concurrente, se responde con el cobro ganador.
+/// <para>
+/// ZH-COLLECTIONS-RECEIVABLE-CONCURRENCY-01 — cobros DISTINTOS sobre la misma CxC se serializan:
+/// transacción explícita → CxC FOR UPDATE (orden por Id) → saldo recargado bajo el lock → recién
+/// entonces se decide si cada monto cabe. El perdedor reevalúa contra el saldo ya consumido y se
+/// rechaza con la regla de dominio canónica (sin ningún efecto). Orden de locks: CxC → secuencia
+/// de asientos (posting en SaveChanges). El cobro no toma CashSession (no crea CashMovement).
+/// </para>
 /// </remarks>
 public sealed class RegisterCollectionCommandHandler
     : IRequestHandler<RegisterCollectionCommand, Result<PaymentDto>>
@@ -138,6 +145,7 @@ public sealed class RegisterCollectionCommandHandler
     private readonly ISalesReceivableRepository _receivables;
     private readonly ICompanyBankAccountRepository _bankAccounts;
     private readonly ICashRegisterRepository _cashRegisters;
+    private readonly IUnitOfWork _uow;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
     private readonly ICurrentUser _u;
@@ -147,6 +155,7 @@ public sealed class RegisterCollectionCommandHandler
         ISalesReceivableRepository receivables,
         ICompanyBankAccountRepository bankAccounts,
         ICashRegisterRepository cashRegisters,
+        IUnitOfWork uow,
         ICurrentTenant t,
         ICurrentCompany c,
         ICurrentUser u
@@ -156,6 +165,7 @@ public sealed class RegisterCollectionCommandHandler
         _receivables = receivables;
         _bankAccounts = bankAccounts;
         _cashRegisters = cashRegisters;
+        _uow = uow;
         _t = t;
         _c = c;
         _u = u;
@@ -175,14 +185,21 @@ public sealed class RegisterCollectionCommandHandler
         if (existing is not null)
             return Replay(existing, key);
 
+        await _uow.BeginTransactionAsync(ct);
         Result<PaymentDto> result;
         try
         {
             result = await RegisterAsync(cmd, key, tenantId, companyId, ct);
+            if (result.IsSuccess)
+                await _uow.CommitAsync(ct);
+            else
+                await _uow.RollbackAsync(ct);
         }
         catch
         {
-            // El SaveChanges perdedor ya se revirtió completo (cobro, CxC, asiento, outbox).
+            // El intento perdedor se revierte completo (cobro, CxC, asiento, outbox) y libera los
+            // locks; si la misma intención ya quedó registrada, se responde con ella.
+            await _uow.RollbackAsync(ct);
             var raced = await _payments.GetByClientRequestIdAsync(tenantId, companyId, key.Id, ct);
             if (raced is null)
                 throw;
@@ -251,21 +268,20 @@ public sealed class RegisterCollectionCommandHandler
         }
         payment.BindClientRequest(key);
 
-        // Carga cada CxC referenciada una sola vez, incluso si varias líneas la referencian
-        // (p. ej. aplicación repartida entre cuotas de la misma factura).
-        var receivablesByDocId =
-            new Dictionary<Guid, Domain.Modules.Sales.Entities.SalesReceivable>();
+        // Cada CxC referenciada se bloquea una sola vez (orden por Id) y se recarga bajo el lock
+        // ANTES de decidir si el monto cabe: un cobro concurrente distinto espera y reevalúa
+        // contra el saldo ya consumido. Una CxC fuera del alcance operativo no se devuelve.
+        var receivablesByDocId = await _receivables.GetByIdsForUpdateAsync(
+            tenantId,
+            cmd.Lines.Select(l => l.DocumentId).ToList(),
+            ct
+        );
         foreach (var line in cmd.Lines)
         {
             if (!receivablesByDocId.ContainsKey(line.DocumentId))
-            {
-                var receivable = await _receivables.GetByIdAsync(tenantId, line.DocumentId, ct);
-                if (receivable is null)
-                    return Result<PaymentDto>.NotFound(
-                        $"Cuenta por cobrar {line.DocumentId} no encontrada."
-                    );
-                receivablesByDocId[line.DocumentId] = receivable;
-            }
+                return Result<PaymentDto>.NotFound(
+                    $"Cuenta por cobrar {line.DocumentId} no encontrada."
+                );
 
             try
             {
@@ -303,6 +319,7 @@ public sealed class ReverseCollectionCommandHandler
 {
     private readonly IPaymentRepository _payments;
     private readonly ISalesReceivableRepository _receivables;
+    private readonly IUnitOfWork _uow;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
     private readonly ICurrentUser _u;
@@ -310,6 +327,7 @@ public sealed class ReverseCollectionCommandHandler
     public ReverseCollectionCommandHandler(
         IPaymentRepository payments,
         ISalesReceivableRepository receivables,
+        IUnitOfWork uow,
         ICurrentTenant t,
         ICurrentCompany c,
         ICurrentUser u
@@ -317,6 +335,7 @@ public sealed class ReverseCollectionCommandHandler
     {
         _payments = payments;
         _receivables = receivables;
+        _uow = uow;
         _t = t;
         _c = c;
         _u = u;
@@ -324,10 +343,35 @@ public sealed class ReverseCollectionCommandHandler
 
     public async Task<Result<PaymentDto>> Handle(ReverseCollectionCommand cmd, CancellationToken ct)
     {
+        await _uow.BeginTransactionAsync(ct);
+        try
+        {
+            var result = await ReverseAsync(cmd, ct);
+            if (result.IsSuccess)
+                await _uow.CommitAsync(ct);
+            else
+                await _uow.RollbackAsync(ct);
+            return result;
+        }
+        catch
+        {
+            await _uow.RollbackAsync(ct);
+            throw;
+        }
+    }
+
+    private async Task<Result<PaymentDto>> ReverseAsync(
+        ReverseCollectionCommand cmd,
+        CancellationToken ct
+    )
+    {
         var tenantId = _t.TenantId;
         var companyId = _c.CompanyId;
 
-        var payment = await _payments.GetByIdAsync(tenantId, companyId, cmd.PaymentId, ct);
+        // ZH-COLLECTIONS-RECEIVABLE-CONCURRENCY-01 — mismo orden de locks que el registro:
+        // pago → CxC (por Id) → secuencia de asientos. Dos reversas del mismo cobro se serializan
+        // en el pago; la segunda lo ve ya reversado y se rechaza por la regla de dominio.
+        var payment = await _payments.GetByIdForUpdateAsync(tenantId, companyId, cmd.PaymentId, ct);
         if (payment is null)
             return Result<PaymentDto>.NotFound("Pago no encontrado.");
         if (payment.Direction != PaymentDirection.Collection)
@@ -342,14 +386,14 @@ public sealed class ReverseCollectionCommandHandler
             return Result<PaymentDto>.ValidationFailure(ex.Message);
         }
 
+        var receivables = await _receivables.GetByIdsForUpdateAsync(
+            tenantId,
+            payment.Lines.Select(l => l.ReceivableId!.Value).ToList(),
+            ct
+        );
         foreach (var line in payment.Lines)
         {
-            var receivable = await _receivables.GetByIdAsync(
-                tenantId,
-                line.ReceivableId!.Value,
-                ct
-            );
-            if (receivable is null)
+            if (!receivables.TryGetValue(line.ReceivableId!.Value, out var receivable))
                 return Result<PaymentDto>.NotFound(
                     $"Cuenta por cobrar {line.ReceivableId} no encontrada."
                 );

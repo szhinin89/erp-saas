@@ -115,7 +115,10 @@ public sealed class SalesReturnRefundHandler
         CancellationToken ct
     )
     {
-        var receivable = await _receivableRepo.GetByInvoiceIdAsync(
+        // ZH-COLLECTIONS-RECEIVABLE-CONCURRENCY-01 — el crédito compite por el mismo saldo que un
+        // cobro concurrente: se bloquea la CxC (dentro de la transacción de la autorización, tras el
+        // advisory lock de la devolución) antes de decidir si el crédito cabe.
+        var receivable = await _receivableRepo.GetByInvoiceIdForUpdateAsync(
             tenantId,
             salesReturn.SalesInvoiceId,
             ct

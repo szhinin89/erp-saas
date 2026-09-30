@@ -16,6 +16,17 @@ public interface IPaymentRepository
         CancellationToken ct = default
     );
 
+    /// <summary>
+    /// ZH-COLLECTIONS-RECEIVABLE-CONCURRENCY-01 — bloquea (SELECT … FOR UPDATE) y recarga el pago
+    /// dentro de la transacción del llamador (reversa: nunca dos reversas del mismo cobro).
+    /// </summary>
+    Task<Payment?> GetByIdForUpdateAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid id,
+        CancellationToken ct = default
+    );
+
     Task<Payment?> GetByIdAsync(
         Guid tenantId,
         Guid companyId,

@@ -269,6 +269,17 @@ Todo comando que **crea** un efecto económico (pago a proveedor, cobro de CxC, 
 
 Un comando nuevo de este tipo sin `ClientRequestId` + índice único es un defecto bloqueante de PR.
 
+### Saldos compartidos: lock pesimista antes de decidir (ZH-COLLECTIONS-RECEIVABLE-CONCURRENCY-01)
+
+La idempotencia protege **una** intención; dos intenciones **distintas** que compiten por el mismo saldo (dos cobros sobre la misma CxC) se serializan con el patrón oficial de lock de fila, nunca con un segundo mecanismo:
+
+1. Transacción explícita (`IUnitOfWork.BeginTransactionAsync`) — sin ella el `FOR UPDATE` se libera al terminar la sentencia.
+2. `Get…ForUpdateAsync` del repositorio: `SELECT 1 … WHERE tenant_id AND company_id AND id … FOR UPDATE` → lectura acotada al alcance operativo → `Entry(x).ReloadAsync`. Una fila fuera del alcance no se bloquea ni se devuelve (fail-closed → 404).
+3. **Recién entonces** la regla de dominio decide si el monto cabe; el perdedor reevalúa contra el saldo ya consumido y recibe la regla canónica (`422 DOMAIN_RULE_VIOLATION`) sin ningún efecto.
+4. `SaveChanges` (estado + posting + outbox) y `Commit`; cualquier fallo → `Rollback` completo.
+
+Todo escritor del saldo de `SalesReceivable` lo lee por `GetByIdsForUpdateAsync`/`GetByInvoiceIdForUpdateAsync`: registrar cobro, reversar cobro (además bloquea el `Payment`) y crédito por devolución de venta. Orden canónico de locks (evita deadlocks): advisory de documento (devolución) → `Payment` (reversa) → `SalesReceivable` en orden ascendente de Id → secuencia documental → secuencia de asientos (posting en `SaveChanges`). El cobro no toma `CashSession`. Sin `advisory lock` adicional ni migración: la fila existente es el recurso compartido.
+
 ---
 
 ## Estructura por módulo

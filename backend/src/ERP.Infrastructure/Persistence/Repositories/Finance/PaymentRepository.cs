@@ -24,6 +24,24 @@ public sealed class PaymentRepository : IPaymentRepository
             .Where(x => x.TenantId == tenantId && x.CompanyId == companyId && x.ClientRequestId == clientRequestId)
             .FirstOrDefaultAsync(ct);
 
+    public async Task<Payment?> GetByIdForUpdateAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid id,
+        CancellationToken ct = default
+    )
+    {
+        // Patrón oficial (CashSessionRepository.GetByIdForUpdateAsync): lock → lectura → Reload.
+        await _context.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT 1 FROM payments WHERE tenant_id = {tenantId} AND company_id = {companyId} AND id = {id} FOR UPDATE",
+            ct
+        );
+        var payment = await GetByIdAsync(tenantId, companyId, id, ct);
+        if (payment is not null)
+            await _context.Entry(payment).ReloadAsync(ct);
+        return payment;
+    }
+
     public Task<Payment?> GetByIdAsync(
         Guid tenantId,
         Guid companyId,
