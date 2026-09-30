@@ -2,6 +2,13 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-29** · Kernel refactor: **2026-06-05**.
 
+## ZH-FRONTEND-UX-SSOT-AUDIT-01 — Auditoría UX SSOT del frontend (2026-09-29)
+
+**Estado: AUDITORÍA COMPLETADA (sin cambios de código).** Hallazgos en [`docs/architecture/UX-SSOT-AUDIT.md`](docs/architecture/UX-SSOT-AUDIT.md): 1 P1 candidato, 7 P2, 9 P3, 8 P4.
+- **P1-01 (a verificar con reproducción):** pago a proveedor, cobro de CxC y movimiento manual de caja son comandos de creación sin `ClientRequestId`/idempotencia de servidor; la defensa es solo estado de UI.
+- P2 principales: vínculo NC↔devolución de compra con dos endpoints; identidad de empresa con dos comandos; ≥5 pickers de producto; HTTP crudo a `/accounting/accounts` saltando `accountLookupFacade`; catálogos de items con varios clientes; dos momentos de emisión de retención; dos pipelines de RIDE.
+- Sin duplicidad: confirmaciones (un visual), modales, feedback `message.*`, rutas (alias = redirects), flujos de caja/CxP/CxC/inventario/ventas.
+
 ## ZH-FRONTEND-CROSS-MODULE-CSS-01 — Sin CSS privado entre módulos (2026-09-29)
 
 **Estado: COMPLETADO.** 0 imports CSS entre `modules/`; guard `F-subscriber-css-import` en `frontend-subscriber-naming` (sin grandfather). Sin cambios de lógica, APIs ni rediseño: 49 reglas movidas con declaraciones idénticas (verificado HEAD vs ahora, incluidos media queries).
