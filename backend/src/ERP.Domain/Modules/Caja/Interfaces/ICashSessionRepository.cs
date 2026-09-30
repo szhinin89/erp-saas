@@ -5,6 +5,16 @@ namespace ERP.Domain.Modules.Caja.Interfaces;
 public interface ICashSessionRepository
 {
     Task<CashSession?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default);
+
+    /// <summary>
+    /// ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01 — movimiento manual ya registrado para esta intención
+    /// del cliente (índice único parcial <c>uq_cash_movements_tenant_client_request_id</c>), o null.
+    /// </summary>
+    Task<CashMovement?> GetMovementByClientRequestIdAsync(
+        Guid tenantId,
+        Guid clientRequestId,
+        CancellationToken ct = default
+    );
     Task<CashSession?> GetOpenByUserAsync(
         Guid tenantId,
         Guid userId,

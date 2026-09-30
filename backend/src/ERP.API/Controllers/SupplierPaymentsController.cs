@@ -40,7 +40,8 @@ public sealed class SupplierPaymentsController : ControllerBase
                     body.MethodLines,
                     body.ApplicationLines ?? [],
                     body.Allocations ?? [],
-                    body.ConfirmUnappliedAmount
+                    body.ConfirmUnappliedAmount,
+                    body.ClientRequestId
                 ),
                 ct
             )

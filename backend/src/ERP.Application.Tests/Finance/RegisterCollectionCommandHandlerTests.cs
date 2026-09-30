@@ -109,7 +109,8 @@ public sealed class RegisterCollectionCommandHandlerTests
             new DateOnly(2026, 7, 30),
             null,
             "REF-1",
-            new[] { new PaymentApplicationLineInput(receivable.Id, null, 60m) }
+            new[] { new PaymentApplicationLineInput(receivable.Id, null, 60m) },
+            ClientRequestId: Guid.NewGuid()
         );
 
         var result = await handler.Handle(cmd, CancellationToken.None);
@@ -157,7 +158,8 @@ public sealed class RegisterCollectionCommandHandlerTests
             new DateOnly(2026, 7, 30),
             null,
             null,
-            new[] { new PaymentApplicationLineInput(receivable.Id, null, 100m) }
+            new[] { new PaymentApplicationLineInput(receivable.Id, null, 100m) },
+            ClientRequestId: Guid.NewGuid()
         );
 
         await handler.Handle(cmd, CancellationToken.None);
@@ -197,7 +199,8 @@ public sealed class RegisterCollectionCommandHandlerTests
             new DateOnly(2026, 7, 30),
             null,
             null,
-            new[] { new PaymentApplicationLineInput(receivable.Id, installmentId, 50m) }
+            new[] { new PaymentApplicationLineInput(receivable.Id, installmentId, 50m) },
+            ClientRequestId: Guid.NewGuid()
         );
 
         var result = await handler.Handle(cmd, CancellationToken.None);
@@ -223,7 +226,8 @@ public sealed class RegisterCollectionCommandHandlerTests
             new DateOnly(2026, 7, 30),
             null,
             null,
-            new[] { new PaymentApplicationLineInput(receivable.Id, null, 50m) }
+            new[] { new PaymentApplicationLineInput(receivable.Id, null, 50m) },
+            ClientRequestId: Guid.NewGuid()
         );
 
         var result = await handler.HandleWithDomainRules(cmd, CancellationToken.None);
@@ -252,7 +256,8 @@ public sealed class RegisterCollectionCommandHandlerTests
             new DateOnly(2026, 7, 30),
             null,
             null,
-            new[] { new PaymentApplicationLineInput(missingId, null, 50m) }
+            new[] { new PaymentApplicationLineInput(missingId, null, 50m) },
+            ClientRequestId: Guid.NewGuid()
         );
 
         var result = await handler.Handle(cmd, CancellationToken.None);
@@ -292,7 +297,8 @@ public sealed class RegisterCollectionCommandHandlerTests
             {
                 new PaymentApplicationLineInput(receivableA.Id, null, 30m),
                 new PaymentApplicationLineInput(receivableB.Id, null, 50m),
-            }
+            },
+            ClientRequestId: Guid.NewGuid()
         );
 
         var result = await handler.Handle(cmd, CancellationToken.None);
@@ -336,7 +342,8 @@ public sealed class RegisterCollectionCommandHandlerTests
             null,
             null,
             new[] { new PaymentApplicationLineInput(receivable.Id, null, 60m) },
-            CashRegisterId: destination.Id
+            CashRegisterId: destination.Id,
+            ClientRequestId: Guid.NewGuid()
         );
 
         var result = await handler.Handle(cmd, CancellationToken.None);
@@ -366,7 +373,8 @@ public sealed class RegisterCollectionCommandHandlerTests
             null,
             null,
             new[] { new PaymentApplicationLineInput(receivable.Id, null, 60m) },
-            CashRegisterId: destination.Id
+            CashRegisterId: destination.Id,
+            ClientRequestId: Guid.NewGuid()
         );
 
         var result = await handler.Handle(cmd, CancellationToken.None);
@@ -398,7 +406,8 @@ public sealed class RegisterCollectionCommandHandlerTests
             new DateOnly(2026, 7, 30),
             null,
             null,
-            new[] { new PaymentApplicationLineInput(receivable.Id, null, 60m) }
+            new[] { new PaymentApplicationLineInput(receivable.Id, null, 60m) },
+            ClientRequestId: Guid.NewGuid()
         );
 
         var result = await handler.Handle(cmd, CancellationToken.None);

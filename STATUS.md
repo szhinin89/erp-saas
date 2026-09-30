@@ -1,6 +1,16 @@
 # Project Status
 
-**Single source of truth** for delivery state. Updated: **2026-09-29** · Kernel refactor: **2026-06-05**.
+**Single source of truth** for delivery state. Updated: **2026-09-30** · Kernel refactor: **2026-06-05**.
+
+## ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01 — Una intención financiera = como máximo un efecto (2026-09-30)
+
+**Estado: COMPLETADO.** Cierra P1-01 de la auditoría UX. Pago a proveedor, cobro de CxC y movimiento manual de caja son idempotentes por `ClientRequestId` con barrera en PostgreSQL.
+- Reproducción antes del fix (HTTP + PostgreSQL reales): pago sin comprobante ×2 → 2 pagos, cuota 200, 2 `CashMovement`, 2 asientos, 2 outbox (secuencial y concurrente); cobro ×2 → 2 cobros y 2 asientos (concurrente: la CxC registró solo 100 — actualización perdida); movimiento manual ×2 secuencial → 2 movimientos. Barreras parciales previas: `receipt_number` único (respondía 409 en vez del original) y versión de fila de la sesión (409 `CONCURRENCY_CONFLICT`).
+- Patrón reutilizado de `CashFundingRequest`/`SupplierCreditMovement`: `ClientRequestId` + huella SHA-256 canónica + índice UNIQUE `(tenant_id, client_request_id)`. Mismo id + misma huella → el documento original (201, sin nuevos efectos); huella distinta → 409 `CONFLICT`; un rechazo no consume la clave. Si el intento falla por cualquier motivo y la clave ya existe (reintento concurrente ganador), responde el ganador.
+- Dominio: `ClientRequestKey` + `BindClientRequest` en `SupplierPayment`, `Payment` y `CashMovement`. Application: `CanonicalRequestFingerprint` (extraído sin cambios de `CashFundingPaymentSnapshot`, fijado con test golden), huellas V1 de cobro y movimiento; el movimiento manual ahora bloquea la sesión `FOR UPDATE` (movimientos concurrentes distintos ya no fallan con 409). Migración aditiva `FinancialCommandIdempotency` (columnas anulables + 3 índices UNIQUE parciales).
+- Frontend: `useClientRequestId` (mismo id mientras el payload no cambie, incluso al reabrir el modal; se libera tras el éxito) en pago, cobro y movimiento; caja con guarda síncrona antes de la confirmación.
+- Convención documentada en `docs/architecture/backend.md`. Tests: 22 HTTP (`FinancialCommandIdempotencyTests`, conteo físico de documento, aplicaciones, caja, asientos, outbox, saldos), UI de doble clic/reintento en los 3 flujos.
+- Pendiente fuera de alcance: dos cobros DISTINTOS concurrentes sobre la misma CxC siguen pudiendo perder una actualización de `SalesReceivable` (sin lock ni token de concurrencia) — ticket propio.
 
 ## ZH-FRONTEND-UX-SSOT-AUDIT-01 — Auditoría UX SSOT del frontend (2026-09-29)
 

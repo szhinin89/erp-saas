@@ -57,7 +57,8 @@ public sealed class CashSessionController : ControllerBase
                     request.Description,
                     request.ReferenceType,
                     request.ReferenceId,
-                    request.ReferenceNumber
+                    request.ReferenceNumber,
+                    request.ClientRequestId
                 ),
                 ct
             )
@@ -104,5 +105,6 @@ public sealed record RecordCashMovementRequest(
     string Description,
     string? ReferenceType = null,
     Guid? ReferenceId = null,
-    string? ReferenceNumber = null
+    string? ReferenceNumber = null,
+    Guid ClientRequestId = default
 );

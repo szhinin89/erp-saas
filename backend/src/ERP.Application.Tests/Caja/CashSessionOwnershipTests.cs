@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Caja;
 using ERP.Application.Modules.Caja.UseCases;
 using ERP.Domain.Configuration.Interfaces;
@@ -96,7 +97,7 @@ public sealed class CashSessionOwnershipTests
     )
     {
         var repo = new Mock<ICashSessionRepository>();
-        repo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>())).ReturnsAsync(session);
+        repo.Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())).ReturnsAsync(session);
         var reasons = new Mock<ICashMovementReasonRepository>();
         var reason = CashMovementReason.Create(
             TenantId, CompanyId, "MOTIVO", "Motivo", CashMovementType.ManualExpense, 1, OwnerId
@@ -105,14 +106,14 @@ public sealed class CashSessionOwnershipTests
             .Setup(r => r.GetByIdAsync(TenantId, CompanyId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(reason);
         var handler = new RecordCashMovementHandler(
-            repo.Object, reasons.Object, Tenant().Object, Branch().Object, User(currentUserId).Object,
-            PreferencesResolver().Object
+            repo.Object, reasons.Object, new Mock<IUnitOfWork>().Object,
+            Tenant().Object, Branch().Object, User(currentUserId).Object, PreferencesResolver().Object
         );
         return (handler, repo);
     }
 
     private static RecordCashMovementCommand ManualExpense(Guid sessionId) =>
-        new(sessionId, "ManualExpense", Guid.NewGuid(), 20m, "Compra menor");
+        new(sessionId, "ManualExpense", Guid.NewGuid(), 20m, "Compra menor", ClientRequestId: Guid.NewGuid());
 
     [Fact]
     public async Task Dueño_registra_movimiento_manual_en_su_caja()

@@ -57,6 +57,15 @@ public sealed class Payment : AuditableEntity, ITenantScopedEntity, ICompanyOper
     public DateTime? ReversedAtUtc { get; private set; }
     public string? ReverseReason { get; private set; }
 
+    /// <summary>
+    /// ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01 — intención del cliente que originó el cobro (único por
+    /// Tenant + ClientRequestId). Null en registros históricos.
+    /// </summary>
+    public Guid? ClientRequestId { get; private set; }
+
+    /// <summary>Huella SHA-256 del request canónico asociado a <see cref="ClientRequestId"/>.</summary>
+    public string? RequestPayloadHash { get; private set; }
+
     private readonly List<PaymentApplicationLine> _lines = new();
     public IReadOnlyCollection<PaymentApplicationLine> Lines => _lines.AsReadOnly();
 
@@ -144,6 +153,18 @@ public sealed class Payment : AuditableEntity, ITenantScopedEntity, ICompanyOper
                 );
 
         _lines.Add(line);
+    }
+
+    /// <summary>
+    /// ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01 — vincula el cobro a la intención del cliente que lo
+    /// origina. Set-once: se fija al crearlo y nunca cambia.
+    /// </summary>
+    public void BindClientRequest(ClientRequestKey key)
+    {
+        if (ClientRequestId is not null)
+            throw new DomainRuleViolationException("La intención del cliente ya fue asignada.");
+        ClientRequestId = key.Id;
+        RequestPayloadHash = key.PayloadHash;
     }
 
     /// <summary>

@@ -44,6 +44,7 @@ import {
 } from "../../../schemas/supplier-payments/registerSupplierPaymentSchema";
 import "../styles/supplier-payments.css";
 import { todayIso } from "../../../lib/formatters/dateFormatters";
+import { useClientRequestId } from "../../../lib/idempotency/useClientRequestId";
 
 const PERMISSIONS = { create: "supplier-payments.create" } as const;
 
@@ -86,10 +87,11 @@ export function SupplierPaymentFormPage() {
   // si no puede leerse queda en false (el backend la aplica igual; esto es solo UX).
   const [allowWithoutPayable, setAllowWithoutPayable] = useState(false);
   const allowWithoutPayableRef = useRef(false);
-  // ZH-CASH-FUNDING-REQUEST-UI-FINAL-02E-EF — solicitud creada (efectivo de caja ajena) y clave de
-  // idempotencia estable por intento de confirmación (un reintento tras error de red no duplica).
+  // ZH-CASH-FUNDING-REQUEST-UI-FINAL-02E-EF — solicitud creada (efectivo de caja ajena).
   const [createdRequestId, setCreatedRequestId] = useState<string | null>(null);
-  const clientRequestIdRef = useRef<string | null>(null);
+  // ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01 — una intención = un ClientRequestId estable mientras el
+  // pago sea el mismo (reintento, timeout, reabrir el modal); se libera al registrar con éxito.
+  const clientRequest = useClientRequestId();
 
   const form = useForm<RegisterSupplierPaymentFormValues>({
     resolver: zodResolver(
@@ -276,7 +278,6 @@ export function SupplierPaymentFormPage() {
     if (!validateRuntimeRules(values)) return;
     setModalError(null);
     setPendingValues(values);
-    clientRequestIdRef.current = crypto.randomUUID();
     setConfirmOpen(true);
   });
 
@@ -301,7 +302,7 @@ export function SupplierPaymentFormPage() {
         validApplicationLines,
       );
 
-      const payload: RegisterSupplierPaymentRequest = {
+      const payload: Omit<RegisterSupplierPaymentRequest, "clientRequestId"> = {
         supplierId: pendingValues.supplierId,
         paymentDate: pendingValues.paymentDate,
         totalAmount,
@@ -332,18 +333,19 @@ export function SupplierPaymentFormPage() {
         confirmUnappliedAmount: unapplied > 0,
       };
 
+      const clientRequestId = clientRequest.idFor({ mode: requestMode ? "request" : "direct", payload });
+
       if (requestMode) {
-        const request = await cashFundingRequestFacade.create({
-          ...payload,
-          clientRequestId: clientRequestIdRef.current ?? crypto.randomUUID(),
-        });
+        const request = await cashFundingRequestFacade.create({ ...payload, clientRequestId });
+        clientRequest.complete();
         message.success("Solicitud de efectivo creada.");
         setConfirmOpen(false);
         setCreatedRequestId(request.id);
         return;
       }
 
-      const dto = await supplierPaymentService.register(payload);
+      const dto = await supplierPaymentService.register({ ...payload, clientRequestId });
+      clientRequest.complete();
       message.success(`Pago ${dto.displayNumber} registrado correctamente.`);
       setConfirmOpen(false);
       navigate(`/supplier-payments/${dto.id}`);

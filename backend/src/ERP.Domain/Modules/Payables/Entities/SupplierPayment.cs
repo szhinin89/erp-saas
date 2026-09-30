@@ -70,6 +70,16 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
     public bool? ReversalCashNotDeliveredConfirmed { get; private set; }
 
     /// <summary>
+    /// ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01 — intención del cliente que originó el pago directo
+    /// (único por Tenant + ClientRequestId). Null en pagos históricos y en los ejecutados desde una
+    /// solicitud de efectivo (idempotentes por el estado de la propia solicitud).
+    /// </summary>
+    public Guid? ClientRequestId { get; private set; }
+
+    /// <summary>Huella SHA-256 del request canónico asociado a <see cref="ClientRequestId"/>.</summary>
+    public string? RequestPayloadHash { get; private set; }
+
+    /// <summary>
     /// ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — derivado, nunca persistido: Σ
     /// <see cref="SupplierPaymentApplicationLine.AmountApplied"/>.
     /// </summary>
@@ -263,6 +273,18 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
         );
 
         return payment;
+    }
+
+    /// <summary>
+    /// ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01 — vincula el pago a la intención del cliente que lo
+    /// origina. Set-once: se fija al crearlo y nunca cambia.
+    /// </summary>
+    public void BindClientRequest(ClientRequestKey key)
+    {
+        if (ClientRequestId is not null)
+            throw new DomainRuleViolationException("La intención del cliente ya fue asignada.");
+        ClientRequestId = key.Id;
+        RequestPayloadHash = key.PayloadHash;
     }
 
     /// <summary>

@@ -3,6 +3,7 @@ using ERP.Application.Modules.Caja;
 using ERP.Application.Modules.Finance;
 using ERP.Application.Modules.Payables.Exceptions;
 using ERP.Application.Modules.Payables.UseCases;
+using ERP.Domain.Common;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Caja.Entities;
@@ -83,10 +84,17 @@ public interface ISupplierPaymentRegistrar
         CancellationToken ct
     );
 
+    /// <param name="clientRequest">
+    /// ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01 — intención del cliente del pago directo: se vincula al
+    /// pago antes del INSERT, así el índice único (TenantId, ClientRequestId) protege la misma
+    /// transacción que aplica CxP, mueve caja, crea el anticipo y postea. Null en la ejecución de una
+    /// solicitud de efectivo (idempotente por el estado de la solicitud).
+    /// </param>
     Task<Result<SupplierPaymentRegistration>> RegisterAsync(
         RegisterSupplierPaymentCommand intent,
         SupplierPaymentRegistrationContext context,
-        CancellationToken ct
+        CancellationToken ct,
+        ClientRequestKey? clientRequest = null
     );
 }
 
@@ -333,7 +341,8 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
     public async Task<Result<SupplierPaymentRegistration>> RegisterAsync(
         RegisterSupplierPaymentCommand cmd,
         SupplierPaymentRegistrationContext context,
-        CancellationToken ct
+        CancellationToken ct,
+        ClientRequestKey? clientRequest = null
     )
     {
         var prepared = await PrepareAsync(cmd, context, ct);
@@ -403,6 +412,9 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
         {
             return Result<SupplierPaymentRegistration>.ValidationFailure(ex.Message);
         }
+
+        if (clientRequest is { } requestKey)
+            payment.BindClientRequest(requestKey);
 
         // ── Aplica cada monto a su cuota puntual y recalcula AccountsPayable cabecera ──
         foreach (var appLine in cmd.ApplicationLines)

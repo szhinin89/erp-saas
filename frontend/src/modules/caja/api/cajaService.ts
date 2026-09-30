@@ -232,6 +232,8 @@ export interface RecordMovementPayload {
   referenceType?: string;
   referenceId?: string;
   referenceNumber?: string;
+  /** ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01 — intención del usuario (useClientRequestId): una por operación, estable en reintentos. */
+  clientRequestId: string;
 }
 
 // ── TREASURY-CASH-MOVEMENT-REASONS-ADMIN-03 / 03A ───────────────────────

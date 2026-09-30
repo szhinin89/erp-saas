@@ -30,6 +30,17 @@ public sealed class CashSessionRepository : ICashSessionRepository
             .Include(x => x.ClosingCounts)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
 
+    public Task<CashMovement?> GetMovementByClientRequestIdAsync(
+        Guid tenantId,
+        Guid clientRequestId,
+        CancellationToken ct = default
+    ) =>
+        // Como hijo del agregado (scope Company+Branch de CashSession), nunca por el DbSet directo:
+        // CashMovement solo tiene filtro por tenant (ver CashMovementDirectQueryAuditTests).
+        Scoped(tenantId)
+            .SelectMany(s => s.Movements)
+            .FirstOrDefaultAsync(m => m.ClientRequestId == clientRequestId, ct);
+
     public Task<CashSession?> GetOpenByUserAsync(
         Guid tenantId,
         Guid userId,

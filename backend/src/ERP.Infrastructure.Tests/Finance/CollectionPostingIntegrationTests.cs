@@ -381,7 +381,8 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
             paymentDate,
             PaymentMethodId: null,
             Reference: null,
-            new[] { new PaymentApplicationLineInput(receivableId, null, amount) }
+            new[] { new PaymentApplicationLineInput(receivableId, null, amount) },
+            ClientRequestId: Guid.NewGuid()
         );
 
     /// <summary>Fase 5.6.6 — siembra tanto la regla de aplicación como la de reverso, más un único

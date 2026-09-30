@@ -34,6 +34,36 @@ public sealed class CashFundingPaymentSnapshotTests
             ConfirmUnappliedAmount: false
         );
 
+    /// <summary>
+    /// ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01 — valor fijo: el JSON canónico y su huella son contrato
+    /// persistente (solicitudes guardadas + pagos directos idempotentes). Cualquier cambio del
+    /// serializador canónico compartido que altere un solo byte rompe este test.
+    /// </summary>
+    [Fact]
+    public void Huella_canonica_es_estable_valor_fijo()
+    {
+        var intent = new RegisterSupplierPaymentCommand(
+            Guid.Parse("11111111-1111-1111-1111-111111111111"),
+            new DateOnly(2026, 9, 20),
+            200.50m,
+            " REC-99 ",
+            [
+                new SupplierPaymentMethodLineRequest(Guid.Parse("22222222-2222-2222-2222-222222222222"), null, Guid.Parse("33333333-3333-3333-3333-333333333333"), 200.500m, Notes: "Entrega"),
+            ],
+            [new SupplierPaymentApplicationLineRequest(Guid.Parse("44444444-4444-4444-4444-444444444444"), 200.5m)],
+            [new SupplierPaymentAllocationLineRequest(0, 0, 200.50m)],
+            ConfirmUnappliedAmount: false
+        );
+
+        var snapshot = CashFundingPaymentSnapshot.FromIntent(intent);
+
+        CashFundingPaymentSnapshot.Serialize(snapshot).Should().Be(
+            """{"supplierId":"11111111-1111-1111-1111-111111111111","paymentDate":"2026-09-20","totalAmount":200.5,"receiptNumber":"REC-99","methodLines":[{"paymentMethodId":"22222222-2222-2222-2222-222222222222","companyBankAccountId":null,"cashRegisterId":"33333333-3333-3333-3333-333333333333","amount":200.5,"referenceNumber":null,"checkNumber":null,"checkDate":null,"notes":"Entrega","transactionDate":null}],"applicationLines":[{"accountsPayableInstallmentId":"44444444-4444-4444-4444-444444444444","amountApplied":200.5}],"allocations":[{"methodLineIndex":0,"applicationLineIndex":0,"amount":200.5}],"confirmUnappliedAmount":false}"""
+        );
+        CashFundingPaymentSnapshot.ComputeHash(snapshot)
+            .Should().Be("69FBAFF583E455A0DB952B6BB8396649D5CD657CDCF9972A5F34697CE2528D82");
+    }
+
     [Fact]
     public void Roundtrip_reconstruye_exactamente_la_intencion()
     {

@@ -1,5 +1,7 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Idempotency;
 using ERP.Application.Modules.Finance.DTOs;
+using ERP.Domain.Common;
 using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Finance.Entities;
@@ -32,8 +34,45 @@ public sealed record RegisterCollectionCommand(
     /// </summary>
     Guid? CompanyBankAccountId = null,
     /// <summary>Caja que recibió el cobro — mutuamente excluyente con <see cref="CompanyBankAccountId"/>.</summary>
-    Guid? CashRegisterId = null
+    Guid? CashRegisterId = null,
+    /// <summary>
+    /// ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01 — intención del cliente (una por cobro que el usuario
+    /// quiere registrar; estable en reintentos). Obligatorio.
+    /// </summary>
+    Guid ClientRequestId = default
 ) : IRequest<Result<PaymentDto>>, ICompanyScopedRequest;
+
+/// <summary>
+/// ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01 — representación canónica V1 de la intención de un cobro
+/// (solo datos del usuario; el contexto tenant/empresa/actor no participa). Cambiar su forma = V2.
+/// </summary>
+internal sealed record CollectionIntentV1(
+    Guid CustomerId,
+    decimal Amount,
+    DateOnly PaymentDate,
+    Guid? PaymentMethodId,
+    string? Reference,
+    Guid? CompanyBankAccountId,
+    Guid? CashRegisterId,
+    IReadOnlyList<CollectionIntentLineV1> Lines
+)
+{
+    public static string ComputeHash(RegisterCollectionCommand cmd) =>
+        CanonicalRequestFingerprint.Compute(
+            new CollectionIntentV1(
+                cmd.CustomerId,
+                cmd.Amount,
+                cmd.PaymentDate,
+                cmd.PaymentMethodId,
+                CanonicalRequestFingerprint.NormalizeText(cmd.Reference),
+                cmd.CompanyBankAccountId,
+                cmd.CashRegisterId,
+                cmd.Lines.Select(l => new CollectionIntentLineV1(l.DocumentId, l.InstallmentId, l.AppliedAmount)).ToList()
+            )
+        );
+}
+
+internal sealed record CollectionIntentLineV1(Guid DocumentId, Guid? InstallmentId, decimal AppliedAmount);
 
 /// <summary>Fase 5.5.5.3 — reversa un cobro ya aplicado y decrementa el saldo de cada CxC afectada.</summary>
 public sealed record ReverseCollectionCommand(Guid PaymentId, string Reason)
@@ -57,6 +96,7 @@ public sealed class RegisterCollectionCommandValidator
 {
     public RegisterCollectionCommandValidator()
     {
+        RuleFor(x => x.ClientRequestId).NotEmpty().WithMessage("El identificador de idempotencia es obligatorio.");
         RuleFor(x => x.CustomerId).NotEmpty();
         RuleFor(x => x.Amount).GreaterThan(0);
         RuleFor(x => x.Lines)
@@ -80,9 +120,20 @@ public sealed class ReverseCollectionCommandValidator : AbstractValidator<Revers
 
 // ── Handlers ────────────────────────────────────────────────────────────
 
+/// <remarks>
+/// ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01 — una intención (<see cref="RegisterCollectionCommand.ClientRequestId"/>)
+/// produce como máximo un cobro: mismo id + misma huella → el cobro ya registrado (sin volver a
+/// aplicar la CxC, postear ni encolar eventos); mismo id + otra huella → Conflict. La barrera
+/// definitiva es el índice único (TenantId, ClientRequestId) dentro del mismo SaveChanges atómico
+/// que persiste cobro, CxC, asiento y outbox. Si el intento falla por cualquier motivo y la
+/// intención quedó registrada por un reintento concurrente, se responde con el cobro ganador.
+/// </remarks>
 public sealed class RegisterCollectionCommandHandler
     : IRequestHandler<RegisterCollectionCommand, Result<PaymentDto>>
 {
+    internal const string ClientRequestConflict =
+        "Ya existe un cobro con este identificador pero con datos distintos.";
+
     private readonly IPaymentRepository _payments;
     private readonly ISalesReceivableRepository _receivables;
     private readonly ICompanyBankAccountRepository _bankAccounts;
@@ -117,6 +168,41 @@ public sealed class RegisterCollectionCommandHandler
     {
         var tenantId = _t.TenantId;
         var companyId = _c.CompanyId;
+        var key = new ClientRequestKey(cmd.ClientRequestId, CollectionIntentV1.ComputeHash(cmd));
+
+        // Camino rápido del replay: ningún efecto.
+        var existing = await _payments.GetByClientRequestIdAsync(tenantId, companyId, key.Id, ct);
+        if (existing is not null)
+            return Replay(existing, key);
+
+        Result<PaymentDto> result;
+        try
+        {
+            result = await RegisterAsync(cmd, key, tenantId, companyId, ct);
+        }
+        catch
+        {
+            // El SaveChanges perdedor ya se revirtió completo (cobro, CxC, asiento, outbox).
+            var raced = await _payments.GetByClientRequestIdAsync(tenantId, companyId, key.Id, ct);
+            if (raced is null)
+                throw;
+            return Replay(raced, key);
+        }
+        if (result.IsSuccess)
+            return result;
+
+        var winner = await _payments.GetByClientRequestIdAsync(tenantId, companyId, key.Id, ct);
+        return winner is not null ? Replay(winner, key) : result;
+    }
+
+    private async Task<Result<PaymentDto>> RegisterAsync(
+        RegisterCollectionCommand cmd,
+        ClientRequestKey key,
+        Guid tenantId,
+        Guid companyId,
+        CancellationToken ct
+    )
+    {
 
         // Una cuenta bancaria o caja explícitamente elegida debe existir, pertenecer a esta
         // empresa, estar activa y tener cuenta contable configurada (a diferencia del caso "sin
@@ -163,6 +249,7 @@ public sealed class RegisterCollectionCommandHandler
         {
             return Result<PaymentDto>.ValidationFailure(ex.Message);
         }
+        payment.BindClientRequest(key);
 
         // Carga cada CxC referenciada una sola vez, incluso si varias líneas la referencian
         // (p. ej. aplicación repartida entre cuotas de la misma factura).
@@ -203,6 +290,12 @@ public sealed class RegisterCollectionCommandHandler
 
         return Result<PaymentDto>.Success(Map.ToDto(payment));
     }
+
+    /// <summary>Mismo request → el cobro ya registrado; request distinto → Conflict.</summary>
+    private static Result<PaymentDto> Replay(Payment existing, ClientRequestKey key) =>
+        key.Matches(existing.RequestPayloadHash)
+            ? Result<PaymentDto>.Success(Map.ToDto(existing))
+            : Result<PaymentDto>.Conflict(ClientRequestConflict);
 }
 
 public sealed class ReverseCollectionCommandHandler

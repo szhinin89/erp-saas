@@ -48,6 +48,8 @@ export interface RegisterCollectionPayload {
   companyBankAccountId?: string | null;
   /** FINANCIAL-DESTINATION-TO-BANK-ACCOUNT-MIGRATION-01 — caja opcional, excluyente con companyBankAccountId. */
   cashRegisterId?: string | null;
+  /** ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01 — intención del usuario (useClientRequestId): una por operación, estable en reintentos. */
+  clientRequestId: string;
 }
 
 const BASE = "/api/v1/finance";

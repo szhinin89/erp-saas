@@ -19,6 +19,18 @@ public sealed class SupplierPaymentRepository : ISupplierPaymentRepository
             .Where(x => x.TenantId == tenantId)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
 
+    public Task<SupplierPayment?> GetByClientRequestIdAsync(
+        Guid tenantId,
+        Guid clientRequestId,
+        CancellationToken ct = default
+    ) =>
+        _db.SupplierPayments
+            .Include(x => x.MethodLines)
+            .Include(x => x.ApplicationLines)
+            .Include(x => x.AllocationLines)
+            .Where(x => x.TenantId == tenantId)
+            .FirstOrDefaultAsync(x => x.ClientRequestId == clientRequestId, ct);
+
     public async Task<(IReadOnlyList<SupplierPayment> Items, int Total)> SearchAsync(
         Guid tenantId,
         Guid companyId,

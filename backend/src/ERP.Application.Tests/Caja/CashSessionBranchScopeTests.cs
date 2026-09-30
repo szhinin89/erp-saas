@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Caja.UseCases;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
@@ -311,7 +312,8 @@ public sealed class CashSessionBranchScopeTests
         }
 
         public RecordCashMovementHandler BuildHandler() =>
-            new(Repo.Object, ReasonRepo.Object, Tenant.Object, Branch.Object, User.Object, Preferences.Object);
+            new(Repo.Object, ReasonRepo.Object, new Mock<IUnitOfWork>().Object,
+                Tenant.Object, Branch.Object, User.Object, Preferences.Object);
     }
 
     [Fact]
@@ -319,13 +321,13 @@ public sealed class CashSessionBranchScopeTests
     {
         var session = CreateOpenSession(BranchBId);
         var f = new MovementFixture(activeBranchId: BranchAId);
-        f.Repo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+        f.Repo.Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(session);
         var reasonId = f.SetupValidReason(session.CompanyId);
 
         var result = await f.BuildHandler()
             .Handle(
-                new RecordCashMovementCommand(session.Id, "ManualIncome", reasonId, 20m, "Ingreso manual"),
+                new RecordCashMovementCommand(session.Id, "ManualIncome", reasonId, 20m, "Ingreso manual", ClientRequestId: Guid.NewGuid()),
                 CancellationToken.None
             );
 
@@ -339,13 +341,13 @@ public sealed class CashSessionBranchScopeTests
     {
         var session = CreateOpenSession(BranchAId);
         var f = new MovementFixture(activeBranchId: BranchAId);
-        f.Repo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+        f.Repo.Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(session);
         var reasonId = f.SetupValidReason(session.CompanyId);
 
         var result = await f.BuildHandler()
             .Handle(
-                new RecordCashMovementCommand(session.Id, "ManualIncome", reasonId, 20m, "Ingreso manual"),
+                new RecordCashMovementCommand(session.Id, "ManualIncome", reasonId, 20m, "Ingreso manual", ClientRequestId: Guid.NewGuid()),
                 CancellationToken.None
             );
 

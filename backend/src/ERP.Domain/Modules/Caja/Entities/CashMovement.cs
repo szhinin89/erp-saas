@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Caja.Enums;
 
 namespace ERP.Domain.Modules.Caja.Entities;
@@ -49,7 +50,29 @@ public sealed class CashMovement : IMustHaveTenant
     /// se renombra o desactiva después.</summary>
     public string? ReasonName { get; private set; }
 
+    /// <summary>
+    /// ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01 — intención del cliente que originó un movimiento
+    /// MANUAL (único por Tenant + ClientRequestId). Null en movimientos de sistema (apertura,
+    /// ventas, devoluciones, pagos a proveedor), que tienen su propia idempotencia, y en históricos.
+    /// </summary>
+    public Guid? ClientRequestId { get; private set; }
+
+    /// <summary>Huella SHA-256 del request canónico asociado a <see cref="ClientRequestId"/>.</summary>
+    public string? RequestPayloadHash { get; private set; }
+
     private CashMovement() { }
+
+    /// <summary>
+    /// ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01 — vincula el movimiento manual a la intención del
+    /// cliente que lo origina. Set-once: se fija al crearlo y nunca cambia.
+    /// </summary>
+    public void BindClientRequest(ClientRequestKey key)
+    {
+        if (ClientRequestId is not null)
+            throw new DomainRuleViolationException("La intención del cliente ya fue asignada.");
+        ClientRequestId = key.Id;
+        RequestPayloadHash = key.PayloadHash;
+    }
 
     internal static CashMovement Create(
         Guid cashSessionId,

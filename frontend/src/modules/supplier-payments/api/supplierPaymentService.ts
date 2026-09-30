@@ -48,6 +48,8 @@ export interface RegisterSupplierPaymentRequest {
    * remanente no aplicado quedará como anticipo a favor del proveedor. El backend la revalida.
    */
   confirmUnappliedAmount?: boolean;
+  /** ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01 — intención del usuario (useClientRequestId): una por operación, estable en reintentos. */
+  clientRequestId: string;
 }
 
 // ── DTOs (GET / respuesta de POST) ──────────────────────────────────────

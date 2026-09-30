@@ -13,6 +13,17 @@ public sealed class PaymentRepository : IPaymentRepository
         _context = context;
     }
 
+    public Task<Payment?> GetByClientRequestIdAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid clientRequestId,
+        CancellationToken ct = default
+    ) =>
+        _context
+            .Payments.Include(x => x.Lines)
+            .Where(x => x.TenantId == tenantId && x.CompanyId == companyId && x.ClientRequestId == clientRequestId)
+            .FirstOrDefaultAsync(ct);
+
     public Task<Payment?> GetByIdAsync(
         Guid tenantId,
         Guid companyId,

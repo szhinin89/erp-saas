@@ -657,6 +657,61 @@ describe("useCajaPage — registrar movimiento: confirmación y feedback (CRITIC
     );
     expect(message.success).not.toHaveBeenCalled();
   });
+
+  // ── ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01 ─────────────────────────────────
+
+  it("doble Enter/clic mientras la confirmación está abierta: una sola confirmación y un solo registro", async () => {
+    let answer!: (ok: boolean) => void;
+    vi.mocked(message.confirm).mockImplementation(() => new Promise<boolean>((resolve) => (answer = resolve)));
+    vi.mocked(cajaService.recordMovement).mockResolvedValue(
+      mockMovementDto({ id: "mv-1", movementType: "ManualIncome", amount: 40, description: "Ajuste de fondo fijo" }),
+    );
+    const result = await setupMovementReady();
+
+    await act(async () => {
+      const first = result.current.handleRecordMovement();
+      const second = result.current.handleRecordMovement();
+      await waitFor(() => expect(message.confirm).toHaveBeenCalled());
+      answer(true);
+      await Promise.all([first, second]);
+    });
+
+    expect(message.confirm).toHaveBeenCalledTimes(1);
+    expect(cajaService.recordMovement).toHaveBeenCalledTimes(1);
+  });
+
+  it("reintentar tras un fallo reenvía el MISMO clientRequestId; tras el éxito el siguiente movimiento usa otro", async () => {
+    vi.mocked(cajaService.recordMovement)
+      .mockRejectedValueOnce(new Error("timeout"))
+      .mockResolvedValueOnce(mockMovementDto({ id: "mv-1", movementType: "ManualIncome", amount: 40, description: "Ajuste de fondo fijo" }))
+      .mockResolvedValueOnce(mockMovementDto({ id: "mv-2", movementType: "ManualIncome", amount: 40, description: "Ajuste de fondo fijo" }));
+    const result = await setupMovementReady();
+
+    await act(async () => {
+      await result.current.handleRecordMovement();
+    });
+    await act(async () => {
+      await result.current.handleRecordMovement();
+    });
+    const [failed, retried] = vi.mocked(cajaService.recordMovement).mock.calls.map(([, payload]) => payload.clientRequestId);
+    expect(retried).toBe(failed);
+
+    act(() => {
+      result.current.movementForm.setValue("movementType", "ManualIncome");
+      result.current.movementForm.setValue("amount", 40);
+      result.current.movementForm.setValue("description", "Ajuste de fondo fijo");
+    });
+    await waitFor(() => expect(result.current.reasons).toEqual(manualIncomeReasons));
+    act(() => {
+      result.current.movementForm.setValue("reasonId", "reason-1");
+    });
+    await act(async () => {
+      await result.current.handleRecordMovement();
+    });
+    expect(cajaService.recordMovement).toHaveBeenCalledTimes(3);
+    const next = vi.mocked(cajaService.recordMovement).mock.calls[2][1].clientRequestId;
+    expect(next).not.toBe(retried);
+  });
 });
 
 describe("useCajaPage — modal de registrar movimiento (TREASURY-CASH-MANUAL-MOVEMENT-MODAL-02)", () => {

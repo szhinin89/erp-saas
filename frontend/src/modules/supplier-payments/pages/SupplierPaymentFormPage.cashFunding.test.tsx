@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { I18nProvider } from "../../../i18n/i18n";
 import { SupplierPaymentFormPage } from "./SupplierPaymentFormPage";
@@ -218,6 +218,32 @@ describe("SupplierPaymentFormPage — solicitud de efectivo (02E-EF)", () => {
 
     await waitFor(() => expect(supplierPaymentService.register).toHaveBeenCalled());
     expect(cashFundingRequestFacade.create).not.toHaveBeenCalled();
+  });
+
+  it("ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01 — reintentos y reabrir el modal con el mismo pago reenvían el MISMO clientRequestId", async () => {
+    vi.mocked(supplierPaymentService.register)
+      .mockRejectedValueOnce(new Error("timeout"))
+      .mockRejectedValueOnce(new Error("timeout"));
+    await payInstallmentWith([{ method: "pm-2", destination: "cash:cash-1", amount: "30" }], "30");
+
+    fireEvent.click(screen.getByText("Pagar"));
+    fireEvent.click(await screen.findByText("Confirmar y registrar"));
+    await waitFor(() => expect(supplierPaymentService.register).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getByText("Confirmar y registrar").closest("button")?.disabled).toBe(false));
+    fireEvent.click(screen.getByText("Confirmar y registrar"));
+    await waitFor(() => expect(supplierPaymentService.register).toHaveBeenCalledTimes(2));
+
+    // El usuario cierra el modal tras la respuesta incierta y vuelve a enviar el mismo pago.
+    const modalCancel = within(screen.getByRole("dialog")).getByText("Cancelar");
+    await waitFor(() => expect(modalCancel.closest("button")?.disabled).toBe(false));
+    fireEvent.click(modalCancel);
+    fireEvent.click(screen.getByText("Pagar"));
+    fireEvent.click(await screen.findByText("Confirmar y registrar"));
+    await waitFor(() => expect(supplierPaymentService.register).toHaveBeenCalledTimes(3));
+
+    const ids = vi.mocked(supplierPaymentService.register).mock.calls.map(([payload]) => payload.clientRequestId);
+    expect(ids[0]).toMatch(/^[0-9a-f-]{36}$/);
+    expect(new Set(ids).size).toBe(1);
   });
 
   it("11. pago solo banco sigue siendo pago directo", async () => {

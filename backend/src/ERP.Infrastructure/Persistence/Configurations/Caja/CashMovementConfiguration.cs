@@ -1,3 +1,4 @@
+using ERP.Domain.Common;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -81,5 +82,19 @@ public sealed class CashMovementConfiguration : IEntityTypeConfiguration<CashMov
             })
             .HasDatabaseName("ix_cash_movements_tenant_ref")
             .HasFilter("reference_id IS NOT NULL");
+
+        // ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01 — una intención del cliente produce como máximo un
+        // registro: la barrera definitiva es este índice único (la lectura previa del handler es
+        // solo el camino rápido). Parcial: históricos y registros de sistema no llevan clave.
+        builder.Property(x => x.ClientRequestId).HasColumnName("client_request_id");
+        builder
+            .Property(x => x.RequestPayloadHash)
+            .HasColumnName("request_payload_hash")
+            .HasMaxLength(ClientRequestKey.PayloadHashLength);
+        builder
+            .HasIndex(x => new { x.TenantId, x.ClientRequestId })
+            .IsUnique()
+            .HasDatabaseName("uq_cash_movements_tenant_client_request_id")
+            .HasFilter("client_request_id IS NOT NULL");
     }
 }

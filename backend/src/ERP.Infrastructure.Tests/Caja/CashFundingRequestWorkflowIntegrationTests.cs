@@ -289,7 +289,9 @@ public sealed partial class CashFundingRequestWorkflowIntegrationTests : IAsyncL
     {
         await using var db = WiredContext(actor.CompanyId);
         return await new RegisterSupplierPaymentCommandHandler(
-                Registrar(db, actor.CompanyId), new UnitOfWork(db), new FixedCurrentTenant(() => _tenantId),
+                Registrar(db, actor.CompanyId), new SupplierPaymentRepository(db),
+                new SupplierCreditRepository(db, new FixedCurrentCompany(() => actor.CompanyId)), new UnitOfWork(db),
+                new FixedCurrentTenant(() => _tenantId),
                 new FixedCurrentCompany(() => actor.CompanyId), new FixedBranch(actor.BranchId), new FixedUser(actor.UserId))
             .Handle(payment, CancellationToken.None);
     }
@@ -328,7 +330,7 @@ public sealed partial class CashFundingRequestWorkflowIntegrationTests : IAsyncL
         }
         return new RegisterSupplierPaymentCommand(_supplierId, Today, total, null, lines,
             [new SupplierPaymentApplicationLineRequest(installmentId, appliedAmount)], allocations,
-            ConfirmUnappliedAmount: appliedAmount < total);
+            ConfirmUnappliedAmount: appliedAmount < total, ClientRequestId: Guid.NewGuid());
     }
 
     private async Task<(int Payments, int CashMovements, int Journals, decimal Balance, CashFundingRequestStatus? Status)> SnapshotAsync(Guid? requestId = null)

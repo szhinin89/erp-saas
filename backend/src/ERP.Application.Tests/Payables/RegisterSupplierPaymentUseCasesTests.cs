@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Payables.Exceptions;
 using ERP.Application.Modules.Payables.UseCases;
 using ERP.Domain.Modules.Caja.Entities;
@@ -139,6 +140,8 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         new(
             // 02E-B — el handler delega en el núcleo compartido (mismas dependencias, mismas reglas).
             BuildRegistrar(m),
+            m.SupplierPayments.Object,
+            m.SupplierCredits.Object,
             m.Uow.Object,
             m.Tenant.Object,
             m.Company.Object,
@@ -299,7 +302,8 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             null,
             new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 300m) },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 300m) },
-            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) }
+            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) },
+            ClientRequestId: Guid.NewGuid()
         );
 
         var result = await handler.Handle(cmd, CancellationToken.None);
@@ -346,7 +350,8 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             {
                 new SupplierPaymentAllocationLineRequest(0, 0, 100m),
                 new SupplierPaymentAllocationLineRequest(1, 0, 200m),
-            }
+            },
+            ClientRequestId: Guid.NewGuid()
         );
 
         var result = await handler.Handle(cmd, CancellationToken.None);
@@ -384,7 +389,8 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             {
                 new SupplierPaymentAllocationLineRequest(0, 0, 100m),
                 new SupplierPaymentAllocationLineRequest(0, 1, 200m),
-            }
+            },
+            ClientRequestId: Guid.NewGuid()
         );
 
         var result = await handler.Handle(cmd, CancellationToken.None);
@@ -433,7 +439,8 @@ public sealed class RegisterSupplierPaymentUseCasesTests
                 new SupplierPaymentAllocationLineRequest(0, 1, 50m),
                 new SupplierPaymentAllocationLineRequest(1, 0, 50m),
                 new SupplierPaymentAllocationLineRequest(1, 1, 100m),
-            }
+            },
+            ClientRequestId: Guid.NewGuid()
         );
 
         var result = await handler.Handle(cmd, CancellationToken.None);
@@ -463,7 +470,8 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             "   ",
             new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m) },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 100m) },
-            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) }
+            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) },
+            ClientRequestId: Guid.NewGuid()
         );
 
         var result = await handler.Handle(cmd, CancellationToken.None);
@@ -491,7 +499,8 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             null,
             new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m) },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 100m) },
-            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) }
+            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) },
+            ClientRequestId: Guid.NewGuid()
         );
 
         var result = await handler.Handle(cmd, CancellationToken.None);
@@ -519,7 +528,8 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             null,
             new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 150m) },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 150m) },
-            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 150m) }
+            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 150m) },
+            ClientRequestId: Guid.NewGuid()
         );
 
         var result = await handler.Handle(cmd, CancellationToken.None);
@@ -549,7 +559,8 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             null,
             new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m) },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 100m) },
-            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) }
+            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) },
+            ClientRequestId: Guid.NewGuid()
         );
 
         var result = await handler.Handle(cmd, CancellationToken.None);
@@ -576,7 +587,8 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             null,
             new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m) },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 100m) },
-            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) }
+            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) },
+            ClientRequestId: Guid.NewGuid()
         );
 
         var result = await handler.Handle(cmd, CancellationToken.None);
@@ -604,7 +616,8 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             null,
             new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 50m) },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 50m) },
-            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 50m) }
+            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 50m) },
+            ClientRequestId: Guid.NewGuid()
         );
 
         var result = await handler.Handle(cmd, CancellationToken.None);
@@ -632,7 +645,8 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             null,
             new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 50m) },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 50m) },
-            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 50m) }
+            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 50m) },
+            ClientRequestId: Guid.NewGuid()
         );
 
         var result = await handler.Handle(cmd, CancellationToken.None);
@@ -659,7 +673,8 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             null,
             new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m) },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 100m) },
-            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) }
+            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) },
+            ClientRequestId: Guid.NewGuid()
         );
 
         var result = await handler.Handle(cmd, CancellationToken.None);
@@ -687,7 +702,8 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             null,
             new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m) },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 100m) },
-            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) }
+            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) },
+            ClientRequestId: Guid.NewGuid()
         );
 
         var result = await handler.Handle(cmd, CancellationToken.None);
@@ -716,7 +732,8 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             null,
             new[] { new SupplierPaymentMethodLineRequest(missingMethodId, null, destination.Id, 100m) },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 100m) },
-            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) }
+            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) },
+            ClientRequestId: Guid.NewGuid()
         );
 
         var result = await handler.Handle(cmd, CancellationToken.None);
@@ -744,7 +761,8 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             null,
             new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m) },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 100m) },
-            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) }
+            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) },
+            ClientRequestId: Guid.NewGuid()
         );
 
         var result = await handler.Handle(cmd, CancellationToken.None);
@@ -774,7 +792,8 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             null,
             new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 300m) },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 250m) },
-            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 250m) }
+            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 250m) },
+            ClientRequestId: Guid.NewGuid()
         );
 
         var result = await handler.Handle(cmd, CancellationToken.None);
@@ -828,7 +847,8 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             "CHK-001",
             new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m) },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 100m) },
-            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) }
+            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) },
+            ClientRequestId: Guid.NewGuid()
         );
 
         var result = await handler.Handle(cmd, CancellationToken.None);
@@ -871,7 +891,8 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             null,
             new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m) },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 100m) },
-            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) }
+            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) },
+            ClientRequestId: Guid.NewGuid()
         );
 
         var result = await handler.Handle(cmd, CancellationToken.None);
@@ -898,7 +919,8 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             null,
             new[] { line },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, amount) },
-            new[] { new SupplierPaymentAllocationLineRequest(0, 0, amount) }
+            new[] { new SupplierPaymentAllocationLineRequest(0, 0, amount) },
+            ClientRequestId: Guid.NewGuid()
         );
 
     [Fact]
@@ -1219,7 +1241,8 @@ public sealed class RegisterSupplierPaymentUseCasesTests
                 {
                     new SupplierPaymentAllocationLineRequest(0, 0, 60m),
                     new SupplierPaymentAllocationLineRequest(1, 0, 60m),
-                }
+                },
+                ClientRequestId: Guid.NewGuid()
             ),
             CancellationToken.None
         );
@@ -1258,7 +1281,8 @@ public sealed class RegisterSupplierPaymentUseCasesTests
                 {
                     new SupplierPaymentAllocationLineRequest(0, 0, 80m),
                     new SupplierPaymentAllocationLineRequest(1, 0, 120m),
-                }
+                },
+                ClientRequestId: Guid.NewGuid()
             ),
             CancellationToken.None
         );
@@ -1354,7 +1378,8 @@ public sealed class RegisterSupplierPaymentUseCasesTests
                 ? []
                 : new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, applied) },
             payable is null || applied == 0 ? [] : new[] { new SupplierPaymentAllocationLineRequest(0, 0, applied) },
-            confirm
+            confirm,
+            ClientRequestId: Guid.NewGuid()
         );
 
     private (Mocks m, PaymentMethod method, CashRegister destination, AccountsPayable payable) ArrangeAdvance(
@@ -1486,7 +1511,7 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         var methods = new[] { new SupplierPaymentMethodLineRequest(Guid.NewGuid(), null, Guid.NewGuid(), 100m) };
 
         validator
-            .Validate(new RegisterSupplierPaymentCommand(SupplierId, new DateOnly(2026, 8, 28), 100m, null, methods, [], [], true))
+            .Validate(new RegisterSupplierPaymentCommand(SupplierId, new DateOnly(2026, 8, 28), 100m, null, methods, [], [], true, ClientRequestId: Guid.NewGuid()))
             .IsValid.Should().BeTrue();
         validator
             .Validate(
@@ -1497,7 +1522,8 @@ public sealed class RegisterSupplierPaymentUseCasesTests
                     null,
                     methods,
                     new[] { new SupplierPaymentApplicationLineRequest(Guid.NewGuid(), 120m) },
-                    new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) }
+                    new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) },
+                    ClientRequestId: Guid.NewGuid()
                 )
             )
             .IsValid.Should().BeFalse();

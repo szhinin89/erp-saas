@@ -1,8 +1,4 @@
-using System.Globalization;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+using ERP.Application.Common.Idempotency;
 using ERP.Application.Modules.Payables.UseCases;
 
 namespace ERP.Application.Modules.Caja.FundingRequests;
@@ -44,22 +40,16 @@ public sealed record CashFundingPaymentSnapshotV1(
 
 /// <summary>
 /// ZH-CASH-FUNDING-REQUEST-FOUNDATION-02E-B — conversión intención ↔ snapshot V1, representación
-/// canónica y huella. El hash se calcula SIEMPRE sobre la serialización canónica del objeto (orden
-/// de propiedades fijo, camelCase, sin espacios, decimales sin ceros de relleno), nunca sobre el
-/// texto leído de BD: jsonb normaliza claves/espacios, así que payload → snapshot → canónico
-/// reproduce exactamente la huella original.
+/// canónica y huella. El hash se calcula SIEMPRE sobre la serialización canónica del objeto
+/// (<see cref="CanonicalRequestFingerprint"/>: orden de propiedades fijo, camelCase, sin espacios,
+/// decimales sin ceros de relleno), nunca sobre el texto leído de BD: jsonb normaliza
+/// claves/espacios, así que payload → snapshot → canónico reproduce exactamente la huella original.
+/// Es también la huella del pago directo idempotente (ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01): la
+/// misma intención de pago tiene una sola representación canónica en todo el ERP.
 /// </summary>
 public static class CashFundingPaymentSnapshot
 {
     public const int CurrentVersion = 1;
-
-    private static readonly JsonSerializerOptions CanonicalOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = false,
-        DefaultIgnoreCondition = JsonIgnoreCondition.Never,
-        Converters = { new CanonicalDecimalConverter() },
-    };
 
     public static CashFundingPaymentSnapshotV1 FromIntent(RegisterSupplierPaymentCommand intent) =>
         new(
@@ -133,7 +123,7 @@ public static class CashFundingPaymentSnapshot
         );
 
     public static string Serialize(CashFundingPaymentSnapshotV1 snapshot) =>
-        JsonSerializer.Serialize(snapshot, CanonicalOptions);
+        CanonicalRequestFingerprint.Serialize(snapshot);
 
     public static CashFundingPaymentSnapshotV1 Deserialize(string payload, int payloadVersion)
     {
@@ -141,13 +131,13 @@ public static class CashFundingPaymentSnapshot
             throw new InvalidOperationException(
                 $"Versión de la intención de pago no soportada: {payloadVersion}."
             );
-        return JsonSerializer.Deserialize<CashFundingPaymentSnapshotV1>(payload, CanonicalOptions)
+        return CanonicalRequestFingerprint.Deserialize<CashFundingPaymentSnapshotV1>(payload)
             ?? throw new InvalidOperationException("La intención de pago guardada está vacía.");
     }
 
     /// <summary>SHA-256 (hex en mayúsculas, 64 caracteres) de la representación canónica.</summary>
     public static string ComputeHash(CashFundingPaymentSnapshotV1 snapshot) =>
-        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(Serialize(snapshot))));
+        CanonicalRequestFingerprint.Compute(snapshot);
 
     /// <summary>
     /// Caja objetivo única del snapshot: el Id si TODAS las líneas de efectivo apuntan a una sola
@@ -167,14 +157,4 @@ public static class CashFundingPaymentSnapshot
     /// <summary>Efectivo total pedido a una caja (Σ de sus líneas).</summary>
     public static decimal CashAmountFor(CashFundingPaymentSnapshotV1 snapshot, Guid cashRegisterId) =>
         snapshot.MethodLines.Where(l => l.CashRegisterId == cashRegisterId).Sum(l => l.Amount);
-
-    /// <summary>Decimales canónicos: mismo valor ⇒ mismo texto (80, 80.0 y 80.00 → "80").</summary>
-    private sealed class CanonicalDecimalConverter : JsonConverter<decimal>
-    {
-        public override decimal Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
-            reader.GetDecimal();
-
-        public override void Write(Utf8JsonWriter writer, decimal value, JsonSerializerOptions options) =>
-            writer.WriteRawValue(value.ToString("0.############################", CultureInfo.InvariantCulture));
-    }
 }

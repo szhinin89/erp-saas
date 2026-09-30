@@ -8,6 +8,12 @@ public interface ISupplierPaymentRepository
     Task<SupplierPayment?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default);
 
     /// <summary>
+    /// ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01 — pago ya registrado para esta intención del cliente
+    /// (índice único parcial <c>uq_supplier_payments_tenant_client_request_id</c>), o null.
+    /// </summary>
+    Task<SupplierPayment?> GetByClientRequestIdAsync(Guid tenantId, Guid clientRequestId, CancellationToken ct = default);
+
+    /// <summary>
     /// SUPPLIER-PAYMENTS-FRONTEND-15E — listado paginado para la pantalla de Pagos a Proveedores.
     /// Sin filtro por rango de fechas todavía (fuera de alcance de este ticket) — solo proveedor y
     /// estado, igual alcance mínimo que <c>PayablesController</c> necesitaba en su primera fase.

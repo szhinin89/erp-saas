@@ -429,6 +429,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
     private RegisterSupplierPaymentCommandHandler BuildHandler(ErpDbContext db, Guid? currentUserId = null) =>
         new(
             BuildRegistrar(db),
+            new SupplierPaymentRepository(db),
+            new SupplierCreditRepository(db, new FixedCurrentCompany(_companyId)),
             new UnitOfWork(db),
             new FixedCurrentTenant(_tenantId),
             new FixedCurrentCompany(_companyId),
@@ -537,7 +539,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             null,
             new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 300m) },
             new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m) },
-            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) }
+            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) },
+            ClientRequestId: Guid.NewGuid()
         );
 
         var result = await BuildHandler(db).Handle(cmd, CancellationToken.None);
@@ -611,7 +614,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             {
                 new SupplierPaymentAllocationLineRequest(0, 0, 100m),
                 new SupplierPaymentAllocationLineRequest(1, 0, 200m),
-            }
+            },
+            ClientRequestId: Guid.NewGuid()
         );
 
         var result = await BuildHandler(db).Handle(cmd, CancellationToken.None);
@@ -662,7 +666,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             {
                 new SupplierPaymentAllocationLineRequest(0, 0, 300m),
                 new SupplierPaymentAllocationLineRequest(0, 1, 200m),
-            }
+            },
+            ClientRequestId: Guid.NewGuid()
         );
 
         var result = await BuildHandler(db).Handle(cmd, CancellationToken.None);
@@ -721,7 +726,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                 new SupplierPaymentAllocationLineRequest(0, 1, 50m),
                 new SupplierPaymentAllocationLineRequest(1, 0, 50m),
                 new SupplierPaymentAllocationLineRequest(1, 1, 100m),
-            }
+            },
+            ClientRequestId: Guid.NewGuid()
         );
 
         var result = await BuildHandler(db).Handle(cmd, CancellationToken.None);
@@ -770,7 +776,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             null,
             new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 300m) },
             new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m) },
-            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) }
+            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) },
+            ClientRequestId: Guid.NewGuid()
         );
 
         var result = await BuildHandler(db).Handle(cmd, CancellationToken.None);
@@ -814,7 +821,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     null,
                     new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 300m) },
                     new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m) },
-                    new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) }
+                    new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) },
+                    ClientRequestId: Guid.NewGuid()
                 ),
                 CancellationToken.None
             );
@@ -883,7 +891,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     null,
                     new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 100m) },
                     new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 100m) },
-                    new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) }
+                    new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) },
+                    ClientRequestId: Guid.NewGuid()
                 ),
                 CancellationToken.None
             );
@@ -932,7 +941,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     {
                         new SupplierPaymentAllocationLineRequest(0, 0, 100m),
                         new SupplierPaymentAllocationLineRequest(1, 0, 200m),
-                    }
+                    },
+                    ClientRequestId: Guid.NewGuid()
                 ),
                 CancellationToken.None
             );
@@ -977,7 +987,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     null,
                     new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 300m) },
                     new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m) },
-                    new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) }
+                    new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) },
+                    ClientRequestId: Guid.NewGuid()
                 ),
                 CancellationToken.None
             );
@@ -1019,7 +1030,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     null,
                     new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 300m) },
                     new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m) },
-                    new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) }
+                    new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) },
+                    ClientRequestId: Guid.NewGuid()
                 ),
                 CancellationToken.None
             );
@@ -1081,7 +1093,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     null,
                     new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 300m) },
                     new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m) },
-                    new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) }
+                    new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) },
+                    ClientRequestId: Guid.NewGuid()
                 ),
                 CancellationToken.None
             );
@@ -1128,7 +1141,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     null,
                     new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 100m) },
                     new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 100m) },
-                    new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) }
+                    new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) },
+                    ClientRequestId: Guid.NewGuid()
                 ),
                 CancellationToken.None
             );
@@ -1170,7 +1184,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     null,
                     new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 300m) },
                     new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m) },
-                    new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) }
+                    new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) },
+                    ClientRequestId: Guid.NewGuid()
                 ),
                 CancellationToken.None
             );
@@ -1209,7 +1224,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     null,
                     new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 300m) },
                     new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m) },
-                    new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) }
+                    new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) },
+                    ClientRequestId: Guid.NewGuid()
                 ),
                 CancellationToken.None
             );
@@ -1331,7 +1347,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                 null,
                 new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 300m) },
                 new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m) },
-                new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) }
+                new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) },
+                ClientRequestId: Guid.NewGuid()
             ),
             CancellationToken.None
         );
@@ -1382,7 +1399,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                 {
                     new SupplierPaymentAllocationLineRequest(0, 0, 40m),
                     new SupplierPaymentAllocationLineRequest(1, 0, 60m),
-                }
+                },
+                ClientRequestId: Guid.NewGuid()
             ),
             CancellationToken.None
         );
@@ -1437,7 +1455,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     ),
                 },
                 new[] { new SupplierPaymentApplicationLineRequest(_expenseInstallmentId, 200m) },
-                new[] { new SupplierPaymentAllocationLineRequest(0, 0, 200m) }
+                new[] { new SupplierPaymentAllocationLineRequest(0, 0, 200m) },
+                ClientRequestId: Guid.NewGuid()
             ),
             CancellationToken.None
         );
@@ -1492,7 +1511,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                 null,
                 new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 120m) },
                 new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 120m) },
-                new[] { new SupplierPaymentAllocationLineRequest(0, 0, 120m) }
+                new[] { new SupplierPaymentAllocationLineRequest(0, 0, 120m) },
+                ClientRequestId: Guid.NewGuid()
             ),
             CancellationToken.None
         );
@@ -1534,7 +1554,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                 {
                     new SupplierPaymentAllocationLineRequest(0, 0, 80m),
                     new SupplierPaymentAllocationLineRequest(1, 0, 120m),
-                }
+                },
+                ClientRequestId: Guid.NewGuid()
             ),
             CancellationToken.None
         );
@@ -1564,7 +1585,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             null,
             new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, amount) },
             new[] { new SupplierPaymentApplicationLineRequest(installmentId, amount) },
-            new[] { new SupplierPaymentAllocationLineRequest(0, 0, amount) }
+            new[] { new SupplierPaymentAllocationLineRequest(0, 0, amount) },
+            ClientRequestId: Guid.NewGuid()
         );
 
     /// <summary>
@@ -1829,7 +1851,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             new[] { new SupplierPaymentMethodLineRequest(_transferMethodId, _companyBankAccountId, null, total, $"OP-{Guid.NewGuid():N}"[..12], TransactionDate: paymentDate) },
             new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, applied) },
             new[] { new SupplierPaymentAllocationLineRequest(0, 0, applied) },
-            confirm
+            confirm,
+            ClientRequestId: Guid.NewGuid()
         );
 
     [Fact]
@@ -1915,7 +1938,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     new SupplierPaymentAllocationLineRequest(0, 0, 100m),
                     new SupplierPaymentAllocationLineRequest(1, 0, 200m),
                 },
-                ConfirmUnappliedAmount: true
+                ConfirmUnappliedAmount: true,
+                ClientRequestId: Guid.NewGuid()
             ),
             CancellationToken.None
         );
@@ -1958,7 +1982,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                 new[] { new SupplierPaymentMethodLineRequest(_transferMethodId, _companyBankAccountId, null, 200m, "OP-ANT", TransactionDate: paymentDate) },
                 [],
                 [],
-                ConfirmUnappliedAmount: true
+                ConfirmUnappliedAmount: true,
+                ClientRequestId: Guid.NewGuid()
             ),
             CancellationToken.None
         );
@@ -1992,7 +2017,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                 new[] { new SupplierPaymentMethodLineRequest(_transferMethodId, _companyBankAccountId, null, 200m, "OP-X", TransactionDate: paymentDate) },
                 [],
                 [],
-                ConfirmUnappliedAmount: true
+                ConfirmUnappliedAmount: true,
+                ClientRequestId: Guid.NewGuid()
             ),
             CancellationToken.None
         );
@@ -2027,7 +2053,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                 new[] { new SupplierPaymentMethodLineRequest(_transferMethodId, _companyBankAccountId, null, 200m, "OP-Y", TransactionDate: paymentDate) },
                 [],
                 [],
-                ConfirmUnappliedAmount: true
+                ConfirmUnappliedAmount: true,
+                ClientRequestId: Guid.NewGuid()
             ),
             CancellationToken.None
         );

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { cajaService } from "../api/cajaService";
@@ -18,6 +18,7 @@ import { formatApiRequestError } from "../../lib/apiError";
 import { message } from "../../../lib/messages";
 import { formatMoneyWithSymbol } from "../../../lib/sanitizers";
 import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
+import { useClientRequestId } from "../../../lib/idempotency/useClientRequestId";
 
 export type UseManualCashMovementFlowArgs = {
   /** Id de la sesión de caja contra la que se registra el movimiento — null si no hay ninguna
@@ -119,6 +120,8 @@ export function useManualCashMovementFlow({
   }, [selectedMovementType]);
 
   const [movementModalOpen, setMovementModalOpen] = useState(false);
+  const submittingRef = useRef(false);
+  const clientRequest = useClientRequestId();
 
   const openMovementModal = useCallback(() => {
     // Defensa en profundidad (TREASURY-CASH-MANUAL-MOVEMENTS-PERMISSION-06): aunque el botón que
@@ -144,7 +147,19 @@ export function useManualCashMovementFlow({
   // inmediato — se confirma antes de ejecutar (tipo, concepto y monto), con variant warning
   // para ingreso y danger para egreso/retiro (mayor riesgo de descuadre).
   const handleRecordMovement = movementForm.handleSubmit(async (data) => {
-    if (!cashSessionId || saving) return;
+    // ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01 — guarda síncrona desde el primer Enter/clic: `saving`
+    // (estado de React) recién se ve en el siguiente render, y la confirmación es asíncrona. Solo
+    // UX: la garantía de un único movimiento es el ClientRequestId en el servidor.
+    if (!cashSessionId || saving || submittingRef.current) return;
+    submittingRef.current = true;
+    try {
+      await confirmAndRecord(cashSessionId, data);
+    } finally {
+      submittingRef.current = false;
+    }
+  });
+
+  const confirmAndRecord = async (sessionId: string, data: RecordMovementFormValues) => {
 
     const typeLabel =
       movementTypes.find((mt) => mt.value === data.movementType)?.label ?? data.movementType;
@@ -173,12 +188,17 @@ export function useManualCashMovementFlow({
     setSaveError("");
     setSaving(true);
     try {
-      await cajaService.recordMovement(cashSessionId, {
+      const movement = {
         movementType: data.movementType,
         reasonId: data.reasonId,
         amount: data.amount,
         description: data.description,
+      };
+      await cajaService.recordMovement(sessionId, {
+        ...movement,
+        clientRequestId: clientRequest.idFor({ sessionId, ...movement }),
       });
+      clientRequest.complete();
       movementForm.reset(emptyMovementForm());
       setMovementModalOpen(false);
       await onRecorded?.();
@@ -196,7 +216,7 @@ export function useManualCashMovementFlow({
       message.error(errorMessage);
     }
     setSaving(false);
-  });
+  };
 
   return {
     allowManualMovements,

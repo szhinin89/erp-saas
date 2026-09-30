@@ -1,7 +1,11 @@
 using ERP.Application.Common;
+using ERP.Application.Modules.Caja.FundingRequests;
 using ERP.Application.Modules.Payables.Services;
+using ERP.Domain.Common;
 using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Payables.Entities;
+using ERP.Domain.Modules.Payables.Interfaces;
+using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentValidation;
 using MediatR;
 
@@ -60,7 +64,8 @@ public sealed record RegisterSupplierPaymentRequest(
     IReadOnlyList<SupplierPaymentMethodLineRequest> MethodLines,
     IReadOnlyList<SupplierPaymentApplicationLineRequest>? ApplicationLines,
     IReadOnlyList<SupplierPaymentAllocationLineRequest>? Allocations,
-    bool ConfirmUnappliedAmount = false
+    bool ConfirmUnappliedAmount = false,
+    Guid ClientRequestId = default
 );
 
 // ── DTO de salida ─────────────────────────────────────────────────────────
@@ -164,7 +169,8 @@ public sealed record RegisterSupplierPaymentCommand(
     IReadOnlyList<SupplierPaymentMethodLineRequest> MethodLines,
     IReadOnlyList<SupplierPaymentApplicationLineRequest> ApplicationLines,
     IReadOnlyList<SupplierPaymentAllocationLineRequest> Allocations,
-    bool ConfirmUnappliedAmount = false
+    bool ConfirmUnappliedAmount = false,
+    Guid ClientRequestId = default
 ) : IRequest<Result<SupplierPaymentDto>>, IBranchScopedRequest;
 
 // ── Validators ──────────────────────────────────────────────────────────
@@ -242,17 +248,42 @@ public sealed class RegisterSupplierPaymentCommandValidator
     }
 }
 
+/// <summary>
+/// ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01 — el pago DIRECTO exige la intención del cliente. Validador
+/// separado a propósito: <see cref="RegisterSupplierPaymentCommandValidator"/> valida la intención
+/// de pago y también la reutiliza la solicitud de efectivo (que tiene su propio ClientRequestId).
+/// </summary>
+public sealed class RegisterSupplierPaymentClientRequestValidator : AbstractValidator<RegisterSupplierPaymentCommand>
+{
+    public RegisterSupplierPaymentClientRequestValidator() =>
+        RuleFor(x => x.ClientRequestId).NotEmpty().WithMessage("El identificador de idempotencia es obligatorio.");
+}
+
 // ── Handler ─────────────────────────────────────────────────────────────
 
 /// <summary>
 /// Pago directo: el usuario actual prepara y ejecuta. ZH-CASH-FUNDING-REQUEST-FOUNDATION-02E-B —
 /// solo gobierna la transacción; todas las reglas viven en <see cref="ISupplierPaymentRegistrar"/>
 /// (núcleo compartido con la ejecución de solicitudes de efectivo), sin cambios de comportamiento.
+/// <para>
+/// ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01 — una intención (<see cref="RegisterSupplierPaymentCommand.ClientRequestId"/>)
+/// produce como máximo un pago: mismo id + misma huella → el pago ya registrado, sin volver a
+/// aplicar CxP, mover caja, crear anticipo ni postear; mismo id + otra huella → Conflict. La
+/// barrera definitiva es el índice único (TenantId, ClientRequestId). Si el intento falla por
+/// cualquier motivo (índice único, cuota ya pagada por el ganador mientras esperaba el lock,
+/// comprobante ya usado) y la intención quedó registrada por un reintento concurrente, la
+/// transacción perdedora se revierte completa y se responde con el pago ganador.
+/// </para>
 /// </summary>
 public sealed class RegisterSupplierPaymentCommandHandler
     : IRequestHandler<RegisterSupplierPaymentCommand, Result<SupplierPaymentDto>>
 {
+    internal const string ClientRequestConflict =
+        "Ya existe un pago con este identificador pero con datos distintos.";
+
     private readonly ISupplierPaymentRegistrar _registrar;
+    private readonly ISupplierPaymentRepository _payments;
+    private readonly ISupplierCreditRepository _supplierCredits;
     private readonly IUnitOfWork _uow;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
@@ -261,6 +292,8 @@ public sealed class RegisterSupplierPaymentCommandHandler
 
     public RegisterSupplierPaymentCommandHandler(
         ISupplierPaymentRegistrar registrar,
+        ISupplierPaymentRepository payments,
+        ISupplierCreditRepository supplierCredits,
         IUnitOfWork uow,
         ICurrentTenant t,
         ICurrentCompany c,
@@ -269,6 +302,8 @@ public sealed class RegisterSupplierPaymentCommandHandler
     )
     {
         _registrar = registrar;
+        _payments = payments;
+        _supplierCredits = supplierCredits;
         _uow = uow;
         _t = t;
         _c = c;
@@ -282,6 +317,15 @@ public sealed class RegisterSupplierPaymentCommandHandler
     )
     {
         var userId = _u.UserId;
+        var key = new ClientRequestKey(
+            cmd.ClientRequestId,
+            CashFundingPaymentSnapshot.ComputeHash(CashFundingPaymentSnapshot.FromIntent(cmd))
+        );
+
+        // Camino rápido del replay: ningún efecto, ni transacción.
+        var existing = await _payments.GetByClientRequestIdAsync(_t.TenantId, key.Id, ct);
+        if (existing is not null)
+            return await ReplayAsync(existing, key, ct);
 
         // Rechazo sin ningún efecto (ni transacción) para las reglas que no requieren locks (02C).
         var intentError = await _registrar.PrevalidateAsync(cmd, ct);
@@ -289,31 +333,61 @@ public sealed class RegisterSupplierPaymentCommandHandler
             return Result<SupplierPaymentDto>.ValidationFailure(intentError);
 
         await _uow.BeginTransactionAsync(ct);
+        Result<SupplierPaymentRegistration> registration;
         try
         {
-            var registration = await _registrar.RegisterAsync(
+            registration = await _registrar.RegisterAsync(
                 cmd,
                 new SupplierPaymentRegistrationContext(_t.TenantId, _c.CompanyId, _b.BranchId, userId, userId),
-                ct
+                ct,
+                key
             );
-            if (!registration.IsSuccess)
-            {
+            if (registration.IsSuccess)
+                await _uow.CommitAsync(ct);
+            else
                 await _uow.RollbackAsync(ct);
-                return Result<SupplierPaymentDto>.Failure(registration.Error!, registration.Code);
-            }
-
-            await _uow.CommitAsync(ct);
-            var (payment, supplierCreditId) = registration.Value!;
-            return Result<SupplierPaymentDto>.Success(
-                SupplierPaymentDtoMapper.ToDto(payment, supplierCreditId: supplierCreditId),
-                ApiResponseCodes.Common.Created
-            );
         }
         catch
         {
             await _uow.RollbackAsync(ct);
-            throw;
+            var raced = await _payments.GetByClientRequestIdAsync(_t.TenantId, key.Id, ct);
+            if (raced is null)
+                throw;
+            return await ReplayAsync(raced, key, ct);
         }
+
+        if (!registration.IsSuccess)
+        {
+            var raced = await _payments.GetByClientRequestIdAsync(_t.TenantId, key.Id, ct);
+            return raced is not null
+                ? await ReplayAsync(raced, key, ct)
+                : Result<SupplierPaymentDto>.Failure(registration.Error!, registration.Code);
+        }
+
+        var (payment, supplierCreditId) = registration.Value!;
+        return Result<SupplierPaymentDto>.Success(
+            SupplierPaymentDtoMapper.ToDto(payment, supplierCreditId: supplierCreditId),
+            ApiResponseCodes.Common.Created
+        );
+    }
+
+    /// <summary>Mismo request → la misma respuesta que la creación original; request distinto → Conflict.</summary>
+    private async Task<Result<SupplierPaymentDto>> ReplayAsync(
+        SupplierPayment existing,
+        ClientRequestKey key,
+        CancellationToken ct
+    )
+    {
+        if (!key.Matches(existing.RequestPayloadHash))
+            return Result<SupplierPaymentDto>.Conflict(ClientRequestConflict);
+
+        var supplierCreditId = existing.UnappliedAmount > 0
+            ? await _supplierCredits.GetIdBySourceSupplierPaymentIdAsync(_t.TenantId, existing.Id, ct)
+            : null;
+        return Result<SupplierPaymentDto>.Success(
+            SupplierPaymentDtoMapper.ToDto(existing, supplierCreditId: supplierCreditId),
+            ApiResponseCodes.Common.Created
+        );
     }
 }
 

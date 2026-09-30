@@ -27,6 +27,7 @@ import {
 } from "../../../schemas/finance/registerCollectionSchema";
 import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { todayIso } from "../../../lib/formatters/dateFormatters";
+import { useClientRequestId } from "../../../lib/idempotency/useClientRequestId";
 
 interface Props {
   open: boolean;
@@ -53,6 +54,8 @@ export function RegisterCollectionModal({
   const [bankAccounts, setBankAccounts] = useState<CompanyBankAccountDto[]>([]);
   const [cashRegisters, setCashRegisters] = useState<CashRegisterDto[]>([]);
   const submittingRef = useRef(false);
+  // ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01 — mismo cobro reintentado = mismo ClientRequestId.
+  const clientRequest = useClientRequestId();
 
   const maxAmount = receivable?.balanceDue ?? 0;
   const {
@@ -113,7 +116,7 @@ export function RegisterCollectionModal({
       : null;
     const cashRegisterId = destination.startsWith("cash:") ? destination.slice(5) : null;
     try {
-      await paymentService.registerCollection({
+      const collection = {
         customerId: receivable.customerId,
         amount: values.amount,
         paymentDate: todayIso(),
@@ -128,7 +131,12 @@ export function RegisterCollectionModal({
             appliedAmount: values.amount,
           },
         ],
+      };
+      await paymentService.registerCollection({
+        ...collection,
+        clientRequestId: clientRequest.idFor(collection),
       });
+      clientRequest.complete();
       message.success("Cobro registrado correctamente.");
       onRegistered();
       onClose();

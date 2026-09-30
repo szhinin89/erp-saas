@@ -814,6 +814,7 @@ public sealed class CajaVentasEndToEndTests : IClassFixture<CajaVentasFlowFixtur
                 reasonId,
                 amount = 15m,
                 description = "Ingreso E2E permiso granular",
+                clientRequestId = Guid.NewGuid(),
             };
 
         // ── 1) Usuario SIN caja.record → 403 (el permiso se evalúa antes que la propiedad) ──

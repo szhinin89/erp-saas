@@ -91,6 +91,9 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
         public Task<SupplierPayment?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default) =>
             Task.FromResult(Store.FirstOrDefault(p => p.TenantId == tenantId && p.Id == id));
 
+        public Task<SupplierPayment?> GetByClientRequestIdAsync(Guid tenantId, Guid clientRequestId, CancellationToken ct = default) =>
+            Task.FromResult(Store.FirstOrDefault(p => p.TenantId == tenantId && p.ClientRequestId == clientRequestId));
+
         public Task<(IReadOnlyList<SupplierPayment> Items, int Total)> SearchAsync(
             Guid tenantId, Guid companyId, Guid? supplierId, SupplierPaymentStatus? status, int page, int pageSize,
             CancellationToken ct = default

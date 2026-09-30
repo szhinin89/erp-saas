@@ -254,6 +254,23 @@ Declarar `[ProducesResponseType]` por cada status que aplique.
 
 ---
 
+## Idempotencia de comandos financieros creadores de dinero (ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01)
+
+Todo comando que **crea** un efecto económico (pago a proveedor, cobro de CxC, movimiento manual de caja, solicitud de efectivo, aplicación/reembolso de crédito de proveedor) sigue una sola convención. Una intención del usuario produce **como máximo un** efecto económico, aunque haya doble clic, Enter repetido, reintento, timeout o requests concurrentes. El estado `saving` de la UI no cuenta como garantía.
+
+| Pieza | Regla |
+|---|---|
+| Identidad | `ClientRequestId` (`Guid`, obligatorio, validador `NotEmpty`) = UNA intención. Lo genera el frontend con `useClientRequestId` (`src/lib/idempotency`): el mismo id mientras el payload sea el mismo; se libera tras el éxito. |
+| Huella | SHA-256 de la representación canónica V1 del request (`CanonicalRequestFingerprint`: record versionado solo con datos del usuario; nunca tenant/empresa/actor). El pago a proveedor usa el snapshot canónico ya existente de `CashFundingPaymentSnapshot`. |
+| Persistencia | `client_request_id` + `request_payload_hash` en el agregado creado; índice **UNIQUE** `(tenant_id, client_request_id)` (parcial `WHERE client_request_id IS NOT NULL` si hay filas históricas o creadas por otra vía). Value object `ClientRequestKey` (set-once vía `BindClientRequest`). |
+| Handler | Un solo camino: lectura por clave (camino rápido, sin efectos) → negocio en UNA transacción (o `SaveChanges` atómico) → si el intento falla por **cualquier** motivo (índice único, saldo ya consumido por el ganador, lock) y la clave ya existe, se responde el documento ganador. Nunca `Exists` → `Insert` como única barrera. |
+| Semántica | Misma clave + misma huella → el documento original, con el **mismo** status y cuerpo que la creación (201), sin volver a aplicar CxP/CxC, mover caja, postear ni encolar outbox. Misma clave + huella distinta → `409 CONFLICT`. Clave distinta → nueva operación legítima. Un rechazo no consume la clave. |
+| Evidencia | Tests HTTP + PostgreSQL reales (`FinancialCommandIdempotencyTests`): secuencial, concurrente, payload distinto, clave distinta, fallo previo, autorización; se cuentan documento, aplicaciones, `CashMovement`, `JournalEntry`, outbox y saldos. |
+
+Un comando nuevo de este tipo sin `ClientRequestId` + índice único es un defecto bloqueante de PR.
+
+---
+
 ## Estructura por módulo
 
 ```
