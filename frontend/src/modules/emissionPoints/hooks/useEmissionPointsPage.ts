@@ -4,8 +4,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   emissionPointsService,
   type EmissionPointListItemDto,
-  type EstablishmentLookupDto,
 } from "../api/emissionPointsService";
+import {
+  establishmentLookupFacade,
+  type EstablishmentLookupDto,
+} from "../../establishments/facades/establishmentLookupFacade";
 import {
   emissionPointsPageSchema,
   emptyEmissionPointsPageForm,
@@ -79,7 +82,7 @@ export function useEmissionPointsPage() {
   const loadEstablishments = useCallback(async () => {
     setLoadingEstablishments(true);
     try {
-      setEstablishments(await emissionPointsService.establishmentLookups());
+      setEstablishments(await establishmentLookupFacade.lookups());
     } catch {
       // selector mostrará vacío
     } finally {

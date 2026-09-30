@@ -3,8 +3,8 @@ import type {
   RetentionEligibilityResult,
   RetentionIntentLineRequest,
   RetentionIntentRequest,
-  RetentionTaxType,
 } from "../api/expenseDocumentService";
+import type { RetentionTaxType } from "../../retentions/facades/retentionDocumentFacade";
 
 /**
  * RETENTIONS-UI-EXPENSES-01F — estado de captura de `RetentionIntent` en el formulario de

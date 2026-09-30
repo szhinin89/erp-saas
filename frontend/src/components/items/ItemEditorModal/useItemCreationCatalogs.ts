@@ -1,87 +1,83 @@
 import { useAsync } from "../../../hooks/useAsync";
-import { apiGet } from "../../../modules/lib/apiEnvelope";
 import { useItemTypeOptions } from "../../../modules/items/hooks/useItemTypeOptions";
 import {
+  barcodeTypeService,
+  brandService,
   sriLookupService,
+  type BarcodeTypeLookup,
+  type BrandDto,
+  type SriIceRateLookup,
+  type SriUomLookup,
   type SriVatRateLookup,
 } from "../../../modules/items/catalog/api/catalogService";
+import {
+  categoryNodeService,
+  type CategoryNodeDto,
+} from "../../../modules/items/catalog/api/categoryNodeService";
 
-// CONTRACT: mismos catálogos ya consumidos por ItemFormTabs.tsx (formulario completo de Items) —
-// no se crea un segundo contrato, solo se reutilizan los GET ya existentes.
-export interface BrandOption {
-  id: string;
-  name: string;
-}
-interface CategoryNodeApi {
-  id: string;
-  name: string;
-  path: string;
-  parentId: string | null;
-  isActive: boolean;
-}
+// CONTRACT: única carga de catálogos de un Item — cada GET pasa por el service canónico del owner
+// (items/catalog: brandService, categoryNodeService, sriLookupService, barcodeTypeService); aquí
+// solo vive la normalización que la UI necesita (categorías hoja con ruta legible).
+export type BrandOption = Pick<BrandDto, "id" | "name">;
 export interface CategoryOption {
   id: string;
   name: string;
 }
-export interface UomOption {
-  code: string;
-  name: string;
-  abbrev: string | null;
-}
-export interface BarcodeTypeOption {
-  code: string;
-  name: string;
-}
+export type UomOption = SriUomLookup;
+export type BarcodeTypeOption = BarcodeTypeLookup;
 
 /**
- * Catálogos necesarios para crear un Item (tipo, marca, categoría hoja, UOM SRI, tipo de código de
- * barras e IVA). Única carga compartida por el editor individual (`ItemEditorForm`) y la creación
- * masiva de Compras (COMPRAS-METODO-ZH-01B) — ambos consumen exactamente los mismos endpoints.
+ * Categorías hoja activas con su ruta completa "Línea > Categoría > Subcategoría" (desde
+ * `path`, ids separados por "/"): la creación/edición de Items exige un nodo final sin hijos, y la
+ * ruta evita ambigüedad entre hojas del mismo nombre en ramas distintas.
  */
-export function useItemCreationCatalogs() {
-  const itemTypesState = useItemTypeOptions();
-
-  const brandsState = useAsync(() =>
-    apiGet<BrandOption[]>("/api/v1/catalog/brands").catch(
-      () => [] as BrandOption[],
-    ),
-  );
-
-  const categoriesState = useAsync(() =>
-    apiGet<{ nodes: CategoryNodeApi[] }>(
-      "/api/v1/catalog/category-nodes",
-    ).catch(() => ({ nodes: [] })),
-  );
-  const allNodes = categoriesState.data?.nodes ?? [];
-  const nodesById = new Map(allNodes.map((n) => [n.id, n]));
+export function toLeafCategoryOptions(nodes: CategoryNodeDto[]): CategoryOption[] {
+  const nodesById = new Map(nodes.map((n) => [n.id, n]));
   const parentIds = new Set(
-    allNodes
+    nodes
       .filter((n) => n.isActive)
       .map((n) => n.parentId)
       .filter(Boolean),
   );
-  const breadcrumb = (node: CategoryNodeApi) =>
+  const breadcrumb = (node: CategoryNodeDto) =>
     node.path
       .split("/")
       .filter(Boolean)
       .map((id) => nodesById.get(id)?.name)
       .filter(Boolean)
       .join(" > ") || node.name;
-  // Solo categorías hoja activas: la creación de Items exige un nodo final sin hijos.
-  const categoryOptions: CategoryOption[] = allNodes
+  return nodes
     .filter((n) => n.isActive && !parentIds.has(n.id))
     .map((n) => ({ id: n.id, name: breadcrumb(n) }));
+}
+
+/**
+ * Catálogos necesarios para crear/editar un Item (tipo, marca, categoría hoja, UOM SRI, tipo de
+ * código de barras, IVA e ICE). Única carga compartida por el formulario completo de Items
+ * (`ItemFormTabs`), el editor individual (`ItemEditorForm`) y la creación masiva de Compras
+ * (COMPRAS-METODO-ZH-01B). Un catálogo que falla se expone vacío (el formulario sigue usable).
+ */
+export function useItemCreationCatalogs() {
+  const itemTypesState = useItemTypeOptions();
+
+  const brandsState = useAsync(() =>
+    brandService.list().catch(() => [] as BrandDto[]),
+  );
+
+  const categoriesState = useAsync(() =>
+    categoryNodeService
+      .getTree()
+      .then((tree) => tree.nodes)
+      .catch(() => [] as CategoryNodeDto[]),
+  );
+  const categoryOptions = toLeafCategoryOptions(categoriesState.data ?? []);
 
   const uomState = useAsync(() =>
-    apiGet<UomOption[]>("/api/v1/catalog/sri-uom").catch(
-      () => [] as UomOption[],
-    ),
+    sriLookupService.uoms().catch(() => [] as SriUomLookup[]),
   );
 
   const barcodeTypeState = useAsync(() =>
-    apiGet<BarcodeTypeOption[]>("/api/v1/catalog/barcode-types").catch(
-      () => [] as BarcodeTypeOption[],
-    ),
+    barcodeTypeService.list().catch(() => [] as BarcodeTypeLookup[]),
   );
 
   // Único catálogo de IVA — opciones del selector y porcentaje de referencia (misma fuente).
@@ -90,11 +86,15 @@ export function useItemCreationCatalogs() {
   );
   const vatRateOptions = vatRatesState.data ?? [];
 
+  const iceRatesState = useAsync(() =>
+    sriLookupService.iceRates().catch(() => [] as SriIceRateLookup[]),
+  );
+
   return {
     itemTypesState,
     itemTypeOptions: itemTypesState.data ?? [],
     brandsState,
-    brandOptions: brandsState.data ?? [],
+    brandOptions: (brandsState.data ?? []) as BrandOption[],
     categoriesState,
     categoryOptions,
     uomState,
@@ -104,6 +104,8 @@ export function useItemCreationCatalogs() {
     vatRatesState,
     vatRateOptions,
     vatRateByCode: new Map(vatRateOptions.map((v) => [v.code, v])),
+    iceRatesState,
+    iceRateOptions: iceRatesState.data ?? [],
     ready:
       itemTypesState.data != null &&
       brandsState.data != null &&

@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
-import { apiPost, apiGet } from "../../lib/apiEnvelope";
+import { setupService } from "../api/setupService";
 import { formatApiRequestError } from "../../lib/apiError";
 import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 import "./LoginPage.css";
@@ -31,7 +31,6 @@ const setupSchema = z.object({
 
 type SetupFormValues = z.infer<typeof setupSchema>;
 
-type SetupStatus = { isInitialized: boolean; adminEmail?: string | null };
 
 export function SetupPage() {
   const navigate = useNavigate();
@@ -58,7 +57,8 @@ export function SetupPage() {
   });
 
   useState(() => {
-    void apiGet<SetupStatus>("/api/v1/setup/status")
+    void setupService
+      .getStatus()
       .then((status) => {
         if (status?.isInitialized) {
           setAlreadyDone(true);
@@ -73,7 +73,7 @@ export function SetupPage() {
   const onValid = async (form: SetupFormValues) => {
     setError("");
     try {
-      await apiPost("/api/v1/setup/admin", {
+      await setupService.createInitialAdmin({
         username: form.username.trim().toLowerCase(),
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),

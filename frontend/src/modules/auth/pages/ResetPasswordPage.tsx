@@ -2,8 +2,7 @@ import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { api } from "../../lib/api";
-import type { ApiResponse } from "../../../types/api";
+import { authService } from "../api/authService";
 import { useI18n } from "../../../i18n/i18n";
 import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
@@ -65,7 +64,7 @@ export function ResetPasswordPage() {
       };
       if (tenantId) body.tenantId = tenantId;
 
-      await api.post<ApiResponse<object>>("/api/v1/auth/reset-password", body);
+      await authService.resetPassword(body);
       setSuccess(t("reset.success"));
       setTimeout(() => navigate("/login"), 900);
     } catch (err: unknown) {

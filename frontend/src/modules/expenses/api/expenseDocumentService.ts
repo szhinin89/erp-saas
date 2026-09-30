@@ -14,11 +14,10 @@ export type ExpenseStatus = "Draft" | "Confirmed" | "Cancelled";
 // (System.Text.Json), con enums como string vía JsonStringEnumConverter registrado
 // en ERP.API/Program.cs — nunca se envía TenantId/CompanyId/BranchId en el body.
 
-/** RetentionTaxType (backend) — nombres de enum tal cual, sin traducir en el contrato de API. */
-export type RetentionTaxType = "Vat" | "Income";
-
-/** RetentionStatus (backend). */
-export type RetentionStatus = "Draft" | "Issued" | "Cancelled";
+import type {
+  RetentionDocumentDto,
+  RetentionTaxType,
+} from "../../retentions/facades/retentionDocumentFacade";
 
 /**
  * RETENTIONS-SUPPLIER-DEFAULTS-DYNAMIC-01 — reemplaza los antiguos
@@ -72,50 +71,6 @@ export interface RetentionIntentRequest {
   emissionPointId?: string | null;
   issueDate?: string | null;
   lines?: RetentionIntentLineRequest[] | null;
-}
-
-export interface RetentionDocumentLineDto {
-  id: string;
-  taxType: RetentionTaxType;
-  retentionCode: string;
-  baseAmount: number;
-  retentionRate: number;
-  retainedAmount: number;
-  description: string | null;
-  /** RETENTIONS-TAX-COMPONENT-MODEL-02B — snapshot del texto del código (nulo en líneas emitidas antes de esta fase). */
-  retentionCodeDescription?: string | null;
-}
-
-export interface RetentionDocumentDto {
-  id: string;
-  companyId: string;
-  branchId: string;
-  sourceDocumentType: string;
-  sourceDocumentId: string;
-  subjectBusinessPartnerId: string;
-  emissionPointId: string;
-  retentionNumber: string | null;
-  issueDate: string | null;
-  status: RetentionStatus;
-  totalRetainedVat: number;
-  totalRetainedIncome: number;
-  totalRetained: number;
-  cancelReason: string | null;
-  cancelledAt: string | null;
-  cancelledBy: string | null;
-  lines: RetentionDocumentLineDto[];
-  /**
-   * RETENTIONS-TAX-COMPONENT-MODEL-02B — periodo fiscal `mm/aaaa` (derivado, nulo en Draft) y
-   * snapshot del documento sustento. Todos nulos en retenciones emitidas antes de esta fase.
-   */
-  fiscalPeriod?: string | null;
-  sourceDocumentSriTypeCode?: string | null;
-  sourceDocumentNumber?: string | null;
-  sourceDocumentIssueDate?: string | null;
-  sourceDocumentAuthorizationNumber?: string | null;
-  sourceDocumentTaxSupportCode?: string | null;
-  sourceDocumentSubtotal?: number | null;
-  sourceDocumentTotal?: number | null;
 }
 
 export interface ExpenseLineDto {

@@ -5,13 +5,16 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import type {
   SalesInvoiceDto,
   SalesListItemDto,
-  PaymentMethodDto,
-  PaymentMethodDetailType,
   CardDetailInput,
   TransferDetailInput,
   ChequeDetailInput,
 } from "../api/salesService";
 import { salesService } from "../api/salesService";
+import {
+  paymentMethodService,
+  type PaymentMethodDto,
+  type PaymentMethodDetailType,
+} from "../api/paymentMethodService";
 import { warehouseLookupFacade } from "../../inventory/facades/warehouseLookupFacade";
 import type { WarehouseDto } from "../../inventory/facades/warehouseLookupFacade";
 import { stockLookupFacade } from "../../inventory/facades/stockLookupFacade";
@@ -665,8 +668,8 @@ export function useSalesPage() {
           .list()
           .then(setPaymentTermsList)
           .catch(() => {}),
-        salesService
-          .listPaymentMethods(true)
+        paymentMethodService
+          .list(true)
           .then(setPaymentMethods)
           .catch(() => {}),
         loadPrecisionPolicy(),

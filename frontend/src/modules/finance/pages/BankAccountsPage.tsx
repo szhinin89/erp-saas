@@ -12,7 +12,10 @@ import { ConfigTabsLayout } from "../../../components/shared/ConfigTabsLayout";
 import { message } from "../../../lib/messages";
 import { applyServerErrors } from "../../lib/validationErrors";
 import { formatApiRequestError } from "../../lib/apiError";
-import { apiGet } from "../../lib/apiEnvelope";
+import {
+  accountLookupFacade,
+  type AccountDto,
+} from "../../accounting/facades/accountLookupFacade";
 import { bankLookupFacade, type BankDto } from "../../settings/banks/facades/bankLookupFacade";
 import { bankAccountService, type CompanyBankAccountDto } from "../api/bankAccountService";
 import {
@@ -24,14 +27,6 @@ import {
 } from "../schemas/bankAccountSchema";
 
 import "../../../styles/shared/items-catalog.css";
-
-interface AccountOption {
-  id: string;
-  code: string;
-  name: string;
-  allowsPosting: boolean;
-  isActive: boolean;
-}
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   Checking: "Corriente",
@@ -54,7 +49,7 @@ export function BankAccountsPage() {
   const [saveError, setSaveError] = useState("");
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [banks, setBanks] = useState<BankDto[]>([]);
-  const [accounts, setAccounts] = useState<AccountOption[]>([]);
+  const [accounts, setAccounts] = useState<AccountDto[]>([]);
 
   const createForm = useForm<CreateBankAccountFormValues>({
     resolver: zodResolver(createBankAccountSchema),
@@ -86,7 +81,8 @@ export function BankAccountsPage() {
       .list(true)
       .then(setBanks)
       .catch(() => setBanks([]));
-    apiGet<AccountOption[]>("/api/v1/accounting/accounts")
+    accountLookupFacade
+      .listAccounts()
       .then((list) => setAccounts(list.filter((a) => a.allowsPosting && a.isActive)))
       .catch(() => setAccounts([]));
   }, [fetchItems]);

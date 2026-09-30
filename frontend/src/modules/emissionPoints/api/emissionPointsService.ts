@@ -36,12 +36,6 @@ export type EmissionPointDto = {
 };
 
 /** Lookup para poblar el selector de Establecimiento en el formulario. */
-export type EstablishmentLookupDto = {
-  id: string;
-  code: string;
-  name: string;
-};
-
 // ── Payloads ──────────────────────────────────────────────────────────────
 export type CreateEmissionPointPayload = {
   establishmentId: string;
@@ -70,10 +64,6 @@ export const emissionPointsService = {
     apiGet<EmissionPointListItemDto[]>(
       `${BASE}?activeStatus=${activeStatus}${search ? `&search=${encodeURIComponent(search)}` : ""}`,
     ),
-
-  /** Establecimientos activos para poblar el selector del formulario. */
-  establishmentLookups: () =>
-    apiGet<EstablishmentLookupDto[]>("/api/v1/settings/establishments/lookups"),
 
   create: (body: CreateEmissionPointPayload) =>
     apiPost<EmissionPointDto>(BASE, body),

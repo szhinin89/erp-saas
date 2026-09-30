@@ -46,6 +46,8 @@ frontend/src/modules/{dominio}/
 - Organizar por módulos; `shared/` solo para reutilizables con ownership claro.
 - Lógica de negocio en hooks/servicios, no en JSX complejo.
 - API desde capa `api/` del módulo, no inline en componentes.
+- **Un cliente HTTP por endpoint** (ZH-FRONTEND-HTTP-CLIENT-SSOT-01): endpoint → UN service en `api/` del módulo owner (el dueño de la capacidad backend, no el módulo que más lo usa) → facade pública si hay subscribers → consumidores. Pantallas, hooks y componentes nunca importan `apiGet/apiPost/…`, la instancia `api` ni hacen `fetch`/`axios`; un segundo service del mismo endpoint (aunque esté en `api/`) es duplicación. Los DTOs del endpoint se declaran una sola vez en el service del owner y se re-exportan desde su facade (una facade solo de tipos es válida cuando el subscriber no usa el service, p. ej. `retentionDocumentFacade`). Un hook compartido solo existe si aporta responsabilidad (p. ej. `useItemCreationCatalogs`: carga única + normalización a categorías hoja), nunca para renombrar un service.
+- Enforcement: `frontend-http-access` (`F-http-outside-api`) — HTTP solo en carpetas `api/` o en la infraestructura oficial (`src/lib/`, `src/modules/lib/`); excepciones de infraestructura: lista cerrada con motivo en `architecture-rules.json` → `frontendHttpAccess.infrastructureFiles` (`F-http-stale-exception` si una entrada deja de existir o de hacer HTTP). La duplicación de endpoint entre dos services `api/` no tiene guard (resolver URLs compuestas sin falsos positivos no es fiable): se revisa en PR.
 
 ### Contratos públicos entre módulos (owner → subscriber)
 

@@ -1,4 +1,4 @@
-﻿import { apiGet, apiPost } from "../../lib/apiEnvelope";
+import { apiGet, apiPost } from "../../lib/apiEnvelope";
 import { normalizeAuthResponse } from "../normalizeAuthResponse";
 import type { AuthResponse, LoginRequest } from "../../../types/auth";
 import type { AccessibleCompany } from "../../../types/access";
@@ -46,6 +46,14 @@ export const authService = {
     apiPost<Record<string, unknown>>("/api/v1/auth/global/return", {}).then(
       mapAuthResponse,
     ),
+
+  /** Solicita el correo de restablecimiento — respuesta sin datos (el backend no revela si el correo existe). */
+  forgotPassword: (email: string) =>
+    apiPost<unknown>("/api/v1/auth/forgot-password", { email }),
+
+  /** Restablece la contraseña con el token recibido por correo (sesión no iniciada). */
+  resetPassword: (payload: { token: string; newPassword: string; tenantId?: string }) =>
+    apiPost<unknown>("/api/v1/auth/reset-password", payload),
 
   completePasswordReset: (payload: {
     passwordResetToken: string;

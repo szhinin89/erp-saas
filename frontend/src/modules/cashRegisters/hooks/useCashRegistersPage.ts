@@ -1,4 +1,3 @@
-import { apiGet } from "../../lib/apiEnvelope";
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,6 +21,10 @@ import {
   type CashRegistersPageFormValues,
 } from "../schemas/cashRegistersPageSchema";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
+import {
+  accountLookupFacade,
+  type AccountDto,
+} from "../../accounting/facades/accountLookupFacade";
 import { applyServerErrors } from "../../lib/validationErrors";
 import { formatApiRequestError } from "../../lib/apiError";
 import { message } from "../../../lib/messages";
@@ -32,9 +35,10 @@ export function useCashRegistersPage() {
   const canManage = canShow("caja.manage");
 
   // ── Datos del listado ────────────────────────────────────────────────────
-  const [accounts, setAccounts] = useState<{id: string; code: string; name: string; isActive: boolean; allowsPosting: boolean}[]>([]);
+  const [accounts, setAccounts] = useState<AccountDto[]>([]);
   useEffect(() => {
-    apiGet<typeof accounts>("/api/v1/accounting/accounts")
+    accountLookupFacade
+      .listAccounts()
       .then((rows) => setAccounts(rows.filter((a) => a.isActive && a.allowsPosting)))
       .catch(() => setAccounts([]));
   }, []);

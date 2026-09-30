@@ -2,8 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
-import { api } from "../../lib/api";
-import type { ApiResponse } from "../../../types/api";
+import { authService } from "../api/authService";
 import { useI18n } from "../../../i18n/i18n";
 import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
@@ -40,9 +39,7 @@ export function ForgotPasswordPage() {
     setSuccess("");
     setLoading(true);
     try {
-      await api.post<ApiResponse<object>>("/api/v1/auth/forgot-password", {
-        email: form.email.trim().toLowerCase(),
-      });
+      await authService.forgotPassword(form.email.trim().toLowerCase());
       setSuccess(t("forgot.success"));
     } catch (err: unknown) {
       const fromApi = readApiErrorMessage(err);

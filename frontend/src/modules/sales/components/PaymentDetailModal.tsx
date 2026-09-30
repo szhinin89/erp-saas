@@ -3,8 +3,8 @@ import type {
   CardDetailInput,
   TransferDetailInput,
   ChequeDetailInput,
-  PaymentMethodDetailType,
 } from "../api/salesService";
+import type { PaymentMethodDetailType } from "../api/paymentMethodService";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { ZhDateInput } from "../../../components/zh/inputs/ZhDateInput";

@@ -1,9 +1,9 @@
 import type {
   CardDetailInput,
   ChequeDetailInput,
-  PaymentMethodDetailType,
   TransferDetailInput,
 } from "../api/salesService";
+import type { PaymentMethodDetailType } from "../api/paymentMethodService";
 
 /**
  * SALES-TRANSFER-PAYMENT-REFERENCE-PAYLOAD-01: deriva el valor que debe viajar en

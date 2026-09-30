@@ -21,12 +21,15 @@ vi.mock("../api/emissionPointsService", () => ({
   EMISSION_TYPE_PHYSICAL: "Physical",
   emissionPointsService: {
     list: vi.fn(),
-    establishmentLookups: vi.fn().mockResolvedValue([]),
     create: vi.fn(),
     update: vi.fn(),
     disable: vi.fn(),
     enable: vi.fn(),
   },
+}));
+
+vi.mock("../../establishments/facades/establishmentLookupFacade", () => ({
+  establishmentLookupFacade: { lookups: vi.fn().mockResolvedValue([]) },
 }));
 
 vi.mock("../../../access/usePermissionsUi", () => ({

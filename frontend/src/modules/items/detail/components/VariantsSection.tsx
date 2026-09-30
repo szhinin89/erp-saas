@@ -14,12 +14,13 @@ import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { EmptyState, Badge } from "../../../../components/PageShell";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/ZHDataTable";
 import { applyServerErrors } from "../../../lib/validationErrors";
-import { apiGet } from "../../../lib/apiEnvelope";
 import { useI18n } from "../../../../i18n/i18n";
 import { itemService } from "../../api/itemService";
 import {
   attributeDefinitionService,
+  barcodeTypeService,
   type AttributeDefinitionDto,
+  type BarcodeTypeLookup,
 } from "../../catalog/api/catalogService";
 import type { ItemVariantDto } from "../../../../types/items";
 
@@ -59,9 +60,7 @@ export function VariantsSection({
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [attrDefs, setAttrDefs] = useState<AttributeDefinitionDto[]>([]);
-  const [barcodeTypes, setBarcodeTypes] = useState<
-    { code: string; name: string }[]
-  >([]);
+  const [barcodeTypes, setBarcodeTypes] = useState<BarcodeTypeLookup[]>([]);
 
   // Barcode inline add state
   const [bcVariantId, setBcVariantId] = useState<string | null>(null);
@@ -71,9 +70,7 @@ export function VariantsSection({
 
   const loadBarcodeTypes = useCallback(async () => {
     try {
-      const types = await apiGet<{ code: string; name: string }[]>(
-        "/api/v1/catalog/barcode-types",
-      );
+      const types = await barcodeTypeService.list();
       setBarcodeTypes(types);
     } catch {
       /* empty */

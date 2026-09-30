@@ -8,9 +8,7 @@ import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHTabBar } from "../../../../components/zh/ZHTabBar";
 import { LoadingState } from "../../../../components/PageShell";
 import { useI18n } from "../../../../i18n/i18n";
-import { useAsync } from "../../../../hooks/useAsync";
-import { apiGet } from "../../../lib/apiEnvelope";
-import { useItemTypeOptions } from "../../hooks/useItemTypeOptions";
+import { useItemCreationCatalogs } from "../../../../components/items/ItemEditorModal/useItemCreationCatalogs";
 import { useItemDetailPage } from "../../detail/hooks/useItemDetail";
 import { VariantsSection } from "../../detail/components/VariantsSection";
 import {
@@ -117,85 +115,19 @@ export function ItemFormTabs({
   // (guardado en curso) y el modo solo-lectura del listado se combinan aquí una sola vez.
   const fieldsDisabled = submitting || disabled;
 
-  // CONTRACT: GET /api/v1/catalog/brands — implemented in CatalogController
-  const brandsState = useAsync(() =>
-    apiGet<{ id: string; name: string }[]>("/api/v1/catalog/brands").catch(
-      () => [] as { id: string; name: string }[],
-    ),
-  );
-  const brandOptions = brandsState.data ?? [];
-
-  const categoriesState = useAsync(() =>
-    apiGet<{
-      nodes: {
-        id: string;
-        name: string;
-        code: string;
-        level: string;
-        path: string;
-        parentId: string | null;
-        isActive: boolean;
-      }[];
-    }>("/api/v1/catalog/category-nodes").catch(() => ({ nodes: [] })),
-  );
-  const allNodes = categoriesState.data?.nodes ?? [];
-  const nodesById = new Map(allNodes.map((n) => [n.id, n]));
-  const parentIds = new Set(
-    allNodes
-      .filter((n) => n.isActive)
-      .map((n) => n.parentId)
-      .filter(Boolean),
-  );
-
-  // Breadcrumb: usa `path` (ids separados por "/") para mostrar la ruta completa
-  // "Línea > Categoría > Subcategoría", evitando ambigüedad entre hojas del mismo
-  // nombre en ramas distintas del árbol.
-  const breadcrumb = (node: { path: string; name: string }) =>
-    node.path
-      .split("/")
-      .filter(Boolean)
-      .map((id) => nodesById.get(id)?.name)
-      .filter(Boolean)
-      .join(" > ") || node.name;
-
-  const categoryOptions = allNodes
-    .filter((n) => n.isActive && !parentIds.has(n.id))
-    .map((c) => ({ id: c.id, name: breadcrumb(c), depth: 0 }));
-
-  const sriUomState = useAsync(() =>
-    apiGet<{ code: string; name: string; abbrev: string | null }[]>(
-      "/api/v1/catalog/sri-uom",
-    ).catch(() => []),
-  );
-  const sriUomOptions = sriUomState.data ?? [];
-
-  const vatRateState = useAsync(() =>
-    apiGet<{ code: string; name: string; percentage: number }[]>(
-      "/api/v1/catalog/sri-vat-rates",
-    ).catch(() => []),
-  );
-  const vatRateOptions = vatRateState.data ?? [];
-
-  const iceRateState = useAsync(() =>
-    apiGet<{ code: string; name: string; percentage: number }[]>(
-      "/api/v1/catalog/sri-ice-rates",
-    ).catch(() => []),
-  );
-  const iceRateOptions = iceRateState.data ?? [];
-
-  const itemTypesState = useItemTypeOptions();
-  const itemTypeOptions = (itemTypesState.data ?? []).map((it) => ({
+  // Catálogos del formulario: única carga compartida con el editor individual y la creación
+  // masiva (useItemCreationCatalogs → services canónicos de items/catalog).
+  const catalogs = useItemCreationCatalogs();
+  const brandOptions = catalogs.brandOptions;
+  const categoryOptions = catalogs.categoryOptions.map((c) => ({ ...c, depth: 0 }));
+  const sriUomOptions = catalogs.uomOptions;
+  const vatRateOptions = catalogs.vatRateOptions;
+  const iceRateOptions = catalogs.iceRateOptions;
+  const itemTypeOptions = catalogs.itemTypeOptions.map((it) => ({
     id: it.id,
     name: it.name,
   }));
-
-  // CONTRACT: GET /api/v1/catalog/barcode-types — catálogo global de solo lectura
-  const barcodeTypesState = useAsync(() =>
-    apiGet<{ code: string; name: string }[]>(
-      "/api/v1/catalog/barcode-types",
-    ).catch(() => []),
-  );
-  const barcodeTypeOptions = barcodeTypesState.data ?? [];
+  const barcodeTypeOptions = catalogs.barcodeTypeOptions;
 
   const schema = isEditMode ? updateItemSchema : createItemSchema;
   const form = useForm<CreateItemFormValues>({

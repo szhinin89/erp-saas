@@ -1,7 +1,6 @@
 import { apiGet, apiPost, apiPut } from "../../lib/apiEnvelope";
 
 const BASE = "/api/v1/sales";
-const PM_BASE = "/api/v1/payment-methods";
 
 // ── DTOs ─────────────────────────────────────────────────────────────────
 
@@ -112,23 +111,6 @@ export interface SalesPaymentInput {
   cardDetail?: CardDetailInput | null;
   transferDetail?: TransferDetailInput | null;
   chequeDetail?: ChequeDetailInput | null;
-}
-
-/** Esquema de detalle que la UI debe capturar al registrar un pago — viene del catálogo, nunca se infiere del código. */
-export type PaymentMethodDetailType = "None" | "Card" | "Transfer" | "Check";
-
-export interface PaymentMethodDto {
-  id: string;
-  code: string;
-  name: string;
-  isActive: boolean;
-  requiresReference: boolean;
-  isCreditAllowed: boolean;
-  sortOrder: number;
-  detailType: PaymentMethodDetailType;
-  /** SALES-PAYMENT-METHOD-SRI-MAPPING-SSOT-01: código del catálogo sri_payment_method mapeado a
-   * esta forma de cobro (null = sin mapeo propio, la emisión cae al default de empresa). */
-  sriPaymentMethodCode: string | null;
 }
 
 export interface SalesPaymentScheduleDto {
@@ -370,9 +352,6 @@ export const salesService = {
     apiPost<SalesInvoiceDto>(`${BASE}/${id}/authorize`, {}),
   cancel: (id: string, reason: string) =>
     apiPost<SalesInvoiceDto>(`${BASE}/${id}/cancel`, { reason }),
-
-  listPaymentMethods: (onlyActive = true) =>
-    apiGet<PaymentMethodDto[]>(`${PM_BASE}?onlyActive=${onlyActive}`),
 
   /** Reporte básico de ventas por rango de fechas. Sin fechas, el backend usa el día actual. */
   dailyReport: (dateFrom?: string, dateTo?: string) => {

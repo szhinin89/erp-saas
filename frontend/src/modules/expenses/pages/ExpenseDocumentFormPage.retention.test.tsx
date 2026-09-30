@@ -21,8 +21,8 @@ import { message } from "../../../lib/messages";
 import type {
   ExpenseDocumentDetailDto,
   RetentionEligibilityResult,
-  RetentionDocumentDto,
 } from "../api/expenseDocumentService";
+import type { RetentionDocumentDto } from "../../retentions/facades/retentionDocumentFacade";
 
 /**
  * RETENTIONS-UI-EXPENSES-01F — cubre la sección de retención integrada dentro del formulario
@@ -78,7 +78,6 @@ vi.mock("../../masterData/facades/paymentTermLookupFacade", () => ({
 vi.mock("../../emissionPoints/facades/emissionPointLookupFacade", () => ({
   emissionPointLookupFacade: {
     list: vi.fn(),
-    establishmentLookups: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
     disable: vi.fn(),
@@ -255,6 +254,14 @@ const RETENTION_DOC: RetentionDocumentDto = {
       description: null,
     },
   ],
+  fiscalPeriod: null,
+  sourceDocumentSriTypeCode: null,
+  sourceDocumentNumber: null,
+  sourceDocumentIssueDate: null,
+  sourceDocumentAuthorizationNumber: null,
+  sourceDocumentTaxSupportCode: null,
+  sourceDocumentSubtotal: null,
+  sourceDocumentTotal: null,
 };
 
 beforeEach(() => {

@@ -2,6 +2,16 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-30** · Kernel refactor: **2026-06-05**.
 
+## ZH-FRONTEND-HTTP-CLIENT-SSOT-01 — Un cliente HTTP por endpoint (2026-09-30)
+
+**Estado: COMPLETADO.** Cierra P2-04 y P2-05 de la auditoría UX y el tipo duplicado de P2-06 (la decisión funcional de emisión de retenciones sigue abierta). Sin cambios de UX, CSS ni flujos; Compras no se toca funcionalmente.
+- Inventario (script sobre `src/`, URLs resueltas contra constantes del archivo): 10 endpoints con más de un cliente y 8 archivos con HTTP fuera de `api/`. Duplicados: `GET /accounting/accounts` (accountingApi + cashRegisters + finance), `/catalog/{brands,category-nodes,sri-uom,sri-vat-rates,sri-ice-rates,barcode-types}` (catalogService/categoryNodeService + `ItemFormTabs` + `useItemCreationCatalogs` + `VariantsSection`), `/catalog/sri-supplier-types` y `/catalog/sri-id-types` (catalogService + masterData), `/settings/establishments/lookups` (establishments + emissionPoints), `/payment-methods` (paymentMethodService + salesService). HTTP inline además en `auth/{Forgot,Reset}PasswordPage` y `SetupPage`.
+- Owners: accounting (`accountLookupFacade`), items/catalog (`brandService`, `categoryNodeService`, `sriLookupService`/`sriLookupFacade`, nuevo `barcodeTypeService` — el endpoint no tenía cliente canónico), establishments (nueva `establishmentLookupFacade`), sales (`paymentMethodService`), auth (`authService.forgotPassword/resetPassword`, nuevo `setupService`).
+- Consumidores migrados sin cambiar requests (mismo endpoint y parámetros efectivos; `category-nodes` ahora envía `includeInactive=true`, que es el default del backend) ni manejo de error. `ItemFormTabs` usa `useItemCreationCatalogs` (carga única + categorías hoja, antes normalizadas dos veces).
+- Tipos unificados: `PaymentMethodDto`/`PaymentMethodDetailType` (salesService tenía una copia parcial), `EstablishmentLookupDto`, `RetentionDocumentDto`/`RetentionDocumentLineDto`/`RetentionTaxType`/`RetentionStatus` (expenses → `retentions/facades/retentionDocumentFacade`), `SriSupplierTypeOption`/`SriIdTypeOption` (alias del lookup canónico), `AccountDto` en lugar de tipos ad hoc.
+- Guard `frontend-http-access` (`F-http-outside-api`, `F-http-stale-exception`), sin grandfather; reemplaza la sub-regla textual `F-cross-layer-module-page` (solo fetch/axios en pages) de `no-cross-layer`. Excepciones de infraestructura con motivo: `hooks/useAuthenticatedImage` y el service de diagnóstico de `components/zh/electronicDocuments` (ADR-024). Tests del guard: 15 (fixtures PASS/FAIL, repo real 0, estado previo al ticket = exactamente los 8 archivos). Tests por capacidad: 7 archivos nuevos (endpoint, params, delegación de facade, propagación de error, ausencia de los clientes eliminados).
+- Pendiente fuera de alcance: no hay guard de "dos services `api/` para el mismo endpoint" (URLs compuestas no resolubles sin falsos positivos).
+
 ## ZH-SALES-CANCEL-AUTHORIZED-RETURN-RULE-01 — Factura con devolución autorizada no se anula (2026-09-30)
 
 **Estado: COMPLETADO.** Cierra el hallazgo P1 de ZH-SALES-RETURN-INVOICE-STATE-CONCURRENCY-01.

@@ -82,6 +82,11 @@ export interface SriSupplierTypeLookup {
   code: string;
   name: string;
 }
+/** Tipo de código de barras — catálogo global de solo lectura (CatalogController). */
+export interface BarcodeTypeLookup {
+  code: string;
+  name: string;
+}
 export interface SriTaxRegimeLookup {
   code: string;
   name: string;
@@ -148,6 +153,11 @@ export const sriLookupService = {
 };
 
 // ── Brands ───────────────────────────────────────────────────────────────
+
+// ── Barcode types (lectura) ──────────────────────────────────────────────
+export const barcodeTypeService = {
+  list: () => apiGet<BarcodeTypeLookup[]>(`${BASE}/barcode-types`),
+};
 
 export const brandService = {
   list: (isActive?: boolean) =>

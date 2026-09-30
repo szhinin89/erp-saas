@@ -15,10 +15,10 @@ import {
 import {
   expenseDocumentService,
   type ExpenseStatus,
-  type RetentionDocumentDto,
   type RetentionEligibilityCandidate,
   type RetentionEligibilityResult,
 } from "../api/expenseDocumentService";
+import type { RetentionDocumentDto } from "../../retentions/facades/retentionDocumentFacade";
 import {
   newRetentionIntentLine,
   type RetentionIntentFormState,

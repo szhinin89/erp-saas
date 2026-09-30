@@ -62,6 +62,20 @@
       { "from": "accounting", "to": "superadmin" }
     ]
   },
+  "frontendHttpAccess": {
+    "$note": "ZH-FRONTEND-HTTP-CLIENT-SSOT-01 — check-frontend-http-access.mjs: HTTP solo en carpetas api/ del owner o en la infraestructura HTTP oficial (allowedDirs). infrastructureFiles es una lista cerrada con motivo, nunca grandfather: cada entrada debe existir y hacer HTTP.",
+    "allowedDirs": ["frontend/src/lib/", "frontend/src/modules/lib/"],
+    "infrastructureFiles": [
+      {
+        "file": "frontend/src/hooks/useAuthenticatedImage.ts",
+        "reason": "Hook genérico sin dominio: descarga con Bearer la URL de contenido que recibe (p. ej. logo de empresa) para <img>; no conoce ningún endpoint propio."
+      },
+      {
+        "file": "frontend/src/components/zh/electronicDocuments/electronicDocumentDiagnosticService.ts",
+        "reason": "Service del componente compartido de Documentos Electrónicos del Design System (ADR-024), agnóstico de módulo; único cliente de GET /electronic-documents/by-source."
+      }
+    ]
+  },
   "crossLayer": {
     "pagesForbiddenPatterns": [
       "\\bfetch\\s*\\(",
@@ -69,10 +83,6 @@
       "from\\s+['\"][^'\"]*\\/api\\/",
       "from\\s+['\"][^'\"]*\\/stores\\/",
       "from\\s+['\"][^'\"]*\\/store\\/"
-    ],
-    "modulePagesForbiddenPatterns": [
-      "[^a-zA-Z.]fetch\\s*\\(",
-      "from\\s+['\"]axios['\"]"
     ],
     "storesForbiddenImportPatterns": [
       "backend/",

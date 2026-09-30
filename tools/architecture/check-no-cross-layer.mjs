@@ -33,22 +33,9 @@ export function runCheckNoCrossLayer() {
     }
   }
 
-  const modulesRoot = path.join(REPO_ROOT, 'frontend/src/modules');
-  for (const abs of walkFiles(modulesRoot, { extensions: ['.tsx'] })) {
-    const rel = toRepoRel(abs);
-    if (exemptions.has(rel)) continue;
-    if (!rel.includes('/pages/')) continue;
-
-    const patterns = cfg.modulePagesForbiddenPatterns.map((p) => new RegExp(p));
-    for (const hit of findPatternViolations(readText(rel), patterns)) {
-      addViolation(result, {
-        rule: 'F-cross-layer-module-page',
-        file: rel,
-        line: hit.line,
-        message: `page must use module api/ layer: ${hit.snippet}`,
-      });
-    }
-  }
+  // HTTP en páginas/hooks/componentes de módulo (antes F-cross-layer-module-page: solo fetch/axios
+  // en pages/*.tsx, por texto): lo cubre por completo frontend-http-access (F-http-outside-api,
+  // ZH-FRONTEND-HTTP-CLIENT-SSOT-01) — una sola regla, un solo guard.
 
   const storesRoot = path.join(REPO_ROOT, 'frontend/src/store');
   if (fs.existsSync(storesRoot)) {

@@ -3,7 +3,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { SalesPageContext } from "../hooks/useSalesPage";
-import type { SalesInvoiceDto, PaymentMethodDto } from "../api/salesService";
+import type { SalesInvoiceDto } from "../api/salesService";
+import type { PaymentMethodDto } from "../api/paymentMethodService";
 
 // SALES-PAYMENT-METHOD-SRI-MAPPING-SSOT-01: la sección "Formas de Cobro" deriva automáticamente
 // el código SRI (formaPago) de cada forma de cobro seleccionada desde PaymentMethod.sriPaymentMethodCode
@@ -120,7 +121,10 @@ function buildPaymentMethod(
     isCreditAllowed: false,
     sortOrder: 1,
     detailType: "None",
+    affectsPhysicalCash: true,
     sriPaymentMethodCode: "01",
+    accountSource: "CashRegister",
+    accountingAccountId: null,
     ...overrides,
   };
 }
