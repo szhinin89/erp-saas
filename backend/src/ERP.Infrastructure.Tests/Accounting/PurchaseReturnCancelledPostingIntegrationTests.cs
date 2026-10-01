@@ -1,3 +1,4 @@
+using ERP.Infrastructure.Tests.Common;
 using ERP.Application.Audit;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
@@ -209,6 +210,7 @@ public sealed class PurchaseReturnCancelledPostingIntegrationTests : IAsyncLifet
         );
 
         var services = new ServiceCollection();
+        services.AddSingleton<TimeProvider>(AccountingDateBoundary.Clock);
         services.AddScoped<ERP.Application.Common.Services.ICompanyClock, ERP.Infrastructure.Persistence.Services.CompanyClock>();
         services.AddLogging();
         services.AddSingleton(db);
@@ -373,7 +375,7 @@ public sealed class PurchaseReturnCancelledPostingIntegrationTests : IAsyncLifet
             ERP.Domain.Modules.Inventory.Enums.StockMovementType.PurchaseEntry,
             quantity,
             "UNIT",
-            DateOnly.FromDateTime(DateTime.UtcNow),
+            AccountingDateBoundary.CompanyToday,
             "Ingreso inicial",
             sourceDocId,
             "PurchaseInvoice",
@@ -454,7 +456,7 @@ public sealed class PurchaseReturnCancelledPostingIntegrationTests : IAsyncLifet
     {
         var issueDate = new DateOnly(2026, 7, 25);
         var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
-        await SeedRulesAndPeriodAsync(db, DateOnly.FromDateTime(DateTime.UtcNow));
+        await SeedRulesAndPeriodAsync(db, AccountingDateBoundary.CompanyToday);
 
         var inv = await SeedConfirmedInvoiceAsync(db, issueDate, "001-001-000000001");
         await GrantStockAsync(db, 10, inv.Id);
@@ -521,7 +523,7 @@ public sealed class PurchaseReturnCancelledPostingIntegrationTests : IAsyncLifet
         // contable que reversar) — el traductor no debe intentar postear nada.
         var issueDate = new DateOnly(2026, 7, 25);
         var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
-        await SeedRulesAndPeriodAsync(db, DateOnly.FromDateTime(DateTime.UtcNow));
+        await SeedRulesAndPeriodAsync(db, AccountingDateBoundary.CompanyToday);
 
         var inv = await SeedConfirmedInvoiceAsync(db, issueDate, "001-001-000000002");
 

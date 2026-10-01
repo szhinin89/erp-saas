@@ -220,7 +220,7 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
             "1234567890001",
             "01",
             invoiceNumber,
-            DateOnly.FromDateTime(DateTime.UtcNow),
+            AccountingDateBoundary.CompanyToday,
             _userId,
             _paymentTermId,
             "Contado",
@@ -792,6 +792,7 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
         );
 
         var services = new ServiceCollection();
+        services.AddSingleton<TimeProvider>(AccountingDateBoundary.Clock);
         services.AddScoped<ERP.Application.Common.Services.ICompanyClock, ERP.Infrastructure.Persistence.Services.CompanyClock>();
         services.AddLogging();
         services.AddSingleton(db);
@@ -901,7 +902,7 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
         rule.AddLine(creditAccount.Id, AccountNature.Credit, PostingAmountKind.GrandTotal);
         db.PostingRules.Add(rule);
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = AccountingDateBoundary.CompanyToday;
         var periodExists = await db.AccountingPeriods.AnyAsync(p =>
             p.TenantId == _tenantId
             && p.CompanyId == _companyId

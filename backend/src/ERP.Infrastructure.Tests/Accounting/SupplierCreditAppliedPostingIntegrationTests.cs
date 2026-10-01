@@ -1,3 +1,4 @@
+using ERP.Infrastructure.Tests.Common;
 using ERP.Application.Audit;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
@@ -185,6 +186,7 @@ public sealed class SupplierCreditAppliedPostingIntegrationTests : IAsyncLifetim
         );
 
         var services = new ServiceCollection();
+        services.AddSingleton<TimeProvider>(AccountingDateBoundary.Clock);
         services.AddScoped<ERP.Application.Common.Services.ICompanyClock, ERP.Infrastructure.Persistence.Services.CompanyClock>();
         services.AddLogging();
         services.AddSingleton(db);
@@ -285,7 +287,7 @@ public sealed class SupplierCreditAppliedPostingIntegrationTests : IAsyncLifetim
             "1791352688001",
             docTypeCode: "01",
             invoiceNumber: invoiceNumber,
-            issueDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            issueDate: AccountingDateBoundary.CompanyToday,
             createdBy: _createdBy,
             paymentTermId: _paymentTermId,
             paymentTermName: "Contado",
@@ -385,7 +387,7 @@ public sealed class SupplierCreditAppliedPostingIntegrationTests : IAsyncLifetim
         var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
         var (payableAccountId, supplierCreditAccountId) = await SeedRuleAndPeriodAsync(
             db,
-            DateOnly.FromDateTime(DateTime.UtcNow)
+            AccountingDateBoundary.CompanyToday
         );
 
         var sourceReturnId = await SeedPurchaseReturnStubAsync(db, "001-001-000000009");
@@ -436,7 +438,7 @@ public sealed class SupplierCreditAppliedPostingIntegrationTests : IAsyncLifetim
         // debe crear un segundo asiento.
         var issueDate = new DateOnly(2026, 7, 25);
         var (db, publisher) = BuildWiredContext(_tenantId, _companyId, _postgres);
-        await SeedRuleAndPeriodAsync(db, DateOnly.FromDateTime(DateTime.UtcNow));
+        await SeedRuleAndPeriodAsync(db, AccountingDateBoundary.CompanyToday);
 
         var sourceReturnId = await SeedPurchaseReturnStubAsync(db, "001-001-000000012");
         var payable = BuildPayable(issueDate, "001-001-000000011", total: 100m);

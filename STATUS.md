@@ -2,6 +2,14 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-30** · Kernel refactor: **2026-06-05**.
 
+## ZH-ACCOUNTING-DATE-BOUNDARY-01 — Frontera de día UTC vs. día de empresa en contabilización (2026-10-01)
+
+**Estado: COMPLETADO.** Sin cambios de reglas fiscales, montos, cuentas, posting rules, permisos ni UX; sin migración.
+- Los 12 fallos (ejecución 2026-10-01 00:53 UTC, también sobre HEAD limpio): `SupplierCreditApplicationReversedPostingIntegrationTests` (2), `SupplierCreditAppliedPostingIntegrationTests` (2), `ApplySupplierCreditConcurrencyTests` (2), `CollectionPostingIntegrationTests` (2, reversa de cobro), `PurchaseReturnCancelledPostingIntegrationTests` (1), `PurchaseReturnAuthorizedPostingIntegrationTests` (3).
+- Causa raíz (en los tests, no en producción): esos traductores no reciben fecha de documento y fechan el asiento con el "hoy" de la empresa (`ICompanyClock.TodayAsync`, America/Guayaquil — regla ADR-034); los tests sembraban el período y las fechas con `DateOnly.FromDateTime(DateTime.UtcNow)`. Entre 19:00 y 23:59 Ecuador del último día del mes, el día UTC ya es del mes siguiente: período de octubre sembrado, asiento con fecha 30-sep → `PERIOD_NOT_OPEN` → el traductor registra y omite (sin asiento). Producción ya cumplía ADR-034: auditados los 23 traductores (fecha de documento cuando existe, `ICompanyClock` cuando no; ninguno usa el día UTC) y los reversos (las 5 anulaciones usan `ReverseJournalEntryCommand`, que conserva el `EntryDate` original; la reversa de reembolso de crédito de proveedor usa la `EffectiveDate` de su propia transacción). Deuda idéntica latente (fin de año) en `PurchaseCreditNoteDiscountPostingIntegrationTests` (año UTC).
+- Corrección: `CompanyClock` obtiene el instante de `TimeProvider` (BCL; producción `TimeProvider.System`, comportamiento idéntico). Los 7 tests afectados fijan el reloj en la frontera (`AccountingDateBoundary`: UTC 2026-10-01 00:30 = empresa 2026-09-30) y siembran desde el día de empresa — ejercitan la frontera en cada ejecución, a cualquier hora. Regla documentada en `docs/architecture/data-standards.md` (Fecha contable).
+- Nuevos: `AccountingDateBoundaryIntegrationTests` (PostgreSQL real, mismo camino que los traductores: `ICompanyClock` → `PostingFact.EntryDate` → `PostingEngine`): día normal, UTC 1-oct/empresa 30-sep, 1-oct en ambos, UTC 1-ene/empresa 31-dic (año fiscal 2026), 1-ene en ambos, período de la empresa cerrado y período inexistente (`PERIOD_NOT_OPEN`, sin desviarse al mes UTC); asiento verificado desde otro DbContext (fecha, período, año fiscal, Posted, cuadrado).
+
 ## ZH-INVENTORY-STOCK-ITEM-LOOKUP-01 — Ajustes/Transferencias buscan solo ítems con stock desde la fuente (2026-09-30)
 
 **Estado: COMPLETADO.** Cierra el pendiente "filtro `tracksStock` sobre la página devuelta" de ZH-PRODUCT-SELECTOR-SSOT-01.

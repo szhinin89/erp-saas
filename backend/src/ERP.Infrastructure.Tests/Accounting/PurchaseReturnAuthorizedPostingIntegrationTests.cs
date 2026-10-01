@@ -1,3 +1,4 @@
+using ERP.Infrastructure.Tests.Common;
 using ERP.Application.Audit;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
@@ -213,6 +214,7 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
         );
 
         var services = new ServiceCollection();
+        services.AddSingleton<TimeProvider>(AccountingDateBoundary.Clock);
         services.AddScoped<ERP.Application.Common.Services.ICompanyClock, ERP.Infrastructure.Persistence.Services.CompanyClock>();
         services.AddLogging();
         services.AddSingleton(db);
@@ -424,7 +426,7 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
             ERP.Domain.Modules.Inventory.Enums.StockMovementType.PurchaseEntry,
             quantity,
             "UNIT",
-            DateOnly.FromDateTime(DateTime.UtcNow),
+            AccountingDateBoundary.CompanyToday,
             "Ingreso inicial",
             sourceDocId,
             "PurchaseInvoice",
@@ -515,10 +517,10 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
     {
         var issueDate = new DateOnly(2026, 7, 25);
         var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
-        // PurchaseReturnAuthorizedEvent.OccurredOn (BaseDomainEvent) es DateTime.UtcNow real, no
-        // issueDate — el período contable debe cubrir la fecha real de ejecución del test, no la
-        // fecha de emisión de la factura origen (mismo criterio que el resto de esta suite).
-        await SeedRuleAndPeriodAsync(db, DateOnly.FromDateTime(DateTime.UtcNow));
+        // El traductor fecha el asiento con el "hoy" de la empresa (ICompanyClock, ADR-034), no con
+        // issueDate: el período sembrado sale de ese mismo día, fijado en la frontera UTC/empresa
+        // (AccountingDateBoundary) — ZH-ACCOUNTING-DATE-BOUNDARY-01.
+        await SeedRuleAndPeriodAsync(db, AccountingDateBoundary.CompanyToday);
 
         var inv = await SeedConfirmedInvoiceAsync(db, issueDate, "001-001-000000001");
         await GrantStockAsync(db, 10, inv.Id);
@@ -608,7 +610,7 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
     {
         var issueDate = new DateOnly(2026, 7, 25);
         var (db, publisher) = BuildWiredContext(_tenantId, _companyId, _postgres);
-        await SeedRuleAndPeriodAsync(db, DateOnly.FromDateTime(DateTime.UtcNow));
+        await SeedRuleAndPeriodAsync(db, AccountingDateBoundary.CompanyToday);
 
         var inv = await SeedConfirmedInvoiceAsync(db, issueDate, "001-001-000000003");
         await GrantStockAsync(db, 10, inv.Id);

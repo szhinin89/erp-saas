@@ -907,6 +907,9 @@ public static class DependencyInjection
             ERP.Application.Modules.Sales.IInvoiceItemSearchRepository,
             ERP.Infrastructure.Persistence.Repositories.Sales.InvoiceItemSearchRepository
         >();
+        // Fuente del instante "ahora" de CompanyClock (BCL); los tests de frontera de fecha la fijan.
+        Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions
+            .TryAddSingleton(services, TimeProvider.System);
         services.AddScoped<
             ERP.Application.Common.Services.ICompanyClock,
             ERP.Infrastructure.Persistence.Services.CompanyClock

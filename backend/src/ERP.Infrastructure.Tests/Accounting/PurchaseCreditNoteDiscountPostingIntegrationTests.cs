@@ -1,3 +1,4 @@
+using ERP.Infrastructure.Tests.Common;
 using ERP.Application.Audit;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
@@ -118,6 +119,7 @@ public sealed class PurchaseCreditNoteDiscountPostingIntegrationTests : IAsyncLi
         var db = new ErpDbContext(options, new FixedCurrentTenant(_tenantId), deferred, new FixedCurrentCompany(_companyId));
 
         var services = new ServiceCollection();
+        services.AddSingleton<TimeProvider>(AccountingDateBoundary.Clock);
         services.AddScoped<ERP.Application.Common.Services.ICompanyClock, ERP.Infrastructure.Persistence.Services.CompanyClock>();
         services.AddLogging();
         services.AddSingleton(db);
@@ -141,7 +143,9 @@ public sealed class PurchaseCreditNoteDiscountPostingIntegrationTests : IAsyncLi
 
     private async Task EnsureCurrentYearPeriodAsync(ErpDbContext db)
     {
-        var currentYear = DateTime.UtcNow.Year;
+        // Año del "hoy" de la empresa (el que usa el traductor vía ICompanyClock), no el año UTC:
+        // el 31-dic desde las 19:00 Ecuador el año UTC ya es el siguiente (ZH-ACCOUNTING-DATE-BOUNDARY-01).
+        var currentYear = AccountingDateBoundary.CompanyToday.Year;
         var hasPeriod = await db.AccountingPeriods.AnyAsync(p => p.CompanyId == _companyId && p.FiscalYear == currentYear);
         if (!hasPeriod)
         {
@@ -162,7 +166,7 @@ public sealed class PurchaseCreditNoteDiscountPostingIntegrationTests : IAsyncLi
         var inv = PurchaseInvoice.CreateDraft(
             _tenantId, _companyId, _branchId, _supplierId, "Proveedor Test", "1791352688001",
             "01", $"001-001-{Random.Shared.Next(100000, 999999)}",
-            DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-5), _createdBy,
+            AccountingDateBoundary.CompanyToday.AddDays(-5), _createdBy,
             _paymentTermId, "Contado", 1, 30
         );
         var line = PurchaseInvoiceDetail.Create(
@@ -196,7 +200,7 @@ public sealed class PurchaseCreditNoteDiscountPostingIntegrationTests : IAsyncLi
         var creditNote = PurchaseCreditNote.CreateDraft(
             _tenantId, _companyId, _branchId, _supplierId, inv.Id, null,
             PurchaseCreditNoteApplicationType.Discount, "001-001-000000005", null, null, null,
-            DateOnly.FromDateTime(DateTime.UtcNow), "Descuento por pronto pago",
+            AccountingDateBoundary.CompanyToday, "Descuento por pronto pago",
             Array.Empty<PurchaseCreditNote.DraftLineInput>(),
             [new(summary.Id, summary.VatCode, summary.VatRate, summary.VatName, summary.IceCode,
                 summary.IceRate, summary.IceName, 20m, summary.IrbpnrCode, summary.IrbpnrRate,

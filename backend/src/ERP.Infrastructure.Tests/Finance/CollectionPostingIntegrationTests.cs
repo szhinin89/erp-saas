@@ -1,3 +1,4 @@
+using ERP.Infrastructure.Tests.Common;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
@@ -270,6 +271,7 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
         services.AddScoped<IPostingEngine, PostingEngine>();
         services.AddScoped<ICompanyBankAccountRepository, CompanyBankAccountRepository>();
         services.AddScoped<ICashRegisterRepository, CashRegisterRepository>();
+        services.AddSingleton<TimeProvider>(AccountingDateBoundary.Clock);
         services.AddScoped<ERP.Application.Common.Services.ICompanyClock, ERP.Infrastructure.Persistence.Services.CompanyClock>();
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(CollectionAppliedPostingTranslator).Assembly)
@@ -712,15 +714,15 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
     // ══════════════════════════════════════════════════════════════════════
     //
     // CollectionReversedEvent no transporta la fecha del cobro original — el traductor fecha el
-    // hecho contable con BaseDomainEvent.OccurredOn (fecha real de ejecución). Por eso estos tests
-    // usan "hoy" (DateOnly.FromDateTime(DateTime.UtcNow)) tanto para el cobro inicial como para el
-    // período sembrado, en vez de una fecha ficticia fija — así ambos asientos (el de aplicación y
-    // el de reverso) caen dentro del mismo período sin depender de una fecha hardcodeada.
+    // hecho contable con el "hoy" de la empresa (ICompanyClock, ADR-034). Estos tests fijan el reloj
+    // en la frontera UTC/empresa (AccountingDateBoundary: UTC 1-oct 00:30 = 30-sep en Guayaquil) y
+    // usan ese día de empresa para el cobro inicial y el período sembrado: ambos asientos caen en
+    // septiembre de forma determinista, a cualquier hora de ejecución (ZH-ACCOUNTING-DATE-BOUNDARY-01).
 
     [Fact]
     public async Task ReverseCollectionCommand_restaura_PaidAmount_y_BalanceDue_de_SalesReceivable()
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = AccountingDateBoundary.CompanyToday;
         var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
         await SeedAppliedAndReversedRulesAndPeriodAsync(db, today);
 
@@ -754,7 +756,7 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task ReverseCollectionCommand_con_PostingRule_genera_JournalEntry_de_reverso()
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = AccountingDateBoundary.CompanyToday;
         var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
         await SeedAppliedAndReversedRulesAndPeriodAsync(db, today);
 
@@ -798,7 +800,7 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Republicar_CollectionReversedEvent_no_duplica_el_JournalEntry_de_reverso()
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = AccountingDateBoundary.CompanyToday;
         var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
         await SeedAppliedAndReversedRulesAndPeriodAsync(db, today);
 
