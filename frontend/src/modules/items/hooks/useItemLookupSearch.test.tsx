@@ -57,11 +57,20 @@ describe("useItemLookupSearch", () => {
     expect(result.current.results.map((i) => i.id)).toEqual(["2", "1"]);
   });
 
-  it("aplica la regla de elegibilidad del consumidor sobre la página devuelta", async () => {
-    search.mockResolvedValue(page([item("1", "A", true), item("2", "B", false)]));
-    const { result } = renderHook(() => useItemLookupSearch({ filter: (i) => i.tracksStock }));
+  it("tracksStock se pide al backend y la página se usa tal cual (sin filtrar en React)", async () => {
+    search.mockResolvedValue(page([item("1", "A", true), item("2", "B", true)]));
+    const { result } = renderHook(() => useItemLookupSearch({ tracksStock: true }));
     act(() => result.current.setQuery("ab"));
-    await waitFor(() => expect(result.current.results.map((i) => i.id)).toEqual(["1"]));
+    await waitFor(() => expect(result.current.results).toHaveLength(2));
+    expect(search).toHaveBeenCalledWith({ search: "ab", isActive: true, pageSize: 12, tracksStock: true });
+  });
+
+  it("sin tracksStock la consulta no lleva el filtro (búsqueda general sin cambios)", async () => {
+    const { result } = renderHook(() => useItemLookupSearch());
+    act(() => result.current.setQuery("ab"));
+    await waitFor(() => expect(search).toHaveBeenCalledTimes(1));
+    expect(search.mock.calls[0][0]).toEqual({ search: "ab", isActive: true, pageSize: 12 });
+    expect("tracksStock" in search.mock.calls[0][0]).toBe(false);
   });
 
   it("descarta una respuesta vieja que llega después de una búsqueda más nueva", async () => {

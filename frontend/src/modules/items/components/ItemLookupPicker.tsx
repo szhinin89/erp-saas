@@ -13,8 +13,8 @@ export interface ItemLookupPickerProps {
   emptyText: (query: string) => string;
   disabled?: boolean;
   pageSize?: number;
-  /** Regla de elegibilidad del consumidor (ver useItemLookupSearch). */
-  filter?: (item: ItemDto) => boolean;
+  /** Solo ítems con control de stock, filtrado en el backend (ver useItemLookupSearch). */
+  tracksStock?: boolean;
 }
 
 /**
@@ -29,13 +29,13 @@ export function ItemLookupPicker({
   emptyText,
   disabled,
   pageSize,
-  filter,
+  tracksStock,
 }: ItemLookupPickerProps) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [focusIdx, setFocusIdx] = useState(-1);
   const wrapRef = useRef<HTMLDivElement>(null);
-  const lookup = useItemLookupSearch({ pageSize, enabled: open, filter });
+  const lookup = useItemLookupSearch({ pageSize, enabled: open, tracksStock });
   const { results } = lookup;
 
   useEffect(() => {

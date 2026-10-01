@@ -14,10 +14,10 @@ export interface ItemLookupSearchOptions {
   /** false = no consulta (p. ej. dropdown cerrado); limpia resultados. */
   enabled?: boolean;
   /**
-   * Regla de elegibilidad del consumidor aplicada a la página devuelta (p. ej. Inventario: solo
-   * ítems con control de stock). El backend no expone ese filtro; nunca se usa para rankear.
+   * Solo ítems con control de stock (Inventario). Lo filtra el backend antes de ordenar y paginar
+   * (ZH-INVENTORY-STOCK-ITEM-LOOKUP-01): nunca se filtra una página parcial en React.
    */
-  filter?: (item: ItemDto) => boolean;
+  tracksStock?: boolean;
 }
 
 export interface ItemLookupSearchState {
@@ -43,18 +43,13 @@ export interface ItemLookupSearchState {
 export function useItemLookupSearch({
   pageSize = 12,
   enabled = true,
-  filter,
+  tracksStock,
 }: ItemLookupSearchOptions = {}): ItemLookupSearchState {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ItemDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const requestRef = useRef(0);
-  // El predicado suele llegar inline: se lee por ref para no relanzar la búsqueda en cada render.
-  const filterRef = useRef(filter);
-  useEffect(() => {
-    filterRef.current = filter;
-  }, [filter]);
 
   const term = query.trim();
   const active = term.length >= ITEM_LOOKUP_MIN_LENGTH;
@@ -72,10 +67,14 @@ export function useItemLookupSearch({
     setError("");
     const timer = setTimeout(async () => {
       try {
-        const page = await itemLookupFacade.search({ search: term, isActive: true, pageSize });
+        const page = await itemLookupFacade.search({
+          search: term,
+          isActive: true,
+          pageSize,
+          ...(tracksStock === undefined ? {} : { tracksStock }),
+        });
         if (request !== requestRef.current) return;
-        const eligible = filterRef.current;
-        setResults(eligible ? page.items.filter(eligible) : page.items);
+        setResults(page.items);
       } catch (err) {
         if (request !== requestRef.current) return;
         setResults([]);
@@ -84,7 +83,7 @@ export function useItemLookupSearch({
       if (request === requestRef.current) setLoading(false);
     }, ITEM_LOOKUP_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [term, active, enabled, pageSize]);
+  }, [term, active, enabled, pageSize, tracksStock]);
 
   const reset = useCallback(() => {
     requestRef.current++;

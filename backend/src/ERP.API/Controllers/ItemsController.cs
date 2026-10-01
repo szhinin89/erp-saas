@@ -48,6 +48,7 @@ public sealed class ItemsController : ControllerBase
         [FromQuery] string? barcode = null,
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 20,
+        [FromQuery] bool? tracksStock = null,
         CancellationToken cancellationToken = default
     )
     {
@@ -64,7 +65,8 @@ public sealed class ItemsController : ControllerBase
                 brandId,
                 barcode,
                 pageNumber,
-                pageSize
+                pageSize,
+                tracksStock
             ),
             cancellationToken
         );

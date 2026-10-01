@@ -375,6 +375,9 @@ public sealed class ItemRepository : IItemRepository
         if (filter.IsForSale is not null)
             query = query.Where(x => x.SaleConfig.IsForSale == filter.IsForSale);
 
+        if (filter.TracksStock is not null)
+            query = query.Where(x => x.StockConfig.TracksStock == filter.TracksStock);
+
         if (filter.IsFavorite is not null)
             query = query.Where(x => x.SaleConfig.IsFavorite == filter.IsFavorite);
 

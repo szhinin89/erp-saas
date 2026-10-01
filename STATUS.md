@@ -2,6 +2,14 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-30** · Kernel refactor: **2026-06-05**.
 
+## ZH-INVENTORY-STOCK-ITEM-LOOKUP-01 — Ajustes/Transferencias buscan solo ítems con stock desde la fuente (2026-09-30)
+
+**Estado: COMPLETADO.** Cierra el pendiente "filtro `tracksStock` sobre la página devuelta" de ZH-PRODUCT-SELECTOR-SSOT-01.
+- Reproducción (HTTP + PostgreSQL reales): 12 coincidencias sin control de stock que ordenan antes por SKU y una con stock después → `GET /api/v1/items?search=…&isActive=true&pageSize=12` devolvía 12 ítems sin stock (total 13); `StockItemPicker` filtraba esa página en React y mostraba "sin resultados" aunque el ítem válido existía (página 2).
+- Contrato: `GET /api/v1/items` acepta el filtro opcional `tracksStock` (null = sin filtro, comportamiento previo; true/false = con/sin control de stock), atravesando `ItemsController` → `GetItemsQuery` → `ItemReportFilter` (parámetro opcional al final) → `ItemRepository.GetPageAsync`, aplicado con el resto de filtros antes de `OrderBy`/`Skip`/`Take` (el total también lo respeta). Scope por tenant, `isActive`, búsqueda SKU/nombre/descripción, orden por SKU y paginación sin cambios; `/items/report` no cambia. Sin migración ni endpoint nuevo.
+- Frontend: `GetItemsParams.tracksStock` (la URL sin el parámetro queda idéntica), `useItemLookupSearch`/`ItemLookupPicker` aceptan `tracksStock` en lugar del predicado client-side `filter` (su único consumidor era Inventario) y `StockItemPicker` lo pide; se elimina el filtrado en React.
+- Tests: 6 HTTP + PostgreSQL (`ItemLookupStockFilterHttpTests`: sin filtro = resultado actual, true, false, paginación/orden después del filtro, búsqueda por descripción + `isActive`, otro tenant); frontend: URL con/sin parámetro, hook envía/omite `tracksStock`, picker general sin cambios, `StockItemPicker` encuentra el ítem con stock detrás de una página completa de coincidencias sin stock.
+
 ## ZH-PRODUCT-SELECTOR-SSOT-01 — Una búsqueda manual de Item, pickers especializados donde corresponde (2026-09-30)
 
 **Estado: COMPLETADO.** Cierra P2-03 de la auditoría UX. Solo frontend; sin cambios de backend, UX visual amplia ni Compras.
@@ -10,7 +18,7 @@
 - Legítimos y separados: Ventas/POS (`GET /sales/item-search`: solo `IsForSale`, ranking barcode exacto → SKU exacto → parcial → nombre, stock por bodega, precio vía `IPricingResolver`, presentación por barcode) y el matching automático de recepción de Compras (código de proveedor / similitud trigram). Ningún picker resuelve precio ni existencias.
 - Final: `items/facades/itemPickerFacade` (patrón `supplierPickerFacade`) con `useItemLookupSearch` (búsqueda canónica sobre `itemLookupFacade.search`, con descarte de respuestas viejas y estado de error) y `ItemLookupPicker` (DS `zh-picker` + `ZHPickerResultItem`, ↑/↓/Enter/Escape, cargando/sin resultados/error). Inventario: un `StockItemPicker` (regla `tracksStock` + perfil `StockItemProfile` con `baseUomCode`) para Ajustes y Transferencias; Precios usa `ItemLookupPicker`; Kardex usa el hook (conserva su marcado). Eliminados `AdjustmentProductPicker.tsx`, `TransferProductPicker.tsx` y `RemoteItemPicker`.
 - Tests: hook (mínimo, debounce con una sola consulta, parámetros, regla del consumidor, respuesta vieja descartada, error, reset, enabled), picker (SKU/nombre, clic, teclado, Escape, elegibilidad, sin resultados, error, deshabilitado), `StockItemPicker` (solo stock + perfil); la página de ajustes sigue agregando líneas por el picker real.
-- Pendiente fuera de alcance: Compras (CLOSED) conserva su `ProductPicker` y su búsqueda global con la misma mecánica local (adoptar `useItemLookupSearch` cuando se reabra); Kardex conserva el marcado `pf-picker-*` (deuda visual ya registrada en la auditoría); el filtro `tracksStock` se aplica sobre la página devuelta porque `GET /items` no lo expone.
+- Pendiente fuera de alcance: Compras (CLOSED) conserva su `ProductPicker` y su búsqueda global con la misma mecánica local (adoptar `useItemLookupSearch` cuando se reabra); Kardex conserva el marcado `pf-picker-*` (deuda visual ya registrada en la auditoría); el filtro `tracksStock` sobre la página devuelta se cerró en ZH-INVENTORY-STOCK-ITEM-LOOKUP-01.
 
 ## ZH-COMPANY-IDENTITY-SSOT-01 — Identidad de empresa: dos contextos, una regla (2026-09-30)
 

@@ -8,35 +8,67 @@ vi.mock("../../items/facades/itemLookupFacade", () => ({ itemLookupFacade: { sea
 import { I18nProvider } from "../../../i18n/i18n";
 import { StockItemPicker } from "./StockItemPicker";
 
+type Row = { id: string; sku: string; shortName: string; description: string; tracksStock: boolean; defaultUomCode: string };
+
+/** 12 coincidencias sin stock que ordenan primero (A01..A12) y una con stock (Z01) en la página 2. */
+const CATALOG: Row[] = [
+  ...Array.from({ length: 12 }, (_, i) => ({
+    id: `a${i}`,
+    sku: `LKP-A${String(i + 1).padStart(2, "0")}`,
+    shortName: `Servicio ${i + 1}`,
+    description: "",
+    tracksStock: false,
+    defaultUomCode: "UN",
+  })),
+  { id: "z1", sku: "LKP-Z01", shortName: "Arroz 1kg", description: "", tracksStock: true, defaultUomCode: "UN" },
+];
+
+/** Emula GET /items: filtra (tracksStock), ordena por SKU y recién entonces pagina. */
+function backend(params: { pageSize: number; tracksStock?: boolean }) {
+  const rows = CATALOG.filter((r) => params.tracksStock === undefined || r.tracksStock === params.tracksStock)
+    .sort((a, b) => a.sku.localeCompare(b.sku))
+    .slice(0, params.pageSize);
+  return Promise.resolve({ items: rows, totalCount: rows.length, pageNumber: 1, pageSize: params.pageSize });
+}
+
+function renderPicker(onSelect = vi.fn()) {
+  render(
+    <I18nProvider>
+      <StockItemPicker placeholder="Buscar" emptyText={() => "Nada"} onSelect={onSelect} />
+    </I18nProvider>,
+  );
+  return onSelect;
+}
+
 /**
- * ZH-PRODUCT-SELECTOR-SSOT-01 — picker único de los documentos de inventario (reemplaza las dos
- * copias de Ajustes y Transferencias): solo ítems con control de stock y perfil de línea común.
+ * ZH-PRODUCT-SELECTOR-SSOT-01 / ZH-INVENTORY-STOCK-ITEM-LOOKUP-01 — picker único de los documentos
+ * de inventario: pide al backend solo ítems con control de stock y entrega el perfil de línea común.
  */
 describe("StockItemPicker", () => {
-  afterEach(cleanup);
+  afterEach(() => {
+    cleanup();
+    search.mockReset();
+  });
 
-  it("solo ofrece ítems que controlan stock y entrega id, sku, nombre y unidad base", async () => {
-    search.mockResolvedValue({
-      items: [
-        { id: "1", sku: "SKU-1", shortName: "Arroz 1kg", description: "", tracksStock: true, defaultUomCode: "UN" },
-        { id: "2", sku: "SRV-1", shortName: "Servicio de flete", description: "", tracksStock: false, defaultUomCode: "UN" },
-      ],
-      totalCount: 2,
-      pageNumber: 1,
-      pageSize: 12,
-    });
-    const onSelect = vi.fn();
-    render(
-      <I18nProvider>
-        <StockItemPicker placeholder="Buscar" emptyText={() => "Nada"} onSelect={onSelect} />
-      </I18nProvider>,
-    );
+  it("pide tracksStock=true y entrega id, sku, nombre y unidad base", async () => {
+    search.mockImplementation(backend);
+    const onSelect = renderPicker();
 
     fireEvent.change(screen.getByLabelText("Buscar"), { target: { value: "1kg" } });
     fireEvent.click(await screen.findByText("Arroz 1kg"));
 
-    expect(screen.queryByText("Servicio de flete")).toBeNull();
-    expect(search).toHaveBeenCalledWith({ search: "1kg", isActive: true, pageSize: 12 });
-    expect(onSelect).toHaveBeenCalledWith({ id: "1", sku: "SKU-1", name: "Arroz 1kg", baseUomCode: "UN" });
+    expect(search).toHaveBeenCalledWith({ search: "1kg", isActive: true, pageSize: 12, tracksStock: true });
+    expect(onSelect).toHaveBeenCalledWith({ id: "z1", sku: "LKP-Z01", name: "Arroz 1kg", baseUomCode: "UN" });
+  });
+
+  it("encuentra el ítem con stock aunque antes haya más de una página de coincidencias sin stock", async () => {
+    search.mockImplementation(backend);
+    renderPicker();
+
+    fireEvent.change(screen.getByLabelText("Buscar"), { target: { value: "LKP" } });
+
+    expect(await screen.findByText("Arroz 1kg")).toBeTruthy();
+    expect(screen.queryByText("Servicio 1")).toBeNull();
+    expect(screen.queryByText("Nada")).toBeNull();
   });
 });

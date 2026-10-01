@@ -17,6 +17,8 @@ export interface GetItemsParams {
   categoryNodeId?: string;
   brandId?: string;
   barcode?: string;
+  /** ZH-INVENTORY-STOCK-ITEM-LOOKUP-01 — solo ítems con (true) / sin (false) control de stock; filtrado en el backend antes de paginar. */
+  tracksStock?: boolean;
   pageNumber?: number;
   pageSize?: number;
 }
@@ -104,6 +106,8 @@ function buildParams(params: GetItemsParams): string {
   if (params.categoryNodeId) q.set("categoryNodeId", params.categoryNodeId);
   if (params.brandId) q.set("brandId", params.brandId);
   if (params.barcode) q.set("barcode", params.barcode);
+  if (params.tracksStock !== undefined)
+    q.set("tracksStock", String(params.tracksStock));
   q.set("pageNumber", String(params.pageNumber ?? 1));
   q.set("pageSize", String(params.pageSize ?? 20));
   return q.toString() ? `?${q.toString()}` : "";

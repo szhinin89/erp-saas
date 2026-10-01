@@ -62,11 +62,18 @@ describe("ItemLookupPicker", () => {
     expect(onSelect).toHaveBeenCalledWith(ITEMS[1]);
   });
 
-  it("regla del consumidor: solo ítems elegibles", async () => {
-    const { input } = renderPicker({ filter: (i) => i.tracksStock });
+  it("tracksStock se envía al backend; sin él, la búsqueda general no lo incluye", async () => {
+    const { input } = renderPicker({ tracksStock: true });
     fireEvent.change(input, { target: { value: "kg" } });
     await screen.findByText("Arroz 1kg");
-    expect(screen.queryByText("Azúcar 1kg")).toBeNull();
+    expect(search).toHaveBeenCalledWith({ search: "kg", isActive: true, pageSize: 12, tracksStock: true });
+    cleanup();
+
+    search.mockClear();
+    const plain = renderPicker();
+    fireEvent.change(plain.input, { target: { value: "kg" } });
+    await screen.findByText("Arroz 1kg");
+    expect(search).toHaveBeenCalledWith({ search: "kg", isActive: true, pageSize: 12 });
   });
 
   it("sin resultados: texto del consumidor con la búsqueda", async () => {
