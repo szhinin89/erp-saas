@@ -9,6 +9,7 @@ import type {
 import { warehouseService } from "../../warehouses/api/warehouseService";
 import type { WarehouseDto } from "../../warehouses/api/warehouseService";
 import { itemLookupFacade } from "../../../items/facades/itemLookupFacade";
+import { useItemLookupSearch } from "../../../items/facades/itemPickerFacade";
 import type { ItemDto } from "../../../../types/items";
 import { purchaseLookupFacade } from "../../../purchases/facades/purchaseLookupFacade";
 import { salesLookupFacade } from "../../../sales/facades/salesLookupFacade";
@@ -47,9 +48,10 @@ export function useInventoryInvestigationPage(
   );
 
   // ── Modo Producto ───────────────────────────────────────────────────────
-  const [productQuery, setProductQuery] = useState("");
-  const [productResults, setProductResults] = useState<ItemDto[]>([]);
-  const [productSearching, setProductSearching] = useState(false);
+  // Búsqueda de producto: la canónica del owner items (debounce, mínimo 2, descarte de respuestas viejas).
+  const productLookup = useItemLookupSearch({ pageSize: 10 });
+  const { query: productQuery, results: productResults, loading: productSearching } = productLookup;
+  const { setQuery: setProductQuery, reset: resetProductLookup } = productLookup;
   const [selectedProduct, setSelectedProduct] = useState<ItemDto | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<
     string | undefined
@@ -133,32 +135,19 @@ export function useInventoryInvestigationPage(
   }, []);
 
   // ── Búsqueda rápida: Producto ────────────────────────────────────────────
-  const searchProducts = useCallback(async (q: string) => {
-    setProductQuery(q);
-    if (q.trim().length < 2) {
-      setProductResults([]);
-      return;
-    }
-    setProductSearching(true);
-    try {
-      const res = await itemLookupFacade.search({
-        search: q.trim(),
-        isActive: true,
-        pageSize: 10,
-      });
-      setProductResults(res.items);
-    } catch {
-      setProductResults([]);
-    }
-    setProductSearching(false);
-  }, []);
+  const searchProducts = useCallback(
+    (q: string) => setProductQuery(q),
+    [setProductQuery],
+  );
 
-  const selectProduct = useCallback((item: ItemDto) => {
-    setSelectedProduct(item);
-    setSelectedProductId(item.id);
-    setProductQuery("");
-    setProductResults([]);
-  }, []);
+  const selectProduct = useCallback(
+    (item: ItemDto) => {
+      setSelectedProduct(item);
+      setSelectedProductId(item.id);
+      resetProductLookup();
+    },
+    [resetProductLookup],
+  );
 
   const clearSelectedProduct = useCallback(() => {
     setSelectedProduct(null);

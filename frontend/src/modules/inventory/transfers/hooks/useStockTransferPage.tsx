@@ -8,7 +8,7 @@ import {
   stockTransferService,
   type StockTransferDto,
 } from "../api/stockTransferService";
-import type { TransferProductProfile } from "../components/TransferProductPicker";
+import type { StockItemProfile } from "../../components/StockItemPicker";
 import { message } from "../../../../lib/messages";
 import { readApiErrorMessage, formatApiRequestError } from "../../../lib/apiError";
 import { useI18n } from "../../../../i18n/i18n";
@@ -106,7 +106,7 @@ export function useStockTransferPage() {
   const formLocked = transfer !== null; // ya se creó — backend no soporta editar un Draft
 
   const addLine = useCallback(
-    async (product: TransferProductProfile) => {
+    async (product: StockItemProfile) => {
       if (lines.some((l) => l.productId === product.id)) {
         message.warning(
           t(

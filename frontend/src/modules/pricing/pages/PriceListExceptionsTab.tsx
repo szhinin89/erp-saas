@@ -1,5 +1,5 @@
-﻿import { Badge } from "../../../components/PageShell";
-import {  useCallback, useEffect, useRef, useState } from "react";
+import { Badge } from "../../../components/PageShell";
+import {  useCallback, useEffect, useState } from "react";
 import {  ZHBtn } from "../../../components/zh/ZHForm";
 import {  ZHIconButton } from "../../../components/zh/ZHIconButton";
 import {  ZHDrawer } from "../../../components/zh/ZHDrawer";
@@ -13,11 +13,11 @@ import {  formatDateTime } from "../../../lib/formatters/dateFormatters";
 import { formatApiRequestError } from "../../lib/apiError";
 import { useI18n } from "../../../i18n/i18n";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
-import { ZhSelect, ZhTextInput } from "../../../components/zh/inputs";
+import { ZhSelect } from "../../../components/zh/inputs";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
 import { itemPriceListFacade } from "../../items/facades/itemPriceListFacade";
 import {  message } from "../../../lib/messages";
-import {  itemLookupFacade } from "../../items/facades/itemLookupFacade";
+import { ItemLookupPicker } from "../../items/facades/itemPickerFacade";
 import type { ItemDto } from "../../../types/items";
 import { 
   priceListService,
@@ -225,7 +225,12 @@ export function PriceListExceptionsTab({
         <div className="zh-field">
           <label className="zh-field-label">{t("pricing.ux.assign")}</label>
           <p className="zh-text-muted">{t("pricing.ux.assignHint")}</p>
-          {assigning ? <p>{t("pricing.ux.saving")}</p> : <RemoteItemPicker onSelect={(item) => void assignItem(item)} />}
+          {assigning ? <p>{t("pricing.ux.saving")}</p> : <ItemLookupPicker
+              pageSize={10}
+              placeholder={t("pricing.ux.search")}
+              emptyText={(query) => `Sin resultados para “${query}”`}
+              onSelect={(item) => void assignItem(item)}
+            />}
         </div>
       )}
       {!loading && rows.length === 0 && <p role="status">{t("pricing.ux.assignFirst")}</p>}
@@ -564,104 +569,6 @@ function ExceptionDrawer({
   );
 }
 
-// ── Buscador remoto de productos (SKU / Nombre) — sin cargar el catálogo completo ──
-
-function RemoteItemPicker({ onSelect }: { onSelect: (item: ItemDto) => void }) {
-  const { t } = useI18n();
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<ItemDto[]>([]);
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const [searchError, setSearchError] = useState("");
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node))
-        setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  useEffect(() => {
-    let current = true;
-    clearTimeout(debounceRef.current);
-    if (query.trim().length < 2) {
-      setResults([]);
-      return;
-    }
-    debounceRef.current = setTimeout(async () => {
-      setLoading(true);
-      setSearchError("");
-      try {
-        const res = await itemLookupFacade.search({
-          search: query.trim(),
-          isActive: true,
-          pageSize: 10,
-        });
-        if (current) setResults(res.items);
-      } catch (e) {
-        if (current) { setResults([]); setSearchError(formatApiRequestError(e, { generic: t("pricing.ux.error") })); }
-      }
-      if (current) setLoading(false);
-    }, 300);
-    return () => { current = false; clearTimeout(debounceRef.current); };
-  }, [query, t]);
-
-  return (
-    <div ref={wrapRef} className="zh-picker">
-      {searchError && <p role="alert">{searchError}</p>}
-      <ZhTextInput
-        className="zh-input"
-        value={query}
-        onChange={(e) => {
-          setQuery(e.target.value);
-          setOpen(true);
-        }}
-        onFocus={() => {
-          if (query.length >= 2) setOpen(true);
-        }}
-        placeholder={t("pricing.ux.search")}
-      />
-      {open && query.length >= 2 && (
-        <div className="zh-picker__dropdown">
-          {loading && (
-            <div className="zh-picker__empty">
-              Buscando...
-            </div>
-          )}
-          {!loading && results.length === 0 && (
-            <div className="zh-picker__empty">
-              Sin resultados para &ldquo;{query}&rdquo;
-            </div>
-          )}
-          {results.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className="zh-picker__result"
-              onClick={() => {
-                onSelect(item);
-                setQuery("");
-                setResults([]);
-                setOpen(false);
-              }}
-            >
-              <div className="zh-picker__result-main">
-                <div className="zh-picker__result-name">
-                  <span className="zh-picker__result-code">{item.sku}</span>
-                  {item.shortName}
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 
 

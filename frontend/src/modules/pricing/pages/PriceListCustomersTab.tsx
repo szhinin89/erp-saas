@@ -17,7 +17,7 @@ import {
 
 // PRICING-CUSTOMER-PRICE-LIST-ADMIN-05B: administración de PriceListCustomer desde
 // /products/pricing → tab "Clientes de la lista". Reutiliza el patrón ya establecido de
-// RemoteItemPicker (PriceListExceptionsTab) para el buscador, y el patrón de confirmación
+// picker remoto de ítems (hoy ItemLookupPicker de items) para el buscador, y el patrón de confirmación
 // ExistsInactive/ExistsInactive→enable de PricingRule para el conflicto "otra lista activa" →
 // aquí Conflict→assign(confirmSwitch=true). Todavía SIN consumo desde Sales.
 
@@ -172,7 +172,7 @@ export function PriceListCustomersTab({ priceList }: { priceList: PriceListDto }
 }
 
 // ── Buscador remoto de clientes (nombre / identificación) — mismo patrón que
-// RemoteItemPicker (PriceListExceptionsTab.tsx), sin cargar el catálogo completo ──
+// ItemLookupPicker (items, ZH-PRODUCT-SELECTOR-SSOT-01), sin cargar el catálogo completo ──
 
 function RemoteCustomerPicker({
   onSelect,

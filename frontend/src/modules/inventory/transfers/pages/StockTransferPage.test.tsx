@@ -48,7 +48,7 @@ vi.mock("../hooks/useStockTransferPage", () => ({
     resetForm: vi.fn(),
   }),
 }));
-vi.mock("../components/TransferProductPicker", () => ({ TransferProductPicker: () => null }));
+vi.mock("../../components/StockItemPicker", () => ({ StockItemPicker: () => null }));
 vi.mock("../../../../components/zh/inputs/ZhWarehouseSelector", () => ({ ZhWarehouseSelector: () => null }));
 vi.mock("../../../../templates/ErpPageTemplate", () => ({
   ErpPageTemplate: ({ children }: { children: ReactNode }) => <div>{children}</div>,

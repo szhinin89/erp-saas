@@ -153,7 +153,7 @@ async function setupDraftTransfer() {
   });
 
   await act(async () => {
-    await result.current.addLine({ id: "prod-1", sku: "SKU-1", name: "Producto 1" });
+    await result.current.addLine({ id: "prod-1", sku: "SKU-1", name: "Producto 1", baseUomCode: "UNIT" });
   });
 
   vi.mocked(stockTransferService.create).mockResolvedValue(buildTransfer());

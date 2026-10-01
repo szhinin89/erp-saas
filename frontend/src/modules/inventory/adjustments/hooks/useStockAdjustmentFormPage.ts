@@ -28,7 +28,7 @@ import {
   resolveLineUomCode,
 } from "../utils/adjustmentLineMath";
 import { useAdjustmentLifecycleActions } from "./useAdjustmentLifecycleActions";
-import type { AdjustmentProductProfile } from "../components/AdjustmentProductPicker";
+import type { StockItemProfile } from "../../components/StockItemPicker";
 
 export type AdjustmentEditorLine = {
   _key: number;
@@ -256,7 +256,7 @@ export function useStockAdjustmentFormPage() {
 
   // ── Líneas ────────────────────────────────────────────────────────────────
   const addLine = useCallback(
-    async (product: AdjustmentProductProfile) => {
+    async (product: StockItemProfile) => {
       if (lines.some((l) => l.itemId === product.id)) {
         message.warning(
           t(

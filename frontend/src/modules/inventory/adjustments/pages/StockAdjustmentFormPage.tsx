@@ -17,7 +17,7 @@ import {
 import { formatMoney } from "../../../../lib/sanitizers";
 import { usePrecisionDecimals } from "../../../../hooks/usePrecisionPolicy";
 import { useStockAdjustmentFormPage } from "../hooks/useStockAdjustmentFormPage";
-import { AdjustmentProductPicker } from "../components/AdjustmentProductPicker";
+import { StockItemPicker } from "../../components/StockItemPicker";
 import { AdjustmentLineCard } from "../components/AdjustmentLineCard";
 import { AdjustmentLifecycleModals } from "../components/AdjustmentLifecycleModals";
 import { AdjustmentAuditRows } from "../components/AdjustmentAuditRows";
@@ -228,9 +228,19 @@ export function StockAdjustmentFormPage() {
             <ZHCard title={t("inventory.adjustments.sections.lines", "Productos")}>
               {!ctx.formLocked && (
                 <div className="adj-picker-wrap">
-                  <AdjustmentProductPicker
+                  <StockItemPicker
                     onSelect={(p) => void ctx.addLine(p)}
                     disabled={ctx.formLocked}
+                    placeholder={t(
+                      "inventory.adjustments.placeholders.searchProduct",
+                      "Buscar producto por SKU o nombre...",
+                    )}
+                    emptyText={() =>
+                      t(
+                        "inventory.adjustments.messages.noProductResults",
+                        "Sin resultados para la búsqueda.",
+                      )
+                    }
                   />
                 </div>
               )}

@@ -2,6 +2,16 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-30** · Kernel refactor: **2026-06-05**.
 
+## ZH-PRODUCT-SELECTOR-SSOT-01 — Una búsqueda manual de Item, pickers especializados donde corresponde (2026-09-30)
+
+**Estado: COMPLETADO.** Cierra P2-03 de la auditoría UX. Solo frontend; sin cambios de backend, UX visual amplia ni Compras.
+- Inventario (8 selecciones de Item): Compras `ProductPicker` (líneas, + perfil costo/PVP) y búsqueda global de `usePurchasesPage`; Inventario `AdjustmentProductPicker` y `TransferProductPicker`; Kardex (búsqueda inline); Precios `RemoteItemPicker` (excepciones de lista; el segundo "picker" de Precios es de clientes); Ventas/POS `SalesItemSearchResultsGrid`; resolución manual de recepción (`ResolvePendingProductsModal`, reutiliza `ProductPicker`). Las 6 selecciones manuales ya usaban el mismo endpoint (`GET /api/v1/items`: contiene sobre SKU/nombre/descripción, solo activos, orden por SKU) por la misma facade (`itemLookupFacade`); el backend no se toca.
+- Duplicidad real (frontend): la mecánica de búsqueda (mínimo 2, debounce 300 ms, `isActive`, pageSize) copiada ×5 —Kardex sin debounce y ninguna con descarte de respuestas viejas salvo Precios— y dos componentes idénticos (Ajustes/Transferencias, solo cambiaba el perfil y los textos).
+- Legítimos y separados: Ventas/POS (`GET /sales/item-search`: solo `IsForSale`, ranking barcode exacto → SKU exacto → parcial → nombre, stock por bodega, precio vía `IPricingResolver`, presentación por barcode) y el matching automático de recepción de Compras (código de proveedor / similitud trigram). Ningún picker resuelve precio ni existencias.
+- Final: `items/facades/itemPickerFacade` (patrón `supplierPickerFacade`) con `useItemLookupSearch` (búsqueda canónica sobre `itemLookupFacade.search`, con descarte de respuestas viejas y estado de error) y `ItemLookupPicker` (DS `zh-picker` + `ZHPickerResultItem`, ↑/↓/Enter/Escape, cargando/sin resultados/error). Inventario: un `StockItemPicker` (regla `tracksStock` + perfil `StockItemProfile` con `baseUomCode`) para Ajustes y Transferencias; Precios usa `ItemLookupPicker`; Kardex usa el hook (conserva su marcado). Eliminados `AdjustmentProductPicker.tsx`, `TransferProductPicker.tsx` y `RemoteItemPicker`.
+- Tests: hook (mínimo, debounce con una sola consulta, parámetros, regla del consumidor, respuesta vieja descartada, error, reset, enabled), picker (SKU/nombre, clic, teclado, Escape, elegibilidad, sin resultados, error, deshabilitado), `StockItemPicker` (solo stock + perfil); la página de ajustes sigue agregando líneas por el picker real.
+- Pendiente fuera de alcance: Compras (CLOSED) conserva su `ProductPicker` y su búsqueda global con la misma mecánica local (adoptar `useItemLookupSearch` cuando se reabra); Kardex conserva el marcado `pf-picker-*` (deuda visual ya registrada en la auditoría); el filtro `tracksStock` se aplica sobre la página devuelta porque `GET /items` no lo expone.
+
 ## ZH-COMPANY-IDENTITY-SSOT-01 — Identidad de empresa: dos contextos, una regla (2026-09-30)
 
 **Estado: COMPLETADO.** Cierra P2-02 de la auditoría UX.

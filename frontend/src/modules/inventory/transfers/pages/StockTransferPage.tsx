@@ -13,7 +13,7 @@ import { ZhWarehouseSelector } from "../../../../components/zh/inputs/ZhWarehous
 import { ZhDecimalInput } from "../../../../components/zh/inputs/ZhDecimalInput";
 import { ZhTextInput } from "../../../../components/zh/inputs/ZhTextInput";
 import { Badge, EmptyState } from "../../../../components/PageShell";
-import { TransferProductPicker } from "../components/TransferProductPicker";
+import { StockItemPicker } from "../../components/StockItemPicker";
 import { useStockTransferPage } from "../hooks/useStockTransferPage";
 import "./StockTransferPage.css";
 
@@ -134,9 +134,14 @@ export function StockTransferPage() {
         <ZHCard title={t("inventory.transfers.sections.products", "Productos")}>
           {!ctx.formLocked && (
             <div className="itf-picker-wrap">
-              <TransferProductPicker
+              <StockItemPicker
                 onSelect={(p) => void ctx.addLine(p)}
                 disabled={ctx.formLocked}
+                placeholder={t(
+                  "inventory.transfers.placeholders.searchProduct",
+                  "Buscar por SKU o nombre...",
+                )}
+                emptyText={(query) => t("inventory.transfers.messages.noResults", { query })}
               />
             </div>
           )}
