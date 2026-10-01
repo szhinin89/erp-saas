@@ -568,6 +568,55 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
         getRetention.Value!.TotalRetained.Should().Be(10.5m);
     }
 
+    /// <summary>
+    /// ZH-RETENTION-EMISSION-SSOT-01 — doble confirmación concurrente del MISMO gasto con intención de
+    /// retención (doble clic / reintento): una sola confirmación gana y quedan exactamente un
+    /// RetentionDocument activo, una CxP con la retención aplicada una vez, un asiento del gasto y uno
+    /// de la retención. La perdedora no deja efectos parciales (rollback de la misma transacción).
+    /// </summary>
+    [Fact]
+    public async Task Doble_confirmacion_concurrente_del_mismo_gasto_con_retencion_produce_un_solo_conjunto_de_efectos()
+    {
+        var (seedDb, _) = BuildWiredContext();
+        await SeedAccountingChartAsync(seedDb);
+        var expenseId = await CreateDraftExpenseAsync(seedDb, _supplierNonExemptId, "RETQA-DOBLE");
+
+        async Task<bool> ConfirmAsync()
+        {
+            try
+            {
+                var (db, _) = BuildWiredContext();
+                var result = await BuildConfirmHandler(db)
+                    .Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)), CancellationToken.None);
+                return result.IsSuccess;
+            }
+            catch (DbUpdateException)
+            {
+                // Concurrencia optimista (xmin del gasto) o índice único de retención activa: la
+                // segunda confirmación pierde y su transacción se revierte completa.
+                return false;
+            }
+        }
+
+        var outcomes = await Task.WhenAll(ConfirmAsync(), ConfirmAsync());
+
+        outcomes.Count(ok => ok).Should().Be(1);
+        await using var verifyDb = CreateContext();
+        (await verifyDb.ExpenseDocuments.SingleAsync(x => x.Id == expenseId)).Status.Should().Be(ExpenseStatus.Confirmed);
+        var retentions = await verifyDb.RetentionDocuments
+            .Where(x => x.SourceDocumentType == RetentionSourceDocumentType.ExpenseDocument && x.SourceDocumentId == expenseId)
+            .ToListAsync();
+        retentions.Should().ContainSingle().Which.Status.Should().Be(RetentionStatus.Issued);
+        var payables = await verifyDb.AccountsPayables.Include(x => x.Installments)
+            .Where(x => x.OriginType == AccountsPayableOriginType.ExpenseDocument && x.OriginId == expenseId)
+            .ToListAsync();
+        payables.Should().ContainSingle().Which.RetainedAmount.Should().Be(10.5m);
+        (await verifyDb.JournalEntries.CountAsync(x => x.SourceModule == "Retentions" && x.SourceEventId == retentions[0].Id))
+            .Should().Be(1);
+        (await verifyDb.JournalEntries.CountAsync(x => x.SourceModule == "Expenses" && x.SourceEventId == expenseId))
+            .Should().Be(1);
+    }
+
     // ══════════════════════════════════════════════════════════════════════
     // BLOQUEOS
     // ══════════════════════════════════════════════════════════════════════

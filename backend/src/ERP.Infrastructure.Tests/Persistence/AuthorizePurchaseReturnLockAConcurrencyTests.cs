@@ -448,10 +448,6 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
             db,
             new FixedCurrentCompany(() => _companyId)
         );
-        var expenseRepo = new ExpenseDocumentRepository(
-            db,
-            new FixedCurrentCompany(() => _companyId)
-        );
         var purchaseReturnRepo = new PurchaseReturnRepository(
             db,
             new FixedCurrentCompany(() => _companyId)
@@ -477,7 +473,6 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
         var uow = new UnitOfWork(db);
 
         var handler = new IssueRetentionHandler(
-            expenseRepo,
             purchaseRepo,
             purchaseReturnRepo,
             payableRepo,
@@ -623,6 +618,31 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
 
         // Sin lost update: ambas mutaciones culminan siempre (Lock A serializa, no descarta).
         retentionResult.Success.Should().BeTrue();
+    }
+
+    /// <summary>
+    /// ZH-RETENTION-EMISSION-SSOT-01 — doble emisión concurrente (doble clic / reintento) sobre la
+    /// misma compra: Lock A serializa y <c>RetentionIssuer</c> (unicidad por origen, respaldada por
+    /// <c>uq_retention_documents_active_source</c>) rechaza la segunda — una sola retención activa y
+    /// la CxP descontada una sola vez.
+    /// </summary>
+    [Fact]
+    public async Task Punto7_Dos_emisiones_de_retencion_concurrentes_sobre_la_misma_compra_producen_una_sola_retencion()
+    {
+        var (invoiceId, _, payableId) = await SeedConfirmedInvoiceAsync(quantity: 10, unitPrice: 35m);
+
+        var results = await Task.WhenAll(ExecuteIssueRetentionAsync(invoiceId), ExecuteIssueRetentionAsync(invoiceId));
+
+        results.Count(r => r.Success).Should().Be(1);
+        results.Single(r => !r.Success).Error.Should().Contain("Ya existe una retención activa");
+        await using var verify = CreateContext();
+        (await verify.Set<Domain.Modules.Retentions.Entities.RetentionDocument>().AsNoTracking()
+            .CountAsync(r => r.SourceDocumentType == RetentionSourceDocumentType.PurchaseInvoice
+                && r.SourceDocumentId == invoiceId
+                && r.Status != Domain.Modules.Retentions.Enums.RetentionStatus.Cancelled))
+            .Should().Be(1);
+        var payable = await verify.AccountsPayables.AsNoTracking().Include(p => p.Installments).SingleAsync(p => p.Id == payableId);
+        payable.RetainedAmount.Should().Be(30m, "la retención se aplica a la CxP una sola vez");
     }
 
     // ── Test doubles mínimos ─────────────────────────────────────────────

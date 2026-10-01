@@ -3,8 +3,6 @@ using ERP.Application.Modules.Retentions.DTOs;
 using ERP.Application.Modules.Retentions.Services;
 using ERP.Domain.Common;
 using ERP.Domain.Exceptions;
-using ERP.Domain.Modules.Expenses.Enums;
-using ERP.Domain.Modules.Expenses.Interfaces;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Enums;
@@ -42,12 +40,14 @@ public sealed record IssueRetentionLineInput(
 
 /// <summary>
 /// RETENTIONS-APPLICATION-01C — emite un <see cref="RetentionDocument"/> de forma AISLADA (post-
-/// confirmación del documento origen, nunca integrada en su propia transacción de confirmación):
-/// para <see cref="RetentionSourceDocumentType.ExpenseDocument"/> no toca <c>AccountsPayable</c> ni
-/// genera asiento por su cuenta (esa integración transaccional vive en
-/// <c>ConfirmExpenseDocumentHandler</c>/<c>CreateConfirmedExpenseHandler</c>, ver
-/// <c>docs/decisions/RETENTIONS-MODULE-DESIGN-01.md</c> § "Flujo funcional integrado de
-/// retenciones").
+/// confirmación del documento origen, nunca integrada en su propia transacción de confirmación).
+///
+/// ZH-RETENTION-EMISSION-SSOT-01 — <see cref="RetentionSourceDocumentType.ExpenseDocument"/> se
+/// rechaza: en Gastos la retención se emite SOLO dentro de la confirmación del gasto
+/// (<c>RetentionIntent</c> en <c>ConfirmExpenseDocumentHandler</c>/<c>CreateConfirmedExpenseHandler</c>:
+/// gasto + CxP con la retención aplicada + RetentionDocument + asiento en una única transacción,
+/// <c>docs/decisions/RETENTIONS-MODULE-DESIGN-01.md</c> decisión 15). La emisión aislada que existía
+/// aquí para Gastos no tenía endpoint y creaba la retención y su asiento SIN aplicarla a la CxP.
 ///
 /// PURCHASES-RETENTIONS-BRIDGE-05B — <see cref="RetentionSourceDocumentType.PurchaseInvoice"/> SÍ
 /// queda soportado aquí (a diferencia de Gastos, Compras nunca integra la emisión dentro de
@@ -114,7 +114,10 @@ public sealed class IssueRetentionValidator : AbstractValidator<IssueRetentionCo
 
 public sealed class IssueRetentionHandler : IRequestHandler<IssueRetentionCommand, Result<RetentionDocumentDto>>
 {
-    private readonly IExpenseDocumentRepository _expenseRepo;
+    /// <summary>Mensaje único del rechazo de la emisión aislada para Gastos.</summary>
+    public const string ExpenseIssuedOnConfirmationMessage =
+        "En Gastos la retención se emite al confirmar el gasto (indique la retención al confirmar); no existe una emisión posterior.";
+
     private readonly IPurchaseInvoiceRepository _purchaseRepo;
     private readonly IPurchaseReturnRepository _purchaseReturnRepo;
     private readonly IAccountsPayableRepository _payableRepo;
@@ -126,7 +129,6 @@ public sealed class IssueRetentionHandler : IRequestHandler<IssueRetentionComman
     private readonly ICurrentUser _user;
 
     public IssueRetentionHandler(
-        IExpenseDocumentRepository expenseRepo,
         IPurchaseInvoiceRepository purchaseRepo,
         IPurchaseReturnRepository purchaseReturnRepo,
         IAccountsPayableRepository payableRepo,
@@ -138,7 +140,6 @@ public sealed class IssueRetentionHandler : IRequestHandler<IssueRetentionComman
         ICurrentUser user
     )
     {
-        _expenseRepo = expenseRepo;
         _purchaseRepo = purchaseRepo;
         _purchaseReturnRepo = purchaseReturnRepo;
         _payableRepo = payableRepo;
@@ -153,7 +154,9 @@ public sealed class IssueRetentionHandler : IRequestHandler<IssueRetentionComman
     public Task<Result<RetentionDocumentDto>> Handle(IssueRetentionCommand cmd, CancellationToken ct) =>
         cmd.SourceDocumentType switch
         {
-            RetentionSourceDocumentType.ExpenseDocument => HandleExpenseAsync(cmd, ct),
+            RetentionSourceDocumentType.ExpenseDocument => Task.FromResult(
+                Result<RetentionDocumentDto>.ValidationFailure(ExpenseIssuedOnConfirmationMessage)
+            ),
             // PURCHASES-RETENTIONS-BRIDGE-05B — Compras conectada al modelo transversal.
             RetentionSourceDocumentType.PurchaseInvoice => HandlePurchaseAsync(cmd, ct),
             // Manual: reservado sin implementación (RetentionSourceDocumentType.Manual). Resultado
@@ -166,53 +169,6 @@ public sealed class IssueRetentionHandler : IRequestHandler<IssueRetentionComman
                 )
             ),
         };
-
-    private async Task<Result<RetentionDocumentDto>> HandleExpenseAsync(
-        IssueRetentionCommand cmd,
-        CancellationToken ct
-    )
-    {
-        var tid = _tenant.TenantId;
-        var cid = _company.CompanyId;
-        var bid = _branch.BranchId;
-        var uid = _user.UserId;
-
-        // Cargar y validar el ExpenseDocument origen, fail-closed tenant/company/branch.
-        // GetByIdAsync ya filtra por tenant+company (ForOperationalScope) — el branch se valida
-        // explícitamente aquí porque el repositorio no lo filtra, mismo patrón exacto que
-        // GetRetentionEligibilityHandler/CancelExpenseDocumentHandler (nunca IgnoreQueryFilters).
-        var document = await _expenseRepo.GetByIdAsync(tid, cmd.SourceDocumentId, ct);
-        if (document is null || document.BranchId != bid)
-            return Result<RetentionDocumentDto>.NotFound("Documento de gasto no encontrado.");
-
-        if (document.Status != ExpenseStatus.Confirmed)
-            return Result<RetentionDocumentDto>.ValidationFailure(
-                "Solo se puede emitir una retención sobre un gasto confirmado."
-            );
-
-        // RETENTIONS-EXPENSES-INTEGRATION-01D-1: la unicidad por origen, la revalidación de
-        // elegibilidad server-side y la construcción/emisión del agregado se extrajeron a
-        // IRetentionIssuer (ERP.Application/Modules/Retentions/Services/RetentionIssuer.cs) — la
-        // misma operación que usa ConfirmExpenseDocumentHandler/CreateConfirmedExpenseHandler para
-        // emitir la retención dentro de su propia transacción de confirmación. Este handler sigue
-        // siendo la única vía de emisión AISLADA (post-confirmación, fuera de la transacción de
-        // confirmar el gasto) — no se duplica lógica, solo se reutiliza. Deliberadamente NO aplica
-        // AccountsPayable.ApplyRetention aquí (mismo comportamiento de siempre) — esa integración
-        // transaccional para Gastos sigue viviendo exclusivamente en los handlers de Confirmar.
-        var issued = await _issuer.IssueForExpenseAsync(
-            document,
-            new RetentionIssueRequest(tid, cid, bid, uid, cmd.EmissionPointId, cmd.IssueDate, cmd.Lines),
-            ct
-        );
-        if (!issued.IsSuccess)
-            return Result<RetentionDocumentDto>.Failure(issued.Error!, issued.Code);
-
-        // Persistir. Sin BeginTransactionAsync explícito — un único agregado nuevo (RetentionDocument
-        // + sus líneas, ya en staging vía IRetentionIssuer), sin tocar ningún otro agregado.
-        await _uow.SaveChangesAsync(ct);
-
-        return Result<RetentionDocumentDto>.Success(RetentionDocumentMapper.ToDto(issued.Value!));
-    }
 
     /// <summary>
     /// PURCHASES-RETENTIONS-BRIDGE-05B / PURCHASES-WITHHOLDING-LEGACY-REMOVAL-05E — emite un
