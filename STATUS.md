@@ -2,6 +2,16 @@
 
 **Single source of truth** for delivery state. Updated: **2026-10-01** · Kernel refactor: **2026-06-05**.
 
+## ZH-RETENTION-CANCELLATION-LIFECYCLE-01 — Retención: se anula solo con su documento origen, terminal (2026-10-01)
+
+**Estado: COMPLETADO (política C).** Sin migración. Sin cambios en cálculo tributario, Compras (inventario/costos), lógica de Gastos ni pipeline SRI/RIDE.
+- Dead-end reproducido en PostgreSQL (antes del cambio): compra confirmada + retención anulada sola → CxP 115 sin retención, asiento de retención reversado, reconfirmar y vista previa rechazados; única salida, anular la compra.
+- Política: la retención es parte de la confirmación del origen (decisión 15), `Cancel()` solo desde la anulación de Compra/Gasto (`RetentionCanceller`), `Cancelled` terminal ("No hay transición Cancelled → *" del diseño). Corregir = anular el origen y registrarlo de nuevo. Una sola semántica para Compras y Gastos.
+- Retirados: `CancelRetentionCommand`/`Handler`/`Validator`, `POST /purchases/{id}/retention/{rid}/cancel`, `cancelForPurchase` y el botón/modal "Anular retención". Nuevo gate de arquitectura `RetentionCancellationLifecycleTests`. Advertencia de retención terminal en los modales de anular compra y gasto.
+- Tests PostgreSQL: terminal tras anular la compra (no se reconfirma ni se registra ante el SRI), doble anulación concurrente y reintento en Compras y Gastos (un solo `ReverseRetention` y un solo reverso contable), otra sucursal sin efectos, comportamiento vigente con comprobante autorizado.
+- **Pendiente de definición funcional (SRI):** ninguna anulación revisa el `ElectronicDocument`; el ERP no anula ante el SRI y el reintento del pipeline reenvía XML firmado (`Signed`/`Received`) sin revisar el estado de la retención. Corregirlo requiere ADR (ElectronicDocuments v1.0 CLOSED).
+- Datos: BD de desarrollo sin compras/retenciones/documentos electrónicos; la base piloto no fue consultada (sin acceso) — ejecutar la consulta de solo lectura del informe antes de desplegar.
+
 ## ZH-PURCHASE-RETENTION-CONFIRM-01 — Compras: retención definida en el borrador y emitida al confirmar (2026-10-01)
 
 **Estado: COMPLETADO.** Compras reabierta SOLO para alinear la emisión de retenciones con `RETENTIONS-MODULE-DESIGN-01` decisión 15 (decisión funcional aprobada). Sin migración. Inventario, costos, cronograma, impuestos, documento electrónico de compra y posting de compra sin cambios de semántica.

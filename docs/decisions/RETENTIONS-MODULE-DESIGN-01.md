@@ -192,6 +192,8 @@ enum RetentionTaxType { Vat, Income }
 
 ## Estados y transiciones
 
+> **Nota de implementación (2026-10-01, ZH-RETENTION-CANCELLATION-LIFECYCLE-01):** `Cancel()` solo ocurre como consecuencia de anular el documento origen (Compra o Gasto), coherente con la decisión 15 (la retención es parte de la confirmación) y con el estado terminal de abajo. La anulación aislada de la retención (PURCHASES-RETENTIONS-CANCEL-05D, pensada para el antiguo par anular+reemitir) fue retirada al no existir ya la emisión posterior. Regla vigente: `docs/architecture/backend.md` § Retenciones.
+
 ```
 Draft ──Issue()──> Issued ──Cancel()──> Cancelled
 Draft ──(descartado, sin persistir número)

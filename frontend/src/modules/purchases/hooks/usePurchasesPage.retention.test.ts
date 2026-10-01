@@ -45,7 +45,6 @@ vi.mock("../api/purchaseService", () => ({
 vi.mock("../../retentions/facades/purchaseRetentionFacade", () => ({
   purchaseRetentionFacade: {
     getForPurchase: vi.fn(),
-    cancelForPurchase: vi.fn(),
     getElectronicXmlBlob: vi.fn(),
     getRidePdfBlob: vi.fn(),
     registerElectronic: vi.fn(),
@@ -542,111 +541,28 @@ describe("usePurchasesPage — documento electrónico de la retención (XML/RIDE
   });
 });
 
-describe("usePurchasesPage — anular retención (PURCHASES-RETENTIONS-CANCEL-05D)", () => {
-  // La condición JSX del botón "Anular" en PurchasesPage.tsx es
-  // `ctx.retention && ctx.retention.status === "Issued" && ctx.canUpdatePurchase` — se prueba aquí
-  // a nivel de estado del hook (fuente de verdad de esa condición), no montando la página completa
-  // (3200+ líneas, fuera de alcance — ver PurchasesPage.withholdingModal.test.tsx).
-  it("retention.status refleja 'Cancelled' tras anular — la condición de mostrar el botón deja de cumplirse", async () => {
-    vi.mocked(purchaseRetentionFacade.getForPurchase).mockResolvedValue(buildRetention({ status: "Issued" }));
-    vi.mocked(purchaseRetentionFacade.cancelForPurchase).mockResolvedValue(
-      buildRetention({ status: "Cancelled" }),
-    );
+describe("usePurchasesPage — sin anulación aislada de la retención (ZH-RETENTION-CANCELLATION-LIFECYCLE-01)", () => {
+  it("el hook y el facade no exponen una anulación de la retención separada de la compra", async () => {
+    vi.mocked(purchaseRetentionFacade.getForPurchase).mockResolvedValue(buildRetention());
+    const result = await setupWithLoadedInvoice();
+    await waitFor(() => expect(result.current.retention?.id).toBe("ret-1"));
+
+    expect(result.current).not.toHaveProperty("handleCancelRetention");
+    expect(result.current).not.toHaveProperty("modalRetentionCancel");
+    expect(purchaseRetentionFacade).not.toHaveProperty("cancelForPurchase");
+  });
+
+  it("anular la compra es la única vía: llama purchaseService.cancel y la retención se resuelve en el backend", async () => {
+    vi.mocked(purchaseRetentionFacade.getForPurchase).mockResolvedValue(buildRetention());
+    vi.mocked(purchaseService.cancel).mockResolvedValue(buildInvoice({ status: "Cancelled" }));
     const result = await setupWithLoadedInvoice();
     await waitFor(() => expect(result.current.retention?.status).toBe("Issued"));
 
     await act(async () => {
-      await result.current.handleCancelRetention("Motivo");
+      await result.current.handleCancel("Error de digitación");
     });
 
-    expect(result.current.retention?.status).toBe("Cancelled");
-    expect(result.current.retention?.status === "Issued").toBe(false);
-  });
-
-  it("sin retención asociada, la condición de mostrar el botón nunca se cumple (retention es null)", async () => {
-    const result = await setupWithLoadedInvoice();
-
-    expect(result.current.retention).toBeNull();
-  });
-
-  it("expone canUpdatePurchase reflejando el permiso purchases.update", async () => {
-    vi.mocked(usePermissionsUi).mockReturnValue({
-      canShow: (key: string) => key === "purchases.update",
-      has: () => true,
-      isAdminRole: false,
-    } as unknown as ReturnType<typeof usePermissionsUi>);
-    const result = await setupWithLoadedInvoice();
-
-    expect(result.current.canUpdatePurchase).toBe(true);
-  });
-
-  it("handleCancelRetention llama purchaseRetentionFacade.cancelForPurchase, nunca purchaseService.cancelWithholding", async () => {
-    vi.mocked(purchaseRetentionFacade.getForPurchase).mockResolvedValue(buildRetention());
-    vi.mocked(purchaseRetentionFacade.cancelForPurchase).mockResolvedValue(
-      buildRetention({ status: "Cancelled", cancelReason: "Error en el cálculo" }),
-    );
-    const result = await setupWithLoadedInvoice();
-    await waitFor(() => expect(result.current.retention?.id).toBe("ret-1"));
-
-    await act(async () => {
-      await result.current.handleCancelRetention("Error en el cálculo");
-    });
-
-    expect(purchaseRetentionFacade.cancelForPurchase).toHaveBeenCalledWith(
-      "purchase-1",
-      "ret-1",
-      "Error en el cálculo",
-    );
-    expect(purchaseService as unknown as Record<string, unknown>).not.toHaveProperty(
-      "cancelWithholding",
-    );
-  });
-
-  it("al anular correctamente, refresca retention y muestra message.success", async () => {
-    vi.mocked(purchaseRetentionFacade.getForPurchase).mockResolvedValue(buildRetention());
-    vi.mocked(purchaseRetentionFacade.cancelForPurchase).mockResolvedValue(
-      buildRetention({ status: "Cancelled", cancelReason: "Motivo" }),
-    );
-    const result = await setupWithLoadedInvoice();
-    await waitFor(() => expect(result.current.retention?.id).toBe("ret-1"));
-
-    await act(async () => {
-      await result.current.handleCancelRetention("Motivo");
-    });
-
-    expect(result.current.retention?.status).toBe("Cancelled");
-    expect(message.success).toHaveBeenCalledWith("Retención anulada correctamente.");
-  });
-
-  it("no llama al backend si no hay retención cargada", async () => {
-    const result = await setupWithLoadedInvoice();
-
-    await act(async () => {
-      await result.current.handleCancelRetention("Motivo");
-    });
-
-    expect(purchaseRetentionFacade.cancelForPurchase).not.toHaveBeenCalled();
-  });
-
-  it("si el backend falla, muestra el error real y no llama message.success", async () => {
-    vi.mocked(purchaseRetentionFacade.getForPurchase).mockResolvedValue(buildRetention());
-    vi.mocked(purchaseRetentionFacade.cancelForPurchase).mockRejectedValue({
-      isAxiosError: true,
-      response: {
-        status: 422,
-        data: { message: { user: "No se puede anular la retención: la cuenta por pagar ya tiene pagos aplicados." } },
-      },
-    });
-    const result = await setupWithLoadedInvoice();
-    await waitFor(() => expect(result.current.retention?.id).toBe("ret-1"));
-
-    await act(async () => {
-      await result.current.handleCancelRetention("Motivo");
-    });
-
-    expect(result.current.saveError).toBe(
-      "No se puede anular la retención: la cuenta por pagar ya tiene pagos aplicados.",
-    );
-    expect(message.success).not.toHaveBeenCalled();
+    expect(purchaseService.cancel).toHaveBeenCalledWith("purchase-1", "Error de digitación");
+    expect(message.success).toHaveBeenCalledWith("Compra anulada correctamente.");
   });
 });

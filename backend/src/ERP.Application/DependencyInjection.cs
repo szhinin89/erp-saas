@@ -41,8 +41,9 @@ public static class DependencyInjection
             ERP.Application.Modules.Payables.Services.SupplierPaymentRegistrar
         >();
         // RETENTIONS-EXPENSES-INTEGRATION-01D-3 — operación interna reutilizable de anulación de
-        // RetentionDocument (+ reversa de AP si corresponde), consumida por CancelRetentionHandler
-        // (anulación aislada) y por CancelExpenseDocumentHandler (anulación transaccional).
+        // RetentionDocument (+ reversa de AP si corresponde), consumida SOLO por la anulación del
+        // documento origen: CancelExpenseDocumentHandler y CancelPurchaseHandler
+        // (ZH-RETENTION-CANCELLATION-LIFECYCLE-01 — no existe anulación aislada de la retención).
         services.AddScoped<IRetentionCanceller, RetentionCanceller>();
         // RETENTIONS-ELECTRONIC-DOCUMENT-MODEL-03A — construye el modelo canónico
         // RetentionElectronicDocumentData desde un RetentionDocument ya Issued. Deliberadamente

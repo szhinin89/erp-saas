@@ -7,8 +7,8 @@
  * posterior. Operaciones sobre la retención ya emitida (casos de uso backend de Retentions):
  *  - lectura:   getForPurchase (GET /purchases/{id}/retention), getElectronicXmlBlob y
  *               getRidePdfBlob (on-demand, sin persistir).
- *  - anular:    cancelForPurchase (POST /purchases/{id}/retention/{retentionId}/cancel — reversa
- *               CxP + asiento).
+ * ZH-RETENTION-CANCELLATION-LIFECYCLE-01: no hay anulación aislada — la retención se anula solo
+ * anulando la compra (cascada en el backend) y una retención anulada es terminal.
  *  - registrar: registerElectronic (POST /retentions/{id}/electronic/register — firma + SRI, manual).
  * Los módulos externos deben importar desde aquí, nunca directamente de
  * retentions/api/retentionsService.
@@ -24,7 +24,6 @@ export type { IssueRetentionLineRequest, RetentionDocumentDto, RetentionIntentRe
 
 export const purchaseRetentionFacade = {
   getForPurchase: retentionsService.getForPurchase,
-  cancelForPurchase: retentionsService.cancelForPurchase,
   getElectronicXmlBlob: retentionsService.getElectronicXmlBlob,
   getRidePdfBlob: retentionsService.getRidePdfBlob,
   registerElectronic: retentionsService.registerElectronic,

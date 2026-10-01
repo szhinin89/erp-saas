@@ -288,7 +288,7 @@ public sealed class PurchaseRetentionConfirmIntegrationTests : IAsyncLifetime
             new FixedCurrentBranch(_branchId)
         );
 
-    private CancelPurchaseHandler CancelHandler(ErpDbContext db)
+    private CancelPurchaseHandler CancelHandler(ErpDbContext db, Guid? branchId = null)
     {
         var company = new FixedCurrentCompany(_companyId);
         return new CancelPurchaseHandler(
@@ -302,7 +302,7 @@ public sealed class PurchaseRetentionConfirmIntegrationTests : IAsyncLifetime
             NullLogger<CancelPurchaseHandler>.Instance,
             new FixedCurrentTenant(_tenantId),
             company,
-            new FixedCurrentBranch(_branchId),
+            new FixedCurrentBranch(branchId ?? _branchId),
             new FixedCurrentUser(_userId),
             new CompanyClock(db)
         );
@@ -642,6 +642,154 @@ public sealed class PurchaseRetentionConfirmIntegrationTests : IAsyncLifetime
             .SingleAsync(e => e.Id == retentionEntry.ReverseJournalEntryId);
         reverse.Lines.Sum(l => l.Debit).Should().Be(4.5m);
         reverse.Lines.Sum(l => l.Credit).Should().Be(4.5m);
+    }
+
+    // ── ZH-RETENTION-CANCELLATION-LIFECYCLE-01: la retención solo se anula con su origen ──
+
+    private async Task<Result<PurchaseInvoiceDto>> CancelPurchaseAsync(Guid invoiceId, Guid? branchId = null)
+    {
+        await using var db = CreateWiredContext();
+        var handler = CancelHandler(db, branchId);
+        return await handler.Handle(new CancelPurchaseCommand(invoiceId, "Error de digitación"), CancellationToken.None);
+    }
+
+    private async Task<(bool Success, string? Error)> TryCancelPurchaseAsync(Guid invoiceId)
+    {
+        try
+        {
+            var result = await CancelPurchaseAsync(invoiceId);
+            return (result.IsSuccess, result.Error);
+        }
+        catch (DbUpdateException ex)
+        {
+            return (false, ex.GetType().Name);
+        }
+    }
+
+    /// <summary>Reversos contables del asiento de emisión de la retención (debe ser exactamente uno tras anular).</summary>
+    private async Task<(ERP.Domain.Modules.Accounting.Enums.JournalEntryStatus IssuedStatus, int Reversals)> RetentionAccountingAsync(Guid retentionId)
+    {
+        await using var db = CreateContext();
+        var issued = await db.JournalEntries.AsNoTracking()
+            .SingleAsync(e => e.SourceModule == "Retentions" && e.SourceEventType == "DocumentIssued" && e.SourceEventId == retentionId);
+        var reversals = await db.JournalEntries.AsNoTracking()
+            .CountAsync(e => e.SourceEventType == "Reversal" && e.SourceEventId == issued.Id);
+        return (issued.Status, reversals);
+    }
+
+    [Fact]
+    public async Task Retencion_anulada_con_su_compra_es_terminal_no_se_reemite_ni_se_registra_electronicamente()
+    {
+        var invoiceId = await SeedDraftPurchaseAsync();
+        (await ConfirmAsync(invoiceId, VatIntent())).IsSuccess.Should().BeTrue();
+        (await CancelPurchaseAsync(invoiceId)).IsSuccess.Should().BeTrue();
+        var retentionId = (await ReadAsync(invoiceId)).Retentions.Single().Id;
+
+        var reconfirm = await ConfirmAsync(invoiceId, VatIntent());
+        Result<ERP.Application.Modules.ElectronicDocuments.DTOs.ElectronicDocumentDto> register;
+        await using (var db = CreateContext())
+            register = await new RegisterRetentionElectronicDocumentHandler(
+                new RetentionDocumentRepository(db, new FixedCurrentCompany(_companyId)),
+                Mock.Of<ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentIssuer>(),
+                new FixedCurrentTenant(_tenantId),
+                new FixedCurrentCompany(_companyId),
+                new FixedCurrentUser(_userId)
+            ).Handle(new RegisterRetentionElectronicDocumentCommand(retentionId), CancellationToken.None);
+
+        reconfirm.IsSuccess.Should().BeFalse("la compra anulada no vuelve a confirmarse");
+        register.IsSuccess.Should().BeFalse("una retención anulada no se registra ante el SRI");
+        var s = await ReadAsync(invoiceId);
+        s.Status.Should().Be(PurchaseStatus.Cancelled);
+        s.Retentions.Should().ContainSingle().Which.Status.Should().Be(RetentionStatus.Cancelled);
+        s.Payables.Single().RetainedAmount.Should().Be(0m);
+        var accounting = await RetentionAccountingAsync(retentionId);
+        accounting.IssuedStatus.Should().Be(ERP.Domain.Modules.Accounting.Enums.JournalEntryStatus.Reversed);
+        accounting.Reversals.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Doble_anulacion_concurrente_de_la_compra_revierte_la_retencion_una_sola_vez()
+    {
+        var invoiceId = await SeedDraftPurchaseAsync();
+        (await ConfirmAsync(invoiceId, VatIntent())).IsSuccess.Should().BeTrue();
+
+        var results = await Task.WhenAll(TryCancelPurchaseAsync(invoiceId), TryCancelPurchaseAsync(invoiceId));
+
+        results.Count(r => r.Success).Should().Be(1, string.Join(" | ", results.Select(r => r.Error)));
+        var s = await ReadAsync(invoiceId);
+        s.Status.Should().Be(PurchaseStatus.Cancelled);
+        var retention = s.Retentions.Should().ContainSingle().Which;
+        retention.Status.Should().Be(RetentionStatus.Cancelled);
+        var payable = s.Payables.Should().ContainSingle().Which;
+        payable.RetainedAmount.Should().Be(0m, "ReverseRetention se aplica exactamente una vez");
+        payable.Status.Should().Be(AccountsPayableStatus.Cancelled);
+        (await RetentionAccountingAsync(retention.Id)).Reversals.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Reintento_de_la_anulacion_no_vuelve_a_revertir_la_retencion()
+    {
+        var invoiceId = await SeedDraftPurchaseAsync();
+        (await ConfirmAsync(invoiceId, VatIntent())).IsSuccess.Should().BeTrue();
+        (await CancelPurchaseAsync(invoiceId)).IsSuccess.Should().BeTrue();
+
+        var retry = await CancelPurchaseAsync(invoiceId);
+
+        retry.IsSuccess.Should().BeFalse();
+        retry.Error.Should().Be("Esta compra ya fue anulada.");
+        var s = await ReadAsync(invoiceId);
+        s.Payables.Single().RetainedAmount.Should().Be(0m);
+        (await RetentionAccountingAsync(s.Retentions.Single().Id)).Reversals.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Anular_desde_otra_sucursal_responde_NotFound_y_la_retencion_sigue_activa()
+    {
+        var invoiceId = await SeedDraftPurchaseAsync();
+        (await ConfirmAsync(invoiceId, VatIntent())).IsSuccess.Should().BeTrue();
+
+        var result = await CancelPurchaseAsync(invoiceId, branchId: _otherBranchId);
+
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        var s = await ReadAsync(invoiceId);
+        s.Status.Should().Be(PurchaseStatus.Confirmed);
+        s.Retentions.Should().ContainSingle().Which.Status.Should().Be(RetentionStatus.Issued);
+        s.Payables.Single().RetainedAmount.Should().Be(4.5m);
+        (await RetentionAccountingAsync(s.Retentions.Single().Id)).Reversals.Should().Be(0);
+    }
+
+    /// <summary>
+    /// Comportamiento VIGENTE, sin definición funcional SRI (ver ZH-RETENTION-CANCELLATION-LIFECYCLE-01
+    /// § matriz SRI): anular la compra anula la retención en el ERP aunque su comprobante electrónico
+    /// ya esté autorizado, y no toca el <c>ElectronicDocument</c> (no existe flujo de anulación ante
+    /// el SRI). Si se define esa regla, este test debe cambiar con ella.
+    /// </summary>
+    [Fact]
+    public async Task Vigente_anular_la_compra_con_retencion_autorizada_no_toca_el_documento_electronico()
+    {
+        var invoiceId = await SeedDraftPurchaseAsync();
+        (await ConfirmAsync(invoiceId, VatIntent())).IsSuccess.Should().BeTrue();
+        var retentionId = (await ReadAsync(invoiceId)).Retentions.Single().Id;
+        Guid edocId;
+        await using (var db = CreateContext())
+        {
+            var edoc = ERP.Domain.Modules.ElectronicDocuments.Entities.ElectronicDocument.Create(
+                _tenantId, _companyId, ERP.Domain.Modules.ElectronicDocuments.Enums.ElectronicDocumentType.Retention,
+                "Retentions", retentionId, _userId);
+            db.ElectronicDocuments.Add(edoc);
+            await db.SaveChangesAsync();
+            edocId = edoc.Id;
+            // Estado SRI simulado: el pipeline real (firma + SOAP) queda fuera de esta prueba.
+            await db.Database.ExecuteSqlInterpolatedAsync(
+                $"UPDATE electronic_documents SET current_state = {(int)ERP.Domain.Modules.ElectronicDocuments.Enums.ElectronicDocumentState.Authorized} WHERE id = {edocId}");
+        }
+
+        (await CancelPurchaseAsync(invoiceId)).IsSuccess.Should().BeTrue();
+
+        (await ReadAsync(invoiceId)).Retentions.Single().Status.Should().Be(RetentionStatus.Cancelled);
+        await using var verify = CreateContext();
+        (await verify.ElectronicDocuments.AsNoTracking().SingleAsync(e => e.Id == edocId)).CurrentState
+            .Should().Be(ERP.Domain.Modules.ElectronicDocuments.Enums.ElectronicDocumentState.Authorized);
     }
 
     // ── 9. Fail-closed por sucursal ───────────────────────────────────────

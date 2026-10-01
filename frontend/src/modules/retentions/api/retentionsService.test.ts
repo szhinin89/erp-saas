@@ -29,12 +29,8 @@ describe("retentionsService", () => {
     expect(retentionsService).not.toHaveProperty("issueForPurchase");
   });
 
-  it("cancelForPurchase llama POST /api/v1/purchases/{purchaseId}/retention/{retentionId}/cancel con el motivo", () => {
-    retentionsService.cancelForPurchase("purchase-1", "ret-1", "Error en el cálculo");
-    expect(apiPost).toHaveBeenCalledWith(
-      "/api/v1/purchases/purchase-1/retention/ret-1/cancel",
-      { reason: "Error en el cálculo" },
-    );
+  it("no expone anulación aislada de la retención (solo se anula anulando la compra)", () => {
+    expect(retentionsService).not.toHaveProperty("cancelForPurchase");
   });
 
   it("registerElectronic llama POST /api/v1/retentions/{id}/electronic/register", () => {

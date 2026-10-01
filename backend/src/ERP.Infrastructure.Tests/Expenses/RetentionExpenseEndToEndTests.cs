@@ -759,6 +759,70 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
         expenseEntry.Status.Should().Be(JournalEntryStatus.Reversed);
     }
 
+    // ── ZH-RETENTION-CANCELLATION-LIFECYCLE-01: misma semántica que Compras — la retención solo se
+    // anula con su gasto, una sola vez, y queda terminal ──
+
+    private async Task<(bool Success, string? Error)> TryCancelExpenseAsync(Guid expenseId)
+    {
+        try
+        {
+            var (db, _) = BuildWiredContext();
+            var result = await BuildCancelHandler(db)
+                .Handle(new CancelExpenseDocumentCommand(expenseId, "RETQA anulacion"), CancellationToken.None);
+            return (result.IsSuccess, result.Error);
+        }
+        catch (DbUpdateException ex)
+        {
+            return (false, ex.GetType().Name);
+        }
+    }
+
+    private async Task AssertRetentionReversedOnceAsync(Guid expenseId)
+    {
+        await using var verifyDb = CreateContext();
+        var retention = await verifyDb.RetentionDocuments.AsNoTracking().SingleAsync(x => x.SourceDocumentId == expenseId);
+        retention.Status.Should().Be(RetentionStatus.Cancelled);
+        var payable = await verifyDb.AccountsPayables.AsNoTracking().Include(x => x.Installments)
+            .SingleAsync(x => x.OriginId == expenseId);
+        payable.RetainedAmount.Should().Be(0m, "ReverseRetention se aplica exactamente una vez");
+        var issued = await verifyDb.JournalEntries.AsNoTracking()
+            .SingleAsync(x => x.SourceModule == "Retentions" && x.SourceEventType == "DocumentIssued" && x.SourceEventId == retention.Id);
+        issued.Status.Should().Be(JournalEntryStatus.Reversed);
+        (await verifyDb.JournalEntries.AsNoTracking().CountAsync(x => x.SourceEventType == "Reversal" && x.SourceEventId == issued.Id))
+            .Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Doble_anulacion_concurrente_del_gasto_revierte_la_retencion_una_sola_vez()
+    {
+        var (db, _) = BuildWiredContext();
+        await SeedAccountingChartAsync(db);
+        var expenseId = await CreateDraftExpenseAsync(db, _supplierNonExemptId, "RETQA-CC1");
+        (await BuildConfirmHandler(db).Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)), CancellationToken.None))
+            .IsSuccess.Should().BeTrue();
+
+        var results = await Task.WhenAll(TryCancelExpenseAsync(expenseId), TryCancelExpenseAsync(expenseId));
+
+        results.Count(r => r.Success).Should().Be(1, string.Join(" | ", results.Select(r => r.Error)));
+        await AssertRetentionReversedOnceAsync(expenseId);
+    }
+
+    [Fact]
+    public async Task Reintento_de_anular_el_gasto_no_vuelve_a_revertir_la_retencion()
+    {
+        var (db, _) = BuildWiredContext();
+        await SeedAccountingChartAsync(db);
+        var expenseId = await CreateDraftExpenseAsync(db, _supplierNonExemptId, "RETQA-CC2");
+        (await BuildConfirmHandler(db).Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)), CancellationToken.None))
+            .IsSuccess.Should().BeTrue();
+        (await TryCancelExpenseAsync(expenseId)).Success.Should().BeTrue();
+
+        var retry = await TryCancelExpenseAsync(expenseId);
+
+        retry.Success.Should().BeFalse();
+        await AssertRetentionReversedOnceAsync(expenseId);
+    }
+
     [Fact]
     public async Task Cancelar_gasto_con_retencion_bloquea_si_la_CxP_ya_tiene_pagos_aplicados()
     {

@@ -120,16 +120,6 @@ export const retentionsService = {
     return data;
   },
 
-  /**
-   * PURCHASES-RETENTIONS-CANCEL-05D — anula la retención (reversa CxP + asiento contable
-   * original).
-   */
-  cancelForPurchase: (purchaseInvoiceId: string, retentionId: string, reason: string) =>
-    apiPost<RetentionDocumentDto>(
-      `${PURCHASES_BASE}/${purchaseInvoiceId}/retention/${retentionId}/cancel`,
-      { reason },
-    ),
-
   /** Registro electrónico real (firma + SOAP + autorización) — manual y explícito, nunca automático. */
   registerElectronic: (retentionId: string) =>
     apiPost<ElectronicDocumentDto>(`${RETENTIONS_BASE}/${retentionId}/electronic/register`, {}),

@@ -115,11 +115,23 @@ public sealed class PurchasesControllerRetentionTests
     [InlineData(nameof(PurchasesController.ConfirmPurchase), PurchasePermissions.Update)]
     [InlineData(nameof(PurchasesController.GetRetentionPreview), PurchasePermissions.View)]
     [InlineData(nameof(PurchasesController.GetRetention), PurchasePermissions.View)]
-    [InlineData(nameof(PurchasesController.CancelRetention), PurchasePermissions.Update)]
     public void Endpoints_de_retencion_de_Compras_usan_permisos_de_Compras(string method, string permission)
     {
         PolicyOf(method).Should().Be($"perm:{permission}");
         PolicyOf(method).Should().NotContain("expenses");
+    }
+
+    /// <summary>
+    /// ZH-RETENTION-CANCELLATION-LIFECYCLE-01 — la retención solo se anula como consecuencia de
+    /// anular la compra (CancelPurchase → RetentionCanceller); no existe anulación aislada que deje la
+    /// compra confirmada sin la retención que se pidió al confirmarla.
+    /// </summary>
+    [Fact]
+    public void No_existe_anulacion_aislada_de_la_retencion_de_una_compra()
+    {
+        typeof(PurchasesController).GetMethods().Select(m => m.Name).Should().NotContain("CancelRetention");
+        typeof(PurchasesController).Assembly.GetType("ERP.API.Controllers.CancelPurchaseRetentionRequest").Should().BeNull();
+        typeof(ConfirmPurchaseCommand).Assembly.GetType("ERP.Application.Modules.Retentions.UseCases.CancelRetentionCommand").Should().BeNull();
     }
 
     [Fact]

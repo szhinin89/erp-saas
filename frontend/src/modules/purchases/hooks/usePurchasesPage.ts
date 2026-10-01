@@ -208,16 +208,11 @@ export function usePurchasesPage() {
   const { canShow, has } = usePermissionsUi();
   const canRegisterElectronic = canShow("electronic-documents.retry");
   const canReadEmissionPoints = has("settings.emission-points.view");
-  // PURCHASES-RETENTIONS-CANCEL-05D — mismo permiso que ya protege emitir/editar la compra
-  // (PurchasePermissions.Update); sin permiso nuevo de Retenciones.
-  const canUpdatePurchase = canShow("purchases.update");
 
   // ── Modals ─────────────────────────────────────────────────────────
   const [modalConfirm, setModalConfirm] = useState(false);
   const [modalDiscount, setModalDiscount] = useState(false);
   const [modalCancelReason, setModalCancelReason] = useState(false);
-  // PURCHASES-RETENTIONS-CANCEL-05D — modal crítico de anulación de RetentionDocument.
-  const [modalRetentionCancel, setModalRetentionCancel] = useState(false);
   // PURCHASE-FREIGHT-DISTRIBUTION-MODAL-01
   const [modalDistributeCost, setModalDistributeCost] = useState(false);
   // COMPRAS-METODO-ZH-01B — resolución masiva de líneas XML sin producto.
@@ -1871,32 +1866,6 @@ export function usePurchasesPage() {
     [],
   );
 
-  // ── Anular retención (PURCHASES-RETENTIONS-CANCEL-05D) ──────────────
-  // Reversa la CxP (AccountsPayable.ReverseRetention) y el asiento contable original — ambos vía
-  // el mismo CancelRetentionCommand/RetentionCanceller transversal que ya usa Gastos.
-  const handleCancelRetention = useCallback(
-    async (reason: string) => {
-      setModalRetentionCancel(false);
-      if (!editing || !retention || whLoading) return;
-      setWhLoading(true);
-      try {
-        const ret = await purchaseRetentionFacade.cancelForPurchase(editing.id, retention.id, reason);
-        setRetention(ret);
-        message.success(
-          t("purchases.messages.retentionCancelled", "Retención anulada correctamente."),
-        );
-      } catch (err: unknown) {
-        showSaveError(
-          formatApiRequestError(err, {
-            generic: t("purchases.errors.retentionCancelFailed", "Error al anular la retención."),
-          }),
-        );
-      }
-      setWhLoading(false);
-    },
-    [editing, retention, whLoading, showSaveError, t],
-  );
-
   // ── Documento electrónico de la retención (XML/RIDE preview, registro manual) ────
   // PURCHASES-RETENTIONS-UI-MIGRATION-05C — nunca se genera/registra automáticamente al emitir;
   // son acciones explícitas del usuario sobre una retención ya Issued (mismos endpoints que ya usa
@@ -2139,8 +2108,6 @@ export function usePurchasesPage() {
     canReadEmissionPoints,
     retention,
     whLoading,
-    handleCancelRetention,
-    canUpdatePurchase,
     electronicPending,
     canRegisterElectronic,
     handleViewRetentionXml,
@@ -2168,8 +2135,6 @@ export function usePurchasesPage() {
     setModalDiscount,
     modalCancelReason,
     setModalCancelReason,
-    modalRetentionCancel,
-    setModalRetentionCancel,
     modalDistributeCost,
     setModalDistributeCost,
     modalPendingProducts,

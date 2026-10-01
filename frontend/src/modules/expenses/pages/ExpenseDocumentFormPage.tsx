@@ -627,7 +627,9 @@ export function ExpenseDocumentFormPage() {
           <>
             <p className="zh-confirm-message">
               Se reversará el asiento contable generado al confirmar y, si existe, se anulará la
-              cuenta por pagar asociada (no permitido si ya tiene pagos aplicados).
+              cuenta por pagar asociada (no permitido si ya tiene pagos aplicados). Si el gasto
+              tiene una retención emitida, también se anulará: una retención anulada no puede
+              volver a emitirse y el ERP no anula comprobantes ante el SRI.
             </p>
             <ZHField label="Motivo de anulación" required error={cancelReasonError}>
               <ZhTextarea

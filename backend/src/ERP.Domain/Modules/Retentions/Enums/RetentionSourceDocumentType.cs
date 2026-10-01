@@ -15,8 +15,8 @@ public enum RetentionSourceDocumentType
 
     /// <summary>
     /// Factura de compra — se emite dentro de <c>ConfirmPurchaseHandler</c> (RetentionIntent,
-    /// ZH-PURCHASE-RETENTION-CONFIRM-01) y se cancela vía <c>CancelRetentionHandler</c> o en cascada
-    /// al anular la compra. La vista previa de Compras (<c>retention-preview</c>/<c>CalculateRetentionQuery</c>)
+    /// ZH-PURCHASE-RETENTION-CONFIRM-01) y solo se anula en cascada al anular la compra
+    /// (ZH-RETENTION-CANCELLATION-LIFECYCLE-01). La vista previa de Compras (<c>retention-preview</c>/<c>CalculateRetentionQuery</c>)
     /// evalúa la elegibilidad con el mismo <c>IRetentionEligibilityService</c> y precalcula los montos.
     /// </summary>
     PurchaseInvoice = 1,

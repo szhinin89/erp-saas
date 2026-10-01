@@ -1234,9 +1234,21 @@ export function PurchasesPage() {
         title={t("purchases.cancel.title", "Anular compra")}
         message={
           ctx.editing
-            ? t("purchases.cancel.message", {
-                invoiceNumber: ctx.editing.invoiceNumber,
-              })
+            ? [
+                t("purchases.cancel.message", {
+                  invoiceNumber: ctx.editing.invoiceNumber,
+                }),
+                // ZH-RETENTION-CANCELLATION-LIFECYCLE-01 — la retención solo se anula con su compra y
+                // es terminal: se advierte antes de confirmar la anulación.
+                ctx.retention?.status === "Issued"
+                  ? `${t(
+                      "purchases.cancel.retentionWarning",
+                      "También se anulará la retención emitida con esta compra y se revertirá su efecto en la cuenta por pagar y en contabilidad. Una retención anulada no puede volver a emitirse, y el ERP no anula comprobantes ante el SRI.",
+                    )} (${ctx.retention.retentionNumber ?? ""})`
+                  : "",
+              ]
+                .filter(Boolean)
+                .join(" ")
             : ""
         }
         label={t("purchases.cancel.reasonLabel", "Motivo de anulación")}
@@ -1246,22 +1258,6 @@ export function PurchasesPage() {
         onConfirm={ctx.handleCancel}
       />
 
-      {/* PURCHASES-RETENTIONS-CANCEL-05D — modal crítico: motivo obligatorio, mismo patrón que
-          "Anular compra" (modalCancelReason) arriba. */}
-      <ZHPromptModal
-        open={ctx.modalRetentionCancel}
-        variant="danger"
-        title={t("purchases.retention.cancelTitle", "Anular retención")}
-        message={t(
-          "purchases.retention.cancelMessage",
-          "Esta acción reversará la afectación a la cuenta por pagar del proveedor y el asiento contable de la retención. Esta operación no se puede deshacer.",
-        )}
-        label={t("purchases.cancel.reasonLabel", "Motivo de anulación")}
-        placeholder={t("purchases.cancel.reasonPlaceholder", "Ingrese el motivo...")}
-        confirmLabel={t("purchases.cancel.confirm", "Anular")}
-        onCancel={() => ctx.setModalRetentionCancel(false)}
-        onConfirm={ctx.handleCancelRetention}
-      />
     </ErpPageTemplate>
   );
 }
@@ -3139,24 +3135,6 @@ function RetentionSection({
                     verified
                   </span>
                   {t("purchases.retention.registerElectronic", "Registrar electrónicamente")}
-                </ZHBtn>
-              )}
-              {/* PURCHASES-RETENTIONS-CANCEL-05D — RetentionCanceller ya generaliza la reversa de
-                  CxP por origen; visible solo con permiso de Compras (purchases.update, sin
-                  permiso nuevo de Retenciones) y retención Issued. */}
-              {ctx.canUpdatePurchase && (
-                <ZHBtn
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => ctx.setModalRetentionCancel(true)}
-                  disabled={ctx.whLoading}
-                  title={t("purchases.retention.cancelTitle", "Anular retención")}
-                >
-                  <span className="material-symbols-outlined pf-retention-action-icon">
-                    cancel
-                  </span>
-                  {t("purchases.retention.cancel", "Anular")}
                 </ZHBtn>
               )}
             </>

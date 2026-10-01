@@ -11,9 +11,10 @@ namespace ERP.Application.Modules.Retentions.Services;
 /// <summary>
 /// RETENTIONS-EXPENSES-INTEGRATION-01D-3 — operación interna reutilizable que anula un
 /// <see cref="RetentionDocument"/> YA CARGADO por el llamador (no lo vuelve a consultar ni valida
-/// que esté "activa" — esa responsabilidad es de quien orquesta:
-/// <c>CancelRetentionHandler</c> para la anulación aislada, <c>CancelExpenseDocumentHandler</c> para
-/// la anulación integrada al anular el gasto origen), y revierte su impacto en
+/// que esté "activa" — esa responsabilidad es de quien orquesta: la anulación del documento
+/// origen, <c>CancelExpenseDocumentHandler</c>/<c>CancelPurchaseHandler</c>; ZH-RETENTION-CANCELLATION-LIFECYCLE-01:
+/// no existe anulación aislada — la retención es parte de la confirmación del origen y solo se anula
+/// con él, y <c>Cancelled</c> es terminal), y revierte su impacto en
 /// <see cref="AccountsPayable"/> si corresponde (<see cref="AccountsPayable.ReverseRetention"/>) —
 /// mismo patrón "staged, sin SaveChanges" que <see cref="IRetentionIssuer"/> (01D-1), en reversa.
 ///

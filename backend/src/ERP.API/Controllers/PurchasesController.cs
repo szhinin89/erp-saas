@@ -228,10 +228,11 @@ public sealed class PurchasesController : ControllerBase
     // ══════════════════════════════════════════════════════════════════════
     // RetentionDocument transversal (Modules/Retentions) — única vía de retenciones para Compras
     // desde PURCHASES-WITHHOLDING-LEGACY-REMOVAL-05E. La EMISIÓN ocurre solo dentro de
-    // ConfirmPurchase (ZH-PURCHASE-RETENTION-CONFIRM-01); aquí quedan la lectura y la anulación,
-    // que reutilizan GetRetentionBySourceQuery/CancelRetentionCommand (transversales) fijando
-    // SourceDocumentType=PurchaseInvoice y SourceDocumentId=id desde la RUTA (nunca desde el body:
-    // el body es un hint de UX, nunca autoridad) con la policy de Compras.
+    // ConfirmPurchase (ZH-PURCHASE-RETENTION-CONFIRM-01) y la ANULACIÓN solo como consecuencia de
+    // anular la compra (CancelPurchase → RetentionCanceller, ZH-RETENTION-CANCELLATION-LIFECYCLE-01:
+    // la retención forma parte de la confirmación y Cancelled es terminal). Aquí queda solo la
+    // lectura, que reutiliza GetRetentionBySourceQuery fijando SourceDocumentType=PurchaseInvoice y
+    // SourceDocumentId=id desde la RUTA (nunca desde el body) con la policy de Compras.
 
     /// <summary>
     /// Retención transversal (<c>RetentionDocument</c>) activa sobre esta compra, si existe.
@@ -245,35 +246,6 @@ public sealed class PurchasesController : ControllerBase
                 new GetRetentionBySourceQuery(RetentionSourceDocumentType.PurchaseInvoice, id),
                 ct
             )
-        );
-
-    /// <summary>
-    /// PURCHASES-RETENTIONS-CANCEL-05D — anula la retención transversal (<c>RetentionDocument</c>)
-    /// de esta compra: reversa la <c>AccountsPayable</c> ya reducida al emitirla (si tenía monto
-    /// retenido real) y el asiento contable original (vía <c>RetentionDocumentCancelledPostingTranslator</c>,
-    /// genérico, sin cambios). <see cref="CancelRetentionCommand"/> recibe la compra de la RUTA como
-    /// documento origen y es el handler quien exige que <paramref name="retentionId"/> sea la
-    /// retención activa de <paramref name="purchaseId"/> (si no, el mismo 404 que una inexistente).
-    /// </summary>
-    [HttpPost("{purchaseId:guid}/retention/{retentionId:guid}/cancel")]
-    [Authorize(Policy = $"perm:{PurchasePermissions.Update}")]
-    public async Task<IActionResult> CancelRetention(
-        Guid purchaseId,
-        Guid retentionId,
-        [FromBody] CancelPurchaseRetentionRequest request,
-        CancellationToken ct
-    ) =>
-        this.ToOkOrBadRequest(
-            await _mediator.Send(
-                new CancelRetentionCommand(
-                    RetentionSourceDocumentType.PurchaseInvoice,
-                    purchaseId,
-                    retentionId,
-                    request.Reason
-                ),
-                ct
-            ),
-            "OK"
         );
 
     // ══════════════════════════════════════════════════════════════════════
@@ -306,9 +278,6 @@ public record UpdatePvpRequest(decimal NewPvp);
 public record ApplyDiscountRequest(decimal DiscountPct);
 
 public record DistributeCostRequest(string CostType, decimal Amount, List<Guid> IncludedLineIds);
-
-/// <summary>PURCHASES-RETENTIONS-CANCEL-05D.</summary>
-public record CancelPurchaseRetentionRequest(string Reason);
 
 public record CancelPurchaseRequest(string Reason);
 
