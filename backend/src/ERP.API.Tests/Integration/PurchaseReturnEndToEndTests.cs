@@ -56,15 +56,10 @@ namespace ERP.API.Tests.Integration;
 /// <c>PurchaseReturnCrossInvariantTests.cs</c> (9/9 verde) como parte del mismo comando de
 /// regresión de <c>ERP.Infrastructure.Tests</c>, sin duplicar aquí.
 ///
-/// Escenario 12 (devolución y retención simultáneas) — PURCHASES-WITHHOLDING-LEGACY-REMOVAL-05E:
-/// <c>IssueRetentionHandler.HandlePurchaseAsync</c> ahora adquiere el mismo Lock A
-/// (<c>IPurchaseReturnRepository.AcquireFinancialLockAsync</c>, namespace
-/// "PurchaseInvoice.FinancialLock") que <c>AuthorizePurchaseReturnHandler</c>/
-/// <c>CancelPurchaseHandler</c> — cubierto contra PostgreSQL real por
-/// <c>AuthorizePurchaseReturnLockAConcurrencyTests.Punto6_Devolucion_y_emision_de_retencion_simultaneas_quedan_serializadas_por_LockA</c>
-/// (ERP.Infrastructure.Tests) y a nivel unitario por
-/// <c>IssueRetentionHandlerTests.Emision_de_retencion_para_PurchaseInvoice_adquiere_Lock_A_dentro_de_una_transaccion</c> —
-/// sin duplicar aquí esa cadena de emisión SRI completa.
+/// Escenario 12 (devolución y retención simultáneas) — ZH-PURCHASE-RETENTION-CONFIRM-01: ya no
+/// puede ocurrir. La retención de Compras solo se emite dentro de <c>ConfirmPurchase</c> (compra
+/// todavía en Draft, sin devoluciones posibles); una retención existente sigue bloqueando la
+/// autorización de devoluciones (PR-006, Escenario 9).
 /// </summary>
 [Trait("Category", "PostgreSql")]
 public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime

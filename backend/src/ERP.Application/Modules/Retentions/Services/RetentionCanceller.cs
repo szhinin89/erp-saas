@@ -54,7 +54,7 @@ public sealed class RetentionCanceller : IRetentionCanceller
 
     /// <summary>
     /// PURCHASES-RETENTIONS-CANCEL-05D — mismo mapeo 1:1 que <see cref="RetentionIssuer"/> ya usa
-    /// implícitamente al resolver la CxP por origen (ver <c>IssueRetentionUseCases.HandlePurchaseAsync</c>/
+    /// implícitamente al resolver la CxP por origen (ver <c>ConfirmPurchaseHandler</c>/
     /// <c>ConfirmExpenseDocumentHandler</c>). <c>Manual</c> no tiene <see cref="AccountsPayableOriginType"/>
     /// equivalente — nunca se inventa uno.
     /// </summary>
@@ -112,7 +112,7 @@ public sealed class RetentionCanceller : IRetentionCanceller
             // encontrar ninguna AccountsPayable con un monto realmente retenido es una
             // inconsistencia de datos: se rechaza en vez de anular la retención dejando el pasivo
             // fiscal ya reflejado en CxP sin reversar — mismo criterio fail-closed que
-            // IssueRetentionHandler ya usa al emitir. Para ExpenseDocument se mantiene el
+            // ConfirmPurchaseHandler usa al emitir (sin CxP no se emite retención con monto). Para ExpenseDocument se mantiene el
             // comportamiento histórico (tolerante: "sin CxP asociada, solo cancela la retención",
             // ver RetentionCancellerTests.Sin_CxP_asociada_solo_cancela_la_retencion) — no se
             // endurece aquí para no romper la anulación de retenciones de Gastos ya en producción.

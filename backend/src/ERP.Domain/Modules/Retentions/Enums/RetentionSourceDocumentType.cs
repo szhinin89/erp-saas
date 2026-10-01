@@ -14,11 +14,10 @@ public enum RetentionSourceDocumentType
     ExpenseDocument = 0,
 
     /// <summary>
-    /// Factura de compra — emite/cancela vía <c>IssueRetentionHandler</c>/<c>CancelRetentionHandler</c>
-    /// (PURCHASES-RETENTIONS-BRIDGE-05B, PURCHASES-WITHHOLDING-LEGACY-REMOVAL-05E), única vía de
-    /// retenciones para Compras. El preview de elegibilidad de <c>RETENTIONS-ELIGIBILITY-01</c>
-    /// sigue sin implementar este origen (ver <c>RetentionEligibilityStatus.NotSupportedInThisPhase</c>);
-    /// Compras arma sus líneas vía <c>retention-preview</c>/<c>CalculateRetentionQuery</c>.
+    /// Factura de compra — se emite dentro de <c>ConfirmPurchaseHandler</c> (RetentionIntent,
+    /// ZH-PURCHASE-RETENTION-CONFIRM-01) y se cancela vía <c>CancelRetentionHandler</c> o en cascada
+    /// al anular la compra. La vista previa de Compras (<c>retention-preview</c>/<c>CalculateRetentionQuery</c>)
+    /// evalúa la elegibilidad con el mismo <c>IRetentionEligibilityService</c> y precalcula los montos.
     /// </summary>
     PurchaseInvoice = 1,
 

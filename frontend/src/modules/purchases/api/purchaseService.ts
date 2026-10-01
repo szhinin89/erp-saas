@@ -1,4 +1,5 @@
 import { apiGet, apiPost, apiPut } from "../../lib/apiEnvelope";
+import type { RetentionIntentRequest } from "../../retentions/facades/purchaseRetentionFacade";
 
 const BASE = "/api/v1/purchases";
 
@@ -345,13 +346,20 @@ export const purchaseService = {
       amount,
       includedLineIds,
     }),
-  confirm: (id: string, schedule?: ConfirmScheduleInput[]) =>
+  /**
+   * ZH-PURCHASE-RETENTION-CONFIRM-01 — `retention` es la intención opcional de emitir la retención
+   * dentro de esta misma confirmación (compra + CxP neta + retención + asientos, todo o nada).
+   * Sin intención, confirma igual que siempre.
+   */
+  confirm: (id: string, schedule?: ConfirmScheduleInput[], retention?: RetentionIntentRequest) =>
     apiPost<PurchaseInvoiceDto>(`${BASE}/${id}/confirm`, {
       schedule: schedule ?? null,
+      retention: retention ?? null,
     }),
   cancel: (id: string, reason: string) =>
     apiPost<PurchaseInvoiceDto>(`${BASE}/${id}/cancel`, { reason }),
 
+  /** Vista previa de la retención de una compra en BORRADOR (elegibilidad + montos propuestos). */
   retentionPreview: (id: string) =>
     apiGet<RetentionPreviewDto>(`${BASE}/${id}/retention-preview`),
 

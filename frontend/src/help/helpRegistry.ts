@@ -92,7 +92,8 @@ export const HELP_REGISTRY: Record<HelpKeyId, HelpContent> = {
   },
   [HELP_KEYS.PURCHASES_RETENTIONS]: {
     title: "Retenciones",
-    short: "Retenciones de IVA y Renta aplicadas según el proveedor y el tipo de ítem.",
+    short:
+      "Retenciones de IVA y Renta según el proveedor y la empresa. Se definen en el borrador y se emiten al confirmar la compra; el registro ante el SRI se hace después.",
   },
   [HELP_KEYS.PURCHASES_PAYMENT_SCHEDULE]: {
     title: "Plazos de pago",

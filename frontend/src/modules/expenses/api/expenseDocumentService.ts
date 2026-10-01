@@ -16,7 +16,7 @@ export type ExpenseStatus = "Draft" | "Confirmed" | "Cancelled";
 
 import type {
   RetentionDocumentDto,
-  RetentionTaxType,
+  RetentionIntentRequest,
 } from "../../retentions/facades/retentionDocumentFacade";
 
 /**
@@ -45,33 +45,15 @@ export interface RetentionEligibilityResult {
   isEligible: boolean;
 }
 
-export interface RetentionIntentLineRequest {
-  taxType: RetentionTaxType;
-  retentionCode: string;
-  baseAmount: number;
-  retentionRate: number;
-  retainedAmount: number;
-  description?: string | null;
-  /**
-   * RETENTIONS-TAX-COMPONENT-MODEL-02B — snapshot opcional del texto del código de retención.
-   * Sin selector de catálogo real en este formulario todavía, se omite; el backend usa
-   * `retentionCode` como respaldo cuando no se envía (ver RetentionIssuer.cs).
-   */
-  retentionCodeDescription?: string | null;
-}
-
 /**
- * RETENTIONS-UI-REMOVE-MANUAL-NUMBER-02F — ya NO incluye un número de retención manual: el
- * backend lo genera siempre server-side vía `DocumentSequence.CaptureNextAsync(..., "07")` a
- * partir de `emissionPointId` (ver RETENTIONS-DOCUMENT-SEQUENCE-02E) — enviarlo desde aquí sería
- * un campo fantasma que el backend ya ignora en silencio.
+ * ZH-PURCHASE-RETENTION-CONFIRM-01 — contrato único de la intención de retener al confirmar
+ * (Gastos y Compras), declarado en el módulo Retentions; aquí solo se reexporta con los nombres que
+ * Gastos ya usaba. El número de retención nunca viaja: lo genera el backend (secuencia "07").
  */
-export interface RetentionIntentRequest {
-  appliesRetention: boolean;
-  emissionPointId?: string | null;
-  issueDate?: string | null;
-  lines?: RetentionIntentLineRequest[] | null;
-}
+export type {
+  IssueRetentionLineRequest as RetentionIntentLineRequest,
+  RetentionIntentRequest,
+} from "../../retentions/facades/retentionDocumentFacade";
 
 export interface ExpenseLineDto {
   id: string;

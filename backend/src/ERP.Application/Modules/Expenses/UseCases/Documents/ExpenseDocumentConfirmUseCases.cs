@@ -25,49 +25,6 @@ using Microsoft.Extensions.Logging;
 
 namespace ERP.Application.Modules.Expenses.UseCases.Documents;
 
-/// <summary>
-/// RETENTIONS-EXPENSES-INTEGRATION-01D-1 — intención OPCIONAL del usuario de generar una retención
-/// en la misma operación que confirma el gasto (ver
-/// <c>docs/decisions/RETENTIONS-MODULE-DESIGN-01.md</c> § "Flujo funcional integrado de
-/// retenciones"). <see cref="AppliesRetention"/> es solo la intención — nunca prueba de que aplica:
-/// el servidor siempre revalida elegibilidad contra el documento real vía
-/// <see cref="IRetentionIssuer"/> antes de emitir. El monto/base/porcentaje de cada línea siguen sin
-/// cálculo server-side en esta fase (mismo criterio ya documentado en <see cref="IssueRetentionCommand"/>
-/// — RETENTIONS-APPLICATION-01C). RETENTIONS-DOCUMENT-SEQUENCE-02E: ya no incluye un número de
-/// retención manual — <see cref="IRetentionIssuer"/> lo genera vía <c>CaptureNextAsync</c> a partir
-/// de <see cref="EmissionPointId"/>.
-/// </summary>
-public sealed record RetentionIntent(
-    bool AppliesRetention,
-    Guid? EmissionPointId,
-    DateOnly? IssueDate,
-    IReadOnlyList<IssueRetentionLineInput>? Lines
-);
-
-/// <summary>Reglas de <see cref="RetentionIntent"/> solo cuando <c>AppliesRetention == true</c> — compartidas por ambos commands de confirmación de gastos.</summary>
-public sealed class RetentionIntentValidator : AbstractValidator<RetentionIntent>
-{
-    public RetentionIntentValidator()
-    {
-        When(
-            x => x.AppliesRetention,
-            () =>
-            {
-                RuleFor(x => x.EmissionPointId)
-                    .Must(v => v.HasValue && v.Value != Guid.Empty)
-                    .WithMessage("El punto de emisión es obligatorio para generar la retención.");
-                RuleFor(x => x.IssueDate)
-                    .NotEmpty()
-                    .WithMessage("La fecha de emisión de la retención es obligatoria.");
-                RuleFor(x => x.Lines)
-                    .NotEmpty()
-                    .WithMessage("Debe incluir al menos una línea de retención.");
-                RuleForEach(x => x.Lines!).SetValidator(new IssueRetentionLineValidator());
-            }
-        );
-    }
-}
-
 public sealed record ConfirmExpenseDocumentCommand(Guid Id, RetentionIntent? Retention = null)
     : IRequest<Result<ExpenseDocumentDetailDto>>,
         IBranchScopedRequest;

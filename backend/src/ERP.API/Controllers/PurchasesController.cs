@@ -162,7 +162,10 @@ public sealed class PurchasesController : ControllerBase
         CancellationToken ct
     ) =>
         this.ToOkOrBadRequest(
-            await _mediator.Send(new ConfirmPurchaseCommand(id, request?.Schedule), ct)
+            await _mediator.Send(
+                new ConfirmPurchaseCommand(id, request?.Schedule, request?.Retention),
+                ct
+            )
         );
 
     [HttpPost("{id:guid}/cancel")]
@@ -212,6 +215,11 @@ public sealed class PurchasesController : ControllerBase
     // RETENCIONES
     // ══════════════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Vista previa de la retención de una compra en BORRADOR (elegibilidad + montos propuestos).
+    /// ZH-PURCHASE-RETENTION-CONFIRM-01: la retención se emite dentro de <c>POST {id}/confirm</c>
+    /// (<see cref="ConfirmPurchaseRequest.Retention"/>), no existe una emisión posterior.
+    /// </summary>
     [HttpGet("{id:guid}/retention-preview")]
     [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
     public async Task<IActionResult> GetRetentionPreview(Guid id, CancellationToken ct) =>
@@ -219,20 +227,11 @@ public sealed class PurchasesController : ControllerBase
 
     // ══════════════════════════════════════════════════════════════════════
     // RetentionDocument transversal (Modules/Retentions) — única vía de retenciones para Compras
-    // desde PURCHASES-WITHHOLDING-LEGACY-REMOVAL-05E. Reutiliza IssueRetentionCommand/
-    // GetRetentionBySourceQuery/CancelRetentionCommand (transversales, ya generalizados en
-    // PURCHASES-RETENTIONS-BRIDGE-05B/PURCHASES-RETENTIONS-CANCEL-05D) — este controller no
-    // duplica ninguna lógica de emisión/elegibilidad/CxP, solo fija SourceDocumentType=
-    // PurchaseInvoice y SourceDocumentId=id desde la RUTA (nunca desde el body, mismo criterio de
-    // seguridad que el resto del ERP: el body es un hint de UX, nunca autoridad).
-    //
-    // Se decidió NO crear un endpoint transversal en RetentionsController (p. ej.
-    // "POST /api/v1/retentions/issue"): el permiso requerido difiere por SourceDocumentType
-    // (PurchasePermissions.Update para Compras) y este ERP no tiene todavía un mecanismo de policy
-    // dinámica por contenido del body — [Authorize(Policy=...)] se resuelve antes del binding del
-    // command. Mantener el endpoint aquí, en PurchasesController, reutiliza la misma policy sin
-    // crear un controller propio de Retenciones para Compras (la lógica de negocio sigue siendo
-    // 100% transversal — ver IssueRetentionCommand/RetentionIssuer).
+    // desde PURCHASES-WITHHOLDING-LEGACY-REMOVAL-05E. La EMISIÓN ocurre solo dentro de
+    // ConfirmPurchase (ZH-PURCHASE-RETENTION-CONFIRM-01); aquí quedan la lectura y la anulación,
+    // que reutilizan GetRetentionBySourceQuery/CancelRetentionCommand (transversales) fijando
+    // SourceDocumentType=PurchaseInvoice y SourceDocumentId=id desde la RUTA (nunca desde el body:
+    // el body es un hint de UX, nunca autoridad) con la policy de Compras.
 
     /// <summary>
     /// Retención transversal (<c>RetentionDocument</c>) activa sobre esta compra, si existe.
@@ -246,33 +245,6 @@ public sealed class PurchasesController : ControllerBase
                 new GetRetentionBySourceQuery(RetentionSourceDocumentType.PurchaseInvoice, id),
                 ct
             )
-        );
-
-    /// <summary>
-    /// Emite una retención transversal (<c>RetentionDocument</c>) sobre esta compra confirmada. El
-    /// número de retención NUNCA viaja en el body (se genera server-side vía
-    /// <c>DocumentSequence.CaptureNextAsync</c>, mismo criterio que el resto del ERP) y
-    /// <c>SourceDocumentId</c> siempre es <paramref name="id"/> de la ruta, nunca un valor del body.
-    /// </summary>
-    [HttpPost("{id:guid}/retention")]
-    [Authorize(Policy = $"perm:{PurchasePermissions.Update}")]
-    public async Task<IActionResult> IssueRetention(
-        Guid id,
-        [FromBody] IssuePurchaseRetentionRequest request,
-        CancellationToken ct
-    ) =>
-        this.ToOkOrBadRequest(
-            await _mediator.Send(
-                new IssueRetentionCommand(
-                    RetentionSourceDocumentType.PurchaseInvoice,
-                    id,
-                    request.EmissionPointId,
-                    request.IssueDate,
-                    request.Lines
-                ),
-                ct
-            ),
-            "OK"
         );
 
     /// <summary>
@@ -335,16 +307,17 @@ public record ApplyDiscountRequest(decimal DiscountPct);
 
 public record DistributeCostRequest(string CostType, decimal Amount, List<Guid> IncludedLineIds);
 
-/// <summary>PURCHASES-RETENTIONS-UI-MIGRATION-05C — nunca incluye SourceDocumentType/SourceDocumentId (fijos por la ruta) ni un número de retención manual.</summary>
-public record IssuePurchaseRetentionRequest(
-    Guid EmissionPointId,
-    DateOnly IssueDate,
-    IReadOnlyList<IssueRetentionLineInput> Lines
-);
-
 /// <summary>PURCHASES-RETENTIONS-CANCEL-05D.</summary>
 public record CancelPurchaseRetentionRequest(string Reason);
 
 public record CancelPurchaseRequest(string Reason);
 
-public record ConfirmPurchaseRequest(List<ConfirmScheduleInput>? Schedule = null);
+/// <summary>
+/// <see cref="Retention"/>: ZH-PURCHASE-RETENTION-CONFIRM-01 — intención opcional de emitir la
+/// retención en esta misma confirmación (mismo contrato <see cref="RetentionIntent"/> que Gastos).
+/// Ausente o null confirma exactamente igual que antes, sin retención.
+/// </summary>
+public record ConfirmPurchaseRequest(
+    List<ConfirmScheduleInput>? Schedule = null,
+    RetentionIntent? Retention = null
+);

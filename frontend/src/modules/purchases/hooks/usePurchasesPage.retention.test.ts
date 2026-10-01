@@ -10,15 +10,16 @@ import {
   purchaseRetentionFacade,
   type RetentionDocumentDto,
 } from "../../retentions/facades/purchaseRetentionFacade";
+import { emissionPointLookupFacade } from "../../emissionPoints/facades/emissionPointLookupFacade";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { message } from "../../../lib/messages";
 
 /**
- * PURCHASES-RETENTIONS-UI-MIGRATION-05C / PURCHASES-WITHHOLDING-LEGACY-REMOVAL-05E — la emisión
- * de retención desde Compras usa el modelo transversal `RetentionDocument` vía
- * `purchaseRetentionFacade` (`POST/GET /api/v1/purchases/{id}/retention`, que internamente reutilizan
- * `IssueRetentionCommand`/`GetRetentionBySourceQuery`). Cubre: carga de la retención asociada,
- * payload exacto del endpoint, y el manejo de conflicto (RetentionDocument ya emitido).
+ * Retención de Compras en el hook de la página. ZH-PURCHASE-RETENTION-CONFIRM-01: la retención se
+ * define en el BORRADOR (vista previa automática del backend, montos precargados, intención
+ * activable) y viaja como `RetentionIntent` en `purchaseService.confirm` — no existe una emisión
+ * posterior. Sobre la compra confirmada quedan: carga de la retención emitida, XML/RIDE/registro
+ * SRI y anulación (`purchaseRetentionFacade`).
  */
 
 vi.mock("../api/purchaseService", () => ({
@@ -44,11 +45,16 @@ vi.mock("../api/purchaseService", () => ({
 vi.mock("../../retentions/facades/purchaseRetentionFacade", () => ({
   purchaseRetentionFacade: {
     getForPurchase: vi.fn(),
-    issueForPurchase: vi.fn(),
     cancelForPurchase: vi.fn(),
     getElectronicXmlBlob: vi.fn(),
     getRidePdfBlob: vi.fn(),
     registerElectronic: vi.fn(),
+  },
+}));
+
+vi.mock("../../emissionPoints/facades/emissionPointLookupFacade", () => ({
+  emissionPointLookupFacade: {
+    list: vi.fn(),
   },
 }));
 
@@ -200,6 +206,24 @@ function buildRetention(overrides: Partial<RetentionDocumentDto> = {}): Retentio
   };
 }
 
+const ELIGIBLE_PREVIEW = {
+  lines: [
+    {
+      taxType: "IVA",
+      retentionCode: "725",
+      retentionCodeName: "Retención IVA 30%",
+      taxableBase: 15,
+      retentionPct: 30,
+      amountRetained: 4.5,
+    },
+  ],
+  totalRetainedVat: 4.5,
+  totalRetainedIncome: 0,
+  totalRetainedIsd: 0,
+  totalRetained: 4.5,
+  skipReason: null,
+};
+
 function wrapper({ children }: { children: React.ReactNode }) {
   return React.createElement(I18nProvider, null, children);
 }
@@ -216,6 +240,35 @@ beforeEach(() => {
     pageSize: 25,
   });
   vi.mocked(purchaseRetentionFacade.getForPurchase).mockResolvedValue(null);
+  vi.mocked(purchaseService.retentionPreview).mockResolvedValue(ELIGIBLE_PREVIEW);
+  vi.mocked(emissionPointLookupFacade.list).mockResolvedValue([
+    {
+      id: "ep-2",
+      establishmentId: "est-1",
+      establishmentCode: "001",
+      establishmentName: "Matriz",
+      branchName: null,
+      code: "002",
+      name: "Caja 2",
+      emissionType: "Electronic",
+      isDefault: false,
+      isActive: true,
+      createdAt: "2026-01-01T00:00:00Z",
+    },
+    {
+      id: "ep-1",
+      establishmentId: "est-1",
+      establishmentCode: "001",
+      establishmentName: "Matriz",
+      branchName: null,
+      code: "001",
+      name: "Principal",
+      emissionType: "Electronic",
+      isDefault: true,
+      isActive: true,
+      createdAt: "2026-01-01T00:00:00Z",
+    },
+  ] as Awaited<ReturnType<typeof emissionPointLookupFacade.list>>);
   vi.mocked(usePermissionsUi).mockReturnValue({
     canShow: () => true,
     has: () => true,
@@ -223,8 +276,8 @@ beforeEach(() => {
   } as unknown as ReturnType<typeof usePermissionsUi>);
 });
 
-async function setupWithLoadedInvoice() {
-  vi.mocked(purchaseService.getById).mockResolvedValue(buildInvoice());
+async function setupWithLoadedInvoice(overrides: Partial<PurchaseInvoiceDto> = {}) {
+  vi.mocked(purchaseService.getById).mockResolvedValue(buildInvoice(overrides));
   const { result } = renderHook(() => usePurchasesPage(), { wrapper });
 
   await act(async () => {
@@ -251,104 +304,185 @@ describe("usePurchasesPage — carga de la retención asociada (RetentionDocumen
   });
 });
 
-describe("usePurchasesPage — emitir retención vía el modelo transversal RetentionDocument", () => {
-  async function setupWithPreview() {
-    vi.mocked(purchaseService.retentionPreview).mockResolvedValue({
-      lines: [
-        {
-          taxType: "IVA",
-          retentionCode: "725",
-          retentionCodeName: "Retención IVA 30%",
-          taxableBase: 100,
-          retentionPct: 30,
-          amountRetained: 30,
-        },
-      ],
-      totalRetainedVat: 30,
-      totalRetainedIncome: 0,
-      totalRetainedIsd: 0,
-      totalRetained: 30,
-      skipReason: null,
-    });
-    const result = await setupWithLoadedInvoice();
-    await act(async () => {
-      await result.current.handleCalcRetention();
-    });
+describe("usePurchasesPage — retención definida en el borrador y emitida al confirmar (ZH-PURCHASE-RETENTION-CONFIRM-01)", () => {
+  async function setupDraft() {
+    const result = await setupWithLoadedInvoice({ status: "Draft" });
     await waitFor(() => expect(result.current.whPreview?.lines.length).toBe(1));
     return result;
   }
 
-  it("llama al endpoint nuevo (purchaseRetentionFacade.issueForPurchase), nunca purchaseService.issueWithholding", async () => {
-    vi.mocked(purchaseRetentionFacade.issueForPurchase).mockResolvedValue(buildRetention());
-    const result = await setupWithPreview();
+  it("en borrador carga la vista previa automáticamente (sin acción 'Calcular') y permite activar la retención", async () => {
+    const result = await setupDraft();
 
-    await act(async () => {
-      await result.current.handleIssueRetention("ep-1");
-    });
-
-    expect(purchaseRetentionFacade.issueForPurchase).toHaveBeenCalledTimes(1);
-    expect(purchaseService as unknown as Record<string, unknown>).not.toHaveProperty(
-      "issueWithholding",
-    );
+    expect(purchaseService.retentionPreview).toHaveBeenCalledWith("purchase-1");
+    expect(result.current.canApplyRetention).toBe(true);
+    expect(result.current.retentionIntent.appliesRetention).toBe(false);
+    expect(result.current.whLoading).toBe(false);
   });
 
-  it("el payload usa emissionPointId/issueDate/lines con taxType Vat/Income — nunca retentionNumber", async () => {
-    vi.mocked(purchaseRetentionFacade.issueForPurchase).mockResolvedValue(buildRetention());
-    const result = await setupWithPreview();
+  it("una compra confirmada no pide vista previa (la retención ya se definió al confirmar)", async () => {
+    await setupWithLoadedInvoice({ status: "Confirmed" });
 
-    await act(async () => {
-      await result.current.handleIssueRetention("ep-1");
-    });
+    expect(purchaseService.retentionPreview).not.toHaveBeenCalled();
+  });
 
-    expect(purchaseRetentionFacade.issueForPurchase).toHaveBeenCalledWith(
-      "purchase-1",
-      expect.objectContaining({
-        emissionPointId: "ep-1",
-        issueDate: expect.any(String),
-        lines: [
-          expect.objectContaining({
-            taxType: "Vat",
-            retentionCode: "725",
-            baseAmount: 100,
-            retentionRate: 30,
-            retainedAmount: 30,
-          }),
-        ],
+  it("muestra loading mientras se calcula la vista previa", async () => {
+    let resolve!: (v: typeof ELIGIBLE_PREVIEW) => void;
+    vi.mocked(purchaseService.retentionPreview).mockReturnValue(
+      new Promise((r) => {
+        resolve = r;
       }),
     );
-    const payload = vi.mocked(purchaseRetentionFacade.issueForPurchase).mock.calls[0][1];
-    expect(payload).not.toHaveProperty("retentionNumber");
-    expect(payload.lines[0]).not.toHaveProperty("retentionNumber");
-  });
+    const result = await setupWithLoadedInvoice({ status: "Draft" });
 
-  it("al emitir correctamente, actualiza retention y muestra message.success", async () => {
-    vi.mocked(purchaseRetentionFacade.issueForPurchase).mockResolvedValue(buildRetention());
-    const result = await setupWithPreview();
-
+    await waitFor(() => expect(result.current.whLoading).toBe(true));
     await act(async () => {
-      await result.current.handleIssueRetention("ep-1");
+      resolve(ELIGIBLE_PREVIEW);
     });
-
-    expect(result.current.retention?.id).toBe("ret-1");
-    expect(message.success).toHaveBeenCalledWith("Retención emitida correctamente.");
+    await waitFor(() => expect(result.current.whLoading).toBe(false));
+    expect(result.current.whPreview?.totalRetained).toBe(4.5);
   });
 
-  it("409 por RetentionDocument ya emitido muestra el mensaje claro esperado", async () => {
-    vi.mocked(purchaseRetentionFacade.issueForPurchase).mockRejectedValue({
+  it("si la vista previa falla expone el error (sin bloquear la página) y no permite activar la retención", async () => {
+    vi.mocked(purchaseService.retentionPreview).mockRejectedValue({
       isAxiosError: true,
-      response: {
-        status: 409,
-        data: { message: { user: "Ya existe una retención activa para este documento origen." } },
-      },
+      response: { status: 500, data: { message: { user: "Fallo de elegibilidad" } } },
     });
-    const result = await setupWithPreview();
+    const result = await setupWithLoadedInvoice({ status: "Draft" });
+
+    await waitFor(() => expect(result.current.whPreviewError).toBe("Fallo de elegibilidad"));
+    expect(result.current.canApplyRetention).toBe(false);
+  });
+
+  it("sin líneas propuestas (empresa no agente, proveedor exento...) la intención no puede quedar activa", async () => {
+    vi.mocked(purchaseService.retentionPreview).mockResolvedValue({
+      lines: [],
+      totalRetainedVat: 0,
+      totalRetainedIncome: 0,
+      totalRetainedIsd: 0,
+      totalRetained: 0,
+      skipReason: "La empresa no está configurada como agente de retención de IVA.",
+    });
+    const result = await setupWithLoadedInvoice({ status: "Draft" });
+    await waitFor(() => expect(result.current.whPreview?.skipReason).toContain("agente de retención"));
+
+    act(() => {
+      result.current.updateRetentionIntent({ appliesRetention: true });
+    });
+
+    await waitFor(() => expect(result.current.retentionIntent.appliesRetention).toBe(false));
+    expect(result.current.canApplyRetention).toBe(false);
+  });
+
+  it("confirmar sin intención envía la confirmación de siempre (sin retención)", async () => {
+    vi.mocked(purchaseService.confirm).mockResolvedValue(buildInvoice());
+    const result = await setupDraft();
 
     await act(async () => {
-      await result.current.handleIssueRetention("ep-1");
+      await result.current.handleConfirm();
     });
 
-    expect(result.current.saveError).toBe("Esta compra ya tiene una retención emitida.");
+    // El 2.º argumento es el cronograma de cuotas del borrador (sin relación con la retención).
+    expect(purchaseService.confirm).toHaveBeenCalledWith("purchase-1", expect.anything(), undefined);
+    expect(message.success).toHaveBeenCalledWith("Compra confirmada correctamente.");
+  });
+
+  it("al activar la intención precarga las líneas de la vista previa y preselecciona el punto de emisión por defecto", async () => {
+    vi.mocked(purchaseService.confirm).mockResolvedValue(buildInvoice());
+    const result = await setupDraft();
+
+    act(() => {
+      result.current.updateRetentionIntent({ appliesRetention: true });
+    });
+    await waitFor(() => expect(result.current.retentionIntent.emissionPointId).toBe("ep-1"));
+
+    await act(async () => {
+      await result.current.handleConfirm();
+    });
+
+    expect(purchaseService.confirm).toHaveBeenCalledTimes(1);
+    const [id, , intent] = vi.mocked(purchaseService.confirm).mock.calls[0];
+    expect(id).toBe("purchase-1");
+    expect(intent).toEqual({
+      appliesRetention: true,
+      emissionPointId: "ep-1",
+      issueDate: expect.any(String),
+      lines: [
+        {
+          taxType: "Vat",
+          retentionCode: "725",
+          baseAmount: 15,
+          retentionRate: 30,
+          retainedAmount: 4.5,
+          retentionCodeDescription: "Retención IVA 30%",
+        },
+      ],
+    });
+    expect(intent).not.toHaveProperty("retentionNumber");
+    expect(message.success).toHaveBeenCalledWith("Compra confirmada y retención emitida correctamente.");
+  });
+
+  it("desactivar la intención vuelve a confirmar sin retención", async () => {
+    vi.mocked(purchaseService.confirm).mockResolvedValue(buildInvoice());
+    const result = await setupDraft();
+    act(() => {
+      result.current.updateRetentionIntent({ appliesRetention: true });
+    });
+    await waitFor(() => expect(result.current.retentionIntent.emissionPointId).toBe("ep-1"));
+    act(() => {
+      result.current.updateRetentionIntent({ appliesRetention: false });
+    });
+
+    await act(async () => {
+      await result.current.handleConfirm();
+    });
+
+    expect(purchaseService.confirm).toHaveBeenCalledWith("purchase-1", expect.anything(), undefined);
+  });
+
+  it("intención incompleta (sin punto de emisión) no confirma a medias: muestra el error y no llama al backend", async () => {
+    vi.mocked(emissionPointLookupFacade.list).mockResolvedValue([]);
+    const result = await setupDraft();
+    act(() => {
+      result.current.updateRetentionIntent({ appliesRetention: true });
+    });
+    await waitFor(() => expect(emissionPointLookupFacade.list).toHaveBeenCalled());
+
+    await act(async () => {
+      await result.current.handleConfirm();
+    });
+
+    expect(purchaseService.confirm).not.toHaveBeenCalled();
+    expect(result.current.saveError).toBe(
+      "Complete la retención (punto de emisión y fecha) o desactívela antes de confirmar.",
+    );
+  });
+
+  it("si la confirmación con retención falla, muestra el error del backend y no informa éxito", async () => {
+    vi.mocked(purchaseService.confirm).mockRejectedValue({
+      response: { data: { message: { user: "La empresa no está configurada como agente de retención de IVA." } } },
+    });
+    const result = await setupDraft();
+    act(() => {
+      result.current.updateRetentionIntent({ appliesRetention: true });
+    });
+    await waitFor(() => expect(result.current.retentionIntent.emissionPointId).toBe("ep-1"));
+
+    await act(async () => {
+      await result.current.handleConfirm();
+    });
+
+    expect(result.current.saveError).toBe("La empresa no está configurada como agente de retención de IVA.");
     expect(message.success).not.toHaveBeenCalled();
+  });
+
+  it("no queda un segundo flujo de emisión posterior: ni acciones en el hook ni en el facade", async () => {
+    const result = await setupDraft();
+
+    expect(result.current).not.toHaveProperty("handleIssueRetention");
+    expect(result.current).not.toHaveProperty("handleCalcRetention");
+    expect(result.current).not.toHaveProperty("modalWhIssue");
+    expect(purchaseRetentionFacade).not.toHaveProperty("issueForPurchase");
   });
 });
 

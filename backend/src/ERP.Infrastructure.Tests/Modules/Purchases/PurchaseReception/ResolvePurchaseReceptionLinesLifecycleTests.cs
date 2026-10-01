@@ -57,6 +57,9 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests
         services.AddScoped<ISriDocTypeCatalogResolver, SriDocTypeCatalogResolver>();
         services.AddScoped<ERP.Application.Modules.Purchases.Services.ISriTaxResolver, SriTaxResolver>();
         services.AddScoped<IPurchaseXmlConfirmationGuard, PurchaseXmlConfirmationGuard>();
+        // ZH-PURCHASE-RETENTION-CONFIRM-01: esta confirmación no lleva RetentionIntent — el emisor
+        // es otro límite del fixture (la emisión integrada se cubre en PurchaseRetentionConfirmIntegrationTests).
+        services.AddScoped(_ => Mock.Of<ERP.Application.Modules.Retentions.Services.IRetentionIssuer>());
         services.AddScoped(_ => Mock.Of<IPurchaseReceptionDetailProcessor>());
         services.AddScoped(_ => Mock.Of<IPaymentTermDefaultResolver>(r =>
             r.ResolveForPurchaseAsync(It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>())

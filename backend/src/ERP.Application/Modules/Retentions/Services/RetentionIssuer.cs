@@ -13,10 +13,10 @@ namespace ERP.Application.Modules.Retentions.Services;
 /// <summary>
 /// RETENTIONS-EXPENSES-INTEGRATION-01D-1 — operación interna reutilizable que construye y emite un
 /// <see cref="RetentionDocument"/> sobre un documento origen YA CARGADO por el llamador (no lo
-/// vuelve a consultar ni revalida su estado — esa responsabilidad es de quien orquesta:
-/// <c>IssueRetentionHandler</c> para la emisión aislada post-confirmación,
-/// <c>ConfirmExpenseDocumentHandler</c>/<c>CreateConfirmedExpenseHandler</c> para la emisión
-/// integrada en la confirmación transaccional de Gastos).
+/// vuelve a consultar ni revalida su estado — esa responsabilidad es de quien orquesta: la
+/// confirmación transaccional del documento origen, única vía de emisión —
+/// <c>ConfirmExpenseDocumentHandler</c>/<c>CreateConfirmedExpenseHandler</c> en Gastos y
+/// <c>ConfirmPurchaseHandler</c> en Compras, ZH-PURCHASE-RETENTION-CONFIRM-01).
 ///
 /// Deliberadamente NO llama <c>SaveChangesAsync</c>/<c>IUnitOfWork</c> — solo
 /// <see cref="IRetentionDocumentRepository.AddAsync"/> (staging). Quien invoca esta operación decide
@@ -125,7 +125,7 @@ public sealed class RetentionIssuer : IRetentionIssuer
         // PURCHASES-RETENTIONS-BRIDGE-05B — wrapper de compatibilidad: solo construye el snapshot
         // desde el ExpenseDocument ya cargado y delega en el núcleo genérico. Mismo comportamiento
         // exacto de antes (mismos parámetros, mismo orden de resolución) — ningún llamador existente
-        // (ConfirmExpenseDocumentHandler/CreateConfirmedExpenseHandler/IssueRetentionHandler) necesita cambios.
+        // (ConfirmExpenseDocumentHandler/CreateConfirmedExpenseHandler) necesita cambios.
         IssueAsync(
             new RetentionSourceDocumentData(
                 RetentionSourceDocumentType.ExpenseDocument,
@@ -200,7 +200,7 @@ public sealed class RetentionIssuer : IRetentionIssuer
             return Result<RetentionDocument>.ValidationFailure(string.Join(" ", eligibility.Reasons));
 
         // RETENTIONS-DOCUMENT-SEQUENCE-02E — resolver el punto de emisión y su establecimiento
-        // ANTES de construir el agregado (mismo orden que IssueRetentionHandler): valida que
+        // ANTES de construir el agregado: valida que
         // exista y pertenezca a la empresa/tenant activos (GetByIdAsync ya filtra por tenant +
         // query filter global de empresa — un punto de emisión de otro tenant/empresa nunca es
         // visible aquí) antes de gastar ningún recurso construyendo líneas.
@@ -260,9 +260,8 @@ public sealed class RetentionIssuer : IRetentionIssuer
                 );
             }
 
-            // CaptureNextAsync: atómico (advisory lock + transacción propia) — mismo punto de
-            // entrada FROZEN (ADR-019) que ya usa IssueRetentionHandler para el mismo doc type
-            // "07". Se llama aquí, lo más tarde posible (líneas ya construidas, justo antes de
+            // CaptureNextAsync: atómico (advisory lock + transacción propia) — punto de entrada
+            // FROZEN (ADR-019) para el doc type "07". Se llama aquí, lo más tarde posible (líneas ya construidas, justo antes de
             // Issue()), para minimizar la ventana de un hueco si algo falla después. El número
             // nunca llega desde el cliente — RetentionIssueRequest ya no tiene ese campo.
             var sequential = await _sequenceRepo.CaptureNextAsync(

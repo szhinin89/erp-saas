@@ -103,8 +103,7 @@ public sealed class CancelPurchaseHandler
         // Fase 3 (P0-02, Remediación transaccional 02) — cmd.PurchaseInvoiceId ya identifica
         // directamente qué Lock A adquirir: no se requiere ninguna carga de descubrimiento.
         // PurchaseInvoice se carga por primera vez YA BAJO el lock (recarga autoritativa real,
-        // nunca la misma instancia servida por el identity map de EF Core) — mismo mecanismo que
-        // IssueRetentionHandler.
+        // nunca la misma instancia servida por el identity map de EF Core).
         await _uow.BeginTransactionAsync(ct);
         try
         {

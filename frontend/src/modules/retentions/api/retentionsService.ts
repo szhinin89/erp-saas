@@ -6,14 +6,15 @@ import { api } from "../../lib/api";
 // PurchasesPage.tsx) — nunca crea pantalla/menú propio de Retenciones (decisión fija). Tipos
 // espejo de los DTOs/records del backend, serializados en camelCase con enums como string (ver
 // backend/src/ERP.Application/Modules/Retentions/DTOs/RetentionDocumentDto.cs,
-// backend/src/ERP.Application/Modules/Retentions/UseCases/IssueRetentionUseCases.cs). Nunca se
-// envía TenantId/CompanyId/BranchId en el body — y SourceDocumentType/SourceDocumentId tampoco:
-// para Compras, ambos quedan fijos por el endpoint/ruta (PurchaseInvoice + el id de la compra).
+// backend/src/ERP.Application/Modules/Retentions/UseCases/RetentionIntent.cs). Nunca se envía
+// TenantId/CompanyId/BranchId en el body — y SourceDocumentType/SourceDocumentId tampoco: el
+// documento origen lo fija siempre la ruta de su confirmación.
 
 export type RetentionTaxType = "Vat" | "Income";
 export type RetentionStatus = "Draft" | "Issued" | "Cancelled";
 export type RetentionSourceDocumentType = "ExpenseDocument" | "PurchaseInvoice" | "Manual";
 
+/** Espejo de `IssueRetentionLineInput` (backend). `retentionCodeDescription` es opcional: el backend usa `retentionCode` como respaldo. */
 export interface IssueRetentionLineRequest {
   taxType: RetentionTaxType;
   retentionCode: string;
@@ -22,6 +23,19 @@ export interface IssueRetentionLineRequest {
   retainedAmount: number;
   description?: string | null;
   retentionCodeDescription?: string | null;
+}
+
+/**
+ * Espejo de `RetentionIntent` (backend) — intención opcional de emitir la retención DENTRO de la
+ * confirmación del documento origen (Gastos y Compras, RETENTIONS-MODULE-DESIGN-01 decisión 15,
+ * ZH-PURCHASE-RETENTION-CONFIRM-01). Nunca incluye el número de retención (lo genera el backend
+ * vía secuencia "07" a partir de `emissionPointId`) ni Tenant/Company/Branch.
+ */
+export interface RetentionIntentRequest {
+  appliesRetention: boolean;
+  emissionPointId?: string | null;
+  issueDate?: string | null;
+  lines?: IssueRetentionLineRequest[] | null;
 }
 
 export interface RetentionDocumentLineDto {
@@ -63,12 +77,6 @@ export interface RetentionDocumentDto {
   sourceDocumentTotal: number | null;
 }
 
-export interface IssuePurchaseRetentionPayload {
-  emissionPointId: string;
-  issueDate: string;
-  lines: IssueRetentionLineRequest[];
-}
-
 /** Espejo de ERP.Application.Modules.ElectronicDocuments.DTOs.ElectronicDocumentDto — devuelto por el registro electrónico manual. */
 export interface ElectronicDocumentDto {
   id: string;
@@ -95,14 +103,6 @@ export const retentionsService = {
    */
   getForPurchase: (purchaseInvoiceId: string) =>
     apiGet<RetentionDocumentDto | null>(`${PURCHASES_BASE}/${purchaseInvoiceId}/retention`),
-
-  /**
-   * Emite la retención vía el modelo transversal `RetentionDocument`. Nunca envía
-   * `retentionNumber`/`sourceDocumentType`/`sourceDocumentId` (el backend los fija: número
-   * server-side, origen por la ruta).
-   */
-  issueForPurchase: (purchaseInvoiceId: string, payload: IssuePurchaseRetentionPayload) =>
-    apiPost<RetentionDocumentDto>(`${PURCHASES_BASE}/${purchaseInvoiceId}/retention`, payload),
 
   /** XML de comprobante de retención, on-demand (sin firmar, sin autorizar, sin persistir). */
   async getElectronicXmlBlob(retentionId: string): Promise<Blob> {

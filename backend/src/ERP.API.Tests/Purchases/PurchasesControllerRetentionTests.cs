@@ -1,6 +1,8 @@
 using ERP.API.Controllers;
 using ERP.API.Tests.Support;
 using ERP.Application.Common;
+using ERP.Application.Modules.Purchases.DTOs;
+using ERP.Application.Modules.Purchases.UseCases;
 using ERP.Application.Modules.Retentions.DTOs;
 using ERP.Application.Modules.Retentions.UseCases;
 using ERP.Domain.Kernel.Permissions;
@@ -16,13 +18,12 @@ using System.Reflection;
 namespace ERP.API.Tests.Purchases;
 
 /// <summary>
-/// PURCHASES-RETENTIONS-UI-MIGRATION-05C — cubre exclusivamente el wiring HTTP de los dos
-/// endpoints nuevos (<see cref="PurchasesController.IssueRetention"/>/<see cref="PurchasesController.GetRetention"/>):
-/// que construyen el comando/query transversal correcto a partir de la ruta+body, y que exponen la
-/// policy de permiso esperada (reutilizada de Compras, sin permiso nuevo de Retenciones). Las
-/// reglas de negocio (duplicados, estado de la compra, elegibilidad, CxP) ya están cubiertas
-/// exhaustivamente en <c>IssueRetentionHandlerTests</c> (PURCHASES-RETENTIONS-BRIDGE-05B) — este
-/// controller es un pass-through delgado y no las duplica.
+/// Wiring HTTP de la retención en Compras. ZH-PURCHASE-RETENTION-CONFIRM-01: la retención se emite
+/// solo dentro de <see cref="PurchasesController.ConfirmPurchase"/> (<see cref="ConfirmPurchaseRequest.Retention"/>
+/// → <see cref="ConfirmPurchaseCommand.Retention"/>); ya no existe un endpoint de emisión posterior.
+/// Se verifica el mapeo ruta+body → comando y la policy de cada endpoint (todas de Compras, ninguna
+/// de Gastos). Las reglas de negocio (elegibilidad, CxP, atomicidad, concurrencia) se cubren en
+/// <c>ConfirmPurchaseHandlerTests</c> y en <c>PurchaseRetentionConfirmIntegrationTests</c> (PostgreSQL).
 /// </summary>
 public sealed class PurchasesControllerRetentionTests
 {
@@ -53,55 +54,80 @@ public sealed class PurchasesControllerRetentionTests
     private static IssueRetentionLineInput VatLine() =>
         new(RetentionTaxType.Vat, "725", 100m, 30m, 30m);
 
+    private static string? PolicyOf(string methodName) =>
+        typeof(PurchasesController).GetMethod(methodName)!.GetCustomAttribute<AuthorizeAttribute>()?.Policy;
+
     [Fact]
-    public async Task IssueRetention_construye_IssueRetentionCommand_con_SourceDocumentType_PurchaseInvoice_desde_la_ruta()
+    public async Task ConfirmPurchase_mapea_la_intencion_de_retencion_al_comando_con_el_id_de_la_ruta()
     {
-        IssueRetentionCommand? captured = null;
+        ConfirmPurchaseCommand? captured = null;
         var controller = BuildController(req =>
         {
-            captured = (IssueRetentionCommand)req;
-            return Result<RetentionDocumentDto>.Success(null!);
+            captured = (ConfirmPurchaseCommand)req;
+            return Result<PurchaseInvoiceDto>.Success(null!);
         });
         var purchaseInvoiceId = Guid.NewGuid();
-        var emissionPointId = Guid.NewGuid();
-        var issueDate = new DateOnly(2026, 9, 3);
+        var intent = new RetentionIntent(true, Guid.NewGuid(), new DateOnly(2026, 9, 30), new[] { VatLine() });
 
-        var response = await controller.IssueRetention(
+        var response = await controller.ConfirmPurchase(
             purchaseInvoiceId,
-            new IssuePurchaseRetentionRequest(emissionPointId, issueDate, new[] { VatLine() }),
+            new ConfirmPurchaseRequest(null, intent),
             CancellationToken.None
         );
 
         response.Should().BeOfType<OkObjectResult>();
         captured.Should().NotBeNull();
-        captured!.SourceDocumentType.Should().Be(RetentionSourceDocumentType.PurchaseInvoice);
-        captured.SourceDocumentId.Should().Be(purchaseInvoiceId, "SourceDocumentId siempre viene de la ruta, nunca del body");
-        captured.EmissionPointId.Should().Be(emissionPointId);
-        captured.IssueDate.Should().Be(issueDate);
-        captured.Lines.Should().ContainSingle();
+        captured!.InvoiceId.Should().Be(purchaseInvoiceId, "la compra siempre viene de la ruta, nunca del body");
+        captured.Retention.Should().BeSameAs(intent);
     }
 
     [Fact]
-    public async Task IssueRetention_nunca_expone_SourceDocumentType_ni_SourceDocumentId_en_el_body()
+    public async Task ConfirmPurchase_sin_body_o_sin_retencion_confirma_sin_intencion()
     {
-        // Estructuralmente imposible enviar un origen distinto o un Id distinto desde el body —
-        // mismo criterio que los tests de forma de IssueRetentionCommand (05B).
-        var properties = typeof(IssuePurchaseRetentionRequest)
-            .GetProperties()
-            .Select(p => p.Name)
-            .ToArray();
+        var captured = new List<ConfirmPurchaseCommand>();
+        var controller = BuildController(req =>
+        {
+            captured.Add((ConfirmPurchaseCommand)req);
+            return Result<PurchaseInvoiceDto>.Success(null!);
+        });
 
-        properties.Should().NotContain(new[] { "SourceDocumentType", "SourceDocumentId" });
+        await controller.ConfirmPurchase(Guid.NewGuid(), null, CancellationToken.None);
+        await controller.ConfirmPurchase(Guid.NewGuid(), new ConfirmPurchaseRequest(), CancellationToken.None);
+
+        captured.Should().HaveCount(2).And.OnlyContain(c => c.Retention == null);
     }
 
     [Fact]
-    public void IssueRetention_requiere_el_permiso_de_Compras_PurchasePermissions_Update()
+    public void ConfirmPurchaseRequest_nunca_expone_Tenant_Company_Branch_ni_numero_de_retencion()
     {
-        var method = typeof(PurchasesController).GetMethod(nameof(PurchasesController.IssueRetention))!;
-        var authorize = method.GetCustomAttribute<AuthorizeAttribute>();
+        var requestProperties = typeof(ConfirmPurchaseRequest).GetProperties().Select(p => p.Name).ToArray();
+        var intentProperties = typeof(RetentionIntent).GetProperties().Select(p => p.Name).ToArray();
 
-        authorize.Should().NotBeNull();
-        authorize!.Policy.Should().Be($"perm:{PurchasePermissions.Update}");
+        requestProperties.Should().NotContain(new[] { "TenantId", "CompanyId", "BranchId" });
+        intentProperties.Should().NotContain(new[] { "TenantId", "CompanyId", "BranchId", "RetentionNumber", "SourceDocumentId" });
+    }
+
+    /// <summary>
+    /// Matriz de permisos de la retención en Compras: confirmar (y por tanto emitir la retención) exige
+    /// el permiso de Compras de siempre; ningún endpoint de Compras exige un permiso de Gastos.
+    /// </summary>
+    [Theory]
+    [InlineData(nameof(PurchasesController.ConfirmPurchase), PurchasePermissions.Update)]
+    [InlineData(nameof(PurchasesController.GetRetentionPreview), PurchasePermissions.View)]
+    [InlineData(nameof(PurchasesController.GetRetention), PurchasePermissions.View)]
+    [InlineData(nameof(PurchasesController.CancelRetention), PurchasePermissions.Update)]
+    public void Endpoints_de_retencion_de_Compras_usan_permisos_de_Compras(string method, string permission)
+    {
+        PolicyOf(method).Should().Be($"perm:{permission}");
+        PolicyOf(method).Should().NotContain("expenses");
+    }
+
+    [Fact]
+    public void La_emision_posterior_de_retencion_sobre_una_compra_confirmada_fue_retirada()
+    {
+        typeof(PurchasesController).GetMethods().Select(m => m.Name).Should().NotContain("IssueRetention");
+        typeof(PurchasesController).Assembly.GetType("ERP.API.Controllers.IssuePurchaseRetentionRequest").Should().BeNull();
+        typeof(ConfirmPurchaseCommand).Assembly.GetType("ERP.Application.Modules.Retentions.UseCases.IssueRetentionCommand").Should().BeNull();
     }
 
     [Fact]
@@ -131,29 +157,6 @@ public sealed class PurchasesControllerRetentionTests
         captured.Should().NotBeNull();
         captured!.SourceDocumentType.Should().Be(RetentionSourceDocumentType.PurchaseInvoice);
         captured.SourceDocumentId.Should().Be(purchaseInvoiceId);
-    }
-
-    [Fact]
-    public async Task IssueRetention_propaga_el_DTO_de_RetentionDocument_devuelto_por_el_handler()
-    {
-        var dto = new RetentionDocumentDto(
-            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
-            RetentionSourceDocumentType.PurchaseInvoice, Guid.NewGuid(), Guid.NewGuid(),
-            Guid.NewGuid(), "001-001-000000005", new DateOnly(2026, 9, 3),
-            RetentionStatus.Issued, 30m, 0m, 30m, null, null, null,
-            new List<RetentionDocumentLineDto>(), "09/2026", "01", "001-001-000000123",
-            new DateOnly(2026, 8, 27), null, null, 100m, 115m
-        );
-        var controller = BuildController(_ => Result<RetentionDocumentDto>.Success(dto));
-
-        var response = await controller.IssueRetention(
-            Guid.NewGuid(),
-            new IssuePurchaseRetentionRequest(Guid.NewGuid(), new DateOnly(2026, 9, 3), new[] { VatLine() }),
-            CancellationToken.None
-        );
-
-        var ok = response.Should().BeOfType<OkObjectResult>().Which;
-        ok.Value.Should().NotBeNull();
     }
 
     [Fact]

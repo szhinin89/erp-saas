@@ -76,7 +76,7 @@ public sealed class CancelRetentionHandler : IRequestHandler<CancelRetentionComm
     {
         // GetByIdAsync ya filtra por tenant+company (ForOperationalScope); el branch se valida
         // explícitamente porque el repositorio no lo filtra — mismo patrón fail-closed usado en
-        // IssueRetentionHandler/GetRetentionEligibilityHandler, nunca IgnoreQueryFilters.
+        // GetRetentionEligibilityHandler/CalculateRetentionHandler, nunca IgnoreQueryFilters.
         //
         // Ownership (ZH-PURCHASES-RETENTION-OWNERSHIP-01): solo la retención ACTIVA del documento
         // origen de la ruta — mismo criterio que GetRetentionBySourceQuery, que el controller usaba

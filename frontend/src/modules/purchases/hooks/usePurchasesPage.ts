@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import axios from "axios";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type {
@@ -13,8 +12,18 @@ import { purchaseService } from "../api/purchaseService";
 import {
   purchaseRetentionFacade,
   type RetentionDocumentDto,
-  type IssueRetentionLineRequest,
 } from "../../retentions/facades/purchaseRetentionFacade";
+import {
+  emissionPointLookupFacade,
+  type EmissionPointListItemDto,
+} from "../../emissionPoints/facades/emissionPointLookupFacade";
+import {
+  buildPurchaseRetentionIntent,
+  canApplyPurchaseRetention,
+  emptyPurchaseRetentionIntent,
+  isPurchaseRetentionIntentComplete,
+  type PurchaseRetentionIntentState,
+} from "../utils/purchaseRetentionIntent";
 import { downloadBlob } from "../../../lib/download";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import {
@@ -179,17 +188,26 @@ export function usePurchasesPage() {
   const [ptRows, setPtRows] = useState<ScheduleRow[]>([]);
   const [ptLoaded, setPtLoaded] = useState(false);
 
-  // ── Retención (PURCHASES-RETENTIONS-UI-MIGRATION-05C: RetentionDocument transversal —
-  // el preview de cálculo (whPreview) viene de purchaseService.retentionPreview, una
-  // calculadora pura sin persistencia) ──────────────────────────────
+  // ── Retención ────────────────────────────────────────────────────
+  // ZH-PURCHASE-RETENTION-CONFIRM-01: la retención se define en el BORRADOR y se emite dentro de
+  // "Confirmar compra" (RetentionIntent). whPreview = vista previa del backend (elegibilidad +
+  // montos propuestos, se carga sola al abrir/recargar el borrador); retentionIntent = decisión del
+  // usuario (emitir o no, punto de emisión, fecha). retention = retención ya emitida (compra
+  // confirmada), sobre la que solo quedan XML/RIDE/registro SRI/anulación.
   const [whPreview, setWhPreview] = useState<RetentionPreviewDto | null>(null);
+  const [whPreviewError, setWhPreviewError] = useState<string | null>(null);
+  const [retentionIntent, setRetentionIntent] = useState<PurchaseRetentionIntentState>(() =>
+    emptyPurchaseRetentionIntent(todayIso()),
+  );
+  const [emissionPoints, setEmissionPoints] = useState<EmissionPointListItemDto[]>([]);
   const [retention, setRetention] = useState<RetentionDocumentDto | null>(
     null,
   );
   const [whLoading, setWhLoading] = useState(false);
   const [electronicPending, setElectronicPending] = useState(false);
-  const { canShow } = usePermissionsUi();
+  const { canShow, has } = usePermissionsUi();
   const canRegisterElectronic = canShow("electronic-documents.retry");
+  const canReadEmissionPoints = has("settings.emission-points.view");
   // PURCHASES-RETENTIONS-CANCEL-05D — mismo permiso que ya protege emitir/editar la compra
   // (PurchasePermissions.Update); sin permiso nuevo de Retenciones.
   const canUpdatePurchase = canShow("purchases.update");
@@ -198,7 +216,6 @@ export function usePurchasesPage() {
   const [modalConfirm, setModalConfirm] = useState(false);
   const [modalDiscount, setModalDiscount] = useState(false);
   const [modalCancelReason, setModalCancelReason] = useState(false);
-  const [modalWhIssue, setModalWhIssue] = useState(false);
   // PURCHASES-RETENTIONS-CANCEL-05D — modal crítico de anulación de RetentionDocument.
   const [modalRetentionCancel, setModalRetentionCancel] = useState(false);
   // PURCHASE-FREIGHT-DISTRIBUTION-MODAL-01
@@ -1118,6 +1135,8 @@ export function usePurchasesPage() {
     setLineKey(1);
     setSupplierProfile(null);
     setWhPreview(null);
+    setWhPreviewError(null);
+    setRetentionIntent(emptyPurchaseRetentionIntent(todayIso()));
     setRetention(null);
     setPtInstallments(1);
     setPtDaysBetween(0);
@@ -1564,6 +1583,18 @@ export function usePurchasesPage() {
   const handleConfirm = useCallback(async () => {
     setModalConfirm(false);
     if (!editing) return;
+    // ZH-PURCHASE-RETENTION-CONFIRM-01 — si el usuario pidió la retención, viaja como intención de
+    // esta misma confirmación (todo o nada en el backend). Incompleta → no se confirma a medias.
+    if (!isPurchaseRetentionIntentComplete(whPreview, retentionIntent)) {
+      showSaveError(
+        t(
+          "purchases.retention.incompleteIntent",
+          "Complete la retención (punto de emisión y fecha) o desactívela antes de confirmar.",
+        ),
+      );
+      return;
+    }
+    const retentionRequest = buildPurchaseRetentionIntent(whPreview, retentionIntent);
     setSaving(true);
     try {
       const schedule =
@@ -1575,9 +1606,14 @@ export function usePurchasesPage() {
               notes: r.notes || null,
             }))
           : undefined;
-      await purchaseService.confirm(editing.id, schedule);
+      await purchaseService.confirm(editing.id, schedule, retentionRequest);
       message.success(
-        t("purchases.messages.confirmed", "Compra confirmada correctamente."),
+        retentionRequest
+          ? t(
+              "purchases.messages.confirmedWithRetention",
+              "Compra confirmada y retención emitida correctamente.",
+            )
+          : t("purchases.messages.confirmed", "Compra confirmada correctamente."),
       );
       resetForm();
       setTab("listado");
@@ -1592,7 +1628,7 @@ export function usePurchasesPage() {
       );
     }
     setSaving(false);
-  }, [editing, ptRows, resetForm, fetchList, showSaveError, t]);
+  }, [editing, ptRows, whPreview, retentionIntent, resetForm, fetchList, showSaveError, t]);
 
   // ── Cancel purchase ────────────────────────────────────────────────
   const handleCancel = useCallback(
@@ -1760,77 +1796,79 @@ export function usePurchasesPage() {
     [getValues, setValue, t],
   );
 
-  // ── Retención (PURCHASES-RETENTIONS-UI-MIGRATION-05C) ───────────────
-  const handleCalcRetention = useCallback(async () => {
-    if (!editing) return;
-    setWhLoading(true);
-    try {
-      setWhPreview(await purchaseService.retentionPreview(editing.id));
-    } catch {
-      showSaveError(
-        t("purchases.errors.retentionPreviewFailed", "Error al calcular retención."),
-      );
-    }
-    setWhLoading(false);
-  }, [editing, showSaveError, t]);
-
-  /** "IVA"/"RENTA" (RetentionCalculator, backend legacy) → "Vat"/"Income" (RetentionTaxType). */
-  function toRetentionTaxType(taxType: string): "Vat" | "Income" {
-    return taxType === "IVA" ? "Vat" : "Income";
-  }
-
-  const handleIssueRetention = useCallback(
-    async (epId: string) => {
-      setModalWhIssue(false);
-      if (!editing || whLoading || !whPreview) return;
-      // todayIso() = hoy en Company.Timezone, nunca UTC — evita el desfase que
-      // causaba fecha futura y rechazo SRI [65] FECHA EMISIÓN EXTEMPORÁNEA.
-      const date = todayIso();
-      // El backend (IssueRetentionCommand) no calcula por su cuenta — necesita las líneas ya
-      // resueltas. Se reutiliza el mismo preview (RetentionCalculator, sin cambios) ya mostrado
-      // al usuario antes de confirmar.
-      const lines: IssueRetentionLineRequest[] = whPreview.lines
-        .filter((l) => l.amountRetained > 0)
-        .map((l) => ({
-          taxType: toRetentionTaxType(l.taxType),
-          retentionCode: l.retentionCode,
-          baseAmount: l.taxableBase,
-          retentionRate: l.retentionPct,
-          retainedAmount: l.amountRetained,
-          retentionCodeDescription: l.retentionCodeName,
-        }));
-      if (lines.length === 0) return;
+  // ── Retención en el borrador (ZH-PURCHASE-RETENTION-CONFIRM-01) ─────
+  // La vista previa se pide sola cada vez que se abre o recarga un borrador (guardar, descuento,
+  // flete, recálculo vuelven a cargar `editing`), así los montos propuestos siempre corresponden a
+  // la compra persistida. Una respuesta tardía de un borrador anterior se descarta.
+  const previewRequestRef = useRef(0);
+  const refreshRetentionPreview = useCallback(
+    async (purchaseId: string) => {
+      const requestId = ++previewRequestRef.current;
       setWhLoading(true);
+      setWhPreviewError(null);
       try {
-        const ret = await purchaseRetentionFacade.issueForPurchase(editing.id, {
-          emissionPointId: epId,
-          issueDate: date,
-          lines,
-        });
-        setRetention(ret);
-        setWhPreview(null);
-        message.success(
-          t("purchases.messages.withholdingIssued", "Retención emitida correctamente."),
-        );
+        const preview = await purchaseService.retentionPreview(purchaseId);
+        if (requestId === previewRequestRef.current) setWhPreview(preview);
       } catch (err: unknown) {
-        if (axios.isAxiosError(err) && err.response?.status === 409) {
-          showSaveError(
-            t(
-              "purchases.errors.retentionAlreadyIssued",
-              "Esta compra ya tiene una retención emitida.",
-            ),
-          );
-        } else {
-          showSaveError(
+        if (requestId === previewRequestRef.current) {
+          setWhPreview(null);
+          setWhPreviewError(
             formatApiRequestError(err, {
-              generic: t("purchases.errors.withholdingIssueFailed", "Error al emitir retención."),
+              generic: t("purchases.errors.retentionPreviewFailed", "Error al calcular retención."),
             }),
           );
         }
       }
-      setWhLoading(false);
+      if (requestId === previewRequestRef.current) setWhLoading(false);
     },
-    [editing, whLoading, whPreview, showSaveError, t],
+    [t],
+  );
+
+  useEffect(() => {
+    if (!editing || editing.status !== "Draft") return;
+    void refreshRetentionPreview(editing.id);
+  }, [editing, refreshRetentionPreview]);
+
+  // Otra compra → la decisión de retener no se arrastra.
+  const editingId = editing?.id;
+  useEffect(() => {
+    setRetentionIntent(emptyPurchaseRetentionIntent(todayIso()));
+  }, [editingId]);
+
+  // Sin líneas propuestas (no elegible) la intención no puede quedar activa.
+  const canApplyRetention = canApplyPurchaseRetention(whPreview);
+  const wantsRetention = retentionIntent.appliesRetention;
+  useEffect(() => {
+    if (wantsRetention && !canApplyRetention && !whLoading)
+      setRetentionIntent((prev) => ({ ...prev, appliesRetention: false }));
+  }, [wantsRetention, canApplyRetention, whLoading]);
+
+  // Puntos de emisión: solo cuando el usuario decide emitir y puede leerlos; se preselecciona el
+  // punto por defecto (el usuario puede cambiarlo).
+  useEffect(() => {
+    if (!wantsRetention || !canReadEmissionPoints) return;
+    let cancelled = false;
+    emissionPointLookupFacade
+      .list("active")
+      .then((rows) => {
+        if (cancelled) return;
+        setEmissionPoints(rows);
+        const fallback = rows.find((p) => p.isDefault) ?? (rows.length === 1 ? rows[0] : undefined);
+        if (fallback)
+          setRetentionIntent((prev) => (prev.emissionPointId ? prev : { ...prev, emissionPointId: fallback.id }));
+      })
+      .catch(() => {
+        if (!cancelled) setEmissionPoints([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [wantsRetention, canReadEmissionPoints]);
+
+  const updateRetentionIntent = useCallback(
+    (patch: Partial<PurchaseRetentionIntentState>) =>
+      setRetentionIntent((prev) => ({ ...prev, ...patch })),
+    [],
   );
 
   // ── Anular retención (PURCHASES-RETENTIONS-CANCEL-05D) ──────────────
@@ -2090,12 +2128,17 @@ export function usePurchasesPage() {
     updateScheduleRow,
     handlePaymentTermChange,
 
-    // Retención (RetentionDocument transversal — PURCHASES-RETENTIONS-UI-MIGRATION-05C)
+    // Retención: definida en el borrador, emitida al confirmar (ZH-PURCHASE-RETENTION-CONFIRM-01)
     whPreview,
+    whPreviewError,
+    refreshRetentionPreview,
+    retentionIntent,
+    updateRetentionIntent,
+    canApplyRetention,
+    emissionPoints,
+    canReadEmissionPoints,
     retention,
     whLoading,
-    handleCalcRetention,
-    handleIssueRetention,
     handleCancelRetention,
     canUpdatePurchase,
     electronicPending,
@@ -2125,8 +2168,6 @@ export function usePurchasesPage() {
     setModalDiscount,
     modalCancelReason,
     setModalCancelReason,
-    modalWhIssue,
-    setModalWhIssue,
     modalRetentionCancel,
     setModalRetentionCancel,
     modalDistributeCost,

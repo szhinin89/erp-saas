@@ -32,8 +32,9 @@ public static class DependencyInjection
         // IRetentionCodeResolver), sin EF directo, por eso vive/registra en Application, no Infrastructure.
         services.AddScoped<IRetentionEligibilityService, RetentionEligibilityService>();
         // RETENTIONS-EXPENSES-INTEGRATION-01D-1 — operación interna reutilizable de emisión de
-        // RetentionDocument, consumida por IssueRetentionHandler (emisión aislada) y por
-        // ConfirmExpenseDocumentHandler/CreateConfirmedExpenseHandler (emisión transaccional).
+        // RetentionDocument, consumida solo dentro de la confirmación transaccional del documento
+        // origen: ConfirmExpenseDocumentHandler/CreateConfirmedExpenseHandler y ConfirmPurchaseHandler
+        // (ZH-PURCHASE-RETENTION-CONFIRM-01).
         services.AddScoped<IRetentionIssuer, RetentionIssuer>();
         services.AddScoped<
             ERP.Application.Modules.Payables.Services.ISupplierPaymentRegistrar,

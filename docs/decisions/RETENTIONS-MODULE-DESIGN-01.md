@@ -286,6 +286,8 @@ retención, no hay asientos. Nunca un estado intermedio.
 
 ## Flujo futuro desde Compras
 
+> **Nota de implementación (2026-10-01, ZH-PURCHASE-RETENTION-CONFIRM-01):** Compras ya usa `RetentionDocument` (PURCHASES-RETENTIONS-BRIDGE-05B / PURCHASES-WITHHOLDING-LEGACY-REMOVAL-05E) y desde este ticket cumple la decisión 15 igual que Gastos: la retención se define en el borrador (vista previa sobre `IRetentionEligibilityService`) y se emite dentro de `ConfirmPurchaseCommand` (`RetentionIntent`), en la misma unidad de trabajo que la compra, el inventario, la CxP y los asientos. La emisión posterior (`POST /purchases/{id}/retention`, `IssueRetentionCommand`) fue retirada. El registro SRI sigue siendo un acto posterior. Lo que sigue en esta sección es el plan histórico de E1. Regla vigente: `docs/architecture/backend.md` § Retenciones.
+
 En E1, **Compras sigue usando `IssuedWithholding`/`IssueWithholdingUseCases.cs` sin cambios** — cero riesgo de regresión sobre un flujo ya en producción con 4 endpoints, UI y tests. La migración de Compras al módulo `Retentions` (reemplazando `IssuedWithholding` por `RetentionDocument` con `SourceDocumentType = PurchaseInvoice`) queda diferida a una fase posterior separada, solo tras validar `Retentions` en producción con Gastos y con acuerdo explícito de que vale la pena el retrabajo.
 
 Único cambio que toca código de Compras en E1: `RetentionCalculator` e `IRetentionCodeResolver` se **reubican** (no se duplican) desde `Modules/Purchases/Services` hacia el namespace de `Retentions`, con el using actualizado en `IssueWithholdingUseCases.cs` — sin cambiar comportamiento ni firma. Requiere tests de regresión completos de Purchases antes de mergear.

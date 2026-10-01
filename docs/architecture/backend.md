@@ -322,22 +322,24 @@ Caso vigente — identidad de empresa (RUC, razón social, nombre comercial, act
 
 Mismo dato → misma respuesta desde ambos: inválido 422 `VALIDATION_ERROR`, RUC duplicado 409 `COMPANY_RUC_ALREADY_EXISTS`, inexistente 404. Contacto/representante/regional se editan solo en Configuración → Empresa (`UpdateContactProfile`), que muestra la identidad de solo lectura.
 
-## Retenciones: una capacidad, momento de emisión por origen (ZH-RETENTION-EMISSION-SSOT-01)
+## Retenciones: una capacidad, una política de emisión (ZH-RETENTION-EMISSION-SSOT-01, ZH-PURCHASE-RETENTION-CONFIRM-01)
 
 Capacidad única (módulo `Retentions`, compartida por todo origen): `RetentionIssuer.IssueAsync` (unicidad por origen + revalidación server-side de elegibilidad con `IRetentionEligibilityService` + secuencia SRI "07" vía `CaptureNextAsync` + `RetentionDocument.Issue`, solo staging), `RetentionCanceller` (anula y revierte `AccountsPayable.ApplyRetention`, bloquea si la CxP tiene pagos), un único asiento `Retentions/DocumentIssued` (traductor estricto: si falla, falla la operación) y su reverso por `ReverseJournalEntryCommand` al anular. Invariante 1:1: a lo sumo una retención no anulada por origen (`ExistsActiveBySourceAsync` + índice único parcial `uq_retention_documents_active_source`).
 
-Ciclo de vida: `Draft` (solo en memoria, dentro de la emisión) → `Issued` (nace, recibe número "07", aplica a la CxP y contabiliza en la misma operación) → `Cancelled`. La parte SRI es otro agregado (`ElectronicDocument`) y un acto explícito posterior para ambos orígenes: `POST /retentions/{id}/electronic/register` (XML → firma → envío → autorización); XML y RIDE se consultan bajo demanda (`/retentions/{id}/electronic/xml`, `/ride/pdf`).
+**Política única (RETENTIONS-MODULE-DESIGN-01, decisión 15):** la retención de una Compra o un Gasto se define ANTES de confirmar el documento origen y, si hay `RetentionIntent` (`Retentions/UseCases/RetentionIntent.cs`, contrato único con `RetentionIntentValidator`), se emite DENTRO de la misma unidad de trabajo de la confirmación: documento confirmado + CxP creada con la retención aplicada + `RetentionDocument` emitido + asientos, en un único `SaveChanges`. Si cualquier paso falla (elegibilidad, punto de emisión, saldo de CxP, asiento), falla toda la confirmación y el documento sigue en borrador. Sin intención, la confirmación es exactamente la de siempre. No existe emisión posterior sobre un documento ya confirmado (`IssueRetentionCommand` y `POST /purchases/{id}/retention` fueron retirados).
 
-| | Gastos | Compras (CLOSED) |
+Ciclo de vida: `Draft` (solo en memoria, dentro de la emisión) → `Issued` (nace, recibe número "07", aplica a la CxP y contabiliza junto con la confirmación) → `Cancelled`. La parte SRI es otro agregado (`ElectronicDocument`) y un acto explícito POSTERIOR para ambos orígenes, nunca automático al confirmar: `POST /retentions/{id}/electronic/register` (XML → firma → envío → autorización); XML y RIDE se consultan bajo demanda (`/retentions/{id}/electronic/xml`, `/ride/pdf`).
+
+| | Gastos | Compras |
 |---|---|---|
-| Cuándo se emite | Dentro de la confirmación (`RetentionIntent` en `ConfirmExpenseDocumentCommand`/`CreateConfirmedExpenseCommand`) | Después de confirmar: `POST /purchases/{id}/retention` (`IssueRetentionCommand`) |
-| Transacción | Única `SaveChanges`: gasto + CxP con la retención aplicada + retención + asientos (todo o nada) | Propia, con Lock A (`PurchaseInvoice.FinancialLock`): retención + `ApplyRetention` sobre la CxP existente + asiento |
-| Si falla la retención | No se confirma el gasto | La compra queda confirmada; la retención no se crea |
-| Anular | Solo anulando el gasto (cascada `RetentionCanceller`) | Acción propia (`POST /purchases/{id}/retention/{rid}/cancel`) o en cascada al anular la compra |
-| Vista previa | `GET /expenses/{id}/retention-eligibility` (`IRetentionEligibilityService`) | `GET /purchases/{id}/retention-preview` (`RetentionCalculator`; no evalúa si la empresa es agente de retención — lo rechaza la emisión) |
+| Vista previa (borrador) | `GET /expenses/{id}/retention-eligibility` — elegibilidad; montos los escribe el usuario | `GET /purchases/{id}/retention-preview` (`CalculateRetentionHandler`) — misma `IRetentionEligibilityService` sobre las mismas bases que la emisión (`PurchaseRetentionSource`: IVA total / suma de bases imponibles) + `RetentionCalculator` para los montos propuestos (precargados, no editables). Solo sobre borradores |
+| Emisión | `RetentionIntent` en `ConfirmExpenseDocumentCommand`/`CreateConfirmedExpenseCommand` | `RetentionIntent` en `ConfirmPurchaseCommand` (`POST /purchases/{id}/confirm`, campo `retention`) |
+| Orden de efectos | confirmar gasto → emitir retención → CxP staged con `ApplyRetention` → `SaveChanges` (asientos de gasto y de retención) | precondiciones → recalcular impuestos → `Confirm` (congela costos) → cronograma → inventario/Kardex → CxP staged → **emitir retención + `ApplyRetention` (paso 4b)** → PVP → comunicación → `SaveChangesWithSequenceRetryAsync` (asientos de compra y de retención) |
+| Concurrencia | `xmin` del gasto + índice 1:1 | `xmin` de la compra + índice único de CxP por origen + índice 1:1 (sin lock nuevo) |
+| Anular | Solo anulando el gasto (cascada `RetentionCanceller`) | Cascada al anular la compra o acción propia `POST /purchases/{id}/retention/{rid}/cancel` (sin re-emisión posterior) |
+| Permisos | `expenses.documents.confirm` | `purchases.update` (confirmar) / `purchases.view` (vista previa); ningún permiso de Gastos |
 
-Gastos no tiene emisión posterior: `IssueRetentionCommand` con `ExpenseDocument` se rechaza. **Decisión pendiente:** el diseño aprobado (`RETENTIONS-MODULE-DESIGN-01`, decisión 15) pide la emisión integrada en la confirmación para Compra y Gasto; Compras emite después de confirmar. Cambiarlo es reabrir Compras (CLOSED) y requiere decisión explícita.
-
+## Estructura por módulo
 ## Estructura por módulo
 
 ```

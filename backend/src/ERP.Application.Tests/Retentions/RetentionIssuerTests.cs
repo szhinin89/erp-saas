@@ -6,8 +6,6 @@ using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Expenses.Interfaces;
-using ERP.Domain.Modules.Payables.Interfaces;
-using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Retentions.Entities;
 using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Domain.Modules.Retentions.Events;
@@ -19,17 +17,15 @@ using Moq;
 namespace ERP.Application.Tests.Retentions;
 
 /// <summary>
-/// RETENTIONS-APPLICATION-01C — cubre <see cref="IssueRetentionHandler"/>/<see cref="IssueRetentionValidator"/>.
-/// ZH-RETENTION-EMISSION-SSOT-01: los casos de Gastos ejercitan <see cref="RetentionIssuer.IssueForExpenseAsync"/>
-/// (el núcleo que usa la confirmación del gasto); el handler aislado solo emite para Compras.
-/// Esta fase emite un <see cref="RetentionDocument"/> de forma AISLADA: no toca
-/// <c>AccountsPayable</c>/<c>JournalEntry</c>/<c>ExpenseDocument</c> (más allá de leerlo). Los
-/// tests de "no toca X" verifican que ningún método de escritura de esos módulos se invoca, porque
-/// el handler ni siquiera depende de esas interfaces (imposible tocarlas por construcción) — se
-/// verifica adicionalmente que <see cref="IExpenseDocumentRepository.SaveChangesAsync"/> nunca se
-/// llama.
+/// Núcleo de emisión <see cref="RetentionIssuer"/> (staging, sin SaveChanges) y contrato
+/// <see cref="RetentionIntent"/>/<see cref="RetentionIntentValidator"/>. ZH-PURCHASE-RETENTION-CONFIRM-01:
+/// la retención solo se emite dentro de la confirmación del documento origen (Gastos y Compras); la
+/// orquestación de cada confirmación (CxP, rollback) se cubre en sus propios tests
+/// (<c>ExpenseDocumentConfirmUseCasesTests</c>, <c>ConfirmPurchaseHandlerTests</c> y los E2E contra
+/// PostgreSQL). Los tests de "no toca X" verifican que el núcleo nunca persiste ni escribe en el
+/// documento origen.
 /// </summary>
-public sealed class IssueRetentionHandlerTests
+public sealed class RetentionIssuerTests
 {
     private static readonly Guid TenantId = Guid.NewGuid();
     private static readonly Guid CompanyId = Guid.NewGuid();
@@ -71,9 +67,8 @@ public sealed class IssueRetentionHandlerTests
         fx.SetupEligibility(document.SupplierId, FullyEligible);
         fx.SetupNotExisting();
 
-        var result = await fx.IssueForExpense(document, new IssueRetentionCommand(
-                RetentionSourceDocumentType.ExpenseDocument,
-                document.Id,
+        var result = await fx.IssueForExpense(document, new RetentionIntent(
+                true,
                 EmissionPointId,
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
@@ -87,12 +82,12 @@ public sealed class IssueRetentionHandlerTests
     // ── RETENTIONS-DOCUMENT-SEQUENCE-02E: generación server-side del número ────
 
     [Fact]
-    public void IssueRetentionCommand_no_expone_una_propiedad_RetentionNumber()
+    public void RetentionIntent_no_expone_una_propiedad_RetentionNumber()
     {
         // Estructuralmente imposible enviar un número manual desde el cliente — no existe ninguna
         // propiedad que el body HTTP pueda poblar para sustituir el número generado por
         // CaptureNextAsync. Mismo criterio que el test de forma para Tenant/Company/Branch (#11).
-        var properties = typeof(IssueRetentionCommand).GetProperties().Select(p => p.Name).ToArray();
+        var properties = typeof(RetentionIntent).GetProperties().Select(p => p.Name).ToArray();
 
         properties.Should().NotContain("RetentionNumber");
     }
@@ -117,9 +112,8 @@ public sealed class IssueRetentionHandlerTests
         fx.SetupEligibility(document.SupplierId, FullyEligible);
         fx.SetupNotExisting();
 
-        var result = await fx.IssueForExpense(document, new IssueRetentionCommand(
-                RetentionSourceDocumentType.ExpenseDocument,
-                document.Id,
+        var result = await fx.IssueForExpense(document, new RetentionIntent(
+                true,
                 EmissionPointId,
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
@@ -135,7 +129,7 @@ public sealed class IssueRetentionHandlerTests
         // El mock de secuencia no tiene estado real — se configura explícitamente una secuencia de
         // retornos (SetupSequence) para simular lo que CaptureNextAsync haría contra Postgres real
         // (ver DocumentSequenceConfigurationTests/RetentionExpenseEndToEndTests para el
-        // incremento real contra BD). Aquí se prueba que el handler usa el valor devuelto tal cual
+        // incremento real contra BD). Aquí se prueba que el emisor usa el valor devuelto tal cual
         // en cada llamada, sin cachear ni recalcular.
         var fx = new Fixture();
         fx.SequenceRepo
@@ -150,16 +144,16 @@ public sealed class IssueRetentionHandlerTests
         fx.SetupDocument(document1);
         fx.SetupEligibility(document1.SupplierId, FullyEligible);
         fx.SetupNotExisting();
-        var result1 = await fx.IssueForExpense(document1, new IssueRetentionCommand(
-                RetentionSourceDocumentType.ExpenseDocument, document1.Id, EmissionPointId,
+        var result1 = await fx.IssueForExpense(document1, new RetentionIntent(
+                true, EmissionPointId,
                 new DateOnly(2026, 9, 3), new[] { VatLine() }
             ));
 
         var document2 = fx.ConfirmedDocument(BranchId, documentNumber: "001-001-000000999");
         fx.SetupDocument(document2);
         fx.SetupEligibility(document2.SupplierId, FullyEligible);
-        var result2 = await fx.IssueForExpense(document2, new IssueRetentionCommand(
-                RetentionSourceDocumentType.ExpenseDocument, document2.Id, EmissionPointId,
+        var result2 = await fx.IssueForExpense(document2, new RetentionIntent(
+                true, EmissionPointId,
                 new DateOnly(2026, 9, 3), new[] { VatLine() }
             ));
 
@@ -182,9 +176,8 @@ public sealed class IssueRetentionHandlerTests
         fx.SetupEligibility(document.SupplierId, FullyEligible);
         fx.SetupNotExisting();
 
-        var result = await fx.IssueForExpense(document, new IssueRetentionCommand(
-                RetentionSourceDocumentType.ExpenseDocument,
-                document.Id,
+        var result = await fx.IssueForExpense(document, new RetentionIntent(
+                true,
                 otherEmissionPointId,
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
@@ -219,9 +212,8 @@ public sealed class IssueRetentionHandlerTests
         fx.SetupEligibility(document.SupplierId, FullyEligible);
         fx.SetupNotExisting();
 
-        var result = await fx.IssueForExpense(document, new IssueRetentionCommand(
-                RetentionSourceDocumentType.ExpenseDocument,
-                document.Id,
+        var result = await fx.IssueForExpense(document, new RetentionIntent(
+                true,
                 EmissionPointId,
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
@@ -231,413 +223,46 @@ public sealed class IssueRetentionHandlerTests
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
     }
 
-    // ── 2/3) Validator ───────────────────────────────────────────────────
+    // ── 2/3) Validator (contrato único de intención: Gastos y Compras) ──────
 
     [Fact]
     public void Rechaza_EmissionPointId_vacio()
     {
-        var cmd = new IssueRetentionCommand(
-            RetentionSourceDocumentType.ExpenseDocument,
-            Guid.NewGuid(),
-            Guid.Empty,
-            new DateOnly(2026, 9, 3),
-            new[] { VatLine() }
-        );
+        var intent = new RetentionIntent(true, Guid.Empty, new DateOnly(2026, 9, 3), new[] { VatLine() });
 
-        var result = new IssueRetentionValidator().Validate(cmd);
+        var result = new RetentionIntentValidator().Validate(intent);
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(IssueRetentionCommand.EmissionPointId));
+        result.Errors.Should().Contain(e => e.PropertyName == nameof(RetentionIntent.EmissionPointId));
     }
 
     [Fact]
-    public void Rechaza_SourceDocumentId_vacio()
+    public void Rechaza_intencion_sin_lineas()
     {
-        var cmd = new IssueRetentionCommand(
-            RetentionSourceDocumentType.ExpenseDocument,
-            Guid.Empty,
-            EmissionPointId,
-            new DateOnly(2026, 9, 3),
-            new[] { VatLine() }
-        );
+        var intent = new RetentionIntent(true, EmissionPointId, new DateOnly(2026, 9, 3), Array.Empty<IssueRetentionLineInput>());
 
-        var result = new IssueRetentionValidator().Validate(cmd);
+        var result = new RetentionIntentValidator().Validate(intent);
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(IssueRetentionCommand.SourceDocumentId));
+        result.Errors.Should().Contain(e => e.PropertyName == nameof(RetentionIntent.Lines));
     }
 
     [Fact]
-    public void Rechaza_SourceDocumentType_invalido()
+    public void Rechaza_linea_con_retenido_mayor_a_la_base()
     {
-        var cmd = new IssueRetentionCommand(
-            (RetentionSourceDocumentType)999,
-            Guid.NewGuid(),
-            EmissionPointId,
-            new DateOnly(2026, 9, 3),
-            new[] { VatLine() }
-        );
+        var intent = new RetentionIntent(true, EmissionPointId, new DateOnly(2026, 9, 3), new[] { VatLine(100m, 30m, 130m) });
 
-        var result = new IssueRetentionValidator().Validate(cmd);
+        var result = new RetentionIntentValidator().Validate(intent);
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(IssueRetentionCommand.SourceDocumentType));
-    }
-
-    // ── 4/5) Manual: no soportado ────────────────────────────────────────
-
-    [Fact]
-    public async Task Rechaza_Manual_con_no_soportado()
-    {
-        var fx = new Fixture();
-
-        var result = await fx.Handler.Handle(
-            new IssueRetentionCommand(
-                RetentionSourceDocumentType.Manual,
-                Guid.NewGuid(),
-                EmissionPointId,
-                new DateOnly(2026, 9, 3),
-                new[] { VatLine() }
-            ),
-            CancellationToken.None
-        );
-
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("NotSupportedInThisPhase");
-    }
-
-    // ── PURCHASES-RETENTIONS-BRIDGE-05B: PurchaseInvoice ya conectada a RetentionDocument ─────
-
-    [Fact]
-    public async Task Rechaza_PurchaseInvoice_inexistente_con_NotFound()
-    {
-        var fx = new Fixture();
-        fx.PurchaseRepo
-            .Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice?)null);
-
-        var result = await fx.Handler.Handle(
-            new IssueRetentionCommand(
-                RetentionSourceDocumentType.PurchaseInvoice,
-                Guid.NewGuid(),
-                EmissionPointId,
-                new DateOnly(2026, 9, 3),
-                new[] { VatLine() }
-            ),
-            CancellationToken.None
-        );
-
-        result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
     }
 
     [Fact]
-    public async Task Rechaza_PurchaseInvoice_no_confirmada_con_error_de_validacion()
+    public void Sin_intencion_de_retener_no_exige_ningun_dato()
     {
-        var fx = new Fixture();
-        var invoice = fx.DraftInvoice();
-        fx.SetupInvoice(invoice);
+        var result = new RetentionIntentValidator().Validate(new RetentionIntent(false, null, null, null));
 
-        var result = await fx.Handler.Handle(
-            new IssueRetentionCommand(
-                RetentionSourceDocumentType.PurchaseInvoice,
-                invoice.Id,
-                EmissionPointId,
-                new DateOnly(2026, 9, 3),
-                new[] { VatLine() }
-            ),
-            CancellationToken.None
-        );
-
-        result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
-        result.Error.Should().Contain("confirmada");
-    }
-
-    [Fact]
-    public async Task Emite_RetentionDocument_con_SourceDocumentType_PurchaseInvoice_para_compra_confirmada_elegible()
-    {
-        var fx = new Fixture();
-        var invoice = fx.ConfirmedInvoice();
-        fx.SetupInvoice(invoice);
-        fx.SetupEligibility(invoice.SupplierId, FullyEligible);
-        fx.SetupNotExisting();
-        fx.SetupPayable(invoice.Id, fx.CreatePayableWithInstallment(invoice.Id, 300m));
-
-        var result = await fx.Handler.Handle(
-            new IssueRetentionCommand(
-                RetentionSourceDocumentType.PurchaseInvoice,
-                invoice.Id,
-                EmissionPointId,
-                new DateOnly(2026, 9, 3),
-                new[] { VatLine() }
-            ),
-            CancellationToken.None
-        );
-
-        result.IsSuccess.Should().BeTrue(because: result.Error);
-        result.Value!.SourceDocumentType.Should().Be(RetentionSourceDocumentType.PurchaseInvoice);
-        result.Value.SourceDocumentId.Should().Be(invoice.Id);
-        result.Value.Status.Should().Be(RetentionStatus.Issued);
-    }
-
-    /// <summary>PURCHASES-WITHHOLDING-LEGACY-REMOVAL-05E — reemplaza la cobertura del legacy
-    /// (AuthorizePurchaseReturnLockAConcurrencyTests, ejercida solo por inspección de código sobre
-    /// IssueWithholdingHandler): al emitir una retención sobre una PurchaseInvoice, el handler debe
-    /// adquirir el mismo Lock A ("PurchaseInvoice.FinancialLock") que CancelPurchaseHandler y
-    /// AuthorizePurchaseReturnHandler, dentro de una transacción explícita con Commit al final —
-    /// así ninguna otra mutación financiera concurrente sobre la misma factura (pago, devolución,
-    /// anulación) puede intercalarse con esta emisión.
-    /// </summary>
-    [Fact]
-    public async Task Emision_de_retencion_para_PurchaseInvoice_adquiere_Lock_A_dentro_de_una_transaccion()
-    {
-        var fx = new Fixture();
-        var invoice = fx.ConfirmedInvoice();
-        fx.SetupInvoice(invoice);
-        fx.SetupEligibility(invoice.SupplierId, FullyEligible);
-        fx.SetupNotExisting();
-        fx.SetupPayable(invoice.Id, fx.CreatePayableWithInstallment(invoice.Id, 300m));
-        var sequence = new MockSequence();
-        fx.Uow.InSequence(sequence)
-            .Setup(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-        fx.PurchaseReturnRepo
-            .InSequence(sequence)
-            .Setup(r => r.AcquireFinancialLockAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-        fx.Uow.InSequence(sequence)
-            .Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(1);
-        fx.Uow.InSequence(sequence)
-            .Setup(u => u.CommitAsync(It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-
-        var result = await fx.Handler.Handle(
-            new IssueRetentionCommand(
-                RetentionSourceDocumentType.PurchaseInvoice,
-                invoice.Id,
-                EmissionPointId,
-                new DateOnly(2026, 9, 3),
-                new[] { VatLine() }
-            ),
-            CancellationToken.None
-        );
-
-        result.IsSuccess.Should().BeTrue(because: result.Error);
-        fx.PurchaseReturnRepo.Verify(
-            r => r.AcquireFinancialLockAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()),
-            Times.Once
-        );
-        fx.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
-        fx.Uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task Snapshot_de_PurchaseInvoice_se_resuelve_desde_la_compra_real()
-    {
-        var fx = new Fixture();
-        var invoice = fx.ConfirmedInvoice(taxSupportCode: "02");
-        fx.SetupInvoice(invoice);
-        fx.SetupEligibility(invoice.SupplierId, FullyEligible);
-        fx.SetupNotExisting();
-        fx.SetupPayable(invoice.Id, fx.CreatePayableWithInstallment(invoice.Id, 300m));
-
-        var result = await fx.Handler.Handle(
-            new IssueRetentionCommand(
-                RetentionSourceDocumentType.PurchaseInvoice,
-                invoice.Id,
-                EmissionPointId,
-                new DateOnly(2026, 9, 3),
-                new[] { VatLine() }
-            ),
-            CancellationToken.None
-        );
-
-        result.IsSuccess.Should().BeTrue(because: result.Error);
-        result.Value!.SourceDocumentSriTypeCode.Should().Be(invoice.DocTypeCode);
-        result.Value.SourceDocumentNumber.Should().Be(invoice.InvoiceNumber);
-        result.Value.SourceDocumentIssueDate.Should().Be(invoice.IssueDate);
-        result.Value.SourceDocumentTaxSupportCode.Should().Be("02");
-        result.Value.SourceDocumentSubtotal.Should().Be(invoice.Subtotal);
-        result.Value.SourceDocumentTotal.Should().Be(invoice.GrandTotal);
-        result.Value.SubjectBusinessPartnerId.Should().Be(invoice.SupplierId);
-    }
-
-    [Fact]
-    public async Task Emision_desde_PurchaseInvoice_captura_secuencia_del_doc_type_07()
-    {
-        var fx = new Fixture();
-        var invoice = fx.ConfirmedInvoice();
-        fx.SetupInvoice(invoice);
-        fx.SetupEligibility(invoice.SupplierId, FullyEligible);
-        fx.SetupNotExisting();
-        fx.SetupPayable(invoice.Id, fx.CreatePayableWithInstallment(invoice.Id, 300m));
-
-        await fx.Handler.Handle(
-            new IssueRetentionCommand(
-                RetentionSourceDocumentType.PurchaseInvoice,
-                invoice.Id,
-                EmissionPointId,
-                new DateOnly(2026, 9, 3),
-                new[] { VatLine() }
-            ),
-            CancellationToken.None
-        );
-
-        fx.SequenceRepo.Verify(
-            r => r.CaptureNextAsync(
-                TenantId, CompanyId, EmissionPointId, SriDocumentTypeCodes.Withholding,
-                It.IsAny<CancellationToken>()
-            ),
-            Times.Once
-        );
-    }
-
-    [Fact]
-    public async Task Aplica_AccountsPayable_ApplyRetention_sobre_la_CxP_existente_de_la_compra()
-    {
-        var fx = new Fixture();
-        var invoice = fx.ConfirmedInvoice();
-        fx.SetupInvoice(invoice);
-        fx.SetupEligibility(invoice.SupplierId, FullyEligible);
-        fx.SetupNotExisting();
-        var payable = fx.CreatePayableWithInstallment(invoice.Id, 300m);
-        fx.SetupPayable(invoice.Id, payable);
-
-        var result = await fx.Handler.Handle(
-            new IssueRetentionCommand(
-                RetentionSourceDocumentType.PurchaseInvoice,
-                invoice.Id,
-                EmissionPointId,
-                new DateOnly(2026, 9, 3),
-                new[] { VatLine(baseAmount: 100m, rate: 30m, retained: 30m) }
-            ),
-            CancellationToken.None
-        );
-
-        result.IsSuccess.Should().BeTrue(because: result.Error);
-        payable.RetainedAmount.Should().Be(30m);
-        payable.OutstandingAmount.Should().Be(270m);
-        fx.Uow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task Sin_CxP_asociada_y_con_retencion_mayor_a_cero_rechaza_la_emision()
-    {
-        var fx = new Fixture();
-        var invoice = fx.ConfirmedInvoice();
-        fx.SetupInvoice(invoice);
-        fx.SetupEligibility(invoice.SupplierId, FullyEligible);
-        fx.SetupNotExisting();
-        fx.SetupPayable(invoice.Id, null);
-
-        var result = await fx.Handler.Handle(
-            new IssueRetentionCommand(
-                RetentionSourceDocumentType.PurchaseInvoice,
-                invoice.Id,
-                EmissionPointId,
-                new DateOnly(2026, 9, 3),
-                new[] { VatLine(baseAmount: 100m, rate: 30m, retained: 30m) }
-            ),
-            CancellationToken.None
-        );
-
-        result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
-        result.Error.Should().Contain("cuenta por pagar");
-    }
-
-    [Fact]
-    public async Task Levanta_RetentionDocumentIssuedEvent_para_PurchaseInvoice_disparando_el_posting()
-    {
-        var fx = new Fixture();
-        var invoice = fx.ConfirmedInvoice();
-        fx.SetupInvoice(invoice);
-        fx.SetupEligibility(invoice.SupplierId, FullyEligible);
-        fx.SetupNotExisting();
-        fx.SetupPayable(invoice.Id, fx.CreatePayableWithInstallment(invoice.Id, 300m));
-
-        RetentionDocument? captured = null;
-        fx.RetentionRepo
-            .Setup(r => r.AddAsync(It.IsAny<RetentionDocument>(), It.IsAny<CancellationToken>()))
-            .Callback<RetentionDocument, CancellationToken>((d, _) => captured = d)
-            .Returns(Task.CompletedTask);
-
-        await fx.Handler.Handle(
-            new IssueRetentionCommand(
-                RetentionSourceDocumentType.PurchaseInvoice,
-                invoice.Id,
-                EmissionPointId,
-                new DateOnly(2026, 9, 3),
-                new[] { VatLine() }
-            ),
-            CancellationToken.None
-        );
-
-        // RetentionDocumentIssuedPostingTranslator (SourceModule="Retentions", FactType="DocumentIssued")
-        // escucha este mismo evento sin distinguir SourceDocumentType — no se prueba el asiento en
-        // sí aquí (cubierto por RetentionDocumentIssuedPostingTranslatorTests), solo que el evento
-        // que lo dispara se levanta igual para Compras que para Gastos.
-        captured.Should().NotBeNull();
-        captured!.DomainEvents.Should().ContainSingle(e => e is RetentionDocumentIssuedEvent);
-    }
-
-    [Fact]
-    public async Task Bloquea_duplicado_si_ya_existe_RetentionDocument_activo_para_la_compra()
-    {
-        var fx = new Fixture();
-        var invoice = fx.ConfirmedInvoice();
-        fx.SetupInvoice(invoice);
-        fx.SetupEligibility(invoice.SupplierId, FullyEligible);
-        fx.RetentionRepo
-            .Setup(r => r.ExistsActiveBySourceAsync(
-                TenantId, CompanyId, RetentionSourceDocumentType.PurchaseInvoice, invoice.Id,
-                It.IsAny<CancellationToken>()
-            ))
-            .ReturnsAsync(true);
-
-        var result = await fx.Handler.Handle(
-            new IssueRetentionCommand(
-                RetentionSourceDocumentType.PurchaseInvoice,
-                invoice.Id,
-                EmissionPointId,
-                new DateOnly(2026, 9, 3),
-                new[] { VatLine() }
-            ),
-            CancellationToken.None
-        );
-
-        result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.Common.Conflict);
-        fx.RetentionRepo.Verify(r => r.AddAsync(It.IsAny<RetentionDocument>(), It.IsAny<CancellationToken>()), Times.Never);
-        fx.PayableRepo.Verify(
-            r => r.GetByOriginAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<ERP.Domain.Modules.Payables.Enums.AccountsPayableOriginType>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
-            Times.Never,
-            "no debe siquiera intentar resolver la CxP si la emisión ya se bloqueó por duplicado"
-        );
-    }
-
-    [Fact]
-    public async Task PurchaseInvoice_de_otra_sucursal_falla_cerrado_con_NotFound()
-    {
-        var fx = new Fixture();
-        var invoice = fx.ConfirmedInvoice(branchId: OtherBranchId);
-        fx.SetupInvoice(invoice);
-
-        var result = await fx.Handler.Handle(
-            new IssueRetentionCommand(
-                RetentionSourceDocumentType.PurchaseInvoice,
-                invoice.Id,
-                EmissionPointId,
-                new DateOnly(2026, 9, 3),
-                new[] { VatLine() }
-            ),
-            CancellationToken.None
-        );
-
-        result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        result.IsValid.Should().BeTrue();
     }
 
     // ── 6) Company no retiene IVA ────────────────────────────────────────
@@ -653,9 +278,8 @@ public sealed class IssueRetentionHandlerTests
             FullyEligible with { CanRetainVat = false, Reasons = new[] { "La empresa no está configurada como agente de retención de IVA." } }
         );
 
-        var result = await fx.IssueForExpense(document, new IssueRetentionCommand(
-                RetentionSourceDocumentType.ExpenseDocument,
-                document.Id,
+        var result = await fx.IssueForExpense(document, new RetentionIntent(
+                true,
                 EmissionPointId,
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
@@ -683,9 +307,8 @@ public sealed class IssueRetentionHandlerTests
             }
         );
 
-        var result = await fx.IssueForExpense(document, new IssueRetentionCommand(
-                RetentionSourceDocumentType.ExpenseDocument,
-                document.Id,
+        var result = await fx.IssueForExpense(document, new RetentionIntent(
+                true,
                 EmissionPointId,
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
@@ -713,9 +336,8 @@ public sealed class IssueRetentionHandlerTests
             }
         );
 
-        var result = await fx.IssueForExpense(document, new IssueRetentionCommand(
-                RetentionSourceDocumentType.ExpenseDocument,
-                document.Id,
+        var result = await fx.IssueForExpense(document, new RetentionIntent(
+                true,
                 EmissionPointId,
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
@@ -743,9 +365,8 @@ public sealed class IssueRetentionHandlerTests
             }
         );
 
-        var result = await fx.IssueForExpense(document, new IssueRetentionCommand(
-                RetentionSourceDocumentType.ExpenseDocument,
-                document.Id,
+        var result = await fx.IssueForExpense(document, new RetentionIntent(
+                true,
                 EmissionPointId,
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
@@ -771,9 +392,8 @@ public sealed class IssueRetentionHandlerTests
             ))
             .ReturnsAsync(true);
 
-        var result = await fx.IssueForExpense(document, new IssueRetentionCommand(
-                RetentionSourceDocumentType.ExpenseDocument,
-                document.Id,
+        var result = await fx.IssueForExpense(document, new RetentionIntent(
+                true,
                 EmissionPointId,
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
@@ -787,9 +407,9 @@ public sealed class IssueRetentionHandlerTests
     // ── 11) El command no acepta Tenant/Company/Branch ────────────────────
 
     [Fact]
-    public void Command_no_expone_propiedades_de_Tenant_Company_Branch()
+    public void Intencion_no_expone_propiedades_de_Tenant_Company_Branch()
     {
-        var properties = typeof(IssueRetentionCommand).GetProperties().Select(p => p.Name).ToArray();
+        var properties = typeof(RetentionIntent).GetProperties().Select(p => p.Name).ToArray();
 
         properties.Should().NotContain(new[] { "TenantId", "CompanyId", "BranchId" });
     }
@@ -811,9 +431,8 @@ public sealed class IssueRetentionHandlerTests
             .Callback<RetentionDocument, CancellationToken>((d, _) => captured = d)
             .Returns(Task.CompletedTask);
 
-        await fx.IssueForExpense(document, new IssueRetentionCommand(
-                RetentionSourceDocumentType.ExpenseDocument,
-                document.Id,
+        await fx.IssueForExpense(document, new RetentionIntent(
+                true,
                 EmissionPointId,
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
@@ -837,9 +456,8 @@ public sealed class IssueRetentionHandlerTests
         fx.SetupEligibility(document.SupplierId, FullyEligible);
         fx.SetupNotExisting();
 
-        var result = await fx.IssueForExpense(document, new IssueRetentionCommand(
-                RetentionSourceDocumentType.ExpenseDocument,
-                document.Id,
+        var result = await fx.IssueForExpense(document, new RetentionIntent(
+                true,
                 EmissionPointId,
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine(baseAmount: 100m, rate: 30m, retained: 30m) }
@@ -852,7 +470,6 @@ public sealed class IssueRetentionHandlerTests
         // El núcleo solo deja el documento en staging: lo persiste la confirmación del gasto, en su
         // única transacción (nunca un SaveChanges propio).
         fx.RetentionRepo.Verify(r => r.AddAsync(It.IsAny<RetentionDocument>(), It.IsAny<CancellationToken>()), Times.Once);
-        fx.Uow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     // ── 14) Levanta evento Issued ──────────────────────────────────────────
@@ -872,9 +489,8 @@ public sealed class IssueRetentionHandlerTests
             .Callback<RetentionDocument, CancellationToken>((d, _) => captured = d)
             .Returns(Task.CompletedTask);
 
-        await fx.IssueForExpense(document, new IssueRetentionCommand(
-                RetentionSourceDocumentType.ExpenseDocument,
-                document.Id,
+        await fx.IssueForExpense(document, new RetentionIntent(
+                true,
                 EmissionPointId,
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
@@ -895,15 +511,14 @@ public sealed class IssueRetentionHandlerTests
         fx.SetupEligibility(document.SupplierId, FullyEligible);
         fx.SetupNotExisting();
 
-        await fx.IssueForExpense(document, new IssueRetentionCommand(
-                RetentionSourceDocumentType.ExpenseDocument,
-                document.Id,
+        await fx.IssueForExpense(document, new RetentionIntent(
+                true,
                 EmissionPointId,
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
             ));
 
-        // El handler no depende de IAccountsPayableRepository/IJournalEntry* — imposible tocar CxP
+        // RetentionIssuer no depende de IAccountsPayableRepository/IJournalEntry* — imposible tocar CxP
         // o contabilidad por construcción. Solo se verifica que el repo de ExpenseDocument nunca
         // se usa para escritura (únicamente se lee vía GetByIdAsync).
         fx.ExpenseRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -927,9 +542,8 @@ public sealed class IssueRetentionHandlerTests
             .Callback<RetentionDocument, CancellationToken>((d, _) => captured = d)
             .Returns(Task.CompletedTask);
 
-        await fx.IssueForExpense(document, new IssueRetentionCommand(
-                RetentionSourceDocumentType.ExpenseDocument,
-                document.Id,
+        await fx.IssueForExpense(document, new RetentionIntent(
+                true,
                 EmissionPointId,
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
@@ -965,9 +579,8 @@ public sealed class IssueRetentionHandlerTests
         fx.SetupEligibility(document.SupplierId, FullyEligible);
         fx.SetupNotExisting();
 
-        var result = await fx.IssueForExpense(document, new IssueRetentionCommand(
-                RetentionSourceDocumentType.ExpenseDocument,
-                document.Id,
+        var result = await fx.IssueForExpense(document, new RetentionIntent(
+                true,
                 EmissionPointId,
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
@@ -986,9 +599,8 @@ public sealed class IssueRetentionHandlerTests
         fx.SetupEligibility(document.SupplierId, FullyEligible);
         fx.SetupNotExisting();
 
-        var result = await fx.IssueForExpense(document, new IssueRetentionCommand(
-                RetentionSourceDocumentType.ExpenseDocument,
-                document.Id,
+        var result = await fx.IssueForExpense(document, new RetentionIntent(
+                true,
                 EmissionPointId,
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
@@ -1019,9 +631,8 @@ public sealed class IssueRetentionHandlerTests
         fx.SetupEligibility(document.SupplierId, FullyEligible);
         fx.SetupNotExisting();
 
-        var result = await fx.IssueForExpense(document, new IssueRetentionCommand(
-                RetentionSourceDocumentType.ExpenseDocument,
-                document.Id,
+        var result = await fx.IssueForExpense(document, new RetentionIntent(
+                true,
                 EmissionPointId,
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
@@ -1043,9 +654,8 @@ public sealed class IssueRetentionHandlerTests
         fx.SetupEligibility(document.SupplierId, FullyEligible);
         fx.SetupNotExisting();
 
-        var result = await fx.IssueForExpense(document, new IssueRetentionCommand(
-                RetentionSourceDocumentType.ExpenseDocument,
-                document.Id,
+        var result = await fx.IssueForExpense(document, new RetentionIntent(
+                true,
                 EmissionPointId,
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
@@ -1072,56 +682,14 @@ public sealed class IssueRetentionHandlerTests
         result.Value.SourceDocumentNumber.Should().NotBe(laterDocument.DocumentNumber);
     }
 
-    // ── ZH-RETENTION-EMISSION-SSOT-01: en Gastos no existe emisión aislada ──
-
-    /// <summary>
-    /// En Gastos la retención se emite SOLO dentro de la confirmación (gasto + CxP con la retención
-    /// aplicada + RetentionDocument + asiento, atómico). La emisión aislada que este handler tenía para
-    /// Gastos no tenía endpoint y omitía la CxP: ahora se rechaza sin leer ni escribir nada.
-    /// </summary>
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task ExpenseDocument_se_rechaza_porque_en_Gastos_la_retencion_se_emite_al_confirmar(bool confirmed)
-    {
-        var fx = new Fixture();
-        var document = confirmed ? fx.ConfirmedDocument(BranchId) : fx.DraftDocument(BranchId);
-        fx.SetupDocument(document);
-        fx.SetupEligibility(document.SupplierId, FullyEligible);
-        fx.SetupNotExisting();
-
-        var result = await fx.Handler.Handle(
-            new IssueRetentionCommand(
-                RetentionSourceDocumentType.ExpenseDocument,
-                document.Id,
-                EmissionPointId,
-                new DateOnly(2026, 9, 3),
-                new[] { VatLine() }
-            ),
-            CancellationToken.None
-        );
-
-        result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
-        result.Error.Should().Be(IssueRetentionHandler.ExpenseIssuedOnConfirmationMessage);
-        fx.ExpenseRepo.VerifyNoOtherCalls();
-        fx.RetentionRepo.Verify(r => r.AddAsync(It.IsAny<RetentionDocument>(), It.IsAny<CancellationToken>()), Times.Never);
-        fx.SequenceRepo.VerifyNoOtherCalls();
-        fx.Uow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
-    }
-
     private sealed class Fixture
     {
         public Mock<IExpenseDocumentRepository> ExpenseRepo { get; } = new();
-        public Mock<IPurchaseInvoiceRepository> PurchaseRepo { get; } = new();
-        public Mock<IPurchaseReturnRepository> PurchaseReturnRepo { get; } = new();
-        public Mock<IAccountsPayableRepository> PayableRepo { get; } = new();
         public Mock<IRetentionDocumentRepository> RetentionRepo { get; } = new();
         public Mock<IRetentionEligibilityService> EligibilityService { get; } = new();
         public Mock<IEmissionPointRepository> EmissionPointRepo { get; } = new();
         public Mock<IEstablishmentRepository> EstablishmentRepo { get; } = new();
         public Mock<IDocumentSequenceRepository> SequenceRepo { get; } = new();
-        public Mock<IUnitOfWork> Uow { get; } = new();
 
         /// <summary>
         /// RETENTIONS-DOCUMENT-SEQUENCE-02E: por defecto, todo test resuelve el mismo punto de
@@ -1175,46 +743,11 @@ public sealed class IssueRetentionHandlerTests
                 .ReturnsAsync(establishment);
         }
 
-        public IssueRetentionHandler Handler =>
-            new(
-                // PURCHASES-RETENTIONS-BRIDGE-05B: PurchaseRepo/PayableRepo se agregan para el
-                // camino de Compras — sin Setup, los mocks devuelven null por defecto, que es
-                // exactamente el comportamiento neutro que necesitan los tests de ExpenseDocument
-                // existentes (nunca se llaman en ese camino).
-                PurchaseRepo.Object,
-                // PURCHASES-WITHHOLDING-LEGACY-REMOVAL-05E: HandlePurchaseAsync ahora adquiere el
-                // mismo Lock A ("PurchaseInvoice.FinancialLock") que CancelPurchaseHandler — sin
-                // Setup, el mock de Task devuelve Task.CompletedTask por defecto (comportamiento
-                // neutro, no interfiere con ningún [Fact] existente).
-                PurchaseReturnRepo.Object,
-                PayableRepo.Object,
-                // RETENTIONS-EXPENSES-INTEGRATION-01D-1: IssueRetentionHandler ya no habla
-                // directamente con RetentionRepo/EligibilityService — delega en RetentionIssuer
-                // (mismo servicio que usa ConfirmExpenseDocumentHandler). Se construye con los
-                // mismos mocks que antes, así las aserciones existentes sobre RetentionRepo/
-                // EligibilityService siguen siendo válidas sin cambiar ningún [Fact].
-                // RETENTIONS-DOCUMENT-SEQUENCE-02E: se agregan EmissionPointRepo/EstablishmentRepo/
-                // SequenceRepo — RetentionIssuer ya genera el número internamente.
-                new RetentionIssuer(
-                    RetentionRepo.Object,
-                    EligibilityService.Object,
-                    EmissionPointRepo.Object,
-                    EstablishmentRepo.Object,
-                    SequenceRepo.Object
-                ),
-                Uow.Object,
-                Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
-                Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
-                Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId),
-                Mock.Of<ICurrentUser>(u => u.UserId == UserId)
-            );
-
         /// <summary>
-        /// ZH-RETENTION-EMISSION-SSOT-01 — en Gastos la retención se emite solo al confirmar, y esa
-        /// confirmación delega en <see cref="RetentionIssuer.IssueForExpenseAsync"/> (staging, sin
-        /// SaveChanges): estos tests ejercitan ese núcleo directamente con el contexto seguro fijo.
+        /// La confirmación del gasto delega en <see cref="RetentionIssuer.IssueForExpenseAsync"/>
+        /// (staging, sin SaveChanges) con la intención del usuario y el contexto seguro fijo.
         /// </summary>
-        public Task<Result<RetentionDocument>> IssueForExpense(ExpenseDocument document, IssueRetentionCommand cmd) =>
+        public Task<Result<RetentionDocument>> IssueForExpense(ExpenseDocument document, RetentionIntent intent) =>
             new RetentionIssuer(
                 RetentionRepo.Object,
                 EligibilityService.Object,
@@ -1223,7 +756,7 @@ public sealed class IssueRetentionHandlerTests
                 SequenceRepo.Object
             ).IssueForExpenseAsync(
                 document,
-                new RetentionIssueRequest(TenantId, CompanyId, BranchId, UserId, cmd.EmissionPointId, cmd.IssueDate, cmd.Lines),
+                new RetentionIssueRequest(TenantId, CompanyId, BranchId, UserId, intent.EmissionPointId!.Value, intent.IssueDate!.Value, intent.Lines!),
                 CancellationToken.None
             );
 
@@ -1280,68 +813,6 @@ public sealed class IssueRetentionHandlerTests
                 UserId
             );
             return document;
-        }
-
-        // ── PURCHASES-RETENTIONS-BRIDGE-05B: fixtures de PurchaseInvoice ──────────
-
-        public ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice DraftInvoice(
-            Guid? branchId = null,
-            string invoiceNumber = "001-001-000000123",
-            string? taxSupportCode = null
-        ) =>
-            ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice.CreateDraft(
-                TenantId, CompanyId, branchId ?? BranchId, SupplierId, "Proveedor Demo",
-                "1791352688001", "01", invoiceNumber, new DateOnly(2026, 8, 27), UserId,
-                PurchasePaymentTermId, "Contado", 1, 30,
-                taxSupportCode: taxSupportCode
-            );
-
-        public ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice ConfirmedInvoice(
-            Guid? branchId = null,
-            string invoiceNumber = "001-001-000000123",
-            string? taxSupportCode = null
-        )
-        {
-            var invoice = DraftInvoice(branchId, invoiceNumber, taxSupportCode);
-            var line = ERP.Domain.Modules.Purchases.Entities.PurchaseInvoiceDetail.Create(
-                invoice.Id, TenantId, "Producto Demo", quantity: 1, unitPrice: 100m,
-                vatCode: "0", uomCode: "UNIT"
-            );
-            invoice.ReplaceLines(new[] { line }, UserId);
-            invoice.Confirm(UserId);
-            return invoice;
-        }
-
-        public void SetupInvoice(ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice invoice) =>
-            PurchaseRepo
-                .Setup(r => r.GetByIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(invoice);
-
-        public void SetupPayable(
-            Guid purchaseInvoiceId,
-            ERP.Domain.Modules.Payables.Entities.AccountsPayable? payable
-        ) =>
-            PayableRepo
-                .Setup(r => r.GetByOriginAsync(
-                    TenantId, CompanyId,
-                    ERP.Domain.Modules.Payables.Enums.AccountsPayableOriginType.PurchaseInvoice,
-                    purchaseInvoiceId, It.IsAny<CancellationToken>()
-                ))
-                .ReturnsAsync(payable);
-
-        public ERP.Domain.Modules.Payables.Entities.AccountsPayable CreatePayableWithInstallment(
-            Guid purchaseInvoiceId,
-            decimal total
-        )
-        {
-            var payable = ERP.Domain.Modules.Payables.Entities.AccountsPayable.CreateFromOrigin(
-                TenantId, CompanyId, BranchId, SupplierId,
-                ERP.Domain.Modules.Payables.Enums.AccountsPayableOriginType.PurchaseInvoice,
-                purchaseInvoiceId, "01", "001-001-000000123",
-                new DateOnly(2026, 8, 27), new DateOnly(2026, 9, 26), UserId
-            );
-            payable.AddInstallment(1, new DateOnly(2026, 9, 26), total);
-            return payable;
         }
     }
 }

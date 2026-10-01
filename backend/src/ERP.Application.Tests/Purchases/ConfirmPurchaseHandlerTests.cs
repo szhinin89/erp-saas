@@ -295,7 +295,8 @@ public sealed class ConfirmPurchaseHandlerTests
         decimal? marginGuardSalePrice = null,
         bool allowConfirmWithoutReceptionXml = true,
         Guid? activeBranchId = null,
-        ERP.Application.Modules.Purchases.Services.IPurchaseXmlConfirmationGuard? xmlGuard = null
+        ERP.Application.Modules.Purchases.Services.IPurchaseXmlConfirmationGuard? xmlGuard = null,
+        ERP.Application.Modules.Retentions.Services.IRetentionIssuer? retentionIssuer = null
     )
     {
         var repo = new Mock<IPurchaseInvoiceRepository>();
@@ -550,7 +551,8 @@ public sealed class ConfirmPurchaseHandlerTests
             user.Object,
             preferences.Object,
             PrecisionPolicyTestDouble.Mock(),
-            xmlGuard ?? Mock.Of<ERP.Application.Modules.Purchases.Services.IPurchaseXmlConfirmationGuard>()
+            xmlGuard ?? Mock.Of<ERP.Application.Modules.Purchases.Services.IPurchaseXmlConfirmationGuard>(),
+            retentionIssuer ?? Mock.Of<ERP.Application.Modules.Retentions.Services.IRetentionIssuer>()
         );
 
         return (handler, repo, stockRepo, payables);
@@ -1103,7 +1105,8 @@ public sealed class ConfirmPurchaseHandlerTests
             user.Object,
             Mock.Of<IOperationalPreferencesResolver>(),
             PrecisionPolicyTestDouble.Mock(),
-            Mock.Of<ERP.Application.Modules.Purchases.Services.IPurchaseXmlConfirmationGuard>()
+            Mock.Of<ERP.Application.Modules.Purchases.Services.IPurchaseXmlConfirmationGuard>(),
+            Mock.Of<ERP.Application.Modules.Retentions.Services.IRetentionIssuer>()
         );
 
         var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id), CancellationToken.None);
@@ -1159,7 +1162,8 @@ public sealed class ConfirmPurchaseHandlerTests
             user.Object,
             preferencesOverride.Object,
             PrecisionPolicyTestDouble.Mock(),
-            Mock.Of<ERP.Application.Modules.Purchases.Services.IPurchaseXmlConfirmationGuard>()
+            Mock.Of<ERP.Application.Modules.Purchases.Services.IPurchaseXmlConfirmationGuard>(),
+            Mock.Of<ERP.Application.Modules.Retentions.Services.IRetentionIssuer>()
         );
 
         var result = await h.Handle(new ConfirmPurchaseCommand(fakeId), CancellationToken.None);
@@ -1648,5 +1652,224 @@ public sealed class ConfirmPurchaseHandlerTests
 
         result.IsSuccess.Should().BeTrue(result.Error);
         inv.Status.Should().Be(Domain.Modules.Purchases.Enums.PurchaseStatus.Confirmed);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // ZH-PURCHASE-RETENTION-CONFIRM-01 — retención integrada en la confirmación
+    // ══════════════════════════════════════════════════════════════════════
+
+    private static readonly Guid RetentionEmissionPointId = Guid.NewGuid();
+
+    private static ERP.Application.Modules.Retentions.UseCases.RetentionIntent RetentionIntentFor(decimal retained = 4.5m) =>
+        new(
+            true,
+            RetentionEmissionPointId,
+            new DateOnly(2026, 9, 30),
+            new[]
+            {
+                new ERP.Application.Modules.Retentions.UseCases.IssueRetentionLineInput(
+                    ERP.Domain.Modules.Retentions.Enums.RetentionTaxType.Vat, "725", 15m, 30m, retained
+                ),
+            }
+        );
+
+    private static ERP.Domain.Modules.Retentions.Entities.RetentionDocument IssuedRetention(PurchaseInvoice inv, decimal retained = 4.5m)
+    {
+        var retention = ERP.Domain.Modules.Retentions.Entities.RetentionDocument.Create(
+            TenantId, CompanyId, inv.BranchId,
+            ERP.Domain.Modules.Retentions.Enums.RetentionSourceDocumentType.PurchaseInvoice,
+            inv.Id, inv.SupplierId, RetentionEmissionPointId, UserId,
+            new ERP.Domain.Modules.Retentions.Entities.RetentionDocument.SourceDocumentSnapshot(
+                "01", inv.InvoiceNumber, inv.IssueDate, null, null, 100m, 115m
+            )
+        );
+        retention.AddLine(
+            ERP.Domain.Modules.Retentions.Entities.RetentionDocumentLine.Create(
+                retention.Id, TenantId, ERP.Domain.Modules.Retentions.Enums.RetentionTaxType.Vat,
+                "725", "Retención IVA 30%", 15m, 30m, retained
+            )
+        );
+        retention.Issue("001-001-000000001", new DateOnly(2026, 9, 30), UserId);
+        return retention;
+    }
+
+    /// <summary>CxP real (en staging) que el handler recibe de StageFromOriginAsync, para inspeccionar ApplyRetention.</summary>
+    private static AccountsPayable StagePayableReturning(Mock<IAccountsPayableService> payables, PurchaseInvoice inv, decimal total)
+    {
+        var payable = AccountsPayable.CreateFromOrigin(
+            TenantId, CompanyId, inv.BranchId, inv.SupplierId,
+            ERP.Domain.Modules.Payables.Enums.AccountsPayableOriginType.PurchaseInvoice, inv.Id, "01",
+            inv.InvoiceNumber, inv.IssueDate, inv.IssueDate, UserId
+        );
+        payable.AddInstallment(1, inv.IssueDate, total);
+        payables
+            .Setup(p => p.StageFromOriginAsync(It.IsAny<CreateAccountsPayableFromOriginRequest>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(payable);
+        return payable;
+    }
+
+    [Fact]
+    public async Task Sin_intencion_de_retencion_confirma_igual_que_antes_sin_invocar_el_emisor()
+    {
+        var inv = CreateDraftInvoice();
+        var issuer = new Mock<ERP.Application.Modules.Retentions.Services.IRetentionIssuer>();
+        var (handler, _, stock, _) = BuildHandler(inv, retentionIssuer: issuer.Object);
+
+        var withoutIntent = await handler.Handle(new ConfirmPurchaseCommand(inv.Id), CancellationToken.None);
+
+        withoutIntent.IsSuccess.Should().BeTrue(withoutIntent.Error);
+        issuer.VerifyNoOtherCalls();
+        stock.Verify(s => s.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Intencion_con_AppliesRetention_false_no_emite_retencion()
+    {
+        var inv = CreateDraftInvoice();
+        var issuer = new Mock<ERP.Application.Modules.Retentions.Services.IRetentionIssuer>();
+        var (handler, _, _, _) = BuildHandler(inv, retentionIssuer: issuer.Object);
+
+        var result = await handler.Handle(
+            new ConfirmPurchaseCommand(inv.Id, null, new ERP.Application.Modules.Retentions.UseCases.RetentionIntent(false, null, null, null)),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        issuer.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Con_intencion_emite_sobre_la_compra_y_aplica_la_retencion_a_la_CxP_antes_del_unico_SaveChanges()
+    {
+        var inv = CreateDraftInvoice();
+        var issuer = new Mock<ERP.Application.Modules.Retentions.Services.IRetentionIssuer>();
+        ERP.Application.Modules.Retentions.Services.RetentionSourceDocumentData? source = null;
+        ERP.Application.Modules.Retentions.Services.RetentionIssueRequest? request = null;
+        issuer
+            .Setup(i => i.IssueAsync(
+                It.IsAny<ERP.Application.Modules.Retentions.Services.RetentionSourceDocumentData>(),
+                It.IsAny<ERP.Application.Modules.Retentions.Services.RetentionIssueRequest>(),
+                It.IsAny<CancellationToken>()
+            ))
+            .Callback((ERP.Application.Modules.Retentions.Services.RetentionSourceDocumentData s, ERP.Application.Modules.Retentions.Services.RetentionIssueRequest r, CancellationToken _) =>
+            {
+                source = s;
+                request = r;
+                // La compra ya está confirmada en memoria cuando se emite (snapshot del documento final).
+                inv.Status.Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Confirmed);
+            })
+            .ReturnsAsync(() => Result<ERP.Domain.Modules.Retentions.Entities.RetentionDocument>.Success(IssuedRetention(inv)));
+        var (handler, _, stock, payables) = BuildHandler(inv, retentionIssuer: issuer.Object);
+        var payable = StagePayableReturning(payables, inv, 115m);
+        decimal? retainedAtSave = null;
+        stock.Setup(s => s.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()))
+            .Callback(() => retainedAtSave = payable.RetainedAmount)
+            .ReturnsAsync(1);
+        var intent = RetentionIntentFor();
+
+        var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id, null, intent), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        source!.SourceDocumentType.Should().Be(ERP.Domain.Modules.Retentions.Enums.RetentionSourceDocumentType.PurchaseInvoice);
+        source.SourceDocumentId.Should().Be(inv.Id);
+        source.SubjectBusinessPartnerId.Should().Be(inv.SupplierId);
+        source.VatRetainableBase.Should().Be(inv.TotalVat);
+        source.IncomeRetainableBase.Should().Be(inv.Lines.Sum(l => l.TaxableBase));
+        source.Snapshot.DocumentNumber.Should().Be(inv.InvoiceNumber);
+        request!.TenantId.Should().Be(TenantId);
+        request.CompanyId.Should().Be(CompanyId);
+        request.BranchId.Should().Be(inv.BranchId);
+        request.UserId.Should().Be(UserId);
+        request.EmissionPointId.Should().Be(RetentionEmissionPointId);
+        request.IssueDate.Should().Be(new DateOnly(2026, 9, 30));
+        request.Lines.Should().BeSameAs(intent.Lines);
+        retainedAtSave.Should().Be(4.5m, "la CxP nace con la retención aplicada en el mismo SaveChanges");
+        (payable.TotalAmount - payable.RetainedAmount).Should().Be(110.5m);
+        stock.Verify(s => s.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory]
+    [InlineData(ApiResponseCodes.Common.ValidationError)]
+    [InlineData(ApiResponseCodes.Common.Conflict)]
+    [InlineData(ApiResponseCodes.Common.NotFound)]
+    public async Task Fallo_del_emisor_aborta_la_confirmacion_sin_persistir_nada(string code)
+    {
+        var inv = CreateDraftInvoice();
+        var issuer = new Mock<ERP.Application.Modules.Retentions.Services.IRetentionIssuer>();
+        issuer
+            .Setup(i => i.IssueAsync(
+                It.IsAny<ERP.Application.Modules.Retentions.Services.RetentionSourceDocumentData>(),
+                It.IsAny<ERP.Application.Modules.Retentions.Services.RetentionIssueRequest>(),
+                It.IsAny<CancellationToken>()
+            ))
+            .ReturnsAsync(Result<ERP.Domain.Modules.Retentions.Entities.RetentionDocument>.Failure("motivo de la retención", code));
+        var (handler, repo, stock, _) = BuildHandler(inv, retentionIssuer: issuer.Object);
+
+        var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id, null, RetentionIntentFor()), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(code, "el código del emisor se preserva para el status HTTP");
+        result.Error.Should().Be("motivo de la retención");
+        stock.Verify(s => s.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()), Times.Never);
+        repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Retencion_mayor_al_saldo_de_la_CxP_aborta_la_confirmacion_sin_persistir()
+    {
+        var inv = CreateDraftInvoice();
+        var issuer = new Mock<ERP.Application.Modules.Retentions.Services.IRetentionIssuer>();
+        issuer
+            .Setup(i => i.IssueAsync(
+                It.IsAny<ERP.Application.Modules.Retentions.Services.RetentionSourceDocumentData>(),
+                It.IsAny<ERP.Application.Modules.Retentions.Services.RetentionIssueRequest>(),
+                It.IsAny<CancellationToken>()
+            ))
+            .ReturnsAsync(() => Result<ERP.Domain.Modules.Retentions.Entities.RetentionDocument>.Success(IssuedRetention(inv, retained: 15m)));
+        var (handler, _, stock, payables) = BuildHandler(inv, retentionIssuer: issuer.Object);
+        StagePayableReturning(payables, inv, 10m);
+
+        var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id, null, RetentionIntentFor(15m)), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        stock.Verify(s => s.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Fallo_del_asiento_de_la_retencion_devuelve_su_codigo_tras_el_rollback_completo()
+    {
+        var inv = CreateDraftInvoice();
+        var issuer = new Mock<ERP.Application.Modules.Retentions.Services.IRetentionIssuer>();
+        issuer
+            .Setup(i => i.IssueAsync(
+                It.IsAny<ERP.Application.Modules.Retentions.Services.RetentionSourceDocumentData>(),
+                It.IsAny<ERP.Application.Modules.Retentions.Services.RetentionIssueRequest>(),
+                It.IsAny<CancellationToken>()
+            ))
+            .ReturnsAsync(() => Result<ERP.Domain.Modules.Retentions.Entities.RetentionDocument>.Success(IssuedRetention(inv)));
+        var (handler, _, stock, payables) = BuildHandler(inv, retentionIssuer: issuer.Object);
+        StagePayableReturning(payables, inv, 115m);
+        stock.Setup(s => s.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new ERP.Application.Modules.Retentions.Exceptions.RetentionPostingFailedException("Sin regla de retención", "RULE_NOT_FOUND"));
+
+        var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id, null, RetentionIntentFor()), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be("RULE_NOT_FOUND");
+        result.Error.Should().Be("Sin regla de retención");
+    }
+
+    [Fact]
+    public void Validador_rechaza_una_intencion_incompleta_y_acepta_la_ausencia_de_intencion()
+    {
+        var validator = new ConfirmPurchaseValidator();
+
+        validator.Validate(new ConfirmPurchaseCommand(Guid.NewGuid())).IsValid.Should().BeTrue();
+        validator.Validate(new ConfirmPurchaseCommand(Guid.NewGuid(), null, RetentionIntentFor())).IsValid.Should().BeTrue();
+        validator
+            .Validate(new ConfirmPurchaseCommand(
+                Guid.NewGuid(), null, new ERP.Application.Modules.Retentions.UseCases.RetentionIntent(true, null, null, null)
+            ))
+            .IsValid.Should().BeFalse();
     }
 }

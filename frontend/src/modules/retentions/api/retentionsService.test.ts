@@ -6,8 +6,8 @@ import { retentionsService } from "./retentionsService";
 
 /**
  * PURCHASES-RETENTIONS-UI-MIGRATION-05C — cliente transversal de Retentions consumido desde
- * Compras. Cubre exclusivamente el wiring HTTP (URL/payload) — las reglas de negocio ya están
- * cubiertas en el backend (IssueRetentionHandlerTests, PURCHASES-RETENTIONS-BRIDGE-05B).
+ * Compras. Cubre exclusivamente el wiring HTTP (URL/payload). ZH-PURCHASE-RETENTION-CONFIRM-01:
+ * la emisión ya no tiene endpoint propio (viaja en la confirmación de la compra).
  */
 
 vi.mock("../../lib/apiEnvelope", () => ({
@@ -25,27 +25,8 @@ describe("retentionsService", () => {
     expect(apiGet).toHaveBeenCalledWith("/api/v1/purchases/purchase-1/retention");
   });
 
-  it("issueForPurchase llama POST /api/v1/purchases/{id}/retention con el payload exacto, sin sourceDocumentType/sourceDocumentId/retentionNumber", () => {
-    const payload = {
-      emissionPointId: "ep-1",
-      issueDate: "2026-09-03",
-      lines: [
-        {
-          taxType: "Vat" as const,
-          retentionCode: "725",
-          baseAmount: 100,
-          retentionRate: 30,
-          retainedAmount: 30,
-        },
-      ],
-    };
-
-    retentionsService.issueForPurchase("purchase-1", payload);
-
-    expect(apiPost).toHaveBeenCalledWith("/api/v1/purchases/purchase-1/retention", payload);
-    expect(payload).not.toHaveProperty("sourceDocumentType");
-    expect(payload).not.toHaveProperty("sourceDocumentId");
-    expect(payload).not.toHaveProperty("retentionNumber");
+  it("no expone una emisión posterior de retención (se emite al confirmar la compra)", () => {
+    expect(retentionsService).not.toHaveProperty("issueForPurchase");
   });
 
   it("cancelForPurchase llama POST /api/v1/purchases/{purchaseId}/retention/{retentionId}/cancel con el motivo", () => {

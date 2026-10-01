@@ -2,9 +2,6 @@ using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Purchases.UseCases;
-using ERP.Application.Modules.Retentions.DTOs;
-using ERP.Application.Modules.Retentions.Services;
-using ERP.Application.Modules.Retentions.UseCases;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.ValueObjects;
@@ -35,7 +32,7 @@ using Testcontainers.PostgreSql;
 namespace ERP.Infrastructure.Tests.Persistence;
 
 /// <summary>
-/// P0-02 Fase 6 — Remediación 02, puntos 4/5/6 de la revisión fallida: escenarios de Lock A
+/// P0-02 Fase 6 — Remediación 02, puntos 4/5 de la revisión fallida: escenarios de Lock A
 /// (<c>"PurchaseInvoice.FinancialLock"</c>) cruzando <see cref="AuthorizePurchaseReturnHandler"/>
 /// contra otros handlers reales que compiten por la misma factura — no simulados, ejecutados
 /// contra PostgreSQL real (Testcontainers).
@@ -57,8 +54,6 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
     private Guid _supplierId;
     private Guid _paymentTermId;
     private Guid _itemId;
-    private Guid _establishmentId;
-    private Guid _emissionPointId;
     private readonly Guid _userId = Guid.NewGuid();
 
     public async Task InitializeAsync()
@@ -157,18 +152,6 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
         await db.SaveChangesAsync();
         _supplierId = supplier.Id;
 
-        // ── Configuración de retención (punto 6) — código IVA 725 al 30%, catálogo real sembrado ──
-        var vatRetentionCode = new SriRetentionCode
-        {
-            Id = Guid.NewGuid(),
-            TaxType = "IVA",
-            Code = "725A",
-            Name = "Retención IVA 30% bienes",
-            Percentage = 30m,
-            AppliesTo = "SUPPLIER",
-            IsActive = true,
-        };
-        db.SriRetentionCodes.Add(vatRetentionCode);
         var supplierRole = Domain.MasterData.Entities.BusinessPartnerRole.Create(
             _tenantId,
             supplier.Id,
@@ -177,47 +160,7 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
             supplierConfig: SupplierRoleConfig.Create()
         );
         db.Set<Domain.MasterData.Entities.BusinessPartnerRole>().Add(supplierRole);
-        // RETENTIONS-SUPPLIER-DEFAULTS-DYNAMIC-01: el default ahora es una fila por proveedor+empresa.
-        db.Set<SupplierRetentionDefault>()
-            .Add(
-                SupplierRetentionDefault.Create(
-                    _tenantId,
-                    _companyId,
-                    supplier.Id,
-                    vatRetentionCode.Id,
-                    0,
-                    _userId
-                )
-            );
-
-        var establishment = Establishment.Create(
-            _tenantId,
-            _branchId,
-            _companyId,
-            "001",
-            "Matriz",
-            "Av. Principal 123",
-            null,
-            isMain: true,
-            _userId
-        );
-        db.Set<Establishment>().Add(establishment);
         await db.SaveChangesAsync();
-        _establishmentId = establishment.Id;
-
-        var emissionPoint = Domain.Modules.Company.Entities.EmissionPoint.Create(
-            _tenantId,
-            _companyId,
-            establishment.Id,
-            "001",
-            "Punto de emisión 1",
-            Domain.Modules.Company.Enums.EmissionType.Electronic,
-            isDefault: true,
-            _userId
-        );
-        db.Set<Domain.Modules.Company.Entities.EmissionPoint>().Add(emissionPoint);
-        await db.SaveChangesAsync();
-        _emissionPointId = emissionPoint.Id;
 
         var itemType = ItemTypeDefinition.Create(_tenantId, "MERCH", "Mercadería", 1, _userId);
         db.Set<ItemTypeDefinition>().Add(itemType);
@@ -437,80 +380,6 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
         return (true, reloaded, null);
     }
 
-    private async Task<(
-        bool Success,
-        RetentionDocumentDto? Value,
-        string? Error
-    )> ExecuteIssueRetentionAsync(Guid invoiceId)
-    {
-        await using var db = CreateContext();
-        var purchaseRepo = new PurchaseInvoiceRepository(
-            db,
-            new FixedCurrentCompany(() => _companyId)
-        );
-        var purchaseReturnRepo = new PurchaseReturnRepository(
-            db,
-            new FixedCurrentCompany(() => _companyId)
-        );
-        var payableRepo = new AccountsPayableRepository(db);
-        var retentionRepo = new RetentionDocumentRepository(
-            db,
-            new FixedCurrentCompany(() => _companyId)
-        );
-        var eligibilityService = new RetentionEligibilityService(
-            new CompanyRepository(db),
-            new BusinessPartnerRoleRepository(db),
-            new SupplierRetentionDefaultRepository(db),
-            new RetentionCodeResolver(db)
-        );
-        var issuer = new RetentionIssuer(
-            retentionRepo,
-            eligibilityService,
-            new EmissionPointRepository(db),
-            new EstablishmentRepository(db),
-            new DocumentSequenceRepository(db)
-        );
-        var uow = new UnitOfWork(db);
-
-        var handler = new IssueRetentionHandler(
-            purchaseRepo,
-            purchaseReturnRepo,
-            payableRepo,
-            issuer,
-            uow,
-            new FixedCurrentTenant(() => _tenantId),
-            new FixedCurrentCompany(() => _companyId),
-            new FixedCurrentBranch(() => _branchId),
-            new FixedCurrentUser(_userId)
-        );
-
-        var result = await handler.Handle(
-            new IssueRetentionCommand(
-                RetentionSourceDocumentType.PurchaseInvoice,
-                invoiceId,
-                _emissionPointId,
-                DateOnly.FromDateTime(DateTime.UtcNow),
-                new[]
-                {
-                    new IssueRetentionLineInput(
-                        ERP.Domain.Modules.Retentions.Enums.RetentionTaxType.Vat,
-                        "725",
-                        100m,
-                        30m,
-                        30m
-                    ),
-                }
-            ),
-            CancellationToken.None
-        );
-
-        return (
-            result.IsSuccess,
-            result.IsSuccess ? result.Value : null,
-            result.IsSuccess ? null : result.Error
-        );
-    }
-
     // ── Punto 4: dos autorizaciones concurrentes exceden el remanente ────
 
     [Fact]
@@ -555,95 +424,15 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
     // ── Punto 5: devolución y pago simultáneos ────────────────────────────
     // PAYABLES-PAYMENTS-LEGACY-CLEANUP-14 — eliminado junto con RegisterPaymentCommand (sin UI ni
     // endpoint activo desde PAYABLES-LEGACY-CLEANUP-13). La garantía de Lock A que este punto
-    // cubría sigue demostrada por los Puntos 4/6 (devolución+devolución, devolución+retención)
-    // sobre el mismo mecanismo de lock.
+    // cubría sigue demostrada por el Punto 4 (devolución+devolución) sobre el mismo mecanismo de
+    // lock.
 
-    // ── Punto 6: devolución y emisión de retención simultáneas ───────────
-
-    [Fact]
-    public async Task Punto6_Devolucion_y_emision_de_retencion_simultaneas_quedan_serializadas_por_LockA()
-    {
-        var (invoiceId, lineId, _) = await SeedConfirmedInvoiceAsync(quantity: 10, unitPrice: 35m);
-        var returnId = await CreateDraftReturnAsync(invoiceId, lineId, quantity: 2);
-
-        var tReturn = ExecuteAuthorizeAsync(returnId, Guid.NewGuid());
-        var tRetention = ExecuteIssueRetentionAsync(invoiceId);
-        await Task.WhenAll(tReturn, tRetention);
-
-        var returnResult = await tReturn;
-        var retentionResult = await tRetention;
-
-        await using var verify = CreateContext();
-        var persistedReturn = await verify
-            .PurchaseReturns.AsNoTracking()
-            .FirstAsync(r => r.Id == returnId);
-        var persistedRetention = await verify
-            .Set<Domain.Modules.Retentions.Entities.RetentionDocument>()
-            .AsNoTracking()
-            .FirstOrDefaultAsync(r =>
-                r.SourceDocumentType == RetentionSourceDocumentType.PurchaseInvoice
-                && r.SourceDocumentId == invoiceId
-            );
-
-        // Lock A serializa ambas operaciones sobre la MISMA PurchaseInvoiceId — nunca corren de
-        // verdad en paralelo, una completa (commit) antes de que la otra adquiera el lock. Dos
-        // órdenes de ejecución son válidas según el diseño (PR-006 es unidireccional: retención
-        // Issued bloquea Authorize, pero una devolución ya autorizada no bloquea la emisión de
-        // retención):
-        if (!returnResult.Success)
-        {
-            // Orden B: la retención ganó el lock primero y quedó Issued antes de que Authorize
-            // revalidara bajo el lock → PR-006 determinista, la devolución permanece en Draft.
-            returnResult.Error.Should().Contain("retenci");
-            persistedReturn
-                .Status.Should()
-                .Be(Domain.Modules.Purchases.Enums.PurchaseReturnStatus.Draft);
-            retentionResult.Success.Should().BeTrue(retentionResult.Error);
-            persistedRetention.Should().NotBeNull();
-            persistedRetention!
-                .Status.Should()
-                .Be(Domain.Modules.Retentions.Enums.RetentionStatus.Issued);
-        }
-        else
-        {
-            // Orden A: Authorize ganó el lock primero y autorizó la devolución sin que existiera
-            // retención Issued todavía. La emisión de retención corre después, sin ninguna regla
-            // de diseño que la bloquee por la existencia de una devolución ya autorizada — debe
-            // completar con éxito de forma independiente.
-            persistedReturn
-                .Status.Should()
-                .Be(Domain.Modules.Purchases.Enums.PurchaseReturnStatus.Authorized);
-            retentionResult.Success.Should().BeTrue(retentionResult.Error);
-        }
-
-        // Sin lost update: ambas mutaciones culminan siempre (Lock A serializa, no descarta).
-        retentionResult.Success.Should().BeTrue();
-    }
-
-    /// <summary>
-    /// ZH-RETENTION-EMISSION-SSOT-01 — doble emisión concurrente (doble clic / reintento) sobre la
-    /// misma compra: Lock A serializa y <c>RetentionIssuer</c> (unicidad por origen, respaldada por
-    /// <c>uq_retention_documents_active_source</c>) rechaza la segunda — una sola retención activa y
-    /// la CxP descontada una sola vez.
-    /// </summary>
-    [Fact]
-    public async Task Punto7_Dos_emisiones_de_retencion_concurrentes_sobre_la_misma_compra_producen_una_sola_retencion()
-    {
-        var (invoiceId, _, payableId) = await SeedConfirmedInvoiceAsync(quantity: 10, unitPrice: 35m);
-
-        var results = await Task.WhenAll(ExecuteIssueRetentionAsync(invoiceId), ExecuteIssueRetentionAsync(invoiceId));
-
-        results.Count(r => r.Success).Should().Be(1);
-        results.Single(r => !r.Success).Error.Should().Contain("Ya existe una retención activa");
-        await using var verify = CreateContext();
-        (await verify.Set<Domain.Modules.Retentions.Entities.RetentionDocument>().AsNoTracking()
-            .CountAsync(r => r.SourceDocumentType == RetentionSourceDocumentType.PurchaseInvoice
-                && r.SourceDocumentId == invoiceId
-                && r.Status != Domain.Modules.Retentions.Enums.RetentionStatus.Cancelled))
-            .Should().Be(1);
-        var payable = await verify.AccountsPayables.AsNoTracking().Include(p => p.Installments).SingleAsync(p => p.Id == payableId);
-        payable.RetainedAmount.Should().Be(30m, "la retención se aplica a la CxP una sola vez");
-    }
+    // ── Puntos 6/7 (retirados en ZH-PURCHASE-RETENTION-CONFIRM-01) ───────
+    // Cubrían la emisión de retención POSTERIOR a confirmar la compra (devolución + retención
+    // simultáneas, doble emisión). La retención de Compras ahora solo se emite dentro de
+    // ConfirmPurchase, cuando la compra todavía es Draft y no puede tener devoluciones: esa carrera
+    // ya no existe. La concurrencia de la emisión integrada (doble confirmación) se cubre en
+    // PurchaseRetentionConfirmIntegrationTests.
 
     // ── Test doubles mínimos ─────────────────────────────────────────────
 

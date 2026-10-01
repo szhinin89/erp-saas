@@ -18,6 +18,7 @@ import { ZHInfoRow } from "../../../components/zh/ZHInfoRow";
 import { ZHInputGroup } from "../../../components/zh/ZHInputGroup";
 import { SupplierSearchSelect } from "../../masterData/facades/supplierPickerFacade";
 import { DistributeCostModal } from "../components/DistributeCostModal";
+import { PurchaseRetentionDraft } from "../components/PurchaseRetentionDraft";
 import { ResolvePendingProductsModal } from "../components/ResolvePendingProductsModal";
 import { ProductPicker } from "../components/ProductPicker";
 import type { ProductProfile } from "../components/ProductPicker";
@@ -50,7 +51,6 @@ import {
   buildCostDistributionInputFromPersistedLines,
   buildCostDistributionInputFromFormLines,
 } from "../utils/purchaseCalc";
-import { buildWithholdingIssueMessage } from "../utils/withholdingMessages";
 import { usePurchasesPage, type Tab } from "../hooks/usePurchasesPage";
 import type { PurchaseListItemDto } from "../api/purchaseService";
 import { useI18n } from "../../../i18n/i18n";
@@ -1026,9 +1026,12 @@ export function PurchasesPage() {
             <div className="pf-plazos-resumen-grid">
               <div>
                 <PaymentScheduleSection ctx={ctx} />
-                {ctx.editing && ctx.editing.status === "Confirmed" && (
-                  <RetentionSection ctx={ctx} />
-                )}
+                {/* ZH-PURCHASE-RETENTION-CONFIRM-01 — en borrador se define la retención (se emite
+                    al confirmar); confirmada, se consulta/gestiona la ya emitida. */}
+                {ctx.editing &&
+                  (ctx.editing.status === "Draft" || ctx.editing.status === "Confirmed") && (
+                    <RetentionSection ctx={ctx} />
+                  )}
               </div>
               <SummaryPanel ctx={ctx} />
             </div>
@@ -1204,7 +1207,22 @@ export function PurchasesPage() {
         open={ctx.modalConfirm}
         variant="warning"
         title={t("purchases.confirm.title", "Confirmar compra")}
-        message={<XmlConfirmChecklist summary={xmlConfirmChecklist} />}
+        message={
+          <>
+            <XmlConfirmChecklist summary={xmlConfirmChecklist} />
+            {ctx.retentionIntent.appliesRetention && ctx.whPreview && (
+              <ZHPageNotice
+                variant="info"
+                icon="receipt_long"
+                message={t(
+                  "purchases.confirm.withRetention",
+                  "Se emitirá la retención junto con la compra, en una sola operación.",
+                )}
+                detail={`${t("purchases.retention.totalToWithhold", "Total a retener")}: ${formatMoneyWithSymbol(ctx.whPreview.totalRetained, moneyDecimals)}`}
+              />
+            )}
+          </>
+        }
         confirmLabel={t("common.confirm", "Confirmar")}
         onCancel={() => ctx.setModalConfirm(false)}
         onConfirm={ctx.handleConfirm}
@@ -1226,27 +1244,6 @@ export function PurchasesPage() {
         confirmLabel={t("purchases.cancel.confirm", "Anular")}
         onCancel={() => ctx.setModalCancelReason(false)}
         onConfirm={ctx.handleCancel}
-      />
-
-      <ZHPromptModal
-        open={ctx.modalWhIssue}
-        title={t("purchases.withholding.issueTitle", "Emitir retención")}
-        variant="warning"
-        message={
-          ctx.editing
-            ? buildWithholdingIssueMessage(
-                ctx.editing.invoiceNumber,
-                ctx.editing.supplierName,
-                ctx.whPreview?.totalRetained,
-                moneyDecimals,
-              )
-            : undefined
-        }
-        label={t("purchases.withholding.emissionPointId", "ID del punto de emisión")}
-        placeholder={t("purchases.withholding.emissionPointPlaceholder", "ID del punto de emisión")}
-        confirmLabel={t("purchases.withholding.issue", "Emitir")}
-        onCancel={() => ctx.setModalWhIssue(false)}
-        onConfirm={ctx.handleIssueRetention}
       />
 
       {/* PURCHASES-RETENTIONS-CANCEL-05D — modal crítico: motivo obligatorio, mismo patrón que
@@ -3086,6 +3083,7 @@ function RetentionSection({
   ctx: ReturnType<typeof usePurchasesPage>;
 }) {
   const { t } = useI18n();
+  const isDraft = ctx.editing?.status === "Draft";
   return (
     <div className="pf-card pf-retention">
       <div className="pf-card__header">
@@ -3097,40 +3095,6 @@ function RetentionSection({
           <ZHFieldHelp helpKey={HELP_KEYS.PURCHASES_RETENTIONS} />
         </h4>
         <div className="pf-retention-actions">
-          {!ctx.retention && (
-            <>
-              <ZHBtn
-                type="button"
-                variant="primary"
-                size="sm"
-                onClick={ctx.handleCalcRetention}
-                disabled={ctx.whLoading}
-              >
-                <span
-                  className="material-symbols-outlined pf-retention-action-icon"
-                >
-                  calculate
-                </span>
-                {t("purchases.retention.calculate", "Calcular")}
-              </ZHBtn>
-              {ctx.whPreview && ctx.whPreview.lines.length > 0 && (
-                <ZHBtn
-                  type="button"
-                  variant="primary"
-                  size="sm"
-                  onClick={() => ctx.setModalWhIssue(true)}
-                  disabled={ctx.whLoading}
-                >
-                  <span
-                    className="material-symbols-outlined pf-retention-action-icon"
-                  >
-                    receipt_long
-                  </span>
-                  {t("purchases.retention.issue", "Emitir")}
-                </ZHBtn>
-              )}
-            </>
-          )}
           {ctx.retention && ctx.retention.status === "Issued" && (
             <>
               <ZHBtn
@@ -3200,57 +3164,12 @@ function RetentionSection({
         </div>
       </div>
       <div className="pf-card__body">
-        {ctx.whPreview && !ctx.retention && (
-          <>
-            {ctx.whPreview.skipReason && (
-              <div className="pf-retention__skip">
-                {ctx.whPreview.skipReason}
-              </div>
-            )}
-            {ctx.whPreview.lines.length > 0 && (
-              <table className="table table--compact table--neutral">
-                <thead>
-                  <tr>
-                    <th>{t("purchases.retention.type", "Tipo")}</th>
-                    <th>{t("purchases.retention.code", "Código")}</th>
-                    <th>{t("purchases.retention.description", "Descripción")}</th>
-                    <th className="zh-text-align-right">{t("purchases.retention.base", "Base")}</th>
-                    <th className="zh-text-align-right">%</th>
-                    <th className="zh-text-align-right">{t("purchases.retention.withheld", "Retenido")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ctx.whPreview.lines.map((l, i) => (
-                    <tr key={i}>
-                      <td>
-                        <Badge
-                          variant={l.taxType === "IVA" ? "info" : "warning"}
-                          label={l.taxType}
-                        />
-                      </td>
-                      <td className="zh-code-value">
-                        {l.retentionCode}
-                      </td>
-                      <td>{l.retentionCodeName}</td>
-                      <td className="zh-table-cell--num">
-                        <ZHMoneyValue value={l.taxableBase} precision="money" />
-                      </td>
-                      <td className="zh-table-cell--num">{l.retentionPct}%</td>
-                      <td className="zh-table-cell--num pf-retention-amount">
-                        <ZHMoneyValue value={l.amountRetained} precision="money" />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-            {ctx.whPreview.totalRetained > 0 && (
-              <div className="pf-retention__total">
-                {t("purchases.retention.totalToWithhold", "Total a retener")}:{" "}
-                <ZHMoneyValue value={ctx.whPreview.totalRetained} precision="money" />
-              </div>
-            )}
-          </>
+        {isDraft && <PurchaseRetentionDraft ctx={ctx} />}
+        {!isDraft && !ctx.retention && (
+          <ZHPageNotice
+            variant="neutral"
+            message={t("purchases.retention.noneIssued", "Sin retención emitida para esta compra.")}
+          />
         )}
         {ctx.retention && (
           <>

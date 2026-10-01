@@ -1,14 +1,12 @@
 /**
- * purchaseRetentionFacade — contrato público del módulo Retentions para el ciclo de vida de la
- * retención de una compra (consumidor: purchases, RetentionSection de PurchasesPage).
+ * purchaseRetentionFacade — contrato público del módulo Retentions para la retención de una compra
+ * (consumidor: purchases, RetentionSection de PurchasesPage).
  *
- * Todas las operaciones delegan en retentionsService; los casos de uso backend son de Retentions
- * (IssueRetentionCommand, CancelRetentionCommand, GetRetentionBySourceQuery,
- * GenerateRetentionXmlQuery, GenerateRetentionRidePdfQuery,
- * RegisterRetentionElectronicDocumentCommand). Mutaciones fiscales explícitas:
+ * ZH-PURCHASE-RETENTION-CONFIRM-01: la retención de una compra se EMITE solo dentro de su
+ * confirmación (`RetentionIntentRequest` en POST /purchases/{id}/confirm); no existe una emisión
+ * posterior. Operaciones sobre la retención ya emitida (casos de uso backend de Retentions):
  *  - lectura:   getForPurchase (GET /purchases/{id}/retention), getElectronicXmlBlob y
  *               getRidePdfBlob (on-demand, sin persistir).
- *  - emitir:    issueForPurchase (POST /purchases/{id}/retention — número vía secuencia server-side).
  *  - anular:    cancelForPurchase (POST /purchases/{id}/retention/{retentionId}/cancel — reversa
  *               CxP + asiento).
  *  - registrar: registerElectronic (POST /retentions/{id}/electronic/register — firma + SRI, manual).
@@ -16,13 +14,16 @@
  * retentions/api/retentionsService.
  */
 import { retentionsService } from "../api/retentionsService";
-import type { IssueRetentionLineRequest, RetentionDocumentDto } from "../api/retentionsService";
+import type {
+  IssueRetentionLineRequest,
+  RetentionDocumentDto,
+  RetentionIntentRequest,
+} from "../api/retentionsService";
 
-export type { IssueRetentionLineRequest, RetentionDocumentDto };
+export type { IssueRetentionLineRequest, RetentionDocumentDto, RetentionIntentRequest };
 
 export const purchaseRetentionFacade = {
   getForPurchase: retentionsService.getForPurchase,
-  issueForPurchase: retentionsService.issueForPurchase,
   cancelForPurchase: retentionsService.cancelForPurchase,
   getElectronicXmlBlob: retentionsService.getElectronicXmlBlob,
   getRidePdfBlob: retentionsService.getRidePdfBlob,

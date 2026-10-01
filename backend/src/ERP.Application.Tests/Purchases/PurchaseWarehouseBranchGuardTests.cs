@@ -337,7 +337,8 @@ public sealed class PurchaseWarehouseBranchGuardTests
             Mock.Of<ICurrentUser>(u => u.UserId == UserId),
             preferences.Object,
             PrecisionPolicyTestDouble.Mock(),
-            Mock.Of<ERP.Application.Modules.Purchases.Services.IPurchaseXmlConfirmationGuard>()
+            Mock.Of<ERP.Application.Modules.Purchases.Services.IPurchaseXmlConfirmationGuard>(),
+            Mock.Of<ERP.Application.Modules.Retentions.Services.IRetentionIssuer>()
         );
 
         var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id), CancellationToken.None);

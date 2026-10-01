@@ -6,6 +6,9 @@ using ERP.Application.Modules.Pricing.Services;
 using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Application.Modules.Purchases.Exceptions;
 using ERP.Application.Modules.Purchases.Services;
+using ERP.Application.Modules.Retentions.Exceptions;
+using ERP.Application.Modules.Retentions.Services;
+using ERP.Application.Modules.Retentions.UseCases;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Accounting.Enums;
@@ -15,6 +18,7 @@ using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
+using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -27,10 +31,27 @@ public sealed record ConfirmScheduleInput(
     string? Notes = null
 );
 
+/// <summary>
+/// ZH-PURCHASE-RETENTION-CONFIRM-01 — <see cref="Retention"/> es la intención OPCIONAL de emitir la
+/// retención dentro de esta misma confirmación (<c>RETENTIONS-MODULE-DESIGN-01</c> decisión 15, mismo
+/// contrato que Gastos). <c>null</c> o <c>AppliesRetention == false</c> confirma exactamente igual que
+/// antes, sin retención.
+/// </summary>
 public sealed record ConfirmPurchaseCommand(
     Guid InvoiceId,
-    List<ConfirmScheduleInput>? Schedule = null
+    List<ConfirmScheduleInput>? Schedule = null,
+    RetentionIntent? Retention = null
 ) : IRequest<Result<PurchaseInvoiceDto>>, IBranchScopedRequest;
+
+public sealed class ConfirmPurchaseValidator : AbstractValidator<ConfirmPurchaseCommand>
+{
+    public ConfirmPurchaseValidator()
+    {
+        RuleFor(x => x.Retention!)
+            .SetValidator(new RetentionIntentValidator())
+            .When(x => x.Retention is not null);
+    }
+}
 
 public sealed class ConfirmPurchaseHandler
     : IRequestHandler<ConfirmPurchaseCommand, Result<PurchaseInvoiceDto>>
@@ -57,6 +78,7 @@ public sealed class ConfirmPurchaseHandler
     private readonly IOperationalPreferencesResolver _preferences;
     private readonly ICompanyPrecisionPolicyProvider _precision;
     private readonly IPurchaseXmlConfirmationGuard _xmlGuard;
+    private readonly IRetentionIssuer _retentionIssuer;
 
     public ConfirmPurchaseHandler(
         IPurchaseInvoiceRepository repo,
@@ -75,11 +97,13 @@ public sealed class ConfirmPurchaseHandler
         ICurrentUser u,
         IOperationalPreferencesResolver preferences,
         ICompanyPrecisionPolicyProvider precision,
-        IPurchaseXmlConfirmationGuard xmlGuard
+        IPurchaseXmlConfirmationGuard xmlGuard,
+        IRetentionIssuer retentionIssuer
     )
     {
         _precision = precision;
         _xmlGuard = xmlGuard;
+        _retentionIssuer = retentionIssuer;
         _repo = repo;
         _stockRepo = stockRepo;
         _itemRepo = itemRepo;
@@ -377,11 +401,12 @@ public sealed class ConfirmPurchaseHandler
         // PurchasePayable original, que tampoco comiteaba por separado — _repo.TrackPayable solo
         // agregaba al ChangeTracker). Un fallo aquí (p. ej. cronograma inválido) aborta la
         // confirmación completa — "hardening": nunca un warning silencioso para CxP obligatoria.
+        ERP.Domain.Modules.Payables.Entities.AccountsPayable? payable = null;
         if (inv.GrandTotal > 0)
         {
             try
             {
-                await _payables.StageFromOriginAsync(
+                payable = await _payables.StageFromOriginAsync(
                     new CreateAccountsPayableFromOriginRequest(
                         tid,
                         cid,
@@ -415,6 +440,21 @@ public sealed class ConfirmPurchaseHandler
                 );
                 return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message);
             }
+        }
+
+        // ── STEP 4b: Retención (ZH-PURCHASE-RETENTION-CONFIRM-01) ───────
+        // RETENTIONS-MODULE-DESIGN-01 decisión 15: si el usuario la pidió, la retención se emite
+        // AQUÍ, dentro de la misma unidad de trabajo que la compra, el inventario y la CxP — mismo
+        // núcleo que Gastos (IRetentionIssuer: unicidad por origen, revalidación de elegibilidad con
+        // IRetentionEligibilityService, secuencia "07" vía CaptureNextAsync, Issue; solo staging) y
+        // ApplyRetention sobre la CxP recién creada, antes del SaveChanges único de STEP 7. El
+        // asiento Retentions/DocumentIssued se dispara en ese mismo SaveChanges (traductor estricto).
+        // Cualquier fallo retorna sin persistir: la compra sigue en Draft, sin CxP ni retención.
+        if (cmd.Retention is { AppliesRetention: true } retention)
+        {
+            var retentionError = await IssueRetentionAsync(inv, payable, retention, uid, ct);
+            if (retentionError is not null)
+                return retentionError;
         }
 
         // ── STEP 5: Actualizar precio base del ítem (SSOT, Motor de Pricing) ──
@@ -468,6 +508,11 @@ public sealed class ConfirmPurchaseHandler
             // ErpDbContext has already rolled back Purchase, Stock, AP and Accounting.
             return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message, ex.Code);
         }
+        catch (RetentionPostingFailedException ex)
+        {
+            // Mismo rollback completo: compra, inventario, CxP, retención y asientos.
+            return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message, ex.Code);
+        }
 
         _logger.LogInformation(
             "Purchase {InvoiceNumber} ({InvoiceId}) confirmed successfully",
@@ -476,5 +521,60 @@ public sealed class ConfirmPurchaseHandler
         );
 
         return Result<PurchaseInvoiceDto>.Success(PurchaseMapper.ToDto(inv));
+    }
+
+    /// <summary>
+    /// STEP 4b — emite la retención (staging) y la aplica a la CxP en staging. Devuelve el error a
+    /// propagar, o <c>null</c> si quedó lista para persistirse junto con la confirmación.
+    /// </summary>
+    private async Task<Result<PurchaseInvoiceDto>?> IssueRetentionAsync(
+        PurchaseInvoice inv,
+        ERP.Domain.Modules.Payables.Entities.AccountsPayable? payable,
+        RetentionIntent retention,
+        Guid uid,
+        CancellationToken ct
+    )
+    {
+        var issued = await _retentionIssuer.IssueAsync(
+            PurchaseRetentionSource.From(inv),
+            new RetentionIssueRequest(
+                _t.TenantId,
+                _c.CompanyId,
+                inv.BranchId,
+                uid,
+                retention.EmissionPointId!.Value,
+                retention.IssueDate!.Value,
+                retention.Lines!
+            ),
+            ct
+        );
+        if (!issued.IsSuccess)
+            return Result<PurchaseInvoiceDto>.Failure(issued.Error!, issued.Code);
+
+        var retained = issued.Value!.TotalRetained;
+        if (retained <= 0)
+            return null;
+
+        // Sin CxP (compra de total cero) no hay saldo que netear: una retención emitida sin efecto
+        // financiero real se rechaza en vez de persistirse.
+        if (payable is null)
+            return Result<PurchaseInvoiceDto>.ValidationFailure(
+                "La compra no genera cuenta por pagar. No se puede aplicar la retención financieramente."
+            );
+
+        try
+        {
+            payable.ApplyRetention(retained, uid);
+        }
+        catch (ArgumentException ex)
+        {
+            return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message);
+        }
+        catch (ERP.Domain.Exceptions.DomainRuleViolationException ex)
+        {
+            return Result<PurchaseInvoiceDto>.FromDomainRule(ex);
+        }
+
+        return null;
     }
 }
