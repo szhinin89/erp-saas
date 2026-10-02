@@ -420,6 +420,17 @@ public static class DependencyInjection
             ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentIssuer,
             ERP.Application.Modules.ElectronicDocuments.Services.ElectronicDocumentIssuer
         >();
+        // ADR-036 — gate SSOT de ciclo de vida del origen (resuelto por SourceModule; cada módulo
+        // dueño registra su guard) y la única decisión de anulación del origen según el estado
+        // electrónico. Sin guard registrado, un origen conserva el comportamiento v1.0.
+        services.AddScoped<
+            ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentSourceLifecycleGuardResolver,
+            ERP.Application.Modules.ElectronicDocuments.Services.ElectronicDocumentSourceLifecycleGuardResolver
+        >();
+        services.AddScoped<
+            ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentSourceCancellation,
+            ERP.Application.Modules.ElectronicDocuments.Services.ElectronicDocumentSourceCancellation
+        >();
         services.AddScoped<
             ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentDataProviderResolver,
             ERP.Application.Modules.ElectronicDocuments.Services.ElectronicDocumentDataProviderResolver

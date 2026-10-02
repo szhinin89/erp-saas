@@ -25,7 +25,9 @@ public sealed class ElectronicDocumentAuditHandler
         INotificationHandler<ElectronicDocumentFailedEvent>,
         INotificationHandler<ElectronicDocumentCancelledEvent>,
         INotificationHandler<ElectronicDocumentRetryAttemptedEvent>,
-        INotificationHandler<ElectronicDocumentReactivatedEvent>
+        INotificationHandler<ElectronicDocumentReactivatedEvent>,
+        INotificationHandler<ElectronicDocumentDispatchingEvent>,
+        INotificationHandler<ElectronicDocumentDiscardedEvent>
 {
     private readonly IAuditService _audit;
     private readonly IAuditContext _context;
@@ -151,6 +153,35 @@ public sealed class ElectronicDocumentAuditHandler
         );
 
     public Task Handle(ElectronicDocumentFailedEvent e, CancellationToken ct) =>
+        _audit.RecordAsync(
+            ElectronicDocumentAudit.Create(
+                _context.Actor,
+                _context.CompanyId,
+                e.ElectronicDocumentId,
+                ((IAuditEvent)e).Action,
+                e.DocumentType,
+                e.FromState,
+                e.ToState,
+                ((IAuditEvent)e).Reason
+            ),
+            ct
+        );
+
+    public Task Handle(ElectronicDocumentDispatchingEvent e, CancellationToken ct) =>
+        _audit.RecordAsync(
+            ElectronicDocumentAudit.Create(
+                _context.Actor,
+                _context.CompanyId,
+                e.ElectronicDocumentId,
+                ((IAuditEvent)e).Action,
+                e.DocumentType,
+                e.FromState,
+                e.ToState
+            ),
+            ct
+        );
+
+    public Task Handle(ElectronicDocumentDiscardedEvent e, CancellationToken ct) =>
         _audit.RecordAsync(
             ElectronicDocumentAudit.Create(
                 _context.Actor,

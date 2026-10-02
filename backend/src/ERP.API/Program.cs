@@ -331,6 +331,7 @@ if (hangfireEnabled)
     builder.Services.AddScoped<IProcessCommunicationsJob, ProcessCommunicationsJob>();
     builder.Services.AddScoped<IMasterDataReconciliationJob, MasterDataReconciliationJob>();
     builder.Services.AddScoped<IElectronicDocumentRetryJob, ElectronicDocumentRetryJob>();
+    builder.Services.AddScoped<IRetentionElectronicRecoveryJob, RetentionElectronicRecoveryJob>();
     builder.Services.AddScoped<IExpireUserSessionsJob, ExpireUserSessionsJob>();
 }
 
@@ -826,6 +827,13 @@ if (hangfireEnabled)
 
     RecurringJob.AddOrUpdate<IElectronicDocumentRetryJob>(
         "electronic-document-retry",
+        x => x.ExecuteAsync(CancellationToken.None),
+        "* * * * *"
+    );
+
+    // ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A — retenciones Issued cuya transmisión no arrancó.
+    RecurringJob.AddOrUpdate<IRetentionElectronicRecoveryJob>(
+        "retention-electronic-recovery",
         x => x.ExecuteAsync(CancellationToken.None),
         "* * * * *"
     );

@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from "../../lib/apiEnvelope";
+import { apiGet } from "../../lib/apiEnvelope";
 import { api } from "../../lib/api";
 
 // PURCHASES-RETENTIONS-UI-MIGRATION-05C — cliente transversal del módulo Retentions
@@ -13,6 +13,18 @@ import { api } from "../../lib/api";
 export type RetentionTaxType = "Vat" | "Income";
 export type RetentionStatus = "Draft" | "Issued" | "Cancelled";
 export type RetentionSourceDocumentType = "ExpenseDocument" | "PurchaseInvoice" | "Manual";
+
+/**
+ * Espejo de `ElectronicDocumentSourceStatus` (backend, ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A):
+ * estado electrónico compacto de la retención, calculado en el servidor.
+ */
+export type RetentionElectronicStatus =
+  | "Pending"
+  | "Processing"
+  | "Authorized"
+  | "Rejected"
+  | "RequiresReconciliation"
+  | "Discarded";
 
 /** Espejo de `IssueRetentionLineInput` (backend). `retentionCodeDescription` es opcional: el backend usa `retentionCode` como respaldo. */
 export interface IssueRetentionLineRequest {
@@ -75,22 +87,7 @@ export interface RetentionDocumentDto {
   sourceDocumentTaxSupportCode: string | null;
   sourceDocumentSubtotal: number | null;
   sourceDocumentTotal: number | null;
-}
-
-/** Espejo de ERP.Application.Modules.ElectronicDocuments.DTOs.ElectronicDocumentDto — devuelto por el registro electrónico manual. */
-export interface ElectronicDocumentDto {
-  id: string;
-  documentType: string;
-  sourceModule: string;
-  sourceEntityId: string;
-  currentState: string;
-  accessKey: string | null;
-  authorizationNumber: string | null;
-  authorizationDate: string | null;
-  retryCount: number;
-  lastAttemptUtc: string | null;
-  createdAt: string;
-  updatedAt: string | null;
+  electronicStatus?: RetentionElectronicStatus | null;
 }
 
 const PURCHASES_BASE = "/api/v1/purchases";
@@ -120,7 +117,7 @@ export const retentionsService = {
     return data;
   },
 
-  /** Registro electrónico real (firma + SOAP + autorización) — manual y explícito, nunca automático. */
-  registerElectronic: (retentionId: string) =>
-    apiPost<ElectronicDocumentDto>(`${RETENTIONS_BASE}/${retentionId}/electronic/register`, {}),
+  // ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A — sin registro electrónico manual: la transmisión se inicia
+  // automáticamente al confirmar el documento origen (con recuperación en el servidor). El endpoint
+  // POST /retentions/{id}/electronic/register queda solo como acción de recuperación server-side.
 };

@@ -37,23 +37,32 @@ public sealed class GenerateRetentionXmlHandler
     private readonly IRetentionElectronicDocumentXmlService _xmlService;
     private readonly ICurrentTenant _currentTenant;
     private readonly ICurrentCompany _currentCompany;
+    private readonly IRetentionSourceAccess _sourceAccess;
 
     public GenerateRetentionXmlHandler(
         IRetentionElectronicDocumentXmlService xmlService,
         ICurrentTenant currentTenant,
-        ICurrentCompany currentCompany
+        ICurrentCompany currentCompany,
+        IRetentionSourceAccess sourceAccess
     )
     {
+        _sourceAccess = sourceAccess;
         _xmlService = xmlService;
         _currentTenant = currentTenant;
         _currentCompany = currentCompany;
     }
 
-    public Task<Result<ElectronicDocumentXml>> Handle(
+    public async Task<Result<ElectronicDocumentXml>> Handle(
         GenerateRetentionXmlQuery request,
         CancellationToken cancellationToken
-    ) =>
-        _xmlService.GenerateXmlAsync(
+    )
+    {
+        // ADR-036 (D-9) — autorización por origen, server-side (Compra → purchases.view; Gasto →
+        // expenses.documents.view). Sin acceso = inexistente (fail-closed).
+        if (await _sourceAccess.FindViewableAsync(request.RetentionId, cancellationToken) is null)
+            return Result<ElectronicDocumentXml>.NotFound("La retención no existe.");
+
+        return await _xmlService.GenerateXmlAsync(
             new ElectronicDocumentSourceReference(
                 _currentTenant.TenantId,
                 _currentCompany.CompanyId,
@@ -61,4 +70,5 @@ public sealed class GenerateRetentionXmlHandler
             ),
             cancellationToken
         );
+    }
 }

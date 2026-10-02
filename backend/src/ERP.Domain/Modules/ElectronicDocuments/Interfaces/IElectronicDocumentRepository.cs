@@ -20,6 +20,9 @@ public interface IElectronicDocumentRepository
     );
 
     Task AddAsync(ElectronicDocument document, CancellationToken ct = default);
+
+    /// <summary>Relee de la BD los valores (y el <c>xmin</c>) de una instancia ya trackeada, descartando cambios en memoria.</summary>
+    Task ReloadAsync(ElectronicDocument document, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
 
     /// <summary>

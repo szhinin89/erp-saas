@@ -296,7 +296,8 @@ public sealed class ConfirmPurchaseHandlerTests
         bool allowConfirmWithoutReceptionXml = true,
         Guid? activeBranchId = null,
         ERP.Application.Modules.Purchases.Services.IPurchaseXmlConfirmationGuard? xmlGuard = null,
-        ERP.Application.Modules.Retentions.Services.IRetentionIssuer? retentionIssuer = null
+        ERP.Application.Modules.Retentions.Services.IRetentionIssuer? retentionIssuer = null,
+        ERP.Application.Modules.Retentions.Services.IRetentionElectronicTransmission? retentionTransmission = null
     )
     {
         var repo = new Mock<IPurchaseInvoiceRepository>();
@@ -552,7 +553,8 @@ public sealed class ConfirmPurchaseHandlerTests
             preferences.Object,
             PrecisionPolicyTestDouble.Mock(),
             xmlGuard ?? Mock.Of<ERP.Application.Modules.Purchases.Services.IPurchaseXmlConfirmationGuard>(),
-            retentionIssuer ?? Mock.Of<ERP.Application.Modules.Retentions.Services.IRetentionIssuer>()
+            retentionIssuer ?? Mock.Of<ERP.Application.Modules.Retentions.Services.IRetentionIssuer>(),
+            retentionTransmission ?? RetentionElectronicTestDoubles.Transmission().Object
         );
 
         return (handler, repo, stockRepo, payables);
@@ -1106,7 +1108,8 @@ public sealed class ConfirmPurchaseHandlerTests
             Mock.Of<IOperationalPreferencesResolver>(),
             PrecisionPolicyTestDouble.Mock(),
             Mock.Of<ERP.Application.Modules.Purchases.Services.IPurchaseXmlConfirmationGuard>(),
-            Mock.Of<ERP.Application.Modules.Retentions.Services.IRetentionIssuer>()
+            Mock.Of<ERP.Application.Modules.Retentions.Services.IRetentionIssuer>(),
+            RetentionElectronicTestDoubles.Transmission().Object
         );
 
         var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id), CancellationToken.None);
@@ -1163,7 +1166,8 @@ public sealed class ConfirmPurchaseHandlerTests
             preferencesOverride.Object,
             PrecisionPolicyTestDouble.Mock(),
             Mock.Of<ERP.Application.Modules.Purchases.Services.IPurchaseXmlConfirmationGuard>(),
-            Mock.Of<ERP.Application.Modules.Retentions.Services.IRetentionIssuer>()
+            Mock.Of<ERP.Application.Modules.Retentions.Services.IRetentionIssuer>(),
+            RetentionElectronicTestDoubles.Transmission().Object
         );
 
         var result = await h.Handle(new ConfirmPurchaseCommand(fakeId), CancellationToken.None);

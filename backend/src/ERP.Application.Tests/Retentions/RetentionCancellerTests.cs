@@ -1,4 +1,7 @@
+using ERP.Application.Common;
+using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Application.Modules.Retentions.Services;
+using ERP.Application.Tests.TestSupport;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
@@ -53,7 +56,27 @@ public sealed class RetentionCancellerTests
     {
         public Mock<IAccountsPayableRepository> PayableRepo { get; } = new();
 
-        public RetentionCanceller Canceller => new(PayableRepo.Object);
+        public Mock<IElectronicDocumentSourceCancellation> Electronic { get; } =
+            Mock.Get(RetentionElectronicTestDoubles.NoElectronicDocument());
+
+        public RetentionCanceller Canceller => new(PayableRepo.Object, Electronic.Object);
+
+        public void SetupElectronicBlocked(string code) =>
+            Electronic
+                .Setup(m =>
+                    m.PrepareAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<string>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<string>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(
+                    Result<ElectronicDocumentSourceCancellationOutcome>.ValidationFailure("bloqueado", code)
+                );
 
         public void SetupNoPayable() =>
             PayableRepo
@@ -83,6 +106,28 @@ public sealed class RetentionCancellerTests
 
         result.IsSuccess.Should().BeTrue();
         retention.Status.Should().Be(RetentionStatus.Cancelled);
+    }
+
+    [Theory]
+    [InlineData(ApiResponseCodes.ElectronicDocuments.SourceCancellationInProcess)]
+    [InlineData(ApiResponseCodes.ElectronicDocuments.SourceCancellationRequiresSriAnnulment)]
+    public async Task Comprobante_electronico_en_proceso_o_autorizado_bloquea_sin_cancelar_ni_reversar(string code)
+    {
+        // ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A (ADR-036 D-5/D-6): la decisión es de
+        // IElectronicDocumentSourceCancellation; el canceller no muta nada si la bloquea.
+        var fx = new Fixture();
+        var payable = Payable(100m);
+        payable.ApplyRetention(4.50m, UserId);
+        fx.SetupPayable(payable);
+        fx.SetupElectronicBlocked(code);
+        var retention = IssuedRetention(4.50m);
+
+        var result = await fx.Canceller.CancelAsync(retention, "Motivo", UserId, CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(code);
+        retention.Status.Should().Be(RetentionStatus.Issued);
+        payable.RetainedAmount.Should().Be(4.50m);
     }
 
     [Fact]
@@ -190,7 +235,7 @@ public sealed class RetentionCancellerTests
                 purchaseInvoiceId, It.IsAny<CancellationToken>()
             ))
             .ReturnsAsync(payable);
-        var canceller = new RetentionCanceller(payableRepo.Object);
+        var canceller = new RetentionCanceller(payableRepo.Object, ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.NoElectronicDocument());
         var retention = IssuedRetentionForPurchase(purchaseInvoiceId);
 
         var result = await canceller.CancelAsync(retention, "Motivo", UserId, CancellationToken.None);
@@ -215,7 +260,7 @@ public sealed class RetentionCancellerTests
                 purchaseInvoiceId, It.IsAny<CancellationToken>()
             ))
             .ReturnsAsync(payable);
-        var canceller = new RetentionCanceller(payableRepo.Object);
+        var canceller = new RetentionCanceller(payableRepo.Object, ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.NoElectronicDocument());
         var retention = IssuedRetentionForPurchase(purchaseInvoiceId);
 
         var result = await canceller.CancelAsync(retention, "Motivo", UserId, CancellationToken.None);
@@ -244,7 +289,7 @@ public sealed class RetentionCancellerTests
                 purchaseInvoiceId, It.IsAny<CancellationToken>()
             ))
             .ReturnsAsync((AccountsPayable?)null);
-        var canceller = new RetentionCanceller(payableRepo.Object);
+        var canceller = new RetentionCanceller(payableRepo.Object, ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.NoElectronicDocument());
         var retention = IssuedRetentionForPurchase(purchaseInvoiceId);
 
         var result = await canceller.CancelAsync(retention, "Motivo", UserId, CancellationToken.None);

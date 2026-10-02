@@ -32,8 +32,30 @@ public sealed class GenerateRetentionRidePdfHandlerTests
             GeneratedAtUtc: DateTime.UtcNow
         );
 
+    /// <summary>ADR-036 (D-9): acceso concedido por el origen — el control fino vive en RetentionSourceAccessTests.</summary>
+    private static Mock<IRetentionSourceAccess> ViewableAccess()
+    {
+        var access = new Mock<IRetentionSourceAccess>();
+        access
+            .Setup(a => a.FindViewableAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                ERP.Domain.Modules.Retentions.Entities.RetentionDocument.Create(
+                    TenantId,
+                    CompanyId,
+                    Guid.NewGuid(),
+                    ERP.Domain.Modules.Retentions.Enums.RetentionSourceDocumentType.PurchaseInvoice,
+                    Guid.NewGuid(),
+                    Guid.NewGuid(),
+                    Guid.NewGuid(),
+                    Guid.NewGuid()
+                )
+            );
+        return access;
+    }
+
     private sealed class Fixture
     {
+        public Mock<IRetentionSourceAccess> Access { get; } = ViewableAccess();
         public Mock<IRetentionElectronicDocumentXmlService> XmlService { get; } = new();
         public Mock<IRetentionRidePdfService> PdfService { get; } = new();
 
@@ -42,7 +64,8 @@ public sealed class GenerateRetentionRidePdfHandlerTests
                 XmlService.Object,
                 PdfService.Object,
                 Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
-                Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId)
+                Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
+                Access.Object
             );
 
         public void SetupSuccessfulXml(ElectronicDocumentXml xml) =>
@@ -150,5 +173,22 @@ public sealed class GenerateRetentionRidePdfHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("No se pudo resolver el branding del RIDE.");
+    }
+    [Fact]
+    public async Task Handle_returns_not_found_without_generating_when_the_origin_is_not_viewable()
+    {
+        var fx = new Fixture();
+        fx.Access
+            .Setup(a => a.FindViewableAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ERP.Domain.Modules.Retentions.Entities.RetentionDocument?)null);
+
+        var result = await fx.Handler.Handle(new GenerateRetentionRidePdfQuery(RetentionId), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        fx.XmlService.Verify(
+            s => s.GenerateXmlAsync(It.IsAny<ElectronicDocumentSourceReference>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 }

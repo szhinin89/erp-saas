@@ -135,6 +135,7 @@ public sealed class GetRetentionBySourceHandlerTests
         public GetRetentionBySourceHandler Handler =>
             new(
                 RetentionRepo.Object,
+                Mock.Of<ERP.Domain.Modules.ElectronicDocuments.Interfaces.IElectronicDocumentRepository>(),
                 Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
                 Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
                 Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId)

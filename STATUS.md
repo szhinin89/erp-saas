@@ -2,6 +2,22 @@
 
 **Single source of truth** for delivery state. Updated: **2026-10-01** · Kernel refactor: **2026-06-05**.
 
+## ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A — Retención: ciclo electrónico seguro + transmisión automática (2026-10-01)
+
+**Estado: COMPLETADO (sin commit).** Implementa ADR-036 fases 1–2 + transmisión inmediata. Sin migración: `Dispatching=11`/`Discarded=12` en un enum persistido como `int`. Ventas/NC sin cambios: el protocolo nuevo aplica solo a orígenes con guard (hoy Retentions).
+- Gate SSOT `IElectronicDocumentSourceLifecycleGuard` en `ElectronicDocumentIssuer`: una retención no `Issued` nunca registra, genera XML, firma, envía, reenvía ni reactiva su comprobante (ni manual, ni job, ni Monitor).
+- Cancel vs. Send: el reclamo `Dispatching` se persiste bajo `FOR UPDATE` de la retención antes del SOAP, y la anulación toma el mismo lock. `Dispatching`, `Signed` histórico y `Received` nunca se reenvían: solo se consultan. Una respuesta no concluyente queda como "Requiere conciliación".
+- Anulación de Compra/Gasto:
+  - sin intento externo → se permite y el comprobante queda `Discarded`, con reversos exact-once;
+  - en proceso → 422 `ELECTRONIC_DOCUMENT_IN_PROCESS`;
+  - `Authorized` → 422 `ELECTRONIC_DOCUMENT_REQUIRES_SRI_ANNULMENT`;
+  - en ambos bloqueos no hay `Cancelled` ni reversos. Se acabó la anulación local silenciosa ERP Cancelled / SRI Authorized.
+- Transmisión automática después del commit de la confirmación (Compra y Gasto), más `RetentionElectronicRecoveryJob` (cada minuto) para retenciones `Issued` sin comprobante. Idempotente: un solo comprobante por origen.
+- UI: se eliminó "Registrar electrónicamente" de Compras. Estado electrónico compacto en la retención de Compras y Gastos. El Monitor conoce `Dispatching`/`Discarded`.
+- Permisos XML/RIDE por origen, server-side (`purchases.view` / `expenses.documents.view`). La recuperación además exige `purchases.update` / `expenses.documents.confirm`.
+- **Hallazgo (no corregido, ADR-036 §23.3):** `ElectronicDocumentRetryJob` no ve candidatos en Hangfire (filtro fail-closed sin contexto de tenant): el reintento automático genérico está inactivo para todos los tipos. Corregirlo activaría reintentos de Ventas/NC (CLOSED); requiere su propio ticket.
+- Pendiente: ZH-RETENTION-SRI-ANNULMENT-01 (anulación oficial SRI). Consultas de solo lectura A–E del piloto en ADR-036 §23.5 (no ejecutadas: sin acceso).
+
 ## ZH-RETENTION-ELECTRONIC-CANCELLATION-ADR-01 — Documento electrónico de una retención anulada: auditoría + ADR (2026-10-01)
 
 **Estado: AUDITORÍA + ADR-036 Accepted (política, decisiones D-1…D-12 del 2026-10-01) — implementación pendiente.** Sin cambios productivos, de esquema ni de frontend; el comportamiento vigente no cambia todavía y ElectronicDocuments v1.0 sigue CLOSED hasta implementar la extensión.

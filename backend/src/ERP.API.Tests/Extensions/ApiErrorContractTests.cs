@@ -60,6 +60,10 @@ public sealed class ApiErrorContractTests
         [ApiResponseCodes.Common.RateLimited] = 429,
         [ApiResponseCodes.Common.InternalError] = 500,
         [ApiResponseCodes.Common.InvalidDateTimeKind] = 500,
+        // ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A (ADR-036): reglas de ciclo electrónico → 422.
+        [ApiResponseCodes.ElectronicDocuments.SourceNotProcessable] = 422,
+        [ApiResponseCodes.ElectronicDocuments.SourceCancellationInProcess] = 422,
+        [ApiResponseCodes.ElectronicDocuments.SourceCancellationRequiresSriAnnulment] = 422,
     };
 
     private static readonly string[] SuccessCodes =

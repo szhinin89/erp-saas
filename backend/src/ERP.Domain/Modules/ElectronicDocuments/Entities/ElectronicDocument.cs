@@ -248,12 +248,15 @@ public sealed class ElectronicDocument
         );
     }
 
-    /// <summary>Transición Signed→Sent: el XML firmado fue enviado al servicio de recepción del SRI.</summary>
+    /// <summary>
+    /// Transición Signed/Dispatching→Sent: el XML firmado fue enviado al servicio de recepción del
+    /// SRI. Dispatching (ADR-036) es el reclamo persistido justo antes de esa misma llamada.
+    /// </summary>
     public void MarkSent(Guid updatedBy)
     {
-        if (CurrentState != ElectronicDocumentState.Signed)
+        if (CurrentState is not (ElectronicDocumentState.Signed or ElectronicDocumentState.Dispatching))
             throw new DomainRuleViolationException(
-                $"Solo se puede marcar como enviado desde Signed (estado actual: {CurrentState})."
+                $"Solo se puede marcar como enviado desde Signed o Dispatching (estado actual: {CurrentState})."
             );
 
         var fromState = CurrentState;
@@ -298,9 +301,9 @@ public sealed class ElectronicDocument
         Guid updatedBy
     )
     {
-        if (CurrentState is not (ElectronicDocumentState.Sent or ElectronicDocumentState.Received))
+        if (!IsAwaitingSriOutcome)
             throw new DomainRuleViolationException(
-                $"Solo se puede autorizar desde Sent o Received (estado actual: {CurrentState})."
+                $"Solo se puede autorizar desde Signed, Dispatching, Sent o Received (estado actual: {CurrentState})."
             );
         if (authorizedXmlPath is not null && authorizedXmlPath.Length > PathMaxLen)
             throw new ArgumentException(
@@ -341,9 +344,9 @@ public sealed class ElectronicDocument
         IReadOnlyList<SriMessage>? sriMessages = null
     )
     {
-        if (CurrentState is not (ElectronicDocumentState.Sent or ElectronicDocumentState.Received))
+        if (!IsAwaitingSriOutcome)
             throw new DomainRuleViolationException(
-                $"Solo se puede rechazar desde Sent o Received (estado actual: {CurrentState})."
+                $"Solo se puede rechazar desde Signed, Dispatching, Sent o Received (estado actual: {CurrentState})."
             );
         if (string.IsNullOrWhiteSpace(reason))
             throw new ArgumentException("El motivo de rechazo es obligatorio.", nameof(reason));
@@ -380,12 +383,13 @@ public sealed class ElectronicDocument
             is not (
                 ElectronicDocumentState.Failed
                 or ElectronicDocumentState.Signed
+                or ElectronicDocumentState.Dispatching
                 or ElectronicDocumentState.Sent
                 or ElectronicDocumentState.Received
             )
         )
             throw new DomainRuleViolationException(
-                $"Solo se puede marcar como DeadLetter desde Failed, Signed, Sent o Received (estado actual: {CurrentState})."
+                $"Solo se puede marcar como DeadLetter desde Failed, Signed, Dispatching, Sent o Received (estado actual: {CurrentState})."
             );
         if (string.IsNullOrWhiteSpace(reason))
             throw new ArgumentException("El motivo del DeadLetter es obligatorio.", nameof(reason));
@@ -419,10 +423,15 @@ public sealed class ElectronicDocument
     public void MarkRetryAttempted(Guid updatedBy)
     {
         if (
-            CurrentState is not (ElectronicDocumentState.Signed or ElectronicDocumentState.Received)
+            CurrentState
+            is not (
+                ElectronicDocumentState.Signed
+                or ElectronicDocumentState.Dispatching
+                or ElectronicDocumentState.Received
+            )
         )
             throw new DomainRuleViolationException(
-                $"Solo se puede reintentar desde Signed o Received (estado actual: {CurrentState})."
+                $"Solo se puede reintentar desde Signed, Dispatching o Received (estado actual: {CurrentState})."
             );
 
         RetryCount++;
@@ -471,6 +480,81 @@ public sealed class ElectronicDocument
             )
         );
     }
+
+    /// <summary>
+    /// ADR-036 (D-3) — Transición Signed→Dispatching: el ERP reclama la transmisión externa y lo
+    /// persiste ANTES de llamar al SRI. Desde aquí el comprobante puede estar en el SRI aunque la
+    /// llamada falle o el proceso caiga: nunca se reenvía automáticamente, solo se consulta.
+    /// </summary>
+    public void MarkDispatching(Guid updatedBy)
+    {
+        if (CurrentState != ElectronicDocumentState.Signed)
+            throw new DomainRuleViolationException(
+                $"Solo se puede despachar un documento Signed (estado actual: {CurrentState})."
+            );
+
+        var fromState = CurrentState;
+        CurrentState = ElectronicDocumentState.Dispatching;
+        LastAttemptUtc = DateTime.UtcNow;
+        SetUpdated(updatedBy);
+
+        RaiseDomainEvent(
+            new ElectronicDocumentDispatchingEvent(TenantId, Id, DocumentType, fromState, CurrentState)
+        );
+    }
+
+    /// <summary>
+    /// ADR-036 (D-2) — Transición Draft/Failed/DeadLetter(previo Draft o Failed)→Discarded: solo
+    /// desde estados donde hay certeza de que nunca existió un intento de transmisión externa (el
+    /// envío solo ocurre desde Signed). Terminal. Un Signed histórico es ambiguo y nunca se descarta.
+    /// </summary>
+    public void MarkDiscarded(string reason, Guid updatedBy)
+    {
+        if (!CanBeDiscarded)
+            throw new DomainRuleViolationException(
+                $"Solo se puede descartar un documento que nunca tuvo intento de transmisión externa (estado actual: {CurrentState})."
+            );
+        if (string.IsNullOrWhiteSpace(reason))
+            throw new ArgumentException("El motivo del descarte es obligatorio.", nameof(reason));
+
+        var fromState = CurrentState;
+        LastError = reason.Trim();
+        CurrentState = ElectronicDocumentState.Discarded;
+        PreDeadLetterState = null;
+        LastAttemptUtc = DateTime.UtcNow;
+        SetUpdated(updatedBy);
+
+        RaiseDomainEvent(
+            new ElectronicDocumentDiscardedEvent(
+                TenantId,
+                Id,
+                DocumentType,
+                fromState,
+                CurrentState,
+                LastError
+            )
+        );
+    }
+
+    /// <summary>True si hay certeza de que el documento nunca tuvo intento de transmisión externa (ver <see cref="MarkDiscarded"/>).</summary>
+    public bool CanBeDiscarded =>
+        CurrentState is ElectronicDocumentState.Draft or ElectronicDocumentState.Failed
+        || (
+            CurrentState == ElectronicDocumentState.DeadLetter
+            && PreDeadLetterState is ElectronicDocumentState.Draft or ElectronicDocumentState.Failed
+        );
+
+    /// <summary>
+    /// True si el comprobante salió o pudo salir hacia el SRI y su resultado final todavía no se
+    /// conoce: Signed (histórico, ADR-036: ambiguo), Dispatching, Sent o Received. Solo desde aquí
+    /// puede registrarse Authorized/Rejected.
+    /// </summary>
+    private bool IsAwaitingSriOutcome =>
+        CurrentState
+            is ElectronicDocumentState.Signed
+                or ElectronicDocumentState.Dispatching
+                or ElectronicDocumentState.Sent
+                or ElectronicDocumentState.Received;
 
     /// <summary>
     /// Transición Authorized→Cancelled: el comprobante ya autorizado por el SRI fue anulado.

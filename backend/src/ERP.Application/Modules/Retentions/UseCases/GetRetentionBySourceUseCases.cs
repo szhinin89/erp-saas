@@ -1,5 +1,8 @@
 using ERP.Application.Common;
+using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Application.Modules.Retentions.DTOs;
+using ERP.Domain.Modules.ElectronicDocuments.Interfaces;
+using ERP.Domain.Modules.Retentions;
 using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Domain.Modules.Retentions.Interfaces;
 using FluentValidation;
@@ -39,18 +42,21 @@ public sealed class GetRetentionBySourceHandler
     : IRequestHandler<GetRetentionBySourceQuery, Result<RetentionDocumentDto?>>
 {
     private readonly IRetentionDocumentRepository _repo;
+    private readonly IElectronicDocumentRepository _electronicDocuments;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
     private readonly ICurrentBranch _branch;
 
     public GetRetentionBySourceHandler(
         IRetentionDocumentRepository repo,
+        IElectronicDocumentRepository electronicDocuments,
         ICurrentTenant tenant,
         ICurrentCompany company,
         ICurrentBranch branch
     )
     {
         _repo = repo;
+        _electronicDocuments = electronicDocuments;
         _tenant = tenant;
         _company = company;
         _branch = branch;
@@ -73,6 +79,16 @@ public sealed class GetRetentionBySourceHandler
         if (retention is null || retention.BranchId != _branch.BranchId)
             return Result<RetentionDocumentDto?>.Success(null);
 
-        return Result<RetentionDocumentDto?>.Success(RetentionDocumentMapper.ToDto(retention));
+        var electronic = await _electronicDocuments.GetBySourceAsync(
+            _tenant.TenantId,
+            RetentionElectronicDocumentSource.SourceModule,
+            retention.Id,
+            ct
+        );
+        var dto = RetentionDocumentMapper.ToDto(retention) with
+        {
+            ElectronicStatus = ElectronicDocumentSourceStatusMapper.From(electronic),
+        };
+        return Result<RetentionDocumentDto?>.Success(dto);
     }
 }

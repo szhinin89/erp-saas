@@ -42,4 +42,21 @@ public static class ApiResponseCodes
         public const string InternalError = "INTERNAL_ERROR";
         public const string RateLimited = "RATE_LIMITED";
     }
+
+    /// <summary>
+    /// ADR-036 — ciclo de vida electrónico frente al documento de origen. Estables: el frontend
+    /// puede distinguirlos sin interpretar el texto del mensaje.
+    /// </summary>
+    public static class ElectronicDocuments
+    {
+        /// <summary>El documento de origen ya no permite procesamiento electrónico (p.ej. retención anulada).</summary>
+        public const string SourceNotProcessable = "ELECTRONIC_DOCUMENT_SOURCE_NOT_PROCESSABLE";
+
+        /// <summary>El comprobante salió o pudo salir al SRI y su resultado no es definitivo: el origen no puede anularse.</summary>
+        public const string SourceCancellationInProcess = "ELECTRONIC_DOCUMENT_IN_PROCESS";
+
+        /// <summary>El comprobante ya está autorizado: anular el origen requiere la anulación electrónica ante el SRI.</summary>
+        public const string SourceCancellationRequiresSriAnnulment =
+            "ELECTRONIC_DOCUMENT_REQUIRES_SRI_ANNULMENT";
+    }
 }

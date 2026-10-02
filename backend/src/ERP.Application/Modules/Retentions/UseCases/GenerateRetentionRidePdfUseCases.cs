@@ -37,14 +37,17 @@ public sealed class GenerateRetentionRidePdfHandler
     private readonly IRetentionRidePdfService _pdfService;
     private readonly ICurrentTenant _currentTenant;
     private readonly ICurrentCompany _currentCompany;
+    private readonly IRetentionSourceAccess _sourceAccess;
 
     public GenerateRetentionRidePdfHandler(
         IRetentionElectronicDocumentXmlService xmlService,
         IRetentionRidePdfService pdfService,
         ICurrentTenant currentTenant,
-        ICurrentCompany currentCompany
+        ICurrentCompany currentCompany,
+        IRetentionSourceAccess sourceAccess
     )
     {
+        _sourceAccess = sourceAccess;
         _xmlService = xmlService;
         _pdfService = pdfService;
         _currentTenant = currentTenant;
@@ -56,6 +59,11 @@ public sealed class GenerateRetentionRidePdfHandler
         CancellationToken cancellationToken
     )
     {
+        // ADR-036 (D-9) — autorización por origen, server-side (Compra → purchases.view; Gasto →
+        // expenses.documents.view). Sin acceso = inexistente (fail-closed).
+        if (await _sourceAccess.FindViewableAsync(request.RetentionId, cancellationToken) is null)
+            return Result<byte[]>.NotFound("La retención no existe.");
+
         var xmlResult = await _xmlService.GenerateXmlAsync(
             new ElectronicDocumentSourceReference(
                 _currentTenant.TenantId,

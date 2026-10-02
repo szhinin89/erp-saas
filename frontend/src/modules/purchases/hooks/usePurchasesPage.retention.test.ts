@@ -47,7 +47,6 @@ vi.mock("../../retentions/facades/purchaseRetentionFacade", () => ({
     getForPurchase: vi.fn(),
     getElectronicXmlBlob: vi.fn(),
     getRidePdfBlob: vi.fn(),
-    registerElectronic: vi.fn(),
   },
 }));
 
@@ -485,59 +484,27 @@ describe("usePurchasesPage — retención definida en el borrador y emitida al c
   });
 });
 
-describe("usePurchasesPage — documento electrónico de la retención (XML/RIDE/registro)", () => {
-  it("expone el registro electrónico solo si el permiso electronic-documents.retry está concedido", async () => {
-    vi.mocked(usePermissionsUi).mockReturnValue({
-      canShow: (key: string) => key !== "electronic-documents.retry",
-      has: () => true,
-      isAdminRole: false,
-    } as unknown as ReturnType<typeof usePermissionsUi>);
-    const result = await setupWithLoadedInvoice();
-
-    expect(result.current.canRegisterElectronic).toBe(false);
-  });
-
-  it("handleRegisterRetentionElectronic no llama al backend si falta el permiso", async () => {
+describe("usePurchasesPage — documento electrónico de la retención (ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A)", () => {
+  it("no expone registro electrónico manual: la transmisión es automática al confirmar", async () => {
     vi.mocked(purchaseRetentionFacade.getForPurchase).mockResolvedValue(buildRetention());
-    vi.mocked(usePermissionsUi).mockReturnValue({
-      canShow: () => false,
-      has: () => true,
-      isAdminRole: false,
-    } as unknown as ReturnType<typeof usePermissionsUi>);
     const result = await setupWithLoadedInvoice();
     await waitFor(() => expect(result.current.retention?.id).toBe("ret-1"));
 
-    await act(async () => {
-      await result.current.handleRegisterRetentionElectronic();
-    });
-
-    expect(purchaseRetentionFacade.registerElectronic).not.toHaveBeenCalled();
+    expect(result.current).not.toHaveProperty("handleRegisterRetentionElectronic");
+    expect(result.current).not.toHaveProperty("canRegisterElectronic");
+    expect(purchaseRetentionFacade).not.toHaveProperty("registerElectronic");
   });
 
-  it("handleRegisterRetentionElectronic llama al backend cuando el permiso está concedido", async () => {
-    vi.mocked(purchaseRetentionFacade.getForPurchase).mockResolvedValue(buildRetention());
-    vi.mocked(purchaseRetentionFacade.registerElectronic).mockResolvedValue({
-      id: "ed-1",
-      documentType: "07",
-      sourceModule: "Retentions",
-      sourceEntityId: "ret-1",
-      currentState: "Authorized",
-      accessKey: null,
-      authorizationNumber: null,
-      authorizationDate: null,
-      retryCount: 0,
-      lastAttemptUtc: null,
-      createdAt: "2026-08-15T10:00:00Z",
-      updatedAt: null,
+  it("expone el estado electrónico calculado por el backend junto con la retención", async () => {
+    vi.mocked(purchaseRetentionFacade.getForPurchase).mockResolvedValue({
+      ...buildRetention(),
+      electronicStatus: "RequiresReconciliation",
     });
     const result = await setupWithLoadedInvoice();
-    await waitFor(() => expect(result.current.retention?.id).toBe("ret-1"));
 
-    await act(async () => {
-      await result.current.handleRegisterRetentionElectronic();
-    });
-
-    expect(purchaseRetentionFacade.registerElectronic).toHaveBeenCalledWith("ret-1");
+    await waitFor(() =>
+      expect(result.current.retention?.electronicStatus).toBe("RequiresReconciliation"),
+    );
   });
 });
 

@@ -13,8 +13,11 @@ import type {
 import "./electronic-documents-monitor.css";
 import "../../../../components/zh/electronicDocuments/electronic-documents.css";
 
+// ADR-036: "Dispatching" es reintentable solo como CONSULTA de autorización (el backend nunca
+// reenvía); "Discarded" es terminal y no aparece aquí.
 const RETRYABLE_STATES = new Set([
   "Signed",
+  "Dispatching",
   "Received",
   "DeadLetter",
   "Failed",

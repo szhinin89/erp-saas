@@ -384,7 +384,13 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
             ),
             new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId)),
             new RetentionDocumentRepository(db, new FixedCurrentCompany(() => _companyId)),
-            new RetentionCanceller(new AccountsPayableRepository(db)),
+            new RetentionCanceller(
+                new AccountsPayableRepository(db),
+                ERP.Infrastructure.Tests.TestData.RetentionElectronicTestWiring.Cancellation(
+                    db,
+                    new FixedCurrentCompany(() => _companyId)
+                )
+            ),
             new UnitOfWork(db),
             NullLogger<CancelPurchaseHandler>.Instance,
             new FixedCurrentTenant(() => _tenantId),

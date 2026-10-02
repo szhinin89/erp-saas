@@ -1,8 +1,10 @@
 using ERP.Application.Common;
+using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
+using ERP.Domain.Modules.Retentions;
 using ERP.Domain.Modules.Retentions.Entities;
 using ERP.Domain.Modules.Retentions.Enums;
 
@@ -36,6 +38,13 @@ namespace ERP.Application.Modules.Retentions.Services;
 /// <see cref="IRetentionIssuer"/> al emitir). <see cref="RetentionSourceDocumentType.Manual"/> sigue
 /// sin CxP asociada (reservado, sin implementación) — se anula el <c>RetentionDocument</c> sin
 /// intentar resolver ninguna cuenta por pagar.
+///
+/// ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A (ADR-036 D-2/D-5/D-6) — antes de mutar nada consulta el
+/// estado de su comprobante electrónico vía <see cref="IElectronicDocumentSourceCancellation"/>, que
+/// toma el mismo lock de la retención que el reclamo de envío: sin intento externo → el comprobante
+/// queda Discarded en este mismo SaveChanges; en proceso (Signed histórico/Dispatching/Received) o
+/// Authorized → se bloquea la anulación completa del origen (sin Cancelled, sin reverso de CxP ni
+/// de asiento). La anulación oficial ante el SRI es ZH-RETENTION-SRI-ANNULMENT-01.
 /// </summary>
 public interface IRetentionCanceller
 {
@@ -50,8 +59,16 @@ public interface IRetentionCanceller
 public sealed class RetentionCanceller : IRetentionCanceller
 {
     private readonly IAccountsPayableRepository _payableRepo;
+    private readonly IElectronicDocumentSourceCancellation _electronicCancellation;
 
-    public RetentionCanceller(IAccountsPayableRepository payableRepo) => _payableRepo = payableRepo;
+    public RetentionCanceller(
+        IAccountsPayableRepository payableRepo,
+        IElectronicDocumentSourceCancellation electronicCancellation
+    )
+    {
+        _payableRepo = payableRepo;
+        _electronicCancellation = electronicCancellation;
+    }
 
     /// <summary>
     /// PURCHASES-RETENTIONS-CANCEL-05D — mismo mapeo 1:1 que <see cref="RetentionIssuer"/> ya usa
@@ -126,6 +143,20 @@ public sealed class RetentionCanceller : IRetentionCanceller
                     "No se encontró la cuenta por pagar asociada al documento origen. No se puede anular la retención de forma segura."
                 );
         }
+
+        // ADR-036 — el comprobante electrónico decide si la anulación local es posible. Va antes de
+        // cualquier mutación de la retención/CxP: un bloqueo deja todo intacto.
+        var electronic = await _electronicCancellation.PrepareAsync(
+            document.TenantId,
+            document.CompanyId,
+            RetentionElectronicDocumentSource.SourceModule,
+            document.Id,
+            reason,
+            cancelledBy,
+            ct
+        );
+        if (!electronic.IsSuccess)
+            return Result<RetentionDocument>.ValidationFailure(electronic.Error!, electronic.Code);
 
         try
         {

@@ -338,7 +338,8 @@ public sealed class PurchaseWarehouseBranchGuardTests
             preferences.Object,
             PrecisionPolicyTestDouble.Mock(),
             Mock.Of<ERP.Application.Modules.Purchases.Services.IPurchaseXmlConfirmationGuard>(),
-            Mock.Of<ERP.Application.Modules.Retentions.Services.IRetentionIssuer>()
+            Mock.Of<ERP.Application.Modules.Retentions.Services.IRetentionIssuer>(),
+            ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.Transmission().Object
         );
 
         var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id), CancellationToken.None);

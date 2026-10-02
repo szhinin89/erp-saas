@@ -1491,6 +1491,8 @@
   "electronicDocuments.monitor.state.DeadLetter": "With error",
   "electronicDocuments.monitor.state.Cancelled": "Cancelled",
   "electronicDocuments.monitor.state.Failed": "Generation failed",
+  "electronicDocuments.monitor.state.Dispatching": "Dispatching",
+  "electronicDocuments.monitor.state.Discarded": "Discarded",
   "electronicDocuments.monitor.documentType.Invoice": "Invoice",
   "electronicDocuments.monitor.documentType.CreditNote": "Credit Note",
   "electronicDocuments.monitor.documentType.DebitNote": "Debit Note",
@@ -1501,6 +1503,8 @@
   "electronicDocuments.monitor.timelineAction.XmlGenerated": "XML generated",
   "electronicDocuments.monitor.timelineAction.Signed": "Document signed",
   "electronicDocuments.monitor.timelineAction.Failed": "Generation failed",
+  "electronicDocuments.monitor.timelineAction.Dispatching": "Transmission claimed",
+  "electronicDocuments.monitor.timelineAction.Discarded": "Discarded (never sent)",
   "dashboard.title": "Main panel",
   "dashboard.kpis.totalIncome": "Total income",
   "dashboard.kpis.monthExpenses": "Monthly expenses",
@@ -4017,5 +4021,12 @@
   "settings.company.precision.retry": "Retry",
   "settings.company.precision.profile.custom": "Configure each field within its allowed range.",
   "session.precisionPolicy.loadError": "The company precision settings could not be loaded. It is not safe to operate without them.",
-  "session.precisionPolicy.retry": "Retry"
+  "session.precisionPolicy.retry": "Retry",
+  "retentions.electronicStatus.label": "Electronic status",
+  "retentions.electronicStatus.pending": "Pending",
+  "retentions.electronicStatus.processing": "Processing",
+  "retentions.electronicStatus.authorized": "Authorized",
+  "retentions.electronicStatus.rejected": "Rejected",
+  "retentions.electronicStatus.requiresReconciliation": "Requires reconciliation",
+  "retentions.electronicStatus.discarded": "Discarded"
 }

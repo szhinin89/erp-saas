@@ -30,11 +30,13 @@ using ERP.Infrastructure.Accounting.Repositories;
 using ERP.Infrastructure.MasterData.Repositories;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories;
+using ERP.Infrastructure.Persistence.Repositories.ElectronicDocuments;
 using ERP.Infrastructure.Persistence.Repositories.Expenses;
 using ERP.Infrastructure.Persistence.Repositories.Payables;
 using ERP.Infrastructure.Persistence.Repositories.Retentions;
 using ERP.Infrastructure.Persistence.Services;
 using ERP.Infrastructure.Seeding.Steps;
+using ERP.Infrastructure.Tests.TestData;
 using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -64,7 +66,7 @@ namespace ERP.Infrastructure.Tests.Expenses;
 /// Requiere Docker.
 /// </summary>
 [Trait("Category", "PostgreSql")]
-public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
+public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
         .WithImage("postgres:16-alpine")
@@ -347,6 +349,12 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
         services.AddScoped<IJournalEntrySequenceRepository, JournalEntrySequenceRepository>();
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<IPostingEngine, PostingEngine>();
+        // ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A — la anulación puede descartar el comprobante
+        // electrónico (ElectronicDocumentDiscardedEvent → ElectronicDocumentAuditHandler).
+        services.AddScoped(typeof(ERP.Application.Audit.IAuditWriter<>), typeof(ERP.Infrastructure.Audit.EfAuditWriter<>));
+        services.AddScoped<ERP.Application.Audit.IAuditService, ERP.Infrastructure.Audit.AuditService>();
+        services.AddScoped<ERP.Application.Audit.IAuditContext>(_ =>
+            new ERP.Infrastructure.Tests.Audit.FixedAuditContext(() => _tenantId, () => _companyId, _createdBy));
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(ExpenseDocumentConfirmedPostingTranslator).Assembly));
 
         var provider = services.BuildServiceProvider();
@@ -403,7 +411,10 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
         return document.Id;
     }
 
-    private ConfirmExpenseDocumentHandler BuildConfirmHandler(ErpDbContext db) =>
+    private ConfirmExpenseDocumentHandler BuildConfirmHandler(
+        ErpDbContext db,
+        ERP.Application.Modules.Retentions.Services.IRetentionElectronicTransmission? transmission = null
+    ) =>
         new(
             new ExpenseDocumentRepository(db, new FixedCurrentCompany(_companyId)),
             new ExpenseCategoryRepository(db, new FixedCurrentCompany(_companyId)),
@@ -422,6 +433,7 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
                 new EstablishmentRepository(db),
                 new DocumentSequenceRepository(db)
             ),
+            transmission ?? RetentionElectronicTestWiring.NoOpTransmission(),
             new PaymentTermRepository(db),
             new FixedCurrentTenant(_tenantId),
             new FixedCurrentCompany(_companyId),
@@ -435,7 +447,10 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
             new ExpenseDocumentRepository(db, new FixedCurrentCompany(_companyId)),
             new AccountsPayableRepository(db),
             new RetentionDocumentRepository(db, new FixedCurrentCompany(_companyId)),
-            new RetentionCanceller(new AccountsPayableRepository(db)),
+            new RetentionCanceller(
+                new AccountsPayableRepository(db),
+                RetentionElectronicTestWiring.Cancellation(db, new FixedCurrentCompany(_companyId))
+            ),
             new UnitOfWork(db),
             new DocumentFlowPolicyService(db),
             new FixedCurrentTenant(_tenantId),
@@ -462,6 +477,7 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
     private GetRetentionBySourceHandler BuildGetRetentionHandler(ErpDbContext db) =>
         new(
             new RetentionDocumentRepository(db, new FixedCurrentCompany(_companyId)),
+            new ElectronicDocumentRepository(db, new ERP.Infrastructure.Persistence.Services.CompanyClock(db)),
             new FixedCurrentTenant(_tenantId),
             new FixedCurrentCompany(_companyId),
             new FixedCurrentBranch(_branchId)

@@ -19,6 +19,7 @@ import { ZHInputGroup } from "../../../components/zh/ZHInputGroup";
 import { SupplierSearchSelect } from "../../masterData/facades/supplierPickerFacade";
 import { DistributeCostModal } from "../components/DistributeCostModal";
 import { PurchaseRetentionDraft } from "../components/PurchaseRetentionDraft";
+import { RetentionElectronicStatusBadge } from "../../retentions/facades/purchaseRetentionFacade";
 import { ResolvePendingProductsModal } from "../components/ResolvePendingProductsModal";
 import { ProductPicker } from "../components/ProductPicker";
 import type { ProductProfile } from "../components/ProductPicker";
@@ -3119,24 +3120,6 @@ function RetentionSection({
                 </span>
                 {t("purchases.retention.viewRide", "RIDE")}
               </ZHBtn>
-              {ctx.canRegisterElectronic && (
-                <ZHBtn
-                  type="button"
-                  variant="primary"
-                  size="sm"
-                  onClick={() => void ctx.handleRegisterRetentionElectronic()}
-                  disabled={ctx.electronicPending}
-                  title={t(
-                    "purchases.retention.registerElectronic",
-                    "Registrar electrónicamente",
-                  )}
-                >
-                  <span className="material-symbols-outlined pf-retention-action-icon">
-                    verified
-                  </span>
-                  {t("purchases.retention.registerElectronic", "Registrar electrónicamente")}
-                </ZHBtn>
-              )}
             </>
           )}
         </div>
@@ -3168,6 +3151,10 @@ function RetentionSection({
               <span className="pf-retention__issued-item">
                 {t("purchases.retention.date", "Fecha")}:{" "}
                 <strong>{formatDate(ctx.retention.issueDate)}</strong>
+              </span>
+              <span className="pf-retention__issued-item">
+                {t("retentions.electronicStatus.label", "Estado electrónico")}:{" "}
+                <RetentionElectronicStatusBadge status={ctx.retention.electronicStatus} />
               </span>
             </div>
             <table className="table table--compact table--neutral">

@@ -181,9 +181,13 @@ public sealed class ElectronicDocumentEntityTests
     }
 
     [Fact]
-    public void MarkAuthorized_before_sent_throws()
+    public void MarkAuthorized_before_signed_throws()
     {
-        var document = SignedDocument();
+        // ADR-036 (D-4): desde Signed ahora SÍ se puede registrar Authorized/Rejected — un Signed
+        // histórico es ambiguo y se resuelve consultando al SRI, nunca reenviando. Lo que sigue
+        // prohibido es autorizar algo que ni siquiera se firmó.
+        var document = NewDraft();
+        document.MarkXmlGenerated("path/draft.xml", "1.1.0", "1.1.0", Guid.NewGuid());
 
         var act = () =>
             document.MarkAuthorized(
@@ -219,9 +223,11 @@ public sealed class ElectronicDocumentEntityTests
     }
 
     [Fact]
-    public void MarkRejected_before_sent_throws()
+    public void MarkRejected_before_signed_throws()
     {
-        var document = SignedDocument();
+        // ADR-036 (D-4): ver MarkAuthorized_before_signed_throws.
+        var document = NewDraft();
+        document.MarkXmlGenerated("path/draft.xml", "1.1.0", "1.1.0", Guid.NewGuid());
 
         var act = () => document.MarkRejected("motivo", Guid.NewGuid());
 

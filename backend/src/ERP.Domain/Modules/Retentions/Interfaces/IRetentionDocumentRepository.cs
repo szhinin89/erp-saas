@@ -41,6 +41,32 @@ public interface IRetentionDocumentRepository
     /// tenant/company vía el mismo scope que el resto del repositorio, nunca
     /// <c>IgnoreQueryFilters</c>.
     /// </summary>
+    /// <summary>
+    /// ADR-036 — estado ACTUAL en BD de la retención (escalar, nunca la instancia trackeada), filtrado
+    /// por tenant y empresa; <c>null</c> si no existe en ese alcance. Con <paramref name="forUpdate"/>
+    /// toma <c>SELECT … FOR UPDATE</c> sobre la fila (solo dentro de una transacción abierta): es el
+    /// lock que serializa el reclamo de envío electrónico contra la anulación del origen.
+    /// </summary>
+    Task<RetentionStatus?> GetCurrentStatusAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid id,
+        bool forUpdate,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
+    /// ADR-036 / ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A (recovery) — retenciones <c>Issued</c> de
+    /// CUALQUIER tenant/empresa (uso exclusivo del job de recuperación, que fija el contexto por
+    /// candidato) emitidas antes de <paramref name="issuedBeforeUtc"/> cuya transmisión no arrancó:
+    /// sin ElectronicDocument, o con uno que quedó en Draft (interrumpido antes de correr el pipeline).
+    /// </summary>
+    Task<IReadOnlyList<RetentionElectronicStartCandidate>> GetPendingElectronicStartAsync(
+        DateTime issuedBeforeUtc,
+        int take,
+        CancellationToken ct = default
+    );
+
     Task<RetentionDocument?> GetBySourceAsync(
         Guid tenantId,
         Guid companyId,
@@ -49,3 +75,6 @@ public interface IRetentionDocumentRepository
         CancellationToken ct = default
     );
 }
+
+/// <summary>Retención emitida que todavía no inició su transmisión electrónica.</summary>
+public sealed record RetentionElectronicStartCandidate(Guid TenantId, Guid CompanyId, Guid RetentionId);

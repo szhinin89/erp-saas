@@ -9,6 +9,7 @@ export function electronicDocumentStateBadgeVariant(
     case "XmlGenerated":
       return "gray";
     case "Signed":
+    case "Dispatching":
     case "Sent":
     case "Received":
       return "blue";
@@ -20,6 +21,8 @@ export function electronicDocumentStateBadgeVariant(
       return "red";
     case "Cancelled":
       return "orange";
+    case "Discarded":
+      return "gray";
     default:
       return "gray";
   }
@@ -34,6 +37,8 @@ export function electronicDocumentStateIcon(state: string): string {
       return "description";
     case "Signed":
       return "draw";
+    case "Dispatching":
+      return "outbox";
     case "Sent":
       return "send";
     case "Received":
@@ -48,6 +53,8 @@ export function electronicDocumentStateIcon(state: string): string {
       return "report";
     case "Cancelled":
       return "block";
+    case "Discarded":
+      return "do_not_disturb_on";
     default:
       return "help";
   }

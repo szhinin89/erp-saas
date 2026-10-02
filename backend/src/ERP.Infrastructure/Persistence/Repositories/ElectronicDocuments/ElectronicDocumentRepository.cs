@@ -40,6 +40,9 @@ public sealed class ElectronicDocumentRepository : IElectronicDocumentRepository
     public Task AddAsync(ElectronicDocument document, CancellationToken ct = default) =>
         _db.ElectronicDocuments.AddAsync(document, ct).AsTask();
 
+    public Task ReloadAsync(ElectronicDocument document, CancellationToken ct = default) =>
+        _db.Entry(document).ReloadAsync(ct);
+
     public Task SaveChangesAsync(CancellationToken ct = default) => _db.SaveChangesAsync(ct);
 
     private IQueryable<ElectronicDocument> Scoped(Guid tenantId, Guid? companyId)

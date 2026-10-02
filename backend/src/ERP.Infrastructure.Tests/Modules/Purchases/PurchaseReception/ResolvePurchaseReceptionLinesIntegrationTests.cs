@@ -133,6 +133,9 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
         services.AddScoped<IPurchaseReceptionAutoMatcher, PurchaseReceptionAutoMatcher>();
         services.AddScoped<IItemMatchFinder, ItemMatchFinder>();
         services.AddScoped<IPurchaseXmlDraftParser, PurchaseXmlDraftParser>();
+        // ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A: ConfirmPurchaseHandler inicia la transmisión de la
+        // retención tras el commit; este test confirma sin retención y no cablea ElectronicDocuments.
+        services.AddScoped(_ => ERP.Infrastructure.Tests.TestData.RetentionElectronicTestWiring.NoOpTransmission());
         ConfigurePurchaseServices(services);
         return services.BuildServiceProvider();
     }

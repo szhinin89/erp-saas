@@ -82,6 +82,8 @@ public sealed class ElectronicDocumentIssuerRetryTests
             authorization.Object,
             fileStorage.Object,
             dbEx.Object,
+            ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.NoGuards(),
+            Mock.Of<IUnitOfWork>(),
             NullLogger<ElectronicDocumentIssuer>.Instance
         );
     }

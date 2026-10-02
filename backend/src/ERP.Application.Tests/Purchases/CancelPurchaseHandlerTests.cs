@@ -165,7 +165,7 @@ public sealed class CancelPurchaseHandlerTests
                 )
                 .ReturnsAsync((RetentionDocument?)null);
         }
-        var effectiveRetentionCanceller = retentionCanceller ?? new RetentionCanceller(payableRepo.Object);
+        var effectiveRetentionCanceller = retentionCanceller ?? new RetentionCanceller(payableRepo.Object, ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.NoElectronicDocument());
 
         var companyClock = new Mock<ICompanyClock>();
         companyClock

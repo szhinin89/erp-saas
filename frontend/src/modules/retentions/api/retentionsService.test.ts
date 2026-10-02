@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from "vitest";
-import { apiGet, apiPost } from "../../lib/apiEnvelope";
+import { apiGet } from "../../lib/apiEnvelope";
 import { api } from "../../lib/api";
 import { retentionsService } from "./retentionsService";
 
@@ -12,7 +12,6 @@ import { retentionsService } from "./retentionsService";
 
 vi.mock("../../lib/apiEnvelope", () => ({
   apiGet: vi.fn(),
-  apiPost: vi.fn(),
 }));
 
 vi.mock("../../lib/api", () => ({
@@ -33,9 +32,8 @@ describe("retentionsService", () => {
     expect(retentionsService).not.toHaveProperty("cancelForPurchase");
   });
 
-  it("registerElectronic llama POST /api/v1/retentions/{id}/electronic/register", () => {
-    retentionsService.registerElectronic("ret-1");
-    expect(apiPost).toHaveBeenCalledWith("/api/v1/retentions/ret-1/electronic/register", {});
+  it("no expone registro electrónico manual (la transmisión es automática al confirmar el origen)", () => {
+    expect(retentionsService).not.toHaveProperty("registerElectronic");
   });
 
   it("getElectronicXmlBlob llama GET /api/v1/retentions/{id}/electronic/xml como blob", async () => {

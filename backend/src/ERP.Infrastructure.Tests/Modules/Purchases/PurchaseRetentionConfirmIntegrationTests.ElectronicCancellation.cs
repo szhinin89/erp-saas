@@ -1,291 +1,525 @@
 using ERP.Application.Common;
-using ERP.Application.Common.Interfaces;
-using ERP.Application.Common.Interfaces.SRI;
-using ERP.Application.Common.Services;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
-using ERP.Application.Modules.ElectronicDocuments.SchemaValidation;
-using ERP.Application.Modules.ElectronicDocuments.Services;
-using ERP.Application.Modules.Retentions.Services;
-using ERP.Domain.Configuration.Interfaces;
-using ERP.Domain.MasterData.Interfaces;
-using ERP.Domain.Modules.Company.Interfaces;
+using ERP.Application.Modules.Purchases.DTOs;
+using ERP.Application.Modules.Purchases.UseCases;
+using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.ElectronicDocuments.ValueObjects;
+using ERP.Domain.Modules.Payables.Entities;
+using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Retentions.Entities;
 using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories.ElectronicDocuments;
 using ERP.Infrastructure.Persistence.Repositories.Retentions;
 using ERP.Infrastructure.Persistence.Services;
+using ERP.Infrastructure.Tests.TestData;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using System.Text;
 
 namespace ERP.Infrastructure.Tests.Modules.Purchases;
 
 /// <summary>
-/// ZH-RETENTION-ELECTRONIC-CANCELLATION-ADR-01 — pruebas de CARACTERIZACIÓN (reproducción) del
-/// comportamiento ACTUAL de <see cref="ElectronicDocumentIssuer"/> frente a una retención cuya compra
-/// origen se anula. Afirman el comportamiento de hoy, no el deseado: documentan la divergencia
-/// ERP=Cancelled / SRI=Authorized descrita en ADR-036. Cuando se implemente el gate de ADR-036 estas
-/// aserciones deben INVERTIRSE (no borrarse) — p.ej. "SendAsync se invoca" pasa a "nunca se invoca".
+/// ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A (ADR-036) — ciclo electrónico de la retención de una Compra
+/// contra PostgreSQL real: gate SSOT de ciclo de vida, reclamo Dispatching bajo el lock de la
+/// retención, anulación del origen según el estado electrónico, transmisión automática post-commit
+/// y recuperación idempotente. Solo se simula la frontera SRI (<see cref="SriBoundaryDouble"/>).
 ///
-/// Real: PostgreSQL, ConfirmPurchaseHandler/CancelPurchaseHandler/RetentionCanceller,
-/// ElectronicDocumentRepository (xmin) y ElectronicDocumentIssuer. Simulado: solo la frontera SRI
-/// (recepción/autorización), el almacenamiento de archivos y, en el caso del pipeline completo, el
-/// XML/XSD/firma (el gate de estado de la retención sí es el real: RetentionElectronicDocumentDataProvider).
+/// Reemplaza (invertidas) las pruebas de caracterización de ZH-RETENTION-ELECTRONIC-CANCELLATION-ADR-01
+/// que documentaban el bug: el XML ya no sale después de anular, el reintento ya no reenvía a ciegas
+/// y la anulación con el comprobante en proceso/autorizado ya no es silenciosa.
 /// </summary>
 public sealed partial class PurchaseRetentionConfirmIntegrationTests
 {
-    private const string RetentionSourceModule = "Retentions";
-    private const string SignedPath = "retentions/signed.xml";
+    private const string RetentionSource = "Retentions";
 
-    private async Task<(Guid InvoiceId, Guid RetentionId)> ConfirmWithIssuedRetentionAsync()
+    // ── Helpers ───────────────────────────────────────────────────────────────────────────────
+
+    private async Task<(Guid InvoiceId, Guid RetentionId)> ConfirmWithIssuedRetentionAsync(SriBoundaryDouble? sri = null)
     {
         var invoiceId = await SeedDraftPurchaseAsync();
-        (await ConfirmAsync(invoiceId, VatIntent())).IsSuccess.Should().BeTrue();
+        await using (var db = CreateWiredContext())
+        // La transmisión post-commit usa su propio contexto en el test: el fan-out MediatR de
+        // CreateWiredContext solo registra lo necesario para compra/retención/contabilidad, y los
+        // suscriptores de ElectronicDocumentAuthorizedEvent (p.ej. correo de Ventas) no se resuelven ahí.
+        await using (var electronicDb = CreateContext())
+        {
+            var transmission = sri is null
+                ? null
+                : RetentionElectronicTestWiring.Transmission(electronicDb, new FixedCurrentCompany(_companyId), sri);
+            var confirmed = await ConfirmHandler(db, transmission: transmission)
+                .Handle(new ConfirmPurchaseCommand(invoiceId, null, VatIntent()), CancellationToken.None);
+            confirmed.IsSuccess.Should().BeTrue(confirmed.Error);
+        }
         var retention = (await ReadAsync(invoiceId)).Retentions.Single();
         retention.Status.Should().Be(RetentionStatus.Issued);
         return (invoiceId, retention.Id);
     }
 
-    private static string NewAccessKey() =>
-        string.Concat(Guid.NewGuid().ToByteArray().Select(b => (b % 10).ToString()))
-            .PadRight(49, '7')[..49];
-
-    /// <summary>Siembra el ElectronicDocument de la retención en el estado pedido (solo vía transiciones de dominio).</summary>
-    private async Task<Guid> SeedRetentionElectronicDocumentAsync(Guid retentionId, ElectronicDocumentState state)
+    /// <summary>Siembra un ElectronicDocument "histórico" en el estado pedido, solo vía transiciones de dominio.</summary>
+    private async Task<Guid> SeedElectronicDocumentAsync(Guid retentionId, ElectronicDocumentState state)
     {
         await using var db = CreateContext();
         var document = ElectronicDocument.Create(
-            _tenantId, _companyId, ElectronicDocumentType.Retention, RetentionSourceModule, retentionId, _userId);
-        if (state is ElectronicDocumentState.Failed)
-            document.MarkFailed("Fallo previo simulado", _userId);
-        if (state is ElectronicDocumentState.Signed or ElectronicDocumentState.Sent or ElectronicDocumentState.Received)
+            _tenantId, _companyId, ElectronicDocumentType.Retention, RetentionSource, retentionId, _userId);
+        switch (state)
         {
-            document.MarkXmlGenerated("retentions/draft.xml", "1.0.0", "1.0.0", _userId);
-            document.MarkSigned(SignedPath, AccessKey.Create(NewAccessKey()), _userId);
+            case ElectronicDocumentState.Draft:
+                break;
+            case ElectronicDocumentState.Failed:
+                document.MarkFailed("Fallo previo a la firma (test)", _userId);
+                break;
+            default:
+                document.MarkXmlGenerated("retentions/draft.xml", "2.0.0", "2.0.0", _userId);
+                document.MarkSigned(SriBoundaryDouble.SignedPath, AccessKey.Create(SriBoundaryDouble.NewAccessKey()), _userId);
+                if (state == ElectronicDocumentState.Dispatching)
+                    document.MarkDispatching(_userId);
+                if (state is ElectronicDocumentState.Sent or ElectronicDocumentState.Received)
+                    document.MarkSent(_userId);
+                if (state == ElectronicDocumentState.Received)
+                    document.MarkReceived(_userId);
+                if (state == ElectronicDocumentState.DeadLetter)
+                    document.MarkDeadLetter("Reintentos agotados (test)", _userId);
+                break;
         }
-        if (state is ElectronicDocumentState.Sent or ElectronicDocumentState.Received)
-            document.MarkSent(_userId);
-        if (state is ElectronicDocumentState.Received)
-            document.MarkReceived(_userId);
         db.ElectronicDocuments.Add(document);
         await db.SaveChangesAsync();
         return document.Id;
     }
 
-    private async Task<(ElectronicDocumentState State, RetentionStatus RetentionStatus)> ReadElectronicAsync(Guid documentId, Guid retentionId)
+    private async Task<ElectronicDocument?> ReadElectronicAsync(Guid retentionId)
     {
         await using var db = CreateContext();
-        var document = await db.ElectronicDocuments.AsNoTracking().SingleAsync(d => d.Id == documentId);
-        var retention = await db.Set<RetentionDocument>().AsNoTracking().SingleAsync(r => r.Id == retentionId);
-        return (document.CurrentState, retention.Status);
+        return await db.ElectronicDocuments.AsNoTracking()
+            .SingleOrDefaultAsync(d => d.SourceModule == RetentionSource && d.SourceEntityId == retentionId);
     }
 
-    private sealed class SriBoundary
+    private async Task<int> CountElectronicAsync(Guid retentionId)
     {
-        public Mock<IElectronicDocumentReceptionService> Reception { get; } = new();
-        public Mock<IElectronicDocumentAuthorizationService> Authorization { get; } = new();
-        public Mock<IElectronicDocumentSigningService> Signing { get; } = new();
-        public Mock<IElectronicDocumentXmlSupplierResolver> Suppliers { get; } = new();
-        public Mock<IElectronicDocumentSchemaValidatorResolver> Validators { get; } = new();
-        public Mock<IElectronicDocumentXmlStorageService> Storage { get; } = new();
-        public Mock<IFileStorage> Files { get; } = new();
-
-        /// <summary>Si se fija, SendAsync avisa que entró y espera esta señal antes de responder (ventana de carrera).</summary>
-        public TaskCompletionSource? HoldSend { get; set; }
-        public TaskCompletionSource SendEntered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        public SriBoundary(Guid companyId)
-        {
-            Files.Setup(f => f.GetAsync(SignedPath, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(() => new MemoryStream(Encoding.UTF8.GetBytes("<comprobanteRetencion><ds:Signature/></comprobanteRetencion>")));
-            Reception.Setup(r => r.SendAsync(companyId, It.IsAny<byte[]>(), It.IsAny<CancellationToken>()))
-                .Returns(async () =>
-                {
-                    SendEntered.TrySetResult();
-                    if (HoldSend is not null)
-                        await HoldSend.Task;
-                    return Result<SriReceptionResult>.Success(new SriReceptionResult { Status = "RECIBIDA" });
-                });
-            Authorization.Setup(a => a.CheckAsync(companyId, It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((Guid _, string key, CancellationToken _) =>
-                    Result<SriAuthorizationResult>.Success(new SriAuthorizationResult
-                    {
-                        Status = "AUTORIZADO",
-                        AuthorizationNumber = key,
-                        AuthorizationDate = DateTime.UtcNow,
-                    }));
-        }
+        await using var db = CreateContext();
+        return await db.ElectronicDocuments.AsNoTracking()
+            .CountAsync(d => d.SourceModule == RetentionSource && d.SourceEntityId == retentionId);
     }
 
-    private ElectronicDocumentIssuer Issuer(ErpDbContext db, SriBoundary sri) =>
-        new(
-            new ElectronicDocumentRepository(db, new CompanyClock(db)),
-            sri.Suppliers.Object,
-            sri.Validators.Object,
-            sri.Signing.Object,
-            sri.Storage.Object,
-            sri.Reception.Object,
-            sri.Authorization.Object,
-            sri.Files.Object,
-            new PostgresDatabaseExceptionTranslator(),
-            NullLogger<ElectronicDocumentIssuer>.Instance
+    private async Task<Result<ElectronicDocumentDto>> StartTransmissionAsync(Guid retentionId, SriBoundaryDouble sri)
+    {
+        await using var db = CreateContext();
+        return await RetentionElectronicTestWiring
+            .Transmission(db, new FixedCurrentCompany(_companyId), sri)
+            .StartAsync(_tenantId, _companyId, retentionId, _userId);
+    }
+
+    private async Task<Result<ElectronicDocumentDto>> RetryAsync(Guid documentId, SriBoundaryDouble sri)
+    {
+        await using var db = CreateContext();
+        return await RetentionElectronicTestWiring
+            .Issuer(db, new FixedCurrentCompany(_companyId), sri)
+            .RetryAsync(_tenantId, documentId, _userId);
+    }
+
+    private async Task<int> StockMovementCountAsync(Guid invoiceId)
+    {
+        await using var db = CreateContext();
+        return await db.Set<ERP.Domain.Modules.Inventory.Entities.StockMovement>().AsNoTracking()
+            .CountAsync(m => m.SourceDocId == invoiceId);
+    }
+
+    /// <summary>Compra, retención, CxP y asientos intactos tras una anulación bloqueada.</summary>
+    private async Task ShouldBeUntouchedConfirmedAsync(Guid invoiceId, Guid retentionId, int stockMovements)
+    {
+        var s = await ReadAsync(invoiceId);
+        s.Status.Should().Be(PurchaseStatus.Confirmed);
+        s.Retentions.Should().ContainSingle().Which.Status.Should().Be(RetentionStatus.Issued);
+        var payable = s.Payables.Should().ContainSingle().Which;
+        payable.RetainedAmount.Should().Be(4.5m, "la CxP no se revierte");
+        payable.Status.Should().NotBe(ERP.Domain.Modules.Payables.Enums.AccountsPayableStatus.Cancelled);
+        var accounting = await RetentionAccountingAsync(retentionId);
+        accounting.IssuedStatus.Should().NotBe(JournalEntryStatus.Reversed, "el asiento de la retención no se revierte");
+        accounting.Reversals.Should().Be(0);
+        (await StockMovementCountAsync(invoiceId)).Should().Be(stockMovements, "el Kardex no se revierte");
+    }
+
+    // ── 1. Cancel first / Send after → cero llamadas externas ────────────────────────────────
+
+    [Fact]
+    public async Task Anulacion_primero_y_transmision_despues_no_genera_XML_ni_llama_al_SRI()
+    {
+        var (invoiceId, retentionId) = await ConfirmWithIssuedRetentionAsync();
+        (await CancelPurchaseAsync(invoiceId)).IsSuccess.Should().BeTrue();
+
+        var sri = new SriBoundaryDouble(_companyId);
+        var start = await StartTransmissionAsync(retentionId, sri);
+
+        start.IsSuccess.Should().BeFalse();
+        start.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.SourceNotProcessable);
+        sri.SignCalls.Should().Be(0);
+        sri.SendCalls.Should().Be(0);
+        sri.AuthorizationCalls.Should().Be(0);
+        (await CountElectronicAsync(retentionId)).Should().Be(0, "nunca se registra un comprobante de una retención anulada");
+    }
+
+    [Fact]
+    public async Task Anulacion_durante_el_pipeline_antes_del_reclamo_deja_Discarded_y_el_XML_nunca_sale()
+    {
+        var (invoiceId, retentionId) = await ConfirmWithIssuedRetentionAsync();
+        var sri = new SriBoundaryDouble(_companyId)
+        {
+            HoldSign = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously),
+        };
+
+        // La transmisión ya leyó la retención Issued, registró el Draft y está firmando…
+        var startTask = StartTransmissionAsync(retentionId, sri);
+        await sri.SignEntered.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+        // …y entonces se anula la compra: el comprobante nunca tuvo intento externo → Discarded.
+        var cancel = await CancelPurchaseAsync(invoiceId).WaitAsync(TimeSpan.FromSeconds(30));
+        cancel.IsSuccess.Should().BeTrue(cancel.Error);
+
+        sri.HoldSign.SetResult();
+        var start = await startTask.WaitAsync(TimeSpan.FromSeconds(30));
+
+        start.IsSuccess.Should().BeFalse("el reclamo de despacho revalida bajo el lock y la retención ya está anulada");
+        sri.SendCalls.Should().Be(0, "el XML jamás sale después de Cancelled");
+        sri.AuthorizationCalls.Should().Be(0);
+        var electronic = await ReadElectronicAsync(retentionId);
+        electronic!.CurrentState.Should().Be(ElectronicDocumentState.Discarded);
+        (await ReadAsync(invoiceId)).Retentions.Single().Status.Should().Be(RetentionStatus.Cancelled);
+        (await RetentionAccountingAsync(retentionId)).Reversals.Should().Be(1);
+    }
+
+    // ── 2. Send claim first / Cancel after → cancelación bloqueada ───────────────────────────
+
+    [Fact]
+    public async Task Reclamo_de_envio_primero_bloquea_la_anulacion_sin_reversos()
+    {
+        var (invoiceId, retentionId) = await ConfirmWithIssuedRetentionAsync();
+        var stockMovements = await StockMovementCountAsync(invoiceId);
+        var sri = new SriBoundaryDouble(_companyId)
+        {
+            HoldSend = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously),
+        };
+
+        var startTask = StartTransmissionAsync(retentionId, sri);
+        await sri.SendEntered.Task.WaitAsync(TimeSpan.FromSeconds(30));
+        (await ReadElectronicAsync(retentionId))!.CurrentState.Should().Be(
+            ElectronicDocumentState.Dispatching,
+            "el reclamo se persiste ANTES de la llamada externa"
         );
 
-    private async Task<Result<ElectronicDocumentDto>> RetryAsync(Guid documentId, SriBoundary sri)
-    {
-        await using var db = CreateContext();
-        return await Issuer(db, sri).RetryAsync(_tenantId, documentId, _userId, CancellationToken.None);
-    }
-
-    // ── CASO B: la anulación gana primero, el reintento llega después ───────────────────────────
-
-    [Fact]
-    public async Task Reproduccion_B_Signed_anulada_la_compra_el_reintento_igual_envia_el_XML_y_queda_Authorized()
-    {
-        var (invoiceId, retentionId) = await ConfirmWithIssuedRetentionAsync();
-        var documentId = await SeedRetentionElectronicDocumentAsync(retentionId, ElectronicDocumentState.Signed);
-        (await CancelPurchaseAsync(invoiceId)).IsSuccess.Should().BeTrue("la anulación del origen no consulta el ElectronicDocument");
-
-        var sri = new SriBoundary(_companyId);
-        var retry = await RetryAsync(documentId, sri);
-
-        retry.IsSuccess.Should().BeTrue();
-        sri.Reception.Verify(r => r.SendAsync(_companyId, It.IsAny<byte[]>(), It.IsAny<CancellationToken>()), Times.Once(),
-            "HOY: RetryAsync reutiliza el XML firmado sin releer la retención — el XML sale DESPUÉS de Cancelled");
-        var state = await ReadElectronicAsync(documentId, retentionId);
-        state.RetentionStatus.Should().Be(RetentionStatus.Cancelled);
-        state.State.Should().Be(ElectronicDocumentState.Authorized, "HOY: divergencia ERP=Cancelled / SRI=Authorized");
-    }
-
-    // ── CASO A: el reintento ya está en vuelo (entre releer el XML y la respuesta SRI) y se anula ──
-
-    [Fact]
-    public async Task Reproduccion_A_anulacion_durante_un_reintento_en_vuelo_no_se_bloquea_ni_lo_detiene()
-    {
-        var (invoiceId, retentionId) = await ConfirmWithIssuedRetentionAsync();
-        var documentId = await SeedRetentionElectronicDocumentAsync(retentionId, ElectronicDocumentState.Signed);
-        var sri = new SriBoundary(_companyId) { HoldSend = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously) };
-
-        var retryTask = RetryAsync(documentId, sri);
-        await sri.SendEntered.Task.WaitAsync(TimeSpan.FromSeconds(30));
-
         var cancel = await CancelPurchaseAsync(invoiceId).WaitAsync(TimeSpan.FromSeconds(30));
-        cancel.IsSuccess.Should().BeTrue("HOY: ningún lock/versión compartido entre la anulación del origen y el ElectronicDocument");
-        (await ReadElectronicAsync(documentId, retentionId)).RetentionStatus.Should().Be(RetentionStatus.Cancelled);
+
+        cancel.IsSuccess.Should().BeFalse();
+        cancel.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.SourceCancellationInProcess);
+        await ShouldBeUntouchedConfirmedAsync(invoiceId, retentionId, stockMovements);
 
         sri.HoldSend.SetResult();
-        (await retryTask).IsSuccess.Should().BeTrue();
-
-        var state = await ReadElectronicAsync(documentId, retentionId);
-        state.State.Should().Be(ElectronicDocumentState.Authorized, "HOY: el reintento completa el envío y la autorización tras la anulación");
-        state.RetentionStatus.Should().Be(RetentionStatus.Cancelled);
+        (await startTask.WaitAsync(TimeSpan.FromSeconds(30))).IsSuccess.Should().BeTrue();
+        (await ReadElectronicAsync(retentionId))!.CurrentState.Should().Be(ElectronicDocumentState.Authorized);
+        sri.SendCalls.Should().Be(1);
     }
 
-    // ── CASO C: el reintento termina primero (Authorized), la anulación llega después ───────────
+    // ── 3/4. Retención anulada (datos históricos) → reintento y reactivación bloqueados ──────
 
-    [Fact]
-    public async Task Reproduccion_C_Authorized_la_anulacion_posterior_del_origen_se_acepta_y_no_toca_el_ElectronicDocument()
+    [Theory]
+    [InlineData(ElectronicDocumentState.Signed)]
+    [InlineData(ElectronicDocumentState.Received)]
+    [InlineData(ElectronicDocumentState.Failed)]
+    public async Task Retencion_anulada_el_reintento_queda_bloqueado_sin_llamadas_ni_escrituras(ElectronicDocumentState state)
     {
         var (invoiceId, retentionId) = await ConfirmWithIssuedRetentionAsync();
-        var documentId = await SeedRetentionElectronicDocumentAsync(retentionId, ElectronicDocumentState.Signed);
-        var sri = new SriBoundary(_companyId);
+        (await CancelPurchaseAsync(invoiceId)).IsSuccess.Should().BeTrue();
+        var documentId = await SeedElectronicDocumentAsync(retentionId, state);
+        var before = await ReadElectronicAsync(retentionId);
+
+        var sri = new SriBoundaryDouble(_companyId);
+        var retry = await RetryAsync(documentId, sri);
+
+        retry.IsSuccess.Should().BeFalse();
+        retry.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.SourceNotProcessable);
+        sri.SignCalls.Should().Be(0);
+        sri.SendCalls.Should().Be(0);
+        sri.AuthorizationCalls.Should().Be(0);
+        var after = await ReadElectronicAsync(retentionId);
+        after!.CurrentState.Should().Be(state);
+        after.RetryCount.Should().Be(before!.RetryCount);
+    }
+
+    [Fact]
+    public async Task Retencion_anulada_la_reactivacion_de_DeadLetter_queda_bloqueada()
+    {
+        var (invoiceId, retentionId) = await ConfirmWithIssuedRetentionAsync();
+        (await CancelPurchaseAsync(invoiceId)).IsSuccess.Should().BeTrue();
+        var documentId = await SeedElectronicDocumentAsync(retentionId, ElectronicDocumentState.DeadLetter);
+
+        var sri = new SriBoundaryDouble(_companyId);
+        var retry = await RetryAsync(documentId, sri);
+
+        retry.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.SourceNotProcessable);
+        sri.SendCalls.Should().Be(0);
+        sri.AuthorizationCalls.Should().Be(0);
+        var after = await ReadElectronicAsync(retentionId);
+        after!.CurrentState.Should().Be(ElectronicDocumentState.DeadLetter, "no se reactiva");
+        after.PreDeadLetterState.Should().Be(ElectronicDocumentState.Signed);
+    }
+
+    // ── 5/6/7. Estado incierto: nunca reenvío, solo consulta ─────────────────────────────────
+
+    [Fact]
+    public async Task Signed_historico_no_se_reenvia_solo_se_consulta_y_sin_respuesta_queda_para_conciliar()
+    {
+        var (_, retentionId) = await ConfirmWithIssuedRetentionAsync();
+        var documentId = await SeedElectronicDocumentAsync(retentionId, ElectronicDocumentState.Signed);
+        var sri = new SriBoundaryDouble(_companyId) { AuthorizationStatus = "TIMEOUT" };
+
         (await RetryAsync(documentId, sri)).IsSuccess.Should().BeTrue();
-        (await ReadElectronicAsync(documentId, retentionId)).State.Should().Be(ElectronicDocumentState.Authorized);
+
+        sri.SendCalls.Should().Be(0, "un Signed histórico es ambiguo: nunca se reenvía a ciegas");
+        sri.AuthorizationCalls.Should().Be(1);
+        var electronic = await ReadElectronicAsync(retentionId);
+        electronic!.CurrentState.Should().Be(ElectronicDocumentState.Signed);
+        electronic.RetryCount.Should().Be(1);
+        ElectronicDocumentSourceStatusMapper.From(electronic)
+            .Should().Be(ElectronicDocumentSourceStatus.RequiresReconciliation);
+    }
+
+    [Fact]
+    public async Task Signed_historico_con_respuesta_concluyente_del_SRI_se_resuelve_sin_reenviar()
+    {
+        var (_, retentionId) = await ConfirmWithIssuedRetentionAsync();
+        var documentId = await SeedElectronicDocumentAsync(retentionId, ElectronicDocumentState.Signed);
+        var sri = new SriBoundaryDouble(_companyId) { AuthorizationStatus = "AUTORIZADO" };
+
+        (await RetryAsync(documentId, sri)).IsSuccess.Should().BeTrue();
+
+        sri.SendCalls.Should().Be(0);
+        (await ReadElectronicAsync(retentionId))!.CurrentState.Should().Be(ElectronicDocumentState.Authorized);
+    }
+
+    [Fact]
+    public async Task Dispatching_no_se_reenvia_aunque_el_envio_haya_fallado_solo_se_consulta()
+    {
+        var (_, retentionId) = await ConfirmWithIssuedRetentionAsync();
+        var sri = new SriBoundaryDouble(_companyId) { ReceptionTransportFailure = true, AuthorizationStatus = "TIMEOUT" };
+
+        // Envío inicial con fallo de transporte: el SRI pudo haberlo recibido.
+        (await StartTransmissionAsync(retentionId, sri)).IsSuccess.Should().BeTrue();
+        var electronic = await ReadElectronicAsync(retentionId);
+        electronic!.CurrentState.Should().Be(ElectronicDocumentState.Dispatching, "nunca vuelve a Signed");
+        sri.SendCalls.Should().Be(1);
+
+        var retry = await RetryAsync(electronic.Id, sri);
+
+        retry.IsSuccess.Should().BeTrue();
+        sri.SendCalls.Should().Be(1, "Dispatching jamás se reenvía automáticamente");
+        sri.AuthorizationCalls.Should().Be(1);
+        electronic = await ReadElectronicAsync(retentionId);
+        electronic!.CurrentState.Should().Be(ElectronicDocumentState.Dispatching);
+        ElectronicDocumentSourceStatusMapper.From(electronic)
+            .Should().Be(ElectronicDocumentSourceStatus.RequiresReconciliation);
+    }
+
+    [Fact]
+    public async Task Received_solo_consulta_autorizacion()
+    {
+        var (_, retentionId) = await ConfirmWithIssuedRetentionAsync();
+        var documentId = await SeedElectronicDocumentAsync(retentionId, ElectronicDocumentState.Received);
+        var sri = new SriBoundaryDouble(_companyId);
+
+        (await RetryAsync(documentId, sri)).IsSuccess.Should().BeTrue();
+
+        sri.SendCalls.Should().Be(0);
+        sri.AuthorizationCalls.Should().Be(1);
+        (await ReadElectronicAsync(retentionId))!.CurrentState.Should().Be(ElectronicDocumentState.Authorized);
+    }
+
+    // ── 8. Authorized → CancelPurchase bloqueado, sin reversos ───────────────────────────────
+
+    [Fact]
+    public async Task Autorizada_por_el_SRI_bloquea_la_anulacion_de_la_compra_sin_reversos()
+    {
+        var sri = new SriBoundaryDouble(_companyId);
+        var (invoiceId, retentionId) = await ConfirmWithIssuedRetentionAsync(sri);
+        (await ReadElectronicAsync(retentionId))!.CurrentState.Should().Be(ElectronicDocumentState.Authorized);
+        var stockMovements = await StockMovementCountAsync(invoiceId);
 
         var cancel = await CancelPurchaseAsync(invoiceId);
 
-        cancel.IsSuccess.Should().BeTrue("HOY: anular el origen no consulta el estado electrónico de la retención");
-        var state = await ReadElectronicAsync(documentId, retentionId);
-        state.RetentionStatus.Should().Be(RetentionStatus.Cancelled);
-        state.State.Should().Be(ElectronicDocumentState.Authorized, "HOY: no hay anulación SRI ni MarkCancelled — anulación local silenciosa");
+        cancel.IsSuccess.Should().BeFalse();
+        cancel.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.SourceCancellationRequiresSriAnnulment);
+        cancel.Error.Should().Contain("anulación electrónica");
+        await ShouldBeUntouchedConfirmedAsync(invoiceId, retentionId, stockMovements);
+        (await ReadElectronicAsync(retentionId))!.CurrentState.Should().Be(ElectronicDocumentState.Authorized);
     }
 
-    // ── CASO D: Sent persistido ─────────────────────────────────────────────────────────────────
-
-    [Fact]
-    public async Task Reproduccion_D_Sent_persistido_no_es_reintentable_ni_candidato_del_job()
+    [Theory]
+    [InlineData(ElectronicDocumentState.Signed)]
+    [InlineData(ElectronicDocumentState.Received)]
+    [InlineData(ElectronicDocumentState.DeadLetter)]
+    public async Task Comprobante_en_estado_incierto_bloquea_la_anulacion_de_la_compra(ElectronicDocumentState state)
     {
         var (invoiceId, retentionId) = await ConfirmWithIssuedRetentionAsync();
-        var documentId = await SeedRetentionElectronicDocumentAsync(retentionId, ElectronicDocumentState.Sent);
-        (await CancelPurchaseAsync(invoiceId)).IsSuccess.Should().BeTrue();
+        await SeedElectronicDocumentAsync(retentionId, state);
+        var stockMovements = await StockMovementCountAsync(invoiceId);
 
-        var sri = new SriBoundary(_companyId);
-        var retry = await RetryAsync(documentId, sri);
+        var cancel = await CancelPurchaseAsync(invoiceId);
 
-        retry.IsSuccess.Should().BeFalse("RetryAsync solo acepta Signed/Received (y Draft/Failed/DeadLetter)");
-        sri.Reception.Verify(r => r.SendAsync(It.IsAny<Guid>(), It.IsAny<byte[]>(), It.IsAny<CancellationToken>()), Times.Never());
-        sri.Authorization.Verify(a => a.CheckAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never(),
-            "HOY: un Sent persistido no tiene camino de consulta de autorización (queda varado)");
+        cancel.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.SourceCancellationInProcess);
+        await ShouldBeUntouchedConfirmedAsync(invoiceId, retentionId, stockMovements);
+    }
+
+    // ── 10. Nunca transmitido → anulación permitida, Discarded, reversos exact-once ───────────
+
+    [Theory]
+    [InlineData(ElectronicDocumentState.Draft)]
+    [InlineData(ElectronicDocumentState.Failed)]
+    public async Task Nunca_transmitido_la_anulacion_se_permite_y_el_comprobante_queda_Discarded(ElectronicDocumentState state)
+    {
+        var (invoiceId, retentionId) = await ConfirmWithIssuedRetentionAsync();
+        await SeedElectronicDocumentAsync(retentionId, state);
+
+        var cancel = await CancelPurchaseAsync(invoiceId);
+
+        cancel.IsSuccess.Should().BeTrue(cancel.Error);
+        var s = await ReadAsync(invoiceId);
+        s.Status.Should().Be(PurchaseStatus.Cancelled);
+        s.Retentions.Single().Status.Should().Be(RetentionStatus.Cancelled);
+        s.Payables.Single().RetainedAmount.Should().Be(0m);
+        (await RetentionAccountingAsync(retentionId)).Reversals.Should().Be(1);
+        var electronic = await ReadElectronicAsync(retentionId);
+        electronic!.CurrentState.Should().Be(ElectronicDocumentState.Discarded);
+        electronic.LastError.Should().Contain("Anulación automática");
         await using var db = CreateContext();
-        var candidates = await new ElectronicDocumentRepository(db, new CompanyClock(db)).GetRetryCandidatesAsync();
-        candidates.Should().NotContain(d => d.Id == documentId);
-        (await ReadElectronicAsync(documentId, retentionId)).State.Should().Be(ElectronicDocumentState.Sent);
+        var audit = await db.ElectronicDocumentAudits.AsNoTracking()
+            .SingleAsync(a => a.EntityId == electronic.Id && a.Action == "Discarded");
+        audit.FromState.Should().Be(state);
+        audit.ToState.Should().Be(ElectronicDocumentState.Discarded);
+        audit.Reason.Should().Contain("Anulación automática", "queda registrado cuándo y por qué se descartó");
     }
 
-    // ── CASO E: Received — solo consulta autorización, puede llegar Authorized tras la anulación ──
-
     [Fact]
-    public async Task Reproduccion_E_Received_anulada_la_compra_el_reintento_no_reenvia_pero_consulta_y_queda_Authorized()
+    public async Task Sin_comprobante_la_anulacion_se_permite_sin_crear_ninguno()
     {
         var (invoiceId, retentionId) = await ConfirmWithIssuedRetentionAsync();
-        var documentId = await SeedRetentionElectronicDocumentAsync(retentionId, ElectronicDocumentState.Received);
+
         (await CancelPurchaseAsync(invoiceId)).IsSuccess.Should().BeTrue();
 
-        var sri = new SriBoundary(_companyId);
-        (await RetryAsync(documentId, sri)).IsSuccess.Should().BeTrue();
-
-        sri.Reception.Verify(r => r.SendAsync(It.IsAny<Guid>(), It.IsAny<byte[]>(), It.IsAny<CancellationToken>()), Times.Never(),
-            "Received nunca reenvía el XML");
-        sri.Authorization.Verify(a => a.CheckAsync(_companyId, It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once());
-        var state = await ReadElectronicAsync(documentId, retentionId);
-        state.RetentionStatus.Should().Be(RetentionStatus.Cancelled);
-        state.State.Should().Be(ElectronicDocumentState.Authorized, "el SRI ya tenía el comprobante: el resultado llega igual");
+        (await CountElectronicAsync(retentionId)).Should().Be(0);
+        (await RetentionAccountingAsync(retentionId)).Reversals.Should().Be(1);
     }
 
-    // ── NO ENVIADO: Failed tras la anulación — el gate real del proveedor de datos bloquea el XML ─
+    // ── 11. Confirmar compra con retención → transmisión automática post-commit ───────────────
 
     [Fact]
-    public async Task Reproduccion_Failed_anulada_la_compra_el_reintento_no_genera_XML_pero_queda_Failed_reintentable()
+    public async Task Confirmar_compra_con_retencion_inicia_la_transmision_electronica_automaticamente()
     {
-        var (invoiceId, retentionId) = await ConfirmWithIssuedRetentionAsync();
-        var documentId = await SeedRetentionElectronicDocumentAsync(retentionId, ElectronicDocumentState.Failed);
-        (await CancelPurchaseAsync(invoiceId)).IsSuccess.Should().BeTrue();
+        var sri = new SriBoundaryDouble(_companyId);
 
-        await using var db = CreateContext();
-        var company = new FixedCurrentCompany(_companyId);
-        var docTypes = new Mock<ISriDocTypeCatalogResolver>();
-        docTypes.Setup(d => d.IsActiveElectronicDocTypeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        var supplier = new RetentionElectronicDocumentXmlSupplier(
-            new RetentionElectronicDocumentXmlService(
-                new RetentionElectronicDocumentDataProvider(
-                    new RetentionDocumentRepository(db, company),
-                    Mock.Of<IEmissionPointRepository>(),
-                    Mock.Of<IEstablishmentRepository>(),
-                    Mock.Of<ICompanyRepository>(),
-                    Mock.Of<ISriSettingsRepository>(),
-                    Mock.Of<IBusinessPartnerRepository>(),
-                    docTypes.Object
-                ),
-                Mock.Of<ERP.Application.Modules.ElectronicDocuments.XmlBuilders.IRetentionXmlBuilder>()
-            )
+        var (_, retentionId) = await ConfirmWithIssuedRetentionAsync(sri);
+
+        var electronic = await ReadElectronicAsync(retentionId);
+        electronic.Should().NotBeNull("la transmisión arranca sin acción manual");
+        electronic!.DocumentType.Should().Be(ElectronicDocumentType.Retention);
+        electronic.CurrentState.Should().Be(ElectronicDocumentState.Authorized);
+        sri.SendCalls.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Fallo_del_SRI_tras_confirmar_no_revierte_la_compra()
+    {
+        var sri = new SriBoundaryDouble(_companyId);
+        sri.Signing
+            .Setup(s => s.SignAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<ERP.Application.Modules.ElectronicDocuments.DTOs.ElectronicDocumentXml>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Certificado inválido (test)"));
+
+        var (invoiceId, retentionId) = await ConfirmWithIssuedRetentionAsync(sri);
+
+        (await ReadAsync(invoiceId)).Status.Should().Be(PurchaseStatus.Confirmed);
+        (await ReadElectronicAsync(retentionId))!.CurrentState.Should().Be(ElectronicDocumentState.Failed);
+        sri.SendCalls.Should().Be(0);
+    }
+
+    // ── 13/14. Recuperación idempotente ───────────────────────────────────────────────────────
+
+    /// <summary>Contexto sin tenant ni empresa, como el job Hangfire antes de fijar JobExecutionContext.</summary>
+    private ErpDbContext CreateJobContext() =>
+        new(
+            new DbContextOptionsBuilder<ErpDbContext>().UseNpgsql(_postgres.GetConnectionString()).Options,
+            new FixedCurrentTenant(Guid.Empty),
+            new NoOpPublisher(),
+            new FixedCurrentCompany(Guid.Empty)
         );
-        var sri = new SriBoundary(_companyId);
-        sri.Suppliers.Setup(s => s.Resolve(ElectronicDocumentType.Retention)).Returns(supplier);
 
-        await Issuer(db, sri).RetryAsync(_tenantId, documentId, _userId, CancellationToken.None);
+    private async Task<IReadOnlyList<ERP.Domain.Modules.Retentions.Interfaces.RetentionElectronicStartCandidate>> RecoveryCandidatesAsync()
+    {
+        await using var db = CreateJobContext();
+        return await new RetentionDocumentRepository(db, new FixedCurrentCompany(Guid.Empty))
+            .GetPendingElectronicStartAsync(DateTime.UtcNow.AddMinutes(1), 50);
+    }
 
-        sri.Signing.Verify(s => s.SignAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<ElectronicDocumentXml>(), It.IsAny<CancellationToken>()), Times.Never());
-        sri.Reception.Verify(r => r.SendAsync(It.IsAny<Guid>(), It.IsAny<byte[]>(), It.IsAny<CancellationToken>()), Times.Never());
-        await using var verify = CreateContext();
-        var document = await verify.ElectronicDocuments.AsNoTracking().SingleAsync(d => d.Id == documentId);
-        document.CurrentState.Should().Be(ElectronicDocumentState.Failed,
-            "HOY: el gate existe solo en el proveedor de datos — el documento queda Failed y vuelve a ser candidato del job (ruido hasta DeadLetter)");
-        document.LastError.Should().Contain("debe estar emitida");
+    [Fact]
+    public async Task Recuperacion_encuentra_la_retencion_sin_transmitir_y_ejecutada_dos_veces_crea_un_solo_comprobante()
+    {
+        // Simula una caída entre el commit de la confirmación y el inicio de la transmisión.
+        var (_, retentionId) = await ConfirmWithIssuedRetentionAsync();
+        var candidates = await RecoveryCandidatesAsync();
+        candidates.Should().ContainSingle(c => c.RetentionId == retentionId && c.TenantId == _tenantId && c.CompanyId == _companyId);
+
+        var sri = new SriBoundaryDouble(_companyId);
+        var first = await StartTransmissionAsync(retentionId, sri);
+        var second = await StartTransmissionAsync(retentionId, sri);
+
+        first.IsSuccess.Should().BeTrue(first.Error);
+        second.IsSuccess.Should().BeFalse();
+        second.Code.Should().Be(ApiResponseCodes.Common.Conflict);
+        (await CountElectronicAsync(retentionId)).Should().Be(1);
+        sri.SendCalls.Should().Be(1);
+        (await RecoveryCandidatesAsync()).Should().NotContain(c => c.RetentionId == retentionId);
+    }
+
+    [Fact]
+    public async Task Recuperacion_ignora_las_retenciones_dentro_de_la_ventana_de_gracia()
+    {
+        var (_, retentionId) = await ConfirmWithIssuedRetentionAsync();
+        await using var db = CreateJobContext();
+
+        var candidates = await new RetentionDocumentRepository(db, new FixedCurrentCompany(Guid.Empty))
+            .GetPendingElectronicStartAsync(DateTime.UtcNow.AddMinutes(-2), 50);
+
+        candidates.Should().NotContain(c => c.RetentionId == retentionId);
+    }
+
+    [Fact]
+    public async Task Carrera_recuperacion_y_transmision_inmediata_crea_un_solo_comprobante()
+    {
+        var (_, retentionId) = await ConfirmWithIssuedRetentionAsync();
+        var sri = new SriBoundaryDouble(_companyId);
+
+        var results = await Task.WhenAll(
+            StartTransmissionAsync(retentionId, sri),
+            StartTransmissionAsync(retentionId, sri)
+        );
+
+        results.Count(r => r.IsSuccess).Should().Be(1, string.Join(" | ", results.Select(r => r.Code + ":" + r.Error)));
+        (await CountElectronicAsync(retentionId)).Should().Be(1);
+        sri.SendCalls.Should().Be(1);
+    }
+
+    // ── Hallazgo: el job genérico de reintento no ve candidatos sin contexto de tenant ─────────
+
+    [Fact]
+    public async Task Hallazgo_GetRetryCandidatesAsync_sin_contexto_de_tenant_no_devuelve_candidatos()
+    {
+        // ElectronicDocumentRetryJob consulta candidatos ANTES de fijar JobExecutionContext; el filtro
+        // global fail-closed (tenant+empresa) devuelve 0 filas. Documentado en ADR-036 como hallazgo
+        // fuera de alcance (corregirlo activaría el reintento automático de Ventas/NC, CLOSED).
+        var (_, retentionId) = await ConfirmWithIssuedRetentionAsync();
+        await SeedElectronicDocumentAsync(retentionId, ElectronicDocumentState.Failed);
+
+        await using var db = CreateJobContext();
+        var candidates = await new ElectronicDocumentRepository(db, new CompanyClock(db)).GetRetryCandidatesAsync();
+
+        candidates.Should().BeEmpty();
     }
 }

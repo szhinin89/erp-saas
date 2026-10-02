@@ -497,7 +497,7 @@ public sealed class CancelExpenseDocumentUseCasesTests
         // (solo con PayableRepo mockeado por debajo), no un mock, para que estos tests verifiquen el
         // efecto real de dominio (RetentionDocument.Cancel + AccountsPayable.ReverseRetention), no
         // solo que el handler "llamó" a algo.
-        public IRetentionCanceller RetentionCanceller => new RetentionCanceller(PayableRepo.Object);
+        public IRetentionCanceller RetentionCanceller => new RetentionCanceller(PayableRepo.Object, ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.NoElectronicDocument());
 
         public CancelExpenseDocumentHandler Handler =>
             new(

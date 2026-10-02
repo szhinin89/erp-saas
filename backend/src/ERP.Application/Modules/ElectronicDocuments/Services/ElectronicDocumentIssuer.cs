@@ -23,6 +23,8 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
     private readonly IElectronicDocumentAuthorizationService _authorizationService;
     private readonly IFileStorage _fileStorage;
     private readonly IDatabaseExceptionTranslator _dbEx;
+    private readonly IElectronicDocumentSourceLifecycleGuardResolver _sourceGuards;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<ElectronicDocumentIssuer> _logger;
 
     public ElectronicDocumentIssuer(
@@ -35,6 +37,8 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
         IElectronicDocumentAuthorizationService authorizationService,
         IFileStorage fileStorage,
         IDatabaseExceptionTranslator dbEx,
+        IElectronicDocumentSourceLifecycleGuardResolver sourceGuards,
+        IUnitOfWork unitOfWork,
         ILogger<ElectronicDocumentIssuer> logger
     )
     {
@@ -47,6 +51,8 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
         _authorizationService = authorizationService;
         _fileStorage = fileStorage;
         _dbEx = dbEx;
+        _sourceGuards = sourceGuards;
+        _unitOfWork = unitOfWork;
         _logger = logger;
     }
 
@@ -62,6 +68,22 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
             request.SourceModule,
             request.SourceEntityId
         );
+
+        // ADR-036 (I-1) — un origen que ya no permite procesamiento electrónico nunca registra
+        // (ni reanuda) su comprobante. Solo aplica a orígenes con guard (hoy Retenciones).
+        var guard = _sourceGuards.Resolve(request.SourceModule);
+        if (guard is not null)
+        {
+            var lifecycle = await guard.EvaluateAsync(
+                request.TenantId,
+                request.CompanyId,
+                request.SourceEntityId,
+                lockForUpdate: false,
+                ct
+            );
+            if (!lifecycle.AllowsProcessing)
+                return SourceNotProcessable(request.SourceModule, request.SourceEntityId, lifecycle);
+        }
 
         var existing = await _repository.GetBySourceAsync(
             request.TenantId,
@@ -133,6 +155,22 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
         CancellationToken ct
     )
     {
+        // ADR-036 (I-1) — antes de generar XML: el origen debe seguir permitiendo procesamiento.
+        // Sin escrituras si no lo permite (no es un fallo del pipeline: el documento no pasa a Failed).
+        var guard = _sourceGuards.Resolve(document.SourceModule);
+        if (guard is not null)
+        {
+            var lifecycle = await guard.EvaluateAsync(
+                document.TenantId,
+                document.CompanyId,
+                document.SourceEntityId,
+                lockForUpdate: false,
+                ct
+            );
+            if (!lifecycle.AllowsProcessing)
+                return SourceNotProcessable(document.SourceModule, document.SourceEntityId, lifecycle);
+        }
+
         var supplier = _xmlSupplierResolver.Resolve(request.DocumentType);
         if (supplier is null)
             return await FailAsync(
@@ -240,19 +278,39 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
                 return await FailAsync(document, request.UserId, ct, reason, storageResult.Code);
             }
 
-            document.MarkXmlGenerated(
-                storageResult.Value!.DraftXmlPath,
-                xmlResult.Value!.Version,
-                validation.SchemaVersion ?? string.Empty,
-                request.UserId
-            );
-            document.MarkSigned(
-                storageResult.Value.SignedXmlPath,
-                AccessKey.Create(signResult.Value!.AccessKey),
-                request.UserId
-            );
+            if (guard is null)
+            {
+                document.MarkXmlGenerated(
+                    storageResult.Value!.DraftXmlPath,
+                    xmlResult.Value!.Version,
+                    validation.SchemaVersion ?? string.Empty,
+                    request.UserId
+                );
+                document.MarkSigned(
+                    storageResult.Value.SignedXmlPath,
+                    AccessKey.Create(signResult.Value!.AccessKey),
+                    request.UserId
+                );
 
-            await _repository.SaveChangesAsync(ct);
+                await _repository.SaveChangesAsync(ct);
+            }
+            else
+            {
+                // ADR-036 (D-3) — XmlGenerated→Signed→Dispatching persistidos juntos, bajo el lock del
+                // origen y solo si sigue permitiendo procesamiento, ANTES de cualquier llamada externa.
+                var claim = await ClaimDispatchAsync(
+                    document,
+                    guard,
+                    storageResult.Value!,
+                    xmlResult.Value!.Version,
+                    validation.SchemaVersion ?? string.Empty,
+                    signResult.Value!.AccessKey,
+                    request.UserId,
+                    ct
+                );
+                if (claim is not null)
+                    return claim;
+            }
             LogDocumentSigned(
                 document.Id,
                 request.SourceModule,
@@ -320,6 +378,15 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
         bool isValidationFailure = false
     )
     {
+        // ADR-036 — si el documento ya no está en Draft/Failed (p.ej. la anulación del origen lo
+        // descartó mientras el pipeline corría y el reclamo de despacho releyó ese estado), no se
+        // registra un fallo encima de un estado terminal.
+        if (
+            document.CurrentState
+            is not (ElectronicDocumentState.Draft or ElectronicDocumentState.Failed)
+        )
+            return Result<ElectronicDocumentDto>.Failure(reason, code);
+
         document.MarkFailed(reason, userId);
         await _repository.SaveChangesAsync(ct);
         return isValidationFailure
@@ -337,6 +404,10 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
         var document = await _repository.GetByIdAsync(tenantId, electronicDocumentId, ct);
         if (document is null)
             return Result<ElectronicDocumentDto>.NotFound("El documento electrónico no existe.");
+
+        var guard = _sourceGuards.Resolve(document.SourceModule);
+        if (guard is not null)
+            return await RetryGuardedAsync(document, guard, userId, ct);
 
         if (document.CurrentState == ElectronicDocumentState.DeadLetter)
         {
@@ -453,6 +524,7 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
             is not (
                 ElectronicDocumentState.Failed
                 or ElectronicDocumentState.Signed
+                or ElectronicDocumentState.Dispatching
                 or ElectronicDocumentState.Received
             )
         )
@@ -466,6 +538,193 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
         document.MarkDeadLetter(reason, userId);
         await _repository.SaveChangesAsync(ct);
         LogDocumentDeadLettered(document.Id, reason);
+    }
+
+    /// <summary>
+    /// ADR-036 — reintento de un origen con guard (hoy Retenciones). Diferencias con v1.0:
+    /// (1) si el origen ya no permite procesamiento, no hay reactivación, pipeline ni consulta —
+    /// cero escrituras; (2) un documento que salió o pudo salir al SRI (Signed histórico,
+    /// Dispatching, Received) NUNCA se reenvía: solo se consulta su autorización por clave de
+    /// acceso (D-4, D-10). Una respuesta no concluyente (TIMEOUT, error, desconocido) deja el estado
+    /// tal cual — requiere conciliación —, nunca autoriza un reenvío.
+    /// </summary>
+    private async Task<Result<ElectronicDocumentDto>> RetryGuardedAsync(
+        ElectronicDocument document,
+        IElectronicDocumentSourceLifecycleGuard guard,
+        Guid userId,
+        CancellationToken ct
+    )
+    {
+        var lifecycle = await guard.EvaluateAsync(
+            document.TenantId,
+            document.CompanyId,
+            document.SourceEntityId,
+            lockForUpdate: false,
+            ct
+        );
+        if (!lifecycle.AllowsProcessing)
+            return SourceNotProcessable(document.SourceModule, document.SourceEntityId, lifecycle);
+
+        if (document.CurrentState == ElectronicDocumentState.DeadLetter)
+        {
+            document.Reactivate(userId);
+            await _repository.SaveChangesAsync(ct);
+            LogDocumentReactivated(document.Id, document.CurrentState);
+        }
+
+        if (
+            document.CurrentState is ElectronicDocumentState.Draft or ElectronicDocumentState.Failed
+        )
+        {
+            var request = new RegisterElectronicDocumentRequest(
+                document.TenantId,
+                document.CompanyId,
+                document.DocumentType,
+                document.SourceModule,
+                document.SourceEntityId,
+                userId
+            );
+            var pipeline = await RunPipelineAsync(document, request, ct);
+            if (pipeline.Code == ApiResponseCodes.ElectronicDocuments.SourceNotProcessable)
+                return pipeline;
+            await ApplyDeadLetterIfExhaustedAsync(document, userId, document.LastError, ct);
+            return Result<ElectronicDocumentDto>.Success(ElectronicDocumentMapper.ToDto(document));
+        }
+
+        if (
+            document.CurrentState
+            is not (
+                ElectronicDocumentState.Signed
+                or ElectronicDocumentState.Dispatching
+                or ElectronicDocumentState.Received
+            )
+        )
+            return Result<ElectronicDocumentDto>.ValidationFailure(
+                $"El documento no está en un estado reintentable (estado actual: {document.CurrentState})."
+            );
+
+        document.MarkRetryAttempted(userId);
+        await _repository.SaveChangesAsync(ct);
+        LogRetryAttempted(document.Id, document.CurrentState, document.RetryCount);
+
+        string? lastFailureReason;
+        try
+        {
+            // Revalidación inmediatamente antes de la llamada externa (consulta de autorización).
+            var recheck = await guard.EvaluateAsync(
+                document.TenantId,
+                document.CompanyId,
+                document.SourceEntityId,
+                lockForUpdate: false,
+                ct
+            );
+            if (!recheck.AllowsProcessing)
+                return SourceNotProcessable(document.SourceModule, document.SourceEntityId, recheck);
+
+            LogQueryOnlyRetry(document.Id, document.CurrentState);
+            lastFailureReason = await AuthorizeAsync(
+                document,
+                document.TenantId,
+                document.CompanyId,
+                userId,
+                ct
+            );
+        }
+        catch (Exception ex)
+        {
+            LogPipelineStageThrew(document.Id, "RetryAuthorizationQuery", ex);
+            lastFailureReason = ex.Message;
+        }
+
+        await ApplyDeadLetterIfExhaustedAsync(document, userId, lastFailureReason, ct);
+        return Result<ElectronicDocumentDto>.Success(ElectronicDocumentMapper.ToDto(document));
+    }
+
+    /// <summary>
+    /// ADR-036 (D-3) — reclamo de despacho: en una transacción corta toma el lock del origen
+    /// (<c>FOR UPDATE</c>, el mismo que toma la anulación del origen), revalida que siga permitiendo
+    /// procesamiento, relee el documento bajo ese lock y persiste XmlGenerated→Signed→Dispatching en
+    /// un solo SaveChanges. Solo después del commit se llama al SRI — nunca se sostiene el lock ni la
+    /// transacción durante SOAP. Devuelve <c>null</c> si el reclamo quedó persistido, o el Result de
+    /// fallo (sin escrituras) si el origen ya no lo permite o el documento cambió concurrentemente.
+    /// </summary>
+    private async Task<Result<ElectronicDocumentDto>?> ClaimDispatchAsync(
+        ElectronicDocument document,
+        IElectronicDocumentSourceLifecycleGuard guard,
+        ElectronicDocumentStoredXmlPaths storedPaths,
+        string xmlVersion,
+        string schemaVersion,
+        string accessKey,
+        Guid userId,
+        CancellationToken ct
+    )
+    {
+        if (_unitOfWork.HasActiveTransaction)
+            throw new InvalidOperationException(
+                "El despacho electrónico no puede reclamarse dentro de una transacción de negocio abierta (se llamaría al SRI con locks tomados)."
+            );
+
+        var environment = document.Environment;
+        await _unitOfWork.BeginTransactionAsync(ct);
+        try
+        {
+            var lifecycle = await guard.EvaluateAsync(
+                document.TenantId,
+                document.CompanyId,
+                document.SourceEntityId,
+                lockForUpdate: true,
+                ct
+            );
+            await _repository.ReloadAsync(document, ct);
+
+            if (!lifecycle.AllowsProcessing)
+            {
+                await _unitOfWork.RollbackAsync(ct);
+                return SourceNotProcessable(document.SourceModule, document.SourceEntityId, lifecycle);
+            }
+
+            if (
+                document.CurrentState
+                is not (ElectronicDocumentState.Draft or ElectronicDocumentState.Failed)
+            )
+            {
+                await _unitOfWork.RollbackAsync(ct);
+                return Result<ElectronicDocumentDto>.Conflict(
+                    $"El documento electrónico cambió de estado durante el procesamiento (estado actual: {document.CurrentState})."
+                );
+            }
+
+            if (environment is not null)
+                document.SetEnvironment(environment);
+            document.MarkXmlGenerated(storedPaths.DraftXmlPath, xmlVersion, schemaVersion, userId);
+            document.MarkSigned(storedPaths.SignedXmlPath, AccessKey.Create(accessKey), userId);
+            document.MarkDispatching(userId);
+            await _repository.SaveChangesAsync(ct);
+            await _unitOfWork.CommitAsync(ct);
+            LogDispatchClaimed(document.Id, document.SourceModule, document.SourceEntityId);
+            return null;
+        }
+        catch
+        {
+            await _unitOfWork.RollbackAsync(ct);
+            await _repository.ReloadAsync(document, ct);
+            throw;
+        }
+    }
+
+    private Result<ElectronicDocumentDto> SourceNotProcessable(
+        string sourceModule,
+        Guid sourceEntityId,
+        ElectronicDocumentSourceLifecycle lifecycle
+    )
+    {
+        var reason =
+            lifecycle.Reason ?? "El documento de origen ya no permite procesamiento electrónico.";
+        LogSourceNotProcessable(sourceModule, sourceEntityId, reason);
+        return Result<ElectronicDocumentDto>.ValidationFailure(
+            reason,
+            ApiResponseCodes.ElectronicDocuments.SourceNotProcessable
+        );
     }
 
     /// <summary>Relee el XML firmado ya almacenado — necesario para reenviar desde Signed sin volver a firmar.</summary>
@@ -835,6 +1094,32 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
         Message = "[ElectronicDocuments] No se pudo releer el XML firmado del documento {ElectronicDocumentId} para reintentar el envío"
     )]
     private partial void LogSignedXmlUnavailable(Guid electronicDocumentId);
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "[ElectronicDocuments] Origen {SourceModule}/{SourceEntityId} ya no permite procesamiento electrónico: {Reason}"
+    )]
+    private partial void LogSourceNotProcessable(
+        string sourceModule,
+        Guid sourceEntityId,
+        string reason
+    );
+
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "[ElectronicDocuments] Despacho reclamado (Dispatching) para {ElectronicDocumentId}, origen {SourceModule}/{SourceEntityId}"
+    )]
+    private partial void LogDispatchClaimed(
+        Guid electronicDocumentId,
+        string sourceModule,
+        Guid sourceEntityId
+    );
+
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "[ElectronicDocuments] Reintento de {ElectronicDocumentId} en {State}: solo consulta de autorización, sin reenvío (ADR-036)"
+    )]
+    private partial void LogQueryOnlyRetry(Guid electronicDocumentId, ElectronicDocumentState state);
 
     [LoggerMessage(
         Level = LogLevel.Error,

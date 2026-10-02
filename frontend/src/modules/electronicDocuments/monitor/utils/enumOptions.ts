@@ -10,6 +10,9 @@ export const ELECTRONIC_DOCUMENT_STATES = [
   "DeadLetter",
   "Cancelled",
   "Failed",
+  // ADR-036 (ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A)
+  "Dispatching",
+  "Discarded",
 ] as const;
 
 /** Valores reales del enum de dominio `ElectronicDocumentType`. */

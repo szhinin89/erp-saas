@@ -18,7 +18,10 @@ import {
   type RetentionEligibilityCandidate,
   type RetentionEligibilityResult,
 } from "../api/expenseDocumentService";
-import type { RetentionDocumentDto } from "../../retentions/facades/retentionDocumentFacade";
+import {
+  RetentionElectronicStatusBadge,
+  type RetentionDocumentDto,
+} from "../../retentions/facades/retentionDocumentFacade";
 import {
   newRetentionIntentLine,
   type RetentionIntentFormState,
@@ -448,7 +451,7 @@ function EligibilityBadge({
 function RetentionDocumentSummary({ retention }: { retention: RetentionDocumentDto }) {
   return (
     <div className="exp-doc-retention-summary">
-      <ZHGrid cols={3}>
+      <ZHGrid cols={4}>
         <div>
           <span className="exp-doc-retention-summary__label">Número</span>
           <p>{retention.retentionNumber ?? "—"}</p>
@@ -460,6 +463,12 @@ function RetentionDocumentSummary({ retention }: { retention: RetentionDocumentD
         <div>
           <span className="exp-doc-retention-summary__label">Estado</span>
           <p>{RETENTION_STATUS_LABEL[retention.status] ?? retention.status}</p>
+        </div>
+        <div>
+          <span className="exp-doc-retention-summary__label">Estado electrónico</span>
+          <p>
+            <RetentionElectronicStatusBadge status={retention.electronicStatus} />
+          </p>
         </div>
       </ZHGrid>
 

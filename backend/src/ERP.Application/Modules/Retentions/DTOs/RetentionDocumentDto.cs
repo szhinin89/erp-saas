@@ -1,3 +1,4 @@
+using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Domain.Modules.Retentions.Enums;
 
 namespace ERP.Application.Modules.Retentions.DTOs;
@@ -36,7 +37,10 @@ public sealed record RetentionDocumentDto(
     string? SourceDocumentAuthorizationNumber = null,
     string? SourceDocumentTaxSupportCode = null,
     decimal? SourceDocumentSubtotal = null,
-    decimal? SourceDocumentTotal = null
+    decimal? SourceDocumentTotal = null,
+    // ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A — estado compacto de su comprobante electrónico
+    // (calculado en backend desde el ElectronicDocument real; null cuando no se consultó).
+    ElectronicDocumentSourceStatus? ElectronicStatus = null
 );
 
 public sealed record RetentionDocumentLineDto(

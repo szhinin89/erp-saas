@@ -134,6 +134,24 @@ public static class MessageCatalog
             "Rate limit exceeded.",
             ApiErrorCategory.RateLimit
         ),
+        [ApiResponseCodes.ElectronicDocuments.SourceNotProcessable] = new(
+            ApiSeverity.Error,
+            "El documento de origen ya no permite procesamiento electrónico.",
+            "Electronic document source no longer allows processing.",
+            ApiErrorCategory.Validation
+        ),
+        [ApiResponseCodes.ElectronicDocuments.SourceCancellationInProcess] = new(
+            ApiSeverity.Error,
+            "El comprobante electrónico está en proceso ante el SRI. Primero debe resolverse su estado.",
+            "Electronic document outcome at SRI is not final; source cancellation blocked.",
+            ApiErrorCategory.Validation
+        ),
+        [ApiResponseCodes.ElectronicDocuments.SourceCancellationRequiresSriAnnulment] = new(
+            ApiSeverity.Error,
+            "El comprobante electrónico ya está autorizado. Requiere el proceso de anulación electrónica ante el SRI.",
+            "Electronic document is authorized; source cancellation requires SRI annulment.",
+            ApiErrorCategory.Validation
+        ),
     };
 
     // Código no catalogado (deuda ADR-027 Fase 1: códigos de módulo aún como literales, p. ej.

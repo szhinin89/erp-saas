@@ -25,4 +25,20 @@ public enum ElectronicDocumentState
     /// <c>ElectronicDocument.LastError</c>.
     /// </summary>
     Failed = 10,
+
+    /// <summary>
+    /// ADR-036 (D-3) — el ERP persistió que va a realizar/intentar una transmisión externa a
+    /// Recepción del SRI. Se guarda ANTES de la llamada de red, bajo el lock del documento de origen
+    /// (solo para orígenes con <c>IElectronicDocumentSourceLifecycleGuard</c> registrado — hoy
+    /// Retenciones). Desde aquí el comprobante PUEDE estar en el SRI: nunca se reenvía
+    /// automáticamente; el único paso siguiente permitido es consultar su autorización.
+    /// </summary>
+    Dispatching = 11,
+
+    /// <summary>
+    /// ADR-036 (D-2) — terminal: hay certeza de que este documento nunca tuvo un intento de
+    /// transmisión externa (Draft/Failed, o DeadLetter que venía de ellos) y su origen ya no
+    /// permite procesarlo. Nunca se reintenta, reactiva, regenera, firma ni envía.
+    /// </summary>
+    Discarded = 12,
 }

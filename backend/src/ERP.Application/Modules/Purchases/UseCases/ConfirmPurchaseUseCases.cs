@@ -79,6 +79,7 @@ public sealed class ConfirmPurchaseHandler
     private readonly ICompanyPrecisionPolicyProvider _precision;
     private readonly IPurchaseXmlConfirmationGuard _xmlGuard;
     private readonly IRetentionIssuer _retentionIssuer;
+    private readonly IRetentionElectronicTransmission _retentionTransmission;
 
     public ConfirmPurchaseHandler(
         IPurchaseInvoiceRepository repo,
@@ -98,9 +99,11 @@ public sealed class ConfirmPurchaseHandler
         IOperationalPreferencesResolver preferences,
         ICompanyPrecisionPolicyProvider precision,
         IPurchaseXmlConfirmationGuard xmlGuard,
-        IRetentionIssuer retentionIssuer
+        IRetentionIssuer retentionIssuer,
+        IRetentionElectronicTransmission retentionTransmission
     )
     {
+        _retentionTransmission = retentionTransmission;
         _precision = precision;
         _xmlGuard = xmlGuard;
         _retentionIssuer = retentionIssuer;
@@ -450,11 +453,19 @@ public sealed class ConfirmPurchaseHandler
         // ApplyRetention sobre la CxP recién creada, antes del SaveChanges único de STEP 7. El
         // asiento Retentions/DocumentIssued se dispara en ese mismo SaveChanges (traductor estricto).
         // Cualquier fallo retorna sin persistir: la compra sigue en Draft, sin CxP ni retención.
+        Guid? issuedRetentionId = null;
         if (cmd.Retention is { AppliesRetention: true } retention)
         {
-            var retentionError = await IssueRetentionAsync(inv, payable, retention, uid, ct);
+            var (retentionError, retentionId) = await IssueRetentionAsync(
+                inv,
+                payable,
+                retention,
+                uid,
+                ct
+            );
             if (retentionError is not null)
                 return retentionError;
+            issuedRetentionId = retentionId;
         }
 
         // ── STEP 5: Actualizar precio base del ítem (SSOT, Motor de Pricing) ──
@@ -520,6 +531,13 @@ public sealed class ConfirmPurchaseHandler
             inv.Id
         );
 
+        // ── STEP 8: Transmisión electrónica de la retención (ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A) ──
+        // DESPUÉS del commit de STEP 7 — nunca dentro de la transacción de compra/inventario/CxP/
+        // contabilidad (SOAP no sostiene locks). Mismo patrón que Ventas (AuthorizeSalesHandler).
+        // Un fallo aquí no afecta la compra ya confirmada: el job de recuperación lo retoma.
+        if (issuedRetentionId is Guid startRetentionId)
+            await _retentionTransmission.StartAsync(tid, cid, startRetentionId, uid, ct);
+
         return Result<PurchaseInvoiceDto>.Success(PurchaseMapper.ToDto(inv));
     }
 
@@ -527,7 +545,7 @@ public sealed class ConfirmPurchaseHandler
     /// STEP 4b — emite la retención (staging) y la aplica a la CxP en staging. Devuelve el error a
     /// propagar, o <c>null</c> si quedó lista para persistirse junto con la confirmación.
     /// </summary>
-    private async Task<Result<PurchaseInvoiceDto>?> IssueRetentionAsync(
+    private async Task<(Result<PurchaseInvoiceDto>? Error, Guid RetentionId)> IssueRetentionAsync(
         PurchaseInvoice inv,
         ERP.Domain.Modules.Payables.Entities.AccountsPayable? payable,
         RetentionIntent retention,
@@ -549,17 +567,21 @@ public sealed class ConfirmPurchaseHandler
             ct
         );
         if (!issued.IsSuccess)
-            return Result<PurchaseInvoiceDto>.Failure(issued.Error!, issued.Code);
+            return (Result<PurchaseInvoiceDto>.Failure(issued.Error!, issued.Code), Guid.Empty);
 
-        var retained = issued.Value!.TotalRetained;
+        var retentionId = issued.Value!.Id;
+        var retained = issued.Value.TotalRetained;
         if (retained <= 0)
-            return null;
+            return (null, retentionId);
 
         // Sin CxP (compra de total cero) no hay saldo que netear: una retención emitida sin efecto
         // financiero real se rechaza en vez de persistirse.
         if (payable is null)
-            return Result<PurchaseInvoiceDto>.ValidationFailure(
-                "La compra no genera cuenta por pagar. No se puede aplicar la retención financieramente."
+            return (
+                Result<PurchaseInvoiceDto>.ValidationFailure(
+                    "La compra no genera cuenta por pagar. No se puede aplicar la retención financieramente."
+                ),
+                Guid.Empty
             );
 
         try
@@ -568,13 +590,13 @@ public sealed class ConfirmPurchaseHandler
         }
         catch (ArgumentException ex)
         {
-            return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message);
+            return (Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message), Guid.Empty);
         }
         catch (ERP.Domain.Exceptions.DomainRuleViolationException ex)
         {
-            return Result<PurchaseInvoiceDto>.FromDomainRule(ex);
+            return (Result<PurchaseInvoiceDto>.FromDomainRule(ex), Guid.Empty);
         }
 
-        return null;
+        return (null, retentionId);
     }
 }

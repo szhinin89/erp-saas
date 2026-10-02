@@ -205,8 +205,7 @@ export function usePurchasesPage() {
   );
   const [whLoading, setWhLoading] = useState(false);
   const [electronicPending, setElectronicPending] = useState(false);
-  const { canShow, has } = usePermissionsUi();
-  const canRegisterElectronic = canShow("electronic-documents.retry");
+  const { has } = usePermissionsUi();
   const canReadEmissionPoints = has("settings.emission-points.view");
 
   // ── Modals ─────────────────────────────────────────────────────────
@@ -1866,10 +1865,10 @@ export function usePurchasesPage() {
     [],
   );
 
-  // ── Documento electrónico de la retención (XML/RIDE preview, registro manual) ────
-  // PURCHASES-RETENTIONS-UI-MIGRATION-05C — nunca se genera/registra automáticamente al emitir;
-  // son acciones explícitas del usuario sobre una retención ya Issued (mismos endpoints que ya usa
-  // Gastos, RetentionsController — sin duplicar lógica ni crear pantalla propia de Retenciones).
+  // ── Documento electrónico de la retención (XML/RIDE) ────────────────────────────
+  // ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A — la transmisión al SRI es automática al confirmar la
+  // compra (con recuperación en el servidor); aquí solo se consultan XML/RIDE de una retención ya
+  // Issued (autorizados por el permiso del origen, purchases.view, resuelto en el servidor).
   const handleViewRetentionXml = useCallback(async () => {
     if (!retention) return;
     setElectronicPending(true);
@@ -1897,22 +1896,6 @@ export function usePurchasesPage() {
     }
     setElectronicPending(false);
   }, [retention, showSaveError]);
-
-  const handleRegisterRetentionElectronic = useCallback(async () => {
-    if (!retention || !canRegisterElectronic) return;
-    setElectronicPending(true);
-    try {
-      await purchaseRetentionFacade.registerElectronic(retention.id);
-      message.success("Registro electrónico enviado correctamente.");
-    } catch (err: unknown) {
-      showSaveError(
-        formatApiRequestError(err, {
-          generic: "No se pudo registrar electrónicamente la retención.",
-        }),
-      );
-    }
-    setElectronicPending(false);
-  }, [retention, canRegisterElectronic, showSaveError]);
 
   // ── Schedule operations ────────────────────────────────────────────
   const regenerateSchedule = useCallback(() => {
@@ -2109,10 +2092,8 @@ export function usePurchasesPage() {
     retention,
     whLoading,
     electronicPending,
-    canRegisterElectronic,
     handleViewRetentionXml,
     handleViewRetentionRidePdf,
-    handleRegisterRetentionElectronic,
 
     // Actions
     fetchList,

@@ -1,21 +1,26 @@
+using ERP.Application.Access.Authorization;
 using ERP.Application.Common;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Application.Modules.ElectronicDocuments.Services;
+using ERP.Application.Modules.Retentions.Services;
 using ERP.Application.Modules.Retentions.UseCases;
+using ERP.Domain.Kernel.Permissions;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.Retentions.Entities;
 using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Domain.Modules.Retentions.Interfaces;
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace ERP.Application.Tests.Retentions;
 
 /// <summary>
-/// RETENTIONS-SRI-MANUAL-REGISTER-04E — cubre <see cref="RegisterRetentionElectronicDocumentHandler"/>:
-/// valida existencia/tenant/company/estado ANTES de delegar en
-/// <see cref="IElectronicDocumentIssuer.RegisterAsync"/> — nunca firma/envía/consulta autorización
-/// por su cuenta.
+/// ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A — <see cref="RegisterRetentionElectronicDocumentHandler"/> es
+/// la acción de RECUPERACIÓN controlada: valida existencia/tenant/company y el permiso del documento
+/// ORIGEN (ver y operar) y delega en el mismo <see cref="RetentionElectronicTransmission"/> que la
+/// transmisión automática. El estado de la retención (solo Issued procesa) lo decide el gate SSOT del
+/// emisor — cubierto contra PostgreSQL real en ERP.Infrastructure.Tests, no aquí.
 /// </summary>
 public sealed class RegisterRetentionElectronicDocumentHandlerTests
 {
@@ -28,21 +33,21 @@ public sealed class RegisterRetentionElectronicDocumentHandlerTests
     private static readonly Guid EmissionPointId = Guid.NewGuid();
     private static readonly Guid UserId = Guid.NewGuid();
 
-    private static RetentionDocument DraftDocument(Guid companyId) =>
-        RetentionDocument.Create(
+    private static RetentionDocument IssuedDocument(
+        Guid companyId,
+        RetentionSourceDocumentType sourceType = RetentionSourceDocumentType.ExpenseDocument
+    )
+    {
+        var doc = RetentionDocument.Create(
             TenantId,
             companyId,
             BranchId,
-            RetentionSourceDocumentType.ExpenseDocument,
+            sourceType,
             SourceDocumentId,
             SupplierId,
             EmissionPointId,
             UserId
         );
-
-    private static RetentionDocument IssuedDocument(Guid companyId)
-    {
-        var doc = DraftDocument(companyId);
         doc.AddLine(
             RetentionDocumentLine.Create(
                 doc.Id,
@@ -63,20 +68,49 @@ public sealed class RegisterRetentionElectronicDocumentHandlerTests
     {
         public Mock<IRetentionDocumentRepository> RetentionRepo { get; } = new();
         public Mock<IElectronicDocumentIssuer> Issuer { get; } = new();
+        public HashSet<string> Granted { get; } = new();
 
-        public RegisterRetentionElectronicDocumentHandler Handler =>
-            new(
-                RetentionRepo.Object,
-                Issuer.Object,
-                Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
-                Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
-                Mock.Of<ICurrentUser>(u => u.UserId == UserId)
-            );
+        public RegisterRetentionElectronicDocumentHandler Handler
+        {
+            get
+            {
+                var authorizer = new Mock<IRuntimePermissionAuthorizer>();
+                authorizer
+                    .Setup(a =>
+                        a.IsAuthorizedAsync(
+                            It.IsAny<string>(),
+                            UserId,
+                            It.IsAny<string>(),
+                            It.IsAny<CancellationToken>()
+                        )
+                    )
+                    .ReturnsAsync((string key, Guid _, string _, CancellationToken _) => Granted.Contains(key));
+                var tenant = Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId);
+                var company = Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId);
+                var user = Mock.Of<ICurrentUser>(u => u.UserId == UserId);
+                return new(
+                    new RetentionElectronicTransmission(
+                        Issuer.Object,
+                        NullLogger<RetentionElectronicTransmission>.Instance
+                    ),
+                    new RetentionSourceAccess(authorizer.Object, user, tenant, company, RetentionRepo.Object),
+                    tenant,
+                    company,
+                    user
+                );
+            }
+        }
 
         public void SetupRetention(RetentionDocument? document) =>
             RetentionRepo
                 .Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(document);
+
+        public void VerifyIssuerNeverCalled() =>
+            Issuer.Verify(
+                i => i.RegisterAsync(It.IsAny<RegisterElectronicDocumentRequest>(), It.IsAny<CancellationToken>()),
+                Times.Never
+            );
     }
 
     private static ElectronicDocumentDto SampleDto(Guid electronicDocumentId) =>
@@ -85,7 +119,7 @@ public sealed class RegisterRetentionElectronicDocumentHandlerTests
             "Retention",
             "Retentions",
             SourceDocumentId,
-            "Signed",
+            "Dispatching",
             new string('1', 49),
             null,
             null,
@@ -109,6 +143,7 @@ public sealed class RegisterRetentionElectronicDocumentHandlerTests
     public async Task Handle_returns_not_found_for_a_nonexistent_retention()
     {
         var fx = new Fixture();
+        fx.Granted.UnionWith([ExpensePermissions.DocumentsView, ExpensePermissions.DocumentsConfirm]);
         fx.SetupRetention(null);
 
         var result = await fx.Handler.Handle(
@@ -117,17 +152,15 @@ public sealed class RegisterRetentionElectronicDocumentHandlerTests
         );
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Be("La retención no existe.");
-        fx.Issuer.Verify(
-            i => i.RegisterAsync(It.IsAny<RegisterElectronicDocumentRequest>(), It.IsAny<CancellationToken>()),
-            Times.Never
-        );
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        fx.VerifyIssuerNeverCalled();
     }
 
     [Fact]
     public async Task Handle_returns_not_found_for_a_retention_from_another_company()
     {
         var fx = new Fixture();
+        fx.Granted.UnionWith([ExpensePermissions.DocumentsView, ExpensePermissions.DocumentsConfirm]);
         fx.SetupRetention(IssuedDocument(OtherCompanyId));
 
         var result = await fx.Handler.Handle(
@@ -135,59 +168,55 @@ public sealed class RegisterRetentionElectronicDocumentHandlerTests
             CancellationToken.None
         );
 
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Be("La retención no existe.");
-        fx.Issuer.Verify(
-            i => i.RegisterAsync(It.IsAny<RegisterElectronicDocumentRequest>(), It.IsAny<CancellationToken>()),
-            Times.Never
-        );
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        fx.VerifyIssuerNeverCalled();
     }
 
     [Fact]
-    public async Task Handle_rejects_a_draft_retention_without_calling_the_issuer()
+    public async Task Handle_returns_not_found_when_the_user_cannot_view_the_origin()
     {
         var fx = new Fixture();
-        fx.SetupRetention(DraftDocument(CompanyId));
+        // Usuario de Compras frente a una retención de Gasto: sus permisos no dan acceso.
+        fx.Granted.UnionWith([PurchasePermissions.View, PurchasePermissions.Update]);
+        fx.SetupRetention(IssuedDocument(CompanyId, RetentionSourceDocumentType.ExpenseDocument));
 
         var result = await fx.Handler.Handle(
             new RegisterRetentionElectronicDocumentCommand(Guid.NewGuid()),
             CancellationToken.None
         );
 
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("emitida");
-        fx.Issuer.Verify(
-            i => i.RegisterAsync(It.IsAny<RegisterElectronicDocumentRequest>(), It.IsAny<CancellationToken>()),
-            Times.Never
-        );
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        fx.VerifyIssuerNeverCalled();
     }
 
     [Fact]
-    public async Task Handle_rejects_a_cancelled_retention_without_calling_the_issuer()
+    public async Task Handle_returns_forbidden_when_the_user_can_view_but_not_operate_the_origin()
     {
         var fx = new Fixture();
-        var document = IssuedDocument(CompanyId);
-        document.Cancel("Anulación de prueba.", UserId);
-        fx.SetupRetention(document);
+        fx.Granted.Add(PurchasePermissions.View);
+        fx.SetupRetention(IssuedDocument(CompanyId, RetentionSourceDocumentType.PurchaseInvoice));
 
         var result = await fx.Handler.Handle(
             new RegisterRetentionElectronicDocumentCommand(Guid.NewGuid()),
             CancellationToken.None
         );
 
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("emitida");
-        fx.Issuer.Verify(
-            i => i.RegisterAsync(It.IsAny<RegisterElectronicDocumentRequest>(), It.IsAny<CancellationToken>()),
-            Times.Never
-        );
+        result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
+        fx.VerifyIssuerNeverCalled();
     }
 
-    [Fact]
-    public async Task Handle_calls_the_issuer_with_the_correct_reference_for_an_issued_retention()
+    [Theory]
+    [InlineData(RetentionSourceDocumentType.PurchaseInvoice, PurchasePermissions.View, PurchasePermissions.Update)]
+    [InlineData(RetentionSourceDocumentType.ExpenseDocument, ExpensePermissions.DocumentsView, ExpensePermissions.DocumentsConfirm)]
+    public async Task Handle_delegates_to_the_single_transmission_entry_with_the_origin_permissions(
+        RetentionSourceDocumentType sourceType,
+        string viewPermission,
+        string operatePermission
+    )
     {
         var fx = new Fixture();
-        var document = IssuedDocument(CompanyId);
+        fx.Granted.UnionWith([viewPermission, operatePermission]);
+        var document = IssuedDocument(CompanyId, sourceType);
         fx.SetupRetention(document);
         var expectedDto = SampleDto(Guid.NewGuid());
         RegisterElectronicDocumentRequest? captured = null;
@@ -215,17 +244,19 @@ public sealed class RegisterRetentionElectronicDocumentHandlerTests
     }
 
     [Fact]
-    public async Task Handle_propagates_a_failure_from_the_issuer()
+    public async Task Handle_propagates_the_gate_rejection_from_the_issuer()
     {
         var fx = new Fixture();
+        fx.Granted.UnionWith([ExpensePermissions.DocumentsView, ExpensePermissions.DocumentsConfirm]);
         fx.SetupRetention(IssuedDocument(CompanyId));
         fx.Issuer
             .Setup(i =>
                 i.RegisterAsync(It.IsAny<RegisterElectronicDocumentRequest>(), It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(
-                Result<ElectronicDocumentDto>.Failure(
-                    "No hay un validador de esquema registrado para el tipo de documento 'Retention'."
+                Result<ElectronicDocumentDto>.ValidationFailure(
+                    "La retención está anulada: su comprobante electrónico no puede procesarse.",
+                    ApiResponseCodes.ElectronicDocuments.SourceNotProcessable
                 )
             );
 
@@ -235,15 +266,14 @@ public sealed class RegisterRetentionElectronicDocumentHandlerTests
         );
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("validador de esquema");
+        result.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.SourceNotProcessable);
     }
 
     [Fact]
     public async Task Handle_preserves_the_issuer_idempotency_when_it_returns_conflict()
     {
-        // RegisterAsync ya es idempotente (Conflict si ya existe un ElectronicDocument en un
-        // estado posterior a Draft/Failed) — el handler no agrega ni interfiere con esa lógica.
         var fx = new Fixture();
+        fx.Granted.UnionWith([ExpensePermissions.DocumentsView, ExpensePermissions.DocumentsConfirm]);
         fx.SetupRetention(IssuedDocument(CompanyId));
         fx.Issuer
             .Setup(i =>
@@ -261,6 +291,6 @@ public sealed class RegisterRetentionElectronicDocumentHandlerTests
         );
 
         result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be("CONFLICT");
+        result.Code.Should().Be(ApiResponseCodes.Common.Conflict);
     }
 }

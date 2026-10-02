@@ -66,6 +66,7 @@ public sealed class ConfirmExpenseDocumentHandler
     private readonly IAccountsPayableService _payables;
     private readonly IDocumentFlowPolicyService _workflowPolicy;
     private readonly IRetentionIssuer _retentionIssuer;
+    private readonly IRetentionElectronicTransmission _retentionTransmission;
     private readonly IPaymentTermRepository _ptRepo;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
@@ -80,6 +81,7 @@ public sealed class ConfirmExpenseDocumentHandler
         IAccountsPayableService payables,
         IDocumentFlowPolicyService workflowPolicy,
         IRetentionIssuer retentionIssuer,
+        IRetentionElectronicTransmission retentionTransmission,
         IPaymentTermRepository ptRepo,
         ICurrentTenant tenant,
         ICurrentCompany company,
@@ -94,6 +96,7 @@ public sealed class ConfirmExpenseDocumentHandler
         _payables = payables;
         _workflowPolicy = workflowPolicy;
         _retentionIssuer = retentionIssuer;
+        _retentionTransmission = retentionTransmission;
         _ptRepo = ptRepo;
         _tenant = tenant;
         _company = company;
@@ -209,6 +212,7 @@ public sealed class ConfirmExpenseDocumentHandler
         // posterior al posting (ver más abajo, ahora condicionado a que este camino NO se haya
         // ejecutado, para no duplicar la CxP).
         var retentionAppliedToPayable = false;
+        Guid? issuedRetentionId = null;
         if (cmd.Retention is { AppliesRetention: true } retention)
         {
             var retentionResult = await _retentionIssuer.IssueForExpenseAsync(
@@ -228,6 +232,7 @@ public sealed class ConfirmExpenseDocumentHandler
                 return retentionResult.ToFailure<RetentionDocument, ExpenseDocumentDetailDto>();
 
             var retentionDocument = retentionResult.Value!;
+            issuedRetentionId = retentionDocument.Id;
 
             // Solo si la política declara PayableGenerationMode.OnConfirmation (mismo criterio que
             // el bloque post-SaveChanges de abajo) hay una CxP a la que aplicar la retención en esta
@@ -351,6 +356,18 @@ public sealed class ConfirmExpenseDocumentHandler
             return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message, ex.Code);
         }
 
+        // ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A — transmisión electrónica de la retención DESPUÉS del
+        // commit del gasto (nunca dentro de su transacción). Un fallo aquí no afecta el gasto ya
+        // confirmado: el job de recuperación lo retoma.
+        if (issuedRetentionId is Guid startRetentionId)
+            await _retentionTransmission.StartAsync(
+                _tenant.TenantId,
+                _company.CompanyId,
+                startRetentionId,
+                _user.UserId,
+                ct
+            );
+
         return Result<ExpenseDocumentDetailDto>.Success(ExpenseDocumentMapper.ToDetail(document));
     }
 }
@@ -411,6 +428,7 @@ public sealed class CreateConfirmedExpenseHandler
     private readonly IAccountsPayableService _payables;
     private readonly IDocumentFlowPolicyService _workflowPolicy;
     private readonly IRetentionIssuer _retentionIssuer;
+    private readonly IRetentionElectronicTransmission _retentionTransmission;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
     private readonly ICurrentBranch _branch;
@@ -428,6 +446,7 @@ public sealed class CreateConfirmedExpenseHandler
         IAccountsPayableService payables,
         IDocumentFlowPolicyService workflowPolicy,
         IRetentionIssuer retentionIssuer,
+        IRetentionElectronicTransmission retentionTransmission,
         ICurrentTenant tenant,
         ICurrentCompany company,
         ICurrentBranch branch,
@@ -445,6 +464,7 @@ public sealed class CreateConfirmedExpenseHandler
         _payables = payables;
         _workflowPolicy = workflowPolicy;
         _retentionIssuer = retentionIssuer;
+        _retentionTransmission = retentionTransmission;
         _tenant = tenant;
         _company = company;
         _branch = branch;
@@ -583,6 +603,7 @@ public sealed class CreateConfirmedExpenseHandler
         // persistan atómicamente en un único SaveChangesAsync. Si falla cualquier paso, se retorna
         // sin persistir nada (ni el ExpenseDocument recién creado en memoria).
         var retentionAppliedToPayable = false;
+        Guid? issuedRetentionId = null;
         if (cmd.Retention is { AppliesRetention: true } retention)
         {
             var retentionResult = await _retentionIssuer.IssueForExpenseAsync(
@@ -602,6 +623,7 @@ public sealed class CreateConfirmedExpenseHandler
                 return retentionResult.ToFailure<RetentionDocument, ExpenseDocumentDetailDto>();
 
             var retentionDocument = retentionResult.Value!;
+            issuedRetentionId = retentionDocument.Id;
 
             // Mismo criterio que ConfirmExpenseDocumentHandler: solo si la política declara
             // PayableGenerationMode.OnConfirmation hay una CxP a la que aplicar la retención en
@@ -704,6 +726,18 @@ public sealed class CreateConfirmedExpenseHandler
         {
             return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message, ex.Code);
         }
+
+        // ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A — transmisión electrónica de la retención DESPUÉS del
+        // commit del gasto (nunca dentro de su transacción). Un fallo aquí no afecta el gasto ya
+        // confirmado: el job de recuperación lo retoma.
+        if (issuedRetentionId is Guid startRetentionId)
+            await _retentionTransmission.StartAsync(
+                _tenant.TenantId,
+                _company.CompanyId,
+                startRetentionId,
+                _user.UserId,
+                ct
+            );
 
         return Result<ExpenseDocumentDetailDto>.Success(ExpenseDocumentMapper.ToDetail(document));
     }

@@ -237,6 +237,9 @@ public sealed class CreateConfirmedExpenseUseCasesTests
         public ExpenseCategoryNode Type { get; }
         public ExpenseCategoryNode Category { get; }
         public ExpenseCategoryNode Subcategory { get; }
+
+        public Mock<ERP.Application.Modules.Retentions.Services.IRetentionElectronicTransmission> Transmission { get; } =
+            ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.Transmission();
         public PaymentTerm PaymentTerm { get; }
         public BusinessPartner Supplier { get; }
         public BusinessPartnerRole SupplierRole { get; }
@@ -253,6 +256,7 @@ public sealed class CreateConfirmedExpenseUseCasesTests
                 Payables.Object,
                 WorkflowPolicy.Object,
                 RetentionIssuer.Object,
+                Transmission.Object,
                 Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
                 Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
                 Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId),

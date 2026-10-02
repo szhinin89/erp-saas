@@ -11,7 +11,9 @@ export type {
   IssueRetentionLineRequest,
   RetentionDocumentDto,
   RetentionDocumentLineDto,
+  RetentionElectronicStatus,
   RetentionIntentRequest,
   RetentionStatus,
   RetentionTaxType,
 } from "../api/retentionsService";
+export { RetentionElectronicStatusBadge } from "../components/RetentionElectronicStatusBadge";

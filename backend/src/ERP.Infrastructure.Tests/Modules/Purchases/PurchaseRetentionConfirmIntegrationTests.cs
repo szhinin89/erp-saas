@@ -234,7 +234,11 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
     private RetentionEligibilityService Eligibility(ErpDbContext db) =>
         new(new CompanyRepository(db), new BusinessPartnerRoleRepository(db), new SupplierRetentionDefaultRepository(db), new RetentionCodeResolver(db));
 
-    private ConfirmPurchaseHandler ConfirmHandler(ErpDbContext db, Guid? branchId = null)
+    private ConfirmPurchaseHandler ConfirmHandler(
+        ErpDbContext db,
+        Guid? branchId = null,
+        IRetentionElectronicTransmission? transmission = null
+    )
     {
         var company = new FixedCurrentCompany(_companyId);
         var tax = new Mock<ERP.Application.Modules.Purchases.Services.ISriTaxResolver>();
@@ -275,7 +279,8 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
                 new EmissionPointRepository(db),
                 new EstablishmentRepository(db),
                 new DocumentSequenceRepository(db)
-            )
+            ),
+            transmission ?? RetentionElectronicTestWiring.NoOpTransmission()
         );
     }
 
@@ -297,7 +302,10 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
             new StockRepository(db, company, new PostgresDatabaseExceptionTranslator(), StandardPrecisionPolicyProvider.Instance),
             new PurchaseReturnRepository(db, company),
             new RetentionDocumentRepository(db, company),
-            new RetentionCanceller(new AccountsPayableRepository(db)),
+            new RetentionCanceller(
+                new AccountsPayableRepository(db),
+                RetentionElectronicTestWiring.Cancellation(db, company)
+            ),
             new UnitOfWork(db),
             NullLogger<CancelPurchaseHandler>.Instance,
             new FixedCurrentTenant(_tenantId),
@@ -687,14 +695,29 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
 
         var reconfirm = await ConfirmAsync(invoiceId, VatIntent());
         Result<ERP.Application.Modules.ElectronicDocuments.DTOs.ElectronicDocumentDto> register;
+        var sri = new SriBoundaryDouble(_companyId);
         await using (var db = CreateContext())
+        {
+            var company = new FixedCurrentCompany(_companyId);
             register = await new RegisterRetentionElectronicDocumentHandler(
-                new RetentionDocumentRepository(db, new FixedCurrentCompany(_companyId)),
-                Mock.Of<ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentIssuer>(),
+                RetentionElectronicTestWiring.Transmission(db, company, sri),
+                new RetentionSourceAccess(
+                    RetentionElectronicTestWiring.Granting(
+                        ERP.Domain.Kernel.Permissions.PurchasePermissions.View,
+                        ERP.Domain.Kernel.Permissions.PurchasePermissions.Update
+                    ),
+                    new FixedCurrentUser(_userId),
+                    new FixedCurrentTenant(_tenantId),
+                    company,
+                    new RetentionDocumentRepository(db, company)
+                ),
                 new FixedCurrentTenant(_tenantId),
-                new FixedCurrentCompany(_companyId),
+                company,
                 new FixedCurrentUser(_userId)
             ).Handle(new RegisterRetentionElectronicDocumentCommand(retentionId), CancellationToken.None);
+        }
+        sri.SignCalls.Should().Be(0);
+        sri.SendCalls.Should().Be(0);
 
         reconfirm.IsSuccess.Should().BeFalse("la compra anulada no vuelve a confirmarse");
         register.IsSuccess.Should().BeFalse("una retención anulada no se registra ante el SRI");
@@ -759,13 +782,14 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
     }
 
     /// <summary>
-    /// Comportamiento VIGENTE, sin definición funcional SRI (ver ZH-RETENTION-CANCELLATION-LIFECYCLE-01
-    /// § matriz SRI): anular la compra anula la retención en el ERP aunque su comprobante electrónico
-    /// ya esté autorizado, y no toca el <c>ElectronicDocument</c> (no existe flujo de anulación ante
-    /// el SRI). Si se define esa regla, este test debe cambiar con ella.
+    /// ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A (ADR-036 D-6) — INVERTIDO: antes (ZH-RETENTION-CANCELLATION-
+    /// LIFECYCLE-01) anular la compra anulaba la retención en el ERP aunque su comprobante estuviera
+    /// autorizado (anulación local silenciosa, ERP Cancelled / SRI Authorized). Ahora se bloquea: sin
+    /// Cancelled, sin reverso de CxP ni de asiento, y el ElectronicDocument sigue Authorized hasta el
+    /// proceso de anulación electrónica SRI (ZH-RETENTION-SRI-ANNULMENT-01).
     /// </summary>
     [Fact]
-    public async Task Vigente_anular_la_compra_con_retencion_autorizada_no_toca_el_documento_electronico()
+    public async Task Anular_la_compra_con_retencion_autorizada_se_bloquea_y_no_toca_nada()
     {
         var invoiceId = await SeedDraftPurchaseAsync();
         (await ConfirmAsync(invoiceId, VatIntent())).IsSuccess.Should().BeTrue();
@@ -784,9 +808,15 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
                 $"UPDATE electronic_documents SET current_state = {(int)ERP.Domain.Modules.ElectronicDocuments.Enums.ElectronicDocumentState.Authorized} WHERE id = {edocId}");
         }
 
-        (await CancelPurchaseAsync(invoiceId)).IsSuccess.Should().BeTrue();
+        var cancel = await CancelPurchaseAsync(invoiceId);
 
-        (await ReadAsync(invoiceId)).Retentions.Single().Status.Should().Be(RetentionStatus.Cancelled);
+        cancel.IsSuccess.Should().BeFalse();
+        cancel.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.SourceCancellationRequiresSriAnnulment);
+        var s = await ReadAsync(invoiceId);
+        s.Status.Should().Be(PurchaseStatus.Confirmed);
+        s.Retentions.Single().Status.Should().Be(RetentionStatus.Issued);
+        s.Payables.Single().RetainedAmount.Should().Be(4.5m);
+        (await RetentionAccountingAsync(retentionId)).Reversals.Should().Be(0);
         await using var verify = CreateContext();
         (await verify.ElectronicDocuments.AsNoTracking().SingleAsync(e => e.Id == edocId)).CurrentState
             .Should().Be(ERP.Domain.Modules.ElectronicDocuments.Enums.ElectronicDocumentState.Authorized);

@@ -1,9 +1,9 @@
 # ADR-036 — Documento electrónico de una retención cuyo origen se anula
 
-**Status:** Accepted (política) — decisiones D-1…D-11 aprobadas el 2026-10-01 · implementación pendiente · quedan decisiones abiertas (§22) · **Fecha:** 2026-10-01 · **Ticket:** ZH-RETENTION-ELECTRONIC-CANCELLATION-ADR-01
+**Status:** Accepted (política) — decisiones D-1…D-11 aprobadas el 2026-10-01 · **fases 1–2 y transmisión inmediata implementadas en ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A (§23)** · anulación oficial SRI pendiente (ZH-RETENTION-SRI-ANNULMENT-01) · quedan decisiones abiertas (§22) · **Fecha:** 2026-10-01 · **Ticket:** ZH-RETENTION-ELECTRONIC-CANCELLATION-ADR-01
 **Relacionado:** ADR-023 (ElectronicDocuments v1.0 CLOSED; este ADR **la extiende de forma controlada**), ADR-024 (diagnóstico SRI), ADR-025 (RIDE), ADR-034 (contrato temporal), `RETENTIONS-MODULE-DESIGN-01`, `RETENTIONS-SRI-AUTHORIZATION-WIRING-DESIGN-04B`, `docs/architecture/backend.md` § Retenciones (ZH-RETENTION-CANCELLATION-LIFECYCLE-01).
 
-> Este ADR **no implementa nada**. Fija la política aprobada, los invariantes, el modelo de estados objetivo, la evidencia y lo que sigue abierto. La implementación de los cambios en ElectronicDocuments v1.0 (CLOSED) exige además tests y una revisión de compatibilidad (`frozen-infrastructure.md`). Hasta entonces el comportamiento vigente es el de §15.
+> §1–§22 fijan la política aprobada, los invariantes, el modelo de estados objetivo y la evidencia previa. §15 describe el comportamiento ANTERIOR a la implementación (sus pruebas ya fueron invertidas). Lo implementado y sus decisiones concretas están en §23.
 
 ## 1. Contexto
 
@@ -402,6 +402,115 @@ GROUP BY r.source_document_type;
 | **O-13** | ¿Bloquear pagos y créditos sobre la CxP del origen durante `AnnulmentPending`? (recomendado: sí) | Funcional |
 | **O-14** | Cómo se confirma ANULADO: consulta al WS (sin evidencia hoy) o registro manual de evidencia; qué casos exigen aceptación del receptor | Fiscal + técnica |
 | **O-15** | Extender D-4/D-10 a todos los tipos de comprobante | Técnica/funcional |
-| **O-16** | Transmisión inmediata: confirmar la obligación y elegir (a)/(b)/(c) de §14 | **Fiscal — DECISIÓN REQUERIDA** |
+| **O-16** | Transmisión inmediata: ~~elegir (a)/(b)/(c) de §14~~ — implementado (a)+(b) en 01A (§23); queda confirmar el texto normativo de la obligación | Fiscal (texto) |
 | **O-17** | T1: disparo de la anulación del origen tras ANULADO (recomendado: comando explícito) | Técnica |
 | **P-2** | Reconocer con evidencia "clave desconocida por el SRI" frente a "en proceso" en `autorizacionComprobante` | Técnica (requiere evidencia SRI) |
+
+## 23. Implementación — ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A (2026-10-01)
+
+**Alcance implementado:** fases 1 y 2 del rollout (§18) y la transmisión inmediata (O-16, opción (a)+(b)). **Fuera de alcance** (→ ZH-RETENTION-SRI-ANNULMENT-01): `AnnulmentPending`, solicitud oficial de anulación, aceptación del receptor, `Cancelled` con evidencia y anulación diferida del origen. No se cambió nada equivalente en Ventas ni en Notas de Crédito.
+
+### 23.1 Arquitectura
+
+| Pieza | Dónde | Rol |
+|---|---|---|
+| `IElectronicDocumentSourceLifecycleGuard` + resolver por `SourceModule` | ElectronicDocuments (Application) | Gate SSOT "el origen todavía permite procesamiento". Lee el estado actual de la BD (escalar, filtrado por tenant y empresa) y, con `lockForUpdate`, toma `FOR UPDATE` sobre la fila del origen |
+| `RetentionElectronicSourceLifecycleGuard` | Retentions | Implementación: solo `Issued`. ElectronicDocuments no referencia Retentions |
+| `ElectronicDocumentIssuer` | ElectronicDocuments | Único pipeline. Con guard: gate antes de registrar, antes de generar XML, antes de reactivar y antes de cada consulta externa. Reclamo `Dispatching` bajo lock. Reintento solo de consulta. Sin guard: v1.0 intacto |
+| `IElectronicDocumentSourceCancellation` | ElectronicDocuments | Única decisión de anulación del origen según el estado electrónico. Toma el mismo lock y deja el descarte en staging |
+| `RetentionCanceller` | Retentions | La consulta antes de mutar. Compras y Gastos la heredan sin código propio |
+| `IRetentionElectronicTransmission` | Retentions | Única entrada de transmisión: post-commit de Compra/Gasto, job de recuperación y acción de recuperación |
+| `RetentionElectronicRecoveryJob` | API/Hangfire | Cada minuto, con gracia de 2 min. Toma retenciones `Issued` sin comprobante o con uno en `Draft` |
+| `IRetentionSourceAccess` | Retentions | Autorización de XML/RIDE y de la recuperación según el origen (D-9) |
+| `ElectronicDocumentSourceStatus` | ElectronicDocuments (DTO) | Estado compacto para la UI, calculado en backend |
+
+### 23.2 Decisiones de implementación
+
+1. **`Dispatching` sin `Signed` intermedio persistido.** Para orígenes con guard, `XmlGenerated→Signed→Dispatching` se guardan en un solo `SaveChanges` dentro de la transacción del reclamo (lock de la retención → revalidar `Issued` → releer el ED bajo el lock → transicionar → commit). Después se llama al SRI. Consecuencia: desde 01A, una retención nunca queda en `Signed` sola. Todo `Signed` de retención es **histórico** (ambiguo, D-4) sin necesidad de una columna nueva que lo distinga.
+2. **Sin migración.** `current_state` se persiste como `int` y no tiene CHECK: `Dispatching = 11` y `Discarded = 12` son valores nuevos, compatibles con todas las filas existentes. No se reclasifica ningún dato histórico.
+3. **Dominio.** Cambios en la entidad:
+   - Métodos nuevos `MarkDispatching` (desde `Signed`) y `MarkDiscarded` (desde `Draft`, `Failed` o `DeadLetter` de esos estados), con motivo y evento auditado.
+   - `MarkSent` acepta `Dispatching`.
+   - `MarkAuthorized`/`MarkRejected` aceptan `Signed`/`Dispatching`. Así, la consulta de un estado incierto puede registrar un resultado concluyente sin reenviar.
+   - Los dos tests de dominio v1.0 que prohibían autorizar desde `Signed` se reescribieron a "prohibido antes de firmar".
+4. **Cancel vs. Send** (sin locks globales; solo la fila de la retención):
+   - Si la anulación gana, el reclamo espera el lock, ve `Cancelled` y no despacha.
+   - Si el reclamo gana, la anulación ve `Dispatching` y se bloquea.
+   - Orden de locks: origen (Lock A / `xmin`) → retención → ED. Nunca se sostiene un lock ni una transacción durante SOAP. El emisor rechaza reclamar dentro de una transacción de negocio abierta.
+5. **Transmisión inmediata durable.** El outbox existente (`OutboxProcessor`) solo marca los mensajes como procesados y no enruta. Por eso la fuente durable de lo pendiente es la propia retención `Issued` sin comprobante, que el job de recuperación retoma. El disparo inmediato sigue el patrón ya existente de Ventas (`AuthorizeSalesHandler`): en la misma petición, después del commit. Un fallo del SRI no revierte la compra ni el gasto.
+6. **UI.**
+   - Compras: se eliminó el botón "Registrar electrónicamente".
+   - Compras y Gastos muestran el estado electrónico compacto (Pendiente / Procesando / Autorizado / Rechazado / Requiere conciliación / Descartado).
+   - El Monitor conoce `Dispatching` (reintentable solo como consulta) y `Discarded`.
+7. **Códigos estables (422):** `ELECTRONIC_DOCUMENT_SOURCE_NOT_PROCESSABLE`, `ELECTRONIC_DOCUMENT_IN_PROCESS`, `ELECTRONIC_DOCUMENT_REQUIRES_SRI_ANNULMENT`.
+
+### 23.3 Hallazgo fuera de alcance — job genérico de reintento inactivo
+
+`ElectronicDocumentRetryJob` consulta candidatos (`GetRetryCandidatesAsync`) **antes** de fijar `JobExecutionContext`. En Hangfire no hay HttpContext, y el filtro global fail-closed (tenant + empresa) devuelve **0 filas**. Por eso el reintento automático genérico no procesa nada en producción para ningún tipo de comprobante. Lo demuestra el test `Hallazgo_GetRetryCandidatesAsync_sin_contexto_de_tenant_no_devuelve_candidatos`.
+
+No se corrigió aquí: hacerlo activaría el reintento automático de Ventas y Notas de Crédito (CLOSED), un cambio de comportamiento que requiere su propio análisis.
+
+Para Retenciones, la recuperación de lo no iniciado la cubre `RetentionElectronicRecoveryJob`. Los comprobantes `Failed`, `Dispatching` o `Received` se resuelven desde el Monitor ("Reintentar" = consulta, sin reenvío). Cuando se corrija el job genérico, debe verificarse que no compita con la recuperación de retenciones (hoy no se solapan: el genérico no ve filas y la recuperación solo toma retenciones sin comprobante o en `Draft`).
+
+### 23.4 Limitaciones conocidas
+
+- Si al despachar falta la URL del WS en `SriSettings` (fallo de prerrequisito, sin llamada de red), el documento queda en `Dispatching` y requiere conciliación. Por D-10 no se reintenta el envío.
+- P-2 sigue abierta: un `Signed` histórico o un `Dispatching` sin respuesta concluyente del SRI no se resuelve solo (O-10).
+- El RIDE y el XML de vista previa siguen exigiendo `Issued` (§8): no cambió.
+
+### 23.5 Consultas de datos históricos (SOLO LECTURA, no ejecutadas: sin acceso al piloto)
+
+La codificación de `current_state` está en §16, más 11 Dispatching y 12 Discarded.
+
+```sql
+-- A. Retención ANULADA con comprobante AUTORIZADO (ERP Cancelled / SRI Authorized).
+SELECT r.tenant_id, r.company_id, r.id, r.retention_number, r.cancelled_at,
+       e.id AS electronic_document_id, e.access_key, e.authorization_date,
+       (e.authorization_date > r.cancelled_at) AS authorized_after_cancel
+FROM retention_documents r
+JOIN electronic_documents e
+  ON e.tenant_id = r.tenant_id AND e.source_module = 'Retentions' AND e.source_entity_id = r.id
+WHERE r.status = 2 AND e.current_state = 6;
+
+-- B. Retención ANULADA con comprobante en vuelo o incierto (Signed / Dispatching / Received / DeadLetter).
+SELECT r.tenant_id, r.company_id, r.id, r.retention_number, r.cancelled_at,
+       e.id AS electronic_document_id, e.current_state, e.pre_dead_letter_state, e.retry_count, e.last_error
+FROM retention_documents r
+JOIN electronic_documents e
+  ON e.tenant_id = r.tenant_id AND e.source_module = 'Retentions' AND e.source_entity_id = r.id
+WHERE r.status = 2 AND e.current_state IN (3, 4, 5, 8, 11);
+
+-- C. Retención EMITIDA sin comprobante electrónico (la recuperación las tomará tras el despliegue).
+SELECT r.tenant_id, r.company_id, r.source_document_type, r.id, r.retention_number,
+       r.issue_date, r.updated_at
+FROM retention_documents r
+WHERE r.status = 1
+  AND NOT EXISTS (SELECT 1 FROM electronic_documents e
+                  WHERE e.tenant_id = r.tenant_id AND e.source_module = 'Retentions' AND e.source_entity_id = r.id)
+ORDER BY r.issue_date;
+
+-- D. Signed históricos de retención sin resultado final (requieren conciliación por consulta).
+SELECT r.tenant_id, r.company_id, r.id AS retention_id, r.status AS retention_status,
+       e.id AS electronic_document_id, e.access_key, e.retry_count, e.last_attempt_utc, e.last_error
+FROM electronic_documents e
+JOIN retention_documents r ON r.id = e.source_entity_id AND r.tenant_id = e.tenant_id
+WHERE e.source_module = 'Retentions'
+  AND (e.current_state = 3 OR (e.current_state = 8 AND e.pre_dead_letter_state = 3));
+
+-- E. Demora emisión → inicio de transmisión → autorización (por origen).
+SELECT r.source_document_type,
+       count(*) AS with_electronic,
+       avg(extract(epoch FROM (e.created_at - r.updated_at)) / 60) AS avg_minutes_issue_to_start,
+       avg(extract(epoch FROM (e.authorization_date - e.created_at)) / 60)
+         FILTER (WHERE e.current_state = 6) AS avg_minutes_start_to_authorized,
+       max(e.created_at::date - r.issue_date) AS max_days_issue_to_start
+FROM retention_documents r
+JOIN electronic_documents e
+  ON e.tenant_id = r.tenant_id AND e.source_module = 'Retentions' AND e.source_entity_id = r.id
+WHERE r.status = 1
+GROUP BY r.source_document_type;
+```
+
+Nota para E: en una retención `Issued`, `updated_at` es el momento de la emisión (`Issue()` llama a `SetUpdated`), porque solo `Cancel()` la vuelve a modificar.
+
+Tratamiento: A y B son datos heredados y entran en la conciliación manual (O-9, O-1). C se procesa automáticamente al desplegar. D requiere conciliación por consulta (O-10, P-2).

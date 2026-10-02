@@ -1556,6 +1556,8 @@
   "electronicDocuments.monitor.state.DeadLetter": "Con error",
   "electronicDocuments.monitor.state.Cancelled": "Anulado",
   "electronicDocuments.monitor.state.Failed": "Falló la generación",
+  "electronicDocuments.monitor.state.Dispatching": "Despachando",
+  "electronicDocuments.monitor.state.Discarded": "Descartado",
   "electronicDocuments.monitor.documentType.Invoice": "Factura",
   "electronicDocuments.monitor.documentType.CreditNote": "Nota de Crédito",
   "electronicDocuments.monitor.documentType.DebitNote": "Nota de Débito",
@@ -1566,6 +1568,8 @@
   "electronicDocuments.monitor.timelineAction.XmlGenerated": "XML generado",
   "electronicDocuments.monitor.timelineAction.Signed": "Documento firmado",
   "electronicDocuments.monitor.timelineAction.Failed": "Falló la generación",
+  "electronicDocuments.monitor.timelineAction.Dispatching": "Transmisión reclamada",
+  "electronicDocuments.monitor.timelineAction.Discarded": "Descartado (nunca enviado)",
   "dashboard.title": "Panel principal",
   "dashboard.kpis.totalIncome": "Ingresos totales",
   "dashboard.kpis.monthExpenses": "Gastos del mes",
@@ -4017,5 +4021,12 @@
   "settings.company.precision.retry": "Reintentar",
   "settings.company.precision.profile.custom": "Configura cada campo dentro de su rango permitido.",
   "session.precisionPolicy.loadError": "No se pudo cargar la configuración de precisión de la empresa. Sin ella no es seguro operar.",
-  "session.precisionPolicy.retry": "Reintentar"
+  "session.precisionPolicy.retry": "Reintentar",
+  "retentions.electronicStatus.label": "Estado electrónico",
+  "retentions.electronicStatus.pending": "Pendiente",
+  "retentions.electronicStatus.processing": "Procesando",
+  "retentions.electronicStatus.authorized": "Autorizado",
+  "retentions.electronicStatus.rejected": "Rechazado",
+  "retentions.electronicStatus.requiresReconciliation": "Requiere conciliación",
+  "retentions.electronicStatus.discarded": "Descartado"
 }

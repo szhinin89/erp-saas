@@ -1,9 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
-using ERP.Application.Modules.ElectronicDocuments.Services;
-using ERP.Domain.Modules.ElectronicDocuments.Enums;
-using ERP.Domain.Modules.Retentions.Enums;
-using ERP.Domain.Modules.Retentions.Interfaces;
+using ERP.Application.Modules.Retentions.Services;
 using FluentValidation;
 using MediatR;
 
@@ -12,15 +9,14 @@ namespace ERP.Application.Modules.Retentions.UseCases;
 // ── Command ───────────────────────────────────────────────────────────────
 
 /// <summary>
-/// RETENTIONS-SRI-MANUAL-REGISTER-04E — disparo manual y controlado del registro electrónico
-/// (firma + envío + consulta de autorización SRI) de una retención ya <c>Issued</c>, vía el mismo
-/// pipeline genérico que usan Factura/Nota de Crédito (<see cref="IElectronicDocumentIssuer.RegisterAsync"/>).
+/// ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A — acción de RECUPERACIÓN controlada (ya no es el camino
+/// normal: la transmisión se inicia automáticamente al confirmar Compra/Gasto, con el job de
+/// recuperación como respaldo). Entra por el mismo <see cref="IRetentionElectronicTransmission"/>
+/// que el flujo automático — mismo gate de ciclo de vida, mismo reclamo Dispatching, misma
+/// idempotencia (Draft/Failed se reanudan; un documento en estado posterior responde Conflict).
 ///
-/// Deliberadamente manual en esta fase: no se dispara automáticamente al emitir la retención
-/// (eso queda para una decisión de negocio posterior, ver 04B/04D). Idempotente por herencia —
-/// <c>RegisterAsync</c> reanuda Draft/Failed y devuelve <c>Conflict</c> si ya existe un
-/// <c>ElectronicDocument</c> en un estado posterior; este comando no agrega ninguna lógica de
-/// idempotencia propia.
+/// Autorización: <c>electronic-documents.retry</c> en el endpoint, más el permiso de acción del
+/// módulo origen resuelto server-side (<see cref="IRetentionSourceAccess.CanOperateAsync"/>).
 /// </summary>
 public sealed record RegisterRetentionElectronicDocumentCommand(Guid RetentionId)
     : IRequest<Result<ElectronicDocumentDto>>;
@@ -41,22 +37,22 @@ public sealed class RegisterRetentionElectronicDocumentValidator
 public sealed class RegisterRetentionElectronicDocumentHandler
     : IRequestHandler<RegisterRetentionElectronicDocumentCommand, Result<ElectronicDocumentDto>>
 {
-    private readonly IRetentionDocumentRepository _retentionRepository;
-    private readonly IElectronicDocumentIssuer _issuer;
+    private readonly IRetentionElectronicTransmission _transmission;
+    private readonly IRetentionSourceAccess _sourceAccess;
     private readonly ICurrentTenant _currentTenant;
     private readonly ICurrentCompany _currentCompany;
     private readonly ICurrentUser _currentUser;
 
     public RegisterRetentionElectronicDocumentHandler(
-        IRetentionDocumentRepository retentionRepository,
-        IElectronicDocumentIssuer issuer,
+        IRetentionElectronicTransmission transmission,
+        IRetentionSourceAccess sourceAccess,
         ICurrentTenant currentTenant,
         ICurrentCompany currentCompany,
         ICurrentUser currentUser
     )
     {
-        _retentionRepository = retentionRepository;
-        _issuer = issuer;
+        _transmission = transmission;
+        _sourceAccess = sourceAccess;
         _currentTenant = currentTenant;
         _currentCompany = currentCompany;
         _currentUser = currentUser;
@@ -67,30 +63,21 @@ public sealed class RegisterRetentionElectronicDocumentHandler
         CancellationToken cancellationToken
     )
     {
-        // GetByIdAsync solo filtra por tenant (ver IRetentionDocumentRepository) — el chequeo de
-        // company se hace explícito aquí, mismo criterio fail-closed que GetRetentionBySourceHandler.
-        var retention = await _retentionRepository.GetByIdAsync(
-            _currentTenant.TenantId,
-            request.RetentionId,
-            cancellationToken
-        );
-        if (retention is null || retention.CompanyId != _currentCompany.CompanyId)
+        var retention = await _sourceAccess.FindViewableAsync(request.RetentionId, cancellationToken);
+        if (retention is null)
             return Result<ElectronicDocumentDto>.NotFound("La retención no existe.");
-
-        if (retention.Status != RetentionStatus.Issued)
-            return Result<ElectronicDocumentDto>.ValidationFailure(
-                $"La retención debe estar emitida para registrar su documento electrónico (estado actual: {retention.Status})."
+        if (!await _sourceAccess.CanOperateAsync(retention.SourceDocumentType, cancellationToken))
+            return Result<ElectronicDocumentDto>.Forbidden(
+                "No tiene permiso para operar el documento origen de esta retención."
             );
 
-        var registerRequest = new RegisterElectronicDocumentRequest(
-            TenantId: _currentTenant.TenantId,
-            CompanyId: _currentCompany.CompanyId,
-            DocumentType: ElectronicDocumentType.Retention,
-            SourceModule: "Retentions",
-            SourceEntityId: retention.Id,
-            UserId: _currentUser.UserId
+        // El estado de la retención (solo Issued es procesable) lo decide el gate SSOT del emisor.
+        return await _transmission.StartAsync(
+            _currentTenant.TenantId,
+            _currentCompany.CompanyId,
+            retention.Id,
+            _currentUser.UserId,
+            cancellationToken
         );
-
-        return await _issuer.RegisterAsync(registerRequest, cancellationToken);
     }
 }

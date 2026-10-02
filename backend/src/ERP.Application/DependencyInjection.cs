@@ -45,6 +45,15 @@ public static class DependencyInjection
         // documento origen: CancelExpenseDocumentHandler y CancelPurchaseHandler
         // (ZH-RETENTION-CANCELLATION-LIFECYCLE-01 — no existe anulación aislada de la retención).
         services.AddScoped<IRetentionCanceller, RetentionCanceller>();
+        // ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A (ADR-036) — gate de ciclo de vida del origen
+        // "Retentions" (solo Issued procesa), única entrada de transmisión electrónica (confirmación,
+        // recuperación y acción manual) y autorización derivada del documento origen.
+        services.AddScoped<
+            ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentSourceLifecycleGuard,
+            RetentionElectronicSourceLifecycleGuard
+        >();
+        services.AddScoped<IRetentionElectronicTransmission, RetentionElectronicTransmission>();
+        services.AddScoped<IRetentionSourceAccess, RetentionSourceAccess>();
         // RETENTIONS-ELECTRONIC-DOCUMENT-MODEL-03A — construye el modelo canónico
         // RetentionElectronicDocumentData desde un RetentionDocument ya Issued. Deliberadamente
         // NO forma parte del registro genérico de IElectronicDocumentDataProvider (motor de

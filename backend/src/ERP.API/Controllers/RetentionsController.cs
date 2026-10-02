@@ -15,18 +15,18 @@ namespace ERP.API.Controllers;
 /// content-type de la respuesta — nunca consulta <c>RetentionDocument</c> ni ningún repositorio
 /// directamente.
 ///
-/// Sin permiso propio de Retentions todavía (ver comentario de <see cref="ExpensesController.GetRetention"/>):
-/// reutiliza <see cref="ExpensePermissions.DocumentsView"/>, el mismo permiso de solo lectura que
-/// ya protege el resto de las consultas de retención expuestas en <c>ExpensesController</c>.
-/// Agregar un permiso nuevo sin un <c>[NavItem]</c> que lo referencie quedaría inasignable desde
-/// el catálogo de permisos (<c>GetPermissionCatalogHandler</c> construye el catálogo desde
-/// <c>KernelRegistry.Navigation</c>) — y esta fase explícitamente no agrega ítems de menú.
+/// Autorización (ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A, ADR-036 D-9): sin permiso transversal de
+/// Retenciones. El permiso se deriva del documento ORIGEN de la retención — Compra →
+/// <c>purchases.view</c>, Gasto → <c>expenses.documents.view</c> — y como el origen es un dato, lo
+/// resuelve server-side el handler (<c>IRetentionSourceAccess</c>), no un <c>[Authorize]</c> estático:
+/// aquí solo se exige autenticación. Sin acceso al origen la respuesta es 404 (fail-closed).
 ///
 /// No firma XML, no envía al SRI, no persiste el XML como autorizado, no cachea el PDF —
 /// cada llamada genera XML y PDF de nuevo a partir del estado actual de la retención.
 ///
-/// RETENTIONS-SRI-MANUAL-REGISTER-04E agrega <see cref="Register"/>: disparo manual y explícito
-/// del registro electrónico real (firma + SOAP + autorización, vía
+/// <see cref="Register"/> (RETENTIONS-SRI-MANUAL-REGISTER-04E; desde 01A solo acción de
+/// RECUPERACIÓN — la transmisión es automática al confirmar Compra/Gasto): disparo explícito del
+/// registro electrónico real (firma + SOAP + autorización, vía
 /// <see cref="ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentIssuer"/>) —
 /// deliberadamente separado de los dos endpoints de arriba, que siguen siendo preview/on-demand
 /// y nunca firman ni envían nada. Usa <see cref="ElectronicDocumentsPermissions.Retry"/> (no un
@@ -52,7 +52,6 @@ public sealed class RetentionsController : ControllerBase
     /// resolverlo, mismo criterio de "controller delgado" que el resto del endpoint.
     /// </summary>
     [HttpGet("{id:guid}/electronic/xml")]
-    [Authorize(Policy = $"perm:{ExpensePermissions.DocumentsView}")]
     public async Task<IActionResult> GetElectronicXml(Guid id, CancellationToken ct)
     {
         var result = await _mediator.Send(new GenerateRetentionXmlQuery(id), ct);
@@ -68,7 +67,6 @@ public sealed class RetentionsController : ControllerBase
     /// firmar, sin autorizar) y lo devuelve como archivo descargable.
     /// </summary>
     [HttpGet("{id:guid}/ride/pdf")]
-    [Authorize(Policy = $"perm:{ExpensePermissions.DocumentsView}")]
     public async Task<IActionResult> GetRidePdf(Guid id, CancellationToken ct)
     {
         var result = await _mediator.Send(new GenerateRetentionRidePdfQuery(id), ct);
@@ -81,8 +79,9 @@ public sealed class RetentionsController : ControllerBase
     /// <summary>
     /// Dispara el registro electrónico real (firma XAdES-BES + envío a Recepción SRI + consulta
     /// de Autorización) de una retención ya <c>Issued</c>, vía el pipeline genérico
-    /// <c>IElectronicDocumentIssuer.RegisterAsync</c> — el mismo que usan Factura/Nota de
-    /// Crédito. Manual y explícito: no se dispara automáticamente al emitir la retención. Sin
+    /// <c>IElectronicDocumentIssuer.RegisterAsync</c>. Acción de recuperación controlada (el camino
+    /// normal es automático): además de este permiso exige el permiso de acción del origen
+    /// (<c>purchases.update</c> / <c>expenses.documents.confirm</c>), resuelto en el handler. Sin
     /// body — solo usa <paramref name="id"/>.
     /// </summary>
     [HttpPost("{id:guid}/electronic/register")]
