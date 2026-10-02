@@ -39,6 +39,7 @@
 | [ADR-033](./ADR-033-payment-term-ssot-and-document-schedules.md) | PaymentTerm como SSOT operativo + defaults por empresa/rol + cronograma final por documento (CreditTerm fuera de alcance) | Approved (diseño) — pre-implementación |
 | [ADR-034](./ADR-034-temporal-contract-single-source.md) | Contrato temporal único — fecha de negocio (DateOnly/date/"YYYY-MM-DD") vs. instante UTC (Company.Timezone); extensión controlada de ADR-023 por bug demostrado | Accepted |
 | [ADR-035](./ADR-035-supplier-payment-unapplied-advance.md) | Remanente no aplicado de SupplierPayment como anticipo — SupplierCredit SSOT (origen PurchaseReturn XOR SupplierPayment), PostingRule AppliedToPayable + SupplierCredit, política pago sin CxP | Accepted |
+| [ADR-036](./ADR-036-retention-electronic-document-cancellation.md) | Documento electrónico de una retención cuyo origen se anula — retención anulada nunca avanza su ED; `Discarded` sin intento externo; `Dispatching` previo al envío; Signed/timeout nunca reenvían sin consulta; Received/Authorized bloquean la anulación; anulación oficial SRI (`AnnulmentPending` → ANULADO) antes de reversos; permisos por origen | Accepted (política) — implementación pendiente |
 
 Seguimiento de migración de ADRs aceptados con implementación pendiente: [`docs/architecture/ARCHITECTURE-BACKLOG.md`](../architecture/ARCHITECTURE-BACKLOG.md) (iniciativas `GOV-xxx`).
 

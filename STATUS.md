@@ -2,6 +2,14 @@
 
 **Single source of truth** for delivery state. Updated: **2026-10-01** · Kernel refactor: **2026-06-05**.
 
+## ZH-RETENTION-ELECTRONIC-CANCELLATION-ADR-01 — Documento electrónico de una retención anulada: auditoría + ADR (2026-10-01)
+
+**Estado: AUDITORÍA + ADR-036 Accepted (política, decisiones D-1…D-12 del 2026-10-01) — implementación pendiente.** Sin cambios productivos, de esquema ni de frontend; el comportamiento vigente no cambia todavía y ElectronicDocuments v1.0 sigue CLOSED hasta implementar la extensión.
+- Reproducido en PostgreSQL (6 tests de caracterización, `PurchaseRetentionConfirmIntegrationTests.ElectronicCancellation.cs`, a invertir al implementar): con la retención `Cancelled`, `RetryAsync` reenvía el XML firmado (`Signed`, `DeadLetter` con pre=Signed) y el documento termina `Authorized`; la anulación de la compra no se bloquea con un reintento en vuelo ni con el ED `Authorized` (anulación local silenciosa con reversos); un `Sent` persistido queda varado; `Received` solo consulta; `Draft`/`Failed` no generan XML pero siguen siendo candidatos del job.
+- Política aprobada: una retención anulada nunca avanza su ED; `Discarded` solo sin intento externo; estado `Dispatching` antes de la llamada (no `Sent`); `Signed` existente y `TIMEOUT`/desconocido nunca reenvían sin consulta concluyente; `Received`/en proceso bloquean la anulación del origen; `Authorized` exige anulación oficial en línea (`AnnulmentPending`, comprobante vigente, sin reversos) y los reversos se completan solo con ANULADO confirmado (`MarkCancelled` con evidencia); XML/RIDE con permiso por origen (`purchases.view` / `expenses.documents.view`). Normativa NAC-DGERCGC25-00000014/-00000017 incorporada (el texto literal debe adjuntarse antes de implementar).
+- Hallazgo D-12: la transmisión al SRI de una retención `Issued` es manual (decisión de QA de 04B), Gastos no tiene camino de UI para transmitir y nada alerta de retenciones `Issued` sin ED; con la obligación de transmisión inmediata esto es una brecha. Decisión pendiente O-16 (recomendación técnica: disparo posterior al commit + job idempotente de respaldo).
+- **Pendientes:** O-1, O-4, O-9…O-17, P-2 (ADR-036 §22). Consultas de solo lectura del piloto Q1–Q6 en ADR-036 §16 (no ejecutadas: sin acceso).
+
 ## ZH-RETENTION-CANCELLATION-LIFECYCLE-01 — Retención: se anula solo con su documento origen, terminal (2026-10-01)
 
 **Estado: COMPLETADO (política C).** Sin migración. Sin cambios en cálculo tributario, Compras (inventario/costos), lógica de Gastos ni pipeline SRI/RIDE.

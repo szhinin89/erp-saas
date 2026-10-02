@@ -65,7 +65,7 @@ namespace ERP.Infrastructure.Tests.Modules.Purchases;
 /// dependencias ajenas a la retención: resolución de tarifas SRI, precios y preferencias operativas.
 /// </summary>
 [Trait("Category", "PostgreSql")]
-public sealed class PurchaseRetentionConfirmIntegrationTests : IAsyncLifetime
+public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
         .WithImage("postgres:16-alpine")
