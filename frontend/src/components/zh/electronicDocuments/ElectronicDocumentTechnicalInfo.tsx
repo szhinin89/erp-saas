@@ -1,7 +1,7 @@
 import { useI18n } from "../../../i18n/i18n";
 import { message } from "../../../lib/messages";
 import { formatDateTime } from "../../../lib/formatters/dateFormatters";
-import { copyToClipboard } from "../../../modules/electronicDocuments/monitor/utils/clipboard";
+import { copyToClipboard } from "../../../lib/clipboard";
 import type { ElectronicDocumentTechnicalInfoDto } from "./electronicDocumentDiagnosticTypes";
 import "./electronic-documents.css";
 

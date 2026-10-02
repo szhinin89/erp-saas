@@ -54,6 +54,27 @@ public static class DependencyInjection
         >();
         services.AddScoped<IRetentionElectronicTransmission, RetentionElectronicTransmission>();
         services.AddScoped<IRetentionSourceAccess, RetentionSourceAccess>();
+        // ZH-RETENTION-SRI-ANNULMENT-01/01B — anulación ante el SRI de retenciones autorizadas (solicitud
+        // asistida; verificación automática vía ISriDocumentStatusQuery / ConsultaComprobante, registrado en
+        // Infrastructure). La finalización reutiliza el flujo oficial de anulación de
+        // cada origen vía IRetentionOriginCancellation (los handlers se resuelven por tipo concreto).
+        services.AddScoped<IRetentionAnnulmentRequester, RetentionAnnulmentRequester>();
+        services.AddScoped<IRetentionAnnulmentService, RetentionAnnulmentService>();
+        services.AddScoped<ERP.Application.Modules.Retentions.UseCases.RetentionAnnulmentAccess>();
+        services.AddScoped<
+            ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentSriAnnulment,
+            ERP.Application.Modules.ElectronicDocuments.Services.ElectronicDocumentSriAnnulment
+        >();
+        services.AddTransient<ERP.Application.Modules.Purchases.UseCases.CancelPurchaseHandler>();
+        services.AddTransient<ERP.Application.Modules.Expenses.UseCases.Documents.CancelExpenseDocumentHandler>();
+        services.AddScoped<
+            IRetentionOriginCancellation,
+            ERP.Application.Modules.Purchases.Services.PurchaseRetentionOriginCancellation
+        >();
+        services.AddScoped<
+            IRetentionOriginCancellation,
+            ERP.Application.Modules.Expenses.Services.ExpenseRetentionOriginCancellation
+        >();
         // RETENTIONS-ELECTRONIC-DOCUMENT-MODEL-03A — construye el modelo canónico
         // RetentionElectronicDocumentData desde un RetentionDocument ya Issued. Deliberadamente
         // NO forma parte del registro genérico de IElectronicDocumentDataProvider (motor de

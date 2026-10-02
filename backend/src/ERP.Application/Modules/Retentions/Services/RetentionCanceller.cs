@@ -76,7 +76,7 @@ public sealed class RetentionCanceller : IRetentionCanceller
     /// <c>ConfirmExpenseDocumentHandler</c>). <c>Manual</c> no tiene <see cref="AccountsPayableOriginType"/>
     /// equivalente — nunca se inventa uno.
     /// </summary>
-    private static bool TryResolveAccountsPayableOriginType(
+    internal static bool TryResolveAccountsPayableOriginType(
         RetentionSourceDocumentType sourceType,
         out AccountsPayableOriginType originType
     )

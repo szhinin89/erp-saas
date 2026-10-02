@@ -64,12 +64,25 @@ public sealed class ApiErrorContractTests
         [ApiResponseCodes.ElectronicDocuments.SourceNotProcessable] = 422,
         [ApiResponseCodes.ElectronicDocuments.SourceCancellationInProcess] = 422,
         [ApiResponseCodes.ElectronicDocuments.SourceCancellationRequiresSriAnnulment] = 422,
+        // ZH-RETENTION-SRI-ANNULMENT-01.
+        [ApiResponseCodes.ElectronicDocuments.AnnulmentPending] = 422,
+        [ApiResponseCodes.Retentions.AnnulmentPending] = 422,
     };
 
     private static readonly string[] SuccessCodes =
     [
         ApiResponseCodes.Common.Ok,
         ApiResponseCodes.Common.Created,
+        // ZH-RETENTION-SRI-ANNULMENT-01 — éxitos con mensaje propio (la operación se aceptó).
+        ApiResponseCodes.Retentions.AnnulmentRequested,
+        ApiResponseCodes.Retentions.AnnulmentFinalized,
+        ApiResponseCodes.Retentions.AnnulmentFinalizationPending,
+        // ZH-RETENTION-SRI-ANNULMENT-01B — la consulta a ConsultaComprobante se ejecutó (200); el código
+        // describe lo que informó el SRI (o que no pudo verificarse), nunca un error del cliente.
+        ApiResponseCodes.Retentions.SriStillAuthorized,
+        ApiResponseCodes.Retentions.SriAnnulmentPending,
+        ApiResponseCodes.Retentions.SriNotAuthorized,
+        ApiResponseCodes.Retentions.SriVerificationFailed,
     ];
 
     private static IEnumerable<string> DeclaredCodes(Type type) =>
@@ -141,6 +154,11 @@ public sealed class ApiErrorContractTests
             },
             { new ArgumentException("x"), ApiResponseCodes.Common.BadRequest },
             { DomainRuleException(), ApiResponseCodes.Common.DomainRuleViolation },
+            // ZH-RETENTION-SRI-ANNULMENT-01 — regla de dominio con código público propio (IApiCodedDomainRule).
+            {
+                new ERP.Domain.Modules.Payables.Exceptions.RetentionAnnulmentPendingException(),
+                ApiResponseCodes.Retentions.AnnulmentPending
+            },
             { new SriCommunicationException("x"), ApiResponseCodes.Common.SriCommunicationError },
             { CompanyScopeException.AccessDenied(), ApiResponseCodes.Common.CompanyScopeForbidden },
             { BranchScopeException.AccessDenied(), ApiResponseCodes.Common.BranchScopeForbidden },
@@ -276,5 +294,18 @@ public sealed class ApiErrorContractTests
                 },
             },
         };
+    }
+
+    [Fact]
+    public void Regla_de_dominio_con_codigo_propio_viaja_con_ese_codigo_por_Result()
+    {
+        var result = Result<string>.FromDomainRule(
+            new ERP.Domain.Modules.Payables.Exceptions.RetentionAnnulmentPendingException()
+        );
+
+        result.Code.Should().Be(ApiResponseCodes.Retentions.AnnulmentPending);
+        ((ObjectResult)Controller().ToOkOrBadRequest(result)).StatusCode.Should().Be(422);
+        Result<string>.FromDomainRule(new ERP.Domain.Exceptions.DomainRuleViolationException("x")).Code
+            .Should().Be(ApiResponseCodes.Common.DomainRuleViolation, "las demás reglas no cambian");
     }
 }

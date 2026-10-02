@@ -1,4 +1,6 @@
 using ERP.Application.Common.Config;
+using ERP.Application.Common.Interfaces.SRI;
+using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.ElectronicDocuments.ValueObjects;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -8,7 +10,8 @@ using System.Xml;
 namespace ERP.Infrastructure.Services.Sri;
 
 /// <summary>
-/// Cliente SOAP para los servicios SRI Ecuador de recepción y autorización.
+/// Cliente SOAP para los servicios SRI Ecuador de recepción, autorización y consulta de estado
+/// (ConsultaComprobante — ZH-RETENTION-SRI-ANNULMENT-01B).
 /// Usa HttpClient puro (sin WCF) — sin dependencias adicionales.
 /// Reutilizable desde cualquier contexto: API, Hangfire, CLI.
 /// </summary>
@@ -26,6 +29,7 @@ public sealed partial class SriSoapClient
     // Namespaces WSDL SRI
     private const string NsRecepcion = "http://ec.gob.sri.ws.recepcion";
     private const string NsAutorizacion = "http://ec.gob.sri.ws.autorizacion";
+    private const string NsConsultas = "http://ec.gob.sri.ws.consultas";
     private const string NsSoap = "http://schemas.xmlsoap.org/soap/envelope/";
 
     private readonly IHttpClientFactory _factory;
@@ -217,6 +221,76 @@ public sealed partial class SriSoapClient
     }
 
     /// <summary>
+    /// ZH-RETENTION-SRI-ANNULMENT-01B — consulta el estado fiscal de un comprobante en el WS
+    /// ConsultaComprobante (<c>consultarEstadoAutorizacionComprobante</c>, Ficha Técnica v2.34 §8).
+    /// UNA sola consulta (sin polling: el llamador decide cuándo volver a consultar). Nunca lanza por
+    /// fallos de transporte ni de formato: todo se traduce a <see cref="SriDocumentStatusResult.Outcome"/>.
+    /// </summary>
+    public async Task<SriDocumentStatusResult> QueryDocumentStatusAsync(
+        string accessKey,
+        string wsdlUrl,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var endpointUrl = ConsultaEndpoint(wsdlUrl);
+        if (endpointUrl is null)
+        {
+            // Nunca se adivina el endpoint: un WsdlUrl que no apunta a RecepcionComprobantesOffline
+            // no permite derivar el de consulta del mismo ambiente.
+            return new SriDocumentStatusResult
+            {
+                Outcome = SriStatusQueryOutcome.Unavailable,
+                ErrorMessage =
+                    "No se pudo derivar el servicio ConsultaComprobante desde la URL SRI configurada (se esperaba RecepcionComprobantesOffline).",
+            };
+        }
+
+        LogSriQueryingStatus(accessKey);
+
+        SoapPostResult posted;
+        try
+        {
+            posted = await PostSoapCoreAsync(endpointUrl, BuildConsultaEnvelope(accessKey), cancellationToken);
+        }
+        catch (SriSoapFaultException ex)
+        {
+            return new SriDocumentStatusResult
+            {
+                Outcome = SriStatusQueryOutcome.Unavailable,
+                ErrorMessage = ex.Fault.ToDisplayMessage(),
+            };
+        }
+
+        if (posted.Body is null)
+        {
+            var timedOut = posted.Failure == SoapTransportFailure.Timeout;
+            return new SriDocumentStatusResult
+            {
+                Outcome = timedOut ? SriStatusQueryOutcome.Timeout : SriStatusQueryOutcome.Unavailable,
+                ErrorMessage = timedOut
+                    ? "El servicio de consulta del SRI no respondió a tiempo."
+                    : "No se pudo contactar al servicio de consulta del SRI."
+                        + (posted.Detail is null ? "" : $" ({posted.Detail})"),
+            };
+        }
+
+        try
+        {
+            return ParseConsultaResponse(posted.Body, accessKey);
+        }
+        catch (XmlException ex)
+        {
+            LogSriMalformedResponse(endpointUrl, ex.Message);
+            return new SriDocumentStatusResult
+            {
+                Outcome = SriStatusQueryOutcome.Unknown,
+                ErrorMessage = "El SRI respondió con un contenido que no pudo interpretarse como XML válido.",
+                RawResponse = posted.Body,
+            };
+        }
+    }
+
+    /// <summary>
     /// Verifica solo que el endpoint del WSDL responda — no envía ni consulta ningún
     /// comprobante. Usado por el diagnóstico "Validar configuración", nunca por el flujo
     /// de emisión real (que sigue usando <see cref="SendAsync"/>/<see cref="CheckAuthorizationAsync"/>).
@@ -265,6 +339,18 @@ public sealed partial class SriSoapClient
             </soapenv:Envelope>
             """;
 
+    private static string BuildConsultaEnvelope(string accessKey) =>
+        $"""
+            <soapenv:Envelope xmlns:soapenv="{NsSoap}" xmlns:ec="{NsConsultas}">
+              <soapenv:Header/>
+              <soapenv:Body>
+                <ec:consultarEstadoAutorizacionComprobante>
+                  <claveAcceso>{System.Security.SecurityElement.Escape(accessKey.Trim())}</claveAcceso>
+                </ec:consultarEstadoAutorizacionComprobante>
+              </soapenv:Body>
+            </soapenv:Envelope>
+            """;
+
     // ── HTTP ──────────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -294,6 +380,28 @@ public sealed partial class SriSoapClient
         string url,
         string envelope,
         CancellationToken cancellationToken
+    ) => (await PostSoapCoreAsync(url, envelope, cancellationToken)).Body;
+
+    /// <summary>Fallo de transporte de <see cref="PostSoapCoreAsync"/> — distingue timeout de red caída.</summary>
+    private enum SoapTransportFailure
+    {
+        None = 0,
+        Timeout = 1,
+        Network = 2,
+        HttpStatus = 3,
+    }
+
+    private readonly record struct SoapPostResult(string? Body, SoapTransportFailure Failure, string? Detail);
+
+    /// <summary>
+    /// Mismo POST/reintentos/SOAP Fault que <see cref="PostSoapAsync"/> (que delega aquí), pero
+    /// conservando POR QUÉ no hubo cuerpo: ConsultaComprobante (01B) necesita distinguir Timeout de
+    /// Unavailable. Recepción/autorización siguen viendo solo el cuerpo o <c>null</c> (sin cambios).
+    /// </summary>
+    private async Task<SoapPostResult> PostSoapCoreAsync(
+        string url,
+        string envelope,
+        CancellationToken cancellationToken
     )
     {
         for (var attempt = 1; attempt <= HttpRetryAttempts; attempt++)
@@ -308,7 +416,7 @@ public sealed partial class SriSoapClient
                 var body = await response.Content.ReadAsStringAsync(cancellationToken);
 
                 if (response.IsSuccessStatusCode)
-                    return body;
+                    return new SoapPostResult(body, SoapTransportFailure.None, null);
 
                 if (TryParseSoapFault(body, out var fault))
                 {
@@ -316,18 +424,16 @@ public sealed partial class SriSoapClient
                     throw new SriSoapFaultException(fault);
                 }
 
-                LogSriHttpRequestFailed(
-                    url,
-                    $"HTTP {(int)response.StatusCode} {response.ReasonPhrase}"
-                );
-                return null;
+                var status = $"HTTP {(int)response.StatusCode} {response.ReasonPhrase}";
+                LogSriHttpRequestFailed(url, status);
+                return new SoapPostResult(null, SoapTransportFailure.HttpStatus, status);
             }
             catch (HttpRequestException ex)
             {
                 if (attempt == HttpRetryAttempts)
                 {
                     LogSriHttpRequestFailed(url, ex.Message);
-                    return null;
+                    return new SoapPostResult(null, SoapTransportFailure.Network, ex.Message);
                 }
                 LogSriRetryingAfterTransientFailure(attempt, HttpRetryAttempts, url, ex.Message);
             }
@@ -339,7 +445,7 @@ public sealed partial class SriSoapClient
                 if (attempt == HttpRetryAttempts)
                 {
                     LogSriRequestTimedOut(url, ex.Message);
-                    return null;
+                    return new SoapPostResult(null, SoapTransportFailure.Timeout, ex.Message);
                 }
                 LogSriRetryingAfterTransientFailure(attempt, HttpRetryAttempts, url, ex.Message);
             }
@@ -347,7 +453,7 @@ public sealed partial class SriSoapClient
             await Task.Delay(TimeSpan.FromMilliseconds(500 * attempt), cancellationToken);
         }
 
-        return null;
+        return new SoapPostResult(null, SoapTransportFailure.Network, null);
     }
 
     [LoggerMessage(
@@ -514,6 +620,108 @@ public sealed partial class SriSoapClient
         };
     }
 
+    /// <summary>
+    /// Ficha Técnica v2.34 §8: éxito → <c>EstadoAutorizacionComprobante</c> con <c>estadoAutorizacion</c>;
+    /// error → <c>estadoConsulta=RECHAZADA</c> + mensaje (identificador 99). La prosa de la ficha llama
+    /// "estadoAutorizacion = RECHAZADA" al caso de error, pero sus ejemplos XML usan <c>estadoConsulta</c>:
+    /// RECHAZADA en cualquiera de los dos se trata como consulta rechazada, NUNCA como estado fiscal.
+    /// Una respuesta para otra clave de acceso se descarta (Unknown).
+    /// </summary>
+    private static SriDocumentStatusResult ParseConsultaResponse(string soap, string requestedAccessKey)
+    {
+        var doc = LoadXml(soap);
+        var messages = SelectMensajeNodes(doc).Select(ToSriMessage).ToList();
+        var rawQueryStatus = NodeText(doc, "estadoConsulta");
+        var rawAuthorizationStatus = NodeText(doc, "estadoAutorizacion");
+        var accessKey = NodeText(doc, "claveAcceso");
+
+        if (IsRechazada(rawQueryStatus) || IsRechazada(rawAuthorizationStatus))
+        {
+            return new SriDocumentStatusResult
+            {
+                Outcome = SriStatusQueryOutcome.Rejected,
+                RawQueryStatus = rawQueryStatus ?? rawAuthorizationStatus,
+                AccessKey = accessKey,
+                Messages = messages,
+                ErrorMessage = DescribeMessages(messages) ?? "El SRI rechazó la consulta.",
+                RawResponse = soap,
+            };
+        }
+
+        if (
+            !string.IsNullOrWhiteSpace(accessKey)
+            && !string.Equals(accessKey, requestedAccessKey.Trim(), StringComparison.Ordinal)
+        )
+        {
+            return new SriDocumentStatusResult
+            {
+                Outcome = SriStatusQueryOutcome.Unknown,
+                RawAuthorizationStatus = rawAuthorizationStatus,
+                AccessKey = accessKey,
+                Messages = messages,
+                ErrorMessage = "La respuesta del SRI corresponde a otra clave de acceso.",
+                RawResponse = soap,
+            };
+        }
+
+        var fiscal = MapFiscalStatus(rawAuthorizationStatus);
+        _ = DateTime.TryParse(
+            NodeText(doc, "fechaAutorizacion"),
+            System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.AdjustToUniversal
+                | System.Globalization.DateTimeStyles.AssumeUniversal,
+            out var authorizationDate
+        );
+
+        return new SriDocumentStatusResult
+        {
+            Outcome = fiscal is null ? SriStatusQueryOutcome.Unknown : SriStatusQueryOutcome.Success,
+            FiscalStatus = fiscal ?? SriFiscalStatus.Unknown,
+            RawAuthorizationStatus = rawAuthorizationStatus,
+            RawQueryStatus = rawQueryStatus,
+            AccessKey = accessKey,
+            DocumentType = NodeText(doc, "tipoComprobante"),
+            IssuerRuc = NodeText(doc, "rucEmisor"),
+            AuthorizationDateUtc = authorizationDate == default ? null : authorizationDate,
+            Messages = messages,
+            ErrorMessage = fiscal is null
+                ? $"Estado no reconocido en la respuesta del SRI: '{rawAuthorizationStatus ?? "(sin estadoAutorizacion)"}'."
+                : null,
+            RawResponse = soap,
+        };
+    }
+
+    private static bool IsRechazada(string? literal) =>
+        string.Equals(NormalizeLiteral(literal), "RECHAZADA", StringComparison.Ordinal);
+
+    /// <summary>Únicos literales oficiales (§8.4). Cualquier otro → null (Unknown), nunca un estado inferido.</summary>
+    private static SriFiscalStatus? MapFiscalStatus(string? literal) =>
+        NormalizeLiteral(literal) switch
+        {
+            "AUTORIZADO" => SriFiscalStatus.Authorized,
+            "NO AUTORIZADO" => SriFiscalStatus.NotAuthorized,
+            "PENDIENTE DE ANULAR" => SriFiscalStatus.PendingAnnulment,
+            "ANULADO" => SriFiscalStatus.Annulled,
+            _ => null,
+        };
+
+    private static string? NormalizeLiteral(string? literal) =>
+        string.IsNullOrWhiteSpace(literal)
+            ? null
+            : string.Join(' ', literal.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
+                .ToUpperInvariant();
+
+    private static string? DescribeMessages(IReadOnlyList<SriMessage> messages) =>
+        messages.Count == 0
+            ? null
+            : string.Join(
+                "; ",
+                messages.Select(m =>
+                    $"[{m.Code}] {m.Message}"
+                    + (string.IsNullOrWhiteSpace(m.AdditionalInfo) ? "" : $": {m.AdditionalInfo}")
+                )
+            );
+
     // ── URL helpers ───────────────────────────────────────────────────────────
 
     /// <summary>
@@ -534,6 +742,25 @@ public sealed partial class SriSoapClient
                 "AutorizacionComprobantesOffline",
                 StringComparison.OrdinalIgnoreCase
             );
+
+    /// <summary>
+    /// Deriva ConsultaComprobante del mismo ambiente que el WsdlUrl configurado (Ficha v2.34 §8.1:
+    /// <c>…/comprobantes-electronicos-ws/ConsultaComprobante</c> en celcer/cel). <c>null</c> si el
+    /// WsdlUrl no contiene <c>RecepcionComprobantesOffline</c> — nunca se postea a otro servicio.
+    /// </summary>
+    private static string? ConsultaEndpoint(string wsdlUrl)
+    {
+        if (string.IsNullOrWhiteSpace(wsdlUrl))
+            return null;
+        var recepcion = RecepcionEndpoint(wsdlUrl);
+        return recepcion.Contains("RecepcionComprobantesOffline", StringComparison.OrdinalIgnoreCase)
+            ? recepcion.Replace(
+                "RecepcionComprobantesOffline",
+                "ConsultaComprobante",
+                StringComparison.OrdinalIgnoreCase
+            )
+            : null;
+    }
 
     // ── XML utils ─────────────────────────────────────────────────────────────
 
@@ -558,6 +785,9 @@ public sealed partial class SriSoapClient
         Message = "[SRI] Consultando autorización intento {N}/{Max}: {Key}"
     )]
     private partial void LogSriCheckingAuthorization(int n, int max, string key);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "[SRI] Consultando estado (ConsultaComprobante): {Key}")]
+    private partial void LogSriQueryingStatus(string key);
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "[SRI] Estado: {Estado} — esperando {Delay}s")]
     private partial void LogSriWaiting(string estado, double delay);

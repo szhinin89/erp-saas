@@ -80,7 +80,8 @@ public sealed record CreateExpenseDraftRequest(
     string? AccessKey = null
 );
 
-public sealed record CancelExpenseDocumentRequest(string Reason);
+/// <summary><c>RequestSriAnnulment</c>: ver <c>CancelPurchaseRequest</c> (ZH-RETENTION-SRI-ANNULMENT-01).</summary>
+public sealed record CancelExpenseDocumentRequest(string Reason, bool RequestSriAnnulment = false);
 
 public sealed record UpdateExpenseDraftRequest(
     Guid SupplierId,

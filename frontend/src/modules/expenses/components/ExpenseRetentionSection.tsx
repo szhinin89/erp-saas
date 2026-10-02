@@ -19,6 +19,7 @@ import {
   type RetentionEligibilityResult,
 } from "../api/expenseDocumentService";
 import {
+  RetentionAnnulmentPanel,
   RetentionElectronicStatusBadge,
   type RetentionDocumentDto,
 } from "../../retentions/facades/retentionDocumentFacade";
@@ -48,6 +49,8 @@ interface Props {
   value: RetentionIntentFormState;
   onChange: (patch: Partial<RetentionIntentFormState>) => void;
   onEligibilityChange: (eligibility: RetentionEligibilityResult | null) => void;
+  /** ZH-RETENTION-SRI-ANNULMENT-01 — la anulación ante el SRI cambió (recargar el gasto). */
+  onAnnulmentChanged?: () => void;
 }
 
 export function ExpenseRetentionSection({
@@ -58,8 +61,10 @@ export function ExpenseRetentionSection({
   value,
   onChange,
   onEligibilityChange,
+  onAnnulmentChanged,
 }: Props) {
   const { has } = usePermissionsUi();
+  const canOperateAnnulment = has("expenses.documents.cancel");
   const canReadEmissionPoints = has("settings.emission-points.view");
 
   const [eligibility, setEligibility] = useState<RetentionEligibilityResult | null>(null);
@@ -174,7 +179,13 @@ export function ExpenseRetentionSection({
         {!loadingRetentionDoc && !retentionDocError && !retentionDoc && (
           <ZHFormAlert type="neutral" message="Sin retención asociada." />
         )}
-        {retentionDoc && <RetentionDocumentSummary retention={retentionDoc} />}
+        {retentionDoc && (
+          <RetentionDocumentSummary
+            retention={retentionDoc}
+            canOperateAnnulment={canOperateAnnulment}
+            onAnnulmentChanged={() => onAnnulmentChanged?.()}
+          />
+        )}
       </section>
     );
   }
@@ -448,7 +459,15 @@ function EligibilityBadge({
   );
 }
 
-function RetentionDocumentSummary({ retention }: { retention: RetentionDocumentDto }) {
+function RetentionDocumentSummary({
+  retention,
+  canOperateAnnulment,
+  onAnnulmentChanged,
+}: {
+  retention: RetentionDocumentDto;
+  canOperateAnnulment: boolean;
+  onAnnulmentChanged: () => void;
+}) {
   return (
     <div className="exp-doc-retention-summary">
       <ZHGrid cols={4}>
@@ -505,6 +524,15 @@ function RetentionDocumentSummary({ retention }: { retention: RetentionDocumentD
             </div>
           ))}
         </div>
+      )}
+
+      {retention.annulment && (
+        <RetentionAnnulmentPanel
+          annulment={retention.annulment}
+          origin="expense"
+          canOperate={canOperateAnnulment}
+          onChanged={onAnnulmentChanged}
+        />
       )}
 
       {retention.cancelReason && (

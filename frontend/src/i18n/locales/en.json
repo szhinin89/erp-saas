@@ -4028,5 +4028,15 @@
   "retentions.electronicStatus.authorized": "Authorized",
   "retentions.electronicStatus.rejected": "Rejected",
   "retentions.electronicStatus.requiresReconciliation": "Requires reconciliation",
-  "retentions.electronicStatus.discarded": "Discarded"
+  "retentions.electronicStatus.discarded": "Discarded",
+  "electronicDocuments.monitor.state.AnnulmentPending": "Annulment pending",
+  "electronicDocuments.monitor.timelineAction.AnnulmentPending": "Annulment requested at SRI",
+  "electronicDocuments.monitor.timelineAction.AnnulmentReverted": "Annulment did not proceed",
+  "retentions.electronicStatus.annulmentPending": "Annulment pending",
+  "retentions.electronicStatus.annulled": "Annulled by SRI",
+  "purchases.messages.sriAnnulmentRequested": "The SRI annulment request was recorded. The purchase remains in force until SRI confirms ANNULLED.",
+  "purchases.cancel.retentionAuthorizedWarning": "This purchase's withholding was already authorized by SRI: the purchase is not cancelled here; the withholding must first be annulled at SRI.",
+  "purchases.sriAnnulment.title": "The withholding was already authorized by SRI",
+  "purchases.sriAnnulment.message": "The withholding was already authorized by SRI and must first be annulled at SRI. The request will be recorded with the given reason; the purchase stays in force (not cancelled, payable and accounting not reversed) until you record that SRI confirmed ANNULLED.",
+  "purchases.sriAnnulment.start": "Start annulment process"
 }

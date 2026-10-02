@@ -34,6 +34,9 @@ public sealed class AccountsPayableConfiguration : IEntityTypeConfiguration<Acco
         builder.Property(x => x.IssueDate).HasColumnName("issue_date").IsRequired();
         builder.Property(x => x.AccountingDate).HasColumnName("accounting_date").IsRequired();
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<int>().IsRequired();
+        // ZH-RETENTION-SRI-ANNULMENT-01 — retención de la CxP por una anulación en trámite ante el SRI.
+        builder.Property(x => x.AnnulmentHoldRequestId).HasColumnName("annulment_hold_request_id");
+        builder.Ignore(x => x.IsOnAnnulmentHold);
 
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");

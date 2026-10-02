@@ -176,7 +176,7 @@ public sealed class PurchasesController : ControllerBase
         CancellationToken ct
     ) =>
         this.ToOkOrBadRequest(
-            await _mediator.Send(new CancelPurchaseCommand(id, request.Reason), ct)
+            await _mediator.Send(new CancelPurchaseCommand(id, request.Reason, request.RequestSriAnnulment), ct)
         );
 
     /// <summary>Contexto completo de un ítem para el detalle de compra (1 request SSOT).</summary>
@@ -279,7 +279,12 @@ public record ApplyDiscountRequest(decimal DiscountPct);
 
 public record DistributeCostRequest(string CostType, decimal Amount, List<Guid> IncludedLineIds);
 
-public record CancelPurchaseRequest(string Reason);
+/// <summary>
+/// <see cref="RequestSriAnnulment"/> (ZH-RETENTION-SRI-ANNULMENT-01): si la retención de la compra ya
+/// está AUTORIZADA, <c>true</c> inicia la anulación ante el SRI (la compra sigue confirmada hasta que el
+/// SRI confirme ANULADO) en lugar de responder <c>ELECTRONIC_DOCUMENT_REQUIRES_SRI_ANNULMENT</c>.
+/// </summary>
+public record CancelPurchaseRequest(string Reason, bool RequestSriAnnulment = false);
 
 /// <summary>
 /// <see cref="Retention"/>: ZH-PURCHASE-RETENTION-CONFIRM-01 — intención opcional de emitir la

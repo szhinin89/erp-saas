@@ -4,7 +4,7 @@ using ERP.Domain.Modules.ElectronicDocuments.Enums;
 
 namespace ERP.Domain.Modules.ElectronicDocuments.Events;
 
-/// <summary>Se levanta cuando un comprobante ya autorizado por el SRI fue anulado (transición Authorized→Cancelled).</summary>
+/// <summary>ADR-036 (D-8) — el SRI confirmó ANULADO el comprobante (transición AnnulmentPending→Cancelled); <c>Reason</c> lleva la evidencia.</summary>
 public sealed class ElectronicDocumentCancelledEvent : BaseDomainEvent, IAuditEvent
 {
     public Guid ElectronicDocumentId { get; }

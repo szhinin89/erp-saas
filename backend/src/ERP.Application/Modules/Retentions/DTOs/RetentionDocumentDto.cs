@@ -40,7 +40,9 @@ public sealed record RetentionDocumentDto(
     decimal? SourceDocumentTotal = null,
     // ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A — estado compacto de su comprobante electrónico
     // (calculado en backend desde el ElectronicDocument real; null cuando no se consultó).
-    ElectronicDocumentSourceStatus? ElectronicStatus = null
+    ElectronicDocumentSourceStatus? ElectronicStatus = null,
+    // ZH-RETENTION-SRI-ANNULMENT-01 — última solicitud de anulación ante el SRI (si existe).
+    RetentionAnnulmentRequestDto? Annulment = null
 );
 
 public sealed record RetentionDocumentLineDto(

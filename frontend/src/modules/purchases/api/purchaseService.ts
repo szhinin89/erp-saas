@@ -356,8 +356,13 @@ export const purchaseService = {
       schedule: schedule ?? null,
       retention: retention ?? null,
     }),
-  cancel: (id: string, reason: string) =>
-    apiPost<PurchaseInvoiceDto>(`${BASE}/${id}/cancel`, { reason }),
+  /**
+   * Anula la compra. `requestSriAnnulment` (ZH-RETENTION-SRI-ANNULMENT-01): si su retención ya está
+   * AUTORIZADA por el SRI, inicia la anulación ante el SRI en lugar de anular — la compra sigue
+   * CONFIRMADA (el DTO devuelto lo refleja) hasta que el SRI confirme ANULADO.
+   */
+  cancel: (id: string, reason: string, requestSriAnnulment = false) =>
+    apiPost<PurchaseInvoiceDto>(`${BASE}/${id}/cancel`, { reason, requestSriAnnulment }),
 
   /** Vista previa de la retención de una compra en BORRADOR (elegibilidad + montos propuestos). */
   retentionPreview: (id: string) =>

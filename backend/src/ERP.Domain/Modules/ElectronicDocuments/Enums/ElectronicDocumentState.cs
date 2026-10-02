@@ -41,4 +41,13 @@ public enum ElectronicDocumentState
     /// permite procesarlo. Nunca se reintenta, reactiva, regenera, firma ni envía.
     /// </summary>
     Discarded = 12,
+
+    /// <summary>
+    /// ADR-036 (D-7, ZH-RETENTION-SRI-ANNULMENT-01) — existe una solicitud de anulación ante el SRI
+    /// que todavía no se confirmó como ANULADO. El comprobante SIGUE siendo fiscalmente válido: no se
+    /// reintenta, no se reenvía y su origen no se revierte. Solo sale a <see cref="Cancelled"/>
+    /// (ANULADO confirmado, con evidencia) o de vuelta a <see cref="Authorized"/> (rechazada / sin
+    /// efecto / desistida).
+    /// </summary>
+    AnnulmentPending = 13,
 }

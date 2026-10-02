@@ -457,7 +457,8 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
             new FixedCurrentCompany(_companyId),
             new FixedCurrentBranch(_branchId),
             new FixedCurrentUser(_createdBy),
-            NullLogger<CancelExpenseDocumentHandler>.Instance
+            NullLogger<CancelExpenseDocumentHandler>.Instance,
+            RetentionElectronicTestWiring.Requester(db, new FixedCurrentCompany(_companyId))
         );
 
     private GetRetentionEligibilityHandler BuildEligibilityHandler(ErpDbContext db) =>

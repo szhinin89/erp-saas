@@ -58,5 +58,40 @@ public static class ApiResponseCodes
         /// <summary>El comprobante ya está autorizado: anular el origen requiere la anulación electrónica ante el SRI.</summary>
         public const string SourceCancellationRequiresSriAnnulment =
             "ELECTRONIC_DOCUMENT_REQUIRES_SRI_ANNULMENT";
+
+        /// <summary>ZH-RETENTION-SRI-ANNULMENT-01 — el comprobante tiene una anulación en trámite ante el SRI.</summary>
+        public const string AnnulmentPending = "ELECTRONIC_DOCUMENT_ANNULMENT_PENDING";
+    }
+
+    /// <summary>ZH-RETENTION-SRI-ANNULMENT-01 — anulación ante el SRI de retenciones autorizadas.</summary>
+    public static class Retentions
+    {
+        /// <summary>Éxito: se registró la solicitud de anulación ante el SRI; el documento origen sigue confirmado.</summary>
+        public const string AnnulmentRequested = "RETENTION_ANNULMENT_REQUESTED";
+
+        /// <summary>Éxito: el SRI confirmó ANULADO y el documento origen quedó anulado.</summary>
+        public const string AnnulmentFinalized = "RETENTION_ANNULMENT_FINALIZED";
+
+        /// <summary>Éxito parcial: ANULADO registrado, pero la anulación del origen quedó pendiente de reintento.</summary>
+        public const string AnnulmentFinalizationPending = "RETENTION_ANNULMENT_FINALIZATION_PENDING";
+
+        // ZH-RETENTION-SRI-ANNULMENT-01B — resultado de la verificación en ConsultaComprobante (200: la
+        // consulta se ejecutó; el estado fiscal lo informa el SRI, nunca el usuario).
+
+        /// <summary>El SRI informa AUTORIZADO: el comprobante sigue vigente; nada cambia.</summary>
+        public const string SriStillAuthorized = "RETENTION_ANNULMENT_SRI_STILL_AUTHORIZED";
+
+        /// <summary>El SRI informa PENDIENTE DE ANULAR: se vuelve a consultar más tarde.</summary>
+        public const string SriAnnulmentPending = "RETENTION_ANNULMENT_SRI_PENDING";
+
+        /// <summary>El SRI informa NO AUTORIZADO: sin acción automática (ADR-036 §24, Decision Required).</summary>
+        public const string SriNotAuthorized = "RETENTION_ANNULMENT_SRI_NOT_AUTHORIZED";
+
+        /// <summary>La consulta no produjo un estado fiscal (rechazada/99, timeout, red, respuesta no reconocida).</summary>
+        public const string SriVerificationFailed = "RETENTION_ANNULMENT_SRI_VERIFICATION_FAILED";
+
+        /// <summary>La CxP del origen está retenida por una anulación en trámite (pagos/créditos/ajustes bloqueados).</summary>
+        public const string AnnulmentPending =
+            ERP.Domain.Modules.Payables.Exceptions.RetentionAnnulmentPendingException.ErrorCode;
     }
 }

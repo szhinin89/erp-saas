@@ -146,6 +146,53 @@ public static class MessageCatalog
             "Electronic document outcome at SRI is not final; source cancellation blocked.",
             ApiErrorCategory.Validation
         ),
+        [ApiResponseCodes.ElectronicDocuments.AnnulmentPending] = new(
+            ApiSeverity.Error,
+            "El comprobante electrónico tiene una anulación en trámite ante el SRI.",
+            "Electronic document annulment pending at SRI.",
+            ApiErrorCategory.Validation
+        ),
+        [ApiResponseCodes.Retentions.AnnulmentPending] = new(
+            ApiSeverity.Error,
+            "La retención tiene una anulación en trámite ante el SRI: la cuenta por pagar no admite pagos, créditos ni ajustes.",
+            "Accounts payable on hold by a pending SRI retention annulment.",
+            ApiErrorCategory.Validation
+        ),
+        [ApiResponseCodes.Retentions.AnnulmentRequested] = new(
+            ApiSeverity.Success,
+            "Se registró la solicitud de anulación ante el SRI. El documento sigue vigente hasta que el SRI confirme ANULADO.",
+            "SRI annulment requested; source document remains confirmed."
+        ),
+        [ApiResponseCodes.Retentions.AnnulmentFinalized] = new(
+            ApiSeverity.Success,
+            "El SRI confirmó la anulación y el documento quedó anulado.",
+            "SRI annulment confirmed; source document cancelled."
+        ),
+        [ApiResponseCodes.Retentions.AnnulmentFinalizationPending] = new(
+            ApiSeverity.Warning,
+            "Se registró la anulación del SRI, pero la anulación del documento quedó pendiente y se reintentará automáticamente.",
+            "SRI annulment recorded; source cancellation pending retry."
+        ),
+        [ApiResponseCodes.Retentions.SriStillAuthorized] = new(
+            ApiSeverity.Info,
+            "El SRI todavía mantiene vigente el comprobante.",
+            "SRI reports the document as AUTORIZADO; nothing changed."
+        ),
+        [ApiResponseCodes.Retentions.SriAnnulmentPending] = new(
+            ApiSeverity.Info,
+            "Pendiente de anulación en SRI.",
+            "SRI reports PENDIENTE DE ANULAR; will be checked again."
+        ),
+        [ApiResponseCodes.Retentions.SriNotAuthorized] = new(
+            ApiSeverity.Warning,
+            "El SRI informa NO AUTORIZADO para el comprobante. No se realizó ningún cambio; requiere revisión.",
+            "SRI reports NO AUTORIZADO; no automatic action (decision required)."
+        ),
+        [ApiResponseCodes.Retentions.SriVerificationFailed] = new(
+            ApiSeverity.Warning,
+            "No fue posible verificar el estado en SRI.",
+            "SRI status query failed; no fiscal state change."
+        ),
         [ApiResponseCodes.ElectronicDocuments.SourceCancellationRequiresSriAnnulment] = new(
             ApiSeverity.Error,
             "El comprobante electrónico ya está autorizado. Requiere el proceso de anulación electrónica ante el SRI.",

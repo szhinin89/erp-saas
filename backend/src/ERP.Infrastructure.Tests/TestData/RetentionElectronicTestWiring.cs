@@ -6,11 +6,16 @@ using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Application.Modules.ElectronicDocuments.SchemaValidation;
 using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Application.Modules.Retentions.Services;
+using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
+using ERP.Domain.Modules.ElectronicDocuments.ValueObjects;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories.ElectronicDocuments;
+using ERP.Infrastructure.MasterData.Repositories;
+using ERP.Infrastructure.Persistence.Repositories.Payables;
 using ERP.Infrastructure.Persistence.Repositories.Retentions;
 using ERP.Infrastructure.Persistence.Services;
+using ERP.Infrastructure.Services.Sri;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using System.Text;
@@ -170,6 +175,75 @@ public sealed class SriBoundaryDouble
             .PadRight(49, '7')[..49];
 }
 
+/// <summary>
+/// ZH-RETENTION-SRI-ANNULMENT-01B — ConsultaComprobante simulado a nivel de contrato tipado: responde el
+/// estado fiscal configurado (o un fallo de consulta) y cuenta las consultas. Para ejercitar el parser
+/// SOAP real usar <see cref="RetentionElectronicTestWiring.SoapStatusQuery"/>.
+/// </summary>
+public sealed class SriStatusQueryDouble : ISriDocumentStatusQuery
+{
+    private int _calls;
+
+    public SriStatusQueryOutcome Outcome { get; set; } = SriStatusQueryOutcome.Success;
+    public SriFiscalStatus FiscalStatus { get; set; } = SriFiscalStatus.Authorized;
+    public int Calls => Volatile.Read(ref _calls);
+
+    public static string Literal(SriFiscalStatus status) =>
+        status switch
+        {
+            SriFiscalStatus.Authorized => "AUTORIZADO",
+            SriFiscalStatus.NotAuthorized => "NO AUTORIZADO",
+            SriFiscalStatus.PendingAnnulment => "PENDIENTE DE ANULAR",
+            SriFiscalStatus.Annulled => "ANULADO",
+            _ => "",
+        };
+
+    public Task<SriDocumentStatusResult> QueryAsync(string accessKey, string wsdlUrl, CancellationToken ct = default)
+    {
+        Interlocked.Increment(ref _calls);
+        var success = Outcome == SriStatusQueryOutcome.Success;
+        return Task.FromResult(
+            new SriDocumentStatusResult
+            {
+                Outcome = Outcome,
+                FiscalStatus = success ? FiscalStatus : SriFiscalStatus.Unknown,
+                RawAuthorizationStatus = success ? Literal(FiscalStatus) : null,
+                RawQueryStatus = Outcome == SriStatusQueryOutcome.Rejected ? "RECHAZADA" : null,
+                AccessKey = accessKey,
+                Messages = Outcome == SriStatusQueryOutcome.Rejected
+                    ? [new SriMessage("99", "ERROR", "ERROR AL CONSULTAR DATOS DEL SERVICIO WEB", "No existen datos para los parámetros ingresados")]
+                    : [],
+                ErrorMessage = success ? null : $"Consulta fallida (test): {Outcome}",
+                RawResponse = success
+                    ? $"<EstadoAutorizacionComprobante><claveAcceso>{accessKey}</claveAcceso><estadoAutorizacion>{Literal(FiscalStatus)}</estadoAutorizacion></EstadoAutorizacionComprobante>"
+                    : null,
+            }
+        );
+    }
+}
+
+/// <summary>HTTP simulado para el <see cref="SriSoapClient"/> REAL (respuesta SOAP literal o excepción de transporte).</summary>
+public sealed class SriHttpDouble(Func<HttpResponseMessage> respond) : HttpMessageHandler, IHttpClientFactory
+{
+    public int Calls { get; private set; }
+
+    public static SriHttpDouble Soap(string body) =>
+        new(() => new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+        {
+            Content = new StringContent(body, Encoding.UTF8, "text/xml"),
+        });
+
+    public static SriHttpDouble Throwing(Func<Exception> failure) => new(() => throw failure());
+
+    public HttpClient CreateClient(string name) => new(this, disposeHandler: false);
+
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        Calls++;
+        return Task.FromResult(respond());
+    }
+}
+
 /// <summary>Cableado real (gate, anulación, emisor, transmisión) sobre un <see cref="ErpDbContext"/> de test.</summary>
 public static class RetentionElectronicTestWiring
 {
@@ -209,6 +283,62 @@ public static class RetentionElectronicTestWiring
             Issuer(db, company, sri),
             NullLogger<RetentionElectronicTransmission>.Instance
         );
+
+    /// <summary>ZH-RETENTION-SRI-ANNULMENT-01 — registro real de la solicitud (lo usa la anulación del origen).</summary>
+    public static IRetentionAnnulmentRequester Requester(ErpDbContext db, ICurrentCompany company) =>
+        new RetentionAnnulmentRequester(
+            new RetentionAnnulmentRequestRepository(db),
+            SriAnnulment(db, company),
+            new AccountsPayableRepository(db),
+            new BusinessPartnerRepository(db),
+            NullLogger<RetentionAnnulmentRequester>.Instance
+        );
+
+    public static IElectronicDocumentSriAnnulment SriAnnulment(ErpDbContext db, ICurrentCompany company) =>
+        new ElectronicDocumentSriAnnulment(
+            new ElectronicDocumentRepository(db, new CompanyClock(db)),
+            Guards(db, company),
+            new UnitOfWork(db)
+        );
+
+    public const string TestWsdlUrl =
+        "https://celcer.sri.gob.ec/comprobantes-electronicos-ws/RecepcionComprobantesOffline?wsdl";
+
+    /// <summary>
+    /// ZH-RETENTION-SRI-ANNULMENT-01/01B — ciclo real (presentación, verificación en ConsultaComprobante,
+    /// finalización por el flujo del origen). Solo la consulta SRI es un doble (<paramref name="sriStatus"/>).
+    /// </summary>
+    public static IRetentionAnnulmentService AnnulmentService(
+        ErpDbContext db,
+        ICurrentCompany company,
+        ISriDocumentStatusQuery sriStatus,
+        params IRetentionOriginCancellation[] origins
+    ) =>
+        new RetentionAnnulmentService(
+            new RetentionAnnulmentRequestRepository(db),
+            new RetentionDocumentRepository(db, company),
+            SriAnnulment(db, company),
+            new AccountsPayableRepository(db),
+            new UnitOfWork(db),
+            origins,
+            sriStatus,
+            SriSettings(company.CompanyId),
+            new CompanyClock(db),
+            NullLogger<RetentionAnnulmentService>.Instance
+        );
+
+    /// <summary>ConsultaComprobante por el <see cref="SriSoapClient"/> REAL (envelope, transporte, parser) sobre HTTP simulado.</summary>
+    public static ISriDocumentStatusQuery SoapStatusQuery(SriHttpDouble http) =>
+        new SriDocumentStatusQuery(new SriSoapClient(http, NullLogger<SriSoapClient>.Instance));
+
+    private static ISriSettingsRepository SriSettings(Guid companyId)
+    {
+        var settings = ERP.Domain.Configuration.Entities.SriSettings.Create(
+            Guid.NewGuid(), companyId, 1, 1, TestWsdlUrl, Guid.NewGuid());
+        var mock = new Mock<ISriSettingsRepository>();
+        mock.Setup(r => r.GetByCompanyIdAsync(companyId, It.IsAny<CancellationToken>())).ReturnsAsync(settings);
+        return mock.Object;
+    }
 
     /// <summary>Transmisión inerte, para tests que no tratan sobre el ciclo electrónico.</summary>
     public static IRetentionElectronicTransmission NoOpTransmission()

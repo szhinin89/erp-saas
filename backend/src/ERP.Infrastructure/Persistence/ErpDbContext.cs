@@ -387,6 +387,10 @@ public class ErpDbContext : DbContext
         Set<ERP.Domain.Modules.Retentions.Entities.RetentionDocument>();
     public DbSet<ERP.Domain.Modules.Retentions.Entities.RetentionDocumentLine> RetentionDocumentLines =>
         Set<ERP.Domain.Modules.Retentions.Entities.RetentionDocumentLine>();
+    public DbSet<ERP.Domain.Modules.Retentions.Entities.RetentionAnnulmentRequest> RetentionAnnulmentRequests =>
+        Set<ERP.Domain.Modules.Retentions.Entities.RetentionAnnulmentRequest>();
+    public DbSet<ERP.Domain.Modules.Retentions.Entities.RetentionAnnulmentRequestAudit> RetentionAnnulmentRequestAudits =>
+        Set<ERP.Domain.Modules.Retentions.Entities.RetentionAnnulmentRequestAudit>();
 
     // ── Payables BC (PAYABLES-GENERIC-FOUNDATION-09) ────────────────────────
     public DbSet<AccountsPayable> AccountsPayables => Set<AccountsPayable>();

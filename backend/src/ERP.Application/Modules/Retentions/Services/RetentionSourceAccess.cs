@@ -27,6 +27,15 @@ public interface IRetentionSourceAccess
 
     /// <summary>Acción de recuperación: Compra → <c>purchases.update</c>; Gasto → <c>expenses.documents.confirm</c>.</summary>
     Task<bool> CanOperateAsync(RetentionSourceDocumentType sourceType, CancellationToken ct = default);
+
+    /// <summary>
+    /// ZH-RETENTION-SRI-ANNULMENT-01/01B — iniciar, registrar la presentación, verificar en el SRI,
+    /// completar la finalización o desistir de una anulación SRI: el permiso EXISTENTE de anular el origen
+    /// (Compra → <c>purchases.update</c>, el que protege <c>POST /purchases/{id}/cancel</c>; Gasto →
+    /// <c>expenses.documents.cancel</c>). 01B retiró la resolución manual (y con ella el permiso reforzado
+    /// <c>electronic-documents.retry</c>): el estado fiscal lo informa el SRI, nunca el usuario.
+    /// </summary>
+    Task<bool> CanCancelOriginAsync(RetentionSourceDocumentType sourceType, CancellationToken ct = default);
 }
 
 public sealed class RetentionSourceAccess : IRetentionSourceAccess
@@ -86,6 +95,20 @@ public sealed class RetentionSourceAccess : IRetentionSourceAccess
             {
                 RetentionSourceDocumentType.PurchaseInvoice => PurchasePermissions.Update,
                 RetentionSourceDocumentType.ExpenseDocument => ExpensePermissions.DocumentsConfirm,
+                _ => null,
+            },
+            ct
+        );
+
+    public Task<bool> CanCancelOriginAsync(
+        RetentionSourceDocumentType sourceType,
+        CancellationToken ct = default
+    ) =>
+        IsAuthorizedAsync(
+            sourceType switch
+            {
+                RetentionSourceDocumentType.PurchaseInvoice => PurchasePermissions.Update,
+                RetentionSourceDocumentType.ExpenseDocument => ExpensePermissions.DocumentsCancel,
                 _ => null,
             },
             ct

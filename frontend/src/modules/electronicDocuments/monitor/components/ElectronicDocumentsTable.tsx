@@ -12,7 +12,7 @@ import {
   electronicDocumentStateBadgeVariant,
   electronicDocumentStateIcon,
 } from "../utils/stateBadge";
-import { copyToClipboard } from "../utils/clipboard";
+import { copyToClipboard } from "../../../../lib/clipboard";
 import "./electronic-documents-monitor.css";
 import "../../../../components/zh/electronicDocuments/electronic-documents.css";
 

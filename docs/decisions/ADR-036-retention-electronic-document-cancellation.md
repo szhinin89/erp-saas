@@ -1,9 +1,9 @@
 # ADR-036 — Documento electrónico de una retención cuyo origen se anula
 
-**Status:** Accepted (política) — decisiones D-1…D-11 aprobadas el 2026-10-01 · **fases 1–2 y transmisión inmediata implementadas en ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A (§23)** · anulación oficial SRI pendiente (ZH-RETENTION-SRI-ANNULMENT-01) · quedan decisiones abiertas (§22) · **Fecha:** 2026-10-01 · **Ticket:** ZH-RETENTION-ELECTRONIC-CANCELLATION-ADR-01
+**Status:** Accepted (política) — decisiones D-1…D-11 aprobadas el 2026-10-01 · **fases 1–2 y transmisión inmediata implementadas en ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A (§23)** · **anulación oficial SRI (flujo asistido) implementada en ZH-RETENTION-SRI-ANNULMENT-01 (§24)** · quedan decisiones abiertas (§22) · **Fecha:** 2026-10-01 · **Ticket:** ZH-RETENTION-ELECTRONIC-CANCELLATION-ADR-01
 **Relacionado:** ADR-023 (ElectronicDocuments v1.0 CLOSED; este ADR **la extiende de forma controlada**), ADR-024 (diagnóstico SRI), ADR-025 (RIDE), ADR-034 (contrato temporal), `RETENTIONS-MODULE-DESIGN-01`, `RETENTIONS-SRI-AUTHORIZATION-WIRING-DESIGN-04B`, `docs/architecture/backend.md` § Retenciones (ZH-RETENTION-CANCELLATION-LIFECYCLE-01).
 
-> §1–§22 fijan la política aprobada, los invariantes, el modelo de estados objetivo y la evidencia previa. §15 describe el comportamiento ANTERIOR a la implementación (sus pruebas ya fueron invertidas). Lo implementado y sus decisiones concretas están en §23.
+> §1–§22 fijan la política aprobada, los invariantes, el modelo de estados objetivo y la evidencia previa. §15 describe el comportamiento ANTERIOR a la implementación (sus pruebas ya fueron invertidas). Lo implementado y sus decisiones concretas están en §23 (01A) y §24 (anulación SRI).
 
 ## 1. Contexto
 
@@ -514,3 +514,229 @@ GROUP BY r.source_document_type;
 Nota para E: en una retención `Issued`, `updated_at` es el momento de la emisión (`Issue()` llama a `SetUpdated`), porque solo `Cancel()` la vuelve a modificar.
 
 Tratamiento: A y B son datos heredados y entran en la conciliación manual (O-9, O-1). C se procesa automáticamente al desplegar. D requiere conciliación por consulta (O-10, P-2).
+
+## 24. Implementación — ZH-RETENTION-SRI-ANNULMENT-01 (2026-10-01)
+
+Implementa D-6…D-8 (anulación oficial de una retención AUTORIZADA) y la parte de O-13 (bloqueo de la CxP). Ventas y Notas de Crédito no cambian, y tampoco el bug del job genérico de reintento (→ ZH-ELECTRONIC-RETRY-TENANT-CONTEXT-01).
+
+### 24.1 Precheck — canal SRI realmente disponible (corregido por ZH-RETENTION-SRI-ANNULMENT-01B)
+
+> **Corrección (01B, 2026-10-02).** El precheck original de 01 afirmaba que no existía un servicio
+> oficial para **consultar** el estado de una anulación. Era **incorrecto**: la búsqueda se limitó al
+> código y a los `.md` del repo y no revisó la Ficha Técnica en PDF que ya estaba en
+> `docs/FICHA TECNICA COMPROBANTES ELECTRONICOS ESQUEMA OFFLINE Versio232.pdf`. Tanto esa versión como la
+> vigente (**Ficha Técnica Comprobantes Electrónicos Esquema Offline v2.34, julio 2026, §8**) documentan el
+> WS **ConsultaComprobante**. La tabla siguiente es la versión corregida; el detalle está en §25.
+
+| Clase | Hallazgo |
+|---|---|
+| **A. Servicio técnico oficial documentado** | **Recepción** (`validarComprobante`), **Autorización** (`autorizacionComprobante`) — ambos en `SriSoapClient` — y **ConsultaComprobante** (`consultarEstadoAutorizacionComprobante(claveAcceso)`, Ficha v2.34 §8), que informa el estado fiscal `AUTORIZADO` / `NO AUTORIZADO` / `PENDIENTE DE ANULAR` / `ANULADO`. **No existe** un WS para **solicitar** la anulación. |
+| **B. Portal web para el usuario** | SRI en Línea (anulación de comprobantes electrónicos; solo en línea según NAC-DGERCGC25-00000014/-00000017, §2) — es el único canal para **solicitar**. No se automatiza: sin navegación, sin scraping, sin login y sin guardar credenciales. |
+| **C. Capacidades inexistentes** | Solicitud programática de anulación, notificación push de la aceptación del receptor y calendario oficial de días hábiles/feriados. |
+
+Conclusión: **solicitud asistida (B) + verificación automática (A)**. No existe WS para SOLICITAR la anulación; ConsultaComprobante existe para CONSULTARLA, y el SRI es la fuente de verdad del estado fiscal (AUTORIZADO / PENDIENTE DE ANULAR / ANULADO). Ningún endpoint SOAP/REST se inventa.
+
+### 24.2 Modelo
+
+- **`RetentionAnnulmentRequest`** (tabla `retention_annulment_requests`). Campos:
+  - origen: retención, comprobante, `SourceModule`/`SourceDocumentId`;
+  - solicitud: motivo, quién/cuándo, más un snapshot de los datos del trámite (clave de acceso, número, fecha de emisión, receptor) y el **plazo ordinario**;
+  - presentación: fecha, referencia, quién/cuándo;
+  - resolución: fecha, evidencia, quién/cuándo, notas (desde 01B solo la escribe un ANULADO consultado en el SRI, §25);
+  - finalización: fecha, intentos y último error.
+
+  `xmin` controla la concurrencia. Un índice único parcial `uq_retention_annulment_requests_open` garantiza **una sola solicitud abierta por retención**. Estados: `PendingSubmission`, `PendingSriResolution`, `Accepted`, `Rejected`, `Expired` (SIN EFECTO), `Abandoned`. Desde 01B `Rejected` y `Expired` quedan reservados (sin transición, §25.6). No reutiliza `RetentionDocument.Status`.
+- **Auditoría** (ADR-022): la tabla `retention_annulment_request_audit` guarda cada paso (`Requested`, `SubmittedToSri`, `ResolvedAccepted`/`ResolvedRejected`/`ResolvedExpired`, `Abandoned`, `OriginFinalized`, `OriginFinalizationFailed`) con el estado anterior y el nuevo y la evidencia. El comprobante audita `AnnulmentPending`, `AnnulmentReverted` y `Cancelled` (con la evidencia). No se guardan credenciales del SRI.
+- **`ElectronicDocument`:**
+  - estado `AnnulmentPending = 13` y referencia débil `AnnulmentRequestId`;
+  - `MarkAnnulmentPending` (solo desde `Authorized`, idempotente para la misma solicitud);
+  - `RevertAnnulment` → `Authorized`;
+  - `ConfirmExternalAnnulment(requestId, ExternalAnnulmentEvidence)` → `Cancelled`. Exige la misma solicitud y una evidencia con fecha y referencia. Desde 01B la evidencia proviene de la consulta a ConsultaComprobante (§25), no de un usuario.
+  - **`MarkCancelled` se eliminó**: `Authorized → Cancelled` es imposible por construcción.
+- **CxP retenida** (`AccountsPayable.AnnulmentHoldRequestId`): la regla vive en el agregado (SSOT), así que ningún handler la repite. Con la retención activa, `RegisterPayment`, `RegisterPaymentToInstallment`, `ApplySupplierCredit`, `ApplyCreditNote` y `ApplyReturnCredit` lanzan `RetentionAnnulmentPendingException`, que es 422 `RETENTION_ANNULMENT_PENDING` vía `IApiCodedDomainRule`: una regla de dominio con código público propio, opt-in, mapeada igual por `Result.FromDomainRule` y por `ExceptionMiddleware`. Las reversas y `Cancel()` siguen permitidas (`Cancel` libera la retención). No se puede retener una CxP con pagos o créditos aplicados.
+- **Plazo** (`RetentionAnnulmentDeadline.Ordinary`): día 7 del mes siguiente a la **emisión** (fecha de negocio). No hay calendario oficial de días hábiles, así que **no** se corre al siguiente día hábil: la UI muestra la fecha ordinaria y advierte que debe validarse contra el SRI. Si ya pasó, la UI lo resalta, pero el ERP no bloquea (no puede confirmar el plazo efectivo). La excepción de ISD no aplica porque el dominio no emite retenciones de ISD.
+
+### 24.3 Flujo
+
+1. **Solicitar** (desde Compra/Gasto, no desde una pantalla paralela): `POST /purchases/{id}/cancel` o `POST /expenses/{id}/cancel` con `requestSriAnnulment: true`.
+   - Corren los mismos locks y guards de la anulación (Lock A, pagos, devoluciones, crédito de proveedor, política documental).
+   - Cuando `RetentionCanceller` responde `ELECTRONIC_DOCUMENT_REQUIRES_SRI_ANNULMENT`, `IRetentionAnnulmentRequester` (en la misma transacción, bajo el lock de la retención) pasa el comprobante a `AnnulmentPending`, retiene la CxP y crea la solicitud con el **motivo de la anulación del origen**.
+   - Respuesta: éxito `RETENTION_ANNULMENT_REQUESTED`, con el documento **todavía Confirmed**. No hay reversos.
+   - Sin el flag, la respuesta sigue siendo el 422 de 01A, que la UI convierte en "Iniciar proceso de anulación".
+2. **Presentar:** `POST /retentions/annulments/{id}/submission` (fecha y referencia). Solo deja constancia; **no** anula.
+3. ~~**Resolver:** `POST /retentions/annulments/{id}/resolution` (ANULADO / RECHAZADO / SIN EFECTO declarados por el usuario).~~ **Retirado en 01B:** el usuario nunca declara el estado fiscal. Lo reemplaza la verificación automática `POST /retentions/annulments/{id}/sri-verification` (§25.4).
+4. **Desistir:** `POST /retentions/annulments/{id}/abandon`, antes de presentar o — desde 01B — ya presentada cuando la última consulta al SRI informa AUTORIZADO (§25.4).
+5. **Finalizar** (`FinalizeRetentionOriginCancellation`, `IRetentionAnnulmentService.FinalizeAsync`): se ejecuta fuera de la transacción de la verificación que aceptó el ANULADO, mediante `IRetentionOriginCancellation`, un puerto por origen implementado por Compras y Gastos.
+   - Llama al **flujo oficial existente** (`CancelPurchaseHandler.ExecuteAsync` / `CancelExpenseDocumentHandler.ExecuteAsync`, el mismo cuerpo que el endpoint, con el motivo y el usuario de la solicitud y sin sucursal activa). Ese flujo revierte Kardex, CxP, retención y asientos **una vez**.
+   - Un origen ya anulado cuenta como `AlreadyCancelled`.
+   - Si falla, se limpia el change tracker, se registra el error y el intento, y la respuesta es `RETENTION_ANNULMENT_FINALIZATION_PENDING`. Lo retoman `RetentionElectronicRecoveryJob` (consulta cross-tenant vía `AsPlatformQuery`, contexto por candidato) o la acción manual `POST /retentions/annulments/{id}/finalization`.
+6. **Permisos** (server-side, por origen, en `RetentionAnnulmentAccess` / `IRetentionSourceAccess`):
+   - iniciar / presentar / verificar en el SRI / reintentar la finalización / desistir: el permiso existente de anular el origen (`purchases.update` / `expenses.documents.cancel`). El permiso reforzado `electronic-documents.retry` que 01 exigía para **resolver** se retiró con la resolución manual (01B): verificar no declara nada, solo pregunta al SRI;
+   - sin acceso al origen, de otra empresa o de otra sucursal: 404. No se creó ningún permiso transversal de Retenciones.
+
+### 24.4 Concurrencia (PostgreSQL real, `PurchaseRetentionConfirmIntegrationTests.SriAnnulment.cs`)
+
+| Caso | Resultado |
+|---|---|
+| A. Solicitud vs. pago | Un pago cargado antes de la solicitud falla por `xmin` al guardar. Si el pago llega primero, la solicitud se rechaza (guard de pagos). Con la solicitud abierta, el pago se rechaza por la regla del agregado. |
+| B. Solicitud vs. crédito de proveedor | Igual que A con `ApplySupplierCredit`. |
+| C. ANULADO (consultado en el SRI) vs. pago concurrente | El pago nunca se aplica (retención o CxP anulada). La finalización completa y revierte una vez. |
+| D. Verificaciones simultáneas con ANULADO (UI + job) | Una sola transición `ResolvedAccepted` y un solo `OriginFinalized` auditados; una sola anulación del origen (01B, test 8). |
+| E. Dos solicitudes simultáneas | Una sola solicitud (Lock A, más el índice único parcial). |
+| F. ANULADO repetido | Idempotente (`RETENTION_ANNULMENT_FINALIZED`; la evidencia original se conserva y el SRI no se vuelve a consultar). |
+| G. ~~RECHAZADO después de ANULADO~~ | Retirado en 01B (no hay resolución manual). Una solicitud `Accepted` no admite otra transición. |
+| H. Finalización reintentada / concurrente | El origen se anula exactamente una vez (reverso contable y Kardex ×1). |
+
+Orden de locks: origen (Lock A / `xmin`) → retención (`FOR UPDATE`) → comprobante / solicitud / CxP (`xmin`). Es el mismo orden de 01A.
+
+### 24.5 Históricos (§13 del ticket)
+
+Los casos `Retention = Cancelled` con comprobante `Authorized` (heredados de antes de 01A) **no se corrigen automáticamente** ni generan reversos nuevos: ya fueron revertidos localmente y quedan como **"Requiere conciliación histórica"**, fuera del flujo normal. Para detectarlos se usan Q1c (§16) y A (§23.5), de solo lectura. La conciliación es manual: se tramita la anulación en SRI en Línea con los datos de la consulta y se documenta fuera del ERP, o se decide con el área fiscal (O-1, O-9). No hay un mecanismo automático: estos casos no tienen solicitud y su comprobante sigue AUTORIZADO; la consulta a ConsultaComprobante (§25) puede usarse para conciliarlos, pero la decisión queda fuera de este flujo.
+
+```sql
+-- Requiere conciliación histórica: retención anulada en el ERP con comprobante AUTORIZADO
+-- (solo lectura). current_state 6 = Authorized; status 2 = Cancelled.
+SELECT r.tenant_id, r.company_id, r.source_document_type, r.source_document_id,
+       r.id AS retention_id, r.retention_number, r.issue_date, r.cancelled_at,
+       e.id AS electronic_document_id, e.access_key, e.authorization_date,
+       'Requiere conciliación histórica' AS situacion
+FROM retention_documents r
+JOIN electronic_documents e
+  ON e.tenant_id = r.tenant_id AND e.source_module = 'Retentions' AND e.source_entity_id = r.id
+WHERE r.status = 2 AND e.current_state = 6
+  AND NOT EXISTS (SELECT 1 FROM retention_annulment_requests q WHERE q.retention_document_id = r.id);
+
+-- Solicitudes abiertas y finalizaciones pendientes (operación diaria).
+SELECT q.tenant_id, q.company_id, q.retention_number, q.status, q.ordinary_deadline,
+       q.submitted_on, q.resolved_on, q.finalized_at_utc, q.finalization_attempts, q.last_finalization_error
+FROM retention_annulment_requests q
+WHERE q.status IN (1, 2) OR (q.status = 3 AND q.finalized_at_utc IS NULL)
+ORDER BY q.ordinary_deadline;
+```
+
+### 24.6 Migración
+
+`20261002040743_RetentionSriAnnulment` es incremental y solo aditiva:
+- `electronic_documents.annulment_request_id` (uuid, nullable);
+- `accounts_payables.annulment_hold_request_id` (uuid, nullable);
+- tablas `retention_annulment_requests` (con FK Restrict a `retention_documents`) y `retention_annulment_request_audit`, con sus índices.
+
+`AnnulmentPending = 13` no cambia el esquema (`int`). No toca `InitialEnterpriseBaseline` ni datos existentes.
+
+### 24.7 Pendientes externos
+
+- **O-11:** confirmar con el texto normativo la fecha de referencia del plazo y el corrimiento a día hábil. Hoy se usa la fecha de emisión y no se corre.
+- **O-12 / O-14:** cuándo se exige la aceptación del receptor y cómo la informa el SRI. Desde 01B: mientras la solicitud no prospere, ConsultaComprobante informa AUTORIZADO o PENDIENTE DE ANULAR; un rechazo se refleja como AUTORIZADO y se cierra desistiendo (§25.4).
+- **P-3:** ~~si el SRI publica un servicio técnico para consultar anulaciones~~ **resuelto en 01B** para la CONSULTA (ConsultaComprobante, ya publicado en la Ficha Técnica, §25). La SOLICITUD sigue sin WS: si el SRI lo publica, se abstraerá con el mismo patrón (puerto, fake en tests, timeout, sin transacción durante la llamada).
+- **O-9:** conciliación de los históricos.
+- **ZH-ELECTRONIC-RETRY-TENANT-CONTEXT-01:** job genérico de reintento.
+
+## 25. Alineación con la Ficha Técnica v2.34 — ZH-RETENTION-SRI-ANNULMENT-01B (2026-10-02)
+
+Evoluciona §24 sin descartarlo: la solicitud sigue **asistida** y la verificación pasa a ser **automática**. Ventas, Notas de Crédito y el bug de tenant del job genérico de reintento no cambian.
+
+### 25.1 Contrato oficial (Ficha Técnica Comprobantes Electrónicos Esquema Offline v2.34, julio 2026, §8; idéntico en v2.32)
+
+| Elemento | Valor |
+|---|---|
+| WSDL pruebas | `https://celcer.sri.gob.ec/comprobantes-electronicos-ws/ConsultaComprobante?wsdl` |
+| WSDL producción | `https://cel.sri.gob.ec/comprobantes-electronicos-ws/ConsultaComprobante?wsdl` |
+| Namespace | `http://ec.gob.sri.ws.consultas` |
+| Operación | `consultarEstadoAutorizacionComprobante(claveAcceso: String)` → `EstadoAutorizacionComprobante` (`RespuestaConsultaComprobante`) |
+| Respuesta exitosa | `claveAcceso`, `mensajes`, `estadoAutorizacion`, `tipoComprobante`, `rucEmisor`, `fechaAutorizacion` (con offset, p.ej. `2024-12-12T10:49:37-05:00`) |
+| Estados (§8.4) | `AUTORIZADO`, `NO AUTORIZADO`, `PENDIENTE DE ANULAR`, `ANULADO` |
+| Respuesta de error | `estadoConsulta = RECHAZADA` + `mensaje` con `identificador = 99` ("ERROR AL CONSULTAR DATOS DEL SERVICIO WEB"); casos documentados: fecha de emisión fuera del rango permitido, y "No existen datos para los parámetros ingresados" |
+
+La prosa de la ficha llama "estadoAutorizacion = RECHAZADA" al caso de error, pero sus ejemplos XML usan `estadoConsulta`. El cliente trata `RECHAZADA` en cualquiera de los dos elementos como **consulta rechazada**, nunca como estado fiscal. La ficha **no** documenta un WS para solicitar la anulación.
+
+### 25.2 Abstracción (sin duplicar SOAP)
+
+- **`ISriDocumentStatusQuery`** (Application, `Common/Interfaces/SRI`) → `SriDocumentStatusResult`. Es el SSOT tipado del estado fiscal.
+- Implementación: `SriDocumentStatusQuery` (Infrastructure). Es un adaptador sobre el **mismo** `SriSoapClient` de recepción y autorización: comparte HTTP, reintentos, SOAP Fault, parsing de `<mensajes>` y `SriSettings.WsdlUrl`. `QueryDocumentStatusAsync` agrega solo el envelope y el parser. El endpoint se deriva del `WsdlUrl` de Recepción de la empresa (mismo ambiente celcer/cel). Si el `WsdlUrl` no apunta a `RecepcionComprobantesOffline`, la consulta devuelve `Unavailable` y no se postea a ningún otro servicio.
+- `PostSoapAsync` se generalizó internamente (`PostSoapCoreAsync`) para distinguir timeout de red caída. Recepción y autorización no cambian.
+
+### 25.3 Estados tipados (Domain, `ElectronicDocuments/Enums`)
+
+| `SriStatusQueryOutcome` (técnico) | `SriFiscalStatus` (fiscal, solo con `Success`) |
+|---|---|
+| `Success`, `Rejected` (RECHAZADA / 99), `Timeout`, `Unavailable` (red, HTTP, SOAP Fault, sin configuración), `Unknown` (no XML, literal no oficial, otra clave de acceso) | `Authorized`, `NotAuthorized`, `PendingAnnulment`, `Annulled`; `Unknown` si la consulta no fue exitosa |
+
+Invariantes, aplicadas por cliente, servicio y dominio:
+- una consulta no exitosa **nunca** trae estado fiscal;
+- `RECHAZADA` **nunca** se mapea a `NotAuthorized`;
+- un timeout **nunca** es `Annulled`.
+
+### 25.4 Flujo
+
+1. **Solicitar:** igual que §24.3.1.
+2. **"Ya presenté la solicitud"** (`POST /retentions/annulments/{id}/submission`): registra la presentación y **consulta enseguida** ConsultaComprobante. Si la verificación no se puede aplicar, la presentación queda registrada igual y la respuesta informa `RETENTION_ANNULMENT_SRI_VERIFICATION_FAILED`.
+3. **Verificar** (`IRetentionAnnulmentService.VerifyWithSriAsync`, `POST /retentions/annulments/{id}/sri-verification`, sin body). Solo con la solicitud `PendingSriResolution`.
+   - La consulta SOAP corre **sin transacción ni lock**.
+   - Después se toma el lock de la retención, se relee la solicitud y, si sigue pendiente, se registra la consulta (`RecordSriCheck`: fecha, resultado, estado fiscal, literal crudo, contador).
+   - La consulta se audita (`SriChecked`) **solo cuando cambia lo informado**, para que el polling no inunde la auditoría.
+
+| SRI informa | Efecto | Código (200) |
+|---|---|---|
+| `AUTORIZADO` | Sigue vigente: sin finalización, sin reversos. El usuario puede **desistir** (§25.5) | `RETENTION_ANNULMENT_SRI_STILL_AUTHORIZED` — "El SRI todavía mantiene vigente el comprobante" |
+| `PENDIENTE DE ANULAR` | Comprobante `AnnulmentPending`, retención `Issued`, origen `Confirmed`, CxP retenida; se re-consulta | `RETENTION_ANNULMENT_SRI_PENDING` — "Pendiente de anulación en SRI" |
+| `ANULADO` | `AcceptSriAnnulment` (solo si la última consulta registrada es ese ANULADO). Evidencia: fecha de verificación (empresa), referencia `ConsultaComprobante ANULADO <UTC>` y respuesta SOAP cruda (`sri_annulment_evidence`). Comprobante `Cancelled`. Solicitud `Accepted`. Después, **fuera de la transacción**, la finalización idempotente existente (`FinalizeAsync`), una vez | `RETENTION_ANNULMENT_FINALIZED` (o `…_FINALIZATION_PENDING`) |
+| `NO AUTORIZADO` | **Sin acción automática** — Decision Required (§25.7) | `RETENTION_ANNULMENT_SRI_NOT_AUTHORIZED` |
+| Rechazada (99) / timeout / red / desconocido | Solo se registra el fallo técnico; sin cambio fiscal ni finalización | `RETENTION_ANNULMENT_SRI_VERIFICATION_FAILED` — "No fue posible verificar el estado en SRI" |
+
+4. **Manual ANULADO: eliminado.** Se retiraron `ResolveRetentionAnnulmentCommand`, `POST …/resolution`, `RetentionAnnulmentResult`, `RetentionAnnulmentRequest.Resolve` y el modal de resolución. No queda contingencia manual (preferencia del ticket: no tener fallback hasta justificarlo con un caso real). Si se justifica, deberá ser un flujo separado, con permiso fuerte y evidencia, y con su propio ADR. El dominio impide aceptar sin un ANULADO consultado.
+
+### 25.5 Desistimiento
+
+`RetentionAnnulmentRequest.CanBeAbandoned` es la regla única para el agregado y para la UI (`canAbandon` en el DTO). Permite desistir:
+- antes de presentar; o
+- ya presentada, **solo** si la última consulta exitosa informa **AUTORIZADO** (el SRI no anuló; p.ej. el receptor no aceptó).
+
+Con PENDIENTE DE ANULAR, NO AUTORIZADO o sin una consulta exitosa no se puede, porque el SRI todavía podría anularlo. Desistir revierte el comprobante a `Authorized` y libera la CxP.
+
+### 25.6 Polling y recuperación
+
+`RetentionElectronicRecoveryJob` (cada minuto; ya existente) agrega `VerifySubmittedAnnulmentsAsync`, después de las finalizaciones pendientes y de las transmisiones no iniciadas.
+- `GetDueForSriVerificationAsync`: consulta cross-tenant vía `AsPlatformQuery` que devuelve solo identificadores. Selecciona las solicitudes `PendingSriResolution` nunca verificadas o verificadas hace más de `SriVerificationInterval = 30 min`, en lotes de 10, las más antiguas primero.
+- Cada solicitud se procesa en su scope bajo `JobExecutionContext`, por el **mismo** `VerifyWithSriAsync` (usuario `Guid.Empty`).
+- Es idempotente: verificaciones concurrentes (job + UI) producen una sola aceptación y una sola finalización (test 8). Ninguna transacción queda abierta durante el SOAP.
+- `Rejected` y `Expired` quedan reservados: ninguna transición los alcanza desde 01B.
+
+### 25.7 Decision Required — `NO AUTORIZADO` sobre un comprobante ya autorizado
+
+La ficha define `NO AUTORIZADO` para comprobantes no autorizados, pero no caracteriza qué significa cuando ConsultaComprobante lo devuelve para un comprobante que el ERP tiene AUTORIZADO con una anulación en trámite. Puede ser una inconsistencia del SRI, otro ambiente o una clave distinta. No se asume ningún significado:
+- sin cambio fiscal ni reversos;
+- se registra el literal;
+- mensaje "requiere revisión";
+- no habilita desistir.
+
+**Decision Required (área fiscal / SRI):** qué acción corresponde.
+
+### 25.8 Migración
+
+`20261002113907_RetentionSriAnnulmentVerification` es aditiva y solo toca `retention_annulment_requests`:
+- columnas `last_sri_check_at_utc`, `last_sri_query_outcome`, `last_sri_fiscal_status`, `last_sri_raw_status` (50), `sri_check_count` (default 0), `sri_annulment_evidence` (8000);
+- índice parcial `ix_retention_annulment_requests_sri_verification` (`status = 2`).
+
+### 25.9 Tests
+
+- **Domain** (`RetentionSriAnnulmentDomainTests`):
+  - aceptación solo con un ANULADO consultado;
+  - consulta fallida sin estado fiscal;
+  - ANULADO idempotente;
+  - desistimiento según lo que informa el SRI;
+  - auditoría solo cuando cambia lo informado.
+- **Application** (`RetentionAnnulmentAccessTests`):
+  - presentar dispara la verificación;
+  - fallo de verificación tras presentar;
+  - permisos;
+  - test 9 (no existe un comando con estado fiscal).
+- **API:**
+  - verificación sin body;
+  - 403;
+  - test 9 (ningún endpoint lo recibe);
+  - códigos nuevos en la matriz de contrato.
+- **Infrastructure:**
+  - `SriSoapClientConsultaComprobanteTests` contra los ejemplos oficiales: los 4 estados, RECHAZADA/99 en ambos elementos, timeout, red, literal no oficial, otra clave, no XML, endpoint no derivable;
+  - PostgreSQL, Compra: tests 1–8 (5 a 7 por el `SriSoapClient` real sobre HTTP simulado), C, D, H, polling cross-tenant;
+  - Gasto: test 10.
+- **Frontend:** panel (mensajes exactos y test 9: no hay control para declarar ANULADO) y página de gasto.

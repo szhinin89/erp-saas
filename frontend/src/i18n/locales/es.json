@@ -4028,5 +4028,15 @@
   "retentions.electronicStatus.authorized": "Autorizado",
   "retentions.electronicStatus.rejected": "Rechazado",
   "retentions.electronicStatus.requiresReconciliation": "Requiere conciliación",
-  "retentions.electronicStatus.discarded": "Descartado"
+  "retentions.electronicStatus.discarded": "Descartado",
+  "electronicDocuments.monitor.state.AnnulmentPending": "Anulación en trámite",
+  "electronicDocuments.monitor.timelineAction.AnnulmentPending": "Anulación solicitada ante el SRI",
+  "electronicDocuments.monitor.timelineAction.AnnulmentReverted": "Anulación no prosperó",
+  "retentions.electronicStatus.annulmentPending": "Anulación en trámite",
+  "retentions.electronicStatus.annulled": "Anulado por el SRI",
+  "purchases.messages.sriAnnulmentRequested": "Se registró la solicitud de anulación ante el SRI. La compra sigue vigente hasta que el SRI confirme ANULADO.",
+  "purchases.cancel.retentionAuthorizedWarning": "La retención de esta compra ya fue autorizada por el SRI: la compra no se anula aquí, primero debe anularse la retención ante el SRI.",
+  "purchases.sriAnnulment.title": "La retención ya fue autorizada por el SRI",
+  "purchases.sriAnnulment.message": "La retención ya fue autorizada por el SRI y debe anularse primero ante el SRI. Se registrará la solicitud con el motivo indicado; la compra seguirá vigente (no se anula, no se revierte la cuenta por pagar ni la contabilidad) hasta que registre que el SRI confirmó ANULADO.",
+  "purchases.sriAnnulment.start": "Iniciar proceso de anulación"
 }

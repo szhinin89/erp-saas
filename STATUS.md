@@ -1,6 +1,34 @@
 # Project Status
 
-**Single source of truth** for delivery state. Updated: **2026-10-01** · Kernel refactor: **2026-06-05**.
+**Single source of truth** for delivery state. Updated: **2026-10-02** · Kernel refactor: **2026-06-05**.
+
+## ZH-RETENTION-SRI-ANNULMENT-01B — Anulación SRI alineada con la Ficha Técnica v2.34 (2026-10-02)
+
+**Estado: COMPLETADO (sin commit).** ADR-036 §25. Evoluciona 01 sin descartarlo. Ventas y Notas de Crédito no cambian; el bug de tenant del job genérico de reintento sigue pendiente (ticket propio).
+- **Corrección:** el precheck de 01 ("no existe servicio oficial para consultar la anulación") era **incorrecto**. No existe WS para SOLICITAR la anulación, pero **ConsultaComprobante** (Ficha v2.34 §8; también en la v2.32 del repo) existe para CONSULTARLA, y el SRI es la fuente de verdad de AUTORIZADO / PENDIENTE DE ANULAR / ANULADO.
+- **`ISriDocumentStatusQuery`** sobre el mismo `SriSoapClient`, sin un segundo cliente SOAP. Resultado técnico Success / Rejected / Timeout / Unavailable / Unknown, separado del estado fiscal Authorized / NotAuthorized / PendingAnnulment / Annulled / Unknown. `RECHAZADA` (99) nunca es NO AUTORIZADO; un timeout nunca es ANULADO.
+- **Flujo:**
+  - "Ya presenté la solicitud" → consulta automática; además, verificación a demanda y polling en `RetentionElectronicRecoveryJob` (cada 30 min por solicitud, sin transacción durante el SOAP, idempotente).
+  - Solo un **ANULADO** informado por el SRI acepta la solicitud (con evidencia técnica: fecha, respuesta cruda, clave) y finaliza el origen exactamente una vez.
+  - AUTORIZADO / PENDIENTE DE ANULAR / NO AUTORIZADO / fallos: sin cambio fiscal ni reversos.
+  - **Se eliminó la resolución manual** (comando, endpoint, modal); no queda fallback manual.
+  - Desistir ya presentada solo con el SRI confirmando AUTORIZADO.
+- **NO AUTORIZADO** sobre un comprobante ya autorizado: sin acción automática; **Decision Required** (ADR-036 §25.7).
+- **Migración aditiva** `RetentionSriAnnulmentVerification` (columnas de la última verificación y evidencia, índice de polling).
+
+## ZH-RETENTION-SRI-ANNULMENT-01 — Retención autorizada: anulación ante el SRI asistida y segura (2026-10-01)
+
+**Estado: COMPLETADO (sin commit) — evolucionado por 01B** (la resolución manual y el permiso reforzado se retiraron; ver arriba). ADR-036 §24. Ventas y Notas de Crédito no cambian.
+- **Precheck (corregido en 01B):** se concluyó, erróneamente, que no existía servicio oficial para consultar anulaciones. El portal SRI en Línea no se automatiza: la solicitud es **asistida**; no se inventan endpoints.
+- **Solicitud desde Compra/Gasto:** `cancel` con `requestSriAnnulment: true` crea una `RetentionAnnulmentRequest` (a lo sumo una abierta; índice único parcial). El comprobante pasa a `AnnulmentPending`, la CxP queda retenida y el origen sigue **Confirmed**, sin reversos. Se conserva el motivo para la finalización.
+- **Pasos auditados:** presentar (fecha, referencia), ~~resolver manualmente~~ (reemplazado por la verificación en el SRI, 01B), desistir.
+- **ANULADO:** comprobante → `Cancelled` (`ConfirmExternalAnnulment`; `MarkCancelled` eliminado, `Authorized→Cancelled` imposible). Luego `FinalizeRetentionOriginCancellation` anula el origen por su **flujo oficial** (`CancelPurchaseHandler`/`CancelExpenseDocumentHandler.ExecuteAsync`) exactamente una vez; un fallo queda registrado y `RetentionElectronicRecoveryJob` lo reintenta.
+- **Desistida:** comprobante → `Authorized`, CxP liberada; origen y retención intactos.
+- **CxP retenida (regla en el agregado):** pagos, créditos de proveedor, notas de crédito y devoluciones → 422 `RETENTION_ANNULMENT_PENDING` (nuevo `IApiCodedDomainRule`, opt-in).
+- **Permisos:** todos los pasos = anular el origen (`purchases.update` / `expenses.documents.cancel`; el `electronic-documents.retry` adicional de "resolver" se retiró con la resolución manual en 01B). Sin permiso global nuevo.
+- **UI** (Compra y Gasto): modal "La retención ya fue autorizada por el SRI → Iniciar proceso de anulación", y un panel con estado, datos copiables para SRI en Línea, plazo ordinario (día 7 del mes siguiente, con advertencia de validar contra el SRI) y acciones según permiso. Nunca muestra "anulada" antes del ANULADO finalizado. El Monitor conoce `AnnulmentPending`.
+- **Migración aditiva** `RetentionSriAnnulment`. Los históricos (retención anulada con comprobante autorizado) no se corrigen: consulta "Requiere conciliación histórica" en ADR-036 §24.5.
+- **Pendientes externos:** O-11 (plazo / días hábiles), O-12/O-14 (aceptación del receptor), P-3 (resuelto para la consulta en 01B; la solicitud sigue sin WS), O-9, ZH-ELECTRONIC-RETRY-TENANT-CONTEXT-01, Decision Required NO AUTORIZADO (§25.7).
 
 ## ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A — Retención: ciclo electrónico seguro + transmisión automática (2026-10-01)
 

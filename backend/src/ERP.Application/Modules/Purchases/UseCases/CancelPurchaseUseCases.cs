@@ -20,9 +20,37 @@ namespace ERP.Application.Modules.Purchases.UseCases;
 
 // ── Command ─────────────────────────────────────────────────────────────
 
-public sealed record CancelPurchaseCommand(Guid PurchaseInvoiceId, string Reason)
+/// <summary>
+/// Anula una compra confirmada. <paramref name="RequestSriAnnulment"/> (ZH-RETENTION-SRI-ANNULMENT-01):
+/// si su retención ya está AUTORIZADA por el SRI, la anulación local se bloquea
+/// (<c>ELECTRONIC_DOCUMENT_REQUIRES_SRI_ANNULMENT</c>); con <c>true</c> el usuario confirma que quiere
+/// iniciar el trámite de anulación ante el SRI: se registra la solicitud (con este motivo) y la
+/// compra sigue CONFIRMADA hasta que el SRI confirme ANULADO — recién entonces se anula por este
+/// mismo flujo, una sola vez.
+/// </summary>
+public sealed record CancelPurchaseCommand(
+    Guid PurchaseInvoiceId,
+    string Reason,
+    bool RequestSriAnnulment = false
+)
     : IRequest<Result<PurchaseInvoiceDto>>,
         IBranchScopedRequest;
+
+/// <summary>
+/// Contexto explícito de una anulación de compra. Desde la API se arma con el contexto autenticado
+/// (<see cref="RequiredBranchId"/> = sucursal activa); la finalización de una anulación SRI
+/// confirmada lo arma desde la solicitud registrada (sin sucursal activa: la compra ya fue validada
+/// cuando se solicitó).
+/// </summary>
+public sealed record PurchaseCancellationContext(
+    Guid TenantId,
+    Guid CompanyId,
+    Guid PurchaseInvoiceId,
+    string Reason,
+    Guid UserId,
+    Guid? RequiredBranchId,
+    bool RequestSriAnnulment
+);
 
 // ── Validator ───────────────────────────────────────────────────────────
 
@@ -57,6 +85,7 @@ public sealed class CancelPurchaseHandler
     private readonly ICurrentUser _u;
     private readonly ICompanyClock _companyClock;
     private readonly IPurchaseReceptionDocumentRepository? _receptionRepo;
+    private readonly IRetentionAnnulmentRequester? _annulments;
 
     public CancelPurchaseHandler(
         IPurchaseInvoiceRepository repo,
@@ -72,9 +101,11 @@ public sealed class CancelPurchaseHandler
         ICurrentBranch b,
         ICurrentUser u,
         ICompanyClock companyClock,
-        IPurchaseReceptionDocumentRepository? receptionRepo = null
+        IPurchaseReceptionDocumentRepository? receptionRepo = null,
+        IRetentionAnnulmentRequester? annulments = null
     )
     {
+        _annulments = annulments;
         _repo = repo;
         _payableRepo = payableRepo;
         _stockRepo = stockRepo;
@@ -91,14 +122,36 @@ public sealed class CancelPurchaseHandler
         _receptionRepo = receptionRepo;
     }
 
-    public async Task<Result<PurchaseInvoiceDto>> Handle(
+    public Task<Result<PurchaseInvoiceDto>> Handle(
         CancelPurchaseCommand cmd,
+        CancellationToken ct
+    ) =>
+        ExecuteAsync(
+            new PurchaseCancellationContext(
+                _t.TenantId,
+                _c.CompanyId,
+                cmd.PurchaseInvoiceId,
+                cmd.Reason,
+                _u.UserId,
+                _b.BranchId,
+                cmd.RequestSriAnnulment
+            ),
+            ct
+        );
+
+    /// <summary>
+    /// Flujo oficial único de anulación de compra (API y finalización de una anulación SRI
+    /// confirmada). Todos los guards, locks y efectos viven aquí — la finalización no los duplica.
+    /// </summary>
+    public async Task<Result<PurchaseInvoiceDto>> ExecuteAsync(
+        PurchaseCancellationContext ctx,
         CancellationToken ct
     )
     {
-        var tid = _t.TenantId;
-        var cid = _c.CompanyId;
-        var uid = _u.UserId;
+        var tid = ctx.TenantId;
+        var cid = ctx.CompanyId;
+        var uid = ctx.UserId;
+        var cmd = new CancelPurchaseCommand(ctx.PurchaseInvoiceId, ctx.Reason, ctx.RequestSriAnnulment);
 
         // Fase 3 (P0-02, Remediación transaccional 02) — cmd.PurchaseInvoiceId ya identifica
         // directamente qué Lock A adquirir: no se requiere ninguna carga de descubrimiento.
@@ -111,7 +164,7 @@ public sealed class CancelPurchaseHandler
 
             // ── 1. Cargar y validar (recarga autoritativa bajo lock) ───────
             var inv = await _repo.GetByIdAsync(tid, cmd.PurchaseInvoiceId, ct);
-            if (inv is null || inv.BranchId != _b.BranchId)
+            if (inv is null || (ctx.RequiredBranchId is Guid branchId && inv.BranchId != branchId))
             {
                 await _uow.RollbackAsync(ct);
                 return Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.");
@@ -198,6 +251,16 @@ public sealed class CancelPurchaseHandler
                 );
                 if (!cancelRetentionResult.IsSuccess)
                 {
+                    // ZH-RETENTION-SRI-ANNULMENT-01 — retención AUTORIZADA y el usuario pidió iniciar
+                    // la anulación ante el SRI: se registra la solicitud (bajo los mismos locks y
+                    // guards de esta anulación) y la compra sigue confirmada. Sin reversos.
+                    if (
+                        ctx.RequestSriAnnulment
+                        && cancelRetentionResult.Code
+                            == ApiResponseCodes.ElectronicDocuments.SourceCancellationRequiresSriAnnulment
+                    )
+                        return await RequestSriAnnulmentAsync(inv, retention, ctx, ct);
+
                     await _uow.RollbackAsync(ct);
                     return Result<PurchaseInvoiceDto>.ValidationFailure(
                         cancelRetentionResult.Error!,
@@ -278,5 +341,38 @@ public sealed class CancelPurchaseHandler
             await _uow.RollbackAsync(ct);
             throw;
         }
+    }
+
+    private async Task<Result<PurchaseInvoiceDto>> RequestSriAnnulmentAsync(
+        PurchaseInvoice inv,
+        ERP.Domain.Modules.Retentions.Entities.RetentionDocument retention,
+        PurchaseCancellationContext ctx,
+        CancellationToken ct
+    )
+    {
+        if (_annulments is null)
+            throw new InvalidOperationException(
+                "Invariante violada: IRetentionAnnulmentRequester no está registrado."
+            );
+
+        var requested = await _annulments.RequestAsync(retention, ctx.Reason, ctx.UserId, ct);
+        if (!requested.IsSuccess)
+        {
+            await _uow.RollbackAsync(ct);
+            return Result<PurchaseInvoiceDto>.ValidationFailure(requested.Error!, requested.Code);
+        }
+
+        await _uow.SaveChangesAsync(ct);
+        await _uow.CommitAsync(ct);
+        _logger.LogInformation(
+            "Purchase {InvoiceNumber} ({InvoiceId}): SRI annulment requested for its authorized retention {RetentionId}; purchase stays confirmed",
+            inv.InvoiceNumber,
+            inv.Id,
+            retention.Id
+        );
+        return Result<PurchaseInvoiceDto>.Success(
+            PurchaseMapper.ToDto(inv),
+            ApiResponseCodes.Retentions.AnnulmentRequested
+        );
     }
 }

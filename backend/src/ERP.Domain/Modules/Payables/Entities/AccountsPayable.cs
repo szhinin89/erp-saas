@@ -1,6 +1,7 @@
 using ERP.Domain.Common;
 using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Payables.Enums;
+using ERP.Domain.Modules.Payables.Exceptions;
 
 namespace ERP.Domain.Modules.Payables.Entities;
 
@@ -40,6 +41,53 @@ public sealed class AccountsPayable : AuditableEntity, ITenantScopedEntity, ICom
     public DateOnly IssueDate { get; private set; }
     public DateOnly AccountingDate { get; private set; }
     public AccountsPayableStatus Status { get; private set; } = AccountsPayableStatus.Pending;
+
+    /// <summary>
+    /// ZH-RETENTION-SRI-ANNULMENT-01 (ADR-036 O-13) — solicitud de anulación ante el SRI de la retención
+    /// del documento origen que retiene esta CxP. Mientras exista, la CxP no admite pagos, créditos ni
+    /// ajustes (sí reversas y la anulación de la CxP que ejecuta la finalización): son los efectos que
+    /// harían imposible completar la anulación del origen cuando el SRI la confirme.
+    /// </summary>
+    public Guid? AnnulmentHoldRequestId { get; private set; }
+
+    public bool IsOnAnnulmentHold => AnnulmentHoldRequestId is not null;
+
+    /// <summary>Retiene la CxP para la solicitud de anulación <paramref name="requestId"/>.</summary>
+    public void PlaceAnnulmentHold(Guid requestId, Guid updatedBy)
+    {
+        if (requestId == Guid.Empty)
+            throw new ArgumentException("La solicitud de anulación es obligatoria.", nameof(requestId));
+        if (Status == AccountsPayableStatus.Cancelled)
+            throw new DomainRuleViolationException(
+                "No se puede retener una cuenta por pagar anulada."
+            );
+        if (AnnulmentHoldRequestId == requestId)
+            return;
+        if (AnnulmentHoldRequestId is not null)
+            throw new RetentionAnnulmentPendingException();
+        if (PaidAmount > 0 || SupplierCreditAmount > 0)
+            throw new DomainRuleViolationException(
+                "No se puede iniciar la anulación: la cuenta por pagar ya tiene pagos o créditos de proveedor aplicados, y la anulación del documento origen no podría completarse. Reverse primero esas aplicaciones."
+            );
+
+        AnnulmentHoldRequestId = requestId;
+        SetUpdated(updatedBy);
+    }
+
+    /// <summary>Libera la retención de la CxP (solicitud rechazada, sin efecto o desistida). Idempotente.</summary>
+    public void ReleaseAnnulmentHold(Guid requestId, Guid updatedBy)
+    {
+        if (AnnulmentHoldRequestId != requestId)
+            return;
+        AnnulmentHoldRequestId = null;
+        SetUpdated(updatedBy);
+    }
+
+    private void EnsureNotOnAnnulmentHold()
+    {
+        if (AnnulmentHoldRequestId is not null)
+            throw new RetentionAnnulmentPendingException();
+    }
 
     private readonly List<AccountsPayableInstallment> _installments = new();
     public IReadOnlyList<AccountsPayableInstallment> Installments => _installments.AsReadOnly();
@@ -142,6 +190,7 @@ public sealed class AccountsPayable : AuditableEntity, ITenantScopedEntity, ICom
             throw new DomainRuleViolationException(
                 "No se puede aplicar un pago sobre una cuenta por pagar anulada."
             );
+        EnsureNotOnAnnulmentHold();
 
         var installment = _installments.FirstOrDefault(i => i.Id == installmentId);
         if (installment is null)
@@ -202,6 +251,7 @@ public sealed class AccountsPayable : AuditableEntity, ITenantScopedEntity, ICom
             throw new DomainRuleViolationException(
                 "No se puede aplicar una devolución sobre una cuenta por pagar anulada."
             );
+        EnsureNotOnAnnulmentHold();
 
         var appliedAmount = Math.Min(recognizedAmount, OutstandingAmount);
         if (appliedAmount > 0)
@@ -265,6 +315,8 @@ public sealed class AccountsPayable : AuditableEntity, ITenantScopedEntity, ICom
         foreach (var installment in _installments)
             installment.MarkCancelled();
         Status = AccountsPayableStatus.Cancelled;
+        // La finalización de una anulación aceptada por el SRI anula la CxP: la retención ya no aplica.
+        AnnulmentHoldRequestId = null;
         SetUpdated(updatedBy);
     }
 
@@ -276,6 +328,7 @@ public sealed class AccountsPayable : AuditableEntity, ITenantScopedEntity, ICom
             throw new DomainRuleViolationException(
                 "No se puede aplicar un ajuste sobre una cuenta por pagar anulada."
             );
+        EnsureNotOnAnnulmentHold();
         if (amount > OutstandingAmount)
             throw new DomainRuleViolationException(
                 $"El monto {label} excede el saldo pendiente de la cuenta por pagar."

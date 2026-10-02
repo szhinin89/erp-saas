@@ -155,7 +155,7 @@ public sealed class ExpensesController : ControllerBase
         CancellationToken ct
     ) =>
         this.ToOkOrBadRequest(
-            await _mediator.Send(new CancelExpenseDocumentCommand(id, request.Reason), ct)
+            await _mediator.Send(new CancelExpenseDocumentCommand(id, request.Reason, request.RequestSriAnnulment), ct)
         );
 
     [HttpPost("confirmed")]

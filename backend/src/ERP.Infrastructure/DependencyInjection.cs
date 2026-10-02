@@ -539,6 +539,11 @@ public static class DependencyInjection
             ERP.Application.Common.Interfaces.SRI.ISriAuthorizationClient,
             ERP.Infrastructure.Services.Sri.SriAuthorizationClient
         >();
+        // ZH-RETENTION-SRI-ANNULMENT-01B: ConsultaComprobante (estado fiscal oficial) — mismo SriSoapClient.
+        services.AddScoped<
+            ERP.Application.Common.Interfaces.SRI.ISriDocumentStatusQuery,
+            ERP.Infrastructure.Services.Sri.SriDocumentStatusQuery
+        >();
         services.AddScoped<
             ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentAuthorizationService,
             ERP.Application.Modules.ElectronicDocuments.Services.ElectronicDocumentAuthorizationService
@@ -825,6 +830,11 @@ public static class DependencyInjection
         services.AddScoped<
             ERP.Domain.Modules.Retentions.Interfaces.IRetentionDocumentRepository,
             ERP.Infrastructure.Persistence.Repositories.Retentions.RetentionDocumentRepository
+        >();
+        // ZH-RETENTION-SRI-ANNULMENT-01 — solicitudes de anulación ante el SRI de retenciones autorizadas.
+        services.AddScoped<
+            ERP.Domain.Modules.Retentions.Interfaces.IRetentionAnnulmentRequestRepository,
+            ERP.Infrastructure.Persistence.Repositories.Retentions.RetentionAnnulmentRequestRepository
         >();
 
         // ── Payables BC (PAYABLES-GENERIC-FOUNDATION-09) ─────────────────────────

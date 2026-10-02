@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Application.Modules.Retentions.DTOs;
 using ERP.Domain.Modules.ElectronicDocuments.Interfaces;
@@ -43,6 +44,8 @@ public sealed class GetRetentionBySourceHandler
 {
     private readonly IRetentionDocumentRepository _repo;
     private readonly IElectronicDocumentRepository _electronicDocuments;
+    private readonly IRetentionAnnulmentRequestRepository? _annulments;
+    private readonly ICompanyClock? _clock;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
     private readonly ICurrentBranch _branch;
@@ -52,9 +55,13 @@ public sealed class GetRetentionBySourceHandler
         IElectronicDocumentRepository electronicDocuments,
         ICurrentTenant tenant,
         ICurrentCompany company,
-        ICurrentBranch branch
+        ICurrentBranch branch,
+        IRetentionAnnulmentRequestRepository? annulments = null,
+        ICompanyClock? clock = null
     )
     {
+        _annulments = annulments;
+        _clock = clock;
         _repo = repo;
         _electronicDocuments = electronicDocuments;
         _tenant = tenant;
@@ -85,9 +92,25 @@ public sealed class GetRetentionBySourceHandler
             retention.Id,
             ct
         );
+        RetentionAnnulmentRequestDto? annulment = null;
+        if (_annulments is not null && _clock is not null)
+        {
+            var latest = await _annulments.GetLatestByRetentionAsync(
+                _tenant.TenantId,
+                _company.CompanyId,
+                retention.Id,
+                ct
+            );
+            if (latest is not null)
+                annulment = RetentionAnnulmentRequestDto.From(
+                    latest,
+                    await _clock.TodayAsync(_company.CompanyId, _tenant.TenantId, ct)
+                );
+        }
         var dto = RetentionDocumentMapper.ToDto(retention) with
         {
             ElectronicStatus = ElectronicDocumentSourceStatusMapper.From(electronic),
+            Annulment = annulment,
         };
         return Result<RetentionDocumentDto?>.Success(dto);
     }

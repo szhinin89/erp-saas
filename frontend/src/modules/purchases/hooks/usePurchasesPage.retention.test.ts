@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor, act } from "@testing-library/react";
 import React from "react";
+import { AxiosError, AxiosHeaders } from "axios";
 import { I18nProvider } from "../../../i18n/i18n";
 import { useActiveBranchStore } from "../../../store/activeBranchStore";
 import { usePurchasesPage } from "./usePurchasesPage";
@@ -48,6 +49,7 @@ vi.mock("../../retentions/facades/purchaseRetentionFacade", () => ({
     getElectronicXmlBlob: vi.fn(),
     getRidePdfBlob: vi.fn(),
   },
+  SRI_ANNULMENT_REQUIRED_CODE: "ELECTRONIC_DOCUMENT_REQUIRES_SRI_ANNULMENT",
 }));
 
 vi.mock("../../emissionPoints/facades/emissionPointLookupFacade", () => ({
@@ -529,7 +531,60 @@ describe("usePurchasesPage — sin anulación aislada de la retención (ZH-RETEN
       await result.current.handleCancel("Error de digitación");
     });
 
-    expect(purchaseService.cancel).toHaveBeenCalledWith("purchase-1", "Error de digitación");
+    expect(purchaseService.cancel).toHaveBeenCalledWith("purchase-1", "Error de digitación", false);
     expect(message.success).toHaveBeenCalledWith("Compra anulada correctamente.");
+  });
+});
+
+describe("usePurchasesPage — anulación ante el SRI de una retención autorizada (ZH-RETENTION-SRI-ANNULMENT-01)", () => {
+  const sriAnnulmentRequired = () =>
+    new AxiosError("Request failed", "ERR_BAD_REQUEST", undefined, undefined, {
+      status: 422,
+      statusText: "Unprocessable Entity",
+      headers: {},
+      config: { headers: new AxiosHeaders() },
+      data: { code: "ELECTRONIC_DOCUMENT_REQUIRES_SRI_ANNULMENT", message: { user: "Requiere anulación SRI" } },
+    });
+
+  it("si la retención está autorizada no anula: ofrece iniciar el trámite conservando el motivo", async () => {
+    vi.mocked(purchaseRetentionFacade.getForPurchase).mockResolvedValue(
+      buildRetention({ electronicStatus: "Authorized" }),
+    );
+    vi.mocked(purchaseService.cancel).mockRejectedValue(sriAnnulmentRequired());
+    const result = await setupWithLoadedInvoice();
+
+    await act(async () => {
+      await result.current.handleCancel("Proveedor facturó mal");
+    });
+
+    expect(result.current.sriAnnulmentReason).toBe("Proveedor facturó mal");
+    expect(message.success).not.toHaveBeenCalled();
+    expect(result.current.saveError).toBeFalsy();
+    expect(result.current.editing?.id).toBe("purchase-1");
+  });
+
+  it("iniciar el trámite registra la solicitud y la compra sigue vigente (nunca 'anulada')", async () => {
+    vi.mocked(purchaseRetentionFacade.getForPurchase).mockResolvedValue(
+      buildRetention({ electronicStatus: "Authorized" }),
+    );
+    vi.mocked(purchaseService.cancel)
+      .mockRejectedValueOnce(sriAnnulmentRequired())
+      .mockResolvedValueOnce(buildInvoice({ status: "Confirmed" }));
+    const result = await setupWithLoadedInvoice({ status: "Confirmed" });
+    await act(async () => {
+      await result.current.handleCancel("Proveedor facturó mal");
+    });
+
+    await act(async () => {
+      await result.current.handleStartSriAnnulment();
+    });
+
+    expect(purchaseService.cancel).toHaveBeenLastCalledWith("purchase-1", "Proveedor facturó mal", true);
+    expect(message.success).toHaveBeenCalledWith(
+      "Se registró la solicitud de anulación ante el SRI. La compra sigue vigente hasta que el SRI confirme ANULADO.",
+    );
+    expect(message.success).not.toHaveBeenCalledWith("Compra anulada correctamente.");
+    expect(result.current.sriAnnulmentReason).toBeNull();
+    expect(result.current.editing?.id).toBe("purchase-1");
   });
 });

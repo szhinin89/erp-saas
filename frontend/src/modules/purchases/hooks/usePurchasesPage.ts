@@ -11,6 +11,7 @@ import type {
 import { purchaseService } from "../api/purchaseService";
 import {
   purchaseRetentionFacade,
+  SRI_ANNULMENT_REQUIRED_CODE,
   type RetentionDocumentDto,
 } from "../../retentions/facades/purchaseRetentionFacade";
 import {
@@ -62,6 +63,7 @@ import {
 } from "../utils/purchaseCalc";
 import { applyServerErrors } from "../../lib/validationErrors";
 import {
+  readApiErrorCode,
   readApiErrorMessage,
   readApiErrorMessages,
   formatApiRequestError,
@@ -212,6 +214,9 @@ export function usePurchasesPage() {
   const [modalConfirm, setModalConfirm] = useState(false);
   const [modalDiscount, setModalDiscount] = useState(false);
   const [modalCancelReason, setModalCancelReason] = useState(false);
+  // ZH-RETENTION-SRI-ANNULMENT-01 — la retención ya está AUTORIZADA: el motivo se conserva para
+  // iniciar la anulación ante el SRI sin pedirlo de nuevo.
+  const [sriAnnulmentReason, setSriAnnulmentReason] = useState<string | null>(null);
   // PURCHASE-FREIGHT-DISTRIBUTION-MODAL-01
   const [modalDistributeCost, setModalDistributeCost] = useState(false);
   // COMPRAS-METODO-ZH-01B — resolución masiva de líneas XML sin producto.
@@ -1625,32 +1630,66 @@ export function usePurchasesPage() {
   }, [editing, ptRows, whPreview, retentionIntent, resetForm, fetchList, showSaveError, t]);
 
   // ── Cancel purchase ────────────────────────────────────────────────
-  const handleCancel = useCallback(
-    async (reason: string) => {
-      setModalCancelReason(false);
+  // ZH-RETENTION-SRI-ANNULMENT-01 — si la retención ya está AUTORIZADA por el SRI la compra no se
+  // anula localmente: el backend responde SRI_ANNULMENT_REQUIRED_CODE y se ofrece iniciar el trámite
+  // de anulación ante el SRI. Iniciarlo NO anula la compra (el DTO devuelto sigue "Confirmed").
+  const runCancel = useCallback(
+    async (reason: string, requestSriAnnulment: boolean) => {
       if (!editing) return;
       setSaving(true);
       try {
-        await purchaseService.cancel(editing.id, reason);
-        message.success(
-          t("purchases.messages.cancelled", "Compra anulada correctamente."),
-        );
-        resetForm();
-        setTab("listado");
-        fetchList();
+        const result = await purchaseService.cancel(editing.id, reason, requestSriAnnulment);
+        if (result.status === "Cancelled") {
+          message.success(
+            t("purchases.messages.cancelled", "Compra anulada correctamente."),
+          );
+          resetForm();
+          setTab("listado");
+          fetchList();
+        } else {
+          message.success(
+            t(
+              "purchases.messages.sriAnnulmentRequested",
+              "Se registró la solicitud de anulación ante el SRI. La compra sigue vigente hasta que el SRI confirme ANULADO.",
+            ),
+          );
+          await loadForEdit(editing.id);
+        }
       } catch (err: unknown) {
-        const e = err as ApiErrorLike;
-        showSaveError(
+        if (!requestSriAnnulment && readApiErrorCode(err) === SRI_ANNULMENT_REQUIRED_CODE) {
+          setSriAnnulmentReason(reason);
+        } else {
+          const e = err as ApiErrorLike;
+          showSaveError(
             e?.response?.data?.message?.user ??
-            e?.response?.data?.data?.errors?.[0] ??
-            e?.message ??
-            t("purchases.errors.cancelFailed", "Error al anular."),
-        );
+              e?.response?.data?.data?.errors?.[0] ??
+              e?.message ??
+              t("purchases.errors.cancelFailed", "Error al anular."),
+          );
+        }
       }
       setSaving(false);
     },
-    [editing, resetForm, fetchList, showSaveError, t],
+    [editing, resetForm, fetchList, showSaveError, t, loadForEdit],
   );
+
+  const handleCancel = useCallback(
+    async (reason: string) => {
+      setModalCancelReason(false);
+      await runCancel(reason, false);
+    },
+    [runCancel],
+  );
+
+  const handleStartSriAnnulment = useCallback(async () => {
+    const reason = sriAnnulmentReason;
+    setSriAnnulmentReason(null);
+    if (reason) await runCancel(reason, true);
+  }, [sriAnnulmentReason, runCancel]);
+
+  const handleRetentionAnnulmentChanged = useCallback(async () => {
+    if (editing) await loadForEdit(editing.id);
+  }, [editing, loadForEdit]);
 
   // ── Discount ───────────────────────────────────────────────────────
   const handleApplyDiscount = useCallback(
@@ -2103,6 +2142,11 @@ export function usePurchasesPage() {
     handleSave,
     handleConfirm,
     handleCancel,
+    sriAnnulmentReason,
+    setSriAnnulmentReason,
+    handleStartSriAnnulment,
+    handleRetentionAnnulmentChanged,
+    canOperateRetentionAnnulment: has("purchases.update"),
     handleApplyDiscount,
     handleAllocateFreight,
     handleRecalculate,

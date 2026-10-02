@@ -22,6 +22,12 @@ const STATUS_PRESENTATION: Record<
     fallback: "Requiere conciliación",
   },
   Discarded: { variant: "neutral", key: "retentions.electronicStatus.discarded", fallback: "Descartado" },
+  AnnulmentPending: {
+    variant: "warning",
+    key: "retentions.electronicStatus.annulmentPending",
+    fallback: "Anulación en trámite",
+  },
+  Annulled: { variant: "neutral", key: "retentions.electronicStatus.annulled", fallback: "Anulado por el SRI" },
 };
 
 export function RetentionElectronicStatusBadge({

@@ -22,6 +22,7 @@ import { todayIso, toDateTimeLocalInputValue } from "../../../lib/formatters/dat
 import { message } from "../../../lib/messages";
 import {
   formatApiRequestError,
+  readApiErrorCode,
   parseValidationErrors,
 } from "../../lib/apiError";
 import { accountLookupFacade, type AccountDto } from "../../accounting/facades/accountLookupFacade";
@@ -55,6 +56,7 @@ import { ExpenseDocumentLinesEditor } from "../components/ExpenseDocumentLinesEd
 import { ExpenseDocumentStatusBadge } from "../components/ExpenseDocumentStatusBadge";
 import { ExpenseDocumentTotals } from "../components/ExpenseDocumentTotals";
 import { ExpenseRetentionSection } from "../components/ExpenseRetentionSection";
+import { SRI_ANNULMENT_REQUIRED_CODE } from "../../retentions/facades/retentionDocumentFacade";
 import {
   buildExpenseDraftPayload,
   calculateExpenseDocumentTotals,
@@ -150,6 +152,9 @@ export function ExpenseDocumentFormPage() {
   const [cancelling, setCancelling] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelReasonError, setCancelReasonError] = useState<string | undefined>();
+  // ZH-RETENTION-SRI-ANNULMENT-01 — retención ya AUTORIZADA: el motivo se conserva para iniciar la
+  // anulación ante el SRI sin pedirlo de nuevo.
+  const [sriAnnulmentReason, setSriAnnulmentReason] = useState<string | null>(null);
   const [retention, setRetention] = useState<RetentionIntentFormState>(
     emptyRetentionIntentState(),
   );
@@ -425,31 +430,53 @@ export function ExpenseDocumentFormPage() {
     setCancelReasonError(undefined);
   };
 
+  const runCancel = async (reason: string, requestSriAnnulment: boolean) => {
+    if (isNew || !id) return;
+    setCancelling(true);
+    try {
+      const result = await expenseDocumentService.cancel(id, reason, requestSriAnnulment);
+      closeCancelModal();
+      if (result.status === "Cancelled") {
+        message.success("Gasto anulado correctamente.");
+      } else {
+        // La solicitud de anulación ante el SRI NO anula el gasto: sigue vigente hasta el ANULADO.
+        message.success(
+          "Se registró la solicitud de anulación ante el SRI. El gasto sigue vigente hasta que el SRI confirme ANULADO.",
+        );
+      }
+      // Mismo criterio que handleConfirm (EXPENSES-CONFIRM-FRONTEND-08): recargar desde API
+      // para reflejar exactamente lo que el backend persistio (reverso contable/CxP incluidos).
+      await load();
+    } catch (error) {
+      if (!requestSriAnnulment && readApiErrorCode(error) === SRI_ANNULMENT_REQUIRED_CODE) {
+        closeCancelModal();
+        setSriAnnulmentReason(reason);
+      } else {
+        message.error(
+          formatApiRequestError(error, {
+            generic: "No se pudo anular el gasto.",
+          }),
+        );
+      }
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   const handleCancel = async () => {
     if (isNew || !id) return;
     if (!cancelReason.trim()) {
       setCancelReasonError("Indique el motivo de la anulación.");
       return;
     }
-
-    setCancelling(true);
     setCancelReasonError(undefined);
-    try {
-      await expenseDocumentService.cancel(id, cancelReason.trim());
-      message.success("Gasto anulado correctamente.");
-      closeCancelModal();
-      // Mismo criterio que handleConfirm (EXPENSES-CONFIRM-FRONTEND-08): recargar desde API
-      // para reflejar exactamente lo que el backend persistio (reverso contable/CxP incluidos).
-      await load();
-    } catch (error) {
-      message.error(
-        formatApiRequestError(error, {
-          generic: "No se pudo anular el gasto.",
-        }),
-      );
-    } finally {
-      setCancelling(false);
-    }
+    await runCancel(cancelReason.trim(), false);
+  };
+
+  const handleStartSriAnnulment = async () => {
+    const reason = sriAnnulmentReason;
+    setSriAnnulmentReason(null);
+    if (reason) await runCancel(reason, true);
   };
 
   return (
@@ -585,6 +612,7 @@ export function ExpenseDocumentFormPage() {
               value={retention}
               onChange={(patch) => setRetention((current) => ({ ...current, ...patch }))}
               onEligibilityChange={setRetentionEligibility}
+              onAnnulmentChanged={() => void load()}
             />
           </ZHCard>
         </div>
@@ -629,7 +657,8 @@ export function ExpenseDocumentFormPage() {
               Se reversará el asiento contable generado al confirmar y, si existe, se anulará la
               cuenta por pagar asociada (no permitido si ya tiene pagos aplicados). Si el gasto
               tiene una retención emitida, también se anulará: una retención anulada no puede
-              volver a emitirse y el ERP no anula comprobantes ante el SRI.
+              volver a emitirse. Si la retención ya fue autorizada por el SRI, primero debe
+              anularse ante el SRI.
             </p>
             <ZHField label="Motivo de anulación" required error={cancelReasonError}>
               <ZhTextarea
@@ -647,6 +676,18 @@ export function ExpenseDocumentFormPage() {
         cancelLabel="Cancelar"
         onCancel={closeCancelModal}
         onConfirm={handleCancel}
+      />
+
+      {/* ZH-RETENTION-SRI-ANNULMENT-01 — la retención ya está autorizada por el SRI. */}
+      <ZHConfirmModal
+        open={sriAnnulmentReason !== null}
+        variant="warning"
+        title="La retención ya fue autorizada por el SRI"
+        message="La retención ya fue autorizada por el SRI y debe anularse primero ante el SRI. Se registrará la solicitud con el motivo indicado; el gasto seguirá vigente (no se anula, no se revierte la cuenta por pagar ni la contabilidad) hasta que el SRI informe ANULADO (el ERP lo verifica automáticamente en el SRI)."
+        confirmLabel={cancelling ? "Registrando..." : "Iniciar proceso de anulación"}
+        cancelLabel="Cancelar"
+        onCancel={() => setSriAnnulmentReason(null)}
+        onConfirm={() => void handleStartSriAnnulment()}
       />
     </PageShell>
   );

@@ -105,6 +105,7 @@ public partial class ExceptionMiddleware
             // ZH-DOMAIN-RULE-ERROR-SSOT-01: la única representación de una regla de negocio. Llega aquí
             // solo si no pasó por DomainRuleBehavior (request cuya respuesta no es Result<T>, o código
             // fuera de MediatR): mismo código y mensaje que Result.FromDomainRule.
+            IApiCodedDomainRule coded => coded.ApiCode,
             DomainRuleViolationException => ApiResponseCodes.Common.DomainRuleViolation,
             // Base de datos: único punto de clasificación técnica (IDatabaseExceptionTranslator):
             // no disponible → 503; UNIQUE/integridad/concurrencia → 409; SQL inesperado → 500.

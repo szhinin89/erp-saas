@@ -17,6 +17,7 @@
 import { retentionsService } from "../api/retentionsService";
 import type {
   IssueRetentionLineRequest,
+  RetentionAnnulmentRequestDto,
   RetentionDocumentDto,
   RetentionElectronicStatus,
   RetentionIntentRequest,
@@ -24,10 +25,13 @@ import type {
 
 export type {
   IssueRetentionLineRequest,
+  RetentionAnnulmentRequestDto,
   RetentionDocumentDto,
   RetentionElectronicStatus,
   RetentionIntentRequest,
 };
+export { SRI_ANNULMENT_REQUIRED_CODE } from "../api/retentionsService";
+export { RetentionAnnulmentPanel } from "../components/RetentionAnnulmentPanel";
 export { RetentionElectronicStatusBadge } from "../components/RetentionElectronicStatusBadge";
 
 export const purchaseRetentionFacade = {

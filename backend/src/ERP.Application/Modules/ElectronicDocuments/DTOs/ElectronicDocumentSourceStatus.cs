@@ -28,6 +28,12 @@ public enum ElectronicDocumentSourceStatus
 
     /// <summary>Nunca tuvo intento externo y el origen ya no permite transmitirlo.</summary>
     Discarded = 6,
+
+    /// <summary>ZH-RETENTION-SRI-ANNULMENT-01 — anulación en trámite ante el SRI: el comprobante sigue vigente.</summary>
+    AnnulmentPending = 7,
+
+    /// <summary>ZH-RETENTION-SRI-ANNULMENT-01 — el SRI confirmó ANULADO (con evidencia).</summary>
+    Annulled = 8,
 }
 
 public static class ElectronicDocumentSourceStatusMapper
@@ -50,8 +56,9 @@ public static class ElectronicDocumentSourceStatusMapper
                 ElectronicDocumentState.Discarded => ElectronicDocumentSourceStatus.Discarded,
                 ElectronicDocumentState.DeadLetter when document.CanBeDiscarded =>
                     ElectronicDocumentSourceStatus.Pending,
-                // Signed (histórico: ambiguo), DeadLetter de un envío/consulta, y Cancelled (sin
-                // flujo productivo todavía — ZH-RETENTION-SRI-ANNULMENT-01).
+                ElectronicDocumentState.AnnulmentPending => ElectronicDocumentSourceStatus.AnnulmentPending,
+                ElectronicDocumentState.Cancelled => ElectronicDocumentSourceStatus.Annulled,
+                // Signed (histórico: ambiguo) y DeadLetter de un envío/consulta.
                 _ => ElectronicDocumentSourceStatus.RequiresReconciliation,
             };
 }

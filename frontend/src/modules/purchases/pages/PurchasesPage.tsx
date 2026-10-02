@@ -19,7 +19,10 @@ import { ZHInputGroup } from "../../../components/zh/ZHInputGroup";
 import { SupplierSearchSelect } from "../../masterData/facades/supplierPickerFacade";
 import { DistributeCostModal } from "../components/DistributeCostModal";
 import { PurchaseRetentionDraft } from "../components/PurchaseRetentionDraft";
-import { RetentionElectronicStatusBadge } from "../../retentions/facades/purchaseRetentionFacade";
+import {
+  RetentionAnnulmentPanel,
+  RetentionElectronicStatusBadge,
+} from "../../retentions/facades/purchaseRetentionFacade";
 import { ResolvePendingProductsModal } from "../components/ResolvePendingProductsModal";
 import { ProductPicker } from "../components/ProductPicker";
 import type { ProductProfile } from "../components/ProductPicker";
@@ -1240,12 +1243,18 @@ export function PurchasesPage() {
                   invoiceNumber: ctx.editing.invoiceNumber,
                 }),
                 // ZH-RETENTION-CANCELLATION-LIFECYCLE-01 — la retención solo se anula con su compra y
-                // es terminal: se advierte antes de confirmar la anulación.
+                // es terminal: se advierte antes de confirmar la anulación. ZH-RETENTION-SRI-ANNULMENT-01:
+                // si ya está autorizada por el SRI, primero debe anularse ante el SRI.
                 ctx.retention?.status === "Issued"
-                  ? `${t(
-                      "purchases.cancel.retentionWarning",
-                      "También se anulará la retención emitida con esta compra y se revertirá su efecto en la cuenta por pagar y en contabilidad. Una retención anulada no puede volver a emitirse, y el ERP no anula comprobantes ante el SRI.",
-                    )} (${ctx.retention.retentionNumber ?? ""})`
+                  ? ctx.retention.electronicStatus === "Authorized"
+                    ? `${t(
+                        "purchases.cancel.retentionAuthorizedWarning",
+                        "La retención de esta compra ya fue autorizada por el SRI: la compra no se anula aquí, primero debe anularse la retención ante el SRI.",
+                      )} (${ctx.retention.retentionNumber ?? ""})`
+                    : `${t(
+                        "purchases.cancel.retentionWarning",
+                        "También se anulará la retención emitida con esta compra y se revertirá su efecto en la cuenta por pagar y en contabilidad. Una retención anulada no puede volver a emitirse.",
+                      )} (${ctx.retention.retentionNumber ?? ""})`
                   : "",
               ]
                 .filter(Boolean)
@@ -1257,6 +1266,21 @@ export function PurchasesPage() {
         confirmLabel={t("purchases.cancel.confirm", "Anular")}
         onCancel={() => ctx.setModalCancelReason(false)}
         onConfirm={ctx.handleCancel}
+      />
+
+      {/* ZH-RETENTION-SRI-ANNULMENT-01 — la retención ya está autorizada por el SRI. */}
+      <ZHConfirmModal
+        open={ctx.sriAnnulmentReason !== null}
+        variant="warning"
+        title={t("purchases.sriAnnulment.title", "La retención ya fue autorizada por el SRI")}
+        message={t(
+          "purchases.sriAnnulment.message",
+          "La retención ya fue autorizada por el SRI y debe anularse primero ante el SRI. Se registrará la solicitud con el motivo indicado; la compra seguirá vigente (no se anula, no se revierte la cuenta por pagar ni la contabilidad) hasta que el SRI informe ANULADO (el ERP lo verifica automáticamente en el SRI).",
+        )}
+        confirmLabel={t("purchases.sriAnnulment.start", "Iniciar proceso de anulación")}
+        cancelLabel={t("common.cancel", "Cancelar")}
+        onCancel={() => ctx.setSriAnnulmentReason(null)}
+        onConfirm={() => void ctx.handleStartSriAnnulment()}
       />
 
     </ErpPageTemplate>
@@ -3157,6 +3181,14 @@ function RetentionSection({
                 <RetentionElectronicStatusBadge status={ctx.retention.electronicStatus} />
               </span>
             </div>
+            {ctx.retention.annulment ? (
+              <RetentionAnnulmentPanel
+                annulment={ctx.retention.annulment}
+                origin="purchase"
+                canOperate={ctx.canOperateRetentionAnnulment}
+                onChanged={() => void ctx.handleRetentionAnnulmentChanged()}
+              />
+            ) : null}
             <table className="table table--compact table--neutral">
               <thead>
                 <tr>

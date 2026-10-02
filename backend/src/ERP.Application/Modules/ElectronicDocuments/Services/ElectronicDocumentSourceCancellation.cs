@@ -49,6 +49,9 @@ public sealed class ElectronicDocumentSourceCancellation : IElectronicDocumentSo
     public const string InProcessMessage =
         "La retención ya está en proceso electrónico. Primero debe resolverse su estado ante el SRI.";
 
+    public const string AnnulmentPendingMessage =
+        "La retención tiene una anulación en trámite ante el SRI. El documento se anulará automáticamente cuando el SRI confirme ANULADO.";
+
     public const string AuthorizedMessage =
         "La retención ya fue autorizada por el SRI. Para anular el documento se requiere el proceso de anulación electrónica ante el SRI.";
 
@@ -114,6 +117,11 @@ public sealed class ElectronicDocumentSourceCancellation : IElectronicDocumentSo
             or ElectronicDocumentState.Cancelled =>
                 Result<ElectronicDocumentSourceCancellationOutcome>.Success(
                     ElectronicDocumentSourceCancellationOutcome.NothingInForce
+                ),
+            ElectronicDocumentState.AnnulmentPending =>
+                Result<ElectronicDocumentSourceCancellationOutcome>.ValidationFailure(
+                    AnnulmentPendingMessage,
+                    ApiResponseCodes.ElectronicDocuments.AnnulmentPending
                 ),
             ElectronicDocumentState.Authorized =>
                 Result<ElectronicDocumentSourceCancellationOutcome>.ValidationFailure(

@@ -20,6 +20,7 @@ export function electronicDocumentStateBadgeVariant(
     case "Failed":
       return "red";
     case "Cancelled":
+    case "AnnulmentPending":
       return "orange";
     case "Discarded":
       return "gray";
@@ -51,6 +52,8 @@ export function electronicDocumentStateIcon(state: string): string {
       return "error";
     case "DeadLetter":
       return "report";
+    case "AnnulmentPending":
+      return "pending_actions";
     case "Cancelled":
       return "block";
     case "Discarded":

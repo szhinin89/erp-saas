@@ -182,7 +182,8 @@
         "IElectronicDocumentXmlBuilder",
         "IElectronicDocumentSchemaValidator",
         "IPricingAdjustmentStrategy",
-        "IGlobalBootstrapStep"
+        "IGlobalBootstrapStep",
+        "IRetentionOriginCancellation"
       ]
     },
     "subscriber": {

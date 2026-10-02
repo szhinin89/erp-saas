@@ -91,4 +91,57 @@ public sealed class RetentionsController : ControllerBase
             await _mediator.Send(new RegisterRetentionElectronicDocumentCommand(id), ct),
             "OK"
         );
+
+    // ── ZH-RETENTION-SRI-ANNULMENT-01 — anulación ante el SRI de una retención AUTORIZADA ──────────
+    // La solicitud se inicia desde la anulación de la Compra/Gasto (RequestSriAnnulment = true). Estos
+    // pasos se autorizan por el documento ORIGEN en el handler (IRetentionSourceAccess): permiso de
+    // anular el origen. Aquí solo se exige autenticación. La SOLICITUD es asistida (no existe WS para
+    // solicitarla); la VERIFICACIÓN es automática vía ConsultaComprobante (01B, Ficha Técnica v2.34 §8).
+    // No hay endpoint para declarar ANULADO.
+
+    /// <summary>Registra que la solicitud se presentó en SRI en Línea (no significa ANULADO).</summary>
+    [HttpPost("annulments/{requestId:guid}/submission")]
+    public async Task<IActionResult> SubmitAnnulment(
+        Guid requestId,
+        [FromBody] SubmitRetentionAnnulmentRequest request,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(
+                new SubmitRetentionAnnulmentCommand(requestId, request.SubmittedOn, request.Reference, request.Notes),
+                ct
+            )
+        );
+
+    /// <summary>
+    /// Consulta el estado fiscal en el WS ConsultaComprobante del SRI y lo aplica (ZH-RETENTION-SRI-ANNULMENT-01B).
+    /// No recibe ningún estado: ANULADO lo informa el SRI, nunca el usuario.
+    /// </summary>
+    [HttpPost("annulments/{requestId:guid}/sri-verification")]
+    public async Task<IActionResult> VerifyAnnulmentWithSri(Guid requestId, CancellationToken ct) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new VerifyRetentionAnnulmentWithSriCommand(requestId), ct)
+        );
+
+    /// <summary>Desiste de la solicitud: antes de presentarla, o si el SRI confirma que el comprobante sigue AUTORIZADO.</summary>
+    [HttpPost("annulments/{requestId:guid}/abandon")]
+    public async Task<IActionResult> AbandonAnnulment(
+        Guid requestId,
+        [FromBody] AbandonRetentionAnnulmentRequest request,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new AbandonRetentionAnnulmentCommand(requestId, request.Reason), ct)
+        );
+
+    /// <summary>Reintenta la anulación del documento origen tras un ANULADO cuya finalización falló.</summary>
+    [HttpPost("annulments/{requestId:guid}/finalization")]
+    public async Task<IActionResult> RetryAnnulmentFinalization(Guid requestId, CancellationToken ct) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new RetryRetentionAnnulmentFinalizationCommand(requestId), ct)
+        );
 }
+
+public sealed record SubmitRetentionAnnulmentRequest(DateOnly SubmittedOn, string? Reference, string? Notes);
+
+public sealed record AbandonRetentionAnnulmentRequest(string Reason);

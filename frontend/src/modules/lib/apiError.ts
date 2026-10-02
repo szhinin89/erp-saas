@@ -83,6 +83,18 @@ function messageFromRecord(o: Record<string, unknown>): string | null {
 }
 
 /**
+ * Código público estable (`code` del envelope, p.ej. `ELECTRONIC_DOCUMENT_REQUIRES_SRI_ANNULMENT`) de
+ * un error de la API, o null. Permite decidir el flujo por regla de negocio sin interpretar mensajes.
+ */
+export function readApiErrorCode(err: unknown): string | null {
+  if (!axios.isAxiosError(err) || !err.response) return null;
+  const data = err.response.data;
+  if (!data || typeof data !== "object") return null;
+  const o = data as Record<string, unknown>;
+  return pickString(o.code) ?? pickString(o.Code);
+}
+
+/**
  * Extrae un mensaje legible del cuerpo de error de la API (ASP.NET, middleware, ProblemDetails, etc.).
  * Devuelve null si no hay información útil.
  */

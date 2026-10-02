@@ -27,10 +27,29 @@ namespace ERP.Application.Modules.Expenses.UseCases.Documents;
 /// cuyo evento dispara la reversa contable vía <c>ExpenseDocumentCancelledPostingTranslator</c> —
 /// este handler nunca reversa contabilidad manualmente. Mismo patrón transaccional que
 /// <c>CancelPurchaseHandler</c> (Purchases).
+/// <para>
+/// <c>RequestSriAnnulment</c> (ZH-RETENTION-SRI-ANNULMENT-01): ver <c>CancelPurchaseCommand</c> —
+/// mismo contrato para Gastos.
+/// </para>
 /// </summary>
-public sealed record CancelExpenseDocumentCommand(Guid Id, string Reason)
+public sealed record CancelExpenseDocumentCommand(
+    Guid Id,
+    string Reason,
+    bool RequestSriAnnulment = false
+)
     : IRequest<Result<ExpenseDocumentDetailDto>>,
         IBranchScopedRequest;
+
+/// <summary>Contexto explícito de una anulación de gasto (ver <c>PurchaseCancellationContext</c>).</summary>
+public sealed record ExpenseCancellationContext(
+    Guid TenantId,
+    Guid CompanyId,
+    Guid ExpenseDocumentId,
+    string Reason,
+    Guid UserId,
+    Guid? RequiredBranchId,
+    bool RequestSriAnnulment
+);
 
 // ── Validator ───────────────────────────────────────────────────────────
 
@@ -62,6 +81,7 @@ public sealed class CancelExpenseDocumentHandler
     private readonly ICurrentBranch _branch;
     private readonly ICurrentUser _user;
     private readonly ILogger<CancelExpenseDocumentHandler> _logger;
+    private readonly IRetentionAnnulmentRequester? _annulments;
 
     public CancelExpenseDocumentHandler(
         IExpenseDocumentRepository repo,
@@ -74,9 +94,11 @@ public sealed class CancelExpenseDocumentHandler
         ICurrentCompany company,
         ICurrentBranch branch,
         ICurrentUser user,
-        ILogger<CancelExpenseDocumentHandler> logger
+        ILogger<CancelExpenseDocumentHandler> logger,
+        IRetentionAnnulmentRequester? annulments = null
     )
     {
+        _annulments = annulments;
         _repo = repo;
         _payableRepo = payableRepo;
         _retentionRepo = retentionRepo;
@@ -90,20 +112,42 @@ public sealed class CancelExpenseDocumentHandler
         _logger = logger;
     }
 
-    public async Task<Result<ExpenseDocumentDetailDto>> Handle(
+    public Task<Result<ExpenseDocumentDetailDto>> Handle(
         CancelExpenseDocumentCommand cmd,
+        CancellationToken ct
+    ) =>
+        ExecuteAsync(
+            new ExpenseCancellationContext(
+                _tenant.TenantId,
+                _company.CompanyId,
+                cmd.Id,
+                cmd.Reason,
+                _user.UserId,
+                _branch.BranchId,
+                cmd.RequestSriAnnulment
+            ),
+            ct
+        );
+
+    /// <summary>
+    /// Flujo oficial único de anulación de gasto (API y finalización de una anulación SRI
+    /// confirmada). Todos los guards, locks y efectos viven aquí — la finalización no los duplica.
+    /// </summary>
+    public async Task<Result<ExpenseDocumentDetailDto>> ExecuteAsync(
+        ExpenseCancellationContext ctx,
         CancellationToken ct
     )
     {
-        var tid = _tenant.TenantId;
-        var cid = _company.CompanyId;
-        var uid = _user.UserId;
+        var tid = ctx.TenantId;
+        var cid = ctx.CompanyId;
+        var uid = ctx.UserId;
+        var cmd = new CancelExpenseDocumentCommand(ctx.ExpenseDocumentId, ctx.Reason, ctx.RequestSriAnnulment);
 
         await _uow.BeginTransactionAsync(ct);
         try
         {
             var document = await _repo.GetByIdAsync(tid, cmd.Id, ct);
-            if (document is null || document.BranchId != _branch.BranchId)
+            if (document is null || (ctx.RequiredBranchId is Guid branchId && document.BranchId != branchId))
             {
                 await _uow.RollbackAsync(ct);
                 return Result<ExpenseDocumentDetailDto>.NotFound("Gasto no encontrado.");
@@ -181,6 +225,15 @@ public sealed class CancelExpenseDocumentHandler
                 );
                 if (!cancelRetentionResult.IsSuccess)
                 {
+                    // ZH-RETENTION-SRI-ANNULMENT-01 — ver CancelPurchaseHandler: se registra la
+                    // solicitud de anulación ante el SRI y el gasto sigue confirmado. Sin reversos.
+                    if (
+                        ctx.RequestSriAnnulment
+                        && cancelRetentionResult.Code
+                            == ApiResponseCodes.ElectronicDocuments.SourceCancellationRequiresSriAnnulment
+                    )
+                        return await RequestSriAnnulmentAsync(document, retentionDocument, ctx, ct);
+
                     await _uow.RollbackAsync(ct);
                     return Result<ExpenseDocumentDetailDto>.ValidationFailure(
                         cancelRetentionResult.Error!,
@@ -255,5 +308,38 @@ public sealed class CancelExpenseDocumentHandler
             await _uow.RollbackAsync(ct);
             throw;
         }
+    }
+
+    private async Task<Result<ExpenseDocumentDetailDto>> RequestSriAnnulmentAsync(
+        ExpenseDocument document,
+        ERP.Domain.Modules.Retentions.Entities.RetentionDocument retention,
+        ExpenseCancellationContext ctx,
+        CancellationToken ct
+    )
+    {
+        if (_annulments is null)
+            throw new InvalidOperationException(
+                "Invariante violada: IRetentionAnnulmentRequester no está registrado."
+            );
+
+        var requested = await _annulments.RequestAsync(retention, ctx.Reason, ctx.UserId, ct);
+        if (!requested.IsSuccess)
+        {
+            await _uow.RollbackAsync(ct);
+            return Result<ExpenseDocumentDetailDto>.ValidationFailure(requested.Error!, requested.Code);
+        }
+
+        await _uow.SaveChangesAsync(ct);
+        await _uow.CommitAsync(ct);
+        _logger.LogInformation(
+            "Expense document {DocumentNumber} ({ExpenseDocumentId}): SRI annulment requested for its authorized retention {RetentionId}; expense stays confirmed",
+            document.DocumentNumber,
+            document.Id,
+            retention.Id
+        );
+        return Result<ExpenseDocumentDetailDto>.Success(
+            ExpenseDocumentMapper.ToDetail(document),
+            ApiResponseCodes.Retentions.AnnulmentRequested
+        );
     }
 }

@@ -72,6 +72,14 @@ public sealed class ElectronicDocument
     /// <summary>Motivo real del fallo más reciente en <see cref="ElectronicDocumentState.Failed"/> — null fuera de ese estado.</summary>
     public string? LastError { get; private set; }
 
+    /// <summary>
+    /// ADR-036 (ZH-RETENTION-SRI-ANNULMENT-01) — solicitud de anulación ante el SRI que mantiene al
+    /// documento en <see cref="ElectronicDocumentState.AnnulmentPending"/>, o que lo llevó a
+    /// <see cref="ElectronicDocumentState.Cancelled"/>. Referencia débil (sin FK) a la solicitud del
+    /// módulo dueño del origen, igual que <see cref="SourceEntityId"/>.
+    /// </summary>
+    public Guid? AnnulmentRequestId { get; private set; }
+
     private ElectronicDocument() { }
 
     /// <summary>
@@ -557,18 +565,85 @@ public sealed class ElectronicDocument
                 or ElectronicDocumentState.Received;
 
     /// <summary>
-    /// Transición Authorized→Cancelled: el comprobante ya autorizado por el SRI fue anulado.
-    /// Solo válida desde Authorized — anular un documento que nunca llegó a autorizarse no es
-    /// un concepto SRI real (un borrador o un envío fallido simplemente no se reintenta).
+    /// ADR-036 (D-7) — Transición Authorized→AnnulmentPending: se registró una solicitud de anulación
+    /// ante el SRI (<paramref name="annulmentRequestId"/>). El comprobante sigue siendo válido: nada
+    /// local se revierte. Idempotente para la misma solicitud.
     /// </summary>
-    public void MarkCancelled(string reason, Guid updatedBy)
+    public void MarkAnnulmentPending(Guid annulmentRequestId, Guid updatedBy)
     {
+        if (annulmentRequestId == Guid.Empty)
+            throw new ArgumentException(
+                "La solicitud de anulación es obligatoria.",
+                nameof(annulmentRequestId)
+            );
+        if (
+            CurrentState == ElectronicDocumentState.AnnulmentPending
+            && AnnulmentRequestId == annulmentRequestId
+        )
+            return;
         if (CurrentState != ElectronicDocumentState.Authorized)
             throw new DomainRuleViolationException(
-                $"Solo se puede anular un documento Authorized (estado actual: {CurrentState})."
+                $"Solo se puede solicitar la anulación ante el SRI de un comprobante autorizado (estado actual: {CurrentState})."
             );
+
+        var fromState = CurrentState;
+        AnnulmentRequestId = annulmentRequestId;
+        CurrentState = ElectronicDocumentState.AnnulmentPending;
+        SetUpdated(updatedBy);
+
+        RaiseDomainEvent(
+            new ElectronicDocumentAnnulmentPendingEvent(
+                TenantId,
+                Id,
+                DocumentType,
+                fromState,
+                CurrentState,
+                annulmentRequestId
+            )
+        );
+    }
+
+    /// <summary>
+    /// ADR-036 (D-7) — Transición AnnulmentPending→Authorized: la solicitud fue rechazada, quedó sin
+    /// efecto o se desistió. El comprobante sigue vigente como siempre.
+    /// </summary>
+    public void RevertAnnulment(Guid annulmentRequestId, string reason, Guid updatedBy)
+    {
+        EnsureAnnulmentPendingFor(annulmentRequestId);
         if (string.IsNullOrWhiteSpace(reason))
-            throw new ArgumentException("El motivo de anulación es obligatorio.", nameof(reason));
+            throw new ArgumentException("El motivo es obligatorio.", nameof(reason));
+
+        var fromState = CurrentState;
+        AnnulmentRequestId = null;
+        CurrentState = ElectronicDocumentState.Authorized;
+        SetUpdated(updatedBy);
+
+        RaiseDomainEvent(
+            new ElectronicDocumentAnnulmentRevertedEvent(
+                TenantId,
+                Id,
+                DocumentType,
+                fromState,
+                CurrentState,
+                reason.Trim()
+            )
+        );
+    }
+
+    /// <summary>
+    /// ADR-036 (D-8, ZH-RETENTION-SRI-ANNULMENT-01) — Transición AnnulmentPending→Cancelled: ÚNICA
+    /// forma de llegar a Cancelled. Exige la solicitud que lo puso en anulación y la evidencia de que
+    /// el SRI confirmó ANULADO (fecha, referencia, quién lo confirmó). No existe Authorized→Cancelled:
+    /// una anulación local sin solicitud ni evidencia es imposible por construcción.
+    /// </summary>
+    public void ConfirmExternalAnnulment(
+        Guid annulmentRequestId,
+        ExternalAnnulmentEvidence evidence,
+        Guid updatedBy
+    )
+    {
+        ArgumentNullException.ThrowIfNull(evidence);
+        EnsureAnnulmentPendingFor(annulmentRequestId);
 
         var fromState = CurrentState;
         CurrentState = ElectronicDocumentState.Cancelled;
@@ -582,8 +657,20 @@ public sealed class ElectronicDocument
                 DocumentType,
                 fromState,
                 CurrentState,
-                reason.Trim()
+                evidence.Describe()
             )
         );
+    }
+
+    private void EnsureAnnulmentPendingFor(Guid annulmentRequestId)
+    {
+        if (CurrentState != ElectronicDocumentState.AnnulmentPending)
+            throw new DomainRuleViolationException(
+                $"El comprobante no tiene una anulación en trámite ante el SRI (estado actual: {CurrentState})."
+            );
+        if (AnnulmentRequestId != annulmentRequestId)
+            throw new DomainRuleViolationException(
+                "La solicitud de anulación indicada no corresponde a la anulación en trámite de este comprobante."
+            );
     }
 }

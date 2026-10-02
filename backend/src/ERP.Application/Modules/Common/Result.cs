@@ -81,7 +81,14 @@ public class Result<T> : IDomainRuleResult<Result<T>>
     /// Se construye desde la excepción semántica, nunca desde un texto.
     /// </summary>
     public static Result<T> FromDomainRule(DomainRuleViolationException violation) =>
-        new(false, default, violation.Message, ApiResponseCodes.Common.DomainRuleViolation);
+        new(
+            false,
+            default,
+            violation.Message,
+            violation is IApiCodedDomainRule coded
+                ? coded.ApiCode
+                : ApiResponseCodes.Common.DomainRuleViolation
+        );
 
     /// <summary>Acceso denegado (HTTP 403).</summary>
     public static Result<T> Forbidden(string error) =>

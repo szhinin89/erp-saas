@@ -214,8 +214,9 @@ export const expenseDocumentService = {
     }),
 
   /** Confirmed → Cancelled. `reason` es obligatorio en el contrato del backend. */
-  cancel: (id: string, reason: string) =>
-    apiPost<ExpenseDocumentDetailDto>(`${BASE}/${id}/cancel`, { reason }),
+  /** `requestSriAnnulment`: ver `purchaseService.cancel` (ZH-RETENTION-SRI-ANNULMENT-01). */
+  cancel: (id: string, reason: string, requestSriAnnulment = false) =>
+    apiPost<ExpenseDocumentDetailDto>(`${BASE}/${id}/cancel`, { reason, requestSriAnnulment }),
 
   /**
    * RETENTIONS-ELIGIBILITY-01 — solo lectura, reevaluada siempre por el servidor antes de

@@ -13,6 +13,8 @@ export const ELECTRONIC_DOCUMENT_STATES = [
   // ADR-036 (ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A)
   "Dispatching",
   "Discarded",
+  // ZH-RETENTION-SRI-ANNULMENT-01
+  "AnnulmentPending",
 ] as const;
 
 /** Valores reales del enum de dominio `ElectronicDocumentType`. */

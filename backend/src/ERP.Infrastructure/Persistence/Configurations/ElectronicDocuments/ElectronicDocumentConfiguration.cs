@@ -86,6 +86,8 @@ public sealed class ElectronicDocumentConfiguration : IEntityTypeConfiguration<E
             .HasColumnName("pre_dead_letter_state")
             .HasConversion<int?>();
         builder.Property(x => x.LastError).HasColumnName("last_error");
+        // ADR-036 (ZH-RETENTION-SRI-ANNULMENT-01) — referencia débil a la solicitud de anulación.
+        builder.Property(x => x.AnnulmentRequestId).HasColumnName("annulment_request_id");
 
         builder.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");

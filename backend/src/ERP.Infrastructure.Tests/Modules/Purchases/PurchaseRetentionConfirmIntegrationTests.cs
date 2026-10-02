@@ -312,7 +312,8 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
             company,
             new FixedCurrentBranch(branchId ?? _branchId),
             new FixedCurrentUser(_userId),
-            new CompanyClock(db)
+            new CompanyClock(db),
+            annulments: RetentionElectronicTestWiring.Requester(db, company)
         );
     }
 

@@ -8,6 +8,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { AxiosError, AxiosHeaders } from "axios";
 import { I18nProvider } from "../../../i18n/i18n";
 import { ExpenseDocumentFormPage } from "./ExpenseDocumentFormPage";
 import { expenseDocumentService } from "../api/expenseDocumentService";
@@ -487,5 +488,93 @@ it.each(["Confirmed", "Cancelled"] as const)("shows the catalog label read-only 
     expect(select.disabled).toBe(true);
     expect(select.value).toBe("01");
     expect(select.selectedOptions[0].textContent).toBe("01 - Factura");
+  });
+});
+
+describe("ExpenseDocumentFormPage — anulación ante el SRI de una retención autorizada (ZH-RETENTION-SRI-ANNULMENT-01)", () => {
+  const sriAnnulmentRequired = () =>
+    new AxiosError("Request failed", "ERR_BAD_REQUEST", undefined, undefined, {
+      status: 422,
+      statusText: "Unprocessable Entity",
+      headers: {},
+      config: { headers: new AxiosHeaders() },
+      data: { code: "ELECTRONIC_DOCUMENT_REQUIRES_SRI_ANNULMENT", message: { user: "Requiere anulación SRI" } },
+    });
+
+  it("anular con retención autorizada ofrece iniciar el trámite y el gasto nunca se muestra anulado", async () => {
+    routeParams.id = "exp-2";
+    vi.mocked(expenseDocumentService.getById).mockResolvedValue(CONFIRMED_DOCUMENT);
+    vi.mocked(expenseDocumentService.getExpenseRetention).mockResolvedValue(RETENTION_DOC);
+    vi.mocked(expenseDocumentService.cancel)
+      .mockRejectedValueOnce(sriAnnulmentRequired())
+      .mockResolvedValueOnce(CONFIRMED_DOCUMENT);
+    renderPage();
+    await waitFor(() => expect(screen.getByText("001-001-000000005")).toBeTruthy());
+
+    fireEvent.click(screen.getByRole("button", { name: /Anular gasto/ }));
+    fireEvent.change(screen.getByLabelText("Motivo de anulación"), { target: { value: "Proveedor facturó mal" } });
+    fireEvent.click(screen.getByRole("button", { name: "Sí, anular" }));
+
+    await waitFor(() => expect(screen.getByText("La retención ya fue autorizada por el SRI")).toBeTruthy());
+    fireEvent.click(screen.getByRole("button", { name: "Iniciar proceso de anulación" }));
+
+    await waitFor(() =>
+      expect(expenseDocumentService.cancel).toHaveBeenLastCalledWith("exp-2", "Proveedor facturó mal", true),
+    );
+    expect(message.success).toHaveBeenCalledWith(
+      "Se registró la solicitud de anulación ante el SRI. El gasto sigue vigente hasta que el SRI confirme ANULADO.",
+    );
+    expect(message.success).not.toHaveBeenCalledWith("Gasto anulado correctamente.");
+  });
+
+  it("con la anulación en trámite muestra que el gasto aún NO está anulado", async () => {
+    routeParams.id = "exp-2";
+    vi.mocked(expenseDocumentService.getById).mockResolvedValue(CONFIRMED_DOCUMENT);
+    vi.mocked(expenseDocumentService.getExpenseRetention).mockResolvedValue({
+      ...RETENTION_DOC,
+      electronicStatus: "AnnulmentPending",
+      annulment: {
+        id: "req-1",
+        retentionDocumentId: "ret-1",
+        sourceDocumentType: "ExpenseDocument",
+        sourceDocumentId: "exp-2",
+        status: "PendingSriResolution",
+        reason: "Proveedor facturó mal",
+        requestedBy: "user-1",
+        requestedAtUtc: "2026-09-02T15:00:00Z",
+        accessKey: "1".repeat(49),
+        retentionNumber: "001-001-000000005",
+        retentionIssueDate: "2026-09-01",
+        receptorIdentification: "0999999999001",
+        receptorName: "Proveedor Uno S.A.",
+        ordinaryDeadline: "2026-10-07",
+        isPastOrdinaryDeadline: false,
+        submittedOn: "2026-09-03",
+        submittedAtUtc: "2026-09-03T15:00:00Z",
+        submissionReference: "T-1",
+        resolvedOn: null,
+        resolvedAtUtc: null,
+        evidenceReference: null,
+        notes: null,
+        finalizedAtUtc: null,
+        finalizationAttempts: 0,
+        lastFinalizationError: null,
+        requiresFinalization: false,
+        lastSriCheckAtUtc: "2026-09-03T15:05:00Z",
+        lastSriQueryOutcome: "Success",
+        lastSriFiscalStatus: "PendingAnnulment",
+        lastSriRawStatus: "PENDIENTE DE ANULAR",
+        sriCheckCount: 1,
+        canAbandon: false,
+      },
+    });
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("El gasto aún NO está anulado.")).toBeTruthy());
+    expect(screen.getAllByText("Pendiente de anulación en SRI").length).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: /Registrar resolución/ })).toBeNull();
+    expect(screen.getByText("Anulación en trámite")).toBeTruthy();
+    expect(screen.queryByText(/quedó anulado/)).toBeNull();
   });
 });

@@ -325,8 +325,11 @@ public sealed class ElectronicDocumentEntityTests
         act.Should().Throw<DomainRuleViolationException>();
     }
 
+    // ZH-RETENTION-SRI-ANNULMENT-01 (ADR-036 D-8): la antigua transición local Authorized→Cancelled
+    // (MarkCancelled) ya no existe — Cancelled solo se alcanza con una solicitud de anulación y la
+    // evidencia de que el SRI confirmó ANULADO. Detalle completo en ElectronicDocumentAnnulmentTests.
     [Fact]
-    public void MarkCancelled_from_authorized_transitions()
+    public void Cancelled_is_only_reachable_through_a_confirmed_sri_annulment()
     {
         var document = SignedDocument();
         document.MarkSent(Guid.NewGuid());
@@ -336,19 +339,30 @@ public sealed class ElectronicDocumentEntityTests
             null,
             Guid.NewGuid()
         );
+        var requestId = Guid.NewGuid();
 
-        document.MarkCancelled("Anulación solicitada por el cliente.", Guid.NewGuid());
+        document.MarkAnnulmentPending(requestId, Guid.NewGuid());
+        document.ConfirmExternalAnnulment(
+            requestId,
+            new ExternalAnnulmentEvidence(new DateOnly(2026, 10, 3), "SRI-TRAMITE-1", Guid.NewGuid()),
+            Guid.NewGuid()
+        );
 
         document.CurrentState.Should().Be(ElectronicDocumentState.Cancelled);
     }
 
     [Fact]
-    public void MarkCancelled_before_authorized_throws()
+    public void Confirming_an_annulment_without_a_pending_request_throws()
     {
         var document = SignedDocument();
         document.MarkSent(Guid.NewGuid());
 
-        var act = () => document.MarkCancelled("motivo", Guid.NewGuid());
+        var act = () =>
+            document.ConfirmExternalAnnulment(
+                Guid.NewGuid(),
+                new ExternalAnnulmentEvidence(new DateOnly(2026, 10, 3), "SRI-TRAMITE-1", Guid.NewGuid()),
+                Guid.NewGuid()
+            );
 
         act.Should().Throw<DomainRuleViolationException>();
     }

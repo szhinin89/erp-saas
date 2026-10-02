@@ -441,7 +441,18 @@ public sealed class ElectronicDocumentRideSourceXmlProviderTests : IAsyncLifetim
     private ElectronicDocument BuildCancelledDocument(Guid sourceEntityId)
     {
         var document = BuildAuthorizedDocument(sourceEntityId, authorizedXmlPath: null);
-        document.MarkCancelled("Anulado por el usuario.", _userId);
+        // ZH-RETENTION-SRI-ANNULMENT-01: Cancelled solo tras una anulación SRI confirmada con evidencia.
+        var annulmentRequestId = Guid.NewGuid();
+        document.MarkAnnulmentPending(annulmentRequestId, _userId);
+        document.ConfirmExternalAnnulment(
+            annulmentRequestId,
+            new ERP.Domain.Modules.ElectronicDocuments.ValueObjects.ExternalAnnulmentEvidence(
+                new DateOnly(2026, 10, 3),
+                "SRI-TRAMITE-1",
+                _userId
+            ),
+            _userId
+        );
         return document;
     }
 }

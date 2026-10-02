@@ -1,4 +1,4 @@
-import { apiGet } from "../../lib/apiEnvelope";
+import { apiGet, apiPost } from "../../lib/apiEnvelope";
 import { api } from "../../lib/api";
 
 // PURCHASES-RETENTIONS-UI-MIGRATION-05C — cliente transversal del módulo Retentions
@@ -24,7 +24,71 @@ export type RetentionElectronicStatus =
   | "Authorized"
   | "Rejected"
   | "RequiresReconciliation"
-  | "Discarded";
+  | "Discarded"
+  | "AnnulmentPending"
+  | "Annulled";
+
+/**
+ * ZH-RETENTION-SRI-ANNULMENT-01/01B — anulación ante el SRI de una retención AUTORIZADA. La SOLICITUD es
+ * asistida (el usuario la presenta en SRI en Línea); la VERIFICACIÓN es automática: el backend consulta
+ * el WS ConsultaComprobante (Ficha Técnica v2.34 §8). El usuario nunca declara el estado fiscal.
+ * Espejo de `RetentionAnnulmentStatus` / `SriStatusQueryOutcome` / `SriFiscalStatus` /
+ * `RetentionAnnulmentRequestDto`.
+ */
+export type RetentionAnnulmentStatus =
+  | "PendingSubmission"
+  | "PendingSriResolution"
+  | "Accepted"
+  | "Rejected"
+  | "Expired"
+  | "Abandoned";
+
+/** Resultado técnico de la consulta a ConsultaComprobante (no es un estado fiscal). */
+export type SriStatusQueryOutcome = "Success" | "Rejected" | "Timeout" | "Unavailable" | "Unknown";
+
+/** Estado fiscal informado por el SRI (solo con una consulta `Success`). */
+export type SriFiscalStatus = "Unknown" | "Authorized" | "NotAuthorized" | "PendingAnnulment" | "Annulled";
+
+export interface RetentionAnnulmentRequestDto {
+  id: string;
+  retentionDocumentId: string;
+  sourceDocumentType: RetentionSourceDocumentType;
+  sourceDocumentId: string;
+  status: RetentionAnnulmentStatus;
+  reason: string;
+  requestedBy: string;
+  requestedAtUtc: string;
+  accessKey: string;
+  retentionNumber: string;
+  retentionIssueDate: string;
+  receptorIdentification: string;
+  receptorName: string;
+  ordinaryDeadline: string;
+  isPastOrdinaryDeadline: boolean;
+  submittedOn: string | null;
+  submittedAtUtc: string | null;
+  submissionReference: string | null;
+  resolvedOn: string | null;
+  resolvedAtUtc: string | null;
+  evidenceReference: string | null;
+  notes: string | null;
+  finalizedAtUtc: string | null;
+  finalizationAttempts: number;
+  lastFinalizationError: string | null;
+  requiresFinalization: boolean;
+  /** 01B — última consulta a ConsultaComprobante (en línea o automática). */
+  lastSriCheckAtUtc: string | null;
+  lastSriQueryOutcome: SriStatusQueryOutcome | null;
+  lastSriFiscalStatus: SriFiscalStatus | null;
+  /** Literal crudo informado por el SRI (p.ej. "PENDIENTE DE ANULAR", "RECHAZADA"). */
+  lastSriRawStatus: string | null;
+  sriCheckCount: number;
+  /** Regla del backend: antes de presentar, o presentada con el SRI confirmando AUTORIZADO. */
+  canAbandon: boolean;
+}
+
+/** Error de la anulación de Compra/Gasto cuando su retención ya está autorizada por el SRI. */
+export const SRI_ANNULMENT_REQUIRED_CODE = "ELECTRONIC_DOCUMENT_REQUIRES_SRI_ANNULMENT";
 
 /** Espejo de `IssueRetentionLineInput` (backend). `retentionCodeDescription` es opcional: el backend usa `retentionCode` como respaldo. */
 export interface IssueRetentionLineRequest {
@@ -88,6 +152,7 @@ export interface RetentionDocumentDto {
   sourceDocumentSubtotal: number | null;
   sourceDocumentTotal: number | null;
   electronicStatus?: RetentionElectronicStatus | null;
+  annulment?: RetentionAnnulmentRequestDto | null;
 }
 
 const PURCHASES_BASE = "/api/v1/purchases";
@@ -116,6 +181,29 @@ export const retentionsService = {
     });
     return data;
   },
+
+  // ── ZH-RETENTION-SRI-ANNULMENT-01 — pasos del trámite (se inicia anulando la Compra/Gasto) ──
+
+  /**
+   * "Ya presenté la solicitud" en SRI en Línea (no significa ANULADO). El backend consulta enseguida
+   * ConsultaComprobante y devuelve la solicitud con el resultado de esa consulta.
+   */
+  submitAnnulment: (
+    requestId: string,
+    body: { submittedOn: string; reference?: string | null; notes?: string | null },
+  ) => apiPost<RetentionAnnulmentRequestDto>(`${RETENTIONS_BASE}/annulments/${requestId}/submission`, body),
+
+  /** Consulta el estado en el SRI (ConsultaComprobante) y lo aplica: ANULADO finaliza la anulación. */
+  verifyAnnulmentWithSri: (requestId: string) =>
+    apiPost<RetentionAnnulmentRequestDto>(`${RETENTIONS_BASE}/annulments/${requestId}/sri-verification`, {}),
+
+  /** Desistir: antes de presentar, o si el SRI confirma que el comprobante sigue AUTORIZADO. */
+  abandonAnnulment: (requestId: string, reason: string) =>
+    apiPost<RetentionAnnulmentRequestDto>(`${RETENTIONS_BASE}/annulments/${requestId}/abandon`, { reason }),
+
+  /** Reintenta anular el documento origen tras un ANULADO cuya finalización falló. */
+  retryAnnulmentFinalization: (requestId: string) =>
+    apiPost<RetentionAnnulmentRequestDto>(`${RETENTIONS_BASE}/annulments/${requestId}/finalization`, {}),
 
   // ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A — sin registro electrónico manual: la transmisión se inicia
   // automáticamente al confirmar el documento origen (con recuperación en el servidor). El endpoint
