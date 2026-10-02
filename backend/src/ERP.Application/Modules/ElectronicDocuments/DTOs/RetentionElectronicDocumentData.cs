@@ -125,7 +125,7 @@ public sealed record RetentionElectronicDocumentTaxLine(
     RetentionTaxType TaxType,
     /// <summary>Código SRI de tipo de impuesto retenido (Tabla 21: "1"=Renta, "2"=IVA) — resuelto desde <c>SriRetentionTaxTypeCodes</c> según <see cref="TaxType"/>, nunca un literal en el proveedor.</summary>
     string SriTaxTypeCode,
-    /// <summary>codigoRetencion — el código de retención propiamente dicho (p.ej. "303", "725"), distinto del código de tipo de impuesto.</summary>
+    /// <summary>codigoRetencion OFICIAL ya resuelto por el provider desde el catálogo global versionado (ZH-SRI-RETENTION-CATALOG-SSOT-01, ADR-037): p. ej. "1" para IVA 30 % (Tabla 20) o "303" para Renta — nunca la clave de negocio de la línea ("725"). El builder solo lo transcribe.</summary>
     string RetentionCode,
     /// <summary>descripcionRetencion — snapshot congelado del nombre del código al emitir (<c>RetentionDocumentLine.RetentionCodeDescription</c>), nunca resuelto de nuevo contra el catálogo.</summary>
     string RetentionCodeDescription,

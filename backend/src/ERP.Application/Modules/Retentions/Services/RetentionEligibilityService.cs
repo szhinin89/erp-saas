@@ -86,7 +86,7 @@ public sealed class RetentionEligibilityService : IRetentionEligibilityService
         var orphanCount = 0;
         foreach (var entry in defaults)
         {
-            var info = await _retCodeResolver.GetRetentionCodeByIdAsync(entry.SriRetentionCodeId, ct);
+            var info = await _retCodeResolver.GetSelectableByIdAsync(entry.SriRetentionCodeId, ct);
             if (info is null)
             {
                 orphanCount++;

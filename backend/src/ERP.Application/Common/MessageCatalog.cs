@@ -152,6 +152,12 @@ public static class MessageCatalog
             "Electronic document annulment pending at SRI.",
             ApiErrorCategory.Validation
         ),
+        [ApiResponseCodes.ElectronicDocuments.FiscalCatalogConfigurationError] = new(
+            ApiSeverity.Error,
+            "El catálogo fiscal del SRI no permite generar el comprobante electrónico. Revise el código de retención usado o contacte a soporte.",
+            "SRI fiscal catalog cannot resolve a single official representation; electronic document not generated.",
+            ApiErrorCategory.Validation
+        ),
         [ApiResponseCodes.Retentions.AnnulmentPending] = new(
             ApiSeverity.Error,
             "La retención tiene una anulación en trámite ante el SRI: la cuenta por pagar no admite pagos, créditos ni ajustes.",

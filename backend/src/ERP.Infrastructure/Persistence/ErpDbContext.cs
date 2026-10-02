@@ -265,6 +265,8 @@ public class ErpDbContext : DbContext
     public DbSet<SriIceRate> SriIceRates => Set<SriIceRate>();
     public DbSet<SriIrbpnrRate> SriIrbpnrRates => Set<SriIrbpnrRate>();
     public DbSet<SriRetentionCode> SriRetentionCodes => Set<SriRetentionCode>();
+    public DbSet<SriRetentionCodeVersion> SriRetentionCodeVersions => Set<SriRetentionCodeVersion>();
+    public DbSet<SriNormativeSource> SriNormativeSources => Set<SriNormativeSource>();
     public DbSet<SriPaymentMethod> SriPaymentMethods => Set<SriPaymentMethod>();
     public DbSet<SriTaxRegime> SriTaxRegimes => Set<SriTaxRegime>();
     public DbSet<SriTaxSupport> SriTaxSupports => Set<SriTaxSupport>();

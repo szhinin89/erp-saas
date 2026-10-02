@@ -67,6 +67,8 @@ public sealed class ApiErrorContractTests
         // ZH-RETENTION-SRI-ANNULMENT-01.
         [ApiResponseCodes.ElectronicDocuments.AnnulmentPending] = 422,
         [ApiResponseCodes.Retentions.AnnulmentPending] = 422,
+        // ZH-SRI-RETENTION-CATALOG-SSOT-01 (ADR-037 D7): configuración fiscal del catálogo → 422.
+        [ApiResponseCodes.ElectronicDocuments.FiscalCatalogConfigurationError] = 422,
     };
 
     private static readonly string[] SuccessCodes =

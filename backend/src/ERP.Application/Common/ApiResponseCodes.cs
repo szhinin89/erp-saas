@@ -61,6 +61,13 @@ public static class ApiResponseCodes
 
         /// <summary>ZH-RETENTION-SRI-ANNULMENT-01 — el comprobante tiene una anulación en trámite ante el SRI.</summary>
         public const string AnnulmentPending = "ELECTRONIC_DOCUMENT_ANNULMENT_PENDING";
+
+        /// <summary>
+        /// ZH-SRI-RETENTION-CATALOG-SSOT-01 (ADR-037 D7) — el catálogo global SRI no permite resolver una
+        /// representación oficial única y coherente (sin versión vigente, ambigua, sin código XML o tasa
+        /// distinta). Error de configuración fiscal: el XML no se genera (fail-closed).
+        /// </summary>
+        public const string FiscalCatalogConfigurationError = "SRI_FISCAL_CATALOG_CONFIGURATION_ERROR";
     }
 
     /// <summary>ZH-RETENTION-SRI-ANNULMENT-01 — anulación ante el SRI de retenciones autorizadas.</summary>

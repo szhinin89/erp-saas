@@ -1,5 +1,7 @@
 using ERP.Application.Common.Services;
+using ERP.Application.Common;
 using ERP.Application.Modules.ElectronicDocuments.Services;
+using ERP.Application.Modules.Purchases.Services;
 using ERP.Application.Modules.Retentions.Services;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Interfaces;
@@ -44,9 +46,40 @@ public sealed class RetentionElectronicDocumentDataProviderTests
         public Mock<ISriSettingsRepository> SriSettingsRepo { get; } = new();
         public Mock<IBusinessPartnerRepository> BusinessPartnerRepo { get; } = new();
         public Mock<ISriDocTypeCatalogResolver> DocTypeResolver { get; } = new();
+        public Mock<IRetentionCodeResolver> RetentionCodeResolver { get; } = new();
 
         public Mocks()
         {
+            // ZH-SRI-RETENTION-CATALOG-SSOT-01 — representación de prueba deliberadamente distinta de la
+            // clave de negocio ("x" + código): prueba que el provider usa lo resuelto, nunca la línea.
+            RetentionCodeResolver
+                .Setup(r =>
+                    r.ResolveForDateAsync(
+                        It.IsAny<RetentionTaxType>(),
+                        It.IsAny<string>(),
+                        It.IsAny<DateOnly>(),
+                        It.IsAny<decimal>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(
+                    (RetentionTaxType taxType, string code, DateOnly _, decimal rate, CancellationToken _) =>
+                        RetentionCodeResolution.Resolved(
+                            new RetentionCodeRepresentation(
+                                Guid.NewGuid(),
+                                Guid.NewGuid(),
+                                taxType == RetentionTaxType.Vat ? "IVA" : "RENTA",
+                                code,
+                                "x" + code,
+                                rate,
+                                Guid.NewGuid(),
+                                "TEST",
+                                null,
+                                null
+                            )
+                        )
+                );
+
             DocTypeResolver
                 .Setup(r =>
                     r.IsActiveElectronicDocTypeAsync(
@@ -65,7 +98,8 @@ public sealed class RetentionElectronicDocumentDataProviderTests
                 CompanyRepo.Object,
                 SriSettingsRepo.Object,
                 BusinessPartnerRepo.Object,
-                DocTypeResolver.Object
+                DocTypeResolver.Object,
+                RetentionCodeResolver.Object
             );
 
         public void SeedHappyPath(RetentionDocument retention)
@@ -349,7 +383,7 @@ public sealed class RetentionElectronicDocumentDataProviderTests
 
         var vatLine = result.Value.Lines.Should().ContainSingle(l => l.TaxType == RetentionTaxType.Vat).Subject;
         vatLine.SriTaxTypeCode.Should().Be("2");
-        vatLine.RetentionCode.Should().Be("725");
+        vatLine.RetentionCode.Should().Be("x725", "el codigoRetencion es la representación resuelta, no la clave de negocio de la línea");
         vatLine.RetentionCodeDescription.Should().Be("Retención IVA 70% bienes");
         vatLine.BaseAmount.Should().Be(100m);
         vatLine.RetentionRate.Should().Be(70m);
@@ -357,7 +391,7 @@ public sealed class RetentionElectronicDocumentDataProviderTests
 
         var incomeLine = result.Value.Lines.Should().ContainSingle(l => l.TaxType == RetentionTaxType.Income).Subject;
         incomeLine.SriTaxTypeCode.Should().Be("1");
-        incomeLine.RetentionCode.Should().Be("303");
+        incomeLine.RetentionCode.Should().Be("x303");
         incomeLine.RetentionCodeDescription.Should().Be("Honorarios profesionales");
         incomeLine.BaseAmount.Should().Be(200m);
         incomeLine.RetentionRate.Should().Be(1m);
@@ -413,7 +447,10 @@ public sealed class RetentionElectronicDocumentDataProviderTests
             .Single()
             .GetParameters();
 
-        ctorParams.Should().HaveCount(7);
+        // 8.º parámetro (ZH-SRI-RETENTION-CATALOG-SSOT-01): IRetentionCodeResolver, de solo lectura sobre el
+        // catálogo global — resuelve el codigoRetencion oficial (ADR-037).
+        ctorParams.Should().HaveCount(8);
+        ctorParams.Select(p => p.ParameterType).Should().Contain(typeof(IRetentionCodeResolver));
         ctorParams.Select(p => p.ParameterType.Name)
             .Should()
             .NotContain(name => name.Contains("ExpenseDocument", StringComparison.OrdinalIgnoreCase));
@@ -570,5 +607,54 @@ public sealed class RetentionElectronicDocumentDataProviderTests
         result.Value.Issuer.MatrixAddress.Should().Be("Av. Principal 123");
         result.Value.RetentionInfo.SpecialTaxpayerNumber.Should().Be("5368");
         result.Value.AdditionalInfo.Should().BeEmpty();
+    }
+
+    // ── ZH-SRI-RETENTION-CATALOG-SSOT-01: codigoRetencion desde el catálogo global versionado ───────────
+
+    [Fact]
+    public async Task GetDataAsync_resuelve_cada_linea_con_la_fecha_de_emision_de_la_retencion_y_su_tasa()
+    {
+        var retention = BuildIssuedRetention();
+        var m = new Mocks();
+        m.SeedHappyPath(retention);
+
+        var result = await m.BuildProvider()
+            .GetDataAsync(new ElectronicDocumentSourceReference(TenantId, CompanyId, retention.Id));
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        m.RetentionCodeResolver.Verify(
+            r => r.ResolveForDateAsync(RetentionTaxType.Vat, "725", new DateOnly(2026, 9, 4), 70m, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+        m.RetentionCodeResolver.Verify(
+            r => r.ResolveForDateAsync(RetentionTaxType.Income, "303", new DateOnly(2026, 9, 4), 1m, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+    }
+
+    [Theory]
+    [InlineData(RetentionCodeResolutionError.ConceptNotFound)]
+    [InlineData(RetentionCodeResolutionError.NoValidVersion)]
+    [InlineData(RetentionCodeResolutionError.AmbiguousVersions)]
+    [InlineData(RetentionCodeResolutionError.MissingXmlCode)]
+    [InlineData(RetentionCodeResolutionError.RateMismatch)]
+    public async Task GetDataAsync_falla_cerrado_con_error_fiscal_estructurado_si_una_linea_no_resuelve(
+        RetentionCodeResolutionError error
+    )
+    {
+        var retention = BuildIssuedRetention();
+        var m = new Mocks();
+        m.SeedHappyPath(retention);
+        m.RetentionCodeResolver
+            .Setup(r => r.ResolveForDateAsync(RetentionTaxType.Vat, "725", It.IsAny<DateOnly>(), It.IsAny<decimal>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(RetentionCodeResolution.Failed(error, "detalle de prueba"));
+
+        var result = await m.BuildProvider()
+            .GetDataAsync(new ElectronicDocumentSourceReference(TenantId, CompanyId, retention.Id));
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.FiscalCatalogConfigurationError);
+        result.Error.Should().Contain("detalle de prueba");
+        result.Value.Should().BeNull();
     }
 }

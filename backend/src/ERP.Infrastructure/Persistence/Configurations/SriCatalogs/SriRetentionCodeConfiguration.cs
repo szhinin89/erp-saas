@@ -20,7 +20,15 @@ public class SriRetentionCodeConfiguration : IEntityTypeConfiguration<SriRetenti
             .HasColumnName("applies_to")
             .HasMaxLength(15)
             .HasDefaultValue("SUPPLIER");
-        builder.Property(x => x.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+        // ZH-SRI-RETENTION-CATALOG-SSOT-01 — IsActive es la habilitación operativa (ADR-037 D13). Con
+        // DEFAULT true y generación "on add", EF omite un `false` (valor CLR por defecto) en seeds e
+        // inserts y la fila quedaría habilitada. ValueGeneratedNever conserva el DEFAULT de la columna
+        // pero obliga a EF a escribir siempre el valor real.
+        builder
+            .Property(x => x.IsActive)
+            .HasColumnName("is_active")
+            .HasDefaultValue(true)
+            .ValueGeneratedNever();
 
         builder
             .HasIndex(x => new { x.TaxType, x.Code })
@@ -76,6 +84,45 @@ public class SriRetentionCodeConfiguration : IEntityTypeConfiguration<SriRetenti
                 Code = "728",
                 Name = "Ret. IVA 15% – Constructoras",
                 Percentage = 15.00m,
+                // ZH-SRI-RETENTION-CATALOG-SSOT-01 — la Ficha v2.34 Tabla 20 no define una retención de IVA
+                // del 15 %: sin representación XML oficial, no se habilita para operaciones nuevas. Se
+                // conservan Id, código y referencias históricas (ADR-037 D9/D13); se rehabilita solo por
+                // migración cuando exista fuente oficial.
+                IsActive = false,
+            },
+            // ZH-SRI-RETENTION-CATALOG-SSOT-01 — conceptos de la Ficha Técnica v2.34, Tabla 20, que el
+            // catálogo no tenía. Identidad interna (Id) y clave de negocio (Code) son independientes del
+            // codigoRetencion oficial, que vive en SriRetentionCodeVersion.XmlCode (ADR-037 D5): el Code
+            // es mnemónico y deliberadamente NO imita un código oficial/formulario (no 729, 730…).
+            new SriRetentionCode
+            {
+                Id = Guid.Parse("10000000-0000-0000-0000-000000000007"),
+                TaxType = "IVA",
+                Code = "IVA-50",
+                Name = "Ret. IVA 50%",
+                Percentage = 50.00m,
+            },
+            // Retención en cero (Tabla 20; Res. NAC-DGERCGC15-00000284) y "No procede retención":
+            // representación confirmada, pero RetentionDocumentLine exige tasa y valor > 0, así que hoy
+            // no pueden usarse en una línea. Se registran NO habilitados (no seleccionables) para no
+            // ofrecer opciones que el dominio rechaza; su representación XML queda versionada.
+            new SriRetentionCode
+            {
+                Id = Guid.Parse("10000000-0000-0000-0000-000000000008"),
+                TaxType = "IVA",
+                Code = "IVA-0",
+                Name = "Ret. IVA 0% – Retención en cero",
+                Percentage = 0.00m,
+                IsActive = false,
+            },
+            new SriRetentionCode
+            {
+                Id = Guid.Parse("10000000-0000-0000-0000-000000000009"),
+                TaxType = "IVA",
+                Code = "IVA-NP",
+                Name = "No procede retención de IVA",
+                Percentage = 0.00m,
+                IsActive = false,
             },
             // RENTA
             new SriRetentionCode

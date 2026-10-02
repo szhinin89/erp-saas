@@ -230,7 +230,7 @@ public sealed class RetentionEligibilityServiceTests
             var entry = SupplierRetentionDefault.Create(TenantId, CompanyId, SupplierId, codeId, _defaults.Count, UserId);
             _defaults.Add(entry);
             RetResolver
-                .Setup(r => r.GetRetentionCodeByIdAsync(codeId, It.IsAny<CancellationToken>()))
+                .Setup(r => r.GetSelectableByIdAsync(codeId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new RetentionCodeInfo(taxType, code, $"Retención {taxType} {percentage}%", percentage));
         }
 
@@ -240,7 +240,7 @@ public sealed class RetentionEligibilityServiceTests
             var entry = SupplierRetentionDefault.Create(TenantId, CompanyId, SupplierId, codeId, _defaults.Count, UserId);
             _defaults.Add(entry);
             RetResolver
-                .Setup(r => r.GetRetentionCodeByIdAsync(codeId, It.IsAny<CancellationToken>()))
+                .Setup(r => r.GetSelectableByIdAsync(codeId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync((RetentionCodeInfo?)null);
         }
     }

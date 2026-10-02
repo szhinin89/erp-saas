@@ -126,6 +126,17 @@ Tienen tres defectos estructurales:
 | `HasQueryFilter` por `IsEnabled` | Ocultaría referencias históricas y rompería la resolución de documentos existentes |
 | `EXCLUDE USING gist` obligatorio | Requiere `btree_gist`, sin precedente en el repo; queda como decisión diferida (DR-5), cubierto por unique + tests + resolver |
 
+## Implementación
+
+- **Slice 1 — `ZH-SRI-RETENTION-CATALOG-SSOT-01` (2026-10-02):** `sri_normative_source` + `sri_retention_code_version`
+  (migración `SriRetentionCatalogVersioning`). `IRetentionCodeResolver` implementa el contrato de D13 y
+  `SriCatalogComplianceTests` cubre la parte de retenciones.
+  - Por instrucción del ticket, en este slice `IsEnabled` se materializa en la columna `is_active` existente
+    (sin renombrar).
+  - `ValidFrom` queda nulo ("sin límite inferior confirmado"): la ficha no permite fijar con certeza la fecha de
+    inicio de la Tabla 20 vigente.
+  - Estado: pendiente de validación real en `celcer`.
+
 ## Decisiones abiertas
 
 DR-1 significado ATS de 721–728 · DR-2 concepto 15 % (`728`) · DR-3 códigos internos para IVA 50 %/0 %/no procede ·

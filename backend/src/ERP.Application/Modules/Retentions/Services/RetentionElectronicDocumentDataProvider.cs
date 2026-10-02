@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Application.Modules.ElectronicDocuments.Services;
+using ERP.Application.Modules.Purchases.Services;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
@@ -52,6 +53,7 @@ public sealed class RetentionElectronicDocumentDataProvider : IRetentionElectron
     private readonly ISriSettingsRepository _sriSettingsRepository;
     private readonly IBusinessPartnerRepository _businessPartnerRepository;
     private readonly ISriDocTypeCatalogResolver _docTypeCatalogResolver;
+    private readonly IRetentionCodeResolver _retentionCodeResolver;
 
     public RetentionElectronicDocumentDataProvider(
         IRetentionDocumentRepository retentionRepository,
@@ -60,7 +62,8 @@ public sealed class RetentionElectronicDocumentDataProvider : IRetentionElectron
         ICompanyRepository companyRepository,
         ISriSettingsRepository sriSettingsRepository,
         IBusinessPartnerRepository businessPartnerRepository,
-        ISriDocTypeCatalogResolver docTypeCatalogResolver
+        ISriDocTypeCatalogResolver docTypeCatalogResolver,
+        IRetentionCodeResolver retentionCodeResolver
     )
     {
         _retentionRepository = retentionRepository;
@@ -70,6 +73,7 @@ public sealed class RetentionElectronicDocumentDataProvider : IRetentionElectron
         _sriSettingsRepository = sriSettingsRepository;
         _businessPartnerRepository = businessPartnerRepository;
         _docTypeCatalogResolver = docTypeCatalogResolver;
+        _retentionCodeResolver = retentionCodeResolver;
     }
 
     public async Task<Result<RetentionElectronicDocumentData>> GetDataAsync(
@@ -151,6 +155,34 @@ public sealed class RetentionElectronicDocumentDataProvider : IRetentionElectron
         if (errors.Count > 0)
             return Result<RetentionElectronicDocumentData>.ValidationFailure(string.Join(" ", errors));
 
+        // ZH-SRI-RETENTION-CATALOG-SSOT-01 (ADR-037 D5/D6/D7) — el codigoRetencion del XML es la
+        // representación oficial vigente a la fecha de emisión, resuelta desde el catálogo global
+        // versionado; nunca la clave de negocio de la línea (p. ej. "725") ni un mapping en código.
+        // Fail-closed: cualquier línea sin representación única y coherente impide generar el XML.
+        var taxLines = new List<RetentionElectronicDocumentTaxLine>(retention.Lines.Count);
+        var catalogErrors = new List<string>();
+        foreach (var line in retention.Lines)
+        {
+            var resolution = await _retentionCodeResolver.ResolveForDateAsync(
+                line.TaxType,
+                line.RetentionCode,
+                retention.IssueDate!.Value,
+                line.RetentionRate,
+                ct
+            );
+            if (!resolution.IsResolved)
+            {
+                catalogErrors.Add(resolution.Detail ?? $"Código de retención '{line.RetentionCode}' sin representación SRI.");
+                continue;
+            }
+            taxLines.Add(BuildTaxLine(line, resolution.Representation!.XmlCode));
+        }
+        if (catalogErrors.Count > 0)
+            return Result<RetentionElectronicDocumentData>.ValidationFailure(
+                "Configuración fiscal del catálogo de retenciones SRI inválida: " + string.Join(" ", catalogErrors),
+                ApiResponseCodes.ElectronicDocuments.FiscalCatalogConfigurationError
+            );
+
         var data = new RetentionElectronicDocumentData(
             Metadata: new RetentionElectronicDocumentMetadata(
                 RetentionId: retention.Id,
@@ -204,7 +236,7 @@ public sealed class RetentionElectronicDocumentDataProvider : IRetentionElectron
                 Subtotal: retention.SourceDocumentSubtotal,
                 Total: retention.SourceDocumentTotal
             ),
-            Lines: retention.Lines.Select(BuildTaxLine).ToList(),
+            Lines: taxLines,
             Totals: new RetentionElectronicDocumentTotals(
                 TotalRetainedVat: retention.TotalRetainedVat,
                 TotalRetainedIncome: retention.TotalRetainedIncome,
@@ -226,11 +258,14 @@ public sealed class RetentionElectronicDocumentDataProvider : IRetentionElectron
             ? "CONTRIBUYENTE RÉGIMEN RIMPE"
             : null;
 
-    private static RetentionElectronicDocumentTaxLine BuildTaxLine(RetentionDocumentLine line) =>
+    private static RetentionElectronicDocumentTaxLine BuildTaxLine(
+        RetentionDocumentLine line,
+        string officialRetentionXmlCode
+    ) =>
         new(
             TaxType: line.TaxType,
             SriTaxTypeCode: ResolveSriTaxTypeCode(line.TaxType),
-            RetentionCode: line.RetentionCode,
+            RetentionCode: officialRetentionXmlCode,
             RetentionCodeDescription: line.RetentionCodeDescription,
             BaseAmount: line.BaseAmount,
             RetentionRate: line.RetentionRate,

@@ -2,6 +2,18 @@
 
 **Single source of truth** for delivery state. Updated: **2026-10-02** · Kernel refactor: **2026-06-05**.
 
+## ZH-SRI-RETENTION-CATALOG-SSOT-01 — codigoRetencion oficial desde catálogo global versionado (2026-10-02)
+
+**Estado: IMPLEMENTED / PENDING REAL SRI VALIDATION (sin commit).** P0 de `docs/sri/SRI-2.34-CURRENT-COMPLIANCE-AUDIT.md` (R24); primer slice de ADR-037. No se cierra hasta autorizar en `celcer` una retención real con Renta + IVA: el entorno no tiene empresa con certificado configurado.
+- **Defecto corregido:** el XML de retención emitía la clave de negocio del catálogo (`725`) como `codigoRetencion`. Ahora emite el código oficial de la Ficha v2.34 Tabla 20 (IVA 10%→9, 20%→10, 30%→1, 50%→11, 70%→2, 100%→3), resuelto a la fecha de emisión. `RetentionXmlBuilder` no cambia.
+- **Modelo (ADR-037):** `global.sri_normative_source` + `global.sri_retention_code_version` (vigencia `ValidFrom/ValidUntil`, `Percentage`, `XmlCode`, `AtsCode` nulo hasta tener fuente). Sin TenantId/CompanyId, sin CRUD/UI. 721–728 se conservan como clave de negocio. `IsActive` sigue siendo la habilitación operativa (sin renombrar).
+- **Conceptos nuevos:** `IVA-50` (habilitado). `IVA-0` (retención en cero, código 7) e `IVA-NP` (no procede, código 8) quedan **no habilitados**, porque `RetentionDocumentLine` exige tasa > 0.
+- **728 (IVA 15%):** se conservan su Id y sus referencias históricas, pero queda **no habilitado** (`IsActive=false`, mediante `UpdateData` de la migración): la Tabla 20 no lo define. No aparece en las lecturas seleccionables y no se pueden crear defaults nuevos con él (`AddSupplierRetentionDefaultValidator` usa ahora `IRetentionCodeResolver.GetSelectableByIdAsync`). Los defaults existentes siguen legibles. Emitirlo falla cerrado con `SRI_FISCAL_CATALOG_CONFIGURATION_ERROR` (422).
+- **Renta:** comportamiento sin cambios (código XML = código del catálogo). Fuente: catálogo ATS **no verificado** y porcentajes sin exigir (ADR-037 DR-4).
+- **Resolver:** `IRetentionCodeResolver` extendido con `GetSelectable…` / `GetByIdIncludingDisabledAsync` / `ResolveForDateAsync` (fail-closed tipado: sin versión, ambigua, sin XmlCode, tasa distinta, concepto inexistente). Se usa en `RetentionElectronicDocumentDataProvider`.
+- **Migración aditiva** `SriRetentionCatalogVersioning` (solo `CreateTable`/`CreateIndex`/`InsertData`; `InitialEnterpriseBaseline` intacta).
+- **Tests:** `SriCatalogComplianceTests` (19) + `SriRetentionCatalogResolutionIntegrationTests` (20, PostgreSQL real: XML de punta a punta provider → resolver → builder → XSD).
+
 ## ZH-RETENTION-SRI-ANNULMENT-01B — Anulación SRI alineada con la Ficha Técnica v2.34 (2026-10-02)
 
 **Estado: COMPLETADO (sin commit).** ADR-036 §25. Evoluciona 01 sin descartarlo. Ventas y Notas de Crédito no cambian; el bug de tenant del job genérico de reintento sigue pendiente (ticket propio).
