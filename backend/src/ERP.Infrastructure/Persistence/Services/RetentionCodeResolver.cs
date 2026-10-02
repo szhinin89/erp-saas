@@ -1,6 +1,7 @@
 using ERP.Application.Modules.Purchases.Services;
 using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Domain.Modules.SriCatalogs.Entities;
+using ERP.Domain.Modules.SriCatalogs.Enums;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 
@@ -136,6 +137,11 @@ public sealed class RetentionCodeResolver : IRetentionCodeResolver
                 RetentionCodeResolutionError.MissingXmlCode,
                 $"El código de retención {label} no tiene código oficial SRI para el comprobante electrónico; no puede emitirse."
             );
+        if (version.RateKind == SriRetentionRateKind.Conditional)
+            return RetentionCodeResolution.Failed(
+                RetentionCodeResolutionError.ConditionalRateUndetermined,
+                $"El código de retención {label} tiene una tarifa condicional según la fuente oficial ('{version.RateRuleText}'); el ERP no puede determinar la tasa aplicable."
+            );
         if (version.Percentage is { } officialRate && officialRate != appliedRate)
             return RetentionCodeResolution.Failed(
                 RetentionCodeResolutionError.RateMismatch,
@@ -144,7 +150,12 @@ public sealed class RetentionCodeResolver : IRetentionCodeResolver
 
         var source = await _db
             .SriNormativeSources.AsNoTracking()
-            .FirstAsync(s => s.Id == version.NormativeSourceId, ct);
+            .FirstOrDefaultAsync(s => s.Id == version.NormativeSourceId, ct);
+        if (source is null)
+            return RetentionCodeResolution.Failed(
+                RetentionCodeResolutionError.NormativeEvidenceMissing,
+                $"El código de retención {label} no tiene una fuente normativa registrada para su representación vigente."
+            );
 
         return RetentionCodeResolution.Resolved(
             new RetentionCodeRepresentation(

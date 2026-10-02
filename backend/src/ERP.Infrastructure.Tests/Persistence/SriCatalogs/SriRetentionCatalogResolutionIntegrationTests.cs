@@ -114,8 +114,8 @@ public sealed class SriRetentionCatalogResolutionIntegrationTests : IClassFixtur
         flags["IVA-50"].Should().BeTrue();
         flags["728"].Should().BeFalse("728 no tiene representación oficial: no se habilita para operaciones nuevas");
         var officialConceptIds = db.SriRetentionCodes.Where(c => c.TaxType != "TEST").Select(c => c.Id);
-        (await db.SriRetentionCodeVersions.CountAsync(v => officialConceptIds.Contains(v.RetentionCodeId))).Should().Be(22);
-        (await db.SriNormativeSources.CountAsync()).Should().Be(2);
+        (await db.SriRetentionCodeVersions.CountAsync(v => officialConceptIds.Contains(v.RetentionCodeId))).Should().Be(32, "22 del slice IVA + 10 versiones de Renta del Catálogo ATS 06/08/2026");
+        (await db.SriNormativeSources.CountAsync()).Should().Be(3);
     }
 
     // ── 7-9. Separación Selectable / ForDate / Historical ────────────────────────────────────────────
@@ -167,6 +167,76 @@ public sealed class SriRetentionCatalogResolutionIntegrationTests : IClassFixtur
         historical!.Code.Should().Be("728");
         historical.Percentage.Should().Be(15m);
         historical.IsActive.Should().BeFalse();
+    }
+
+    // ── ZH-SRI-RETENTION-INCOME-CATALOG-SSOT-01: Renta del Catálogo ATS 06/08/2026 ────────────────────
+
+    private static readonly DateOnly LastLegacyDay = new(2026, 8, 5);
+    private static readonly DateOnly AtsBlockStart = new(2026, 8, 6);
+    private static readonly Guid Concept341 = Guid.Parse("20000000-0000-0000-0000-000000000010");
+
+    [Fact]
+    public async Task El_2026_08_05_resuelve_la_version_anterior_y_el_2026_08_06_la_tasa_oficial_ATS()
+    {
+        await using var db = _fixture.CreateContext();
+        var resolver = new RetentionCodeResolver(db);
+
+        var before = await resolver.ResolveForDateAsync(RetentionTaxType.Income, "304", LastLegacyDay, 2m);
+        before.IsResolved.Should().BeTrue(before.Detail);
+        before.Representation!.Percentage.Should().BeNull("la versión heredada no exige tasa (histórico preservado)");
+        before.Representation.NormativeSourceId.Should().Be(SriNormativeSourceConfiguration.AtsIncomeRetentionCatalogId);
+
+        (await resolver.ResolveForDateAsync(RetentionTaxType.Income, "304", AtsBlockStart, 2m)).Error
+            .Should().Be(RetentionCodeResolutionError.RateMismatch, "desde 06/08/2026 la tasa oficial de 304 es 10 %");
+
+        var after = await resolver.ResolveForDateAsync(RetentionTaxType.Income, "304", AtsBlockStart, 10m);
+        after.IsResolved.Should().BeTrue(after.Detail);
+        after.Representation!.XmlCode.Should().Be("304");
+        after.Representation.Percentage.Should().Be(10m);
+        after.Representation.NormativeSourceId.Should().Be(SriNormativeSourceConfiguration.AtsIncomeTable310From20260806Id);
+        after.Representation.NormativeDocument.Should().Be("CATALOGO_ATS");
+    }
+
+    [Theory]
+    [InlineData("310", 1)]
+    [InlineData("327", 12)]
+    public async Task Tasa_condicional_falla_cerrado_desde_2026_08_06(string code, int anyRate)
+    {
+        await using var db = _fixture.CreateContext();
+        var resolver = new RetentionCodeResolver(db);
+
+        (await resolver.ResolveForDateAsync(RetentionTaxType.Income, code, AtsBlockStart, anyRate)).Error
+            .Should().Be(RetentionCodeResolutionError.ConditionalRateUndetermined);
+        (await resolver.ResolveForDateAsync(RetentionTaxType.Income, code, LastLegacyDay, anyRate)).IsResolved
+            .Should().BeTrue("los documentos anteriores conservan su resolución histórica");
+        (await resolver.GetSelectableByCodeAsync(code, "RENTA")).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Codigo_retirado_341_no_es_seleccionable_no_resuelve_desde_2026_08_06_y_sigue_legible()
+    {
+        await using var db = _fixture.CreateContext();
+        var resolver = new RetentionCodeResolver(db);
+
+        (await resolver.GetSelectableByIdAsync(Concept341)).Should().BeNull();
+        (await resolver.ResolveForDateAsync(Concept341, AtsBlockStart, 2m)).Error.Should().Be(RetentionCodeResolutionError.NoValidVersion);
+        (await resolver.ResolveForDateAsync(Concept341, LastLegacyDay, 2m)).IsResolved.Should().BeTrue();
+
+        var historical = await resolver.GetByIdIncludingDisabledAsync(Concept341);
+        historical!.Code.Should().Be("341");
+        historical.IsActive.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Las_tasas_operativas_seleccionables_coinciden_con_el_ATS_vigente()
+    {
+        await using var db = _fixture.CreateContext();
+        var resolver = new RetentionCodeResolver(db);
+
+        (await resolver.GetSelectableByCodeAsync("304", "RENTA"))!.Percentage.Should().Be(10m);
+        (await resolver.GetSelectableByCodeAsync("307", "RENTA"))!.Percentage.Should().Be(3m);
+        (await resolver.GetSelectableByCodeAsync("312", "RENTA"))!.Percentage.Should().Be(2m);
+        (await resolver.GetSelectableByCodeAsync("343", "RENTA"))!.Percentage.Should().Be(1m);
     }
 
     // ── 10-12 + 728. Fail-closed tipado ──────────────────────────────────────────────────────────────

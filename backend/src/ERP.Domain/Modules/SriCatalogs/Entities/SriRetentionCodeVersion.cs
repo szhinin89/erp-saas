@@ -1,3 +1,5 @@
+using ERP.Domain.Modules.SriCatalogs.Enums;
+
 namespace ERP.Domain.Modules.SriCatalogs.Entities;
 
 /// <summary>
@@ -17,6 +19,7 @@ public class SriRetentionCodeVersion
 {
     public const int XmlCodeMaxLen = 5;
     public const int AtsCodeMaxLen = 10;
+    public const int RateRuleTextMaxLen = 300;
 
     public Guid Id { get; set; }
     public Guid RetentionCodeId { get; set; }
@@ -24,8 +27,17 @@ public class SriRetentionCodeVersion
     public DateOnly? ValidFrom { get; set; }
     public DateOnly? ValidUntil { get; set; }
 
+    /// <summary>
+    /// Forma de la tarifa (ZH-SRI-RETENTION-INCOME-CATALOG-SSOT-01). <see cref="SriRetentionRateKind.Conditional"/>
+    /// nunca lleva <see cref="Percentage"/> y no es resoluble automáticamente.
+    /// </summary>
+    public SriRetentionRateKind RateKind { get; set; } = SriRetentionRateKind.Fixed;
+
     /// <summary>Porcentaje oficial de la versión; null cuando la fuente no lo fija o no está verificado (no se exige coincidencia).</summary>
     public decimal? Percentage { get; set; }
+
+    /// <summary>Texto literal de la regla oficial cuando la tarifa es condicional (p. ej. "12 o 14").</summary>
+    public string? RateRuleText { get; set; }
 
     /// <summary><c>codigoRetencion</c> del XML; null = concepto sin representación oficial (no emitible, fail-closed).</summary>
     public string? XmlCode { get; set; }

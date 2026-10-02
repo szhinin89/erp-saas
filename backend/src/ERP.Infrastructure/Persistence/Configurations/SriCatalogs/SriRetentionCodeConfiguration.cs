@@ -130,7 +130,9 @@ public class SriRetentionCodeConfiguration : IEntityTypeConfiguration<SriRetenti
                 Id = Guid.Parse("20000000-0000-0000-0000-000000000001"),
                 TaxType = "RENTA",
                 Code = "303",
-                Name = "Honorarios profesionales y demás servicios",
+                // ZH-SRI-RETENTION-INCOME-CATALOG-SSOT-01 — nombre y tarifa operativa vigentes (Catálogo ATS,
+                // Tabla 3.10 desde 06/08/2026). La historia vive en sri_retention_code_version.
+                Name = "Honorarios profesionales y demás pagos por servicios relacionados con el título profesional",
                 Percentage = 10.00m,
             },
             new SriRetentionCode
@@ -138,64 +140,84 @@ public class SriRetentionCodeConfiguration : IEntityTypeConfiguration<SriRetenti
                 Id = Guid.Parse("20000000-0000-0000-0000-000000000002"),
                 TaxType = "RENTA",
                 Code = "304",
-                Name = "Servicios – predomina mano de obra",
-                Percentage = 2.00m,
+                // ZH-SRI-RETENTION-INCOME-CATALOG-SSOT-01 — nombre y tarifa operativa vigentes (Catálogo ATS,
+                // Tabla 3.10 desde 06/08/2026). La historia vive en sri_retention_code_version.
+                Name = "Servicios predomina el intelecto no relacionados con el título profesional",
+                Percentage = 10.00m,
             },
             new SriRetentionCode
             {
                 Id = Guid.Parse("20000000-0000-0000-0000-000000000003"),
                 TaxType = "RENTA",
                 Code = "307",
-                Name = "Publicidad y comunicación",
-                Percentage = 1.75m,
+                // ZH-SRI-RETENTION-INCOME-CATALOG-SSOT-01 — nombre y tarifa operativa vigentes (Catálogo ATS,
+                // Tabla 3.10 desde 06/08/2026). La historia vive en sri_retention_code_version.
+                Name = "Servicios predomina la mano de obra",
+                Percentage = 3.00m,
             },
             new SriRetentionCode
             {
                 Id = Guid.Parse("20000000-0000-0000-0000-000000000004"),
                 TaxType = "RENTA",
                 Code = "309",
-                Name = "Arrendamiento bienes inmuebles (persona natural)",
-                Percentage = 8.00m,
+                // ZH-SRI-RETENTION-INCOME-CATALOG-SSOT-01 — nombre y tarifa operativa vigentes (Catálogo ATS,
+                // Tabla 3.10 desde 06/08/2026). La historia vive en sri_retention_code_version.
+                Name = "Servicios prestados por medios de comunicación y agencias de publicidad",
+                Percentage = 3.00m,
             },
             new SriRetentionCode
             {
                 Id = Guid.Parse("20000000-0000-0000-0000-000000000005"),
                 TaxType = "RENTA",
                 Code = "310",
-                Name = "Seguros y reaseguros (10% de primas)",
+                // ZH-SRI-RETENTION-INCOME-CATALOG-SSOT-01 — nombre oficial (Catálogo ATS, Tabla 3.10 desde
+                // 06/08/2026). Tarifa CONDICIONAL ("1 /0 según resolución NAC-DGERCGC26-00000028"): el ERP no puede determinarla,
+                // así que no se habilita; Percentage queda como valor heredado sin efecto operativo.
+                Name = "Servicio de transporte privado de pasajeros o transporte público o privado de carga",
                 Percentage = 1.00m,
+                IsActive = false,
             },
             new SriRetentionCode
             {
                 Id = Guid.Parse("20000000-0000-0000-0000-000000000006"),
                 TaxType = "RENTA",
                 Code = "312",
-                Name = "Transf. bienes muebles de naturaleza corporal",
-                Percentage = 1.00m,
+                // ZH-SRI-RETENTION-INCOME-CATALOG-SSOT-01 — nombre y tarifa operativa vigentes (Catálogo ATS,
+                // Tabla 3.10 desde 06/08/2026). La historia vive en sri_retention_code_version.
+                Name = "Transferencia de bienes muebles de naturaleza corporal",
+                Percentage = 2.00m,
             },
             new SriRetentionCode
             {
                 Id = Guid.Parse("20000000-0000-0000-0000-000000000007"),
                 TaxType = "RENTA",
                 Code = "320",
-                Name = "Servicios entre sociedades",
-                Percentage = 2.75m,
+                // ZH-SRI-RETENTION-INCOME-CATALOG-SSOT-01 — nombre y tarifa operativa vigentes (Catálogo ATS,
+                // Tabla 3.10 desde 06/08/2026). La historia vive en sri_retention_code_version.
+                Name = "Arrendamiento bienes inmuebles",
+                Percentage = 10.00m,
             },
             new SriRetentionCode
             {
                 Id = Guid.Parse("20000000-0000-0000-0000-000000000008"),
                 TaxType = "RENTA",
                 Code = "325",
-                Name = "Compra bienes corporales muebles",
-                Percentage = 1.75m,
+                // ZH-SRI-RETENTION-INCOME-CATALOG-SSOT-01 — nombre y tarifa operativa vigentes (Catálogo ATS,
+                // Tabla 3.10 desde 06/08/2026). La historia vive en sri_retention_code_version.
+                Name = "Anticipo dividendos",
+                Percentage = 25.00m,
             },
             new SriRetentionCode
             {
                 Id = Guid.Parse("20000000-0000-0000-0000-000000000009"),
                 TaxType = "RENTA",
                 Code = "327",
-                Name = "Actividades de construcción (contrato)",
+                // ZH-SRI-RETENTION-INCOME-CATALOG-SSOT-01 — nombre oficial (Catálogo ATS, Tabla 3.10 desde
+                // 06/08/2026). Tarifa CONDICIONAL ("12 o 14"): el ERP no puede determinarla,
+                // así que no se habilita; Percentage queda como valor heredado sin efecto operativo.
+                Name = "Dividendos distribuidos a personas naturales residentes",
                 Percentage = 1.75m,
+                IsActive = false,
             },
             new SriRetentionCode
             {
@@ -204,6 +226,9 @@ public class SriRetentionCodeConfiguration : IEntityTypeConfiguration<SriRetenti
                 Code = "341",
                 Name = "Otras retenciones aplicables al 2%",
                 Percentage = 2.00m,
+                // ZH-SRI-RETENTION-INCOME-CATALOG-SSOT-01 — no existe en el Catálogo ATS vigente (Tabla 3.10,
+                // desde 06/08/2026): retirado de operaciones nuevas; se conserva para históricos.
+                IsActive = false,
             },
             new SriRetentionCode
             {
@@ -212,14 +237,19 @@ public class SriRetentionCodeConfiguration : IEntityTypeConfiguration<SriRetenti
                 Code = "342",
                 Name = "Otras retenciones aplicables al 1%",
                 Percentage = 1.00m,
+                // ZH-SRI-RETENTION-INCOME-CATALOG-SSOT-01 — no existe en el Catálogo ATS vigente (Tabla 3.10,
+                // desde 06/08/2026): retirado de operaciones nuevas; se conserva para históricos.
+                IsActive = false,
             },
             new SriRetentionCode
             {
                 Id = Guid.Parse("20000000-0000-0000-0000-000000000012"),
                 TaxType = "RENTA",
                 Code = "343",
-                Name = "Otras retenciones aplicables al 1.75%",
-                Percentage = 1.75m,
+                // ZH-SRI-RETENTION-INCOME-CATALOG-SSOT-01 — nombre y tarifa operativa vigentes (Catálogo ATS,
+                // Tabla 3.10 desde 06/08/2026). La historia vive en sri_retention_code_version.
+                Name = "Otras retenciones aplicables el 1% (incluye régimen RIMPE - Emprendedores, para este caso aplica con cualquier forma de pago inclusive los pagos que deban realizar las tarjetas de crédito/débito)",
+                Percentage = 1.00m,
             },
             new SriRetentionCode
             {
@@ -228,6 +258,9 @@ public class SriRetentionCodeConfiguration : IEntityTypeConfiguration<SriRetenti
                 Code = "344",
                 Name = "Otras retenciones aplicables al 2.75%",
                 Percentage = 2.75m,
+                // ZH-SRI-RETENTION-INCOME-CATALOG-SSOT-01 — no existe en el Catálogo ATS vigente (Tabla 3.10,
+                // desde 06/08/2026): retirado de operaciones nuevas; se conserva para históricos.
+                IsActive = false,
             },
             // ISD
             new SriRetentionCode

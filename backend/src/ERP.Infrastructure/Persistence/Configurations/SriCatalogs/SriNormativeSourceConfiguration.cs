@@ -18,6 +18,14 @@ public class SriNormativeSourceConfiguration : IEntityTypeConfiguration<SriNorma
 
     public const string IntroducedInMigration = "SriRetentionCatalogVersioning";
 
+    /// <summary>
+    /// ZH-SRI-RETENTION-INCOME-CATALOG-SSOT-01 — Catálogo ATS oficial (Catalogo_ATS.xls), hoja TABLAS RETENCIONES,
+    /// Tabla 3.10, bloque "DESDE 06/AGOSTO/2026": fuente verificada de los códigos y tarifas de Renta.
+    /// </summary>
+    public static readonly Guid AtsIncomeTable310From20260806Id = Guid.Parse("40000000-0000-0000-0000-000000000003");
+
+    public const string IncomeAtsIntroducedInMigration = "SriRetentionIncomeCatalogAts20260806";
+
     public void Configure(EntityTypeBuilder<SriNormativeSource> builder)
     {
         builder.ToTable("sri_normative_source", schema: "global");
@@ -77,6 +85,23 @@ public class SriNormativeSourceConfiguration : IEntityTypeConfiguration<SriNorma
                     "PENDIENTE DE VERIFICACIÓN (ADR-037 DR-4). El XML usa el mismo código del catálogo, como en el "
                     + "ejemplo oficial de la Ficha v2.34 Anexo 1 (codigoRetencion 323B1). Porcentajes no "
                     + "verificados: las versiones de Renta no fijan Percentage y no se exige coincidencia.",
+            },
+            new SriNormativeSource
+            {
+                Id = AtsIncomeTable310From20260806Id,
+                Document = "CATALOGO_ATS",
+                Version = "2026-08-06",
+                Section =
+                    "Hoja TABLAS RETENCIONES — Tabla 3.10 Conceptos de retención en la fuente de IR (AIR), bloque DESDE 06/AGOSTO/2026",
+                PublishedOn = new DateOnly(2026, 8, 6),
+                ReferenceUrl =
+                    "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar/e6a826af-b22c-40bb-8752-d711f293b8f9/Catalogo_ATS.xls",
+                DocumentSha256 = "bd3f7834f2cd31187af39cd2f4c685a646d7e49316e92ee493da5f2dd9776e3e",
+                IntroducedInMigration = IncomeAtsIntroducedInMigration,
+                Notes =
+                    "Descargado el 2026-10-02 desde https://www.sri.gob.ec/formularios-e-instructivos1. Fecha de "
+                    + "actualización = inicio del bloque (06/08/2026). Tarifas no numéricas (\"12 o 14\", \"1 /0 según "
+                    + "resolución…\") se registran como regla condicional, nunca como porcentaje.",
             }
         );
     }

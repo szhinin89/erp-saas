@@ -31,6 +31,15 @@ public enum RetentionCodeResolutionError
 
     /// <summary>La tasa aplicada en el documento no coincide con el porcentaje oficial de la versión vigente.</summary>
     RateMismatch = 5,
+
+    /// <summary>
+    /// ZH-SRI-RETENTION-INCOME-CATALOG-SSOT-01 — la fuente oficial no fija una tarifa única ("12 o 14",
+    /// "1 /0 según resolución…"): el ERP no puede determinar legalmente la tasa aplicable.
+    /// </summary>
+    ConditionalRateUndetermined = 6,
+
+    /// <summary>La versión vigente no tiene una fuente normativa registrada: sin evidencia no se emite.</summary>
+    NormativeEvidenceMissing = 7,
 }
 
 /// <summary>Representación oficial vigente de un concepto de retención a una fecha de documento.</summary>

@@ -2,6 +2,22 @@
 
 **Single source of truth** for delivery state. Updated: **2026-10-02** · Kernel refactor: **2026-06-05**.
 
+## ZH-SRI-RETENTION-INCOME-CATALOG-SSOT-01 — Renta alineada con el Catálogo ATS oficial 06/08/2026 (2026-10-02)
+
+**Estado: COMPLETADO (sin commit).** P0 fiscal; segundo slice de ADR-037.
+- **Fuente:** `Catalogo_ATS.xls` del SRI (SHA-256 `bd3f7834…776e3e`), hoja TABLAS RETENCIONES, Tabla 3.10, bloque DESDE 06/AGOSTO/2026. La matriz completa (127 códigos) está en `docs/sri/SRI-ATS-INCOME-RETENTION-MATRIX-2026-08-06.md`.
+- **Defecto:** de los 13 códigos de Renta del ERP, 9 tenían un nombre que no correspondía al significado oficial del código (p. ej. 304 rotulado "mano de obra" al 2 %; oficialmente es "intelecto" al 10 %). Las tasas de 312, 304, 307, 309, 320, 325 y 343 estaban desactualizadas.
+- **Corrección (decisión del propietario: mismo Id y código, versionado):**
+  - Las 13 versiones heredadas solo cierran `ValidUntil = 2026-08-05`.
+  - Hay versiones ATS nuevas desde 2026-08-06, con `AtsCode` confirmado.
+  - El nombre y la tasa operativa del concepto se alinean con la versión vigente; un compliance test impide que diverjan.
+  - Snapshots y documentos no cambian.
+- **Tasas condicionales** (310 "1 /0 según resolución", 327 "12 o 14"): nuevo `SriRetentionRateKind.Conditional` + `RateRuleText`, sin porcentaje. Concepto no habilitado; la resolución falla cerrado (`ConditionalRateUndetermined`).
+- **Retirados** 341/342/344 (no existen en el bloque vigente): sin versión nueva y no habilitados; los históricos siguen legibles. No se remapean a 3440.
+- **Defaults de proveedor:** la migración deshabilita (no borra ni remapea) los que apuntan a conceptos cuyo significado cambió o que se retiraron (304, 307, 309, 310, 320, 325, 327, 341, 342, 343, 344). Deben revisarse y reactivarse explícitamente. Antes de desplegar al piloto, revisar cuántos hay.
+- **Sin altas** de los demás códigos ATS (decisión: solo la matriz).
+- **Migración** `SriRetentionIncomeCatalogAts20260806`. DEV quedó al día hasta `SriRetentionCatalogVersioning` (autorizado); esta migración nueva **no** se aplicó a DEV ni al piloto.
+
 ## ZH-SRI-RETENTION-CATALOG-SSOT-01 — codigoRetencion oficial desde catálogo global versionado (2026-10-02)
 
 **Estado: IMPLEMENTED / PENDING REAL SRI VALIDATION (sin commit).** P0 de `docs/sri/SRI-2.34-CURRENT-COMPLIANCE-AUDIT.md` (R24); primer slice de ADR-037. No se cierra hasta autorizar en `celcer` una retención real con Renta + IVA: el entorno no tiene empresa con certificado configurado.

@@ -1,4 +1,5 @@
 using ERP.Domain.Modules.SriCatalogs.Entities;
+using ERP.Domain.Modules.SriCatalogs.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -21,6 +22,19 @@ public class SriRetentionCodeVersionConfiguration : IEntityTypeConfiguration<Sri
         builder.Property(x => x.ValidFrom).HasColumnName("valid_from");
         builder.Property(x => x.ValidUntil).HasColumnName("valid_until");
         builder.Property(x => x.Percentage).HasColumnName("percentage").HasPrecision(7, 4);
+        // Columna nueva con DEFAULT Fixed: las versiones existentes quedan Fixed sin reescribirse (ADR-037 D9).
+        // ValueGeneratedNever: EF siempre escribe el valor real (Conditional incluido) en seeds e inserts.
+        builder
+            .Property(x => x.RateKind)
+            .HasColumnName("rate_kind")
+            .HasConversion<int>()
+            .HasDefaultValue(SriRetentionRateKind.Fixed)
+            .ValueGeneratedNever()
+            .IsRequired();
+        builder
+            .Property(x => x.RateRuleText)
+            .HasColumnName("rate_rule_text")
+            .HasMaxLength(SriRetentionCodeVersion.RateRuleTextMaxLen);
         builder
             .Property(x => x.XmlCode)
             .HasColumnName("xml_code")
@@ -56,6 +70,12 @@ public class SriRetentionCodeVersionConfiguration : IEntityTypeConfiguration<Sri
 
     private static readonly Guid Table20 = SriNormativeSourceConfiguration.FichaV234Table20Id;
     private static readonly Guid AtsIncome = SriNormativeSourceConfiguration.AtsIncomeRetentionCatalogId;
+    private static readonly Guid AtsIncome20260806 = SriNormativeSourceConfiguration.AtsIncomeTable310From20260806Id;
+
+    /// <summary>Último día de las versiones de Renta heredadas (no verificadas); el bloque ATS verificado rige desde el 06/08/2026.</summary>
+    public static readonly DateOnly LegacyIncomeValidUntil = new(2026, 8, 5);
+
+    public static readonly DateOnly AtsIncome20260806ValidFrom = new(2026, 8, 6);
 
     private static SriRetentionCodeVersion[] Seed() =>
     [
@@ -73,19 +93,31 @@ public class SriRetentionCodeVersionConfiguration : IEntityTypeConfiguration<Sri
         Iva("41000000-0000-0000-0000-000000000009", "10000000-0000-0000-0000-000000000009", 0.00m, "8"), // IVA-NP
         // ── RENTA — catálogo ATS (referido por la Ficha; NO verificado): mismo código que el concepto,
         // sin porcentaje exigible. Conserva exactamente el comportamiento previo del XML. ─────────────
-        Income("42000000-0000-0000-0000-000000000001", "20000000-0000-0000-0000-000000000001", "303"),
-        Income("42000000-0000-0000-0000-000000000002", "20000000-0000-0000-0000-000000000002", "304"),
-        Income("42000000-0000-0000-0000-000000000003", "20000000-0000-0000-0000-000000000003", "307"),
-        Income("42000000-0000-0000-0000-000000000004", "20000000-0000-0000-0000-000000000004", "309"),
-        Income("42000000-0000-0000-0000-000000000005", "20000000-0000-0000-0000-000000000005", "310"),
-        Income("42000000-0000-0000-0000-000000000006", "20000000-0000-0000-0000-000000000006", "312"),
-        Income("42000000-0000-0000-0000-000000000007", "20000000-0000-0000-0000-000000000007", "320"),
-        Income("42000000-0000-0000-0000-000000000008", "20000000-0000-0000-0000-000000000008", "325"),
-        Income("42000000-0000-0000-0000-000000000009", "20000000-0000-0000-0000-000000000009", "327"),
-        Income("42000000-0000-0000-0000-000000000010", "20000000-0000-0000-0000-000000000010", "341"),
-        Income("42000000-0000-0000-0000-000000000011", "20000000-0000-0000-0000-000000000011", "342"),
-        Income("42000000-0000-0000-0000-000000000012", "20000000-0000-0000-0000-000000000012", "343"),
-        Income("42000000-0000-0000-0000-000000000013", "20000000-0000-0000-0000-000000000013", "344"),
+        Income("42000000-0000-0000-0000-000000000001", "20000000-0000-0000-0000-000000000001", "303", LegacyIncomeValidUntil),
+        Income("42000000-0000-0000-0000-000000000002", "20000000-0000-0000-0000-000000000002", "304", LegacyIncomeValidUntil),
+        Income("42000000-0000-0000-0000-000000000003", "20000000-0000-0000-0000-000000000003", "307", LegacyIncomeValidUntil),
+        Income("42000000-0000-0000-0000-000000000004", "20000000-0000-0000-0000-000000000004", "309", LegacyIncomeValidUntil),
+        Income("42000000-0000-0000-0000-000000000005", "20000000-0000-0000-0000-000000000005", "310", LegacyIncomeValidUntil),
+        Income("42000000-0000-0000-0000-000000000006", "20000000-0000-0000-0000-000000000006", "312", LegacyIncomeValidUntil),
+        Income("42000000-0000-0000-0000-000000000007", "20000000-0000-0000-0000-000000000007", "320", LegacyIncomeValidUntil),
+        Income("42000000-0000-0000-0000-000000000008", "20000000-0000-0000-0000-000000000008", "325", LegacyIncomeValidUntil),
+        Income("42000000-0000-0000-0000-000000000009", "20000000-0000-0000-0000-000000000009", "327", LegacyIncomeValidUntil),
+        Income("42000000-0000-0000-0000-000000000010", "20000000-0000-0000-0000-000000000010", "341", LegacyIncomeValidUntil),
+        Income("42000000-0000-0000-0000-000000000011", "20000000-0000-0000-0000-000000000011", "342", LegacyIncomeValidUntil),
+        Income("42000000-0000-0000-0000-000000000012", "20000000-0000-0000-0000-000000000012", "343", LegacyIncomeValidUntil),
+        Income("42000000-0000-0000-0000-000000000013", "20000000-0000-0000-0000-000000000013", "344", LegacyIncomeValidUntil),
+        // ── RENTA — Catálogo ATS oficial, Tabla 3.10 desde 06/08/2026 (verificado contra el XLS). ─────────
+        // 341/342/344 no existen en el bloque vigente: sin versión nueva (no resolubles desde esa fecha).
+        IncomeFixed("43000000-0000-0000-0000-000000000001", "20000000-0000-0000-0000-000000000001", "303", 10.00m),
+        IncomeFixed("43000000-0000-0000-0000-000000000002", "20000000-0000-0000-0000-000000000002", "304", 10.00m),
+        IncomeFixed("43000000-0000-0000-0000-000000000003", "20000000-0000-0000-0000-000000000003", "307", 3.00m),
+        IncomeFixed("43000000-0000-0000-0000-000000000004", "20000000-0000-0000-0000-000000000004", "309", 3.00m),
+        IncomeConditional("43000000-0000-0000-0000-000000000005", "20000000-0000-0000-0000-000000000005", "310", "1 /0 según resolución NAC-DGERCGC26-00000028"),
+        IncomeFixed("43000000-0000-0000-0000-000000000006", "20000000-0000-0000-0000-000000000006", "312", 2.00m),
+        IncomeFixed("43000000-0000-0000-0000-000000000007", "20000000-0000-0000-0000-000000000007", "320", 10.00m),
+        IncomeFixed("43000000-0000-0000-0000-000000000008", "20000000-0000-0000-0000-000000000008", "325", 25.00m),
+        IncomeConditional("43000000-0000-0000-0000-000000000009", "20000000-0000-0000-0000-000000000009", "327", "12 o 14"),
+        IncomeFixed("43000000-0000-0000-0000-000000000012", "20000000-0000-0000-0000-000000000012", "343", 1.00m),
         // ISD (4580): sin versión — el comprobante de retención del ERP no emite ISD (RetentionTaxType
         // solo IVA/Renta); cualquier intento de resolverlo falla cerrado por "sin versión vigente".
     ];
@@ -103,16 +135,46 @@ public class SriRetentionCodeVersionConfiguration : IEntityTypeConfiguration<Sri
             NormativeSourceId = Table20,
         };
 
-    private static SriRetentionCodeVersion Income(string id, string conceptId, string xmlCode) =>
+    private static SriRetentionCodeVersion Income(string id, string conceptId, string xmlCode, DateOnly? validUntil) =>
         new()
         {
             Id = Guid.Parse(id),
             RetentionCodeId = Guid.Parse(conceptId),
             ValidFrom = null,
-            ValidUntil = null,
+            ValidUntil = validUntil,
             Percentage = null,
             XmlCode = xmlCode,
             AtsCode = null,
             NormativeSourceId = AtsIncome,
+        };
+
+    private static SriRetentionCodeVersion IncomeFixed(string id, string conceptId, string xmlCode, decimal percentage) =>
+        new()
+        {
+            Id = Guid.Parse(id),
+            RetentionCodeId = Guid.Parse(conceptId),
+            ValidFrom = AtsIncome20260806ValidFrom,
+            ValidUntil = null,
+            RateKind = SriRetentionRateKind.Fixed,
+            Percentage = percentage,
+            XmlCode = xmlCode,
+            AtsCode = xmlCode,
+            NormativeSourceId = AtsIncome20260806,
+        };
+
+    /// <summary>Tarifa no única en la fuente: sin porcentaje, con el texto literal de la regla (fail-closed al resolver).</summary>
+    private static SriRetentionCodeVersion IncomeConditional(string id, string conceptId, string xmlCode, string rateRuleText) =>
+        new()
+        {
+            Id = Guid.Parse(id),
+            RetentionCodeId = Guid.Parse(conceptId),
+            ValidFrom = AtsIncome20260806ValidFrom,
+            ValidUntil = null,
+            RateKind = SriRetentionRateKind.Conditional,
+            Percentage = null,
+            RateRuleText = rateRuleText,
+            XmlCode = xmlCode,
+            AtsCode = xmlCode,
+            NormativeSourceId = AtsIncome20260806,
         };
 }

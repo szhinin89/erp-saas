@@ -136,6 +136,18 @@ Tienen tres defectos estructurales:
   - `ValidFrom` queda nulo ("sin límite inferior confirmado"): la ficha no permite fijar con certeza la fecha de
     inicio de la Tabla 20 vigente.
   - Estado: pendiente de validación real en `celcer`.
+- **Slice 2 — `ZH-SRI-RETENTION-INCOME-CATALOG-SSOT-01` (2026-10-02):** Renta alineada con el Catálogo ATS oficial
+  (Tabla 3.10, desde 06/08/2026), migración `SriRetentionIncomeCatalogAts20260806`. Concreciones de este ADR:
+  - **Tarifa no única:** `SriRetentionRateKind` (`Fixed`/`Conditional`) + `RateRuleText`. Una regla
+    condicional nunca guarda porcentaje y su resolución falla cerrado (D7).
+  - **`SriRetentionCode.Percentage` es la tasa operativa vigente para operaciones nuevas.** Es una
+    denormalización: se actualiza por migración junto con la versión que entra en vigencia, y un compliance
+    test garantiza que coincida con ella. La historia vive en las versiones (inmutables salvo `ValidUntil`) y
+    en los snapshots de cada línea emitida (D9).
+  - **Corrección de significado:** cuando el nombre del concepto no correspondía al significado oficial del
+    código, se corrigió conservando Id y código (el XML siempre envió el código oficial). Los defaults de
+    proveedor afectados se deshabilitan en la migración, sin borrarlos ni remapearlos, hasta su validación
+    explícita.
 
 ## Decisiones abiertas
 
