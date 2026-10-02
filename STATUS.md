@@ -2,6 +2,14 @@
 
 **Single source of truth** for delivery state. Updated: **2026-10-02** · Kernel refactor: **2026-06-05**.
 
+## ZH-SRI-ARCHITECTURE-DESIGN-01 — Arquitectura de cumplimiento electrónico SRI (2026-10-02)
+
+**Estado: DISEÑO COMPLETADO (sin implementación, sin commit).** [ADR-038](docs/decisions/ADR-038-sri-electronic-compliance-architecture.md) (Accepted) + [`docs/sri/SRI-ELECTRONIC-COMPLIANCE-ARCHITECTURE.md`](docs/sri/SRI-ELECTRONIC-COMPLIANCE-ARCHITECTURE.md). Sin cambios de código, tablas, XML, catálogos ni frontend.
+- **Decisión central:** ElectronicDocuments evoluciona (no hay "SRI Core" paralelo). Los módulos solo aportan datos fiscales (providers); firma, `SriSoapClient`, 70/43/45, XSD y ConsultaComprobante se conservan.
+- **Piezas nuevas previstas:** composer único de `infoAdicional` (fase 1), perfil fiscal del emisor proyectado desde `Company` (fase 2), versión de ficha separada de la versión XML (fase 3), servicio de estado por empresa (fase 4/5).
+- **Hallazgos de código:** la versión XML activa está en 3 fuentes (builder, validador, `manifest.json`, con Retention `null`); recepción y autorización se interpretan con strings (`StartsWith("[70]")`); `RetentionAnnulmentService` usa el gateway SRI directamente. Solo existen dos orquestadores provider→builder (`CommercialElectronicDocumentXmlSupplier`, `RetentionElectronicDocumentXmlService`): ahí se invocará el composer.
+- **Siguiente P0:** `ZH-SRI-ANEXO26-PROVIDER-RUC-01`, con diseño exacto en §X (sin cambios en builders/providers/RIDE). Regla definitiva (DA-2): `EffectiveDate` es la fecha de aplicabilidad fiscal; antes de ella nunca se emite el campo (sin emisión anticipada); desde ella, `Enabled=false` o un RUC inválido fallan cerrado (`SRI_SYSTEM_PROVIDER_RUC_NOT_CONFIGURED`, sin XML); `Enabled=true` sin `EffectiveDate` también falla cerrado. Se compara con la `IssueDate` de negocio. Base normativa confirmada (DA-1): Res. NAC-DGERCGC26-00000027, RO No. 335 (Quinto Suplemento) del 28/07/2026, 60 días hábiles. Pendiente solo lo administrativo: registro de ZH en el listado de proveedores y fecha legal exacta para `EffectiveDate`.
+
 ## ZH-SRI-RETENTION-INCOME-CATALOG-SSOT-01 — Renta alineada con el Catálogo ATS oficial 06/08/2026 (2026-10-02)
 
 **Estado: COMPLETADO (sin commit).** P0 fiscal; segundo slice de ADR-037.
