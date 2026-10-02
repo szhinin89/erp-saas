@@ -113,7 +113,11 @@ public sealed class RetentionElectronicDocumentXmlServiceTests
         );
         xmlBuilder.Setup(b => b.Build(data)).Returns(Result<ElectronicDocumentXml>.Success(expectedXml));
 
-        var service = new RetentionElectronicDocumentXmlService(dataProvider.Object, xmlBuilder.Object);
+        var service = new RetentionElectronicDocumentXmlService(
+            dataProvider.Object,
+            xmlBuilder.Object,
+            ERP.Application.Tests.TestSupport.AdditionalInfoTestDoubles.PassThroughComposer()
+        );
 
         var result = await service.GenerateXmlAsync(reference, CancellationToken.None);
 
@@ -139,7 +143,11 @@ public sealed class RetentionElectronicDocumentXmlServiceTests
 
         var xmlBuilder = new Mock<IRetentionXmlBuilder>();
 
-        var service = new RetentionElectronicDocumentXmlService(dataProvider.Object, xmlBuilder.Object);
+        var service = new RetentionElectronicDocumentXmlService(
+            dataProvider.Object,
+            xmlBuilder.Object,
+            ERP.Application.Tests.TestSupport.AdditionalInfoTestDoubles.PassThroughComposer()
+        );
 
         var result = await service.GenerateXmlAsync(reference, CancellationToken.None);
 
@@ -168,7 +176,11 @@ public sealed class RetentionElectronicDocumentXmlServiceTests
             .Setup(b => b.Build(data))
             .Returns(Result<ElectronicDocumentXml>.ValidationFailure("El secuencial debe tener 9 dígitos."));
 
-        var service = new RetentionElectronicDocumentXmlService(dataProvider.Object, xmlBuilder.Object);
+        var service = new RetentionElectronicDocumentXmlService(
+            dataProvider.Object,
+            xmlBuilder.Object,
+            ERP.Application.Tests.TestSupport.AdditionalInfoTestDoubles.PassThroughComposer()
+        );
 
         var result = await service.GenerateXmlAsync(reference, CancellationToken.None);
 

@@ -26,7 +26,8 @@ public sealed class ElectronicDocumentXmlSupplierResolverTests
         var resolver = new ElectronicDocumentXmlSupplierResolver(
             [explicitSupplier.Object],
             dataProviderResolver.Object,
-            xmlBuilderResolver.Object
+            xmlBuilderResolver.Object,
+            ERP.Application.Tests.TestSupport.AdditionalInfoTestDoubles.PassThroughComposer()
         );
 
         var result = resolver.Resolve(ElectronicDocumentType.Retention);
@@ -65,7 +66,8 @@ public sealed class ElectronicDocumentXmlSupplierResolverTests
         var resolver = new ElectronicDocumentXmlSupplierResolver(
             [],
             dataProviderResolver.Object,
-            xmlBuilderResolver.Object
+            xmlBuilderResolver.Object,
+            ERP.Application.Tests.TestSupport.AdditionalInfoTestDoubles.PassThroughComposer()
         );
 
         var invoiceSupplier = resolver.Resolve(ElectronicDocumentType.Invoice);
@@ -92,7 +94,8 @@ public sealed class ElectronicDocumentXmlSupplierResolverTests
         var resolver = new ElectronicDocumentXmlSupplierResolver(
             [],
             dataProviderResolver.Object,
-            xmlBuilderResolver.Object
+            xmlBuilderResolver.Object,
+            ERP.Application.Tests.TestSupport.AdditionalInfoTestDoubles.PassThroughComposer()
         );
 
         var result = resolver.Resolve(ElectronicDocumentType.DebitNote);
@@ -118,7 +121,8 @@ public sealed class ElectronicDocumentXmlSupplierResolverTests
         var resolver = new ElectronicDocumentXmlSupplierResolver(
             [],
             dataProviderResolver.Object,
-            xmlBuilderResolver.Object
+            xmlBuilderResolver.Object,
+            ERP.Application.Tests.TestSupport.AdditionalInfoTestDoubles.PassThroughComposer()
         );
 
         var result = resolver.Resolve(ElectronicDocumentType.ShippingGuide);
@@ -148,7 +152,8 @@ public sealed class ElectronicDocumentXmlSupplierResolverTests
         var resolver = new ElectronicDocumentXmlSupplierResolver(
             [retentionSupplier.Object],
             dataProviderResolver.Object,
-            xmlBuilderResolver.Object
+            xmlBuilderResolver.Object,
+            ERP.Application.Tests.TestSupport.AdditionalInfoTestDoubles.PassThroughComposer()
         );
 
         resolver.Resolve(ElectronicDocumentType.Invoice).Should().BeOfType<CommercialElectronicDocumentXmlSupplier>();

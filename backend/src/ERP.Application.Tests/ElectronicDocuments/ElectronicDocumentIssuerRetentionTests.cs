@@ -92,7 +92,8 @@ public sealed class ElectronicDocumentIssuerRetentionTests
         var supplierResolver = new ElectronicDocumentXmlSupplierResolver(
             [retentionSupplier],
             dataProviderResolver.Object,
-            xmlBuilderResolver.Object
+            xmlBuilderResolver.Object,
+            ERP.Application.Tests.TestSupport.AdditionalInfoTestDoubles.PassThroughComposer()
         );
 
         // RetentionXmlSchemaValidator real (no mockeado) — confirma que el pipeline realmente lo

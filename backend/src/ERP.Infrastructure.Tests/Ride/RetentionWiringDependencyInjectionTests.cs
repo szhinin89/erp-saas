@@ -35,6 +35,18 @@ public sealed class RetentionWiringDependencyInjectionTests
         services.AddScoped(_ => dataProviderMock.Object);
         var xmlBuilderMock = new Mock<IRetentionXmlBuilder>();
         services.AddScoped(_ => xmlBuilderMock.Object);
+        // ZH-SRI-ANEXO26-PROVIDER-RUC-01 (ADR-038 D6): composer y contributor reales, igual que en
+        // el registro de producción; solo la configuración global del proveedor es doble.
+        services.AddLogging();
+        services.AddScoped(_ => new Mock<ERP.Domain.Configuration.Interfaces.ISystemProviderSettingsRepository>().Object);
+        services.AddScoped<
+            ERP.Application.Modules.ElectronicDocuments.AdditionalInfo.IElectronicDocumentAdditionalInfoContributor,
+            ERP.Application.Modules.ElectronicDocuments.AdditionalInfo.SystemProviderRucAdditionalInfoContributor
+        >();
+        services.AddScoped<
+            ERP.Application.Modules.ElectronicDocuments.AdditionalInfo.IElectronicDocumentAdditionalInfoComposer,
+            ERP.Application.Modules.ElectronicDocuments.AdditionalInfo.ElectronicDocumentAdditionalInfoComposer
+        >();
         services.AddScoped<
             IRetentionElectronicDocumentXmlService,
             RetentionElectronicDocumentXmlService

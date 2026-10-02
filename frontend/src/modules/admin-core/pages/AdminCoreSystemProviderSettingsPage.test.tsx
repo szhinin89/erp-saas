@@ -208,7 +208,7 @@ describe("AdminCoreSystemProviderSettingsPage", () => {
 
     renderRoute();
 
-    const rucInput = await screen.findByLabelText("RUC", { exact: false });
+    const rucInput = await screen.findByLabelText(/^RUC/);
     fireEvent.change(rucInput, { target: { value: "1790012345001" } });
     fireEvent.change(screen.getByLabelText("Razón social", { exact: false }), {
       target: { value: "ZH Technologies" },
@@ -257,9 +257,98 @@ describe("AdminCoreSystemProviderSettingsPage", () => {
 
     renderRoute();
 
-    await screen.findByLabelText("RUC", { exact: false });
+    await screen.findByLabelText(/^RUC/);
     fireEvent.click(screen.getByRole("button", { name: "Guardar configuración global" }));
 
     expect(await screen.findByText("No se pudo guardar el cambio.")).toBeTruthy();
+  });
+
+  // ZH-SRI-ANEXO26-PROVIDER-RUC-01 (ADR-038 D7): habilitar exige RUC y fecha de vigencia.
+  const emptySettings = {
+    ruc: null,
+    legalName: null,
+    ciiuCode: null,
+    enabled: false,
+    effectiveDate: null,
+    isFullyConfigured: false,
+    updatedAtUtc: null,
+  };
+
+  it("explica que la fecha de vigencia marca desde cuándo el RUC del proveedor es obligatorio", async () => {
+    setGlobalAdminSession();
+    vi.mocked(systemProviderSettingsService.get).mockResolvedValue(emptySettings);
+
+    renderRoute();
+
+    expect(
+      await screen.findByText(
+        "Fecha desde la cual el RUC del proveedor será obligatorio en los comprobantes electrónicos.",
+      ),
+    ).toBeTruthy();
+  });
+
+  it("no permite habilitar sin RUC ni fecha de vigencia y no llama al backend", async () => {
+    setGlobalAdminSession();
+    vi.mocked(systemProviderSettingsService.get).mockResolvedValue(emptySettings);
+
+    renderRoute();
+
+    await screen.findByLabelText(/^RUC/);
+    fireEvent.change(screen.getByLabelText("Razón social", { exact: false }), {
+      target: { value: "ZH Technologies" },
+    });
+    fireEvent.change(screen.getByLabelText("Código CIIU", { exact: false }), {
+      target: { value: "J6201" },
+    });
+    fireEvent.click(screen.getByRole("switch"));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar configuración global" }));
+
+    expect(
+      await screen.findByText(
+        "El RUC del proveedor tecnológico es obligatorio para habilitar la configuración.",
+      ),
+    ).toBeTruthy();
+    expect(screen.getByText(/La fecha de vigencia es obligatoria para habilitar/)).toBeTruthy();
+    expect(systemProviderSettingsService.update).not.toHaveBeenCalled();
+  });
+
+  it("muestra junto a la fecha el error 422 del backend (autoridad)", async () => {
+    setGlobalAdminSession();
+    vi.mocked(systemProviderSettingsService.get).mockResolvedValue({
+      ruc: "1790012345001",
+      legalName: "ZH Technologies",
+      ciiuCode: "J6201",
+      enabled: false,
+      effectiveDate: "2026-11-03",
+      isFullyConfigured: true,
+      updatedAtUtc: null,
+    });
+    vi.mocked(systemProviderSettingsService.update).mockRejectedValue({
+      isAxiosError: true,
+      response: {
+        status: 422,
+        data: {
+          code: "VALIDATION_ERROR",
+          message: { user: "Datos inválidos. Revisa el formulario." },
+          data: {
+            errors: {
+              effectiveDate: [
+                "No se puede habilitar el proveedor de sistema sin la fecha desde la cual el RUC del proveedor será obligatorio en los comprobantes electrónicos.",
+              ],
+            },
+          },
+        },
+      },
+    });
+
+    renderRoute();
+
+    await screen.findByDisplayValue("1790012345001");
+    fireEvent.click(screen.getByRole("switch"));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar configuración global" }));
+
+    expect(
+      await screen.findByText(/No se puede habilitar el proveedor de sistema sin la fecha/),
+    ).toBeTruthy();
   });
 });

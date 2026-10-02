@@ -83,7 +83,8 @@ public sealed class CommercialElectronicDocumentXmlSupplierTests
         var supplier = new CommercialElectronicDocumentXmlSupplier(
             ElectronicDocumentType.Invoice,
             provider.Object,
-            builder.Object
+            builder.Object,
+            ERP.Application.Tests.TestSupport.AdditionalInfoTestDoubles.PassThroughComposer()
         );
 
         var result = await supplier.BuildXmlAsync(Reference, CancellationToken.None);
@@ -112,7 +113,8 @@ public sealed class CommercialElectronicDocumentXmlSupplierTests
         var supplier = new CommercialElectronicDocumentXmlSupplier(
             ElectronicDocumentType.CreditNote,
             provider.Object,
-            builder.Object
+            builder.Object,
+            ERP.Application.Tests.TestSupport.AdditionalInfoTestDoubles.PassThroughComposer()
         );
 
         var result = await supplier.BuildXmlAsync(Reference, CancellationToken.None);
@@ -135,7 +137,8 @@ public sealed class CommercialElectronicDocumentXmlSupplierTests
         var supplier = new CommercialElectronicDocumentXmlSupplier(
             ElectronicDocumentType.Invoice,
             provider.Object,
-            builder.Object
+            builder.Object,
+            ERP.Application.Tests.TestSupport.AdditionalInfoTestDoubles.PassThroughComposer()
         );
 
         var result = await supplier.BuildXmlAsync(Reference, CancellationToken.None);
@@ -162,7 +165,8 @@ public sealed class CommercialElectronicDocumentXmlSupplierTests
         var supplier = new CommercialElectronicDocumentXmlSupplier(
             ElectronicDocumentType.Invoice,
             provider.Object,
-            builder.Object
+            builder.Object,
+            ERP.Application.Tests.TestSupport.AdditionalInfoTestDoubles.PassThroughComposer()
         );
 
         var result = await supplier.BuildXmlAsync(Reference, CancellationToken.None);

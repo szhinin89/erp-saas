@@ -153,6 +153,24 @@ Auditoría de cierre final (previa a la declaración de CLOSED de esta ADR) enco
 
 Primera excepción real a "Agregar builders/providers/validadores para nuevos tipos de comprobante... requiere su propia fase con roadmap explícito": `SalesReturn` (P0-01) necesitaba emitir Nota de Crédito, y esa fase con roadmap explícito ya existía (Fase 11 de `P0-01_SALES_RETURN_IMPLEMENTATION_PLAN.md`). Se agregó `CreditNoteXmlSchemaValidator` (mismo contrato `IElectronicDocumentSchemaValidator` que `InvoiceXmlSchemaValidator`) en el punto de extensión que `ElectronicDocumentSchemaValidatorResolver`/DI ya preveían sin cambios, y se activó `CreditNote.activeVersion: "1.1.0"` en `manifest.json`. Ningún contrato público, estado, guard ni pipeline listado en esta ADR se modificó. Detalle completo: [`ADR-031-credit-note-v1-activation.md`](ADR-031-credit-note-v1-activation.md).
 
+## Addendum (2026-10-02): ZH-SRI-ANEXO26-PROVIDER-RUC-01 — RUC Proveedor (cambio obligatorio del SRI, causa 1)
+
+La Ficha Técnica 2.34 (Anexo 26; Res. NAC-DGERCGC26-00000027, RO No. 335, 28/07/2026) exige
+`<campoAdicional nombre="RUC Proveedor">RUC</campoAdicional>` en los comprobantes de emisores que usan sistemas
+de terceros. Se implementa según ADR-038 (D6/D7), con salida XML nueva solo en `infoAdicional` de 01/04/07:
+
+- `IElectronicDocumentAdditionalInfoComposer` (SSOT de `infoAdicional`) + `SystemProviderRucAdditionalInfoContributor`
+  (único consumidor fiscal de `SystemProviderSettings`), en `ElectronicDocuments/AdditionalInfo`.
+- Se invoca solo en los dos orquestadores de ensamblado fiscal: `CommercialElectronicDocumentXmlSupplier` (01/04)
+  y `RetentionElectronicDocumentXmlService` (07: pipeline, vista previa XML y RIDE).
+- `EffectiveDate` es la fecha de aplicabilidad y se compara con la fecha de emisión de negocio: antes, sin campo
+  (XML idéntico al anterior); desde ella, campo obligatorio o fallo cerrado
+  `SRI_SYSTEM_PROVIDER_RUC_NOT_CONFIGURED` (ED `Failed`, sin XML, firma ni llamada al SRI).
+
+**Sin cambios:** builders, providers, validadores, XSD, firma, `SriSoapClient`, máquina de estados, pipeline del
+Issuer, jobs y RIDE. Los tres XML con el campo validan contra los XSD actuales (Factura 1.1.0, NC 1.1.0,
+Retención 1.0.0). Documentos firmados o autorizados no se regeneran.
+
 ## Cierre oficial
 
 **Estado: CLOSED.** **Versión: v1.0.** **Fecha de cierre: 2026-07-11.** **Responsable: Sebastian Zhinin (Lead/Architect del proyecto).**

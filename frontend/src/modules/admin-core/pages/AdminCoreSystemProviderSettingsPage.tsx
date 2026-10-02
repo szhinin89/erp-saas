@@ -172,7 +172,7 @@ export function AdminCoreSystemProviderSettingsPage() {
                 <ZHField
                   label="Fecha de vigencia"
                   fieldError={errors.effectiveDate?.message}
-                  hint="Fecha desde la cual esta configuración global está vigente."
+                  hint="Fecha desde la cual el RUC del proveedor será obligatorio en los comprobantes electrónicos."
                 >
                   <ZhDateInput disabled={saving} {...register("effectiveDate")} />
                 </ZHField>
@@ -184,7 +184,7 @@ export function AdminCoreSystemProviderSettingsPage() {
               render={({ field }) => (
                 <ZHToggle
                   label="Habilitado"
-                  description="Activa esta configuración global cuando los datos del proveedor tecnológico estén completos y vigentes."
+                  description="Activa esta configuración global cuando los datos del proveedor tecnológico estén completos. Requiere RUC y fecha de vigencia."
                   value={!!field.value}
                   onChange={field.onChange}
                   disabled={saving}

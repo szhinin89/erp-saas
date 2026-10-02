@@ -139,6 +139,47 @@ descarta y fija una única forma de evolucionar.
   XSD/versión, RIDE y políticas propias.
 - Se agregan tests de arquitectura con allowlist (ratchet) para las violaciones actuales.
 
+## Implementación
+
+- **Fase 1 — `ZH-SRI-ANEXO26-PROVIDER-RUC-01` (2026-10-02): IMPLEMENTED / PENDING REAL SRI VALIDATION.**
+  - `IElectronicDocumentAdditionalInfoComposer` / `ElectronicDocumentAdditionalInfoComposer`,
+    `IElectronicDocumentAdditionalInfoContributor`, `AdditionalInfoCompositionContext` y
+    `SystemProviderRucAdditionalInfoContributor` en `ERP.Application/Modules/ElectronicDocuments/AdditionalInfo`.
+    Nombre normativo en `SriAdditionalInfoFieldNames.SystemProviderRuc` (Domain, `SriCatalogs/Constants`).
+  - Invocado solo desde `CommercialElectronicDocumentXmlSupplier` y `RetentionElectronicDocumentXmlService`.
+    Builders, providers, XSD, firma, SOAP, Issuer y RIDE sin cambios.
+  - Concreción de D6: el composer nunca reescribe nombres ni valores (las reglas comparan con `Trim`, pero se
+    emite el texto original); si ningún contributor aporta campos devuelve la misma lista del provider, de modo
+    que el XML queda byte a byte igual al anterior.
+  - Concreción de D7 (ampliación pedida por el ticket): el riesgo de la regla 2 se cierra en origen.
+    `SystemProviderSettings.Configure` y `UpsertSystemProviderSettingsCommandValidator` rechazan
+    `Enabled = true` sin `EffectiveDate` (422, error asociado al campo `effectiveDate`); la pantalla de admin-core
+    exige RUC y fecha al habilitar (espejo de UX). La regla de RUC válido es única:
+    `SystemProviderSettings.IsValidRuc` (13 dígitos ASCII).
+  - Códigos 422 nuevos: `ELECTRONIC_DOCUMENT_ADDITIONAL_INFO_INVALID`, `SRI_SYSTEM_PROVIDER_RUC_NOT_CONFIGURED`.
+  - Tests de arquitectura (`ElectronicDocumentsAdditionalInfoBoundaryTests`, baseline 0).
+  - **Verificación previa al despliegue (solo lectura, no corrige filas):**
+
+    ```sql
+    BEGIN TRANSACTION READ ONLY;
+    -- Habilitado sin fecha de vigencia: bloquearía TODA la emisión electrónica (regla 2)
+    SELECT id, enabled, effective_date, ruc FROM system_provider_settings
+    WHERE enabled AND effective_date IS NULL;
+    -- Habilitado con RUC nulo o inválido: fallaría cerrado desde effective_date
+    SELECT id, enabled, effective_date, ruc FROM system_provider_settings
+    WHERE enabled AND (ruc IS NULL OR ruc !~ '^[0-9]{13}$');
+    -- Fotografía completa para la revisión explícita
+    SELECT id, enabled, effective_date, ruc IS NOT NULL AS has_ruc, legal_name IS NOT NULL AS has_legal_name,
+           ciiu_code IS NOT NULL AS has_ciiu, updated_at_utc FROM system_provider_settings;
+    ROLLBACK;
+    ```
+
+    Resultado en DEV (2026-10-02): 0 filas en las tres consultas (sin configuración → fila 1, sin campo). No se
+    ejecutó contra el piloto.
+  - Pendiente para cerrar: confirmación del registro de ZH Technologies en el listado de proveedores, fecha legal
+    exacta en `EffectiveDate`, configuración revisada en cada instalación antes del despliegue y autorización real
+    en `celcer` de al menos una factura con el campo.
+
 ## Alternativas consideradas
 
 | Alternativa | Motivo de descarte |

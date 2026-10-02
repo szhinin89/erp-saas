@@ -495,6 +495,18 @@ public static class DependencyInjection
             ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentXmlSupplierResolver,
             ERP.Application.Modules.ElectronicDocuments.Services.ElectronicDocumentXmlSupplierResolver
         >();
+        // ZH-SRI-ANEXO26-PROVIDER-RUC-01 (ADR-038 D6/D7) — composer único de infoAdicional, usado por
+        // los dos orquestadores de ensamblado fiscal (CommercialElectronicDocumentXmlSupplier y
+        // RetentionElectronicDocumentXmlService). Requisitos normativos/sectoriales nuevos se agregan
+        // como IElectronicDocumentAdditionalInfoContributor aquí — nunca en providers ni builders.
+        services.AddScoped<
+            ERP.Application.Modules.ElectronicDocuments.AdditionalInfo.IElectronicDocumentAdditionalInfoComposer,
+            ERP.Application.Modules.ElectronicDocuments.AdditionalInfo.ElectronicDocumentAdditionalInfoComposer
+        >();
+        services.AddScoped<
+            ERP.Application.Modules.ElectronicDocuments.AdditionalInfo.IElectronicDocumentAdditionalInfoContributor,
+            ERP.Application.Modules.ElectronicDocuments.AdditionalInfo.SystemProviderRucAdditionalInfoContributor
+        >();
         services.AddScoped<
             ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentXmlSupplier,
             ERP.Application.Modules.ElectronicDocuments.Services.RetentionElectronicDocumentXmlSupplier

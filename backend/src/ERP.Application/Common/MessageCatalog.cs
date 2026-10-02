@@ -158,6 +158,18 @@ public static class MessageCatalog
             "SRI fiscal catalog cannot resolve a single official representation; electronic document not generated.",
             ApiErrorCategory.Validation
         ),
+        [ApiResponseCodes.ElectronicDocuments.AdditionalInfoInvalid] = new(
+            ApiSeverity.Error,
+            "La información adicional del comprobante electrónico no cumple las reglas del SRI. Revise las observaciones del documento.",
+            "Electronic document additional info violates SRI rules; electronic document not generated.",
+            ApiErrorCategory.Validation
+        ),
+        [ApiResponseCodes.ElectronicDocuments.SystemProviderRucNotConfigured] = new(
+            ApiSeverity.Error,
+            "El RUC del proveedor tecnológico es obligatorio para este comprobante y su configuración global está incompleta. Contacte a soporte.",
+            "SRI system provider RUC (Annex 26) is required and its global configuration is incomplete; electronic document not generated.",
+            ApiErrorCategory.Validation
+        ),
         [ApiResponseCodes.Retentions.AnnulmentPending] = new(
             ApiSeverity.Error,
             "La retención tiene una anulación en trámite ante el SRI: la cuenta por pagar no admite pagos, créditos ni ajustes.",

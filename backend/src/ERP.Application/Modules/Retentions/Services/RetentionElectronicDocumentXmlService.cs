@@ -1,7 +1,9 @@
 using ERP.Application.Common;
+using ERP.Application.Modules.ElectronicDocuments.AdditionalInfo;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Application.Modules.ElectronicDocuments.XmlBuilders;
+using ERP.Domain.Modules.ElectronicDocuments.Enums;
 
 namespace ERP.Application.Modules.Retentions.Services;
 
@@ -17,6 +19,11 @@ namespace ERP.Application.Modules.Retentions.Services;
 /// ADR de esta fase. Este servicio es el pipeline paralelo, pequeño y explícito para Retención:
 /// no firma, no envía al SRI, no persiste el XML como autorizado (eso pertenece a una fase
 /// posterior de autorización) — solo produce el <see cref="ElectronicDocumentXml"/> en memoria.
+///
+/// ZH-SRI-ANEXO26-PROVIDER-RUC-01 (ADR-038 D6) — orquestador de ensamblado fiscal de Retención:
+/// entre el provider y el builder compone la información adicional con
+/// <see cref="IElectronicDocumentAdditionalInfoComposer"/>. Como el pipeline, la vista previa del XML
+/// y la del RIDE pasan por aquí, los tres producen el mismo <c>infoAdicional</c>.
 /// </summary>
 public interface IRetentionElectronicDocumentXmlService
 {
@@ -30,14 +37,17 @@ public sealed class RetentionElectronicDocumentXmlService : IRetentionElectronic
 {
     private readonly IRetentionElectronicDocumentDataProvider _dataProvider;
     private readonly IRetentionXmlBuilder _xmlBuilder;
+    private readonly IElectronicDocumentAdditionalInfoComposer _additionalInfoComposer;
 
     public RetentionElectronicDocumentXmlService(
         IRetentionElectronicDocumentDataProvider dataProvider,
-        IRetentionXmlBuilder xmlBuilder
+        IRetentionXmlBuilder xmlBuilder,
+        IElectronicDocumentAdditionalInfoComposer additionalInfoComposer
     )
     {
         _dataProvider = dataProvider;
         _xmlBuilder = xmlBuilder;
+        _additionalInfoComposer = additionalInfoComposer;
     }
 
     public async Task<Result<ElectronicDocumentXml>> GenerateXmlAsync(
@@ -52,6 +62,24 @@ public sealed class RetentionElectronicDocumentXmlService : IRetentionElectronic
                 dataResult.Code
             );
 
-        return _xmlBuilder.Build(dataResult.Value!);
+        var data = dataResult.Value!;
+        var additionalInfo = await _additionalInfoComposer.ComposeAsync(
+            new AdditionalInfoCompositionContext(
+                ElectronicDocumentType.Retention,
+                reference.TenantId,
+                reference.CompanyId,
+                data.Emission.IssueDate,
+                data.Issuer
+            ),
+            data.AdditionalInfo,
+            ct
+        );
+        if (!additionalInfo.IsSuccess)
+            return Result<ElectronicDocumentXml>.ValidationFailure(
+                additionalInfo.Error ?? "No se pudo componer la información adicional de la retención.",
+                additionalInfo.Code
+            );
+
+        return _xmlBuilder.Build(data with { AdditionalInfo = additionalInfo.Value });
     }
 }

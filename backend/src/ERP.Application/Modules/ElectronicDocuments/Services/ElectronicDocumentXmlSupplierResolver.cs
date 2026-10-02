@@ -1,3 +1,4 @@
+using ERP.Application.Modules.ElectronicDocuments.AdditionalInfo;
 using ERP.Application.Modules.ElectronicDocuments.XmlBuilders;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 
@@ -32,16 +33,19 @@ public sealed class ElectronicDocumentXmlSupplierResolver : IElectronicDocumentX
     > _explicitSuppliers;
     private readonly IElectronicDocumentDataProviderResolver _dataProviderResolver;
     private readonly IElectronicDocumentXmlBuilderResolver _xmlBuilderResolver;
+    private readonly IElectronicDocumentAdditionalInfoComposer _additionalInfoComposer;
 
     public ElectronicDocumentXmlSupplierResolver(
         IEnumerable<IElectronicDocumentXmlSupplier> explicitSuppliers,
         IElectronicDocumentDataProviderResolver dataProviderResolver,
-        IElectronicDocumentXmlBuilderResolver xmlBuilderResolver
+        IElectronicDocumentXmlBuilderResolver xmlBuilderResolver,
+        IElectronicDocumentAdditionalInfoComposer additionalInfoComposer
     )
     {
         _explicitSuppliers = explicitSuppliers.ToDictionary(s => s.DocumentType);
         _dataProviderResolver = dataProviderResolver;
         _xmlBuilderResolver = xmlBuilderResolver;
+        _additionalInfoComposer = additionalInfoComposer;
     }
 
     public IElectronicDocumentXmlSupplier? Resolve(ElectronicDocumentType documentType)
@@ -53,6 +57,11 @@ public sealed class ElectronicDocumentXmlSupplierResolver : IElectronicDocumentX
         var xmlBuilder = _xmlBuilderResolver.Resolve(documentType);
         return dataProvider is null || xmlBuilder is null
             ? null
-            : new CommercialElectronicDocumentXmlSupplier(documentType, dataProvider, xmlBuilder);
+            : new CommercialElectronicDocumentXmlSupplier(
+                documentType,
+                dataProvider,
+                xmlBuilder,
+                _additionalInfoComposer
+            );
     }
 }

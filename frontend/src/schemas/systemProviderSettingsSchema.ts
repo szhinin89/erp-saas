@@ -24,16 +24,35 @@ export const systemProviderSettingsFormSchema = z
     effectiveDate: z.string().trim().optional().or(z.literal("")),
     enabled: z.boolean().optional(),
   })
-  .refine(
-    (values) =>
-      !values.enabled ||
-      (!!values.ruc?.trim() && !!values.legalName?.trim() && !!values.ciiuCode?.trim()),
-    {
-      message:
-        "No se puede habilitar la configuración global del proveedor tecnológico sin RUC, razón social y CIIU completos.",
-      path: ["enabled"],
-    },
-  );
+  // ZH-SRI-ANEXO26-PROVIDER-RUC-01 (ADR-038 D7): habilitar exige RUC y fecha de vigencia (fecha
+  // desde la cual el RUC Proveedor es obligatorio en los comprobantes). Espejo de UX: el backend
+  // (validador + dominio) es la autoridad y responde 422 con el error asociado al campo.
+  .superRefine((values, ctx) => {
+    if (!values.enabled) return;
+    if (!values.ruc?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["ruc"],
+        message: "El RUC del proveedor tecnológico es obligatorio para habilitar la configuración.",
+      });
+    }
+    if (!values.effectiveDate?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["effectiveDate"],
+        message:
+          "La fecha de vigencia es obligatoria para habilitar: desde esa fecha el RUC del proveedor se incluye en los comprobantes electrónicos.",
+      });
+    }
+    if (!values.legalName?.trim() || !values.ciiuCode?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["enabled"],
+        message:
+          "No se puede habilitar la configuración global del proveedor tecnológico sin RUC, razón social y CIIU completos.",
+      });
+    }
+  });
 
 export type SystemProviderSettingsFormValues = z.infer<
   typeof systemProviderSettingsFormSchema

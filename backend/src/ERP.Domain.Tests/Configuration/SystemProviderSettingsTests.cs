@@ -64,6 +64,58 @@ public sealed class SystemProviderSettingsTests
         act.Should().Throw<ArgumentException>();
     }
 
+    // ── ZH-SRI-ANEXO26-PROVIDER-RUC-01 (ADR-038 D7, regla 2) ───────────────
+
+    [Fact]
+    public void Configure_enabled_true_sin_EffectiveDate_lanza_excepcion()
+    {
+        var settings = SystemProviderSettings.CreateNew();
+
+        var act = () =>
+            settings.Configure("1790012345001", "ZH Technologies S.A.", "J62021002", null, enabled: true, UserId);
+
+        act.Should()
+            .Throw<DomainRuleViolationException>()
+            .WithMessage(SystemProviderSettings.EnabledWithoutEffectiveDateMessage);
+        settings.Enabled.Should().BeFalse("una configuración inválida nunca se aplica");
+    }
+
+    [Fact]
+    public void Configure_enabled_true_con_RUC_invalido_lanza_excepcion()
+    {
+        var settings = SystemProviderSettings.CreateNew();
+
+        var act = () =>
+            settings.Configure("179001234500A", "ZH Technologies S.A.", "J62021002", new DateOnly(2026, 11, 3), enabled: true, UserId);
+
+        act.Should().Throw<ArgumentException>();
+        settings.Enabled.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Configure_enabled_false_puede_quedar_sin_EffectiveDate()
+    {
+        var settings = SystemProviderSettings.CreateNew();
+
+        settings.Configure("1790012345001", "ZH Technologies S.A.", "J62021002", null, enabled: false, UserId);
+
+        settings.Enabled.Should().BeFalse();
+        settings.EffectiveDate.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData("1790012345001", true)]
+    [InlineData(null, false)]
+    [InlineData("", false)]
+    [InlineData("179001234500", false)]
+    [InlineData("17900123450011", false)]
+    [InlineData("179001234500A", false)]
+    [InlineData("١٧٩٠٠١٢٣٤٥٠٠١", false)]
+    public void IsValidRuc_exige_13_digitos_ASCII(string? ruc, bool expected)
+    {
+        SystemProviderSettings.IsValidRuc(ruc).Should().Be(expected);
+    }
+
     [Fact]
     public void Configure_enabled_false_con_datos_parciales_no_lanza()
     {

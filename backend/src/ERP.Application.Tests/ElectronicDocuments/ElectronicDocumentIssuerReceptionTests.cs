@@ -163,7 +163,8 @@ public sealed class ElectronicDocumentIssuerReceptionTests
         var supplier = new CommercialElectronicDocumentXmlSupplier(
             ElectronicDocumentType.Invoice,
             providerMock.Object,
-            builderMock.Object
+            builderMock.Object,
+            ERP.Application.Tests.TestSupport.AdditionalInfoTestDoubles.PassThroughComposer()
         );
         var supplierResolver = new Mock<IElectronicDocumentXmlSupplierResolver>();
         supplierResolver.Setup(r => r.Resolve(ElectronicDocumentType.Invoice)).Returns(supplier);

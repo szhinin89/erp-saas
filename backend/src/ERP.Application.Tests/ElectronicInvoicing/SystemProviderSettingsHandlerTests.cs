@@ -104,4 +104,62 @@ public sealed class SystemProviderSettingsHandlerTests
         f.Repo.Verify(r => r.AddAsync(It.IsAny<SystemProviderSettings>(), It.IsAny<CancellationToken>()), Times.Never);
         f.Repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    // ── ZH-SRI-ANEXO26-PROVIDER-RUC-01 (ADR-038 D7, regla 2): invariante al guardar ──────────
+
+    private static readonly UpsertSystemProviderSettingsCommandValidator Validator = new();
+
+    [Fact]
+    public void Validator_rechaza_habilitar_sin_EffectiveDate_y_asocia_el_error_al_campo()
+    {
+        var result = Validator.Validate(
+            new UpsertSystemProviderSettingsCommand("1790012345001", "ZH Technologies S.A.", "J62021002", null, Enabled: true)
+        );
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().ContainSingle(e =>
+            e.PropertyName == nameof(UpsertSystemProviderSettingsCommand.EffectiveDate)
+            && e.ErrorMessage == SystemProviderSettings.EnabledWithoutEffectiveDateMessage
+        );
+    }
+
+    [Theory]
+    [InlineData("123")]
+    [InlineData("179001234500A")]
+    public void Validator_rechaza_habilitar_con_RUC_invalido(string ruc)
+    {
+        var result = Validator.Validate(
+            new UpsertSystemProviderSettingsCommand(ruc, "ZH Technologies S.A.", "J62021002", new DateOnly(2026, 11, 3), Enabled: true)
+        );
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == nameof(UpsertSystemProviderSettingsCommand.Ruc));
+    }
+
+    [Fact]
+    public void Validator_permite_deshabilitado_sin_EffectiveDate()
+    {
+        Validator
+            .Validate(new UpsertSystemProviderSettingsCommand("1790012345001", null, null, null, Enabled: false))
+            .IsValid.Should()
+            .BeTrue();
+    }
+
+    [Fact]
+    public async Task Upsert_habilitar_sin_EffectiveDate_no_guarda_y_devuelve_fallo()
+    {
+        var existing = SystemProviderSettings.CreateNew();
+        var f = new Fixture();
+        f.Repo.Setup(r => r.GetAsync(It.IsAny<CancellationToken>())).ReturnsAsync(existing);
+
+        var result = await f.BuildUpsertHandler()
+            .HandleWithDomainRules(
+                new UpsertSystemProviderSettingsCommand("1790012345001", "ZH Technologies S.A.", "J62021002", null, Enabled: true),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeFalse();
+        existing.Enabled.Should().BeFalse();
+        f.Repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
 }

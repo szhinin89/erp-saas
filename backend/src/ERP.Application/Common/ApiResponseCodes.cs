@@ -68,6 +68,20 @@ public static class ApiResponseCodes
         /// distinta). Error de configuración fiscal: el XML no se genera (fail-closed).
         /// </summary>
         public const string FiscalCatalogConfigurationError = "SRI_FISCAL_CATALOG_CONFIGURATION_ERROR";
+
+        /// <summary>
+        /// ZH-SRI-ANEXO26-PROVIDER-RUC-01 (ADR-038 D6) — la información adicional compuesta viola una
+        /// regla del SRI (nombre o valor vacío o &gt; 300, nombre duplicado o reservado, más de 15
+        /// campos). El XML no se genera (fail-closed).
+        /// </summary>
+        public const string AdditionalInfoInvalid = "ELECTRONIC_DOCUMENT_ADDITIONAL_INFO_INVALID";
+
+        /// <summary>
+        /// ZH-SRI-ANEXO26-PROVIDER-RUC-01 (ADR-038 D7) — el RUC Proveedor (Ficha 2.34 Anexo 26) es
+        /// exigible para el comprobante y la configuración global del proveedor está incompleta
+        /// (deshabilitada, sin fecha de vigencia o sin RUC válido). El XML no se genera (fail-closed).
+        /// </summary>
+        public const string SystemProviderRucNotConfigured = "SRI_SYSTEM_PROVIDER_RUC_NOT_CONFIGURED";
     }
 
     /// <summary>ZH-RETENTION-SRI-ANNULMENT-01 — anulación ante el SRI de retenciones autorizadas.</summary>

@@ -2,6 +2,17 @@
 
 **Single source of truth** for delivery state. Updated: **2026-10-02** · Kernel refactor: **2026-06-05**.
 
+## ZH-SRI-ANEXO26-PROVIDER-RUC-01 — RUC Proveedor en comprobantes electrónicos (2026-10-02)
+
+**Estado: IMPLEMENTED / PENDING REAL SRI VALIDATION (sin commit).** P0 fiscal; fase 1 de [ADR-038](docs/decisions/ADR-038-sri-electronic-compliance-architecture.md). Ficha Técnica 2.34 Anexo 26; Res. NAC-DGERCGC26-00000027.
+- **Arquitectura:** `SystemProviderSettings` → `SystemProviderRucAdditionalInfoContributor` → `IElectronicDocumentAdditionalInfoComposer` (SSOT de `infoAdicional`) → `CommercialElectronicDocumentXmlSupplier` (01/04) y `RetentionElectronicDocumentXmlService` (07: pipeline, vista previa XML y RIDE) → builders sin cambios → XSD/firma/SRI → RIDE sin cambios.
+- **Regla fiscal (ADR-038 D7):** `EffectiveDate` es la fecha de aplicabilidad y se compara con la fecha de emisión de negocio. Sin fecha + deshabilitado → sin campo. Sin fecha + habilitado → fallo. Emisión anterior → sin campo (XML idéntico al anterior). Desde la fecha: habilitado + RUC válido → `RUC Proveedor`; deshabilitado o RUC inválido → fallo. Todo fallo es `SRI_SYSTEM_PROVIDER_RUC_NOT_CONFIGURED` (422): ED `Failed`, sin XML, firma ni llamada al SRI; reintentable al corregir.
+- **Composer:** orden determinístico (contributors por `Order`, luego campos del documento), nombres únicos sin distinguir mayúsculas, normativos reservados, nombre y valor 1..300 sin truncado, máximo 15, `ELECTRONIC_DOCUMENT_ADDITIONAL_INFO_INVALID` (422).
+- **Invariante de configuración:** `Configure` y el validador rechazan `Enabled = true` sin `EffectiveDate` (422, error en `effectiveDate`). Admin-core exige RUC y fecha al habilitar, con ayuda "Fecha desde la cual el RUC del proveedor será obligatorio en los comprobantes electrónicos.".
+- **Verificado:** los XML de Factura 1.1.0, NC 1.1.0 y Retención 1.0.0 con el campo pasan sus XSD actuales; los parsers RIDE existentes lo muestran; vista previa y pipeline de retención producen el mismo XML. Tests de arquitectura con baseline 0.
+- **Antes de desplegar en cada instalación:** ejecutar la consulta de solo lectura de ADR-038 § Implementación (habilitado sin fecha / RUC inválido) y revisar la configuración. DEV: sin configuración (0 filas).
+- **Pendientes de cierre:** confirmación del registro de ZH Technologies en el listado de proveedores; fecha legal exacta en `EffectiveDate` (no calculada); configuración revisada antes del despliegue; autorización real en `celcer` de al menos una factura con el campo (configurando una `EffectiveDate` propia en la instancia de pruebas).
+
 ## ZH-SRI-ARCHITECTURE-DESIGN-01 — Arquitectura de cumplimiento electrónico SRI (2026-10-02)
 
 **Estado: DISEÑO COMPLETADO (sin implementación, sin commit).** [ADR-038](docs/decisions/ADR-038-sri-electronic-compliance-architecture.md) (Accepted) + [`docs/sri/SRI-ELECTRONIC-COMPLIANCE-ARCHITECTURE.md`](docs/sri/SRI-ELECTRONIC-COMPLIANCE-ARCHITECTURE.md). Sin cambios de código, tablas, XML, catálogos ni frontend.

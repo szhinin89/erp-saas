@@ -69,6 +69,9 @@ public sealed class ApiErrorContractTests
         [ApiResponseCodes.Retentions.AnnulmentPending] = 422,
         // ZH-SRI-RETENTION-CATALOG-SSOT-01 (ADR-037 D7): configuración fiscal del catálogo → 422.
         [ApiResponseCodes.ElectronicDocuments.FiscalCatalogConfigurationError] = 422,
+        // ZH-SRI-ANEXO26-PROVIDER-RUC-01 (ADR-038 D6/D7): infoAdicional / RUC Proveedor → 422.
+        [ApiResponseCodes.ElectronicDocuments.AdditionalInfoInvalid] = 422,
+        [ApiResponseCodes.ElectronicDocuments.SystemProviderRucNotConfigured] = 422,
     };
 
     private static readonly string[] SuccessCodes =

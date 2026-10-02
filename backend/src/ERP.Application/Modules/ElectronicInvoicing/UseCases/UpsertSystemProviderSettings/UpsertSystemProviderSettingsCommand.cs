@@ -43,5 +43,12 @@ public sealed class UpsertSystemProviderSettingsCommandValidator
             .WithMessage(
                 "No se puede habilitar el proveedor de sistema sin RUC, razón social y CIIU completos."
             );
+        // ZH-SRI-ANEXO26-PROVIDER-RUC-01 (ADR-038 D7, regla 2): habilitado sin fecha de vigencia
+        // bloquearía la emisión electrónica de toda la instancia — se rechaza al guardar (422),
+        // asociado al campo para que la UI lo muestre junto a la fecha. El dominio repite el invariante.
+        RuleFor(x => x.EffectiveDate)
+            .NotNull()
+            .When(x => x.Enabled)
+            .WithMessage(SystemProviderSettings.EnabledWithoutEffectiveDateMessage);
     }
 }

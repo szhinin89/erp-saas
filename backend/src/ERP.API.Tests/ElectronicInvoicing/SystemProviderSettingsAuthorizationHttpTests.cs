@@ -2,6 +2,9 @@ using ERP.API.Tests.Support;
 using FluentAssertions;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text.Json;
+using ERP.Domain.Configuration.Entities;
 
 namespace ERP.API.Tests.ElectronicInvoicing;
 
@@ -78,6 +81,44 @@ public sealed class SystemProviderSettingsAuthorizationHttpTests
         using var response = await _f.Client.SendAsync(request);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    // ZH-SRI-ANEXO26-PROVIDER-RUC-01 (ADR-038 D7, regla 2): habilitar sin fecha de vigencia se
+    // rechaza en el backend (autoridad), con error estructurado asociado al campo.
+    [Fact]
+    public async Task Habilitar_sin_EffectiveDate_devuelve_422_estructurado_y_no_guarda()
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Put, Endpoint)
+        {
+            Content = JsonContent.Create(
+                new
+                {
+                    ruc = "1790012345001",
+                    legalName = "ZH Technologies S.A.",
+                    ciiuCode = "J62021002",
+                    effectiveDate = (string?)null,
+                    enabled = true,
+                }
+            ),
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue(
+            "Bearer",
+            SystemProviderSettingsAuthorizationHttpFixture.GlobalAdminToken()
+        );
+
+        using var response = await _f.Client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("code").GetString().Should().Be("VALIDATION_ERROR");
+        doc.RootElement.GetProperty("data").GetProperty("errors").GetProperty("effectiveDate")[0]
+            .GetString()
+            .Should()
+            .Be(SystemProviderSettings.EnabledWithoutEffectiveDateMessage);
+
+        using var get = await SendAsync(SystemProviderSettingsAuthorizationHttpFixture.GlobalAdminToken());
+        using var current = JsonDocument.Parse(await get.Content.ReadAsStringAsync());
+        current.RootElement.GetProperty("data").GetProperty("enabled").GetBoolean().Should().BeFalse();
     }
 
     private async Task<HttpResponseMessage> SendAsync(string bearerToken)
