@@ -2,6 +2,14 @@
 
 **Single source of truth** for delivery state. Updated: **2026-10-02** · Kernel refactor: **2026-06-05**.
 
+## ZH-COMMUNICATIONS-ARCHITECTURE-01/02 — Arquitectura de Communications (2026-10-02)
+
+**Estado: DISEÑO COMPLETADO (sin implementación, sin commit).** [ADR-039](docs/decisions/ADR-039-communications-architecture.md) (Accepted) + [`docs/communications/COMMUNICATIONS-ARCHITECTURE.md`](docs/communications/COMMUNICATIONS-ARCHITECTURE.md). Sin cambios de código, tablas ni frontend.
+- **Hallazgo central:** Communications ya existe como capacidad transversal (outbox genérica, cola, un solo `IEmailSender`/`SmtpEmailSender`, job, SMTP por empresa). Se evoluciona; no se crea otro módulo ni otra outbox.
+- **Riesgos vigentes:** (1) el enlace de password reset con el token raw se escribe en el log (`LoggingPasswordResetLinkSender`, única implementación; no se envía correo en producción), `forgot-password` permite enumeración y no tiene rate limit; (2) `process-communications` puede enviar dos veces el mismo correo (sin claim atómico ni `[DisableConcurrentExecution]`) y una fila puede quedar en `Processing` para siempre.
+- **Decisiones cerradas:** DA-1 — los mensajes System (reset, verificación, alertas, invitaciones) usan siempre el SMTP de instancia, nunca "la primera empresa del usuario". DA-2 — templates por defecto embebidos y versionados + override opcional por empresa (`CommunicationTemplate` existente), renderer propio; RazorLight no se adopta.
+- **Siguiente:** Fase 1 `ZH-AUTH-PASSWORD-RESET-SECURITY-HOTFIX-01` y Fase 2 `ZH-COMMUNICATIONS-DELIVERY-HARDENING-01` (independientes).
+
 ## ZH-SRI-ANEXO26-PROVIDER-RUC-01 — RUC Proveedor en comprobantes electrónicos (2026-10-02)
 
 **Estado: IMPLEMENTED / PENDING REAL SRI VALIDATION (sin commit).** P0 fiscal; fase 1 de [ADR-038](docs/decisions/ADR-038-sri-electronic-compliance-architecture.md). Ficha Técnica 2.34 Anexo 26; Res. NAC-DGERCGC26-00000027.
