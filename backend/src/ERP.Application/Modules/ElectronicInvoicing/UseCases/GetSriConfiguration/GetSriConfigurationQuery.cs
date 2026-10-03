@@ -4,4 +4,4 @@ using MediatR;
 
 namespace ERP.Application.Modules.ElectronicInvoicing.UseCases.GetSriConfiguration;
 
-public record GetSriConfigurationQuery : IRequest<Result<SriConfigurationDto?>>;
+public record GetSriConfigurationQuery : IRequest<Result<SriConfigurationDto?>>, IRequiresCompanyContext;

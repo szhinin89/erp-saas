@@ -6,4 +6,5 @@ namespace ERP.Application.Modules.ElectronicInvoicing.UseCases.InspectSriCertifi
 
 /// <summary>Prueba una contraseña contra el certificado ya subido sin persistirla — feedback en vivo mientras el usuario escribe.</summary>
 public sealed record InspectSriCertificateQuery(string Password)
-    : IRequest<Result<SriCertificateInfoDto>>;
+    : IRequest<Result<SriCertificateInfoDto>>,
+        IRequiresCompanyContext;

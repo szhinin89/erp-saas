@@ -1,13 +1,18 @@
+using ERP.Application.Behaviors;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Common.Interfaces.SRI;
+using ERP.Application.Modules.Companies;
+using ERP.Application.Modules.ElectronicInvoicing.DTOs;
 using ERP.Application.Modules.ElectronicInvoicing.Services;
 using ERP.Application.Modules.ElectronicInvoicing.UseCases.GetSriConfiguration;
 using ERP.Application.Modules.ElectronicInvoicing.UseCases.InspectSriCertificate;
+using ERP.Application.Modules.ElectronicInvoicing.UseCases.UploadSriCertificate;
 using ERP.Application.Modules.ElectronicInvoicing.UseCases.UpsertSriConfiguration;
 using ERP.Application.Modules.ElectronicInvoicing.UseCases.ValidateSriConfiguration;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Interfaces;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Company.Interfaces;
 using FluentAssertions;
 using Moq;
@@ -184,5 +189,58 @@ public sealed class ElectronicInvoicingCompanyScopeTests
             r => r.ResolveAsync(It.IsAny<SriSettings>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
+    }
+
+    /// <summary>
+    /// BUG-PILOT-SRI-CONFIG-500: sin marker, CompanyScopeBehavior dejaba pasar estos requests sin
+    /// X-Company-Id ni validación de membership; el Upsert llegaba a guardar SriSettings con
+    /// CompanyId = Guid.Empty y el TenantGuard lo cortaba con un 500.
+    /// </summary>
+    [Theory]
+    [InlineData(typeof(GetSriConfigurationQuery))]
+    [InlineData(typeof(UpsertSriConfigurationCommand))]
+    [InlineData(typeof(ValidateSriConfigurationQuery))]
+    [InlineData(typeof(UploadSriCertificateCommand))]
+    [InlineData(typeof(InspectSriCertificateQuery))]
+    public void Request_de_configuracion_SRI_implementa_IRequiresCompanyContext(Type requestType)
+    {
+        typeof(IRequiresCompanyContext)
+            .IsAssignableFrom(requestType)
+            .Should()
+            .BeTrue(
+                $"{requestType.Name} opera sobre SriSettings de la empresa activa y debe pasar por CompanyScopeBehavior→ICompanyAccessGuard"
+            );
+    }
+
+    [Fact]
+    public async Task UpsertSriConfiguration_sin_contexto_de_empresa_se_rechaza_antes_del_handler()
+    {
+        var guard = new Mock<ICompanyAccessGuard>();
+        guard
+            .Setup(g => g.RequireActiveTenantAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<Guid>.Success(TenantId));
+        var company = new Mock<ICurrentCompany>();
+        company.Setup(c => c.HasCompanyContext).Returns(false);
+        var behavior = new CompanyScopeBehavior<
+            UpsertSriConfigurationCommand,
+            Result<SriConfigurationDto>
+        >(guard.Object, company.Object);
+        var handlerCalled = false;
+
+        var act = async () =>
+            await behavior.Handle(
+                new UpsertSriConfigurationCommand(null, 1, 1, "https://celcer.sri.gob.ec/wsdl"),
+                _ =>
+                {
+                    handlerCalled = true;
+                    return Task.FromResult(Result<SriConfigurationDto>.Failure("no-debe-llegar"));
+                },
+                CancellationToken.None
+            );
+
+        (await act.Should().ThrowAsync<CompanyScopeException>())
+            .Which.Code.Should()
+            .Be("company_context_required");
+        handlerCalled.Should().BeFalse();
     }
 }

@@ -2,6 +2,14 @@
 
 **Single source of truth** for delivery state. Updated: **2026-10-03** · Kernel refactor: **2026-06-05**.
 
+## BUG-PILOT-SRI-CONFIG-500 — La configuración SRI exige contexto de empresa (2026-10-03)
+
+**Estado: COMPLETADO.** Desbloquea la configuración SRI del piloto Sumak (`erp_sumak_pilot`).
+- **Bug:** `Get/UpsertSriConfiguration`, `ValidateSriConfiguration`, `UploadSriCertificate` e `InspectSriCertificate` no tenían marker de scope. Sin `X-Company-Id`, el Upsert llegaba a guardar `SriSettings` con `CompanyId = Guid.Empty` y el TenantGuard respondía 500. Con un `X-Company-Id` ajeno no se validaba la membership, una brecha de aislamiento entre empresas del mismo tenant.
+- **Fix:** los cinco requests implementan `IRequiresCompanyContext`, el mismo marker que Access, y pasan por `CompanyScopeBehavior` → `ICompanyAccessGuard`. Sin contexto o con una empresa ajena la respuesta es 403 `COMPANY_SCOPE_FORBIDDEN`. No cambian handlers ni contratos. Los sales-defaults (FROZEN) no se tocaron.
+- **Tests:** `ElectronicInvoicingCompanyScopeTests` (marker en los 5 requests; Upsert sin contexto se rechaza antes del handler) · Application focalizados 57/57 · Architecture 143/143 · API focalizados 14/14 · `git diff --check` limpio.
+- **Pendiente aparte:** `setup/admin` con un email mal formado responde 500 en vez de 422 (el validador no revisa el formato del email).
+
 ## ZH-ELECTRONIC-RETRY-TENANT-CONTEXT-01 — El reintento automático de comprobantes vuelve a funcionar en Hangfire (2026-10-03)
 
 **Estado: COMPLETADO (sin commit).** Cierra el hallazgo de [ADR-036 §23.3](docs/decisions/ADR-036-retention-electronic-document-cancellation.md). Sin migración ni ADR nuevo: no cambian estados fiscales, XML, firma, SOAP, política de reintento ni el issuer.

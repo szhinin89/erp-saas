@@ -9,4 +9,4 @@ public record UpsertSriConfigurationCommand(
     int Environment,
     int EmissionType,
     string WsdlUrl
-) : IRequest<Result<SriConfigurationDto>>;
+) : IRequest<Result<SriConfigurationDto>>, IRequiresCompanyContext;

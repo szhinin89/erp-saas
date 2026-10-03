@@ -11,4 +11,5 @@ namespace ERP.Application.Modules.ElectronicInvoicing.UseCases.ValidateSriConfig
 /// <see cref="ISriCertificateInspector"/>/<see cref="SriSoapClient"/> ya existentes.
 /// </summary>
 public sealed record ValidateSriConfigurationQuery
-    : IRequest<Result<SriConfigurationValidationDto>>;
+    : IRequest<Result<SriConfigurationValidationDto>>,
+        IRequiresCompanyContext;

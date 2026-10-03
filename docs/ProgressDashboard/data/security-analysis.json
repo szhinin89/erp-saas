@@ -1,6 +1,6 @@
 ﻿{
-    "Generated":  "2026-10-03 07:28:17",
-    "FilesAnalyzed":  11661,
+    "Generated":  "2026-10-03 08:26:54",
+    "FilesAnalyzed":  11652,
     "SecretsFound":  184,
     "SecretFiles":  [
                         "C:\\ProyectCursor\\erp-saas\\backend\\artifacts\\nc-api-build\\appsettings.Development.json",
