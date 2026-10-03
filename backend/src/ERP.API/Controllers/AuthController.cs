@@ -174,8 +174,14 @@ public sealed class AuthController : ControllerBase
         return this.ToOkOrBadRequest(result);
     }
 
+    /// <summary>
+    /// Respuesta neutral: mismo 200 exista o no la cuenta (ZH-AUTH-PASSWORD-RESET-SECURITY-HOTFIX-01).
+    /// 429 <c>RATE_LIMITED</c> al exceder el límite por IP; el límite por email se aplica en el
+    /// handler y también responde neutral.
+    /// </summary>
     [HttpPost("forgot-password")]
     [AllowAnonymous]
+    [EnableRateLimiting("auth-forgot-password-ip")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ForgotPassword(
         [FromBody] ForgotPasswordCommand command,

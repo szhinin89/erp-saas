@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
-using System.Globalization;
+using StackExchange.Redis;
 
 namespace ERP.Infrastructure.Services;
 
@@ -8,54 +8,33 @@ namespace ERP.Infrastructure.Services;
 public sealed class RefreshTokenRateLimiter
 {
     private readonly IDistributedCache _cache;
+    private readonly IConnectionMultiplexer? _redis;
     private readonly ILogger<RefreshTokenRateLimiter> _logger;
 
-    public RefreshTokenRateLimiter(IDistributedCache cache, ILogger<RefreshTokenRateLimiter> logger)
+    /// <param name="redis">Conexión Redis compartida si está configurada; sin ella, fallback en memoria.</param>
+    public RefreshTokenRateLimiter(
+        IDistributedCache cache,
+        ILogger<RefreshTokenRateLimiter> logger,
+        IConnectionMultiplexer? redis = null
+    )
     {
         _cache = cache;
         _logger = logger;
+        _redis = redis;
     }
 
-    public async Task<bool> TryAcquireAsync(
+    public Task<bool> TryAcquireAsync(
         string partitionKey,
         int limit,
         TimeSpan window,
         CancellationToken cancellationToken = default
-    )
-    {
-        var key = $"erp:refresh:rl:{partitionKey}";
-        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        var windowMs = (long)window.TotalMilliseconds;
-
-        var raw = await _cache.GetStringAsync(key, cancellationToken);
-        RefreshRateBucket bucket;
-        if (string.IsNullOrEmpty(raw))
-        {
-            bucket = new RefreshRateBucket(now, 1);
-        }
-        else
-        {
-            var parts = raw.Split(':');
-            var windowStart = long.Parse(parts[0], CultureInfo.InvariantCulture);
-            var count = int.Parse(parts[1], CultureInfo.InvariantCulture);
-
-            if (now - windowStart >= windowMs)
-                bucket = new RefreshRateBucket(now, 1);
-            else if (count >= limit)
-                return false;
-            else
-                bucket = new RefreshRateBucket(windowStart, count + 1);
-        }
-
-        await _cache.SetStringAsync(
-            key,
-            $"{bucket.WindowStartMs}:{bucket.Count}",
-            new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = window },
+    ) =>
+        DistributedFixedWindowRateLimit.TryAcquireAsync(
+            _cache,
+            _redis,
+            $"erp:refresh:rl:{partitionKey}",
+            limit,
+            window,
             cancellationToken
         );
-
-        return true;
-    }
-
-    private readonly record struct RefreshRateBucket(long WindowStartMs, int Count);
 }

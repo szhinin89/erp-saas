@@ -175,7 +175,20 @@ Por fases (detalle en el documento, §U):
 6. Entrega de password reset sobre Communications (scope System, payload sensible).
 7. Monitor.
 
-No hay fase multicanal. Estado: **diseño aceptado; ninguna fase implementada.**
+No hay fase multicanal. Estado: **diseño aceptado; fase 1 implementada.**
+
+- **Fase 1 — `ZH-AUTH-PASSWORD-RESET-SECURITY-HOTFIX-01` (2026-10-02): IMPLEMENTED.** Solo Auth; sin Communications,
+  SMTP ni migraciones.
+  - `LoggingPasswordResetLinkSender` ya no registra enlace, token ni email (evento `PasswordResetDeliverySimulated`).
+  - `ForgotPasswordHandler` responde `Success(true)` en toda rama de negocio; el motivo real se registra como
+    `PasswordResetRequestSuppressed` (`PasswordResetSuppressionReason`), sin token cuando no hay cuenta inequívoca.
+    Eventos: `PasswordResetRequested`, `PasswordResetRequestSuppressed`, `PasswordResetDeliveryRequested`.
+  - Límite por IP: política `auth-forgot-password-ip` (429 `RATE_LIMITED`), solo en `forgot-password`.
+  - Límite por identidad: `IPasswordResetRequestThrottle` → `PasswordResetRequestThrottle` sobre `IDistributedCache`
+    (clave SHA-256 del email), consumido antes de buscar la cuenta, supresión neutral. Incremento atómico: script Lua `INCR`+`PEXPIRE` sobre el `IConnectionMultiplexer` compartido con `RedisCache` cuando hay Redis; locks process-local particionados en el fallback en memoria. Lógica de ventana fija única
+    compartida con `RefreshTokenRateLimiter` (`DistributedFixedWindowRateLimit`).
+  - Configuración: `PasswordReset:IpRequestLimit`/`IpRequestWindowMinutes` (10/15 min) e
+    `IdentityRequestLimit`/`IdentityRequestWindowMinutes` (3/60 min).
 
 ## Alternativas consideradas
 

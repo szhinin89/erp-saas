@@ -2,6 +2,16 @@
 
 **Single source of truth** for delivery state. Updated: **2026-10-02** · Kernel refactor: **2026-06-05**.
 
+## ZH-AUTH-PASSWORD-RESET-SECURITY-HOTFIX-01 — Forgot Password sin fuga de token ni enumeración (2026-10-02)
+
+**Estado: COMPLETADO (sin commit).** Fase 1 de [ADR-039](docs/decisions/ADR-039-communications-architecture.md). Solo Auth: sin Communications, SMTP, templates ni migraciones.
+- **Token fuera de los logs:** `LoggingPasswordResetLinkSender` registraba `"Password reset link for {Email}: {Link}"` (enlace con token raw, nivel Information, en todos los entornos). Ahora solo registra `PasswordResetDeliverySimulated`, sin enlace, token ni email.
+- **Respuesta neutral:** `forgot-password` responde el mismo 200 para cuenta existente, inexistente, inactiva, sin membresía, con tenants ambiguos o con cupo agotado (antes 400 "No existe una cuenta…" / "Hay múltiples cuentas…"). Sin cuenta inequívoca no se emite token. El motivo real queda en `PasswordResetRequestSuppressed` (solo `UserId`, nunca email). El formato inválido de email (validación) y los fallos técnicos reales siguen el contrato global.
+- **Rate limit:** por IP con la política ASP.NET `auth-forgot-password-ip` (10/15 min, 429 `RATE_LIMITED`; `reset-password` no la comparte); por identidad con `PasswordResetRequestThrottle` sobre `IDistributedCache` (Redis si está configurado, memoria si no; clave SHA-256 del email; 3/60 min), contado antes de buscar la cuenta y con supresión neutral. Configurable en `PasswordReset:*`. **Atómico** (verificación final): `IDistributedCache` Get+Set no lo era (20 solicitudes concurrentes → 20 permisos); ahora Redis usa un script Lua `INCR`+`PEXPIRE` sobre una conexión compartida con `RedisCache`, y el fallback en memoria serializa por clave con locks process-local. Aplica también a `RefreshTokenRateLimiter`. Probado con 20 concurrentes / límite 3 en memoria y en Redis real (incluye dos nodos).
+- **Sin cambios:** emisión, hash, expiración, single-use e invalidación del token (Auth); `ResetPasswordWithToken`/`CompletePasswordReset`; frontend (ya mostraba "Si existe una cuenta asociada…").
+- **Limitación conocida:** el reset por email sigue sin entregarse en producción (y en Development el enlace ya no aparece en el log) hasta la fase 6 de ADR-039.
+- **Tests:** Application 14 nuevos (`ForgotPasswordHandlerTests`, `ResetPasswordWithTokenHandlerTests`), Infrastructure 3 (`PasswordResetSecurityServicesTests`), API 5 por HTTP real + PostgreSQL (`ForgotPasswordSecurityHttpTests`), frontend 1 (`ForgotPasswordPage.test.tsx`).
+
 ## ZH-COMMUNICATIONS-ARCHITECTURE-01/02 — Arquitectura de Communications (2026-10-02)
 
 **Estado: DISEÑO COMPLETADO (sin implementación, sin commit).** [ADR-039](docs/decisions/ADR-039-communications-architecture.md) (Accepted) + [`docs/communications/COMMUNICATIONS-ARCHITECTURE.md`](docs/communications/COMMUNICATIONS-ARCHITECTURE.md). Sin cambios de código, tablas ni frontend.

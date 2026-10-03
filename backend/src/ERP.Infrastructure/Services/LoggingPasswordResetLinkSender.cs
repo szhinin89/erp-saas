@@ -3,7 +3,11 @@ using Microsoft.Extensions.Logging;
 
 namespace ERP.Infrastructure.Services;
 
-/// <summary>Desarrollo / fallback: registra el enlace. Sustituir por SMTP en producción.</summary>
+/// <summary>
+/// Entrega SIMULADA temporal (no envía correo). ZH-AUTH-PASSWORD-RESET-SECURITY-HOTFIX-01: nunca
+/// registra el enlace, el token ni el email — en ningún entorno, Development incluido. Se reemplaza
+/// por el adapter sobre Communications (ADR-039, fase 6).
+/// </summary>
 public sealed partial class LoggingPasswordResetLinkSender : IPasswordResetLinkSender
 {
     private readonly ILogger<LoggingPasswordResetLinkSender> _logger;
@@ -19,13 +23,15 @@ public sealed partial class LoggingPasswordResetLinkSender : IPasswordResetLinkS
         CancellationToken cancellationToken = default
     )
     {
-        LogPasswordResetLink(toEmail, resetLink);
+        LogSimulatedDelivery();
         return Task.CompletedTask;
     }
 
     [LoggerMessage(
-        Level = LogLevel.Information,
-        Message = "Password reset link for {Email}: {Link}"
+        EventId = 4104,
+        EventName = "PasswordResetDeliverySimulated",
+        Level = LogLevel.Warning,
+        Message = "Recuperación de contraseña: entrega simulada, sin transporte de correo configurado (el enlace no se envía ni se registra)."
     )]
-    private partial void LogPasswordResetLink(string email, string link);
+    private partial void LogSimulatedDelivery();
 }

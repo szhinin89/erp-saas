@@ -212,6 +212,41 @@ builder.Services.AddRateLimiter(options =>
             );
         }
     );
+
+    // ZH-AUTH-PASSWORD-RESET-SECURITY-HOTFIX-01 — solo forgot-password (reset-password con token
+    // legítimo no comparte esta política). Límites en PasswordReset:IpRequestLimit/IpRequestWindowMinutes.
+    var passwordResetDefaults = new ERP.Application.Common.Config.PasswordResetOptions();
+    var forgotPasswordIpLimit = Math.Max(
+        1,
+        builder.Configuration.GetValue(
+            $"{ERP.Application.Common.Config.PasswordResetOptions.SectionName}:IpRequestLimit",
+            passwordResetDefaults.IpRequestLimit
+        )
+    );
+    var forgotPasswordIpWindowMinutes = Math.Max(
+        1,
+        builder.Configuration.GetValue(
+            $"{ERP.Application.Common.Config.PasswordResetOptions.SectionName}:IpRequestWindowMinutes",
+            passwordResetDefaults.IpRequestWindowMinutes
+        )
+    );
+    options.AddPolicy(
+        "auth-forgot-password-ip",
+        httpContext =>
+        {
+            var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            return RateLimitPartition.GetFixedWindowLimiter(
+                ip,
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = forgotPasswordIpLimit,
+                    Window = TimeSpan.FromMinutes(forgotPasswordIpWindowMinutes),
+                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                    QueueLimit = 0,
+                }
+            );
+        }
+    );
 });
 
 // IDistributedCache: Redis si Redis:ConnectionString o ConnectionStrings:Redis está definida;
@@ -231,6 +266,19 @@ if (redisConfigured)
         options.Configuration = redisConnection;
         options.InstanceName = redisInstanceName;
     });
+
+    // Una sola conexión Redis: la usa RedisCache y la usan los rate limits que necesitan
+    // incremento atómico (DistributedFixedWindowRateLimit), que IDistributedCache no ofrece.
+    builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(_ =>
+        StackExchange.Redis.ConnectionMultiplexer.Connect(redisConnection!)
+    );
+    builder.Services
+        .AddOptions<Microsoft.Extensions.Caching.StackExchangeRedis.RedisCacheOptions>()
+        .Configure<IServiceProvider>(
+            (options, sp) =>
+                options.ConnectionMultiplexerFactory = () =>
+                    Task.FromResult(sp.GetRequiredService<StackExchange.Redis.IConnectionMultiplexer>())
+        );
 }
 else
 {

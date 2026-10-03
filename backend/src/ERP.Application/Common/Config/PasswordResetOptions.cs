@@ -17,4 +17,22 @@ public sealed class PasswordResetOptions
     /// request, no es un enlace por email que deba sobrevivir minutos/horas sin uso.
     /// </summary>
     public int FirstLoginTokenLifetimeMinutes { get; set; } = 5;
+
+    /// <summary>
+    /// ZH-AUTH-PASSWORD-RESET-SECURITY-HOTFIX-01 — solicitudes de <c>forgot-password</c> aceptadas por
+    /// email normalizado dentro de <see cref="IdentityRequestWindowMinutes"/>. Se cuenta ANTES de buscar
+    /// la cuenta (mismo comportamiento exista o no); al excederse la solicitud se suprime en silencio
+    /// (respuesta neutral, sin token).
+    /// </summary>
+    public int IdentityRequestLimit { get; set; } = 3;
+
+    public int IdentityRequestWindowMinutes { get; set; } = 60;
+
+    /// <summary>
+    /// Límite por IP del endpoint <c>forgot-password</c> (política ASP.NET
+    /// <c>auth-forgot-password-ip</c>); al excederse responde 429 <c>RATE_LIMITED</c>.
+    /// </summary>
+    public int IpRequestLimit { get; set; } = 10;
+
+    public int IpRequestWindowMinutes { get; set; } = 15;
 }

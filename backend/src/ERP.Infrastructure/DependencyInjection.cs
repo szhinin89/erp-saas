@@ -126,6 +126,7 @@ public static class DependencyInjection
         >();
         services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
         services.AddScoped<IPasswordResetLinkSender, LoggingPasswordResetLinkSender>();
+        services.AddScoped<IPasswordResetRequestThrottle, PasswordResetRequestThrottle>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<ICurrentTenant, CurrentTenantService>();
         services.AddScoped<ICurrentCompany, CurrentCompanyService>();
