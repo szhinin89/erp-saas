@@ -2,6 +2,15 @@
 
 **Single source of truth** for delivery state. Updated: **2026-10-03** · Kernel refactor: **2026-06-05**.
 
+## ZH-ELECTRONIC-RETRY-TENANT-CONTEXT-01 — El reintento automático de comprobantes vuelve a funcionar en Hangfire (2026-10-03)
+
+**Estado: COMPLETADO (sin commit).** Cierra el hallazgo de [ADR-036 §23.3](docs/decisions/ADR-036-retention-electronic-document-cancellation.md). Sin migración ni ADR nuevo: no cambian estados fiscales, XML, firma, SOAP, política de reintento ni el issuer.
+- **Bug:** `ElectronicDocumentRetryJob` leía los candidatos antes de fijar `JobExecutionContext`. Hangfire no tiene contexto de tenant, así que el filtro fail-closed devolvía 0 filas y el reintento automático estaba inactivo para todos los tipos de comprobante.
+- **Fix (mismo patrón que `RetentionElectronicRecoveryJob`):** `GetRetryCandidatesAsync` es cross-tenant vía `AsPlatformQuery()`, sin tracking, y solo devuelve `ElectronicDocumentRetryCandidate` (tenant, empresa, id, `RetryCount`, `LastAttemptUtc`). El job aplica `ElectronicDocumentRetryPolicy` sin cambios. Cada candidato se procesa con `JobExecutionContext` de su tenant y empresa y en un scope propio. Ahí se resuelve la preferencia `auto_retry_enabled` y el issuer vuelve a leer el documento con los filtros fail-closed de esa empresa.
+- **Efecto de comportamiento (esperado):** se reactiva el reintento automático de Factura, Nota de crédito y Retención en Draft, Failed, Signed y Received, con backoff de 1/2/4/8/16 min y DeadLetter a los 5 intentos. Las retenciones siguen pasando por su guard de ciclo de vida (ADR-036 I-1, sin reenvío ciego). La concurrencia con `RetentionElectronicRecoveryJob` sobre comprobantes de retención en `Draft` la serializan el `xmin` del comprobante y el reclamo `Dispatching` bajo lock.
+- **Tests:** `ElectronicDocumentRetryJobTenantContextTests` (ERP.API.Tests, PostgreSQL real, filtros reales) tiene 5 casos: candidato encontrado sin contexto; A procesado bajo A; dos empresas del mismo tenant más otro tenant sin contaminarse; no elegibles (Authorized, DeadLetter, intentos agotados, en backoff, preferencia apagada) sin reintento; dos corridas sin duplicar el efecto. Una mutación sin `AsPlatformQuery` hace fallar 4/5. El test de caracterización `Hallazgo_GetRetryCandidatesAsync_…` se invirtió.
+- **Validación:** job 6/6 · Infrastructure focalizados 2/2 (incluye `IgnoreQueryFiltersAuditTests`) · Architecture 143/143 · `architecture:check` PASS (0 nuevas) · `git diff --check` limpio.
+
 ## ZH-EDOC-COMMUNICATIONS-01 — Correo de comprobantes autorizados: Factura, Nota de crédito y Retención (2026-10-03)
 
 **Estado: COMPLETADO (sin commit).**

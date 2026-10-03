@@ -85,8 +85,22 @@ public interface IElectronicDocumentRepository
     );
 
     /// <summary>
-    /// Documentos elegibles a reintento automático (Signed/Received), cross-tenant — usado
-    /// exclusivamente por el job Hangfire de reintentos. Trackeado (se muta y persiste).
+    /// Candidatos a reintento automático (Draft/Failed/Signed/Received), cross-tenant — usado
+    /// exclusivamente por el job Hangfire de reintentos, que corre sin contexto de tenant.
+    /// ZH-ELECTRONIC-RETRY-TENANT-CONTEXT-01: devuelve solo identificadores y los datos del
+    /// backoff (sin tracking); cada candidato se procesa después bajo el contexto de su propio
+    /// tenant/empresa, donde el documento se vuelve a leer con los filtros fail-closed.
     /// </summary>
-    Task<IReadOnlyList<ElectronicDocument>> GetRetryCandidatesAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<ElectronicDocumentRetryCandidate>> GetRetryCandidatesAsync(
+        CancellationToken ct = default
+    );
 }
+
+/// <summary>Identidad de un candidato a reintento automático y los datos de su backoff.</summary>
+public sealed record ElectronicDocumentRetryCandidate(
+    Guid TenantId,
+    Guid CompanyId,
+    Guid ElectronicDocumentId,
+    int RetryCount,
+    DateTime? LastAttemptUtc
+);

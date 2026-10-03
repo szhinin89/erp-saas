@@ -446,6 +446,8 @@ GROUP BY r.source_document_type;
 
 ### 23.3 Hallazgo fuera de alcance — job genérico de reintento inactivo
 
+> **Resuelto (2026-10-03, ZH-ELECTRONIC-RETRY-TENANT-CONTEXT-01):** la consulta de candidatos es cross-tenant (`AsPlatformQuery`, solo identificadores) y cada documento se procesa bajo `JobExecutionContext` de su tenant/empresa. El texto siguiente se conserva como registro histórico. Ver `STATUS.md`.
+
 `ElectronicDocumentRetryJob` consulta candidatos (`GetRetryCandidatesAsync`) **antes** de fijar `JobExecutionContext`. En Hangfire no hay HttpContext, y el filtro global fail-closed (tenant + empresa) devuelve **0 filas**. Por eso el reintento automático genérico no procesa nada en producción para ningún tipo de comprobante. Lo demuestra el test `Hallazgo_GetRetryCandidatesAsync_sin_contexto_de_tenant_no_devuelve_candidatos`.
 
 No se corrigió aquí: hacerlo activaría el reintento automático de Ventas y Notas de Crédito (CLOSED), un cambio de comportamiento que requiere su propio análisis.

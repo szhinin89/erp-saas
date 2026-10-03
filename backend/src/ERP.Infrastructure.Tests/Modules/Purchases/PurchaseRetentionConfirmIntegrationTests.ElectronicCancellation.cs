@@ -506,20 +506,21 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
         sri.SendCalls.Should().Be(1);
     }
 
-    // ── Hallazgo: el job genérico de reintento no ve candidatos sin contexto de tenant ─────────
+    // ── Job genérico de reintento: candidatos visibles sin contexto de tenant ──────────────────
 
     [Fact]
-    public async Task Hallazgo_GetRetryCandidatesAsync_sin_contexto_de_tenant_no_devuelve_candidatos()
+    public async Task GetRetryCandidatesAsync_sin_contexto_de_tenant_devuelve_el_candidato_con_su_tenant_y_empresa()
     {
-        // ElectronicDocumentRetryJob consulta candidatos ANTES de fijar JobExecutionContext; el filtro
-        // global fail-closed (tenant+empresa) devuelve 0 filas. Documentado en ADR-036 como hallazgo
-        // fuera de alcance (corregirlo activaría el reintento automático de Ventas/NC, CLOSED).
+        // ZH-ELECTRONIC-RETRY-TENANT-CONTEXT-01 (antes: hallazgo de ADR-036 §23.3, 0 filas). La consulta
+        // es cross-tenant y devuelve solo identificadores; el job procesa cada uno bajo su contexto.
         var (_, retentionId) = await ConfirmWithIssuedRetentionAsync();
-        await SeedElectronicDocumentAsync(retentionId, ElectronicDocumentState.Failed);
+        var documentId = await SeedElectronicDocumentAsync(retentionId, ElectronicDocumentState.Failed);
 
         await using var db = CreateJobContext();
         var candidates = await new ElectronicDocumentRepository(db, new CompanyClock(db)).GetRetryCandidatesAsync();
 
-        candidates.Should().BeEmpty();
+        var candidate = candidates.Should().ContainSingle(c => c.ElectronicDocumentId == documentId).Subject;
+        candidate.TenantId.Should().Be(_tenantId);
+        candidate.CompanyId.Should().Be(_companyId);
     }
 }

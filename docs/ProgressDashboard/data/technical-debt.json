@@ -1,6 +1,6 @@
 ﻿{
-    "Generated":  "2026-10-03 06:57:01",
-    "FilesAnalyzed":  11545,
+    "Generated":  "2026-10-03 07:27:59",
+    "FilesAnalyzed":  11546,
     "TODO":  731,
     "FIXME":  30,
     "HACK":  1,
@@ -524,7 +524,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Modules\\Purchases\\PurchaseRetentionConfirmIntegrationTests.ElectronicCancellation.cs",
-                           "Lines":  526
+                           "Lines":  527
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Modules\\Purchases\\PurchaseRetentionConfirmIntegrationTests.SriAnnulment.cs",

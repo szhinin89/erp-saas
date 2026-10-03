@@ -206,15 +206,31 @@ public sealed class ElectronicDocumentRepository : IElectronicDocumentRepository
         return _companyClock.TodayUtcRangeAsync(currentCompanyId, tenantId, ct);
     }
 
-    public async Task<IReadOnlyList<ElectronicDocument>> GetRetryCandidatesAsync(
+    public async Task<IReadOnlyList<ElectronicDocumentRetryCandidate>> GetRetryCandidatesAsync(
         CancellationToken ct = default
     ) =>
+        // Bypass de filtros globales vía el accessor sancionado (AsPlatformQuery), deliberado y
+        // acotado: lo usa SOLO el job de reintentos (sin contexto de tenant en Hangfire, donde el
+        // filtro fail-closed devolvería 0 filas); devuelve únicamente identificadores, y cada
+        // candidato se procesa después con JobExecutionContext de su propio tenant/empresa, donde
+        // los filtros vuelven a aplicar (mismo patrón que GetPendingElectronicStartAsync).
         await _db
-            .ElectronicDocuments.Where(x =>
+            .ElectronicDocuments.AsPlatformQuery()
+            .AsNoTracking()
+            .Where(x =>
                 x.CurrentState == ElectronicDocumentState.Signed
                 || x.CurrentState == ElectronicDocumentState.Received
                 || x.CurrentState == ElectronicDocumentState.Draft
                 || x.CurrentState == ElectronicDocumentState.Failed
             )
+            .OrderBy(x => x.CreatedAt)
+            .ThenBy(x => x.Id)
+            .Select(x => new ElectronicDocumentRetryCandidate(
+                x.TenantId,
+                x.CompanyId,
+                x.Id,
+                x.RetryCount,
+                x.LastAttemptUtc
+            ))
             .ToListAsync(ct);
 }

@@ -1,6 +1,5 @@
 using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Domain.Configuration.Interfaces;
-using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Interfaces;
 using ERP.Infrastructure.Services;
 using Hangfire;
@@ -16,8 +15,9 @@ public interface IElectronicDocumentRetryJob
 /// Hangfire recurring job que reintenta documentos electrónicos varados en Signed/Received,
 /// respetando el backoff de <see cref="ElectronicDocumentRetryPolicy"/>. Un fallo en un
 /// documento nunca detiene el resto del lote. Cross-tenant por diseño (mismo patrón que
-/// <see cref="ProcessOutboxJob"/>) — cada documento resuelve su propio tenant/empresa vía
-/// <see cref="JobExecutionContext"/>, sin HttpContext.
+/// <see cref="RetentionElectronicRecoveryJob"/>): la consulta de candidatos ignora filtros globales
+/// y devuelve solo identificadores; cada documento se procesa en su propio scope bajo
+/// <see cref="JobExecutionContext"/> de su tenant/empresa, sin HttpContext.
 /// </summary>
 public sealed partial class ElectronicDocumentRetryJob : IElectronicDocumentRetryJob
 {
@@ -43,16 +43,17 @@ public sealed partial class ElectronicDocumentRetryJob : IElectronicDocumentRetr
     [DisableConcurrentExecution(timeoutInSeconds: 10)]
     public async Task ExecuteAsync(CancellationToken cancellationToken = default)
     {
-        await using var scope = _scopeFactory.CreateAsyncScope();
-        var repository = scope.ServiceProvider.GetRequiredService<IElectronicDocumentRepository>();
-        var issuer = scope.ServiceProvider.GetRequiredService<IElectronicDocumentIssuer>();
-        var preferencesResolver =
-            scope.ServiceProvider.GetRequiredService<IOperationalPreferencesResolver>();
-
-        IReadOnlyList<ElectronicDocument> candidates;
+        // ZH-ELECTRONIC-RETRY-TENANT-CONTEXT-01 (ADR-036 §23.3): Hangfire no tiene HttpContext ni
+        // contexto de tenant, así que la consulta de candidatos es cross-tenant y devuelve solo
+        // identificadores. Antes se leían las entidades con el filtro fail-closed activo y sin
+        // contexto: 0 filas, el reintento automático no procesaba nada.
+        IReadOnlyList<ElectronicDocumentRetryCandidate> candidates;
         try
         {
-            candidates = await repository.GetRetryCandidatesAsync(cancellationToken);
+            await using var queryScope = _scopeFactory.CreateAsyncScope();
+            candidates = await queryScope
+                .ServiceProvider.GetRequiredService<IElectronicDocumentRepository>()
+                .GetRetryCandidatesAsync(cancellationToken);
         }
         catch (Exception ex)
         {
@@ -68,46 +69,52 @@ public sealed partial class ElectronicDocumentRetryJob : IElectronicDocumentRetr
         var autoRetryEnabledCache = new Dictionary<(Guid TenantId, Guid CompanyId), bool>();
 
         var nowUtc = DateTime.UtcNow;
-        foreach (var document in candidates)
+        foreach (var candidate in candidates)
         {
             if (
                 !ElectronicDocumentRetryPolicy.IsEligibleForAutomaticRetry(
-                    document.RetryCount,
-                    document.LastAttemptUtc,
+                    candidate.RetryCount,
+                    candidate.LastAttemptUtc,
                     nowUtc
                 )
             )
                 continue;
 
-            var cacheKey = (document.TenantId, document.CompanyId);
-            if (!autoRetryEnabledCache.TryGetValue(cacheKey, out var autoRetryEnabled))
-            {
-                var preferences = await preferencesResolver.ResolveAsync(
-                    document.TenantId,
-                    document.CompanyId,
-                    cancellationToken
-                );
-                autoRetryEnabled = preferences.ElectronicDocuments.AutoRetryEnabled;
-                autoRetryEnabledCache[cacheKey] = autoRetryEnabled;
-            }
-            if (!autoRetryEnabled)
-                continue;
-
-            using var _ = JobExecutionContext.Begin(document.TenantId, document.CompanyId);
+            // Cada documento en su propio tenant/empresa y en un scope nuevo: el issuer vuelve a
+            // leer el documento con los filtros fail-closed de ESA empresa, así que un documento
+            // nunca se procesa bajo el contexto de otra, y un fallo (o un DbContext en mal estado)
+            // de un documento no contamina al siguiente.
+            using var _ = JobExecutionContext.Begin(candidate.TenantId, candidate.CompanyId);
             try
             {
-                var result = await issuer.RetryAsync(
-                    document.TenantId,
-                    document.Id,
-                    Guid.Empty,
-                    cancellationToken
-                );
+                await using var scope = _scopeFactory.CreateAsyncScope();
+
+                var cacheKey = (candidate.TenantId, candidate.CompanyId);
+                if (!autoRetryEnabledCache.TryGetValue(cacheKey, out var autoRetryEnabled))
+                {
+                    var preferences = await scope
+                        .ServiceProvider.GetRequiredService<IOperationalPreferencesResolver>()
+                        .ResolveAsync(candidate.TenantId, candidate.CompanyId, cancellationToken);
+                    autoRetryEnabled = preferences.ElectronicDocuments.AutoRetryEnabled;
+                    autoRetryEnabledCache[cacheKey] = autoRetryEnabled;
+                }
+                if (!autoRetryEnabled)
+                    continue;
+
+                var result = await scope
+                    .ServiceProvider.GetRequiredService<IElectronicDocumentIssuer>()
+                    .RetryAsync(
+                        candidate.TenantId,
+                        candidate.ElectronicDocumentId,
+                        Guid.Empty,
+                        cancellationToken
+                    );
                 if (!result.IsSuccess)
-                    LogRetryFailed(document.Id, result.Error);
+                    LogRetryFailed(candidate.ElectronicDocumentId, result.Error);
             }
             catch (Exception ex)
             {
-                LogRetryThrew(document.Id, ex);
+                LogRetryThrew(candidate.ElectronicDocumentId, ex);
             }
         }
     }
