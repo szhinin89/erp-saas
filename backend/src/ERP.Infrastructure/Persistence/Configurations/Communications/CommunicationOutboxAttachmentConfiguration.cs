@@ -13,8 +13,8 @@ public sealed class CommunicationOutboxAttachmentConfiguration
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").IsRequired();
-        builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
-        builder.Property(x => x.CompanyId).HasColumnName("company_id").IsRequired();
+        builder.Property(x => x.TenantId).HasColumnName("tenant_id");
+        builder.Property(x => x.CompanyId).HasColumnName("company_id");
         builder.Property(x => x.CommunicationOutboxId).HasColumnName("communication_outbox_id").IsRequired();
         builder.Property(x => x.AttachmentType).HasColumnName("attachment_type").HasConversion<string>().HasMaxLength(30).IsRequired();
         builder.Property(x => x.FileName).HasColumnName("file_name").HasMaxLength(CommunicationOutboxAttachment.FileNameMaxLen).IsRequired();

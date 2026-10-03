@@ -1,4 +1,5 @@
 using ERP.Domain.Modules.Communications.Entities;
+using ERP.Domain.Modules.Communications.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -6,17 +7,37 @@ namespace ERP.Infrastructure.Persistence.Configurations.Communications;
 
 public sealed class CommunicationOutboxConfiguration : IEntityTypeConfiguration<CommunicationOutbox>
 {
+    /// <summary>
+    /// ZH-COMMUNICATIONS-CONTRACT-01 (ADR-039 D3) — invariante de alcance en la BD: Company exige
+    /// tenant y empresa; System no tiene tenant, empresa ni sucursal (NULL, nunca un centinela).
+    /// </summary>
+    public const string ScopeCheckConstraint = "ck_communication_outbox_scope";
+
     public void Configure(EntityTypeBuilder<CommunicationOutbox> builder)
     {
-        builder.ToTable("communication_outbox");
+        builder.ToTable(
+            "communication_outbox",
+            t => t.HasCheckConstraint(
+                ScopeCheckConstraint,
+                "(scope_kind = 'Company' AND tenant_id IS NOT NULL AND company_id IS NOT NULL) "
+                    + "OR (scope_kind = 'System' AND tenant_id IS NULL AND company_id IS NULL AND branch_id IS NULL)"
+            )
+        );
 
         builder.HasKey(x => x.Id);
+        builder.Ignore(x => x.Scope);
+        builder.Ignore(x => x.DomainEvents);
         builder.Property(x => x.Id).HasColumnName("id").IsRequired();
-        builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
-        builder.Property(x => x.CompanyId).HasColumnName("company_id").IsRequired();
+        builder.Property(x => x.ScopeKind).HasColumnName("scope_kind").HasConversion<string>().HasMaxLength(20).IsRequired();
+        builder.Property(x => x.TenantId).HasColumnName("tenant_id");
+        builder.Property(x => x.CompanyId).HasColumnName("company_id");
         builder.Property(x => x.BranchId).HasColumnName("branch_id");
         builder.Property(x => x.Channel).HasColumnName("channel").HasConversion<string>().HasMaxLength(30).IsRequired();
         builder.Property(x => x.Purpose).HasColumnName("purpose").HasMaxLength(CommunicationOutbox.PurposeMaxLen).IsRequired();
+        builder.Property(x => x.SourceModule).HasColumnName("source_module").HasMaxLength(CommunicationSource.ModuleMaxLen);
+        builder.Property(x => x.SourceType).HasColumnName("source_type").HasMaxLength(CommunicationSource.TypeMaxLen);
+        builder.Property(x => x.SourceId).HasColumnName("source_id");
+        builder.Property(x => x.RecipientRole).HasColumnName("recipient_role").HasConversion<string>().HasMaxLength(30);
         builder.Property(x => x.RecipientName).HasColumnName("recipient_name").HasMaxLength(CommunicationOutbox.RecipientNameMaxLen);
         builder.Property(x => x.RecipientEmail).HasColumnName("recipient_email").HasMaxLength(CommunicationOutbox.RecipientEmailMaxLen);
         builder.Property(x => x.RecipientPhone).HasColumnName("recipient_phone").HasMaxLength(CommunicationOutbox.RecipientPhoneMaxLen);
@@ -33,9 +54,9 @@ public sealed class CommunicationOutboxConfiguration : IEntityTypeConfiguration<
         builder.Property(x => x.RetryCount).HasColumnName("retry_count").IsRequired();
         builder.Property(x => x.MaxRetries).HasColumnName("max_retries").IsRequired();
         builder.Property(x => x.LastError).HasColumnName("last_error").HasMaxLength(CommunicationOutbox.LastErrorMaxLen);
-        builder.Property(x => x.CorrelationType).HasColumnName("correlation_type").HasMaxLength(CommunicationOutbox.CorrelationTypeMaxLen);
-        builder.Property(x => x.CorrelationId).HasColumnName("correlation_id");
         builder.Property(x => x.IdempotencyKey).HasColumnName("idempotency_key").HasMaxLength(CommunicationOutbox.IdempotencyKeyMaxLen);
+        builder.Property(x => x.ResendOfCommunicationId).HasColumnName("resend_of_communication_id");
+        builder.Property(x => x.ResendSequence).HasColumnName("resend_sequence").IsRequired();
         builder.Property(x => x.ClaimToken).HasColumnName("claim_token");
         builder.Property(x => x.LeaseUntilUtc).HasColumnName("lease_until_utc");
         builder.Property(x => x.FailureCategory).HasColumnName("failure_category").HasConversion<string>().HasMaxLength(30);
@@ -59,10 +80,15 @@ public sealed class CommunicationOutboxConfiguration : IEntityTypeConfiguration<
         builder.HasIndex(x => new { x.Status, x.ScheduledAtUtc })
             .HasFilter("status IN ('Pending', 'Processing')")
             .HasDatabaseName("ix_communication_outbox_claimable");
-        builder.HasIndex(x => new { x.TenantId, x.CompanyId, x.CorrelationType, x.CorrelationId, x.Purpose, x.RecipientEmail })
-            .HasDatabaseName("ix_communication_outbox_correlation");
+        // Antes ix_communication_outbox_correlation (correlation_type/correlation_id): mismas columnas
+        // renombradas a source_type/source_id. Sirve a búsquedas por origen (monitor, reconciliación).
+        builder.HasIndex(x => new { x.TenantId, x.CompanyId, x.SourceType, x.SourceId, x.Purpose, x.RecipientEmail })
+            .HasDatabaseName("ix_communication_outbox_source");
+        // Autoridad de idempotencia (INSERT … ON CONFLICT DO NOTHING). NULLS NOT DISTINCT: las filas
+        // System (tenant/empresa NULL) también quedan protegidas (PostgreSQL 15+; el ERP usa 16).
         builder.HasIndex(x => new { x.TenantId, x.CompanyId, x.IdempotencyKey })
             .IsUnique()
+            .AreNullsDistinct(false)
             .HasFilter("idempotency_key IS NOT NULL")
             .HasDatabaseName("ux_communication_outbox_idempotency");
     }

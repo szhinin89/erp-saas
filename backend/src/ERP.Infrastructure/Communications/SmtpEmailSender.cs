@@ -6,7 +6,7 @@ namespace ERP.Infrastructure.Communications;
 
 public sealed class SmtpEmailSender : IEmailSender
 {
-    public async Task SendAsync(
+    public async Task<EmailDeliveryReceipt> SendAsync(
         EmailMessage message,
         CommunicationEmailSettings settings,
         CancellationToken ct = default
@@ -34,6 +34,8 @@ public sealed class SmtpEmailSender : IEmailSender
         try
         {
             await client.SendMailAsync(mail, timeout.Token);
+            // System.Net.Mail no expone la respuesta del servidor (id de cola del proveedor): null, nunca inventado.
+            return EmailDeliveryReceipt.WithoutProviderId;
         }
         // SmtpClient envuelve la cancelación de NUESTRO token de timeout como SmtpException (sin causa
         // interna) u OperationCanceledException según la fase: se decide por el estado de los tokens,

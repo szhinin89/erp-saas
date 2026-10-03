@@ -1,30 +1,37 @@
 using ERP.Application.Modules.Communications.DTOs;
 using ERP.Domain.Modules.Communications.Enums;
+using ERP.Domain.Modules.Communications.ValueObjects;
 
 namespace ERP.Application.Modules.Communications.Services;
 
+/// <summary>
+/// ZH-COMMUNICATIONS-CONTRACT-01 — ÚNICO camino para crear una comunicación (ADR-039 D6/D7). El
+/// alcance llega explícito en la request (nunca se infiere del contexto ambiente) y la identidad
+/// idempotente la construye <see cref="CommunicationIdentity"/>: el caller no arma claves.
+/// </summary>
 public interface ICommunicationQueue
 {
-    Task<QueuedCommunicationDto> QueueEmailAsync(
-        QueueEmailRequest request,
-        CancellationToken ct = default
-    );
+    Task<QueuedCommunicationDto> EnqueueAsync(CommunicationRequest request, CancellationToken ct = default);
 }
 
-public sealed record QueueEmailRequest(
+/// <param name="Scope">Alcance explícito: <see cref="CommunicationScope.Company"/> o <see cref="CommunicationScope.System"/>.</param>
+/// <param name="Purpose">Propósito registrado en <c>CommunicationPurposes</c> (define alcance y canales permitidos).</param>
+/// <param name="Source">Origen de negocio (módulo, tipo, id): parte de la identidad.</param>
+/// <param name="RecipientRole">Rol estable del destinatario: parte de la identidad (el email no).</param>
+/// <param name="MaxRetries">Override explícito; si es null se copia del perfil resuelto para el alcance.</param>
+public sealed record CommunicationRequest(
+    CommunicationScope Scope,
     string Purpose,
+    CommunicationSource Source,
+    CommunicationRecipientRole RecipientRole,
     string? RecipientName,
     string RecipientEmail,
     string Subject,
     string? BodyHtml,
     string? BodyText,
+    IReadOnlyCollection<QueueCommunicationAttachmentDto>? Attachments = null,
+    CommunicationChannel Channel = CommunicationChannel.Email,
     CommunicationPriority Priority = CommunicationPriority.Normal,
     DateTime? ScheduledAtUtc = null,
-    int? MaxRetries = null,
-    string? CorrelationType = null,
-    Guid? CorrelationId = null,
-    string? IdempotencyKey = null,
-    IReadOnlyCollection<QueueCommunicationAttachmentDto>? Attachments = null,
-    Guid? BranchId = null,
-    bool SaveImmediately = true
+    int? MaxRetries = null
 );

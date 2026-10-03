@@ -35,6 +35,31 @@ public static class CommunicationFailureClassifier
             _ => CommunicationFailureCategory.Unknown,
         };
 
+    /// <summary>
+    /// ZH-COMMUNICATIONS-CONTRACT-01 — código del proveedor si el fallo lo trae (p. ej. <c>smtp:550</c>).
+    /// </summary>
+    public static string? ProviderCode(Exception exception) =>
+        exception switch
+        {
+            SmtpFailedRecipientsException many when many.InnerExceptions.Length > 0 =>
+                $"smtp:{(int)many.InnerExceptions[0].StatusCode}",
+            SmtpException smtp when smtp.StatusCode != SmtpStatusCode.GeneralFailure => $"smtp:{(int)smtp.StatusCode}",
+            _ => null,
+        };
+
+    /// <summary>
+    /// Texto persistible del fallo (<c>LastError</c> y <c>ErrorSafeText</c>): tipo de error + código del
+    /// proveedor. Nunca el mensaje de excepciones externas (los rechazos SMTP incluyen la dirección del
+    /// destinatario); sí el de <see cref="TimeoutException"/>, que redacta el propio ERP.
+    /// </summary>
+    public static string SafeDescription(Exception exception) =>
+        exception switch
+        {
+            TimeoutException timeout => $"{nameof(TimeoutException)}: {timeout.Message}",
+            _ when ProviderCode(exception) is { } code => $"{exception.GetType().Name} ({code})",
+            _ => exception.GetType().Name,
+        };
+
     private static CommunicationFailureCategory ClassifyRecipients(SmtpFailedRecipientsException many)
     {
         // Todos los destinatarios fallidos: si alguno es transitorio, se reintenta; el email lleva un

@@ -136,8 +136,8 @@ piezas existentes.
 | | **Company** | **System** |
 |---|---|---|
 | Uso | Factura, NC, Retención, estado de cuenta, avisos operativos | Password reset, verificación de email, alertas de seguridad, invitaciones, mensajes de la instalación |
-| `TenantId` | Obligatorio | Opcional: el tenant del sujeto si existe (solo auditoría/filtro), nunca para elegir SMTP |
-| `CompanyId` | Obligatorio | **No aplica** |
+| `TenantId` | Obligatorio | **No aplica** (NULL; el sujeto se traza por el origen, p. ej. el token) |
+| `CompanyId` | Obligatorio | **No aplica** (NULL) |
 | `BranchId` | Opcional | No aplica |
 | Configuración de transporte | Perfil de la empresa; perfil de instancia solo según la política de fallback (§O) | Perfil de instancia, siempre |
 | Template override | Permitido si el propósito lo declara | Prohibido |
@@ -145,36 +145,42 @@ piezas existentes.
 
 **Invariantes (fail-fast en el factory de dominio y con CHECK constraint en BD):**
 
-1. `Company` ⇒ `TenantId ≠ ∅` y `CompanyId ≠ ∅`.
-2. `System` ⇒ `CompanyId = ∅` y `BranchId = null`.
+1. `Company` ⇒ `TenantId` y `CompanyId` presentes (no vacíos); `BranchId` opcional.
+2. `System` ⇒ `TenantId`, `CompanyId` y `BranchId` NULL.
 3. El `ScopeKind` del mensaje debe coincidir con el scope que declara su propósito (`PASSWORD_RESET` solo
-   System; `SALES_INVOICE_AUTHORIZED` solo Company). Una combinación inválida lanza `DomainRuleViolationException`
-   al encolar: nunca se persiste.
+   System; `SALES_INVOICE_AUTHORIZED` solo Company). Una combinación inválida falla al construir la identidad,
+   antes de persistir.
 
-**Representación persistida.** `CommunicationOutbox` implementa `ICompanyOperationalEntity` (Tenant/Company `Guid`
-no nulos) y `EnterpriseQueryFilterConfigurator` le aplica el filtro fail-closed de tenant + empresa. Para no romper
-ese contrato compartido, "no aplica" se persiste como `Guid.Empty`. Solo es válido con `ScopeKind = System` y lo
-fija la CHECK constraint:
+**Representación persistida (decisión definitiva de la fase 3).** "No aplica" es **NULL**, nunca un centinela:
 
 ```sql
-CHECK (
-  (scope_kind = 'Company' AND tenant_id <> '00000000-0000-0000-0000-000000000000'
-                          AND company_id <> '00000000-0000-0000-0000-000000000000')
+CONSTRAINT ck_communication_outbox_scope CHECK (
+  (scope_kind = 'Company' AND tenant_id IS NOT NULL AND company_id IS NOT NULL)
   OR
-  (scope_kind = 'System'  AND company_id = '00000000-0000-0000-0000-000000000000' AND branch_id IS NULL)
+  (scope_kind = 'System' AND tenant_id IS NULL AND company_id IS NULL AND branch_id IS NULL)
 )
 ```
 
-El dominio expone `CommunicationScope` (Kind, `Guid? TenantId`, `Guid? CompanyId`). El valor centinela no sale de
-la entidad. Consecuencia buscada: ningún contexto de empresa ve un mensaje System, porque `CompanyId = ∅` nunca
-coincide con la empresa actual. El aislamiento es por construcción, sin tocar el filtro global.
+- `CommunicationOutbox`, `CommunicationOutboxAttachment` y `CommunicationDeliveryAttempt` heredan de
+  `SystemAggregateRoot`/`SystemBaseEntity` (no de `BaseEntity`, que impone `Guid TenantId` + `IMustHaveTenant`) e
+  implementan `IOptionalCompanyScopeEntity` (`Guid?` tenant/empresa). La interfaz está restringida a Communications
+  por un test de arquitectura.
+- **Filtro global centralizado** (`EnterpriseQueryFilterConfigurator`, una rama nueva): misma semántica fail-closed
+  que `ICompanyOperationalEntity`. Una fila NULL nunca coincide con un contexto (comparación SQL con NULL = falso),
+  así que los mensajes System son invisibles para cualquier consulta de empresa y solo se ven con
+  `AsPlatformQuery()`.
+- **Idempotencia:** `ux_communication_outbox_idempotency (tenant_id, company_id, idempotency_key)` con
+  `NULLS NOT DISTINCT` (PostgreSQL 16), de modo que las filas System también están protegidas.
+- El dominio expone `CommunicationScope` (`Company(...)`/`System`); los módulos nunca construyen tenant/empresa
+  sueltos.
 
-Las tablas de Communications no tienen FK a tenants/companies (verificado en `InitialEnterpriseBaseline`), así
-que el centinela no viola integridad referencial.
+**Por qué no `Guid.Empty`** (era la redacción inicial):
+- `CompanyTenantInterceptor`, activo en producción, rechaza `TenantId`/`CompanyId = Guid.Empty` al guardar.
+- `Guid.Empty` ya significa "tenant global" (`GlobalLoginHandler`), "sin contexto" y "actor del sistema"; agregar
+  "instancia" sería un cuarto significado ambiguo.
+- Impediría una FK futura.
 
-Alternativas descartadas: columnas nullables (rompen `ITenantScopedEntity`/`ICompanyOperationalEntity` y obligan a
-un filtro especial en infraestructura multi-tenant compartida); tabla separada para System (sería una segunda
-outbox).
+Tabla separada para System: descartada (sería una segunda outbox).
 
 El processor deja de depender del contexto ambiente. Las filas Company abren
 `JobExecutionContext.Begin(tenant, company)` como hoy. Las filas System no abren contexto de tenant (`Begin` exige
@@ -385,6 +391,55 @@ fencing invalida resultados tardíos.
   `CommunicationDeliveryFailed`, `CommunicationClaimLost` (id, tenant, empresa, propósito, canal, contadores,
   categoría). Nunca cuerpo, destinatario, adjuntos ni credenciales. La traza completa solo se registra para fallos
   `Unknown` (`CommunicationUnknownFailure`).
+
+### Implementación efectiva — Fase 3 (ZH-COMMUNICATIONS-CONTRACT-01, 2026-10-02)
+
+- **Alcance:** `CommunicationScopeKind` + `CommunicationScope` (value object con invariantes) y almacenamiento NULL
+  (§D). Ver la tabla de abajo para la diferencia con el diseño de §D.
+- **Request explícito:** `ICommunicationQueue.EnqueueAsync(CommunicationRequest)` es el único camino
+  (`QueueEmailAsync`, `QueueEmailRequest` y `QueueEmailCommand` se retiraron).
+  - La request trae `Scope`, `Purpose`, `Source`, `RecipientRole`, destinatario, contenido, adjuntos, canal,
+    prioridad, programación y `MaxRetries` opcional.
+  - La cola no lee el tenant del contexto. Solo usa la empresa autenticada como **guarda**: una request Company para
+    otra empresa se rechaza.
+  - `MaxRetries` sale del perfil del mismo alcance.
+- **Origen:** `SourceModule`/`SourceType`/`SourceId`. Las columnas `correlation_type`/`correlation_id` se
+  **renombraron** a `source_type`/`source_id` (no conviven dos representaciones); el índice
+  `ix_communication_outbox_correlation` pasa a ser `ix_communication_outbox_source`.
+- **Identidad:** `CommunicationIdentity` es el único constructor. Clave = `cid:v1:` + SHA-256 (hex, 71 caracteres
+  en total) de `v1|scope|tenant|empresa|propósito|canal|módulo|tipo|id|rol|secuenciaReenvío`.
+  - Difiere de §F (clave legible): el hash la deja acotada y opaca; los componentes ya están en sus columnas.
+  - Las filas previas conservan su clave legacy.
+- **Encolado idempotente:** `CommunicationOutboxRepository.EnqueueAsync` = `INSERT … ON CONFLICT DO NOTHING`
+  (columnas tomadas del modelo EF) + lectura de la existente.
+  - Corre en la transacción ambiente si existe; si no, en una propia y corta (comunicación + adjuntos).
+  - La colisión nunca lanza ni aborta la transacción de negocio. Si la otra transacción revierte, el segundo
+    encolado crea la fila. Probado contra PostgreSQL.
+- **Registro de propósitos:** `CommunicationPurposes.Get(code)` → scope, canales, `IsSensitive`,
+  `AllowsManualResend`. El código es la TemplateKey.
+  - `SALES_INVOICE_AUTHORIZED`: Company, no sensible, admite reenvío.
+  - `PASSWORD_RESET`: System, sensible, sin reenvío; reservado sin productor hasta la fase 6.
+- **Rol del destinatario:** `Customer`, `Supplier`, `User`, `CompanyCopy`. La factura usa `Customer`.
+- **Reenvío manual:** nueva comunicación con `ResendOfCommunicationId` + `ResendSequence` e identidad
+  `ForResend(n)`; no colisiona con el índice. Sin UI todavía.
+- **Historial `CommunicationDeliveryAttempt`** (tabla `communication_delivery_attempts`):
+  - El claim abre el intento `n+1` en la misma sentencia y cierra como `Abandoned` el intento abierto de un worker
+    muerto.
+  - La finalización cierra el intento propio en una transacción corta con la comunicación: `Sent`/`Failed` con
+    categoría, `provider_code` (p. ej. `smtp:421`) y `provider_message_id`.
+  - Si el fencing falló, el intento queda `ClaimLost` y la comunicación no se toca.
+  - `ErrorSafeText`/`LastError` = tipo de error + código. Nunca el mensaje de la excepción, porque los rechazos SMTP
+    incluyen el destinatario.
+- **ProviderMessageId ≠ Message-ID propio:** `IEmailSender` devuelve `EmailDeliveryReceipt(ProviderMessageId)`;
+  System.Net.Mail no expone uno, así que queda null (nunca inventado).
+- **Configuración por alcance:** `ResolveEmailAsync(scope)`. Company → OrgSettings de esa empresa + fallback de
+  instancia actual; System → solo instancia. El processor ya no usa el contexto ambiente para resolverla.
+- **Migración `20261003020718_CommunicationContract`:**
+  - Agrega `scope_kind` (backfill `Company` para todas las filas previas, que tenían tenant y empresa),
+    `source_module` y `recipient_role` (backfill `Sales`/`Customer` solo para filas de factura demostrables; el
+    resto queda NULL), `resend_*` y la tabla de intentos.
+  - Hace nullable tenant/empresa de outbox y adjuntos, agrega la CHECK y el índice `NULLS NOT DISTINCT`.
+  - El `Down` falla de forma segura si existen filas System: no las convierte en centinela.
 
 ---
 

@@ -6,7 +6,17 @@ public interface IEmailSender
     /// Envía el mensaje. Debe respetar <paramref name="ct"/> y <see cref="CommunicationEmailSettings.SmtpTimeout"/>;
     /// un timeout se informa como <see cref="TimeoutException"/>.
     /// </summary>
-    Task SendAsync(EmailMessage message, CommunicationEmailSettings settings, CancellationToken ct = default);
+    Task<EmailDeliveryReceipt> SendAsync(EmailMessage message, CommunicationEmailSettings settings, CancellationToken ct = default);
+}
+
+/// <summary>
+/// Respuesta del proveedor a un envío aceptado. <see cref="ProviderMessageId"/> es el id REAL que el
+/// proveedor devolvió (null si no expone ninguno, como System.Net.Mail); nunca se inventa. Es distinto
+/// del Message-ID propio y determinístico (<see cref="CommunicationMessageId"/>).
+/// </summary>
+public sealed record EmailDeliveryReceipt(string? ProviderMessageId)
+{
+    public static EmailDeliveryReceipt WithoutProviderId { get; } = new((string?)null);
 }
 
 /// <param name="CommunicationId">

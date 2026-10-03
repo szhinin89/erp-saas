@@ -250,6 +250,7 @@ public class ErpDbContext : DbContext
     public DbSet<CommunicationOutbox> CommunicationOutbox => Set<CommunicationOutbox>();
     public DbSet<CommunicationOutboxAttachment> CommunicationOutboxAttachments => Set<CommunicationOutboxAttachment>();
     public DbSet<CommunicationTemplate> CommunicationTemplates => Set<CommunicationTemplate>();
+    public DbSet<CommunicationDeliveryAttempt> CommunicationDeliveryAttempts => Set<CommunicationDeliveryAttempt>();
 
     // ── DocTypes (internal document/process SSOT + workflow policy) ──────
     public DbSet<DocType> DocTypes => Set<DocType>();

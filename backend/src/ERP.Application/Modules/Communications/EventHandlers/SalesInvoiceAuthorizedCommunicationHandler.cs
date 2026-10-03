@@ -5,6 +5,7 @@ using ERP.Application.Modules.Ride.UseCases.GetOrGenerateRide;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Communications.Constants;
 using ERP.Domain.Modules.Communications.Enums;
+using ERP.Domain.Modules.Communications.ValueObjects;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.ElectronicDocuments.Events;
@@ -29,7 +30,7 @@ public sealed partial class SalesInvoiceAuthorizedCommunicationHandler
     : INotificationHandler<ElectronicDocumentAuthorizedEvent>
 {
     private const string SalesSourceModule = "Sales";
-    private const string SalesInvoiceCorrelationType = "SalesInvoice";
+    private const string SalesInvoiceSourceType = "SalesInvoice";
 
     private readonly IElectronicDocumentRepository _electronicDocuments;
     private readonly ISalesInvoiceRepository _salesInvoices;
@@ -132,9 +133,15 @@ public sealed partial class SalesInvoiceAuthorizedCommunicationHandler
         AddAuthorizedXmlAttachment(attachments, invoice.InvoiceNumber, document.AuthorizedXmlPath);
         await AddRideAttachmentAsync(attachments, invoice.InvoiceNumber, invoice.Id, ct);
 
-        var queued = await _communicationQueue.QueueEmailAsync(
-            new QueueEmailRequest(
+        // ZH-COMMUNICATIONS-CONTRACT-01 — alcance explícito (empresa del documento, no del contexto
+        // ambiente), origen Sales/SalesInvoice y rol Customer: la identidad la arma
+        // CommunicationIdentity y no incluye el email (cambiarlo no duplica la comunicación).
+        var queued = await _communicationQueue.EnqueueAsync(
+            new CommunicationRequest(
+                Scope: CommunicationScope.Company(document.TenantId, document.CompanyId, invoice.BranchId),
                 Purpose: CommunicationPurposes.SalesInvoiceAuthorized,
+                Source: new CommunicationSource(SalesSourceModule, SalesInvoiceSourceType, invoice.Id),
+                RecipientRole: CommunicationRecipientRole.Customer,
                 RecipientName: invoice.Customer.Name,
                 RecipientEmail: recipientEmail,
                 Subject: $"Factura autorizada {invoice.InvoiceNumber} - {issuerName}",
@@ -152,20 +159,9 @@ public sealed partial class SalesInvoiceAuthorizedCommunicationHandler
                     invoice.AuthorizedGrandTotal ?? invoice.GrandTotal,
                     issuerName
                 ),
-                Priority: CommunicationPriority.Normal,
-                ScheduledAtUtc: DateTime.UtcNow,
-                MaxRetries: null,
-                CorrelationType: SalesInvoiceCorrelationType,
-                CorrelationId: invoice.Id,
-                IdempotencyKey: BuildIdempotencyKey(
-                    document.TenantId,
-                    document.CompanyId,
-                    invoice.Id,
-                    recipientEmail
-                ),
                 Attachments: attachments,
-                BranchId: invoice.BranchId,
-                SaveImmediately: false
+                Priority: CommunicationPriority.Normal,
+                ScheduledAtUtc: DateTime.UtcNow
             ),
             ct
         );
@@ -239,14 +235,6 @@ public sealed partial class SalesInvoiceAuthorizedCommunicationHandler
             )
         );
     }
-
-    private static string BuildIdempotencyKey(
-        Guid tenantId,
-        Guid companyId,
-        Guid invoiceId,
-        string recipientEmail
-    ) =>
-        $"communications:{CommunicationPurposes.SalesInvoiceAuthorized}:{tenantId:N}:{companyId:N}:{invoiceId:N}:{recipientEmail.ToLowerInvariant()}";
 
     private static string BuildBodyHtml(
         string invoiceNumber,

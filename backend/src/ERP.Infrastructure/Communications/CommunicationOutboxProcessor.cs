@@ -2,6 +2,7 @@ using ERP.Application.Modules.Communications.Services;
 using ERP.Domain.Modules.Communications.Entities;
 using ERP.Domain.Modules.Communications.Enums;
 using ERP.Domain.Modules.Communications.Services;
+using ERP.Domain.Modules.Communications.ValueObjects;
 using ERP.Infrastructure.Services;
 using Microsoft.Extensions.Logging;
 
@@ -12,10 +13,15 @@ namespace ERP.Infrastructure.Communications;
 /// workers, nodos o ejecuciones solapadas (ADR-039 D9/D10). La exclusión vive en PostgreSQL
 /// (<see cref="CommunicationOutboxDeliveryStore"/>), no en Hangfire.
 /// <para>
-/// Por iteración: claim de UNA fila (sentencia corta) → scope tenant/empresa de esa fila → envío
+/// Por iteración: claim de UNA fila (sentencia corta, abre el intento) → scope de esa fila → envío
 /// fuera de toda transacción, acotado por <see cref="CommunicationEmailSettings.SmtpTimeout"/> →
-/// finalización con fencing (sentencia corta). Una fila por claim mantiene el lease fresco: nunca
+/// finalización con fencing (cierra el intento). Una fila por claim mantiene el lease fresco: nunca
 /// espera detrás de otros envíos.
+/// </para>
+/// <para>
+/// ZH-COMMUNICATIONS-CONTRACT-01 — scope explícito por fila: Company abre
+/// <c>JobExecutionContext(tenant, empresa)</c> y resuelve el perfil de ESA empresa; System no abre
+/// contexto de tenant y resuelve solo el perfil de instancia. Nunca hay fallback cruzado.
 /// </para>
 /// <para>
 /// Garantía real: un solo claim vigente por fila + fencing + entrega AL MENOS UNA VEZ. Si SMTP
@@ -63,13 +69,17 @@ public sealed partial class CommunicationOutboxProcessor : ICommunicationOutboxP
 
     private async Task ProcessClaimAsync(ClaimedCommunication claim, CancellationToken ct)
     {
-        // Scope de la fila (fail-closed): settings, carga y finalización se resuelven con el
-        // tenant/empresa de ESTA comunicación, nunca con los de otra del mismo lote.
-        using var scope = JobExecutionContext.Begin(claim.TenantId, claim.CompanyId);
+        var scope = claim.GetScope();
+
+        // Scope de la fila (fail-closed): settings, carga y finalización se resuelven con el alcance de
+        // ESTA comunicación, nunca con los de otra del mismo lote. System no tiene tenant/empresa.
+        using var context = scope.Kind == CommunicationScopeKind.Company
+            ? JobExecutionContext.Begin(scope.TenantId!.Value, scope.CompanyId!.Value)
+            : null;
 
         if (claim.Recovered)
         {
-            LogRecoveredAfterLease(claim.Id, claim.TenantId, claim.CompanyId, claim.Purpose, claim.Channel, claim.RetryCount, claim.MaxRetries);
+            LogRecoveredAfterLease(claim.Id, claim.TenantId, claim.CompanyId, claim.Purpose, claim.Channel, claim.RetryCount, claim.MaxRetries, claim.AttemptNumber);
             if (CommunicationRetryPolicy.IsExhausted(claim.RetryCount, claim.MaxRetries))
             {
                 // El intento del worker muerto ya se contó al reclamar; agotado, no se reenvía.
@@ -78,6 +88,7 @@ public sealed partial class CommunicationOutboxProcessor : ICommunicationOutboxP
                     new CommunicationFailureOutcome(CommunicationStatus.Failed, claim.RetryCount, null),
                     CommunicationFailureCategory.Unknown,
                     "Lease vencido sin finalizar (worker interrumpido); intentos agotados.",
+                    providerCode: null,
                     ct
                 );
                 return;
@@ -85,12 +96,13 @@ public sealed partial class CommunicationOutboxProcessor : ICommunicationOutboxP
         }
         else
         {
-            LogClaimed(claim.Id, claim.TenantId, claim.CompanyId, claim.Purpose, claim.Channel, claim.RetryCount, claim.MaxRetries);
+            LogClaimed(claim.Id, claim.TenantId, claim.CompanyId, claim.Purpose, claim.Channel, claim.RetryCount, claim.MaxRetries, claim.AttemptNumber);
         }
 
+        EmailDeliveryReceipt receipt;
         try
         {
-            var communication = await _store.LoadOwnedAsync(claim.Id, claim.ClaimToken, ct);
+            var communication = await _store.LoadOwnedAsync(claim, ct);
             if (communication is null)
             {
                 LogClaimLost(claim.Id, claim.TenantId, claim.CompanyId, claim.Purpose, claim.Channel, claim.RetryCount);
@@ -99,23 +111,24 @@ public sealed partial class CommunicationOutboxProcessor : ICommunicationOutboxP
 
             if (communication.Channel != CommunicationChannel.Email)
             {
-                await FailAsync(claim, CommunicationFailureCategory.Permanent, $"El canal {communication.Channel} no tiene procesador.", ct);
+                await FailAsync(claim, CommunicationFailureCategory.Permanent, $"El canal {communication.Channel} no tiene procesador.", null, ct);
                 return;
             }
 
-            var settings = await _settingsResolver.ResolveEmailAsync(ct);
+            var settings = await _settingsResolver.ResolveEmailAsync(scope, ct);
             if (!settings.CanSend)
             {
                 await FailAsync(
                     claim,
                     CommunicationFailureCategory.Configuration,
                     "La configuración SMTP de Communications está incompleta o inactiva; corregirla y reencolar.",
+                    null,
                     ct
                 );
                 return;
             }
 
-            await SendWithTimeoutAsync(communication, settings, ct);
+            receipt = await SendWithTimeoutAsync(communication, settings, ct);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -127,20 +140,26 @@ public sealed partial class CommunicationOutboxProcessor : ICommunicationOutboxP
             var category = CommunicationFailureClassifier.Classify(ex);
             if (category == CommunicationFailureCategory.Unknown)
                 LogUnknownFailureDetail(ex, claim.Id);
-            await FailAsync(claim, category, $"{ex.GetType().Name}: {ex.Message}", ct);
+            await FailAsync(
+                claim,
+                category,
+                CommunicationFailureClassifier.SafeDescription(ex),
+                CommunicationFailureClassifier.ProviderCode(ex),
+                ct
+            );
             return;
         }
 
         // Fuera del try: SMTP ya aceptó el mensaje. Si esta finalización falla (p. ej. BD caída), la
         // fila NO se marca fallida (sería un reintento seguro de un correo entregado): queda en
         // Processing y el lease la recupera — la ventana at-least-once documentada.
-        if (await _store.MarkSentAsync(claim.Id, claim.ClaimToken, UtcNow(), ct))
-            LogDeliverySucceeded(claim.Id, claim.TenantId, claim.CompanyId, claim.Purpose, claim.Channel, claim.RetryCount);
+        if (await _store.MarkSentAsync(claim, receipt, UtcNow(), ct))
+            LogDeliverySucceeded(claim.Id, claim.TenantId, claim.CompanyId, claim.Purpose, claim.Channel, claim.RetryCount, claim.AttemptNumber);
         else
             LogClaimLost(claim.Id, claim.TenantId, claim.CompanyId, claim.Purpose, claim.Channel, claim.RetryCount);
     }
 
-    private async Task SendWithTimeoutAsync(
+    private async Task<EmailDeliveryReceipt> SendWithTimeoutAsync(
         CommunicationOutbox communication,
         CommunicationEmailSettings settings,
         CancellationToken ct
@@ -151,7 +170,7 @@ public sealed partial class CommunicationOutboxProcessor : ICommunicationOutboxP
         timeout.CancelAfter(settings.SmtpTimeout);
         try
         {
-            await _emailSender.SendAsync(ToEmailMessage(communication), settings, timeout.Token);
+            return await _emailSender.SendAsync(ToEmailMessage(communication), settings, timeout.Token);
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
@@ -164,14 +183,16 @@ public sealed partial class CommunicationOutboxProcessor : ICommunicationOutboxP
     private Task FailAsync(
         ClaimedCommunication claim,
         CommunicationFailureCategory category,
-        string error,
+        string errorSafeText,
+        string? providerCode,
         CancellationToken ct
     ) =>
         FinalizeFailureAsync(
             claim,
             CommunicationRetryPolicy.OnFailure(claim.RetryCount, claim.MaxRetries, category, UtcNow()),
             category,
-            error,
+            errorSafeText,
+            providerCode,
             ct
         );
 
@@ -179,11 +200,12 @@ public sealed partial class CommunicationOutboxProcessor : ICommunicationOutboxP
         ClaimedCommunication claim,
         CommunicationFailureOutcome outcome,
         CommunicationFailureCategory category,
-        string error,
+        string errorSafeText,
+        string? providerCode,
         CancellationToken ct
     )
     {
-        if (!await _store.MarkFailedAsync(claim.Id, claim.ClaimToken, outcome, category, error, UtcNow(), ct))
+        if (!await _store.MarkFailedAsync(claim, outcome, category, errorSafeText, providerCode, UtcNow(), ct))
         {
             LogClaimLost(claim.Id, claim.TenantId, claim.CompanyId, claim.Purpose, claim.Channel, claim.RetryCount);
             return;
@@ -219,25 +241,26 @@ public sealed partial class CommunicationOutboxProcessor : ICommunicationOutboxP
         );
 
     // Eventos estructurados: nunca cuerpo, destinatario, adjuntos, credenciales ni tokens.
+    // Tenant/empresa null = comunicación System (instancia).
     [LoggerMessage(EventId = 4201, EventName = "CommunicationClaimed", Level = LogLevel.Debug,
-        Message = "Communications: claimed {CommunicationId} tenant={TenantId} company={CompanyId} purpose={Purpose} channel={Channel} retry={RetryCount}/{MaxRetries}")]
-    private partial void LogClaimed(Guid communicationId, Guid tenantId, Guid companyId, string purpose, string channel, int retryCount, int maxRetries);
+        Message = "Communications: claimed {CommunicationId} tenant={TenantId} company={CompanyId} purpose={Purpose} channel={Channel} retry={RetryCount}/{MaxRetries} attempt={AttemptNumber}")]
+    private partial void LogClaimed(Guid communicationId, Guid? tenantId, Guid? companyId, string purpose, string channel, int retryCount, int maxRetries, int attemptNumber);
 
     [LoggerMessage(EventId = 4202, EventName = "CommunicationRecoveredAfterLease", Level = LogLevel.Warning,
-        Message = "Communications: recovered {CommunicationId} after expired lease tenant={TenantId} company={CompanyId} purpose={Purpose} channel={Channel} retry={RetryCount}/{MaxRetries}")]
-    private partial void LogRecoveredAfterLease(Guid communicationId, Guid tenantId, Guid companyId, string purpose, string channel, int retryCount, int maxRetries);
+        Message = "Communications: recovered {CommunicationId} after expired lease tenant={TenantId} company={CompanyId} purpose={Purpose} channel={Channel} retry={RetryCount}/{MaxRetries} attempt={AttemptNumber}")]
+    private partial void LogRecoveredAfterLease(Guid communicationId, Guid? tenantId, Guid? companyId, string purpose, string channel, int retryCount, int maxRetries, int attemptNumber);
 
     [LoggerMessage(EventId = 4203, EventName = "CommunicationDeliverySucceeded", Level = LogLevel.Information,
-        Message = "Communications: sent {CommunicationId} tenant={TenantId} company={CompanyId} purpose={Purpose} channel={Channel} retry={RetryCount}")]
-    private partial void LogDeliverySucceeded(Guid communicationId, Guid tenantId, Guid companyId, string purpose, string channel, int retryCount);
+        Message = "Communications: sent {CommunicationId} tenant={TenantId} company={CompanyId} purpose={Purpose} channel={Channel} retry={RetryCount} attempt={AttemptNumber}")]
+    private partial void LogDeliverySucceeded(Guid communicationId, Guid? tenantId, Guid? companyId, string purpose, string channel, int retryCount, int attemptNumber);
 
     [LoggerMessage(EventId = 4204, EventName = "CommunicationDeliveryFailed", Level = LogLevel.Warning,
         Message = "Communications: failed {CommunicationId} tenant={TenantId} company={CompanyId} purpose={Purpose} channel={Channel} category={FailureCategory} retry={RetryCount}/{MaxRetries} status={Status} nextAttempt={NextAttemptAtUtc}")]
-    private partial void LogDeliveryFailed(Guid communicationId, Guid tenantId, Guid companyId, string purpose, string channel, CommunicationFailureCategory failureCategory, int retryCount, int maxRetries, CommunicationStatus status, DateTime? nextAttemptAtUtc);
+    private partial void LogDeliveryFailed(Guid communicationId, Guid? tenantId, Guid? companyId, string purpose, string channel, CommunicationFailureCategory failureCategory, int retryCount, int maxRetries, CommunicationStatus status, DateTime? nextAttemptAtUtc);
 
     [LoggerMessage(EventId = 4205, EventName = "CommunicationClaimLost", Level = LogLevel.Warning,
         Message = "Communications: claim lost for {CommunicationId} tenant={TenantId} company={CompanyId} purpose={Purpose} channel={Channel} retry={RetryCount}; another worker owns it, result discarded")]
-    private partial void LogClaimLost(Guid communicationId, Guid tenantId, Guid companyId, string purpose, string channel, int retryCount);
+    private partial void LogClaimLost(Guid communicationId, Guid? tenantId, Guid? companyId, string purpose, string channel, int retryCount);
 
     // Solo para fallos no clasificados: la traza es imprescindible para diagnosticarlos.
     [LoggerMessage(EventId = 4206, EventName = "CommunicationUnknownFailure", Level = LogLevel.Warning,

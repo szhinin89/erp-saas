@@ -2,6 +2,17 @@
 
 **Single source of truth** for delivery state. Updated: **2026-10-02** · Kernel refactor: **2026-06-05**.
 
+## ZH-COMMUNICATIONS-CONTRACT-01 — Contrato de Communications: alcance, identidad, origen e intentos (2026-10-02)
+
+**Estado: COMPLETADO (sin commit).** Fase 3 de [ADR-039](docs/decisions/ADR-039-communications-architecture.md); detalle en [`COMMUNICATIONS-ARCHITECTURE.md`](docs/communications/COMMUNICATIONS-ARCHITECTURE.md) (§D y "Implementación efectiva — Fase 3").
+- **Decisión de almacenamiento System/Company (enmienda de ADR-039 D3):** NULL, no `Guid.Empty`. Auditoría: `CompanyTenantInterceptor` rechaza `Guid.Empty` al guardar, y `Guid.Empty` ya significa "tenant global"/"sin contexto"/"actor sistema". Las entidades de Communications heredan `SystemAggregateRoot`/`SystemBaseEntity` e implementan `IOptionalCompanyScopeEntity`, con filtro global centralizado (fail-closed: los mensajes System son invisibles para toda empresa). CHECK `ck_communication_outbox_scope` e índice de idempotencia con `NULLS NOT DISTINCT`.
+- **Contrato:** `ICommunicationQueue.EnqueueAsync(CommunicationRequest)` con `CommunicationScope` explícito (guarda: no se encola para otra empresa que la autenticada). Único constructor de identidad `CommunicationIdentity` (sin email/asunto/cuerpo/SMTP). Origen `SourceModule/SourceType/SourceId` (renombre de `correlation_*`), `RecipientRole`, registro de propósitos (`PASSWORD_RESET` reservado sin productor), reenvío manual explícito. `QueueEmailCommand` (sin llamadores) retirado.
+- **Encolado idempotente real:** `INSERT … ON CONFLICT DO NOTHING` dentro de la transacción ambiente. Una colisión ya no puede revertir la autorización SRI (antes, `Add` + índice único sí podía).
+- **Historial:** `CommunicationDeliveryAttempt` integrado al claim y al fencing (`Sent`/`Failed`/`Abandoned`/`ClaimLost`, `ProviderCode`, `ProviderMessageId` real o null, texto de error seguro sin destinatario).
+- **Factura:** mismo correo; ahora con alcance, origen `Sales/SalesInvoice` y rol `Customer`. Las facturas ya encoladas conservan su clave legacy.
+- **Migración:** `20261003020718_CommunicationContract` (backfill demostrable: todas `Company`; `Sales`/`Customer` solo filas de factura).
+- **Tests:** Domain 15 nuevos (`CommunicationIdentityTests`, `CommunicationOutboxTests` reescrito); Application 6 (`CommunicationQueueTests`) + handler de factura actualizado; Infrastructure 16 contra PostgreSQL (`CommunicationContractIntegrationTests`: visibilidad por alcance, processor System, CHECK, encolado concurrente y frente a transacción abierta, cambio de email, adjuntos, intentos Transient→Sent / Abandoned / ClaimLost / sin datos sensibles); Architecture 5 (`CommunicationsBoundaryTests`). Regresión de la fase 2 intacta (37/37).
+
 ## ZH-COMMUNICATIONS-DELIVERY-HARDENING-01 — Entrega de Communications segura con varios workers (2026-10-02)
 
 **Estado: COMPLETADO (sin commit).** Fase 2 de [ADR-039](docs/decisions/ADR-039-communications-architecture.md); detalle en [`COMMUNICATIONS-ARCHITECTURE.md` §G/§H](docs/communications/COMMUNICATIONS-ARCHITECTURE.md).

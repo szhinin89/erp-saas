@@ -3,28 +3,31 @@ using ERP.Domain.Modules.Communications.Enums;
 
 namespace ERP.Domain.Modules.Communications.Entities;
 
-public sealed class CommunicationOutboxAttachment
-    : AuditableEntity,
-        ITenantScopedEntity,
-        ICompanyOperationalEntity
+/// <summary>Adjunto de una comunicación; hereda el alcance (tenant/empresa o instancia) de su comunicación.</summary>
+public sealed class CommunicationOutboxAttachment : SystemBaseEntity, IOptionalCompanyScopeEntity
 {
     public const int FileNameMaxLen = 255;
     public const int ContentTypeMaxLen = 120;
     public const int FileStoragePathMaxLen = 1000;
 
-    public Guid CompanyId { get; private set; }
+    public Guid? TenantId { get; private set; }
+    public Guid? CompanyId { get; private set; }
     public Guid CommunicationOutboxId { get; private set; }
     public CommunicationAttachmentType AttachmentType { get; private set; }
     public string FileName { get; private set; } = null!;
     public string ContentType { get; private set; } = null!;
     public string? FileStoragePath { get; private set; }
     public byte[]? BinaryContent { get; private set; }
+    public DateTime CreatedAt { get; private set; }
+    public DateTime? UpdatedAt { get; private set; }
+    public Guid CreatedBy { get; private set; }
+    public Guid? UpdatedBy { get; private set; }
 
     private CommunicationOutboxAttachment() { }
 
     internal static CommunicationOutboxAttachment Create(
-        Guid tenantId,
-        Guid companyId,
+        Guid? tenantId,
+        Guid? companyId,
         Guid communicationOutboxId,
         CommunicationAttachmentType attachmentType,
         string fileName,
@@ -43,7 +46,7 @@ public sealed class CommunicationOutboxAttachment
         if (string.IsNullOrWhiteSpace(fileStoragePath) && (binaryContent is null || binaryContent.Length == 0))
             throw new ArgumentException("El adjunto debe tener ruta de almacenamiento o contenido binario.", nameof(fileStoragePath));
 
-        var attachment = new CommunicationOutboxAttachment
+        return new CommunicationOutboxAttachment
         {
             Id = Guid.NewGuid(),
             TenantId = tenantId,
@@ -54,9 +57,9 @@ public sealed class CommunicationOutboxAttachment
             ContentType = Trim(contentType, ContentTypeMaxLen, nameof(contentType)),
             FileStoragePath = NormalizeOptional(fileStoragePath, FileStoragePathMaxLen, nameof(fileStoragePath)),
             BinaryContent = binaryContent,
+            CreatedAt = DateTime.UtcNow,
+            CreatedBy = createdBy,
         };
-        attachment.SetCreated(createdBy);
-        return attachment;
     }
 
     private static string Trim(string value, int maxLength, string paramName)

@@ -7,6 +7,7 @@ using ERP.Application.Modules.Ride.UseCases.GetOrGenerateRide;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Communications.Constants;
 using ERP.Domain.Modules.Communications.Enums;
+using ERP.Domain.Modules.Communications.ValueObjects;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
@@ -68,12 +69,11 @@ public sealed class SalesInvoiceAuthorizedCommunicationHandlerTests
         request.BodyText.Should().Contain(invoice.Customer.Name);
         request.BodyText.Should().Contain("USD 100.00");
         request.BodyText.Should().Contain("ZH Demo");
-        request.CorrelationType.Should().Be("SalesInvoice");
-        request.CorrelationId.Should().Be(invoice.Id);
-        request.BranchId.Should().Be(BranchId);
-        request.SaveImmediately.Should().BeFalse();
-        request.IdempotencyKey.Should().Contain(CommunicationPurposes.SalesInvoiceAuthorized);
-        request.IdempotencyKey.Should().Contain(invoice.Id.ToString("N"));
+        // ZH-COMMUNICATIONS-CONTRACT-01 — alcance explícito del documento, origen y rol estables.
+        request.Scope.Should().Be(CommunicationScope.Company(TenantId, CompanyId, BranchId));
+        request.Source.Should().Be(new CommunicationSource("Sales", "SalesInvoice", invoice.Id));
+        request.RecipientRole.Should().Be(CommunicationRecipientRole.Customer);
+        request.MaxRetries.Should().BeNull("se copia del perfil resuelto al encolar");
 
         request.Attachments.Should().HaveCount(2);
         request.Attachments.Should().ContainSingle(a =>
@@ -99,7 +99,7 @@ public sealed class SalesInvoiceAuthorizedCommunicationHandlerTests
 
         await act.Should().NotThrowAsync();
         fixture.Queue.Verify(
-            q => q.QueueEmailAsync(It.IsAny<QueueEmailRequest>(), It.IsAny<CancellationToken>()),
+            q => q.EnqueueAsync(It.IsAny<CommunicationRequest>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
@@ -114,7 +114,7 @@ public sealed class SalesInvoiceAuthorizedCommunicationHandlerTests
         await fixture.Handler.Handle(EventFor(document), CancellationToken.None);
 
         fixture.Queue.Verify(
-            q => q.QueueEmailAsync(It.IsAny<QueueEmailRequest>(), It.IsAny<CancellationToken>()),
+            q => q.EnqueueAsync(It.IsAny<CommunicationRequest>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
@@ -127,17 +127,15 @@ public sealed class SalesInvoiceAuthorizedCommunicationHandlerTests
         var fixture = new Fixture(document, invoice);
 
         await fixture.Handler.Handle(EventFor(document), CancellationToken.None);
-        var firstKey = fixture.CapturedRequest!.IdempotencyKey;
+        var firstKey = KeyOf(fixture.CapturedRequest!);
 
         await fixture.Handler.Handle(EventFor(document), CancellationToken.None);
-        var secondKey = fixture.CapturedRequest!.IdempotencyKey;
+        var secondKey = KeyOf(fixture.CapturedRequest!);
 
+        // La identidad la arma CommunicationIdentity a partir de datos estables de la request.
         secondKey.Should().Be(firstKey);
         fixture.Queue.Verify(
-            q => q.QueueEmailAsync(
-                It.Is<QueueEmailRequest>(r => r.IdempotencyKey == firstKey),
-                It.IsAny<CancellationToken>()
-            ),
+            q => q.EnqueueAsync(It.IsAny<CommunicationRequest>(), It.IsAny<CancellationToken>()),
             Times.Exactly(2)
         );
     }
@@ -244,6 +242,9 @@ public sealed class SalesInvoiceAuthorizedCommunicationHandlerTests
             ElectronicDocumentState.Authorized
         );
 
+    private static string KeyOf(CommunicationRequest request) =>
+        CommunicationIdentity.For(request.Scope, request.Purpose, request.Channel, request.Source, request.RecipientRole).Key;
+
     private const string AccessKeyValue =
         "2108202601179214672100110010010000000011234567811";
 
@@ -251,7 +252,7 @@ public sealed class SalesInvoiceAuthorizedCommunicationHandlerTests
     {
         public Mock<ICommunicationQueue> Queue { get; } = new();
         public Mock<IOperationalPreferencesResolver> Preferences { get; } = new();
-        public QueueEmailRequest? CapturedRequest { get; private set; }
+        public CommunicationRequest? CapturedRequest { get; private set; }
         public Result<RideGenerationResultDto> RideResult { get; set; } =
             Result<RideGenerationResultDto>.Success(
                 new RideGenerationResultDto(
@@ -311,8 +312,8 @@ public sealed class SalesInvoiceAuthorizedCommunicationHandlerTests
                 );
 
             Queue
-                .Setup(q => q.QueueEmailAsync(It.IsAny<QueueEmailRequest>(), It.IsAny<CancellationToken>()))
-                .Callback<QueueEmailRequest, CancellationToken>((request, _) => CapturedRequest = request)
+                .Setup(q => q.EnqueueAsync(It.IsAny<CommunicationRequest>(), It.IsAny<CancellationToken>()))
+                .Callback<CommunicationRequest, CancellationToken>((request, _) => CapturedRequest = request)
                 .ReturnsAsync(new QueuedCommunicationDto(Guid.NewGuid(), WasAlreadyQueued: false));
 
             var sender = new Mock<ISender>();

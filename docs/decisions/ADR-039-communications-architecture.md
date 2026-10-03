@@ -45,12 +45,15 @@ propio servicio de correo o su propia cola. Este ADR fija una única forma de ev
   conserva.
 - **D3 — System y Company son scopes distintos (`CommunicationScopeKind`).**
   - *Company:* Tenant y Company obligatorios; usa el perfil de la empresa.
-  - *System:* Company no aplica; el tenant es opcional y solo informativo; usa siempre el perfil de **instancia**.
+  - *System:* sin tenant, empresa ni sucursal; usa siempre el perfil de **instancia**.
   - Cada propósito declara su scope y una combinación inválida falla al encolar.
   - Un mensaje System **nunca** se resuelve con "la primera empresa del usuario".
-  - Persistencia: como la entidad cumple `ICompanyOperationalEntity`, "no aplica" se guarda como `Guid.Empty`, solo
-    válido con `System` y garantizado por CHECK constraint. Ningún contexto de empresa ve un mensaje System, por
-    construcción del filtro fail-closed existente.
+  - **Persistencia (enmienda definitiva de la fase 3, 2026-10-02):** "no aplica" es **NULL**, nunca `Guid.Empty`.
+    La entidad deja de ser `BaseEntity`/`ICompanyOperationalEntity` (hereda `SystemAggregateRoot`) e implementa
+    `IOptionalCompanyScopeEntity` (`Guid?` tenant/empresa), con filtro global centralizado en
+    `EnterpriseQueryFilterConfigurator` (fail-closed: una fila NULL no coincide con ningún contexto). La CHECK
+    `ck_communication_outbox_scope` fija la invariante en la BD y el índice de idempotencia usa
+    `NULLS NOT DISTINCT`. La primera redacción (centinela `Guid.Empty`) se descarta; motivos en "Alternativas".
 - **D4 — `CommunicationOutbox` es el SSOT durable de la entrega.** Un registro = una entrega por un canal a un rol
   de destinatario. Se evoluciona esa entidad; no se crea otra outbox ni otra tabla de mensajes.
 - **D5 — La outbox de domain events y la de Communications son concerns distintos.**
@@ -175,7 +178,28 @@ Por fases (detalle en el documento, §U):
 6. Entrega de password reset sobre Communications (scope System, payload sensible).
 7. Monitor.
 
-No hay fase multicanal. Estado: **diseño aceptado; fases 1 y 2 implementadas.**
+No hay fase multicanal. Estado: **diseño aceptado; fases 1, 2 y 3 implementadas.**
+
+- **Fase 3 — `ZH-COMMUNICATIONS-CONTRACT-01` (2026-10-02): IMPLEMENTED.** Detalle en el documento (§D, §F,
+  §I y "Implementación efectiva — Fase 3").
+  - D3: `CommunicationScope` (`Company(tenant, empresa, sucursal?)` / `System`), almacenamiento NULL (enmienda de
+    D3), CHECK `ck_communication_outbox_scope`, filtro centralizado para `IOptionalCompanyScopeEntity`.
+  - D6/D7/D8: único camino `ICommunicationQueue.EnqueueAsync(CommunicationRequest)` con alcance explícito (sin
+    inferirlo del contexto; una request Company para otra empresa que la autenticada se rechaza).
+    `CommunicationIdentity` es el único constructor de la clave (`cid:v1:` + SHA-256 de alcance, propósito, canal,
+    origen, rol y secuencia de reenvío; sin email, asunto, cuerpo ni configuración SMTP). Encolado con
+    `INSERT … ON CONFLICT DO NOTHING`: nunca aborta la transacción de negocio. Se retiró `QueueEmailCommand`
+    (sin llamadores).
+  - Origen formal `SourceModule`/`SourceType`/`SourceId` (renombre de `correlation_*`), `RecipientRole`, registro
+    de propósitos (`CommunicationPurposes`: scope, canales, `IsSensitive`, `AllowsManualResend`; `PASSWORD_RESET`
+    reservado sin productor) y reenvío manual (`ResendOfCommunicationId` + `ResendSequence`).
+  - D11: `CommunicationDeliveryAttempt`. El claim abre el intento (y cierra como `Abandoned` el de un worker
+    muerto); la finalización lo cierra (`Sent`/`Failed`, o `ClaimLost` si perdió el fencing). `ProviderMessageId`
+    solo si el proveedor lo devuelve (System.Net.Mail: null).
+  - D19 parcial: `ResolveEmailAsync(scope)`: Company → OrgSettings de esa empresa + fallback actual; System → solo
+    instancia. Sin fallback cruzado.
+  - Migración `20261003020718_CommunicationContract`; backfill demostrable (Company para todas; Sales/Customer solo
+    para filas de factura).
 
 - **Fase 2 — `ZH-COMMUNICATIONS-DELIVERY-HARDENING-01` (2026-10-02): IMPLEMENTED.** Detalle en el documento
   (§G "Implementación efectiva", §H).
@@ -214,9 +238,18 @@ No hay fase multicanal. Estado: **diseño aceptado; fases 1 y 2 implementadas.**
   existe y funciona.
 - **Fusionar `CommunicationOutbox` con `OutboxMessage`.** Descartado: son concerns distintos (domain events vs.
   entrega a personas), con ciclos de vida, reintentos y privacidad diferentes.
-- **Hacer `TenantId`/`CompanyId` nullables para System.** Descartado: rompe `ITenantScopedEntity`/
-  `ICompanyOperationalEntity` y obliga a un filtro especial en la infraestructura multi-tenant compartida. El
-  centinela con `ScopeKind` y CHECK conserva el aislamiento fail-closed por construcción.
+- **Centinela `Guid.Empty` para tenant/empresa de un mensaje System** (redacción inicial de D3). Descartado en la
+  fase 3 tras auditar el código:
+  - `CompanyTenantInterceptor` (activo en producción) rechaza al guardar toda `ITenantScopedEntity` con
+    `TenantId = Guid.Empty` y toda `ICompanyOperationalEntity` con `CompanyId = Guid.Empty`. El centinela exigía
+    una excepción en esa guarda transversal.
+  - `Guid.Empty` ya tiene significados en el ERP: tenant global (`GlobalLoginHandler.GlobalTenantId`), "sin
+    contexto" (`JobTenantContext`, `ICurrentTenant`) y actor del sistema (`CreatedBy`). Un cuarto significado
+    ("instancia") sería ambiguo para cualquier consulta de plataforma, agrupación o limpieza por `tenant_id`.
+  - Impediría una FK futura a tenants/empresas y dependería de una CHECK con valor mágico.
+  - Elegido: **NULL** con `IOptionalCompanyScopeEntity` y un filtro centralizado. El costo es una rama más en
+    `EnterpriseQueryFilterConfigurator`, cubierta por tests de arquitectura (allowlist) y de integración. El índice
+    de idempotencia protege también las filas System gracias a `NULLS NOT DISTINCT` (PostgreSQL 16).
 - **Resolver el SMTP del password reset con la primera empresa del usuario.** Descartado: es ambiguo con varias
   membresías, falla si la empresa no tiene SMTP, y el remitente de seguridad es la instalación.
 - **Templates solo en BD (CMS).** Descartado: sin revisión en PR ni pruebas, y obligaría a seeds por empresa. El

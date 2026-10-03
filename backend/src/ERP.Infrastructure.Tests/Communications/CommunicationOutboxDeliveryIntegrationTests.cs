@@ -3,6 +3,7 @@ using System.Net.Mail;
 using ERP.Application.Modules.Communications.Services;
 using ERP.Domain.Modules.Communications.Entities;
 using ERP.Domain.Modules.Communications.Enums;
+using ERP.Domain.Modules.Communications.ValueObjects;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Communications;
@@ -118,15 +119,15 @@ public sealed class CommunicationOutboxDeliveryIntegrationTests
 
         using (JobExecutionContext.Begin(_db.TenantA, _db.CompanyA))
         {
-            (await storeA.MarkSentAsync(id, claimA.ClaimToken, t0)).Should().BeFalse("A perdió el claim");
-            (await storeA.MarkFailedAsync(id, claimA.ClaimToken, new(CommunicationStatus.Failed, 9, null), CommunicationFailureCategory.Permanent, "tarde", t0))
+            (await storeA.MarkSentAsync(claimA, EmailDeliveryReceipt.WithoutProviderId, t0)).Should().BeFalse("A perdió el claim");
+            (await storeA.MarkFailedAsync(claimA, new(CommunicationStatus.Failed, 9, null), CommunicationFailureCategory.Permanent, "tarde", null, t0))
                 .Should().BeFalse();
 
             var row = await RowAsync(id);
             row.Status.Should().Be(CommunicationStatus.Processing);
             row.ClaimToken.Should().Be(claimB.ClaimToken);
 
-            (await storeB.MarkSentAsync(id, claimB.ClaimToken, t0)).Should().BeTrue();
+            (await storeB.MarkSentAsync(claimB, EmailDeliveryReceipt.WithoutProviderId, t0)).Should().BeTrue();
         }
 
         (await RowAsync(id)).Status.Should().Be(CommunicationStatus.Sent);
@@ -298,7 +299,7 @@ public sealed class CommunicationOutboxDeliveryIntegrationTests
     /// <summary>Arma el MailMessage real (como SmtpEmailSender), captura su Message-ID y falla Transient.</summary>
     private sealed class MessageIdCapturingSender(List<string> messageIds) : IEmailSender
     {
-        public Task SendAsync(EmailMessage message, CommunicationEmailSettings settings, CancellationToken ct = default)
+        public Task<EmailDeliveryReceipt> SendAsync(EmailMessage message, CommunicationEmailSettings settings, CancellationToken ct = default)
         {
             using var mail = SmtpEmailSender.BuildMailMessage(message, settings);
             messageIds.Add(mail.Headers["Message-ID"]!);
@@ -310,7 +311,11 @@ public sealed class CommunicationOutboxDeliveryIntegrationTests
     {
         public string SenderEmail { get; set; } = senderEmail;
 
-        public Task<CommunicationEmailSettings> ResolveEmailAsync(CancellationToken ct = default) =>
+        public Task<CommunicationEmailSettings> ResolveEmailAsync(CancellationToken ct = default) => Resolve();
+
+        public Task<CommunicationEmailSettings> ResolveEmailAsync(CommunicationScope scope, CancellationToken ct = default) => Resolve();
+
+        private Task<CommunicationEmailSettings> Resolve() =>
             Task.FromResult(new CommunicationEmailSettings(true, "smtp.test", 587, null, null, SenderEmail, null, true, null, 3, "es"));
     }
 
@@ -345,10 +350,12 @@ public sealed class CommunicationOutboxDeliveryIntegrationTests
     [Fact]
     public async Task Indice_unico_tenant_company_idempotency_key_sigue_vigente()
     {
-        await SeedAsync(_db.CompanyA, count: 1, idempotencyKey: "invoice:1");
-        await SeedAsync(_db.CompanyB, count: 1, idempotencyKey: "invoice:1"); // otra empresa: permitido
+        var invoiceId = Guid.NewGuid();
+        await SeedAsync(_db.CompanyA, count: 1, sourceId: invoiceId);
+        await SeedAsync(_db.CompanyB, count: 1, sourceId: invoiceId); // otra empresa: otra identidad
 
-        var duplicate = () => SeedAsync(_db.CompanyA, count: 1, idempotencyKey: "invoice:1");
+        // Escritura directa (sin la cola idempotente): el índice único sigue siendo la autoridad.
+        var duplicate = () => SeedAsync(_db.CompanyA, count: 1, sourceId: invoiceId);
 
         (await duplicate.Should().ThrowAsync<DbUpdateException>())
             .WithInnerException<PostgresException>()
@@ -380,16 +387,22 @@ public sealed class CommunicationOutboxDeliveryIntegrationTests
         int count,
         int maxRetries = 3,
         string? subject = null,
-        string? idempotencyKey = null
+        Guid? sourceId = null
     )
     {
         var tenantId = companyId == _db.CompanyA ? _db.TenantA : _db.TenantB;
         await using var ctx = _db.Context();
         var rows = Enumerable.Range(0, count)
             .Select(i => CommunicationOutbox.CreateEmail(
-                tenantId, companyId, null, Purpose, null, $"cliente{i}@test.com",
-                subject ?? $"msg-{Guid.NewGuid():N}", "<p>x</p>", null, CommunicationPriority.Normal,
-                DateTime.UtcNow.AddMinutes(-1), maxRetries, null, null, idempotencyKey, Guid.Empty))
+                CommunicationIdentity.For(
+                    CommunicationScope.Company(tenantId, companyId),
+                    Purpose,
+                    CommunicationChannel.Email,
+                    new CommunicationSource("Sales", "SalesInvoice", sourceId ?? Guid.NewGuid()),
+                    CommunicationRecipientRole.Customer
+                ),
+                null, $"cliente{i}@test.com", subject ?? $"msg-{Guid.NewGuid():N}", "<p>x</p>", null,
+                CommunicationPriority.Normal, DateTime.UtcNow.AddMinutes(-1), maxRetries, Guid.Empty))
             .ToList();
         ctx.CommunicationOutbox.AddRange(rows);
         await ctx.SaveChangesAsync();
@@ -460,29 +473,36 @@ public sealed class CommunicationOutboxDeliveryIntegrationTests
         private int _calls;
         public int Calls => _calls;
 
-        public Task SendAsync(EmailMessage message, CommunicationEmailSettings settings, CancellationToken ct = default)
+        public async Task<EmailDeliveryReceipt> SendAsync(EmailMessage message, CommunicationEmailSettings settings, CancellationToken ct = default)
         {
             Interlocked.Increment(ref _calls);
-            return behavior(new RecordedMessage(message.CommunicationId, message.Subject, settings.SenderEmail), ct);
+            await behavior(new RecordedMessage(message.CommunicationId, message.Subject, settings.SenderEmail), ct);
+            return EmailDeliveryReceipt.WithoutProviderId;
         }
     }
 
     private sealed record RecordedMessage(Guid? CommunicationId, string Subject, string? SenderEmailUsed);
 
-    /// <summary>Resuelve la configuración de la empresa del scope ambiente (como el resolver real).</summary>
+    /// <summary>
+    /// Resuelve por el alcance EXPLÍCITO (como el resolver real): remitente por empresa; System usa el
+    /// remitente de instancia. El sender verifica además el contexto ambiente abierto por el processor.
+    /// </summary>
     private sealed class ScopedResolver(bool canSend = true, TimeSpan? timeout = null) : ICommunicationSettingsResolver
     {
         private int _calls;
         public int Calls => _calls;
+        public const string InstanceSender = "instancia@sender.test";
 
         public static string SenderFor(Guid companyId) => $"{companyId:N}@sender.test";
 
-        public Task<CommunicationEmailSettings> ResolveEmailAsync(CancellationToken ct = default)
+        public Task<CommunicationEmailSettings> ResolveEmailAsync(CancellationToken ct = default) =>
+            throw new InvalidOperationException("El processor debe resolver con el alcance explícito de la fila.");
+
+        public Task<CommunicationEmailSettings> ResolveEmailAsync(CommunicationScope scope, CancellationToken ct = default)
         {
             Interlocked.Increment(ref _calls);
-            var company = new CurrentCompanyService(new HttpContextAccessor()).CompanyId;
             return Task.FromResult(
-                new CommunicationEmailSettings(canSend, "smtp.test", 587, null, null, SenderFor(company), null, true, null, 3, "es")
+                new CommunicationEmailSettings(canSend, "smtp.test", 587, null, null, scope.CompanyId is { } company ? SenderFor(company) : InstanceSender, null, true, null, 3, "es")
                 {
                     SmtpTimeout = timeout ?? CommunicationDeliveryTiming.DefaultSmtpTimeout,
                 }

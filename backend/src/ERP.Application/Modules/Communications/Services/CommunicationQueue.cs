@@ -1,74 +1,61 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Communications.DTOs;
 using ERP.Domain.Modules.Communications.Entities;
+using ERP.Domain.Modules.Communications.Enums;
 using ERP.Domain.Modules.Communications.Interfaces;
+using ERP.Domain.Modules.Communications.ValueObjects;
 
 namespace ERP.Application.Modules.Communications.Services;
 
+/// <summary>
+/// ZH-COMMUNICATIONS-CONTRACT-01 — encola con alcance EXPLÍCITO e identidad central:
+/// <list type="bullet">
+/// <item>El alcance sale de la request; el contexto ambiente solo se usa como guarda: una request
+/// Company para otra empresa que la del contexto autenticado se rechaza (el caller no es autoridad
+/// del scope).</item>
+/// <item><see cref="CommunicationIdentity"/> construye la IdempotencyKey.</item>
+/// <item><c>MaxRetries</c> se copia al encolar desde el perfil del mismo alcance (no se reinterpreta luego).</item>
+/// <item>PostgreSQL es la autoridad de idempotencia (<see cref="ICommunicationOutboxRepository.EnqueueAsync"/>).</item>
+/// </list>
+/// </summary>
 public sealed class CommunicationQueue : ICommunicationQueue
 {
     private readonly ICommunicationOutboxRepository _outbox;
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly ICurrentTenant _currentTenant;
     private readonly ICurrentCompany _currentCompany;
-    private readonly ICurrentBranch _currentBranch;
     private readonly ICurrentUser _currentUser;
     private readonly ICommunicationSettingsResolver _settings;
 
     public CommunicationQueue(
         ICommunicationOutboxRepository outbox,
-        IUnitOfWork unitOfWork,
-        ICurrentTenant currentTenant,
         ICurrentCompany currentCompany,
-        ICurrentBranch currentBranch,
         ICurrentUser currentUser,
         ICommunicationSettingsResolver settings
     )
     {
         _outbox = outbox;
-        _unitOfWork = unitOfWork;
-        _currentTenant = currentTenant;
         _currentCompany = currentCompany;
-        _currentBranch = currentBranch;
         _currentUser = currentUser;
         _settings = settings;
     }
 
-    public async Task<QueuedCommunicationDto> QueueEmailAsync(
-        QueueEmailRequest request,
-        CancellationToken ct = default
-    )
+    public async Task<QueuedCommunicationDto> EnqueueAsync(CommunicationRequest request, CancellationToken ct = default)
     {
-        if (!string.IsNullOrWhiteSpace(request.IdempotencyKey))
-        {
-            var existing = await _outbox.GetByIdempotencyKeyAsync(
-                _currentTenant.TenantId,
-                _currentCompany.CompanyId,
-                request.IdempotencyKey,
-                ct
-            );
+        ArgumentNullException.ThrowIfNull(request);
+        EnsureScopeMatchesAuthenticatedCompany(request.Scope);
 
-            if (existing is not null)
-                return new QueuedCommunicationDto(existing.Id, WasAlreadyQueued: true);
-        }
-
-        // ZH-COMMUNICATIONS-DELIVERY-HARDENING-01 — MaxRetries se fija AL ENCOLAR desde el perfil
-        // resuelto (communications.email.max_retries / fallback de instancia) y queda copiado en la
-        // fila: un cambio posterior de configuración no reinterpreta comunicaciones ya creadas.
-        var maxRetries = request.MaxRetries
-            ?? (await _settings.ResolveEmailAsync(ct)).MaxRetries;
-
-        var actorId = _currentUser.UserId == Guid.Empty ? Guid.Empty : _currentUser.UserId;
-        var branchId = request.BranchId.HasValue
-            ? request.BranchId
-            : _currentBranch.HasBranchContext
-                ? _currentBranch.BranchId
-                : (Guid?)null;
-        var communication = CommunicationOutbox.CreateEmail(
-            _currentTenant.TenantId,
-            _currentCompany.CompanyId,
-            branchId,
+        var identity = CommunicationIdentity.For(
+            request.Scope,
             request.Purpose,
+            request.Channel,
+            request.Source,
+            request.RecipientRole
+        );
+
+        var maxRetries = request.MaxRetries
+            ?? (await _settings.ResolveEmailAsync(request.Scope, ct)).MaxRetries;
+
+        var communication = CommunicationOutbox.CreateEmail(
+            identity,
             request.RecipientName,
             request.RecipientEmail,
             request.Subject,
@@ -77,10 +64,7 @@ public sealed class CommunicationQueue : ICommunicationQueue
             request.Priority,
             request.ScheduledAtUtc,
             maxRetries,
-            request.CorrelationType,
-            request.CorrelationId,
-            request.IdempotencyKey,
-            actorId
+            _currentUser.UserId
         );
 
         foreach (var attachment in request.Attachments ?? [])
@@ -91,14 +75,22 @@ public sealed class CommunicationQueue : ICommunicationQueue
                 attachment.ContentType,
                 attachment.FileStoragePath,
                 attachment.BinaryContent,
-                actorId
+                _currentUser.UserId
             );
         }
 
-        await _outbox.AddAsync(communication, ct);
-        if (request.SaveImmediately)
-            await _unitOfWork.SaveChangesAsync(ct);
+        var result = await _outbox.EnqueueAsync(communication, ct);
+        return new QueuedCommunicationDto(result.Id, WasAlreadyQueued: !result.Created);
+    }
 
-        return new QueuedCommunicationDto(communication.Id, WasAlreadyQueued: false);
+    private void EnsureScopeMatchesAuthenticatedCompany(CommunicationScope scope)
+    {
+        if (scope.Kind != CommunicationScopeKind.Company || !_currentCompany.HasCompanyContext)
+            return;
+
+        if (scope.CompanyId != _currentCompany.CompanyId)
+            throw new InvalidOperationException(
+                "El alcance explícito de la comunicación no coincide con la empresa del contexto autenticado."
+            );
     }
 }
