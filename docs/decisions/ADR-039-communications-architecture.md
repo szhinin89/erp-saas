@@ -178,7 +178,32 @@ Por fases (detalle en el documento, §U):
 6. Entrega de password reset sobre Communications (scope System, payload sensible).
 7. Monitor.
 
-No hay fase multicanal. Estado: **diseño aceptado; fases 1, 2 y 3 implementadas.**
+No hay fase multicanal. Estado: **diseño aceptado; fases 1 a 4 implementadas.**
+
+- **Fase 4 — `ZH-COMMUNICATIONS-TEMPLATES-01` (2026-10-02): IMPLEMENTED.** Detalle en el documento (§J
+  "Implementación efectiva — Fase 4").
+  - D12: defaults embebidos y versionados en el release (`CommunicationDefaultTemplates`; hoy solo
+    `SALES_INVOICE_AUTHORIZED` v1). Override opcional por empresa con la entidad existente `CommunicationTemplate`
+    (nueva columna `revision`). TemplateKey = Purpose.
+  - Resolver único `ICommunicationTemplateResolver`: System → siempre default; Company → override activo de esa
+    empresa o default. **Un override inválido falla (`COMMUNICATION_TEMPLATE_INVALID`), sin fallback silencioso.**
+    Durabilidad (verificación final): un fallo de template nunca revierte el hecho de negocio ni pierde la intención.
+    La comunicación se persiste en la MISMA outbox como `Failed`, sin contenido, con la misma identidad y las
+    variables (si el propósito no es sensible) para re-renderizarla tras corregir el template. La CHECK
+    `ck_communication_outbox_content` impide que una fila sin contenido sea enviable.
+    Se descarta el `DefaultFallback` previsto en el diseño original: ocultaría al administrador que su template
+    no se usa.
+  - D13: renderer único `CommunicationTemplateRenderer`: placeholders `{{Nombre}}`, escape HTML por defecto, asunto
+    de una línea, fail-closed (variable faltante, no declarada o placeholder desconocido/mal formado), variables
+    tipadas por template (`ICommunicationTemplateModel`, sin reflexión). Sin RazorLight; el paquete queda sin
+    consumidores → REMOVE EVENTUALLY.
+  - Se renderiza AL ENCOLAR (`CommunicationQueue`). La fila guarda asunto/cuerpo renderizados y `template_key`,
+    `template_version` y `template_source`. El processor nunca re-renderiza. La versión del template no forma parte
+    de la identidad, así que cambiarla no duplica comunicaciones.
+  - Factura migrada sin cambios de salida (golden byte a byte, incluido el escape de caracteres especiales). El
+    handler solo aporta `SalesInvoiceAuthorizedTemplateModel`.
+  - Migración `20261003035732_CommunicationTemplates`. Las facturas previas se marcan `Legacy`, sin versión: se
+    armaban en código y no se afirma que sean v1.
 
 - **Fase 3 — `ZH-COMMUNICATIONS-CONTRACT-01` (2026-10-02): IMPLEMENTED.** Detalle en el documento (§D, §F,
   §I y "Implementación efectiva — Fase 3").

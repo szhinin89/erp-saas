@@ -29,7 +29,7 @@ public sealed class CommunicationIdentityTests
         );
 
     private static CommunicationOutbox Email(CommunicationIdentity identity, string email, string subject, string body) =>
-        CommunicationOutbox.CreateEmail(identity, null, email, subject, body, null, CommunicationPriority.Normal, null, 3, Guid.Empty);
+        CommunicationOutbox.CreateEmail(identity, null, email, new CommunicationTemplateUsage(identity.Purpose, 1, CommunicationTemplateSource.Default), subject, body, null, CommunicationPriority.Normal, null, 3, Guid.Empty);
 
     // ── Identidad ─────────────────────────────────────────────────────────────────────────
 

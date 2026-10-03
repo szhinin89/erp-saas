@@ -2,6 +2,18 @@
 
 **Single source of truth** for delivery state. Updated: **2026-10-02** · Kernel refactor: **2026-06-05**.
 
+## ZH-COMMUNICATIONS-TEMPLATES-01 — Subsistema de templates de Communications (2026-10-02)
+
+**Estado: COMPLETADO (sin commit).** Fase 4 de [ADR-039](docs/decisions/ADR-039-communications-architecture.md); detalle en [`COMMUNICATIONS-ARCHITECTURE.md` §J](docs/communications/COMMUNICATIONS-ARCHITECTURE.md).
+- **Una sola vía:** TemplateKey (= Purpose) → default embebido versionado (`CommunicationDefaultTemplates`) u override activo de la empresa (`CommunicationTemplate` existente + `revision`) → `ICommunicationTemplateResolver` → `CommunicationTemplateRenderer` → asunto/HTML/texto. Render AL ENCOLAR; la fila guarda el contenido y `template_key`/`template_version`/`template_source`; el envío nunca re-renderiza.
+- **Renderer propio** (sin RazorLight): placeholders `{{Nombre}}`, escape HTML por defecto, fail-closed (variable faltante o no declarada, placeholder desconocido o mal formado), variables tipadas por template. Errores `COMMUNICATION_TEMPLATE_NOT_FOUND`/`_INVALID`/`_RENDER_FAILED` (Validation). Un override inválido falla sin fallback silencioso.
+- **Durabilidad ante fallo de template (verificación final):** antes, un fallo de template al autorizar una factura dejaba solo un log (la autorización seguía, pero la intención se perdía). Ahora la comunicación se persiste en la misma outbox como `Failed` (Configuration/Permanent), sin contenido inventado, con la misma identidad (no duplica) y las variables para re-renderizarla y reencolarla tras corregir el template. La CHECK `ck_communication_outbox_content` impide que sea enviable. Probado por el flujo real `ErpDbContext` → handler → cola → PostgreSQL.
+- **Factura:** el handler ya no contiene HTML ni texto; aporta `SalesInvoiceAuthorizedTemplateModel`. Salida idéntica (golden byte a byte capturado antes de migrar).
+- **Aislamiento:** el override de una empresa nunca se usa en otra; System nunca consulta overrides. Cambiar un template no duplica ni altera comunicaciones ya encoladas.
+- **Migración:** `20261003035732_CommunicationTemplates` (columnas de template en la outbox, `revision` en `communication_templates`; facturas previas marcadas `Legacy` sin versión).
+- **RazorLight:** sin consumidores → REMOVE EVENTUALLY.
+- **Tests:** Application 33 nuevos (renderer, resolver, golden de Factura, cola con templates); Domain 2; Infrastructure 5 contra PostgreSQL (override A/B, inactivo, inválido, System, cambio de override tras encolar); Architecture 3. Regresión fases 2 y 3 intacta.
+
 ## ZH-COMMUNICATIONS-CONTRACT-01 — Contrato de Communications: alcance, identidad, origen e intentos (2026-10-02)
 
 **Estado: COMPLETADO (sin commit).** Fase 3 de [ADR-039](docs/decisions/ADR-039-communications-architecture.md); detalle en [`COMMUNICATIONS-ARCHITECTURE.md`](docs/communications/COMMUNICATIONS-ARCHITECTURE.md) (§D y "Implementación efectiva — Fase 3").

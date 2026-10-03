@@ -231,7 +231,8 @@ public sealed partial class CommunicationOutboxProcessor : ICommunicationOutboxP
         new(
             communication.RecipientEmail!,
             communication.RecipientName,
-            communication.Subject,
+            // Una fila reclamable siempre tiene contenido: ck_communication_outbox_content.
+            communication.Subject!,
             communication.BodyHtml,
             communication.BodyText,
             communication.Attachments

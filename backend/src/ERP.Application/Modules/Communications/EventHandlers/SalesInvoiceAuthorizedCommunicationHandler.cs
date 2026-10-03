@@ -1,5 +1,6 @@
 using ERP.Application.Modules.Communications.DTOs;
 using ERP.Application.Modules.Communications.Services;
+using ERP.Application.Modules.Communications.Templates;
 using ERP.Application.Modules.Ride.DTOs;
 using ERP.Application.Modules.Ride.UseCases.GetOrGenerateRide;
 using ERP.Domain.Configuration.Interfaces;
@@ -15,7 +16,6 @@ using ERP.Domain.Modules.Sales.Interfaces;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using System.Globalization;
-using System.Net;
 using System.Net.Mail;
 
 namespace ERP.Application.Modules.Communications.EventHandlers;
@@ -144,20 +144,14 @@ public sealed partial class SalesInvoiceAuthorizedCommunicationHandler
                 RecipientRole: CommunicationRecipientRole.Customer,
                 RecipientName: invoice.Customer.Name,
                 RecipientEmail: recipientEmail,
-                Subject: $"Factura autorizada {invoice.InvoiceNumber} - {issuerName}",
-                BodyHtml: BuildBodyHtml(
-                    invoice.InvoiceNumber,
-                    document.AuthorizationNumber!.Value,
-                    invoice.Customer.Name,
-                    invoice.AuthorizedGrandTotal ?? invoice.GrandTotal,
-                    issuerName
-                ),
-                BodyText: BuildBodyText(
-                    invoice.InvoiceNumber,
-                    document.AuthorizationNumber!.Value,
-                    invoice.Customer.Name,
-                    invoice.AuthorizedGrandTotal ?? invoice.GrandTotal,
-                    issuerName
+                // ZH-COMMUNICATIONS-TEMPLATES-01 — solo datos (ya formateados): asunto, HTML y texto los
+                // produce el template SALES_INVOICE_AUTHORIZED (default v1 u override de la empresa).
+                Template: new SalesInvoiceAuthorizedTemplateModel(
+                    CustomerName: invoice.Customer.Name,
+                    InvoiceNumber: invoice.InvoiceNumber,
+                    AccessKey: document.AuthorizationNumber!.Value,
+                    Total: (invoice.AuthorizedGrandTotal ?? invoice.GrandTotal).ToString("0.00", CultureInfo.InvariantCulture),
+                    IssuerName: issuerName
                 ),
                 Attachments: attachments,
                 Priority: CommunicationPriority.Normal,
@@ -236,50 +230,6 @@ public sealed partial class SalesInvoiceAuthorizedCommunicationHandler
         );
     }
 
-    private static string BuildBodyHtml(
-        string invoiceNumber,
-        string accessKey,
-        string customerName,
-        decimal total,
-        string issuerName
-    ) =>
-        "<p>Estimado/a "
-        + Html(customerName)
-        + ",</p>"
-        + "<p>Su factura electronica fue autorizada por el SRI.</p>"
-        + "<ul>"
-        + "<li><strong>Factura:</strong> "
-        + Html(invoiceNumber)
-        + "</li>"
-        + "<li><strong>Clave de acceso:</strong> "
-        + Html(accessKey)
-        + "</li>"
-        + "<li><strong>Cliente:</strong> "
-        + Html(customerName)
-        + "</li>"
-        + "<li><strong>Total:</strong> USD "
-        + total.ToString("0.00", CultureInfo.InvariantCulture)
-        + "</li>"
-        + "<li><strong>Emisor:</strong> "
-        + Html(issuerName)
-        + "</li>"
-        + "</ul>";
-
-    private static string BuildBodyText(
-        string invoiceNumber,
-        string accessKey,
-        string customerName,
-        decimal total,
-        string issuerName
-    ) =>
-        $"Estimado/a {customerName},\n\n"
-        + "Su factura electronica fue autorizada por el SRI.\n"
-        + $"Factura: {invoiceNumber}\n"
-        + $"Clave de acceso: {accessKey}\n"
-        + $"Cliente: {customerName}\n"
-        + $"Total: USD {total.ToString("0.00", CultureInfo.InvariantCulture)}\n"
-        + $"Emisor: {issuerName}\n";
-
     private static string? NormalizeEmail(string? email)
     {
         if (string.IsNullOrWhiteSpace(email))
@@ -302,7 +252,6 @@ public sealed partial class SalesInvoiceAuthorizedCommunicationHandler
     private static string? FirstNonEmpty(params string?[] values) =>
         values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value))?.Trim();
 
-    private static string Html(string value) => WebUtility.HtmlEncode(value);
 
     private static string SafeFileToken(string value) =>
         string.Join("-", value.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));

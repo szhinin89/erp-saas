@@ -554,6 +554,38 @@ ERP.Application/Modules/Communications/Templates/
 
 ---
 
+### Implementación efectiva — Fase 4 (ZH-COMMUNICATIONS-TEMPLATES-01, 2026-10-02)
+
+| Pieza | Implementación real |
+|---|---|
+| TemplateKey | = Purpose (`CommunicationPurposes`). Defaults registrados: solo `SALES_INVOICE_AUTHORIZED`. Los propósitos reservados (`PASSWORD_RESET`) no tienen default hasta su fase: encolarlos da `COMMUNICATION_TEMPLATE_NOT_FOUND` |
+| Default | `CommunicationDefaultTemplates`: clases C# en `ERP.Application/Modules/Communications/Templates`, versionadas (`SalesInvoiceAuthorizedV1`). Forman parte del release; no dependen de BD ni seeds |
+| Override | Entidad existente `CommunicationTemplate` (empresa, `Code` = TemplateKey, canal Email, idioma `es`, `IsActive`) + columna nueva `revision` (1 al crear, +1 por cambio de contenido). Es la "versión" registrada cuando se usa |
+| Resolver | `ICommunicationTemplateResolver` (único): System → default sin consultar overrides; Company → override activo de ESA empresa (filtro global) o default |
+| Override inválido | `COMMUNICATION_TEMPLATE_INVALID` al encolar, sin fallback (difiere del `DefaultFallback` del diseño). Nunca se envía contenido corrupto; la comunicación queda registrada como `Failed` (ver "Durabilidad ante fallo de template") |
+| Renderer | `CommunicationTemplateRenderer` (único, estático, sin RazorLight). Ver reglas abajo |
+| Variables | `ICommunicationTemplateModel` por template (p. ej. `SalesInvoiceAuthorizedTemplateModel`), con valores ya formateados por el módulo origen. El contrato (`CommunicationTemplateVariable`) es el del default; un override no puede salirse de él |
+| Momento | AL ENCOLAR (`CommunicationQueue`). La fila guarda asunto/cuerpo + `template_key`/`template_version`/`template_source`. El processor envía lo guardado |
+| Identidad | La versión del template NO forma parte de `CommunicationIdentity`: cambiar un template nunca duplica la comunicación de un hecho |
+| Reenvío manual | Al no existir todavía, la regla queda fijada: un reenvío es una comunicación nueva y se renderiza con el template vigente en ese momento |
+| Errores | `COMMUNICATION_TEMPLATE_NOT_FOUND` / `_INVALID` (categoría de fallo Configuration) y `_RENDER_FAILED` (Permanent), Validation en la API y nunca SMTP. La cola no lanza: devuelve el código en `QueuedCommunicationDto.TemplateFailureCode` y persiste la fila `Failed`. Los mensajes nombran variables, nunca valores |
+| Durabilidad ante fallo de template | El hecho de negocio nunca se revierte y la intención nunca se pierde. En la MISMA outbox, `CommunicationOutbox.CreateEmailTemplateFailure`: `Failed` + `failure_category` + `last_error` con el código, misma identidad (repetir o reconciliar no duplica), destinatario, origen, adjuntos y `template_payload_json` (variables, solo en propósitos no sensibles) para re-renderizar y reencolar tras corregir el template. Sin asunto ni cuerpo inventados. La CHECK `ck_communication_outbox_content` impide que una fila sin contenido quede `Pending`/`Processing`/`Sent`: un reencolado futuro debe re-renderizar primero. Probado por el flujo real (`ErpDbContext` → handler de Factura → cola → resolver → PostgreSQL) |
+| Logs | `CommunicationTemplateRendered`: id, TemplateKey, versión, fuente y SourceId. Sin variables, asunto ni cuerpo |
+| Filas previas | La migración marca las facturas como `template_key = SALES_INVOICE_AUTHORIZED`, `template_source = Legacy`, sin versión (se armaban en código). El resto queda NULL |
+| RazorLight | Sin consumidores → REMOVE EVENTUALLY (no se retira en este ticket) |
+
+**Reglas del renderer:**
+- Sintaxis `{{Nombre}}` (admite espacios internos). Nombres `[A-Za-z][A-Za-z0-9_]*`, sin navegación (`{{A.B}}` es inválido).
+- Fallos:
+  - placeholder no declarado o mal formado (`{{`/`}}` sueltos) → `INVALID`;
+  - variable obligatoria ausente o vacía, variable no declarada en el contrato, modelo de otro template, o asunto/cuerpo fuera de límites → `RENDER_FAILED`.
+- HTML: toda variable pasa por `WebUtility.HtmlEncode` (el mismo escape del correo anterior; no existe inserción cruda).
+- Texto: sin escape.
+- Asunto: CR/LF → espacio.
+- Determinístico; un valor con `{{…}}` no se reinterpreta.
+
+**Factura migrada:** el handler arma solo `SalesInvoiceAuthorizedTemplateModel`. La salida del default v1 coincide byte a byte con la anterior (`SalesInvoiceAuthorizedGoldenEmail`, capturado antes de la migración, incluido el escape `Jos&#233; &amp; Hijos &lt;S.A.&gt;`).
+
 ## K. Comunicaciones sensibles
 
 Aplica a los propósitos `IsSensitive` (password reset, verificación de email, MFA, invitaciones con token).

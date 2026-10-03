@@ -23,6 +23,7 @@ public sealed class CommunicationTemplateConfiguration : IEntityTypeConfiguratio
         builder.Property(x => x.TextTemplate).HasColumnName("text_template").HasMaxLength(CommunicationTemplate.BodyTemplateMaxLen);
         builder.Property(x => x.Language).HasColumnName("language").HasMaxLength(CommunicationTemplate.LanguageMaxLen).IsRequired();
         builder.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
+        builder.Property(x => x.Revision).HasColumnName("revision").IsRequired();
         builder.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by").IsRequired();

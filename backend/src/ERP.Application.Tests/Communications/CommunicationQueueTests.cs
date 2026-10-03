@@ -1,5 +1,8 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Communications.Services;
+using ERP.Application.Modules.Communications.Templates;
+using ERP.Application.Tests.TestSupport;
+using Microsoft.Extensions.Logging.Abstractions;
 using ERP.Domain.Modules.Communications.Constants;
 using ERP.Domain.Modules.Communications.Entities;
 using ERP.Domain.Modules.Communications.Enums;
@@ -41,9 +44,30 @@ public sealed class CommunicationQueueTests
             CurrentCompany.Setup(c => c.HasCompanyContext).Returns(false);
         }
 
-        public CommunicationQueue Build() =>
-            new(Outbox.Object, CurrentCompany.Object, Mock.Of<ICurrentUser>(u => u.UserId == Guid.NewGuid()), Settings.Object);
+        public Mock<ICommunicationTemplateResolver> Templates { get; } = new();
+
+        public CommunicationQueue Build()
+        {
+            Templates
+                .Setup(t => t.ResolveAsync(It.IsAny<CommunicationScope>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((CommunicationScope _, string key, CancellationToken _) =>
+                    key == CommunicationPurposes.PasswordReset
+                        ? Result<CommunicationTemplateDefinition>.Success(StructuralPasswordResetTemplate.Definition)
+                        : Result<CommunicationTemplateDefinition>.Success(CommunicationDefaultTemplates.SalesInvoiceAuthorizedV1)
+                );
+            return new(
+                Outbox.Object,
+                CurrentCompany.Object,
+                Mock.Of<ICurrentUser>(u => u.UserId == Guid.NewGuid()),
+                Settings.Object,
+                Templates.Object,
+                NullLogger<CommunicationQueue>.Instance
+            );
+        }
     }
+
+    private static readonly SalesInvoiceAuthorizedTemplateModel InvoiceModel =
+        new("Cliente", "001-001-000000001", "2108202601179214672100110010010000000011234567811", "100.00", "ZH Demo");
 
     private static CommunicationRequest Request(CommunicationScope? scope = null, int? maxRetries = null) =>
         new(
@@ -53,11 +77,106 @@ public sealed class CommunicationQueueTests
             CommunicationRecipientRole.Customer,
             "Cliente",
             "cliente@test.com",
-            "Factura",
-            "<p>x</p>",
-            null,
+            InvoiceModel,
             MaxRetries: maxRetries
         );
+
+    // ── ZH-COMMUNICATIONS-TEMPLATES-01 ────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Renderiza_al_encolar_y_persiste_contenido_y_metadata_del_template()
+    {
+        var f = new Fixture();
+
+        await f.Build().EnqueueAsync(Request());
+
+        var created = f.Enqueued.Single();
+        created.TemplateKey.Should().Be(CommunicationPurposes.SalesInvoiceAuthorized);
+        created.TemplateVersion.Should().Be(1);
+        created.TemplateSource.Should().Be(CommunicationTemplateSource.Default);
+        created.Subject.Should().Be("Factura autorizada 001-001-000000001 - ZH Demo");
+        created.BodyHtml.Should().Contain("<li><strong>Total:</strong> USD 100.00</li>");
+        created.BodyText.Should().Contain("Emisor: ZH Demo");
+    }
+
+    [Fact]
+    public async Task Fallo_de_template_registra_la_comunicacion_Failed_sin_contenido_y_expone_el_codigo()
+    {
+        var f = new Fixture();
+        var queue = f.Build();
+        f.Templates
+            .Setup(t => t.ResolveAsync(It.IsAny<CommunicationScope>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<CommunicationTemplateDefinition>.Failure("override inválido", ApiResponseCodes.Communications.TemplateInvalid));
+
+        var result = await queue.EnqueueAsync(Request());
+
+        result.TemplateFailureCode.Should().Be(ApiResponseCodes.Communications.TemplateInvalid);
+        var failed = f.Enqueued.Should().ContainSingle().Subject;
+        failed.Status.Should().Be(CommunicationStatus.Failed);
+        failed.FailureCategory.Should().Be(CommunicationFailureCategory.Configuration);
+        failed.Subject.Should().BeNull();
+        failed.BodyHtml.Should().BeNull();
+        failed.BodyText.Should().BeNull();
+        failed.TemplateKey.Should().Be(CommunicationPurposes.SalesInvoiceAuthorized);
+        failed.TemplatePayloadJson.Should().Contain("\"InvoiceNumber\":\"001-001-000000001\"");
+        failed.LastError.Should().StartWith(ApiResponseCodes.Communications.TemplateInvalid);
+    }
+
+    [Fact]
+    public async Task Fallo_de_template_de_un_proposito_sensible_no_persiste_las_variables()
+    {
+        var f = new Fixture();
+        var queue = f.Build();
+        f.Templates
+            .Setup(t => t.ResolveAsync(It.IsAny<CommunicationScope>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<CommunicationTemplateDefinition>.Failure("sin template", ApiResponseCodes.Communications.TemplateNotFound));
+        var request = new CommunicationRequest(
+            CommunicationScope.System,
+            CommunicationPurposes.PasswordReset,
+            new CommunicationSource("Authentication", "PasswordReset", Guid.NewGuid()),
+            CommunicationRecipientRole.User,
+            null,
+            "user@test.com",
+            new StructuralPasswordResetTemplate.Model("Ana")
+        );
+
+        await queue.EnqueueAsync(request);
+
+        f.Enqueued.Single().TemplatePayloadJson.Should().BeNull("las variables de un propósito sensible nunca se guardan en claro");
+    }
+
+    [Fact]
+    public async Task Modelo_de_otro_template_que_el_proposito_se_rechaza()
+    {
+        var f = new Fixture();
+        var request = Request() with { Template = new StructuralPasswordResetTemplate.Model("Ana") };
+
+        var result = await f.Build().EnqueueAsync(request);
+
+        result.TemplateFailureCode.Should().Be(ApiResponseCodes.Communications.TemplateRenderFailed);
+        var failed = f.Enqueued.Single();
+        failed.Status.Should().Be(CommunicationStatus.Failed);
+        failed.FailureCategory.Should().Be(CommunicationFailureCategory.Permanent, "un modelo que no cumple el contrato no se corrige reintentando");
+    }
+
+    [Fact]
+    public async Task La_version_del_template_no_forma_parte_de_la_identidad()
+    {
+        var f = new Fixture();
+        var request = Request();
+        await f.Build().EnqueueAsync(request);
+
+        var v2 = CommunicationDefaultTemplates.SalesInvoiceAuthorizedV1 with { Version = 2, SubjectTemplate = "Nuevo {{InvoiceNumber}}" };
+        var second = new Fixture();
+        var queue = second.Build();
+        second.Templates
+            .Setup(t => t.ResolveAsync(It.IsAny<CommunicationScope>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<CommunicationTemplateDefinition>.Success(v2));
+        await queue.EnqueueAsync(request);
+
+        second.Enqueued.Single().IdempotencyKey.Should().Be(f.Enqueued.Single().IdempotencyKey);
+        second.Enqueued.Single().TemplateVersion.Should().Be(2);
+    }
 
     [Fact]
     public async Task Usa_el_alcance_explicito_y_la_identidad_central()
@@ -133,9 +252,7 @@ public sealed class CommunicationQueueTests
             CommunicationRecipientRole.User,
             null,
             "user@test.com",
-            "Recupera tu acceso",
-            null,
-            "Instrucciones"
+            new StructuralPasswordResetTemplate.Model("Ana")
         );
 
         await f.Build().EnqueueAsync(request);

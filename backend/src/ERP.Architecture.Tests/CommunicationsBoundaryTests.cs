@@ -119,6 +119,64 @@ public sealed class CommunicationsBoundaryTests
         offenders.Should().BeEmpty("los módulos encolan por ICommunicationQueue; nunca escriben la outbox (ADR-039 D6)");
     }
 
+    // ── ZH-COMMUNICATIONS-TEMPLATES-01 (ADR-039 D12/D13) ─────────────────────────────────
+
+    private static readonly string[] TemplateEngineTypes =
+    [
+        typeof(ERP.Application.Modules.Communications.Templates.CommunicationTemplateRenderer).FullName!,
+        typeof(ERP.Application.Modules.Communications.Templates.CommunicationDefaultTemplates).FullName!,
+        typeof(ERP.Application.Modules.Communications.Templates.ICommunicationTemplateResolver).FullName!,
+        typeof(ERP.Domain.Modules.Communications.Interfaces.ICommunicationTemplateRepository).FullName!,
+    ];
+
+    [Fact]
+    public void Solo_Communications_resuelve_renderiza_o_lee_templates()
+    {
+        var offenders = new[] { ApplicationAssembly, InfrastructureAssembly, ApiAssembly }
+            .SelectMany(assembly => TemplateEngineTypes.SelectMany(type => Failing(Types.InAssembly(assembly).That().HaveDependencyOn(type))))
+            .Where(name => !StartsWithAny(
+                name,
+                "ERP.Application.Modules.Communications.Services.CommunicationQueue",
+                "ERP.Application.Modules.Communications.Templates.",
+                "ERP.Application.DependencyInjection",
+                "ERP.Infrastructure.Persistence.Repositories.Communications.CommunicationTemplateRepository",
+                "ERP.Infrastructure.DependencyInjection"
+            ))
+            .Distinct()
+            .ToList();
+
+        offenders.Should().BeEmpty("los módulos aportan variables; solo la cola de Communications resuelve y renderiza");
+    }
+
+    [Fact]
+    public void Handlers_de_negocio_no_arman_HTML_ni_renderizan()
+    {
+        Failing(
+                Types.InAssembly(ApplicationAssembly)
+                    .That().ResideInNamespace("ERP.Application.Modules.Communications.EventHandlers")
+                    .And().HaveDependencyOnAny("System.Net.WebUtility", "System.Web.HttpUtility")
+            )
+            .Should().BeEmpty("el escape HTML vive solo en el renderer");
+    }
+
+    [Fact]
+    public void Ni_el_transporte_ni_el_processor_renderizan_y_el_renderer_no_conoce_SMTP()
+    {
+        Failing(
+                Types.InAssembly(InfrastructureAssembly)
+                    .That().ResideInNamespace("ERP.Infrastructure.Communications")
+                    .And().HaveDependencyOn("ERP.Application.Modules.Communications.Templates")
+            )
+            .Should().BeEmpty("el envío usa el contenido ya renderizado al encolar; nunca re-renderiza");
+
+        Failing(
+                Types.InAssembly(ApplicationAssembly)
+                    .That().ResideInNamespace("ERP.Application.Modules.Communications.Templates")
+                    .And().HaveDependencyOnAny(typeof(IEmailSender).FullName!, "System.Net.Mail")
+            )
+            .Should().BeEmpty("el renderer no conoce el transporte");
+    }
+
     [Fact]
     public void SMTP_e_IEmailSender_solo_dentro_de_Communications()
     {

@@ -13,15 +13,30 @@ public sealed class CommunicationOutboxConfiguration : IEntityTypeConfiguration<
     /// </summary>
     public const string ScopeCheckConstraint = "ck_communication_outbox_scope";
 
+    /// <summary>
+    /// ZH-COMMUNICATIONS-TEMPLATES-01 — solo una comunicación Failed o Cancelled puede no tener contenido
+    /// (fallo de template al encolar): ninguna fila sin asunto y cuerpo puede quedar Pending, Processing
+    /// ni Sent. Un reencolado futuro debe re-renderizar antes de volver a Pending.
+    /// </summary>
+    public const string ContentCheckConstraint = "ck_communication_outbox_content";
+
     public void Configure(EntityTypeBuilder<CommunicationOutbox> builder)
     {
         builder.ToTable(
             "communication_outbox",
-            t => t.HasCheckConstraint(
-                ScopeCheckConstraint,
-                "(scope_kind = 'Company' AND tenant_id IS NOT NULL AND company_id IS NOT NULL) "
-                    + "OR (scope_kind = 'System' AND tenant_id IS NULL AND company_id IS NULL AND branch_id IS NULL)"
-            )
+            t =>
+            {
+                t.HasCheckConstraint(
+                    ScopeCheckConstraint,
+                    "(scope_kind = 'Company' AND tenant_id IS NOT NULL AND company_id IS NOT NULL) "
+                        + "OR (scope_kind = 'System' AND tenant_id IS NULL AND company_id IS NULL AND branch_id IS NULL)"
+                );
+                t.HasCheckConstraint(
+                    ContentCheckConstraint,
+                    "status IN ('Failed', 'Cancelled') "
+                        + "OR (subject IS NOT NULL AND (body_html IS NOT NULL OR body_text IS NOT NULL))"
+                );
+            }
         );
 
         builder.HasKey(x => x.Id);
@@ -41,7 +56,7 @@ public sealed class CommunicationOutboxConfiguration : IEntityTypeConfiguration<
         builder.Property(x => x.RecipientName).HasColumnName("recipient_name").HasMaxLength(CommunicationOutbox.RecipientNameMaxLen);
         builder.Property(x => x.RecipientEmail).HasColumnName("recipient_email").HasMaxLength(CommunicationOutbox.RecipientEmailMaxLen);
         builder.Property(x => x.RecipientPhone).HasColumnName("recipient_phone").HasMaxLength(CommunicationOutbox.RecipientPhoneMaxLen);
-        builder.Property(x => x.Subject).HasColumnName("subject").HasMaxLength(CommunicationOutbox.SubjectMaxLen).IsRequired();
+        builder.Property(x => x.Subject).HasColumnName("subject").HasMaxLength(CommunicationOutbox.SubjectMaxLen);
         builder.Property(x => x.BodyHtml).HasColumnName("body_html").HasMaxLength(CommunicationOutbox.BodyMaxLen);
         builder.Property(x => x.BodyText).HasColumnName("body_text").HasMaxLength(CommunicationOutbox.BodyMaxLen);
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().HasMaxLength(30).IsRequired();
@@ -55,6 +70,10 @@ public sealed class CommunicationOutboxConfiguration : IEntityTypeConfiguration<
         builder.Property(x => x.MaxRetries).HasColumnName("max_retries").IsRequired();
         builder.Property(x => x.LastError).HasColumnName("last_error").HasMaxLength(CommunicationOutbox.LastErrorMaxLen);
         builder.Property(x => x.IdempotencyKey).HasColumnName("idempotency_key").HasMaxLength(CommunicationOutbox.IdempotencyKeyMaxLen);
+        builder.Property(x => x.TemplateKey).HasColumnName("template_key").HasMaxLength(CommunicationTemplateUsage.KeyMaxLen);
+        builder.Property(x => x.TemplateVersion).HasColumnName("template_version");
+        builder.Property(x => x.TemplateSource).HasColumnName("template_source").HasConversion<string>().HasMaxLength(30);
+        builder.Property(x => x.TemplatePayloadJson).HasColumnName("template_payload_json");
         builder.Property(x => x.ResendOfCommunicationId).HasColumnName("resend_of_communication_id");
         builder.Property(x => x.ResendSequence).HasColumnName("resend_sequence").IsRequired();
         builder.Property(x => x.ClaimToken).HasColumnName("claim_token");

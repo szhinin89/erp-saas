@@ -10,7 +10,11 @@ public sealed record QueueCommunicationAttachmentDto(
     byte[]? BinaryContent = null
 );
 
-public sealed record QueuedCommunicationDto(Guid Id, bool WasAlreadyQueued);
+/// <param name="TemplateFailureCode">
+/// ZH-COMMUNICATIONS-TEMPLATES-01 — no null si el template no pudo renderizarse: la comunicación quedó
+/// registrada como Failed (evidencia durable, recuperable) y no se enviará hasta reencolarla.
+/// </param>
+public sealed record QueuedCommunicationDto(Guid Id, bool WasAlreadyQueued, string? TemplateFailureCode = null);
 
 public sealed record CommunicationOutboxItemDto(
     Guid Id,

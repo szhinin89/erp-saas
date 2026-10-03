@@ -84,6 +84,22 @@ public static class ApiResponseCodes
         public const string SystemProviderRucNotConfigured = "SRI_SYSTEM_PROVIDER_RUC_NOT_CONFIGURED";
     }
 
+    /// <summary>
+    /// ZH-COMMUNICATIONS-TEMPLATES-01 (ADR-039 D12/D13) — fallos de template al encolar: configuración
+    /// o validación, nunca SMTP. Ocurren antes de persistir la comunicación.
+    /// </summary>
+    public static class Communications
+    {
+        /// <summary>No existe template (default ni override) para la TemplateKey.</summary>
+        public const string TemplateNotFound = "COMMUNICATION_TEMPLATE_NOT_FOUND";
+
+        /// <summary>El template (p. ej. un override de empresa) no cumple el contrato: no se usa ni se reemplaza en silencio.</summary>
+        public const string TemplateInvalid = "COMMUNICATION_TEMPLATE_INVALID";
+
+        /// <summary>Las variables no cumplen el contrato del template (faltante, no declarada o resultado fuera de límites).</summary>
+        public const string TemplateRenderFailed = "COMMUNICATION_TEMPLATE_RENDER_FAILED";
+    }
+
     /// <summary>ZH-RETENTION-SRI-ANNULMENT-01 — anulación ante el SRI de retenciones autorizadas.</summary>
     public static class Retentions
     {

@@ -401,7 +401,8 @@ public sealed class CommunicationOutboxDeliveryIntegrationTests
                     new CommunicationSource("Sales", "SalesInvoice", sourceId ?? Guid.NewGuid()),
                     CommunicationRecipientRole.Customer
                 ),
-                null, $"cliente{i}@test.com", subject ?? $"msg-{Guid.NewGuid():N}", "<p>x</p>", null,
+                null, $"cliente{i}@test.com", new CommunicationTemplateUsage(Purpose, 1, CommunicationTemplateSource.Default),
+                subject ?? $"msg-{Guid.NewGuid():N}", "<p>x</p>", null,
                 CommunicationPriority.Normal, DateTime.UtcNow.AddMinutes(-1), maxRetries, Guid.Empty))
             .ToList();
         ctx.CommunicationOutbox.AddRange(rows);
@@ -457,13 +458,13 @@ public sealed class CommunicationOutboxDeliveryIntegrationTests
         public Task DisposeAsync() => _pg.DisposeAsync().AsTask();
 
         /// <summary>Contexto como en producción: tenant/empresa desde JobExecutionContext (sin HttpContext).</summary>
-        public ErpDbContext Context(string? connectionString = null)
+        public ErpDbContext Context(string? connectionString = null, MediatR.IPublisher? publisher = null)
         {
             var accessor = new HttpContextAccessor();
             var options = new DbContextOptionsBuilder<ErpDbContext>()
                 .UseNpgsql(connectionString ?? ConnectionString)
                 .Options;
-            return new ErpDbContext(options, new CurrentTenantService(accessor), new NoPublisher(), new CurrentCompanyService(accessor));
+            return new ErpDbContext(options, new CurrentTenantService(accessor), publisher ?? new NoPublisher(), new CurrentCompanyService(accessor));
         }
     }
 

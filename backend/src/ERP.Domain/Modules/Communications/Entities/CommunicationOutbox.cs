@@ -43,7 +43,8 @@ public sealed class CommunicationOutbox : SystemAggregateRoot, IOptionalCompanyS
     public string? RecipientName { get; private set; }
     public string? RecipientEmail { get; private set; }
     public string? RecipientPhone { get; private set; }
-    public string Subject { get; private set; } = null!;
+    /// <summary>Null solo en una comunicación que falló al renderizar (nunca se envía; CHECK en BD).</summary>
+    public string? Subject { get; private set; }
     public string? BodyHtml { get; private set; }
     public string? BodyText { get; private set; }
     public CommunicationStatus Status { get; private set; }
@@ -59,6 +60,22 @@ public sealed class CommunicationOutbox : SystemAggregateRoot, IOptionalCompanyS
 
     /// <summary>Clave de <see cref="CommunicationIdentity"/>; única por (tenant, empresa) con NULLS NOT DISTINCT.</summary>
     public string? IdempotencyKey { get; private set; }
+
+    /// <summary>
+    /// ZH-COMMUNICATIONS-TEMPLATES-01 — template que produjo <see cref="Subject"/>/<see cref="BodyHtml"/>/
+    /// <see cref="BodyText"/> (renderizados AL ENCOLAR; la fila conserva lo que se enviará y no se
+    /// re-renderiza). Null solo en filas anteriores al subsistema que no pudieron atribuirse.
+    /// </summary>
+    public string? TemplateKey { get; private set; }
+    public int? TemplateVersion { get; private set; }
+    public CommunicationTemplateSource? TemplateSource { get; private set; }
+
+    /// <summary>
+    /// Variables del template (JSON) guardadas SOLO cuando el render falló al encolar, para poder
+    /// re-renderizar y reencolar tras corregir el template. Null en comunicaciones renderizadas (ya
+    /// guardan el contenido) y siempre null en propósitos sensibles (nunca se persisten en claro).
+    /// </summary>
+    public string? TemplatePayloadJson { get; private set; }
 
     /// <summary>Reenvío manual: comunicación original y número de reenvío (0 = original).</summary>
     public Guid? ResendOfCommunicationId { get; private set; }
@@ -93,6 +110,7 @@ public sealed class CommunicationOutbox : SystemAggregateRoot, IOptionalCompanyS
         CommunicationIdentity identity,
         string? recipientName,
         string recipientEmail,
+        CommunicationTemplateUsage template,
         string subject,
         string? bodyHtml,
         string? bodyText,
@@ -104,6 +122,9 @@ public sealed class CommunicationOutbox : SystemAggregateRoot, IOptionalCompanyS
     )
     {
         ArgumentNullException.ThrowIfNull(identity);
+        ArgumentNullException.ThrowIfNull(template);
+        if (!string.Equals(template.Key, identity.Purpose, StringComparison.Ordinal))
+            throw new ArgumentException("La TemplateKey debe ser la del propósito de la comunicación.", nameof(template));
         if (identity.Channel != CommunicationChannel.Email)
             throw new ArgumentException("CreateEmail requiere una identidad del canal Email.", nameof(identity));
         if (string.IsNullOrWhiteSpace(recipientEmail))
@@ -134,6 +155,9 @@ public sealed class CommunicationOutbox : SystemAggregateRoot, IOptionalCompanyS
             RecipientRole = identity.RecipientRole,
             RecipientName = Optional(recipientName, RecipientNameMaxLen, nameof(recipientName)),
             RecipientEmail = Required(recipientEmail.ToLowerInvariant(), RecipientEmailMaxLen, nameof(recipientEmail)),
+            TemplateKey = template.Key,
+            TemplateVersion = template.Version,
+            TemplateSource = template.Source,
             Subject = Required(subject, SubjectMaxLen, nameof(subject)),
             BodyHtml = Optional(bodyHtml, BodyMaxLen, nameof(bodyHtml)),
             BodyText = Optional(bodyText, BodyMaxLen, nameof(bodyText)),
@@ -149,6 +173,72 @@ public sealed class CommunicationOutbox : SystemAggregateRoot, IOptionalCompanyS
         };
         return message;
     }
+
+    /// <summary>
+    /// Evidencia durable de una comunicación que NO pudo renderizarse al encolar (template inexistente,
+    /// inválido o variables que no cumplen su contrato). Nace <c>Failed</c> con la categoría del fallo,
+    /// misma identidad (un reintento del hecho no la duplica), destinatario, origen y — si el propósito no
+    /// es sensible — las variables en <paramref name="templatePayloadJson"/> para re-renderizarla tras
+    /// corregir el template. Nunca lleva asunto ni cuerpo inventados y nunca se envía (la CHECK
+    /// <c>ck_communication_outbox_content</c> impide que una fila sin contenido quede reclamable).
+    /// </summary>
+    public static CommunicationOutbox CreateEmailTemplateFailure(
+        CommunicationIdentity identity,
+        string? recipientName,
+        string recipientEmail,
+        CommunicationFailureCategory category,
+        string errorSafeText,
+        string? templatePayloadJson,
+        CommunicationPriority priority,
+        int maxRetries,
+        Guid createdBy
+    )
+    {
+        ArgumentNullException.ThrowIfNull(identity);
+        if (identity.Channel != CommunicationChannel.Email)
+            throw new ArgumentException("CreateEmailTemplateFailure requiere una identidad del canal Email.", nameof(identity));
+        if (string.IsNullOrWhiteSpace(recipientEmail))
+            throw new ArgumentException("El correo destinatario es obligatorio.", nameof(recipientEmail));
+        if (category is not (CommunicationFailureCategory.Configuration or CommunicationFailureCategory.Permanent))
+            throw new ArgumentException("Un fallo de template es de configuración o permanente.", nameof(category));
+        if (identity.ResendSequence > 0)
+            throw new ArgumentException("Un reenvío manual se renderiza al reenviarse; no nace fallido.", nameof(identity));
+        if (templatePayloadJson is not null && CommunicationPurposes.Get(identity.Purpose).IsSensitive)
+            throw new ArgumentException("Las variables de un propósito sensible nunca se persisten en claro.", nameof(templatePayloadJson));
+
+        var scope = identity.Scope;
+        var now = DateTime.UtcNow;
+        return new CommunicationOutbox
+        {
+            Id = Guid.NewGuid(),
+            ScopeKind = scope.Kind,
+            TenantId = scope.TenantId,
+            CompanyId = scope.CompanyId,
+            BranchId = scope.BranchId,
+            Channel = identity.Channel,
+            Purpose = Required(identity.Purpose, PurposeMaxLen, nameof(identity)),
+            SourceModule = identity.Source.Module,
+            SourceType = identity.Source.Type,
+            SourceId = identity.Source.Id,
+            RecipientRole = identity.RecipientRole,
+            RecipientName = Optional(recipientName, RecipientNameMaxLen, nameof(recipientName)),
+            RecipientEmail = Required(recipientEmail.ToLowerInvariant(), RecipientEmailMaxLen, nameof(recipientEmail)),
+            TemplateKey = identity.Purpose,
+            TemplatePayloadJson = templatePayloadJson,
+            Status = CommunicationStatus.Failed,
+            FailureCategory = category,
+            LastError = Truncate(Required(errorSafeText, int.MaxValue, nameof(errorSafeText)), LastErrorMaxLen),
+            FailedAtUtc = now,
+            Priority = priority,
+            ScheduledAtUtc = now,
+            MaxRetries = Math.Clamp(maxRetries, 0, 20),
+            IdempotencyKey = identity.Key,
+            CreatedAt = now,
+            CreatedBy = createdBy,
+        };
+    }
+
+    private static string Truncate(string value, int maxLength) => value.Length <= maxLength ? value : value[..maxLength];
 
     public void AddAttachment(
         CommunicationAttachmentType attachmentType,

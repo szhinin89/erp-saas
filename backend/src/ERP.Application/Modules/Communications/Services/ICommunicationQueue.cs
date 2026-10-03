@@ -1,4 +1,5 @@
 using ERP.Application.Modules.Communications.DTOs;
+using ERP.Application.Modules.Communications.Templates;
 using ERP.Domain.Modules.Communications.Enums;
 using ERP.Domain.Modules.Communications.ValueObjects;
 
@@ -18,6 +19,11 @@ public interface ICommunicationQueue
 /// <param name="Purpose">Propósito registrado en <c>CommunicationPurposes</c> (define alcance y canales permitidos).</param>
 /// <param name="Source">Origen de negocio (módulo, tipo, id): parte de la identidad.</param>
 /// <param name="RecipientRole">Rol estable del destinatario: parte de la identidad (el email no).</param>
+/// <param name="Template">
+/// Variables tipadas del template del propósito (ZH-COMMUNICATIONS-TEMPLATES-01): el módulo origen
+/// aporta datos, nunca asunto/HTML/texto. La cola resuelve el template (default u override de la
+/// empresa) y lo renderiza AL ENCOLAR.
+/// </param>
 /// <param name="MaxRetries">Override explícito; si es null se copia del perfil resuelto para el alcance.</param>
 public sealed record CommunicationRequest(
     CommunicationScope Scope,
@@ -26,9 +32,7 @@ public sealed record CommunicationRequest(
     CommunicationRecipientRole RecipientRole,
     string? RecipientName,
     string RecipientEmail,
-    string Subject,
-    string? BodyHtml,
-    string? BodyText,
+    ICommunicationTemplateModel Template,
     IReadOnlyCollection<QueueCommunicationAttachmentDto>? Attachments = null,
     CommunicationChannel Channel = CommunicationChannel.Email,
     CommunicationPriority Priority = CommunicationPriority.Normal,

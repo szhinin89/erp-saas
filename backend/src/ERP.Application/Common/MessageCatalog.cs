@@ -170,6 +170,24 @@ public static class MessageCatalog
             "SRI system provider RUC (Annex 26) is required and its global configuration is incomplete; electronic document not generated.",
             ApiErrorCategory.Validation
         ),
+        [ApiResponseCodes.Communications.TemplateNotFound] = new(
+            ApiSeverity.Error,
+            "No existe una plantilla de correo para esta comunicación.",
+            "Communication template not found for the template key.",
+            ApiErrorCategory.Validation
+        ),
+        [ApiResponseCodes.Communications.TemplateInvalid] = new(
+            ApiSeverity.Error,
+            "La plantilla de correo configurada no es válida. Revise la plantilla personalizada de la empresa.",
+            "Communication template violates its contract; not used and not silently replaced.",
+            ApiErrorCategory.Validation
+        ),
+        [ApiResponseCodes.Communications.TemplateRenderFailed] = new(
+            ApiSeverity.Error,
+            "No se pudo generar el contenido del correo con los datos disponibles.",
+            "Communication template variables do not satisfy the template contract.",
+            ApiErrorCategory.Validation
+        ),
         [ApiResponseCodes.Retentions.AnnulmentPending] = new(
             ApiSeverity.Error,
             "La retención tiene una anulación en trámite ante el SRI: la cuenta por pagar no admite pagos, créditos ni ajustes.",

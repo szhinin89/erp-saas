@@ -26,6 +26,7 @@ public static class DependencyInjection
         services.AddScoped<IEffectivePermissionKeysProvider, EffectivePermissionKeysProvider>();
         services.AddScoped<ICompanyContextProvider, CompanyContextProvider>();
         services.AddScoped<ICommunicationQueue, CommunicationQueue>();
+        services.AddScoped<ERP.Application.Modules.Communications.Templates.ICommunicationTemplateResolver, ERP.Application.Modules.Communications.Templates.CommunicationTemplateResolver>();
         services.AddScoped<IRuntimePermissionAuthorizer, RuntimePermissionAuthorizer>();
         services.AddScoped<IExternalEntitlementService, NoOpExternalEntitlementService>();
         // RETENTIONS-ELIGIBILITY-01 — solo orquesta repos ya registrados (Company, BusinessPartnerRole,

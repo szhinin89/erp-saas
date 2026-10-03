@@ -3,6 +3,7 @@ using System.Net.Mail;
 using ERP.Application.Common;
 using ERP.Application.Modules.Communications.DTOs;
 using ERP.Application.Modules.Communications.Services;
+using ERP.Application.Modules.Communications.Templates;
 using ERP.Domain.Modules.Communications.Constants;
 using ERP.Domain.Modules.Communications.Entities;
 using ERP.Domain.Modules.Communications.Enums;
@@ -171,7 +172,7 @@ public sealed class CommunicationContractIntegrationTests
         var original = InvoiceRequest(CompanyScope(_db.TenantA, _db.CompanyA));
         var first = await EnqueueAsync(original);
 
-        var second = await EnqueueAsync(original with { RecipientEmail = "otro-email@cliente.com", Subject = "Otro asunto" });
+        var second = await EnqueueAsync(original with { RecipientEmail = "otro-email@cliente.com", Template = CommunicationTestTemplates.Invoice("Otro nombre") });
 
         second.WasAlreadyQueued.Should().BeTrue();
         second.Id.Should().Be(first.Id);
@@ -304,9 +305,7 @@ public sealed class CommunicationContractIntegrationTests
             CommunicationRecipientRole.Customer,
             "Cliente",
             "cliente@test.com",
-            "Factura autorizada",
-            "<p>x</p>",
-            null,
+            CommunicationTestTemplates.Invoice(),
             ScheduledAtUtc: DateTime.UtcNow.AddMinutes(-1)
         );
 
@@ -318,9 +317,7 @@ public sealed class CommunicationContractIntegrationTests
             CommunicationRecipientRole.User,
             null,
             "usuario@test.com",
-            "Recupera tu acceso",
-            null,
-            "Contenido estructural de prueba (sin token)",
+            new CommunicationTestTemplates.PasswordResetModel("Usuario"),
             ScheduledAtUtc: DateTime.UtcNow.AddMinutes(-1)
         );
 
@@ -329,7 +326,11 @@ public sealed class CommunicationContractIntegrationTests
             new CommunicationOutboxRepository(ctx),
             new CurrentCompanyService(new HttpContextAccessor()),
             Mock.Of<ICurrentUser>(u => u.UserId == Guid.Empty),
-            new ScopedResolver()
+            new ScopedResolver(),
+            new CommunicationTestTemplates.WithStructuralSystemTemplate(
+                new CommunicationTemplateResolver(new CommunicationTemplateRepository(ctx))
+            ),
+            NullLogger<CommunicationQueue>.Instance
         );
 
     private async Task<QueuedCommunicationDto> EnqueueAsync(CommunicationRequest request)

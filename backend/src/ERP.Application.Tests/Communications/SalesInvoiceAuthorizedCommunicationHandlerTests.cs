@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Communications.DTOs;
 using ERP.Application.Modules.Communications.EventHandlers;
 using ERP.Application.Modules.Communications.Services;
+using ERP.Application.Modules.Communications.Templates;
 using ERP.Application.Modules.Ride.DTOs;
 using ERP.Application.Modules.Ride.UseCases.GetOrGenerateRide;
 using ERP.Domain.Configuration.Interfaces;
@@ -33,6 +34,36 @@ public sealed class SalesInvoiceAuthorizedCommunicationHandlerTests
     private static readonly Guid BranchId = Guid.Parse("33333333-3333-3333-3333-333333333333");
     private static readonly Guid UserId = Guid.Parse("44444444-4444-4444-4444-444444444444");
 
+    public static TheoryData<string> GoldenCases() => new() { nameof(SalesInvoiceAuthorizedGoldenEmail.Plain), nameof(SalesInvoiceAuthorizedGoldenEmail.Special) };
+
+    // ZH-COMMUNICATIONS-TEMPLATES-01 — golden: el correo de factura no cambia al migrar a templates.
+    [Theory]
+    [MemberData(nameof(GoldenCases))]
+    public async Task correo_de_factura_reproduce_exactamente_la_salida_golden(string goldenCase)
+    {
+        var golden = goldenCase == nameof(SalesInvoiceAuthorizedGoldenEmail.Plain)
+            ? SalesInvoiceAuthorizedGoldenEmail.Plain
+            : SalesInvoiceAuthorizedGoldenEmail.Special;
+        var invoice = AuthorizedInvoice("cliente@example.com", golden.CustomerName);
+        var document = AuthorizedElectronicDocument(invoice.Id, authorizedXmlPath: "edocs/authorized.xml");
+        var fixture = new Fixture(document, invoice);
+
+        await fixture.Handler.Handle(EventFor(document), CancellationToken.None);
+
+        var (subject, html, text) = RenderedOf(fixture.CapturedRequest!);
+        subject.Should().Be(golden.Subject);
+        html.Should().Be(golden.Html);
+        text.Should().Be(golden.Text);
+    }
+
+    /// <summary>Render real: default SALES_INVOICE_AUTHORIZED v1 + el modelo que armó el handler.</summary>
+    private static (string Subject, string? Html, string? Text) RenderedOf(CommunicationRequest request)
+    {
+        var rendered = CommunicationTemplateRenderer.Render(CommunicationDefaultTemplates.SalesInvoiceAuthorizedV1, request.Template);
+        rendered.IsSuccess.Should().BeTrue(rendered.Error);
+        return (rendered.Value!.Subject, rendered.Value.Html, rendered.Value.Text);
+    }
+
     [Fact]
     public async Task factura_autorizada_con_email_encola_correo_con_xml_ride_e_idempotencia()
     {
@@ -63,12 +94,9 @@ public sealed class SalesInvoiceAuthorizedCommunicationHandlerTests
         request.Purpose.Should().Be(CommunicationPurposes.SalesInvoiceAuthorized);
         request.RecipientEmail.Should().Be("cliente@example.com");
         request.RecipientName.Should().Be(invoice.Customer.Name);
-        request.Subject.Should().Contain(invoice.InvoiceNumber);
-        request.BodyText.Should().Contain(invoice.InvoiceNumber);
-        request.BodyText.Should().Contain(document.AuthorizationNumber!.Value);
-        request.BodyText.Should().Contain(invoice.Customer.Name);
-        request.BodyText.Should().Contain("USD 100.00");
-        request.BodyText.Should().Contain("ZH Demo");
+        // ZH-COMMUNICATIONS-TEMPLATES-01 — el handler aporta solo datos tipados (sin HTML/texto).
+        request.Template.Should().Be(new SalesInvoiceAuthorizedTemplateModel(
+            invoice.Customer.Name, invoice.InvoiceNumber, document.AuthorizationNumber!.Value, "100.00", "ZH Demo"));
         // ZH-COMMUNICATIONS-CONTRACT-01 — alcance explícito del documento, origen y rol estables.
         request.Scope.Should().Be(CommunicationScope.Company(TenantId, CompanyId, BranchId));
         request.Source.Should().Be(new CommunicationSource("Sales", "SalesInvoice", invoice.Id));
@@ -169,14 +197,14 @@ public sealed class SalesInvoiceAuthorizedCommunicationHandlerTests
         invoice.Status.Should().Be(SalesInvoiceStatus.Authorized);
     }
 
-    private static SalesInvoice AuthorizedInvoice(string? email)
+    private static SalesInvoice AuthorizedInvoice(string? email, string customerName = "Cliente Demo")
     {
         var invoice = SalesInvoice.CreateDraft(
             TenantId,
             CompanyId,
             BranchId,
             Guid.NewGuid(),
-            CustomerSnapshot.Create("Cliente Demo", "0102030405001", "04", email),
+            CustomerSnapshot.Create(customerName, "0102030405001", "04", email),
             "001-001-000000001",
             new DateOnly(2026, 8, 21),
             UserId,

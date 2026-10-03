@@ -25,6 +25,12 @@ public sealed class CommunicationTemplate
     public string Language { get; private set; } = "es";
     public bool IsActive { get; private set; }
 
+    /// <summary>
+    /// ZH-COMMUNICATIONS-TEMPLATES-01 — revisión del override (1 al crearlo; +1 en cada cambio de
+    /// contenido). Es la "versión" registrada en la comunicación cuando se usó este override.
+    /// </summary>
+    public int Revision { get; private set; }
+
     private CommunicationTemplate() { }
 
     public static CommunicationTemplate Create(
@@ -62,6 +68,7 @@ public sealed class CommunicationTemplate
             TextTemplate = Optional(textTemplate, BodyTemplateMaxLen, nameof(textTemplate)),
             Language = Required(language, LanguageMaxLen, nameof(language)).ToLowerInvariant(),
             IsActive = true,
+            Revision = 1,
         };
         template.SetCreated(createdBy);
         return template;
@@ -82,6 +89,7 @@ public sealed class CommunicationTemplate
         SubjectTemplate = Required(subjectTemplate, SubjectTemplateMaxLen, nameof(subjectTemplate));
         HtmlTemplate = Optional(htmlTemplate, BodyTemplateMaxLen, nameof(htmlTemplate));
         TextTemplate = Optional(textTemplate, BodyTemplateMaxLen, nameof(textTemplate));
+        Revision++;
         SetUpdated(updatedBy);
     }
 
