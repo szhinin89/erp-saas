@@ -1,5 +1,5 @@
 {
-  "$schemaNote": "Reglas F-04 — Design System único (UI). Canónico: docs/architecture/frontend.md#design-system--estándares-únicos-obligatorios. Checks Node: tools/architecture/README.md. F-04-color (hex fuera de design-tokens.css) escanea frontend/src/**/*.css salvo cssHexExcludeFiles.",
+  "$schemaNote": "Reglas F-04 — Design System único (UI). Canónico: docs/architecture/frontend.md#design-system--estándares-únicos-obligatorios. Checks Node: tools/architecture/README.md. F-04-color (hex fuera de design-tokens.css) escanea frontend/src/**/*.css salvo cssHexExcludeFiles. F-04-primitive/-rgb/-motion (ZH Visual Discipline): literales CSS fuera de design-tokens.css; cssLiteralAllowances congela por conteo la deuda histórica documentada (ratchet: más → falla por deuda nueva; menos → falla hasta bajar el allowance).",
   "scanGlobs": [
     "frontend/src/modules/**/*.tsx",
     "frontend/src/pages/**/*.tsx",
@@ -87,5 +87,23 @@
   "iconInlineStyleMessage": "Ícono con style={{ fontSize: N }} — usar .zh-icon-sm/md/lg/xl según valor (14/16/18/32px).",
   "cssHexExcludeFiles": [
     "frontend/src/styles/design-tokens.css"
-  ]
+  ],
+  "cssLiteralAllowances": {
+    "$note": "Deuda histórica, no patrón a copiar. F-04-rgb: glass header + gradiente decorativo de auth (zh-ui.css). F-04-motion: duraciones literales previas a --motion-* en CSS de componentes/módulos; se eliminan al tocar ese archivo.",
+    "F-04-rgb": {
+      "frontend/src/styles/zh-ui.css": 11
+    },
+    "F-04-motion": {
+      "frontend/src/components/zh/ZHAppTenantHeader.css": 1,
+      "frontend/src/components/zh/header/launcher/launcher.css": 5,
+      "frontend/src/components/zh/progress/zh-batch-progress.css": 1,
+      "frontend/src/components/zh/zh-file-upload.css": 1,
+      "frontend/src/modules/configuracion/facturacionElectronica/sections/sri-config-page.css": 1,
+      "frontend/src/modules/items/catalog/wizard/catalog-wizard.css": 1,
+      "frontend/src/modules/masterData/pages/masterdata-pages.css": 1,
+      "frontend/src/modules/sales/styles/sales-invoice.css": 2,
+      "frontend/src/modules/sales/styles/sales-product-card.css": 3,
+      "frontend/src/styles/shared/items-catalog.css": 6
+    }
+  }
 }

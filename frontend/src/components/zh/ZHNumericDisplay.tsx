@@ -46,11 +46,16 @@ export function NumericDisplay({
     [isEmpty, value, decimals, effectiveLocale],
   );
 
+  // Modificadores de signo solo de presentación (ZH-DS-ERP-PATTERNS-01): se derivan del valor
+  // crudo, no del texto formateado; no alteran valor, formato ni decimales.
+  const signClass = isEmpty ? "" : value < 0 ? `${block}--negative` : value === 0 ? `${block}--zero` : "";
+
   const cls = [
     block,
     `${block}--${emphasis}`,
     `${block}--${align}`,
     isEmpty ? `${block}--empty` : "",
+    signClass,
     className,
   ]
     .filter(Boolean)

@@ -487,3 +487,28 @@ describe("ZHMoneyValue — API única (06)", () => {
     expect(screen.getByText("1.500")).toBeTruthy();
   });
 });
+
+describe("ZHMoneyValue — modificadores de signo (ZH-DS-ERP-PATTERNS-01)", () => {
+  afterEach(cleanup);
+  const root = (container: HTMLElement) => container.firstElementChild as HTMLElement;
+
+  it("negativo agrega --negative y conserva el signo en el texto", () => {
+    const { container } = render(<ZHMoneyValue precision="money" value={-5} />);
+    expect(root(container).classList.contains("zh-money-value--negative")).toBe(true);
+    expect(root(container).textContent).toBe("$-5.00");
+  });
+
+  it("cero agrega --zero (cero no es vacío)", () => {
+    const { container } = render(<ZHMoneyValue precision="money" value={0} />);
+    expect(root(container).classList.contains("zh-money-value--zero")).toBe(true);
+    expect(root(container).classList.contains("zh-money-value--empty")).toBe(false);
+  });
+
+  it("positivo y vacío no agregan modificador de signo", () => {
+    const { container } = render(<ZHMoneyValue precision="money" value={10} />);
+    expect(root(container).className).toBe("zh-money-value zh-money-value--default zh-money-value--end");
+    cleanup();
+    const empty = render(<ZHMoneyValue precision="money" value={null} />);
+    expect(root(empty.container).className).not.toMatch(/--(zero|negative)/);
+  });
+});

@@ -663,7 +663,7 @@ Fragmentación del Design System (grids, toggles, modales y tabs duplicados con 
 ```
 
 ### ENFORCEMENT
-- **BLOQUEANTE PR:** `npm run architecture:design-system` (`tools/architecture/check-design-system.mjs`) — incluido en `npm run architecture:check` (CI). Reglas `F-04-grid`, `F-04-toggle`, `F-04-icon`, `F-04-modal`, `F-04-tabs`, `F-04-table`, `F-04-activity`.
+- **BLOQUEANTE PR:** `npm run architecture:design-system` (`tools/architecture/check-design-system.mjs`) — incluido en `npm run architecture:check` (CI). Reglas `F-04-grid`, `F-04-toggle`, `F-04-icon`, `F-04-modal`, `F-04-tabs`, `F-04-table`, `F-04-activity`; en CSS: `F-04-color`, `F-04-token`, `F-04-primitive`, `F-04-rgb`, `F-04-motion` (ZH Visual Discipline — deuda histórica congelada por conteo en `config/design-system.json#cssLiteralAllowances`; ver [frontend.md § Enforcement (F-04)](./frontend.md#enforcement-f-04)).
 - Legacy permitido temporalmente vía `tools/architecture/architecture-grandfather.json#designSystemGrandfathered` (lista `{file, rules}`). Archivos nuevos o reglas no listadas para un archivo existente → falla CI. Refactors deben reducir esta lista, no ampliarla.
 - ESLint (`frontend/eslint.config.js`, `no-restricted-syntax`) bloquea `style={{...}}` en `src/modules/**/components/**`, `src/modules/**/pages/**`, `src/pages/**`, `src/templates/**` (excepción documentada: `src/modules/auth/**`).
 

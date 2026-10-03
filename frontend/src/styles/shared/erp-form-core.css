@@ -9,8 +9,9 @@
 /* ── Section Cards ──────────────────────────────────────────── */
 .pf-card {
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-xs); /* contrato card (= .card/.pg-section) */
   overflow: visible;
   margin-bottom: var(--space-5);
 }
@@ -19,16 +20,16 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--space-4) var(--space-5);
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-surface-container-low);
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  border-bottom: var(--border-width) solid var(--color-border);
+  /* Contrato de sección (zh-ui.css §9): header sin fondo tintado, = .card/.pg-section. */
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
 }
 .pf-card__title {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
   margin: 0;
 }
@@ -93,7 +94,7 @@
 .pf-collapsible__chevron {
   margin-left: auto;
   font-size: 20px;
-  transition: transform 0.2s ease;
+  transition: transform var(--motion-duration-normal) var(--motion-ease);
 }
 .pf-collapsible__body {
   padding: 0 var(--space-5) var(--space-4);
@@ -259,9 +260,9 @@
     box-shadow var(--transition);
 }
 .pdl-search__input:focus {
-  border-color: var(--color-primary);
+  border-color: var(--color-focus-border);
   outline: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 10%, transparent);
+  box-shadow: var(--focus-ring);
 }
 .pdl-type-filter-select {
   flex-shrink: 0;
@@ -279,7 +280,7 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
+  box-shadow: var(--shadow-md);
   max-height: 320px;
   overflow-y: auto;
   margin-top: 4px;

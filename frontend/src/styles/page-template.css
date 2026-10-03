@@ -133,9 +133,9 @@
 .pg-kpi {
   background: var(--color-surface);
   padding: var(--density-card-padding);
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-card);
+  border: var(--border-width) solid var(--color-border);
+  box-shadow: var(--shadow-xs);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -174,25 +174,26 @@
   background: var(--color-tertiary-fixed);
   color: var(--color-tertiary);
 }
+/* Tonos de estado del ícono KPI = escala soft/strong (ZH-DS-ERP-PATTERNS-01). */
 .pg-kpi-icon--success {
-  background: color-mix(in srgb, var(--color-success) 10%, transparent);
-  color: var(--color-success);
+  background: var(--color-success-soft);
+  color: var(--color-success-strong);
 }
 .pg-kpi-icon--warning {
-  background: color-mix(in srgb, var(--color-warning) 10%, transparent);
-  color: var(--color-warning);
+  background: var(--color-warning-soft);
+  color: var(--color-warning-strong);
 }
 .pg-kpi-icon--error {
-  background: var(--color-error-container);
-  color: var(--color-error);
+  background: var(--color-error-soft);
+  color: var(--color-error-strong);
 }
 .pg-kpi-icon--neutral {
-  background: var(--color-surface-container);
-  color: var(--color-text-secondary);
+  background: var(--color-neutral-soft);
+  color: var(--color-neutral-strong);
 }
 .pg-kpi-icon--info {
-  background: var(--color-primary-fixed);
-  color: var(--color-primary);
+  background: var(--color-info-soft);
+  color: var(--color-info-strong);
 }
 
 /* .pg-kpi-badge/--success/--warning/--error/--neutral ELIMINADOS (Bloque 11A)
@@ -213,10 +214,16 @@
   margin: 0;
 }
 
+/* KPI ERP (ZH-DS-ERP-PATTERNS-01): label (13px secondary) → valor primario
+   (20px semibold, cifras tabulares) + unidad/contexto (.pg-kpi-unit) → delta
+   (.pg-kpi-trend) → estado (<Badge>) → ícono opcional (.pg-kpi-icon--tone).
+   Denso: padding --density-card-padding, sin tipografía display. */
 .pg-kpi-value {
   font-size: var(--text-headline-md-size);
   font-weight: var(--text-headline-md-weight);
   letter-spacing: var(--text-headline-md-spacing);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: var(--font-features-numeric);
   color: var(--color-text-primary);
   margin: 0;
 }
@@ -228,10 +235,10 @@
    .edm-metric--success/--danger coloreaban el número directamente, algo que
    ReportKpiCard no soportaba hasta ahora. */
 .pg-kpi-value--success {
-  color: var(--color-success);
+  color: var(--color-success-strong);
 }
 .pg-kpi-value--danger {
-  color: var(--color-error);
+  color: var(--color-error-strong);
 }
 
 /* ZH-DESIGN-SYSTEM-PRECISION-02C — un valor numérico del DS (<ZHNumberValue>/<ZHMoneyValue>)
@@ -262,13 +269,14 @@
   margin-top: var(--space-1);
 }
 .pg-kpi-trend .material-symbols-outlined {
-  font-size: 16px;
+  font-size: var(--font-size-lg);
 }
+/* Delta en texto 12px: tono --*-strong (warning base no llegaba a AA). */
 .pg-kpi-trend--success {
-  color: var(--color-success);
+  color: var(--color-success-strong);
 }
 .pg-kpi-trend--warning {
-  color: var(--color-warning);
+  color: var(--color-warning-strong);
 }
 .pg-kpi-trend--neutral {
   color: var(--color-text-secondary);
@@ -298,17 +306,15 @@
   cursor: pointer;
   font: inherit;
   color: inherit;
-  transition:
-    box-shadow var(--transition),
-    border-color var(--transition),
-    background var(--transition);
+  transition: var(--transition-control);
 }
 .pg-kpi--interactive:hover {
-  background: var(--color-surface-container-low);
+  background: var(--color-surface-hover);
+  box-shadow: var(--shadow-sm);
 }
 .pg-kpi--interactive:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
 }
 
 /* Active/selected state (Bloque 12G-1) — combina con .pg-kpi--interactive
@@ -316,16 +322,16 @@
    filtro está aplicado actualmente. Mismo tratamiento visual que tenía
    .edm-kpi-card--active (borde + sombra primary), generalizado al SSOT. */
 .pg-kpi--active {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 1px var(--color-primary);
+  border-color: var(--color-border-selected);
+  box-shadow: 0 0 0 var(--border-width) var(--color-border-selected);
 }
 
 /* ── 4. SECTION CARD ─────────────────────────────────────── */
 .pg-section {
   background: var(--color-surface);
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-card);
+  border: var(--border-width) solid var(--color-border);
+  box-shadow: var(--shadow-xs);
   overflow: hidden;
 }
 
@@ -335,7 +341,7 @@
   justify-content: space-between;
   gap: var(--space-3);
   padding: var(--density-card-padding);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: var(--border-width) solid var(--color-border);
 }
 
 .pg-section-header-left {
@@ -355,7 +361,7 @@
   font-weight: var(--text-label-md-weight);
   color: var(--color-text-primary);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--text-overline-spacing);
   margin: 0;
 }
 
@@ -429,13 +435,14 @@
   display: flex;
   align-items: center;
   color: var(--color-text-secondary);
-  transition: background var(--transition);
+  transition: var(--transition-control);
 }
 .pg-pagination-btn:not(:last-child) {
   border-right: 1px solid var(--color-border);
 }
 .pg-pagination-btn:hover:not(:disabled) {
   background: var(--color-surface-container-low);
+  color: var(--color-text-primary);
 }
 .pg-pagination-btn:disabled {
   opacity: 0.4;
@@ -451,7 +458,7 @@
    en sí usan <ZHBtn> (ya oficial, sin CSS propio necesario) dentro de
    .pg-pagination-actions; el texto de resumen usa .pg-pagination-summary. */
 .pg-pagination-summary {
-  font-size: 13px;
+  font-size: var(--text-compact-size);
   color: var(--color-text-secondary);
   margin: 0;
 }

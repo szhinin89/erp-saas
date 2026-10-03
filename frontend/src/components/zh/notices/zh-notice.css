@@ -16,8 +16,8 @@
 }
 
 .zh-notice-badge-trigger:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
 }
 
 .zh-notice-compact {
@@ -37,7 +37,7 @@
   border: 1px solid var(--color-outline-variant);
   border-left: 3px solid var(--color-text-secondary);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md); /* contrato: popover → md */
 }
 
 .zh-notice-popover--info {

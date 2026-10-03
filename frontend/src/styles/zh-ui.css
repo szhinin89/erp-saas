@@ -96,10 +96,10 @@ a:hover {
    cada módulo. El color se deja fuera a propósito: cada consumidor define su propio
    color (neutro, énfasis, warning, etc.) según el contexto (SALES-DS-GLOBAL-VISUAL-16). */
 .zh-section-title {
-  font-size: 11px;
+  font-size: var(--text-overline-size);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--text-overline-spacing);
 }
 .subtle {
   color: var(--color-text-secondary);
@@ -119,24 +119,27 @@ a:hover {
   font-size: var(--text-label-md-size);
   font-weight: var(--text-label-md-weight);
   letter-spacing: 0.01em;
-  border-radius: var(--radius-md);
-  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  border: var(--border-width) solid transparent;
   cursor: pointer;
   white-space: nowrap;
   text-decoration: none;
   transition:
-    background var(--transition),
-    color var(--transition),
-    border-color var(--transition),
-    box-shadow var(--transition),
+    var(--transition-control),
     opacity var(--transition),
-    transform 0.08s ease;
+    transform var(--transition);
 }
 .zh-btn:active:not(:disabled) {
   transform: scale(0.97);
 }
+/* Jerarquía de acciones (ZH-DS-ERP-PATTERNS-01) — una sola acción --primary
+   por zona; --secondary para alternativas; --ghost (terciaria) para acciones
+   de baja prioridad; --destructive para anular/eliminar; icon-only =
+   <ZHIconButton>. Todas comparten: radio --radius-control, transición
+   --transition-control, foco --focus-outline (index.css) y este disabled. */
 .zh-btn:disabled {
-  opacity: 0.55;
+  opacity: var(--opacity-disabled);
+  box-shadow: none;
   cursor: not-allowed;
 }
 
@@ -144,17 +147,17 @@ a:hover {
 .zh-btn--md {
   height: var(--density-control-height-md);
   padding: 0 14px;
-  font-size: 13px;
+  font-size: var(--text-compact-size);
 }
 .zh-btn--sm {
   height: var(--density-control-height-sm);
   padding: 0 10px;
-  font-size: 12px;
+  font-size: var(--font-size-xs);
 }
 .zh-btn--xs {
   height: var(--density-control-height-xs);
-  padding: 0 8px;
-  font-size: 11px;
+  padding: 0 var(--space-2);
+  font-size: var(--font-size-2xs);
 }
 
 /* Variants */
@@ -162,6 +165,7 @@ a:hover {
   background: var(--color-primary);
   color: var(--color-on-primary);
   border-color: var(--color-primary);
+  box-shadow: var(--shadow-xs);
 }
 .zh-btn--primary:hover:not(:disabled) {
   background: color-mix(
@@ -172,12 +176,13 @@ a:hover {
 }
 
 .zh-btn--secondary {
-  background: var(--color-surface-container-low);
+  background: var(--color-surface);
   color: var(--color-primary);
-  border-color: var(--color-border);
+  border-color: var(--color-outline-variant);
+  box-shadow: var(--shadow-xs);
 }
 .zh-btn--secondary:hover:not(:disabled) {
-  background: var(--color-surface-container);
+  background: var(--color-surface-container-low);
 }
 
 .zh-btn--ghost {
@@ -192,11 +197,11 @@ a:hover {
 
 .zh-btn--destructive {
   background: transparent;
-  color: var(--color-error);
-  border-color: color-mix(in srgb, var(--color-error) 35%, transparent);
+  color: var(--color-error-strong);
+  border-color: var(--color-error-border);
 }
 .zh-btn--destructive:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-error) 8%, transparent);
+  background: var(--color-error-soft);
 }
 
 /* Success (Bloque 13G) — misma arquitectura que --primary (fondo sólido +
@@ -207,6 +212,7 @@ a:hover {
   background: var(--color-success);
   color: var(--color-on-primary);
   border-color: var(--color-success);
+  box-shadow: var(--shadow-xs);
 }
 .zh-btn--success:hover:not(:disabled) {
   background: color-mix(
@@ -223,7 +229,7 @@ a:hover {
 .zh-btn--cta {
   height: auto;
   padding: 10px 24px;
-  font-size: 13px;
+  font-size: var(--text-compact-size);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -255,17 +261,16 @@ select,
 textarea {
   font-family: var(--font-family);
   font-size: var(--text-body-md-size);
+  font-feature-settings: var(--font-features-numeric);
   color: var(--color-text-primary);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 0 12px;
+  background: var(--color-input-bg);
+  border: var(--border-width) solid var(--color-input-border);
+  border-radius: var(--radius-control);
+  padding: 0 var(--density-control-padding-x);
   height: var(--density-control-height);
   width: 100%;
   outline: none;
-  transition:
-    border-color var(--transition),
-    box-shadow var(--transition);
+  transition: var(--transition-control);
 }
 textarea {
   height: auto;
@@ -277,12 +282,11 @@ textarea {
 select {
   appearance: none;
   cursor: pointer;
-  background-color: var(--color-surface-container-low);
+  background-color: var(--color-input-bg);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;
   padding-right: 32px;
-  border-color: var(--color-outline-variant, var(--color-border));
 }
 
 .zh-select--compact {
@@ -307,24 +311,27 @@ textarea::placeholder {
    todo dato numérico se alinea a la derecha por defecto. Componente base, no excepción local. */
 .zh-numeric-input {
   text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 input:hover,
 select:hover,
 textarea:hover {
-  border-color: var(--color-outline);
+  background-color: var(--color-surface);
+  border-color: var(--color-input-border-hover);
 }
 input:focus,
 select:focus,
 textarea:focus {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-focus-ring);
+  background-color: var(--color-surface);
+  border-color: var(--color-focus-border);
+  box-shadow: var(--focus-ring);
 }
 input:disabled,
 select:disabled,
 textarea:disabled {
   background: var(--color-surface-container-low);
-  opacity: 0.6;
+  opacity: var(--opacity-disabled);
   cursor: not-allowed;
 }
 
@@ -385,11 +392,11 @@ input[type="radio"] {
   transform: rotate(45deg);
 }
 .zh-checkbox-label input[type="checkbox"]:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
 }
 .zh-checkbox-label input[type="checkbox"]:disabled {
-  opacity: 0.5;
+  opacity: var(--opacity-disabled);
   cursor: not-allowed;
 }
 .zh-checkbox-grid {
@@ -416,9 +423,9 @@ input[type="date"] {
    selector de clase para las 5, sin variante `.zh-select--compact`/
    `.zh-textarea--compact` propia (SSOT, ver Bloque 14A-1). */
 .zh-input--compact {
-  font-size: 13px;
+  font-size: var(--text-compact-size);
   height: auto;
-  padding: var(--space-2) var(--space-3);
+  padding: var(--density-control-padding-compact);
   border-width: 1.5px;
 }
 /* Reserva espacio para el chevron del <select> en densidad compacta — el resto
@@ -435,14 +442,20 @@ select.zh-input--compact {
 .zh-input-group {
   display: flex;
   align-items: center;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-input-border);
+  border-radius: var(--radius-control);
+  background: var(--color-input-bg);
   overflow: hidden;
+  transition: var(--transition-control);
+}
+.zh-input-group:hover {
+  background: var(--color-surface);
+  border-color: var(--color-input-border-hover);
 }
 .zh-input-group:focus-within {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-focus-ring);
+  background: var(--color-surface);
+  border-color: var(--color-focus-border);
+  box-shadow: var(--focus-ring);
 }
 .zh-input-group__prefix,
 .zh-input-group__suffix {
@@ -481,7 +494,7 @@ select.zh-input--compact {
   font-size: var(--text-label-md-size);
   font-weight: var(--text-label-md-weight);
   line-height: var(--text-label-md-height);
-  color: var(--color-text-primary);
+  color: var(--color-text-secondary);
   text-transform: none;
   letter-spacing: normal;
 }
@@ -519,6 +532,28 @@ select.zh-input--compact {
   font-weight: 400;
 }
 
+/* ── NÚMEROS ERP — contrato base (ZH-DS-ERP-PATTERNS-01) ─────────────────
+   Todo número operativo (monto, cantidad, porcentaje, conteo) comparte:
+   cifras tabulares, glifos Inter numéricos, sin wrapping y alineación a la
+   derecha en columnas. Solo presentación: el formato/decimales los decide
+   formatDecimalDisplay + PrecisionPolicy, nunca el CSS.
+     • Componente: <ZHMoneyValue> (monto) / <ZHNumberValue> (cantidad, %,
+       factor; unidad o "%" vía `suffix`).
+     • Texto numérico suelto sin componente: clase .zh-num.
+     • Celda de tabla: cellClassName "zh-table-cell--num" (§ tabla densa).
+   Jerarquía de montos (prop `emphasis`): default = línea · muted = monto
+   secundario (ICE/IRBPNR) · strong = subtotal · total = total del documento
+   · grand = gran total destacado. Signo: el negativo muestra "-" (contrato
+   $-5.00) sin color automático — no existe regla de producto de rojo/verde
+   por signo; el cero se atenúa solo en emphasis default/muted. */
+.zh-num,
+.zh-money-value,
+.zh-number-value {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: var(--font-features-numeric);
+  white-space: nowrap;
+}
+
 /* ZHMoneyValue / ZHNumberValue (ZH-DESIGN-SYSTEM-PRECISION-02A): misma base visual; ZHNumberValue
    es la variante sin símbolo, con __prefix/__suffix en el tono del símbolo.
    ZHMoneyValue — valor monetario de solo lectura, reemplaza el patrón manual
@@ -535,7 +570,7 @@ select.zh-input--compact {
   display: inline-flex;
   align-items: baseline;
   gap: var(--space-1);
-  color: var(--color-text-primary);
+  color: var(--color-text-body);
   white-space: nowrap;
 }
 
@@ -569,13 +604,15 @@ select.zh-input--compact {
 .zh-money-value--strong,
 .zh-number-value--strong {
   font-size: var(--text-body-md-size);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
 }
 
 .zh-money-value--total,
 .zh-number-value--total {
   font-size: var(--text-body-lg-size);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
 }
 
 /* PURCHASES-DS-GLOBAL-COMPONENT-04 — tier faltante para el total más
@@ -587,8 +624,9 @@ select.zh-input--compact {
    la propiedad al componente global en vez de dos reglas CSS por pantalla. */
 .zh-money-value--grand,
 .zh-number-value--grand {
-  font-size: 20px;
-  font-weight: 800;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
   letter-spacing: -0.5px;
 }
 
@@ -601,12 +639,22 @@ select.zh-input--compact {
 .zh-money-value__amount,
 .zh-number-value__amount {
   font-variant-numeric: tabular-nums;
+  font-feature-settings: var(--font-features-numeric);
 }
 
 .zh-money-value--empty,
 .zh-number-value--empty {
   color: var(--color-text-secondary);
 }
+
+/* Cero: dato presente pero sin peso — se atenúa en líneas, nunca en totales. */
+.zh-money-value--zero.zh-money-value--default,
+.zh-money-value--zero.zh-money-value--muted,
+.zh-number-value--zero.zh-number-value--default,
+.zh-number-value--zero.zh-number-value--muted {
+  color: var(--color-text-secondary);
+}
+/* --negative: gancho de presentación sin estilo propio (ver contrato arriba). */
 
 /* PURCHASES-DS-GLOBAL-COMPONENT-04 — <ZHDataValue>: dato de solo lectura no
    monetario (SKU, cantidad, stock, ingreso a inventario, etc.). Reemplaza los
@@ -643,10 +691,11 @@ select.zh-input--compact {
   font-size: var(--text-title-sm-size);
   font-weight: 700;
 }
+/* Mismo contrato que .zh-code-value--inline (ver CÓDIGOS E IDENTIFICADORES). */
 .zh-data-value--code {
   font-family: var(--font-family-mono);
   font-size: var(--text-help-size);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text-secondary);
 }
 .zh-data-value--tone-success {
@@ -667,6 +716,69 @@ select.zh-input--compact {
    clase local existente, nunca reemplazarla. */
 .zh-code-value {
   font-family: var(--font-family-mono);
+}
+/* ── CÓDIGOS E IDENTIFICADORES (ZH-DS-ERP-PATTERNS-01) ───────────────────
+   Un identificador se lee como código (mono), no como texto descriptivo ni
+   como número operativo. Tres variantes, todas sobre .zh-code-value:
+     --inline   → tablas densas: SKU, barcode, código de proveedor/interno,
+                  código contable. Discreto (12px, secondary). Equivale a
+                  <ZHDataValue variant="code">.
+     --document → número de documento/secuencia (001-001-000000123): el
+                  identificador principal de la fila; legible y sin wrapping.
+     --chip     → separar visualmente códigos cortos o técnicos: códigos
+                  SRI/tributarios (01, 07, 303, 725), claves de referencia.
+   Nunca para montos/cantidades. Opt-in; sin migración masiva. */
+.zh-code-value--inline,
+.zh-code-value--document,
+.zh-code-value--chip {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.zh-code-value--inline {
+  font-size: var(--text-help-size);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+.zh-code-value--document {
+  font-size: var(--text-compact-size);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+.zh-code-value--chip {
+  display: inline-block;
+  padding: 1px var(--space-1);
+  font-size: var(--text-label-sm-size);
+  font-weight: 600;
+  line-height: var(--text-badge-height);
+  color: var(--color-text-body);
+  background: var(--color-code-bg);
+  border: var(--border-width) solid var(--color-code-border);
+  border-radius: var(--radius-sm);
+}
+
+/* Código contable + descripción ("1.1.01 Caja"): el código se distingue
+   (inline code) sin dominar la fila; la descripción es el texto principal.
+   <span className="zh-account-ref"><span className="zh-account-ref__code">…
+   </span><span className="zh-account-ref__name">…</span></span>
+   La jerarquía/indentación contable la sigue resolviendo la pantalla. */
+.zh-account-ref {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.zh-account-ref__code {
+  font-family: var(--font-family-mono);
+  font-size: var(--text-help-size);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.zh-account-ref__name {
+  color: var(--color-text-body);
+  min-width: 0;
 }
 
 /* ERP-DS-MONO-REMAINING-01 -- alias historico de .zh-code-value. Vivia como
@@ -721,7 +833,7 @@ select.zh-input--compact {
 .zh-field--error .zh-field-control select,
 .zh-field--error .zh-field-control textarea {
   border-color: var(--color-error);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-error) 12%, transparent);
+  box-shadow: var(--focus-ring-error);
 }
 
 /* Success state */
@@ -741,7 +853,7 @@ select.zh-input--compact {
   gap: 4px;
 }
 .zh-field--compact .zh-field-label {
-  font-size: 11px;
+  font-size: var(--text-overline-size);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -751,16 +863,16 @@ select.zh-input--compact {
 .zh-field--compact .zh-field-control textarea {
   /* Replica exacta del tamaño de .pf-field (erp-form.css) — deliberadamente por debajo
      de --text-body-md-size para preservar la densidad de las grillas de líneas. */
-  font-size: 13px;
+  font-size: var(--text-compact-size);
   height: auto;
-  padding: var(--space-2) var(--space-3);
+  padding: var(--density-control-padding-compact);
   border-width: 1.5px;
 }
 .zh-field--compact .zh-field-control textarea {
   min-height: 52px;
 }
 .zh-field--compact .zh-field-hint {
-  font-size: 11px;
+  font-size: var(--text-overline-size);
 }
 
 /* Hints */
@@ -876,40 +988,43 @@ select.zh-input--compact {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 10px var(--space-3);
   border-radius: var(--radius-md);
-  border: 1px solid transparent;
+  border: var(--border-width) solid transparent;
   margin-bottom: var(--space-4);
 }
+/* Escala de estados soft/border/strong (ZH-DS-SYSTEMIC-SCALES-01). Antes el
+   texto usaba el color base sobre un tinte del 8%: warning quedaba ≈ 3.4:1
+   (bajo AA); con --*-strong todas las variantes superan 4.5:1. */
 .zh-form-alert--success {
-  background: color-mix(in srgb, var(--color-success) 8%, transparent);
-  border-color: color-mix(in srgb, var(--color-success) 30%, transparent);
-  color: var(--color-success);
+  background: var(--color-success-soft);
+  border-color: var(--color-success-border);
+  color: var(--color-success-strong);
 }
 .zh-form-alert--error {
-  background: color-mix(in srgb, var(--color-error) 8%, transparent);
-  border-color: color-mix(in srgb, var(--color-error) 28%, transparent);
-  color: var(--color-error);
+  background: var(--color-error-soft);
+  border-color: var(--color-error-border);
+  color: var(--color-error-strong);
 }
 .zh-form-alert--warning {
-  background: color-mix(in srgb, var(--color-warning) 8%, transparent);
-  border-color: color-mix(in srgb, var(--color-warning) 28%, transparent);
-  color: var(--color-warning);
+  background: var(--color-warning-soft);
+  border-color: var(--color-warning-border);
+  color: var(--color-warning-strong);
 }
 .zh-form-alert--info {
-  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
-  border-color: color-mix(in srgb, var(--color-primary) 25%, transparent);
-  color: var(--color-primary);
+  background: var(--color-info-soft);
+  border-color: var(--color-info-border);
+  color: var(--color-info-strong);
 }
 .zh-form-alert--attention {
-  background: rgba(194, 84, 11, 0.08);
-  border-color: rgba(194, 84, 11, 0.28);
-  color: var(--color-attention);
+  background: var(--color-attention-soft);
+  border-color: var(--color-attention-border);
+  color: var(--color-attention-strong);
 }
 .zh-form-alert--neutral {
-  background: var(--color-surface-container);
-  border-color: var(--color-border);
-  color: var(--color-text-secondary);
+  background: var(--color-neutral-soft);
+  border-color: var(--color-neutral-border);
+  color: var(--color-neutral-strong);
 }
 .zh-form-alert-icon {
   flex-shrink: 0;
@@ -986,7 +1101,8 @@ select.zh-input--compact {
   color: var(--color-on-primary);
 }
 .zh-form-header-close:focus-visible {
-  outline: 2px solid var(--color-on-primary);
+  /* Sobre fondo primary: mismo grosor del contrato, color invertido. */
+  outline: var(--focus-outline-width) solid var(--color-on-primary);
   outline-offset: 1px;
 }
 .zh-form-logo {
@@ -1194,7 +1310,7 @@ select.zh-input--compact {
   border-color: var(--color-primary);
 }
 .zh-toggle-switch.is-pressed {
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);
+  box-shadow: var(--focus-ring);
 }
 .zh-toggle-switch[aria-disabled="true"] {
   opacity: 0.45;
@@ -1220,15 +1336,23 @@ select.zh-input--compact {
 /* ── 9. CARDS ────────────────────────────────────────────── */
 .card {
   background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-card);
+  border: var(--border-width) solid var(--color-border);
+  box-shadow: var(--shadow-xs);
   overflow: hidden;
-  transition: box-shadow var(--transition);
+  transition: var(--transition-control);
 }
+/* ── SECCIÓN DE FORMULARIO / CARD — contrato visual compartido ────────────
+   .card (ZHCard), .pg-section y .pf-card (legacy) se ven igual: superficie
+   blanca, --radius-card, borde --color-border, --shadow-xs; header con
+   divisor inferior y título 14px semibold primary (sin fondo tintado);
+   descripción opcional .zh-section-description; acciones en .zh-form-actions. */
 .card-header {
   padding: var(--density-card-padding);
-  border-bottom: 1px solid var(--color-border);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  border-bottom: var(--border-width) solid var(--color-border);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1238,18 +1362,25 @@ select.zh-input--compact {
 .card-body {
   padding: var(--density-card-padding);
 }
+.zh-section-description {
+  margin: 2px 0 0;
+  font-size: var(--text-help-size);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--text-help-height);
+  color: var(--color-text-secondary);
+}
 
 /* Size variant — larger radius (dashboard, overview panels) */
 .card--xl {
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-2xl);
 }
 
 /* Table Card (sin padding lateral en tabla) */
 .table-card {
   background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-card);
+  border: var(--border-width) solid var(--color-border);
+  box-shadow: var(--shadow-xs);
   overflow-x: auto;
   width: 100%;
 }
@@ -1296,7 +1427,7 @@ select.zh-input--compact {
    densa ni a componentes que ya tengan su propia tarjeta. Sin hover/focus:
    no es una fila clickeable/interactiva por sí sola. */
 .zh-detail-line {
-  border: 1px solid var(--color-border);
+  border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
   box-shadow: var(--shadow-xs);
@@ -1307,42 +1438,71 @@ select.zh-input--compact {
 }
 
 /* ── 10. TABLAS ──────────────────────────────────────────── */
+/* TABLA ERP DENSA — contrato (ZH-DS-ERP-PATTERNS-01). Padding/altura:
+   --density-table-cell-padding-* (sin cambios).
+     header    → overline 11px, secondary, fondo --color-table-header-bg
+     body      → 13px, --color-text-body, cifras tabulares
+     numérica  → cellClassName "zh-table-cell--num" (+ align "right")
+     código    → .zh-code-value--inline / --document dentro de la celda
+     estado    → <Badge> (pill nowrap)
+     acciones  → <ZHIconButton>/ZHBtn --ghost; columna "zh-table-cell--actions"
+     totales   → <tfoot> (semibold, primary, divisor superior)
+     hover     → --color-surface-hover · seleccionada → .zh-datatable-row--selected
+     loading/empty/error → LoadingState / EmptyState / ErrorState (§16) */
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--text-body-md-size);
+  font-size: var(--text-compact-size);
+  font-feature-settings: var(--font-features-numeric);
 }
 .table th {
   text-align: left;
   padding: var(--density-table-cell-padding-y) var(--density-table-cell-padding-x);
-  font-size: var(--text-label-sm-size);
-  font-weight: var(--text-label-sm-weight);
-  letter-spacing: var(--text-label-sm-spacing);
+  font-size: var(--text-overline-size);
+  font-weight: var(--text-overline-weight);
+  letter-spacing: var(--text-overline-spacing);
   text-transform: uppercase;
-  color: var(--color-on-surface-variant);
-  background: var(--color-surface-primary-tint);
-  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  background: var(--color-table-header-bg);
+  border-bottom: var(--border-width) solid var(--color-border);
 }
 .table td {
   padding: var(--density-table-cell-padding-y) var(--density-table-cell-padding-x);
-  border-bottom: 1px solid var(--color-border);
-  color: var(--color-text-primary);
+  border-bottom: var(--border-width) solid var(--color-border-light);
+  color: var(--color-text-body);
   vertical-align: middle;
-  transition: background var(--transition);
+  transition: background-color var(--transition);
 }
 .table tr:last-child td {
   border-bottom: none;
 }
 .table tbody tr:hover td {
-  background: var(--color-surface-container-low);
+  background: var(--color-surface-hover);
+}
+/* Alineación por columna también en el header: `.table th { text-align: left }`
+   (0,1,1) le ganaba a las utilidades (0,1,0) y el título de una columna
+   numérica quedaba a la izquierda de sus cifras (contrato: header + celda). */
+.table :is(th, td):is(.zh-text-align-right, .zh-table-cell--num, .zh-table-cell--actions) {
+  text-align: right;
+}
+.table :is(th, td).zh-text-align-center {
+  text-align: center;
+}
+.table tfoot td,
+.table tfoot th {
+  padding: var(--density-table-cell-padding-y) var(--density-table-cell-padding-x);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  background: var(--color-table-header-bg);
+  border-top: var(--border-width) solid var(--color-border);
 }
 
 /* Compact variant */
 .table--compact th {
-  padding: 8px var(--space-3);
+  padding: var(--density-table-cell-padding-y) var(--density-table-cell-padding-x);
 }
 .table--compact td {
-  padding: 8px var(--space-3);
+  padding: var(--density-table-cell-padding-y) var(--density-table-cell-padding-x);
 }
 
 /* Neutral variant (Bloque 9B) — reproduce la identidad visual histórica de
@@ -1353,11 +1513,11 @@ select.zh-input--compact {
    .table--compact (que solo toca padding). No usar sola: siempre junto a
    .table, ej. className="table table--compact table--neutral". */
 .table--neutral {
-  font-size: 13px;
+  font-size: var(--text-compact-size);
 }
 .table--neutral th {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--text-overline-size);
+  font-weight: var(--text-overline-weight);
   letter-spacing: 0.04em;
   color: var(--color-text-secondary);
   background: var(--color-surface-container-low);
@@ -1393,11 +1553,11 @@ select.zh-input--compact {
    className="table table--compact table--neutral table--matrix". */
 .table--matrix th,
 .table--matrix td {
-  border: 1px solid var(--color-border);
+  border: var(--border-width) solid var(--color-border);
   text-align: center;
 }
 .table--matrix tr:last-child td {
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: var(--border-width) solid var(--color-border);
 }
 
 /* Sticky-column pattern (Bloque 12D, completado en 12F-3B) — capacidad
@@ -1431,18 +1591,23 @@ select.zh-input--compact {
   text-align: left;
 }
 .table--sticky-column th.table__sticky-cell {
-  background: var(--color-surface-primary-tint);
+  background: var(--color-table-header-bg);
 }
 .table--neutral.table--sticky-column th.table__sticky-cell {
   background: var(--color-surface-container-low);
 }
 .table tbody tr:hover .table__sticky-cell {
-  background: var(--color-surface-container-low);
+  /* Opaco (la celda fija tapa el contenido desplazado): mismo tono que --color-surface-hover. */
+  background: color-mix(in srgb, var(--color-surface-container-low) 70%, var(--color-surface));
 }
 
 /* .zh-tr-clickable ELIMINADO (Bloque 12B) — sin consumidores. */
 
 /* ── 11. BADGES ──────────────────────────────────────────── */
+/* ESTADO DOCUMENTAL — una sola disciplina (fondo --*-soft, borde --*-border,
+   texto --*-strong, pill). Mapeo canónico estado → familia en
+   docs/architecture/frontend.md § Patrones visuales ERP. <Badge> para estado
+   de documento; .zh-status (con punto) para estado de entidad/maestro. */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -1452,6 +1617,8 @@ select.zh-input--compact {
   font-weight: var(--text-badge-weight);
   line-height: var(--text-badge-height);
   white-space: nowrap;
+  /* Contorno interno con el --*-border del estado (inset: no altera el tamaño de la pill). */
+  box-shadow: inset 0 0 0 var(--border-width) var(--badge-border, transparent);
 }
 
 /* .badge--green/--red/--gray/--blue/--orange ELIMINADOS (Bloque 12B) — sin
@@ -1459,28 +1626,34 @@ select.zh-input--compact {
    produce estos nombres literalmente; solo aparecían en un comentario de
    ZHForm.tsx, ya corregido). */
 
-/* Status badges (solid) */
+/* Status badges (soft pill — ZH-DS-VISUAL-REFINEMENT-01). Antes sólidos; el
+   warning sólido tenía contraste 3.7:1 (insuficiente), ahora todas ≥ 6:1. */
 .badge--success {
-  background: var(--color-success);
-  color: var(--color-on-primary);
+  --badge-border: var(--color-success-border);
+  background: var(--color-success-soft);
+  color: var(--color-success-strong);
 }
 /* .badge--danger ELIMINADO (Bloque 12B) — duplicado exacto de .badge--error,
    nunca producido por variantClassMap (no existe variante "danger"). */
 .badge--error {
-  background: var(--color-error);
-  color: var(--color-on-primary);
+  --badge-border: var(--color-error-border);
+  background: var(--color-error-soft);
+  color: var(--color-error-strong);
 }
 .badge--warning {
-  background: var(--color-warning);
-  color: var(--color-on-primary);
+  --badge-border: var(--color-warning-border);
+  background: var(--color-warning-soft);
+  color: var(--color-warning-strong);
 }
 .badge--info {
-  background: var(--color-primary);
-  color: var(--color-on-primary);
+  --badge-border: var(--color-info-border);
+  background: var(--color-info-soft);
+  color: var(--color-info-strong);
 }
 .badge--neutral {
-  background: var(--color-surface-container);
-  color: var(--color-text-secondary);
+  --badge-border: var(--color-neutral-border);
+  background: var(--color-neutral-soft);
+  color: var(--color-neutral-strong);
 }
 
 /* Shape / text modifiers */
@@ -1528,8 +1701,8 @@ select.zh-input--compact {
 .page-shell a:focus-visible,
 .table-card button:focus-visible,
 .table-card a:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
   border-radius: var(--radius-sm);
 }
 
@@ -1599,22 +1772,29 @@ select.zh-input--compact {
 }
 
 /* ── 16. ESTADOS ─────────────────────────────────────────── */
+/* LOADING / EMPTY / NO RESULTS / ERROR / DISABLED — contrato único:
+     loading     → <LoadingState> (.loading-state)
+     empty       → <EmptyState message> (.empty-state) — sin registros aún
+     no results  → <EmptyState message> con texto de filtro ("Sin resultados.")
+     error       → <ErrorState> (.error-state, escala error soft/border/strong)
+     en tabla    → .zh-table-empty (fila dentro de <table>) / .zh-inline-empty
+     disabled    → opacity --opacity-disabled + cursor not-allowed */
 .empty-state,
 .loading-state {
   text-align: center;
-  padding: 48px var(--space-6);
+  padding: var(--space-12) var(--space-6);
   color: var(--color-text-secondary);
-  font-size: 14px;
+  font-size: var(--font-size-base);
   border-radius: var(--radius-lg);
-  border: 1px dashed var(--color-border);
+  border: var(--border-width) dashed var(--color-border);
 }
 .error-state {
   padding: 14px var(--space-5);
-  background: color-mix(in srgb, var(--color-error) 7%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-error) 25%, transparent);
-  color: var(--color-error);
+  background: var(--color-error-soft);
+  border: var(--border-width) solid var(--color-error-border);
+  color: var(--color-error-strong);
   border-radius: var(--radius-md);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 /* ── 17. MODALES ─────────────────────────────────────────── */
@@ -1639,26 +1819,26 @@ select.zh-input--compact {
 .zh-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(25, 28, 30, 0.45);
+  background: var(--color-overlay-scrim);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
   padding: var(--space-6);
   backdrop-filter: blur(2px);
-  animation: zh-overlay-in 0.15s ease both;
+  animation: zh-overlay-in var(--motion-duration-fast) var(--motion-ease) both;
 }
 .zh-modal {
   background: var(--color-surface);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-lg);
+  border-radius: var(--radius-modal);
+  box-shadow: var(--shadow-overlay);
   max-height: 90vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   width: 100%;
   max-width: 520px;
-  animation: zh-modal-in 0.18s cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: zh-modal-in var(--motion-duration-normal) var(--motion-ease-emphasized) both;
 }
 /* ── Size variants ── */
 .zh-modal--sm {
@@ -1692,7 +1872,7 @@ select.zh-input--compact {
   justify-content: flex-end;
   gap: var(--space-3);
   padding: var(--density-card-padding) var(--space-5);
-  border-top: 1px solid var(--color-border);
+  border-top: var(--border-width) solid var(--color-border);
   background: var(--color-surface-container-low);
   flex-shrink: 0;
 }
@@ -1721,13 +1901,13 @@ select.zh-input--compact {
 }
 .zh-drawer {
   background: var(--color-surface);
-  box-shadow: var(--shadow-lg);
-  border-left: 1px solid var(--color-border);
+  box-shadow: var(--shadow-overlay);
+  border-left: var(--border-width) solid var(--color-border);
   height: 100%;
   display: flex;
   flex-direction: column;
   width: 100%;
-  animation: zh-drawer-in 0.2s cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: zh-drawer-in var(--motion-duration-normal) var(--motion-ease-emphasized) both;
 }
 .zh-drawer--sm {
   max-width: 380px;
@@ -1782,16 +1962,24 @@ select.zh-input--compact {
   cursor: pointer;
 }
 .zh-datatable-row--clickable:hover {
-  background: var(--color-surface-container-low);
+  background: var(--color-surface-hover);
+}
+/* Fila seleccionada (vía `rowClassName`): tinte primary + barra de selección. */
+.zh-datatable-row--selected td {
+  background: var(--color-surface-selected);
+}
+.zh-datatable-row--selected td:first-child {
+  box-shadow: inset var(--focus-outline-width) 0 0 var(--color-border-selected);
 }
 .zh-datatable-total {
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: var(--text-compact-size);
 }
 /* ZH-DATATABLE-ROW-NUMBER-01 — columna "N°" angosta, nunca más ancha que su contenido. */
 .zh-datatable-row-number-col {
   width: 1%;
   white-space: nowrap;
+  color: var(--color-text-secondary);
 }
 
 .zh-filterbar {
@@ -1801,8 +1989,8 @@ select.zh-input--compact {
   gap: var(--space-3);
   padding: var(--space-4);
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
   margin-bottom: var(--space-4);
 }
 /* Variante sin chrome (ZHFilterBar `plain`): los filtros ya viven dentro de una card/listado,
@@ -2190,6 +2378,8 @@ select.zh-input--compact {
   font-weight: var(--text-label-sm-weight);
   letter-spacing: var(--text-label-sm-spacing);
   white-space: nowrap;
+  /* Mismo contorno de estado que .badge. */
+  box-shadow: inset 0 0 0 var(--border-width) var(--status-border, transparent);
 }
 .zh-status::before {
   content: "";
@@ -2199,29 +2389,33 @@ select.zh-input--compact {
   flex-shrink: 0;
 }
 .zh-status--active {
-  background: color-mix(in srgb, var(--color-success) 10%, transparent);
-  color: var(--color-success);
+  --status-border: var(--color-success-border);
+  background: var(--color-success-soft);
+  color: var(--color-success-strong);
 }
 .zh-status--active::before {
   background: var(--color-success);
 }
 .zh-status--suspended {
-  background: color-mix(in srgb, var(--color-warning) 10%, transparent);
-  color: var(--color-warning);
+  --status-border: var(--color-warning-border);
+  background: var(--color-warning-soft);
+  color: var(--color-warning-strong);
 }
 .zh-status--suspended::before {
   background: var(--color-warning);
 }
 .zh-status--inactive {
-  background: var(--color-surface-container);
-  color: var(--color-text-secondary);
+  --status-border: var(--color-neutral-border);
+  background: var(--color-neutral-soft);
+  color: var(--color-neutral-strong);
 }
 .zh-status--inactive::before {
   background: var(--color-outline);
 }
 .zh-status--pending {
-  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
-  color: var(--color-primary);
+  --status-border: var(--color-info-border);
+  background: var(--color-info-soft);
+  color: var(--color-info-strong);
 }
 .zh-status--pending::before {
   background: var(--color-primary);
@@ -2230,8 +2424,9 @@ select.zh-input--compact {
    críticos/error (p.ej. stock crítico) — antes cada módulo reimplementaba el
    punto de color a mano (`.pdl-stock-label--danger::before { content: "● " }`). */
 .zh-status--danger {
-  background: color-mix(in srgb, var(--color-error) 10%, transparent);
-  color: var(--color-error);
+  --status-border: var(--color-error-border);
+  background: var(--color-error-soft);
+  color: var(--color-error-strong);
 }
 .zh-status--danger::before {
   background: var(--color-error);
@@ -2423,14 +2618,14 @@ select.zh-input--compact {
     box-shadow var(--transition);
 }
 .zh-auth-input::placeholder {
-  color: rgba(115, 119, 127, 0.5);
+  color: var(--color-outline);
 }
 .zh-auth-input:hover {
   border-color: var(--color-outline);
 }
 .zh-auth-input:focus {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-focus-ring);
+  border-color: var(--color-focus-border);
+  box-shadow: var(--focus-ring);
 }
 .zh-auth-input:disabled {
   opacity: 0.6;
@@ -2439,7 +2634,7 @@ select.zh-input--compact {
 
 .zh-auth-field--error .zh-auth-input {
   border-color: var(--color-error);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-error) 12%, transparent);
+  box-shadow: var(--focus-ring-error);
 }
 
 .zh-auth-field-error {
@@ -2469,7 +2664,7 @@ select.zh-input--compact {
   cursor: pointer;
   transition:
     background var(--transition),
-    transform 0.08s ease;
+    transform var(--transition);
 }
 .zh-auth-submit:hover:not(:disabled) {
   background: var(--color-primary);
@@ -2694,7 +2889,7 @@ select.zh-input--compact {
   box-shadow: var(--shadow-md);
   min-width: 260px;
   max-width: 380px;
-  animation: zh-toast-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: zh-toast-in var(--motion-duration-normal) var(--motion-ease-emphasized) both;
 }
 .zh-toast--success {
   background: color-mix(in srgb, var(--color-success) 8%, transparent);
@@ -2913,7 +3108,7 @@ select.zh-input--compact {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-text-primary) 12%, transparent);
+  box-shadow: var(--shadow-md);
   max-height: 240px;
   overflow-y: auto;
   margin-top: var(--space-1);
@@ -3027,10 +3222,10 @@ select.zh-input--compact {
   background: var(--color-surface-container-low);
 }
 .zh-picker-result-item--selected {
-  background: var(--color-surface-container-low);
+  background: var(--color-surface-selected);
 }
 .zh-picker-result-item:disabled {
-  opacity: 0.55;
+  opacity: var(--opacity-disabled);
   cursor: not-allowed;
 }
 .zh-picker-result-item__icon {
@@ -3113,7 +3308,7 @@ select.zh-input--compact {
     color var(--transition);
 }
 .zh-toggle-tile:disabled {
-  opacity: 0.55;
+  opacity: var(--opacity-disabled);
   cursor: not-allowed;
 }
 .zh-toggle-tile--active {
@@ -3203,12 +3398,22 @@ select.zh-input--compact {
   text-align: right;
 }
 
-/* Celda numérica: alineación derecha + mono + tamaño (Bloque 7B, ex .pf-td--num) */
+/* Celda numérica (Bloque 7B, ex .pf-td--num): alineación derecha + contrato de
+   número ERP. ZH-DS-ERP-PATTERNS-01: antes monoespaciada 12px — la mono queda
+   reservada a códigos; los números usan Inter con cifras tabulares (mismo
+   ancho por dígito, columnas alineadas). */
 .zh-table-cell--num {
   text-align: right;
-  font-family: var(--font-family-mono);
-  font-size: 12px;
-  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: var(--font-features-numeric);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+/* Columna de acciones: angosta, alineada a la derecha, sin wrapping. */
+.zh-table-cell--actions {
+  width: 1%;
+  text-align: right;
+  white-space: nowrap;
 }
 
 /* Fila de estado vacío dentro de <table> (Bloque 7B, ex .pf-table-empty) */
@@ -3216,7 +3421,7 @@ select.zh-input--compact {
   padding: var(--space-8) var(--space-5);
   text-align: center;
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: var(--text-compact-size);
 }
 
 
@@ -3239,7 +3444,7 @@ select.zh-input--compact {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-xs);
   overflow: hidden;
 }
 
@@ -3401,7 +3606,7 @@ select.zh-input--compact {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
   display: grid;
   gap: var(--space-1);
   text-align: left;
@@ -3424,19 +3629,19 @@ select.zh-input--compact {
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--color-text-primary);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
 }
 
 .zh-line-action-item:hover:not(:disabled),
 .zh-line-action-item:focus-visible {
-  background: var(--color-surface-container-low);
+  background: var(--color-surface-hover);
 }
 
 .zh-line-action-item:disabled {
   cursor: not-allowed;
-  opacity: 0.55;
+  opacity: var(--opacity-disabled);
 }
 
 .zh-line-action-item__icon {

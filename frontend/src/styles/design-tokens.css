@@ -1,55 +1,55 @@
 /* ============================================================
-   ZH Technologies — Design Tokens (nueva paleta)
-   Fuente: ZH Material Design System
+   ZH Technologies — Design Tokens
+   Fuente: ZH Material Design System + ZH-DS-SYSTEMIC-SCALES-01
+
+   CAPAS (ver docs/architecture/frontend.md § Design System)
+     1. Primitivas   — escalas cerradas (neutral, tamaños, pesos, espacio,
+                       radio, sombra, movimiento). Solo se consumen aquí, para
+                       construir tokens semánticos, salvo que no exista una
+                       intención semántica (p. ej. tamaño de texto genérico).
+     2. Semánticas   — intención: superficie, texto, borde, estado, foco,
+                       densidad. Es lo que consumen componentes y módulos.
+     3. Componentes  — zh-ui.css / page-template.css consumen (2).
+     4. Módulos      — solo layout/dominio; nunca deciden color, tamaño,
+                       radio, sombra ni transición propios.
+   Los nombres históricos (--color-surface-container-*, --radius-lg,
+   --shadow-lg, --text-xs…) se mantienen como alias para no romper consumidores.
    ============================================================ */
 :root {
-  /* ── Brand ──────────────────────────────────────────────── */
-  --color-primary: #3a5f84;
-  --color-primary-dim: #a5caf4;
-  --color-primary-container: #53779e;
-  --color-brand-dark: #003366;
-  --color-brand-accent: #4f7ba6;
-  --color-focus-cyan: #00e5ff;
-  --color-on-primary: #ffffff;
-  --color-secondary: #3c6188;
-  --color-tertiary: #555d64;
+  /* ══ 1. PRIMITIVAS ═════════════════════════════════════════ */
 
-  /* ── Semantic ────────────────────────────────────────────── */
-  --color-error: #c0392b;
-  --color-success: #1a7a4a;
-  --color-warning: #ba7517;
-  /* Naranja distinto del ámbar de warning — estados intermedios (ni éxito ni aviso clásico). */
-  --color-attention: #c2540b;
+  /* ── Neutral (slate) — única escala de grises del sistema ── */
+  --color-neutral-50: #f8fafc;
+  --color-neutral-100: #f1f5f9;
+  --color-neutral-200: #e2e8f0;
+  --color-neutral-300: #cbd5e1;
+  --color-neutral-400: #94a3b8;
+  --color-neutral-500: #64748b;
+  --color-neutral-600: #475569;
+  --color-neutral-700: #334155;
+  --color-neutral-800: #1e293b;
+  --color-neutral-900: #0f172a;
+  --color-white: #ffffff;
 
-  /* ── Surface / Background ────────────────────────────────── */
-  --color-background: #f8f9fb;
-  --color-surface: #ffffff;
-  --color-surface-bright: #f8f9fb;
-  --color-surface-dim: #d9dadc;
-  --color-surface-container: #edeef0;
-  --color-surface-container-low: #f2f4f6;
-  --color-surface-container-high: #e7e8ea;
+  /* ── Font size — escala cerrada ──────────────────────────────
+     11 overline/th · 12 ayuda/badge/metadata · 13 compacto/controles/tablas
+     · 14 body · 16 título de sección · 20 título de página.
+     Fuera de escala (reservados, ya existentes): 15 (total monetario),
+     18 (h2 de panel), 28 (pantallas especiales: login/onboarding). */
+  --font-size-2xs: 11px;
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-base: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 20px;
 
-  /* ── Text ────────────────────────────────────────────────── */
-  --color-text-primary: #1a1d23;
-  --color-text-secondary: #6b7280;
-  --color-on-surface: #191c1e;
-  --color-on-surface-variant: #42474e;
-  --color-outline: #73777f;
-  --color-outline-variant: #c2c7cf;
+  /* ── Font weight — únicos pesos oficiales ── */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
 
-  /* ── Border ──────────────────────────────────────────────── */
-  --color-border: rgba(0, 0, 0, 0.1);
-
-  /* ── Border Radius ────────────────────────────────────────── */
-  --radius-xs: 2px;
-  --radius-sm: 4px;
-  --radius-md: 7px; /* inputs, buttons */
-  --radius-lg: 9px; /* cards */
-  --radius-xl: 12px; /* modals, large panels */
-  --radius-pill: 999px;
-
-  /* ── Spacing (4px grid) ──────────────────────────────────── */
+  /* ── Spacing (4px grid) — 4·8·12·16·20·24·32·40·48 ── */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -58,86 +58,253 @@
   --space-6: 24px;
   --space-8: 32px;
   --space-10: 40px;
+  --space-12: 48px;
 
-  /* ── App / platform shell content (LayoutFrame) ─────────── */
-  --shell-content-padding: var(--space-4); /* antes var(--space-6): ZH-UI-DENSITY-COMPACT-01 */
-  --shell-content-padding-compact: var(--space-4);
-  --shell-content-max-width: 1440px;
-  --shell-content-gap: var(--space-4); /* antes var(--space-6): ZH-UI-DENSITY-COMPACT-01 */
+  /* ── Border radius — 6·8·12·14·16·full ── */
+  --radius-xs: 2px; /* legado: solo indicadores mínimos */
+  --radius-sm: 6px; /* small: chips de código, checkbox, ítems de menú, foco */
+  --radius-md: 8px; /* medium */
+  --radius-lg: 12px; /* paneles internos, notices, tiles, filter bar */
+  --radius-xl: 14px;
+  --radius-2xl: 16px;
+  --radius-pill: 999px; /* full */
 
-  /* ── Densidad de UI (ZH-UI-DENSITY-COMPACT-01) ────────────
-     SSOT de altura de controles y padding de cards/tablas/modales.
-     Antes eran literales px repetidos en zh-ui.css/page-template.css;
-     centralizados aquí para permitir compactación global reversible. */
-  --density-control-height: 36px; /* antes 38px: input/select/textarea, .zh-btn base */
-  --density-control-height-md: 32px; /* antes 34px: .zh-btn--md */
-  --density-control-height-sm: 26px; /* antes 28px: .zh-btn--sm */
-  --density-control-height-xs: 24px; /* .zh-btn--xs (ya mínimo, solo tokenizado) */
-  --density-card-padding: var(--space-4); /* antes var(--space-5): card/section/kpi/modal */
-  --density-table-cell-padding-y: 8px; /* antes 11px/12px en .table th/td */
-  --density-table-cell-padding-x: var(--space-3); /* antes var(--space-4) en .table th/td */
+  /* ── Shadow — xs·sm·md·overlay (soft, tinte slate-900 rgb 15,23,42) ── */
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+  --shadow-overlay: 0 16px 40px -8px rgba(15, 23, 42, 0.16), 0 4px 12px -4px rgba(15, 23, 42, 0.06);
 
-  /* ── Typography ───────────────────────────────────────────── */
-  /* Escala tipográfica única del ERP. --text-headline-lg-* está reservada
-     exclusivamente para pantallas especiales (Login, First Run, Onboarding,
-     Wizards principales, Empty States) — nunca para pantallas CRUD. */
-  --font-family: "Inter", system-ui, -apple-system, sans-serif;
+  /* ── Motion — fast (UI estándar) · normal (entrada de overlays) · slow ── */
+  --motion-duration-fast: 150ms;
+  --motion-duration-normal: 200ms;
+  --motion-duration-slow: 300ms; /* solo transiciones decorativas de auth */
+  --motion-ease: ease-in-out;
+  --motion-ease-emphasized: cubic-bezier(0.4, 0, 0.2, 1); /* entrada de modal/drawer/toast */
+
+  /* ══ 2. SEMÁNTICAS ═════════════════════════════════════════ */
+
+  /* ── Brand ──────────────────────────────────────────────── */
+  --color-primary: #3a5f84;
+  --color-primary-dim: #a5caf4;
+  --color-primary-container: #53779e;
+  --color-brand-dark: #003366;
+  --color-brand-accent: #4f7ba6;
+  --color-focus-cyan: #00e5ff;
+  --color-on-primary: var(--color-white);
+  --color-secondary: #3c6188;
+  --color-tertiary: #555d64;
+
+  /* ── Estados — base ─────────────────────────────────────── */
+  --color-error: #c0392b;
+  --color-success: #1a7a4a;
+  --color-warning: #ba7517;
+  /* Naranja distinto del ámbar de warning — estados intermedios (ni éxito ni aviso clásico). */
+  --color-attention: #c2540b;
+  /* Info = primary — mismo criterio que .zh-form-alert--info / .badge--info / .zh-toast--info */
+  --color-info: var(--color-primary);
+
+  /* ── Estados — escala soft / border / strong ─────────────────
+     Contrato para badges, notices, status pills y validación:
+       fondo = --*-soft · borde = --*-border · texto/ícono = --*-strong.
+     --*-strong cumple AA (≥ 4.5:1) sobre --*-soft. Colores sólidos
+     saturados solo para acciones (botones) e indicadores no textuales. */
+  --color-neutral-soft: var(--color-neutral-100);
+  --color-neutral-border: var(--color-border);
+  --color-neutral-strong: var(--color-neutral-600);
+  --color-info-soft: color-mix(in srgb, var(--color-info) 10%, var(--color-surface));
+  --color-info-border: color-mix(in srgb, var(--color-info) 26%, transparent);
+  --color-info-strong: #2f4e6d;
+  --color-success-soft: color-mix(in srgb, var(--color-success) 11%, var(--color-surface));
+  --color-success-border: color-mix(in srgb, var(--color-success) 28%, transparent);
+  --color-success-strong: #14603a;
+  --color-warning-soft: color-mix(in srgb, var(--color-warning) 13%, var(--color-surface));
+  --color-warning-border: color-mix(in srgb, var(--color-warning) 32%, transparent);
+  --color-warning-strong: #7f4f0c;
+  --color-error-soft: color-mix(in srgb, var(--color-error) 10%, var(--color-surface));
+  --color-error-border: color-mix(in srgb, var(--color-error) 28%, transparent);
+  --color-error-strong: #9d2d21;
+  --color-attention-soft: color-mix(in srgb, var(--color-attention) 10%, var(--color-surface));
+  --color-attention-border: color-mix(in srgb, var(--color-attention) 28%, transparent);
+  --color-attention-strong: #9a420a;
+
+  /* ── Superficies — page · surface · subtle · hover · selected · overlay ── */
+  --color-background: var(--color-neutral-50); /* page */
+  --color-surface: var(--color-white); /* surface: cards, modales, tablas */
+  --color-surface-container-low: var(--color-neutral-100); /* subtle: headers de card, footers, secundarios */
+  --color-surface-hover: color-mix(in srgb, var(--color-neutral-100) 70%, transparent); /* hover de filas/ítems */
+  --color-surface-selected: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface)); /* ítem seleccionado */
+  --color-overlay-scrim: color-mix(in srgb, var(--color-neutral-900) 40%, transparent); /* overlay de modal */
+  /* Alias históricos (Material 3) sobre la escala neutral. */
+  --color-surface-bright: var(--color-neutral-50);
+  --color-surface-container: color-mix(in srgb, var(--color-neutral-100) 50%, var(--color-neutral-200));
+  --color-surface-container-high: var(--color-neutral-200);
+  --color-surface-dim: color-mix(in srgb, var(--color-neutral-200) 50%, var(--color-neutral-300));
+  --color-surface-primary-tint: #e8f0f8; /* subtle primary accent (legacy) */
+  --color-table-header-bg: var(--color-neutral-50); /* thead limpio */
+  /* Input: fondo ligeramente gris; blanco en hover/focus. */
+  --color-input-bg: color-mix(in srgb, var(--color-neutral-100) 60%, var(--color-surface));
+  /* Código/identificador (SKU, nro. documento, código SRI/contable). */
+  --color-code-bg: color-mix(in srgb, var(--color-neutral-100) 80%, transparent);
+  --color-code-border: color-mix(in srgb, var(--color-neutral-200) 60%, transparent);
+
+  /* ── Inverse surface (tooltips, snackbars sobre fondo oscuro) ── */
+  --color-inverse-surface: #2e3132;
+  --color-inverse-on-surface: #f0f1f3;
+
+  /* ── Texto — primary · body · secondary · muted ─────────── */
+  --color-text-primary: var(--color-neutral-900); /* títulos, valores */
+  --color-text-body: var(--color-neutral-700); /* texto corrido, celdas */
+  --color-text-secondary: var(--color-neutral-500); /* labels, ayuda (4.8:1) */
+  /* muted: placeholder / texto terciario — entre 400 y 500 (≈ 4:1). */
+  --color-outline: color-mix(in srgb, var(--color-neutral-500) 75%, var(--color-neutral-400));
+  --color-text-tertiary: var(--color-outline);
+  --color-on-surface: var(--color-neutral-900);
+  --color-on-surface-variant: var(--color-neutral-600);
+  --color-outline-variant: var(--color-neutral-300);
+
+  /* ── Bordes — default · soft · interactive · focus · selected · error ──
+     Grosor único 1px (--border-width); los estados cambian color/halo,
+     nunca el grosor. Excepción heredada: 1.5px en densidad compacta. */
+  --border-width: 1px;
+  --color-border: color-mix(in srgb, var(--color-neutral-300) 60%, transparent); /* default */
+  --color-border-light: color-mix(in srgb, var(--color-neutral-200) 70%, transparent); /* soft: separadores */
+  --color-border-interactive: var(--color-neutral-300); /* hover de controles */
+  --color-focus-border: color-mix(in srgb, var(--color-primary) 65%, var(--color-surface)); /* focus */
+  --color-border-selected: var(--color-primary); /* selected */
+  /* error: --color-error (campo inválido) */
+  --color-input-border: var(--color-border);
+  --color-input-border-hover: var(--color-border-interactive);
+
+  /* ── Foco — contrato único ─────────────────────────────────
+     • Controles de texto (input/select/textarea y wrappers .zh-input-group/
+       .zh-prefixed-input): borde --color-focus-border + halo --focus-ring.
+       Sin outline (evita doble anillo).
+     • Todo lo demás (botones, links, checkbox, tiles, filas): outline
+       --focus-outline vía :focus-visible (index.css). */
+  --focus-ring-width: 3px;
+  --color-focus-ring: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  --color-error-ring: color-mix(in srgb, var(--color-error) 12%, transparent);
+  --focus-ring: 0 0 0 var(--focus-ring-width) var(--color-focus-ring);
+  --focus-ring-error: 0 0 0 var(--focus-ring-width) var(--color-error-ring);
+  --focus-outline-width: 2px;
+  --focus-outline-offset: 2px;
+  --focus-outline: var(--focus-outline-width) solid var(--color-primary);
+
+  /* ── Radios — contrato ────────────────────────────────────
+     small element → --radius-sm · input/button → --radius-control
+     · card/section → --radius-card · modal → --radius-modal · badge → --radius-pill */
+  --radius-control: var(--radius-md);
+  --radius-card: var(--radius-xl);
+  --radius-modal: var(--radius-2xl);
+
+  /* ── Sombras — contrato ───────────────────────────────────
+     card normal → --shadow-xs · interactivo/elevado (hover, botón) → --shadow-sm
+     · dropdown/popover/toast → --shadow-md · modal/drawer → --shadow-overlay */
+  --shadow-lg: var(--shadow-overlay); /* alias histórico */
+
+  /* ── Disabled — contrato único (antes 0.45/0.5/0.55/0.6 por componente) ── */
+  --opacity-disabled: 0.55;
+
+  /* ── Transiciones ─────────────────────────────────────────── */
+  --transition: var(--motion-duration-fast) var(--motion-ease);
+  --transition-slow: var(--motion-duration-slow) var(--motion-ease);
+  /* Transición estándar de controles interactivos (botón, input, fila, card). */
+  --transition-control:
+    background-color var(--transition), border-color var(--transition),
+    box-shadow var(--transition), color var(--transition);
+
+  /* ── Tipografía ───────────────────────────────────────────── */
+  --font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; /* sans */
   --font-family-mono: "SF Mono", "Cascadia Code", ui-monospace, Consolas, monospace;
+  /* Alternativas de glifo de Inter (a/l/1 desambiguados). --font-features-numeric
+     añade cifras tabulares (font-feature-settings no se acumula: repetir cv*). */
+  --font-features-default: "cv02", "cv03", "cv04", "cv11";
+  --font-features-numeric: "cv02", "cv03", "cv04", "cv11", "tnum";
 
+  /* Reservado a pantallas especiales (Login, First Run, Onboarding, Wizards
+     principales, Empty States) — nunca para pantallas CRUD. */
   --text-headline-lg-size: 28px;
   --text-headline-lg-height: 36px;
-  --text-headline-lg-weight: 600;
+  --text-headline-lg-weight: var(--font-weight-semibold);
   --text-headline-lg-spacing: -0.02em;
 
-  /* H1 — títulos principales de páginas CRUD */
-  --text-headline-md-size: 20px;
+  /* H1 — título de página */
+  --text-headline-md-size: var(--font-size-xl);
   --text-headline-md-height: 28px;
-  --text-headline-md-weight: 600;
+  --text-headline-md-weight: var(--font-weight-semibold);
   --text-headline-md-spacing: -0.01em;
 
   /* H2 — paneles, tarjetas, bloques */
   --text-headline-sm-size: 18px;
   --text-headline-sm-height: 26px;
-  --text-headline-sm-weight: 600;
+  --text-headline-sm-weight: var(--font-weight-semibold);
 
-  /* H3 — subsecciones */
-  --text-title-sm-size: 16px;
+  /* H3 — título de sección */
+  --text-title-sm-size: var(--font-size-lg);
   --text-title-sm-height: 24px;
-  --text-title-sm-weight: 600;
+  --text-title-sm-weight: var(--font-weight-semibold);
 
   --text-body-lg-size: 15px;
 
-  /* Body — párrafos, contenido, inputs, selects, textareas, celdas de tabla */
-  --text-body-md-size: 14px;
+  /* Body — párrafos, contenido, inputs, selects, textareas */
+  --text-body-md-size: var(--font-size-base);
   --text-body-md-height: 22px;
-  --text-body-md-weight: 400;
+  --text-body-md-weight: var(--font-weight-regular);
+
+  /* Compacto — celdas de tabla, botones md, inputs compactos */
+  --text-compact-size: var(--font-size-sm);
 
   /* Label — único estilo oficial de etiqueta de campo */
-  --text-label-md-size: 14px;
+  --text-label-md-size: var(--font-size-sm);
   --text-label-md-height: 20px;
-  --text-label-md-weight: 600;
+  --text-label-md-weight: var(--font-weight-semibold);
 
-  /* Header de tabla */
-  --text-label-sm-size: 12px;
-  --text-label-sm-weight: 600;
+  /* Overline — mayúsculas pequeñas: header de tabla, títulos de sección compactos */
+  --text-overline-size: var(--font-size-2xs);
+  --text-overline-weight: var(--font-weight-semibold);
+  --text-overline-spacing: 0.06em;
+
+  /* Label pequeño (labels compactos, status, kicker) */
+  --text-label-sm-size: var(--font-size-xs);
+  --text-label-sm-weight: var(--font-weight-semibold);
   --text-label-sm-spacing: 0.03em;
 
   /* Help text — texto de ayuda bajo campos */
-  --text-help-size: 12px;
+  --text-help-size: var(--font-size-xs);
   --text-help-height: 18px;
-  --text-help-weight: 400;
+  --text-help-weight: var(--font-weight-regular);
 
-  /* Badge — mismo tamaño que header de tabla pero peso distinto (500 vs 600) */
-  --text-badge-size: 12px;
+  /* Badge */
+  --text-badge-size: var(--font-size-xs);
   --text-badge-height: 16px;
-  --text-badge-weight: 500;
+  --text-badge-weight: var(--font-weight-medium);
 
-  /* ── Tinted surfaces ─────────────────────────────────────── */
-  --color-surface-primary-tint: #e8f0f8; /* table thead, subtle primary accent */
+  /* Alias históricos */
+  --text-xs: var(--text-label-sm-size);
+  --text-sm: var(--text-body-md-size);
+  --text-body-sm-size: var(--text-help-size);
 
-  /* ── Inverse surface (tooltips, snackbars sobre fondo oscuro) ── */
-  --color-inverse-surface: #2e3132;
-  --color-inverse-on-surface: #f0f1f3;
+  /* Interlineado compacto (descripciones secundarias en pickers/resultados) */
+  --line-height-snug: 1.3;
+
+  /* ── Densidad — default · compact (ZH-UI-DENSITY-COMPACT-01) ──
+     SSOT de alturas y paddings. No aumentar: ERP de alta densidad. */
+  --density-control-height: 36px; /* default: input/select/textarea, .zh-btn */
+  --density-control-height-md: 32px; /* .zh-btn--md */
+  --density-control-height-sm: 26px; /* .zh-btn--sm */
+  --density-control-height-xs: 24px; /* .zh-btn--xs */
+  --density-control-padding-x: var(--space-3); /* input/select/textarea */
+  --density-control-padding-compact: var(--space-2) var(--space-3); /* compact: grillas de líneas, celdas */
+  --density-card-padding: var(--space-4); /* card/section/kpi/modal */
+  --density-table-cell-padding-y: var(--space-2);
+  --density-table-cell-padding-x: var(--space-3);
+
+  /* ── Shell (LayoutFrame) — gap de página ── */
+  --shell-content-padding: var(--space-4);
+  --shell-content-padding-compact: var(--space-4);
+  --shell-content-max-width: 1440px;
+  --shell-content-gap: var(--space-4); /* page gap */
 
   /* ── Gradients ────────────────────────────────────────────── */
   --gradient-brand: linear-gradient(
@@ -146,53 +313,12 @@
     var(--color-primary) 100%
   );
 
-  /* ── Shadows ──────────────────────────────────────────────── */
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.06);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1), 0 1px 4px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.06);
-
-  /* ── Transitions ──────────────────────────────────────────── */
-  --transition: 0.15s ease;
-  --transition-slow: 0.3s ease;
-
-  /* ── Token aliases (shorthand + missing refs) ─────────────── */
-  /* Typography shorthands */
-  --text-xs: var(--text-label-sm-size);
-  --text-sm: var(--text-body-md-size);
-
-  /* Help text — usado por páginas que referenciaban un token inexistente */
-  --text-body-sm-size: var(--text-help-size);
-
-  /* Surface aliases */
-  --color-border-light: rgba(0, 0, 0, 0.06); /* lighter separator */
-  --color-text-tertiary: var(--color-outline); /* most subtle text */
-
-  /* Color-fixed aliases (Material 3 pattern used in KPI icons, plan badges) */
-  --color-primary-fixed: rgba(58, 95, 132, 0.1);
-  --color-secondary-fixed: rgba(60, 97, 136, 0.1);
+  /* ── Alias tintados (Material 3 / contenedores semánticos) ── */
+  --color-primary-fixed: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  --color-primary-subtle: var(--color-primary-fixed); /* duplicado exacto — alias */
+  --color-secondary-fixed: color-mix(in srgb, var(--color-secondary) 10%, transparent);
   --color-tertiary-fixed: #dbe3eb;
-
-  /* Semantic containers */
-  --color-error-container: rgba(192, 57, 43, 0.1);
-  --color-primary-subtle: rgba(
-    58,
-    95,
-    132,
-    0.1
-  ); /* used in permission badges */
-
-  /* Info = primary — mismo criterio que .zh-form-alert--info / .badge--info / .zh-toast--info */
-  --color-info: var(--color-primary);
-
-  /* Anillo de foco de inputs (3px box-shadow) — mismo criterio que .zh-toggle-switch.is-pressed */
-  --color-focus-ring: color-mix(in srgb, var(--color-primary) 18%, transparent);
-
-  /* Duración corta para transiciones puntuales (barras de progreso, iconos) */
-  --motion-duration-fast: 0.15s;
-
-  /* Interlineado compacto (descripciones secundarias en pickers/resultados) */
-  --line-height-snug: 1.3;
+  --color-error-container: color-mix(in srgb, var(--color-error) 10%, transparent);
 
   /* Valor por defecto de la barra de progreso de carga de archivos — el
      componente lo sobrescribe por instancia vía style inline (ZhFileUpload.tsx). */

@@ -33,16 +33,48 @@ body {
   font-size: var(--text-body-md-size);
   line-height: var(--text-body-md-height);
   font-weight: var(--text-body-md-weight);
+  font-feature-settings: var(--font-features-default);
   background-color: var(--color-background);
-  color: var(--color-text-primary);
+  color: var(--color-text-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Accesibilidad ─────────────────────────────────────────── */
+/* ── Accesibilidad — contrato único de foco (ZH-DS-SYSTEMIC-SCALES-01) ──
+   1. Por defecto (botones, links, checkbox/radio, tiles, filas): outline
+      --focus-outline con offset.
+   2. Controles de texto: el foco lo expresa el propio control con borde
+      --color-focus-border + halo --focus-ring (zh-ui.css §3; los wrappers
+      .zh-input-group/.zh-prefixed-input lo hacen con :focus-within). Antes
+      este :focus-visible global, declarado después de zh-ui.css, ganaba a
+      `outline: none` y se sumaba al halo → doble anillo. :where() mantiene
+      la especificidad de (1), así cualquier regla más específica prevalece. */
 :focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
+}
+:where(
+    input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"]),
+    select,
+    textarea
+  ):focus-visible {
+  outline: none;
+}
+
+/* Movimiento reducido (ZH-DS-VISUAL-REFINEMENT-01): anula transiciones/animaciones
+   decorativas para usuarios que lo solicitan en el sistema operativo. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* ── Material Symbols ──────────────────────────────────────── */

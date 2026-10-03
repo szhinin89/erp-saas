@@ -150,6 +150,50 @@ y debe migrarse al tocar el archivo.
 
 Nota: `pf-badge`, `prd-status-badge`, `pg-kpi-badge`, `md-badge` **no** están deprecados — son variantes con semántica propia (status dot de 2 estados, tendencia de KPI) no consolidadas todavía en `Badge`. No copiar su patrón para casos nuevos que sí encajen en `Badge` (etiqueta simple con color semántico).
 
+### ZH Visual Discipline (principio)
+
+> **ZH tiene la misma disciplina visual de escalas que Tailwind, pero utiliza un Design System propio especializado para ERP.** No se instala Tailwind ni una segunda arquitectura de estilos.
+
+```text
+Primitive tokens → Semantic tokens → Contracts → ZH Components → ERP Patterns → Modules
+```
+
+- **Escalas oficiales** (`design-tokens.css`, cabecera documenta cada capa): color neutral, estados (soft/border/strong), tipografía (tamaños/pesos), spacing, radius (+ contrato control/card/modal), shadow (xs/sm/md/overlay), border, surface, motion (fast/normal/slow + easing), densidad (default/compact) y foco (contrato único).
+- **Regla:** los módulos **no inventan** colores, spacing, radius, sombras, motion, foco, estilo de estados ni presentación numérica cuando existe un contrato compartido; consumen tokens **semánticos** (nunca primitivas `--color-neutral-N`/`--color-white`) o componentes ZH.
+- **Consumidores existentes:** los nuevos desarrollos usan los contratos oficiales; las pantallas existentes se migran solo con tarea autorizada o cuando ya se están modificando. Sin migración masiva.
+
+### Patrones visuales ERP (ZH-DS-ERP-PATTERNS-01)
+
+Solo presentación: ningún patrón formatea, redondea ni decide decimales (eso es `formatDecimalDisplay` + `PrecisionPolicy`). El detalle de cada contrato está comentado junto a su CSS.
+
+| Concepto ERP | Usar | Notas |
+|---|---|---|
+| Número operativo (contrato base) | `ZHMoneyValue` / `ZHNumberValue`; texto suelto: `.zh-num`; celda: `cellClassName: "zh-table-cell--num"` | Cifras tabulares, Inter (no mono), nowrap, color body |
+| Dinero | `ZHMoneyValue` + `emphasis` | `default` línea · `muted` secundario · `strong` subtotal · `total` · `grand`. Negativo `$-5.00` **sin** color por signo (no hay regla de producto); `--zero` se atenúa solo en `default`/`muted` |
+| Cantidad | `ZHNumberValue precision=… suffix={uom}` | Mismo contrato base; UOM en `__suffix` |
+| Porcentaje (IVA, ICE, retención, descuento, margen) | `ZHNumberValue suffix="%"` | Único contrato; sin componente propio |
+| Código inline (SKU, barcode, proveedor, interno) | `.zh-code-value.zh-code-value--inline` ≡ `ZHDataValue variant="code"` | Mono 12px secondary — discreto en tablas densas |
+| Número de documento / secuencia | `.zh-code-value.zh-code-value--document` | Mono 13px primary, nowrap |
+| Código SRI / tributario / clave técnica | `.zh-code-value.zh-code-value--chip` | Pastilla; solo donde separar el código aporta |
+| Código contable + descripción | `.zh-account-ref` > `__code` + `__name` | Código inline, descripción principal; la jerarquía contable sigue en la pantalla |
+| Estado de documento | `Badge` | Fondo `--*-soft`, borde `--*-border`, texto `--*-strong` |
+| Estado de entidad/maestro | `.zh-status--*` (con punto) | Misma escala soft/border/strong |
+| KPI | `ReportKpiCard` (`.pg-kpi`) | label · valor tabular · unidad · delta (`--*-strong`) · `Badge` · ícono opcional; denso |
+| Tabla densa | `ZHDataTable` / `.table` | Ver contrato en `zh-ui.css` §10: header overline, body 13px, num/código/estado/acciones (`zh-table-cell--actions`), `tfoot` totales, `.zh-datatable-row--selected` |
+| Sección de formulario | `ZHCard` (`.card`) / `.pg-section` / `.pf-card` | Mismo contrato visual; descripción `.zh-section-description`; acciones `.zh-form-actions` |
+| Acciones | `ZHBtn` primary · secondary · ghost · destructive; icon-only `ZHIconButton` | Una sola primaria por zona; disabled `--opacity-disabled` |
+| Loading / empty / sin resultados / error | `LoadingState` / `EmptyState` / `EmptyState` (texto de filtro) / `ErrorState`; en tabla `.zh-table-empty` | Sin familias paralelas |
+| Notice / ayuda | `ZHFormAlert`/`ZHPageNotice` (`.zh-form-alert--*`), `zh-notice`, `zh-help` | Escala soft/border/strong; popovers con `--shadow-md` |
+
+**Mapeo canónico estado → familia** (derivado del uso real; los módulos conservan sus mapas — no se migraron):
+
+| Familia de estados | neutral | info | success | warning | error |
+|---|---|---|---|---|---|
+| Ciclo de vida del documento | — | `Processing`, `PartiallyPaid` | `Confirmed`, `Authorized`, `Executed`, `Paid`, `Fulfilled`, `Processed` | `Draft`, `Pending` | `Cancelled`, `Reversed`, `Rejected`, `Failed` |
+| Estado electrónico SRI | `Pending`, `Discarded`, `Annulled` | `Processing` | `Authorized` | `RequiresReconciliation`, `AnnulmentPending` | `Rejected` |
+
+`attention` existe solo en notices (`.zh-form-alert--attention`); `Badge` no tiene esa variante. Desvíos detectados respecto del mapeo (deuda, no se tocan): `ExpenseDocumentStatusBadge` `Draft`→gray; `adjustmentStatusBadge` `Cancelled`→gray; `cashFundingRequestStatus` `Cancelled`→neutral; `purchaseReceptionLabels` `PENDING`→neutral.
+
 ### Excepciones permitidas al uso de componentes ZH de input
 
 Los siguientes casos **no** requieren envolver el control en un componente ZH — son
@@ -214,7 +258,17 @@ de la tabla anterior en `frontend/src/modules/**`, `frontend/src/pages/**`,
 `F-04-badge` y `F-04-pf-field` para los estándares de botón/badge/campo agregados
 en la Fase 3B), además de `F-04-color` (hex fuera de `design-tokens.css`) y
 `F-04-token` (`var(--x)` no definido en `design-tokens.css`) sobre todo
-`frontend/src/**/*.css`. Código legacy permitido temporalmente vía
+`frontend/src/**/*.css`. ZH Visual Discipline agrega, también sobre todo CSS salvo
+`design-tokens.css` y sin contar comentarios: `F-04-primitive` (primitiva de color
+`--color-neutral-N`/`--color-white` fuera de la capa de tokens), `F-04-rgb` (`rgb()`/`rgba()`
+literal) y `F-04-motion` (duración literal en `transition`/`animation`; exentos bucles
+`infinite` y el reset `0.01ms` de reduced-motion). La deuda histórica de estas tres reglas se
+congela por conteo en `config/design-system.json#cssLiteralAllowances` (ratchet: más
+literales → falla; menos → falla hasta bajar el allowance). **Solo documentado, sin guard**
+(señal no robusta): font-size fuera de escala (los íconos usan su propia escala), radius en px
+(círculos/barras legítimas), `z-index` (no existe contrato de capas) y sombras con `color-mix`
+literal. El mapeo estado → familia es una guía visual, **no** se impone por guard.
+Código legacy permitido temporalmente vía
 `tools/architecture/architecture-grandfather.json#designSystemGrandfathered`
 (`{file, rules}`); archivos/reglas no listados allí bloquean el PR. Detalle de
 reglas: [`pr-rules-catalog.md#f-04`](./pr-rules-catalog.md#f-04--design-system-único-ui).

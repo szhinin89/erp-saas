@@ -3,23 +3,24 @@
 .zh-prefixed-input {
   display: flex;
   align-items: stretch;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-input-border);
+  border-radius: var(--radius-control);
+  background: var(--color-input-bg);
   overflow: hidden;
-  transition:
-    border-color var(--transition),
-    box-shadow var(--transition);
+  transition: var(--transition-control);
   height: var(--density-control-height);
 }
 
+/* Mismo contrato de foco que input/select/textarea (design-tokens § Foco). */
 .zh-prefixed-input:focus-within {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-focus-ring);
+  background: var(--color-surface);
+  border-color: var(--color-focus-border);
+  box-shadow: var(--focus-ring);
 }
 
 .zh-prefixed-input:hover:not(:focus-within) {
-  border-color: var(--color-outline);
+  background: var(--color-surface);
+  border-color: var(--color-input-border-hover);
 }
 
 .zh-prefixed-input--disabled {

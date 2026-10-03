@@ -26,8 +26,8 @@
 }
 
 .zh-help-icon:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
 }
 
 .zh-help-field {
@@ -55,9 +55,9 @@
   max-width: 320px;
   padding: var(--space-3) var(--space-4);
   background: var(--color-surface);
-  border: 1px solid var(--color-outline-variant);
+  border: var(--border-width) solid var(--color-outline-variant);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md); /* contrato: popover → md */
 }
 
 .zh-help-popover__title {

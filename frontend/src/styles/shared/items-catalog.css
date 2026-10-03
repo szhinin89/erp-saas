@@ -1172,7 +1172,7 @@ tr.cfg-row--selected:hover > td {
   transition: background var(--transition);
 }
 .prd-icon-btn--danger:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-error) 10%, transparent);
+  background: var(--color-error-soft);
 }
 
 .prd-icon-btn--success {
@@ -1181,7 +1181,7 @@ tr.cfg-row--selected:hover > td {
   transition: background var(--transition);
 }
 .prd-icon-btn--success:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-success) 10%, transparent);
+  background: var(--color-success-soft);
 }
 
 /* Ghost: neutro por defecto, resalta a primary en hover (Bloque 7D,
