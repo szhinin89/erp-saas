@@ -45,8 +45,6 @@ public sealed class CommunicationOutboxTests
         message.Subject.Should().Be("Factura autorizada");
         message.MaxRetries.Should().Be(5);
         message.IdempotencyKey.Should().Be("invoice:001");
-        message.IsDue(scheduledAt.AddSeconds(-1)).Should().BeFalse();
-        message.IsDue(scheduledAt).Should().BeTrue();
     }
 
     [Fact]
@@ -67,44 +65,6 @@ public sealed class CommunicationOutboxTests
         message.Attachments.Single().TenantId.Should().Be(TenantId);
         message.Attachments.Single().CompanyId.Should().Be(CompanyId);
         message.Attachments.Single().CommunicationOutboxId.Should().Be(message.Id);
-    }
-
-    [Fact]
-    public void MarkFailed_reprograma_hasta_agotar_reintentos()
-    {
-        var message = NewMessage(maxRetries: 2);
-
-        message.MarkProcessing(UserId);
-        message.MarkFailed("SMTP temporal", UserId);
-
-        message.Status.Should().Be(CommunicationStatus.Pending);
-        message.RetryCount.Should().Be(1);
-        message.NextAttemptAtUtc.Should().NotBeNull();
-        message.LastError.Should().Be("SMTP temporal");
-
-        message.MarkProcessing(UserId);
-        message.MarkFailed("SMTP final", UserId);
-
-        message.Status.Should().Be(CommunicationStatus.Failed);
-        message.RetryCount.Should().Be(2);
-        message.NextAttemptAtUtc.Should().BeNull();
-        message.LastError.Should().Be("SMTP final");
-    }
-
-    [Fact]
-    public void MarkSent_limpia_error_y_cierra_envio()
-    {
-        var message = NewMessage(maxRetries: 2);
-
-        message.MarkProcessing(UserId);
-        message.MarkFailed("SMTP temporal", UserId);
-        message.MarkProcessing(UserId);
-        message.MarkSent(UserId);
-
-        message.Status.Should().Be(CommunicationStatus.Sent);
-        message.SentAtUtc.Should().NotBeNull();
-        message.LastError.Should().BeNull();
-        message.NextAttemptAtUtc.Should().BeNull();
     }
 
     private static CommunicationOutbox NewMessage(int maxRetries) =>

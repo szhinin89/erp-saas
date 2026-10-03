@@ -46,6 +46,15 @@ public sealed class CommunicationOutbox
     public Guid? CorrelationId { get; private set; }
     public string? IdempotencyKey { get; private set; }
 
+    /// <summary>Token del claim vigente (fencing): toda finalización exige este valor. Null fuera de Processing.</summary>
+    public Guid? ClaimToken { get; private set; }
+
+    /// <summary>Fin del lease del claim vigente; vencido, la fila vuelve a ser reclamable.</summary>
+    public DateTime? LeaseUntilUtc { get; private set; }
+
+    /// <summary>Categoría del último fallo (null si nunca falló o tras enviarse).</summary>
+    public CommunicationFailureCategory? FailureCategory { get; private set; }
+
     public IReadOnlyCollection<CommunicationOutboxAttachment> Attachments => _attachments.AsReadOnly();
 
     private CommunicationOutbox() { }
@@ -114,51 +123,10 @@ public sealed class CommunicationOutbox
         Guid createdBy
     ) => _attachments.Add(CommunicationOutboxAttachment.Create(TenantId, CompanyId, Id, attachmentType, fileName, contentType, fileStoragePath, binaryContent, createdBy));
 
-    public bool IsDue(DateTime utcNow) =>
-        Status == CommunicationStatus.Pending
-        && ScheduledAtUtc <= utcNow
-        && (NextAttemptAtUtc is null || NextAttemptAtUtc <= utcNow);
-
-    public void MarkProcessing(Guid updatedBy)
-    {
-        if (Status != CommunicationStatus.Pending)
-            throw new DomainRuleViolationException("Solo una comunicación pendiente puede marcarse en proceso.");
-
-        Status = CommunicationStatus.Processing;
-        ProcessingStartedAtUtc = DateTime.UtcNow;
-        SetUpdated(updatedBy);
-    }
-
-    public void MarkSent(Guid updatedBy)
-    {
-        Status = CommunicationStatus.Sent;
-        SentAtUtc = DateTime.UtcNow;
-        FailedAtUtc = null;
-        LastError = null;
-        NextAttemptAtUtc = null;
-        SetUpdated(updatedBy);
-    }
-
-    public void MarkFailed(string error, Guid updatedBy)
-    {
-        RetryCount++;
-        FailedAtUtc = DateTime.UtcNow;
-        LastError = Optional(error, LastErrorMaxLen, nameof(error));
-        ProcessingStartedAtUtc = null;
-
-        if (RetryCount >= MaxRetries)
-        {
-            Status = CommunicationStatus.Failed;
-            NextAttemptAtUtc = null;
-        }
-        else
-        {
-            Status = CommunicationStatus.Pending;
-            NextAttemptAtUtc = DateTime.UtcNow.AddMinutes(Math.Min(Math.Pow(2, RetryCount), 60));
-        }
-
-        SetUpdated(updatedBy);
-    }
+    // ZH-COMMUNICATIONS-DELIVERY-HARDENING-01 — las transiciones de entrega (claim → Sent/Failed/
+    // reprogramada) ya no se hacen en memoria + SaveChanges: son UPDATE condicionados en PostgreSQL
+    // (CommunicationOutboxDeliveryStore), con ClaimToken como fencing. La regla de reintento/backoff
+    // vive en CommunicationRetryPolicy.
 
     public void Cancel(Guid updatedBy)
     {

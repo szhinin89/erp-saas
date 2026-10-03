@@ -13,6 +13,7 @@ public sealed class CommunicationQueue : ICommunicationQueue
     private readonly ICurrentCompany _currentCompany;
     private readonly ICurrentBranch _currentBranch;
     private readonly ICurrentUser _currentUser;
+    private readonly ICommunicationSettingsResolver _settings;
 
     public CommunicationQueue(
         ICommunicationOutboxRepository outbox,
@@ -20,7 +21,8 @@ public sealed class CommunicationQueue : ICommunicationQueue
         ICurrentTenant currentTenant,
         ICurrentCompany currentCompany,
         ICurrentBranch currentBranch,
-        ICurrentUser currentUser
+        ICurrentUser currentUser,
+        ICommunicationSettingsResolver settings
     )
     {
         _outbox = outbox;
@@ -29,6 +31,7 @@ public sealed class CommunicationQueue : ICommunicationQueue
         _currentCompany = currentCompany;
         _currentBranch = currentBranch;
         _currentUser = currentUser;
+        _settings = settings;
     }
 
     public async Task<QueuedCommunicationDto> QueueEmailAsync(
@@ -49,6 +52,12 @@ public sealed class CommunicationQueue : ICommunicationQueue
                 return new QueuedCommunicationDto(existing.Id, WasAlreadyQueued: true);
         }
 
+        // ZH-COMMUNICATIONS-DELIVERY-HARDENING-01 — MaxRetries se fija AL ENCOLAR desde el perfil
+        // resuelto (communications.email.max_retries / fallback de instancia) y queda copiado en la
+        // fila: un cambio posterior de configuración no reinterpreta comunicaciones ya creadas.
+        var maxRetries = request.MaxRetries
+            ?? (await _settings.ResolveEmailAsync(ct)).MaxRetries;
+
         var actorId = _currentUser.UserId == Guid.Empty ? Guid.Empty : _currentUser.UserId;
         var branchId = request.BranchId.HasValue
             ? request.BranchId
@@ -67,7 +76,7 @@ public sealed class CommunicationQueue : ICommunicationQueue
             request.BodyText,
             request.Priority,
             request.ScheduledAtUtc,
-            request.MaxRetries,
+            maxRetries,
             request.CorrelationType,
             request.CorrelationId,
             request.IdempotencyKey,

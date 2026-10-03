@@ -1072,6 +1072,7 @@ public static class DependencyInjection
         services.AddScoped<ICommunicationTemplateRepository, CommunicationTemplateRepository>();
         services.AddScoped<ICommunicationSettingsResolver, CommunicationSettingsResolver>();
         services.AddScoped<IEmailSender, SmtpEmailSender>();
+        services.AddScoped<CommunicationOutboxDeliveryStore>();
         services.AddScoped<ICommunicationOutboxProcessor, CommunicationOutboxProcessor>();
         // ── Configuration BC ──────────────────────────────────────────────────
         services.AddScoped<

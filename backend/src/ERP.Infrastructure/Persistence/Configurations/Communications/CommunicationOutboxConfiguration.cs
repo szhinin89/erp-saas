@@ -36,6 +36,9 @@ public sealed class CommunicationOutboxConfiguration : IEntityTypeConfiguration<
         builder.Property(x => x.CorrelationType).HasColumnName("correlation_type").HasMaxLength(CommunicationOutbox.CorrelationTypeMaxLen);
         builder.Property(x => x.CorrelationId).HasColumnName("correlation_id");
         builder.Property(x => x.IdempotencyKey).HasColumnName("idempotency_key").HasMaxLength(CommunicationOutbox.IdempotencyKeyMaxLen);
+        builder.Property(x => x.ClaimToken).HasColumnName("claim_token");
+        builder.Property(x => x.LeaseUntilUtc).HasColumnName("lease_until_utc");
+        builder.Property(x => x.FailureCategory).HasColumnName("failure_category").HasConversion<string>().HasMaxLength(30);
         builder.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by").IsRequired();
@@ -50,6 +53,12 @@ public sealed class CommunicationOutboxConfiguration : IEntityTypeConfiguration<
 
         builder.HasIndex(x => new { x.TenantId, x.CompanyId, x.Status, x.ScheduledAtUtc, x.NextAttemptAtUtc })
             .HasDatabaseName("ix_communication_outbox_due");
+        // ZH-COMMUNICATIONS-DELIVERY-HARDENING-01 — el claim es cross-tenant (no filtra por
+        // tenant/company): índice parcial solo sobre filas reclamables (Pending o Processing), que
+        // son una fracción mínima de la tabla (Sent/Failed/Cancelled quedan fuera).
+        builder.HasIndex(x => new { x.Status, x.ScheduledAtUtc })
+            .HasFilter("status IN ('Pending', 'Processing')")
+            .HasDatabaseName("ix_communication_outbox_claimable");
         builder.HasIndex(x => new { x.TenantId, x.CompanyId, x.CorrelationType, x.CorrelationId, x.Purpose, x.RecipientEmail })
             .HasDatabaseName("ix_communication_outbox_correlation");
         builder.HasIndex(x => new { x.TenantId, x.CompanyId, x.IdempotencyKey })

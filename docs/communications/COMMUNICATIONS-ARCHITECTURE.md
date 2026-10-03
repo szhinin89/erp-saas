@@ -339,16 +339,63 @@ vencido, primero se cierra el intento anterior como `LeaseExpired`.
   `Failed`.
 - **Ventana residual (inherente al email):** si SMTP aceptó el mensaje y el worker murió antes de finalizar, la
   recuperación lo reenvía. La entrega es **al menos una vez, con duplicación acotada al lease**. Se mitiga con un
-  header `Message-ID` determinístico (`<{communicationId}@{dominio del remitente}>`), igual en todos los intentos,
+  header `Message-ID` determinístico (`<{communicationId}@communications.zh-erp>`, independiente de la configuración SMTP), igual en todos los intentos,
   que permite a los clientes de correo deduplicar. Para mensajes sensibles el riesgo es aceptable: el segundo
   correo lleva el mismo enlace.
 
 Seguro con varios procesos, varios nodos y varias instancias de Hangfire: `SKIP LOCKED` reparte las filas y el
 fencing invalida resultados tardíos.
 
+### Implementación efectiva — Fase 2 (ZH-COMMUNICATIONS-DELIVERY-HARDENING-01, 2026-10-02)
+
+- **Componentes:** `CommunicationOutboxDeliveryStore` (claim, `MarkSentAsync`, `MarkFailedAsync`, `LoadOwnedAsync`),
+  `CommunicationOutboxProcessor` (orquesta), `CommunicationRetryPolicy` (Domain), `CommunicationFailureClassifier`,
+  `CommunicationDeliveryTiming`. Las transiciones `MarkProcessing`/`MarkSent`/`MarkFailed`/`IsDue` de la entidad se
+  retiraron: ahora son `UPDATE` condicionados en PostgreSQL.
+- **Claim real:** el del diseño, con tres diferencias. (1) No hay tabla de intentos (fase 3): el intento perdido de un
+  worker muerto se cuenta sumando 1 a `retry_count` al recuperarlo. (2) Un `Processing` con `lease_until_utc` NULL
+  (filas atascadas antes de la migración) cuenta como vencido. (3) La prioridad se ordena con un `CASE`
+  (`High` > `Normal` > `Low`), porque la columna es texto; el `OrderByDescending` anterior ordenaba alfabéticamente.
+  El `RETURNING` devuelve solo id, tenant, empresa, token, contadores, propósito, canal y si fue recuperación.
+- **Instantes:** salen de `TimeProvider` (parámetros del SQL), no de `now()`. Supuesto: el desfase de reloj entre
+  nodos es muy inferior al lease.
+- **Un claim por iteración**, hasta 50 por ejecución: el lease nunca espera detrás de otros envíos.
+- **Lease = 5 min; timeout SMTP = `Communications:Email:SmtpTimeoutSeconds`** (solo instancia; por defecto 30 s,
+  acotado a [5, 120] s). Invariante probada: timeout máximo (120 s) + margen de trabajo (60 s) < lease. Un worker
+  muerto libera la fila como máximo 5 min después del claim.
+- **Timeout:** lo aplica el processor (para cualquier `IEmailSender`) y también `SmtpEmailSender`. `SmtpClient`
+  envuelve la cancelación de su propio token como `SmtpException`; se convierte en `TimeoutException` según el
+  estado de los tokens, no por el texto.
+- **Fencing:** `MarkSentAsync`/`MarkFailedAsync` exigen `id + status = Processing + claim_token`; con 0 filas
+  registran `CommunicationClaimLost` y no tocan la fila. `MarkSent` está fuera del `try` de envío: si falla tras
+  aceptar SMTP (p. ej. BD caída), la fila no se marca fallida y la recupera el lease.
+- **Message-ID:** `<{CommunicationOutbox.Id:N}@communications.zh-erp>` (`CommunicationMessageId`): depende solo del Id, nunca del remitente ni de otra configuración SMTP mutable; igual en todos los reintentos aunque cambie el SMTP (test), sin
+  destinatario, tenant ni secretos (verificado en el `.eml` generado por System.Net.Mail: un único header). No se
+  asume que el servidor SMTP deduplique.
+- **Garantía real:** un solo claim vigente por fila + fencing + entrega **al menos una vez**. Ventana residual
+  inevitable: SMTP acepta, el proceso muere antes de `MarkSent` y la recuperación reenvía (mismo Message-ID).
+- **Multi-tenant:** el claim es cross-tenant y devuelve solo el scope. Carga, configuración y finalización corren
+  dentro de `JobExecutionContext.Begin(tenant, empresa)` de cada fila, con los filtros globales activos.
+- **Migración `20261003010236_CommunicationDeliveryHardening`** (aditiva): `claim_token uuid`,
+  `lease_until_utc timestamptz`, `failure_category varchar(30)` e índice parcial `ix_communication_outbox_claimable
+  (status, scheduled_at_utc) WHERE status IN ('Pending','Processing')`. `EXPLAIN` con 20 000 filas `Sent` + 60
+  reclamables: `Index Scan using ix_communication_outbox_claimable` (no recorre las terminales).
+- **Hangfire:** `[DisableConcurrentExecution(10)]` en `ProcessCommunicationsJob`, solo como defensa secundaria.
+- **Eventos de log:** `CommunicationClaimed`, `CommunicationRecoveredAfterLease`, `CommunicationDeliverySucceeded`,
+  `CommunicationDeliveryFailed`, `CommunicationClaimLost` (id, tenant, empresa, propósito, canal, contadores,
+  categoría). Nunca cuerpo, destinatario, adjuntos ni credenciales. La traza completa solo se registra para fallos
+  `Unknown` (`CommunicationUnknownFailure`).
+
 ---
 
 ## H. Política de reintento
+
+> **Fase 2 implementada (diferencias con lo de abajo hasta la fase 3):** backoff `min(2^n, 60) min` tras el n-ésimo
+> fallo (2, 4, 8, 16, 32, 60), sin jitter. `Configuration` y `Permanent` terminan en `Failed` al primer fallo, con
+> `failure_category`, sin busy-loop ni consumir los demás intentos. El reintento de `Configuration` "cada 15 min hasta
+> `ExpiresAtUtc`" requiere `ExpiresAtUtc` (fase 3); hasta entonces, corregir la configuración exige reencolar
+> explícitamente (fase 7). `MaxRetries` ya tiene efecto: se copia al encolar desde el perfil resuelto. Un fichero
+> adjunto inexistente (`FileNotFoundException`) se clasifica como Transient: reintenta hasta agotar.
 
 `CommunicationRetryPolicy` (Domain, pura y testeable) es la **única** dueña de presupuesto, backoff y vencimiento.
 

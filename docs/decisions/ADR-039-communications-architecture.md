@@ -175,7 +175,25 @@ Por fases (detalle en el documento, §U):
 6. Entrega de password reset sobre Communications (scope System, payload sensible).
 7. Monitor.
 
-No hay fase multicanal. Estado: **diseño aceptado; fase 1 implementada.**
+No hay fase multicanal. Estado: **diseño aceptado; fases 1 y 2 implementadas.**
+
+- **Fase 2 — `ZH-COMMUNICATIONS-DELIVERY-HARDENING-01` (2026-10-02): IMPLEMENTED.** Detalle en el documento
+  (§G "Implementación efectiva", §H).
+  - D9 vigente: claim de una fila con `UPDATE … FROM (SELECT … FOR UPDATE SKIP LOCKED LIMIT 1) RETURNING`, que
+    reclama `Pending` vencidas o `Processing` con lease vencido (o sin lease). `ClaimToken` nuevo por claim y
+    finalizaciones `UPDATE … WHERE status = Processing AND claim_token = @token`. Lease de 5 min; timeout SMTP
+    `Communications:Email:SmtpTimeoutSeconds` acotado a [5, 120] s. Sin transacción abierta durante SMTP.
+    `[DisableConcurrentExecution]` solo como defensa secundaria.
+  - D10 parcial: `CommunicationRetryPolicy` (backoff `min(2^n, 60)` min, sin jitter) y `CommunicationFailureClassifier`
+    (Transient/Permanent/Configuration/Unknown, por datos estructurados). `Configuration` es terminal (`Failed` +
+    `failure_category`) hasta que existan `ExpiresAtUtc` (fase 3) y el requeue (fase 7). `MaxRetries` se copia al
+    encolar.
+  - D17 parcial: Message-ID determinístico por `CommunicationOutbox.Id`.
+  - **Garantía honesta:** claim único + fencing + entrega **al menos una vez**. Si SMTP aceptó y el proceso muere
+    antes de `MarkSent`, se reenvía tras el lease (mismo Message-ID). No hay exactly-once con SMTP.
+  - Migración `CommunicationDeliveryHardening` (aditiva: `claim_token`, `lease_until_utc`, `failure_category`, índice
+    parcial `ix_communication_outbox_claimable`). La tabla de intentos (D11) sigue diferida a la fase 3: el processor
+    ya separa claim, envío y finalización, para insertarla sin reescribir el algoritmo.
 
 - **Fase 1 — `ZH-AUTH-PASSWORD-RESET-SECURITY-HOTFIX-01` (2026-10-02): IMPLEMENTED.** Solo Auth; sin Communications,
   SMTP ni migraciones.

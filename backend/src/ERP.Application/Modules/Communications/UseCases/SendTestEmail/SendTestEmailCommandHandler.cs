@@ -55,7 +55,7 @@ public sealed class SendTestEmailCommandHandler
                 $"No se pudo enviar el correo de prueba: el servidor SMTP rechazó la conexión o las credenciales ({ex.Message})."
             );
         }
-        catch (OperationCanceledException)
+        catch (TimeoutException)
         {
             return Result<SendTestEmailResultDto>.ValidationFailure(
                 "No se pudo enviar el correo de prueba: tiempo de espera agotado al conectar con el servidor SMTP."

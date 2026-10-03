@@ -2,6 +2,16 @@
 
 **Single source of truth** for delivery state. Updated: **2026-10-02** · Kernel refactor: **2026-06-05**.
 
+## ZH-COMMUNICATIONS-DELIVERY-HARDENING-01 — Entrega de Communications segura con varios workers (2026-10-02)
+
+**Estado: COMPLETADO (sin commit).** Fase 2 de [ADR-039](docs/decisions/ADR-039-communications-architecture.md); detalle en [`COMMUNICATIONS-ARCHITECTURE.md` §G/§H](docs/communications/COMMUNICATIONS-ARCHITECTURE.md).
+- **Defecto reproducido:** el processor leía las `Pending` y luego las marcaba `Processing` solo en memoria. Con 3 processors concurrentes y 30 mensajes, PostgreSQL real registró **90 envíos** (cada mensaje 3 veces). Además, una fila podía quedar en `Processing` para siempre, `MaxRetries` de la configuración no se aplicaba y no había timeout SMTP explícito.
+- **Corrección:** claim atómico en PostgreSQL (`UPDATE … FROM (SELECT … FOR UPDATE SKIP LOCKED LIMIT 1) RETURNING`, una fila por iteración) con `ClaimToken` + lease de 5 min. Finalizaciones con fencing (`WHERE status = Processing AND claim_token = @token`). Recuperación de `Processing` vencido en el mismo claim. Sin transacción abierta durante SMTP. Timeout SMTP explícito (`Communications:Email:SmtpTimeoutSeconds`, 30 s, acotado a [5, 120] s < lease). Clasificación Transient/Permanent/Configuration/Unknown con política única de reintento. `MaxRetries` copiado al encolar. Message-ID determinístico. `[DisableConcurrentExecution]` solo como defensa secundaria.
+- **Garantía real:** claim único + fencing + entrega **al menos una vez** (si SMTP acepta y el proceso muere antes de `MarkSent`, se reenvía tras el lease con el mismo Message-ID).
+- **Comportamiento nuevo a conocer:** un fallo `Configuration` (SMTP deshabilitado o incompleto, host inexistente, credenciales inválidas) termina en `Failed` + `failure_category = Configuration` al primer intento, sin reintentos. Tras corregir la configuración hay que reencolar explícitamente (no existe todavía; fase 7).
+- **Migración:** `20261003010236_CommunicationDeliveryHardening` (aditiva: `claim_token`, `lease_until_utc`, `failure_category`, índice parcial `ix_communication_outbox_claimable`).
+- **Tests:** Infrastructure 10 contra PostgreSQL real (`CommunicationOutboxDeliveryIntegrationTests`: 3 workers, dos nodos, fencing tras lease vencido, worker muerto, recuperación agotada, SMTP lento, configuración sin busy-loop, categorías, multi-tenant, índice de idempotencia) + 26 de transporte (`SmtpDeliveryTransportTests`: Message-ID en el `.eml` real, timeout contra un servidor mudo, clasificación); Domain 15 (`CommunicationRetryPolicyTests`); Application 4 (`CommunicationQueueTests`, timeout en `SendTestEmail`).
+
 ## ZH-AUTH-PASSWORD-RESET-SECURITY-HOTFIX-01 — Forgot Password sin fuga de token ni enumeración (2026-10-02)
 
 **Estado: COMPLETADO (sin commit).** Fase 1 de [ADR-039](docs/decisions/ADR-039-communications-architecture.md). Solo Auth: sin Communications, SMTP, templates ni migraciones.

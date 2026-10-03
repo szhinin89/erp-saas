@@ -74,9 +74,16 @@ public sealed class CommunicationSettingsResolver : ICommunicationSettingsResolv
             senderName,
             useSsl,
             replyTo,
-            maxRetries,
+            Math.Clamp(maxRetries, 0, 20),
             language
-        );
+        )
+        {
+            // ZH-COMMUNICATIONS-DELIVERY-HARDENING-01 — solo instancia (no OrgSettings): el lease del
+            // claim depende de este valor, acotado a [5, 120] s por CommunicationDeliveryTiming.
+            SmtpTimeout = CommunicationDeliveryTiming.ResolveSmtpTimeout(
+                _configuration.GetValue<int?>("Communications:Email:SmtpTimeoutSeconds")
+            ),
+        };
     }
 
     private Task<string?> GetStringAsync(string key, Guid companyScopeId, CancellationToken ct) =>
