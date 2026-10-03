@@ -100,7 +100,7 @@
 }
 
 .zh-batch-progress--warning .zh-batch-progress-message {
-  color: var(--color-warning);
+  color: var(--color-warning-strong);
 }
 
 .zh-batch-progress--error .zh-batch-progress-message {

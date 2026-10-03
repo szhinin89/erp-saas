@@ -42,6 +42,7 @@
   --font-size-base: 14px;
   --font-size-lg: 16px;
   --font-size-xl: 20px;
+  --font-size-2xl: 24px; /* excepcional: valor principal de KPI */
 
   /* ── Font weight — únicos pesos oficiales ── */
   --font-weight-regular: 400;
@@ -65,15 +66,17 @@
   --radius-sm: 6px; /* small: chips de código, checkbox, ítems de menú, foco */
   --radius-md: 8px; /* medium */
   --radius-lg: 12px; /* paneles internos, notices, tiles, filter bar */
-  --radius-xl: 14px;
-  --radius-2xl: 16px;
+  --radius-xl: 16px; /* ZH-DS-VISUAL-SIGNATURE-01: antes 14px — cards más perceptibles */
+  --radius-2xl: 20px; /* antes 16px — modal */
   --radius-pill: 999px; /* full */
 
   /* ── Shadow — xs·sm·md·overlay (soft, tinte slate-900 rgb 15,23,42) ── */
-  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
-  --shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
-  --shadow-overlay: 0 16px 40px -8px rgba(15, 23, 42, 0.16), 0 4px 12px -4px rgba(15, 23, 42, 0.06);
+  /* ZH-DS-VISUAL-SIGNATURE-01: presencia algo mayor (antes casi imperceptible),
+     siempre difusa y tintada slate — nunca negra ni dura. */
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.05);
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 12px -2px rgba(15, 23, 42, 0.09);
+  --shadow-md: 0 3px 8px -3px rgba(15, 23, 42, 0.08), 0 10px 28px -6px rgba(15, 23, 42, 0.16);
+  --shadow-overlay: 0 8px 20px -8px rgba(15, 23, 42, 0.12), 0 28px 64px -12px rgba(15, 23, 42, 0.28);
 
   /* ── Motion — fast (UI estándar) · normal (entrada de overlays) · slow ── */
   --motion-duration-fast: 150ms;
@@ -129,11 +132,12 @@
   --color-attention-strong: #9a420a;
 
   /* ── Superficies — page · surface · subtle · hover · selected · overlay ── */
-  --color-background: var(--color-neutral-50); /* page */
+  --color-background: var(--color-neutral-100); /* page — antes neutral-50: las cards blancas ahora se separan del fondo */
   --color-surface: var(--color-white); /* surface: cards, modales, tablas */
   --color-surface-container-low: var(--color-neutral-100); /* subtle: headers de card, footers, secundarios */
-  --color-surface-hover: color-mix(in srgb, var(--color-neutral-100) 70%, transparent); /* hover de filas/ítems */
-  --color-surface-selected: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface)); /* ítem seleccionado */
+  /* hover: neutral-50 con un 5% de primary — perceptible y frío, opaco (sirve en celdas fijas). */
+  --color-surface-hover: color-mix(in srgb, var(--color-primary) 5%, var(--color-neutral-50));
+  --color-surface-selected: color-mix(in srgb, var(--color-primary) 9%, var(--color-surface)); /* ítem seleccionado */
   --color-overlay-scrim: color-mix(in srgb, var(--color-neutral-900) 40%, transparent); /* overlay de modal */
   /* Alias históricos (Material 3) sobre la escala neutral. */
   --color-surface-bright: var(--color-neutral-50);
@@ -141,9 +145,12 @@
   --color-surface-container-high: var(--color-neutral-200);
   --color-surface-dim: color-mix(in srgb, var(--color-neutral-200) 50%, var(--color-neutral-300));
   --color-surface-primary-tint: #e8f0f8; /* subtle primary accent (legacy) */
-  --color-table-header-bg: var(--color-neutral-50); /* thead limpio */
+  --color-table-header-bg: color-mix(in srgb, var(--color-neutral-100) 60%, var(--color-neutral-50)); /* thead diferenciado */
   /* Input: fondo ligeramente gris; blanco en hover/focus. */
   --color-input-bg: color-mix(in srgb, var(--color-neutral-100) 60%, var(--color-surface));
+  --color-input-bg-readonly: color-mix(in srgb, var(--color-neutral-100) 80%, var(--color-surface)); /* solo lectura */
+  --color-input-bg-disabled: var(--color-neutral-100); /* deshabilitado: legible, sin opacidad */
+  --color-input-text-disabled: var(--color-neutral-500);
   /* Código/identificador (SKU, nro. documento, código SRI/contable). */
   --color-code-bg: color-mix(in srgb, var(--color-neutral-100) 80%, transparent);
   --color-code-border: color-mix(in srgb, var(--color-neutral-200) 60%, transparent);
@@ -169,11 +176,11 @@
   --border-width: 1px;
   --color-border: color-mix(in srgb, var(--color-neutral-300) 60%, transparent); /* default */
   --color-border-light: color-mix(in srgb, var(--color-neutral-200) 70%, transparent); /* soft: separadores */
-  --color-border-interactive: var(--color-neutral-300); /* hover de controles */
+  --color-border-interactive: color-mix(in srgb, var(--color-neutral-400) 70%, var(--color-neutral-300)); /* hover de controles */
   --color-focus-border: color-mix(in srgb, var(--color-primary) 65%, var(--color-surface)); /* focus */
   --color-border-selected: var(--color-primary); /* selected */
   /* error: --color-error (campo inválido) */
-  --color-input-border: var(--color-border);
+  --color-input-border: color-mix(in srgb, var(--color-neutral-300) 85%, transparent); /* más definido que el borde de card */
   --color-input-border-hover: var(--color-border-interactive);
 
   /* ── Foco — contrato único ─────────────────────────────────
@@ -183,7 +190,7 @@
      • Todo lo demás (botones, links, checkbox, tiles, filas): outline
        --focus-outline vía :focus-visible (index.css). */
   --focus-ring-width: 3px;
-  --color-focus-ring: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  --color-focus-ring: color-mix(in srgb, var(--color-primary) 16%, transparent);
   --color-error-ring: color-mix(in srgb, var(--color-error) 12%, transparent);
   --focus-ring: 0 0 0 var(--focus-ring-width) var(--color-focus-ring);
   --focus-ring-error: 0 0 0 var(--focus-ring-width) var(--color-error-ring);
@@ -199,9 +206,14 @@
   --radius-modal: var(--radius-2xl);
 
   /* ── Sombras — contrato ───────────────────────────────────
-     card normal → --shadow-xs · interactivo/elevado (hover, botón) → --shadow-sm
+     card/sección/KPI → --shadow-card (= sm; ZH-DS-VISUAL-SIGNATURE-01, antes xs)
+     · ítem de lista/control → --shadow-xs · interactivo/elevado (hover) → --shadow-sm/md
      · dropdown/popover/toast → --shadow-md · modal/drawer → --shadow-overlay */
   --shadow-lg: var(--shadow-overlay); /* alias histórico */
+  --shadow-card: var(--shadow-sm);
+  /* Acción primaria sólida: sombra corta + brillo interior superior (sensación de relieve). */
+  --shadow-action-primary: 0 1px 2px rgba(15, 23, 42, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  --shadow-action-primary-hover: 0 4px 12px -4px rgba(15, 23, 42, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.14);
 
   /* ── Disabled — contrato único (antes 0.45/0.5/0.55/0.6 por componente) ── */
   --opacity-disabled: 0.55;

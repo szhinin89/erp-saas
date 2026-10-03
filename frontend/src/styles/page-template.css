@@ -135,7 +135,7 @@
   padding: var(--density-card-padding);
   border-radius: var(--radius-card);
   border: var(--border-width) solid var(--color-border);
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--shadow-card);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -153,7 +153,9 @@
 .pg-kpi-icon {
   width: 40px;
   height: 40px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
+  /* Contorno interior del mismo tono (ZH-DS-VISUAL-SIGNATURE-01): superficie de ícono refinada. */
+  box-shadow: inset 0 0 0 var(--border-width) color-mix(in srgb, currentColor 16%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -207,9 +209,10 @@
   gap: 2px;
 }
 
+/* Label suave (12px medium) para que el valor sea el protagonista. */
 .pg-kpi-label {
-  font-size: var(--text-label-md-size);
-  font-weight: var(--text-label-md-weight);
+  font-size: var(--text-label-sm-size);
+  font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
   margin: 0;
 }
@@ -219,9 +222,10 @@
    (.pg-kpi-trend) → estado (<Badge>) → ícono opcional (.pg-kpi-icon--tone).
    Denso: padding --density-card-padding, sin tipografía display. */
 .pg-kpi-value {
-  font-size: var(--text-headline-md-size);
-  font-weight: var(--text-headline-md-weight);
-  letter-spacing: var(--text-headline-md-spacing);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--text-headline-lg-spacing);
+  line-height: var(--text-title-sm-height);
   font-variant-numeric: tabular-nums;
   font-feature-settings: var(--font-features-numeric);
   color: var(--color-text-primary);
@@ -310,7 +314,7 @@
 }
 .pg-kpi--interactive:hover {
   background: var(--color-surface-hover);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md); /* elevación sobre --shadow-card */
 }
 .pg-kpi--interactive:focus-visible {
   outline: var(--focus-outline);
@@ -331,7 +335,7 @@
   background: var(--color-surface);
   border-radius: var(--radius-card);
   border: var(--border-width) solid var(--color-border);
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--shadow-card);
   overflow: hidden;
 }
 
@@ -445,7 +449,7 @@
   color: var(--color-text-primary);
 }
 .pg-pagination-btn:disabled {
-  opacity: 0.4;
+  opacity: var(--opacity-disabled);
   cursor: not-allowed;
 }
 .pg-pagination-btn .material-symbols-outlined {

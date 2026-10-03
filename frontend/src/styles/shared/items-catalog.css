@@ -32,59 +32,9 @@
 }
 /* .prd-slidedown ELIMINADO (Bloque 12B) — sin consumidores. */
 
-/* ── Tab bar ─────────────────────────────────────────────── */
-.prd-tabs {
-  display: flex;
-  gap: 2px;
-  border-bottom: 2px solid var(--color-border);
-  margin-bottom: var(--space-4);
-  position: relative;
-}
-
-.prd-tab-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  font: 500 13px/1 var(--font-family);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
-  transition:
-    color 0.15s,
-    background 0.15s,
-    border-color 0.15s;
-  white-space: nowrap;
-}
-.prd-tab-btn:hover {
-  color: var(--color-text-primary);
-  background: var(--color-surface-container-low);
-}
-.prd-tab-btn--active {
-  color: var(--color-primary);
-  border-bottom-color: var(--color-primary);
-}
-.prd-tab-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.prd-tab-btn:disabled:hover {
-  background: none;
-  color: inherit;
-}
-
-/* ── Variante "fill" — pestañas repartidas a ancho completo (formularios con muchas pestañas) ── */
-.prd-tabs--fill .prd-tab-btn {
-  flex: 1 1 0;
-  justify-content: center;
-}
-.prd-tab-icon {
-  font-size: 16px;
-}
+/* Tab bar (.prd-tabs/.prd-tab-btn/--fill/.prd-tab-icon) MOVIDO a zh-ui.css
+   (ZH-DS-GLOBAL-COMPONENTS-01): es el CSS de <ZHTabBar>/ConfigTabsLayout; las
+   pantallas que no cargaban este archivo recibían pestañas sin estilo. */
 /* .prd-tab-edit-badge ELIMINADO (Bloque 12B) — sin consumidores. */
 
 .prd-tab-content {
@@ -833,18 +783,9 @@
   margin-bottom: var(--space-3);
 }
 
-/* ── Icon button (unstyled) ──────────────────────────────── */
-.prd-icon-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-}
-.prd-icon-btn .material-symbols-outlined {
-  font-size: 20px;
-}
+/* .prd-icon-btn (base) MOVIDO a zh-ui.css §2 (ZH-DS-GLOBAL-COMPONENTS-01): es el CSS
+   propio de <ZHIconButton>; vivía aquí y las pantallas que no cargan este archivo
+   (p. ej. POS) mostraban el borde nativo del <button>. */
 
 /* ── CRUD checkbox area ──────────────────────────────────── */
 .prd-checkbox-field {
@@ -1157,62 +1098,8 @@ tr.cfg-row--selected:hover > td {
   font-size: 16px;
 }
 
-.prd-icon-btn--primary {
-  color: var(--color-primary);
-}
-
-/* danger/success: color semántico + hover con fondo suave (Bloque 13D).
-   No se toca padding/geometría de estas dos variantes — permanecen del mismo
-   tamaño que .prd-icon-btn--primary para no romper filas mixtas ya
-   existentes (p.ej. primary + danger/success alternando en la misma fila de
-   tabla). El fondo hover se ajusta al radio del propio ícono. */
-.prd-icon-btn--danger {
-  color: var(--color-error);
-  border-radius: var(--radius-sm);
-  transition: background var(--transition);
-}
-.prd-icon-btn--danger:hover:not(:disabled) {
-  background: var(--color-error-soft);
-}
-
-.prd-icon-btn--success {
-  color: var(--color-success);
-  border-radius: var(--radius-sm);
-  transition: background var(--transition);
-}
-.prd-icon-btn--success:hover:not(:disabled) {
-  background: var(--color-success-soft);
-}
-
-/* Ghost: neutro por defecto, resalta a primary en hover (Bloque 7D,
-   ex .pf-row-action de erp-form-core.css). */
-.prd-icon-btn--ghost {
-  padding: 4px;
-  border-radius: var(--radius-sm);
-  color: var(--color-text-secondary);
-  transition:
-    color var(--transition),
-    background var(--transition);
-}
-.prd-icon-btn--ghost:hover:not(:disabled) {
-  background: var(--color-surface-container-high);
-  color: var(--color-primary);
-}
-
-/* Circle shape (Bloque 13D) — variante circular opcional (prop `shape`),
-   preparada para reemplazar reimplementaciones ad-hoc como
-   .rpt-row-actions-btn (kebab "más acciones"). Aditiva: solo agrega
-   dimensión fija + radio 50%, compone con cualquier variante de color.
-   Sin consumidores todavía — preparación de capacidad (Bloque 13D). */
-.prd-icon-btn--circle {
-  width: 32px;
-  height: 32px;
-  justify-content: center;
-  border-radius: 50%;
-}
-.prd-icon-btn--circle:hover:not(:disabled) {
-  background: var(--color-surface-container);
-}
+/* .prd-icon-btn--primary/--danger/--success/--ghost/--circle MOVIDOS a zh-ui.css §2
+   junto con la base de <ZHIconButton> (ZH-DS-GLOBAL-COMPONENTS-01). */
 
 .prd-form-grid {
   max-width: 600px;

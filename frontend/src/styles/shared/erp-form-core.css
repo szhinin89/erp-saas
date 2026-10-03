@@ -11,7 +11,7 @@
   background: var(--color-surface);
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-card);
-  box-shadow: var(--shadow-xs); /* contrato card (= .card/.pg-section) */
+  box-shadow: var(--shadow-card); /* contrato card (= .card/.pg-section) */
   overflow: visible;
   margin-bottom: var(--space-5);
 }
@@ -109,6 +109,7 @@
   display: flex;
   flex-direction: column;
   gap: 0;
+  box-shadow: var(--shadow-card); /* contrato card (ZH-DS-VISUAL-SIGNATURE-01) */
 }
 .pf-mini-card__title {
   display: flex;

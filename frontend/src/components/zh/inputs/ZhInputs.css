@@ -25,7 +25,7 @@
 
 .zh-prefixed-input--disabled {
   background: var(--color-surface-container-low);
-  opacity: 0.6;
+  opacity: var(--opacity-disabled);
   cursor: not-allowed;
 }
 
