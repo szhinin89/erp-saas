@@ -1,3 +1,4 @@
+using ERP.Application.Modules.Communications.Services;
 using ERP.Domain.Modules.Communications.Enums;
 using System.Net.Mail;
 using System.Net.Sockets;
@@ -26,6 +27,8 @@ public static class CommunicationFailureClassifier
         exception switch
         {
             TimeoutException => CommunicationFailureCategory.Transient,
+            // ZH-EDOC-COMMUNICATIONS-01 — adjunto no disponible en su módulo dueño al enviar: reintentable.
+            CommunicationAttachmentException => CommunicationFailureCategory.Transient,
             SmtpFailedRecipientsException many => ClassifyRecipients(many),
             SmtpFailedRecipientException one => ClassifyStatus((int)one.StatusCode),
             SmtpException smtp => ClassifySmtp(smtp),
@@ -56,6 +59,7 @@ public static class CommunicationFailureClassifier
         exception switch
         {
             TimeoutException timeout => $"{nameof(TimeoutException)}: {timeout.Message}",
+            CommunicationAttachmentException attachment => $"{attachment.Code}: {attachment.Message}",
             _ when ProviderCode(exception) is { } code => $"{exception.GetType().Name} ({code})",
             _ => exception.GetType().Name,
         };

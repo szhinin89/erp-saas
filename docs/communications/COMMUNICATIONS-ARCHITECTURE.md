@@ -79,15 +79,15 @@ ElectronicDocument.Authorize → ElectronicDocumentAuthorizedEvent
 | G2 | Password reset: no envía correo en producción; token raw en logs | 🟥 | §K, §L, Fases 1 y 6 |
 | G3 | Password reset: enumeración de usuarios, sin rate limit | 🟧 | §L, Fase 1 |
 | G4 | Filas atascadas en `Processing` para siempre | 🟧 | §G, Fase 2 |
-| G5 | NC y Retención sin correo; handler acoplado a Sales | 🟧 | §M, Fase 5 |
+| G5 | NC y Retención sin correo; handler acoplado a Sales | 🟧 | §M, Fase 5 — ✅ resuelto 2026-10-03 |
 | G6 | Sin templates reales (HTML en el handler); `CommunicationTemplate` y RazorLight sin uso | 🟧 | §J, Fase 4 |
 | G7 | `MaxRetries` de configuración nunca aplicado; sin clasificación de errores; sin requeue | 🟨 | §H, Fases 2 y 7 |
 | G8 | Scope tenant/company implícito (contexto ambiente) | 🟨 | §D, Fase 3 |
 | G9 | Sin monitor ni historial de intentos | 🟨 | §I, §P, Fases 3 y 7 |
 | G10 | Código muerto/duplicado: `QueueEmailCommand`, RazorLight, `sales_invoice_authorized.enabled` | 🟩 | §S |
-| G11 | Intención perdida en silencio si el handler falla (excepción tragada) | 🟧 | §E, Fase 5 |
-| G12 | RIDE generado dentro de la transacción de autorización SRI | 🟨 | §N, Fase 5 |
-| G13 | Adjuntos por ruta local del nodo | 🟨 | §N, Fase 5 |
+| G11 | Intención perdida en silencio si el handler falla (excepción tragada) | 🟧 | §E, Fase 5 — ✅ resuelto (reconciliación) |
+| G12 | RIDE generado dentro de la transacción de autorización SRI | 🟨 | §N, Fase 5 — ✅ resuelto (RIDE al enviar) |
+| G13 | Adjuntos por ruta local del nodo | 🟨 | §N, Fase 5 — ✅ resuelto (referencias + IFileStorage) |
 | G14 | Fallback de configuración campo por campo (mezcla host de empresa con password de instancia) | 🟨 | §O, Fase 3 |
 
 ---
@@ -523,8 +523,8 @@ ERP.Application/Modules/Communications/Templates/
 | TemplateKey | Scope | Sensible | Override empresa | Estado |
 |---|---|---|---|---|
 | `SALES_INVOICE_AUTHORIZED` | Company | No | Sí | Existe (en el handler); se migra en Fase 4 sin cambiar la salida |
-| `SALES_CREDIT_NOTE_AUTHORIZED` | Company | No | Sí | Futuro (Fase 5) |
-| `RETENTION_AUTHORIZED` | Company | No | Sí | Futuro (Fase 5) |
+| `SALES_CREDIT_NOTE_AUTHORIZED` | Company | No | Sí | Activo (Fase 5, default v1) |
+| `RETENTION_AUTHORIZED` | Company | No | Sí | Activo (Fase 5, default v1) |
 | `ACCOUNT_STATEMENT` | Company | No | Sí | Futuro (sin ticket) |
 | `PASSWORD_RESET` | System | **Sí** | No | Futuro (Fase 6) |
 | `EMAIL_VERIFICATION` | System | **Sí** | No | Futuro (sin ticket) |
@@ -672,6 +672,99 @@ Mientras no exista la Fase 6, el reset por email no funciona en producción. Se 
 Contributors: **Sales** (Factura y NC: cliente del snapshot) y **Retentions** (Retención: proveedor). No se copian
 handlers. ElectronicDocuments solo publica el hecho fiscal (ADR-038 D14).
 
+### Implementación efectiva — Fase 5 (ZH-EDOC-COMMUNICATIONS-01, 2026-10-03)
+
+Concreción del diseño anterior. Prevalece sobre él donde difiere.
+
+```
+ElectronicDocumentAuthorizedEvent (dentro de la transacción fiscal)
+  → ElectronicDocumentAuthorizedCommunicationHandler        (único; absorbe fallos)
+    → IElectronicDocumentCommunicationService               (camino único: evento y reconciliación)
+      → contributor por (SourceModule, DocumentType)         (módulo dueño; solo datos)
+      → ICommunicationQueue → CommunicationOutbox            (INSERT … ON CONFLICT DO NOTHING)
+Job process-communications → processor
+  → ICommunicationAttachmentResolver → proveedor del módulo dueño (XML: ElectronicDocuments; RIDE: Ride)
+  → IEmailSender (bytes ya resueltos)
+Job reconcile-electronic-document-communications (cada 10 min) → mismo servicio, misma identidad
+```
+
+| Ruta | Propósito | Origen oficial | Rol | Destinatario |
+|---|---|---|---|---|
+| `Sales` / Invoice | `SALES_INVOICE_AUTHORIZED` (v1, golden intacto) | `Sales`/`SalesInvoice` | Customer | snapshot del cliente de la factura |
+| `Sales` / CreditNote | `SALES_CREDIT_NOTE_AUTHORIZED` (v1 nuevo) | `Sales`/`SalesReturn` | Customer | snapshot del cliente de la factura modificada (el del XML de la NC) |
+| `Retentions` / Retention | `RETENTION_AUTHORIZED` (v1 nuevo) | `Retentions`/`RetentionDocument` | Supplier | contacto primario del tercero (`BusinessPartnerContactResolver`, regla única movida desde Ventas); nunca inventado |
+
+- **Contrato.** `IElectronicDocumentCommunicationContributor` declara `SourceModule` y
+  `PurposesByDocumentType`. `ContributeAsync` devuelve `ElectronicDocumentCommunicationContribution` (propósito,
+  origen, rol, nombre/correo, sucursal, número del comprobante y modelo tipado) o un fallo estructurado
+  (`SOURCE_NOT_FOUND` / `SOURCE_NOT_ELIGIBLE`). `ElectronicDocumentCommunicationContributorResolver` rechaza dos
+  contributors para la misma ruta. El servicio exige que el propósito sea el de la ruta y que el origen sea el mismo
+  par (módulo, id) del comprobante.
+- **Diferencia con §M.** No se usa `ICommunicationSourceContributor.ComposeAsync` ni "componer en el processor": se
+  renderiza al encolar (fase 4). `CompanyCopy` queda diferido.
+- **Adjuntos (concreción de §N).** `communication_outbox_attachments.reference_id` = `ElectronicDocument.Id`. Las
+  referencias las agrega el servicio genérico, no cada contributor: XML si `AuthorizedXmlPath` existe, más RIDE.
+  Al enviar, `CommunicationAttachmentResolver` materializa:
+  - bytes guardados → tal cual;
+  - `FileStoragePath` → `IFileStorage` (corrige el `File.Exists` sobre rutas relativas);
+  - referencia → `ICommunicationAttachmentContentProvider` del tipo.
+
+  Proveedores:
+  - `ElectronicDocumentAuthorizedXmlAttachmentProvider`: repositorio de ED + `IFileStorage`, byte a byte;
+    obligatorio.
+  - `RidePdfCommunicationAttachmentProvider`: `GetOrGenerateRideQuery` + `IFileStorage`. `PendingSource` →
+    reintento; cualquier otro desenlace sin PDF → se omite y el correo sale con el XML legal.
+
+  Un adjunto obligatorio ausente lanza `CommunicationAttachmentException` → `Transient` (backoff normal).
+  `EmailAttachment` es `(FileName, ContentType, byte[])`: el transporte no conoce rutas. CHECK
+  `ck_communication_outbox_attachments_content_source`.
+- **Destinatario ausente (transversal, en la cola).** Correo nulo, vacío o inválido (incluye display name) → fila
+  `Failed`/`Permanent` con `COMMUNICATION_RECIPIENT_MISSING`, sin correo ni contenido, con las variables y los
+  adjuntos por referencia. No se renderiza ni se lanza. Usa la misma identidad. Factory única:
+  `CommunicationOutbox.CreateEmailFailedBeforeDelivery` (antes `CreateEmailTemplateFailure`). DTO:
+  `QueuedCommunicationDto.FailureCode`.
+- **Template inválido.** Misma semántica de la fase 4 para los tres propósitos.
+- **Reconciliación.** `ElectronicDocumentCommunicationReconciliationQuery` es SQL cross-tenant explícito y solo
+  devuelve ids. Busca comprobantes `Authorized` de una ruta soportada, **de cualquier antigüedad**, sin cambios en
+  los últimos 5 min, que no tengan fila en la outbox con el mismo tenant, empresa, `source_module`, `SourceType`
+  (declarado por la ruta del contributor), `source_id` y propósito, en cualquier estado.
+
+  Horizonte (verificación final): se eliminó la ventana de 7 días sobre `created_at`. Medido con EXPLAIN ANALYZE
+  sobre 100k comprobantes, no ahorraba ningún escaneo (`created_at` no tiene índice en `electronic_documents`,
+  tabla CLOSED): solo descartaba faltantes, incluidos los autorizados tarde. El conjunto de faltantes se calcula sin
+  `LIMIT` en un CTE `MATERIALIZED`, para que el planner elija el anti-join por costo (con `LIMIT` apostaba por un
+  nested loop que sondeaba cada comprobante, 3× más lento). Después se ordena y se pagina. El costo es lineal en
+  autorizados + outbox, como antes; no hay índice nuevo.
+
+  El reconciliador:
+  - resuelve la preferencia una vez por empresa (sin duplicar su SSOT) y excluye en SQL a las desactivadas;
+  - orden global determinístico (`created_at`, `id`), más antiguos primero, páginas de 50 y hasta 200 por corrida;
+  - usa un cursor process-local (singleton): la corrida siguiente continúa tras el último examinado y vuelve al
+    inicio al llegar al final. Así los faltantes que el servicio omite y siguen faltando (origen aún no autorizado
+    o inexistente) nunca bloquean a los posteriores. Si se pierde en un reinicio, solo se reexamina desde el más
+    antiguo;
+  - procesa cada documento en su propio scope bajo `JobExecutionContext`.
+
+  No reencola `Failed` ni crea tablas. Job Hangfire `*/10 * * * *` con `[DisableConcurrentExecution]` como
+  defensa secundaria; la exclusión real es la identidad única.
+- **Logs** (sin PII):
+  - 4230–4237 `ElectronicDocumentCommunication{Requested,Skipped,Queued,SourceMissing,Failed,Reconciled,ReconciliationFailed,ReconciliationRun}`;
+  - 4212 `CommunicationRecipientMissing`;
+  - 4220 `CommunicationAttachmentSkipped`.
+- **Tests:**
+  - unitarios: handler/servicio/contributors con golden de Factura; cola; resolvedor y proveedores de adjuntos;
+  - PostgreSQL (`ElectronicDocumentCommunicationIntegrationTests`):
+    - los tres tipos con XML/RIDE reales al enviar;
+    - sin correo por tipo;
+    - override inválido por tipo;
+    - evento duplicado;
+    - reconciliación simple, repetida y concurrente con eventos duplicados;
+    - preferencia y antigüedad mínima;
+    - multi-tenant;
+  - arquitectura (`CommunicationsBoundaryTests`, baseline 0): un solo handler; contributors solo datos;
+    ElectronicDocuments y el gateway SRI sin Communications ni SMTP; el camino del evento sin RIDE ni archivos; el
+    transporte sin filesystem.
+
 ---
 
 ## N. Adjuntos
@@ -732,9 +825,9 @@ handlers. ElectronicDocuments solo publica el hecho fiscal (ADR-038 D14).
 
 **Settings duplicados:**
 
-- `communications.sales_invoice_authorized.enabled` → REMOVE EVENTUALLY (Fase 5). La única autoridad es
+- `communications.sales_invoice_authorized.enabled` → REMOVE EVENTUALLY (Fase 5). Diferido en la implementación de la Fase 5 (sigue sin consumidor; su retiro es una migración de settings aparte). La única autoridad es
   `electronic_documents.email_on_authorization`.
-- `communications.send_copy_to_company_email` → se **implementa** en la Fase 5 como `RecipientRole = CompanyCopy`.
+- `communications.send_copy_to_company_email` → se **implementa** en la Fase 5 como `RecipientRole = CompanyCopy`. **Diferido** por ZH-EDOC-COMMUNICATIONS-01 (alcance explícito del ticket).
   Dueño: la empresa (configuración); consumidor: el handler genérico de ED.
 
 ---
@@ -823,7 +916,7 @@ handlers. ElectronicDocuments solo publica el hecho fiscal (ADR-038 D14).
 | `SmtpEmailSender` | **KEEP / EXTEND** | Timeout, clasificación, `Message-ID`; MailKit solo si hace falta |
 | `CommunicationSettingsResolver` | **EXTEND** | Scope explícito, perfil completo, política de fallback |
 | `CommunicationTemplate` (+ repositorio) | **KEEP → EXTEND** | Pasa a ser el override por empresa (`BaseTemplateVersion`) |
-| `SalesInvoiceAuthorizedCommunicationHandler` | **REMOVE EVENTUALLY** | Reemplazado en Fase 5 por el handler genérico + contributor Sales, con el mismo correo |
+| `SalesInvoiceAuthorizedCommunicationHandler` | **REMOVED (2026-10-03)** | Reemplazado en Fase 5 por el handler genérico + contributor Sales, con el mismo correo (golden) |
 | `IPasswordResetLinkSender` | **KEEP** | Frontera de Auth; firma ampliada en Fase 6 |
 | `LoggingPasswordResetLinkSender` | **REMOVE EVENTUALLY** | Fase 1 quita el enlace del log; Fase 6 lo elimina |
 | `QueueEmailCommand` (+ validator, handler) | **REMOVE EVENTUALLY** | Sin llamadores; las reglas útiles del validador pasan al dominio/queue |
@@ -851,7 +944,7 @@ lo indicado.
 | 2 | ZH-COMMUNICATIONS-DELIVERY-HARDENING-01 | Claim atómico + lease + fencing, recuperación de `Processing`, `[DisableConcurrentExecution]` secundario, `MaxRetries` real (snapshot), clasificación de errores, timeout SMTP, `Message-ID` determinístico | Sí (`claim_token`, `lease_until_utc`) | — |
 | 3 | ZH-COMMUNICATIONS-CONTRACT-01 | `ScopeKind` + invariantes + CHECK, `CommunicationIdentity`, origen (`SourceModule`/`SourceType`/`SourceId`/`SourceDisplay`/`TraceId`), `RecipientRole`, `ExpiresAtUtc`, `Skipped`/`Expired`, `CommunicationDeliveryAttempt`, `LastErrorSafeText`, resolver con scope explícito y perfil completo, INSERT ON CONFLICT, backfill de `RecipientRole = Primary` | Sí | 2 |
 | 4 | ZH-COMMUNICATIONS-TEMPLATES-01 | Catálogo embebido + renderer + override por empresa (sin UI); migrar Factura **byte a byte**; quitar RazorLight | Sí (`base_template_version`, columnas de template en la outbox) | 3 |
-| 5 | ZH-EDOC-COMMUNICATIONS-01 (= ADR-038 fase 6) | Handler genérico, contributors Sales (Factura, NC) y Retentions, composición en el processor (RIDE fuera de la transacción SRI), referencias de adjuntos + resolver de ED, reconciliación con horizonte, `CompanyCopy`, retirar `SalesInvoiceAuthorizedCommunicationHandler` y el setting duplicado | Sí (columnas de referencia en adjuntos) | 3, 4 |
+| 5 | ZH-EDOC-COMMUNICATIONS-01 (= ADR-038 fase 6) | **IMPLEMENTED 2026-10-03.** Handler genérico, contributors Sales (Factura, NC) y Retentions, composición en el processor (RIDE fuera de la transacción SRI), referencias de adjuntos + resolver de ED, reconciliación con horizonte, `CompanyCopy`, retirar `SalesInvoiceAuthorizedCommunicationHandler` y el setting duplicado. Implementado con composición al encolar (fase 4); `CompanyCopy` y retiro del setting duplicado diferidos | Sí (columnas de referencia en adjuntos) | 3, 4 |
 | 6 | ZH-AUTH-PASSWORD-RESET-DELIVERY-01 | `CommunicationsPasswordResetLinkSender`, scope System, payload sensible + scrub, template `PASSWORD_RESET`, eliminar `LoggingPasswordResetLinkSender` | Sí (columnas sensibles) | 1, 3, 4 |
 | 7 | ZH-COMMUNICATIONS-MONITOR-01 | Read model, intentos, requeue/cancel/resend, permisos, pantalla | Posible (índices) | 3 |
 

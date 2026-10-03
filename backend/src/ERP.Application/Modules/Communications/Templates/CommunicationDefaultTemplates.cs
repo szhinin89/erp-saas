@@ -52,8 +52,79 @@ public static class CommunicationDefaultTemplates
         ]
     );
 
+    /// <summary>ZH-EDOC-COMMUNICATIONS-01 — nota de crédito de venta autorizada (mismo estilo que la factura).</summary>
+    public static readonly CommunicationTemplateDefinition SalesCreditNoteAuthorizedV1 = new(
+        CommunicationPurposes.SalesCreditNoteAuthorized,
+        Version: 1,
+        CommunicationTemplateSource.Default,
+        SubjectTemplate: "Nota de credito autorizada {{CreditNoteNumber}} - {{IssuerName}}",
+        HtmlTemplate: "<p>Estimado/a {{CustomerName}},</p>"
+            + "<p>Su nota de credito electronica fue autorizada por el SRI.</p>"
+            + "<ul>"
+            + "<li><strong>Nota de credito:</strong> {{CreditNoteNumber}}</li>"
+            + "<li><strong>Factura modificada:</strong> {{ModifiedInvoiceNumber}}</li>"
+            + "<li><strong>Clave de acceso:</strong> {{AccessKey}}</li>"
+            + "<li><strong>Cliente:</strong> {{CustomerName}}</li>"
+            + "<li><strong>Total:</strong> USD {{Total}}</li>"
+            + "<li><strong>Emisor:</strong> {{IssuerName}}</li>"
+            + "</ul>",
+        TextTemplate: "Estimado/a {{CustomerName}},\n\n"
+            + "Su nota de credito electronica fue autorizada por el SRI.\n"
+            + "Nota de credito: {{CreditNoteNumber}}\n"
+            + "Factura modificada: {{ModifiedInvoiceNumber}}\n"
+            + "Clave de acceso: {{AccessKey}}\n"
+            + "Cliente: {{CustomerName}}\n"
+            + "Total: USD {{Total}}\n"
+            + "Emisor: {{IssuerName}}\n",
+        Variables:
+        [
+            new(nameof(SalesCreditNoteAuthorizedTemplateModel.CustomerName)),
+            new(nameof(SalesCreditNoteAuthorizedTemplateModel.CreditNoteNumber)),
+            new(nameof(SalesCreditNoteAuthorizedTemplateModel.ModifiedInvoiceNumber)),
+            new(nameof(SalesCreditNoteAuthorizedTemplateModel.AccessKey)),
+            new(nameof(SalesCreditNoteAuthorizedTemplateModel.Total)),
+            new(nameof(SalesCreditNoteAuthorizedTemplateModel.IssuerName)),
+        ]
+    );
+
+    /// <summary>ZH-EDOC-COMMUNICATIONS-01 — comprobante de retención autorizado (al sujeto retenido).</summary>
+    public static readonly CommunicationTemplateDefinition RetentionAuthorizedV1 = new(
+        CommunicationPurposes.RetentionAuthorized,
+        Version: 1,
+        CommunicationTemplateSource.Default,
+        SubjectTemplate: "Comprobante de retencion autorizado {{RetentionNumber}} - {{IssuerName}}",
+        HtmlTemplate: "<p>Estimado/a {{SupplierName}},</p>"
+            + "<p>Su comprobante de retencion electronico fue autorizado por el SRI.</p>"
+            + "<ul>"
+            + "<li><strong>Retencion:</strong> {{RetentionNumber}}</li>"
+            + "<li><strong>Documento sustento:</strong> {{SourceDocumentNumber}}</li>"
+            + "<li><strong>Clave de acceso:</strong> {{AccessKey}}</li>"
+            + "<li><strong>Sujeto retenido:</strong> {{SupplierName}}</li>"
+            + "<li><strong>Total retenido:</strong> USD {{TotalRetained}}</li>"
+            + "<li><strong>Agente de retencion:</strong> {{IssuerName}}</li>"
+            + "</ul>",
+        TextTemplate: "Estimado/a {{SupplierName}},\n\n"
+            + "Su comprobante de retencion electronico fue autorizado por el SRI.\n"
+            + "Retencion: {{RetentionNumber}}\n"
+            + "Documento sustento: {{SourceDocumentNumber}}\n"
+            + "Clave de acceso: {{AccessKey}}\n"
+            + "Sujeto retenido: {{SupplierName}}\n"
+            + "Total retenido: USD {{TotalRetained}}\n"
+            + "Agente de retencion: {{IssuerName}}\n",
+        Variables:
+        [
+            new(nameof(RetentionAuthorizedTemplateModel.SupplierName)),
+            new(nameof(RetentionAuthorizedTemplateModel.RetentionNumber)),
+            new(nameof(RetentionAuthorizedTemplateModel.SourceDocumentNumber)),
+            new(nameof(RetentionAuthorizedTemplateModel.AccessKey)),
+            new(nameof(RetentionAuthorizedTemplateModel.TotalRetained)),
+            new(nameof(RetentionAuthorizedTemplateModel.IssuerName)),
+        ]
+    );
+
     private static readonly IReadOnlyDictionary<string, CommunicationTemplateDefinition> Defaults =
-        new[] { SalesInvoiceAuthorizedV1 }.ToDictionary(d => d.Key, StringComparer.Ordinal);
+        new[] { SalesInvoiceAuthorizedV1, SalesCreditNoteAuthorizedV1, RetentionAuthorizedV1 }
+            .ToDictionary(d => d.Key, StringComparer.Ordinal);
 
     public static IEnumerable<CommunicationTemplateDefinition> All => Defaults.Values;
 

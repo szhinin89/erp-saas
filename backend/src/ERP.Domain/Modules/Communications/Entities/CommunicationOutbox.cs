@@ -175,17 +175,19 @@ public sealed class CommunicationOutbox : SystemAggregateRoot, IOptionalCompanyS
     }
 
     /// <summary>
-    /// Evidencia durable de una comunicación que NO pudo renderizarse al encolar (template inexistente,
-    /// inválido o variables que no cumplen su contrato). Nace <c>Failed</c> con la categoría del fallo,
-    /// misma identidad (un reintento del hecho no la duplica), destinatario, origen y — si el propósito no
-    /// es sensible — las variables en <paramref name="templatePayloadJson"/> para re-renderizarla tras
-    /// corregir el template. Nunca lleva asunto ni cuerpo inventados y nunca se envía (la CHECK
-    /// <c>ck_communication_outbox_content</c> impide que una fila sin contenido quede reclamable).
+    /// Evidencia durable de una comunicación que NO pudo prepararse al encolar: template inexistente,
+    /// inválido o variables que no cumplen su contrato (ZH-COMMUNICATIONS-TEMPLATES-01), o destinatario
+    /// ausente/inválido (ZH-EDOC-COMMUNICATIONS-01, <paramref name="recipientEmail"/> null). Nace
+    /// <c>Failed</c> con la categoría del fallo, misma identidad (un reintento del hecho o la
+    /// reconciliación no la duplican), origen y — si el propósito no es sensible — las variables en
+    /// <paramref name="templatePayloadJson"/> para reconstruirla tras corregir la causa. Nunca lleva
+    /// asunto ni cuerpo inventados y nunca se envía (la CHECK <c>ck_communication_outbox_content</c>
+    /// impide que una fila sin contenido quede reclamable).
     /// </summary>
-    public static CommunicationOutbox CreateEmailTemplateFailure(
+    public static CommunicationOutbox CreateEmailFailedBeforeDelivery(
         CommunicationIdentity identity,
         string? recipientName,
-        string recipientEmail,
+        string? recipientEmail,
         CommunicationFailureCategory category,
         string errorSafeText,
         string? templatePayloadJson,
@@ -196,11 +198,9 @@ public sealed class CommunicationOutbox : SystemAggregateRoot, IOptionalCompanyS
     {
         ArgumentNullException.ThrowIfNull(identity);
         if (identity.Channel != CommunicationChannel.Email)
-            throw new ArgumentException("CreateEmailTemplateFailure requiere una identidad del canal Email.", nameof(identity));
-        if (string.IsNullOrWhiteSpace(recipientEmail))
-            throw new ArgumentException("El correo destinatario es obligatorio.", nameof(recipientEmail));
+            throw new ArgumentException("CreateEmailFailedBeforeDelivery requiere una identidad del canal Email.", nameof(identity));
         if (category is not (CommunicationFailureCategory.Configuration or CommunicationFailureCategory.Permanent))
-            throw new ArgumentException("Un fallo de template es de configuración o permanente.", nameof(category));
+            throw new ArgumentException("Un fallo previo a la entrega es de configuración o permanente.", nameof(category));
         if (identity.ResendSequence > 0)
             throw new ArgumentException("Un reenvío manual se renderiza al reenviarse; no nace fallido.", nameof(identity));
         if (templatePayloadJson is not null && CommunicationPurposes.Get(identity.Purpose).IsSensitive)
@@ -222,7 +222,7 @@ public sealed class CommunicationOutbox : SystemAggregateRoot, IOptionalCompanyS
             SourceId = identity.Source.Id,
             RecipientRole = identity.RecipientRole,
             RecipientName = Optional(recipientName, RecipientNameMaxLen, nameof(recipientName)),
-            RecipientEmail = Required(recipientEmail.ToLowerInvariant(), RecipientEmailMaxLen, nameof(recipientEmail)),
+            RecipientEmail = Optional(recipientEmail?.ToLowerInvariant(), RecipientEmailMaxLen, nameof(recipientEmail)),
             TemplateKey = identity.Purpose,
             TemplatePayloadJson = templatePayloadJson,
             Status = CommunicationStatus.Failed,
@@ -240,14 +240,24 @@ public sealed class CommunicationOutbox : SystemAggregateRoot, IOptionalCompanyS
 
     private static string Truncate(string value, int maxLength) => value.Length <= maxLength ? value : value[..maxLength];
 
+    /// <summary>
+    /// Adjunta contenido por ruta de almacenamiento oficial, bytes, o <paramref name="referenceId"/>
+    /// (recurso resuelto por su módulo dueño al enviar).
+    /// </summary>
     public void AddAttachment(
         CommunicationAttachmentType attachmentType,
         string fileName,
         string contentType,
         string? fileStoragePath,
         byte[]? binaryContent,
-        Guid createdBy
-    ) => _attachments.Add(CommunicationOutboxAttachment.Create(TenantId, CompanyId, Id, attachmentType, fileName, contentType, fileStoragePath, binaryContent, createdBy));
+        Guid createdBy,
+        Guid? referenceId = null
+    ) =>
+        _attachments.Add(
+            CommunicationOutboxAttachment.Create(
+                TenantId, CompanyId, Id, attachmentType, fileName, contentType, fileStoragePath, binaryContent, referenceId, createdBy
+            )
+        );
 
     // ZH-COMMUNICATIONS-DELIVERY-HARDENING-01 — las transiciones de entrega (claim → Sent/Failed/
     // reprogramada) ya no se hacen en memoria + SaveChanges: son UPDATE condicionados en PostgreSQL

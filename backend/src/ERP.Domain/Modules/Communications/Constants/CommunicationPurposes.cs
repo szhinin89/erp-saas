@@ -11,6 +11,12 @@ public static class CommunicationPurposes
 {
     public const string SalesInvoiceAuthorized = "SALES_INVOICE_AUTHORIZED";
 
+    /// <summary>ZH-EDOC-COMMUNICATIONS-01 — nota de crédito de venta autorizada (origen SalesReturn).</summary>
+    public const string SalesCreditNoteAuthorized = "SALES_CREDIT_NOTE_AUTHORIZED";
+
+    /// <summary>ZH-EDOC-COMMUNICATIONS-01 — comprobante de retención autorizado (sujeto retenido).</summary>
+    public const string RetentionAuthorized = "RETENTION_AUTHORIZED";
+
     /// <summary>
     /// Contrato reservado (scope System, sensible): sin productor hasta la fase 6 de ADR-039; hoy la
     /// recuperación de contraseña usa la entrega simulada de Auth.
@@ -22,6 +28,20 @@ public static class CommunicationPurposes
         {
             new CommunicationPurposeDefinition(
                 SalesInvoiceAuthorized,
+                CommunicationScopeKind.Company,
+                [CommunicationChannel.Email],
+                IsSensitive: false,
+                AllowsManualResend: true
+            ),
+            new CommunicationPurposeDefinition(
+                SalesCreditNoteAuthorized,
+                CommunicationScopeKind.Company,
+                [CommunicationChannel.Email],
+                IsSensitive: false,
+                AllowsManualResend: true
+            ),
+            new CommunicationPurposeDefinition(
+                RetentionAuthorized,
                 CommunicationScopeKind.Company,
                 [CommunicationChannel.Email],
                 IsSensitive: false,

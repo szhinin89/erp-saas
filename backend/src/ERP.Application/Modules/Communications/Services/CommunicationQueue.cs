@@ -7,6 +7,7 @@ using ERP.Domain.Modules.Communications.Enums;
 using ERP.Domain.Modules.Communications.Interfaces;
 using ERP.Domain.Modules.Communications.ValueObjects;
 using Microsoft.Extensions.Logging;
+using System.Net.Mail;
 using System.Text.Json;
 
 namespace ERP.Application.Modules.Communications.Services;
@@ -27,7 +28,9 @@ namespace ERP.Application.Modules.Communications.Services;
 /// renderizados y la TemplateKey/versión/fuente; el envío nunca re-renderiza. Un fallo de template NO
 /// lanza ni se pierde: se persiste la comunicación como <c>Failed</c> (categoría Configuration/Permanent,
 /// sin contenido, con las variables si el propósito no es sensible) y se devuelve su código en
-/// <see cref="QueuedCommunicationDto.TemplateFailureCode"/>. Nunca revierte el hecho de negocio.
+/// <see cref="QueuedCommunicationDto.FailureCode"/>. Nunca revierte el hecho de negocio.
+/// ZH-EDOC-COMMUNICATIONS-01 — misma semántica para un destinatario sin correo válido:
+/// Failed/Permanent con <c>COMMUNICATION_RECIPIENT_MISSING</c> (no se lanza ni se inventa un correo).
 /// </summary>
 public sealed partial class CommunicationQueue : ICommunicationQueue
 {
@@ -73,31 +76,48 @@ public sealed partial class CommunicationQueue : ICommunicationQueue
             ?? (await _settings.ResolveEmailAsync(request.Scope, ct)).MaxRetries;
 
         CommunicationOutbox communication;
-        string? templateFailureCode = null;
-        try
+        string? failureCode = null;
+        var recipientEmail = NormalizeEmail(request.RecipientEmail);
+        if (recipientEmail is null)
         {
-            var rendered = await RenderAsync(request, identity, ct);
-            communication = CommunicationOutbox.CreateEmail(
-                identity,
-                request.RecipientName,
-                request.RecipientEmail,
-                rendered.Usage,
-                rendered.Subject,
-                rendered.Html,
-                rendered.Text,
-                request.Priority,
-                request.ScheduledAtUtc,
-                maxRetries,
-                _currentUser.UserId
-            );
+            // ZH-EDOC-COMMUNICATIONS-01 — semántica transversal de destinatario ausente: nunca se inventa
+            // un correo ni se lanza; queda evidencia Failed/Permanent (misma identidad) con las variables
+            // para reconstruirla tras corregir el contacto.
+            failureCode = ApiResponseCodes.Communications.RecipientMissing;
+            communication = FailedBeforeDelivery(
+                request, identity, failureCode, CommunicationFailureCategory.Permanent,
+                "El destinatario no tiene un correo electrónico válido.", maxRetries);
         }
-        catch (CommunicationTemplateException failure)
+        else
         {
-            // Un fallo de template no revierte el hecho de negocio NI pierde la intención: queda una fila
-            // Failed (misma identidad, sin contenido inventado, nunca enviable) con las variables para
-            // re-renderizarla tras corregir el template.
-            templateFailureCode = failure.Code;
-            communication = TemplateFailure(request, identity, failure, maxRetries);
+            try
+            {
+                var rendered = await RenderAsync(request, identity, ct);
+                communication = CommunicationOutbox.CreateEmail(
+                    identity,
+                    request.RecipientName,
+                    recipientEmail,
+                    rendered.Usage,
+                    rendered.Subject,
+                    rendered.Html,
+                    rendered.Text,
+                    request.Priority,
+                    request.ScheduledAtUtc,
+                    maxRetries,
+                    _currentUser.UserId
+                );
+            }
+            catch (CommunicationTemplateException failure)
+            {
+                // Un fallo de template no revierte el hecho de negocio NI pierde la intención: queda una fila
+                // Failed (misma identidad, sin contenido inventado, nunca enviable) con las variables para
+                // re-renderizarla tras corregir el template.
+                failureCode = failure.Code;
+                var category = failure.Code == ApiResponseCodes.Communications.TemplateRenderFailed
+                    ? CommunicationFailureCategory.Permanent
+                    : CommunicationFailureCategory.Configuration;
+                communication = FailedBeforeDelivery(request, identity, failure.Code, category, failure.Message, maxRetries, recipientEmail);
+            }
         }
 
         foreach (var attachment in request.Attachments ?? [])
@@ -108,45 +128,62 @@ public sealed partial class CommunicationQueue : ICommunicationQueue
                 attachment.ContentType,
                 attachment.FileStoragePath,
                 attachment.BinaryContent,
-                _currentUser.UserId
+                _currentUser.UserId,
+                attachment.ReferenceId
             );
         }
 
         var result = await _outbox.EnqueueAsync(communication, ct);
-        if (templateFailureCode is null)
+        if (failureCode is null)
             LogTemplateUsed(result.Id, communication.TemplateKey!, communication.TemplateVersion!.Value, communication.TemplateSource!.Value, request.Source.Id, !result.Created);
+        else if (failureCode == ApiResponseCodes.Communications.RecipientMissing)
+            LogRecipientMissing(result.Id, identity.Purpose, request.Source.Id, !result.Created);
         else
-            LogTemplateFailed(result.Id, identity.Purpose, templateFailureCode, request.Source.Id, !result.Created);
+            LogTemplateFailed(result.Id, identity.Purpose, failureCode, request.Source.Id, !result.Created);
 
-        return new QueuedCommunicationDto(result.Id, WasAlreadyQueued: !result.Created, templateFailureCode);
+        return new QueuedCommunicationDto(result.Id, WasAlreadyQueued: !result.Created, failureCode);
     }
 
-    private CommunicationOutbox TemplateFailure(
+    private CommunicationOutbox FailedBeforeDelivery(
         CommunicationRequest request,
         CommunicationIdentity identity,
-        CommunicationTemplateException failure,
-        int maxRetries
+        string code,
+        CommunicationFailureCategory category,
+        string safeMessage,
+        int maxRetries,
+        string? recipientEmail = null
     )
     {
-        var category = failure.Code == ApiResponseCodes.Communications.TemplateRenderFailed
-            ? CommunicationFailureCategory.Permanent
-            : CommunicationFailureCategory.Configuration;
         var payload = CommunicationPurposes.Get(identity.Purpose).IsSensitive
             ? null
             : JsonSerializer.Serialize(request.Template.ToVariables());
 
-        return CommunicationOutbox.CreateEmailTemplateFailure(
+        return CommunicationOutbox.CreateEmailFailedBeforeDelivery(
             identity,
             request.RecipientName,
-            request.RecipientEmail,
+            recipientEmail,
             category,
-            $"{failure.Code}: {failure.Message}",
+            $"{code}: {safeMessage}",
             payload,
             request.Priority,
             maxRetries,
             _currentUser.UserId
         );
     }
+
+    /// <summary>Correo normalizado (sin display name, minúsculas) o null si falta o no es una dirección válida.</summary>
+    internal static string? NormalizeEmail(string? email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            return null;
+        var trimmed = email.Trim();
+        if (trimmed.Length > CommunicationOutbox.RecipientEmailMaxLen
+            || !MailAddress.TryCreate(trimmed, out var address)
+            || !string.Equals(address.Address, trimmed, StringComparison.OrdinalIgnoreCase))
+            return null;
+        return address.Address.ToLowerInvariant();
+    }
+
 
     private async Task<RenderedCommunicationTemplate> RenderAsync(
         CommunicationRequest request,
@@ -191,4 +228,9 @@ public sealed partial class CommunicationQueue : ICommunicationQueue
     [LoggerMessage(EventId = 4211, EventName = "CommunicationTemplateFailed", Level = LogLevel.Warning,
         Message = "Communications: {CommunicationId} recorded as Failed without content: template {TemplateKey} failed with {FailureCode} source={SourceId} alreadyQueued={WasAlreadyQueued}; fix the template and requeue")]
     private partial void LogTemplateFailed(Guid communicationId, string templateKey, string failureCode, Guid sourceId, bool wasAlreadyQueued);
+
+    // Sin PII: nunca el correo ni el nombre del destinatario.
+    [LoggerMessage(EventId = 4212, EventName = "CommunicationRecipientMissing", Level = LogLevel.Warning,
+        Message = "Communications: {CommunicationId} recorded as Failed (COMMUNICATION_RECIPIENT_MISSING) for {Purpose} source={SourceId} alreadyQueued={WasAlreadyQueued}; fix the recipient contact and reconcile")]
+    private partial void LogRecipientMissing(Guid communicationId, string purpose, Guid sourceId, bool wasAlreadyQueued);
 }

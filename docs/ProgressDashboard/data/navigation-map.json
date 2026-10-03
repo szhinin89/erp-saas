@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-09-26 11:40:27",
+    "generated":  "2026-10-03 06:57:49",
     "source":  "architecture-progress.json, modules.json, domains.json, database-analysis.json, migration-analysis.json, frontend-analysis.json, backend-analysis.json",
     "method":  {
                    "layerToStage":  "Contiguous-window search over stages[] (real array order); a window is a candidate only if its average pct exactly equals the already-published layers[].pct. If multiple window sizes match, the largest is preferred (a multi-stage exact match is far less likely to be coincidental than a single-stage one); accepted as verified only if that largest match is unique. Ambiguous cases are reported (candidateCount) instead of guessed.",
@@ -104,9 +104,9 @@
                        "migrations":  null,
                        "frontendStats":  {
                                              "statistics":  {
-                                                                "SourceFiles":  933,
+                                                                "SourceFiles":  1007,
                                                                 "Pages":  0,
-                                                                "Components":  126,
+                                                                "Components":  127,
                                                                 "Hooks":  8,
                                                                 "Services":  0,
                                                                 "Stores":  0,
@@ -432,39 +432,39 @@
 
                                          ],
                        "databaseStats":  {
-                                             "DbContext":  82,
-                                             "DbSets":  181,
+                                             "DbContext":  96,
+                                             "DbSets":  187,
                                              "EntityConfigurations":  0,
-                                             "Repositories":  93,
-                                             "Migrations":  9
+                                             "Repositories":  95,
+                                             "Migrations":  21
                                          },
                        "migrations":  {
-                                          "totalFiles":  9,
+                                          "totalFiles":  21,
                                           "mostRecent":  [
                                                              {
-                                                                 "name":  "20260926131427_SupplierPaymentUnappliedAdvance",
-                                                                 "modified":  "2026-09-26 08:14:27",
-                                                                 "sizeKB":  3.44
+                                                                 "name":  "20261003045206_EdocCommunications",
+                                                                 "modified":  "2026-10-02 23:52:06",
+                                                                 "sizeKB":  1.29
                                                              },
                                                              {
-                                                                 "name":  "20260926131427_SupplierPaymentUnappliedAdvance.Designer",
-                                                                 "modified":  "2026-09-26 08:14:27",
-                                                                 "sizeKB":  771.45
+                                                                 "name":  "20261003045206_EdocCommunications.Designer",
+                                                                 "modified":  "2026-10-02 23:52:06",
+                                                                 "sizeKB":  828.49
                                                              },
                                                              {
                                                                  "name":  "ErpDbContextModelSnapshot",
-                                                                 "modified":  "2026-09-26 08:14:27",
-                                                                 "sizeKB":  771.31
+                                                                 "modified":  "2026-10-02 23:52:06",
+                                                                 "sizeKB":  828.38
                                                              },
                                                              {
-                                                                 "name":  "20260926122639_SupplierPaymentReversalSemantics.Designer",
-                                                                 "modified":  "2026-09-26 07:26:39",
-                                                                 "sizeKB":  770.39
+                                                                 "name":  "20261003035732_CommunicationTemplates",
+                                                                 "modified":  "2026-10-02 22:57:45",
+                                                                 "sizeKB":  4.52
                                                              },
                                                              {
-                                                                 "name":  "20260926122639_SupplierPaymentReversalSemantics",
-                                                                 "modified":  "2026-09-26 07:26:39",
-                                                                 "sizeKB":  1.17
+                                                                 "name":  "20261003035732_CommunicationTemplates.Designer",
+                                                                 "modified":  "2026-10-02 22:57:32",
+                                                                 "sizeKB":  828.1
                                                              }
                                                          ]
                                       },

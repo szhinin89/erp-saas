@@ -110,7 +110,7 @@ public sealed class CommunicationQueueTests
 
         var result = await queue.EnqueueAsync(Request());
 
-        result.TemplateFailureCode.Should().Be(ApiResponseCodes.Communications.TemplateInvalid);
+        result.FailureCode.Should().Be(ApiResponseCodes.Communications.TemplateInvalid);
         var failed = f.Enqueued.Should().ContainSingle().Subject;
         failed.Status.Should().Be(CommunicationStatus.Failed);
         failed.FailureCategory.Should().Be(CommunicationFailureCategory.Configuration);
@@ -153,7 +153,7 @@ public sealed class CommunicationQueueTests
 
         var result = await f.Build().EnqueueAsync(request);
 
-        result.TemplateFailureCode.Should().Be(ApiResponseCodes.Communications.TemplateRenderFailed);
+        result.FailureCode.Should().Be(ApiResponseCodes.Communications.TemplateRenderFailed);
         var failed = f.Enqueued.Single();
         failed.Status.Should().Be(CommunicationStatus.Failed);
         failed.FailureCategory.Should().Be(CommunicationFailureCategory.Permanent, "un modelo que no cumple el contrato no se corrige reintentando");
@@ -262,5 +262,58 @@ public sealed class CommunicationQueueTests
         created.TenantId.Should().BeNull();
         created.CompanyId.Should().BeNull("System no hereda la empresa del contexto");
         f.ResolvedScopes.Should().Equal(CommunicationScope.System);
+    }
+
+    // ── ZH-EDOC-COMMUNICATIONS-01 — destinatario ausente (semántica transversal) ───────────
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("no-es-un-correo")]
+    [InlineData("Cliente <cliente@test.com>")]
+    public async Task Destinatario_sin_correo_valido_queda_Failed_Permanent_sin_contenido_y_sin_render(string? email)
+    {
+        var f = new Fixture();
+        var queue = f.Build();
+
+        var result = await queue.EnqueueAsync(Request() with { RecipientEmail = email });
+
+        result.FailureCode.Should().Be(ApiResponseCodes.Communications.RecipientMissing);
+        var failed = f.Enqueued.Should().ContainSingle().Subject;
+        failed.Status.Should().Be(CommunicationStatus.Failed);
+        failed.FailureCategory.Should().Be(CommunicationFailureCategory.Permanent);
+        failed.RecipientEmail.Should().BeNull();
+        failed.Subject.Should().BeNull();
+        failed.TemplatePayloadJson.Should().Contain("\"InvoiceNumber\":\"001-001-000000001\"", "se puede reconstruir tras corregir el contacto");
+        failed.LastError.Should().StartWith(ApiResponseCodes.Communications.RecipientMissing);
+        f.Templates.Verify(t => t.ResolveAsync(It.IsAny<CommunicationScope>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Destinatario_ausente_conserva_la_identidad_y_los_adjuntos_por_referencia()
+    {
+        var f = new Fixture();
+        var request = Request() with
+        {
+            RecipientEmail = null,
+            Attachments = [new ERP.Application.Modules.Communications.DTOs.QueueCommunicationAttachmentDto(CommunicationAttachmentType.RidePdf, "x-RIDE.pdf", "application/pdf", ReferenceId: Guid.NewGuid())],
+        };
+
+        await f.Build().EnqueueAsync(request);
+
+        var failed = f.Enqueued.Single();
+        failed.IdempotencyKey.Should().Be(CommunicationIdentity.For(request.Scope, request.Purpose, request.Channel, request.Source, request.RecipientRole).Key);
+        failed.Attachments.Should().ContainSingle(a => a.ReferenceId == request.Attachments!.Single().ReferenceId);
+    }
+
+    [Fact]
+    public async Task Correo_valido_se_normaliza_en_minusculas()
+    {
+        var f = new Fixture();
+
+        await f.Build().EnqueueAsync(Request() with { RecipientEmail = "  Cliente@Test.COM " });
+
+        f.Enqueued.Single().RecipientEmail.Should().Be("cliente@test.com");
     }
 }

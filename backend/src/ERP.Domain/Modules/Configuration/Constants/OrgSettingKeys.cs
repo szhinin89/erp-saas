@@ -91,7 +91,7 @@ public static class OrgSettingKeys
         /// <summary>
         /// CONFIG-DYNAMIC-OPERATIONS-01: si se envía el correo de "factura autorizada" al cliente.
         /// Propietario: Empresa (scope=Company). Ausencia de fila → true (comportamiento actual,
-        /// sin cambios, ver SalesInvoiceAuthorizedCommunicationHandler).
+        /// sin cambios, ver ElectronicDocumentAuthorizedCommunicationHandler).
         /// </summary>
         public const string SalesInvoiceAuthorizedEnabled =
             "communications.sales_invoice_authorized.enabled";

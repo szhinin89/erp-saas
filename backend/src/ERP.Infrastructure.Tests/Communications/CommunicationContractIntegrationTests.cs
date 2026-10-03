@@ -345,6 +345,7 @@ public sealed class CommunicationContractIntegrationTests
         await new CommunicationOutboxProcessor(
             new CommunicationOutboxDeliveryStore(ctx),
             sender,
+            NoAttachments.Resolver,
             new ScopedResolver(),
             _time,
             NullLogger<CommunicationOutboxProcessor>.Instance

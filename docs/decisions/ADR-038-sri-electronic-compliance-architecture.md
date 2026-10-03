@@ -180,6 +180,17 @@ descarta y fija una única forma de evolucionar.
     exacta en `EffectiveDate`, configuración revisada en cada instalación antes del despliegue y autorización real
     en `celcer` de al menos una factura con el campo.
 
+- **Fase communications (D14) — `ZH-EDOC-COMMUNICATIONS-01` (2026-10-03): IMPLEMENTED.** Es la fase 5 de ADR-039,
+  donde está el detalle.
+  - ElectronicDocuments solo publica `ElectronicDocumentAuthorizedEvent`. **Un** handler genérico de Communications
+    enruta por (`SourceModule`, `DocumentType`) a un contributor del módulo dueño: Sales para Factura y NC, Retentions
+    para Retención. Ya no existe un handler por tipo y el de Factura se eliminó.
+  - Fuera del ciclo fiscal: dentro de la transacción de autorización solo se inserta, idempotente, la fila de outbox.
+    RIDE, lectura del XML autorizado y SMTP ocurren al enviar.
+  - El XML autorizado lo entrega ElectronicDocuments, en solo lectura (`ElectronicDocumentAuthorizedXmlAttachmentProvider`).
+  - Sin cambios en XML fiscal, firma, SOAP, estados del ED ni motor RIDE.
+  - Tests de arquitectura: ElectronicDocuments y el gateway SRI no dependen de Communications ni de SMTP.
+
 ## Alternativas consideradas
 
 | Alternativa | Motivo de descarte |

@@ -13,7 +13,7 @@ namespace ERP.Domain.Configuration.Definitions.Modules;
 /// - SalesInvoiceAuthorizedEnabled: DUPLICADA — no conectar. La regla "enviar correo de factura de
 ///   venta autorizada" ya está resuelta y con efecto real por
 ///   ElectronicDocumentsPreferences.EmailOnAuthorization ("electronic_documents.email_on_authorization",
-///   CONFIG-DYNAMIC-OPERATIONS-01), la única key que SalesInvoiceAuthorizedCommunicationHandler
+///   CONFIG-DYNAMIC-OPERATIONS-01), la única key que ElectronicDocumentAuthorizedCommunicationHandler
 ///   consulta hoy. Esta key ("communications.sales_invoice_authorized_enabled") es una segunda
 ///   representación de la misma regla, nunca leída por ningún handler — se mantiene guardada
 ///   (compatibilidad del contrato del DTO/API) pero EmailOnAuthorization es la única autoridad; no

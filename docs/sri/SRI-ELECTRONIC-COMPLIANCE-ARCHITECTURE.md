@@ -68,7 +68,7 @@ Monitor/diagnóstico:      ElectronicDocumentsController (list/dashboard/detail/
 | ConsultaComprobante | No | No | Sí (anulación, `RetentionAnnulmentService`) |
 | Anulación SRI | No aplica (flujo comercial) | No | ADR-036 (`AnnulmentPending` → `Cancelled` con evidencia) |
 | RIDE | `InvoiceRideXmlParser` + `DefaultInvoiceRideTemplate` | `CreditNoteRideXmlParser` + `CreditNoteRideTemplate` | `RetentionRideXmlParser` + `RetentionRideTemplate`; vista previa al vuelo vía `GenerateRetentionRidePdfUseCases` → `RetentionRidePdfService` |
-| Correo | `SalesInvoiceAuthorizedCommunicationHandler` (Communications, XML + RIDE) | No | No |
+| Correo | `ElectronicDocumentAuthorizedCommunicationHandler` + contributors Sales/Retentions (Communications, XML + RIDE al enviar) | No | No |
 
 ### A.3 Diferencias legítimas (no se igualan)
 
@@ -601,11 +601,16 @@ Communications       ──decide───►  si se envía, a quién, plantilla
 ```
 
 - ElectronicDocuments **no** implementa correo, SMTP ni reintentos de entrega.
-- Hoy solo existe `SalesInvoiceAuthorizedCommunicationHandler` (Communications), que conoce Ventas para obtener el
-  destinatario. Para NC y Retención (auditoría R30) no se copian handlers: un handler genérico en Communications
-  + un contributor de destinatario por módulo de origen (`email`, nombre, número visible), mismo patrón que
-  `ISourceDocumentSummaryProvider`. Ticket propio (fase 6).
-- El RIDE se obtiene por su caso de uso existente (`GetOrGenerateRideQuery`); Communications no genera XML.
+- **Implementado (ZH-EDOC-COMMUNICATIONS-01, 2026-10-03):** un solo handler genérico en Communications
+  (`ElectronicDocumentAuthorizedCommunicationHandler`) más un contributor por módulo de origen: Sales para Factura y
+  NC, Retentions para Retención. `SalesInvoiceAuthorizedCommunicationHandler` se eliminó.
+- Dentro de la transacción de autorización solo se inserta (idempotente) la fila de outbox. El RIDE
+  (`GetOrGenerateRideQuery`) y el XML autorizado (solo lectura, `ElectronicDocumentAuthorizedXmlAttachmentProvider`)
+  se resuelven al enviar. Communications no genera XML ni toca estados, firma ni SOAP.
+- La reconciliación de Communications recupera los comprobantes `Authorized` sin comunicación. Solo lee
+  `electronic_documents`; no cambia el ciclo fiscal.
+- Regla de arquitectura (baseline 0): ElectronicDocuments y el gateway SRI no dependen de Communications ni de SMTP.
+- Detalle: ADR-039 fase 5 y `docs/communications/COMMUNICATIONS-ARCHITECTURE.md` §M.
 
 ---
 
@@ -690,7 +695,7 @@ Tests de arquitectura propuestos (`ERP.Architecture.Tests`, ratchet sobre la deu
 | Storage XML | `ElectronicDocumentXmlStorageService` (draft/signed/authorized) | sin cambio | ElectronicDocuments | Issuer, RIDE, Communications | KEEP |
 | RIDE | `RideDocumentService` + parsers/plantillas por tipo (ADR-025) | sin cambio | Ride | API, Communications | KEEP |
 | Recovery | `ElectronicDocumentRetryJob` (inoperante) + `RetentionElectronicRecoveryJob` + manual | capacidad transversal + contributors por origen | ElectronicDocuments | jobs, Monitor | EXTEND (fase 4) |
-| Frontera Communications | `ElectronicDocumentAuthorizedEvent` → handler de Factura | mismo evento → handler genérico + contributor de destinatario | Communications | — | EXTEND (fase 6) |
+| Frontera Communications | `ElectronicDocumentAuthorizedEvent` → handler genérico + contributors (2026-10-03) | — | Communications | — | DONE |
 
 ---
 
@@ -733,7 +738,7 @@ Tests de arquitectura propuestos (`ERP.Architecture.Tests`, ratchet sobre la deu
 | Catálogos `sri_*` + resolvers | **KEEP** (ADR-037) | — |
 | `EmbeddedXmlSchemaProvider` + XSD | **KEEP** | Verificar patrón RIMPE contra XSD oficial (fase 2) |
 | RIDE (parsers, plantillas, renderer) | **KEEP** | Muestra `campoAdicional` sin cambios |
-| `SalesInvoiceAuthorizedCommunicationHandler` | **KEEP** → **REMOVE EVENTUALLY** (fase 6) | Reemplazado por handler genérico + contributor de Ventas, sin cambiar el correo de factura |
+| `SalesInvoiceAuthorizedCommunicationHandler` | **REMOVED (2026-10-03)** | Reemplazado por handler genérico + contributor de Ventas, sin cambiar el correo de factura |
 | `docs/FICHA … Versio232.pdf` | **LEGACY** | Referencia 2.34 en `docs/sri/` |
 
 No se clasifica nada como REWRITE.
@@ -754,7 +759,7 @@ operativa; 7 tiene disparador.
 | 3 | ZH-EDOC-SPECIFICATION-VERSIONING-01 | `SpecificationVersion` (columna aditiva); validador por `xml.Version`; manifest verificado | No | Columna nullable ignorada |
 | 4 | ZH-EDOC-RETRY-JOB-TENANT-01 + ZH-EDOC-RECOVERY-ARCHITECTURE-01 | Job genérico cross-tenant, ventana 24 h, `IElectronicDocumentStatusService`, detector de origen sin ED | No | Preferencia `auto_retry_enabled` |
 | 5 | ZH-EDOC-REJECTION-RECOVERY-01 | Interpretación tipada (recepción/autorización), código 50, R14, corrección de NAT con misma clave | No (comportamiento de pipeline) | Golden tests de decisión |
-| 6 | ZH-EDOC-COMMUNICATIONS-01 | Handler genérico + contributors de destinatario; NC y Retención por correo | No | Preferencia `email_on_authorization` |
+| 6 | ZH-EDOC-COMMUNICATIONS-01 | **IMPLEMENTED 2026-10-03.** Handler genérico + contributors de destinatario; NC y Retención por correo | No | Preferencia `email_on_authorization` |
 | 7 | (con el primer tipo nuevo 03/05/06) | Contrato del sobre, orquestador genérico, clave de acceso en Domain, mover `RetentionElectronicDocumentXmlService` | No (byte a byte) | Commit |
 | transversal | SriComplianceTests | Se construye incrementalmente desde la fase 1 | — | — |
 

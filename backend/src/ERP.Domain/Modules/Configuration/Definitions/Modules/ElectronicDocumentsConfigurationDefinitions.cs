@@ -5,7 +5,7 @@ namespace ERP.Domain.Configuration.Definitions.Modules;
 
 /// <summary>
 /// Definitions para OrgSettingKeys.ElectronicDocuments. Conectadas a efecto real:
-/// EmailOnAuthorization (CONFIG-DYNAMIC-OPERATIONS-01, SalesInvoiceAuthorizedCommunicationHandler)
+/// EmailOnAuthorization (CONFIG-DYNAMIC-OPERATIONS-01, ElectronicDocumentAuthorizedCommunicationHandler)
 /// y AutoRetryEnabled (CONFIG-DYNAMIC-OPERATIONS-02, ElectronicDocumentRetryJob — solo apaga el
 /// reintento AUTOMÁTICO del job Hangfire; el reintento manual vía IElectronicDocumentIssuer.RetryAsync
 /// sigue disponible siempre).

@@ -18,6 +18,14 @@ public sealed class CommunicationOutboxAttachment : SystemBaseEntity, IOptionalC
     public string ContentType { get; private set; } = null!;
     public string? FileStoragePath { get; private set; }
     public byte[]? BinaryContent { get; private set; }
+
+    /// <summary>
+    /// ZH-EDOC-COMMUNICATIONS-01 — referencia lógica al recurso en su módulo dueño (p. ej. el
+    /// ElectronicDocument para AuthorizedXml/RidePdf). El contenido lo resuelve ese módulo AL ENVIAR
+    /// (ICommunicationAttachmentContentProvider), sobre su almacenamiento oficial: no se duplican bytes
+    /// ni se asume el filesystem del nodo que encoló.
+    /// </summary>
+    public Guid? ReferenceId { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public DateTime? UpdatedAt { get; private set; }
     public Guid CreatedBy { get; private set; }
@@ -34,6 +42,7 @@ public sealed class CommunicationOutboxAttachment : SystemBaseEntity, IOptionalC
         string contentType,
         string? fileStoragePath,
         byte[]? binaryContent,
+        Guid? referenceId,
         Guid createdBy
     )
     {
@@ -43,8 +52,15 @@ public sealed class CommunicationOutboxAttachment : SystemBaseEntity, IOptionalC
         if (string.IsNullOrWhiteSpace(contentType))
             throw new ArgumentException("El content type del adjunto es obligatorio.", nameof(contentType));
 
-        if (string.IsNullOrWhiteSpace(fileStoragePath) && (binaryContent is null || binaryContent.Length == 0))
-            throw new ArgumentException("El adjunto debe tener ruta de almacenamiento o contenido binario.", nameof(fileStoragePath));
+        if (
+            string.IsNullOrWhiteSpace(fileStoragePath)
+            && (binaryContent is null || binaryContent.Length == 0)
+            && (referenceId is null || referenceId == Guid.Empty)
+        )
+            throw new ArgumentException(
+                "El adjunto debe tener ruta de almacenamiento, contenido binario o referencia a su módulo dueño.",
+                nameof(fileStoragePath)
+            );
 
         return new CommunicationOutboxAttachment
         {
@@ -57,6 +73,7 @@ public sealed class CommunicationOutboxAttachment : SystemBaseEntity, IOptionalC
             ContentType = Trim(contentType, ContentTypeMaxLen, nameof(contentType)),
             FileStoragePath = NormalizeOptional(fileStoragePath, FileStoragePathMaxLen, nameof(fileStoragePath)),
             BinaryContent = binaryContent,
+            ReferenceId = referenceId == Guid.Empty ? null : referenceId,
             CreatedAt = DateTime.UtcNow,
             CreatedBy = createdBy,
         };

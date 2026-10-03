@@ -1228,13 +1228,6 @@
         "module":  "Retentions",
         "features":  [
                          {
-                             "name":  "Cancel Retention",
-                             "status":  "implemented",
-                             "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Retentions/UseCases/CancelRetentionUseCases.cs"
-                                          ]
-                         },
-                         {
                              "name":  "Generate Retention Ride Pdf",
                              "status":  "implemented",
                              "evidence":  [
@@ -1263,17 +1256,31 @@
                                           ]
                          },
                          {
-                             "name":  "Issue Retention",
-                             "status":  "implemented",
-                             "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Retentions/UseCases/IssueRetentionUseCases.cs"
-                                          ]
-                         },
-                         {
                              "name":  "Register Retention Electronic Document",
                              "status":  "implemented",
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/Retentions/UseCases/RegisterRetentionElectronicDocumentUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Retention Annulment",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Retentions/UseCases/RetentionAnnulmentUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Retention Document Mapper",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Retentions/UseCases/RetentionDocumentMapper.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Retention Intent",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Retentions/UseCases/RetentionIntent.cs"
                                           ]
                          }
                      ]
@@ -1346,6 +1353,13 @@
                              "status":  "implemented",
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/MatchItem"
+                                          ]
+                         },
+                         {
+                             "name":  "Resolve Lines",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/ResolveLines"
                                           ]
                          },
                          {
@@ -1571,10 +1585,24 @@
                                           ]
                          },
                          {
+                             "name":  "Supplier Credit Payable Target",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Finance/UseCases/SupplierCreditPayableTarget.cs"
+                                          ]
+                         },
+                         {
                              "name":  "Supplier Credit",
                              "status":  "implemented",
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/Finance/UseCases/SupplierCreditQueryUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Supplier Credit Read Model",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Finance/UseCases/SupplierCreditReadModel.cs"
                                           ]
                          }
                      ]
@@ -2092,13 +2120,6 @@
                              "status":  "implemented",
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/Communications/UseCases/GetCompanyEmailSettings"
-                                          ]
-                         },
-                         {
-                             "name":  "Queue Email",
-                             "status":  "implemented",
-                             "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Communications/UseCases/QueueEmail"
                                           ]
                          },
                          {

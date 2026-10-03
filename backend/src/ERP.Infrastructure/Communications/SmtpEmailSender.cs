@@ -91,15 +91,9 @@ public sealed class SmtpEmailSender : IEmailSender
 
     private static Attachment CreateAttachment(EmailAttachment attachment)
     {
-        if (attachment.BinaryContent is { Length: > 0 })
-        {
-            var stream = new MemoryStream(attachment.BinaryContent);
-            return new Attachment(stream, attachment.FileName, attachment.ContentType);
-        }
+        if (attachment.Content is not { Length: > 0 })
+            throw new ArgumentException("El adjunto de la comunicación no tiene contenido resuelto.", nameof(attachment));
 
-        if (string.IsNullOrWhiteSpace(attachment.FileStoragePath) || !File.Exists(attachment.FileStoragePath))
-            throw new FileNotFoundException("No se encontró el archivo adjunto de la comunicación.", attachment.FileStoragePath);
-
-        return new Attachment(attachment.FileStoragePath, attachment.ContentType);
+        return new Attachment(new MemoryStream(attachment.Content, writable: false), attachment.FileName, attachment.ContentType);
     }
 }

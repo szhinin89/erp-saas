@@ -1,35 +1,20 @@
 using ERP.Application.Common;
-using ERP.Application.Modules.Communications.EventHandlers;
+using ERP.Application.Modules.Communications.ElectronicDocuments;
 using ERP.Application.Modules.Communications.Services;
 using ERP.Application.Modules.Communications.Templates;
-using ERP.Application.Modules.Ride.DTOs;
-using ERP.Application.Modules.Ride.UseCases.GetOrGenerateRide;
-using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Communications.Constants;
 using ERP.Domain.Modules.Communications.Entities;
 using ERP.Domain.Modules.Communications.Enums;
 using ERP.Domain.Modules.Communications.ValueObjects;
-using ERP.Domain.Modules.Company.Entities;
-using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
-using ERP.Domain.Modules.ElectronicDocuments.Events;
-using ERP.Domain.Modules.ElectronicDocuments.ValueObjects;
 using ERP.Domain.Modules.Sales.Entities;
-using ERP.Domain.Modules.Sales.Interfaces;
-using ERP.Domain.Modules.Sales.ValueObjects;
 using ERP.Infrastructure.Communications;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Configurations.Communications;
-using ERP.Infrastructure.Persistence.Repositories.Communications;
-using ERP.Infrastructure.Persistence.Repositories.ElectronicDocuments;
 using ERP.Infrastructure.Services;
 using FluentAssertions;
-using MediatR;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging.Abstractions;
-using Moq;
 using Npgsql;
 
 namespace ERP.Infrastructure.Tests.Communications;
@@ -37,7 +22,7 @@ namespace ERP.Infrastructure.Tests.Communications;
 /// <summary>
 /// ZH-COMMUNICATIONS-TEMPLATES-01 (verificación final) — durabilidad ante fallo de template por el flujo
 /// REAL: el ElectronicDocument autorizado se guarda con ErpDbContext, que publica
-/// ElectronicDocumentAuthorizedEvent DENTRO de su transacción al handler real de Factura → cola real →
+/// ElectronicDocumentAuthorizedEvent DENTRO de su transacción al handler genérico real (ZH-EDOC-COMMUNICATIONS-01) → cola real →
 /// resolver real (override en PostgreSQL) → renderer → CommunicationOutbox. Requiere Docker.
 /// </summary>
 [Trait("Category", "PostgreSql")]
@@ -45,10 +30,14 @@ public sealed class CommunicationTemplateFailureDurabilityTests
     : IClassFixture<CommunicationOutboxDeliveryIntegrationTests.Database>,
         IAsyncLifetime
 {
-    private const string AccessKeyValue = "2108202601179214672100110010010000000011234567811";
     private readonly CommunicationOutboxDeliveryIntegrationTests.Database _db;
+    private readonly ElectronicDocumentCommunicationFlow _flow;
 
-    public CommunicationTemplateFailureDurabilityTests(CommunicationOutboxDeliveryIntegrationTests.Database db) => _db = db;
+    public CommunicationTemplateFailureDurabilityTests(CommunicationOutboxDeliveryIntegrationTests.Database db)
+    {
+        _db = db;
+        _flow = new ElectronicDocumentCommunicationFlow(db);
+    }
 
     public async Task InitializeAsync()
     {
@@ -95,7 +84,7 @@ public sealed class CommunicationTemplateFailureDurabilityTests
         (await RowsAsync()).Single().Status.Should().Be(CommunicationStatus.Failed);
 
         // Repetir el hecho (re-entrega / reconciliación futura) no duplica.
-        var repeated = await RepublishAsync(document, invoice);
+        var repeated = await RepublishAsync(document);
         repeated.Should().BeTrue("la misma identidad vuelve a la fila existente");
         (await RowsAsync()).Should().ContainSingle();
     }
@@ -136,106 +125,20 @@ public sealed class CommunicationTemplateFailureDurabilityTests
         (await RowsAsync()).Single().Status.Should().Be(CommunicationStatus.Sent);
     }
 
-    // ── flujo real ────────────────────────────────────────────────────────────────────────
+    // ── flujo real (ElectronicDocumentCommunicationFlow) ──────────────────────────────────
 
-    /// <summary>
-    /// Autoriza y guarda el ElectronicDocument con ErpDbContext (transacción propia del SaveChanges): el
-    /// evento se publica al handler real ANTES del commit, como en producción.
-    /// </summary>
-    private async Task<ElectronicDocument> AuthorizeInTransactionAsync(SalesInvoice invoice)
-    {
-        var document = AuthorizedDocument(invoice.Id);
-        var publisher = new HandlerPublisher();
-        await using var ctx = _db.Context(publisher: publisher);
-        using var _ = JobExecutionContext.Begin(_db.TenantA, _db.CompanyA);
-        publisher.Handler = BuildHandler(ctx, invoice);
+    private async Task<ElectronicDocument> AuthorizeInTransactionAsync(SalesInvoice invoice) =>
+        await _flow.AuthorizeAsync(_db.TenantA, _db.CompanyA, ElectronicDocumentType.Invoice, "Sales", invoice.Id);
 
-        ctx.ElectronicDocuments.Add(document);
-        await ctx.SaveChangesAsync();
-
-        publisher.Delivered.Should().Be(1, "el handler real recibió ElectronicDocumentAuthorizedEvent");
-        return document;
-    }
-
-    private async Task<bool> RepublishAsync(ElectronicDocument document, SalesInvoice invoice)
-    {
-        var queue = new Mock<ICommunicationQueue>();
-        await using var ctx = _db.Context();
-        using var _ = JobExecutionContext.Begin(_db.TenantA, _db.CompanyA);
-        var realQueue = Queue(ctx);
-        bool? wasAlreadyQueued = null;
-        queue.Setup(q => q.EnqueueAsync(It.IsAny<CommunicationRequest>(), It.IsAny<CancellationToken>()))
-            .Returns(async (CommunicationRequest r, CancellationToken ct) =>
-            {
-                var result = await realQueue.EnqueueAsync(r, ct);
-                wasAlreadyQueued = result.WasAlreadyQueued;
-                return result;
-            });
-
-        await BuildHandler(ctx, invoice, queue.Object).Handle(
-            new ElectronicDocumentAuthorizedEvent(_db.TenantA, document.Id, ElectronicDocumentType.Invoice, ElectronicDocumentState.Received, ElectronicDocumentState.Authorized),
-            CancellationToken.None
-        );
-        return wasAlreadyQueued!.Value;
-    }
-
-    private SalesInvoiceAuthorizedCommunicationHandler BuildHandler(ErpDbContext ctx, SalesInvoice invoice, ICommunicationQueue? queue = null)
-    {
-        var invoices = new Mock<ISalesInvoiceRepository>();
-        invoices.Setup(r => r.GetByIdAsync(_db.TenantA, invoice.Id, It.IsAny<CancellationToken>())).ReturnsAsync(invoice);
-
-        var companies = new Mock<ICompanyRepository>();
-        companies.Setup(r => r.GetByIdAsync(_db.CompanyA, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Company.CreateManaged(_db.TenantA, "1790012345001", "Empresa A", tradeName: "ZH Demo"));
-
-        var preferences = new Mock<IOperationalPreferencesResolver>();
-        preferences.Setup(p => p.ResolveAsync(_db.TenantA, _db.CompanyA, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new OperationalPreferences(
-                SalesPos: new SalesPosPreferences(true, false, true, 0m, null, false, false, null, null),
-                Cash: new CashPreferences(true, true, 0m, true, true, true),
-                Purchases: new PurchasesPreferences(null, true, true, true, false),
-                Inventory: new InventoryPreferences(false, true, false, 0m),
-                Printing: new PrintingPreferences("AskBeforePrint", 1, "80mm", false, true, true, false),
-                ElectronicDocuments: new ElectronicDocumentsPreferences(true, 3, true, EmailOnAuthorization: true),
-                Notifications: new NotificationsPreferences(true, false, "es")
-            ));
-
-        var rideSender = new Mock<ISender>();
-        rideSender.Setup(s => s.Send(It.IsAny<GetOrGenerateRideQuery>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<RideGenerationResultDto>.Success(new RideGenerationResultDto(RideOutcome.PendingSource, null, null, "pending")));
-
-        return new SalesInvoiceAuthorizedCommunicationHandler(
-            new ElectronicDocumentRepository(ctx, Mock.Of<ERP.Application.Common.Services.ICompanyClock>()),
-            invoices.Object,
-            companies.Object,
-            queue ?? Queue(ctx),
-            rideSender.Object,
-            NullLogger<SalesInvoiceAuthorizedCommunicationHandler>.Instance,
-            preferences.Object
-        );
-    }
-
-    private static CommunicationQueue Queue(ErpDbContext ctx) =>
-        new(
-            new CommunicationOutboxRepository(ctx),
-            new CurrentCompanyService(new HttpContextAccessor()),
-            Mock.Of<ICurrentUser>(u => u.UserId == Guid.Empty),
-            new FixedSettings(),
-            new CommunicationTemplateResolver(new CommunicationTemplateRepository(ctx)),
-            NullLogger<CommunicationQueue>.Instance
-        );
-
-    private async Task RunProcessorAsync(IEmailSender sender)
+    private async Task<bool> RepublishAsync(ElectronicDocument document)
     {
         await using var ctx = _db.Context();
-        await new CommunicationOutboxProcessor(
-            new CommunicationOutboxDeliveryStore(ctx),
-            sender,
-            new FixedSettings(),
-            TimeProvider.System,
-            NullLogger<CommunicationOutboxProcessor>.Instance
-        ).ProcessPendingAsync();
+        using var _ = JobExecutionContext.Begin(_db.TenantA, _db.CompanyA);
+        var result = await _flow.Service(ctx).RequestAsync(document, ElectronicDocumentCommunicationTrigger.Reconciliation);
+        return result.Outcome == ElectronicDocumentCommunicationOutcome.AlreadyQueued;
     }
+
+    private Task RunProcessorAsync(IEmailSender sender) => _flow.RunProcessorAsync(sender);
 
     private async Task AddOverrideAsync(string subject)
     {
@@ -246,31 +149,7 @@ public sealed class CommunicationTemplateFailureDurabilityTests
         await ctx.SaveChangesAsync();
     }
 
-    private SalesInvoice AuthorizedInvoice()
-    {
-        var invoice = SalesInvoice.CreateDraft(
-            _db.TenantA, _db.CompanyA, Guid.NewGuid(), Guid.NewGuid(),
-            CustomerSnapshot.Create("Cliente Demo", "0102030405001", "04", "cliente@example.com"),
-            "001-001-000000001", new DateOnly(2026, 8, 21), Guid.Empty,
-            PaymentTermSnapshot.Create(Guid.NewGuid(), "Contado", installments: 1, daysBetween: 0), Guid.NewGuid()
-        );
-        invoice.ReplaceLines([SalesInvoiceDetail.Create(invoice.Id, _db.TenantA, "Producto", quantity: 1m, unitPrice: 100m, vatCode: "0", uomCode: "UNIT")], Guid.Empty);
-        invoice.ReplacePayments([SalesInvoicePayment.Create(invoice.Id, _db.TenantA, Guid.NewGuid(), "01", "Efectivo", 100m)], Guid.Empty);
-        invoice.Authorize(Guid.Empty);
-        return invoice;
-    }
-
-    private ElectronicDocument AuthorizedDocument(Guid invoiceId)
-    {
-        var document = ElectronicDocument.Create(_db.TenantA, _db.CompanyA, ElectronicDocumentType.Invoice, "Sales", invoiceId, Guid.Empty);
-        document.SetEnvironment("1");
-        document.MarkXmlGenerated("edocs/draft.xml", "1.1.0", "1.1.0", Guid.Empty);
-        document.MarkSigned("edocs/signed.xml", AccessKey.Create(AccessKeyValue), Guid.Empty);
-        document.MarkSent(Guid.Empty);
-        document.MarkReceived(Guid.Empty);
-        document.MarkAuthorized(AuthorizationNumber.Create(AccessKeyValue), DateTime.UtcNow, "edocs/authorized.xml", Guid.Empty);
-        return document;
-    }
+    private SalesInvoice AuthorizedInvoice() => _flow.Invoice(_db.TenantA, _db.CompanyA, "cliente@example.com");
 
     private async Task<ElectronicDocument> DocumentAsync(Guid id)
     {
@@ -284,26 +163,6 @@ public sealed class CommunicationTemplateFailureDurabilityTests
         return await ctx.CommunicationOutbox.IgnoreQueryFilters().AsNoTracking().ToListAsync();
     }
 
-    /// <summary>Publisher del ErpDbContext que entrega ElectronicDocumentAuthorizedEvent al handler real.</summary>
-    private sealed class HandlerPublisher : IPublisher
-    {
-        public SalesInvoiceAuthorizedCommunicationHandler? Handler { get; set; }
-        public int Delivered { get; private set; }
-
-        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
-            notification is INotification n ? Publish(n, cancellationToken) : Task.CompletedTask;
-
-        public async Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
-            where TNotification : INotification
-        {
-            if (notification is ElectronicDocumentAuthorizedEvent authorized && Handler is not null)
-            {
-                Delivered++;
-                await Handler.Handle(authorized, cancellationToken);
-            }
-        }
-    }
-
     private sealed class CountingSender : IEmailSender
     {
         public int Calls { get; private set; }
@@ -313,14 +172,5 @@ public sealed class CommunicationTemplateFailureDurabilityTests
             Calls++;
             return Task.FromResult(EmailDeliveryReceipt.WithoutProviderId);
         }
-    }
-
-    private sealed class FixedSettings : ICommunicationSettingsResolver
-    {
-        private static readonly CommunicationEmailSettings Settings = new(true, "smtp.test", 587, null, null, "s@test.com", null, true, null, 3, "es");
-
-        public Task<CommunicationEmailSettings> ResolveEmailAsync(CancellationToken ct = default) => Task.FromResult(Settings);
-
-        public Task<CommunicationEmailSettings> ResolveEmailAsync(CommunicationScope scope, CancellationToken ct = default) => Task.FromResult(Settings);
     }
 }

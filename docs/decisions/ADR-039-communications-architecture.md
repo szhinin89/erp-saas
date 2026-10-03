@@ -178,7 +178,45 @@ Por fases (detalle en el documento, §U):
 6. Entrega de password reset sobre Communications (scope System, payload sensible).
 7. Monitor.
 
-No hay fase multicanal. Estado: **diseño aceptado; fases 1 a 4 implementadas.**
+No hay fase multicanal. Estado: **diseño aceptado; fases 1 a 5 implementadas.**
+
+- **Fase 5 — `ZH-EDOC-COMMUNICATIONS-01` (2026-10-03): IMPLEMENTED.** Es también la fase de comunicaciones de
+  ADR-038. Detalle en el documento (§"Implementación efectiva — Fase 5").
+  - `SalesInvoiceAuthorizedCommunicationHandler` se elimina. Lo reemplaza **un** handler genérico,
+    `ElectronicDocumentAuthorizedCommunicationHandler`. Este delega en `IElectronicDocumentCommunicationService`,
+    el camino único que comparten el evento y la reconciliación. El servicio enruta por
+    (`SourceModule`, `DocumentType`) a un `IElectronicDocumentCommunicationContributor` del módulo dueño, sin
+    switches, reflexión ni service locator. Los contributors se registran explícitamente en DI.
+  - Rutas: `Sales`/Invoice → `SALES_INVOICE_AUTHORIZED` (Customer; golden intacto); `Sales`/CreditNote →
+    `SALES_CREDIT_NOTE_AUTHORIZED` (Customer de la factura modificada); `Retentions`/Retention → `RETENTION_AUTHORIZED`
+    (Supplier; correo del contacto real del tercero, nunca inventado). El origen oficial es `SalesInvoice`,
+    `SalesReturn` o `RetentionDocument`, con el mismo par (módulo, id) que el comprobante.
+  - Un contributor solo devuelve datos: propósito, origen, rol, destinatario, sucursal, número y modelo tipado.
+    Nunca asunto/HTML, renderer, adjuntos ni outbox (regla de arquitectura). Templates default v1 nuevos para
+    nota de crédito y retención.
+  - **Adjuntos por referencia** (`communication_outbox_attachments.reference_id` = `ElectronicDocument.Id`), resueltos
+    AL ENVIAR por su módulo dueño (`ICommunicationAttachmentContentProvider`): el XML autorizado lo entrega
+    ElectronicDocuments desde `IFileStorage` (byte a byte, obligatorio → Transient si falta) y el RIDE lo entrega
+    Ride (`GetOrGenerateRideQuery`, opcional; `PendingSource` → Transient). La generación del RIDE sale de la
+    transacción fiscal. `SmtpEmailSender` ya no lee rutas: recibe bytes. Se corrige el `File.Exists` sobre rutas
+    relativas de `IFileStorage`.
+  - **Destinatario ausente** (semántica transversal, en la cola): fila `Failed`/`Permanent` con
+    `COMMUNICATION_RECIPIENT_MISSING`, sin correo ni contenido y con las variables. Usa la misma identidad, así que
+    la reconciliación no la reencola. El template inválido mantiene la semántica de la fase 4.
+  - **Reconciliación mínima** (`ElectronicDocumentCommunicationReconciler` + job `reconcile-electronic-document-communications`
+    cada 10 min). Toma comprobantes `Authorized` de una ruta soportada que no tienen fila en la outbox para
+    (empresa, módulo, `SourceType`, `source_id`, propósito). Respeta la preferencia de la empresa y procesa por
+    documento bajo `JobExecutionContext`. **Sin horizonte de antigüedad** (verificación final): orden global
+    determinístico, más antiguos primero, antigüedad mínima de 5 min y hasta 200 por corrida. Un cursor
+    process-local continúa donde quedó la corrida anterior y vuelve al inicio al terminar, así los faltantes
+    que se omiten no bloquean a los siguientes. Sin tabla nueva y sin reencolar `Failed`. Evento + duplicado + reconciliación (también concurrentes) producen una
+    sola fila.
+  - Códigos estructurados: `COMMUNICATION_SOURCE_NOT_SUPPORTED`, `COMMUNICATION_SOURCE_NOT_FOUND`,
+    `COMMUNICATION_SOURCE_NOT_ELIGIBLE`, `COMMUNICATION_RECIPIENT_MISSING`, `COMMUNICATION_ATTACHMENT_UNAVAILABLE`.
+  - Logs sin PII: `ElectronicDocumentCommunicationRequested`/`Skipped`/`Queued`/`Reconciled`.
+  - Diferido: `CompanyCopy`.
+  - Migración `20261003045206_EdocCommunications` (aditiva: `reference_id` + CHECK
+    `ck_communication_outbox_attachments_content_source`).
 
 - **Fase 4 — `ZH-COMMUNICATIONS-TEMPLATES-01` (2026-10-02): IMPLEMENTED.** Detalle en el documento (§J
   "Implementación efectiva — Fase 4").

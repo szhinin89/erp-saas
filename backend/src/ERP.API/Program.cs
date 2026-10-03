@@ -377,6 +377,7 @@ if (hangfireEnabled)
     builder.Services.AddHangfireServer();
     builder.Services.AddScoped<IProcessOutboxJob, ProcessOutboxJob>();
     builder.Services.AddScoped<IProcessCommunicationsJob, ProcessCommunicationsJob>();
+    builder.Services.AddScoped<IReconcileElectronicDocumentCommunicationsJob, ReconcileElectronicDocumentCommunicationsJob>();
     builder.Services.AddScoped<IMasterDataReconciliationJob, MasterDataReconciliationJob>();
     builder.Services.AddScoped<IElectronicDocumentRetryJob, ElectronicDocumentRetryJob>();
     builder.Services.AddScoped<IRetentionElectronicRecoveryJob, RetentionElectronicRecoveryJob>();
@@ -865,6 +866,13 @@ if (hangfireEnabled)
         "process-communications",
         x => x.ExecuteAsync(CancellationToken.None),
         "* * * * *"
+    );
+
+    // ZH-EDOC-COMMUNICATIONS-01 — comprobantes autorizados sin comunicación (red de seguridad del evento).
+    RecurringJob.AddOrUpdate<IReconcileElectronicDocumentCommunicationsJob>(
+        "reconcile-electronic-document-communications",
+        x => x.ExecuteAsync(CancellationToken.None),
+        "*/10 * * * *"
     );
 
     RecurringJob.AddOrUpdate<IMasterDataReconciliationJob>(

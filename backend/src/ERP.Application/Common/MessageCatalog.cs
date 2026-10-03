@@ -188,6 +188,36 @@ public static class MessageCatalog
             "Communication template variables do not satisfy the template contract.",
             ApiErrorCategory.Validation
         ),
+        [ApiResponseCodes.Communications.RecipientMissing] = new(
+            ApiSeverity.Error,
+            "El destinatario no tiene un correo electrónico válido registrado; el correo no se envió.",
+            "Communication recipient has no valid email address; recorded as failed, not sent.",
+            ApiErrorCategory.Validation
+        ),
+        [ApiResponseCodes.Communications.SourceNotSupported] = new(
+            ApiSeverity.Error,
+            "Este tipo de documento no tiene una comunicación configurada.",
+            "No communication contributor supports this source module/document type.",
+            ApiErrorCategory.Validation
+        ),
+        [ApiResponseCodes.Communications.SourceNotFound] = new(
+            ApiSeverity.Error,
+            "No se encontró el documento de origen de la comunicación.",
+            "Communication source document not found in its owner module.",
+            ApiErrorCategory.Validation
+        ),
+        [ApiResponseCodes.Communications.SourceNotEligible] = new(
+            ApiSeverity.Error,
+            "El estado del documento de origen no permite enviar esta comunicación.",
+            "Communication source document state does not allow this communication.",
+            ApiErrorCategory.Validation
+        ),
+        [ApiResponseCodes.Communications.AttachmentUnavailable] = new(
+            ApiSeverity.Error,
+            "No se pudo obtener un adjunto del correo desde su módulo de origen.",
+            "Communication attachment could not be resolved by its owner module.",
+            ApiErrorCategory.Validation
+        ),
         [ApiResponseCodes.Retentions.AnnulmentPending] = new(
             ApiSeverity.Error,
             "La retención tiene una anulación en trámite ante el SRI: la cuenta por pagar no admite pagos, créditos ni ajustes.",

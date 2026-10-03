@@ -1,6 +1,60 @@
 # Project Status
 
-**Single source of truth** for delivery state. Updated: **2026-10-02** · Kernel refactor: **2026-06-05**.
+**Single source of truth** for delivery state. Updated: **2026-10-03** · Kernel refactor: **2026-06-05**.
+
+## ZH-EDOC-COMMUNICATIONS-01 — Correo de comprobantes autorizados: Factura, Nota de crédito y Retención (2026-10-03)
+
+**Estado: COMPLETADO (sin commit).**
+- Cubre la fase 5 de [ADR-039](docs/decisions/ADR-039-communications-architecture.md) y la fase de comunicaciones
+  de [ADR-038](docs/decisions/ADR-038-sri-electronic-compliance-architecture.md).
+- Detalle en [`COMMUNICATIONS-ARCHITECTURE.md` §M](docs/communications/COMMUNICATIONS-ARCHITECTURE.md).
+
+**Funcionalidad nueva:** la nota de crédito autorizada se envía al cliente de la factura y la retención autorizada al
+sujeto retenido (correo de su contacto real). La factura conserva su correo idéntico (golden).
+
+**Un solo camino:**
+- `ElectronicDocumentAuthorizedEvent` llega a un único handler genérico.
+- `IElectronicDocumentCommunicationService` lo comparten el evento y la reconciliación.
+- El servicio enruta a un contributor por (`SourceModule`, `DocumentType`): Sales para Factura y NC, Retentions
+  para Retención.
+- El contributor aporta datos tipados; la cola renderiza el template y escribe la outbox.
+- `SalesInvoiceAuthorizedCommunicationHandler` se eliminó. No hay handlers por documento, switches ni reflexión.
+
+**Fuera de la transacción fiscal:**
+- Al autorizar solo se inserta, idempotente, la fila.
+- El XML autorizado (ElectronicDocuments, byte a byte) y el RIDE (Ride) se adjuntan **por referencia** y se
+  resuelven al enviar, desde el almacenamiento oficial.
+- Se corrigió un bug real: el transporte usaba `File.Exists` sobre rutas relativas de `IFileStorage`.
+
+**Sin correo:** fila `Failed`/`Permanent` `COMMUNICATION_RECIPIENT_MISSING`, sin envío y sin duplicar. Antes la
+factura solo dejaba un log; es una semántica transversal de la cola.
+
+**Template inválido:** misma semántica que la fase 4 para los tres tipos.
+
+**Reconciliación:**
+- Job `reconcile-electronic-document-communications`, cada 10 min.
+- Encola comprobantes `Authorized` que no tienen comunicación, **de cualquier antigüedad** (verificación final: se
+  eliminó la ventana de 7 días, que no ahorraba escaneos), del más antiguo al más nuevo, con antigüedad mínima de
+  5 min y hasta 200 por corrida.
+- Un cursor continúa entre corridas, así los faltantes omitidos no bloquean a los siguientes.
+- Usa la misma identidad que el evento, así que evento + duplicado + reconciliación concurrentes producen una sola
+  fila.
+- No reencola filas `Failed` y no crea tablas.
+- Cross-tenant por ids, con `JobExecutionContext` por documento.
+
+**Migración:** `20261003045206_EdocCommunications`, aditiva: `communication_outbox_attachments.reference_id` + CHECK
+de fuente de contenido.
+
+**Diferido:** `CompanyCopy`, retiro del setting `communications.sales_invoice_authorized.enabled`, requeue manual,
+monitor y password reset.
+
+**Tests:**
+- Application: handler genérico con golden, NC, retención, rutas y robustez; cola con destinatario ausente;
+  resolvedor y proveedores de adjuntos.
+- Domain: adjunto por referencia y fallo sin destinatario.
+- Infrastructure contra PostgreSQL: 3 tipos end-to-end con XML/RIDE, sin correo ×3, override inválido ×3, evento
+  duplicado, reconciliación simple/repetida/concurrente, preferencia/antigüedad, multi-tenant.
+- Architecture: 4 reglas nuevas, baseline 0.
 
 ## ZH-COMMUNICATIONS-TEMPLATES-01 — Subsistema de templates de Communications (2026-10-02)
 

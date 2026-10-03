@@ -7,9 +7,19 @@ namespace ERP.Infrastructure.Persistence.Configurations.Communications;
 public sealed class CommunicationOutboxAttachmentConfiguration
     : IEntityTypeConfiguration<CommunicationOutboxAttachment>
 {
+    public const string ContentSourceCheckConstraint = "ck_communication_outbox_attachments_content_source";
+
     public void Configure(EntityTypeBuilder<CommunicationOutboxAttachment> builder)
     {
-        builder.ToTable("communication_outbox_attachments");
+        // ZH-EDOC-COMMUNICATIONS-01 — todo adjunto tiene una fuente de contenido: ruta del almacenamiento
+        // oficial, bytes o referencia a su módulo dueño (resuelta al enviar).
+        builder.ToTable(
+            "communication_outbox_attachments",
+            t => t.HasCheckConstraint(
+                ContentSourceCheckConstraint,
+                "file_storage_path IS NOT NULL OR binary_content IS NOT NULL OR reference_id IS NOT NULL"
+            )
+        );
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").IsRequired();
@@ -21,6 +31,7 @@ public sealed class CommunicationOutboxAttachmentConfiguration
         builder.Property(x => x.ContentType).HasColumnName("content_type").HasMaxLength(CommunicationOutboxAttachment.ContentTypeMaxLen).IsRequired();
         builder.Property(x => x.FileStoragePath).HasColumnName("file_storage_path").HasMaxLength(CommunicationOutboxAttachment.FileStoragePathMaxLen);
         builder.Property(x => x.BinaryContent).HasColumnName("binary_content");
+        builder.Property(x => x.ReferenceId).HasColumnName("reference_id");
         builder.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by").IsRequired();

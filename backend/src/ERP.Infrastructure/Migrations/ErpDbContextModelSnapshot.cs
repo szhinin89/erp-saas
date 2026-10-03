@@ -4142,6 +4142,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(1000)")
                         .HasColumnName("file_storage_path");
 
+                    b.Property<Guid?>("ReferenceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reference_id");
+
                     b.Property<Guid?>("TenantId")
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
@@ -4159,7 +4163,10 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("CommunicationOutboxId")
                         .HasDatabaseName("ix_communication_outbox_attachments_outbox");
 
-                    b.ToTable("communication_outbox_attachments", (string)null);
+                    b.ToTable("communication_outbox_attachments", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_communication_outbox_attachments_content_source", "file_storage_path IS NOT NULL OR binary_content IS NOT NULL OR reference_id IS NOT NULL");
+                        });
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Communications.Entities.CommunicationTemplate", b =>

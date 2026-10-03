@@ -27,6 +27,16 @@ public static class DependencyInjection
         services.AddScoped<ICompanyContextProvider, CompanyContextProvider>();
         services.AddScoped<ICommunicationQueue, CommunicationQueue>();
         services.AddScoped<ERP.Application.Modules.Communications.Templates.ICommunicationTemplateResolver, ERP.Application.Modules.Communications.Templates.CommunicationTemplateResolver>();
+        // ZH-EDOC-COMMUNICATIONS-01 — comprobante autorizado → comunicación: un servicio genérico,
+        // contributors por módulo dueño (registro explícito, sin reflexión) y adjuntos resueltos al
+        // enviar por el módulo dueño de cada recurso.
+        services.AddScoped<ERP.Application.Modules.Communications.ElectronicDocuments.IElectronicDocumentCommunicationService, ERP.Application.Modules.Communications.ElectronicDocuments.ElectronicDocumentCommunicationService>();
+        services.AddScoped<ERP.Application.Modules.Communications.ElectronicDocuments.IElectronicDocumentCommunicationContributorResolver, ERP.Application.Modules.Communications.ElectronicDocuments.ElectronicDocumentCommunicationContributorResolver>();
+        services.AddScoped<ERP.Application.Modules.Communications.ElectronicDocuments.IElectronicDocumentCommunicationContributor, ERP.Application.Modules.Sales.Communications.SalesElectronicDocumentCommunicationContributor>();
+        services.AddScoped<ERP.Application.Modules.Communications.ElectronicDocuments.IElectronicDocumentCommunicationContributor, ERP.Application.Modules.Retentions.Communications.RetentionElectronicDocumentCommunicationContributor>();
+        services.AddScoped<ICommunicationAttachmentResolver, CommunicationAttachmentResolver>();
+        services.AddScoped<ICommunicationAttachmentContentProvider, ERP.Application.Modules.ElectronicDocuments.Communications.ElectronicDocumentAuthorizedXmlAttachmentProvider>();
+        services.AddScoped<ICommunicationAttachmentContentProvider, ERP.Application.Modules.Ride.Communications.RidePdfCommunicationAttachmentProvider>();
         services.AddScoped<IRuntimePermissionAuthorizer, RuntimePermissionAuthorizer>();
         services.AddScoped<IExternalEntitlementService, NoOpExternalEntitlementService>();
         // RETENTIONS-ELIGIBILITY-01 — solo orquesta repos ya registrados (Company, BusinessPartnerRole,

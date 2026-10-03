@@ -15,7 +15,7 @@ public interface IOperationalPreferencesResolver
     /// <summary>
     /// Resuelve para un tenant/company explícitos — uso desde event handlers/jobs en background
     /// donde ICurrentTenant/ICurrentCompany del request NO reflejan de forma confiable la empresa
-    /// dueña del documento que disparó el evento (ej. SalesInvoiceAuthorizedCommunicationHandler,
+    /// dueña del documento que disparó el evento (ej. ElectronicDocumentAuthorizedCommunicationHandler,
     /// que ya recibe TenantId/CompanyId explícitos del documento, no del contexto ambiente).
     /// </summary>
     Task<OperationalPreferences> ResolveAsync(

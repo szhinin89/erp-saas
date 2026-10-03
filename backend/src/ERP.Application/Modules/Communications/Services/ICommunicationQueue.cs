@@ -24,6 +24,11 @@ public interface ICommunicationQueue
 /// aporta datos, nunca asunto/HTML/texto. La cola resuelve el template (default u override de la
 /// empresa) y lo renderiza AL ENCOLAR.
 /// </param>
+/// <param name="RecipientEmail">
+/// ZH-EDOC-COMMUNICATIONS-01 — puede venir null/vacío/inválido: la cola NO lanza ni inventa un correo;
+/// registra la comunicación como Failed/Permanent con <c>COMMUNICATION_RECIPIENT_MISSING</c> (semántica
+/// transversal, misma identidad: corregir el contacto y reconciliar no la duplica).
+/// </param>
 /// <param name="MaxRetries">Override explícito; si es null se copia del perfil resuelto para el alcance.</param>
 public sealed record CommunicationRequest(
     CommunicationScope Scope,
@@ -31,7 +36,7 @@ public sealed record CommunicationRequest(
     CommunicationSource Source,
     CommunicationRecipientRole RecipientRole,
     string? RecipientName,
-    string RecipientEmail,
+    string? RecipientEmail,
     ICommunicationTemplateModel Template,
     IReadOnlyCollection<QueueCommunicationAttachmentDto>? Attachments = null,
     CommunicationChannel Channel = CommunicationChannel.Email,

@@ -375,6 +375,7 @@ public sealed class CommunicationOutboxDeliveryIntegrationTests
         var processor = new CommunicationOutboxProcessor(
             new CommunicationOutboxDeliveryStore(ctx),
             sender,
+            NoAttachments.Resolver,
             resolver ?? new ScopedResolver(),
             time ?? _time,
             NullLogger<CommunicationOutboxProcessor>.Instance

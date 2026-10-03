@@ -75,6 +75,11 @@ public sealed class ApiErrorContractTests
         [ApiResponseCodes.Communications.TemplateNotFound] = 422,
         [ApiResponseCodes.Communications.TemplateInvalid] = 422,
         [ApiResponseCodes.Communications.TemplateRenderFailed] = 422,
+        [ApiResponseCodes.Communications.RecipientMissing] = 422,
+        [ApiResponseCodes.Communications.SourceNotSupported] = 422,
+        [ApiResponseCodes.Communications.SourceNotFound] = 422,
+        [ApiResponseCodes.Communications.SourceNotEligible] = 422,
+        [ApiResponseCodes.Communications.AttachmentUnavailable] = 422,
     };
 
     private static readonly string[] SuccessCodes =

@@ -33,12 +33,12 @@ public sealed record EmailMessage(
     Guid? CommunicationId = null
 );
 
-public sealed record EmailAttachment(
-    string FileName,
-    string ContentType,
-    string? FileStoragePath,
-    byte[]? BinaryContent
-);
+/// <summary>
+/// ZH-EDOC-COMMUNICATIONS-01 — adjunto YA resuelto (bytes): el transporte nunca lee rutas ni el
+/// filesystem; <see cref="ICommunicationAttachmentResolver"/> obtiene el contenido del almacenamiento
+/// oficial o del módulo dueño antes de enviar.
+/// </summary>
+public sealed record EmailAttachment(string FileName, string ContentType, byte[] Content);
 
 public sealed record CommunicationEmailSettings(
     bool Enabled,

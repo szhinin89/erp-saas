@@ -1,53 +1,113 @@
 ﻿{
-    "Generated":  "2026-09-26 11:39:25",
+    "Generated":  "2026-10-03 06:53:16",
     "Summary":  {
-                    "TotalFiles":  9
+                    "TotalFiles":  21
                 },
     "Migrations":  [
                        {
-                           "Name":  "20260926002259_InitialEnterpriseBaseline",
-                           "SizeKB":  569.21,
-                           "Modified":  "2026-09-25 19:22:59"
+                           "Name":  "20260929143218_InitialEnterpriseBaseline",
+                           "SizeKB":  573.96,
+                           "Modified":  "2026-09-29 10:53:22"
                        },
                        {
-                           "Name":  "20260926002259_InitialEnterpriseBaseline.Designer",
-                           "SizeKB":  768.21,
-                           "Modified":  "2026-09-25 19:22:59"
+                           "Name":  "20260929143218_InitialEnterpriseBaseline.Designer",
+                           "SizeKB":  760.32,
+                           "Modified":  "2026-09-29 10:53:22"
                        },
                        {
-                           "Name":  "20260926045201_SupplierPaymentCashTransferHardening",
-                           "SizeKB":  4.38,
-                           "Modified":  "2026-09-26 06:22:17"
+                           "Name":  "20260930024608_FinancialCommandIdempotency",
+                           "SizeKB":  3.82,
+                           "Modified":  "2026-09-29 21:46:32"
                        },
                        {
-                           "Name":  "20260926045201_SupplierPaymentCashTransferHardening.Designer",
-                           "SizeKB":  770.02,
-                           "Modified":  "2026-09-25 23:52:01"
+                           "Name":  "20260930024608_FinancialCommandIdempotency.Designer",
+                           "SizeKB":  762.23,
+                           "Modified":  "2026-09-29 21:46:32"
                        },
                        {
-                           "Name":  "20260926122639_SupplierPaymentReversalSemantics",
-                           "SizeKB":  1.17,
-                           "Modified":  "2026-09-26 07:26:39"
+                           "Name":  "20261002040743_RetentionSriAnnulment",
+                           "SizeKB":  9.08,
+                           "Modified":  "2026-10-01 23:07:43"
                        },
                        {
-                           "Name":  "20260926122639_SupplierPaymentReversalSemantics.Designer",
-                           "SizeKB":  770.39,
-                           "Modified":  "2026-09-26 07:26:39"
+                           "Name":  "20261002040743_RetentionSriAnnulment.Designer",
+                           "SizeKB":  792.28,
+                           "Modified":  "2026-10-01 23:07:43"
                        },
                        {
-                           "Name":  "20260926131427_SupplierPaymentUnappliedAdvance",
-                           "SizeKB":  3.44,
-                           "Modified":  "2026-09-26 08:14:27"
+                           "Name":  "20261002113907_RetentionSriAnnulmentVerification",
+                           "SizeKB":  3.13,
+                           "Modified":  "2026-10-02 11:23:05"
                        },
                        {
-                           "Name":  "20260926131427_SupplierPaymentUnappliedAdvance.Designer",
-                           "SizeKB":  771.45,
-                           "Modified":  "2026-09-26 08:14:27"
+                           "Name":  "20261002113907_RetentionSriAnnulmentVerification.Designer",
+                           "SizeKB":  774.96,
+                           "Modified":  "2026-10-02 11:23:05"
+                       },
+                       {
+                           "Name":  "20261002170222_SriRetentionCatalogVersioning",
+                           "SizeKB":  13.22,
+                           "Modified":  "2026-10-02 12:02:23"
+                       },
+                       {
+                           "Name":  "20261002170222_SriRetentionCatalogVersioning.Designer",
+                           "SizeKB":  811.26,
+                           "Modified":  "2026-10-02 12:02:23"
+                       },
+                       {
+                           "Name":  "20261002173418_SriRetentionIncomeCatalogAts20260806",
+                           "SizeKB":  31.81,
+                           "Modified":  "2026-10-02 12:34:58"
+                       },
+                       {
+                           "Name":  "20261002173418_SriRetentionIncomeCatalogAts20260806.Designer",
+                           "SizeKB":  821.04,
+                           "Modified":  "2026-10-02 12:34:18"
+                       },
+                       {
+                           "Name":  "20261003010236_CommunicationDeliveryHardening",
+                           "SizeKB":  1.96,
+                           "Modified":  "2026-10-02 20:02:36"
+                       },
+                       {
+                           "Name":  "20261003010236_CommunicationDeliveryHardening.Designer",
+                           "SizeKB":  821.81,
+                           "Modified":  "2026-10-02 20:02:36"
+                       },
+                       {
+                           "Name":  "20261003020718_CommunicationContract",
+                           "SizeKB":  11.41,
+                           "Modified":  "2026-10-02 21:09:40"
+                       },
+                       {
+                           "Name":  "20261003020718_CommunicationContract.Designer",
+                           "SizeKB":  827,
+                           "Modified":  "2026-10-02 21:07:18"
+                       },
+                       {
+                           "Name":  "20261003035732_CommunicationTemplates",
+                           "SizeKB":  4.52,
+                           "Modified":  "2026-10-02 22:57:45"
+                       },
+                       {
+                           "Name":  "20261003035732_CommunicationTemplates.Designer",
+                           "SizeKB":  828.1,
+                           "Modified":  "2026-10-02 22:57:32"
+                       },
+                       {
+                           "Name":  "20261003045206_EdocCommunications",
+                           "SizeKB":  1.29,
+                           "Modified":  "2026-10-02 23:52:06"
+                       },
+                       {
+                           "Name":  "20261003045206_EdocCommunications.Designer",
+                           "SizeKB":  828.49,
+                           "Modified":  "2026-10-02 23:52:06"
                        },
                        {
                            "Name":  "ErpDbContextModelSnapshot",
-                           "SizeKB":  771.31,
-                           "Modified":  "2026-09-26 08:14:27"
+                           "SizeKB":  828.38,
+                           "Modified":  "2026-10-02 23:52:06"
                        }
                    ]
 }

@@ -1,6 +1,5 @@
 using ERP.Application.Audit;
 using ERP.Application.Common;
-using ERP.Application.Modules.Communications.Services;
 using ERP.Application.Modules.Ride.Services;
 using ERP.Domain.Audit;
 using ERP.Domain.Configuration.Interfaces;
@@ -94,13 +93,10 @@ public sealed class ElectronicDocumentRideSourceXmlProviderTests : IAsyncLifetim
             return mock.Object;
         });
         services.AddScoped(_ => Mock.Of<ICompanyRepository>());
-        services.AddScoped(_ => Mock.Of<ICommunicationQueue>());
-        // SalesInvoiceAuthorizedCommunicationHandler (MediatR real, ver comentario de clase) exige
-        // IOperationalPreferencesResolver en su constructor — nunca se invoca en estos escenarios
-        // porque ISalesInvoiceRepository.GetByIdAsync (mock arriba) siempre devuelve null y el
-        // handler retorna antes de llegar a _preferences.ResolveAsync (ver TryQueueAsync). Un test
-        // double vacío alcanza para que el contenedor de DI pueda construir el handler.
-        services.AddScoped(_ => Mock.Of<IOperationalPreferencesResolver>());
+        // ZH-EDOC-COMMUNICATIONS-01 — ElectronicDocumentAuthorizedCommunicationHandler (MediatR real, ver
+        // comentario de clase) solo necesita el servicio genérico de comunicaciones: un test double vacío
+        // alcanza (estos escenarios prueban el RIDE, no el correo).
+        services.AddScoped(_ => Mock.Of<ERP.Application.Modules.Communications.ElectronicDocuments.IElectronicDocumentCommunicationService>());
         services.AddLogging();
         services.AddScoped<
             ERP.Application.Common.Services.ICompanyClock,

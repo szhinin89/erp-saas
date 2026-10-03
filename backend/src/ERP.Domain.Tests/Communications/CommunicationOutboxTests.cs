@@ -146,7 +146,7 @@ public sealed class CommunicationOutboxTests
     {
         var identity = InvoiceIdentity();
 
-        var failed = CommunicationOutbox.CreateEmailTemplateFailure(
+        var failed = CommunicationOutbox.CreateEmailFailedBeforeDelivery(
             identity, "Cliente", "Cliente@Mail.com", CommunicationFailureCategory.Configuration,
             "COMMUNICATION_TEMPLATE_INVALID: placeholder no declarado", "{\"InvoiceNumber\":\"001\"}",
             CommunicationPriority.Normal, 3, UserId);
@@ -161,9 +161,9 @@ public sealed class CommunicationOutboxTests
         failed.TemplatePayloadJson.Should().Contain("InvoiceNumber");
         failed.RecipientEmail.Should().Be("cliente@mail.com");
 
-        var transient = () => CommunicationOutbox.CreateEmailTemplateFailure(identity, null, "c@test.com", CommunicationFailureCategory.Transient, "x", null, CommunicationPriority.Normal, 3, UserId);
-        var resend = () => CommunicationOutbox.CreateEmailTemplateFailure(identity.ForResend(1), null, "c@test.com", CommunicationFailureCategory.Configuration, "x", null, CommunicationPriority.Normal, 3, UserId);
-        var sensitivePayload = () => CommunicationOutbox.CreateEmailTemplateFailure(
+        var transient = () => CommunicationOutbox.CreateEmailFailedBeforeDelivery(identity, null, "c@test.com", CommunicationFailureCategory.Transient, "x", null, CommunicationPriority.Normal, 3, UserId);
+        var resend = () => CommunicationOutbox.CreateEmailFailedBeforeDelivery(identity.ForResend(1), null, "c@test.com", CommunicationFailureCategory.Configuration, "x", null, CommunicationPriority.Normal, 3, UserId);
+        var sensitivePayload = () => CommunicationOutbox.CreateEmailFailedBeforeDelivery(
             CommunicationIdentity.For(CommunicationScope.System, CommunicationPurposes.PasswordReset, CommunicationChannel.Email,
                 new CommunicationSource("Authentication", "PasswordReset", Guid.NewGuid()), CommunicationRecipientRole.User),
             null, "u@test.com", CommunicationFailureCategory.Configuration, "x", "{\"Link\":\"secreto\"}", CommunicationPriority.High, 3, UserId);
@@ -171,5 +171,36 @@ public sealed class CommunicationOutboxTests
         transient.Should().Throw<ArgumentException>();
         resend.Should().Throw<ArgumentException>();
         sensitivePayload.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void Destinatario_ausente_nace_Failed_Permanent_sin_correo_ni_contenido()
+    {
+        var identity = InvoiceIdentity();
+
+        var failed = CommunicationOutbox.CreateEmailFailedBeforeDelivery(
+            identity, "Cliente", null, CommunicationFailureCategory.Permanent,
+            "COMMUNICATION_RECIPIENT_MISSING", "{\"InvoiceNumber\":\"001\"}", CommunicationPriority.Normal, 3, UserId);
+
+        failed.Status.Should().Be(CommunicationStatus.Failed);
+        failed.FailureCategory.Should().Be(CommunicationFailureCategory.Permanent);
+        failed.RecipientEmail.Should().BeNull();
+        failed.Subject.Should().BeNull();
+        failed.IdempotencyKey.Should().Be(identity.Key, "el correo no forma parte de la identidad");
+    }
+
+    [Fact]
+    public void Adjunto_por_referencia_no_requiere_ruta_ni_bytes()
+    {
+        var message = CommunicationOutbox.CreateEmail(InvoiceIdentity(), "Cliente", "cliente@mail.com", Usage(InvoiceIdentity()), "Factura", "<p>Lista</p>", null, CommunicationPriority.Normal, null, 3, UserId);
+        var documentId = Guid.NewGuid();
+
+        message.AddAttachment(CommunicationAttachmentType.RidePdf, "ride.pdf", "application/pdf", null, null, UserId, documentId);
+        var referenciaVacia = () => message.AddAttachment(CommunicationAttachmentType.RidePdf, "x.pdf", "application/pdf", null, null, UserId, Guid.Empty);
+
+        message.Attachments.Single().ReferenceId.Should().Be(documentId);
+        message.Attachments.Single().FileStoragePath.Should().BeNull();
+        message.Attachments.Single().BinaryContent.Should().BeNull();
+        referenciaVacia.Should().Throw<ArgumentException>();
     }
 }

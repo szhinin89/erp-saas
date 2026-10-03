@@ -212,45 +212,6 @@ public sealed class UpdateSalesDraftValidator : AbstractValidator<UpdateSalesDra
 
 // ── Handlers ────────────────────────────────────────────────────────────
 
-/// <summary>
-/// SALES-INVOICE-FINAL-SEMANTIC-INTEGRITY-01 (Fase 6E) — resuelve Email/Address reales del
-/// cliente para poblar <see cref="CustomerSnapshot"/> completo (antes solo se invocaba
-/// CustomerSnapshot.Create con 3 argumentos posicionales, dejando Email/Address siempre NULL
-/// aunque las columnas y el value object ya los soportaban). BusinessPartner no contiene estos
-/// datos directamente (ver comentario de scope en BusinessPartner.cs): Email vive en
-/// BusinessPartnerContact.Contact.Email (contacto primario) y Address en
-/// BusinessPartnerLocation.Address.AddressLine (ubicación primaria) — con fallback al Email de
-/// la ubicación primaria si no hay contacto primario con email. Nunca bloquea la creación de la
-/// factura si no existen: ambos quedan null.
-/// </summary>
-internal static class CustomerSnapshotContactResolver
-{
-    public static async Task<(string? Email, string? Address)> ResolveAsync(
-        IBusinessPartnerContactRepository contactRepo,
-        IBusinessPartnerLocationRepository locationRepo,
-        Guid businessPartnerId,
-        CancellationToken ct
-    )
-    {
-        string? email = null;
-        string? address = null;
-
-        var contacts = await contactRepo.GetByBusinessPartnerAsync(businessPartnerId, true, ct);
-        var primaryContact =
-            contacts.FirstOrDefault(c => c.IsPrimary) ?? contacts.FirstOrDefault();
-        email = primaryContact?.Contact.Email;
-
-        var locations = await locationRepo.GetByBusinessPartnerAsync(businessPartnerId, true, ct);
-        var primaryLocation =
-            locations.FirstOrDefault(l => l.IsPrimary) ?? locations.FirstOrDefault();
-        address = primaryLocation?.Address.AddressLine;
-        if (string.IsNullOrWhiteSpace(email))
-            email = primaryLocation?.Email;
-
-        return (email, address);
-    }
-}
-
 public sealed class CreateSalesDraftHandler
     : IRequestHandler<CreateSalesDraftCommand, Result<SalesInvoiceDto>>
 {
@@ -504,7 +465,7 @@ public sealed class CreateSalesDraftHandler
             }
         }
 
-        var (customerEmail, customerAddress) = await CustomerSnapshotContactResolver.ResolveAsync(
+        var (customerEmail, customerAddress) = await ERP.Application.MasterData.Services.BusinessPartnerContactResolver.ResolveAsync(
             _bpContactRepo,
             _bpLocationRepo,
             cmd.CustomerId,
@@ -743,7 +704,7 @@ public sealed class UpdateSalesDraftHandler
 
         try
         {
-            var (customerEmail, customerAddress) = await CustomerSnapshotContactResolver.ResolveAsync(
+            var (customerEmail, customerAddress) = await ERP.Application.MasterData.Services.BusinessPartnerContactResolver.ResolveAsync(
                 _bpContactRepo,
                 _bpLocationRepo,
                 cmd.CustomerId,

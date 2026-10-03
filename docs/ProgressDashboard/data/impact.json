@@ -1,9 +1,9 @@
 ﻿{
-    "generated":  "2026-09-26 11:40:15",
+    "generated":  "2026-10-03 06:57:35",
     "coverage":  {
                      "mappedFeaturePoints":  45,
-                     "totalFeaturePoints":  282,
-                     "percentage":  15.96
+                     "totalFeaturePoints":  285,
+                     "percentage":  15.79
                  },
     "domains":  [
                     {
@@ -94,7 +94,7 @@
 
                                                           ],
                                             "risks":  [
-                                                          "5 possible secret(s) detected in module source"
+                                                          "8 possible secret(s) detected in module source"
                                                       ],
                                             "risk":  "HIGH"
                                         },
@@ -188,7 +188,7 @@
                                         {
                                             "name":  "Inventory",
                                             "score":  81.5,
-                                            "features":  32,
+                                            "features":  33,
                                             "processes":  [
 
                                                           ],
@@ -244,7 +244,7 @@
 
                                                           ],
                                             "risks":  [
-
+                                                          "2 large file(s) (\u003e=500 lines)"
                                                       ],
                                             "risk":  "MEDIUM"
                                         }
@@ -256,12 +256,12 @@
                                         {
                                             "name":  "Finance",
                                             "score":  81.5,
-                                            "features":  8,
+                                            "features":  10,
                                             "processes":  [
 
                                                           ],
                                             "risks":  [
-
+                                                          "1 large file(s) (\u003e=500 lines)"
                                                       ],
                                             "risk":  "MEDIUM"
                                         }
@@ -399,7 +399,7 @@
                                         {
                                             "name":  "Retentions",
                                             "score":  81.5,
-                                            "features":  7,
+                                            "features":  8,
                                             "processes":  [
 
                                                           ],
@@ -483,7 +483,7 @@
                                         {
                                             "name":  "Communications",
                                             "score":  77.75,
-                                            "features":  4,
+                                            "features":  3,
                                             "processes":  [
 
                                                           ],

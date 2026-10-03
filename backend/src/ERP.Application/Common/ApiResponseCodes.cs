@@ -98,6 +98,21 @@ public static class ApiResponseCodes
 
         /// <summary>Las variables no cumplen el contrato del template (faltante, no declarada o resultado fuera de límites).</summary>
         public const string TemplateRenderFailed = "COMMUNICATION_TEMPLATE_RENDER_FAILED";
+
+        /// <summary>ZH-EDOC-COMMUNICATIONS-01 — el destinatario no tiene correo válido: evidencia Failed/Permanent, no se envía.</summary>
+        public const string RecipientMissing = "COMMUNICATION_RECIPIENT_MISSING";
+
+        /// <summary>Ningún contributor soporta el par módulo origen / tipo de documento.</summary>
+        public const string SourceNotSupported = "COMMUNICATION_SOURCE_NOT_SUPPORTED";
+
+        /// <summary>El documento de origen no existe (o no es visible) en su módulo dueño.</summary>
+        public const string SourceNotFound = "COMMUNICATION_SOURCE_NOT_FOUND";
+
+        /// <summary>El documento de origen existe pero su estado de negocio no admite la comunicación (p. ej. factura no autorizada).</summary>
+        public const string SourceNotEligible = "COMMUNICATION_SOURCE_NOT_ELIGIBLE";
+
+        /// <summary>Un adjunto por referencia no pudo resolverse en su módulo dueño al enviar.</summary>
+        public const string AttachmentUnavailable = "COMMUNICATION_ATTACHMENT_UNAVAILABLE";
     }
 
     /// <summary>ZH-RETENTION-SRI-ANNULMENT-01 — anulación ante el SRI de retenciones autorizadas.</summary>

@@ -87,7 +87,7 @@ public sealed class CommunicationTemplateIntegrationTests
 
         var result = await EnqueueAsync(_db.TenantA, _db.CompanyA);
 
-        result.TemplateFailureCode.Should().Be(ApiResponseCodes.Communications.TemplateInvalid);
+        result.FailureCode.Should().Be(ApiResponseCodes.Communications.TemplateInvalid);
         var row = await RowAsync(result.Id);
         row.Status.Should().Be(CommunicationStatus.Failed, "nunca se envía un template inválido ni se reemplaza en silencio por el default");
         row.FailureCategory.Should().Be(CommunicationFailureCategory.Configuration);
@@ -135,6 +135,7 @@ public sealed class CommunicationTemplateIntegrationTests
             await new CommunicationOutboxProcessor(
                 new CommunicationOutboxDeliveryStore(ctx),
                 new CapturingSender((m, _) => { sentSubject = m.Subject; sentHtml = m.BodyHtml; }),
+                NoAttachments.Resolver,
                 new InstanceResolver(),
                 TimeProvider.System,
                 NullLogger<CommunicationOutboxProcessor>.Instance

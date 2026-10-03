@@ -9,7 +9,7 @@
                           "evidence":  [
                                            "backend/src/ERP.Application/Modules/Sales/SalesMapper.cs",
                                            "backend/src/ERP.Application/Modules/Sales/SalesReturnMapper.cs",
-                                           "backend/src/ERP.Application/Modules/Sales/DTOs/SalesDtos.cs"
+                                           "backend/src/ERP.Application/Modules/Sales/Communications/SalesElectronicDocumentCommunicationContributor.cs"
                                        ]
                       },
                       {
@@ -38,8 +38,8 @@
                           "status":  "verified",
                           "evidence":  [
                                            "backend/src/ERP.Application/Modules/Sales/SalesMapper.cs",
-                                           "backend/src/ERP.Application/Modules/Sales/Services/ElectronicSalesInvoiceEmissionStrategy.cs",
-                                           "backend/src/ERP.Application/Modules/Sales/Services/ISalesInvoiceEmissionStrategy.cs"
+                                           "backend/src/ERP.Application/Modules/Sales/Communications/SalesElectronicDocumentCommunicationContributor.cs",
+                                           "backend/src/ERP.Application/Modules/Sales/Services/ElectronicSalesInvoiceEmissionStrategy.cs"
                                        ]
                       },
                       {
@@ -48,8 +48,8 @@
                           "status":  "verified",
                           "evidence":  [
                                            "backend/src/ERP.Application/Modules/Sales/SalesMapper.cs",
-                                           "backend/src/ERP.Application/Modules/Sales/DTOs/ReturnableLineDto.cs",
-                                           "backend/src/ERP.Application/Modules/Sales/DTOs/SalesDtos.cs"
+                                           "backend/src/ERP.Application/Modules/Sales/Communications/SalesElectronicDocumentCommunicationContributor.cs",
+                                           "backend/src/ERP.Application/Modules/Sales/DTOs/ReturnableLineDto.cs"
                                        ]
                       },
                       {
@@ -114,7 +114,7 @@
                           "evidence":  [
                                            "backend/src/ERP.Application/Modules/Purchases/PurchaseMapper.cs",
                                            "backend/src/ERP.Application/Modules/Purchases/DTOs/PurchaseDtos.cs",
-                                           "backend/src/ERP.Application/Modules/Purchases/UseCases/AuthorizePurchaseCreditNoteUseCases.cs"
+                                           "backend/src/ERP.Application/Modules/Purchases/Exceptions/PurchasePostingFailedException.cs"
                                        ]
                       }
                   ]

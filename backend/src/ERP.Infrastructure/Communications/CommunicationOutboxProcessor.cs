@@ -35,6 +35,7 @@ public sealed partial class CommunicationOutboxProcessor : ICommunicationOutboxP
 
     private readonly CommunicationOutboxDeliveryStore _store;
     private readonly IEmailSender _emailSender;
+    private readonly ICommunicationAttachmentResolver _attachments;
     private readonly ICommunicationSettingsResolver _settingsResolver;
     private readonly TimeProvider _time;
     private readonly ILogger<CommunicationOutboxProcessor> _logger;
@@ -42,6 +43,7 @@ public sealed partial class CommunicationOutboxProcessor : ICommunicationOutboxP
     public CommunicationOutboxProcessor(
         CommunicationOutboxDeliveryStore store,
         IEmailSender emailSender,
+        ICommunicationAttachmentResolver attachments,
         ICommunicationSettingsResolver settingsResolver,
         TimeProvider time,
         ILogger<CommunicationOutboxProcessor> logger
@@ -49,6 +51,7 @@ public sealed partial class CommunicationOutboxProcessor : ICommunicationOutboxP
     {
         _store = store;
         _emailSender = emailSender;
+        _attachments = attachments;
         _settingsResolver = settingsResolver;
         _time = time;
         _logger = logger;
@@ -128,7 +131,10 @@ public sealed partial class CommunicationOutboxProcessor : ICommunicationOutboxP
                 return;
             }
 
-            receipt = await SendWithTimeoutAsync(communication, settings, ct);
+            // ZH-EDOC-COMMUNICATIONS-01 — adjuntos materializados al enviar (almacenamiento oficial o
+            // módulo dueño, dentro del alcance de esta fila); un adjunto obligatorio ausente es Transient.
+            var attachments = await _attachments.ResolveAsync(communication, ct);
+            receipt = await SendWithTimeoutAsync(ToEmailMessage(communication, attachments), settings, ct);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -160,7 +166,7 @@ public sealed partial class CommunicationOutboxProcessor : ICommunicationOutboxP
     }
 
     private async Task<EmailDeliveryReceipt> SendWithTimeoutAsync(
-        CommunicationOutbox communication,
+        EmailMessage message,
         CommunicationEmailSettings settings,
         CancellationToken ct
     )
@@ -170,7 +176,7 @@ public sealed partial class CommunicationOutboxProcessor : ICommunicationOutboxP
         timeout.CancelAfter(settings.SmtpTimeout);
         try
         {
-            return await _emailSender.SendAsync(ToEmailMessage(communication), settings, timeout.Token);
+            return await _emailSender.SendAsync(message, settings, timeout.Token);
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
@@ -227,7 +233,7 @@ public sealed partial class CommunicationOutboxProcessor : ICommunicationOutboxP
 
     private DateTime UtcNow() => _time.GetUtcNow().UtcDateTime;
 
-    private static EmailMessage ToEmailMessage(CommunicationOutbox communication) =>
+    private static EmailMessage ToEmailMessage(CommunicationOutbox communication, IReadOnlyList<EmailAttachment> attachments) =>
         new(
             communication.RecipientEmail!,
             communication.RecipientName,
@@ -235,9 +241,7 @@ public sealed partial class CommunicationOutboxProcessor : ICommunicationOutboxP
             communication.Subject!,
             communication.BodyHtml,
             communication.BodyText,
-            communication.Attachments
-                .Select(a => new EmailAttachment(a.FileName, a.ContentType, a.FileStoragePath, a.BinaryContent))
-                .ToList(),
+            attachments,
             communication.Id
         );
 

@@ -1074,6 +1074,10 @@ public static class DependencyInjection
         services.AddScoped<IEmailSender, SmtpEmailSender>();
         services.AddScoped<CommunicationOutboxDeliveryStore>();
         services.AddScoped<ICommunicationOutboxProcessor, CommunicationOutboxProcessor>();
+        services.AddScoped<ERP.Application.Modules.Communications.ElectronicDocuments.IElectronicDocumentCommunicationReconciliationQuery, ElectronicDocumentCommunicationReconciliationQuery>();
+        // Posición de la reconciliación entre corridas (process-local; perderla solo reinicia desde el más antiguo).
+        services.AddSingleton<ElectronicDocumentCommunicationReconciliationCursor>();
+        services.AddScoped<IElectronicDocumentCommunicationReconciler, ElectronicDocumentCommunicationReconciler>();
         // ── Configuration BC ──────────────────────────────────────────────────
         services.AddScoped<
             ERP.Domain.Configuration.Interfaces.ISriSettingsRepository,

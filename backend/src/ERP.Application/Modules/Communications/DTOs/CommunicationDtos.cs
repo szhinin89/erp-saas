@@ -2,19 +2,25 @@ using ERP.Domain.Modules.Communications.Enums;
 
 namespace ERP.Application.Modules.Communications.DTOs;
 
+/// <param name="ReferenceId">
+/// ZH-EDOC-COMMUNICATIONS-01 — referencia al recurso en su módulo dueño (p. ej. ElectronicDocument.Id
+/// para AuthorizedXml/RidePdf): el contenido lo resuelve ese módulo al enviar, sin copiar bytes al outbox.
+/// </param>
 public sealed record QueueCommunicationAttachmentDto(
     CommunicationAttachmentType AttachmentType,
     string FileName,
     string ContentType,
     string? FileStoragePath = null,
-    byte[]? BinaryContent = null
+    byte[]? BinaryContent = null,
+    Guid? ReferenceId = null
 );
 
-/// <param name="TemplateFailureCode">
-/// ZH-COMMUNICATIONS-TEMPLATES-01 — no null si el template no pudo renderizarse: la comunicación quedó
-/// registrada como Failed (evidencia durable, recuperable) y no se enviará hasta reencolarla.
+/// <param name="FailureCode">
+/// No null si la comunicación no pudo prepararse al encolar (template inexistente/inválido/render, o
+/// destinatario ausente — ZH-EDOC-COMMUNICATIONS-01): quedó registrada como Failed (evidencia durable,
+/// recuperable) y no se enviará hasta reencolarla.
 /// </param>
-public sealed record QueuedCommunicationDto(Guid Id, bool WasAlreadyQueued, string? TemplateFailureCode = null);
+public sealed record QueuedCommunicationDto(Guid Id, bool WasAlreadyQueued, string? FailureCode = null);
 
 public sealed record CommunicationOutboxItemDto(
     Guid Id,

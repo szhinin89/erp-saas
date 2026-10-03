@@ -29,6 +29,11 @@ public sealed class CommunicationsBoundaryTests
     private static IReadOnlyList<string> Failing(PredicateList predicates) =>
         predicates.GetTypes().Select(t => t.FullName!).Where(n => !n.Contains('<')).ToList();
 
+    /// <summary>Tipos de EXACTAMENTE ese namespace (o sus subnamespaces) con alguna dependencia prohibida.</summary>
+    private static IEnumerable<string> InNamespace(Assembly assembly, string ns, string[] forbidden) =>
+        Failing(Types.InAssembly(assembly).That().ResideInNamespace(ns).And().HaveDependencyOnAny(forbidden))
+            .Where(name => name.StartsWith(ns + ".", StringComparison.Ordinal));
+
     private static bool StartsWithAny(string? name, params string[] prefixes) =>
         name is not null && prefixes.Any(p => name.StartsWith(p, StringComparison.Ordinal));
 
@@ -203,5 +208,109 @@ public sealed class CommunicationsBoundaryTests
         mailOffenders.Should().BeEmpty("System.Net.Mail solo en Communications");
         smtpClientOffenders.Should().BeEmpty("SmtpClient solo en SmtpEmailSender (ADR-039 D17)");
         senderOffenders.Should().BeEmpty("ningún módulo llama SMTP ni IEmailSender (ADR-039 D6)");
+    }
+
+    // ── ZH-EDOC-COMMUNICATIONS-01 (ADR-038 / ADR-039 fase 5) ─────────────────────────────
+
+    [Fact]
+    public void Un_solo_handler_de_comprobante_autorizado_a_comunicacion()
+    {
+        var handlerInterface = typeof(MediatR.INotificationHandler<ERP.Domain.Modules.ElectronicDocuments.Events.ElectronicDocumentAuthorizedEvent>);
+        var communicationHandlers = ApplicationAssembly.GetTypes()
+            .Where(t => t is { IsClass: true, IsAbstract: false } && handlerInterface.IsAssignableFrom(t))
+            .Where(t => StartsWithAny(t.Namespace, "ERP.Application.Modules.Communications"))
+            .Select(t => t.Name)
+            .ToList();
+
+        communicationHandlers.Should().Equal(
+            nameof(ERP.Application.Modules.Communications.EventHandlers.ElectronicDocumentAuthorizedCommunicationHandler));
+
+        // Nadie más pide comunicaciones de comprobantes: solo el handler genérico y la reconciliación.
+        var serviceConsumers = new[] { ApplicationAssembly, InfrastructureAssembly, ApiAssembly }
+            .SelectMany(assembly => Failing(Types.InAssembly(assembly).That().HaveDependencyOn(
+                typeof(ERP.Application.Modules.Communications.ElectronicDocuments.IElectronicDocumentCommunicationService).FullName!)))
+            .Where(name => !StartsWithAny(
+                name,
+                "ERP.Application.Modules.Communications.ElectronicDocuments.",
+                "ERP.Application.Modules.Communications.EventHandlers.ElectronicDocumentAuthorizedCommunicationHandler",
+                "ERP.Infrastructure.Communications.ElectronicDocumentCommunicationReconciler",
+                "ERP.Application.DependencyInjection"
+            ))
+            .ToList();
+        serviceConsumers.Should().BeEmpty();
+
+        // La cola solo la usa Communications (el servicio genérico): ningún módulo encola correos de comprobantes por su cuenta.
+        new[] { ApplicationAssembly, InfrastructureAssembly, ApiAssembly }
+            .SelectMany(assembly => Failing(Types.InAssembly(assembly).That().HaveDependencyOn(typeof(ICommunicationQueue).FullName!)))
+            .Where(name => !StartsWithAny(name, "ERP.Application.Modules.Communications.", "ERP.Application.DependencyInjection"))
+            .Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Contributors_solo_aportan_datos()
+    {
+        var contributors = ApplicationAssembly.GetTypes()
+            .Where(t => t is { IsClass: true, IsAbstract: false }
+                && typeof(ERP.Application.Modules.Communications.ElectronicDocuments.IElectronicDocumentCommunicationContributor).IsAssignableFrom(t))
+            .ToList();
+        contributors.Should().NotBeEmpty();
+
+        string[] forbidden =
+        [
+            "System.Net.WebUtility",
+            "System.Web.HttpUtility",
+            "System.Net.Mail",
+            typeof(IEmailSender).FullName!,
+            typeof(ICommunicationQueue).FullName!,
+            typeof(CommunicationOutbox).FullName!,
+            typeof(ERP.Domain.Modules.Communications.Interfaces.ICommunicationOutboxRepository).FullName!,
+            typeof(ERP.Application.Common.Interfaces.IFileStorage).FullName!,
+            "ERP.Application.Modules.Ride",
+            .. TemplateEngineTypes,
+        ];
+
+        Failing(
+                Types.InAssembly(ApplicationAssembly)
+                    .That().ImplementInterface(typeof(ERP.Application.Modules.Communications.ElectronicDocuments.IElectronicDocumentCommunicationContributor))
+                    .And().HaveDependencyOnAny(forbidden)
+            )
+            .Should().BeEmpty("un contributor devuelve destinatario y variables; no arma HTML, no renderiza, no adjunta ni escribe la outbox");
+    }
+
+    [Fact]
+    public void Ni_ElectronicDocuments_ni_el_gateway_SRI_dependen_de_Communications_o_SMTP()
+    {
+        string[] forbidden =
+        [
+            "System.Net.Mail",
+            typeof(IEmailSender).FullName!,
+            typeof(ICommunicationQueue).FullName!,
+            typeof(ERP.Application.Modules.Communications.ElectronicDocuments.IElectronicDocumentCommunicationService).FullName!,
+            typeof(CommunicationOutbox).FullName!,
+        ];
+
+        var offenders = InNamespace(ApplicationAssembly, "ERP.Application.Modules.ElectronicDocuments", forbidden)
+            .Concat(InNamespace(InfrastructureAssembly, "ERP.Infrastructure.Services.Sri", forbidden))
+            .Concat(InNamespace(InfrastructureAssembly, "ERP.Infrastructure.Services.ElectronicDocuments", forbidden))
+            .Concat(InNamespace(InfrastructureAssembly, "ERP.Infrastructure.Persistence.Repositories.ElectronicDocuments", forbidden))
+            .ToList();
+
+        offenders.Should().BeEmpty("el ciclo fiscal (XML, firma, SOAP, estados) no conoce correos: Communications reacciona a su evento");
+    }
+
+    [Fact]
+    public void El_camino_del_evento_no_genera_RIDE_ni_lee_archivos_y_el_transporte_no_toca_el_filesystem()
+    {
+        string[] sendTimeOnly = ["ERP.Application.Modules.Ride", typeof(ERP.Application.Common.Interfaces.IFileStorage).FullName!, "MediatR.ISender"];
+        InNamespace(ApplicationAssembly, "ERP.Application.Modules.Communications.EventHandlers", sendTimeOnly)
+            .Concat(InNamespace(ApplicationAssembly, "ERP.Application.Modules.Communications.ElectronicDocuments", sendTimeOnly))
+            .Should().BeEmpty("dentro de la transacción fiscal solo se inserta la fila; RIDE y archivos se resuelven al enviar");
+
+        Failing(
+                Types.InAssembly(InfrastructureAssembly)
+                    .That().HaveName(nameof(ERP.Infrastructure.Communications.SmtpEmailSender))
+                    .And().HaveDependencyOnAny("System.IO.File", "System.IO.Directory")
+            )
+            .Should().BeEmpty("el transporte recibe bytes ya resueltos desde el almacenamiento oficial");
     }
 }
