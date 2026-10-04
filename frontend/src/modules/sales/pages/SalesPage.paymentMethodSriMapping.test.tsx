@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import { screen, cleanup, fireEvent } from "@testing-library/react";
+import { renderSalesUi as render } from "../test/renderSalesUi";
 import { MemoryRouter } from "react-router-dom";
 import type { SalesPageContext } from "../hooks/useSalesPage";
 import { withPosDerivedCtx } from "../test/salesPageCtxTestUtils";
@@ -334,8 +335,9 @@ describe("SalesPage — mapeo automático PaymentMethod → Forma Pago SRI (SALE
     renderSalesPage();
 
     expect(
-      screen.getByText((_, el) => el?.textContent === "SRI 01 — Sin utilización del sistema financiero"),
+      screen.getByText("SRI 01"),
     ).toBeTruthy();
+    expect(screen.getByText("SRI 01").getAttribute("title")).toContain("Sin utilización del sistema financiero");
   });
 
   it("al agregar Transferencia con monto, muestra el SRI 20 derivado del mapeo", () => {
@@ -347,8 +349,9 @@ describe("SalesPage — mapeo automático PaymentMethod → Forma Pago SRI (SALE
     renderSalesPage();
 
     expect(
-      screen.getByText((_, el) => el?.textContent === "SRI 20 — Otros con utilización del sistema financiero"),
+      screen.getByText("SRI 20"),
     ).toBeTruthy();
+    expect(screen.getByText("SRI 20").getAttribute("title")).toContain("Otros con utilización del sistema financiero");
   });
 
   it("al cambiar de método de cobro, el resumen SRI mostrado cambia acorde", () => {
@@ -390,7 +393,7 @@ describe("SalesPage — mapeo automático PaymentMethod → Forma Pago SRI (SALE
     );
     renderSalesPage();
 
-    expect(screen.getByText(/Sin forma de pago SRI configurada/)).toBeTruthy();
+    expect(screen.getByText(/Sin forma de pago SRI/)).toBeTruthy();
   });
 
   it("no fuerza al cajero a editar manualmente el select de cabecera Forma Pago SRI", () => {
@@ -427,7 +430,7 @@ describe("SalesPage — label de cabecera aclara que Forma Pago SRI es solo el d
   // modal ("Configuración" — único botón, ver SALES-POS-EMISSION-CONFIG-DUPLICATED-ACTIONS-01)
   // antes de buscar el label/select.
   function openConfigModal() {
-    fireEvent.click(screen.getByRole("button", { name: "Configuración" }));
+    fireEvent.click(screen.getByRole("button", { name: /Configuración$/ }));
   }
 
   it("muestra el label actualizado 'Forma Pago SRI por Defecto' dentro del modal de configuración", () => {

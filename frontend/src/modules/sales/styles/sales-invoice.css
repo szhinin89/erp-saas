@@ -6,9 +6,15 @@
 .sf-layout {
   display: grid;
   grid-template-columns: minmax(0, 260px) minmax(0, 1fr);
-  grid-template-rows: 1fr auto;
+  /* POS-VIEWPORT-LAYOUT-01: la fila de contenido absorbe el alto disponible y la barra inferior
+     queda siempre visible. El alto lo da el flex del contenedor (.sales-page-root--pos dentro del
+     opt-in .shell-fill-viewport), no una resta mágica sobre 100vh (antes `min-height:
+     calc(100vh - 120px)`, que dejaba crecer el layout con cada línea y hacía scrollear la página). */
+  /* POS-OPERATIONAL-HEADER-01: header operativo / contenido / barra inferior. */
+  grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 0;
-  min-height: calc(100vh - 120px);
+  flex: 1;
+  min-height: 0;
   background: var(--color-surface-container-low);
   border-radius: var(--radius-xl);
   overflow: hidden;
@@ -32,8 +38,17 @@
   border-right: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
+  /* Fallback de seguridad: en alturas fuera de soporte el panel scrollea por dentro; en las
+     resoluciones soportadas Cliente + cobro caben completos (POS-OPERATIONAL-HEADER-01). */
   overflow-y: auto;
-  grid-row: 1 / 3;
+  min-height: 0;
+  grid-row: 2;
+}
+
+/* POS-OPERATIONAL-HEADER-01: el panel izquierdo es solo Cliente + cobro, apilado en su alto
+   natural (sin zonas que compriman secciones). */
+.sf-sidebar > * {
+  flex-shrink: 0;
 }
 
 .sf-sidebar__section {
@@ -80,16 +95,17 @@
    a la derecha, y una costura entre pestañas en vez de un único grupo. El ajuste queda scoped a
    `.sf-sidebar` — la clase base `.prd-tab-btn` (items-catalog.css) no cambia, así que el resto de
    pantallas que la reutilizan no se ven afectadas. */
-.sf-sidebar .prd-tabs {
+.sf-ophead .prd-tabs {
   display: flex;
-  width: 100%;
+  flex: none;
+  width: auto;
   gap: 0;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   overflow: hidden;
   margin-bottom: 0;
 }
-.sf-sidebar .prd-tab-btn {
+.sf-ophead .prd-tab-btn {
   appearance: none;
   box-sizing: border-box;
   flex: 1 1 0;
@@ -97,7 +113,7 @@
   justify-content: center;
   align-items: center;
   gap: 6px;
-  padding: 12px 8px;
+  padding: var(--space-2) var(--space-3);
   /* font-size/font-weight/line-height: heredados de .prd-tab-btn (items-catalog.css, 13px/500/1)
      — no se reinventa tipografía aquí, solo el layout "fill" y el look de pill activo/inactivo
      propio del sidebar POS (SALES-DS-VISUAL-BASELINE-15). */
@@ -110,17 +126,17 @@
 }
 /* Único divisor interno entre pestañas (nunca en el borde exterior del grupo) — reemplaza el
    border-right suelto que tenía antes solo el primer botón. */
-.sf-sidebar .prd-tab-btn + .prd-tab-btn {
+.sf-ophead .prd-tab-btn + .prd-tab-btn {
   border-left: 1px solid var(--color-border);
 }
-.sf-sidebar .prd-tab-btn--active {
+.sf-ophead .prd-tab-btn--active {
   background: var(--color-primary);
   color: var(--color-on-primary);
 }
-.sf-sidebar .prd-tab-btn--active .prd-tab-icon {
+.sf-ophead .prd-tab-btn--active .prd-tab-icon {
   color: var(--color-on-primary);
 }
-.sf-sidebar .prd-tab-icon {
+.sf-ophead .prd-tab-icon {
   font-size: 18px;
 }
 
@@ -173,36 +189,9 @@
 /* .sf-customer-card / .sf-customer-card__name / __taxid / __address / __email
    ELIMINADOS (SALES-DS-CLEANUP-13) — sin consumidores TSX. */
 
-/* ── Configuración de venta (tarjeta compacta) ───────────────────
-   SALES-POS-EMISSION-PANEL-SIMPLIFICATION-01: reemplaza el bloque completo "Datos de Emisión"
-   (.sf-emission, arriba) en el panel principal — ese markup sigue existiendo tal cual dentro del
-   modal de detalle (SalesEmissionConfigSection), esta tarjeta es solo el resumen de 1-3 líneas +
-   estado + acciones que se ve siempre en el sidebar. */
-.sf-config-card {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.sf-config-card__summary {
-  font-size: var(--text-body-sm-size);
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-.sf-config-card__hint {
-  font-size: var(--text-label-sm-size);
-  color: var(--color-text-secondary);
-}
-/* SALES-POS-SILENT-OK-STATUS-AND-ALERTS-01: el ZHPageNotice de warning/error de esta tarjeta
-   reutiliza su propio padding/color — solo se ajusta el espacio respecto al resumen de arriba. */
-.sf-config-card .zh-page-notice {
-  margin-top: 2px;
-}
-.sf-config-card__actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 6px;
-  flex-wrap: wrap;
-}
+/* .sf-config-card* ELIMINADOS (POS-OPERATIONAL-HEADER-01) — la tarjeta "Configuración de venta"
+   del panel izquierdo se reemplazó por el header operativo (.sf-ophead); el detalle sigue en el
+   modal (.sf-emission). */
 
 /* ── Invoice Summary ──────────────────────────────────────────── */
 .sf-summary__discount-total {
@@ -306,7 +295,10 @@
   display: flex;
   flex-direction: column;
   background: var(--color-surface-container-low);
-  overflow-y: auto;
+  /* POS-VIEWPORT-LAYOUT-01: el área principal NO scrollea — el buscador queda fijo arriba y el
+     único scroll vertical es el del detalle de líneas (.sf-products). Overflow visible para no
+     recortar el desplegable de resultados del buscador. */
+  min-height: 0;
   min-width: 0;
 }
 
@@ -314,10 +306,14 @@
 .sf-searchbar {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
   gap: 12px;
   padding: 12px 20px;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
+  /* Por encima del detalle scrolleable, para que el desplegable de resultados lo cubra. */
+  position: relative;
+  z-index: 3;
 }
 .sf-searchbar__input-wrap {
   flex: 1;
@@ -366,9 +362,12 @@
   border-top: 1px solid var(--color-border);
 }
 .sf-bottombar__sri {
+  /* POS-OPERATIONAL-HEADER-01: una sola fila (etiqueta · clave · conectividad) — la barra
+     inferior no crece en alto en ventas electrónicas. La clave se trunca con elipsis. */
   display: flex;
-  flex-direction: column;
-  gap: 1px;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2);
   min-width: 0;
   flex-shrink: 1;
 }
@@ -388,10 +387,22 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
+}
+.sf-bottombar__sri-label {
+  white-space: nowrap;
 }
 
 .sf-bottombar__spacer {
   flex: 1;
+}
+
+/* POS-VIEWPORT-LAYOUT-01: contador discreto de líneas — texto secundario, no un KPI. */
+.sf-bottombar__count {
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .sf-bottombar__primary-actions,
@@ -401,6 +412,16 @@
   justify-content: flex-end;
   flex-wrap: wrap;
   gap: var(--space-2);
+}
+
+/* POS-OPERATIONAL-HEADER-01: las acciones de caja (Movimiento / Limpiar / Emitir) nunca se
+   encogen ni se parten en dos filas; ceden ancho la clave SRI y el "siguiente paso" (elipsis). */
+.sf-bottombar__primary-actions {
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+}
+.sf-bottombar .sf-next-step-inline {
+  flex: 0 1 auto;
 }
 
 .sf-bottombar__secondary-actions {
@@ -440,7 +461,10 @@
 @media (max-width: 768px) {
   .sf-layout {
     grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr auto;
+    grid-template-rows: auto auto 1fr auto;
+  }
+  .sf-ophead {
+    flex-wrap: wrap;
   }
   .sf-sidebar {
     grid-row: auto;
@@ -896,5 +920,129 @@
   .sf-search-columns-header__cell:nth-child(3),
   .sf-search-columns-header__cell:nth-child(4) {
     font-size: 10px;
+  }
+}
+
+/* ── POS-VIEWPORT-LAYOUT-01 — responsive por ALTURA ─────────────────────────
+   En alturas reducidas (768/720) se recorta solo el aire vertical (padding/gaps) con la escala de
+   espaciado — nunca la tipografía ni el bloque de cobro — para que la venta completa quepa sin
+   scroll de página. */
+@media (max-height: 920px) {
+  .sf-ophead {
+    padding-top: var(--space-1);
+    padding-bottom: var(--space-1);
+  }
+  .sf-sidebar__section {
+    padding: var(--space-3) var(--space-4) var(--space-2);
+  }
+  .sf-sidebar__header {
+    margin-bottom: var(--space-2);
+  }
+  .sf-next-step {
+    padding: var(--space-2) var(--space-4);
+  }
+  .sf-searchbar {
+    padding: var(--space-2) var(--space-5);
+  }
+  .sf-bottombar {
+    padding: var(--space-2) var(--space-5);
+  }
+}
+
+/* ── Header operativo compacto (POS-OPERATIONAL-HEADER-01) ───────────────────
+   Una franja sobre todo el POS: pestañas · contexto fiscal (sucursal, establecimiento, punto,
+   tipo de emisión, ambiente) · estado de configuración · Configuración. Siempre visible. */
+.sf-ophead {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+.sf-ophead__context {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  flex-wrap: wrap;
+}
+.sf-ophead__item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  min-width: 0;
+  white-space: nowrap;
+}
+.sf-ophead__label {
+  font-size: var(--text-overline-size);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+.sf-ophead__value {
+  font-size: var(--text-body-md-size);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sf-ophead > .zh-btn {
+  flex: none;
+}
+
+/* Desglose de impuestos compacto dentro de "Total a cobrar" (debajo del total). */
+.sf-tax-table--compact {
+  margin-top: var(--space-2);
+}
+.sf-tax-table--compact thead th,
+.sf-tax-table--compact tbody td {
+  padding-top: 2px;
+  padding-bottom: 2px;
+  font-size: var(--text-help-size);
+}
+
+/* "Siguiente paso" / "Listo para emitir" en una línea dentro de la barra inferior. */
+.sf-next-step-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  font-size: var(--text-help-size);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+}
+.sf-next-step-inline--ready {
+  color: var(--color-success-strong);
+}
+.sf-next-step-inline__icon {
+  font-size: var(--text-title-sm-size);
+}
+.sf-next-step-inline__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* POS-OPERATIONAL-HEADER-01 — 768/720 de alto: menos aire vertical en secciones, pestañas del
+   header y barra inferior (escala de espaciado; la tipografía no cambia). */
+@media (max-height: 780px) {
+  .sf-sidebar__section {
+    padding: var(--space-2) var(--space-4) var(--space-2);
+  }
+  .sf-sidebar__header {
+    margin-bottom: var(--space-1);
+  }
+  .sf-ophead .prd-tab-btn {
+    padding-top: var(--space-1);
+    padding-bottom: var(--space-1);
+  }
+  .sf-bottombar {
+    padding-top: var(--space-1);
+    padding-bottom: var(--space-1);
   }
 }

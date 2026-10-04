@@ -99,7 +99,10 @@ describe("SalesInvoiceLinesGrid — cabecera de columnas (SALES-INVOICE-LINES-GR
   it("no renderiza la cabecera cuando no hay líneas (estado vacío)", () => {
     const { container } = renderSection([]);
     expect(container.querySelector(".sfl-header")).toBeNull();
-    expect(screen.getByText(/busca un producto arriba/i)).not.toBeNull();
+    // POS-VIEWPORT-LAYOUT-01: empty state compacto y accionable (incluye el atajo oficial F2).
+    expect(screen.getByText("Agrega un producto para comenzar")).not.toBeNull();
+    expect(screen.getByText(/nombre, SKU o escanea el código de barras/i)).not.toBeNull();
+    expect(screen.getByText("F2")).not.toBeNull();
   });
 
   it("la cabecera y la fila comparten el mismo grid-template-columns y column-gap (var(--sfl-cols) / var(--sfl-col-gap))", () => {

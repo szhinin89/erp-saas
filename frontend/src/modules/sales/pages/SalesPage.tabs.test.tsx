@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { screen, cleanup } from "@testing-library/react";
+import { renderSalesUi as render } from "../test/renderSalesUi";
 import { MemoryRouter } from "react-router-dom";
 import type { SalesPageContext } from "../hooks/useSalesPage";
 import { withPosDerivedCtx } from "../test/salesPageCtxTestUtils";
@@ -357,5 +358,59 @@ describe("SalesPage — tabs (ZHTabBar, SALES-DS-TABS-02)", () => {
       expect(el.getAttribute("style")).toBeNull();
     });
     expect(tabBar?.getAttribute("style")).toBeNull();
+  });
+});
+
+// POS-VIEWPORT-LAYOUT-01 — estructura del layout de caja: la venta ocupa el viewport (opt-in del
+// shell) y el panel izquierdo separa CONTEXTO (cede altura) de CHECKOUT (siempre visible).
+describe("SalesPage — layout de caja (POS-VIEWPORT-LAYOUT-01)", () => {
+  afterEach(() => cleanup());
+
+  it("en Nueva Factura la raíz declara el opt-in de altura fija del shell", () => {
+    useSalesPageMock.mockReturnValue(buildCtx({ tab: "nuevo" }));
+    const { container } = renderSalesPage();
+    const root = container.querySelector(".sales-page-root");
+    expect(root?.classList.contains("shell-fill-viewport")).toBe(true);
+    expect(root?.classList.contains("sales-page-root--pos")).toBe(true);
+  });
+
+  it("en el Historial (listado) la página conserva el scroll normal", () => {
+    useSalesPageMock.mockReturnValue(buildCtx({ tab: "listado" }));
+    const { container } = renderSalesPage();
+    expect(container.querySelector(".sales-page-root")?.classList.contains("shell-fill-viewport")).toBe(false);
+  });
+
+  it("Cliente, total y cobro viven en el sidebar; tabs y contexto en el header", () => {
+    useSalesPageMock.mockReturnValue(buildCtx({ tab: "nuevo" }));
+    const { container } = renderSalesPage();
+    const sidebar = container.querySelector(".sf-sidebar");
+    expect(container.querySelector(".sf-ophead .prd-tabs")).toBeTruthy();
+    expect(sidebar?.querySelector(".sf-sidebar__section--customer")).toBeTruthy();
+    expect(sidebar?.querySelector(".sf-total-box")).toBeTruthy();
+    expect(sidebar?.textContent).toContain("Formas de Cobro");
+    expect(sidebar?.querySelector(".sf-tax-table")).toBeTruthy();
+    expect(sidebar?.querySelector(".prd-tabs")).toBeNull();
+    expect(screen.getByRole("button", { name: /Emitir/ })).toBeTruthy();
+  });
+
+  it("contador discreto de líneas en la barra inferior (singular / plural)", () => {
+    useSalesPageMock.mockReturnValue(buildCtx({ tab: "nuevo", lines: [{ _key: 1 }] as never }));
+    const { rerender } = renderSalesPage();
+    expect(screen.getByText("1 producto")).toBeTruthy();
+    useSalesPageMock.mockReturnValue(
+      buildCtx({ tab: "nuevo", lines: [{ _key: 1 }, { _key: 2 }, { _key: 3 }] as never }),
+    );
+    rerender(
+      <MemoryRouter>
+        <SalesPage />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText("3 productos")).toBeTruthy();
+  });
+
+  it("sin líneas no muestra contador", () => {
+    useSalesPageMock.mockReturnValue(buildCtx({ tab: "nuevo", lines: [] as never }));
+    renderSalesPage();
+    expect(screen.queryByText(/\d+ productos?$/)).toBeNull();
   });
 });

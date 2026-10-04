@@ -20,6 +20,13 @@
 /* ── Products Container ───────────────────────────────────────── */
 .sf-products {
   flex: 1;
+  /* POS-VIEWPORT-LAYOUT-01: ÚNICO contenedor con scroll vertical de la pantalla de venta — las
+     líneas crecen aquí dentro; buscador, panel izquierdo, cobro y barra inferior no se mueven.
+     Usa el scrollbar fino global (index.css). */
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: auto;
+  overscroll-behavior: contain;
   /* SALES-INVOICE-LINES-GRID-CONTAINER-SPACING-01J: padding superior reducido a --space-3 (era
      20px) para que la grilla arranque pegada al buscador de arriba (.sf-searchbar, mismo padding
      vertical) en vez de flotar separada; lateral/inferior se mantienen sobre el token equivalente
@@ -83,6 +90,13 @@
   align-items: center;
   padding: 6px 14px;
   background: var(--color-primary);
+  /* POS-VIEWPORT-LAYOUT-01: cabecera de columnas fija mientras se desplazan las líneas (el scroll
+     lo hace .sf-products). Sombra mínima del DS para separarla de la fila que pasa por debajo. */
+  position: sticky;
+  /* Pegada al borde superior del área scrolleable (compensa el padding-top de .sf-products). */
+  top: calc(var(--space-1) * -1);
+  z-index: 2;
+  box-shadow: var(--shadow-xs);
   /* El límite cabecera→cuerpo ya lo da el salto de color (azul → superficie blanca de la primera
      fila) — no hace falta un border-bottom adicional; uno del mismo tono que el fondo sería
      invisible, y uno distinto competiría con el propio bloque de color. */
@@ -176,9 +190,13 @@
    nada). `:focus-within` es justamente lo que evita tener que gestionar un estado de "línea
    activa" a mano — la fila se ve activa mientras el foco real esté en cualquiera de sus
    controles, y dejar de estarlo cuando el foco sale, sin JS ni clases adicionales. */
-.sf-product-card.zh-line-card:hover,
+.sf-product-card.zh-line-card:hover {
+  background: var(--color-surface-hover);
+}
+/* POS-VIEWPORT-LAYOUT-01: la línea en edición (foco en cualquiera de sus controles) se distingue
+   de un simple hover con el token de selección del DS — es fácil saber qué línea se edita. */
 .sf-product-card.zh-line-card:focus-within {
-  background: var(--color-surface-container-low);
+  background: var(--color-surface-selected);
 }
 
 /* ── Columna Línea (número + eliminar) ────────────────────────────────
@@ -201,8 +219,15 @@
   width: 32px;
   height: 32px;
 }
+/* POS-VIEWPORT-LAYOUT-01: acción de línea menos ruidosa — neutra en reposo, roja solo al
+   apuntarla o enfocarla (sigue siendo inequívoca cuando se va a usar). */
 .sf-product__delete-btn .material-symbols-outlined {
   font-size: 20px;
+  color: var(--color-text-secondary);
+  transition: color var(--motion-duration-fast) var(--motion-ease);
+}
+.sf-product__delete-btn:hover .material-symbols-outlined,
+.sf-product__delete-btn:focus-visible .material-symbols-outlined {
   color: var(--color-error);
 }
 
@@ -606,22 +631,69 @@
 }
 
 /* ── Empty state ──────────────────────────────────────────────── */
+/* POS-VIEWPORT-LAYOUT-01: empty state compacto y accionable — una franja, no una gran zona
+   vacía centrada. */
 .sf-products-empty {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
+  gap: var(--space-3);
+  margin: var(--space-2) var(--space-1) 0;
+  padding: var(--space-4) var(--space-5);
+  border: 1px dashed var(--color-outline-variant);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
   color: var(--color-text-secondary);
   font-size: var(--text-body-md-size);
-  gap: 8px;
 }
 .sf-products-empty__icon {
-  font-size: 48px;
-  color: var(--color-outline-variant);
+  font-size: var(--text-headline-md-size);
+  color: var(--color-outline);
+}
+.sf-products-empty__text p {
+  margin: 0;
+}
+.sf-products-empty__title {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+.sf-products-empty__hint {
+  font-size: var(--text-help-size);
+}
+.sf-products-empty__kbd {
+  padding: 0 var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xs);
+  background: var(--color-surface-container-low);
+  font-family: var(--font-family-mono);
+  font-size: var(--text-help-size);
+  color: var(--color-text-primary);
 }
 
 /* ── Responsive ───────────────────────────────────────────────── */
+/* POS-VIEWPORT-LAYOUT-01: a 1280–1440px de ancho los mínimos de columna originales (~1250px)
+   desbordaban el área de detalle y escondían "Total". Se reducen solo los mínimos (las fracciones
+   `fr` siguen repartiendo el sobrante) y el espacio entre columnas baja un paso de la escala. */
+@media (max-width: 1440px) {
+  .sf-products {
+    --sfl-cols:
+      44px
+      minmax(114px, 1.3fr)
+      minmax(84px, 0.65fr)
+      minmax(76px, 0.5fr)
+      minmax(112px, 0.7fr)
+      minmax(164px, 0.95fr)
+      minmax(104px, 0.5fr)
+      minmax(136px, 0.75fr);
+    --sfl-col-gap: var(--space-2);
+  }
+  /* Etiquetas cortas de la columna Total en una sola línea ("BASE SIN IVA", "TOTAL LÍNEA",
+     "IMP. INCLUIDOS") — evita que la fila crezca por wrap de palabras sueltas. */
+  .sf-product__subtotal-label,
+  .sf-product__total-label,
+  .sf-product__tax-incl {
+    white-space: nowrap;
+  }
+}
 @media (max-width: 1100px) {
   /* La cabecera solo tiene sentido mientras las filas son un grid real de una sola línea — en
      este breakpoint las filas pasan a envolver en tarjeta (2 columnas), así que ya no hay

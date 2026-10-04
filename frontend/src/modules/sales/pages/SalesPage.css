@@ -4,6 +4,17 @@
 .sales-page-root {
   padding: var(--space-2) var(--space-4) 0;
 }
+/* POS-VIEWPORT-LAYOUT-01: en modo venta la raíz es una columna que llena el alto disponible
+   (opt-in .shell-fill-viewport); los avisos superiores conservan su alto y .sf-layout toma el
+   resto. */
+.sales-page-root--pos {
+  /* El shell ya aporta el margen lateral (--shell-content-padding): sin padding horizontal
+     duplicado, el detalle de líneas gana el ancho que necesitan sus columnas a 1280/1366. */
+  padding: 0;
+}
+.sales-page-root--pos > :not(.sf-layout) {
+  flex-shrink: 0;
+}
 
 .sales-page-listbar {
   margin-bottom: var(--space-4);
@@ -127,6 +138,35 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   gap: var(--space-2);
+}
+/* POS-VIEWPORT-LAYOUT-01: en el panel del POS (≈228px útiles) las formas de cobro van en 2
+   columnas — el bloque de cobro completo entra en pantallas de 768px de alto. Una forma con
+   monto "Aplicado $" (multipago) ocupa la fila completa para que su input no se comprima. */
+.sf-sidebar .sales-payment-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.sf-sidebar .sales-payment-method:last-child:nth-child(odd) {
+  /* La última forma impar (p. ej. Crédito) usa la fila completa: su aviso
+     "Requiere condición de pago a crédito" se lee en una línea en vez de tres. */
+  grid-column: 1 / -1;
+}
+/* Multipago dentro de la celda (≈106px): "APLICADO" rotulado arriba y el input + quitar en una
+   fila — la grilla de 2 columnas no se desordena y el rótulo sigue distinguiéndolo de
+   "Efectivo recibido". */
+.sf-sidebar .sales-payment-amount-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  width: 100%;
+}
+.sf-sidebar .sales-payment-amount-row .sales-payment-applied-label {
+  grid-column: 1 / -1;
+  font-size: var(--text-overline-size);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.sf-sidebar .sales-payment-amount-row .sales-payment-input {
+  width: 100%;
 }
 
 /* Layout wrapper del tile de método de pago (ZHToggleTile) + filas
@@ -438,3 +478,124 @@
    "Precio lista" ya no lleva label propio, la cabecera de la grilla ya lo dice
    (SALES-INVOICE-LINES-GRID-UX-01B; .sf-product__pricelist-label también se eliminó,
    SALES-PAGE-CLEANUP-DUPLICATES-SAFETY-01). */
+
+/* POS-VIEWPORT-LAYOUT-01 — responsive por ALTURA del bloque de cobro: en pantallas bajas
+   (768/720) solo se recorta aire vertical con la escala de espaciado; la tipografía y los datos
+   del cobro (Recibido / Vuelto / estado) no cambian. */
+@media (max-height: 920px) {
+  .sales-form-tax-section {
+    padding: var(--space-2) var(--space-4);
+  }
+  .sales-tender,
+  .sales-result {
+    margin-top: var(--space-2);
+  }
+  .sales-tender {
+    gap: var(--space-1);
+  }
+  .sales-tender__field .sales-tender__input {
+    padding: var(--space-1) 0;
+  }
+  .sales-result__rows {
+    padding: var(--space-2) var(--space-3) var(--space-1);
+  }
+  .sales-result__highlight,
+  .sales-result__state {
+    padding-top: var(--space-1);
+    padding-bottom: var(--space-1);
+  }
+}
+
+/* ── POS-OPERATIONAL-HEADER-01 — cliente + cobro sin scroll del panel en alturas bajas ─────
+   Solo se recorta aire vertical y elementos REDUNDANTES u OPCIONALES — nunca Cliente, Total,
+   Formas de cobro, Efectivo recibido ni Falta / Pago exacto / Vuelto. */
+.sf-total-box .sf-tax-table--compact thead th {
+  font-size: var(--text-overline-size);
+}
+@media (max-height: 920px) {
+  /* "Total a cobrar" ya se ve en grande justo arriba (sf-total-box): la tarjeta de resultado
+     queda con Recibido / Vuelto·Falta + estado. */
+  .sf-sidebar .sales-result__total {
+    display: none;
+  }
+  .sf-sidebar .sales-payment-grid {
+    gap: var(--space-1);
+  }
+  .sf-sidebar .zh-toggle-tile {
+    padding-top: var(--space-1);
+    padding-bottom: var(--space-1);
+  }
+  /* "Sin lista preferente" es informativo; con lista real se sigue mostrando. */
+  .sf-sidebar .sales-price-list-context--muted {
+    display: none;
+  }
+  .sf-sidebar .sf-total-box {
+    padding: var(--space-2) var(--space-3);
+  }
+}
+/* Cliente seleccionado: acciones (cambiar / editar) en fila — la tarjeta del cliente no crece en
+   alto por apilar dos iconos (alcance: solo el panel del POS). */
+.sf-sidebar .zh-picker-selected-value__actions {
+  flex-direction: row;
+}
+
+@media (max-height: 780px) {
+  /* Montos rápidos: atajo opcional — en 768/720 de alto el campo de efectivo recibido basta. */
+  .sales-tender__quick {
+    display: none;
+  }
+  /* Ayuda informativa (tooltip) de Consumidor Final: el nombre del cliente ya lo dice y el aviso
+     de monto excedido (ZHPageNotice) se sigue mostrando — no es esta línea. */
+  .sf-sidebar .sales-consumer-final-help {
+    display: none;
+  }
+  .sf-sidebar .sales-tender,
+  .sf-sidebar .sales-result {
+    margin-top: var(--space-1);
+  }
+  .sf-sidebar .zh-toggle-tile {
+    padding-top: 2px;
+    padding-bottom: 2px;
+  }
+}
+
+@media (max-height: 780px) {
+  /* 768/720 de alto: el desglose por tasa se consulta en cada línea (Base / IVA por línea) —
+     prioridad a Cliente + cobro sin scroll. */
+  .sf-sidebar .sf-tax-table--compact {
+    display: none;
+  }
+}
+
+@media (max-height: 740px) {
+  /* 720px de alto: el código SRI de la forma de cobro queda en Configuración (y en el XML) —
+     el panel prioriza Cliente + cobro sin scroll. */
+  .sf-sidebar .sales-payment-sri-hint {
+    display: none;
+  }
+  /* El rótulo de sección "Cliente" cede su fila: la tarjeta del cliente (nombre + identificación
+     + cambiar/editar) sigue visible y se explica sola. */
+  .sf-sidebar__section--customer > .sf-sidebar__header {
+    display: none;
+  }
+  .sf-sidebar > .sf-sidebar__section {
+    padding-top: var(--space-1);
+    padding-bottom: var(--space-1);
+  }
+  /* "Sin lista preferente" (informativo) — con una lista real asignada se sigue mostrando. */
+  .sf-sidebar .sales-price-list-context:not(.sales-price-list-context--preferred) {
+    display: none;
+  }
+}
+
+/* Multipago (POS-OPERATIONAL-HEADER-01): la fila "Aplicado" agrega alto al cobro — a cualquier
+   altura se retiran los elementos informativos/opcionales del panel (los mismos que ya se
+   retiran en pantallas bajas) para que cliente + cobro sigan sin scroll. */
+.sf-sidebar:has(.sales-payment-amount-row) .sf-tax-table--compact,
+.sf-sidebar:has(.sales-payment-amount-row) .sales-consumer-final-help,
+.sf-sidebar:has(.sales-payment-amount-row) .sales-price-list-context:not(.sales-price-list-context--preferred),
+.sf-sidebar:has(.sales-payment-amount-row) .sales-tender__quick,
+.sf-sidebar:has(.sales-payment-amount-row) .sales-result__total,
+.sf-sidebar .sales-result__received-dup {
+  display: none;
+}

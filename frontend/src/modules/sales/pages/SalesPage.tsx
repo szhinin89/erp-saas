@@ -5,7 +5,6 @@ import { Badge, type BadgeVariant } from "../../../components/PageShell";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
-import { ZHTabBar, type ZHTab } from "../../../components/zh/ZHTabBar";
 import { ZhTextInput } from "../../../components/zh/inputs";
 import { ZHConfirmModal, ZHPromptModal } from "../../../components/zh/ZHConfirmModal";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
@@ -26,7 +25,7 @@ import { SalesIssueModal } from "../components/SalesIssueModal";
 import { CashSessionNotice } from "../components/CashSessionNotice";
 import { ManualCashMovementModal } from "../../caja/facades/manualCashMovementFacade";
 import { SalesFormChecklist } from "../components/SalesFormChecklist";
-import { SalesEmissionConfigSection } from "../components/SalesEmissionConfigSection";
+import { SalesOperationalHeader } from "../components/SalesOperationalHeader";
 import { EmitButton } from "../components/EmitButton";
 import { PaymentMethodsSection } from "../components/PaymentMethodsSection";
 import { remainingToCollect } from "../components/paymentRemaining";
@@ -150,12 +149,22 @@ export function SalesPage() {
   ];
 
   return (
-    <div className="sales-page-root">
-      {/* Solo aplica a ventas Electrónicas — fuente única ctx.isElectronic
+    // POS-VIEWPORT-LAYOUT-01: en "Nueva/Editar factura" la página ocupa exactamente el alto
+    // disponible (opt-in del shell `.shell-fill-viewport`): la página no hace scroll, solo el
+    // detalle de líneas. El historial (listado) conserva el scroll normal de página.
+    <div
+      className={
+        ctx.tab === "nuevo"
+          ? "sales-page-root sales-page-root--pos shell-fill-viewport"
+          : "sales-page-root"
+      }
+    >
+      {/* Solo aplica a ventas Electrónicas — fuente única ctx.isElectronic. En el POS el ambiente
+          se muestra compacto en el header operativo (POS-OPERATIONAL-HEADER-01).
           (POS-EMISSION-TYPE-SNAPSHOT-01: snapshot de la factura si ya existe; si es venta nueva,
           CashRegister → EmissionPoint → EmissionType). Una venta Física nunca debe consultar ni
           mostrar estado de configuración SRI. */}
-      {ctx.isElectronic && <ZHElectronicEnvironmentBanner />}
+      {ctx.isElectronic && ctx.tab !== "nuevo" && <ZHElectronicEnvironmentBanner />}
 
       {/* ── Aviso caja no abierta / no se pudo verificar ────────────── */}
       <CashSessionNotice ctx={ctx} />
@@ -221,47 +230,16 @@ export function SalesPage() {
       {/* ═══════════════════════════ NUEVO / EDITAR (POS Layout) ═══════════════════════════ */}
       {ctx.tab === "nuevo" && (
         <div className="sf-layout">
-          {/* ── SIDEBAR ── */}
+          {/* POS-OPERATIONAL-HEADER-01: header operativo compacto — pestañas Nueva Factura /
+              Historial + contexto fiscal (sucursal, establecimiento, punto, tipo de emisión,
+              ambiente si es electrónica) + Configuración. Siempre visible, primera fila del
+              layout. Reemplaza la tarjeta "Configuración de venta" del panel izquierdo. */}
+          <SalesOperationalHeader ctx={ctx} />
+
+          {/* ── SIDEBAR — Cliente + Cobro (POS-OPERATIONAL-HEADER-01) ── */}
           <div className="sf-sidebar">
-            {/* Tabs */}
-            <ZHTabBar
-              tabs={
-                [
-                  {
-                    id: "form",
-                    label: ctx.editing ? "Editar Factura" : "Nueva Factura",
-                    icon: "receipt_long",
-                    inert: true,
-                  },
-                  { id: "history", label: "Historial", icon: "history" },
-                ] as ZHTab<"form" | "history">[]
-              }
-              activeTab="form"
-              fill
-              onChange={(id) => {
-                if (id === "history") {
-                  void ctx.resetForm();
-                  ctx.setTab("listado");
-                }
-              }}
-            />
-
-            {/* Checklist + Next Step (only in draft mode) */}
-            {ctx.isDraft && !ctx.readOnly && <SalesFormChecklist ctx={ctx} />}
-
-            {/* Configuración de venta — SALES-POS-SIDEBAR-SECTION-ORDER-01: antes del contexto
-                base de emisión (Sucursal/Caja/Punto/Tipo Documento/Tipo Emisión) para que el
-                cajero vea primero si la venta está correctamente configurada, antes de elegir
-                cliente. SALES-POS-EMISSION-PANEL-SIMPLIFICATION-01: tarjeta compacta (sin badge
-                cuando está OK, solo aviso si hay que revisar/falta algo) reemplaza el bloque
-                completo de Datos de Emisión que antes vivía siempre expandido acá; el detalle
-                completo (Sucursal/Caja/Punto/Tipo Emisión/Tipo Documento/Forma Pago SRI por
-                Defecto/Nro.) se movió al modal de SalesEmissionConfigSection — mismo form/ctx,
-                sin segunda fuente de verdad. */}
-            <SalesEmissionConfigSection ctx={ctx} />
-
             {/* Cliente */}
-            <div className="sf-sidebar__section">
+            <div className="sf-sidebar__section sf-sidebar__section--customer">
               <div className="sf-sidebar__header zh-section-title">
                 <span className="material-symbols-outlined sf-sidebar__header-icon">
                   person
@@ -327,6 +305,7 @@ export function SalesPage() {
                   />
                 ) : (
                   <ZHSectionHelp
+                    className="sales-consumer-final-help"
                     helpKey={HELP_KEYS.SALES_CUSTOMER_CONSUMER_FINAL}
                     variables={{
                       maxConsumerFinalAmount: formatMoney(
@@ -338,10 +317,22 @@ export function SalesPage() {
                 ))}
             </div>
 
-            {/* Resumen Impuestos + Total */}
+            {/* Total a cobrar (protagonista del flujo B) + desglose de impuestos compacto */}
             <div className="sf-sidebar__section sales-form-tax-section">
               <div className="sf-total-box">
-                <table className="sf-tax-table">
+                <div className="sf-total-box__header">
+                  <span className="sf-total-box__label zh-section-title">
+                    Total a Cobrar
+                  </span>
+                </div>
+                <div className="sf-total-box__amount">
+                  <ZHMoneyValue
+                    value={ctx.grandTotal}
+                    precision="money"
+                    emphasis="total"
+                  />
+                </div>
+                <table className="sf-tax-table sf-tax-table--compact">
                   <thead>
                     <tr>
                       <th>Impuesto</th>
@@ -354,49 +345,28 @@ export function SalesPage() {
                       <tr key={e.rate}>
                         <td>{e.label}</td>
                         <td>
-                          <ZHMoneyValue
-                            value={e.base}
-                            precision="money"
-                          />
+                          <ZHMoneyValue value={e.base} precision="money" />
                         </td>
                         <td>
-                          <ZHMoneyValue
-                            value={e.tax}
-                            precision="tax"
-                          />
+                          <ZHMoneyValue value={e.tax} precision="tax" />
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
                 {ctx.totalDiscount > 0 && (
-                  <div className="sf-summary__discount-total zh-mt-8">
+                  <div className="sf-summary__discount-total">
                     <span>Descuento:</span>
                     <span>
                       -
-                      <ZHMoneyValue
-                        value={ctx.totalDiscount}
-                        precision="money"
-                      />
+                      <ZHMoneyValue value={ctx.totalDiscount} precision="money" />
                     </span>
                   </div>
                 )}
-                <div className="sf-total-box__header zh-mt-10">
-                  <span className="sf-total-box__label zh-section-title">
-                    Total a Cobrar
-                  </span>
-                </div>
-                <div className="sf-total-box__amount">
-                  <ZHMoneyValue
-                    value={ctx.grandTotal}
-                    precision="money"
-                    emphasis="total"
-                  />
-                </div>
               </div>
             </div>
 
-            {/* Formas de Cobro */}
+            {/* Formas de Cobro → Efectivo recibido → Resultado (flujo B) */}
             <PaymentMethodsSection ctx={ctx} />
 
             {/* Errors */}
@@ -459,6 +429,17 @@ export function SalesPage() {
                   size="md"
                 />
               </div>
+            )}
+
+            {/* POS-OPERATIONAL-HEADER-01: "Siguiente paso" / "Listo para emitir" en una línea,
+                junto a Emitir (misma fuente ctx.emitBlockers / ctx.canEmit). */}
+            {ctx.isDraft && !ctx.readOnly && <SalesFormChecklist ctx={ctx} compact />}
+
+            {/* POS-VIEWPORT-LAYOUT-01: contador discreto de líneas (no es un KPI). */}
+            {ctx.lines.length > 0 && (
+              <span className="sf-bottombar__count">
+                {ctx.lines.length === 1 ? "1 producto" : `${ctx.lines.length} productos`}
+              </span>
             )}
 
             <div className="sf-bottombar__spacer" />

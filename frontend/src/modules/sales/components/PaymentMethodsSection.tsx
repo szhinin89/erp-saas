@@ -81,8 +81,9 @@ function CollectionResultCard({
       data-collection-state={c.state}
     >
       <dl className="sales-result__rows">
-        <dt>Total a cobrar</dt>
-        <dd>
+        {/* En pantallas bajas se omite (CSS): el mismo total está a la vista justo arriba. */}
+        <dt className="sales-result__total">Total a cobrar</dt>
+        <dd className="sales-result__total">
           <ZHMoneyValue value={c.total} precision="money" />
         </dd>
         {showReceived ? (
@@ -106,8 +107,10 @@ function CollectionResultCard({
         )}
         {isMultiPayment && c.cashApplied > 0 && c.cashReceived !== null && (
           <>
-            <dt>Efectivo recibido</dt>
-            <dd>
+            {/* Visible en pantallas altas; en el panel del POS se omite (CSS) porque el mismo
+                valor está en el campo "Efectivo recibido" justo arriba. */}
+            <dt className="sales-result__received-dup">Efectivo recibido</dt>
+            <dd className="sales-result__received-dup">
               <ZHMoneyValue value={c.cashReceived} precision="money" />
             </dd>
           </>
@@ -414,17 +417,18 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
                       return sriCode ? (
                         <span
                           className="sales-payment-sri-hint"
-                          title={`Forma de pago SRI derivada automáticamente de "${pm.name}" (SALES-PAYMENT-METHOD-SRI-MAPPING-SSOT-01)`}
+                          title={`Forma de pago SRI ${sriCode}${sriName ? ` — ${sriName}` : ""}, derivada automáticamente de "${pm.name}" (SALES-PAYMENT-METHOD-SRI-MAPPING-SSOT-01)`}
                         >
+                          {/* POS-OPERATIONAL-HEADER-01: solo el código (la descripción va en el
+                              tooltip) — el panel de cobro no crece por un texto de 3 líneas. */}
                           SRI {sriCode}
-                          {sriName ? ` — ${sriName}` : ""}
                         </span>
                       ) : (
                         <span
                           className="sales-payment-sri-hint sales-payment-sri-hint--warning"
                           title="Configure el mapeo SRI de esta forma de cobro en Configuración → Métodos de Pago, o un default de empresa en Configuración → Ventas."
                         >
-                          ⚠ Sin forma de pago SRI configurada
+                          ⚠ Sin forma de pago SRI
                         </span>
                       );
                     })()}
@@ -466,13 +470,8 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
                   className="sales-tender__input"
                 />
               </div>
-              {isMultiPayment && (
-                <div className="sales-tender__hint">
-                  Aplicado en efectivo{" "}
-                  <ZHMoneyValue value={c.cashApplied} precision="money" /> · lo que exceda es
-                  vuelto
-                </div>
-              )}
+              {/* POS-OPERATIONAL-HEADER-01: en multipago el monto aplicado ya se ve rotulado
+                  ("APLICADO") en la celda de Efectivo — sin texto repetido aquí. */}
               {!ctx.fieldDisabled && (
                 <div className="sales-tender__quick" aria-label="Montos rápidos de efectivo">
                   {quickTenderAmounts(c.cashApplied).map((amount) => (

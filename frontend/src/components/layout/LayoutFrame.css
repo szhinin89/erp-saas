@@ -48,3 +48,32 @@
     padding: var(--shell-content-padding-compact, var(--space-4));
   }
 }
+
+/* ── Opt-in: página de altura fija (POS) ───────────────────────────────────
+   Una página que declara `.shell-fill-viewport` en su raíz (hijo directo de __inner) ocupa
+   exactamente el alto disponible bajo el header: el frame deja de crecer con el contenido y la
+   página gestiona su propio scroll interno (p. ej. solo el detalle de líneas del POS). Sin la
+   clase, ninguna otra pantalla cambia: el frame sigue siendo min-height 100vh con scroll. */
+.shell-content-frame--tenant:has(.shell-fill-viewport) {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+}
+
+.shell-content-frame__scroll:has(> .shell-content-frame__inner > .shell-fill-viewport) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.shell-content-frame__inner:has(> .shell-fill-viewport) {
+  flex: 1;
+  min-height: 0;
+}
+
+.shell-fill-viewport {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}

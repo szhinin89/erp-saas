@@ -1,16 +1,14 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import { screen, cleanup, fireEvent } from "@testing-library/react";
+import { renderSalesUi as render } from "../test/renderSalesUi";
 import { MemoryRouter } from "react-router-dom";
 import type { SalesPageContext } from "../hooks/useSalesPage";
 import { withPosDerivedCtx } from "../test/salesPageCtxTestUtils";
 import type { SalesInvoiceDto } from "../api/salesService";
 
-// SALES-POS-SIDEBAR-SECTION-ORDER-01: reordenamiento puramente visual del panel izquierdo de
-// /sales — "Configuración de venta" pasa a mostrarse antes que "Cliente" (contexto base de
-// emisión primero), sin tocar lógica/estado/cálculo/validaciones ni el comportamiento de ninguna
-// de las dos secciones. Esta suite no mockea CustomerPicker (a diferencia de otras suites de
-// SalesPage) para poder verificar que sigue editable de verdad, no solo que el mock se llamó.
+// Header operativo separado del sidebar: Cliente + Total + Cobro.
+// CustomerPicker real para conservar la prueba de edicion del cliente.
 vi.mock("../components/SalesInvoiceDetailsSection", () => ({
   SalesInvoiceDetailsSection: () => null,
 }));
@@ -321,21 +319,14 @@ describe("SalesPage — orden de secciones del sidebar (SALES-POS-SIDEBAR-SECTIO
     cleanup();
   });
 
-  it('"Configuración de venta" aparece antes que "Cliente" en el DOM', () => {
+  it("header operativo precede al sidebar, que comienza por Cliente", () => {
     useSalesPageMock.mockReturnValue(buildCtx());
     const { container } = renderSalesPage();
-
-    const headers = Array.from(
-      container.querySelectorAll(".sf-sidebar__header"),
-    ).map((el) => el.textContent?.trim());
-    // El texto incluye el nombre del ícono Material Symbols como contenido literal (p. ej.
-    // "apartmentConfiguración de venta") — se usa includes() en vez de startsWith() por eso.
-    const configIdx = headers.findIndex((h) => h?.includes("Configuración de venta"));
-    const clienteIdx = headers.findIndex((h) => h?.includes("Cliente"));
-
-    expect(configIdx).toBeGreaterThanOrEqual(0);
-    expect(clienteIdx).toBeGreaterThanOrEqual(0);
-    expect(configIdx).toBeLessThan(clienteIdx);
+    expect(container.querySelector(".sf-layout")?.firstElementChild?.classList.contains("sf-ophead")).toBe(true);
+    const sidebar = container.querySelector(".sf-sidebar");
+    expect(sidebar?.firstElementChild?.textContent).toContain("Cliente");
+    expect(sidebar?.querySelector(".sf-ophead")).toBeNull();
+    expect(sidebar?.querySelector(".prd-tabs")).toBeNull();
   });
 
   it("Cliente sigue visible y editable (CustomerPicker real, sin disabled)", () => {
@@ -368,14 +359,14 @@ describe("SalesPage — orden de secciones del sidebar (SALES-POS-SIDEBAR-SECTIO
     const { container } = renderSalesPage();
 
     expect(screen.queryByText("Lista")).toBeNull();
-    expect(container.querySelector(".badge--success")).toBeNull();
+    expect(container.querySelector(".sf-ophead")?.textContent).not.toContain("LISTA");
   });
 
   it('el modal de "Configuración" sigue abriendo desde su nueva posición', () => {
     useSalesPageMock.mockReturnValue(buildCtx());
     renderSalesPage();
 
-    fireEvent.click(screen.getByRole("button", { name: "Configuración" }));
+    fireEvent.click(screen.getByRole("button", { name: /Configuración$/ }));
     expect(screen.getByRole("dialog")).toBeTruthy();
   });
 });

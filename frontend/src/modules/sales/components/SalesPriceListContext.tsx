@@ -27,7 +27,7 @@ export function SalesPriceListContext({ state }: { state?: PriceListHeaderState 
 
   return (
     <div
-      className={`sales-price-list-context${muted ? " sales-price-list-context--muted" : ""}`}
+      className={`sales-price-list-context sales-price-list-context--${state.kind}${muted ? " sales-price-list-context--muted" : ""}`}
       data-testid="sales-price-list-context"
     >
       <span className="material-symbols-outlined zh-icon-sm">sell</span>

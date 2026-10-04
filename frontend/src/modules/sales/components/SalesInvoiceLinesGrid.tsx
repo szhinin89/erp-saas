@@ -57,11 +57,18 @@ export function SalesInvoiceLinesGrid({
 }: SalesInvoiceLinesGridProps) {
   if (lines.length === 0) {
     return (
+      // POS-VIEWPORT-LAYOUT-01: empty state compacto y accionable (no una gran zona vacía).
       <div className="sf-products-empty">
         <span className="material-symbols-outlined sf-products-empty__icon">
           add_shopping_cart
         </span>
-        <p>Busca un producto arriba para agregarlo a la factura</p>
+        <div className="sf-products-empty__text">
+          <p className="sf-products-empty__title">Agrega un producto para comenzar</p>
+          <p className="sf-products-empty__hint">
+            Busca por nombre, SKU o escanea el código de barras ·{" "}
+            <kbd className="sf-products-empty__kbd">F2</kbd> enfoca el buscador
+          </p>
+        </div>
       </div>
     );
   }
