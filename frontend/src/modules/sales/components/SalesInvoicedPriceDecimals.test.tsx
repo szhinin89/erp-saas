@@ -196,7 +196,7 @@ describe("precio facturado unitario neto del descuento", () => {
     const input = priceInput(container);
     fireEvent.focus(input);
     expect(input.value).toBe("0.2700");
-    expect(container.textContent).toContain("Precio facturado sin IVA");
+    expect(input.getAttribute("aria-label")).toBe("Precio facturado sin IVA");
     expect(container.textContent).not.toContain("Precio unitario antes del descuento");
     fireEvent.blur(input);
     expect(input.value).toBe("0.2700");

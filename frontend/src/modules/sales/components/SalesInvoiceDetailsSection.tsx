@@ -74,6 +74,7 @@ export function SalesInvoiceDetailsSection({
   const resultRefs = useRef<Array<HTMLDivElement | null>>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const searchVersionRef = useRef(0);
+  const invalidateSearch = useCallback(() => ++searchVersionRef.current, []);
 
   // UX retail: foco automático al buscador de productos al entrar a "Nueva
   // Venta" y después de cada "Nueva venta" tras emitir (ver productSearchFocusKey en useSalesPage.ts).
@@ -106,6 +107,9 @@ export function SalesInvoiceDetailsSection({
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
+    const version = invalidateSearch();
+    setResults([]);
+    setFocusIdx(-1);
     if (!open || query.length < 2) {
       setResults([]);
       setLoading(false);
@@ -113,7 +117,6 @@ export function SalesInvoiceDetailsSection({
     }
     setLoading(true);
     debounceRef.current = setTimeout(async () => {
-      const version = ++searchVersionRef.current;
       try {
         const res = await invoiceItemSearchService.search({
           q: query.trim(),
@@ -131,8 +134,11 @@ export function SalesInvoiceDetailsSection({
         if (version === searchVersionRef.current) setLoading(false);
       }
     }, 300);
-    return () => clearTimeout(debounceRef.current);
-  }, [query, open, selectedWarehouseId, customerId]);
+    return () => {
+      clearTimeout(debounceRef.current);
+      invalidateSearch();
+    };
+  }, [query, open, selectedWarehouseId, customerId, invalidateSearch]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, waitFor, act } from "@testing-library/react";
 import { SalesInvoiceDetailsSection } from "./SalesInvoiceDetailsSection";
 import type { InvoiceItemSearchResultDto } from "../api/invoiceItemSearchService";
 
@@ -21,6 +21,7 @@ vi.mock("../api/invoiceItemSearchService", () => ({
 afterEach(() => {
   cleanup();
   searchMock.mockReset();
+  vi.useRealTimers();
 });
 
 function makeResult(
@@ -164,5 +165,22 @@ describe("SalesInvoiceDetailsSection — integración con el buscador de product
     typeQuery("club");
     await screen.findByText("15865");
     expect(container.querySelectorAll("[style]").length).toBe(0);
+  });
+});
+
+
+describe("POS search race", () => {
+  it("discards the previous response during the next query debounce", async () => {
+    vi.useFakeTimers();
+    let resolveFirst!: (rows: InvoiceItemSearchResultDto[]) => void;
+    searchMock.mockImplementationOnce(() => new Promise<InvoiceItemSearchResultDto[]>((resolve) => { resolveFirst = resolve; }));
+    searchMock.mockResolvedValue([]);
+    renderSection();
+    typeQuery("old-sku");
+    await act(async () => { await vi.advanceTimersByTimeAsync(300); });
+    expect(searchMock).toHaveBeenCalledTimes(1);
+    typeQuery("new-sku");
+    await act(async () => { resolveFirst([makeResult({sku:"OLD-SKU"})]); });
+    expect(screen.queryByText("OLD-SKU")).toBeNull();
   });
 });

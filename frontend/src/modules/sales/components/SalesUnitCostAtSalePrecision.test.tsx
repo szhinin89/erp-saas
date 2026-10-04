@@ -89,6 +89,6 @@ describe("Ventas — Costo al vender con precision=\"unitCost\" (02B)", () => {
     expect(line._unitCostAtSale).toBe(0.2261);
     expect(snapshot).toEqual(PERSISTED_LINE);
     expect(fiscal()).toEqual(fiscalBefore);
-    expect(fiscalBefore).toEqual(["$1.00", "$0.15", "$1.15"]);
+    expect(fiscalBefore).toEqual(["$1.15", "$1.00", "$0.15"]);
   });
 });

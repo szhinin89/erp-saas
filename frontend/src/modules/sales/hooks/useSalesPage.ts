@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -422,6 +422,9 @@ export function useSalesPage() {
   const [modalCredit, setModalCredit] = useState(false);
 
   // ── Issue flow state (Nueva Venta → Emitir Factura) ────────────────
+  const issueInFlightRef = useRef(false);
+  const lineLoadVersionRef = useRef(0);
+  useEffect(() => () => { ++lineLoadVersionRef.current; }, []);
   const [issuePhase, setIssuePhase] = useState<IssuePhase>("idle");
   const [issueStepIndex, setIssueStepIndex] = useState(0);
   const [issueResult, setIssueResult] = useState<SalesInvoiceDto | null>(null);
@@ -949,6 +952,7 @@ export function useSalesPage() {
       // SALES-CONTEXTUAL-PRICING-READ-06A: se informa el cliente actual (o ninguno) — Sales no
       // decide qué lista corresponde, solo deja que el backend resuelva Customer → CompanyDefault
       // → PVP con ese dato.
+      const lineLoadVersion = lineLoadVersionRef.current;
       let pricing;
       try {
         pricing = await salesItemPricingService.get(
@@ -961,6 +965,8 @@ export function useSalesPage() {
         );
         return;
       }
+
+      if (lineLoadVersion !== lineLoadVersionRef.current) return;
 
       const cost =
         item.averageCost != null && item.averageCost > 0
@@ -1019,7 +1025,7 @@ export function useSalesPage() {
       }
 
       const newLine: SalesLineFormValues = {
-        _key: lineKey,
+        _key: Math.max(lineKey, ...currentLines.map((line) => line._key + 1)),
         itemId: item.id,
         warehouseId: lineWarehouseId,
         description: `${item.sku} — ${item.description}`,
@@ -1235,6 +1241,7 @@ export function useSalesPage() {
 
   // ── Form reset ─────────────────────────────────────────────────────
   const resetForm = useCallback(async () => {
+    ++lineLoadVersionRef.current;
     const base = emptySalesInvoiceForm();
     reset({
       ...base,
@@ -1553,7 +1560,9 @@ export function useSalesPage() {
   }, [issuePhase]);
 
   const confirmIssue = useCallback(async () => {
-    if (issuePhase === "processing") return; // reentrancia: doble clic en el modal
+    if (issueInFlightRef.current || issuePhase === "processing") return;
+    // Lock synchronously: React state updates alone do not guard calls in the same render.
+    issueInFlightRef.current = true;
     setIssuePhase("processing");
     setIssueStepIndex(0); // Validando
     setSaving(true);
@@ -1689,6 +1698,7 @@ export function useSalesPage() {
       setIssuePhase("success");
       fetchList(); // refresca el listado en segundo plano — sin recargar la página
     } finally {
+      issueInFlightRef.current = false;
       setSaving(false);
     }
   }, [

@@ -64,7 +64,7 @@ describe("línea — texto secundario de lista / PVP (usa solo metadata existent
       line({ _priceListId: "l1", _priceListName: "MAYORISTA001", _discountDescription: "Descuento 10% (regla general)" }),
     ]);
     expect(secondary(container)).toEqual(["MAYORISTA001"]);
-    expect(container.querySelector(".sf-product__discount")?.textContent).toContain("-10%");
+    expect(container.querySelector(".sf-product__discount")?.getAttribute("title")).toContain("10%");
   });
 
   it("línea con lista default → nombre de esa lista", () => {

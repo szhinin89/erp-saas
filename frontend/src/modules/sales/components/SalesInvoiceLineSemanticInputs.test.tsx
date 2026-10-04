@@ -134,7 +134,7 @@ describe("SalesInvoiceLineGridRow — precisión semántica en inputs (03E)", ()
     const fiscal = [...row.container.querySelectorAll(".sf-product__subtotal-value, .sf-product__total-amount")].map(
       (el) => el.textContent,
     );
-    expect(fiscal).toEqual(["$0.60", "$0.09", "$0.69"]);
+    expect(fiscal).toEqual(["$0.69", "$0.60", "$0.09"]);
   });
 });
 

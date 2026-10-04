@@ -102,9 +102,7 @@ describe("SalesInvoiceDetailsSection — ficha de línea de venta retail (FIX06)
     // "Cantidad" también es texto de la cabecera de columnas (SALES-INVOICE-LINES-GRID-UX-01B) —
     // se verifica el label propio de la fila por selector, no por texto ambiguo.
     const { container } = renderSection([baseLine({ quantity: 2 })]);
-    expect(container.querySelector(".sf-product__qty-label")?.textContent).toBe(
-      "Cantidad",
-    );
+    expect(container.querySelector(".sf-product__qty-input")?.getAttribute("aria-label")).toBe("Cantidad");
     expect(screen.getByDisplayValue("2.0000")).not.toBeNull();
   });
 
@@ -115,13 +113,13 @@ describe("SalesInvoiceDetailsSection — ficha de línea de venta retail (FIX06)
 
   it("muestra el descuento (Dto. %)", () => {
     renderSection([baseLine()]);
-    expect(screen.getByText("Dto. %")).not.toBeNull();
+    expect(screen.getByRole("textbox", { name: "Descuento porcentual" })).not.toBeNull();
     expect(screen.getByDisplayValue("0.00")).not.toBeNull();
   });
 
   it("muestra el precio facturado", () => {
     renderSection([baseLine({ unitPrice: 26 })]);
-    expect(screen.getByText("Precio facturado sin IVA")).not.toBeNull();
+    expect(screen.getByRole("textbox", { name: "Precio facturado sin IVA" })).not.toBeNull();
     expect(screen.getByDisplayValue("26.00")).not.toBeNull();
   });
 
@@ -132,13 +130,13 @@ describe("SalesInvoiceDetailsSection — ficha de línea de venta retail (FIX06)
     const labels = Array.from(
       container.querySelectorAll(".sf-product__stock-label"),
     ).map((el) => el.textContent);
-    expect(labels).toEqual(["Stock", "Ubicación"]);
+    expect(labels).toEqual([]);
     expect(screen.getByText("5")).not.toBeNull();
   });
 
   it("muestra el enlace Ver stock global cuando el ítem controla inventario", () => {
     renderSection([baseLine({ itemId: "item-1", _tracksStock: true })]);
-    const link = screen.getByText(/ver stock global/i).closest("a");
+    const link = screen.getByRole("link", { name: /ver stock global/i });
     expect(link).not.toBeNull();
     expect(link?.getAttribute("href")).toBe("/inventory/kardex?productId=item-1");
     expect(link?.getAttribute("target")).toBe("_blank");
@@ -159,12 +157,12 @@ describe("SalesInvoiceDetailsSection — ficha de línea de venta retail (FIX06)
     expect(container.querySelector(".sf-product__stock-icon")).toBeNull();
   });
 
-  it("mantiene el selector de bodega y la ayuda contextual de stock disponibles", () => {
+  it("mantiene el selector de bodega y la accion compacta de stock disponibles", () => {
     const { container } = renderSection([baseLine()]);
     expect(
       container.querySelector(".sf-product__stock-location .zh-wh-selector"),
     ).not.toBeNull();
-    expect(container.querySelector(".sf-product__stock-header .zh-help-field")).not.toBeNull();
+    expect(container.querySelector(".sf-product__stock-global-link")?.getAttribute("title")).toBe("Ver stock global");
   });
 
   it("no usa estilos inline en la columna Stock / Ubicación", () => {
@@ -189,7 +187,7 @@ describe("SalesInvoiceDetailsSection — ficha de línea de venta retail (FIX06)
 
   it("muestra el total de línea", () => {
     const { container } = renderSection([baseLine()]);
-    expect(screen.getByText("Total línea")).not.toBeNull();
+    expect(screen.getByText("Total", { selector: ".sfl-header__cell" })).not.toBeNull();
     expect(totalAmountText(container)).toBe("$59.80");
   });
 
@@ -355,7 +353,7 @@ describe("SalesInvoiceDetailsSection — ficha de línea de venta retail (FIX06)
     ]);
     expect(screen.queryByText(/regla general/i)).toBeNull();
     expect(screen.queryByText(/excepción/i)).toBeNull();
-    expect(screen.getByText("-5%")).not.toBeNull();
+    expect(document.querySelector(".sf-product__discount")?.getAttribute("title")).toContain("5%");
   });
 
   // SALES-INVOICE-LINES-GRID-UX-01 (reemplaza el criterio de SALES-PRICE-LIST-DISCOUNT-
@@ -363,7 +361,7 @@ describe("SalesInvoiceDetailsSection — ficha de línea de venta retail (FIX06)
   // descuento/regla aplicado ya no se explica ahí como texto suelto — pasa a la columna
   // Descuento como insignia corta ("-5%"), con el texto completo de la regla en el title
   // (mismo criterio que SalesItemSearchResultsGrid, el buscador).
-  it("con descuento de lista: 'Precio lista' muestra el precio base + nombre de lista, y la columna Descuento muestra la insignia con el detalle en el title", () => {
+  it("con descuento de lista: 'Precio lista' muestra el precio base + nombre de lista, y la columna Descuento conserva el detalle en el title", () => {
     const { container } = renderSection([
       baseLine({
         unitPrice: 2,
@@ -375,9 +373,7 @@ describe("SalesInvoiceDetailsSection — ficha de línea de venta retail (FIX06)
     ]);
     expect(moneyText(container, ".sf-product__pricelist-value")).toBe("$2.10");
     expect(screen.getByText("Lista General")).not.toBeNull();
-    expect(container.querySelector(".sf-product__discount-tag")?.textContent).toBe(
-      "-5%",
-    );
+    expect(container.querySelector(".sf-product__discount-tag")).toBeNull();
     expect(container.querySelector(".sf-product__discount")?.getAttribute("title")).toBe(
       "Descuento 5% — Lista: Lista General",
     );
@@ -400,7 +396,7 @@ describe("SalesInvoiceDetailsSection — ficha de línea de venta retail (FIX06)
     expect(container.querySelector(".sf-product__discount")?.getAttribute("title")).toBeNull();
   });
 
-  it("editar el precio facturado a mano muestra el badge 'Precio manual' y oculta la explicación de descuento", () => {
+  it("editar el precio facturado a mano muestra el tooltip 'Precio manual' y oculta la explicación de descuento", () => {
     const onUpdateLine = vi.fn();
     renderSection(
       [
@@ -415,7 +411,7 @@ describe("SalesInvoiceDetailsSection — ficha de línea de venta retail (FIX06)
       ],
       { onUpdateLine },
     );
-    expect(screen.getByText("Precio manual")).not.toBeNull();
+    expect(document.querySelector(".sf-product__price-block")?.getAttribute("title")).toBe("Precio manual");
     expect(screen.queryByText(/descuento 5%/i)).toBeNull();
   });
 
