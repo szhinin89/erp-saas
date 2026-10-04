@@ -119,7 +119,7 @@ describe("SalesInvoiceDetailsSection — selector de presentación", () => {
     renderSection([boxLine({ quantity: 1, _stockQty: 10 })]);
     expect(
       screen.getByText(
-        "Stock insuficiente: 1 CAJA equivale a 12 UNIT, disponible 10 UNIT.",
+        /Disponible: 10 .* Solicitado: 12 UNIT/,
       ),
     ).not.toBeNull();
   });

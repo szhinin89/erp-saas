@@ -22,7 +22,8 @@ export function EmitButton({ ctx }: EmitButtonProps) {
       <ZHBtn
         variant="cta"
         onClick={ctx.openIssueFlow}
-        disabled={!ctx.canEmit}
+        disabled={!ctx.canEmit && !ctx.lineIssues?.length}
+        aria-disabled={!ctx.canEmit}
         title={
           !ctx.canEmit && primaryBlocker
             ? `No se puede emitir: ${primaryBlocker.message}`

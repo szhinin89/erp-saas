@@ -462,7 +462,7 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
                   // POS_EMIT_SHORTCUT_ATTR, ver useSalesPage); Enter equivale.
                   data-pos-emit-shortcut="true"
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && ctx.canEmit) {
+                      if (e.key === "Enter" && (ctx.canEmit || !!ctx.lineIssues?.length)) {
                       e.preventDefault();
                       ctx.openIssueFlow();
                     }

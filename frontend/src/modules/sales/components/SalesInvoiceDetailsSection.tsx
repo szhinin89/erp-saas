@@ -1,3 +1,4 @@
+import type { SalesLineIssue } from "../utils/salesLineIssues";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { SalesInvoiceDetailDto } from "../api/salesService";
 import type { SalesLineFormValues } from "../schemas/salesInvoiceSchema";
@@ -16,6 +17,7 @@ import "../styles/sales-product-card.css";
 
 interface SalesInvoiceDetailsSectionProps {
   lines: SalesLineFormValues[];
+  lineIssues?: SalesLineIssue[];
   backendLines?: SalesInvoiceDetailDto[];
   readOnly: boolean;
   disabled: boolean;
@@ -47,6 +49,7 @@ interface SalesInvoiceDetailsSectionProps {
 
 export function SalesInvoiceDetailsSection({
   lines,
+  lineIssues,
   backendLines,
   readOnly,
   disabled,
@@ -297,6 +300,7 @@ export function SalesInvoiceDetailsSection({
       <div className="sf-products">
         <SalesInvoiceLinesGrid
           lines={lines}
+          lineIssues={lineIssues}
           backendLines={backendLines}
           disabled={disabled}
           readOnly={readOnly}

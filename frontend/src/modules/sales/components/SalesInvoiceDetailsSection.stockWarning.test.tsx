@@ -62,20 +62,20 @@ describe("SalesInvoiceDetailsSection — advertencia de stock por línea", () =>
     ]);
 
     expect(screen.getByText(/Cantidad excede stock/i)).not.toBeNull();
-    expect(screen.getByText(/Supera el disponible/i)).not.toBeNull();
+    expect(screen.getByText(/Disponible:.*Solicitado:/i)).not.toBeNull();
   });
 
   it("no muestra advertencia cuando la cantidad no supera el stock disponible", () => {
     renderSection([baseLine({ quantity: 1, _stockQty: 10 })]);
 
     expect(screen.queryByText(/Cantidad excede stock/i)).toBeNull();
-    expect(screen.queryByText(/Supera el disponible/i)).toBeNull();
+    expect(screen.queryByText(/Disponible:.*Solicitado:/i)).toBeNull();
   });
 
   it("no bloquea/advierte cuando el dato de stock no está disponible (undefined) — no inventa stock", () => {
     renderSection([baseLine({ quantity: 100, _stockQty: undefined })]);
 
     expect(screen.queryByText(/Cantidad excede stock/i)).toBeNull();
-    expect(screen.queryByText(/Supera el disponible/i)).toBeNull();
+    expect(screen.queryByText(/Disponible:.*Solicitado:/i)).toBeNull();
   });
 });

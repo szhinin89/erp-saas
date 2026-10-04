@@ -1,3 +1,4 @@
+import { collectSalesLineIssues, mapSalesServerLineIssues, focusSalesLineIssue, salesLineCorrectionSummary, type SalesLineIssue } from "../utils/salesLineIssues";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import { useForm } from "react-hook-form";
@@ -79,7 +80,6 @@ import {
   resolveLinePresentationChange,
   type TaxBreakdownEntry,
 } from "../utils/salesCalc";
-import { applyServerErrors } from "../../lib/validationErrors";
 import { cajaSessionLookupFacade } from "../../caja/facades/cajaSessionLookupFacade";
 import type { CashSessionDto } from "../../caja/facades/cajaSessionLookupFacade";
 import { useManualCashMovementFlow } from "../../caja/facades/manualCashMovementFacade";
@@ -215,7 +215,8 @@ export type EmitBlockerSource =
   | "cashSession"
   | "config"
   | "consumerFinal"
-  | "payment";
+  | "payment"
+  | "document";
 export type EmitBlocker = { source: EmitBlockerSource; message: string };
 
 /** Aviso de error accionable para el formulario de ventas: título contextual (qué acción
@@ -315,6 +316,8 @@ export function useSalesPage() {
   const [listSearch, setListSearch] = useState("");
 
   const [saving, setSaving] = useState(false);
+  const [serverLineIssues, setServerLineIssues] = useState<SalesLineIssue[]>([]);
+  const [pendingLineFocus, setPendingLineFocus] = useState<SalesLineIssue | null>(null);
   const [saveError, setSaveError] = useState<SalesErrorNotice | null>(null);
   const [editing, setEditing] = useState<SalesInvoiceDto | null>(null);
   // undefined = todavía cargando (o no se pudo verificar, ver cashSessionCheckError); null =
@@ -494,7 +497,6 @@ export function useSalesPage() {
     setValue,
     getValues,
     trigger,
-    setError: setFieldError,
     formState: { errors, isDirty },
   } = form;
 
@@ -533,6 +535,25 @@ export function useSalesPage() {
 
   const hasCustomer = !!formWatch.customerId?.trim();
   const hasLines = lines.length > 0;
+  const lineIssues = useMemo(() => readOnly ? [] : collectSalesLineIssues(lines, serverLineIssues), [lines,serverLineIssues,readOnly]);
+  const focusFirstInvalidLine = useCallback(() => { if (lineIssues[0]) focusSalesLineIssue(lineIssues[0]); }, [lineIssues]);
+  useEffect(() => {
+    if (pendingLineFocus) { focusSalesLineIssue(pendingLineFocus); setPendingLineFocus(null); }
+  }, [pendingLineFocus]);
+  // A document notice describes the rejected input, not a later corrected form.
+  const issueInputSignature = JSON.stringify([formWatch, cashReceivedInput, myCashSession]);
+  const previousIssueInput = useRef(issueInputSignature);
+  useEffect(() => {
+    if (previousIssueInput.current !== issueInputSignature) setSaveError(null);
+    previousIssueInput.current = issueInputSignature;
+  }, [issueInputSignature]);
+  const applyIssueValidationError = useCallback((err: unknown) => {
+    const mapped = mapSalesServerLineIssues(err, getValues("lines"));
+    setServerLineIssues(mapped.lineIssues);
+    if (mapped.lineIssues[0]) setPendingLineFocus(mapped.lineIssues[0]);
+    setSaveError(mapped.globalMessages.length ? {title:"No se puede emitir la factura.",detail:mapped.globalMessages[0]} : mapped.lineIssues.length ? null : buildSalesErrorNotice(err,"No se puede emitir la factura.","Revise los datos de la factura."));
+  }, [getValues]);
+
 
   // ── POS-EMISSION-TYPE-SNAPSHOT-01 — tipo de emisión EFECTIVO de la venta en pantalla ──
   // Venta nueva (sin documento): CashSession → EmissionPoint → EmissionType, resuelto en vivo
@@ -626,11 +647,9 @@ export function useSalesPage() {
     emitBlockers.push({ source: "customer", message: "Seleccione un cliente para comenzar." });
   if (!hasLines)
     emitBlockers.push({ source: "lines", message: "Agregue productos a la factura." });
-  if (hasInsufficientStock)
-    emitBlockers.push({
-      source: "stock",
-      message: "Hay líneas con cantidad mayor al stock disponible — ajústelas antes de emitir.",
-    });
+  if (lineIssues.length)
+    emitBlockers.push({source:"lines",message:salesLineCorrectionSummary(lineIssues)});
+  if (saveError) emitBlockers.push({source:"document",message:saveError.detail || saveError.title});
   if (hasCashSession !== true)
     emitBlockers.push({
       source: "cashSession",
@@ -1242,6 +1261,7 @@ export function useSalesPage() {
   // ── Form reset ─────────────────────────────────────────────────────
   const resetForm = useCallback(async () => {
     ++lineLoadVersionRef.current;
+    setServerLineIssues([]);
     const base = emptySalesInvoiceForm();
     reset({
       ...base,
@@ -1548,10 +1568,11 @@ export function useSalesPage() {
   // por eso, si no existe un Draft aún o hay cambios sin guardar, se
   // persiste automáticamente antes de emitir.
   const openIssueFlow = useCallback(() => {
+    if (lineIssues.length) { focusFirstInvalidLine(); return; }
     if (!canEmit || issuePhase !== "idle") return;
     setIssueError(null);
     setIssuePhase("confirm");
-  }, [canEmit, issuePhase]);
+  }, [canEmit, issuePhase, lineIssues, focusFirstInvalidLine]);
 
   const closeIssueFlow = useCallback(() => {
     if (issuePhase === "processing") return; // no se puede cerrar mientras se emite
@@ -1561,6 +1582,12 @@ export function useSalesPage() {
 
   const confirmIssue = useCallback(async () => {
     if (issueInFlightRef.current || issuePhase === "processing") return;
+    const currentLineIssues = collectSalesLineIssues(getValues("lines"), serverLineIssues);
+    if (currentLineIssues.length) {
+      setPendingLineFocus(currentLineIssues[0]);
+      setIssuePhase("idle");
+      return;
+    }
     // Lock synchronously: React state updates alone do not guard calls in the same render.
     issueInFlightRef.current = true;
     setIssuePhase("processing");
@@ -1631,17 +1658,7 @@ export function useSalesPage() {
         try {
           saved = await persistDraft(getValues());
         } catch (err: unknown) {
-          const applied = applyServerErrors(err, setFieldError, (msg) =>
-            setSaveError({ title: "No se puede guardar la venta.", detail: msg }),
-          );
-          if (!applied)
-            setSaveError(
-              buildSalesErrorNotice(
-                err,
-                "No se puede guardar la venta.",
-                "No se pudieron guardar los cambios pendientes.",
-              ),
-            );
+          applyIssueValidationError(err);
           setIssuePhase("idle");
           return; // guardado falló — se cancela la emisión, el usuario corrige en el formulario
         }
@@ -1668,13 +1685,7 @@ export function useSalesPage() {
           // resuelve en el formulario, no en el modal de emisión. El detalle
           // prioriza siempre data.errors (p. ej. "Línea 'X': stock insuficiente...")
           // sobre el mensaje genérico del catálogo — ver buildSalesErrorNotice.
-          setSaveError(
-            buildSalesErrorNotice(
-              err,
-              "No se puede emitir la factura.",
-              "Revise los datos de la factura antes de emitir.",
-            ),
-          );
+          applyIssueValidationError(err);
           setIssuePhase("idle");
           return;
         }
@@ -1703,6 +1714,8 @@ export function useSalesPage() {
     }
   }, [
     issuePhase,
+    applyIssueValidationError,
+    serverLineIssues,
     isElectronic,
     refreshSriConnectivity,
     editing,
@@ -1713,7 +1726,6 @@ export function useSalesPage() {
     form,
     getValues,
     persistDraft,
-    setFieldError,
     reset,
     fetchList,
   ]);
@@ -1755,13 +1767,13 @@ export function useSalesPage() {
   // foco está en un control editable (p. ej. dentro de un modal abierto sobre la página).
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (!shouldTriggerF8Emit(e, { tab, issuePhase, canEmit })) return;
+      if (!shouldTriggerF8Emit(e, { tab, issuePhase, canEmit: canEmit || lineIssues.length > 0 })) return;
       e.preventDefault();
       openIssueFlow();
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [tab, issuePhase, canEmit, openIssueFlow]);
+  }, [tab, issuePhase, canEmit, lineIssues, openIssueFlow]);
 
   // ── Generar documento electrónico (backfill) ───────────────────────
   // Para facturas autorizadas comercialmente que nunca llegaron a generar un ElectronicDocument
@@ -2097,6 +2109,8 @@ export function useSalesPage() {
     fieldDisabled,
     canEmit,
     emitBlockers,
+    lineIssues,
+    focusFirstInvalidLine,
     configStatus,
     paymentOk,
     summary,

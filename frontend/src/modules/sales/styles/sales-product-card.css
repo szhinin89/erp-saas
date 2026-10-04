@@ -850,3 +850,37 @@
   .sf-product__stock-uom { margin-left: 3px; }
   .sf-product__stock-global-link .material-symbols-outlined { width: 18px; overflow: hidden; }
 }
+/* Inline validation adds height only to invalid POS rows. */
+.sf-product-card--invalid.zh-line-card {
+  border-left-color: var(--color-error);
+  background: color-mix(in srgb, var(--color-error) 4%, var(--color-surface));
+}
+.sf-product-card--invalid.zh-line-card:focus-within {
+  background: color-mix(in srgb, var(--color-error) 9%, var(--color-surface));
+}
+.sf-product__errors {
+  margin-top: 4px;
+  color: var(--color-error);
+  font-size: 12px;
+  line-height: 16px;
+  text-align: left;
+  width: 100%;
+  overflow-wrap: anywhere;
+}
+.sf-product__error-message { display: block; font-weight: 700; }
+.sf-product__error-detail { display: block; font-weight: 400; }
+.sf-product [aria-invalid="true"] { border-color: var(--color-error); }
+.sf-line-error-summary {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-error);
+  color: var(--color-error);
+  font-size: 13px;
+  font-weight: 700;
+}
+.sales-emit-wrap [aria-disabled="true"] { opacity: var(--opacity-disabled); }

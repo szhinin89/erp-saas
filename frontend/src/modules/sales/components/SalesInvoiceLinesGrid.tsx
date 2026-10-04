@@ -1,3 +1,4 @@
+import { collectSalesLineIssues, type SalesLineIssue } from "../utils/salesLineIssues";
 import type { SalesInvoiceDetailDto } from "../api/salesService";
 import type { SalesLineFormValues } from "../schemas/salesInvoiceSchema";
 import type { WarehouseDto } from "../../inventory/facades/warehouseLookupFacade";
@@ -6,6 +7,7 @@ import { SalesInvoiceLineGridRow } from "./SalesInvoiceLineGridRow";
 
 interface SalesInvoiceLinesGridProps {
   lines: SalesLineFormValues[];
+  lineIssues?: SalesLineIssue[];
   backendLines?: SalesInvoiceDetailDto[];
   disabled: boolean;
   readOnly: boolean;
@@ -42,6 +44,7 @@ interface SalesInvoiceLinesGridProps {
  */
 export function SalesInvoiceLinesGrid({
   lines,
+  lineIssues,
   backendLines,
   disabled,
   readOnly,
@@ -55,6 +58,7 @@ export function SalesInvoiceLinesGrid({
   onUpdatePresentation,
   onRemove,
 }: SalesInvoiceLinesGridProps) {
+  const issues = readOnly ? [] : (lineIssues ?? collectSalesLineIssues(lines));
   if (lines.length === 0) {
     return (
       // POS-VIEWPORT-LAYOUT-01: empty state compacto y accionable (no una gran zona vacía).
@@ -95,6 +99,7 @@ export function SalesInvoiceLinesGrid({
           key={l._key}
           index={idx}
           line={l}
+          issues={issues.filter(issue => issue.key === l._key)}
           backendLine={backendLines?.[idx]}
           disabled={disabled}
           readOnly={readOnly}

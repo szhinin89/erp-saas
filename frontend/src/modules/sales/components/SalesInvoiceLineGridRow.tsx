@@ -1,3 +1,4 @@
+import type { SalesLineIssue, SalesLineIssueColumn } from "../utils/salesLineIssues";
 import { Link } from "react-router-dom";
 import type { SalesInvoiceDetailDto } from "../api/salesService";
 import type { SalesLineFormValues } from "../schemas/salesInvoiceSchema";
@@ -23,13 +24,13 @@ import {
   lineExceedsStock,
   stockBadgeInfo,
   parenthesizeRateLabel,
-  stockExceededMessage,
   presentationEquivalenceLabel,
   discountBadgeText,
 } from "../utils/salesCalc";
 
 interface SalesInvoiceLineGridRowProps {
   line: SalesLineFormValues;
+  issues?: SalesLineIssue[];
   backendLine?: SalesInvoiceDetailDto;
   disabled: boolean;
   readOnly: boolean;
@@ -72,6 +73,7 @@ interface SalesInvoiceLineGridRowProps {
  */
 export function SalesInvoiceLineGridRow({
   line,
+  issues = [],
   backendLine,
   disabled,
   readOnly,
@@ -195,6 +197,17 @@ export function SalesInvoiceLineGridRow({
       : discountDescription
     : undefined;
 
+  const errorId = (column: SalesLineIssueColumn) => issues.some(issue => issue.column === column) ? `sales-line-${line._key}-${column}-error` : undefined;
+  const renderIssues = (column: SalesLineIssueColumn) => {
+    const messages = issues.filter(issue => issue.column === column);
+    return messages.length > 0 ? <div className="sf-product__errors" id={errorId(column)}>
+      {messages.map((issue, index) => <div key={`${issue.field}-${index}`}>
+        <span className="sf-product__error-message"> {"\u26a0"} {issue.message}</span>
+        {issue.detail && <span className="sf-product__error-detail">{issue.detail}</span>}
+      </div>)}
+    </div> : null;
+  };
+
   return (
     // DS-LINE-CARD-UNIFY-01 / SALES-INVOICE-LINES-GRID-UX-01B: ZHLineCard ya no recibe `rail` —
     // el número de línea y el botón eliminar pasan a ser la primera columna real del grid interno
@@ -203,8 +216,8 @@ export function SalesInvoiceLineGridRow({
     // usando ZHLineCard solo por el marco visual externo (borde/sombra/radio ya definidos en
     // .sf-product-card.zh-line-card) — sin rail, ZHLineCard renderiza un único hijo (el body) que
     // ocupa todo el ancho, así que no cambia nada de ese marco.
-    <ZHLineCard className="sf-product-card">
-      <div className="sf-product">
+    <ZHLineCard className={`sf-product-card${issues.length ? " sf-product-card--invalid" : ""}`}>
+      <div className="sf-product" data-sales-line-key={line._key} tabIndex={-1} aria-invalid={issues.length > 0}>
         {/* Col 1: Línea — número + eliminar, compacto. Sin label: la cabecera ya dice "Línea". */}
         <div className="sf-product__line-cell">
           <span className="sf-product__rail-index">
@@ -235,7 +248,7 @@ export function SalesInvoiceLineGridRow({
               <span className="sf-product__code zh-code-value">{sku}</span>
             )}
           </div>
-          <div className="sf-product__name zh-row-title" title={name}>
+          <div className="sf-product__name zh-row-title" title={name} tabIndex={-1} aria-describedby={errorId("product")}>
             {name}
           </div>
           {presentationTag && (
@@ -245,6 +258,7 @@ export function SalesInvoiceLineGridRow({
               {presentationTag}
             </div>
           )}
+          {renderIssues("product")}
         </div>
 
         {/* Col 3: Precio lista — solo el precio base y, si existe, el nombre de la lista debajo
@@ -324,6 +338,8 @@ export function SalesInvoiceLineGridRow({
                 // (mismo bug que quantity, ver abajo).
                 key={line.discountPct ?? 0}
                 className="sf-product__disc-input"
+              aria-invalid={!!errorId("discount")}
+              aria-describedby={errorId("discount")}
                 aria-label="Descuento porcentual"
                 density="compact"
                 precision="percentage"
@@ -341,6 +357,7 @@ export function SalesInvoiceLineGridRow({
               />
             </>
           )}
+          {renderIssues("discount")}
         </div>
 
         {/* Net editing is converted to the persisted price/discount pair by updateLine. */}
@@ -352,6 +369,8 @@ export function SalesInvoiceLineGridRow({
             <ZhDecimalInput
               key={`${line.unitPrice}:${line.discountPct ?? 0}:${dc.salesUnitPriceDecimals}`}
               className="sf-product__price-input"
+              aria-invalid={!!errorId("price")}
+              aria-describedby={errorId("price")}
               aria-label="Precio facturado sin IVA"
               density="compact"
               precision="salesUnitPrice"
@@ -375,10 +394,11 @@ export function SalesInvoiceLineGridRow({
               disabled={disabled}
             />
           </ZHInputGroup>
+          {renderIssues("price")}
         </div>
 
         {/* Stock summary and warehouse stay on two lines in the normal POS row. */}
-        <div className="sf-product__stock-box">
+        <div className="sf-product__stock-box" role="group" aria-describedby={errorId("stock")}>
           <div className="sf-product__stock-data">
             <div className="sf-product__stock-summary">
               {readOnly ? (
@@ -432,11 +452,7 @@ export function SalesInvoiceLineGridRow({
                 </Link>
               )}
             </div>
-            {!readOnly && exceedsStock && (
-              <div className="sf-product__stock-warning">
-                {stockExceededMessage(line)}
-              </div>
-            )}
+            {renderIssues("stock")}
             {readOnly && unitCostAtSale != null && (
               // Costo al vender (SALES-HISTORICAL-PRICING-SNAPSHOT-01) — texto secundario, sin
               // rediseñar el bloque de stock existente (el ticket pide no tocar el layout visual).
@@ -525,6 +541,8 @@ export function SalesInvoiceLineGridRow({
             // lee line.quantity en vivo) queda desincronizado de la cantidad visible.
             key={line.quantity}
             className="sf-product__qty-input"
+              aria-invalid={!!errorId("quantity")}
+              aria-describedby={errorId("quantity")}
             aria-label="Cantidad"
             precision="quantity"
             positiveOnly
@@ -540,6 +558,7 @@ export function SalesInvoiceLineGridRow({
               {equivalenceLabel}
             </div>
           )}
+          {renderIssues("quantity")}
         </div>
 
         {/* Col 8: Total línea — el dato más fuerte del bloque es el Total línea */}
@@ -570,6 +589,7 @@ export function SalesInvoiceLineGridRow({
               className="sf-product__subtotal-value"
             />
           </div>
+          {renderIssues("total")}
         </div>
       </div>
     </ZHLineCard>

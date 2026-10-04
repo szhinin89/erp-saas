@@ -1,3 +1,4 @@
+import { salesLineCorrectionSummary } from "../utils/salesLineIssues";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
@@ -178,6 +179,7 @@ export function SalesPage() {
             message={ctx.saveError.title}
             detail={ctx.saveError.detail}
           />
+          <ZHBtn variant="secondary" onClick={() => ctx.setSaveError(null)}>Revisar y reintentar</ZHBtn>
         </div>
       )}
 
@@ -387,8 +389,13 @@ export function SalesPage() {
 
           {/* ── MAIN AREA ── */}
           <div className="sf-main">
+            {!!ctx.lineIssues?.length && <div className="sf-line-error-summary" role="status">
+              <span>{salesLineCorrectionSummary(ctx.lineIssues)}</span>
+              <ZHBtn variant="secondary" onClick={ctx.focusFirstInvalidLine}>Ir al primero</ZHBtn>
+            </div>}
             <SalesInvoiceDetailsSection
               lines={ctx.lines}
+              lineIssues={ctx.lineIssues}
               backendLines={ctx.editing?.lines}
               readOnly={ctx.readOnly}
               disabled={ctx.fieldDisabled}

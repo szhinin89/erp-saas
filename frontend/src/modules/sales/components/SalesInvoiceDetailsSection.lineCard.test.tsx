@@ -319,7 +319,7 @@ describe("SalesInvoiceDetailsSection — ficha de línea de venta retail (FIX06)
   it("la advertencia de stock sigue funcionando cuando la cantidad supera el disponible", () => {
     renderSection([baseLine({ quantity: 10, _stockQty: 5, _tracksStock: true })]);
     expect(screen.getByText(/cantidad excede stock/i)).not.toBeNull();
-    expect(screen.getByText(/supera el disponible/i)).not.toBeNull();
+    expect(screen.getByText(/Disponible:.*Solicitado:/i)).not.toBeNull();
   });
 
   it("el botón eliminar sigue funcionando", () => {

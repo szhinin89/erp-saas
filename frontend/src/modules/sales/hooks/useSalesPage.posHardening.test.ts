@@ -104,6 +104,59 @@ async function setup() {
 }
 
 describe("POS hardening: real hook, mocked transport only", () => {
+  it.each([[1,[1]],[5,[2,4]],[30,[3,15,27]]])("keeps %i rows blocked until every invalid row is corrected", async (count, invalid) => {
+    const {result} = await setup();
+    await act(async () => { for(let i=1;i<=count;i++) await result.current.addLineWithItem(item(String(i))); });
+    act(() => {
+      result.current.form.setValue("customerId","customer");
+      result.current.form.setValue("payments",[{_key:1,paymentMethodId:"cash",amount:result.current.summary.total}]);
+      result.current.setCashReceivedInput("100000");
+      for(const number of invalid) result.current.updateLine(result.current.lines[number-1]._key,"quantity",101);
+    });
+    expect(new Set(result.current.lineIssues.map(issue=>issue.key)).size).toBe(invalid.length);
+    expect(result.current.canEmit).toBe(false);
+    act(() => result.current.openIssueFlow());
+    expect(result.current.issuePhase).toBe("idle");
+    await act(async () => { await result.current.confirmIssue(); });
+    expect(vi.mocked(apiPost)).not.toHaveBeenCalled();
+    for (let index=0; index<invalid.length; index++) {
+      act(() => result.current.updateLine(result.current.lines[invalid[index]-1]._key,"quantity",1));
+      expect(new Set(result.current.lineIssues.map(issue=>issue.key)).size).toBe(invalid.length-index-1);
+      expect(result.current.canEmit).toBe(index===invalid.length-1);
+    }
+  });
+  it("routes server stock errors inline instead of showing a ready footer and global banner", async () => {
+    const {result}=await setup();
+    await act(async () => { await result.current.addLineWithItem(item("A")); });
+    act(()=> {result.current.form.setValue("customerId","customer");result.current.form.setValue("payments",[{_key:1,paymentMethodId:"cash",amount:11.5}]);result.current.setCashReceivedInput("20");});
+    vi.mocked(apiPost).mockImplementation(async (url) => {
+      if(url.endsWith("/authorize")) throw {isAxiosError:true,response:{status:422,data:{data:{errors:["L\u00ednea 'A \u2014 A': stock insuficiente en la bodega seleccionada (disponible: 0, solicitado: 1)."]}}}};
+      return {id:"invoice",status:"Draft",payments:[],lines:[],emissionType:"Physical"};
+    });
+    expect(result.current.canEmit).toBe(true);
+    act(()=> result.current.openIssueFlow());
+    await act(async()=> {await result.current.confirmIssue();});
+    expect(result.current.saveError).toBeNull();
+    expect(result.current.lineIssues).toHaveLength(1);
+    expect(result.current.lineIssues[0].column).toBe("stock");
+    expect(result.current.canEmit).toBe(false);
+    expect(result.current.emitBlockers[0].source).toBe("lines");
+    act(()=> result.current.updateLine(result.current.lines[0]._key,"quantity",0.5));
+    expect(result.current.lineIssues).toEqual([]);
+    expect(result.current.canEmit).toBe(true);
+  });
+  it("a document error also blocks readiness and clears after changing its input", async () => {
+    const {result}=await setup();
+    await act(async()=> {await result.current.addLineWithItem(item("A"));});
+    act(()=> {result.current.form.setValue("customerId","customer");result.current.form.setValue("payments",[{_key:1,paymentMethodId:"cash",amount:11.5}]);result.current.setCashReceivedInput("20");});
+    act(()=> result.current.setSaveError({title:"No se puede emitir",detail:"Cliente bloqueado"}));
+    expect(result.current.canEmit).toBe(false);
+    expect(result.current.emitBlockers.some(blocker=>blocker.source==="document")).toBe(true);
+    act(()=> result.current.form.setValue("customerId","other"));
+    expect(result.current.saveError).toBeNull();
+    expect(result.current.canEmit).toBe(true);
+  });
+
   it("does not restore a pending product after clearing the sale", async () => {
     const { result } = await setup();
     let resolvePrice!: (
