@@ -13,8 +13,8 @@ const shellCss = readFileSync(
 
 /** Bloque de reglas de un selector, sin comentarios (los comentarios citan el CSS antiguo). */
 function block(css: string, selector: string): string {
-  const start = css.indexOf(`${selector} {`);
-  expect(start, `selector "${selector}" no encontrado`).toBeGreaterThan(-1);
+  const start = css.indexOf(`\n${selector} {`) + 1;
+  expect(start, `selector "${selector}" no encontrado`).toBeGreaterThan(0);
   return css.slice(start, css.indexOf("}", start)).replace(/\/\*[\s\S]*?\*\//g, "");
 }
 
@@ -25,6 +25,16 @@ describe("POS — layout de viewport fijo", () => {
     expect(b).toMatch(/flex:\s*1/);
     expect(b).toMatch(/min-height:\s*0/);
     expect(b).toMatch(/grid-template-rows:\s*auto\s+minmax\(0,\s*1fr\)\s+auto/);
+  });
+
+  it("header, sidebar/productos y footer tienen filas explicitas sin superposicion", () => {
+    expect(block(invoiceCss, ".sf-layout")).toMatch(/grid-template-areas:\s*"header header"\s*"sidebar products"\s*"footer footer"/);
+    expect(block(invoiceCss, ".sf-ophead")).toContain("grid-area: header");
+    expect(block(invoiceCss, ".sf-sidebar")).toContain("grid-area: sidebar");
+    expect(block(invoiceCss, ".sf-main")).toContain("grid-area: products");
+    const footer = block(invoiceCss, ".sf-bottombar");
+    expect(footer).toContain("grid-area: footer");
+    expect(footer).not.toMatch(/position:\s*(absolute|fixed)/);
   });
 
   it(".sf-main no scrollea: el scroll vertical es exclusivo de .sf-products", () => {
@@ -38,6 +48,7 @@ describe("POS — layout de viewport fijo", () => {
   });
 
   it("Cliente y cobro no se comprimen ni tienen zonas de scroll separadas", () => {
+    expect(block(invoiceCss, ".sf-sidebar")).toMatch(/overflow:\s*clip/);
     expect(block(invoiceCss, ".sf-sidebar > *")).toMatch(/flex-shrink:\s*0/);
     expect(invoiceCss).not.toContain(".sf-sidebar__context {");
     expect(invoiceCss).not.toContain(".sf-sidebar__checkout {");

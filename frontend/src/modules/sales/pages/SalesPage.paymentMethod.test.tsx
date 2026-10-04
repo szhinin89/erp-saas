@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { screen, cleanup } from "@testing-library/react";
+import { screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
 import { renderSalesUi as render } from "../test/renderSalesUi";
 import { MemoryRouter } from "react-router-dom";
 import type { SalesPageContext } from "../hooks/useSalesPage";
@@ -333,6 +333,28 @@ describe("SalesPage — selector de método de pago (ZHToggleTile, SALES-DS-TOGG
 
     expect(setInvoicePayments).toHaveBeenCalledTimes(1);
     expect(setPayKey).toHaveBeenCalledTimes(1);
+  });
+
+  it("click Efectivo enfoca recibido sin solicitar scroll, incluso al montarse el campo", async () => {
+    const focus = vi.spyOn(HTMLInputElement.prototype, "focus");
+    const cash = buildPaymentMethod({ affectsPhysicalCash: true });
+    const ctx = buildCtx({ editing: null, paymentMethods: [cash] });
+    useSalesPageMock.mockReturnValue(ctx);
+    const { rerender } = renderSalesPage();
+    fireEvent.click(screen.getByRole("button", { name: "Efectivo" }));
+    useSalesPageMock.mockReturnValue(buildCtx({
+      editing: null,
+      paymentMethods: [cash],
+      payments: [{ _key: 1, paymentMethodId: cash.id, amount: 115, reference: null }],
+    }));
+    rerender(<MemoryRouter><SalesPage /></MemoryRouter>);
+    const received = document.getElementById("sales-cash-received");
+    await waitFor(() => expect(document.activeElement).toBe(received));
+    expect(focus).toHaveBeenLastCalledWith({ preventScroll: true });
+    focus.mockClear();
+    fireEvent.click(screen.getByRole("button", { name: "Efectivo" }));
+    await waitFor(() => expect(focus).toHaveBeenCalledWith({ preventScroll: true }));
+    focus.mockRestore();
   });
 
   it("el método con pago registrado se ve como activo (aria-pressed=true)", () => {

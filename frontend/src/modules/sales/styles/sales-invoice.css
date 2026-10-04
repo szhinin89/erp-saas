@@ -12,6 +12,10 @@
      calc(100vh - 120px)`, que dejaba crecer el layout con cada línea y hacía scrollear la página). */
   /* POS-OPERATIONAL-HEADER-01: header operativo / contenido / barra inferior. */
   grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "header header"
+    "sidebar products"
+    "footer footer";
   gap: 0;
   flex: 1;
   min-height: 0;
@@ -38,11 +42,11 @@
   border-right: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
-  /* Fallback de seguridad: en alturas fuera de soporte el panel scrollea por dentro; en las
-     resoluciones soportadas Cliente + cobro caben completos (POS-OPERATIONAL-HEADER-01). */
-  overflow-y: auto;
+  /* El sidebar no es un scroll container, ni siquiera al enfocar un campo.
+     Su contenido se compacta en las alturas soportadas. */
+  overflow: clip;
   min-height: 0;
-  grid-row: 2;
+  grid-area: sidebar;
 }
 
 /* POS-OPERATIONAL-HEADER-01: el panel izquierdo es solo Cliente + cobro, apilado en su alto
@@ -250,48 +254,11 @@
   letter-spacing: inherit;
 }
 
-/* Tax Breakdown Table */
-.sf-tax-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--text-label-sm-size);
-  border-radius: var(--radius-sm, 4px);
-  overflow: hidden;
-}
-.sf-tax-table thead th {
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-  padding: 5px 8px;
-  text-align: left;
-  font-weight: var(--text-label-sm-weight);
-  text-transform: uppercase;
-  font-size: var(--text-label-sm-size);
-  letter-spacing: var(--text-label-sm-spacing);
-}
-.sf-tax-table thead th:not(:first-child) {
-  text-align: right;
-}
-.sf-tax-table tbody td {
-  padding: 4px 8px;
-  background: color-mix(in srgb, var(--color-surface) 50%, transparent);
-  border-bottom: 1px solid color-mix(in srgb, var(--color-text-primary) 6%, transparent);
-  font-size: var(--text-label-sm-size);
-  color: var(--color-text-primary);
-}
-.sf-tax-table tbody td:not(:first-child) {
-  text-align: right;
-  font-weight: 600;
-}
-.sf-tax-table .zh-money-value {
-  font-size: inherit;
-  font-weight: inherit;
-  color: inherit;
-}
-
 /* .sf-payment-pending ELIMINADO (SALES-DS-CLEANUP-13) — sin consumidores TSX. */
 
 /* ── Main Area ────────────────────────────────────────────────── */
 .sf-main {
+  grid-area: products;
   display: flex;
   flex-direction: column;
   background: var(--color-surface-container-low);
@@ -353,7 +320,8 @@
 
 /* ── Bottom Bar ───────────────────────────────────────────────── */
 .sf-bottombar {
-  grid-column: 1 / -1;
+  grid-area: footer;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -461,17 +429,16 @@
 @media (max-width: 768px) {
   .sf-layout {
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto 1fr auto;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    grid-template-areas: "header" "sidebar" "products" "footer";
   }
   .sf-ophead {
     flex-wrap: wrap;
   }
   .sf-sidebar {
-    grid-row: auto;
     border-right: none;
     border-bottom: 1px solid var(--color-border);
-    max-height: 300px;
-    overflow-y: auto;
+    overflow: clip;
   }
   .sf-searchbar {
     flex-wrap: wrap;
@@ -953,7 +920,7 @@
    Una franja sobre todo el POS: pestañas · contexto fiscal (sucursal, establecimiento, punto,
    tipo de emisión, ambiente) · estado de configuración · Configuración. Siempre visible. */
 .sf-ophead {
-  grid-column: 1 / -1;
+  grid-area: header;
   display: flex;
   align-items: center;
   gap: var(--space-4);
@@ -993,17 +960,6 @@
 }
 .sf-ophead > .zh-btn {
   flex: none;
-}
-
-/* Desglose de impuestos compacto dentro de "Total a cobrar" (debajo del total). */
-.sf-tax-table--compact {
-  margin-top: var(--space-2);
-}
-.sf-tax-table--compact thead th,
-.sf-tax-table--compact tbody td {
-  padding-top: 2px;
-  padding-bottom: 2px;
-  font-size: var(--text-help-size);
 }
 
 /* "Siguiente paso" / "Listo para emitir" en una línea dentro de la barra inferior. */

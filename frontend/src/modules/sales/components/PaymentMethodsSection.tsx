@@ -158,7 +158,7 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
 
   const focusCashReceived = () => {
     // El bloque de efectivo se monta en el render siguiente al primer cobro en efectivo.
-    setTimeout(() => cashInputRef.current?.focus(), 0);
+    setTimeout(() => cashInputRef.current?.focus({ preventScroll: true }), 0);
   };
 
   return (
@@ -483,7 +483,7 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
                       className="sales-tender__quick-btn"
                       onClick={() => {
                         ctx.setCashReceivedInput(formatDecimalDisplay(amount, moneyDecimals));
-                        cashInputRef.current?.focus();
+                        cashInputRef.current?.focus({ preventScroll: true });
                       }}
                     >
                       ${amount}
@@ -496,7 +496,7 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
                     className="sales-tender__quick-btn"
                     onClick={() => {
                       ctx.setCashReceivedInput("");
-                      cashInputRef.current?.focus();
+                      cashInputRef.current?.focus({ preventScroll: true });
                     }}
                   >
                     Limpiar

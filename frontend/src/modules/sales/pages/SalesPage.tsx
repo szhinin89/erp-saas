@@ -271,7 +271,10 @@ export function SalesPage() {
               {ctx.customerProfile && (
                 <div className="sales-form-customer-profile">
                   {ctx.customerProfile.address && (
-                    <div className="sales-form-profile-row">
+                    <div
+                      className="sales-form-profile-row"
+                      title={ctx.customerProfile.address}
+                    >
                       <span className="material-symbols-outlined zh-icon-sm">
                         location_on
                       </span>
@@ -279,7 +282,10 @@ export function SalesPage() {
                     </div>
                   )}
                   {ctx.customerProfile.email && (
-                    <div className="sales-form-profile-row">
+                    <div
+                      className="sales-form-profile-row"
+                      title={ctx.customerProfile.email}
+                    >
                       <span className="material-symbols-outlined zh-icon-sm">
                         mail
                       </span>
@@ -287,7 +293,10 @@ export function SalesPage() {
                     </div>
                   )}
                   {ctx.customerProfile.phone && (
-                    <div className="sales-form-profile-row">
+                    <div
+                      className="sales-form-profile-row"
+                      title={ctx.customerProfile.phone}
+                    >
                       <span className="material-symbols-outlined zh-icon-sm">
                         phone
                       </span>
@@ -332,28 +341,20 @@ export function SalesPage() {
                     emphasis="total"
                   />
                 </div>
-                <table className="sf-tax-table sf-tax-table--compact">
-                  <thead>
-                    <tr>
-                      <th>Impuesto</th>
-                      <th>Base</th>
-                      <th>Valor</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {ctx.taxBreakdown.map((e) => (
-                      <tr key={e.rate}>
-                        <td>{e.label}</td>
-                        <td>
-                          <ZHMoneyValue value={e.base} precision="money" />
-                        </td>
-                        <td>
-                          <ZHMoneyValue value={e.tax} precision="tax" />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <div className="sales-tax-summary" aria-label="Resumen de impuestos">
+                  <span>
+                    Base <ZHMoneyValue value={ctx.summary.netSubtotal} precision="money" />
+                  </span>
+                  <span aria-hidden="true">{"\u00b7"}</span>
+                  <span>
+                    IVA <ZHMoneyValue value={ctx.summary.vat} precision="tax" />
+                  </span>
+                  {ctx.summary.ice > 0 && (
+                    <span>
+                      {"\u00b7"} ICE <ZHMoneyValue value={ctx.summary.ice} precision="tax" />
+                    </span>
+                  )}
+                </div>
                 {ctx.totalDiscount > 0 && (
                   <div className="sf-summary__discount-total">
                     <span>Descuento:</span>

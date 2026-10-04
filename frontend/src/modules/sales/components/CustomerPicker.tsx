@@ -131,7 +131,7 @@ export function CustomerPicker({
   if (selected) {
     return (
       <ZHPickerSelectedValue
-        title={selected.fullName}
+        title={<span title={selected.fullName}>{selected.fullName}</span>}
         meta={selected.identificationNumber}
         clearLabel="Cambiar cliente"
         editLabel={editLabel}

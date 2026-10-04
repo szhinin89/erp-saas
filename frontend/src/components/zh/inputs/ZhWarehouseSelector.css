@@ -42,12 +42,13 @@
 }
 
 .zh-wh-selector__panel {
-  position: absolute;
+  position: fixed;
   z-index: 40;
-  top: calc(100% + 4px);
-  left: 0;
-  min-width: 260px;
-  max-width: 340px;
+  visibility: hidden;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  max-width: calc(100vw - 16px);
   background: var(--color-surface);
   border: 1px solid var(--color-outline-variant);
   border-radius: 10px;
@@ -56,6 +57,8 @@
 }
 
 .zh-wh-selector__search {
+  box-sizing: border-box;
+  flex-shrink: 0;
   width: 100%;
   padding: 8px 10px;
   border: none;
@@ -67,6 +70,7 @@
 }
 
 .zh-wh-selector__list {
+  min-height: 0;
   max-height: 280px;
   overflow-y: auto;
 }

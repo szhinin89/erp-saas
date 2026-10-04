@@ -37,3 +37,22 @@ describe("SalesPage.css — contraste de filas complementarias de método de pag
     expect(css).not.toContain(".sales-payment-method__btn");
   });
 });
+
+
+describe("POS - estados de cobro", () => {
+  it("hover perceptible conserva tokens ZH y cursor pointer", () => {
+    expect(ruleBlockFor(".sf-sidebar .sales-payment-method .zh-toggle-tile:enabled")).toContain("cursor: pointer");
+    const hover = ruleBlockFor(".sf-sidebar .sales-payment-method .zh-toggle-tile:enabled:hover");
+    expect(hover).toContain("--color-primary");
+    expect(hover).toContain("color-mix");
+  });
+
+  it("activo usa primary y on-primary; focus-visible usa el anillo ZH", () => {
+    const active = ruleBlockFor(".sf-sidebar .sales-payment-method .zh-toggle-tile--active:enabled:hover");
+    expect(active).toContain("background: var(--color-primary)");
+    expect(active).toContain("color: var(--color-on-primary)");
+    const focus = ruleBlockFor(".sf-sidebar .sales-payment-method .zh-toggle-tile:focus-visible");
+    expect(focus).toContain("outline: var(--focus-outline)");
+    expect(focus).toContain("outline-offset: var(--focus-outline-offset)");
+  });
+});

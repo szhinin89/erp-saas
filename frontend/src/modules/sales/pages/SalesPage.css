@@ -509,9 +509,6 @@
 /* ── POS-OPERATIONAL-HEADER-01 — cliente + cobro sin scroll del panel en alturas bajas ─────
    Solo se recorta aire vertical y elementos REDUNDANTES u OPCIONALES — nunca Cliente, Total,
    Formas de cobro, Efectivo recibido ni Falta / Pago exacto / Vuelto. */
-.sf-total-box .sf-tax-table--compact thead th {
-  font-size: var(--text-overline-size);
-}
 @media (max-height: 920px) {
   /* "Total a cobrar" ya se ve en grande justo arriba (sf-total-box): la tarjeta de resultado
      queda con Recibido / Vuelto·Falta + estado. */
@@ -524,10 +521,6 @@
   .sf-sidebar .zh-toggle-tile {
     padding-top: var(--space-1);
     padding-bottom: var(--space-1);
-  }
-  /* "Sin lista preferente" es informativo; con lista real se sigue mostrando. */
-  .sf-sidebar .sales-price-list-context--muted {
-    display: none;
   }
   .sf-sidebar .sf-total-box {
     padding: var(--space-2) var(--space-3);
@@ -559,14 +552,6 @@
   }
 }
 
-@media (max-height: 780px) {
-  /* 768/720 de alto: el desglose por tasa se consulta en cada línea (Base / IVA por línea) —
-     prioridad a Cliente + cobro sin scroll. */
-  .sf-sidebar .sf-tax-table--compact {
-    display: none;
-  }
-}
-
 @media (max-height: 740px) {
   /* 720px de alto: el código SRI de la forma de cobro queda en Configuración (y en el XML) —
      el panel prioriza Cliente + cobro sin scroll. */
@@ -583,19 +568,156 @@
     padding-bottom: var(--space-1);
   }
   /* "Sin lista preferente" (informativo) — con una lista real asignada se sigue mostrando. */
-  .sf-sidebar .sales-price-list-context:not(.sales-price-list-context--preferred) {
-    display: none;
-  }
 }
 
 /* Multipago (POS-OPERATIONAL-HEADER-01): la fila "Aplicado" agrega alto al cobro — a cualquier
    altura se retiran los elementos informativos/opcionales del panel (los mismos que ya se
    retiran en pantallas bajas) para que cliente + cobro sigan sin scroll. */
-.sf-sidebar:has(.sales-payment-amount-row) .sf-tax-table--compact,
 .sf-sidebar:has(.sales-payment-amount-row) .sales-consumer-final-help,
-.sf-sidebar:has(.sales-payment-amount-row) .sales-price-list-context:not(.sales-price-list-context--preferred),
 .sf-sidebar:has(.sales-payment-amount-row) .sales-tender__quick,
 .sf-sidebar:has(.sales-payment-amount-row) .sales-result__total,
 .sf-sidebar .sales-result__received-dup {
   display: none;
+}
+
+/* Caja: informacion secundaria en una sola linea, con detalle en tooltip. */
+.sf-sidebar .sales-price-list-context {
+  margin-top: var(--space-1);
+  flex-wrap: nowrap;
+  min-width: 0;
+  white-space: nowrap;
+}
+.sf-sidebar .sales-price-list-context__primary {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.sf-sidebar .sales-price-list-context__secondary {
+  display: none;
+}
+.sf-sidebar .sales-form-customer-profile {
+  display: flex;
+  gap: var(--space-2);
+}
+.sf-sidebar .sales-form-profile-row {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sf-sidebar .sales-form-profile-row .material-symbols-outlined {
+  vertical-align: middle;
+}
+
+/* Interaccion de cobro: tokens ZH, sin alterar el alto de los tiles. */
+.sf-sidebar .sales-payment-method .zh-toggle-tile:enabled {
+  cursor: pointer;
+}
+.sf-sidebar .sales-payment-method .zh-toggle-tile:enabled:hover {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 18%, var(--color-surface));
+  color: var(--color-primary);
+}
+.sf-sidebar .sales-payment-method .zh-toggle-tile--active,
+.sf-sidebar .sales-payment-method .zh-toggle-tile--active:enabled:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.sf-sidebar .sales-payment-method .zh-toggle-tile:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
+}
+
+/* Nombres largos conservan el detalle en tooltip sin empujar el cobro. */
+.sf-sidebar .zh-picker-selected-value__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-height: 780px) {
+  .sf-sidebar .sf-total-box {
+    padding-top: var(--space-1);
+    padding-bottom: var(--space-1);
+  }
+  /* Los datos de contacto se consultan desde Editar datos, siempre accesible. */
+  .sf-sidebar .sales-form-customer-profile {
+    display: none;
+  }
+  /* Cobrado/Recibido y Vuelto/Falta comparten una fila; el estado sigue debajo. */
+  .sf-sidebar .sales-result {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .sf-sidebar .sales-result__rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: var(--space-1) var(--space-3);
+  }
+  .sf-sidebar .sales-result__rows dd {
+    text-align: left;
+  }
+  .sf-sidebar .sales-result__highlight {
+    flex-direction: column;
+    justify-content: center;
+    gap: 0;
+    border-top: none;
+    margin: 0;
+    padding: var(--space-1) var(--space-3);
+  }
+  .sf-sidebar .sales-result__state {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Total ya visible arriba: sin duplicarlo en la tarjeta de resultado. */
+.sf-sidebar .sales-result__total,
+.sf-sidebar .sales-price-list-context--none {
+  display: none;
+}
+.sales-tax-summary {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+  white-space: nowrap;
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+}
+.sales-tax-summary .zh-money-value {
+  font-size: inherit;
+}
+
+/* Densidad de caja: cliente y datos fiscales sin bloques secundarios altos. */
+.sf-sidebar .zh-picker-selected-value {
+  padding: var(--space-1) var(--space-2);
+  gap: var(--space-2);
+}
+.sf-sidebar .zh-picker-selected-value__title {
+  line-height: var(--text-body-md-height);
+}
+.sf-sidebar .zh-picker-selected-value__meta {
+  line-height: var(--text-help-height);
+}
+@media (max-height: 780px) {
+  .sf-sidebar__section--customer > .sf-sidebar__header {
+    display: none;
+  }
+  .sf-sidebar > .sf-sidebar__section {
+    padding-top: var(--space-1);
+    padding-bottom: var(--space-1);
+  }
+  .sf-sidebar .sales-result__rows,
+  .sf-sidebar .sales-result__highlight {
+    padding-top: 2px;
+    padding-bottom: 2px;
+  }
+}
+
+.sf-sidebar .sf-total-box__amount {
+  margin-bottom: 0;
 }

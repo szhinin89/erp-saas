@@ -320,7 +320,7 @@ describe("SalesPage — valores monetarios read-only migrados a ZHMoneyValue (SA
     expect(modalAmount("Subtotal")).toBe(`$${testCase.subtotalDisplay}`);
     expect(modalAmount("IVA")).toBe(`$${testCase.vatDisplay}`);
     expect(modalAmount("Total")).toBe(`$${testCase.totalDisplay}`);
-    expect(container.querySelectorAll(".sf-tax-table .zh-money-value")[0]?.textContent)
+    expect(container.querySelectorAll(".sales-tax-summary .zh-money-value")[0]?.textContent)
       .toBe(`$${testCase.baseDisplay}`);
 
     // Reopened read-only context uses the persisted DTO, as useSalesPage does.
@@ -404,7 +404,7 @@ describe("SalesPage — valores monetarios read-only migrados a ZHMoneyValue (SA
     expect(screen.getByText("001-001-000000123")).toBeTruthy();
   });
 
-  it('desglose de impuestos: Base y Valor usan ZHMoneyValue', () => {
+  it('resumen de impuestos: Base e IVA usan ZHMoneyValue', () => {
     useSalesPageMock.mockReturnValue(
       buildCtx({
         taxBreakdown: [{ rate: 15, label: "IVA 15%", base: 100, tax: 15 }],

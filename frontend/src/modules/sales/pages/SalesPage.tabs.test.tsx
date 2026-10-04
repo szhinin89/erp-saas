@@ -388,7 +388,7 @@ describe("SalesPage — layout de caja (POS-VIEWPORT-LAYOUT-01)", () => {
     expect(sidebar?.querySelector(".sf-sidebar__section--customer")).toBeTruthy();
     expect(sidebar?.querySelector(".sf-total-box")).toBeTruthy();
     expect(sidebar?.textContent).toContain("Formas de Cobro");
-    expect(sidebar?.querySelector(".sf-tax-table")).toBeTruthy();
+    expect(sidebar?.querySelector(".sales-tax-summary")).toBeTruthy();
     expect(sidebar?.querySelector(".prd-tabs")).toBeNull();
     expect(screen.getByRole("button", { name: /Emitir/ })).toBeTruthy();
   });

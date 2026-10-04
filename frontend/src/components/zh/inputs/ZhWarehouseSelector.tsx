@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Badge } from "../../PageShell";
 import { stockService } from "../../../modules/inventory/stock/api/stockService";
 import type { ItemWarehouseAvailabilityDto } from "../../../modules/inventory/stock/api/stockService";
@@ -47,6 +48,8 @@ export function ZhWarehouseSelector({
   );
   const wrapRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
 
   const rows: ItemWarehouseAvailabilityDto[] = useMemo(() => {
     const base: ItemWarehouseAvailabilityDto[] =
@@ -79,6 +82,49 @@ export function ZhWarehouseSelector({
     fallbackWarehouses.find((w) => w.id === value)?.name ??
     "";
 
+  useLayoutEffect(() => {
+    if (!open) return;
+    const panel = panelRef.current;
+    const anchor = wrapRef.current;
+    if (!panel || !anchor) return;
+    const position = () => {
+      const bounds = anchor.getBoundingClientRect();
+      const margin = 8;
+      const gap = 4;
+      const viewportWidth = document.documentElement.clientWidth;
+      const viewportHeight = document.documentElement.clientHeight;
+      const width = Math.min(Math.max(bounds.width, 260), 340, Math.max(0, viewportWidth - margin * 2));
+      panel.style.width = `${width}px`;
+      const list = panel.querySelector<HTMLElement>(".zh-wh-selector__list");
+      const desiredHeight = (inputRef.current?.offsetHeight ?? 0) + Math.min(list?.scrollHeight ?? 0, 280) + 2;
+      const below = Math.max(0, viewportHeight - bounds.bottom - gap - margin);
+      const above = Math.max(0, bounds.top - gap - margin);
+      const openAbove = desiredHeight > below && above > below;
+      const height = Math.min(desiredHeight, openAbove ? above : below);
+      panel.style.left = `${Math.max(margin, Math.min(bounds.left, viewportWidth - width - margin))}px`;
+      panel.style.top = `${openAbove ? bounds.top - gap - height : bounds.bottom + gap}px`;
+      panel.style.maxHeight = `${height}px`;
+      panel.style.visibility = "visible";
+    };
+    position();
+    const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(position) : null;
+    observer?.observe(anchor);
+    if (inputRef.current) observer?.observe(inputRef.current);
+    const list = panel.querySelector(".zh-wh-selector__list");
+    if (list) observer?.observe(list);
+    window.addEventListener("resize", position);
+    window.addEventListener("scroll", position, true);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", position);
+      window.removeEventListener("scroll", position, true);
+    };
+  }, [open, loading, filtered]);
+
+  useLayoutEffect(() => {
+    if (open) inputRef.current?.focus({ preventScroll: true });
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     setQuery("");
@@ -107,7 +153,8 @@ export function ZhWarehouseSelector({
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node))
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node) &&
+          !panelRef.current?.contains(e.target as Node))
         setOpen(false);
     };
     document.addEventListener("mousedown", handler);
@@ -123,6 +170,11 @@ export function ZhWarehouseSelector({
   );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      setOpen(false);
+      wrapRef.current?.querySelector("button")?.focus({ preventScroll: true });
+      return;
+    }
     if (!open || filtered.length === 0) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
@@ -136,7 +188,6 @@ export function ZhWarehouseSelector({
       e.preventDefault();
       select(filtered[focusIdx]);
     }
-    if (e.key === "Escape") setOpen(false);
   };
 
   return (
@@ -145,9 +196,9 @@ export function ZhWarehouseSelector({
         type="button"
         className="zh-wh-selector__trigger"
         disabled={disabled}
+        aria-expanded={open}
         onClick={() => {
           setOpen((o) => !o);
-          setTimeout(() => inputRef.current?.focus(), 0);
         }}
       >
         <span className="material-symbols-outlined zh-wh-selector__icon">
@@ -161,8 +212,8 @@ export function ZhWarehouseSelector({
         </span>
       </button>
 
-      {open && (
-        <div className="zh-wh-selector__panel">
+      {open && createPortal(
+        <div className="zh-wh-selector__panel" ref={panelRef}>
           <input
             ref={inputRef}
             type="text"
@@ -219,7 +270,8 @@ export function ZhWarehouseSelector({
               ))
             )}
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

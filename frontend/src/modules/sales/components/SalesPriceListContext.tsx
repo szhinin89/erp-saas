@@ -29,6 +29,7 @@ export function SalesPriceListContext({ state }: { state?: PriceListHeaderState 
     <div
       className={`sales-price-list-context sales-price-list-context--${state.kind}${muted ? " sales-price-list-context--muted" : ""}`}
       data-testid="sales-price-list-context"
+      title={[primary, secondary].filter(Boolean).join(" \u00b7 ")}
     >
       <span className="material-symbols-outlined zh-icon-sm">sell</span>
       <span className="sales-price-list-context__primary">{primary}</span>
