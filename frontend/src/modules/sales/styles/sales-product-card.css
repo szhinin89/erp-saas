@@ -36,15 +36,9 @@
   flex-direction: column;
   gap: var(--space-3);
   background: var(--color-surface-container-low);
-  --sfl-cols:
-    56px
-    minmax(220px, 1.3fr)
-    minmax(130px, 0.65fr)
-    minmax(96px, 0.5fr)
-    minmax(150px, 0.7fr)
-    minmax(210px, 0.95fr)
-    minmax(120px, 0.5fr)
-    minmax(180px, 0.75fr);
+  --sfl-cols: 56px minmax(220px, 1.3fr) minmax(130px, 0.65fr)
+    minmax(96px, 0.5fr) minmax(150px, 0.7fr) minmax(210px, 0.95fr)
+    minmax(120px, 0.5fr) minmax(180px, 0.75fr);
   /* SALES-INVOICE-LINES-GRID-ROW-SEPARATORS-ALIGNMENT-01F: separación entre columnas por
      `column-gap`, no por `border-right` — mismo criterio que el buscador (.sf-result,
      sales-invoice.css, que separa columnas con column-gap y ningún borde vertical). Una sola
@@ -267,7 +261,7 @@
 /* ── Columna 1: Producto (SKU + nombre) ────────
    Columna propia con todo el ancho disponible para el nombre, que trunca lo menos posible. */
 .sf-product__info {
-  gap: 6px;
+  gap: 1px;
 }
 .sf-product__title-row {
   display: flex;
@@ -675,15 +669,9 @@
    `fr` siguen repartiendo el sobrante) y el espacio entre columnas baja un paso de la escala. */
 @media (max-width: 1440px) {
   .sf-products {
-    --sfl-cols:
-      44px
-      minmax(114px, 1.3fr)
-      minmax(84px, 0.65fr)
-      minmax(76px, 0.5fr)
-      minmax(112px, 0.7fr)
-      minmax(164px, 0.95fr)
-      minmax(104px, 0.5fr)
-      minmax(136px, 0.75fr);
+    --sfl-cols: 44px minmax(114px, 1.3fr) minmax(84px, 0.65fr)
+      minmax(76px, 0.5fr) minmax(112px, 0.7fr) minmax(164px, 0.95fr)
+      minmax(104px, 0.5fr) minmax(136px, 0.75fr);
     --sfl-col-gap: var(--space-2);
   }
   /* Etiquetas cortas de la columna Total en una sola línea ("BASE SIN IVA", "TOTAL LÍNEA",
@@ -729,4 +717,136 @@
   .sf-product > *:last-child {
     border-bottom: none;
   }
+}
+/* Dense POS values: readable typography, no redundant internal headings. */
+@media (min-width: 1101px) {
+  .sf-product-card.zh-line-card {
+    flex-shrink: 0;
+    min-height: 72px;
+  }
+  .sf-product {
+    height: auto;
+    min-height: 71px;
+  }
+  .sf-product > * {
+    padding: 5px 4px;
+  }
+  .sf-product__code {
+    font-size: 11px;
+    line-height: 14px;
+    padding: 0 4px;
+  }
+  .sf-product__name {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    white-space: normal;
+    font-size: 14px;
+    line-height: 18px;
+  }
+  .sf-product__line-cell {
+    gap: 1px;
+  }
+  .sf-product__discount,
+  .sf-product__price-block,
+  .sf-product__qty {
+    gap: 2px;
+  }
+  .sf-product__disc-input,
+  .sf-product__price-input {
+    height: 32px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+  .sf-product__qty {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+  .sf-product__qty-input {
+    height: 34px;
+    padding: 4px;
+    font-size: 16px;
+  }
+  .sf-product__stock-data {
+    position: relative;
+    width: 100%;
+    gap: 2px;
+  }
+  .sf-product__stock-summary {
+    flex-wrap: nowrap;
+    gap: 4px;
+    padding-right: 22px;
+    min-height: 22px;
+  }
+  .sf-product__stock-qty {
+    font-size: 14px;
+    white-space: nowrap;
+  }
+  .sf-product__stock-location {
+    margin-top: 0;
+  }
+  .sf-product__stock-location .zh-wh-selector {
+    min-width: 0;
+    width: 100%;
+  }
+  .sf-product__stock-location .zh-wh-selector__trigger {
+    height: 28px;
+    padding: 3px 6px;
+  }
+  .sf-product__stock-global-link {
+    position: absolute;
+    top: 0;
+    right: 0;
+    margin: 0;
+    width: 22px;
+    height: 22px;
+    justify-content: center;
+  }
+  .sf-product__subtotal {
+    gap: 2px;
+    padding-right: 12px;
+  }
+  .sf-product__total-amount.zh-money-value {
+    font-size: 22px;
+    line-height: 26px;
+  }
+  .sf-product__presentation-select {
+    min-width: 0;
+  }
+}
+.sf-product__tax-details {
+  position: relative;
+}
+.sf-product__tax-details summary {
+  cursor: pointer;
+  list-style: none;
+}
+.sf-product__tax-details summary::-webkit-details-marker {
+  display: none;
+}
+.sf-product__tax-details summary:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+.sf-product__tax-base {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 3;
+  padding: 8px;
+  white-space: nowrap;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-xs);
+  font-size: 12px;
+}
+.sf-product__vat-label {
+  color: var(--color-text-secondary);
+}
+@media (min-width: 1101px) {
+  .sf-product__stock-summary .badge { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 1; }
+  .sf-product__stock-qty--empty { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .sf-product__stock-uom { margin-left: 3px; }
+  .sf-product__stock-global-link .material-symbols-outlined { width: 18px; overflow: hidden; }
 }

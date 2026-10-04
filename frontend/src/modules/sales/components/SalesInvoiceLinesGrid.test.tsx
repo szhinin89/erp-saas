@@ -22,7 +22,9 @@ const WAREHOUSES: WarehouseDto[] = [
   { id: "wh-1", name: "Bodega Principal" } as WarehouseDto,
 ];
 
-function baseLine(overrides: Partial<SalesLineFormValues> = {}): SalesLineFormValues {
+function baseLine(
+  overrides: Partial<SalesLineFormValues> = {},
+): SalesLineFormValues {
   return {
     _key: 1,
     itemId: "item-1",
@@ -101,7 +103,9 @@ describe("SalesInvoiceLinesGrid — cabecera de columnas (SALES-INVOICE-LINES-GR
     expect(container.querySelector(".sfl-header")).toBeNull();
     // POS-VIEWPORT-LAYOUT-01: empty state compacto y accionable (incluye el atajo oficial F2).
     expect(screen.getByText("Agrega un producto para comenzar")).not.toBeNull();
-    expect(screen.getByText(/nombre, SKU o escanea el código de barras/i)).not.toBeNull();
+    expect(
+      screen.getByText(/nombre, SKU o escanea el código de barras/i),
+    ).not.toBeNull();
     expect(screen.getByText("F2")).not.toBeNull();
   });
 
@@ -110,9 +114,9 @@ describe("SalesInvoiceLinesGrid — cabecera de columnas (SALES-INVOICE-LINES-GR
     const header = container.querySelector(".sfl-header") as HTMLElement;
     const row = container.querySelector(".sf-product") as HTMLElement;
     expect(getComputedStyle(header).gridTemplateColumns).not.toBe("");
-    expect(getComputedStyle(header).getPropertyValue("grid-template-columns")).toBe(
-      getComputedStyle(row).getPropertyValue("grid-template-columns"),
-    );
+    expect(
+      getComputedStyle(header).getPropertyValue("grid-template-columns"),
+    ).toBe(getComputedStyle(row).getPropertyValue("grid-template-columns"));
     // SALES-INVOICE-LINES-GRID-ROW-SEPARATORS-ALIGNMENT-01F: la separación entre columnas es
     // solo espacio (column-gap), no bordes verticales — cabecera y fila deben usar el mismo
     // valor para no desalinearse.
@@ -184,7 +188,9 @@ describe("SalesInvoiceLinesGrid — cabecera de columnas (SALES-INVOICE-LINES-GR
     const cell = container.querySelector(".sf-product__stock-box");
     expect(cell?.textContent).toContain("5");
     expect(cell?.querySelector(".zh-badge, [class*='badge']")).not.toBeNull();
-    expect(cell?.textContent).toMatch(/ver stock global/i);
+    expect(cell?.querySelector("a")?.getAttribute("aria-label")).toBe(
+      "Ver stock global",
+    );
   });
 
   it("Cantidad: el input editable aparece bajo la columna Cantidad", () => {
@@ -201,6 +207,9 @@ describe("SalesInvoiceLinesGrid — cabecera de columnas (SALES-INVOICE-LINES-GR
     expect(cell?.querySelector(".sf-product__total-amount")).not.toBeNull();
     const values = cell?.querySelectorAll(".sf-product__subtotal-value");
     expect(values?.length).toBe(2); // Base sin IVA + IVA
+    const details = cell?.querySelector("details") as HTMLDetailsElement;
+    expect(details.open).toBe(false);
+    expect(details.querySelector("summary")?.getAttribute("aria-label")).toContain("base tributaria");
   });
 
   it("el botón eliminar sigue funcionando", () => {
@@ -225,15 +234,22 @@ describe("SalesInvoiceLinesGrid — cabecera de columnas (SALES-INVOICE-LINES-GR
   it.each([
     ["mayor que la referencia", "30", 30],
     ["menor que la referencia", "20", 20],
-  ])("cambiar el precio facturado (%s) dispara onUpdateLine con invoicedUnitPrice", (_case, typed, expected) => {
-    const onUpdateLine = vi.fn();
-    renderSection([baseLine({ unitPrice: 26 })], { onUpdateLine });
-    const priceInput = screen.getByDisplayValue("26.00");
-    fireEvent.change(priceInput, { target: { value: typed } });
-    fireEvent.blur(priceInput);
-    expect(onUpdateLine).toHaveBeenCalledTimes(1);
-    expect(onUpdateLine).toHaveBeenCalledWith(1, "invoicedUnitPrice", expected);
-  });
+  ])(
+    "cambiar el precio facturado (%s) dispara onUpdateLine con invoicedUnitPrice",
+    (_case, typed, expected) => {
+      const onUpdateLine = vi.fn();
+      renderSection([baseLine({ unitPrice: 26 })], { onUpdateLine });
+      const priceInput = screen.getByDisplayValue("26.00");
+      fireEvent.change(priceInput, { target: { value: typed } });
+      fireEvent.blur(priceInput);
+      expect(onUpdateLine).toHaveBeenCalledTimes(1);
+      expect(onUpdateLine).toHaveBeenCalledWith(
+        1,
+        "invoicedUnitPrice",
+        expected,
+      );
+    },
+  );
 
   it("no muestra 'regla general' ni 'excepción' como texto principal", () => {
     renderSection([
@@ -244,7 +260,9 @@ describe("SalesInvoiceLinesGrid — cabecera de columnas (SALES-INVOICE-LINES-GR
     ]);
     expect(screen.queryByText(/regla general/i)).toBeNull();
     expect(screen.queryByText(/excepción/i)).toBeNull();
-    expect(screen.getByText("-5%")).not.toBeNull();
+    expect(
+      document.querySelector(".sf-product__discount")?.getAttribute("title"),
+    ).toContain("5%");
   });
 
   it("no introduce estilos inline", () => {
