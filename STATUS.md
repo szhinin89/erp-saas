@@ -2,6 +2,17 @@
 
 **Single source of truth** for delivery state. Updated: **2026-10-03** · Kernel refactor: **2026-06-05**.
 
+## POS-RELIABLE-SALE-01 — Cobro POS confiable y tipo de emisión coherente (2026-10-03)
+
+**Estado: IMPLEMENTADO (sin commit). Smoke real pendiente de ejecución por el usuario.**
+- **Cobro (flujo B inline):** un único estado del cobro (`utils/salesCollectionStatus.ts`) para resumen, mensaje y bloqueo: vacío = neutro, Falta, Pago exacto, Vuelto. Usa la tolerancia de settlement de la empresa (`CompanyPrecisionPolicy`) en vez de las constantes de UI 0.02/0.01. El efectivo recibido se actualiza en cada pulsación; F8/Enter funcionan desde ese campo. Si el efectivo es el único cobro, lo aplicado sigue al total; en multipago no se redistribuye nada.
+- **`canEmit` único:** `emitBlockers` en `useSalesPage` gobierna EmitButton, checklist, F8/Enter y la tarjeta de configuración. Solo los issues `error` de la tarjeta bloquean, y siempre bloquean.
+- **Tipo de emisión:** snapshot inmutable de la factura (ver [backend.md § Tipo de emisión](docs/architecture/backend.md#tipo-de-emisión-de-una-venta-snapshot-inmutable-pos-emission-type-snapshot-01)). Authorize ya no lee el EP vivo y la creación del borrador es fail-closed (no cae a `Electronic`). El DTO del listado expone `EmissionType`.
+- **Visibilidad:** RIDE, XML, clave, estado, diagnóstico, conectividad y Forma de pago SRI solo aparecen en electrónica, decidido por el snapshot de la factura. El modal de emisión ya no muestra pasos XML/SRI simulados. La tirilla recibe recibido/vuelto desde el payload del POS.
+- **Cierre de confiabilidad (POS-CASH-TENDERED-01):** `SalesInvoice.CreateDraft` exige `emissionType` explícito (51 callers de tests actualizados) y `sales_invoices.emission_type` ya no tiene default de BD. El efectivo entregado se persiste como `SalesInvoicePayment.TenderedAmount` (nullable, solo efectivo, ≥ aplicado, CHECK en BD); el vuelto es derivado. La tirilla y la reimpresión lo leen del backend. Migración `20261003233053_PosCashTenderedAndEmissionTypeSnapshotNoDefault`, aplicada y verificada en PostgreSQL de desarrollo.
+- **Tests:** Domain 1310/1310 · Application 2613/2613 · Infrastructure focalizados 701 (3 intermitentes por ejecución concurrente; 3/3 en aislado) · API Ventas/Caja 104/104 · Architecture 143/143 · frontend Ventas 667/667 · `architecture:check` PASS.
+- **Pendiente:** smoke real autenticado (`run-smoke-pos.ps1`, lo ejecuta el usuario con sus credenciales E2E).
+
 ## BUG-PILOT-SRI-CONFIG-500 — La configuración SRI exige contexto de empresa (2026-10-03)
 
 **Estado: COMPLETADO.** Desbloquea la configuración SRI del piloto Sumak (`erp_sumak_pilot`).

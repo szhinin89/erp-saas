@@ -212,7 +212,8 @@ public sealed class FinancialCommandIdempotencyFixture : IAsyncLifetime
             issueDate: Today,
             createdBy: _adminId,
             paymentTerm: PaymentTermSnapshot.Create(Guid.NewGuid(), "Crédito", installments: 1, daysBetween: 30),
-            cashSessionId: _anchorSessionId
+            cashSessionId: _anchorSessionId,
+            emissionType: EmissionType.Physical
         );
         invoice.ReplaceLines(
             new[] { SalesInvoiceDetail.Create(invoice.Id, TenantId, "Producto", quantity: 1, unitPrice: amount, vatCode: "0", uomCode: "UNIT") },

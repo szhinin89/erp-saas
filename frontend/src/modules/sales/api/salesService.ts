@@ -81,6 +81,10 @@ export interface SalesInvoicePaymentDto {
   cardDetail: CardDetailDto | null;
   transferDetail: TransferDetailDto | null;
   chequeDetail: ChequeDetailDto | null;
+  /** POS-CASH-TENDERED-01: efectivo entregado (null = no aplica / no registrado). */
+  tenderedAmount: number | null;
+  /** Vuelto derivado en backend (tenderedAmount − amount); null si no hay efectivo entregado. */
+  changeAmount: number | null;
 }
 
 export interface CardDetailInput {
@@ -111,6 +115,9 @@ export interface SalesPaymentInput {
   cardDetail?: CardDetailInput | null;
   transferDetail?: TransferDetailInput | null;
   chequeDetail?: ChequeDetailInput | null;
+  /** POS-CASH-TENDERED-01: efectivo físico entregado — solo formas de cobro con
+   * affectsPhysicalCash; nunca cambia `amount` (importe aplicado). El backend lo valida. */
+  tenderedAmount?: number | null;
 }
 
 export interface SalesPaymentScheduleDto {
@@ -183,6 +190,8 @@ export interface SalesListItemDto {
   lineCount: number;
   grandTotal: number;
   createdAt: string;
+  /** POS-EMISSION-TYPE-SNAPSHOT-01: snapshot de la factura ("Electronic" | "Physical"). */
+  emissionType: string;
 }
 
 export interface SalesListResponse {

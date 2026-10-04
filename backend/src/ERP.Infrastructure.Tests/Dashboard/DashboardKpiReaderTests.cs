@@ -245,7 +245,8 @@ public sealed class DashboardKpiReaderTests : IAsyncLifetime
             createdBy: _createdBy,
             paymentTerm: paymentTerm,
             cashSessionId: infra.CashSessionId,
-            emissionPointId: null
+            emissionPointId: null,
+            emissionType: EmissionType.Physical
         );
 
         var line = SalesInvoiceDetail.Create(

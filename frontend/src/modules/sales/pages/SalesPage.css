@@ -112,8 +112,8 @@
 .sales-payment-chip .zh-money-value {
   font-size: inherit;
 }
-/* SALES-PAYMENT-TOLERANCE-NOTE-01: aclara un descuadre menor (dentro de
-   INVOICE_PAYMENT_TOLERANCE) entre el cobro real mostrado arriba y el total de la factura —
+/* SALES-PAYMENT-TOLERANCE-NOTE-01: aclara un descuadre menor (dentro de la tolerancia de
+   settlement de la empresa, CompanyPrecisionPolicy) entre el cobro real mostrado arriba y el total de la factura —
    nunca reemplaza el monto real, solo da contexto. flex-basis 100% para que ocupe su propia
    fila debajo de los chips (el contenedor es flex-wrap). */
 .sales-payment-tolerance-note {
@@ -148,9 +148,12 @@
 /* Filas complementarias del método de pago (monto/referencia/crédito), debajo
    del tile (ZHToggleTile) y sobre fondo normal — no sobre el fondo primario
    del tile activo. Usan tokens de texto estándar en vez de --color-on-primary. */
-.sales-payment-dollar {
+/* "Aplicado $" — solo en multipago: rotula explícitamente el monto aplicado a la factura para
+   no confundirlo con "Efectivo recibido" (POS-COLLECTION-INLINE-B-01). */
+.sales-payment-applied-label {
   color: var(--color-text-secondary);
   font-size: var(--text-label-sm-size);
+  white-space: nowrap;
 }
 
 .sales-payment-input {
@@ -207,90 +210,185 @@
   font-weight: var(--text-label-md-weight);
 }
 
-/* Caja de efectivo recibido */
-.sales-cash-box {
-  margin-top: var(--space-2);
-  padding: 6px var(--space-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-container-low);
-  font-size: var(--text-label-sm-size);
-}
-.sales-cash-box--insufficient {
-  border-color: var(--color-error);
-  background: var(--color-error-container);
-}
-.sales-cash-box__row {
+/* ── Cobro inline — flujo B (POS-COLLECTION-INLINE-B-01) ──────────────────
+   Recorrido del cajero: formas de cobro → "Efectivo recibido" (campo ancho, montos rápidos)
+   → UNA tarjeta de resultado (Total / Recibido / Vuelto·Falta + estado único) → Emitir.
+   Diseñado para el ancho real del sidebar del POS (~228px útiles). Solo tokens semánticos. */
+.sales-tender {
+  margin-top: var(--space-3);
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   gap: var(--space-2);
 }
-.sales-cash-box__label {
-  color: var(--color-text-secondary);
-}
-.sales-cash-box__input-wrap {
+.sales-tender__label {
   display: flex;
   align-items: center;
-  gap: 2px;
-}
-.sales-cash-box__currency {
-  font-size: var(--text-label-sm-size);
-}
-.sales-cash-input {
-  width: 80px;
-  padding: 2px var(--space-1);
-  font-size: var(--text-body-md-size);
-  font-weight: var(--text-label-md-weight);
-  text-align: center;
-}
-.sales-cash-box__total-row {
-  display: flex;
-  justify-content: space-between;
-  font-weight: 700;
-  margin-top: 2px;
-  padding-top: 2px;
-  border-top: 1px solid var(--color-border);
-  color: var(--color-text-primary);
-}
-.sales-cash-box__total-row--insufficient {
-  color: var(--color-error);
-}
-/* Resumen de cobro (total / cobrado / pendiente) */
-.sales-summary-box {
-  margin-top: var(--space-2);
-  padding: 6px var(--space-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-container-low);
-  font-size: var(--text-label-sm-size);
-}
-.sales-summary-box--complete {
-  background: color-mix(in srgb, var(--color-success) 10%, var(--color-surface));
-}
-.sales-summary-box--exceeds {
-  border-color: var(--color-error);
-  background: var(--color-error-container);
-}
-.sales-summary-row {
-  display: flex;
-  justify-content: space-between;
+  gap: var(--space-1);
+  font-size: var(--text-overline-size);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--color-text-secondary);
 }
-.sales-summary-total-row {
+.sales-tender__field {
   display: flex;
-  justify-content: space-between;
-  font-weight: 700;
-  margin-top: 2px;
-  padding-top: 2px;
-  border-top: 1px solid var(--color-border);
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  transition: border-color var(--motion-duration-fast) var(--motion-ease), box-shadow var(--motion-duration-fast) var(--motion-ease);
+}
+.sales-tender__field:focus-within {
+  border-color: var(--color-focus-border);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+.sales-tender__currency {
+  color: var(--color-text-secondary);
+  font-size: var(--text-title-sm-size);
+  font-weight: var(--font-weight-medium);
+}
+/* El input ZH vive dentro del campo: sin borde propio, ancho completo, cifra a la derecha. */
+.sales-tender__field .sales-tender__input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  padding: var(--space-2) 0;
+  text-align: right;
+  font-size: var(--text-headline-sm-size);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
   color: var(--color-text-primary);
 }
-.sales-summary-total-row--complete {
-  color: var(--color-success);
+.sales-tender__field .sales-tender__input:focus {
+  outline: none;
+  box-shadow: none;
 }
-.sales-summary-total-row--exceeds {
-  color: var(--color-error);
+.sales-tender__hint {
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+}
+.sales-tender__hint .zh-money-value {
+  font-size: inherit;
+}
+.sales-tender__quick {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-1);
+}
+.sales-tender__quick-btn {
+  min-width: 0;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tarjeta única de resultado: card blanca + borde de estado soft. */
+.sales-result {
+  margin-top: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+  overflow: hidden;
+}
+.sales-result--success {
+  border-color: var(--color-success-border);
+}
+.sales-result--warning {
+  border-color: var(--color-warning-border);
+}
+.sales-result--error {
+  border-color: var(--color-error-border);
+}
+.sales-result__rows {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  row-gap: var(--space-1);
+  margin: 0;
+  padding: var(--space-3) var(--space-3) var(--space-2);
+  font-size: var(--text-body-md-size);
+}
+.sales-result__rows dt {
+  color: var(--color-text-secondary);
+}
+.sales-result__rows dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-primary);
+}
+.sales-result__empty {
+  color: var(--color-text-secondary);
+}
+.sales-result__highlight {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: 0 var(--space-3);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--color-border);
+}
+.sales-result__highlight-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-overline-size);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-primary);
+}
+.sales-result__highlight-amount {
+  font-variant-numeric: tabular-nums;
+}
+.sales-result__highlight-amount .zh-money-value,
+.sales-result__highlight-amount .zh-money-value__symbol {
+  font-size: var(--text-headline-sm-size);
+  font-weight: var(--font-weight-bold);
+  color: inherit;
+}
+.sales-result--success .sales-result__highlight-amount {
+  color: var(--color-success-strong);
+}
+.sales-result--warning .sales-result__highlight-amount {
+  color: var(--color-warning-strong);
+}
+.sales-result--error .sales-result__highlight-amount {
+  color: var(--color-error-strong);
+}
+.sales-result__state {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface-container-low);
+  color: var(--color-text-secondary);
+  font-size: var(--text-body-md-size);
+  font-weight: var(--font-weight-semibold);
+}
+.sales-result--success .sales-result__state {
+  background: var(--color-success-soft);
+  color: var(--color-success-strong);
+  border-top-color: var(--color-success-border);
+}
+.sales-result--warning .sales-result__state {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-strong);
+  border-top-color: var(--color-warning-border);
+}
+.sales-result--error .sales-result__state {
+  background: var(--color-error-soft);
+  color: var(--color-error-strong);
+  border-top-color: var(--color-error-border);
+}
+.sales-result__state-icon {
+  font-size: var(--text-title-sm-size);
 }
 @media (max-width: 980px) {
   .sales-page-root {

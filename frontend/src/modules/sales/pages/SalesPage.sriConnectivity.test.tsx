@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { SalesPageContext } from "../hooks/useSalesPage";
+import { withPosDerivedCtx } from "../test/salesPageCtxTestUtils";
 import type { SalesInvoiceDto } from "../api/salesService";
 
 // ELECTRONIC-INVOICING-SRI-CONNECTIVITY-CHECK-SCOPE-01: estado discreto de conectividad SRI en
@@ -274,7 +275,7 @@ function buildCtx(
     simulateCreditInstallments: vi.fn(() => []),
   };
 
-  return { ...base, ...overrides } as unknown as SalesPageContext;
+  return withPosDerivedCtx({ ...base, ...overrides });
 }
 
 describe("SalesPage — estado discreto de conectividad SRI (ELECTRONIC-INVOICING-SRI-CONNECTIVITY-CHECK-SCOPE-01)", () => {

@@ -142,7 +142,8 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
             paymentTerm: paymentTerm,
             cashSessionId: CashSessionId,
             sriPaymentMethodCode: "01",
-            emissionPointId: EmissionPointId
+            emissionPointId: EmissionPointId,
+            emissionType: EmissionType.Electronic
         );
 
         // Venta de 1 CAJA x12 — Quantity visible = 1, UnitPrice por caja = 18, ConversionFactor
@@ -216,7 +217,8 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
             paymentTerm: paymentTerm,
             cashSessionId: CashSessionId,
             sriPaymentMethodCode: "01",
-            emissionPointId: EmissionPointId
+            emissionPointId: EmissionPointId,
+            emissionType: EmissionType.Electronic
         );
         var line = SalesInvoiceDetail.Create(
             invoice.Id,
@@ -356,7 +358,8 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
             paymentTerm: paymentTerm,
             cashSessionId: CashSessionId,
             sriPaymentMethodCode: "01",
-            emissionPointId: EmissionPointId
+            emissionPointId: EmissionPointId,
+            emissionType: EmissionType.Electronic
         );
         invoice.ReplaceLines(new[] { line }, UserId);
         var payment = SalesInvoicePayment.Create(
@@ -381,7 +384,8 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
                 CustomerSnapshot.Create("Cliente Test", "1710034065", "05"),
                 "001-001-000000060", new DateOnly(2026, 7, 20), UserId,
                 PaymentTermSnapshot.Create(PaymentTermId, "Contado", 1, 0),
-                cashSessionId: CashSessionId, sriPaymentMethodCode: "01", emissionPointId: EmissionPointId
+                cashSessionId: CashSessionId, sriPaymentMethodCode: "01", emissionPointId: EmissionPointId,
+                emissionType: EmissionType.Electronic
             ),
             quantity: 5m,
             unitPrice: 10m
@@ -412,7 +416,8 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
             CustomerSnapshot.Create("Cliente Test", "1710034065", "05"),
             "001-001-000000061", new DateOnly(2026, 7, 20), UserId,
             PaymentTermSnapshot.Create(PaymentTermId, "Contado", 1, 0),
-            cashSessionId: CashSessionId, sriPaymentMethodCode: "01", emissionPointId: EmissionPointId
+            cashSessionId: CashSessionId, sriPaymentMethodCode: "01", emissionPointId: EmissionPointId,
+            emissionType: EmissionType.Electronic
         );
         var line = CreateAuthorizedLine(
             draft,
@@ -447,7 +452,8 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
             CustomerSnapshot.Create("Cliente Test", "1710034065", "05"),
             "001-001-000000062", new DateOnly(2026, 7, 20), UserId,
             PaymentTermSnapshot.Create(PaymentTermId, "Contado", 1, 0),
-            cashSessionId: CashSessionId, sriPaymentMethodCode: "01", emissionPointId: EmissionPointId
+            cashSessionId: CashSessionId, sriPaymentMethodCode: "01", emissionPointId: EmissionPointId,
+            emissionType: EmissionType.Electronic
         );
         var line = CreateAuthorizedLine(
             draft,
@@ -480,7 +486,8 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
             CustomerSnapshot.Create("Cliente Test", "1710034065", "05"),
             "001-001-000000063", new DateOnly(2026, 7, 20), UserId,
             PaymentTermSnapshot.Create(PaymentTermId, "Contado", 1, 0),
-            cashSessionId: CashSessionId, sriPaymentMethodCode: "01", emissionPointId: EmissionPointId
+            cashSessionId: CashSessionId, sriPaymentMethodCode: "01", emissionPointId: EmissionPointId,
+            emissionType: EmissionType.Electronic
         );
         var line = CreateAuthorizedLine(draft, quantity: 24m, unitPrice: 0.5837m);
         AddIrbpnr(line, "5001", 0.02m, 0.48m);
@@ -508,7 +515,8 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
             CustomerSnapshot.Create("Cliente Test", "1710034065", "05"),
             "001-001-000000064", new DateOnly(2026, 7, 20), UserId,
             PaymentTermSnapshot.Create(PaymentTermId, "Contado", 1, 0),
-            cashSessionId: CashSessionId, sriPaymentMethodCode: "01", emissionPointId: EmissionPointId
+            cashSessionId: CashSessionId, sriPaymentMethodCode: "01", emissionPointId: EmissionPointId,
+            emissionType: EmissionType.Electronic
         );
         var line = CreateAuthorizedLine(
             draft,
@@ -556,7 +564,8 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
             paymentTerm: paymentTerm,
             cashSessionId: CashSessionId,
             sriPaymentMethodCode: headerSriPaymentMethodCode,
-            emissionPointId: EmissionPointId
+            emissionPointId: EmissionPointId,
+            emissionType: EmissionType.Electronic
         );
         var line = SalesInvoiceDetail.Create(
             invoice.Id,
@@ -750,7 +759,8 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
             CustomerSnapshot.Create("Cliente Test", "1710034065", "05"),
             "001-001-000000065", new DateOnly(2026, 7, 20), UserId,
             PaymentTermSnapshot.Create(PaymentTermId, "Contado", 1, 0),
-            cashSessionId: CashSessionId, sriPaymentMethodCode: "01", emissionPointId: EmissionPointId
+            cashSessionId: CashSessionId, sriPaymentMethodCode: "01", emissionPointId: EmissionPointId,
+            emissionType: EmissionType.Electronic
         );
         var line = CreateAuthorizedLine(
             draft,

@@ -1,140 +1,128 @@
-import { describe, it, expect, vi } from "vitest";
-import { computeSalesConfigStatus } from "./salesEmissionConfigStatus";
-import type { SalesPageContext } from "../hooks/useSalesPage";
+import { describe, it, expect } from "vitest";
+import {
+  computeSalesConfigStatus,
+  type SalesConfigStatusInput,
+} from "./salesEmissionConfigStatus";
 
-// SALES-POS-EMISSION-PANEL-SIMPLIFICATION-01: computeSalesConfigStatus es la única fuente de
-// verdad del estado "Lista/Revisar/Incompleta" — usada tanto por la tarjeta compacta
-// (SalesEmissionConfigSection) como por el mensaje "Siguiente paso" (SalesFormChecklist).
+// POS-CONFIG-STATUS-SEVERITY-01: computeSalesConfigStatus es la única fuente de verdad del estado
+// de "Configuración de venta". Solo `error` bloquea (y se integra a canEmit en useSalesPage);
+// cliente/caja/cobro/stock tienen su propio bloqueante en el hook y ya no viven aquí.
 
-function buildCtx(overrides: Partial<SalesPageContext> = {}): SalesPageContext {
-  const base = {
-    formWatch: { docTypeCode: "01", sriPaymentMethodCode: "01", customerId: "cust-1" },
-    setValue: vi.fn(),
-    readOnly: false,
-    fieldDisabled: false,
-    editing: null,
-    lines: [],
-    selectedWarehouseId: "wh-1",
-    payments: [],
-    paymentMethods: [],
+const MAPPED = { id: "pm-cash", isCreditAllowed: false, sriPaymentMethodCode: "01" };
+const UNMAPPED = { id: "pm-card", isCreditAllowed: false, sriPaymentMethodCode: null };
+const CREDIT = { id: "pm-credit", isCreditAllowed: true, sriPaymentMethodCode: null };
+
+function input(overrides: Partial<SalesConfigStatusInput> = {}): SalesConfigStatusInput {
+  return {
     hasCashSession: true,
-    myCashSession: {
-      id: "cash-session-1",
-      companyId: "company-1",
-      branchId: "branch-1",
-      userId: "user-1",
-      cashRegisterId: "cr-1",
-      cashRegisterCodeSnapshot: "CAJA-01",
-      cashRegisterNameSnapshot: "Caja Principal",
-      emissionPointId: "ep-1",
-      emissionPointCodeSnapshot: "001",
-      emissionType: "Physical",
-      defaultWarehouseId: null,
-      defaultCustomerId: null,
-    },
-    branchName: "Sucursal Principal",
-    sriDocTypes: [{ code: "01", name: "Factura" }],
-    sriPaymentMethods: [
-      { code: "01", name: "Sin utilización del sistema financiero" },
-      { code: "20", name: "Otros con utilización del sistema financiero" },
-    ],
+    emissionType: "Electronic",
+    docTypeCode: "01",
+    lines: [],
+    defaultSriPaymentCode: "01",
+    payments: [],
+    paymentMethods: [MAPPED, UNMAPPED, CREDIT],
+    ...overrides,
   };
-  return { ...base, ...overrides } as unknown as SalesPageContext;
 }
 
 describe("computeSalesConfigStatus", () => {
-  it("ready cuando todos los defaults están presentes y no hay fallback en uso", () => {
-    expect(computeSalesConfigStatus(buildCtx()).level).toBe("ready");
+  it("ready cuando todo está configurado", () => {
+    const s = computeSalesConfigStatus(input());
+    expect(s.level).toBe("ready");
+    expect(s.missing).toEqual([]);
   });
 
-  it("incomplete cuando falta el cliente", () => {
-    const status = computeSalesConfigStatus(
-      buildCtx({
-        formWatch: {
-          docTypeCode: "01",
-          sriPaymentMethodCode: "01",
-          customerId: "",
-        } as unknown as SalesPageContext["formWatch"],
-      }),
-    );
-    expect(status.level).toBe("incomplete");
-    expect(status.missing).toContain("Cliente");
+  it("ya no reporta Cliente ni Caja abierta (tienen su propio bloqueante en el hook)", () => {
+    const s = computeSalesConfigStatus(input({ hasCashSession: false, emissionType: null }));
+    expect(s.missing).toEqual([]);
   });
 
-  it("incomplete cuando no hay caja abierta", () => {
-    const status = computeSalesConfigStatus(
-      buildCtx({ hasCashSession: false, myCashSession: null }),
-    );
-    expect(status.level).toBe("incomplete");
-    expect(status.missing).toContain("Caja abierta (Sucursal / Caja / Punto de emisión)");
+  it("error bloqueante si hay caja abierta pero el tipo de emisión no se resolvió", () => {
+    const s = computeSalesConfigStatus(input({ emissionType: null }));
+    expect(s.level).toBe("incomplete");
+    expect(s.missing[0]).toMatch(/Tipo de emisión/);
   });
 
-  it("incomplete cuando hay líneas que controlan stock pero no hay bodega seleccionada", () => {
-    const status = computeSalesConfigStatus(
-      buildCtx({
-        selectedWarehouseId: "",
-        lines: [{ _tracksStock: true }] as unknown as SalesPageContext["lines"],
-      }),
+  it("error bloqueante si una línea de stock no tiene bodega (mismo criterio que el schema)", () => {
+    const s = computeSalesConfigStatus(
+      input({ lines: [{ _tracksStock: true, warehouseId: null }] }),
     );
-    expect(status.level).toBe("incomplete");
-    expect(status.missing).toContain("Bodega");
+    expect(s.missing).toContain("Bodega");
   });
 
-  it("incomplete cuando no hay Forma Pago SRI por defecto y una forma de cobro en uso no tiene mapeo propio", () => {
-    const status = computeSalesConfigStatus(
-      buildCtx({
-        formWatch: {
-          docTypeCode: "01",
-          sriPaymentMethodCode: "",
-          customerId: "cust-1",
-        } as unknown as SalesPageContext["formWatch"],
-        paymentMethods: [
-          {
-            id: "pm-1",
-            code: "OTRO",
-            name: "Otro",
-            isActive: true,
-            requiresReference: false,
-            isCreditAllowed: false,
-            sortOrder: 1,
-            detailType: "None",
-            affectsPhysicalCash: false,
-            accountSource: "PaymentMethodAccount",
-            accountingAccountId: null,
-            sriPaymentMethodCode: null,
-          },
-        ],
-        payments: [{ _key: 1, paymentMethodId: "pm-1", amount: 10, reference: null }],
-      }),
+  it("línea de stock CON bodega no bloquea", () => {
+    const s = computeSalesConfigStatus(
+      input({ lines: [{ _tracksStock: true, warehouseId: "wh-1" }] }),
     );
-    expect(status.level).toBe("incomplete");
-    expect(status.missing).toContain("Forma de pago SRI por defecto");
+    expect(s.missing).toEqual([]);
   });
 
-  it("review (no bloquea) cuando hay Forma Pago SRI por defecto pero una forma de cobro en uso cae al fallback", () => {
-    const status = computeSalesConfigStatus(
-      buildCtx({
-        paymentMethods: [
-          {
-            id: "pm-1",
-            code: "OTRO",
-            name: "Otro",
-            isActive: true,
-            requiresReference: false,
-            isCreditAllowed: false,
-            sortOrder: 1,
-            detailType: "None",
-            affectsPhysicalCash: false,
-            accountSource: "PaymentMethodAccount",
-            accountingAccountId: null,
-            sriPaymentMethodCode: null,
-          },
-        ],
-        payments: [{ _key: 1, paymentMethodId: "pm-1", amount: 10, reference: null }],
-      }),
-    );
-    expect(status.level).toBe("review");
-    expect(status.missing).toHaveLength(0);
-    expect(status.warnings.length).toBeGreaterThan(0);
+  it("tipo de documento vacío es solo informativo (el backend usa Factura 01)", () => {
+    const s = computeSalesConfigStatus(input({ docTypeCode: "" }));
+    expect(s.level).toBe("ready");
+    expect(s.issues.some((i) => i.severity === "info")).toBe(true);
+  });
+
+  describe("Forma de pago SRI — solo electrónica", () => {
+    it("física: nunca reporta nada de Forma de pago SRI, aunque falte el default", () => {
+      const s = computeSalesConfigStatus(
+        input({
+          emissionType: "Physical",
+          defaultSriPaymentCode: "",
+          payments: [{ paymentMethodId: UNMAPPED.id, amount: 10 }],
+        }),
+      );
+      expect(s.issues).toEqual([]);
+      expect(s.level).toBe("ready");
+    });
+
+    it("electrónica sin default + cobro sin mapeo propio → error bloqueante", () => {
+      const s = computeSalesConfigStatus(
+        input({
+          defaultSriPaymentCode: "",
+          payments: [{ paymentMethodId: UNMAPPED.id, amount: 10 }],
+        }),
+      );
+      expect(s.missing).toContain("Forma de pago SRI por defecto");
+    });
+
+    it("electrónica sin default + único método mapeado no-crédito → no bloquea (el backend sincroniza la cabecera)", () => {
+      const s = computeSalesConfigStatus(
+        input({
+          defaultSriPaymentCode: "",
+          payments: [{ paymentMethodId: MAPPED.id, amount: 10 }],
+        }),
+      );
+      expect(s.missing).toEqual([]);
+    });
+
+    it("electrónica sin default + multipago (aunque todos mapeados) → bloquea: la cabecera no se sincroniza", () => {
+      const twoMapped = { id: "pm-transfer", isCreditAllowed: false, sriPaymentMethodCode: "20" };
+      const s = computeSalesConfigStatus(
+        input({
+          defaultSriPaymentCode: "",
+          paymentMethods: [MAPPED, twoMapped],
+          payments: [
+            { paymentMethodId: MAPPED.id, amount: 5 },
+            { paymentMethodId: twoMapped.id, amount: 5 },
+          ],
+        }),
+      );
+      expect(s.missing).toContain("Forma de pago SRI por defecto");
+    });
+
+    it("electrónica sin default y sin cobros todavía → warning (no bloquea)", () => {
+      const s = computeSalesConfigStatus(input({ defaultSriPaymentCode: "" }));
+      expect(s.level).toBe("review");
+      expect(s.missing).toEqual([]);
+    });
+
+    it("electrónica con default + cobro sin mapeo propio → solo info (usa el default)", () => {
+      const s = computeSalesConfigStatus(
+        input({ payments: [{ paymentMethodId: UNMAPPED.id, amount: 10 }] }),
+      );
+      expect(s.level).toBe("ready");
+      expect(s.issues.map((i) => i.severity)).toEqual(["info"]);
+    });
   });
 });

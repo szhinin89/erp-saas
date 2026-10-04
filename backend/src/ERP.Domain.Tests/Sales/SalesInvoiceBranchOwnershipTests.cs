@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.ValueObjects;
 using FluentAssertions;
@@ -32,7 +33,8 @@ public sealed class SalesInvoiceBranchOwnershipTests
             DateOnly.FromDateTime(DateTime.UtcNow),
             UserId,
             PaymentTerm(),
-            cashSessionId: Guid.NewGuid()
+            cashSessionId: Guid.NewGuid(),
+            emissionType: EmissionType.Physical
         );
 
     [Fact]
@@ -81,7 +83,8 @@ public sealed class SalesInvoiceBranchOwnershipTests
                 DateOnly.FromDateTime(DateTime.UtcNow),
                 UserId,
                 PaymentTerm(),
-                cashSessionId: Guid.Empty
+                cashSessionId: Guid.Empty,
+                emissionType: EmissionType.Physical
             );
 
         act.Should().Throw<ArgumentException>().WithParameterName("cashSessionId");

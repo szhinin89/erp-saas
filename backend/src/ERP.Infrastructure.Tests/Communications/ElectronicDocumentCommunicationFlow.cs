@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Company.Enums;
 using System.Collections.Concurrent;
 using System.Text;
 using ERP.Application.Common;
@@ -103,7 +104,8 @@ internal sealed class ElectronicDocumentCommunicationFlow
             tenantId, companyId, Guid.NewGuid(), Guid.NewGuid(),
             CustomerSnapshot.Create("Cliente Demo", "0102030405001", "04", email),
             number, new DateOnly(2026, 8, 21), Guid.Empty,
-            PaymentTermSnapshot.Create(Guid.NewGuid(), "Contado", installments: 1, daysBetween: 0), Guid.NewGuid()
+            PaymentTermSnapshot.Create(Guid.NewGuid(), "Contado", installments: 1, daysBetween: 0), Guid.NewGuid(),
+            emissionType: EmissionType.Electronic
         );
         invoice.ReplaceLines([SalesInvoiceDetail.Create(invoice.Id, tenantId, "Producto", quantity: 1m, unitPrice: 100m, vatCode: "0", uomCode: "UNIT")], Guid.Empty);
         invoice.ReplacePayments([SalesInvoicePayment.Create(invoice.Id, tenantId, Guid.NewGuid(), "01", "Efectivo", 100m)], Guid.Empty);

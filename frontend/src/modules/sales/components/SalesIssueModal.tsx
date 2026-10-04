@@ -15,11 +15,8 @@ import {
   type PrintJobResponse,
 } from "../api/printAgentClient";
 import { operationalPreferencesLookupFacade } from "../../configuracion/facades/operationalPreferencesLookupFacade";
-import {
-  ISSUE_STEPS,
-  type IssuePhase,
-  type IssueErrorInfo,
-} from "../hooks/useSalesPage";
+import type { IssuePhase, IssueErrorInfo } from "../hooks/useSalesPage";
+import { persistedCashTendered } from "../utils/salesCashTendered";
 import "../styles/sales-invoice.css";
 
 interface SalesIssueModalProps {
@@ -34,7 +31,8 @@ interface SalesIssueModalProps {
   vat: number;
   total: number;
 
-  // Processing
+  // Processing — pasos reales que el frontend conoce (issueStepsFor, POS-ISSUE-REAL-PROGRESS-01)
+  steps: readonly string[];
   stepIndex: number;
 
   // Success
@@ -44,10 +42,6 @@ interface SalesIssueModalProps {
   onPrintRide: () => void;
   onDownloadPdf: () => void;
   onDownloadXml: () => void;
-  /** Pago en efectivo de esta venta — solo se muestran si hubo cobro en efectivo (cashDue > 0). */
-  cashDue: number;
-  cashReceived: number;
-  cashChange: number;
 
   // Error (solo fallas de infraestructura — interno/comunicación)
   error: IssueErrorInfo | null;
@@ -88,6 +82,7 @@ export function SalesIssueModal({
   discount,
   vat,
   total,
+  steps,
   stepIndex,
   result,
   ridePending,
@@ -95,9 +90,6 @@ export function SalesIssueModal({
   onPrintRide,
   onDownloadPdf,
   onDownloadXml,
-  cashDue,
-  cashReceived,
-  cashChange,
   error,
   onRetry,
   onCancel,
@@ -107,6 +99,12 @@ export function SalesIssueModal({
   // Durante la emisión no se puede cerrar el flujo (Escape, backdrop y la X
   // del header quedan neutralizados porque onClose ignora la llamada).
   const canClose = phase !== "processing";
+  // POS-CASH-TENDERED-01: Recibido/Vuelto salen de lo PERSISTIDO en los pagos de la factura
+  // emitida (mismo dato que la tirilla y la reimpresión), nunca del estado del POS.
+  const cashTendered = persistedCashTendered(result?.payments);
+  // POS-EMISSION-VISIBILITY-01: el resultado se decide por el snapshot de la factura emitida.
+  const resultIsElectronic = result?.emissionType === "Electronic";
+  const rideAvailable = resultIsElectronic && result?.electronicStatus === "Authorized";
   const confirmBtnRef = useRef<HTMLButtonElement>(null);
   const [receiptPrintState, setReceiptPrintState] =
     useState<ReceiptPrintState>("idle");
@@ -179,6 +177,8 @@ export function SalesIssueModal({
     setReceiptPrintDetail(null);
 
     try {
+      // POS-CASH-TENDERED-01: el payload oficial ya trae Efectivo recibido / Vuelto desde los
+      // pagos persistidos — la tirilla inicial y cualquier reimpresión imprimen lo mismo.
       const payload = await salesService.getReceiptPrintPayload(result.id);
       const request = buildReceiptPrintJobRequest(
         payload,
@@ -230,16 +230,13 @@ export function SalesIssueModal({
 
   if (phase === "idle") return null;
 
-  const title =
-    phase === "processing"
-      ? "Emitiendo factura..."
-      : phase === "success"
-        ? "¡Factura emitida!"
-        : phase === "error"
-          ? "No se pudo emitir la factura"
-          : isElectronic
-            ? "Emitir Factura Electrónica"
-            : "Emitir Factura";
+  const TITLE_BY_PHASE: Record<Exclude<IssuePhase, "idle">, string> = {
+    confirm: isElectronic ? "Emitir Factura Electrónica" : "Emitir Factura",
+    processing: isElectronic ? "Procesando factura electrónica..." : "Procesando venta...",
+    success: "Venta completada",
+    error: "No se pudo emitir la factura",
+  };
+  const title = TITLE_BY_PHASE[phase];
 
   const footer =
     phase === "confirm" ? (
@@ -277,25 +274,30 @@ export function SalesIssueModal({
                 : "Imprimir tirilla"}
           </ZHBtn>
         )}
-        <ZHBtn
-          type="button"
-          variant="ghost"
-          size="md"
-          disabled={ridePending}
-          onClick={onPrintRide}
-        >
-          Imprimir RIDE
-        </ZHBtn>
-        <ZHBtn
-          type="button"
-          variant="ghost"
-          size="md"
-          disabled={ridePending}
-          onClick={onDownloadPdf}
-        >
-          Descargar PDF
-        </ZHBtn>
-        {result?.emissionType === "Electronic" && (
+        {/* RIDE = representación del XML AUTORIZADO por el SRI: solo electrónica autorizada. */}
+        {rideAvailable && (
+          <>
+            <ZHBtn
+              type="button"
+              variant="ghost"
+              size="md"
+              disabled={ridePending}
+              onClick={onPrintRide}
+            >
+              Imprimir RIDE
+            </ZHBtn>
+            <ZHBtn
+              type="button"
+              variant="ghost"
+              size="md"
+              disabled={ridePending}
+              onClick={onDownloadPdf}
+            >
+              Descargar PDF
+            </ZHBtn>
+          </>
+        )}
+        {resultIsElectronic && (
           <ZHBtn
             type="button"
             variant="ghost"
@@ -364,7 +366,7 @@ export function SalesIssueModal({
 
       {phase === "processing" && (
         <ul className="sf-issue-steps">
-          {ISSUE_STEPS.map((label, i) => (
+          {steps.map((label, i) => (
             <li
               key={label}
               className={`sf-issue-step${i < stepIndex ? " sf-issue-step--done" : i === stepIndex ? " sf-issue-step--active" : ""}`}
@@ -391,7 +393,7 @@ export function SalesIssueModal({
         <div className="sf-issue-success">
           <div className="sf-issue-success__number zh-code-value">{result.invoiceNumber}</div>
           <dl className="sf-authorize-summary__grid">
-            {result.emissionType === "Electronic" && (
+            {resultIsElectronic && (
               <>
                 <dt>Estado electrónico</dt>
                 <dd>
@@ -406,13 +408,13 @@ export function SalesIssueModal({
                 </dd>
               </>
             )}
-            {result.accessKey && (
+            {resultIsElectronic && result.accessKey && (
               <>
                 <dt>Clave de acceso</dt>
                 <dd className="sf-issue-success__mono zh-code-value">{result.accessKey}</dd>
               </>
             )}
-            {result.authorizationNumber && (
+            {resultIsElectronic && result.authorizationNumber && (
               <>
                 <dt>Nro. de autorización</dt>
                 <dd className="sf-issue-success__mono zh-code-value">
@@ -428,22 +430,21 @@ export function SalesIssueModal({
             <dd>
               <ZHMoneyValue value={result.grandTotal} precision="money" emphasis="total" />
             </dd>
-            {cashDue > 0 && (
+            {cashTendered && (
               <>
-                <dt>Monto recibido</dt>
+                <dt>Recibido</dt>
                 <dd>
-                  <ZHMoneyValue value={cashReceived} precision="money" />
+                  <ZHMoneyValue value={cashTendered.cashReceived} precision="money" />
                 </dd>
                 <dt>Vuelto</dt>
                 <dd>
-                  <ZHMoneyValue value={cashChange} precision="money" emphasis="total" />
+                  <ZHMoneyValue value={cashTendered.cashChange} precision="money" emphasis="total" />
                 </dd>
               </>
             )}
           </dl>
-          {(result.electronicIssueError ||
-            (result.emissionType === "Electronic" &&
-              result.electronicStatus !== "Authorized")) && (
+          {resultIsElectronic &&
+            (result.electronicIssueError || result.electronicStatus !== "Authorized") && (
             <ZHPageNotice
               variant="warning"
               message={

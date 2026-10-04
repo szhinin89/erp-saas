@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Application.Common;
 using ERP.Application.Modules.Communications.DTOs;
 using ERP.Application.Modules.Communications.ElectronicDocuments;
@@ -364,7 +365,8 @@ public sealed class ElectronicDocumentAuthorizedCommunicationHandlerTests
                 CustomerSnapshot.Create(customerName, "0102030405001", "04", email),
                 "001-001-000000001", new DateOnly(2026, 8, 21), UserId,
                 PaymentTermSnapshot.Create(Guid.NewGuid(), "Contado", installments: 1, daysBetween: 0),
-                Guid.NewGuid()
+                Guid.NewGuid(),
+                emissionType: EmissionType.Electronic
             );
             var line = SalesInvoiceDetail.Create(invoice.Id, TenantId, "Producto demo", quantity: 1m, unitPrice: 100m, vatCode: "0", uomCode: "UNIT");
             invoice.ReplaceLines([line], UserId);

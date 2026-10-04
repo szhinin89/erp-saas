@@ -304,6 +304,23 @@ Una devolución autorizada es terminal y ya reingresó Kardex, reembolsó, conta
 
 `SalesInvoice` y `Payment` nunca se toman en el mismo flujo; ningún flujo que tenga la CxC vuelve a pedir factura, pago o advisory. El cobro no toma `CashSession`. Sin `advisory lock` adicional ni migración: la fila existente es el recurso compartido.
 
+### Tipo de emisión de una venta: snapshot inmutable (POS-EMISSION-TYPE-SNAPSHOT-01)
+
+`SalesInvoice.EmissionPointId` y `SalesInvoice.EmissionType` son **snapshots inmutables** fijados al crear el borrador (`CreateSalesDraftHandler`, desde `ICurrentCashSession` → `EmissionPoint.EmissionType`) y gobiernan **todo** el lifecycle de la factura: estrategia de emisión al autorizar (`ISalesInvoiceEmissionStrategyResolver`), XML/provider electrónico, RIDE, tirilla y DTO.
+
+- Un cambio posterior de `EmissionPoint.EmissionType` solo afecta **ventas nuevas**. `AuthorizeSalesInvoiceHandler` resuelve la estrategia desde `inv.EmissionType`, nunca desde el EP vivo (si divergen, solo registra un warning).
+- **Fail-closed al crear**: si la caja no tiene punto de emisión, el punto no existe para la empresa o está desactivado → `ValidationFailure` claro. Prohibido el fallback silencioso a `Electronic` en cualquier capa: `SalesInvoice.CreateDraft` exige `emissionType` explícito (sin parámetro por defecto; un valor no definido lanza) y `sales_invoices.emission_type` no tiene default de BD.
+- El frontend deriva el tipo efectivo igual: venta nueva = caja abierta; venta existente = snapshot de la factura (`resolveSalesEmissionType`). La UI electrónica (SRI, clave de acceso, RIDE, XML, diagnóstico, Forma de pago SRI) depende de ese tipo, nunca de la caja actual.
+
+### Efectivo entregado: dato operacional del settlement (POS-CASH-TENDERED-01)
+
+El efectivo entregado es dato operacional del settlement y **no modifica el importe aplicado ni el total financiero**.
+
+- `SalesInvoicePayment.Amount` = importe aplicado (único valor financiero: total cobrado, caja, CxC, contabilidad, conciliación).
+- `SalesInvoicePayment.TenderedAmount` (`numeric(18,2)`, nullable) = efectivo físico entregado para ESE pago. Solo en formas de cobro con `PaymentMethod.AffectsPhysicalCash`; ≥ `Amount`; > 0; 2 decimales. Lo valida `SalesPaymentHelper` (contrato `SalesPaymentInput.TenderedAmount`), el dominio (`SetTenderedAmount`) y un CHECK de BD.
+- `ChangeAmount` = `TenderedAmount − Amount`, derivado (no persistido). En multipago solo la porción efectivo lo tiene.
+- La tirilla (`receipt-print-payload`) reconstruye "Efectivo recibido / Vuelto" desde los pagos persistidos, así que la tirilla inicial y cualquier reimpresión muestran lo mismo. Las ventas anteriores a este dato no lo muestran (no se infiere).
+
 ---
 
 ## Una capacidad, varios contextos de autorización (ZH-COMPANY-IDENTITY-SSOT-01)

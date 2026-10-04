@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { SalesPageContext } from "../hooks/useSalesPage";
+import { withPosDerivedCtx } from "../test/salesPageCtxTestUtils";
 import type { SalesInvoiceDto } from "../api/salesService";
 import { calcSummary } from "../utils/salesCalc";
 
@@ -274,7 +275,7 @@ function buildCtx(
     simulateCreditInstallments: vi.fn(() => []),
   };
 
-  return { ...base, ...overrides } as unknown as SalesPageContext;
+  return withPosDerivedCtx({ ...base, ...overrides });
 }
 
 function getMoneyValueByText(text: string): HTMLElement {
@@ -308,8 +309,12 @@ describe("SalesPage — valores monetarios read-only migrados a ZHMoneyValue (SA
       ".sf-summary__discount-total .zh-money-value",
     )?.textContent;
     expect(sidebarDiscount()).toBe(`$${testCase.display}`);
-    const modalAmount = (label: string) => screen.getByText(label, { selector: "dt" })
-      .nextElementSibling?.textContent;
+    // Acotado al modal: el resumen inline de cobro (POS-COLLECTION-INLINE-B-01) también tiene
+    // una fila "Total".
+    const modalAmount = (label: string) =>
+      within(screen.getByRole("dialog"))
+        .getByText(label, { selector: "dt" })
+        .nextElementSibling?.textContent;
     expect(modalAmount("Descuento")).toBe(`$${testCase.display}`);
     expect(modalAmount("Subtotal")).toBe(`$${testCase.subtotalDisplay}`);
     expect(modalAmount("IVA")).toBe(`$${testCase.vatDisplay}`);
@@ -358,6 +363,7 @@ describe("SalesPage — valores monetarios read-only migrados a ZHMoneyValue (SA
             lineCount: 2,
             status: "Authorized",
             createdAt: "2026-07-01T00:00:00Z",
+            emissionType: "Electronic",
           },
         ],
       }),
@@ -384,6 +390,7 @@ describe("SalesPage — valores monetarios read-only migrados a ZHMoneyValue (SA
             lineCount: 2,
             status: "Authorized",
             createdAt: "2026-07-01T00:00:00Z",
+            emissionType: "Electronic",
           },
         ],
       }),
@@ -442,6 +449,8 @@ describe("SalesPage — valores monetarios read-only migrados a ZHMoneyValue (SA
               cardDetail: null,
               transferDetail: null,
               chequeDetail: null,
+              tenderedAmount: null,
+              changeAmount: null,
             },
           ],
         }),
@@ -457,8 +466,9 @@ describe("SalesPage — valores monetarios read-only migrados a ZHMoneyValue (SA
 
   // SALES-PAYMENT-TOLERANCE-NOTE-01: el pago mostrado sigue siendo el monto real cobrado (nunca
   // se falsea como si se hubiera cobrado el total exacto); cuando la diferencia contra el total
-  // cae dentro de INVOICE_PAYMENT_TOLERANCE (0.02), se aclara con una nota corta.
-  it("muestra la nota de tolerancia cuando el pago difiere del total dentro de INVOICE_PAYMENT_TOLERANCE", () => {
+  // cae dentro de la tolerancia de settlement de la empresa (CompanyPrecisionPolicy — 0.01 en el
+  // fixture de tests), se aclara con una nota corta.
+  it("muestra la nota de tolerancia cuando el pago difiere del total dentro de la tolerancia de settlement", () => {
     useSalesPageMock.mockReturnValue(
       buildCtx({
         readOnly: true,
@@ -476,6 +486,8 @@ describe("SalesPage — valores monetarios read-only migrados a ZHMoneyValue (SA
               cardDetail: null,
               transferDetail: null,
               chequeDetail: null,
+              tenderedAmount: null,
+              changeAmount: null,
             },
           ],
         }),
@@ -511,6 +523,8 @@ describe("SalesPage — valores monetarios read-only migrados a ZHMoneyValue (SA
               cardDetail: null,
               transferDetail: null,
               chequeDetail: null,
+              tenderedAmount: null,
+              changeAmount: null,
             },
           ],
         }),
@@ -521,10 +535,26 @@ describe("SalesPage — valores monetarios read-only migrados a ZHMoneyValue (SA
     expect(container.querySelector(".sales-payment-tolerance-note")).toBeNull();
   });
 
-  it("resumen de cobro (Total cobrado / Pendiente) usa ZHMoneyValue", () => {
+  it("resumen de cobro (Total / Cobrado / Falta por cobrar) usa ZHMoneyValue", () => {
     useSalesPageMock.mockReturnValue(
       buildCtx({
-        paidTotal: 50,
+        paymentMethods: [
+          {
+            id: "pm-card",
+            code: "TARJETA",
+            name: "Tarjeta",
+            isActive: true,
+            requiresReference: false,
+            isCreditAllowed: false,
+            sortOrder: 1,
+            detailType: "None",
+            affectsPhysicalCash: false,
+            sriPaymentMethodCode: null,
+            accountSource: "PaymentMethodAccount",
+            accountingAccountId: null,
+          },
+        ],
+        payments: [{ _key: 1, paymentMethodId: "pm-card", amount: 50, reference: null }],
         summary: {
           subtotal: 100,
           discount: 0,
@@ -538,31 +568,45 @@ describe("SalesPage — valores monetarios read-only migrados a ZHMoneyValue (SA
     );
     const { container } = renderSalesPage();
 
-    // "Total factura" ya no se repite acá (SALES-POS-UI-REFINE-01) — el total principal
-    // vive únicamente en "Total a Cobrar" (sf-total-box). Solo queda "Total cobrado".
-    const rows = container.querySelectorAll(".sales-summary-row__amount");
-    expect(rows).toHaveLength(1);
-    expect(rows[0].querySelector(".zh-money-value")?.textContent).toBe(
-      "$50.00",
-    );
+    // POS-COLLECTION-INLINE-B-01: resumen compacto Total / Cobrado + un único estado.
+    const amounts = Array.from(
+      container.querySelectorAll(".sales-result__rows dd .zh-money-value"),
+    ).map((el) => el.textContent);
+    expect(amounts).toEqual(["$115.00", "$50.00"]);
 
     const pendingAmount = container.querySelector(
-      ".sales-summary-total-row__amount .zh-money-value",
+      ".sales-result__highlight-amount .zh-money-value",
     );
     expect(pendingAmount?.textContent).toBe("$65.00");
   });
 
-  it("el input editable de monto recibido en efectivo sigue siendo un <input> nativo, no ZHMoneyValue", () => {
+  it("el input editable de efectivo recibido sigue siendo un <input> nativo, no ZHMoneyValue", () => {
     useSalesPageMock.mockReturnValue(
       buildCtx({
-        cashDue: 115,
-        cashReceived: 50,
-      }),
+        paymentMethods: [
+          {
+            id: "pm-cash",
+            code: "EFECTIVO",
+            name: "Efectivo",
+            isActive: true,
+            requiresReference: false,
+            isCreditAllowed: false,
+            sortOrder: 1,
+            detailType: "None",
+            affectsPhysicalCash: true,
+            sriPaymentMethodCode: "01",
+            accountSource: "CashRegister",
+            accountingAccountId: null,
+          },
+        ],
+        payments: [{ _key: 1, paymentMethodId: "pm-cash", amount: 115, reference: null }],
+        cashReceivedInput: "50",
+      } as unknown as Partial<SalesPageContext>),
     );
     const { container } = renderSalesPage();
 
     const cashInput = container.querySelector<HTMLInputElement>(
-      ".sales-cash-input",
+      ".sales-tender__input",
     );
     expect(cashInput).toBeTruthy();
     expect(cashInput?.tagName).toBe("INPUT");

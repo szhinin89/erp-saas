@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Accounting.Posting;
@@ -113,9 +114,12 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     /// a crédito, para las pruebas de política fiscal de Consumidor Final.</summary>
     private static SalesInvoice CreateDraftInvoice(
         DateOnly issueDate,
+        // POS-EMISSION-TYPE-SNAPSHOT-01: sin default — cada test declara el tipo que prueba.
+        EmissionType emissionType,
         decimal unitPrice = 100m,
         int installments = 1,
-        int daysBetween = 0
+        int daysBetween = 0,
+        Guid? emissionPointId = null
     )
     {
         var customer = CustomerSnapshot.Create("Cliente Test", "1710034065", "05");
@@ -137,7 +141,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             createdBy: UserId,
             paymentTerm: paymentTerm,
             cashSessionId: CashSessionId,
-            emissionPointId: null
+            emissionPointId: emissionPointId,
+            emissionType: emissionType
         );
 
         var line = SalesInvoiceDetail.Create(
@@ -270,7 +275,11 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         Mock<ERP.Domain.Modules.Caja.Interfaces.ICashSessionRepository>? cashSessionRepoOverride =
             null,
         Mock<ERP.Domain.Modules.Caja.Interfaces.ICashRegisterRepository>? cashRegisterRepoOverride =
-            null
+            null,
+        Mock<IEmissionPointRepository>? emissionPointRepoOverride = null,
+        Mock<IEstablishmentRepository>? establishmentRepoOverride = null,
+        Mock<IDocumentSequenceRepository>? sequenceRepoOverride = null,
+        Mock<ISalesInvoiceEmissionStrategyResolver>? strategyResolverOverride = null
     )
     {
         var preferences = new Mock<IOperationalPreferencesResolver>();
@@ -424,11 +433,11 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             stockRepo.Object,
             ActivePaymentTermRepoMock().Object,
             tax.Object,
-            Mock.Of<IDocumentSequenceRepository>(),
-            Mock.Of<IEmissionPointRepository>(),
-            Mock.Of<IEstablishmentRepository>(),
+            (sequenceRepoOverride ?? new Mock<IDocumentSequenceRepository>()).Object,
+            (emissionPointRepoOverride ?? new Mock<IEmissionPointRepository>()).Object,
+            (establishmentRepoOverride ?? new Mock<IEstablishmentRepository>()).Object,
             edocRepo.Object,
-            Mock.Of<ISalesInvoiceEmissionStrategyResolver>(),
+            (strategyResolverOverride ?? new Mock<ISalesInvoiceEmissionStrategyResolver>()).Object,
             companyClock.Object,
             bpRepo.Object,
             fiscalPolicyResolver.Object,
@@ -610,7 +619,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             createdBy: UserId,
             paymentTerm: paymentTerm,
             cashSessionId: CashSessionId,
-            emissionPointId: null
+            emissionPointId: null,
+            emissionType: EmissionType.Physical
         );
 
         var line = SalesInvoiceDetail.Create(
@@ -663,7 +673,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             createdBy: UserId,
             paymentTerm: paymentTerm,
             cashSessionId: CashSessionId,
-            emissionPointId: null
+            emissionPointId: null,
+            emissionType: EmissionType.Physical
         );
 
         var line = SalesInvoiceDetail.Create(
@@ -848,7 +859,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     [Fact]
     public async Task Autorizar_bloqueado_si_condicion_de_pago_fue_desactivada_despues_del_borrador()
     {
-        var inv = CreateDraftInvoice(new DateOnly(2026, 8, 1));
+        var inv = CreateDraftInvoice(new DateOnly(2026, 8, 1), emissionType: EmissionType.Physical);
 
         var repo = new Mock<ISalesInvoiceRepository>();
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
@@ -1033,7 +1044,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     public async Task Rejects_future_issue_date()
     {
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today.AddDays(4)); // reproduce factura 001-500-000000012
+        var inv = CreateDraftInvoice(issueDate: today.AddDays(4), emissionType: EmissionType.Physical); // reproduce factura 001-500-000000012
         var (handler, _, _) = BuildHandler(inv, today);
 
         var result = await handler.Handle(
@@ -1054,7 +1065,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     public async Task Rejects_issue_date_older_than_90_days()
     {
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today.AddDays(-91));
+        var inv = CreateDraftInvoice(issueDate: today.AddDays(-91), emissionType: EmissionType.Physical);
         var (handler, _, _) = BuildHandler(inv, today);
 
         var result = await handler.Handle(
@@ -1073,7 +1084,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         // IRBPNR y no existe PostingRuleLine configurada, la autorización debe bloquear ANTES de
         // capturar el secuencial SRI/persistir efectos.
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today);
+        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical);
         var line = inv.Lines.Single();
         line.ReplaceTaxes(
             [
@@ -1120,7 +1131,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     public async Task Accepts_issue_date_exactly_90_days_old_boundary()
     {
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today.AddDays(-90));
+        var inv = CreateDraftInvoice(issueDate: today.AddDays(-90), emissionType: EmissionType.Physical);
         var (handler, _, _) = BuildHandler(inv, today);
 
         var result = await handler.Handle(
@@ -1142,7 +1153,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         // recalcula impuestos (ApplyTaxes) y congela la línea (Freeze); nunca debe tocar estos
         // campos, aunque el maestro de precios/costos haya cambiado después de crear el borrador.
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today);
+        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical);
         var line = inv.Lines.Single();
         var priceListId = Guid.NewGuid();
         line.SetHistoricalSnapshot(
@@ -1195,7 +1206,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         // Línea creada antes de esta fase (o sin dato disponible al capturar el Draft): todos los
         // campos históricos quedan null desde Create() — Authorize no debe rellenarlos con nada.
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today);
+        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical);
         var (handler, _, _) = BuildHandler(inv, today);
 
         var result = await handler.Handle(
@@ -1222,7 +1233,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         // Reproduce factura 001-500-000000016: operación real a las 21:57 hora Ecuador
         // (todavía "hoy" localmente) — con la fecha empresarial correcta, esto ya no falla.
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today);
+        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical);
         var (handler, companyClock, _) = BuildHandler(inv, today);
 
         var result = await handler.Handle(
@@ -1246,7 +1257,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         // ICompanyClock, esta factura (fechada "ayer" respecto al UTC real de la máquina de
         // pruebas) fallaría de forma intermitente según la hora en que corra la suite.
         var companyToday = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-1);
-        var inv = CreateDraftInvoice(issueDate: companyToday);
+        var inv = CreateDraftInvoice(issueDate: companyToday, emissionType: EmissionType.Physical);
         var (handler, companyClock, _) = BuildHandler(inv, companyToday);
 
         var result = await handler.Handle(
@@ -1274,7 +1285,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     public async Task Authorize_preserva_el_CashSessionId_fijado_al_crear_el_borrador()
     {
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today);
+        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical);
         var (handler, _, _) = BuildHandler(inv, today);
 
         var result = await handler.Handle(
@@ -1292,7 +1303,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     public async Task ConsumerFinal_contado_dentro_del_maximo_es_permitido()
     {
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today, unitPrice: 40m); // total ≈ 46 < máximo 50
+        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical, unitPrice: 40m); // total ≈ 46 < máximo 50
         var policy = new SalesFiscalPolicyResult(
             true,
             50.00m,
@@ -1314,7 +1325,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     public async Task ConsumerFinal_contado_supera_el_maximo_es_bloqueado()
     {
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today, unitPrice: 100m); // total ≈ 115 > máximo 50
+        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical, unitPrice: 100m); // total ≈ 115 > máximo 50
         var policy = new SalesFiscalPolicyResult(
             true,
             50.00m,
@@ -1341,7 +1352,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         var today = new DateOnly(2026, 7, 13);
         // Monto bajo (dentro del máximo) para aislar que el bloqueo es por crédito, no por monto.
         var inv = CreateDraftInvoice(
-            issueDate: today,
+            issueDate: today, emissionType: EmissionType.Physical,
             unitPrice: 10m,
             installments: 3,
             daysBetween: 30
@@ -1376,7 +1387,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     {
         var today = new DateOnly(2026, 7, 13);
         // installments=1, daysBetween=0 (default) → PaymentTerm es Contado, como en la factura real.
-        var inv = CreateDraftInvoice(issueDate: today, unitPrice: 10m);
+        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical, unitPrice: 10m);
         var policy = new SalesFiscalPolicyResult(
             true,
             50.00m,
@@ -1409,7 +1420,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     public async Task ConsumerFinal_contado_con_metodo_pago_contado_dentro_del_maximo_es_permitido()
     {
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today, unitPrice: 10m); // total ≈ 11.5 < 50
+        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical, unitPrice: 10m); // total ≈ 11.5 < 50
         var policy = new SalesFiscalPolicyResult(
             true,
             50.00m,
@@ -1438,7 +1449,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     {
         var today = new DateOnly(2026, 7, 13);
         var inv = CreateDraftInvoice(
-            issueDate: today,
+            issueDate: today, emissionType: EmissionType.Physical,
             unitPrice: 1000m, // supera el máximo de Consumidor Final — no debe importar aquí
             installments: 3,
             daysBetween: 30
@@ -1470,7 +1481,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     public async Task ClienteIdentificado_total_mayor_al_maximo_es_permitido()
     {
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today, unitPrice: 1000m); // muy por encima de 50
+        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical, unitPrice: 1000m); // muy por encima de 50
         var policy = new SalesFiscalPolicyResult(
             true,
             50.00m,
@@ -1492,7 +1503,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     public async Task ConsumerFinalMaxAmount_cero_bloquea_toda_venta_a_consumidor_final()
     {
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today, unitPrice: 0.01m); // el total mínimo posible
+        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical, unitPrice: 0.01m); // el total mínimo posible
         var policy = new SalesFiscalPolicyResult(
             true,
             0.00m,
@@ -1517,7 +1528,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     public async Task ClienteIdentificado_contado_con_efectivo_es_permitido_y_no_genera_CxC()
     {
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today, unitPrice: 10m); // Contado, default efectivo
+        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical, unitPrice: 10m); // Contado, default efectivo
         var (handler, _, receivableRepo) = BuildHandler(
             inv,
             today,
@@ -1544,7 +1555,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     {
         var today = new DateOnly(2026, 7, 13);
         // installments=1, daysBetween=0 (default) → PaymentTerm Contado.
-        var inv = CreateDraftInvoice(issueDate: today, unitPrice: 10m);
+        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical, unitPrice: 10m);
         var (handler, _, _) = BuildHandler(
             inv,
             today,
@@ -1568,7 +1579,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     {
         var today = new DateOnly(2026, 7, 13);
         var inv = CreateDraftInvoice(
-            issueDate: today,
+            issueDate: today, emissionType: EmissionType.Physical,
             unitPrice: 10m,
             installments: 1,
             daysBetween: 30
@@ -1599,7 +1610,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     {
         var today = new DateOnly(2026, 7, 13);
         var inv = CreateDraftInvoice(
-            issueDate: today,
+            issueDate: today, emissionType: EmissionType.Physical,
             unitPrice: 10m,
             installments: 1,
             daysBetween: 30
@@ -1633,7 +1644,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         // (prioridad), no el genérico de consistencia — ambos contienen "crédito", por eso se
         // verifica el texto completo, no solo una palabra.
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today, unitPrice: 10m);
+        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical, unitPrice: 10m);
         var policy = new SalesFiscalPolicyResult(
             true,
             50.00m,
@@ -1670,7 +1681,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     public async Task Factura_de_otra_sucursal_retorna_NotFound_y_no_la_autoriza()
     {
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today);
+        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical);
         var otherBranchId = Guid.NewGuid();
         var (handler, _, _) = BuildHandler(
             inv,
@@ -1694,7 +1705,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     public async Task Factura_de_la_misma_sucursal_sigue_autorizandose_correctamente()
     {
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today);
+        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical);
         var (handler, _, _) = BuildHandler(inv, today, CreateIdentifiedCustomerBp());
 
         var result = await handler.Handle(
@@ -1712,7 +1723,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     public async Task Contado_GeneraCronogramaPeroNoGeneraCxC()
     {
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today, unitPrice: 10m); // Contado (installments=1, days=0)
+        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical, unitPrice: 10m); // Contado (installments=1, days=0)
         inv.GeneratePaymentSchedule();
         var (handler, _, receivableRepo) = BuildHandler(inv, today, CreateIdentifiedCustomerBp());
 
@@ -1735,7 +1746,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     {
         var today = new DateOnly(2026, 7, 13);
         var inv = CreateDraftInvoice(
-            issueDate: today,
+            issueDate: today, emissionType: EmissionType.Physical,
             unitPrice: 10m,
             installments: 1,
             daysBetween: 30
@@ -1775,7 +1786,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     {
         var today = new DateOnly(2026, 7, 13);
         var inv = CreateDraftInvoice(
-            issueDate: today,
+            issueDate: today, emissionType: EmissionType.Physical,
             unitPrice: 100m, // GrandTotal = 100 (CreateDraftInvoice no aplica IVA a nivel de dominio)
             installments: 3,
             daysBetween: 30
@@ -1828,7 +1839,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         // generando CxC vía el fallback defensivo (SalesReceivable.GenerateInstallments).
         var today = new DateOnly(2026, 7, 13);
         var inv = CreateDraftInvoice(
-            issueDate: today,
+            issueDate: today, emissionType: EmissionType.Physical,
             unitPrice: 10m,
             installments: 1,
             daysBetween: 30
@@ -1862,7 +1873,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         var today = new DateOnly(2026, 7, 13);
         // installments=1, daysBetween=30 → PaymentTerm de crédito (isCreditByTerm = true).
         var inv = CreateDraftInvoice(
-            issueDate: today,
+            issueDate: today, emissionType: EmissionType.Physical,
             unitPrice: 100m,
             installments: 1,
             daysBetween: 30
@@ -1964,7 +1975,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             paymentTerm: paymentTerm,
             cashSessionId: CashSessionId,
             emissionPointId: null,
-            sriPaymentMethodCode: headerSriPaymentMethodCode
+            sriPaymentMethodCode: headerSriPaymentMethodCode,
+            emissionType: EmissionType.Physical
         );
 
         var line = SalesInvoiceDetail.Create(
@@ -2276,7 +2288,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         // autorización (a diferencia de cualquier otro método) — el traductor de posting enruta
         // ese monto a la línea fija histórica de la PostingRule.
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today, unitPrice: 100m);
+        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical, unitPrice: 100m);
 
         // Mapa vacío deliberado: ningún método tiene cuenta configurada — Company "sin migrar",
         // el gate fail-closed permanece apagado.
@@ -2308,7 +2320,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         // Regresión: Efectivo con PaymentMethodAccount configurado (Caja general) debe seguir
         // autorizando exactamente igual que antes de este ticket.
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today, unitPrice: 100m);
+        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical, unitPrice: 100m);
         var cajaGeneralAccountId = Guid.NewGuid();
 
         var paymentMethodAccountRepo = new Mock<IPaymentMethodAccountRepository>();
@@ -2681,7 +2693,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     public async Task Efectivo_100_por_ciento_CashApplied_y_PhysicalCashApplied_iguales_al_total()
     {
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today, unitPrice: 100m);
+        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical, unitPrice: 100m);
         var total = ExpectedGrandTotal(100m);
 
         var cashMethodId = Guid.NewGuid();
@@ -2720,5 +2732,125 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             .Single();
         authorizedEvent.CashApplied.Should().Be(total);
         authorizedEvent.PhysicalCashApplied.Should().Be(total);
+    }
+
+    // ── POS-EMISSION-TYPE-SNAPSHOT-01: el tipo de emisión es un snapshot inmutable ──────────
+    // SalesInvoice.EmissionPointId + EmissionType se fijan al crear el borrador y gobiernan TODO
+    // el lifecycle. Un cambio posterior de EmissionPoint.EmissionType solo afecta ventas nuevas —
+    // nunca reinterpreta un borrador ya creado (antes la estrategia se resolvía desde el EP vivo
+    // mientras el provider electrónico, el DTO, el RIDE y la tirilla leían el snapshot).
+
+    private static (
+        AuthorizeSalesInvoiceHandler handler,
+        List<EmissionType> resolvedTypes
+    ) BuildHandlerWithEmissionPoint(
+        SalesInvoice inv,
+        DateOnly today,
+        ERP.Domain.Modules.Company.Entities.EmissionPoint ep
+    )
+    {
+        var epRepo = new Mock<IEmissionPointRepository>();
+        epRepo
+            .Setup(r => r.GetByIdForCompanyAsync(TenantId, CompanyId, ep.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(ep);
+
+        var est = ERP.Domain.Modules.Company.Entities.Establishment.Create(
+            TenantId, BranchId, CompanyId, "001", "Matriz", "Dirección", null, true, UserId
+        );
+        var estRepo = new Mock<IEstablishmentRepository>();
+        estRepo
+            .Setup(r => r.GetByIdForCompanyAsync(TenantId, CompanyId, ep.EstablishmentId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(est);
+
+        var seqRepo = new Mock<IDocumentSequenceRepository>();
+        seqRepo
+            .Setup(r => r.CaptureNextAsync(TenantId, CompanyId, ep.Id, It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync("000000001");
+
+        var resolvedTypes = new List<EmissionType>();
+        var strategy = new Mock<ISalesInvoiceEmissionStrategy>();
+        strategy
+            .Setup(s => s.ExecuteAsync(It.IsAny<SalesInvoiceEmissionContext>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string?)null);
+        var resolver = new Mock<ISalesInvoiceEmissionStrategyResolver>();
+        resolver
+            .Setup(r => r.Resolve(It.IsAny<EmissionType>()))
+            .Callback<EmissionType>(t => resolvedTypes.Add(t))
+            .Returns(strategy.Object);
+
+        var (handler, _, _) = BuildHandler(
+            inv,
+            today,
+            out _,
+            CreateIdentifiedCustomerBp(),
+            emissionPointRepoOverride: epRepo,
+            establishmentRepoOverride: estRepo,
+            sequenceRepoOverride: seqRepo,
+            strategyResolverOverride: resolver
+        );
+        return (handler, resolvedTypes);
+    }
+
+    private static ERP.Domain.Modules.Company.Entities.EmissionPoint NewEmissionPoint(
+        EmissionType type
+    ) =>
+        ERP.Domain.Modules.Company.Entities.EmissionPoint.Create(
+            TenantId, CompanyId, Guid.NewGuid(), "001", "Punto 1", type, true, UserId
+        );
+
+    [Theory]
+    [InlineData(
+        EmissionType.Electronic,
+        EmissionType.Physical
+    )]
+    [InlineData(
+        EmissionType.Physical,
+        EmissionType.Electronic
+    )]
+    public async Task Cambio_posterior_del_EmissionPoint_no_altera_el_tipo_de_emision_del_borrador(
+        EmissionType snapshotType,
+        EmissionType liveTypeAfterChange
+    )
+    {
+        var today = new DateOnly(2026, 7, 13);
+        var ep = NewEmissionPoint(snapshotType);
+        var inv = CreateDraftInvoice(
+            issueDate: today,
+            emissionPointId: ep.Id,
+            emissionType: snapshotType
+        );
+        // Caso A/B: el administrador cambia el tipo del punto DESPUÉS de crear el borrador.
+        ep.Update(ep.Name, liveTypeAfterChange, UserId);
+
+        var (handler, resolvedTypes) = BuildHandlerWithEmissionPoint(inv, today, ep);
+
+        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        resolvedTypes.Should().Equal(new[] { snapshotType },
+            "la estrategia de emisión se resuelve desde el snapshot de la factura, nunca desde el EP vivo");
+        inv.EmissionType.Should().Be(snapshotType);
+        inv.EmissionPointId.Should().Be(ep.Id);
+        result.Value!.EmissionType.Should().Be(snapshotType.ToString());
+    }
+
+    [Theory]
+    [InlineData(EmissionType.Electronic)]
+    [InlineData(EmissionType.Physical)]
+    public async Task Sin_cambios_en_el_EmissionPoint_resuelve_la_estrategia_del_snapshot(
+        EmissionType type
+    )
+    {
+        var today = new DateOnly(2026, 7, 13);
+        var ep = NewEmissionPoint(type);
+        var inv = CreateDraftInvoice(issueDate: today, emissionPointId: ep.Id, emissionType: type);
+
+        var (handler, resolvedTypes) = BuildHandlerWithEmissionPoint(inv, today, ep);
+
+        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        resolvedTypes.Should().Equal(type);
+        inv.InvoiceNumber.Should().Be("001-001-000000001");
     }
 }

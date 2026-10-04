@@ -33,9 +33,9 @@ export const HELP_REGISTRY: Record<HelpKeyId, HelpContent> = {
     long: "Puede combinar efectivo, tarjeta, transferencia, cheque o crédito (si el cliente lo permite).",
   },
   [HELP_KEYS.SALES_PAYMENTS_CASH_RECEIVED]: {
-    title: "Monto recibido",
+    title: "Efectivo recibido",
     short: "Dinero en efectivo que el cliente entrega en caja.",
-    long: "Se usa solo para calcular el vuelto; no afecta el total de la factura.",
+    long: "Se usa solo para calcular Falta / Pago exacto / Vuelto; no cambia el monto aplicado a la factura.",
   },
   [HELP_KEYS.SALES_PAYMENTS_CHANGE]: {
     title: "Vuelto",

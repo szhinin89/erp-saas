@@ -23,6 +23,22 @@ internal static class SalesReceiptPrintPayloadMapper
     public static SalesReceiptPaymentDto MapPayment(SalesInvoicePayment payment) =>
         new(payment.PaymentMethodName, payment.Amount, payment.Reference);
 
+    /// <summary>
+    /// POS-CASH-TENDERED-01 — "Efectivo recibido" / "Vuelto" de la tirilla, reconstruidos SOLO de
+    /// lo persistido en los pagos (TenderedAmount): la tirilla inicial y cualquier reimpresión
+    /// muestran lo mismo sin depender del estado del POS. Sin efectivo entregado registrado
+    /// (venta sin efectivo o anterior a este dato) → ambos null y la tirilla los omite.
+    /// </summary>
+    public static (decimal? CashReceived, decimal? CashChange) ResolveCashTendered(
+        IEnumerable<SalesInvoicePayment> payments
+    )
+    {
+        var tendered = payments.Where(p => p.TenderedAmount.HasValue).ToList();
+        if (tendered.Count == 0)
+            return (null, null);
+        return (tendered.Sum(p => p.TenderedAmount!.Value), tendered.Sum(p => p.ChangeAmount!.Value));
+    }
+
     public static (string? EstablishmentCode, string? EmissionPointCode) ResolveSriCodes(
         SalesInvoice invoice,
         string? cashSessionEmissionPointCode,

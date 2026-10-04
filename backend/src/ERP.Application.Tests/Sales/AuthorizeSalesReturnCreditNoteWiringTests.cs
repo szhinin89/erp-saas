@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Accounting.Posting;
@@ -55,7 +56,8 @@ public sealed class AuthorizeSalesReturnCreditNoteWiringTests
             UserId,
             paymentTerm,
             CashSessionId,
-            emissionPointId: withEmissionPoint ? EmissionPointId : null
+            emissionPointId: withEmissionPoint ? EmissionPointId : null,
+            emissionType: EmissionType.Electronic
         );
         var line = SalesInvoiceDetail.Create(
             inv.Id,

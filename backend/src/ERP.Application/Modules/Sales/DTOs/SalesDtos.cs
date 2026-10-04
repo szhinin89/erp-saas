@@ -109,7 +109,10 @@ public sealed record SalesInvoicePaymentDto(
     string? Reference,
     PaymentCardDetailDto? CardDetail,
     PaymentTransferDetailDto? TransferDetail,
-    PaymentChequeDetailDto? ChequeDetail
+    PaymentChequeDetailDto? ChequeDetail,
+    // POS-CASH-TENDERED-01: efectivo entregado (null = no aplica / no registrado) y vuelto derivado.
+    decimal? TenderedAmount,
+    decimal? ChangeAmount
 );
 
 public sealed record PaymentCardDetailDto(
@@ -276,7 +279,10 @@ public sealed record SalesListDto(
     string Status,
     int LineCount,
     decimal GrandTotal,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    // POS-EMISSION-TYPE-SNAPSHOT-01: snapshot SalesInvoice.EmissionType — permite al listado
+    // decidir acciones electrónicas (RIDE) por la factura, nunca por la caja abierta actual.
+    string EmissionType
 );
 
 /// <summary>

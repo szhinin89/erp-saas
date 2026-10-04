@@ -201,7 +201,8 @@ public sealed class SalesReturnRepositoryTests : IAsyncLifetime
             issueDate: new DateOnly(2026, 7, 25),
             createdBy: _createdBy,
             paymentTerm: paymentTerm,
-            cashSessionId: _cashSessionId
+            cashSessionId: _cashSessionId,
+            emissionType: EmissionType.Electronic
         );
 
         var line = SalesInvoiceDetail.Create(

@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Application.Common;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.MasterData.Entities;
@@ -131,7 +132,8 @@ public sealed class SalesPaymentScheduleRepositoryTests : IAsyncLifetime
             _tenantId, _companyId, _branchId, _customerId,
             CustomerSnapshot.Create("Cliente Test", "1710034065", "05"),
             "DRAFT-SPS-TEST", new DateOnly(2026, 1, 1), _createdBy, pt,
-            cashSessionId: _cashSessionId
+            cashSessionId: _cashSessionId,
+            emissionType: EmissionType.Physical
         );
         var line = SalesInvoiceDetail.Create(inv.Id, _tenantId, "Producto Test", 1, unitPrice, "0", "UNIT");
         inv.ReplaceLines(new[] { line }, _createdBy);

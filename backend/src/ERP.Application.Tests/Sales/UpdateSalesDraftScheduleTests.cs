@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.MasterData.Services;
@@ -157,7 +158,8 @@ public sealed class UpdateSalesDraftScheduleTests
                 TenantId, CompanyId, BranchId, CustomerId,
                 CustomerSnapshot.Create("Cliente Test", "1710034065", "05"),
                 "DRAFT-TEST", new DateOnly(2026, 1, 1), UserId, pt,
-                cashSessionId: Guid.NewGuid()
+                cashSessionId: Guid.NewGuid(),
+                emissionType: EmissionType.Physical
             );
             var line = SalesInvoiceDetail.Create(inv.Id, TenantId, "Producto Test", 1, unitPrice, "10", "UNIT");
             line.ApplyTaxes("10", 15m, "IVA 15%", null, 0m, null);
@@ -217,7 +219,8 @@ public sealed class UpdateSalesDraftScheduleTests
                 TenantId, CompanyId, BranchId, CustomerId,
                 CustomerSnapshot.Create("Cliente Test", "1710034065", "05"),
                 "DRAFT-TEST", new DateOnly(2026, 1, 1), UserId, pt,
-                cashSessionId: Guid.NewGuid()
+                cashSessionId: Guid.NewGuid(),
+                emissionType: EmissionType.Physical
             );
             var line = SalesInvoiceDetail.Create(inv.Id, TenantId, "Producto Test", 1, unitPrice, "10", "UNIT");
             line.ApplyTaxes("10", 15m, "IVA 15%", null, 0m, null);
@@ -378,7 +381,8 @@ public sealed class UpdateSalesDraftScheduleTests
             TenantId, CompanyId, BranchId, CustomerId,
             CustomerSnapshot.Create("Cliente Test", "1710034065", "05"),
             "DRAFT-TEST", new DateOnly(2026, 1, 1), UserId, pt,
-            cashSessionId: Guid.NewGuid()
+            cashSessionId: Guid.NewGuid(),
+            emissionType: EmissionType.Physical
         );
         var line = SalesInvoiceDetail.Create(inv.Id, TenantId, "Producto Test", 1, 100m, "10", "UNIT");
         inv.ReplaceLines(new[] { line }, UserId);

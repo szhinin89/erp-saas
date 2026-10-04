@@ -94,7 +94,15 @@ import {
   type SalesLineFormValues,
   type SalesPaymentFormValues,
 } from "../schemas/salesInvoiceSchema";
-import { INVOICE_PAYMENT_TOLERANCE } from "../constants/tolerances";
+import {
+  basePaymentsForAdditionalMethod,
+  computeSalesCollectionStatus,
+  parseCashReceivedInput,
+  syncCashOnlyAppliedAmount,
+} from "../utils/salesCollectionStatus";
+import { resolveSalesEmissionType } from "../utils/salesEmissionType";
+import { tenderedForPayment } from "../utils/salesCashTendered";
+import { computeSalesConfigStatus } from "../utils/salesEmissionConfigStatus";
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -172,34 +180,43 @@ export type IssueErrorKind = "internal" | "communication";
 export type IssueErrorInfo = { kind: IssueErrorKind; message: string };
 
 /**
+ * POS-F8-CASH-INPUT-01: atributo de opt-in para el atajo de emisión. Un control editable que lo
+ * declara (hoy solo "Efectivo recibido" del cobro inline) permite F8 aunque tenga el foco: es el
+ * último dato que escribe el cajero y obligarlo a salir del campo antes de emitir era una regla
+ * implícita imposible de adivinar. El resto de controles editables (buscador de productos,
+ * modales como "Crear Cliente") siguen bloqueando F8 — ver SALES-QUICK-CUSTOMER-MODAL-INPUT-FIX-07.
+ */
+export const POS_EMIT_SHORTCUT_ATTR = "data-pos-emit-shortcut";
+
+/**
  * SALES-QUICK-CUSTOMER-MODAL-FIX-07A: decisión pura del atajo global F8 ("Emitir Factura"),
- * extraída del listener de teclado para poder testearla sin montar todo useSalesPage. Nunca
+ * extraída del listener de teclado para poder testearla sin montar todo useSalesPage. No
  * dispara mientras el foco está en un control editable (p. ej. un modal abierto sobre la
- * página) — ver SALES-QUICK-CUSTOMER-MODAL-INPUT-FIX-07.
+ * página) — ver SALES-QUICK-CUSTOMER-MODAL-INPUT-FIX-07 — salvo los controles que declaran
+ * explícitamente `POS_EMIT_SHORTCUT_ATTR` (POS-F8-CASH-INPUT-01).
  */
 export function shouldTriggerF8Emit(
   e: Pick<KeyboardEvent, "key" | "target">,
   ctx: { tab: Tab; issuePhase: IssuePhase; canEmit: boolean },
 ): boolean {
   if (e.key !== "F8") return false;
-  if (isEditableTarget(e.target)) return false;
+  const optedIn =
+    e.target instanceof HTMLElement && e.target.getAttribute(POS_EMIT_SHORTCUT_ATTR) === "true";
+  if (isEditableTarget(e.target) && !optedIn) return false;
   if (ctx.tab !== "nuevo" || ctx.issuePhase !== "idle" || !ctx.canEmit) return false;
   return true;
 }
 
-// Pasos 0-1 (Validando/Guardando) son awaits reales del formulario y de
-// persistDraft. Pasos 2-5 ocurren dentro de un único request atómico en el
-// servidor (numeración + XML + firma + envío SRI + autorización) — no hay
-// progreso real intermedio que consultar, por eso se muestran escalonados
-// mientras se espera esa respuesta única (ver simulateRemainingSteps).
-export const ISSUE_STEPS = [
-  "Validando",
-  "Guardando",
-  "Generando XML",
-  "Firmando",
-  "Enviando al SRI",
-  "Consultando autorización",
-] as const;
+/** Motivo bloqueante de emisión — `source` dice qué zona de la pantalla ya muestra el detalle. */
+export type EmitBlockerSource =
+  | "customer"
+  | "lines"
+  | "stock"
+  | "cashSession"
+  | "config"
+  | "consumerFinal"
+  | "payment";
+export type EmitBlocker = { source: EmitBlockerSource; message: string };
 
 /** Aviso de error accionable para el formulario de ventas: título contextual (qué acción
  * falló, p. ej. "No se puede emitir la factura.") + detalle. El detalle prioriza los
@@ -272,23 +289,12 @@ async function resolveConsumidorFinal(): Promise<CustomerPickerRow | null> {
   }
 }
 
-/** Identifica la forma de pago "Efectivo" del catálogo tenant-editable — código sembrado
- * por SalesBootstrapStep (ver CLAUDE.md/backend), no un enum fijo. Solo habilita el campo
- * de "Monto recibido / Vuelto" en pantalla; no afecta reglas de negocio del backend. */
+/** POS-CASH-TENDERED-01: forma de cobro de efectivo físico = PaymentMethod.affectsPhysicalCash —
+ * el MISMO criterio con el que el backend acepta TenderedAmount y mueve el cajón de Caja
+ * (antes se comparaba el código "EFECTIVO", que el tenant puede editar). Habilita "Efectivo
+ * recibido / Vuelto"; nunca decide el importe aplicado. */
 function isCashPaymentMethod(pm: PaymentMethodDto | undefined): boolean {
-  return !!pm && pm.code.trim().toUpperCase() === "EFECTIVO";
-}
-
-/** Avanza el índice de paso mostrado mientras se espera la respuesta de /authorize; se detiene en el último paso si la respuesta tarda más que la animación. */
-function simulateRemainingSteps(
-  setIndex: (updater: (i: number) => number) => void,
-  toIndex: number,
-  stepMs = 750,
-) {
-  const id = setInterval(() => {
-    setIndex((i) => Math.min(i + 1, toIndex));
-  }, stepMs);
-  return { stop: () => clearInterval(id) };
+  return !!pm && pm.affectsPhysicalCash;
 }
 
 // SALES-TRANSFER-BANK-ACCOUNT-01: etiquetas legibles de BankAccountType para el selector de
@@ -461,8 +467,10 @@ export function useSalesPage() {
   >(null);
   const [scheduleIsManual, setScheduleIsManual] = useState(false);
 
-  // ── Cash payment: monto recibido / vuelto (solo UI — el backend no exige este dato) ──
-  const [cashReceived, setCashReceived] = useState(0);
+  // ── Cash payment: efectivo recibido físicamente (solo POS — el backend no exige este dato;
+  // viaja a la tirilla vía el payload de impresión, ver SalesIssueModal). Texto crudo del input
+  // controlado: se interpreta en cada pulsación (POS-COLLECTION-SSOT-01), nunca solo al blur.
+  const [cashReceivedInput, setCashReceivedInput] = useState("");
 
   // ── Line key counter ───────────────────────────────────────────────
   const [lineKey, setLineKey] = useState(1);
@@ -520,29 +528,54 @@ export function useSalesPage() {
     [lines, vatRatesMap, iceRatesMap],
   );
 
-  // Única fuente de verdad de "¿se puede emitir?" — la usan tanto el botón
-  // "Emitir Factura" como el atajo F8, para no duplicar la validación. También expuesta
-  // como `paymentOk` para que el checklist visual de SalesPage.tsx no la recalcule aparte.
   const hasCustomer = !!formWatch.customerId?.trim();
   const hasLines = lines.length > 0;
-  const paidTotal = payments.reduce((s, p) => s + (Number(p.amount) || 0), 0);
-  const paymentOk =
-    summary.total > 0 &&
-    paidTotal > 0 &&
-    Math.abs(summary.total - paidTotal) < INVOICE_PAYMENT_TOLERANCE;
-  // Efectivo: si hay un cobro asignado a la forma de pago "Efectivo", el monto recibido
-  // no puede ser menor al cobro requerido — de lo contrario no hay vuelto que calcular.
-  const cashPaymentEntry = payments.find((p) =>
-    isCashPaymentMethod(paymentMethods.find((pm) => pm.id === p.paymentMethodId)),
+
+  // ── POS-EMISSION-TYPE-SNAPSHOT-01 — tipo de emisión EFECTIVO de la venta en pantalla ──
+  // Venta nueva (sin documento): CashSession → EmissionPoint → EmissionType, resuelto en vivo
+  // por el backend en myCashSession.emissionType. Venta ya creada (borrador, autorizada,
+  // anulada, histórica): manda SIEMPRE el snapshot inmutable SalesInvoice.EmissionType — es el
+  // mismo que usa el backend para emitir (AuthorizeSalesInvoiceHandler), el XML, el RIDE y la
+  // tirilla. Antes la caja actual tenía prioridad: una factura electrónica histórica abierta
+  // desde una caja física ocultaba su clave de acceso / RIDE / diagnóstico (y viceversa).
+  const sessionEmissionType = myCashSession?.emissionType ?? null;
+  const emissionType = resolveSalesEmissionType(editing, myCashSession);
+  const isElectronic = emissionType === "Electronic";
+
+  // ── POS-COLLECTION-SSOT-01 — estado único del cobro (ver utils/salesCollectionStatus.ts) ──
+  // Tolerancia = política de settlement REAL de la empresa (CompanyPrecisionPolicy), la misma que
+  // el backend usa al autorizar — no una constante propia de UI.
+  const precisionPolicy = getPrecisionPolicy();
+  const isCashMethodId = useCallback(
+    (paymentMethodId: string) =>
+      isCashPaymentMethod(paymentMethods.find((pm) => pm.id === paymentMethodId)),
+    [paymentMethods],
   );
-  const cashDue = cashPaymentEntry?.amount || 0;
-  const cashChangeFactor = 10 ** getPrecisionPolicy().moneyDecimals;
-  const cashChange =
-    cashDue > 0
-      ? Math.max(0, Math.round((cashReceived - cashDue) * cashChangeFactor) / cashChangeFactor)
-      : 0;
-  const cashInsufficient =
-    cashDue > 0 && cashReceived + INVOICE_PAYMENT_TOLERANCE < cashDue;
+  const cashReceivedValue = parseCashReceivedInput(cashReceivedInput);
+  const collection = computeSalesCollectionStatus({
+    total: summary.total,
+    payments,
+    isCashMethod: isCashMethodId,
+    cashReceived: cashReceivedValue,
+    tolerance: precisionPolicy.settlementToleranceAmount,
+    moneyDecimals: precisionPolicy.moneyDecimals,
+  });
+  const paidTotal = collection.appliedTotal;
+  const paymentOk = collection.appliedOk;
+  const cashDue = collection.cashApplied;
+  const cashChange = collection.cashChange;
+
+  // POS-CASH-ONLY-FOLLOWS-TOTAL-01: con un ÚNICO cobro y en Efectivo, el monto aplicado es un
+  // derivado del total (el cajero solo edita "Efectivo recibido"): si cambian las líneas después
+  // de cobrar, lo aplicado sigue al total y el efectivo recibido se conserva — Falta/Vuelto se
+  // recalculan solos. Con 2+ formas de cobro los montos son explícitos del cajero y NUNCA se
+  // redistribuyen: la diferencia se muestra como Falta / Excede.
+  const cashOnlyApplied = collection.isCashOnly ? collection.cashApplied : null;
+  useEffect(() => {
+    if (readOnly || cashOnlyApplied === null) return;
+    const next = syncCashOnlyAppliedAmount(getValues("payments"), isCashMethodId, summary.total);
+    if (next) setValue("payments", next, { shouldDirty: true });
+  }, [readOnly, cashOnlyApplied, summary.total, isCashMethodId, getValues, setValue]);
 
   // Advertencia preventiva de stock (UX) — nunca bloquea si el frontend no tiene el dato de
   // disponibilidad (_stockQty), solo anticipa el mismo resultado que ya valida el backend al
@@ -568,15 +601,55 @@ export function useSalesPage() {
     !!consumerFinalPolicy &&
     grandTotal > consumerFinalPolicy.consumerFinalMaxAmount;
 
-  const canEmit =
-    !fieldDisabled &&
-    hasCustomer &&
-    hasLines &&
-    hasCashSession === true &&
-    paymentOk &&
-    !cashInsufficient &&
-    !hasInsufficientStock &&
-    !consumerFinalAmountExceeded;
+  // POS-CONFIG-STATUS-SEVERITY-01: solo los issues `error` bloquean (y SIEMPRE bloquean).
+  const configStatus = computeSalesConfigStatus({
+    hasCashSession,
+    emissionType,
+    docTypeCode: readOnly ? editing?.docTypeCode : formWatch.docTypeCode,
+    lines,
+    defaultSriPaymentCode: readOnly
+      ? editing?.sriPaymentMethodCode
+      : formWatch.sriPaymentMethodCode,
+    payments,
+    paymentMethods,
+  });
+
+  // ── POS-CANEMIT-SSOT-01 — ÚNICA fuente de verdad de "¿se puede emitir?" ──
+  // Lista ordenada de bloqueantes: el primero es el "Siguiente paso" del checklist y el motivo
+  // del botón Emitir; `canEmit` es exactamente "no hay bloqueantes". La usan EmitButton,
+  // SalesFormChecklist, F8/Enter y el estado del cobro — nadie recalcula reglas por su cuenta.
+  const emitBlockers: EmitBlocker[] = [];
+  if (!hasCustomer)
+    emitBlockers.push({ source: "customer", message: "Seleccione un cliente para comenzar." });
+  if (!hasLines)
+    emitBlockers.push({ source: "lines", message: "Agregue productos a la factura." });
+  if (hasInsufficientStock)
+    emitBlockers.push({
+      source: "stock",
+      message: "Hay líneas con cantidad mayor al stock disponible — ajústelas antes de emitir.",
+    });
+  if (hasCashSession !== true)
+    emitBlockers.push({
+      source: "cashSession",
+      message: cashSessionCheckError
+        ? "No se pudo verificar la caja — reintente arriba antes de emitir."
+        : "Debe abrir una caja antes de emitir.",
+    });
+  if (configStatus.missing.length > 0)
+    emitBlockers.push({
+      source: "config",
+      message: `Revise la configuración de venta: ${configStatus.missing.join(", ")}.`,
+    });
+  if (consumerFinalAmountExceeded)
+    emitBlockers.push({
+      source: "consumerFinal",
+      message:
+        "El total supera el monto permitido para Consumidor Final — seleccione un cliente identificado.",
+    });
+  if (hasLines && !collection.isComplete)
+    emitBlockers.push({ source: "payment", message: "Complete el cobro en Formas de Cobro." });
+
+  const canEmit = !fieldDisabled && emitBlockers.length === 0;
 
   const taxBreakdown: TaxBreakdownEntry[] = useMemo(() => {
     if (editing && readOnly && editing.lines.length > 0) {
@@ -598,14 +671,6 @@ export function useSalesPage() {
     }
     return summary.taxBreakdown;
   }, [editing, readOnly, summary.taxBreakdown]);
-
-  // Único punto de decisión Electronic/Physical de toda la pantalla de Ventas — fuente de verdad:
-  // CashRegister → EmissionPoint → EmissionType, resuelto en vivo por el backend en
-  // myCashSession.emissionType (disponible desde que carga la pantalla, sin esperar a que exista
-  // un borrador). Se usa editing.emissionType únicamente como respaldo al ver/editar una factura
-  // ya creada fuera de una sesión de caja activa (ej. sin sesión abierta en este navegador).
-  const isElectronic =
-    (myCashSession?.emissionType ?? editing?.emissionType) === "Electronic";
 
   // ELECTRONIC-INVOICING-SRI-CONNECTIVITY-CHECK-SCOPE-01: conectividad SRI acotada a Ventas —
   // el bootstrap global (SessionBootstrap) ya no hace ping al SRI, solo esta pantalla, y solo
@@ -1149,6 +1214,25 @@ export function useSalesPage() {
     [getValues, setValue],
   );
 
+  // POS-CASH-ONLY-FOLLOWS-TOTAL-01 — pagos base al sumar OTRA forma de cobro. Si hoy el único
+  // cobro es Efectivo (aplicado = total, derivado), pasar a multipago fija lo aplicado en
+  // Efectivo a lo realmente recibido (tope: el total) — o lo quita si aún no se ingresó nada —
+  // para que la nueva forma de cobro cubra solo el resto. Pura: no muta el formulario; el
+  // llamador aplica el resultado junto con el nuevo cobro en un solo setInvoicePayments (así
+  // la regla "Efectivo único sigue al total" nunca ve un estado intermedio). En multipago
+  // devuelve los pagos tal cual: los montos explícitos nunca se redistribuyen.
+  const paymentsForAdditionalMethod = useCallback(
+    (paymentMethodId: string): SalesPaymentFormValues[] =>
+      basePaymentsForAdditionalMethod(
+        getValues("payments"),
+        paymentMethodId,
+        isCashMethodId,
+        cashReceivedValue,
+        summary.total,
+      ),
+    [getValues, isCashMethodId, cashReceivedValue, summary.total],
+  );
+
   // ── Form reset ─────────────────────────────────────────────────────
   const resetForm = useCallback(async () => {
     const base = emptySalesInvoiceForm();
@@ -1173,7 +1257,7 @@ export function useSalesPage() {
     setSaveError(null);
     setLineKey(1);
     setPayKey(1);
-    setCashReceived(0);
+    setCashReceivedInput("");
     setCreditRows([]);
     setConfirmedScheduleRows(null);
     setScheduleIsManual(false);
@@ -1344,6 +1428,11 @@ export function useSalesPage() {
 
         setLineKey(inv.lines.length + 1);
         setPayKey((inv.payments?.length ?? 0) + 1);
+        // POS-CASH-TENDERED-01: el efectivo recibido persistido vuelve al POS al reabrir la venta.
+        const persistedTendered = (inv.payments ?? []).find(
+          (p) => p.tenderedAmount != null,
+        )?.tenderedAmount;
+        setCashReceivedInput(persistedTendered != null ? String(persistedTendered) : "");
 
         // ADR-033, Fase 4: hidrata el cronograma persistido — si el usuario reabre el
         // simulador, ve exactamente lo que ya tiene el borrador (automático o personalizado).
@@ -1402,6 +1491,13 @@ export function useSalesPage() {
         payments: data.payments.map((p) => ({
           paymentMethodId: p.paymentMethodId,
           amount: p.amount,
+          // POS-CASH-TENDERED-01: efectivo entregado persistido en el pago en efectivo — fuente de
+          // la tirilla y de cualquier reimpresión (el backend lo valida y no cambia `amount`).
+          tenderedAmount: tenderedForPayment(
+            isCashMethodId(p.paymentMethodId),
+            p.amount,
+            cashReceivedValue,
+          ),
           reference: p.reference,
           cardDetail: p.cardDetail ?? undefined,
           // ZH-TEMPORAL-CONTRACT-02J: transferDate/cashDate son fechas de negocio (API DateOnly
@@ -1430,7 +1526,7 @@ export function useSalesPage() {
         ? salesService.update(editing.id, { ...payload, id: editing.id })
         : salesService.create(payload);
     },
-    [editing, scheduleIsManual, confirmedScheduleRows],
+    [editing, scheduleIsManual, confirmedScheduleRows, isCashMethodId, cashReceivedValue],
   );
 
   // ── Issue flow (Nueva Venta → Emitir Factura → Confirmación → Emisión →
@@ -1478,7 +1574,17 @@ export function useSalesPage() {
 
       let invoiceId = editing?.id;
 
-      if (!editing || isDirty) {
+      // POS-CASH-TENDERED-01: el efectivo recibido no vive en el form (no marca isDirty) — si
+      // cambió respecto de lo ya persistido en el borrador, también hay que re-guardar.
+      const persistedTendered =
+        editing?.payments.find((p) => isCashMethodId(p.paymentMethodId))?.tenderedAmount ?? null;
+      const currentCash = getValues("payments").find((p) => isCashMethodId(p.paymentMethodId));
+      const currentTendered = currentCash
+        ? tenderedForPayment(true, currentCash.amount, cashReceivedValue)
+        : null;
+      const tenderedChanged = persistedTendered !== currentTendered;
+
+      if (!editing || isDirty || tenderedChanged) {
         const valid = await trigger();
         if (!valid) {
           // Error de validación: vuelve al formulario — el usuario corrige
@@ -1536,13 +1642,9 @@ export function useSalesPage() {
         reset(getValues()); // limpia isDirty sin navegar ni alterar lo mostrado en pantalla
       }
 
-      // Generando XML / Firmando / Enviando al SRI / Consultando autorización
-      // ocurren dentro de un único request atómico — se muestran escalonados
-      // mientras se espera esa respuesta (ver comentario de ISSUE_STEPS).
-      const stepTimer = simulateRemainingSteps(
-        setIssueStepIndex,
-        ISSUE_STEPS.length - 1,
-      );
+      // Único request de autorización (numeración + emisión): no expone progreso intermedio,
+      // así que se muestra un solo paso real (ver issueStepsFor) hasta que responde.
+      setIssueStepIndex(2);
       let authorized: SalesInvoiceDto;
       try {
         // invoiceId siempre queda definido en este punto: o ya existía
@@ -1581,11 +1683,8 @@ export function useSalesPage() {
         });
         setIssuePhase("error");
         return;
-      } finally {
-        stepTimer.stop();
       }
 
-      setIssueStepIndex(ISSUE_STEPS.length - 1);
       setIssueResult(authorized);
       setIssuePhase("success");
       fetchList(); // refresca el listado en segundo plano — sin recargar la página
@@ -1598,6 +1697,8 @@ export function useSalesPage() {
     refreshSriConnectivity,
     editing,
     isDirty,
+    isCashMethodId,
+    cashReceivedValue,
     trigger,
     form,
     getValues,
@@ -1933,6 +2034,8 @@ export function useSalesPage() {
     // Payments
     payments,
     setInvoicePayments,
+    paymentsForAdditionalMethod,
+    isCashMethodId,
     payKey,
     setPayKey,
     paymentMethods,
@@ -1940,6 +2043,8 @@ export function useSalesPage() {
     // Único cómputo de "total ya cobrado" — evita que el checklist y la grilla de formas de
     // cobro recalculen el mismo reduce() por separado (ver SalesPage.tsx).
     paidTotal,
+    // POS-COLLECTION-SSOT-01: estado único del cobro (resumen, mensaje, Falta/Vuelto).
+    collection,
 
     // Customer
     customerProfile,
@@ -1981,12 +2086,16 @@ export function useSalesPage() {
     readOnly,
     fieldDisabled,
     canEmit,
+    emitBlockers,
+    configStatus,
     paymentOk,
     summary,
     grandTotal,
     totalDiscount,
     taxBreakdown,
     isElectronic,
+    emissionType,
+    sessionEmissionType,
     // Estado discreto de conectividad SRI (ver refreshSriConnectivity arriba) — "Available" /
     // "Unavailable" / "Unknown" ("no verificado", incl. antes de que resuelva el primer check).
     sriAvailability: sriStatus?.sriAvailability ?? "Unknown",
@@ -2074,12 +2183,12 @@ export function useSalesPage() {
     scheduleIsManual,
     setScheduleIsManual,
 
-    // Cash payment (Monto recibido / Vuelto)
-    cashReceived,
-    setCashReceived,
+    // Cash payment (Efectivo recibido / Vuelto) — derivados de `collection`
+    cashReceivedInput,
+    setCashReceivedInput,
+    cashReceived: cashReceivedValue,
     cashDue,
     cashChange,
-    cashInsufficient,
 
     // Stock (advertencia preventiva antes de emitir)
     hasInsufficientStock,

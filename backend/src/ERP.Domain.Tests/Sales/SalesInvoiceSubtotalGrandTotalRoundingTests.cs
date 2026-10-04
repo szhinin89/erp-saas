@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.ValueObjects;
 using FluentAssertions;
@@ -36,7 +37,8 @@ public sealed class SalesInvoiceSubtotalGrandTotalRoundingTests
             issueDate: new DateOnly(2026, 9, 13),
             createdBy: UserId,
             paymentTerm: PaymentTermSnapshot.Create(Guid.NewGuid(), "Contado", 1, 0),
-            cashSessionId: Guid.NewGuid()
+            cashSessionId: Guid.NewGuid(),
+            emissionType: EmissionType.Physical
         );
 
     private static SalesInvoiceDetail CreateLine(

@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { SalesPageContext } from "../hooks/useSalesPage";
+import { withPosDerivedCtx } from "../test/salesPageCtxTestUtils";
 import type { SalesInvoiceDto } from "../api/salesService";
 
 // SALES-MANUAL-CASH-MOVEMENT-INTEGRATION-08: el botón "+ Movimiento de caja" en Sales
@@ -312,7 +313,7 @@ function buildCtx(overrides: Partial<SalesPageContext> = {}): SalesPageContext {
     simulateCreditInstallments: vi.fn(() => []),
   };
 
-  return { ...base, ...overrides } as unknown as SalesPageContext;
+  return withPosDerivedCtx({ ...base, ...overrides });
 }
 
 const BUTTON_TEXT = "Movimiento de caja";

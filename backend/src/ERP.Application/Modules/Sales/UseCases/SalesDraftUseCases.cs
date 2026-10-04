@@ -52,7 +52,10 @@ public sealed record SalesPaymentInput(
     string? Reference = null,
     CardDetailInput? CardDetail = null,
     TransferDetailInput? TransferDetail = null,
-    ChequeDetailInput? ChequeDetail = null
+    ChequeDetailInput? ChequeDetail = null,
+    // POS-CASH-TENDERED-01: efectivo físico entregado por el cliente para este pago. Solo formas de
+    // cobro con PaymentMethod.AffectsPhysicalCash; nunca cambia Amount (importe aplicado real).
+    decimal? TenderedAmount = null
 );
 
 public sealed record CardDetailInput(
@@ -493,11 +496,25 @@ public sealed class CreateSalesDraftHandler
         // EmissionPointId nunca viene del cliente — proviene de la caja abierta del usuario
         // (ICurrentCashSession), garantizada no-nula por HasOpenSession (Fase 2: un CashRegister
         // no puede abrir sesión sin EmissionPointId asignado).
-        var emissionPointId = _cashSession.EmissionPointId!.Value;
-        var emissionType = EmissionType.Electronic;
+        //
+        // POS-EMISSION-TYPE-SNAPSHOT-01 — fail-closed: EmissionPointId y EmissionType quedan como
+        // snapshot inmutable de la factura (gobiernan su lifecycle completo: estrategia de emisión,
+        // XML, RIDE, tirilla). Si el punto no se puede resolver no existe un tipo confiable — antes
+        // se asumía Electronic en silencio, creando ventas con un tipo de emisión inventado.
+        if (_cashSession.EmissionPointId is not { } emissionPointId)
+            return Result<SalesInvoiceDto>.ValidationFailure(
+                "La caja abierta no tiene un punto de emisión asignado. Configure el punto de emisión de la caja antes de vender."
+            );
         var ep = await _epRepo.GetByIdForCompanyAsync(tid, _c.CompanyId, emissionPointId, ct);
-        if (ep is not null)
-            emissionType = ep.EmissionType;
+        if (ep is null)
+            return Result<SalesInvoiceDto>.ValidationFailure(
+                "No se encontró el punto de emisión de la caja abierta. Revise la configuración de la caja antes de vender."
+            );
+        if (!ep.IsActive)
+            return Result<SalesInvoiceDto>.ValidationFailure(
+                "El punto de emisión de la caja abierta está desactivado. Revise la configuración de la caja antes de vender."
+            );
+        var emissionType = ep.EmissionType;
 
         var draftNumber = $"DRAFT-{Guid.NewGuid():N}"[..14];
 
@@ -995,7 +1012,8 @@ public sealed class GetSalesInvoiceListHandler
                 i.Status.ToString(),
                 i.Lines.Count,
                 i.GrandTotal,
-                i.CreatedAt
+                i.CreatedAt,
+                i.EmissionType.ToString()
             ))
             .ToList();
         return Result<SalesListResponse>.Success(
@@ -1557,6 +1575,28 @@ file static class SalesPaymentHelper
                         input.ChequeDetail.CashDate
                     )
                 );
+
+            // POS-CASH-TENDERED-01 — el efectivo entregado es dato operacional del settlement: solo
+            // aplica a formas de cobro que mueven el cajón físico, debe cubrir el importe aplicado y
+            // jamás modifica Amount (lo aplicado sigue siendo el único importe financiero).
+            if (input.TenderedAmount is { } tendered)
+            {
+                if (!pm.AffectsPhysicalCash)
+                    return PaymentsBuildResult.Fail(
+                        $"El método '{pm.Name}' no admite efectivo recibido: solo aplica a cobros en efectivo."
+                    );
+                if (tendered <= 0)
+                    return PaymentsBuildResult.Fail("El efectivo recibido debe ser mayor a cero.");
+                if (decimal.Round(tendered, SalesInvoicePayment.AmountDecimals) != tendered)
+                    return PaymentsBuildResult.Fail(
+                        "El efectivo recibido admite como máximo 2 decimales."
+                    );
+                if (tendered < input.Amount)
+                    return PaymentsBuildResult.Fail(
+                        $"El efectivo recibido ({tendered:0.00}) no puede ser menor al monto aplicado en '{pm.Name}' ({input.Amount:0.00})."
+                    );
+                payment.SetTenderedAmount(tendered);
+            }
 
             items.Add(payment);
         }

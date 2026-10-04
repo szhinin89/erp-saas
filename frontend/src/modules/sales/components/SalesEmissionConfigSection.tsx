@@ -8,10 +8,7 @@ import { ZhSelect } from "../../../components/zh/inputs";
 import { ZHFieldHelp } from "../../../components/zh/help";
 import { HELP_KEYS } from "../../../help";
 import type { SalesPageContext } from "../hooks/useSalesPage";
-import {
-  computeSalesConfigStatus,
-  type SalesConfigStatus,
-} from "../utils/salesEmissionConfigStatus";
+import type { SalesConfigStatus } from "../utils/salesEmissionConfigStatus";
 
 function buildSummaryLine(ctx: SalesPageContext): string | null {
   const docTypeCode = ctx.readOnly
@@ -21,21 +18,40 @@ function buildSummaryLine(ctx: SalesPageContext): string | null {
     ctx.sriDocTypes.find((dt) => dt.code === docTypeCode)?.name ?? null;
   const parts = [
     docTypeName,
-    ctx.myCashSession?.cashRegisterNameSnapshot ?? null,
+    belongsToCurrentSession(ctx) ? (ctx.myCashSession?.cashRegisterNameSnapshot ?? null) : null,
     ctx.branchName ?? null,
   ].filter((p): p is string => !!p);
   return parts.length > 0 ? parts.join(" · ") : null;
 }
 
+/** La venta en pantalla pertenece a la caja abierta actual (venta nueva o factura de esa misma
+ * sesión) — solo entonces los datos de la caja actual describen a la venta. */
+function belongsToCurrentSession(ctx: SalesPageContext): boolean {
+  return !ctx.editing || ctx.editing.cashSessionId === ctx.myCashSession?.id;
+}
+
+const EMISSION_TYPE_LABEL: Record<string, string> = {
+  Electronic: "Emisión electrónica",
+  Physical: "Emisión física",
+};
+
+/** POS-EMISSION-TYPE-SNAPSHOT-01: código del punto de emisión de la venta en pantalla. Venta
+ * nueva o del mismo punto que la caja → snapshot de la caja; factura de OTRO punto (histórica
+ * abierta desde otra caja) → segmento "EEE-PPP-" de su número definitivo, nunca el de la caja
+ * actual. Un borrador de otro punto aún no tiene número definitivo → sin código. */
+function resolvePointCode(ctx: SalesPageContext): string | null {
+  const session = ctx.myCashSession;
+  if (!ctx.editing) return session?.emissionPointCodeSnapshot ?? null;
+  if (session && ctx.editing.emissionPointId === session.emissionPointId)
+    return session.emissionPointCodeSnapshot;
+  return /^\d{3}-(\d{3})-\d+$/.exec(ctx.editing.invoiceNumber)?.[1] ?? null;
+}
+
 function buildHintLine(ctx: SalesPageContext): string | null {
-  const emissionType = ctx.myCashSession?.emissionType ?? ctx.editing?.emissionType;
-  const emissionLabel =
-    emissionType === "Electronic"
-      ? "Emisión electrónica"
-      : emissionType === "Physical"
-        ? "Emisión física"
-        : null;
-  const pointCode = ctx.myCashSession?.emissionPointCodeSnapshot ?? null;
+  const emissionLabel = ctx.emissionType
+    ? (EMISSION_TYPE_LABEL[ctx.emissionType] ?? null)
+    : null;
+  const pointCode = resolvePointCode(ctx);
   const parts = [emissionLabel, pointCode ? `Punto ${pointCode}` : null].filter(
     (p): p is string => !!p,
   );
@@ -47,10 +63,13 @@ function buildHintLine(ctx: SalesPageContext): string | null {
 // estado "ready" no muestra ningún badge/aviso (nada que llame la atención sin motivo), solo el
 // resumen. Solo "review"/"incomplete" muestran un ZHPageNotice (amarillo/rojo) con la causa,
 // porque ahí sí hay algo que el cajero debería revisar o resolver.
+// POS-CONFIG-STATUS-SEVERITY-01: el estado viene de ctx.configStatus (calculado UNA vez en el
+// hook): rojo ⇔ bloquea Emitir (forma parte de ctx.emitBlockers); amarillo = revisar sin
+// bloquear; info nunca se pinta como alerta en la tarjeta.
 export function SalesEmissionConfigSection({ ctx }: { ctx: SalesPageContext }) {
   const [open, setOpen] = useState(false);
   const loading = ctx.hasCashSession === null;
-  const status = computeSalesConfigStatus(ctx);
+  const status = ctx.configStatus;
   const summaryLine = buildSummaryLine(ctx);
   const hintLine = buildHintLine(ctx);
 
@@ -127,7 +146,9 @@ function SalesEmissionConfigModal({
   open: boolean;
   onClose: () => void;
 }) {
-  const emissionType = ctx.myCashSession?.emissionType ?? ctx.editing?.emissionType;
+  const emissionType = ctx.emissionType;
+  const pointCode = resolvePointCode(ctx);
+  const infos = status.issues.filter((i) => i.severity === "info").map((i) => i.message);
 
   return (
     <ZHModal
@@ -135,7 +156,11 @@ function SalesEmissionConfigModal({
       onClose={onClose}
       size="md"
       title="Configuración de venta"
-      subtitle="Sucursal, caja, punto de emisión, documento y forma de pago SRI por defecto."
+      subtitle={
+        ctx.isElectronic
+          ? "Sucursal, caja, punto de emisión, documento y forma de pago SRI por defecto."
+          : "Sucursal, caja, punto de emisión y documento."
+      }
       footer={
         <ZHBtn type="button" variant="primary" size="md" onClick={onClose}>
           Cerrar
@@ -154,6 +179,7 @@ function SalesEmissionConfigModal({
       {status.warnings.length > 0 && (
         <ZHPageNotice variant="warning" message={status.warnings.join(" ")} />
       )}
+      {infos.length > 0 && <ZHPageNotice variant="info" message={infos.join(" ")} />}
 
       <div className="sf-emission">
         {ctx.branchName && (
@@ -164,7 +190,7 @@ function SalesEmissionConfigModal({
             <span className="sf-emission__value">{ctx.branchName}</span>
           </div>
         )}
-        {ctx.myCashSession && (
+        {ctx.myCashSession && belongsToCurrentSession(ctx) && (
           <div>
             <ZHFieldLabel size="sm" className="sf-emission__label">
               {"Caja:"}
@@ -176,14 +202,12 @@ function SalesEmissionConfigModal({
             </span>
           </div>
         )}
-        {ctx.myCashSession && (
+        {pointCode && (
           <div>
             <ZHFieldLabel size="sm" className="sf-emission__label">
               {"Punto:"}
             </ZHFieldLabel>
-            <span className="sf-emission__value">
-              {ctx.myCashSession.emissionPointCodeSnapshot}
-            </span>
+            <span className="sf-emission__value">{pointCode}</span>
           </div>
         )}
         {emissionType && (
@@ -229,6 +253,10 @@ function SalesEmissionConfigModal({
             ))}
           </ZhSelect>
         </div>
+        {/* POS-EMISSION-VISIBILITY-01: la Forma de pago SRI solo existe en el XML electrónico —
+            una factura física nunca se vuelve electrónica (snapshot inmutable), así que en
+            física no se muestra ni se exige. */}
+        {ctx.isElectronic && (
         <div className="sf-emission__full">
           <ZHFieldLabel size="sm" className="sf-emission__label">
             Forma Pago SRI por Defecto
@@ -260,6 +288,7 @@ function SalesEmissionConfigModal({
             ))}
           </ZhSelect>
         </div>
+        )}
         {ctx.editing && (
           <div className="zh-mt-4">
             <ZHFieldLabel size="sm" className="sf-emission__label">

@@ -114,6 +114,7 @@ public sealed class GetSalesReceiptPrintPayloadQueryHandler
             emissionPoint?.Code
         );
 
+        var cashTendered = SalesReceiptPrintPayloadMapper.ResolveCashTendered(invoice.Payments);
         return Result<SalesReceiptPrintPayloadDto>.Success(
             new SalesReceiptPrintPayloadDto(
                 TenantId: invoice.TenantId,
@@ -151,8 +152,8 @@ public sealed class GetSalesReceiptPrintPayloadQueryHandler
                 Payments: invoice.Payments.OrderBy(payment => payment.CreatedAt)
                     .Select(SalesReceiptPrintPayloadMapper.MapPayment)
                     .ToArray(),
-                CashReceived: null,
-                CashChange: null,
+                CashReceived: cashTendered.CashReceived,
+                CashChange: cashTendered.CashChange,
                 FooterMessage: branding.DocumentFooterText ?? company.ExtraLegend
             )
         );

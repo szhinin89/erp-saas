@@ -215,7 +215,8 @@ public sealed class SalesInvoiceDetailTaxDuplicationIntegrationTests : IAsyncLif
             issueDate: new DateOnly(2026, 7, 25),
             createdBy: _createdBy,
             paymentTerm: paymentTerm,
-            cashSessionId: _cashSessionId
+            cashSessionId: _cashSessionId,
+            emissionType: EmissionType.Physical
         );
 
         var line = SalesInvoiceDetail.Create(

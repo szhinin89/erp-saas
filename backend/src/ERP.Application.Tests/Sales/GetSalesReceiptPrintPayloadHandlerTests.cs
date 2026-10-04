@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Modules.Sales.DTOs;
 using ERP.Application.Modules.Sales.UseCases.GetSalesReceiptPrintPayload;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.Branches.Interfaces;
@@ -157,10 +158,115 @@ public sealed class GetSalesReceiptPrintPayloadHandlerTests
         payload.Payments[0].Method.Should().Be("Efectivo");
         payload.Payments[0].Amount.Should().Be(20.70m);
         payload.Payments[0].Reference.Should().Be("REC-001");
-        payload.CashReceived.Should().BeNull("el monto entregado por el cliente no está persistido en Sales/Cash");
-        payload.CashChange.Should().BeNull("el vuelto no está persistido en Sales/Cash");
+        payload.CashReceived.Should().BeNull("el pago no registró efectivo entregado (TenderedAmount)");
+        payload.CashChange.Should().BeNull("sin efectivo entregado no hay vuelto que mostrar");
         payload.FooterMessage.Should().Be("Gracias por su compra");
         f.VerifyReadOnlyRepositories();
+    }
+
+    // ── POS-CASH-TENDERED-01: Efectivo recibido / Vuelto de la tirilla salen de lo PERSISTIDO en
+    // los pagos (TenderedAmount) — la tirilla inicial y cualquier reimpresión muestran lo mismo sin
+    // depender del estado del POS. Total de la factura de prueba: 20.70.
+
+    private static readonly Guid CardMethodId = Guid.NewGuid();
+
+    private static SalesInvoice CreateAuthorizedInvoiceWithPayments(
+        Func<Guid, SalesInvoicePayment[]> payments
+    )
+    {
+        var invoice = CreateDraftInvoice(EmissionType.Physical);
+        var line = SalesInvoiceDetail.Create(
+            invoice.Id, TenantId, "Producto Test", quantity: 2m, unitPrice: 10m, vatCode: "2",
+            uomCode: "UNIT", snapshotSku: "SKU-001", snapshotItemName: "Producto Test", discountPct: 10m
+        );
+        line.ApplyTaxes("2", 15m, "IVA 15%", null, 0m, null);
+        invoice.ReplaceLines(new[] { line }, UserId);
+        invoice.ReplacePayments(payments(invoice.Id), UserId);
+        invoice.Authorize(UserId);
+        return invoice;
+    }
+
+    private static SalesInvoicePayment Cash(Guid invoiceId, decimal applied, decimal? tendered)
+    {
+        var p = SalesInvoicePayment.Create(invoiceId, TenantId, PaymentMethodId, "EFECTIVO", "Efectivo", applied);
+        if (tendered is { } t)
+            p.SetTenderedAmount(t);
+        return p;
+    }
+
+    private static SalesInvoicePayment Card(Guid invoiceId, decimal applied) =>
+        SalesInvoicePayment.Create(invoiceId, TenantId, CardMethodId, "TARJETA", "Tarjeta", applied, "AUT-1");
+
+    private static async Task<SalesReceiptPrintPayloadDto> PrintAsync(SalesInvoice invoice)
+    {
+        var f = new Fixture();
+        f.SalesInvoices.Setup(r => r.GetByIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(invoice);
+        var result = await f.BuildHandler()
+            .Handle(new GetSalesReceiptPrintPayloadQuery(invoice.Id), CancellationToken.None);
+        result.IsSuccess.Should().BeTrue(result.Error);
+        return result.Value!;
+    }
+
+    [Fact]
+    public async Task Efectivo_mayor_al_total_la_tirilla_muestra_recibido_y_vuelto()
+    {
+        var invoice = CreateAuthorizedInvoiceWithPayments(id => [Cash(id, 20.70m, 25m)]);
+
+        var payload = await PrintAsync(invoice);
+
+        payload.Payments.Should().ContainSingle().Which.Amount.Should().Be(20.70m);
+        payload.CashReceived.Should().Be(25m);
+        payload.CashChange.Should().Be(4.30m);
+        payload.Totals.Total.Should().Be(20.70m, "el efectivo entregado nunca altera el total");
+    }
+
+    [Fact]
+    public async Task Pago_exacto_la_tirilla_muestra_recibido_igual_al_total_y_vuelto_cero()
+    {
+        var invoice = CreateAuthorizedInvoiceWithPayments(id => [Cash(id, 20.70m, 20.70m)]);
+
+        var payload = await PrintAsync(invoice);
+
+        payload.CashReceived.Should().Be(20.70m);
+        payload.CashChange.Should().Be(0m);
+    }
+
+    [Fact]
+    public async Task Multipago_solo_la_porcion_efectivo_aporta_recibido_y_vuelto()
+    {
+        var invoice = CreateAuthorizedInvoiceWithPayments(id => [Card(id, 10m), Cash(id, 10.70m, 15m)]);
+
+        var payload = await PrintAsync(invoice);
+
+        payload.Payments.Select(p => p.Amount).Should().Equal(10m, 10.70m);
+        payload.CashReceived.Should().Be(15m);
+        payload.CashChange.Should().Be(4.30m);
+    }
+
+    [Fact]
+    public async Task Venta_sin_efectivo_no_muestra_recibido_ni_vuelto()
+    {
+        var invoice = CreateAuthorizedInvoiceWithPayments(id => [Card(id, 20.70m)]);
+
+        var payload = await PrintAsync(invoice);
+
+        payload.CashReceived.Should().BeNull();
+        payload.CashChange.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Reimpresion_posterior_obtiene_los_mismos_valores_desde_persistencia()
+    {
+        var invoice = CreateAuthorizedInvoiceWithPayments(id => [Card(id, 10m), Cash(id, 10.70m, 20m)]);
+
+        // Dos consultas independientes (handler/fixture nuevos): ningún estado del POS interviene.
+        var first = await PrintAsync(invoice);
+        var reprint = await PrintAsync(invoice);
+
+        reprint.CashReceived.Should().Be(first.CashReceived).And.Be(20m);
+        reprint.CashChange.Should().Be(first.CashChange).And.Be(9.30m);
+        reprint.Payments.Should().BeEquivalentTo(first.Payments);
     }
 
     // SALES-PRESENTATIONS-04: la tirilla debe mostrar la presentación vendida (UomCode/

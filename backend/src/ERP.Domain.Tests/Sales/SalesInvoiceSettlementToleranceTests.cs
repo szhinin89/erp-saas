@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Policies;
@@ -37,7 +38,8 @@ public sealed class SalesInvoiceSettlementToleranceTests
             issueDate: new DateOnly(2026, 7, 25),
             createdBy: UserId,
             paymentTerm: paymentTerm,
-            cashSessionId: Guid.NewGuid()
+            cashSessionId: Guid.NewGuid(),
+            emissionType: EmissionType.Physical
         );
 
         var line = SalesInvoiceDetail.Create(

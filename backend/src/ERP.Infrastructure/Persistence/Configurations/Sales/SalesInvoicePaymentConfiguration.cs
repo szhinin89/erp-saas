@@ -9,7 +9,15 @@ public sealed class SalesInvoicePaymentConfiguration : IEntityTypeConfiguration<
 {
     public void Configure(EntityTypeBuilder<SalesInvoicePayment> builder)
     {
-        builder.ToTable("sales_invoice_payments");
+        builder.ToTable(
+            "sales_invoice_payments",
+            t =>
+                // POS-CASH-TENDERED-01: el efectivo entregado, si existe, cubre el importe aplicado.
+                t.HasCheckConstraint(
+                    "chk_sales_invoice_payments_tendered_covers_amount",
+                    "\"tendered_amount\" IS NULL OR \"tendered_amount\" >= \"amount\""
+                )
+        );
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").IsRequired();
@@ -33,6 +41,14 @@ public sealed class SalesInvoicePaymentConfiguration : IEntityTypeConfiguration<
             .HasColumnName("amount")
             .HasColumnType("numeric(18,2)")
             .IsRequired();
+
+        // POS-CASH-TENDERED-01: efectivo entregado (dato operacional, nullable). ChangeAmount es
+        // derivado (TenderedAmount − Amount) y no se persiste.
+        builder
+            .Property(x => x.TenderedAmount)
+            .HasColumnName("tendered_amount")
+            .HasColumnType("numeric(18,2)");
+        builder.Ignore(x => x.ChangeAmount);
 
         builder
             .Property(x => x.Reference)

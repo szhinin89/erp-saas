@@ -257,7 +257,8 @@ public sealed class SalesInvoiceCashReceivableSplitAndCancelReversalIntegrationT
         var inv = SalesInvoice.CreateDraft(
             _tenantId, _companyId, _branchId, _customerId, customer,
             invoiceNumber: invoiceNumber, issueDate: issueDate, createdBy: _createdBy,
-            paymentTerm: paymentTerm, cashSessionId: _cashSessionId, emissionPointId: null
+            paymentTerm: paymentTerm, cashSessionId: _cashSessionId, emissionPointId: null,
+            emissionType: EmissionType.Physical
         );
 
         var line = SalesInvoiceDetail.Create(

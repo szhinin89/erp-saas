@@ -511,9 +511,13 @@ public sealed class AuthorizeSalesInvoiceHandler
         // EmissionPointId nunca se sobreescribe aquí: ya quedó fijado al crear el borrador
         // (resuelto entonces desde ICurrentCashSession) — la autorización solo lo consume.
         //
-        // Fuente de verdad del tipo de emisión: se lee de EmissionPoint.EmissionType, recién
-        // cargado aquí — nunca de inv.EmissionType (snapshot fijado al crear el borrador). Se
-        // captura en esta variable hoisted para que el bloque de emisión (más abajo) resuelva
+        // POS-EMISSION-TYPE-SNAPSHOT-01 — fuente de verdad del tipo de emisión: el snapshot
+        // inv.EmissionType, fijado junto con EmissionPointId al crear el borrador e inmutable
+        // durante todo el lifecycle. Un cambio posterior de EmissionPoint.EmissionType solo afecta
+        // ventas NUEVAS: antes se leía aquí el EP vivo, mientras el provider electrónico, el DTO,
+        // el RIDE y la tirilla leían el snapshot — un borrador creado Electronic y autorizado tras
+        // cambiar el punto a Physical (o viceversa) quedaba con estrategia y snapshot divergentes.
+        // Se captura en esta variable hoisted para que el bloque de emisión (más abajo) resuelva
         // la estrategia correspondiente sin volver a decidir nada por su cuenta.
         var epId = inv.EmissionPointId;
         EmissionType? emissionPointType = null;
@@ -539,7 +543,15 @@ public sealed class AuthorizeSalesInvoiceHandler
             );
             inv.SetInvoiceNumber($"{est.Code}-{ep.Code}-{sequential}");
 
-            emissionPointType = ep.EmissionType;
+            if (ep.EmissionType != inv.EmissionType)
+                _logger.LogWarning(
+                    "Sales invoice {InvoiceId}: emission point {EmissionPointId} is now {LiveType} but the draft was created as {SnapshotType} — the snapshot governs (POS-EMISSION-TYPE-SNAPSHOT-01).",
+                    inv.Id,
+                    ep.Id,
+                    ep.EmissionType,
+                    inv.EmissionType
+                );
+            emissionPointType = inv.EmissionType;
         }
 
         // ── Sincronizar código de pago SRI de cabecera (SALES-INVOICE-FINAL-SEMANTIC-INTEGRITY-01,
@@ -717,7 +729,7 @@ public sealed class AuthorizeSalesInvoiceHandler
         // exigidas: factura autorizada internamente (garantizado, este código solo se alcanza tras
         // inv.Authorize() exitoso) y con secuencial definitivo (emissionPointType solo tiene valor
         // cuando hubo EmissionPointId y se capturó secuencial SRI). Este handler únicamente
-        // resuelve el tipo de emisión (ya resuelto arriba, desde EmissionPoint.EmissionType) y
+        // resuelve el tipo de emisión (ya resuelto arriba, desde el snapshot inv.EmissionType) y
         // delega en la estrategia correspondiente — nunca vuelve a decidir aquí si algo es
         // electrónico o físico. La completitud de la información específica del comprobante
         // electrónico la valida el propio proveedor (SalesInvoiceElectronicDocumentDataProvider),

@@ -187,7 +187,8 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
             issueDate: new DateOnly(2026, 7, 1),
             createdBy: _createdBy,
             paymentTerm: paymentTerm,
-            cashSessionId: cashSession.Id
+            cashSessionId: cashSession.Id,
+            emissionType: EmissionType.Physical
         );
         var line = SalesInvoiceDetail.Create(
             invoice.Id,

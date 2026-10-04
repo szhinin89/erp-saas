@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Application.Modules.Sales.UseCases;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Interfaces;
@@ -35,7 +36,8 @@ public sealed class GetReturnableLinesByInvoiceHandlerTests
             issueDate: new DateOnly(2026, 7, 25),
             createdBy: UserId,
             paymentTerm: paymentTerm,
-            cashSessionId: CashSessionId
+            cashSessionId: CashSessionId,
+            emissionType: EmissionType.Physical
         );
 
         var lines = lineSpecs

@@ -13522,9 +13522,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("emission_point_id");
 
                     b.Property<short>("EmissionType")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("smallint")
-                        .HasDefaultValue((short)1)
                         .HasColumnName("emission_type");
 
                     b.Property<decimal>("ExchangeRate")
@@ -13896,6 +13894,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
 
+                    b.Property<decimal?>("TenderedAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("tendered_amount");
+
                     b.HasKey("Id");
 
                     b.HasIndex("InvoiceId");
@@ -13906,7 +13908,10 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("TenantId", "InvoiceId")
                         .HasDatabaseName("ix_sales_invoice_payments_tenant_invoice");
 
-                    b.ToTable("sales_invoice_payments", (string)null);
+                    b.ToTable("sales_invoice_payments", null, t =>
+                        {
+                            t.HasCheckConstraint("chk_sales_invoice_payments_tendered_covers_amount", "\"tendered_amount\" IS NULL OR \"tendered_amount\" >= \"amount\"");
+                        });
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesPaymentSchedule", b =>

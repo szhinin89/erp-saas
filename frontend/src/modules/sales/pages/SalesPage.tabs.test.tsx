@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { SalesPageContext } from "../hooks/useSalesPage";
+import { withPosDerivedCtx } from "../test/salesPageCtxTestUtils";
 
 // ── Mocks de componentes pesados: esta suite prueba únicamente la
 // migración de los tabs locales sf-tabs/sf-tab a ZHTabBar (SALES-DS-TABS-02),
@@ -229,7 +230,7 @@ function buildCtx(
     simulateCreditInstallments: vi.fn(() => []),
   };
 
-  return { ...base, ...overrides } as unknown as SalesPageContext;
+  return withPosDerivedCtx({ ...base, ...overrides });
 }
 
 describe("SalesPage — tabs (ZHTabBar, SALES-DS-TABS-02)", () => {

@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.ValueObjects;
@@ -38,7 +39,8 @@ public sealed class SalesPaymentScheduleTests
             issueDate ?? new DateOnly(2026, 1, 1),
             UserId,
             pt,
-            cashSessionId: Guid.NewGuid()
+            cashSessionId: Guid.NewGuid(),
+            emissionType: EmissionType.Physical
         );
         var line = SalesInvoiceDetail.Create(
             inv.Id,

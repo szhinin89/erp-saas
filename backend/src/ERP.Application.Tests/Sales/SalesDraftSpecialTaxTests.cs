@@ -65,6 +65,14 @@ public sealed class SalesDraftSpecialTaxTests
 
         public Fixture()
         {
+            // POS-EMISSION-TYPE-SNAPSHOT-01: la creación del borrador es fail-closed si el punto
+            // de emisión de la caja no se resuelve — default "punto electrónico activo".
+            EpRepo
+                .Setup(r => r.GetByIdForCompanyAsync(
+                    It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(ERP.Domain.Modules.Company.Entities.EmissionPoint.Create(
+                    TenantId, CompanyId, Guid.NewGuid(), "001", "Punto 1",
+                    ERP.Domain.Modules.Company.Enums.EmissionType.Electronic, true, Guid.NewGuid()));
             // SALES-CONTEXTUAL-PRICING-DRAFT-06B: default "sin pricing resuelto" (diccionario
             // vacío) para los tests de esta suite que no le importa el pricing contextual — evita
             // depender del comportamiento de Moq para mocks sin configurar en un método nuevo.

@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Sales.UseCases;
@@ -56,7 +57,8 @@ public sealed class CancelSalesInvoiceHandlerTests
             issueDate: new DateOnly(2026, 7, 25),
             createdBy: UserId,
             paymentTerm: paymentTerm,
-            cashSessionId: CashSessionId
+            cashSessionId: CashSessionId,
+            emissionType: EmissionType.Physical
         );
 
         var line = SalesInvoiceDetail.Create(

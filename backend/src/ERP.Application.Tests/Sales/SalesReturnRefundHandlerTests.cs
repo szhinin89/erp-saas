@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Accounting.Posting;
@@ -316,7 +317,8 @@ public sealed class SalesReturnRefundHandlerTests
             new DateOnly(2026, 7, 25),
             UserId,
             paymentTerm,
-            Guid.NewGuid()
+            Guid.NewGuid(),
+            emissionType: EmissionType.Electronic
         );
         var line = SalesInvoiceDetail.Create(
             inv.Id,

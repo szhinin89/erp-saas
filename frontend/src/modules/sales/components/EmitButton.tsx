@@ -5,22 +5,17 @@ export interface EmitButtonProps {
   ctx: SalesPageContext;
 }
 
-// ── Emit Button with tooltip ────────────────────────────────────────────
+// ── Emit Button ─────────────────────────────────────────────────────────
 // Único botón de acción del formulario de venta: "Nueva Venta → Emitir
 // Factura → Modal de confirmación → Emisión → Pantalla de éxito" es el
 // flujo completo visible al usuario. Este botón solo abre el modal
 // (ctx.openIssueFlow) — toda la lógica de negocio vive en el hook.
 // El atajo de teclado F8 dispara la misma acción (ver useSalesPage.ts).
+// POS-CANEMIT-SSOT-01: habilitación y motivo salen de ctx.canEmit / ctx.emitBlockers — el botón
+// no recalcula reglas ni repite el motivo como texto visible (ya lo muestra "Siguiente paso" y,
+// para el cobro, el estado del resumen); el motivo principal queda solo como `title` accesible.
 export function EmitButton({ ctx }: EmitButtonProps) {
-  const reasons: string[] = [];
-  if (!ctx.formWatch.customerId.trim()) reasons.push("Seleccione un cliente");
-  if (ctx.lines.length === 0) reasons.push("Agregue al menos un producto");
-  if (ctx.hasCashSession === true && ctx.summary.total > 0 && !ctx.paymentOk)
-    reasons.push("Registre formas de pago por el total de la factura");
-  if (ctx.cashInsufficient)
-    reasons.push("El monto recibido en efectivo es menor al total a cobrar");
-  if (ctx.hasInsufficientStock)
-    reasons.push("Hay una línea con cantidad mayor al stock disponible");
+  const primaryBlocker = ctx.emitBlockers[0];
 
   return (
     <div className="sales-emit-wrap">
@@ -29,8 +24,8 @@ export function EmitButton({ ctx }: EmitButtonProps) {
         onClick={ctx.openIssueFlow}
         disabled={!ctx.canEmit}
         title={
-          reasons.length > 0
-            ? `No se puede emitir: ${reasons.join(", ")}`
+          !ctx.canEmit && primaryBlocker
+            ? `No se puede emitir: ${primaryBlocker.message}`
             : undefined
         }
       >
@@ -41,9 +36,6 @@ export function EmitButton({ ctx }: EmitButtonProps) {
           ? "Emitir Factura Electrónica (F8)"
           : "Emitir Factura (F8)"}
       </ZHBtn>
-      {!ctx.canEmit && !ctx.fieldDisabled && reasons.length > 0 && (
-        <div className="sf-save-tooltip">{reasons.join(" · ")}</div>
-      )}
     </div>
   );
 }

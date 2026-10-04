@@ -18,7 +18,7 @@ function ruleBlockFor(selector: string): string {
 
 describe("SalesPage.css — contraste de filas complementarias de método de pago", () => {
   it.each([
-    ".sales-payment-dollar",
+    ".sales-payment-applied-label",
     ".sales-payment-input",
     ".sales-payment-ref-amount",
     ".sales-payment-ref-count",

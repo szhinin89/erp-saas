@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.MasterData.Services;
@@ -48,7 +49,8 @@ public sealed class SalesDiscountAndDraftBranchScopeTests
             issueDate: new DateOnly(2026, 7, 25),
             createdBy: UserId,
             paymentTerm: paymentTerm,
-            cashSessionId: Guid.NewGuid()
+            cashSessionId: Guid.NewGuid(),
+            emissionType: EmissionType.Physical
         );
     }
 

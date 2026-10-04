@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Application.Common;
 using ERP.Application.Modules.Sales.UseCases;
 using ERP.Application.Tests.TestSupport;
@@ -51,7 +52,8 @@ public sealed class SalesReturnDraftHandlerTests
             issueDate: new DateOnly(2026, 7, 25),
             createdBy: UserId,
             paymentTerm: paymentTerm,
-            cashSessionId: CashSessionId
+            cashSessionId: CashSessionId,
+            emissionType: EmissionType.Electronic
         );
 
         var lines = lineSpecs
@@ -257,7 +259,8 @@ public sealed class SalesReturnDraftHandlerTests
             new DateOnly(2026, 7, 25),
             UserId,
             paymentTerm,
-            CashSessionId
+            CashSessionId,
+            emissionType: EmissionType.Electronic
         );
         var invoiceRepo = MockInvoiceRepo(invoice);
         var returnRepo = MockReturnRepo();

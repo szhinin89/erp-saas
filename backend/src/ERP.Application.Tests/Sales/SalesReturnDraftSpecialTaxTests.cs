@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Application.Common;
 using ERP.Application.Modules.Sales.UseCases;
 using ERP.Application.Tests.TestSupport;
@@ -44,7 +45,8 @@ public sealed class SalesReturnDraftSpecialTaxTests
         var inv = SalesInvoice.CreateDraft(
             TenantId, CompanyId, BranchId, CustomerId, customer,
             invoiceNumber: "001-001-000000010", issueDate: new DateOnly(2026, 7, 25),
-            createdBy: UserId, paymentTerm: paymentTerm, cashSessionId: CashSessionId
+            createdBy: UserId, paymentTerm: paymentTerm, cashSessionId: CashSessionId,
+            emissionType: EmissionType.Electronic
         );
 
         var line = SalesInvoiceDetail.Create(

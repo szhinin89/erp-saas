@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { SalesPageContext } from "../hooks/useSalesPage";
+import { withPosDerivedCtx } from "../test/salesPageCtxTestUtils";
 import type { SalesInvoiceDto } from "../api/salesService";
 
 // ── Mocks de componentes pesados: esta suite prueba únicamente la migración
@@ -272,7 +273,7 @@ function buildCtx(
     simulateCreditInstallments: vi.fn(() => []),
   };
 
-  return { ...base, ...overrides } as unknown as SalesPageContext;
+  return withPosDerivedCtx({ ...base, ...overrides });
 }
 
 describe("SalesPage — EmitButton migrado a ZHBtn variant=cta (SALES-DS-CTA-11)", () => {

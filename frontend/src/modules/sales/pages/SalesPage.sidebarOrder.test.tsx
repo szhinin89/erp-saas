@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { SalesPageContext } from "../hooks/useSalesPage";
+import { withPosDerivedCtx } from "../test/salesPageCtxTestUtils";
 import type { SalesInvoiceDto } from "../api/salesService";
 
 // SALES-POS-SIDEBAR-SECTION-ORDER-01: reordenamiento puramente visual del panel izquierdo de
@@ -308,7 +309,7 @@ function buildCtx(overrides: Partial<SalesPageContext> = {}): SalesPageContext {
     simulateCreditInstallments: vi.fn(() => []),
   };
 
-  return { ...base, ...overrides } as unknown as SalesPageContext;
+  return withPosDerivedCtx({ ...base, ...overrides });
 }
 
 describe("SalesPage — orden de secciones del sidebar (SALES-POS-SIDEBAR-SECTION-ORDER-01)", () => {

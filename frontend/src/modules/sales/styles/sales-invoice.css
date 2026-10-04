@@ -656,18 +656,10 @@
   font-size: var(--text-help-size);
 }
 
-/* ── Save button tooltip ── */
-.sf-save-tooltip {
-  font-size: var(--text-label-sm-size);
-  color: var(--color-text-secondary);
-  text-align: center;
-  padding: 2px 0;
-  max-width: 200px;
-}
-
-/* .sf-payment-summary / __label / __value / __value--ok / __value--short
-   ELIMINADOS (SALES-DS-CLEANUP-13) — sin consumidores TSX; el resumen de
-   cobro actual usa .sales-summary-box/.sales-summary-row (ver SalesPage.css). */
+/* .sf-save-tooltip ELIMINADO (POS-CANEMIT-SSOT-01) — EmitButton ya no repite el motivo de
+   bloqueo como texto visible (lo muestra "Siguiente paso"); queda solo como `title`.
+   .sf-payment-summary* ELIMINADOS (SALES-DS-CLEANUP-13); el resumen de cobro actual es
+   .sales-collection (ver SalesPage.css, POS-COLLECTION-INLINE-B-01). */
 
 /* ═══════════════════════════════════════════════════════════════
    Buscador de productos — grilla horizontal con encabezado de columnas

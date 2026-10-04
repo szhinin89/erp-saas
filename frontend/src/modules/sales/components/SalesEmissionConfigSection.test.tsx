@@ -3,6 +3,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup, fireEvent, within } from "@testing-library/react";
 import { SalesEmissionConfigSection } from "./SalesEmissionConfigSection";
 import type { SalesPageContext } from "../hooks/useSalesPage";
+import { withPosDerivedCtx } from "../test/salesPageCtxTestUtils";
 
 // SALES-POS-EMISSION-PANEL-SIMPLIFICATION-01: el panel principal de /sales ya no expande Sucursal
 // / Caja / Punto de emisión / Tipo Emisión / Tipo Documento / Forma Pago SRI por Defecto — solo
@@ -17,6 +18,39 @@ import type { SalesPageContext } from "../hooks/useSalesPage";
 
 afterEach(() => cleanup());
 
+const BASE_SESSION = {
+  id: "cash-session-1",
+  companyId: "company-1",
+  branchId: "branch-1",
+  userId: "user-1",
+  cashRegisterId: "cr-1",
+  cashRegisterCodeSnapshot: "CAJA-01",
+  cashRegisterNameSnapshot: "Caja Principal",
+  emissionPointId: "ep-1",
+  emissionPointCodeSnapshot: "001",
+  emissionType: "Physical",
+  defaultWarehouseId: null,
+  defaultCustomerId: null,
+};
+/** POS-EMISSION-VISIBILITY-01: la Forma de pago SRI solo existe en emisión electrónica. */
+const ELECTRONIC = {
+  myCashSession: { ...BASE_SESSION, emissionType: "Electronic" },
+} as unknown as Partial<SalesPageContext>;
+const UNMAPPED_PM = {
+  id: "pm-1",
+  code: "OTRO",
+  name: "Otro",
+  isActive: true,
+  requiresReference: false,
+  isCreditAllowed: false,
+  sortOrder: 1,
+  detailType: "None",
+  affectsPhysicalCash: false,
+  accountSource: "PaymentMethodAccount",
+  accountingAccountId: null,
+  sriPaymentMethodCode: null,
+};
+
 function buildCtx(overrides: Partial<SalesPageContext> = {}): SalesPageContext {
   const base = {
     formWatch: { docTypeCode: "01", sriPaymentMethodCode: "01", customerId: "cust-1" },
@@ -29,20 +63,7 @@ function buildCtx(overrides: Partial<SalesPageContext> = {}): SalesPageContext {
     payments: [],
     paymentMethods: [],
     hasCashSession: true,
-    myCashSession: {
-      id: "cash-session-1",
-      companyId: "company-1",
-      branchId: "branch-1",
-      userId: "user-1",
-      cashRegisterId: "cr-1",
-      cashRegisterCodeSnapshot: "CAJA-01",
-      cashRegisterNameSnapshot: "Caja Principal",
-      emissionPointId: "ep-1",
-      emissionPointCodeSnapshot: "001",
-      emissionType: "Physical",
-      defaultWarehouseId: null,
-      defaultCustomerId: null,
-    },
+    myCashSession: BASE_SESSION,
     branchName: "Sucursal Principal",
     sriDocTypes: [{ code: "01", name: "Factura" }],
     sriPaymentMethods: [
@@ -50,7 +71,7 @@ function buildCtx(overrides: Partial<SalesPageContext> = {}): SalesPageContext {
       { code: "20", name: "Otros con utilización del sistema financiero" },
     ],
   };
-  return { ...base, ...overrides } as unknown as SalesPageContext;
+  return withPosDerivedCtx({ ...base, ...overrides });
 }
 
 describe("SalesEmissionConfigSection — tarjeta compacta (panel principal)", () => {
@@ -92,48 +113,69 @@ describe("SalesEmissionConfigSection — tarjeta compacta (panel principal)", ()
     expect(container.querySelector(".badge--success")).toBeNull();
   });
 
-  it('estado incompleto: aviso rojo "Falta configuración" cuando falta un dato requerido (sin caja abierta)', () => {
+  it('estado incompleto: aviso rojo "Falta configuración" cuando falta un dato BLOQUEANTE (caja abierta sin tipo de emisión)', () => {
+    render(
+      <SalesEmissionConfigSection
+        ctx={buildCtx({
+          myCashSession: { ...BASE_SESSION, emissionType: null },
+        } as unknown as Partial<SalesPageContext>)}
+      />,
+    );
+    expect(screen.getByText("Falta configuración")).toBeTruthy();
+    expect(screen.getByText(/Tipo de emisión/)).toBeTruthy();
+  });
+
+  // POS-CONFIG-STATUS-SEVERITY-01: "sin caja abierta" tiene su propio aviso (CashSessionNotice) y
+  // su propio bloqueante en ctx.emitBlockers — la tarjeta de configuración ya no lo duplica.
+  it("sin caja abierta: la tarjeta no repite el aviso (lo muestra CashSessionNotice)", () => {
     render(
       <SalesEmissionConfigSection
         ctx={buildCtx({ hasCashSession: false, myCashSession: null })}
       />,
     );
-    expect(screen.getByText("Falta configuración")).toBeTruthy();
-    expect(
-      screen.getByText(/Caja abierta \(Sucursal \/ Caja \/ Punto de emisión\)/),
-    ).toBeTruthy();
+    expect(screen.queryByText("Falta configuración")).toBeNull();
   });
 
-  it('estado advertencia: aviso amarillo "Revisar configuración" con la causa, cuando una forma de cobro usada cae al default SRI (no bloquea)', () => {
+  it('estado advertencia (electrónica): aviso amarillo "Revisar configuración" cuando no hay Forma Pago SRI por defecto y aún no hay cobros (no bloquea)', () => {
     render(
       <SalesEmissionConfigSection
         ctx={buildCtx({
-          paymentMethods: [
-            {
-              id: "pm-1",
-              code: "OTRO",
-              name: "Otro",
-              isActive: true,
-              requiresReference: false,
-              isCreditAllowed: false,
-              sortOrder: 1,
-              detailType: "None",
-              affectsPhysicalCash: false,
-              accountSource: "PaymentMethodAccount",
-              accountingAccountId: null,
-              sriPaymentMethodCode: null,
-            },
-          ],
-          payments: [{ _key: 1, paymentMethodId: "pm-1", amount: 10, reference: null }],
-        })}
+          ...ELECTRONIC,
+          formWatch: { docTypeCode: "01", sriPaymentMethodCode: "", customerId: "cust-1" },
+        } as unknown as Partial<SalesPageContext>)}
       />,
     );
     expect(screen.getByText("Revisar configuración")).toBeTruthy();
-    expect(
-      screen.getByText(
-        "Alguna forma de cobro no tiene mapeo SRI propio y usa la Forma Pago SRI por defecto.",
-      ),
-    ).toBeTruthy();
+    expect(screen.getByText("No hay Forma Pago SRI por defecto configurada.")).toBeTruthy();
+  });
+
+  it("electrónica: una forma de cobro que usa el default SRI es solo informativa — la tarjeta no alarma", () => {
+    render(
+      <SalesEmissionConfigSection
+        ctx={buildCtx({
+          ...ELECTRONIC,
+          paymentMethods: [UNMAPPED_PM],
+          payments: [{ _key: 1, paymentMethodId: "pm-1", amount: 10, reference: null }],
+        } as unknown as Partial<SalesPageContext>)}
+      />,
+    );
+    expect(screen.queryByText("Revisar configuración")).toBeNull();
+    expect(screen.queryByText("Falta configuración")).toBeNull();
+  });
+
+  it("física: nunca muestra avisos de Forma de pago SRI, aunque no haya default ni mapeo", () => {
+    render(
+      <SalesEmissionConfigSection
+        ctx={buildCtx({
+          formWatch: { docTypeCode: "01", sriPaymentMethodCode: "", customerId: "cust-1" },
+          paymentMethods: [UNMAPPED_PM],
+          payments: [{ _key: 1, paymentMethodId: "pm-1", amount: 10, reference: null }],
+        } as unknown as Partial<SalesPageContext>)}
+      />,
+    );
+    expect(screen.queryByText("Revisar configuración")).toBeNull();
+    expect(screen.queryByText("Falta configuración")).toBeNull();
+    expect(screen.queryByText(/Forma Pago SRI/)).toBeNull();
   });
 
   it("no bloquea/alarma mientras la sesión de caja todavía se está verificando (hasCashSession null)", () => {
@@ -168,8 +210,16 @@ describe("SalesEmissionConfigSection — tarjeta compacta (panel principal)", ()
 });
 
 describe("SalesEmissionConfigSection — modal de detalle", () => {
-  it('"Configuración" abre el modal con los datos completos de emisión', () => {
+  it("física: el modal NO muestra Forma Pago SRI por Defecto (solo existe en el XML electrónico)", () => {
     render(<SalesEmissionConfigSection ctx={buildCtx()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Configuración" }));
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByText("Tipo Emisión:")).toBeTruthy();
+    expect(within(dialog).queryByText("Forma Pago SRI por Defecto")).toBeNull();
+  });
+
+  it('"Configuración" abre el modal con los datos completos de emisión (electrónica)', () => {
+    render(<SalesEmissionConfigSection ctx={buildCtx(ELECTRONIC)} />);
     fireEvent.click(screen.getByRole("button", { name: "Configuración" }));
 
     const dialog = screen.getByRole("dialog");
@@ -211,7 +261,7 @@ describe("SalesEmissionConfigSection — modal de detalle", () => {
 
   it("cambiar Forma Pago SRI por Defecto desde el modal actualiza el mismo form (ctx.setValue)", () => {
     const setValue = vi.fn();
-    render(<SalesEmissionConfigSection ctx={buildCtx({ setValue })} />);
+    render(<SalesEmissionConfigSection ctx={buildCtx({ ...ELECTRONIC, setValue })} />);
     fireEvent.click(screen.getByRole("button", { name: "Configuración" }));
 
     const select = screen.getByDisplayValue("01 — Sin utilización del sistema financiero");
@@ -221,7 +271,7 @@ describe("SalesEmissionConfigSection — modal de detalle", () => {
   });
 
   it("con el formulario editable, el modal permite cambiar los selects (no disabled)", () => {
-    render(<SalesEmissionConfigSection ctx={buildCtx({ fieldDisabled: false })} />);
+    render(<SalesEmissionConfigSection ctx={buildCtx({ ...ELECTRONIC, fieldDisabled: false })} />);
     fireEvent.click(screen.getByRole("button", { name: "Configuración" }));
 
     const docTypeSelect = screen.getByDisplayValue(
@@ -235,7 +285,7 @@ describe("SalesEmissionConfigSection — modal de detalle", () => {
   });
 
   it("con el formulario bloqueado (fieldDisabled), el mismo botón abre el modal en solo lectura", () => {
-    render(<SalesEmissionConfigSection ctx={buildCtx({ fieldDisabled: true })} />);
+    render(<SalesEmissionConfigSection ctx={buildCtx({ ...ELECTRONIC, fieldDisabled: true })} />);
     fireEvent.click(screen.getByRole("button", { name: "Configuración" }));
 
     expect(screen.getByRole("dialog")).toBeTruthy();
@@ -252,38 +302,26 @@ describe("SalesEmissionConfigSection — modal de detalle", () => {
   it("cuando falta un dato bloqueante, el modal lista los faltantes", () => {
     render(
       <SalesEmissionConfigSection
-        ctx={buildCtx({ hasCashSession: false, myCashSession: null })}
+        ctx={buildCtx({
+          myCashSession: { ...BASE_SESSION, emissionType: null },
+        } as unknown as Partial<SalesPageContext>)}
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: "Configuración" }));
 
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).getByText(/Falta para poder emitir/)).toBeTruthy();
-    expect(within(dialog).getByText(/Caja abierta/)).toBeTruthy();
+    expect(within(dialog).getByText(/Tipo de emisión/)).toBeTruthy();
   });
 
-  it("cuando hay una advertencia (fallback en uso), el modal muestra la causa", () => {
+  it("cuando hay un fallback en uso (electrónica), el modal muestra la causa como información", () => {
     render(
       <SalesEmissionConfigSection
         ctx={buildCtx({
-          paymentMethods: [
-            {
-              id: "pm-1",
-              code: "OTRO",
-              name: "Otro",
-              isActive: true,
-              requiresReference: false,
-              isCreditAllowed: false,
-              sortOrder: 1,
-              detailType: "None",
-              affectsPhysicalCash: false,
-              accountSource: "PaymentMethodAccount",
-              accountingAccountId: null,
-              sriPaymentMethodCode: null,
-            },
-          ],
+          ...ELECTRONIC,
+          paymentMethods: [UNMAPPED_PM],
           payments: [{ _key: 1, paymentMethodId: "pm-1", amount: 10, reference: null }],
-        })}
+        } as unknown as Partial<SalesPageContext>)}
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: "Configuración" }));

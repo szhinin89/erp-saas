@@ -3,6 +3,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { SalesPageContext } from "../hooks/useSalesPage";
+import { withPosDerivedCtx } from "../test/salesPageCtxTestUtils";
+import { resolveSalesEmissionType } from "../utils/salesEmissionType";
 import type { SalesInvoiceDto, SalesListItemDto } from "../api/salesService";
 
 // ── Mocks de componentes pesados: esta suite prueba únicamente la
@@ -280,7 +282,7 @@ function buildCtx(
     simulateCreditInstallments: vi.fn(() => []),
   };
 
-  return { ...base, ...overrides } as unknown as SalesPageContext;
+  return withPosDerivedCtx({ ...base, ...overrides });
 }
 
 describe("SalesPage — acciones de RIDE", () => {
@@ -308,6 +310,7 @@ describe("SalesPage — acciones de RIDE", () => {
               lineCount: 1,
               grandTotal: 10,
               createdAt: "",
+              emissionType: "Electronic",
             },
             {
               id: "inv-draft",
@@ -319,6 +322,7 @@ describe("SalesPage — acciones de RIDE", () => {
               lineCount: 1,
               grandTotal: 10,
               createdAt: "",
+              emissionType: "Electronic",
             },
           ],
         }),
@@ -345,6 +349,7 @@ describe("SalesPage — acciones de RIDE", () => {
               lineCount: 1,
               grandTotal: 10,
               createdAt: "",
+              emissionType: "Electronic",
             },
           ],
         }),
@@ -518,5 +523,77 @@ describe("SalesPage — acciones de RIDE", () => {
 
       expect(refreshCashSession).toHaveBeenCalledTimes(1);
     });
+  });
+});
+
+// POS-EMISSION-VISIBILITY-01 / POS-EMISSION-TYPE-SNAPSHOT-01 — la visibilidad electrónica de una
+// factura existente depende de SU snapshot (SalesInvoice.EmissionType), nunca de la caja abierta.
+describe("SalesPage — visibilidad Electrónica/Física por snapshot de la factura", () => {
+  afterEach(() => cleanup());
+
+  function ctxFor(invoiceType: "Electronic" | "Physical", sessionType: "Electronic" | "Physical") {
+    const editing = buildInvoice({
+      status: "Authorized",
+      emissionType: invoiceType,
+      electronicStatus: invoiceType === "Electronic" ? "Authorized" : "None",
+      accessKey: invoiceType === "Electronic" ? "0310202601179001234500110010010000000101234567818" : null,
+    });
+    const myCashSession = { emissionType: sessionType } as unknown as SalesPageContext["myCashSession"];
+    return buildCtx({
+      tab: "nuevo",
+      isDraft: false,
+      readOnly: true,
+      editing,
+      myCashSession,
+      isElectronic: resolveSalesEmissionType(editing, myCashSession) === "Electronic",
+    });
+  }
+
+  it("factura ELECTRÓNICA histórica abierta desde una caja FÍSICA conserva RIDE, diagnóstico y clave de acceso", () => {
+    useSalesPageMock.mockReturnValue(ctxFor("Electronic", "Physical"));
+    renderSalesPage();
+    expect(screen.getByText("Ver RIDE")).toBeTruthy();
+    expect(screen.getByText("Descargar RIDE")).toBeTruthy();
+    expect(screen.getByText("Regenerar RIDE")).toBeTruthy();
+    expect(screen.getByTitle("Ver diagnóstico SRI")).toBeTruthy();
+    expect(screen.getByText("Clave de Acceso SRI")).toBeTruthy();
+  });
+
+  it("factura FÍSICA histórica abierta desde una caja ELECTRÓNICA no muestra nada electrónico", () => {
+    useSalesPageMock.mockReturnValue(ctxFor("Physical", "Electronic"));
+    renderSalesPage();
+    expect(screen.queryByText("Ver RIDE")).toBeNull();
+    expect(screen.queryByText("Descargar RIDE")).toBeNull();
+    expect(screen.queryByText("Regenerar RIDE")).toBeNull();
+    expect(screen.queryByTitle("Ver diagnóstico SRI")).toBeNull();
+    expect(screen.queryByText("Clave de Acceso SRI")).toBeNull();
+    expect(screen.queryByText("Generar documento electrónico")).toBeNull();
+    // Acciones comunes siguen disponibles.
+    expect(screen.getByText("Anular")).toBeTruthy();
+  });
+
+  it("listado: 'Ver RIDE' solo en facturas Authorized ELECTRÓNICAS (snapshot de cada fila)", () => {
+    const row = (id: string, emissionType: string): SalesListItemDto => ({
+      id,
+      invoiceNumber: `001-001-${id}`,
+      issueDate: "2026-07-01",
+      customerId: "c1",
+      customerName: "A",
+      status: "Authorized",
+      lineCount: 1,
+      grandTotal: 10,
+      createdAt: "",
+      emissionType,
+    });
+    useSalesPageMock.mockReturnValue(
+      buildCtx({
+        tab: "listado",
+        isElectronic: false,
+        listItems: [row("000000001", "Electronic"), row("000000002", "Physical")],
+      }),
+    );
+    renderSalesPage();
+    expect(screen.getByLabelText("Ver RIDE de factura 001-001-000000001")).toBeTruthy();
+    expect(screen.queryByLabelText("Ver RIDE de factura 001-001-000000002")).toBeNull();
   });
 });

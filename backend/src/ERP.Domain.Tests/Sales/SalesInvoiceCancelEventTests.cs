@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Events;
@@ -35,7 +36,8 @@ public sealed class SalesInvoiceCancelEventTests
             issueDate: new DateOnly(2026, 9, 13),
             createdBy: UserId,
             paymentTerm: paymentTerm,
-            cashSessionId: Guid.NewGuid()
+            cashSessionId: Guid.NewGuid(),
+            emissionType: EmissionType.Physical
         );
 
         var line = SalesInvoiceDetail.Create(

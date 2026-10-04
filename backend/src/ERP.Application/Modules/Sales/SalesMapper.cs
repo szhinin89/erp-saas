@@ -100,7 +100,9 @@ internal static class SalesMapper
                     p.ChequeDetail.HolderName,
                     p.ChequeDetail.CashDate
                 )
-                : null
+                : null,
+            p.TenderedAmount,
+            p.ChangeAmount
         );
 
     public static SalesInvoiceDetailDto MapDetail(SalesInvoiceDetail l) =>

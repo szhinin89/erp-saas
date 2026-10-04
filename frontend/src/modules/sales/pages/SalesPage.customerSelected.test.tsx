@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { SalesPageContext } from "../hooks/useSalesPage";
+import { withPosDerivedCtx } from "../test/salesPageCtxTestUtils";
 
 // ── Mocks de componentes pesados, salvo CustomerPicker: esta suite prueba
 // específicamente la integración real SalesPage → CustomerPicker →
@@ -247,7 +248,7 @@ function buildCtx(overrides: Partial<SalesPageContext> = {}): SalesPageContext {
     simulateCreditInstallments: vi.fn(() => []),
   };
 
-  return { ...base, ...overrides } as unknown as SalesPageContext;
+  return withPosDerivedCtx({ ...base, ...overrides });
 }
 
 describe("SalesPage — cliente seleccionado + Editar datos integrado (SALES-DS-CUSTOMER-SELECTED-08)", () => {

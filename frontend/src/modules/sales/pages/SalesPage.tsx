@@ -32,6 +32,7 @@ import { PaymentMethodsSection } from "../components/PaymentMethodsSection";
 import { remainingToCollect } from "../components/paymentRemaining";
 import { deriveDetailReference } from "../utils/paymentDetailReference";
 import { useSalesPage } from "../hooks/useSalesPage";
+import { issueStepsFor } from "../utils/salesIssueSteps";
 import type { SalesListItemDto } from "../api/salesService";
 import { useRideActions } from "../hooks/useRideActions";
 import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
@@ -132,7 +133,9 @@ export function SalesPage() {
               onClick={() => navigate(`/inventory/kardex?docId=${inv.id}&docType=SalesInvoice`)}
             />
           )}
-          {inv.status === "Authorized" && (
+          {/* POS-EMISSION-VISIBILITY-01: el RIDE solo existe para facturas electrónicas — se
+              decide por el snapshot de la factura, nunca por la caja abierta actual. */}
+          {inv.status === "Authorized" && inv.emissionType === "Electronic" && (
             <ZHIconButton
               icon="picture_as_pdf"
               title="Ver RIDE"
@@ -148,9 +151,10 @@ export function SalesPage() {
 
   return (
     <div className="sales-page-root">
-      {/* Solo aplica a Puntos de Emisión Electrónicos — fuente única ctx.isElectronic
-          (CashRegister → EmissionPoint → EmissionType). Un Punto Físico nunca debe consultar
-          ni mostrar estado de configuración SRI. */}
+      {/* Solo aplica a ventas Electrónicas — fuente única ctx.isElectronic
+          (POS-EMISSION-TYPE-SNAPSHOT-01: snapshot de la factura si ya existe; si es venta nueva,
+          CashRegister → EmissionPoint → EmissionType). Una venta Física nunca debe consultar ni
+          mostrar estado de configuración SRI. */}
       {ctx.isElectronic && <ZHElectronicEnvironmentBanner />}
 
       {/* ── Aviso caja no abierta / no se pudo verificar ────────────── */}
@@ -529,7 +533,9 @@ export function SalesPage() {
               )}
             </div>
 
-            {ctx.editing && (
+            {/* POS-EMISSION-VISIBILITY-01: acciones secundarias = solo electrónicas (diagnóstico SRI,
+                RIDE). Una venta física no tiene ninguna. */}
+            {ctx.editing && ctx.isElectronic && (
               <div
                 className="sf-bottombar__secondary-actions"
                 aria-label="Acciones secundarias de factura"
@@ -542,7 +548,7 @@ export function SalesPage() {
                   />
                 )}
 
-                {ctx.editing && ctx.editing.status === "Authorized" && (
+                {ctx.editing && ctx.isElectronic && ctx.editing.status === "Authorized" && (
                   <ZHBtn
                     variant="secondary"
                     size="sm"
@@ -557,7 +563,7 @@ export function SalesPage() {
                   </ZHBtn>
                 )}
 
-                {ctx.editing && ctx.editing.status === "Authorized" && (
+                {ctx.editing && ctx.isElectronic && ctx.editing.status === "Authorized" && (
                   <ZHBtn
                     variant="secondary"
                     size="sm"
@@ -576,7 +582,7 @@ export function SalesPage() {
                   </ZHBtn>
                 )}
 
-                {ctx.editing && ctx.editing.status === "Authorized" && (
+                {ctx.editing && ctx.isElectronic && ctx.editing.status === "Authorized" && (
                   <ZHBtn
                     variant="secondary"
                     size="sm"
@@ -631,8 +637,11 @@ export function SalesPage() {
         initialKey={ctx.detailKey}
         available={remainingToCollect(ctx, ctx.detailMethodId)}
         onConfirm={(rows) => {
-          ctx.setInvoicePayments((prev) => {
-            const without = prev.filter(
+          // POS-CASH-ONLY-FOLLOWS-TOTAL-01: base = pagos con el Efectivo único ya fijado a lo
+          // recibido (si aplica) — misma base con la que se calculó `available`.
+          const base = ctx.paymentsForAdditionalMethod(ctx.detailMethodId);
+          ctx.setInvoicePayments(() => {
+            const without = base.filter(
               (p) => p.paymentMethodId !== ctx.detailMethodId,
             );
             const newPayments = rows.map((r) => ({
@@ -677,7 +686,9 @@ export function SalesPage() {
           ctx.setScheduleIsManual(true);
           const creditPm = ctx.paymentMethods.find((p) => p.isCreditAllowed);
           if (creditPm) {
-            ctx.setInvoicePayments((prev) => {
+            const base = ctx.paymentsForAdditionalMethod(creditPm.id);
+            ctx.setInvoicePayments(() => {
+              const prev = base;
               const exists = prev.find(
                 (p) => p.paymentMethodId === creditPm.id,
               );
@@ -708,7 +719,8 @@ export function SalesPage() {
 
       <SalesIssueModal
         phase={ctx.issuePhase}
-        isElectronic={!!ctx.isElectronic}
+        isElectronic={ctx.isElectronic}
+        steps={issueStepsFor(ctx.isElectronic)}
         customerName={ctx.customerProfile?.name ?? ""}
         lineCount={ctx.lines.length}
         subtotal={ctx.summary.subtotal}
@@ -730,9 +742,6 @@ export function SalesPage() {
           )
         }
         onDownloadXml={() => void ctx.handleDownloadXml()}
-        cashDue={ctx.cashDue}
-        cashReceived={ctx.cashReceived}
-        cashChange={ctx.cashChange}
         error={ctx.issueError}
         onRetry={ctx.retryIssue}
         onCancel={ctx.closeIssueFlow}

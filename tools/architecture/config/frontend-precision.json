@@ -59,8 +59,8 @@
     {
       "file": "frontend/src/modules/sales/components/PaymentMethodsSection.tsx",
       "rule": "F-PREC-policy-read",
-      "count": 2,
-      "reason": "Cálculo: factor de redondeo de la diferencia pagado vs total (nota de tolerancia y caja resumen); la presentación usa usePrecisionDecimals."
+      "count": 1,
+      "reason": "Cálculo: factor de redondeo + tolerancia de settlement de la nota 'dentro de tolerancia' (solo lectura); el estado del cobro editable vive en utils/salesCollectionStatus.ts y la presentación usa usePrecisionDecimals."
     },
     {
       "file": "frontend/src/modules/sales/components/SalesInvoiceLineGridRow.tsx",

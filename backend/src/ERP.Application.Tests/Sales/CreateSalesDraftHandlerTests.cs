@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.MasterData.Services;
@@ -65,6 +66,15 @@ public sealed class CreateSalesDraftHandlerTests
 
         public Fixture()
         {
+            // POS-EMISSION-TYPE-SNAPSHOT-01: la creación del borrador es fail-closed si el punto
+            // de emisión de la caja no se resuelve — default "punto electrónico activo" para los
+            // tests de esta suite que no se enfocan en el tipo de emisión.
+            EpRepo
+                .Setup(r => r.GetByIdForCompanyAsync(
+                    It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(ERP.Domain.Modules.Company.Entities.EmissionPoint.Create(
+                    TenantId, CompanyId, Guid.NewGuid(), "001", "Punto 1",
+                    ERP.Domain.Modules.Company.Enums.EmissionType.Electronic, true, Guid.NewGuid()));
             // SALES-CONTEXTUAL-PRICING-DRAFT-06B: default "sin pricing resuelto" (diccionario
             // vacío) para los tests de esta suite que no le importa el pricing contextual — evita
             // depender del comportamiento de Moq para mocks sin configurar en un método nuevo.
@@ -679,6 +689,200 @@ public sealed class CreateSalesDraftHandlerTests
         var result = await handler.Handle(command, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
+    }
+
+    // ── POS-CASH-TENDERED-01: contrato HTTP de pagos — SalesPaymentInput.TenderedAmount ──────
+    // El backend valida el efectivo entregado (no confía en el POS): solo formas de cobro que
+    // mueven el cajón, >= importe aplicado, > 0, escala de dinero. Nunca altera el importe aplicado.
+
+    private static readonly PaymentMethod TenderCashMethod = PaymentMethod.Create(
+        TenantId, "EFECTIVO", "Efectivo", false, false, 1, Guid.NewGuid(), affectsPhysicalCash: true
+    );
+    private static readonly PaymentMethod TenderCardMethod = PaymentMethod.Create(
+        TenantId, "TARJETA", "Tarjeta", false, false, 2, Guid.NewGuid(), affectsPhysicalCash: false
+    );
+
+    private static async Task<(Result<ERP.Application.Modules.Sales.DTOs.SalesInvoiceDto> Result, SalesInvoice? Captured)>
+        CreateWithPaymentsAsync(params SalesPaymentInput[] payments)
+    {
+        var f = new Fixture();
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
+        f.PmRepo.Setup(r => r.GetByIdAsync(TenantId, TenderCashMethod.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TenderCashMethod);
+        f.PmRepo.Setup(r => r.GetByIdAsync(TenantId, TenderCardMethod.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TenderCardMethod);
+        SalesInvoice? captured = null;
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
+            .Returns(Task.CompletedTask);
+
+        var cmd = Fixture.ValidCommand() with { Payments = payments.ToList() };
+        var result = await f.BuildHandler().Handle(cmd, CancellationToken.None);
+        return (result, captured);
+    }
+
+    [Fact]
+    public async Task Efectivo_entregado_se_persiste_en_el_pago_sin_cambiar_el_importe_aplicado()
+    {
+        var (result, inv) = await CreateWithPaymentsAsync(
+            new SalesPaymentInput(TenderCashMethod.Id, 14.66m, TenderedAmount: 20m)
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var payment = inv!.Payments.Single();
+        payment.Amount.Should().Be(14.66m);
+        payment.TenderedAmount.Should().Be(20m);
+        payment.ChangeAmount.Should().Be(5.34m);
+        var dto = result.Value!.Payments.Single();
+        dto.TenderedAmount.Should().Be(20m);
+        dto.ChangeAmount.Should().Be(5.34m);
+        dto.Amount.Should().Be(14.66m, "TenderedAmount nunca incrementa lo cobrado");
+    }
+
+    [Fact]
+    public async Task Multipago_solo_la_porcion_efectivo_lleva_efectivo_entregado()
+    {
+        var (result, inv) = await CreateWithPaymentsAsync(
+            new SalesPaymentInput(TenderCardMethod.Id, 10m),
+            new SalesPaymentInput(TenderCashMethod.Id, 4.66m, TenderedAmount: 10m)
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        inv!.Payments.Single(p => p.PaymentMethodId == TenderCardMethod.Id).TenderedAmount.Should().BeNull();
+        inv.Payments.Single(p => p.PaymentMethodId == TenderCashMethod.Id).ChangeAmount.Should().Be(5.34m);
+        inv.Payments.Sum(p => p.Amount).Should().Be(14.66m);
+    }
+
+    [Fact]
+    public async Task Efectivo_entregado_en_forma_de_cobro_que_no_es_efectivo_se_rechaza()
+    {
+        var (result, inv) = await CreateWithPaymentsAsync(
+            new SalesPaymentInput(TenderCardMethod.Id, 14.66m, TenderedAmount: 20m)
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("solo aplica a cobros en efectivo");
+        inv.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Efectivo_entregado_menor_al_aplicado_se_rechaza()
+    {
+        var (result, _) = await CreateWithPaymentsAsync(
+            new SalesPaymentInput(TenderCashMethod.Id, 14.66m, TenderedAmount: 10m)
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("no puede ser menor al monto aplicado");
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-5)]
+    public async Task Efectivo_entregado_cero_o_negativo_se_rechaza(decimal tendered)
+    {
+        var (result, _) = await CreateWithPaymentsAsync(
+            new SalesPaymentInput(TenderCashMethod.Id, 14.66m, TenderedAmount: tendered)
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("mayor a cero");
+    }
+
+    [Fact]
+    public async Task Efectivo_entregado_con_mas_de_dos_decimales_se_rechaza()
+    {
+        var (result, _) = await CreateWithPaymentsAsync(
+            new SalesPaymentInput(TenderCashMethod.Id, 14.66m, TenderedAmount: 20.001m)
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("2 decimales");
+    }
+
+    // ── POS-EMISSION-TYPE-SNAPSHOT-01: tipo de emisión snapshot + fail-closed ──────────────
+
+    [Theory]
+    [InlineData(ERP.Domain.Modules.Company.Enums.EmissionType.Electronic)]
+    [InlineData(ERP.Domain.Modules.Company.Enums.EmissionType.Physical)]
+    public async Task El_borrador_toma_el_EmissionType_del_punto_de_emision_de_la_caja(
+        ERP.Domain.Modules.Company.Enums.EmissionType type
+    )
+    {
+        var f = new Fixture();
+        var ep = ERP.Domain.Modules.Company.Entities.EmissionPoint.Create(
+            TenantId, CompanyId, Guid.NewGuid(), "002", "Punto 2", type, false, Guid.NewGuid());
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(ep.Id);
+        f.EpRepo.Setup(r => r.GetByIdForCompanyAsync(TenantId, CompanyId, ep.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(ep);
+        SalesInvoice? captured = null;
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
+            .Returns(Task.CompletedTask);
+
+        var result = await f.BuildHandler().Handle(Fixture.ValidCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        captured!.EmissionType.Should().Be(type);
+        captured.EmissionPointId.Should().Be(ep.Id);
+    }
+
+    [Fact]
+    public async Task Punto_de_emision_inexistente_rechaza_sin_fallback_silencioso_a_Electronic()
+    {
+        var f = new Fixture();
+        var epId = Guid.NewGuid();
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(epId);
+        f.EpRepo.Setup(r => r.GetByIdForCompanyAsync(TenantId, CompanyId, epId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ERP.Domain.Modules.Company.Entities.EmissionPoint?)null);
+
+        var result = await f.BuildHandler().Handle(Fixture.ValidCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("punto de emisión");
+        f.Repo.Verify(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Caja_sin_punto_de_emision_rechaza_sin_crear_la_venta()
+    {
+        var f = new Fixture();
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns((Guid?)null);
+
+        var result = await f.BuildHandler().Handle(Fixture.ValidCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("punto de emisión");
+        f.Repo.Verify(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Punto_de_emision_desactivado_rechaza_sin_crear_la_venta()
+    {
+        var f = new Fixture();
+        var ep = ERP.Domain.Modules.Company.Entities.EmissionPoint.Create(
+            TenantId, CompanyId, Guid.NewGuid(), "003", "Punto 3",
+            ERP.Domain.Modules.Company.Enums.EmissionType.Physical, false, Guid.NewGuid());
+        ep.Disable(Guid.NewGuid());
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(ep.Id);
+        f.EpRepo.Setup(r => r.GetByIdForCompanyAsync(TenantId, CompanyId, ep.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(ep);
+
+        var result = await f.BuildHandler().Handle(Fixture.ValidCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("desactivado");
+        f.Repo.Verify(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -2024,7 +2228,8 @@ public sealed class CreateSalesDraftHandlerTests
             paymentTerm: ERP.Domain.Modules.Sales.ValueObjects.PaymentTermSnapshot.Create(
                 Guid.NewGuid(), "Contado", 1, 0
             ),
-            cashSessionId: Guid.NewGuid()
+            cashSessionId: Guid.NewGuid(),
+            emissionType: EmissionType.Physical
         );
 
         legacyInvoice.PricingTraceabilityVersion.Should().BeNull();

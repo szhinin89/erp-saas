@@ -40,9 +40,10 @@ public sealed class SalesInvoiceConfiguration : IEntityTypeConfiguration<SalesIn
             .Property(x => x.EmissionType)
             .HasColumnName("emission_type")
             .HasConversion<short>()
-            .IsRequired()
-            .HasDefaultValue(EmissionType.Electronic)
-            .HasSentinel((EmissionType)0);
+            // POS-EMISSION-TYPE-SNAPSHOT-01: sin default de BD — el tipo SIEMPRE lo fija el dominio
+            // (snapshot explícito del EmissionPoint). Un default Electronic era un fallback
+            // silencioso para cualquier inserción sin valor.
+            .IsRequired();
 
         builder
             .Property(x => x.SriPaymentMethodCode)

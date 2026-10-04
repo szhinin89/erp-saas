@@ -7,10 +7,8 @@ export const PAYMENT_DETAIL_TOLERANCE = 0.01;
 /** Tolerancia de redondeo al distribuir cuotas de crédito (suma de cuotas vs monto). */
 export const INSTALLMENT_ROUNDING_TOLERANCE = 0.01;
 
-/** Tolerancia acumulada para validar que los cobros suman el total de la factura.
- *  Ligeramente mayor que PAYMENT_DETAIL_TOLERANCE para absorber errores de redondeo
- *  cuando hay múltiples formas de pago con decimales. */
-export const INVOICE_PAYMENT_TOLERANCE = 0.02;
-
-/** Tolerancia para determinar si el cobro excede el total de la factura. */
-export const PAYMENT_EXCEEDS_TOLERANCE = 0.01;
+// POS-COLLECTION-SSOT-01: la tolerancia de cuadre cobros-vs-total de la factura YA NO vive aquí
+// (antes INVOICE_PAYMENT_TOLERANCE=0.02 / PAYMENT_EXCEEDS_TOLERANCE=0.01, distintas entre sí y de
+// la del backend). Es la tolerancia de settlement de la empresa —
+// CompanyPrecisionPolicy.SettlementToleranceAmount (getPrecisionPolicy()), la misma que usa
+// AuthorizeSalesInvoiceHandler — consumida por utils/salesCollectionStatus.ts.

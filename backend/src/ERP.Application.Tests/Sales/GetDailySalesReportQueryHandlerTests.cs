@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Sales.UseCases.GetDailySalesReport;
@@ -78,7 +79,8 @@ public sealed class GetDailySalesReportQueryHandlerTests
             cashSession.Id,
             docTypeCode: "01",
             emissionPointId: EmissionPointId,
-            sriPaymentMethodCode: "01"
+            sriPaymentMethodCode: "01",
+            emissionType: EmissionType.Electronic
         );
 
         var line = SalesInvoiceDetail.Create(

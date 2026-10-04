@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Application.Modules.Sales.Services;
@@ -50,7 +51,8 @@ public sealed class SalesReturnCreditNoteDataProviderTests
             createdBy: UserId,
             paymentTerm: paymentTerm,
             cashSessionId: CashSessionId,
-            emissionPointId: EmissionPointId
+            emissionPointId: EmissionPointId,
+            emissionType: EmissionType.Electronic
         );
 
         var line = SalesInvoiceDetail.Create(
@@ -305,7 +307,8 @@ public sealed class SalesReturnCreditNoteDataProviderTests
             createdBy: UserId,
             paymentTerm: paymentTerm,
             cashSessionId: CashSessionId,
-            emissionPointId: EmissionPointId
+            emissionPointId: EmissionPointId,
+            emissionType: EmissionType.Electronic
         );
         var invoiceLine = SalesInvoiceDetail.Create(
             inv.Id,
@@ -501,7 +504,8 @@ public sealed class SalesReturnCreditNoteDataProviderTests
             TenantId, CompanyId, BranchId, CustomerId, customer,
             invoiceNumber: "001-001-000000047", issueDate: new DateOnly(2026, 7, 20),
             createdBy: UserId, paymentTerm: paymentTerm, cashSessionId: CashSessionId,
-            emissionPointId: EmissionPointId
+            emissionPointId: EmissionPointId,
+            emissionType: EmissionType.Electronic
         );
         var line = SalesInvoiceDetail.Create(
             inv.Id, TenantId, "Producto con impuestos especiales", quantity, unitPrice,

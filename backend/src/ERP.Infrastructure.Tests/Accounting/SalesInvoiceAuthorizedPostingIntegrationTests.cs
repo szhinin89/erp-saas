@@ -348,7 +348,8 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
             createdBy: _createdBy,
             paymentTerm: paymentTerm,
             cashSessionId: _cashSessionId,
-            emissionPointId: null
+            emissionPointId: null,
+            emissionType: EmissionType.Physical
         );
 
         var line = SalesInvoiceDetail.Create(
@@ -603,7 +604,8 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
             createdBy: _createdBy,
             paymentTerm: paymentTerm,
             cashSessionId: _cashSessionId,
-            emissionPointId: null
+            emissionPointId: null,
+            emissionType: EmissionType.Physical
         );
 
         var line1 = SalesInvoiceDetail.Create(

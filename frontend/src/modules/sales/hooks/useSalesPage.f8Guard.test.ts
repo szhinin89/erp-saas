@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
-import { shouldTriggerF8Emit } from "./useSalesPage";
+import { POS_EMIT_SHORTCUT_ATTR, shouldTriggerF8Emit } from "./useSalesPage";
 
 // SALES-QUICK-CUSTOMER-MODAL-FIX-07A: guard del atajo global F8 ("Emitir Factura") — nunca debe
 // disparar mientras el foco está en un control editable (p. ej. el modal "Crear Cliente"
@@ -54,5 +54,20 @@ describe("SALES-QUICK-CUSTOMER-MODAL-FIX-07A — shouldTriggerF8Emit", () => {
     const button = document.createElement("button");
     expect(shouldTriggerF8Emit({ key: "Enter", target: input }, READY_CTX)).toBe(false);
     expect(shouldTriggerF8Emit({ key: "Enter", target: button }, READY_CTX)).toBe(false);
+  });
+
+  // POS-F8-CASH-INPUT-01: "escribir efectivo recibido → F8 → emitir" sin tener que salir del campo.
+  it("un input que declara el opt-in POS_EMIT_SHORTCUT_ATTR SÍ permite F8 con foco (efectivo recibido)", () => {
+    const input = document.createElement("input");
+    input.setAttribute(POS_EMIT_SHORTCUT_ATTR, "true");
+    expect(shouldTriggerF8Emit({ key: "F8", target: input }, READY_CTX)).toBe(true);
+  });
+
+  it("el opt-in no salta canEmit: con el cobro incompleto F8 sigue sin disparar", () => {
+    const input = document.createElement("input");
+    input.setAttribute(POS_EMIT_SHORTCUT_ATTR, "true");
+    expect(
+      shouldTriggerF8Emit({ key: "F8", target: input }, { ...READY_CTX, canEmit: false }),
+    ).toBe(false);
   });
 });

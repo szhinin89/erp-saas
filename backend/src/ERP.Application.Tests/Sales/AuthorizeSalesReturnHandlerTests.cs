@@ -71,7 +71,8 @@ public sealed class AuthorizeSalesReturnHandlerTests
             issueDate: new DateOnly(2026, 7, 25),
             createdBy: UserId,
             paymentTerm: paymentTerm,
-            cashSessionId: CashSessionId
+            cashSessionId: CashSessionId,
+            emissionType: EmissionType.Electronic
         );
 
         var lines = lineSpecs
@@ -595,7 +596,8 @@ public sealed class AuthorizeSalesReturnHandlerTests
             issueDate: new DateOnly(2026, 7, 25),
             createdBy: UserId,
             paymentTerm: paymentTerm,
-            cashSessionId: CashSessionId
+            cashSessionId: CashSessionId,
+            emissionType: EmissionType.Electronic
         );
         var line = SalesInvoiceDetail.Create(
             inv.Id,
@@ -1007,7 +1009,8 @@ public sealed class AuthorizeSalesReturnHandlerTests
                 issueDate: new DateOnly(2026, 7, 25),
                 createdBy: _createdBy,
                 paymentTerm: paymentTerm,
-                cashSessionId: _cashSessionId
+                cashSessionId: _cashSessionId,
+                emissionType: EmissionType.Electronic
             );
 
             var line = SalesInvoiceDetail.Create(

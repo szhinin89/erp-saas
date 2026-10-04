@@ -146,7 +146,8 @@ public sealed class CashSessionCollectionSummaryRepositoryTests : IAsyncLifetime
             issueDate: new DateOnly(2026, 9, 18),
             createdBy: _createdBy,
             paymentTerm: paymentTerm,
-            cashSessionId: cashSessionIdOverride ?? _cashSessionId
+            cashSessionId: cashSessionIdOverride ?? _cashSessionId,
+            emissionType: EmissionType.Physical
         );
 
         var line = SalesInvoiceDetail.Create(

@@ -1,15 +1,20 @@
+import { useRef } from "react";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
+import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHToggleTile } from "../../../components/zh/ZHToggleTile";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHFieldHelp } from "../../../components/zh/help";
 import { HELP_KEYS } from "../../../help";
 import { ZhDecimalInput } from "../../../components/zh/inputs";
-import { formatMoneyWithSymbol } from "../../../lib/sanitizers";
+import { formatDecimalDisplay, formatMoneyWithSymbol } from "../../../lib/sanitizers";
 import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
-import { INVOICE_PAYMENT_TOLERANCE } from "../constants/tolerances";
 import type { SalesPageContext } from "../hooks/useSalesPage";
+import {
+  quickTenderAmounts,
+  type SalesCollectionStatus,
+} from "../utils/salesCollectionStatus";
 import { remainingToCollect } from "./paymentRemaining";
 
 export interface PaymentMethodsSectionProps {
@@ -32,11 +37,127 @@ function resolveSriPaymentMethodCode(
   return pm?.sriPaymentMethodCode || ctx.formWatch.sriPaymentMethodCode || undefined;
 }
 
+const STATE_ICON: Record<SalesCollectionStatus["tone"], string> = {
+  success: "check_circle",
+  neutral: "schedule",
+  warning: "error",
+  error: "error",
+};
+
+/** Cifra destacada de la tarjeta: Vuelto / Falta / Excede — solo cuando existe. */
+function highlightOf(c: SalesCollectionStatus): { label: string; amount: number } | null {
+  if (c.state === "change") return { label: "Vuelto", amount: c.cashChange };
+  if (c.state === "cashShort" || c.state === "pending") return { label: "Falta", amount: c.amount ?? 0 };
+  if (c.state === "exceeds") return { label: "Excede", amount: c.amount ?? 0 };
+  return null;
+}
+
+/** Texto del estado único (pie de la tarjeta). Las cifras ya están en la tarjeta. */
+const STATE_LABEL: Partial<Record<SalesCollectionStatus["state"], string>> = {
+  change: "Cobro completo",
+  complete: "Cobro completo",
+  cashShort: "Falta por cobrar",
+  pending: "Falta por cobrar",
+};
+
+/**
+ * POS-COLLECTION-INLINE-B-01 — ÚNICA tarjeta dinámica de resultado del cobro (flujo B):
+ * Total a cobrar / Recibido (o Cobrado en multipago) → cifra destacada (Vuelto · Falta · Excede)
+ * → un solo estado. Todo sale de `ctx.collection` (computeSalesCollectionStatus): la vista no
+ * recalcula reglas ni repite mensajes en otras cajas.
+ */
+function CollectionResultCard({
+  c,
+  isMultiPayment,
+}: {
+  c: SalesCollectionStatus;
+  isMultiPayment: boolean;
+}) {
+  const highlight = highlightOf(c);
+  const showReceived = c.cashApplied > 0 && !isMultiPayment;
+  return (
+    <div
+      className={`sales-result sales-result--${c.tone}`}
+      data-collection-state={c.state}
+    >
+      <dl className="sales-result__rows">
+        <dt>Total a cobrar</dt>
+        <dd>
+          <ZHMoneyValue value={c.total} precision="money" />
+        </dd>
+        {showReceived ? (
+          <>
+            <dt>Recibido</dt>
+            <dd>
+              {c.cashReceived !== null ? (
+                <ZHMoneyValue value={c.cashReceived} precision="money" />
+              ) : (
+                <span className="sales-result__empty">—</span>
+              )}
+            </dd>
+          </>
+        ) : (
+          <>
+            <dt>Cobrado</dt>
+            <dd>
+              <ZHMoneyValue value={c.appliedTotal} precision="money" />
+            </dd>
+          </>
+        )}
+        {isMultiPayment && c.cashApplied > 0 && c.cashReceived !== null && (
+          <>
+            <dt>Efectivo recibido</dt>
+            <dd>
+              <ZHMoneyValue value={c.cashReceived} precision="money" />
+            </dd>
+          </>
+        )}
+      </dl>
+      {highlight && (
+        <div className="sales-result__highlight" data-highlight={highlight.label}>
+          <span className="sales-result__highlight-label">
+            {highlight.label}
+            {highlight.label === "Vuelto" && (
+              <ZHFieldHelp helpKey={HELP_KEYS.SALES_PAYMENTS_CHANGE} />
+            )}
+          </span>
+          <span className="sales-result__highlight-amount">
+            <ZHMoneyValue value={highlight.amount} precision="money" />
+          </span>
+        </div>
+      )}
+      <div className="sales-result__state" role="status">
+        <span className="material-symbols-outlined sales-result__state-icon">
+          {STATE_ICON[c.tone]}
+        </span>
+        <span>{STATE_LABEL[c.state] ?? c.label}</span>
+      </div>
+    </div>
+  );
+}
+
 // ── Payment Methods Section ─────────────────────────────────────────────
+// POS-COLLECTION-INLINE-B-01 — flujo B inline: Forma de cobro → (Efectivo) Efectivo recibido
+// (campo ancho + montos rápidos) → UNA tarjeta de resultado (Total / Recibido / Vuelto·Falta +
+// estado único) → Emitir.
+// - Efectivo como ÚNICO cobro: el cajero edita solo "Efectivo recibido"; lo aplicado a la factura
+//   es derivado (sigue al total, ver useSalesPage POS-CASH-ONLY-FOLLOWS-TOTAL-01) y no se muestra
+//   como un segundo campo de dinero idéntico.
+// - Multipago: cada forma de cobro conserva su monto "Aplicado" explícito; Efectivo además pide
+//   "Efectivo recibido" para el vuelto.
 export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
-  // Presentación de textos compuestos: semántica declarada (04E). Los `factor` de redondeo y los
-  // defaultValue de inputs siguen leyendo la escala de money de la policy (cálculo / montaje).
+  // Presentación de textos compuestos: semántica declarada (04E). Los `factor` de redondeo siguen
+  // leyendo la escala de money de la policy (cálculo).
   const moneyDecimals = usePrecisionDecimals("money");
+  const cashInputRef = useRef<HTMLInputElement>(null);
+  const c = ctx.collection;
+  const isMultiPayment = ctx.payments.filter((p) => p.amount > 0).length > 1;
+
+  const focusCashReceived = () => {
+    // El bloque de efectivo se monta en el render siguiente al primer cobro en efectivo.
+    setTimeout(() => cashInputRef.current?.focus(), 0);
+  };
+
   return (
     <div className="sf-sidebar__section">
       <div className="sf-sidebar__header zh-section-title">
@@ -49,7 +170,10 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
           <span
             className="material-symbols-outlined sf-sidebar__header-right zh-icon-md"
             title="Limpiar cobros"
-            onClick={() => ctx.setInvoicePayments([])}
+            onClick={() => {
+              ctx.setInvoicePayments([]);
+              ctx.setCashReceivedInput("");
+            }}
           >
             delete_sweep
           </span>
@@ -73,13 +197,11 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
           {(() => {
             // SALES-PAYMENT-TOLERANCE-NOTE-01: el monto mostrado arriba es SIEMPRE el cobro real
             // (nunca se falsea mostrando el total como si se hubiera cobrado exacto). Cuando la
-            // suma de pagos difiere del total dentro de INVOICE_PAYMENT_TOLERANCE (settlement ya
-            // resuelto y correcto en backend, SalesSettlementPolicy.Tolerance), se aclara esa
-            // diferencia en vez de dejarla como un descuadre visual sin contexto. Si la diferencia
-            // excede la tolerancia, no se muestra nota — sigue viéndose como pendiente/no saldada
-            // según la lógica ya existente (no se toca esa lógica).
-            const decimals = getPrecisionPolicy().moneyDecimals;
-            const factor = 10 ** decimals;
+            // suma de pagos difiere del total dentro de la tolerancia de settlement de la empresa
+            // (CompanyPrecisionPolicy.SettlementToleranceAmount — la misma que usó el backend al
+            // autorizar), se aclara esa diferencia en vez de dejarla como un descuadre visual.
+            const policy = getPrecisionPolicy();
+            const factor = 10 ** policy.moneyDecimals;
             const total = ctx.grandTotal;
             const paid = (ctx.editing?.payments ?? []).reduce(
               (s, p) => s + (p.amount || 0),
@@ -87,7 +209,7 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
             );
             const diff = Math.round((total - paid) * factor) / factor;
             const absDiff = Math.abs(diff);
-            if (total <= 0 || absDiff === 0 || absDiff > INVOICE_PAYMENT_TOLERANCE) {
+            if (total <= 0 || absDiff === 0 || absDiff > policy.settlementToleranceAmount) {
               return null;
             }
             return (
@@ -123,6 +245,7 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
               );
               const hasValue = totalForMethod > 0;
               const isCredit = pm.isCreditAllowed;
+              const isCash = ctx.isCashMethodId(pm.id);
               // BUGFIX-SALES-CREDIT-PAYMENT-CONSISTENCY-01: el backend bloquea Contado + método
               // Crédito (AuthorizeSalesInvoiceHandler) — se deshabilita aquí para prevenir el
               // intento, nunca reemplaza esa validación.
@@ -130,6 +253,10 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
                 ctx.fieldDisabled || (isCredit && !ctx.isCreditTerm);
               const calcRemaining = () =>
                 Math.max(0, remainingToCollect(ctx, pm.id));
+              // Monto aplicado editable solo en multipago: con Efectivo único lo aplicado es
+              // derivado del total y el cajero solo escribe "Efectivo recibido".
+              const showAppliedInput =
+                hasValue && !isCredit && !pm.requiresReference && !(isCash && c.isCashOnly);
 
               return (
                 <div key={pm.id} className="sales-payment-method">
@@ -184,8 +311,9 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
                       } else if (!hasValue) {
                         const rem = calcRemaining();
                         if (rem > 0) {
-                          ctx.setInvoicePayments((prev) => [
-                            ...prev,
+                          const base = ctx.paymentsForAdditionalMethod(pm.id);
+                          ctx.setInvoicePayments([
+                            ...base,
                             {
                               _key: ctx.payKey,
                               paymentMethodId: pm.id,
@@ -195,15 +323,19 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
                           ]);
                           ctx.setPayKey((k) => k + 1);
                         }
+                        if (isCash) focusCashReceived();
+                      } else if (isCash) {
+                        focusCashReceived();
                       }
                     }}
                   />
-                  {hasValue && !isCredit && !pm.requiresReference && (
+                  {showAppliedInput && (
                     <div className="sales-payment-amount-row">
-                      <span className="sales-payment-dollar">$</span>
+                      <span className="sales-payment-applied-label">Aplicado $</span>
                       <ZhDecimalInput
                         precision="money"
                         positiveOnly
+                        aria-label={`Monto aplicado ${pm.name}`}
                         // Valor canónico: el input (precision="money") decide la escala (04G).
                         defaultValue={entry!.amount}
                         disabled={ctx.fieldDisabled}
@@ -237,6 +369,9 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
                       />
                     </div>
                   )}
+                  {/* Efectivo único: sin controles extra bajo la forma de cobro — el recorrido sigue
+                      directo a "Efectivo recibido". Se quita con "Limpiar cobros" del encabezado, o
+                      eligiendo otra forma de cobro (paymentsForAdditionalMethod). */}
                   {hasValue && pm.requiresReference && !isCredit && (
                     <span className="sales-payment-ref-amount">
                       <ZHMoneyValue
@@ -265,7 +400,11 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
                       />
                     </span>
                   )}
-                  {hasValue &&
+                  {/* POS-EMISSION-VISIBILITY-01: el código SRI (formaPago) solo existe en el XML
+                      electrónico — una factura física nunca se vuelve electrónica (snapshot
+                      inmutable), así que en física no se muestra. */}
+                  {ctx.isElectronic &&
+                    hasValue &&
                     !isCredit &&
                     (() => {
                       const sriCode = resolveSriPaymentMethodCode(ctx, pm.id);
@@ -293,98 +432,84 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
               );
             })}
           </div>
-          {ctx.cashDue > 0 && (
-            <div
-              className={`sales-cash-box${ctx.cashInsufficient ? " sales-cash-box--insufficient" : ""}`}
-            >
-              <div className="sales-cash-box__row">
-                <span className="sales-cash-box__label">
-                  Monto recibido (Efectivo):
-                </span>
+
+          {c.cashApplied > 0 && (
+            <div className="sales-tender">
+              <div className="sales-tender__label">
+                <label htmlFor="sales-cash-received">Efectivo recibido</label>
                 <ZHFieldHelp helpKey={HELP_KEYS.SALES_PAYMENTS_CASH_RECEIVED} />
-                <div className="sales-cash-box__input-wrap">
-                  <span className="sales-cash-box__currency">$</span>
-                  <ZhDecimalInput
-                    precision="money"
-                    positiveOnly
-                    // Valor canónico ("" = sin monto): el input (precision="money") decide la escala (04G).
-                    defaultValue={ctx.cashReceived > 0 ? ctx.cashReceived : ""}
-                    disabled={ctx.fieldDisabled}
-                    onBlur={(e) =>
-                      ctx.setCashReceived(Number(e.target.value) || 0)
+              </div>
+              <div className="sales-tender__field">
+                <span className="sales-tender__currency" aria-hidden="true">
+                  $
+                </span>
+                <ZhDecimalInput
+                  id="sales-cash-received"
+                  ref={cashInputRef}
+                  precision="money"
+                  positiveOnly
+                  placeholder="0.00"
+                  // Controlado: Falta / Pago exacto / Vuelto / canEmit se recalculan en cada
+                  // pulsación (POS-COLLECTION-SSOT-01), no al salir del campo.
+                  value={ctx.cashReceivedInput}
+                  onChange={(e) => ctx.setCashReceivedInput(e.target.value)}
+                  disabled={ctx.fieldDisabled}
+                  // POS-F8-CASH-INPUT-01: F8 emite aunque el foco siga aquí (opt-in
+                  // POS_EMIT_SHORTCUT_ATTR, ver useSalesPage); Enter equivale.
+                  data-pos-emit-shortcut="true"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && ctx.canEmit) {
+                      e.preventDefault();
+                      ctx.openIssueFlow();
                     }
-                    className="sales-cash-input"
-                  />
+                  }}
+                  className="sales-tender__input"
+                />
+              </div>
+              {isMultiPayment && (
+                <div className="sales-tender__hint">
+                  Aplicado en efectivo{" "}
+                  <ZHMoneyValue value={c.cashApplied} precision="money" /> · lo que exceda es
+                  vuelto
                 </div>
-              </div>
-              <div
-                className={`sales-cash-box__total-row${ctx.cashInsufficient ? " sales-cash-box__total-row--insufficient" : ""}`}
-              >
-                <span>
-                  {ctx.cashInsufficient ? "✗ Insuficiente" : "Vuelto:"}
-                  {!ctx.cashInsufficient && (
-                    <ZHFieldHelp helpKey={HELP_KEYS.SALES_PAYMENTS_CHANGE} />
-                  )}
-                </span>
-                <span className="sales-cash-box__amount">
-                  <ZHMoneyValue
-                    value={
-                      ctx.cashInsufficient
-                        ? ctx.cashDue - ctx.cashReceived
-                        : ctx.cashChange
-                    }
-                    precision="money"
-                  />
-                </span>
-              </div>
+              )}
+              {!ctx.fieldDisabled && (
+                <div className="sales-tender__quick" aria-label="Montos rápidos de efectivo">
+                  {quickTenderAmounts(c.cashApplied).map((amount) => (
+                    <ZHBtn
+                      key={amount}
+                      type="button"
+                      variant="secondary"
+                      size="xs"
+                      className="sales-tender__quick-btn"
+                      onClick={() => {
+                        ctx.setCashReceivedInput(formatDecimalDisplay(amount, moneyDecimals));
+                        cashInputRef.current?.focus();
+                      }}
+                    >
+                      ${amount}
+                    </ZHBtn>
+                  ))}
+                  <ZHBtn
+                    type="button"
+                    variant="ghost"
+                    size="xs"
+                    className="sales-tender__quick-btn"
+                    onClick={() => {
+                      ctx.setCashReceivedInput("");
+                      cashInputRef.current?.focus();
+                    }}
+                  >
+                    Limpiar
+                  </ZHBtn>
+                </div>
+              )}
             </div>
           )}
-          {(() => {
-            const paid = ctx.paidTotal;
-            const total = ctx.summary.total;
-            const factor = 10 ** getPrecisionPolicy().moneyDecimals;
-            const diff = Math.round((total - paid) * factor) / factor;
-            const exceeds = diff < 0;
-            return (
-              <div
-                className={`sales-summary-box${diff === 0 ? " sales-summary-box--complete" : ""}${exceeds ? " sales-summary-box--exceeds" : ""}`}
-              >
-                {/* SALES-POS-UI-REFINE-01: se retiró la fila "Total factura" — el mismo valor
-                    (ctx.summary.total) ya es el dato más prominente de la pantalla en
-                    "Total a Cobrar" (sf-total-box, arriba en el sidebar); mostrarlo de nuevo acá
-                    era una duplicación visual sin aportar información nueva. `total` se conserva
-                    solo para el cálculo de `diff` (Pendiente/Completo/Excede) debajo. */}
-                <div className="sales-summary-row">
-                  <span>Total cobrado:</span>
-                  <span className="sales-summary-row__amount">
-                    <ZHMoneyValue
-                      value={paid}
-                      precision="money"
-                    />
-                  </span>
-                </div>
-                <div
-                  className={`sales-summary-total-row${diff === 0 ? " sales-summary-total-row--complete" : ""}${exceeds ? " sales-summary-total-row--exceeds" : ""}`}
-                >
-                  <span>
-                    {diff === 0
-                      ? "✓ Cobro completo"
-                      : exceeds
-                        ? "✗ Excede"
-                        : "Pendiente:"}
-                  </span>
-                  {diff !== 0 && (
-                    <span className="sales-summary-total-row__amount">
-                      <ZHMoneyValue
-                        value={Math.abs(diff)}
-                        precision="money"
-                      />
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })()}
+
+          {c.state !== "noTotal" && (
+            <CollectionResultCard c={c} isMultiPayment={isMultiPayment} />
+          )}
         </>
       )}
     </div>

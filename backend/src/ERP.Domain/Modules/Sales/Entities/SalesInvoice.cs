@@ -155,9 +155,11 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
         Guid createdBy,
         PaymentTermSnapshot paymentTerm,
         Guid cashSessionId,
+        // POS-EMISSION-TYPE-SNAPSHOT-01: obligatorio y explícito — snapshot inmutable del tipo del
+        // EmissionPoint resuelto al crear la venta. Nunca se infiere Electronic por omisión.
+        EmissionType emissionType,
         string docTypeCode = "01",
         Guid? emissionPointId = null,
-        EmissionType emissionType = EmissionType.Electronic,
         DateOnly? dueDate = null,
         string? notes = null,
         string currencyCode = "USD",
@@ -191,6 +193,11 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
             );
         if (cashSessionId == Guid.Empty)
             throw new ArgumentException("La caja abierta es obligatoria.", nameof(cashSessionId));
+        if (!Enum.IsDefined(emissionType))
+            throw new ArgumentException(
+                "El tipo de emisión es obligatorio (Electrónica o Física).",
+                nameof(emissionType)
+            );
 
         var inv = new SalesInvoice
         {
