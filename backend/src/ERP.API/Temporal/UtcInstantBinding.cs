@@ -1,7 +1,7 @@
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using ERP.Domain.Common;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ERP.API.Temporal;
 

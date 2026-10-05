@@ -1,8 +1,8 @@
 // CA1000: Static factory methods on Result<T> are intentional API design — moving to non-generic Result class
 // would break the fluent API used across all use cases.
 #pragma warning disable CA1000
-using System.Text.Json.Serialization;
 using ERP.Domain.Exceptions;
+using System.Text.Json.Serialization;
 
 namespace ERP.Application.Common;
 

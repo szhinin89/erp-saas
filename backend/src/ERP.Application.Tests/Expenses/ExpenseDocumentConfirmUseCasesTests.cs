@@ -6,6 +6,8 @@ using ERP.Application.Modules.Payables.UseCases;
 using ERP.Application.Modules.Retentions.Exceptions;
 using ERP.Application.Modules.Retentions.Services;
 using ERP.Application.Modules.Retentions.UseCases;
+using ERP.Application.Tests.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Accounting.Entities;
@@ -25,8 +27,6 @@ using ERP.Domain.Modules.Retentions.Enums;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using ERP.Domain.Exceptions;
-using ERP.Application.Tests.Common;
 
 namespace ERP.Application.Tests.Expenses;
 

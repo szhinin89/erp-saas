@@ -1,5 +1,5 @@
-using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Exceptions;
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.ValueObjects;
 using FluentAssertions;

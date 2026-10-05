@@ -1,16 +1,12 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Communications.ElectronicDocuments;
 using ERP.Application.Modules.Communications.Services;
-using ERP.Application.Modules.Communications.Templates;
 using ERP.Domain.Modules.Communications.Constants;
 using ERP.Domain.Modules.Communications.Entities;
 using ERP.Domain.Modules.Communications.Enums;
-using ERP.Domain.Modules.Communications.ValueObjects;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.Sales.Entities;
-using ERP.Infrastructure.Communications;
-using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Configurations.Communications;
 using ERP.Infrastructure.Services;
 using FluentAssertions;

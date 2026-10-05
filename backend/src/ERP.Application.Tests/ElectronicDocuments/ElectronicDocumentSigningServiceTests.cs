@@ -4,11 +4,11 @@ using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Interfaces;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Security.Cryptography;
-using ERP.Domain.Exceptions;
 
 namespace ERP.Application.Tests.ElectronicDocuments;
 

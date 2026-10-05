@@ -1,4 +1,3 @@
-using ERP.Application.Modules.Expenses.UseCases.Documents;
 using ERP.Application.Modules.Retentions.UseCases;
 using ERP.Domain.Common;
 using ERP.Domain.Modules.Retentions.Enums;

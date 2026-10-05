@@ -7,7 +7,6 @@ using ERP.Domain.Modules.Communications.Entities;
 using ERP.Domain.Modules.Communications.Enums;
 using ERP.Domain.Modules.Communications.ValueObjects;
 using ERP.Infrastructure.Communications;
-using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories.Communications;
 using ERP.Infrastructure.Services;
 using FluentAssertions;

@@ -1,7 +1,7 @@
-using System.Data;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 
 namespace ERP.Infrastructure.Seeding;
 

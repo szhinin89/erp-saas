@@ -1,11 +1,11 @@
-using System.Net;
-using System.Net.Http.Json;
-using System.Text.Json;
 using ERP.Domain.Modules.Finance.Enums;
 using ERP.Infrastructure.Persistence;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace ERP.API.Tests.Integration;
 

@@ -3,7 +3,6 @@ using ERP.Application.Common.Services;
 using ERP.Application.Modules.Retentions.DTOs;
 using ERP.Application.Modules.Retentions.Services;
 using ERP.Domain.Modules.Retentions.Entities;
-using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Domain.Modules.Retentions.Interfaces;
 using FluentValidation;
 using MediatR;

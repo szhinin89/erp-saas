@@ -363,8 +363,11 @@ public sealed class SalesInvoiceCashReceivableSplitAndCancelReversalIntegrationT
         reversal.Lines.Sum(l => l.Debit).Should().Be(0.35m);
         reversal.Lines.Sum(l => l.Credit).Should().Be(0.35m);
         reversal.Lines.Select(l => new { l.AccountId, l.Debit, l.Credit }).Should()
-            .BeEquivalentTo(persistedOriginal.Lines.Select(l => new {
-                l.AccountId, Debit = l.Credit, Credit = l.Debit
+            .BeEquivalentTo(persistedOriginal.Lines.Select(l => new
+            {
+                l.AccountId,
+                Debit = l.Credit,
+                Credit = l.Debit
             }));
     }
 

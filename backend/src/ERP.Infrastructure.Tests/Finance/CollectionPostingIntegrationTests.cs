@@ -1,4 +1,3 @@
-using ERP.Infrastructure.Tests.Common;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
@@ -27,6 +26,7 @@ using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories.Caja;
 using ERP.Infrastructure.Persistence.Repositories.Finance;
 using ERP.Infrastructure.Persistence.Repositories.Sales;
+using ERP.Infrastructure.Tests.Common;
 using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;

@@ -21,11 +21,11 @@ using ERP.Infrastructure.Persistence.Repositories.Caja;
 using ERP.Infrastructure.Persistence.Repositories.Finance;
 using ERP.Infrastructure.Persistence.Repositories.Purchases;
 using ERP.Infrastructure.Persistence.Repositories.Sales;
+using ERP.Infrastructure.Tests.Common;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Testcontainers.PostgreSql;
-using ERP.Infrastructure.Tests.Common;
 
 namespace ERP.Infrastructure.Tests.Persistence;
 

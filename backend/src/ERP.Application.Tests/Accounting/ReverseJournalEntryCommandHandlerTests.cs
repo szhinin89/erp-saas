@@ -1,12 +1,12 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.UseCases.JournalEntries;
+using ERP.Application.Tests.Common;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Accounting.ValueObjects;
 using FluentAssertions;
 using Moq;
-using ERP.Application.Tests.Common;
 
 namespace ERP.Application.Tests.Accounting;
 

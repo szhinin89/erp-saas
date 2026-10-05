@@ -1,9 +1,9 @@
-using System.Data.Common;
 using ERP.Domain.Modules.Communications.Entities;
 using ERP.Domain.Modules.Communications.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Npgsql;
+using System.Data.Common;
 
 namespace ERP.Infrastructure.Persistence.Repositories.Communications;
 

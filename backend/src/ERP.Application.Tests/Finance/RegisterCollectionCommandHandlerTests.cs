@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Finance.DTOs;
 using ERP.Application.Modules.Finance.UseCases.Payments;
+using ERP.Application.Tests.Common;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Finance.Events;
@@ -9,7 +10,6 @@ using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Interfaces;
 using FluentAssertions;
 using Moq;
-using ERP.Application.Tests.Common;
 
 namespace ERP.Application.Tests.Finance;
 

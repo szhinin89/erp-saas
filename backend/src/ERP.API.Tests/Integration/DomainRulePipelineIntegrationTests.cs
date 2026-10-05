@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using ERP.API.Tests.Support;
 using ERP.Application.Behaviors;
 using ERP.Application.Common;
@@ -12,6 +11,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using System.Collections.Concurrent;
 
 namespace ERP.API.Tests.Integration;
 

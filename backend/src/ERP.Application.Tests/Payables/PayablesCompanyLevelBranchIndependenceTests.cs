@@ -1,10 +1,10 @@
-using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Application.Common;
 using ERP.Application.Modules.Payables.UseCases;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
+using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentAssertions;
 using Moq;
 

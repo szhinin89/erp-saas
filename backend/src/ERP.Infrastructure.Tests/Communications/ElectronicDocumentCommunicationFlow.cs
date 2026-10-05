@@ -1,6 +1,3 @@
-using ERP.Domain.Modules.Company.Enums;
-using System.Collections.Concurrent;
-using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.Communications.ElectronicDocuments;
@@ -19,6 +16,7 @@ using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Communications.ValueObjects;
 using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
@@ -43,6 +41,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
+using System.Collections.Concurrent;
+using System.Text;
 
 namespace ERP.Infrastructure.Tests.Communications;
 

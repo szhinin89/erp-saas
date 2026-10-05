@@ -1,4 +1,3 @@
-using System.Text.Json;
 using ERP.API.Extensions;
 using ERP.Application.Common;
 using FluentAssertions;
@@ -6,6 +5,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
+using System.Text.Json;
 
 namespace ERP.API.Tests.Extensions;
 

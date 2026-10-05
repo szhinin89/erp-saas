@@ -6,11 +6,11 @@ using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Accounting.Repositories;
 using ERP.Infrastructure.Persistence;
+using ERP.Infrastructure.Tests.Common;
 using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Testcontainers.PostgreSql;
-using ERP.Infrastructure.Tests.Common;
 
 namespace ERP.Infrastructure.Tests.Accounting;
 

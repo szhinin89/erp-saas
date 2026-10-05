@@ -1,7 +1,7 @@
-using System.Net;
-using System.Text.RegularExpressions;
 using ERP.Application.Common;
 using ERP.Domain.Modules.Communications.Entities;
+using System.Net;
+using System.Text.RegularExpressions;
 
 namespace ERP.Application.Modules.Communications.Templates;
 

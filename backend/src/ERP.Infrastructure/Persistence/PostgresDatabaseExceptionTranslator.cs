@@ -1,10 +1,10 @@
-using System.Data.Common;
-using System.Net.Sockets;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Npgsql;
+using System.Data.Common;
+using System.Net.Sockets;
 
 namespace ERP.Infrastructure.Persistence;
 

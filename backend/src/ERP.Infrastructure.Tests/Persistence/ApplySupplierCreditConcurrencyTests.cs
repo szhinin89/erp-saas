@@ -18,11 +18,11 @@ using ERP.Infrastructure.Accounting.Repositories;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories.Payables;
 using ERP.Infrastructure.Persistence.Repositories.Purchases;
+using ERP.Infrastructure.Tests.Common;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.PostgreSql;
-using ERP.Infrastructure.Tests.Common;
 
 namespace ERP.Infrastructure.Tests.Persistence;
 

@@ -1,7 +1,3 @@
-using System.Collections.Concurrent;
-using System.Net;
-using System.Text;
-using System.Text.Json;
 using ERP.API.Tests.Support;
 using ERP.Application.Auth.UseCases.PasswordReset;
 using ERP.Application.Common.Interfaces;
@@ -11,12 +7,15 @@ using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Services;
 using FluentAssertions;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System.Collections.Concurrent;
+using System.Net;
+using System.Text;
+using System.Text.Json;
 
 namespace ERP.API.Tests.Integration;
 

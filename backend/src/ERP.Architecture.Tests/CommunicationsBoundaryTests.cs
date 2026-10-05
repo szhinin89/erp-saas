@@ -1,9 +1,9 @@
-using System.Reflection;
 using ERP.Application.Modules.Communications.Services;
 using ERP.Domain.Common;
 using ERP.Domain.Modules.Communications.Entities;
 using FluentAssertions;
 using NetArchTest.Rules;
+using System.Reflection;
 
 namespace ERP.Architecture.Tests;
 

@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Branches;
 using ERP.Application.Modules.Payables.Exceptions;
 using ERP.Application.Modules.Payables.UseCases;
+using ERP.Application.Tests.Common;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Caja.Interfaces;
@@ -13,7 +14,6 @@ using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentAssertions;
 using Moq;
-using ERP.Application.Tests.Common;
 
 namespace ERP.Application.Tests.Payables;
 

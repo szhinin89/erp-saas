@@ -1,14 +1,11 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
-using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Application.Modules.Purchases.UseCases;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.ElectronicDocuments.ValueObjects;
-using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
-using ERP.Domain.Modules.Retentions.Entities;
 using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories.ElectronicDocuments;

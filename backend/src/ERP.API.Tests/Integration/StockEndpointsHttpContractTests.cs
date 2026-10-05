@@ -1,6 +1,3 @@
-using System.Net;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using ERP.API.Tests.Support;
 using ERP.Application.Access.Authorization;
 using ERP.Application.Common;
@@ -13,6 +10,9 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
 
 namespace ERP.API.Tests.Integration;
 
@@ -112,8 +112,12 @@ public sealed class StockEndpointsHttpContractTests : IAsyncLifetime
 
     private static readonly object AdjustmentBody = new
     {
-        warehouseId = Warehouse, warehouseName = "Bodega", movementType = "PositiveAdjust",
-        reasonId = Guid.NewGuid(), notes = "n", lines = Array.Empty<object>(),
+        warehouseId = Warehouse,
+        warehouseName = "Bodega",
+        movementType = "PositiveAdjust",
+        reasonId = Guid.NewGuid(),
+        notes = "n",
+        lines = Array.Empty<object>(),
     };
 
     public static TheoryData<string, string, string, int, string> Endpoints =>
@@ -142,13 +146,21 @@ public sealed class StockEndpointsHttpContractTests : IAsyncLifetime
             "/api/v1/inventory/stock/adjustments" => AdjustmentBody,
             _ when method == "PUT" => new
             {
-                id = Doc, warehouseId = Warehouse, warehouseName = "Bodega", movementType = "PositiveAdjust",
-                reasonId = Guid.NewGuid(), notes = "n", lines = Array.Empty<object>(),
+                id = Doc,
+                warehouseId = Warehouse,
+                warehouseName = "Bodega",
+                movementType = "PositiveAdjust",
+                reasonId = Guid.NewGuid(),
+                notes = "n",
+                lines = Array.Empty<object>(),
             },
             _ when url.EndsWith("/cancel", StringComparison.Ordinal) => new { reason = "Error de digitación" },
             "/api/v1/inventory/stock/transfers" => new
             {
-                sourceWarehouseId = Warehouse, targetWarehouseId = Guid.NewGuid(), reason = "r", notes = "n",
+                sourceWarehouseId = Warehouse,
+                targetWarehouseId = Guid.NewGuid(),
+                reason = "r",
+                notes = "n",
                 lines = new[] { new { productId = Item, quantity = 2.5m, description = "Item" } },
             },
             _ => method == "POST" ? new { } : null,
@@ -223,8 +235,13 @@ public sealed class StockEndpointsHttpContractTests : IAsyncLifetime
         {
             Content = JsonContent.Create(new
             {
-                id = Doc, warehouseId = Warehouse, warehouseName = "Bodega", movementType = "PositiveAdjust",
-                reasonId = Guid.NewGuid(), notes = "n", lines = Array.Empty<object>(),
+                id = Doc,
+                warehouseId = Warehouse,
+                warehouseName = "Bodega",
+                movementType = "PositiveAdjust",
+                reasonId = Guid.NewGuid(),
+                notes = "n",
+                lines = Array.Empty<object>(),
             }),
         };
 

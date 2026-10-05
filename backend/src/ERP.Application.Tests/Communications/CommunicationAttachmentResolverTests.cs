@@ -1,4 +1,3 @@
-using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.Communications.Services;
@@ -18,6 +17,7 @@ using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
+using System.Text;
 
 namespace ERP.Application.Tests.Communications;
 

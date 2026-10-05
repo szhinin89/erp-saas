@@ -1,4 +1,3 @@
-using System.Text.Json;
 using ERP.API.Contracts;
 using ERP.API.Temporal;
 using ERP.Application.Modules.Sales.UseCases;
@@ -6,6 +5,7 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Primitives;
+using System.Text.Json;
 
 namespace ERP.API.Tests.Unit;
 

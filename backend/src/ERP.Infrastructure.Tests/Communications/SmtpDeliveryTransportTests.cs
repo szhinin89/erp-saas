@@ -1,10 +1,10 @@
-using System.Net;
-using System.Net.Mail;
-using System.Net.Sockets;
 using ERP.Application.Modules.Communications.Services;
 using ERP.Domain.Modules.Communications.Enums;
 using ERP.Infrastructure.Communications;
 using FluentAssertions;
+using System.Net;
+using System.Net.Mail;
+using System.Net.Sockets;
 
 namespace ERP.Infrastructure.Tests.Communications;
 

@@ -3,6 +3,7 @@ using ERP.Application.Common.Persistence;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Purchases.UseCases;
+using ERP.Application.Tests.Common;
 using ERP.Application.Tests.TestSupport;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Inventory.Entities;
@@ -19,7 +20,6 @@ using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Domain.Modules.Retentions.Interfaces;
 using FluentAssertions;
 using Moq;
-using ERP.Application.Tests.Common;
 
 namespace ERP.Application.Tests.Purchases;
 

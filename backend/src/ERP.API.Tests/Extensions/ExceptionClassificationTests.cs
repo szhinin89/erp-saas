@@ -1,5 +1,3 @@
-using System.Net.Sockets;
-using System.Text.Json;
 using ERP.API.Middleware;
 using ERP.Infrastructure.Persistence;
 using FluentAssertions;
@@ -9,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging.Abstractions;
 using Npgsql;
+using System.Net.Sockets;
+using System.Text.Json;
 
 namespace ERP.API.Tests.Extensions;
 

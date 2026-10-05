@@ -1,4 +1,3 @@
-using System.Reflection;
 using ERP.API.Diagnostics;
 using ERP.Application.Common.Interfaces;
 using FluentAssertions;
@@ -7,6 +6,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
+using System.Reflection;
 
 namespace ERP.API.Tests.Diagnostics;
 

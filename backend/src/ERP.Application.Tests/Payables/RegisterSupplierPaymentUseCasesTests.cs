@@ -1,26 +1,25 @@
 using ERP.Application.Common;
-using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Payables.Exceptions;
 using ERP.Application.Modules.Payables.UseCases;
+using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Enums;
-using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
-using ERP.Domain.Modules.Purchases.Entities;
-using ERP.Domain.Modules.Purchases.Interfaces;
-using CompanyEntity = ERP.Domain.Modules.Company.Entities.Company;
 using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Finance.Enums;
 using ERP.Domain.Modules.Finance.Interfaces;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
+using ERP.Domain.Modules.Purchases.Entities;
+using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Interfaces;
 using FluentAssertions;
 using Moq;
+using CompanyEntity = ERP.Domain.Modules.Company.Entities.Company;
 
 namespace ERP.Application.Tests.Payables;
 

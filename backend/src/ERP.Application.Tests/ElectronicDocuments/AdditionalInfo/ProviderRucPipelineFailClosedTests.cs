@@ -7,7 +7,6 @@ using ERP.Application.Modules.ElectronicDocuments.SchemaValidation;
 using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Application.Modules.ElectronicDocuments.XmlBuilders;
 using ERP.Application.Tests.TestSupport;
-using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;

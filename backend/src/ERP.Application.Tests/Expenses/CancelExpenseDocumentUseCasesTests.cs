@@ -3,6 +3,7 @@ using ERP.Application.Modules.DocTypes.Services;
 using ERP.Application.Modules.Expenses.Exceptions;
 using ERP.Application.Modules.Expenses.UseCases.Documents;
 using ERP.Application.Modules.Retentions.Services;
+using ERP.Application.Tests.Common;
 using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.DocTypes.Constants;
 using ERP.Domain.Modules.DocTypes.Enums;
@@ -18,7 +19,6 @@ using ERP.Domain.Modules.Retentions.Interfaces;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using ERP.Application.Tests.Common;
 
 namespace ERP.Application.Tests.Expenses;
 

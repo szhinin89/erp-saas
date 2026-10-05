@@ -1,7 +1,7 @@
 using ERP.Application.Common;
-using ERP.Application.Modules.Purchases.Exceptions;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
+using ERP.Application.Modules.Purchases.Exceptions;
 using ERP.Domain.Modules.Purchases.Events;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;

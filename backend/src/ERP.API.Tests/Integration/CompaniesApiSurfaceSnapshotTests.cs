@@ -1,7 +1,3 @@
-using System.Reflection;
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Nodes;
 using ERP.API.Attributes;
 using ERP.API.Tests.Support;
 using FluentAssertions;
@@ -10,6 +6,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace ERP.API.Tests.Integration;
 

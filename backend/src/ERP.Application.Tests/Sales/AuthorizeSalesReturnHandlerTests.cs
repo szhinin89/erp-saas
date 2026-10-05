@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Sales.UseCases;
+using ERP.Application.Tests.Common;
 using ERP.Application.Tests.TestSupport;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.MasterData.Entities;
@@ -27,7 +28,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Testcontainers.PostgreSql;
-using ERP.Application.Tests.Common;
 
 namespace ERP.Application.Tests.Sales;
 

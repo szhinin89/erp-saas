@@ -1,6 +1,4 @@
-using System.Xml.Linq;
 using ERP.Application.Common;
-using ERP.Application.Common.Interfaces;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.ElectronicDocuments.SchemaValidation;
 using ERP.Application.Modules.ElectronicDocuments.Services;
@@ -28,6 +26,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
+using System.Xml.Linq;
 using Testcontainers.PostgreSql;
 
 namespace ERP.Infrastructure.Tests.Persistence.SriCatalogs;
@@ -467,14 +466,23 @@ public sealed class SriRetentionCatalogResolutionIntegrationTests : IClassFixtur
         await using var db = _fixture.CreateContext();
         var concept = new SriRetentionCode
         {
-            Id = Guid.NewGuid(), TaxType = "TEST", Code = code, Name = "Concepto de prueba", Percentage = 1m,
+            Id = Guid.NewGuid(),
+            TaxType = "TEST",
+            Code = code,
+            Name = "Concepto de prueba",
+            Percentage = 1m,
         };
         db.SriRetentionCodes.Add(concept);
         foreach (var (from, until, xml) in versions)
             db.SriRetentionCodeVersions.Add(new SriRetentionCodeVersion
             {
-                Id = Guid.NewGuid(), RetentionCodeId = concept.Id, ValidFrom = from, ValidUntil = until,
-                Percentage = 1m, XmlCode = xml, NormativeSourceId = SriNormativeSourceConfiguration.FichaV234Table20Id,
+                Id = Guid.NewGuid(),
+                RetentionCodeId = concept.Id,
+                ValidFrom = from,
+                ValidUntil = until,
+                Percentage = 1m,
+                XmlCode = xml,
+                NormativeSourceId = SriNormativeSourceConfiguration.FichaV234Table20Id,
             });
         await db.SaveChangesAsync();
         return concept.Id;

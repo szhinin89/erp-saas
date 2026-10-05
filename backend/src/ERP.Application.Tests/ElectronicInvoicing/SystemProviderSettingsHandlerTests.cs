@@ -1,11 +1,11 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.ElectronicInvoicing.UseCases.GetSystemProviderSettings;
 using ERP.Application.Modules.ElectronicInvoicing.UseCases.UpsertSystemProviderSettings;
+using ERP.Application.Tests.Common;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Interfaces;
 using FluentAssertions;
 using Moq;
-using ERP.Application.Tests.Common;
 
 namespace ERP.Application.Tests.ElectronicInvoicing;
 

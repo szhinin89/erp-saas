@@ -2,7 +2,6 @@ using ERP.Application.Modules.Communications.Services;
 using ERP.Domain.Modules.Communications.Entities;
 using ERP.Domain.Modules.Communications.Enums;
 using ERP.Domain.Modules.Communications.Services;
-using ERP.Domain.Modules.Communications.ValueObjects;
 using ERP.Infrastructure.Services;
 using Microsoft.Extensions.Logging;
 

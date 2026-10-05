@@ -1,4 +1,3 @@
-using System.Globalization;
 using ERP.Application.Common;
 using ERP.Application.MasterData.Services;
 using ERP.Application.Modules.Communications.ElectronicDocuments;
@@ -11,6 +10,7 @@ using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.Retentions;
 using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Domain.Modules.Retentions.Interfaces;
+using System.Globalization;
 
 namespace ERP.Application.Modules.Retentions.Communications;
 

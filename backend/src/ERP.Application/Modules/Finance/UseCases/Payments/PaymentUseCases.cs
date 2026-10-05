@@ -2,7 +2,6 @@ using ERP.Application.Common;
 using ERP.Application.Common.Idempotency;
 using ERP.Application.Modules.Finance.DTOs;
 using ERP.Domain.Common;
-using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Finance.Enums;

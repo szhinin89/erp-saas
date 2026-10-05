@@ -1,5 +1,4 @@
 using ERP.Application.Common;
-using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Caja.UseCases;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;

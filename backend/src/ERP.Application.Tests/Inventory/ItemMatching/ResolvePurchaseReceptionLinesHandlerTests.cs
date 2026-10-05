@@ -13,7 +13,6 @@ using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Models;
 using FluentAssertions;
-using FluentValidation;
 using MediatR;
 using Moq;
 

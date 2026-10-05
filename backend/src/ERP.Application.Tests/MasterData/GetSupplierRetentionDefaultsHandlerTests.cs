@@ -29,8 +29,12 @@ public sealed class GetSupplierRetentionDefaultsHandlerTests
         catalog.Setup(c => c.GetRetentionCodeByIdAsync(Concept728, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new SriRetentionCode
             {
-                Id = Concept728, TaxType = "IVA", Code = "728", Name = "Ret. IVA 15% – Constructoras",
-                Percentage = 15m, IsActive = false,
+                Id = Concept728,
+                TaxType = "IVA",
+                Code = "728",
+                Name = "Ret. IVA 15% – Constructoras",
+                Percentage = 15m,
+                IsActive = false,
             });
 
         var result = await new GetSupplierRetentionDefaultsHandler(repo.Object, catalog.Object)

@@ -1,7 +1,3 @@
-using System.Net;
-using System.Net.Http.Json;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using ERP.API.Tests.Support;
 using ERP.Application.Modules.Finance.UseCases.Payments;
 using ERP.Domain.Modules.Finance.Enums;
@@ -13,6 +9,10 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
+using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Xunit.Abstractions;
 
 namespace ERP.API.Tests.Integration;

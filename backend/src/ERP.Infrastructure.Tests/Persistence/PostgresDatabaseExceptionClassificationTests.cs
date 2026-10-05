@@ -1,10 +1,10 @@
-using System.Net.Sockets;
 using ERP.Application.Common;
 using ERP.Infrastructure.Persistence;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Npgsql;
+using System.Net.Sockets;
 
 namespace ERP.Infrastructure.Tests.Persistence;
 

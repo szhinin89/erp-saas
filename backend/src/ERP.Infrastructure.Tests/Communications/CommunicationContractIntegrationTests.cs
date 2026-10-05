@@ -1,5 +1,3 @@
-using System.Collections.Concurrent;
-using System.Net.Mail;
 using ERP.Application.Common;
 using ERP.Application.Modules.Communications.DTOs;
 using ERP.Application.Modules.Communications.Services;
@@ -19,6 +17,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Npgsql;
+using System.Collections.Concurrent;
+using System.Net.Mail;
 
 namespace ERP.Infrastructure.Tests.Communications;
 

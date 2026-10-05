@@ -1,8 +1,8 @@
-using System.Reflection;
 using ERP.API.Controllers;
 using ERP.Domain.Kernel.Permissions;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authorization;
+using System.Reflection;
 
 namespace ERP.Architecture.Tests;
 

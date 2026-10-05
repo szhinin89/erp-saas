@@ -6,7 +6,6 @@ using ERP.Application.Modules.Accounting.Posting.Translators;
 using ERP.Application.Modules.Finance.UseCases;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.MasterData.Entities;
-using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Enums;
@@ -31,13 +30,13 @@ using ERP.Infrastructure.Persistence.Repositories.Purchases;
 using ERP.Infrastructure.Persistence.Repositories.Sales;
 using ERP.Infrastructure.Seeding.Steps;
 using ERP.Infrastructure.Tests.Audit;
+using ERP.Infrastructure.Tests.Common;
 using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Testcontainers.PostgreSql;
-using ERP.Infrastructure.Tests.Common;
 
 namespace ERP.Infrastructure.Tests.Accounting;
 

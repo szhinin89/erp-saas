@@ -1,4 +1,3 @@
-using ERP.Infrastructure.Tests.Common;
 using ERP.Application.Audit;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
@@ -17,6 +16,7 @@ using ERP.Infrastructure.Audit;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Seeding.Steps;
 using ERP.Infrastructure.Tests.Audit;
+using ERP.Infrastructure.Tests.Common;
 using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;

@@ -1,6 +1,5 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Idempotency;
-using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Caja.DTOs;
 using ERP.Domain.Common;
 using ERP.Domain.Configuration.Interfaces;

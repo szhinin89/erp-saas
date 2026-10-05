@@ -2,7 +2,6 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Branches;
 using ERP.Application.Modules.Caja;
 using ERP.Application.Modules.Payables.Exceptions;
-using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Caja.Interfaces;

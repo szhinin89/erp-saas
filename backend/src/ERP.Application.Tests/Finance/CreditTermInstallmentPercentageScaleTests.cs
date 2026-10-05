@@ -1,9 +1,9 @@
-using ERP.Domain.Exceptions;
-using System.Globalization;
 using ERP.Application.Modules.Finance.UseCases.CreditTerms;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Finance.Enums;
 using FluentAssertions;
+using System.Globalization;
 
 namespace ERP.Application.Tests.Finance;
 

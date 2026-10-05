@@ -2,7 +2,6 @@ using ERP.Application.Audit;
 using ERP.Application.Common;
 using ERP.Application.Modules.Ride.Services;
 using ERP.Domain.Audit;
-using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;

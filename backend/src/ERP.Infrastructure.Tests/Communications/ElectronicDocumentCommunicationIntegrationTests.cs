@@ -1,4 +1,3 @@
-using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Modules.Ride.UseCases.GetOrGenerateRide;
 using ERP.Domain.Modules.Communications.Constants;
@@ -9,6 +8,7 @@ using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Moq;
+using System.Text;
 
 namespace ERP.Infrastructure.Tests.Communications;
 

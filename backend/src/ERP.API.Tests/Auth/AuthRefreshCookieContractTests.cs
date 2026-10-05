@@ -81,45 +81,45 @@ public sealed class AuthRefreshCookieContractTests
         switch (endpoint)
         {
             case "login":
-            {
-                var c = WithContext(new AuthController(mediator), https);
-                return (await c.Login(new LoginCommand("ana", "pw"), default), c);
-            }
+                {
+                    var c = WithContext(new AuthController(mediator), https);
+                    return (await c.Login(new LoginCommand("ana", "pw"), default), c);
+                }
             case "global-login":
-            {
-                var c = WithContext(new AuthController(mediator), https);
-                return (await c.GlobalLogin(new GlobalLoginCommand("ana", "pw"), default), c);
-            }
+                {
+                    var c = WithContext(new AuthController(mediator), https);
+                    return (await c.GlobalLogin(new GlobalLoginCommand("ana", "pw"), default), c);
+                }
             case "complete-password-reset":
-            {
-                var c = WithContext(new AuthController(mediator), https);
-                return (await c.CompletePasswordReset(new CompletePasswordResetCommand("tok", "N3wPass!"), default), c);
-            }
+                {
+                    var c = WithContext(new AuthController(mediator), https);
+                    return (await c.CompletePasswordReset(new CompletePasswordResetCommand("tok", "N3wPass!"), default), c);
+                }
             case "refresh":
-            {
-                var c = WithContext(new AuthController(mediator), https);
-                return (await c.Refresh(new RefreshRequest("raw-token"), default), c);
-            }
+                {
+                    var c = WithContext(new AuthController(mediator), https);
+                    return (await c.Refresh(new RefreshRequest("raw-token"), default), c);
+                }
             case "reauthenticate":
-            {
-                var c = WithContext(new AuthController(mediator), https, requestCookie: "raw-token");
-                return (await c.Reauthenticate(new ReauthenticateRequest("pw"), default), c);
-            }
+                {
+                    var c = WithContext(new AuthController(mediator), https, requestCookie: "raw-token");
+                    return (await c.Reauthenticate(new ReauthenticateRequest("pw"), default), c);
+                }
             case "switch-company":
-            {
-                var c = WithContext(new AuthController(mediator), https);
-                return (await c.SwitchCompany(new SwitchCompanyRequest(Guid.NewGuid()), default), c);
-            }
+                {
+                    var c = WithContext(new AuthController(mediator), https);
+                    return (await c.SwitchCompany(new SwitchCompanyRequest(Guid.NewGuid()), default), c);
+                }
             case "global/operate-company":
-            {
-                var c = WithContext(new GlobalAuthController(mediator), https);
-                return (await c.OperateCompany(new OperateCompanyRequest(Guid.NewGuid()), default), c);
-            }
+                {
+                    var c = WithContext(new GlobalAuthController(mediator), https);
+                    return (await c.OperateCompany(new OperateCompanyRequest(Guid.NewGuid()), default), c);
+                }
             case "global/return":
-            {
-                var c = WithContext(new GlobalAuthController(mediator), https);
-                return (await c.Return(default), c);
-            }
+                {
+                    var c = WithContext(new GlobalAuthController(mediator), https);
+                    return (await c.Return(default), c);
+                }
             default:
                 throw new ArgumentOutOfRangeException(nameof(endpoint));
         }

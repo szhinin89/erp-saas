@@ -1,6 +1,6 @@
-using System.Diagnostics;
 using ERP.Infrastructure.Security;
 using FluentAssertions;
+using System.Diagnostics;
 
 namespace ERP.Infrastructure.Tests.Security;
 

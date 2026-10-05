@@ -2,13 +2,13 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Communications.Services;
 using ERP.Application.Modules.Communications.Templates;
 using ERP.Application.Tests.TestSupport;
-using Microsoft.Extensions.Logging.Abstractions;
 using ERP.Domain.Modules.Communications.Constants;
 using ERP.Domain.Modules.Communications.Entities;
 using ERP.Domain.Modules.Communications.Enums;
 using ERP.Domain.Modules.Communications.Interfaces;
 using ERP.Domain.Modules.Communications.ValueObjects;
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace ERP.Application.Tests.Communications;

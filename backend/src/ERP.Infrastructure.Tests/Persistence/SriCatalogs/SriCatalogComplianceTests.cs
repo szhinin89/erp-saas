@@ -5,7 +5,6 @@ using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Configurations.SriCatalogs;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace ERP.Infrastructure.Tests.Persistence.SriCatalogs;
@@ -89,13 +88,13 @@ public sealed class SriCatalogComplianceTests
             .ToList();
 
         foreach (var group in versions.GroupBy(v => v.RetentionCodeId))
-        foreach (var date in probeDates)
-        {
-            var count = group.Count(v => IsValidOn(v, date));
-            count.Should().BeLessThanOrEqualTo(1, $"el concepto {group.Key} no puede tener reglas ambiguas el {date:yyyy-MM-dd}");
-            if (!retiredIds.Contains(group.Key))
-                count.Should().Be(1, $"el concepto {group.Key} debe tener exactamente una versión vigente el {date:yyyy-MM-dd}");
-        }
+            foreach (var date in probeDates)
+            {
+                var count = group.Count(v => IsValidOn(v, date));
+                count.Should().BeLessThanOrEqualTo(1, $"el concepto {group.Key} no puede tener reglas ambiguas el {date:yyyy-MM-dd}");
+                if (!retiredIds.Contains(group.Key))
+                    count.Should().Be(1, $"el concepto {group.Key} debe tener exactamente una versión vigente el {date:yyyy-MM-dd}");
+            }
     }
 
     // ── 4. Mappings IVA de la Ficha Técnica v2.34 Tabla 20 completos ─────────────────────────────────

@@ -1,4 +1,3 @@
-using ERP.Domain.Modules.Company.Enums;
 using ERP.Application.Common;
 using ERP.Application.Modules.Communications.DTOs;
 using ERP.Application.Modules.Communications.ElectronicDocuments;
@@ -15,6 +14,7 @@ using ERP.Domain.Modules.Communications.Constants;
 using ERP.Domain.Modules.Communications.Enums;
 using ERP.Domain.Modules.Communications.ValueObjects;
 using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;

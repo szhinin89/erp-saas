@@ -1,4 +1,3 @@
-using System.Text.Json;
 using ERP.Application.Access.Authorization;
 using ERP.Application.Common;
 using ERP.Application.Modules.Caja.FundingRequests;
@@ -17,6 +16,7 @@ using ERP.Infrastructure.Services;
 using ERP.Infrastructure.Tests.Audit;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace ERP.Infrastructure.Tests.Caja;
 

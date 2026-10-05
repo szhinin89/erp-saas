@@ -1,5 +1,5 @@
-using ERP.Domain.Modules.Company.Enums;
 using ERP.Application.Modules.Sales.UseCases;
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Interfaces;
 using ERP.Domain.Modules.Sales.ValueObjects;

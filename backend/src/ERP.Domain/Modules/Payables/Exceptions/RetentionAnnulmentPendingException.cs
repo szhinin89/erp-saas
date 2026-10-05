@@ -14,7 +14,8 @@ public sealed class RetentionAnnulmentPendingException : DomainRuleViolationExce
     public RetentionAnnulmentPendingException()
         : base(
             "La retención de este documento tiene una anulación en trámite ante el SRI. No se pueden aplicar pagos, créditos ni ajustes a su cuenta por pagar hasta que el SRI la resuelva."
-        ) { }
+        )
+    { }
 
     public string ApiCode => ErrorCode;
 }

@@ -1,5 +1,3 @@
-using System.Reflection;
-using System.Text.Json;
 using ERP.API.Extensions;
 using ERP.API.Middleware;
 using ERP.Application.Common;
@@ -14,6 +12,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging.Abstractions;
+using System.Reflection;
+using System.Text.Json;
 
 namespace ERP.API.Tests.Extensions;
 

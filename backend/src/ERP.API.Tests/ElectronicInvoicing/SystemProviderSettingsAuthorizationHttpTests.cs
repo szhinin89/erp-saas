@@ -1,10 +1,10 @@
 using ERP.API.Tests.Support;
+using ERP.Domain.Configuration.Entities;
 using FluentAssertions;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
-using ERP.Domain.Configuration.Entities;
 
 namespace ERP.API.Tests.ElectronicInvoicing;
 

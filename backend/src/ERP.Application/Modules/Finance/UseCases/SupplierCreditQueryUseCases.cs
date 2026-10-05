@@ -1,6 +1,6 @@
 using ERP.Application.Common;
-using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Access.Interfaces;
+using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Finance.Interfaces;
 using ERP.Domain.Modules.Payables.Interfaces;

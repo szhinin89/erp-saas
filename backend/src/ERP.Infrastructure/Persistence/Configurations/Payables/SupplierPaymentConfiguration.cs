@@ -1,5 +1,5 @@
-using ERP.Domain.Common;
 using ERP.Domain.Branches.Entities;
+using ERP.Domain.Common;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Payables.Entities;

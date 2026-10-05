@@ -1,5 +1,3 @@
-using System.Collections.Concurrent;
-using System.Net.Mail;
 using ERP.Application.Modules.Communications.Services;
 using ERP.Domain.Modules.Communications.Entities;
 using ERP.Domain.Modules.Communications.Enums;
@@ -14,6 +12,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Npgsql;
+using System.Collections.Concurrent;
+using System.Net.Mail;
 using Testcontainers.PostgreSql;
 
 namespace ERP.Infrastructure.Tests.Communications;

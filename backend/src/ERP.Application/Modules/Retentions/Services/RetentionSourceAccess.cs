@@ -1,5 +1,5 @@
-using ERP.Application.Common;
 using ERP.Application.Access.Authorization;
+using ERP.Application.Common;
 using ERP.Domain.Kernel.Permissions;
 using ERP.Domain.Modules.Retentions.Entities;
 using ERP.Domain.Modules.Retentions.Enums;

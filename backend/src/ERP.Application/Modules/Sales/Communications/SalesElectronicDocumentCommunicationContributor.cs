@@ -1,4 +1,3 @@
-using System.Globalization;
 using ERP.Application.Common;
 using ERP.Application.Modules.Communications.ElectronicDocuments;
 using ERP.Application.Modules.Communications.Templates;
@@ -8,6 +7,7 @@ using ERP.Domain.Modules.Communications.ValueObjects;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Interfaces;
+using System.Globalization;
 
 namespace ERP.Application.Modules.Sales.Communications;
 
