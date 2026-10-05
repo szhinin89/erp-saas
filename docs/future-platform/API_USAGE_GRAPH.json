@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-09-28T17:16:01.465Z",
+  "generatedAt": "2026-10-05T18:15:54.557Z",
   "summary": {
-    "total": 134,
-    "allowed": 134,
+    "total": 135,
+    "allowed": 135,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
@@ -74,8 +74,7 @@
     {
       "endpoint": "/api/v1/accounting/accounts",
       "files": [
-        "frontend/src/modules/cashRegisters/hooks/useCashRegistersPage.ts",
-        "frontend/src/modules/finance/pages/BankAccountsPage.tsx"
+        "frontend/src/modules/accounting/facades/accountLookupFacade.test.ts"
       ],
       "legacy": false,
       "allowed": true
@@ -147,7 +146,8 @@
     {
       "endpoint": "/api/v1/auth/forgot-password",
       "files": [
-        "frontend/src/modules/auth/pages/ForgotPasswordPage.tsx",
+        "frontend/src/modules/auth/api/authPublicFlows.test.ts",
+        "frontend/src/modules/auth/api/authService.ts",
         "frontend/src/modules/lib/authRefreshPolicy.ts"
       ],
       "legacy": false,
@@ -224,7 +224,8 @@
     {
       "endpoint": "/api/v1/auth/reset-password",
       "files": [
-        "frontend/src/modules/auth/pages/ResetPasswordPage.tsx",
+        "frontend/src/modules/auth/api/authPublicFlows.test.ts",
+        "frontend/src/modules/auth/api/authService.ts",
         "frontend/src/modules/lib/authRefreshPolicy.ts"
       ],
       "legacy": false,
@@ -281,9 +282,7 @@
     {
       "endpoint": "/api/v1/catalog/barcode-types",
       "files": [
-        "frontend/src/components/items/ItemEditorModal/useItemCreationCatalogs.ts",
-        "frontend/src/modules/items/components/ItemForm/ItemFormTabs.tsx",
-        "frontend/src/modules/items/detail/components/VariantsSection.tsx"
+        "frontend/src/modules/items/catalog/api/catalogService.httpSsot.test.ts"
       ],
       "legacy": false,
       "allowed": true
@@ -291,8 +290,7 @@
     {
       "endpoint": "/api/v1/catalog/brands",
       "files": [
-        "frontend/src/components/items/ItemEditorModal/useItemCreationCatalogs.ts",
-        "frontend/src/modules/items/components/ItemForm/ItemFormTabs.tsx"
+        "frontend/src/modules/items/catalog/api/catalogService.httpSsot.test.ts"
       ],
       "legacy": false,
       "allowed": true
@@ -300,9 +298,15 @@
     {
       "endpoint": "/api/v1/catalog/category-nodes",
       "files": [
-        "frontend/src/components/items/ItemEditorModal/useItemCreationCatalogs.ts",
-        "frontend/src/modules/items/catalog/api/categoryNodeService.ts",
-        "frontend/src/modules/items/components/ItemForm/ItemFormTabs.tsx"
+        "frontend/src/modules/items/catalog/api/categoryNodeService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/catalog/category-nodes?includeInactive=true",
+      "files": [
+        "frontend/src/modules/items/catalog/api/catalogService.httpSsot.test.ts"
       ],
       "legacy": false,
       "allowed": true
@@ -326,7 +330,7 @@
     {
       "endpoint": "/api/v1/catalog/sri-ice-rates",
       "files": [
-        "frontend/src/modules/items/components/ItemForm/ItemFormTabs.tsx"
+        "frontend/src/modules/items/catalog/api/catalogService.httpSsot.test.ts"
       ],
       "legacy": false,
       "allowed": true
@@ -334,7 +338,15 @@
     {
       "endpoint": "/api/v1/catalog/sri-id-types",
       "files": [
-        "frontend/src/modules/masterData/api/useSriIdTypes.ts"
+        "frontend/src/modules/items/catalog/api/catalogService.httpSsot.test.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/catalog/sri-id-types/by-usage/customer",
+      "files": [
+        "frontend/src/modules/items/catalog/api/catalogService.httpSsot.test.ts"
       ],
       "legacy": false,
       "allowed": true
@@ -342,7 +354,7 @@
     {
       "endpoint": "/api/v1/catalog/sri-supplier-types",
       "files": [
-        "frontend/src/modules/masterData/api/useSriSupplierTypes.ts"
+        "frontend/src/modules/items/catalog/api/catalogService.httpSsot.test.ts"
       ],
       "legacy": false,
       "allowed": true
@@ -350,8 +362,7 @@
     {
       "endpoint": "/api/v1/catalog/sri-uom",
       "files": [
-        "frontend/src/components/items/ItemEditorModal/useItemCreationCatalogs.ts",
-        "frontend/src/modules/items/components/ItemForm/ItemFormTabs.tsx"
+        "frontend/src/modules/items/catalog/api/catalogService.httpSsot.test.ts"
       ],
       "legacy": false,
       "allowed": true
@@ -359,7 +370,7 @@
     {
       "endpoint": "/api/v1/catalog/sri-vat-rates",
       "files": [
-        "frontend/src/modules/items/components/ItemForm/ItemFormTabs.tsx"
+        "frontend/src/modules/items/catalog/api/catalogService.httpSsot.test.ts"
       ],
       "legacy": false,
       "allowed": true
@@ -731,6 +742,7 @@
     {
       "endpoint": "/api/v1/items",
       "files": [
+        "frontend/src/modules/items/api/itemService.tracksStock.test.ts",
         "frontend/src/modules/items/api/itemService.ts",
         "frontend/src/modules/lib/authRefreshPolicy.test.ts"
       ],
@@ -782,7 +794,7 @@
       "endpoint": "/api/v1/payables",
       "files": [
         "frontend/src/modules/payables/api/payablesService.ts",
-        "frontend/src/modules/supplier-payments/api/pendingPayablesFacade.ts",
+        "frontend/src/modules/payables/facades/pendingPayablesFacade.ts",
         "frontend/src/routes/payablesRoutes.legacyCleanup.test.tsx"
       ],
       "legacy": false,
@@ -791,8 +803,8 @@
     {
       "endpoint": "/api/v1/payment-methods",
       "files": [
-        "frontend/src/modules/sales/api/paymentMethodService.ts",
-        "frontend/src/modules/sales/api/salesService.ts"
+        "frontend/src/modules/sales/api/paymentMethodService.test.ts",
+        "frontend/src/modules/sales/api/paymentMethodService.ts"
       ],
       "legacy": false,
       "allowed": true
@@ -831,14 +843,6 @@
       "allowed": true
     },
     {
-      "endpoint": "/api/v1/purchases/purchase-1/retention/ret-1/cancel",
-      "files": [
-        "frontend/src/modules/retentions/api/retentionsService.test.ts"
-      ],
-      "legacy": false,
-      "allowed": true
-    },
-    {
       "endpoint": "/api/v1/purchases/reception",
       "files": [
         "frontend/src/modules/purchases/api/purchaseReceptionService.ts"
@@ -858,14 +862,6 @@
       "endpoint": "/api/v1/retentions",
       "files": [
         "frontend/src/modules/retentions/api/retentionsService.ts"
-      ],
-      "legacy": false,
-      "allowed": true
-    },
-    {
-      "endpoint": "/api/v1/retentions/ret-1/electronic/register",
-      "files": [
-        "frontend/src/modules/retentions/api/retentionsService.test.ts"
       ],
       "legacy": false,
       "allowed": true
@@ -920,7 +916,8 @@
         "frontend/src/modules/sales/api/salesItemPricingService.ts",
         "frontend/src/modules/sales/api/salesRepricingPreviewService.ts",
         "frontend/src/modules/sales/api/salesRuntimeContextService.ts",
-        "frontend/src/modules/sales/api/salesService.ts"
+        "frontend/src/modules/sales/api/salesService.ts",
+        "frontend/src/modules/sales/hooks/useSalesPage.posHardening.test.ts"
       ],
       "legacy": false,
       "allowed": true
@@ -1081,7 +1078,7 @@
     {
       "endpoint": "/api/v1/settings/establishments/lookups",
       "files": [
-        "frontend/src/modules/emissionPoints/api/emissionPointsService.ts"
+        "frontend/src/modules/establishments/facades/establishmentLookupFacade.test.ts"
       ],
       "legacy": false,
       "allowed": true
@@ -1089,7 +1086,7 @@
     {
       "endpoint": "/api/v1/settings/geography",
       "files": [
-        "frontend/src/modules/masterData/api/geographyService.ts"
+        "frontend/src/modules/branches/api/branchService.geography.test.ts"
       ],
       "legacy": false,
       "allowed": true
@@ -1111,9 +1108,18 @@
       "allowed": true
     },
     {
+      "endpoint": "/api/v1/setup",
+      "files": [
+        "frontend/src/modules/auth/api/setupService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
       "endpoint": "/api/v1/setup/admin",
       "files": [
-        "frontend/src/modules/auth/pages/SetupPage.tsx"
+        "frontend/src/modules/auth/api/authPublicFlows.test.ts",
+        "frontend/src/modules/auth/api/setupService.ts"
       ],
       "legacy": false,
       "allowed": true
@@ -1121,7 +1127,8 @@
     {
       "endpoint": "/api/v1/setup/status",
       "files": [
-        "frontend/src/modules/auth/pages/SetupPage.tsx"
+        "frontend/src/modules/auth/api/authPublicFlows.test.ts",
+        "frontend/src/modules/auth/api/setupService.ts"
       ],
       "legacy": false,
       "allowed": true
