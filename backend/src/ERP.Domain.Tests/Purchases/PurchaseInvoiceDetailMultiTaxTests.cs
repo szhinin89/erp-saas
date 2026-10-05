@@ -15,7 +15,11 @@ public sealed class PurchaseInvoiceDetailMultiTaxTests
 {
     private static readonly Guid TenantId = Guid.NewGuid();
 
-    private static PurchaseInvoiceDetail CreateLine(decimal quantity, decimal unitPrice, string vatCode) =>
+    private static PurchaseInvoiceDetail CreateLine(
+        decimal quantity,
+        decimal unitPrice,
+        string vatCode
+    ) =>
         PurchaseInvoiceDetail.Create(
             invoiceId: Guid.NewGuid(),
             tenantId: TenantId,
@@ -80,7 +84,11 @@ public sealed class PurchaseInvoiceDetailMultiTaxTests
         );
 
         line.IceCalculationType.Should().Be(SriTaxCalculationType.Specific);
-        line.IceAmount.Should().Be(iceExactoDelXml, "un impuesto específico nunca se recalcula desde una tarifa porcentual");
+        line.IceAmount.Should()
+            .Be(
+                iceExactoDelXml,
+                "un impuesto específico nunca se recalcula desde una tarifa porcentual"
+            );
     }
 
     [Fact]
@@ -120,7 +128,11 @@ public sealed class PurchaseInvoiceDetailMultiTaxTests
 
         line.ApplyDiscount(10m);
 
-        line.IceAmount.Should().Be(5m, "un impuesto específico (por botella/por 100g de azúcar) no es proporcional al descuento de la línea");
+        line.IceAmount.Should()
+            .Be(
+                5m,
+                "un impuesto específico (por botella/por 100g de azúcar) no es proporcional al descuento de la línea"
+            );
     }
 
     [Fact]
@@ -130,22 +142,20 @@ public sealed class PurchaseInvoiceDetailMultiTaxTests
         // proveedor: debe estar incluido en TaxInclusiveTotal (y por lo tanto en GrandTotal).
         var line = CreateLine(24, 0.5837m, "4");
         line.ApplyTaxes("4", 4m, "IVA 4%", null, 0m, null);
-        line.ReplaceTaxes(
-            [
-                PurchaseInvoiceDetailTax.Create(
-                    line.Id,
-                    TenantId,
-                    "5",
-                    "5001",
-                    "IRBPNR",
-                    0.02m,
-                    SriTaxCalculationType.Specific,
-                    line.TaxableBase,
-                    0.48m,
-                    PurchaseTaxSource.Xml
-                ),
-            ]
-        );
+        line.ReplaceTaxes([
+            PurchaseInvoiceDetailTax.Create(
+                line.Id,
+                TenantId,
+                "5",
+                "5001",
+                "IRBPNR",
+                0.02m,
+                SriTaxCalculationType.Specific,
+                line.TaxableBase,
+                0.48m,
+                PurchaseTaxSource.Xml
+            ),
+        ]);
 
         line.TaxInclusiveTotal.Should()
             .Be(line.TaxableBase + line.IceAmount + line.VatAmount + line.IrbpnrAmount);
@@ -181,50 +191,49 @@ public sealed class PurchaseInvoiceDetailMultiTaxTests
             iceExactAmount: 1.23m
         );
 
-        line.ReplaceTaxes(
-            [
-                PurchaseInvoiceDetailTax.Create(
-                    line.Id,
-                    TenantId,
-                    "2",
-                    "4",
-                    "IVA 4%",
-                    4m,
-                    SriTaxCalculationType.Percentage,
-                    line.TaxableBase,
-                    line.VatAmount,
-                    PurchaseTaxSource.Xml
-                ),
-                PurchaseInvoiceDetailTax.Create(
-                    line.Id,
-                    TenantId,
-                    "3",
-                    "3053",
-                    "ICE Específico",
-                    null,
-                    SriTaxCalculationType.Specific,
-                    line.TaxableBase,
-                    1.23m,
-                    PurchaseTaxSource.Xml
-                ),
-                PurchaseInvoiceDetailTax.Create(
-                    line.Id,
-                    TenantId,
-                    "5",
-                    "5001",
-                    "IRBPNR",
-                    0.02m,
-                    SriTaxCalculationType.Specific,
-                    line.TaxableBase,
-                    0.48m,
-                    PurchaseTaxSource.Xml
-                ),
-            ]
-        );
+        line.ReplaceTaxes([
+            PurchaseInvoiceDetailTax.Create(
+                line.Id,
+                TenantId,
+                "2",
+                "4",
+                "IVA 4%",
+                4m,
+                SriTaxCalculationType.Percentage,
+                line.TaxableBase,
+                line.VatAmount,
+                PurchaseTaxSource.Xml
+            ),
+            PurchaseInvoiceDetailTax.Create(
+                line.Id,
+                TenantId,
+                "3",
+                "3053",
+                "ICE Específico",
+                null,
+                SriTaxCalculationType.Specific,
+                line.TaxableBase,
+                1.23m,
+                PurchaseTaxSource.Xml
+            ),
+            PurchaseInvoiceDetailTax.Create(
+                line.Id,
+                TenantId,
+                "5",
+                "5001",
+                "IRBPNR",
+                0.02m,
+                SriTaxCalculationType.Specific,
+                line.TaxableBase,
+                0.48m,
+                PurchaseTaxSource.Xml
+            ),
+        ]);
 
         line.IrbpnrAmount.Should().Be(0.48m);
         line.IrbpnrCode.Should().Be("5001");
-        line.IceAmount.Should().Be(1.23m, "ReplaceTaxes es aditivo y no debe tocar los campos escalares legacy");
+        line.IceAmount.Should()
+            .Be(1.23m, "ReplaceTaxes es aditivo y no debe tocar los campos escalares legacy");
         line.Taxes.Should().HaveCount(3);
     }
 
@@ -234,7 +243,10 @@ public sealed class PurchaseInvoiceDetailMultiTaxTests
         var line = CreateLine(1, 100m, "4");
         line.ApplyTaxes("4", 4m, "IVA 4%", null, 0m, null);
         typeof(PurchaseInvoiceDetail)
-            .GetMethod("FreezeCosts", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+            .GetMethod(
+                "FreezeCosts",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance
+            )!
             .Invoke(line, null);
 
         var act = () => line.ReplaceTaxes([]);

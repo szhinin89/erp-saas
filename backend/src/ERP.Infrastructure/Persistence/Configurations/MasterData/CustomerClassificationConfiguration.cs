@@ -4,7 +4,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ERP.Infrastructure.Persistence.Configurations.MasterData;
 
-public sealed class CustomerClassificationConfiguration : IEntityTypeConfiguration<CustomerClassification>
+public sealed class CustomerClassificationConfiguration
+    : IEntityTypeConfiguration<CustomerClassification>
 {
     public void Configure(EntityTypeBuilder<CustomerClassification> builder)
     {

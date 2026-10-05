@@ -295,9 +295,19 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         );
         db.Set<PaymentMethod>().Add(paymentMethod);
         // 02D-B — medio ↔ destino: la caja solo admite un medio de efectivo físico.
-        db.Set<PaymentMethod>().Add(
-            PaymentMethod.Create(_tenantId, "CASH", "Efectivo", false, false, 2, _userId, affectsPhysicalCash: true)
-        );
+        db.Set<PaymentMethod>()
+            .Add(
+                PaymentMethod.Create(
+                    _tenantId,
+                    "CASH",
+                    "Efectivo",
+                    false,
+                    false,
+                    2,
+                    _userId,
+                    affectsPhysicalCash: true
+                )
+            );
         await db.SaveChangesAsync();
     }
 
@@ -378,7 +388,11 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
             inv.IssueDate,
             _userId
         );
-        payable.AddInstallment(1, inv.IssueDate.AddDays(30), inv.ConfirmedGrandTotal ?? confirmedLine.TaxInclusiveTotal);
+        payable.AddInstallment(
+            1,
+            inv.IssueDate.AddDays(30),
+            inv.ConfirmedGrandTotal ?? confirmedLine.TaxInclusiveTotal
+        );
         if (paidAmount > 0)
             payable.RegisterPayment(paidAmount, _userId);
 
@@ -978,8 +992,17 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         var result = await new ERP.Application.Behaviors.DomainRuleBehavior<
             AuthorizePurchaseReturnCommand,
             Result<PurchaseReturnDto>
-        >(Microsoft.Extensions.Logging.Abstractions.NullLogger<ERP.Application.Behaviors.DomainRuleBehavior<AuthorizePurchaseReturnCommand, Result<PurchaseReturnDto>>>.Instance)
-            .Handle(command, ct => authHandler.Handle(command, ct), CancellationToken.None);
+        >(
+            Microsoft
+                .Extensions
+                .Logging
+                .Abstractions
+                .NullLogger<ERP.Application.Behaviors.DomainRuleBehavior<
+                    AuthorizePurchaseReturnCommand,
+                    Result<PurchaseReturnDto>
+                >>
+                .Instance
+        ).Handle(command, ct => authHandler.Handle(command, ct), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.DomainRuleViolation);
@@ -1289,7 +1312,9 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
     {
         // ZH-BACKEND-SECURITY-ERROR-FINAL-HARDENING-01: clasificación técnica real (único punto).
         public string? ClassifyFailureCode(Exception exception) =>
-            new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator().ClassifyFailureCode(exception);
+            new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator().ClassifyFailureCode(
+                exception
+            );
 
         public bool TryGetUniqueViolation(Exception exception, out DatabaseUniqueViolationInfo info)
         {

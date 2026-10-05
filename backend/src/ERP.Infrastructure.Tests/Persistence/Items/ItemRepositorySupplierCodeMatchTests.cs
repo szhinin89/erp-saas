@@ -58,7 +58,13 @@ public sealed class ItemRepositorySupplierCodeMatchTests : IAsyncLifetime
             );
             supplierId = supplier.Id;
 
-            var itemType = ItemTypeDefinition.Create(_tenantId, "PHYSICAL", "Fisico", 1, _createdBy);
+            var itemType = ItemTypeDefinition.Create(
+                _tenantId,
+                "PHYSICAL",
+                "Fisico",
+                1,
+                _createdBy
+            );
             var item = Item.Create(
                 _tenantId,
                 "SKU-PACA",

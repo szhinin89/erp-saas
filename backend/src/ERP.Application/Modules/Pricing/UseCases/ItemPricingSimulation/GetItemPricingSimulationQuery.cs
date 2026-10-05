@@ -51,15 +51,20 @@ public sealed record GetItemPricingSimulationQuery(
     SetPricingRuleCommand? ExceptionPreview = null
 ) : IRequest<Result<IReadOnlyList<ItemPricingSimulationRowDto>>>, ICompanyScopedRequest;
 
-public sealed class GetItemPricingSimulationQueryValidator : AbstractValidator<GetItemPricingSimulationQuery>
+public sealed class GetItemPricingSimulationQueryValidator
+    : AbstractValidator<GetItemPricingSimulationQuery>
 {
     public GetItemPricingSimulationQueryValidator()
     {
-        When(q => q.ExceptionPreview != null, () =>
-        {
-            RuleFor(q => q.ExceptionPreview!).SetValidator(new SetPricingRuleCommandValidator());
-            RuleFor(q => q.ItemId).NotNull().Equal(q => q.ExceptionPreview!.ItemId);
-        });
+        When(
+            q => q.ExceptionPreview != null,
+            () =>
+            {
+                RuleFor(q => q.ExceptionPreview!)
+                    .SetValidator(new SetPricingRuleCommandValidator());
+                RuleFor(q => q.ItemId).NotNull().Equal(q => q.ExceptionPreview!.ItemId);
+            }
+        );
     }
 }
 
@@ -151,9 +156,17 @@ public sealed class GetItemPricingSimulationQueryHandler
         {
             if (q.ItemId != preview.ItemId || !assignedListIds.Contains(preview.PriceListId))
                 return Result<IReadOnlyList<ItemPricingSimulationRowDto>>.ValidationFailure(
-                    "El ítem no está asignado a esta lista de precios (o la asignación está deshabilitada).");
-            previewRule = PricingRule.Create(tenantId, _c.CompanyId, preview.PriceListId,
-                preview.ItemId, preview.RuleType, preview.RuleValue, Guid.Empty);
+                    "El ítem no está asignado a esta lista de precios (o la asignación está deshabilitada)."
+                );
+            previewRule = PricingRule.Create(
+                tenantId,
+                _c.CompanyId,
+                preview.PriceListId,
+                preview.ItemId,
+                preview.RuleType,
+                preview.RuleValue,
+                Guid.Empty
+            );
         }
 
         if (!basePrice.HasValue)
@@ -187,13 +200,28 @@ public sealed class GetItemPricingSimulationQueryHandler
                 itemRulesByList.TryGetValue(priceList.Id, out var itemRule);
                 if (previewRule?.PriceListId == priceList.Id)
                     itemRule = previewRule;
-                (netPrice, _) = PricingCalculation.Resolve(basePrice.Value, itemRule, priceList, _strategies, priceDecimals);
+                (netPrice, _) = PricingCalculation.Resolve(
+                    basePrice.Value,
+                    itemRule,
+                    priceList,
+                    _strategies,
+                    priceDecimals
+                );
                 ruleSummary = PricingCalculation.Summarize(itemRule, priceList);
             }
             else
             {
-                netPrice = Math.Round(basePrice.Value, priceDecimals, MidpointRounding.AwayFromZero);
-                ruleSummary = new PricingRuleSummaryDto(PriceSource.BasePrice, null, null, "Precio base");
+                netPrice = Math.Round(
+                    basePrice.Value,
+                    priceDecimals,
+                    MidpointRounding.AwayFromZero
+                );
+                ruleSummary = new PricingRuleSummaryDto(
+                    PriceSource.BasePrice,
+                    null,
+                    null,
+                    "Precio base"
+                );
             }
 
             // Precio neto (sin impuestos) — el piso de descuento se calcula sobre el mismo

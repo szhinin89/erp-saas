@@ -73,7 +73,14 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         var uow = new Mock<IUnitOfWork>();
         companies
             .Setup(c => c.GetByIdAsync(CompanyId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new CompanyEntity { Id = CompanyId, TenantId = TenantId, CurrencyCode = "USD" });
+            .ReturnsAsync(
+                new CompanyEntity
+                {
+                    Id = CompanyId,
+                    TenantId = TenantId,
+                    CurrencyCode = "USD",
+                }
+            );
         SetAllowWithoutPayable(preferences, false);
         var tenant = new Mock<ICurrentTenant>();
         var company = new Mock<ICurrentCompany>();
@@ -119,7 +126,10 @@ public sealed class RegisterSupplierPaymentUseCasesTests
     }
 
     /// <summary>ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — política de empresa payables.allow_supplier_payment_without_payable.</summary>
-    private static void SetAllowWithoutPayable(Mock<IOperationalPreferencesResolver> preferences, bool allow) =>
+    private static void SetAllowWithoutPayable(
+        Mock<IOperationalPreferencesResolver> preferences,
+        bool allow
+    ) =>
         preferences
             .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(
@@ -148,7 +158,9 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             m.User.Object
         );
 
-    private static ERP.Application.Modules.Payables.Services.SupplierPaymentRegistrar BuildRegistrar(Mocks m) =>
+    private static ERP.Application.Modules.Payables.Services.SupplierPaymentRegistrar BuildRegistrar(
+        Mocks m
+    ) =>
         new(
             m.SupplierPayments.Object,
             m.Sequences.Object,
@@ -215,17 +227,26 @@ public sealed class RegisterSupplierPaymentUseCasesTests
 
     private static void SetupTransfer(Mocks m, PaymentMethod method, CompanyBankAccount bankAccount)
     {
-        m.PaymentMethods
-            .Setup(p => p.GetByIdAsync(TenantId, method.Id, It.IsAny<CancellationToken>()))
+        m.PaymentMethods.Setup(p =>
+                p.GetByIdAsync(TenantId, method.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(method);
-        m.BankAccounts
-            .Setup(b => b.GetByIdAsync(TenantId, bankAccount.Id, It.IsAny<CancellationToken>()))
+        m.BankAccounts.Setup(b =>
+                b.GetByIdAsync(TenantId, bankAccount.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(bankAccount);
     }
 
     private static CashRegister ActiveDestination(Guid companyId)
     {
-        var register = CashRegister.Create(TenantId, companyId, BranchId, "CAJA-01", "Caja Principal", UserId);
+        var register = CashRegister.Create(
+            TenantId,
+            companyId,
+            BranchId,
+            "CAJA-01",
+            "Caja Principal",
+            UserId
+        );
         register.SetAccountingAccount(Guid.NewGuid(), UserId);
         return register;
     }
@@ -260,16 +281,21 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         decimal openingAmount = 500m
     )
     {
-        m.PaymentMethods
-            .Setup(p => p.GetByIdAsync(TenantId, method.Id, It.IsAny<CancellationToken>()))
+        m.PaymentMethods.Setup(p =>
+                p.GetByIdAsync(TenantId, method.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(method);
-        m.CashRegisters
-            .Setup(f => f.GetByIdAsync(TenantId, destination.Id, It.IsAny<CancellationToken>()))
+        m.CashRegisters.Setup(f =>
+                f.GetByIdAsync(TenantId, destination.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(destination);
         var session = OpenSession(destination.Id, openingAmount);
-        m.CashSessions
-            .Setup(r =>
-                r.GetOpenByCashRegisterForUpdateAsync(TenantId, destination.Id, It.IsAny<CancellationToken>())
+        m.CashSessions.Setup(r =>
+                r.GetOpenByCashRegisterForUpdateAsync(
+                    TenantId,
+                    destination.Id,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(session);
         return session;
@@ -278,8 +304,9 @@ public sealed class RegisterSupplierPaymentUseCasesTests
     private void SetupPayable(Mocks m, AccountsPayable payable)
     {
         var installmentId = payable.Installments[0].Id;
-        m.AccountsPayables
-            .Setup(a => a.GetByInstallmentIdAsync(TenantId, installmentId, It.IsAny<CancellationToken>()))
+        m.AccountsPayables.Setup(a =>
+                a.GetByInstallmentIdAsync(TenantId, installmentId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(payable);
     }
 
@@ -342,7 +369,14 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             new[]
             {
                 new SupplierPaymentMethodLineRequest(methodA.Id, null, destination.Id, 100m),
-                new SupplierPaymentMethodLineRequest(methodB.Id, bankAccount.Id, null, 200m, "OP-123", TransactionDate: new DateOnly(2026, 8, 28)),
+                new SupplierPaymentMethodLineRequest(
+                    methodB.Id,
+                    bankAccount.Id,
+                    null,
+                    200m,
+                    "OP-123",
+                    TransactionDate: new DateOnly(2026, 8, 28)
+                ),
             },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 300m) },
             new[]
@@ -425,7 +459,14 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             new[]
             {
                 new SupplierPaymentMethodLineRequest(methodA.Id, null, destination.Id, 150m),
-                new SupplierPaymentMethodLineRequest(methodB.Id, bankAccount.Id, null, 150m, "OP-456", TransactionDate: new DateOnly(2026, 8, 28)),
+                new SupplierPaymentMethodLineRequest(
+                    methodB.Id,
+                    bankAccount.Id,
+                    null,
+                    150m,
+                    "OP-456",
+                    TransactionDate: new DateOnly(2026, 8, 28)
+                ),
             },
             new[]
             {
@@ -718,8 +759,9 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         var destination = ActiveDestination(CompanyId);
         var payable = CreatePayableWithInstallment(100m);
         var missingMethodId = Guid.NewGuid();
-        m.CashRegisters
-            .Setup(f => f.GetByIdAsync(TenantId, destination.Id, It.IsAny<CancellationToken>()))
+        m.CashRegisters.Setup(f =>
+                f.GetByIdAsync(TenantId, destination.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(destination);
         SetupPayable(m, payable);
 
@@ -729,7 +771,10 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             new DateOnly(2026, 8, 28),
             100m,
             null,
-            new[] { new SupplierPaymentMethodLineRequest(missingMethodId, null, destination.Id, 100m) },
+            new[]
+            {
+                new SupplierPaymentMethodLineRequest(missingMethodId, null, destination.Id, 100m),
+            },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 100m) },
             new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) },
             ClientRequestId: Guid.NewGuid()
@@ -809,7 +854,12 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             Times.Never
         );
         m.Sequences.Verify(
-            s => s.CaptureNextAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            s =>
+                s.CaptureNextAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
         m.Uow.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -826,8 +876,7 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         var payable = CreatePayableWithInstallment(100m);
         SetupMethodAndDestination(m, method, destination);
         SetupPayable(m, payable);
-        m.SupplierPayments
-            .Setup(r =>
+        m.SupplierPayments.Setup(r =>
                 r.ExistsByReceiptNumberAsync(
                     TenantId,
                     CompanyId,
@@ -873,8 +922,7 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         var payable = CreatePayableWithInstallment(100m);
         SetupMethodAndDestination(m, method, destination);
         SetupPayable(m, payable);
-        m.SupplierPayments
-            .Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+        m.SupplierPayments.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(
                 new SupplierPaymentPostingFailedException(
                     "El destino financiero no tiene una cuenta contable configurada.",
@@ -933,10 +981,15 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         SetupPayable(m, payable);
         var expectedBefore = session.CurrentBalance;
 
-        var result = await BuildHandler(m).Handle(
-            SingleLineCommand(new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 120m), payable, 120m),
-            CancellationToken.None
-        );
+        var result = await BuildHandler(m)
+            .Handle(
+                SingleLineCommand(
+                    new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 120m),
+                    payable,
+                    120m
+                ),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         var line = result.Value!.MethodLines.Single();
@@ -961,17 +1014,25 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         var destination = ActiveDestination(CompanyId);
         var payable = CreatePayableWithInstallment(100m);
         SetupMethodAndDestination(m, method, destination);
-        m.CashSessions
-            .Setup(r =>
-                r.GetOpenByCashRegisterForUpdateAsync(TenantId, destination.Id, It.IsAny<CancellationToken>())
+        m.CashSessions.Setup(r =>
+                r.GetOpenByCashRegisterForUpdateAsync(
+                    TenantId,
+                    destination.Id,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((CashSession?)null);
         SetupPayable(m, payable);
 
-        var result = await BuildHandler(m).Handle(
-            SingleLineCommand(new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m), payable, 100m),
-            CancellationToken.None
-        );
+        var result = await BuildHandler(m)
+            .Handle(
+                SingleLineCommand(
+                    new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m),
+                    payable,
+                    100m
+                ),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("sesión de caja abierta");
@@ -990,29 +1051,31 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         SetupPayable(m, payable);
         var bankDate = new DateOnly(2026, 8, 27); // distinta de PaymentDate (2026-08-28)
 
-        var result = await BuildHandler(m).Handle(
-            SingleLineCommand(
-                new SupplierPaymentMethodLineRequest(
-                    method.Id,
-                    bankAccount.Id,
-                    null,
-                    250m,
-                    ReferenceNumber: " 000987654 ",
-                    Notes: "Transferencia interbancaria",
-                    TransactionDate: bankDate
+        var result = await BuildHandler(m)
+            .Handle(
+                SingleLineCommand(
+                    new SupplierPaymentMethodLineRequest(
+                        method.Id,
+                        bankAccount.Id,
+                        null,
+                        250m,
+                        ReferenceNumber: " 000987654 ",
+                        Notes: "Transferencia interbancaria",
+                        TransactionDate: bankDate
+                    ),
+                    payable,
+                    250m
                 ),
-                payable,
-                250m
-            ),
-            CancellationToken.None
-        );
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         var line = result.Value!.MethodLines.Single();
         line.PaymentMethodId.Should().Be(method.Id);
         line.CompanyBankAccountId.Should().Be(bankAccount.Id);
         line.Amount.Should().Be(250m);
-        line.TransactionDate.Should().Be(bankDate, "la fecha real de la fuente no se sustituye por PaymentDate");
+        line.TransactionDate.Should()
+            .Be(bankDate, "la fecha real de la fuente no se sustituye por PaymentDate");
         line.ReferenceNumber.Should().Be("000987654");
         line.Notes.Should().Be("Transferencia interbancaria");
         line.CashRegisterId.Should().BeNull();
@@ -1031,27 +1094,45 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         SetupTransfer(m, method, bankAccount);
         SetupPayable(m, payable);
 
-        var result = await BuildHandler(m).Handle(
-            SingleLineCommand(
-                new SupplierPaymentMethodLineRequest(method.Id, bankAccount.Id, null, 80m, "OP-1", TransactionDate: null),
-                payable,
-                80m
-            ),
-            CancellationToken.None
-        );
+        var result = await BuildHandler(m)
+            .Handle(
+                SingleLineCommand(
+                    new SupplierPaymentMethodLineRequest(
+                        method.Id,
+                        bankAccount.Id,
+                        null,
+                        80m,
+                        "OP-1",
+                        TransactionDate: null
+                    ),
+                    payable,
+                    80m
+                ),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
         result.Error.Should().Be("La fecha de la transacción bancaria es obligatoria.");
         m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
-        m.SupplierPayments.Verify(r => r.AddAsync(It.IsAny<SupplierPayment>(), It.IsAny<CancellationToken>()), Times.Never);
+        m.SupplierPayments.Verify(
+            r => r.AddAsync(It.IsAny<SupplierPayment>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
     public void Validator_rechaza_linea_bancaria_sin_fecha_de_transaccion()
     {
         var result = new SupplierPaymentMethodLineRequestValidator().Validate(
-            new SupplierPaymentMethodLineRequest(Guid.NewGuid(), Guid.NewGuid(), null, 10m, "OP-1", TransactionDate: null)
+            new SupplierPaymentMethodLineRequest(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                null,
+                10m,
+                "OP-1",
+                TransactionDate: null
+            )
         );
 
         result.IsValid.Should().BeFalse();
@@ -1067,10 +1148,21 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         SetupTransfer(m, method, bankAccount);
         SetupPayable(m, payable);
 
-        var result = await BuildHandler(m).Handle(
-            SingleLineCommand(new SupplierPaymentMethodLineRequest(method.Id, bankAccount.Id, null, 80m, TransactionDate: new DateOnly(2026, 8, 28)), payable, 80m),
-            CancellationToken.None
-        );
+        var result = await BuildHandler(m)
+            .Handle(
+                SingleLineCommand(
+                    new SupplierPaymentMethodLineRequest(
+                        method.Id,
+                        bankAccount.Id,
+                        null,
+                        80m,
+                        TransactionDate: new DateOnly(2026, 8, 28)
+                    ),
+                    payable,
+                    80m
+                ),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("número de operación");
@@ -1087,10 +1179,21 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         SetupTransfer(m, method, bankAccount);
         SetupPayable(m, payable);
 
-        var result = await BuildHandler(m).Handle(
-            SingleLineCommand(new SupplierPaymentMethodLineRequest(method.Id, bankAccount.Id, null, 100m, TransactionDate: new DateOnly(2026, 8, 28)), payable, 100m),
-            CancellationToken.None
-        );
+        var result = await BuildHandler(m)
+            .Handle(
+                SingleLineCommand(
+                    new SupplierPaymentMethodLineRequest(
+                        method.Id,
+                        bankAccount.Id,
+                        null,
+                        100m,
+                        TransactionDate: new DateOnly(2026, 8, 28)
+                    ),
+                    payable,
+                    100m
+                ),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
@@ -1108,10 +1211,21 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         SetupMethodAndDestination(m, method, destination);
         SetupPayable(m, payable);
 
-        var result = await BuildHandler(m).Handle(
-            SingleLineCommand(new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m, "OP-9"), payable, 100m),
-            CancellationToken.None
-        );
+        var result = await BuildHandler(m)
+            .Handle(
+                SingleLineCommand(
+                    new SupplierPaymentMethodLineRequest(
+                        method.Id,
+                        null,
+                        destination.Id,
+                        100m,
+                        "OP-9"
+                    ),
+                    payable,
+                    100m
+                ),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
@@ -1129,10 +1243,21 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         SetupTransfer(m, credit, bankAccount);
         SetupPayable(m, payable);
 
-        var result = await BuildHandler(m).Handle(
-            SingleLineCommand(new SupplierPaymentMethodLineRequest(credit.Id, bankAccount.Id, null, 100m, TransactionDate: new DateOnly(2026, 8, 28)), payable, 100m),
-            CancellationToken.None
-        );
+        var result = await BuildHandler(m)
+            .Handle(
+                SingleLineCommand(
+                    new SupplierPaymentMethodLineRequest(
+                        credit.Id,
+                        bankAccount.Id,
+                        null,
+                        100m,
+                        TransactionDate: new DateOnly(2026, 8, 28)
+                    ),
+                    payable,
+                    100m
+                ),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("crédito");
@@ -1163,12 +1288,28 @@ public sealed class RegisterSupplierPaymentUseCasesTests
 
     private void AssertNothingPersisted(Mocks m, CashSession session, AccountsPayable payable)
     {
-        m.SupplierPayments.Verify(r => r.AddAsync(It.IsAny<SupplierPayment>(), It.IsAny<CancellationToken>()), Times.Never);
-        m.SupplierPayments.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
-        m.Sequences.Verify(s => s.CaptureNextAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        m.SupplierPayments.Verify(
+            r => r.AddAsync(It.IsAny<SupplierPayment>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        m.SupplierPayments.Verify(
+            r => r.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        m.Sequences.Verify(
+            s =>
+                s.CaptureNextAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
         m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
         m.Uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
-        session.Movements.Should().ContainSingle("solo la apertura: ningún egreso de caja registrado");
+        session
+            .Movements.Should()
+            .ContainSingle("solo la apertura: ningún egreso de caja registrado");
         payable.Installments[0].PaidAmount.Should().Be(0m);
     }
 
@@ -1182,10 +1323,15 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         var session = SetupMethodAndDestination(m, method, destination, openingAmount: 80m);
         SetupPayable(m, payable);
 
-        var result = await BuildHandler(m).Handle(
-            SingleLineCommand(new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 80m), payable, 80m),
-            CancellationToken.None
-        );
+        var result = await BuildHandler(m)
+            .Handle(
+                SingleLineCommand(
+                    new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 80m),
+                    payable,
+                    80m
+                ),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         session.CurrentBalance.Should().Be(0m);
@@ -1201,14 +1347,23 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         var session = SetupMethodAndDestination(m, method, destination, openingAmount: 80m);
         SetupPayable(m, payable);
 
-        var result = await BuildHandler(m).Handle(
-            SingleLineCommand(new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 120m), payable, 120m),
-            CancellationToken.None
-        );
+        var result = await BuildHandler(m)
+            .Handle(
+                SingleLineCommand(
+                    new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 120m),
+                    payable,
+                    120m
+                ),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
-        result.Error.Should().Be("La caja seleccionada dispone de $80.00 y se intenta registrar un pago de $120.00.");
+        result
+            .Error.Should()
+            .Be(
+                "La caja seleccionada dispone de $80.00 y se intenta registrar un pago de $120.00."
+            );
         session.CurrentBalance.Should().Be(80m, "el esperado nunca queda negativo");
         AssertNothingPersisted(m, session, payable);
     }
@@ -1224,30 +1379,38 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         SetupPayable(m, payable);
 
         // Cada línea (60) cabe sola en 100; juntas (120) no.
-        var result = await BuildHandler(m).Handle(
-            new RegisterSupplierPaymentCommand(
-                SupplierId,
-                new DateOnly(2026, 8, 28),
-                120m,
-                null,
-                new[]
-                {
-                    new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 60m),
-                    new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 60m),
-                },
-                new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 120m) },
-                new[]
-                {
-                    new SupplierPaymentAllocationLineRequest(0, 0, 60m),
-                    new SupplierPaymentAllocationLineRequest(1, 0, 60m),
-                },
-                ClientRequestId: Guid.NewGuid()
-            ),
-            CancellationToken.None
-        );
+        var result = await BuildHandler(m)
+            .Handle(
+                new RegisterSupplierPaymentCommand(
+                    SupplierId,
+                    new DateOnly(2026, 8, 28),
+                    120m,
+                    null,
+                    new[]
+                    {
+                        new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 60m),
+                        new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 60m),
+                    },
+                    new[]
+                    {
+                        new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 120m),
+                    },
+                    new[]
+                    {
+                        new SupplierPaymentAllocationLineRequest(0, 0, 60m),
+                        new SupplierPaymentAllocationLineRequest(1, 0, 60m),
+                    },
+                    ClientRequestId: Guid.NewGuid()
+                ),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Be("La caja seleccionada dispone de $100.00 y se intenta registrar un pago de $120.00.");
+        result
+            .Error.Should()
+            .Be(
+                "La caja seleccionada dispone de $100.00 y se intenta registrar un pago de $120.00."
+            );
         AssertNothingPersisted(m, session, payable);
     }
 
@@ -1264,32 +1427,47 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         SetupTransfer(m, transfer, bankAccount);
         SetupPayable(m, payable);
 
-        var result = await BuildHandler(m).Handle(
-            new RegisterSupplierPaymentCommand(
-                SupplierId,
-                new DateOnly(2026, 8, 28),
-                200m,
-                null,
-                new[]
-                {
-                    new SupplierPaymentMethodLineRequest(cash.Id, null, destination.Id, 80m),
-                    new SupplierPaymentMethodLineRequest(transfer.Id, bankAccount.Id, null, 120m, "OP-777", TransactionDate: new DateOnly(2026, 8, 28)),
-                },
-                new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 200m) },
-                new[]
-                {
-                    new SupplierPaymentAllocationLineRequest(0, 0, 80m),
-                    new SupplierPaymentAllocationLineRequest(1, 0, 120m),
-                },
-                ClientRequestId: Guid.NewGuid()
-            ),
-            CancellationToken.None
-        );
+        var result = await BuildHandler(m)
+            .Handle(
+                new RegisterSupplierPaymentCommand(
+                    SupplierId,
+                    new DateOnly(2026, 8, 28),
+                    200m,
+                    null,
+                    new[]
+                    {
+                        new SupplierPaymentMethodLineRequest(cash.Id, null, destination.Id, 80m),
+                        new SupplierPaymentMethodLineRequest(
+                            transfer.Id,
+                            bankAccount.Id,
+                            null,
+                            120m,
+                            "OP-777",
+                            TransactionDate: new DateOnly(2026, 8, 28)
+                        ),
+                    },
+                    new[]
+                    {
+                        new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 200m),
+                    },
+                    new[]
+                    {
+                        new SupplierPaymentAllocationLineRequest(0, 0, 80m),
+                        new SupplierPaymentAllocationLineRequest(1, 0, 120m),
+                    },
+                    ClientRequestId: Guid.NewGuid()
+                ),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         session.CurrentBalance.Should().Be(0m);
         payable.Installments[0].Status.Should().Be(AccountsPayableStatus.Paid);
-        session.Movements.Should().ContainSingle(x => x.MovementType == CashMovementType.SupplierPayment && x.Amount == 80m);
+        session
+            .Movements.Should()
+            .ContainSingle(x =>
+                x.MovementType == CashMovementType.SupplierPayment && x.Amount == 80m
+            );
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -1305,25 +1483,47 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         var payable = CreatePayableWithInstallment(100m);
         SetupMethodAndDestination(m, method, destination);
         var foreignSession = CashSession.Open(
-            TenantId, CompanyId, BranchId, Guid.NewGuid(), destination.Id,
-            "CAJA-01", "Caja Principal", Guid.NewGuid(), "001", 500m, Guid.NewGuid()
+            TenantId,
+            CompanyId,
+            BranchId,
+            Guid.NewGuid(),
+            destination.Id,
+            "CAJA-01",
+            "Caja Principal",
+            Guid.NewGuid(),
+            "001",
+            500m,
+            Guid.NewGuid()
         );
-        m.CashSessions
-            .Setup(r => r.GetOpenByCashRegisterForUpdateAsync(TenantId, destination.Id, It.IsAny<CancellationToken>()))
+        m.CashSessions.Setup(r =>
+                r.GetOpenByCashRegisterForUpdateAsync(
+                    TenantId,
+                    destination.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(foreignSession);
         SetupPayable(m, payable);
 
-        var result = await BuildHandler(m).Handle(
-            SingleLineCommand(new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m), payable, 100m),
-            CancellationToken.None
-        );
+        var result = await BuildHandler(m)
+            .Handle(
+                SingleLineCommand(
+                    new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m),
+                    payable,
+                    100m
+                ),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
         result.Error.Should().Be("La caja seleccionada está siendo operada por otro usuario.");
         foreignSession.Movements.Should().ContainSingle("la caja ajena no se toca");
         payable.Installments[0].PaidAmount.Should().Be(0m);
-        m.SupplierPayments.Verify(r => r.AddAsync(It.IsAny<SupplierPayment>(), It.IsAny<CancellationToken>()), Times.Never);
+        m.SupplierPayments.Verify(
+            r => r.AddAsync(It.IsAny<SupplierPayment>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
         m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -1336,18 +1536,37 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         var payable = CreatePayableWithInstallment(100m);
         SetupMethodAndDestination(m, method, destination);
         var otherBranchSession = CashSession.Open(
-            TenantId, CompanyId, Guid.NewGuid(), UserId, destination.Id,
-            "CAJA-01", "Caja Principal", Guid.NewGuid(), "001", 500m, UserId
+            TenantId,
+            CompanyId,
+            Guid.NewGuid(),
+            UserId,
+            destination.Id,
+            "CAJA-01",
+            "Caja Principal",
+            Guid.NewGuid(),
+            "001",
+            500m,
+            UserId
         );
-        m.CashSessions
-            .Setup(r => r.GetOpenByCashRegisterForUpdateAsync(TenantId, destination.Id, It.IsAny<CancellationToken>()))
+        m.CashSessions.Setup(r =>
+                r.GetOpenByCashRegisterForUpdateAsync(
+                    TenantId,
+                    destination.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(otherBranchSession);
         SetupPayable(m, payable);
 
-        var result = await BuildHandler(m).Handle(
-            SingleLineCommand(new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m), payable, 100m),
-            CancellationToken.None
-        );
+        var result = await BuildHandler(m)
+            .Handle(
+                SingleLineCommand(
+                    new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m),
+                    payable,
+                    100m
+                ),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("La caja seleccionada no pertenece a la sucursal activa.");
@@ -1375,16 +1594,23 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, total) },
             payable is null || applied == 0
                 ? []
-                : new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, applied) },
-            payable is null || applied == 0 ? [] : new[] { new SupplierPaymentAllocationLineRequest(0, 0, applied) },
+                : new[]
+                {
+                    new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, applied),
+                },
+            payable is null || applied == 0
+                ? []
+                : new[] { new SupplierPaymentAllocationLineRequest(0, 0, applied) },
             confirm,
             ClientRequestId: Guid.NewGuid()
         );
 
-    private (Mocks m, PaymentMethod method, CashRegister destination, AccountsPayable payable) ArrangeAdvance(
-        decimal outstanding,
-        bool allowWithoutPayable
-    )
+    private (
+        Mocks m,
+        PaymentMethod method,
+        CashRegister destination,
+        AccountsPayable payable
+    ) ArrangeAdvance(decimal outstanding, bool allowWithoutPayable)
     {
         var m = BuildMocks();
         SetAllowWithoutPayable(m.Preferences, allowWithoutPayable);
@@ -1401,12 +1627,19 @@ public sealed class RegisterSupplierPaymentUseCasesTests
     {
         var (m, method, destination, payable) = ArrangeAdvance(180m, allowWithoutPayable: false);
 
-        var result = await BuildHandler(m).Handle(AdvanceCommand(method, destination, payable, 180m, 180m, confirm: false), CancellationToken.None);
+        var result = await BuildHandler(m)
+            .Handle(
+                AdvanceCommand(method, destination, payable, 180m, 180m, confirm: false),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.UnappliedAmount.Should().Be(0m);
         result.Value.SupplierCreditId.Should().BeNull();
-        m.SupplierCredits.Verify(r => r.AddAsync(It.IsAny<SupplierCredit>(), It.IsAny<CancellationToken>()), Times.Never);
+        m.SupplierCredits.Verify(
+            r => r.AddAsync(It.IsAny<SupplierCredit>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
         m.Preferences.Verify(p => p.ResolveAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -1415,26 +1648,40 @@ public sealed class RegisterSupplierPaymentUseCasesTests
     {
         var (m, method, destination, payable) = ArrangeAdvance(180m, allowWithoutPayable: false);
 
-        var result = await BuildHandler(m).Handle(AdvanceCommand(method, destination, payable, 100m, 100m, confirm: false), CancellationToken.None);
+        var result = await BuildHandler(m)
+            .Handle(
+                AdvanceCommand(method, destination, payable, 100m, 100m, confirm: false),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         payable.Installments[0].OutstandingAmount.Should().Be(80m);
-        m.SupplierCredits.Verify(r => r.AddAsync(It.IsAny<SupplierCredit>(), It.IsAny<CancellationToken>()), Times.Never);
+        m.SupplierCredits.Verify(
+            r => r.AddAsync(It.IsAny<SupplierCredit>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task Excedente_confirmado_crea_SupplierCredit_por_exactamente_el_remanente_con_o_sin_setting(bool setting)
+    public async Task Excedente_confirmado_crea_SupplierCredit_por_exactamente_el_remanente_con_o_sin_setting(
+        bool setting
+    )
     {
         var (m, method, destination, payable) = ArrangeAdvance(180m, allowWithoutPayable: setting);
         SupplierCredit? added = null;
-        m.SupplierCredits
-            .Setup(r => r.AddAsync(It.IsAny<SupplierCredit>(), It.IsAny<CancellationToken>()))
+        m.SupplierCredits.Setup(r =>
+                r.AddAsync(It.IsAny<SupplierCredit>(), It.IsAny<CancellationToken>())
+            )
             .Callback<SupplierCredit, CancellationToken>((c, _) => added = c)
             .Returns(Task.CompletedTask);
 
-        var result = await BuildHandler(m).Handle(AdvanceCommand(method, destination, payable, 200m, 180m, confirm: true), CancellationToken.None);
+        var result = await BuildHandler(m)
+            .Handle(
+                AdvanceCommand(method, destination, payable, 200m, 180m, confirm: true),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.AppliedAmount.Should().Be(180m);
@@ -1447,7 +1694,9 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         added.BranchId.Should().Be(BranchId);
         added.SupplierId.Should().Be(SupplierId);
         added.CompanyId.Should().Be(CompanyId);
-        added.DomainEvents.Should().BeEmpty("SupplierCredit no contabiliza al crearse desde un pago");
+        added
+            .DomainEvents.Should()
+            .BeEmpty("SupplierCredit no contabiliza al crearse desde un pago");
         result.Value.SupplierCreditId.Should().Be(added.Id);
         payable.Installments[0].OutstandingAmount.Should().Be(0m);
         // El setting solo gobierna el pago SIN CxP: el anticipo por sobrepago no lo consulta.
@@ -1460,13 +1709,23 @@ public sealed class RegisterSupplierPaymentUseCasesTests
     {
         var (m, method, destination, _) = ArrangeAdvance(180m, allowWithoutPayable: false);
 
-        var result = await BuildHandler(m).Handle(AdvanceCommand(method, destination, null, 200m, 0m, confirm: true), CancellationToken.None);
+        var result = await BuildHandler(m)
+            .Handle(
+                AdvanceCommand(method, destination, null, 200m, 0m, confirm: true),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("sin una cuenta por pagar");
         m.Uow.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
-        m.SupplierPayments.Verify(r => r.AddAsync(It.IsAny<SupplierPayment>(), It.IsAny<CancellationToken>()), Times.Never);
-        m.SupplierCredits.Verify(r => r.AddAsync(It.IsAny<SupplierCredit>(), It.IsAny<CancellationToken>()), Times.Never);
+        m.SupplierPayments.Verify(
+            r => r.AddAsync(It.IsAny<SupplierPayment>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        m.SupplierCredits.Verify(
+            r => r.AddAsync(It.IsAny<SupplierCredit>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -1474,19 +1733,29 @@ public sealed class RegisterSupplierPaymentUseCasesTests
     {
         var (m, method, destination, _) = ArrangeAdvance(180m, allowWithoutPayable: true);
         SupplierCredit? added = null;
-        m.SupplierCredits
-            .Setup(r => r.AddAsync(It.IsAny<SupplierCredit>(), It.IsAny<CancellationToken>()))
+        m.SupplierCredits.Setup(r =>
+                r.AddAsync(It.IsAny<SupplierCredit>(), It.IsAny<CancellationToken>())
+            )
             .Callback<SupplierCredit, CancellationToken>((c, _) => added = c)
             .Returns(Task.CompletedTask);
 
-        var result = await BuildHandler(m).Handle(AdvanceCommand(method, destination, null, 200m, 0m, confirm: true), CancellationToken.None);
+        var result = await BuildHandler(m)
+            .Handle(
+                AdvanceCommand(method, destination, null, 200m, 0m, confirm: true),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.AppliedAmount.Should().Be(0m);
         result.Value.UnappliedAmount.Should().Be(200m);
         added!.OriginalAmount.Should().Be(200m);
         m.AccountsPayables.Verify(
-            a => a.GetByInstallmentIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            a =>
+                a.GetByInstallmentIdAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }
@@ -1496,22 +1765,45 @@ public sealed class RegisterSupplierPaymentUseCasesTests
     {
         var (m, method, destination, _) = ArrangeAdvance(180m, allowWithoutPayable: true);
 
-        var result = await BuildHandler(m).Handle(AdvanceCommand(method, destination, null, 200m, 0m, confirm: false), CancellationToken.None);
+        var result = await BuildHandler(m)
+            .Handle(
+                AdvanceCommand(method, destination, null, 200m, 0m, confirm: false),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeFalse();
         m.Uow.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
-        m.SupplierCredits.Verify(r => r.AddAsync(It.IsAny<SupplierCredit>(), It.IsAny<CancellationToken>()), Times.Never);
+        m.SupplierCredits.Verify(
+            r => r.AddAsync(It.IsAny<SupplierCredit>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
     public void Validator_acepta_cero_aplicaciones_pero_rechaza_aplicaciones_mayores_al_total()
     {
         var validator = new RegisterSupplierPaymentCommandValidator();
-        var methods = new[] { new SupplierPaymentMethodLineRequest(Guid.NewGuid(), null, Guid.NewGuid(), 100m) };
+        var methods = new[]
+        {
+            new SupplierPaymentMethodLineRequest(Guid.NewGuid(), null, Guid.NewGuid(), 100m),
+        };
 
         validator
-            .Validate(new RegisterSupplierPaymentCommand(SupplierId, new DateOnly(2026, 8, 28), 100m, null, methods, [], [], true, ClientRequestId: Guid.NewGuid()))
-            .IsValid.Should().BeTrue();
+            .Validate(
+                new RegisterSupplierPaymentCommand(
+                    SupplierId,
+                    new DateOnly(2026, 8, 28),
+                    100m,
+                    null,
+                    methods,
+                    [],
+                    [],
+                    true,
+                    ClientRequestId: Guid.NewGuid()
+                )
+            )
+            .IsValid.Should()
+            .BeTrue();
         validator
             .Validate(
                 new RegisterSupplierPaymentCommand(
@@ -1525,7 +1817,8 @@ public sealed class RegisterSupplierPaymentUseCasesTests
                     ClientRequestId: Guid.NewGuid()
                 )
             )
-            .IsValid.Should().BeFalse();
+            .IsValid.Should()
+            .BeFalse();
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -1543,19 +1836,31 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         SetupPayable(m, payable);
         var originator = Guid.NewGuid(); // quien preparó el pago NO controla la caja
 
-        var result = await BuildRegistrar(m).RegisterAsync(
-            SingleLineCommand(new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 120m), payable, 120m),
-            new ERP.Application.Modules.Payables.Services.SupplierPaymentRegistrationContext(
-                TenantId, CompanyId, BranchId, originator, UserId),
-            CancellationToken.None
-        );
+        var result = await BuildRegistrar(m)
+            .RegisterAsync(
+                SingleLineCommand(
+                    new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 120m),
+                    payable,
+                    120m
+                ),
+                new ERP.Application.Modules.Payables.Services.SupplierPaymentRegistrationContext(
+                    TenantId,
+                    CompanyId,
+                    BranchId,
+                    originator,
+                    UserId
+                ),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         var payment = result.Value!.Payment;
         payment.CreatedBy.Should().Be(originator, "el originador sigue siendo el autor del pago");
         payment.ConfirmedByUserId.Should().Be(UserId, "el cajero que controla la caja lo ejecuta");
-        session.Movements.Single(x => x.ReferenceId == payment.Id).CreatedBy
-            .Should().Be(UserId, "el egreso de caja lo registra quien entrega el efectivo");
+        session
+            .Movements.Single(x => x.ReferenceId == payment.Id)
+            .CreatedBy.Should()
+            .Be(UserId, "el egreso de caja lo registra quien entrega el efectivo");
         payable.UpdatedBy.Should().Be(UserId);
         m.Uow.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
         m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -1573,17 +1878,30 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         SetupPayable(m, payable);
 
         // El originador controla la caja, pero el ejecutor no: se rechaza (ownership del ejecutor).
-        var result = await BuildRegistrar(m).RegisterAsync(
-            SingleLineCommand(new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m), payable, 100m),
-            new ERP.Application.Modules.Payables.Services.SupplierPaymentRegistrationContext(
-                TenantId, CompanyId, BranchId, UserId, Guid.NewGuid()),
-            CancellationToken.None
-        );
+        var result = await BuildRegistrar(m)
+            .RegisterAsync(
+                SingleLineCommand(
+                    new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m),
+                    payable,
+                    100m
+                ),
+                new ERP.Application.Modules.Payables.Services.SupplierPaymentRegistrationContext(
+                    TenantId,
+                    CompanyId,
+                    BranchId,
+                    UserId,
+                    Guid.NewGuid()
+                ),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("La caja seleccionada está siendo operada por otro usuario.");
         session.Movements.Should().ContainSingle("solo la apertura");
-        m.SupplierPayments.Verify(r => r.AddAsync(It.IsAny<SupplierPayment>(), It.IsAny<CancellationToken>()), Times.Never);
+        m.SupplierPayments.Verify(
+            r => r.AddAsync(It.IsAny<SupplierPayment>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -1596,14 +1914,20 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         SetupMethodAndDestination(m, method, destination);
         SetupPayable(m, payable);
         SupplierPayment? added = null;
-        m.SupplierPayments
-            .Setup(r => r.AddAsync(It.IsAny<SupplierPayment>(), It.IsAny<CancellationToken>()))
+        m.SupplierPayments.Setup(r =>
+                r.AddAsync(It.IsAny<SupplierPayment>(), It.IsAny<CancellationToken>())
+            )
             .Callback<SupplierPayment, CancellationToken>((p, _) => added = p);
 
-        var result = await BuildHandler(m).Handle(
-            SingleLineCommand(new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 120m), payable, 120m),
-            CancellationToken.None
-        );
+        var result = await BuildHandler(m)
+            .Handle(
+                SingleLineCommand(
+                    new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 120m),
+                    payable,
+                    120m
+                ),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         (added!.CreatedBy, added.ConfirmedByUserId).Should().Be((UserId, UserId));

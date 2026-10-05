@@ -71,7 +71,9 @@ public sealed class RecordCashMovementValidator : AbstractValidator<RecordCashMo
 {
     public RecordCashMovementValidator()
     {
-        RuleFor(x => x.ClientRequestId).NotEmpty().WithMessage("El identificador de idempotencia es obligatorio.");
+        RuleFor(x => x.ClientRequestId)
+            .NotEmpty()
+            .WithMessage("El identificador de idempotencia es obligatorio.");
         RuleFor(x => x.CashSessionId).NotEmpty().WithMessage("La sesión de caja es obligatoria.");
         RuleFor(x => x.MovementType)
             .NotEmpty()
@@ -140,7 +142,10 @@ public sealed class RecordCashMovementHandler
         CancellationToken ct
     )
     {
-        var key = new ClientRequestKey(cmd.ClientRequestId, ManualCashMovementIntentV1.ComputeHash(cmd));
+        var key = new ClientRequestKey(
+            cmd.ClientRequestId,
+            ManualCashMovementIntentV1.ComputeHash(cmd)
+        );
 
         // Camino rápido del replay: ningún efecto, ni transacción.
         var existing = await _repo.GetMovementByClientRequestIdAsync(_t.TenantId, key.Id, ct);
@@ -224,12 +229,19 @@ public sealed class RecordCashMovementHandler
         // 02B — `caja.record` decide QUÉ puede hacer el usuario; la sesión solo la opera quien la
         // abrió (CashSession.UserId). Fail-closed, sin bypass por rol.
         if (!session.IsControlledBy(_u.UserId))
-            return Result<CashMovementDto>.ValidationFailure(CashSessionOwnership.RejectionMessage(session));
+            return Result<CashMovementDto>.ValidationFailure(
+                CashSessionOwnership.RejectionMessage(session)
+            );
 
         // Fail-closed: la búsqueda ya filtra por Tenant+Company de la sesión — un motivo de otro
         // tenant o de otra empresa (aunque exista con ese Id) llega aquí como null, exactamente
         // igual que "no existe". Nunca se usa un CompanyId ambient distinto del de la sesión real.
-        var reason = await _reasonRepo.GetByIdAsync(_t.TenantId, session.CompanyId, cmd.ReasonId, ct);
+        var reason = await _reasonRepo.GetByIdAsync(
+            _t.TenantId,
+            session.CompanyId,
+            cmd.ReasonId,
+            ct
+        );
         if (reason is null)
             return Result<CashMovementDto>.ValidationFailure(
                 "El motivo seleccionado no existe o no pertenece a esta empresa."

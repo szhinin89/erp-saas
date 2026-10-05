@@ -50,10 +50,17 @@ public sealed class ReverseSupplierCreditApplicationUseCasesTests
         );
 
         var payable = AccountsPayable.CreateFromOrigin(
-            TenantId, CompanyId, BranchId, SupplierId,
-            AccountsPayableOriginType.PurchaseInvoice, PurchaseInvoiceId,
-            "01", "001-001-000000001",
-            DateOnly.FromDateTime(DateTime.UtcNow), DateOnly.FromDateTime(DateTime.UtcNow), UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            PurchaseInvoiceId,
+            "01",
+            "001-001-000000001",
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            UserId
         );
         payable.AddInstallment(1, DateOnly.FromDateTime(DateTime.UtcNow).AddDays(30), 500m);
 
@@ -85,10 +92,11 @@ public sealed class ReverseSupplierCreditApplicationUseCasesTests
         public Mocks(Fixture f)
         {
             PayableRepo
-                .Setup(r =>
-                    r.GetOriginAsync(TenantId, PayableId, It.IsAny<CancellationToken>())
-                )
-                .ReturnsAsync(((AccountsPayableOriginType, Guid)?)(AccountsPayableOriginType.PurchaseInvoice, PurchaseInvoiceId));
+                .Setup(r => r.GetOriginAsync(TenantId, PayableId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(
+                    ((AccountsPayableOriginType, Guid)?)
+                        (AccountsPayableOriginType.PurchaseInvoice, PurchaseInvoiceId)
+                );
             PayableRepo
                 .Setup(r => r.GetByIdAsync(TenantId, PayableId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(f.Payable);
@@ -104,13 +112,12 @@ public sealed class ReverseSupplierCreditApplicationUseCasesTests
         {
             PayableRepo
                 .Setup(r =>
-                    r.GetOriginAsync(
-                        TenantId,
-                        OtherPayableId,
-                        It.IsAny<CancellationToken>()
-                    )
+                    r.GetOriginAsync(TenantId, OtherPayableId, It.IsAny<CancellationToken>())
                 )
-                .ReturnsAsync(((AccountsPayableOriginType, Guid)?)(AccountsPayableOriginType.PurchaseInvoice, OtherPurchaseInvoiceId));
+                .ReturnsAsync(
+                    ((AccountsPayableOriginType, Guid)?)
+                        (AccountsPayableOriginType.PurchaseInvoice, OtherPurchaseInvoiceId)
+                );
             PayableRepo
                 .Setup(r => r.GetByIdAsync(TenantId, OtherPayableId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(otherPayable);
@@ -186,10 +193,17 @@ public sealed class ReverseSupplierCreditApplicationUseCasesTests
         var f = BuildFixture(creditAmount: 100m, appliedAmount: 60m);
         var m = new Mocks(f);
         var otherPayable = AccountsPayable.CreateFromOrigin(
-            TenantId, CompanyId, BranchId, SupplierId,
-            AccountsPayableOriginType.PurchaseInvoice, OtherPurchaseInvoiceId,
-            "01", "001-001-000000002",
-            DateOnly.FromDateTime(DateTime.UtcNow), DateOnly.FromDateTime(DateTime.UtcNow), UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            OtherPurchaseInvoiceId,
+            "01",
+            "001-001-000000002",
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            UserId
         );
         otherPayable.AddInstallment(1, DateOnly.FromDateTime(DateTime.UtcNow).AddDays(30), 300m);
         m.RegisterOtherPayable(otherPayable);

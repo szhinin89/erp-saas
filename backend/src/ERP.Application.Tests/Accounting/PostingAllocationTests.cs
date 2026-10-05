@@ -37,9 +37,7 @@ public sealed class PostingAllocationTests
     {
         var act = () => new PostingAllocation(Guid.Empty, 100m, AccountNature.Debit);
 
-        act.Should()
-            .Throw<ArgumentException>()
-            .WithParameterName("accountingAccountId");
+        act.Should().Throw<ArgumentException>().WithParameterName("accountingAccountId");
     }
 
     [Fact]

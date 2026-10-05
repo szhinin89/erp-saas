@@ -5,7 +5,11 @@ using ERP.Domain.Modules.Payables.Interfaces;
 namespace ERP.Application.Modules.Payables.UseCases;
 
 /// <summary>PAYABLES-PURCHASE-MIGRATION-10 — una cuota del cronograma a crear junto con la CxP.</summary>
-public sealed record AccountsPayableInstallmentInput(int InstallmentNumber, DateOnly DueDate, decimal Amount);
+public sealed record AccountsPayableInstallmentInput(
+    int InstallmentNumber,
+    DateOnly DueDate,
+    decimal Amount
+);
 
 /// <summary>
 /// PAYABLES-GENERIC-FOUNDATION-09 / PAYABLES-PURCHASE-MIGRATION-10 — payload para crear una CxP
@@ -132,7 +136,11 @@ public sealed class AccountsPayableService : IAccountsPayableService
             createdBy
         );
         foreach (var installment in request.Installments)
-            payable.AddInstallment(installment.InstallmentNumber, installment.DueDate, installment.Amount);
+            payable.AddInstallment(
+                installment.InstallmentNumber,
+                installment.DueDate,
+                installment.Amount
+            );
 
         return payable;
     }

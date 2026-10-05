@@ -37,9 +37,13 @@ public sealed class ExpenseRetentionOriginCancellation : IRetentionOriginCancell
     {
         var expense = await _expenses.GetByIdAsync(request.TenantId, request.SourceDocumentId, ct);
         if (expense is null || expense.CompanyId != request.CompanyId)
-            return Result<RetentionOriginCancellationOutcome>.NotFound("El gasto de la retención no existe.");
+            return Result<RetentionOriginCancellationOutcome>.NotFound(
+                "El gasto de la retención no existe."
+            );
         if (expense.Status == ExpenseStatus.Cancelled)
-            return Result<RetentionOriginCancellationOutcome>.Success(RetentionOriginCancellationOutcome.AlreadyCancelled);
+            return Result<RetentionOriginCancellationOutcome>.Success(
+                RetentionOriginCancellationOutcome.AlreadyCancelled
+            );
 
         var result = await _cancelExpense.ExecuteAsync(
             new ExpenseCancellationContext(
@@ -54,7 +58,9 @@ public sealed class ExpenseRetentionOriginCancellation : IRetentionOriginCancell
             ct
         );
         return result.IsSuccess
-            ? Result<RetentionOriginCancellationOutcome>.Success(RetentionOriginCancellationOutcome.Cancelled)
+            ? Result<RetentionOriginCancellationOutcome>.Success(
+                RetentionOriginCancellationOutcome.Cancelled
+            )
             : Result<RetentionOriginCancellationOutcome>.Failure(result.Error!, result.Code);
     }
 }

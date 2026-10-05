@@ -27,7 +27,8 @@ namespace ERP.Application.Modules.Accounting.Posting.Translators;
 /// propio JournalEntry independiente. Log-and-continue: un fallo al contabilizar el costo nunca
 /// revierte la venta ya autorizada.
 /// </remarks>
-public sealed class SalesInvoiceCogsPostingTranslator : INotificationHandler<SalesInvoiceAuthorizedEvent>
+public sealed class SalesInvoiceCogsPostingTranslator
+    : INotificationHandler<SalesInvoiceAuthorizedEvent>
 {
     private const string SourceModuleName = "Sales";
     private const string FactTypeName = "CostOfGoodsSold";

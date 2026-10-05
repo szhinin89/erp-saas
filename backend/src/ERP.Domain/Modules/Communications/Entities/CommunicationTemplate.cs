@@ -52,7 +52,10 @@ public sealed class CommunicationTemplate
         if (companyId == Guid.Empty)
             throw new ArgumentException("CompanyId es obligatorio.", nameof(companyId));
         if (string.IsNullOrWhiteSpace(htmlTemplate) && string.IsNullOrWhiteSpace(textTemplate))
-            throw new ArgumentException("La plantilla debe tener cuerpo HTML o texto.", nameof(textTemplate));
+            throw new ArgumentException(
+                "La plantilla debe tener cuerpo HTML o texto.",
+                nameof(textTemplate)
+            );
 
         var template = new CommunicationTemplate
         {
@@ -63,7 +66,11 @@ public sealed class CommunicationTemplate
             Code = Required(code, CodeMaxLen, nameof(code)).ToUpperInvariant(),
             Name = Required(name, NameMaxLen, nameof(name)),
             Channel = channel,
-            SubjectTemplate = Required(subjectTemplate, SubjectTemplateMaxLen, nameof(subjectTemplate)),
+            SubjectTemplate = Required(
+                subjectTemplate,
+                SubjectTemplateMaxLen,
+                nameof(subjectTemplate)
+            ),
             HtmlTemplate = Optional(htmlTemplate, BodyTemplateMaxLen, nameof(htmlTemplate)),
             TextTemplate = Optional(textTemplate, BodyTemplateMaxLen, nameof(textTemplate)),
             Language = Required(language, LanguageMaxLen, nameof(language)).ToLowerInvariant(),
@@ -83,7 +90,10 @@ public sealed class CommunicationTemplate
     )
     {
         if (string.IsNullOrWhiteSpace(htmlTemplate) && string.IsNullOrWhiteSpace(textTemplate))
-            throw new ArgumentException("La plantilla debe tener cuerpo HTML o texto.", nameof(textTemplate));
+            throw new ArgumentException(
+                "La plantilla debe tener cuerpo HTML o texto.",
+                nameof(textTemplate)
+            );
 
         Name = Required(name, NameMaxLen, nameof(name));
         SubjectTemplate = Required(subjectTemplate, SubjectTemplateMaxLen, nameof(subjectTemplate));
@@ -119,7 +129,10 @@ public sealed class CommunicationTemplate
     {
         var normalized = value.Trim();
         if (normalized.Length > maxLength)
-            throw new ArgumentException($"El valor no puede superar {maxLength} caracteres.", paramName);
+            throw new ArgumentException(
+                $"El valor no puede superar {maxLength} caracteres.",
+                paramName
+            );
         return normalized;
     }
 }

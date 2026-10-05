@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common;
+using ERP.Application.Common;
 using ERP.Application.Modules.Companies.DTOs;
 using MediatR;
 

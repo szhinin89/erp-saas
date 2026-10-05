@@ -33,8 +33,17 @@ public sealed class CommunicationOutboxTests
         var identity = InvoiceIdentity(BranchId);
 
         var message = CommunicationOutbox.CreateEmail(
-            identity, " Cliente ", " CLIENTE@MAIL.COM ", Usage(identity), " Factura autorizada ", "<p>Lista</p>", null,
-            CommunicationPriority.High, scheduledAt, 5, UserId
+            identity,
+            " Cliente ",
+            " CLIENTE@MAIL.COM ",
+            Usage(identity),
+            " Factura autorizada ",
+            "<p>Lista</p>",
+            null,
+            CommunicationPriority.High,
+            scheduledAt,
+            5,
+            UserId
         );
 
         message.ScopeKind.Should().Be(CommunicationScopeKind.Company);
@@ -71,8 +80,27 @@ public sealed class CommunicationOutboxTests
             CommunicationRecipientRole.User
         );
 
-        var message = CommunicationOutbox.CreateEmail(identity, null, "u@test.com", Usage(identity), "Recupera tu acceso", null, "texto", CommunicationPriority.High, null, 3, Guid.Empty);
-        message.AddAttachment(CommunicationAttachmentType.Generic, "a.txt", "text/plain", null, [1], Guid.Empty);
+        var message = CommunicationOutbox.CreateEmail(
+            identity,
+            null,
+            "u@test.com",
+            Usage(identity),
+            "Recupera tu acceso",
+            null,
+            "texto",
+            CommunicationPriority.High,
+            null,
+            3,
+            Guid.Empty
+        );
+        message.AddAttachment(
+            CommunicationAttachmentType.Generic,
+            "a.txt",
+            "text/plain",
+            null,
+            [1],
+            Guid.Empty
+        );
 
         message.ScopeKind.Should().Be(CommunicationScopeKind.System);
         message.TenantId.Should().BeNull();
@@ -89,13 +117,52 @@ public sealed class CommunicationOutboxTests
         var originalId = Guid.NewGuid();
 
         var resend = CommunicationOutbox.CreateEmail(
-            original.ForResend(1), null, "c@test.com", Usage(original), "s", "<p>x</p>", null, CommunicationPriority.Normal, null, 3, UserId, originalId);
+            original.ForResend(1),
+            null,
+            "c@test.com",
+            Usage(original),
+            "s",
+            "<p>x</p>",
+            null,
+            CommunicationPriority.Normal,
+            null,
+            3,
+            UserId,
+            originalId
+        );
         resend.ResendOfCommunicationId.Should().Be(originalId);
         resend.ResendSequence.Should().Be(1);
         resend.IdempotencyKey.Should().NotBe(original.Key);
 
-        var sinOriginal = () => CommunicationOutbox.CreateEmail(original.ForResend(1), null, "c@test.com", Usage(original), "s", "<p>x</p>", null, CommunicationPriority.Normal, null, 3, UserId);
-        var originalConReferencia = () => CommunicationOutbox.CreateEmail(original, null, "c@test.com", Usage(original), "s", "<p>x</p>", null, CommunicationPriority.Normal, null, 3, UserId, originalId);
+        var sinOriginal = () =>
+            CommunicationOutbox.CreateEmail(
+                original.ForResend(1),
+                null,
+                "c@test.com",
+                Usage(original),
+                "s",
+                "<p>x</p>",
+                null,
+                CommunicationPriority.Normal,
+                null,
+                3,
+                UserId
+            );
+        var originalConReferencia = () =>
+            CommunicationOutbox.CreateEmail(
+                original,
+                null,
+                "c@test.com",
+                Usage(original),
+                "s",
+                "<p>x</p>",
+                null,
+                CommunicationPriority.Normal,
+                null,
+                3,
+                UserId,
+                originalId
+            );
         sinOriginal.Should().Throw<ArgumentException>();
         originalConReferencia.Should().Throw<ArgumentException>();
     }
@@ -103,10 +170,37 @@ public sealed class CommunicationOutboxTests
     [Fact]
     public void AddAttachment_hereda_el_alcance_y_exige_ruta_o_contenido_binario()
     {
-        var message = CommunicationOutbox.CreateEmail(InvoiceIdentity(), "Cliente", "cliente@mail.com", Usage(InvoiceIdentity()), "Factura", "<p>Lista</p>", null, CommunicationPriority.Normal, null, 3, UserId);
+        var message = CommunicationOutbox.CreateEmail(
+            InvoiceIdentity(),
+            "Cliente",
+            "cliente@mail.com",
+            Usage(InvoiceIdentity()),
+            "Factura",
+            "<p>Lista</p>",
+            null,
+            CommunicationPriority.Normal,
+            null,
+            3,
+            UserId
+        );
 
-        message.AddAttachment(CommunicationAttachmentType.AuthorizedXml, "autorizado.xml", "application/xml", "storage/invoices/autorizado.xml", null, UserId);
-        var sinContenido = () => message.AddAttachment(CommunicationAttachmentType.Generic, "x", "text/plain", null, null, UserId);
+        message.AddAttachment(
+            CommunicationAttachmentType.AuthorizedXml,
+            "autorizado.xml",
+            "application/xml",
+            "storage/invoices/autorizado.xml",
+            null,
+            UserId
+        );
+        var sinContenido = () =>
+            message.AddAttachment(
+                CommunicationAttachmentType.Generic,
+                "x",
+                "text/plain",
+                null,
+                null,
+                UserId
+            );
 
         message.Attachments.Should().ContainSingle();
         message.Attachments.Single().TenantId.Should().Be(TenantId);
@@ -119,21 +213,60 @@ public sealed class CommunicationOutboxTests
     public void Template_de_otro_proposito_o_uso_invalido_falla()
     {
         var identity = InvoiceIdentity();
-        var otherKey = () => CommunicationOutbox.CreateEmail(
-            identity, null, "c@test.com", new CommunicationTemplateUsage(CommunicationPurposes.PasswordReset, 1, CommunicationTemplateSource.Default),
-            "s", "<p>x</p>", null, CommunicationPriority.Normal, null, 3, UserId);
-        var versionZero = () => new CommunicationTemplateUsage(CommunicationPurposes.SalesInvoiceAuthorized, 0, CommunicationTemplateSource.Default);
-        var legacyNew = () => new CommunicationTemplateUsage(CommunicationPurposes.SalesInvoiceAuthorized, 1, CommunicationTemplateSource.Legacy);
+        var otherKey = () =>
+            CommunicationOutbox.CreateEmail(
+                identity,
+                null,
+                "c@test.com",
+                new CommunicationTemplateUsage(
+                    CommunicationPurposes.PasswordReset,
+                    1,
+                    CommunicationTemplateSource.Default
+                ),
+                "s",
+                "<p>x</p>",
+                null,
+                CommunicationPriority.Normal,
+                null,
+                3,
+                UserId
+            );
+        var versionZero = () =>
+            new CommunicationTemplateUsage(
+                CommunicationPurposes.SalesInvoiceAuthorized,
+                0,
+                CommunicationTemplateSource.Default
+            );
+        var legacyNew = () =>
+            new CommunicationTemplateUsage(
+                CommunicationPurposes.SalesInvoiceAuthorized,
+                1,
+                CommunicationTemplateSource.Legacy
+            );
 
         otherKey.Should().Throw<ArgumentException>();
         versionZero.Should().Throw<ArgumentOutOfRangeException>();
-        legacyNew.Should().Throw<ArgumentException>("Legacy solo existe en filas previas al subsistema");
+        legacyNew
+            .Should()
+            .Throw<ArgumentException>("Legacy solo existe en filas previas al subsistema");
     }
 
     [Fact]
     public void Override_de_empresa_sube_de_revision_en_cada_cambio_de_contenido()
     {
-        var template = CommunicationTemplate.Create(TenantId, CompanyId, null, CommunicationPurposes.SalesInvoiceAuthorized, "Factura", CommunicationChannel.Email, "Asunto {{InvoiceNumber}}", "<p>x</p>", null, "es", UserId);
+        var template = CommunicationTemplate.Create(
+            TenantId,
+            CompanyId,
+            null,
+            CommunicationPurposes.SalesInvoiceAuthorized,
+            "Factura",
+            CommunicationChannel.Email,
+            "Asunto {{InvoiceNumber}}",
+            "<p>x</p>",
+            null,
+            "es",
+            UserId
+        );
         template.Revision.Should().Be(1);
 
         template.UpdateContent("Factura", "Otro {{InvoiceNumber}}", "<p>y</p>", null, UserId);
@@ -147,26 +280,71 @@ public sealed class CommunicationOutboxTests
         var identity = InvoiceIdentity();
 
         var failed = CommunicationOutbox.CreateEmailFailedBeforeDelivery(
-            identity, "Cliente", "Cliente@Mail.com", CommunicationFailureCategory.Configuration,
-            "COMMUNICATION_TEMPLATE_INVALID: placeholder no declarado", "{\"InvoiceNumber\":\"001\"}",
-            CommunicationPriority.Normal, 3, UserId);
+            identity,
+            "Cliente",
+            "Cliente@Mail.com",
+            CommunicationFailureCategory.Configuration,
+            "COMMUNICATION_TEMPLATE_INVALID: placeholder no declarado",
+            "{\"InvoiceNumber\":\"001\"}",
+            CommunicationPriority.Normal,
+            3,
+            UserId
+        );
 
         failed.Status.Should().Be(CommunicationStatus.Failed);
         failed.FailureCategory.Should().Be(CommunicationFailureCategory.Configuration);
         failed.Subject.Should().BeNull();
         failed.BodyHtml.Should().BeNull();
         failed.BodyText.Should().BeNull();
-        failed.IdempotencyKey.Should().Be(identity.Key, "misma identidad: repetir el hecho no la duplica");
+        failed
+            .IdempotencyKey.Should()
+            .Be(identity.Key, "misma identidad: repetir el hecho no la duplica");
         failed.TemplateKey.Should().Be(identity.Purpose);
         failed.TemplatePayloadJson.Should().Contain("InvoiceNumber");
         failed.RecipientEmail.Should().Be("cliente@mail.com");
 
-        var transient = () => CommunicationOutbox.CreateEmailFailedBeforeDelivery(identity, null, "c@test.com", CommunicationFailureCategory.Transient, "x", null, CommunicationPriority.Normal, 3, UserId);
-        var resend = () => CommunicationOutbox.CreateEmailFailedBeforeDelivery(identity.ForResend(1), null, "c@test.com", CommunicationFailureCategory.Configuration, "x", null, CommunicationPriority.Normal, 3, UserId);
-        var sensitivePayload = () => CommunicationOutbox.CreateEmailFailedBeforeDelivery(
-            CommunicationIdentity.For(CommunicationScope.System, CommunicationPurposes.PasswordReset, CommunicationChannel.Email,
-                new CommunicationSource("Authentication", "PasswordReset", Guid.NewGuid()), CommunicationRecipientRole.User),
-            null, "u@test.com", CommunicationFailureCategory.Configuration, "x", "{\"Link\":\"secreto\"}", CommunicationPriority.High, 3, UserId);
+        var transient = () =>
+            CommunicationOutbox.CreateEmailFailedBeforeDelivery(
+                identity,
+                null,
+                "c@test.com",
+                CommunicationFailureCategory.Transient,
+                "x",
+                null,
+                CommunicationPriority.Normal,
+                3,
+                UserId
+            );
+        var resend = () =>
+            CommunicationOutbox.CreateEmailFailedBeforeDelivery(
+                identity.ForResend(1),
+                null,
+                "c@test.com",
+                CommunicationFailureCategory.Configuration,
+                "x",
+                null,
+                CommunicationPriority.Normal,
+                3,
+                UserId
+            );
+        var sensitivePayload = () =>
+            CommunicationOutbox.CreateEmailFailedBeforeDelivery(
+                CommunicationIdentity.For(
+                    CommunicationScope.System,
+                    CommunicationPurposes.PasswordReset,
+                    CommunicationChannel.Email,
+                    new CommunicationSource("Authentication", "PasswordReset", Guid.NewGuid()),
+                    CommunicationRecipientRole.User
+                ),
+                null,
+                "u@test.com",
+                CommunicationFailureCategory.Configuration,
+                "x",
+                "{\"Link\":\"secreto\"}",
+                CommunicationPriority.High,
+                3,
+                UserId
+            );
 
         transient.Should().Throw<ArgumentException>();
         resend.Should().Throw<ArgumentException>();
@@ -179,8 +357,16 @@ public sealed class CommunicationOutboxTests
         var identity = InvoiceIdentity();
 
         var failed = CommunicationOutbox.CreateEmailFailedBeforeDelivery(
-            identity, "Cliente", null, CommunicationFailureCategory.Permanent,
-            "COMMUNICATION_RECIPIENT_MISSING", "{\"InvoiceNumber\":\"001\"}", CommunicationPriority.Normal, 3, UserId);
+            identity,
+            "Cliente",
+            null,
+            CommunicationFailureCategory.Permanent,
+            "COMMUNICATION_RECIPIENT_MISSING",
+            "{\"InvoiceNumber\":\"001\"}",
+            CommunicationPriority.Normal,
+            3,
+            UserId
+        );
 
         failed.Status.Should().Be(CommunicationStatus.Failed);
         failed.FailureCategory.Should().Be(CommunicationFailureCategory.Permanent);
@@ -192,11 +378,40 @@ public sealed class CommunicationOutboxTests
     [Fact]
     public void Adjunto_por_referencia_no_requiere_ruta_ni_bytes()
     {
-        var message = CommunicationOutbox.CreateEmail(InvoiceIdentity(), "Cliente", "cliente@mail.com", Usage(InvoiceIdentity()), "Factura", "<p>Lista</p>", null, CommunicationPriority.Normal, null, 3, UserId);
+        var message = CommunicationOutbox.CreateEmail(
+            InvoiceIdentity(),
+            "Cliente",
+            "cliente@mail.com",
+            Usage(InvoiceIdentity()),
+            "Factura",
+            "<p>Lista</p>",
+            null,
+            CommunicationPriority.Normal,
+            null,
+            3,
+            UserId
+        );
         var documentId = Guid.NewGuid();
 
-        message.AddAttachment(CommunicationAttachmentType.RidePdf, "ride.pdf", "application/pdf", null, null, UserId, documentId);
-        var referenciaVacia = () => message.AddAttachment(CommunicationAttachmentType.RidePdf, "x.pdf", "application/pdf", null, null, UserId, Guid.Empty);
+        message.AddAttachment(
+            CommunicationAttachmentType.RidePdf,
+            "ride.pdf",
+            "application/pdf",
+            null,
+            null,
+            UserId,
+            documentId
+        );
+        var referenciaVacia = () =>
+            message.AddAttachment(
+                CommunicationAttachmentType.RidePdf,
+                "x.pdf",
+                "application/pdf",
+                null,
+                null,
+                UserId,
+                Guid.Empty
+            );
 
         message.Attachments.Single().ReferenceId.Should().Be(documentId);
         message.Attachments.Single().FileStoragePath.Should().BeNull();

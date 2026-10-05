@@ -56,14 +56,15 @@ public static class PrecisionPolicyDefinitions
         new(SettlementToleranceAmount, PrecisionFieldKind.Amount, 0.00m, 0.02m, 0.01m, 0.01m),
     ];
 
-    public static PrecisionFieldDefinition Get(string key) =>
-        Fields.Single(f => f.Key == key);
+    public static PrecisionFieldDefinition Get(string key) => Fields.Single(f => f.Key == key);
 
     public static PrecisionPolicyValues Standard { get; } = BuildValues(f => f.Standard);
 
     public static PrecisionPolicyValues HighPrecision { get; } = BuildValues(f => f.HighPrecision);
 
-    private static PrecisionPolicyValues BuildValues(Func<PrecisionFieldDefinition, decimal> pick) =>
+    private static PrecisionPolicyValues BuildValues(
+        Func<PrecisionFieldDefinition, decimal> pick
+    ) =>
         new(
             (short)pick(Get(SalesUnitPriceDecimals)),
             (short)pick(Get(PurchaseUnitPriceDecimals)),

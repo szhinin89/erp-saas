@@ -32,8 +32,10 @@ internal sealed class CompanyIdentityRules : AbstractValidator<ICompanyIdentityI
             .MaximumLength(200);
 
         RuleFor(x => x.TaxId)
-            .Must(ruc => ruc!.Trim().All(c => c is >= '0' and <= '9')
-                && ERP.Domain.Common.Validators.RucValidator.EsRucValido(ruc))
+            .Must(ruc =>
+                ruc!.Trim().All(c => c is >= '0' and <= '9')
+                && ERP.Domain.Common.Validators.RucValidator.EsRucValido(ruc)
+            )
             .WithMessage("El RUC ecuatoriano no es válido.")
             .When(x => !string.IsNullOrWhiteSpace(x.TaxId));
 

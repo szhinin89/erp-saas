@@ -4,7 +4,11 @@ namespace ERP.Domain.Modules.Expenses.Interfaces;
 
 public interface IExpenseDocumentRepository
 {
-    Task<(IReadOnlyList<ExpenseDocument> Items, IReadOnlyDictionary<Guid, int> LineCounts, int Total)> GetPagedAsync(
+    Task<(
+        IReadOnlyList<ExpenseDocument> Items,
+        IReadOnlyDictionary<Guid, int> LineCounts,
+        int Total
+    )> GetPagedAsync(
         Guid tenantId,
         Guid branchId,
         string? search = null,
@@ -36,7 +40,11 @@ public interface IExpenseDocumentRepository
     /// RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — solo cuenta un gasto ACTIVO; uno
     /// <c>Cancelled</c> nunca bloquea.
     /// </summary>
-    Task<bool> ExistsByAccessKeyAsync(Guid tenantId, string accessKey, CancellationToken ct = default);
+    Task<bool> ExistsByAccessKeyAsync(
+        Guid tenantId,
+        string accessKey,
+        CancellationToken ct = default
+    );
 
     /// <summary>
     /// PURCHASE-RECEPTION-BULK-SRI-XML-DOWNLOAD-01 — Id del gasto ACTIVO (Draft/Confirmed) con
@@ -54,7 +62,11 @@ public interface IExpenseDocumentRepository
     /// RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — solo cuenta un gasto ACTIVO vinculado a esta
     /// recepción; uno <c>Cancelled</c> nunca bloquea reprocesar la misma recepción.
     /// </summary>
-    Task<bool> ExistsByReceptionDocumentIdAsync(Guid tenantId, Guid receptionDocumentId, CancellationToken ct = default);
+    Task<bool> ExistsByReceptionDocumentIdAsync(
+        Guid tenantId,
+        Guid receptionDocumentId,
+        CancellationToken ct = default
+    );
 
     /// <summary>
     /// RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — Id del gasto Cancelled más reciente con este

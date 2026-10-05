@@ -33,8 +33,6 @@ public sealed class ImportBatchFileConfiguration : IEntityTypeConfiguration<Impo
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder
-            .HasIndex(x => x.ImportBatchId)
-            .HasDatabaseName("ix_import_batch_files_batch");
+        builder.HasIndex(x => x.ImportBatchId).HasDatabaseName("ix_import_batch_files_batch");
     }
 }

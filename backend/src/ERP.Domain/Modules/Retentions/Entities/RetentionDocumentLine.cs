@@ -59,7 +59,10 @@ public sealed class RetentionDocumentLine : IMustHaveTenant
         if (tenantId == Guid.Empty)
             throw new ArgumentException("El tenant es obligatorio.", nameof(tenantId));
         if (!Enum.IsDefined(taxType))
-            throw new ArgumentException("El tipo de impuesto retenido no es válido.", nameof(taxType));
+            throw new ArgumentException(
+                "El tipo de impuesto retenido no es válido.",
+                nameof(taxType)
+            );
         if (string.IsNullOrWhiteSpace(retentionCode))
             throw new ArgumentException(
                 "El código de retención es obligatorio.",
@@ -99,12 +102,25 @@ public sealed class RetentionDocumentLine : IMustHaveTenant
             TaxType = taxType,
             RetentionCode = retentionCode.Trim(),
             RetentionCodeDescription = retentionCodeDescription.Trim(),
-            BaseAmount = Math.Round(baseAmount, FiscalPrecision.TaxAmount, MidpointRounding.AwayFromZero),
-            RetentionRate = Math.Round(retentionRate, FiscalPrecision.Percentage, MidpointRounding.AwayFromZero),
-            RetainedAmount = Math.Round(retainedAmount, FiscalPrecision.TaxAmount, MidpointRounding.AwayFromZero),
+            BaseAmount = Math.Round(
+                baseAmount,
+                FiscalPrecision.TaxAmount,
+                MidpointRounding.AwayFromZero
+            ),
+            RetentionRate = Math.Round(
+                retentionRate,
+                FiscalPrecision.Percentage,
+                MidpointRounding.AwayFromZero
+            ),
+            RetainedAmount = Math.Round(
+                retainedAmount,
+                FiscalPrecision.TaxAmount,
+                MidpointRounding.AwayFromZero
+            ),
             Description = Normalize(description),
         };
     }
 
-    private static string? Normalize(string? value) => value?.Trim() is { Length: > 0 } text ? text : null;
+    private static string? Normalize(string? value) =>
+        value?.Trim() is { Length: > 0 } text ? text : null;
 }

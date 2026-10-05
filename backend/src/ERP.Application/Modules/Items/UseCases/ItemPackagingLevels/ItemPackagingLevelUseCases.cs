@@ -61,7 +61,10 @@ public sealed class ReplaceItemPackagingLevelsCommandValidator
                 l.RuleFor(x => x.UomCode).NotEmpty().MaximumLength(10);
                 l.RuleFor(x => x.BaseQuantity).GreaterThan(0);
                 l.RuleFor(x => x.Weight)
-                    .Must(w => w is null || decimal.Round(w.Value, ItemPrecision.PackagingWeight) == w.Value)
+                    .Must(w =>
+                        w is null
+                        || decimal.Round(w.Value, ItemPrecision.PackagingWeight) == w.Value
+                    )
                     .WithMessage(PackagingWeightScaleMessage);
                 l.RuleFor(x => x.BaseQuantity)
                     .Equal(1m)
@@ -148,7 +151,9 @@ public sealed class ReplaceItemPackagingLevelsCommandHandler
 
         var submittedIds = levels.Where(l => l.Id.HasValue).Select(l => l.Id!.Value).ToHashSet();
         var removedUsedLevel = item.SupplierCodes.Any(s =>
-            s.IsActive && s.PackagingLevelId.HasValue && !submittedIds.Contains(s.PackagingLevelId.Value)
+            s.IsActive
+            && s.PackagingLevelId.HasValue
+            && !submittedIds.Contains(s.PackagingLevelId.Value)
         );
         if (removedUsedLevel)
         {
@@ -166,7 +171,9 @@ public sealed class ReplaceItemPackagingLevelsCommandHandler
             );
         if (usedInConfirmedDocuments.Count > 0)
         {
-            var removedDocumentLevel = usedInConfirmedDocuments.Any(id => !submittedIds.Contains(id));
+            var removedDocumentLevel = usedInConfirmedDocuments.Any(id =>
+                !submittedIds.Contains(id)
+            );
             if (removedDocumentLevel)
             {
                 return Result<ItemDetailDto>.ValidationFailure(

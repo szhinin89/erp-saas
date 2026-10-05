@@ -26,7 +26,10 @@ namespace ERP.Domain.Modules.Payables.Entities;
 /// más común, incluido todo Gastos) esto se reduce exactamente al comportamiento agregado que tenía
 /// <c>PurchasePayable</c> (un único acumulador por cuenta por pagar).
 /// </remarks>
-public sealed class AccountsPayable : AuditableEntity, ITenantScopedEntity, ICompanyOperationalEntity
+public sealed class AccountsPayable
+    : AuditableEntity,
+        ITenantScopedEntity,
+        ICompanyOperationalEntity
 {
     public const int DocumentTypeMaxLen = 5;
     public const int DocumentNumberMaxLen = 30;
@@ -56,7 +59,10 @@ public sealed class AccountsPayable : AuditableEntity, ITenantScopedEntity, ICom
     public void PlaceAnnulmentHold(Guid requestId, Guid updatedBy)
     {
         if (requestId == Guid.Empty)
-            throw new ArgumentException("La solicitud de anulación es obligatoria.", nameof(requestId));
+            throw new ArgumentException(
+                "La solicitud de anulación es obligatoria.",
+                nameof(requestId)
+            );
         if (Status == AccountsPayableStatus.Cancelled)
             throw new DomainRuleViolationException(
                 "No se puede retener una cuenta por pagar anulada."
@@ -127,9 +133,15 @@ public sealed class AccountsPayable : AuditableEntity, ITenantScopedEntity, ICom
         if (originId == Guid.Empty)
             throw new ArgumentException("El documento de origen es obligatorio.", nameof(originId));
         if (string.IsNullOrWhiteSpace(documentType))
-            throw new ArgumentException("El tipo de documento es obligatorio.", nameof(documentType));
+            throw new ArgumentException(
+                "El tipo de documento es obligatorio.",
+                nameof(documentType)
+            );
         if (string.IsNullOrWhiteSpace(documentNumber))
-            throw new ArgumentException("El número de documento es obligatorio.", nameof(documentNumber));
+            throw new ArgumentException(
+                "El número de documento es obligatorio.",
+                nameof(documentNumber)
+            );
 
         var payable = new AccountsPayable
         {
@@ -155,14 +167,24 @@ public sealed class AccountsPayable : AuditableEntity, ITenantScopedEntity, ICom
     /// incluido todo Gastos); Compras con condición de pago a plazos genera N cuotas — este método
     /// es genérico para ambos casos, sin cambios aquí.
     /// </summary>
-    public AccountsPayableInstallment AddInstallment(int installmentNumber, DateOnly dueDate, decimal amount)
+    public AccountsPayableInstallment AddInstallment(
+        int installmentNumber,
+        DateOnly dueDate,
+        decimal amount
+    )
     {
         if (_installments.Any(i => i.InstallmentNumber == installmentNumber))
             throw new DomainRuleViolationException(
                 $"Ya existe una cuota con el número {installmentNumber}."
             );
 
-        var installment = AccountsPayableInstallment.Create(Id, TenantId, installmentNumber, dueDate, amount);
+        var installment = AccountsPayableInstallment.Create(
+            Id,
+            TenantId,
+            installmentNumber,
+            dueDate,
+            amount
+        );
         _installments.Add(installment);
         RecalculateStatus();
         return installment;
@@ -217,7 +239,10 @@ public sealed class AccountsPayable : AuditableEntity, ITenantScopedEntity, ICom
     public void ReversePaymentToInstallment(Guid installmentId, decimal amount, Guid updatedBy)
     {
         if (amount <= 0)
-            throw new ArgumentException("El monto a reversar debe ser mayor a cero.", nameof(amount));
+            throw new ArgumentException(
+                "El monto a reversar debe ser mayor a cero.",
+                nameof(amount)
+            );
 
         var installment = _installments.FirstOrDefault(i => i.Id == installmentId);
         if (installment is null)
@@ -240,7 +265,10 @@ public sealed class AccountsPayable : AuditableEntity, ITenantScopedEntity, ICom
     /// un track independiente de <see cref="OutstandingAmount"/>.
     /// </summary>
     /// <returns><c>appliedAmount</c> (lo efectivamente aplicado contra el saldo) y el excedente que Application usará para crear un <c>SupplierCredit</c>.</returns>
-    public (decimal AppliedAmount, decimal Excess) ApplyReturnCredit(decimal recognizedAmount, Guid updatedBy)
+    public (decimal AppliedAmount, decimal Excess) ApplyReturnCredit(
+        decimal recognizedAmount,
+        Guid updatedBy
+    )
     {
         if (recognizedAmount <= 0)
             throw new ArgumentException(
@@ -263,15 +291,30 @@ public sealed class AccountsPayable : AuditableEntity, ITenantScopedEntity, ICom
 
     /// <summary>Reversa la devolución de compra aplicada (reemplaza <c>PurchasePayable.ReverseReturnCredit</c>).</summary>
     public void ReverseReturnCredit(decimal appliedAmount, Guid updatedBy) =>
-        Reverse(AccountsPayableAdjustmentType.ReturnCredit, appliedAmount, updatedBy, "de devolución aplicado");
+        Reverse(
+            AccountsPayableAdjustmentType.ReturnCredit,
+            appliedAmount,
+            updatedBy,
+            "de devolución aplicado"
+        );
 
     /// <summary>Aplica un <c>SupplierCredit</c> externo contra esta CxP (reemplaza <c>PurchasePayable.ApplySupplierCredit</c>).</summary>
     public void ApplySupplierCredit(decimal amount, Guid updatedBy) =>
-        Apply(AccountsPayableAdjustmentType.SupplierCredit, amount, updatedBy, "del crédito de proveedor");
+        Apply(
+            AccountsPayableAdjustmentType.SupplierCredit,
+            amount,
+            updatedBy,
+            "del crédito de proveedor"
+        );
 
     /// <summary>Reversa la aplicación de un <c>SupplierCredit</c> externo (reemplaza <c>PurchasePayable.ReverseSupplierCredit</c>).</summary>
     public void ReverseSupplierCredit(decimal amount, Guid updatedBy) =>
-        Reverse(AccountsPayableAdjustmentType.SupplierCredit, amount, updatedBy, "de crédito de proveedor aplicado");
+        Reverse(
+            AccountsPayableAdjustmentType.SupplierCredit,
+            amount,
+            updatedBy,
+            "de crédito de proveedor aplicado"
+        );
 
     /// <summary>
     /// Aplica una <c>PurchaseCreditNote</c> (descuento/promoción) contra esta CxP (reemplaza
@@ -280,11 +323,21 @@ public sealed class AccountsPayable : AuditableEntity, ITenantScopedEntity, ICom
     /// defensivamente si, pese a eso, el monto excede el saldo actual.
     /// </summary>
     public void ApplyCreditNote(decimal amount, Guid updatedBy) =>
-        Apply(AccountsPayableAdjustmentType.CreditNote, amount, updatedBy, "de la nota de crédito a aplicar");
+        Apply(
+            AccountsPayableAdjustmentType.CreditNote,
+            amount,
+            updatedBy,
+            "de la nota de crédito a aplicar"
+        );
 
     /// <summary>Reversa una <c>PurchaseCreditNote</c> aplicada (reemplaza <c>PurchasePayable.ReverseCreditNote</c>).</summary>
     public void ReverseCreditNote(decimal amount, Guid updatedBy) =>
-        Reverse(AccountsPayableAdjustmentType.CreditNote, amount, updatedBy, "de nota de crédito aplicado");
+        Reverse(
+            AccountsPayableAdjustmentType.CreditNote,
+            amount,
+            updatedBy,
+            "de nota de crédito aplicado"
+        );
 
     /// <summary>
     /// Aplica una retención tributaria contra esta CxP (reemplaza <c>PurchasePayable.ApplyRetention</c>).
@@ -301,7 +354,12 @@ public sealed class AccountsPayable : AuditableEntity, ITenantScopedEntity, ICom
         var amount = RetainedAmount;
         if (amount <= 0)
             return;
-        Reverse(AccountsPayableAdjustmentType.Retention, amount, updatedBy, "de retención aplicado");
+        Reverse(
+            AccountsPayableAdjustmentType.Retention,
+            amount,
+            updatedBy,
+            "de retención aplicado"
+        );
     }
 
     /// <summary>Anula la CxP (reemplaza <c>PurchasePayable.CancelPayable</c>) — bloquea si ya hay pagos registrados.</summary>
@@ -320,7 +378,12 @@ public sealed class AccountsPayable : AuditableEntity, ITenantScopedEntity, ICom
         SetUpdated(updatedBy);
     }
 
-    private void Apply(AccountsPayableAdjustmentType type, decimal amount, Guid updatedBy, string label)
+    private void Apply(
+        AccountsPayableAdjustmentType type,
+        decimal amount,
+        Guid updatedBy,
+        string label
+    )
     {
         if (amount <= 0)
             throw new ArgumentException($"El monto {label} debe ser mayor a cero.", nameof(amount));
@@ -339,10 +402,18 @@ public sealed class AccountsPayable : AuditableEntity, ITenantScopedEntity, ICom
         SetUpdated(updatedBy);
     }
 
-    private void Reverse(AccountsPayableAdjustmentType type, decimal amount, Guid updatedBy, string label)
+    private void Reverse(
+        AccountsPayableAdjustmentType type,
+        decimal amount,
+        Guid updatedBy,
+        string label
+    )
     {
         if (amount <= 0)
-            throw new ArgumentException("El monto a reversar debe ser mayor a cero.", nameof(amount));
+            throw new ArgumentException(
+                "El monto a reversar debe ser mayor a cero.",
+                nameof(amount)
+            );
 
         var totalApplied = _installments.Sum(i => i.GetApplied(type));
         if (amount > totalApplied)

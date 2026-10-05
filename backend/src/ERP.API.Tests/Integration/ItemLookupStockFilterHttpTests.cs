@@ -1,3 +1,6 @@
+using System.Net;
+using System.Net.Http.Headers;
+using System.Text.Json;
 using ERP.API.Tests.Support;
 using ERP.Application.Access.Authorization;
 using ERP.Domain.Access.Entities;
@@ -10,9 +13,6 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
-using System.Net;
-using System.Net.Http.Headers;
-using System.Text.Json;
 
 namespace ERP.API.Tests.Integration;
 
@@ -43,26 +43,51 @@ public sealed class ItemLookupStockFilterFixture : IAsyncLifetime
         await _factory.InitializeAsync();
         await _factory.MigrateAsync();
 
-        Guid companyId, userId;
+        Guid companyId,
+            userId;
         using (var scope = _factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
             var tenant = Tenant.Create("ZH-StockLookup", $"zh-sl-{Guid.NewGuid():N}", _adminId);
-            var foreign = Tenant.Create("ZH-StockLookup-Otro", $"zh-so-{Guid.NewGuid():N}", _adminId);
+            var foreign = Tenant.Create(
+                "ZH-StockLookup-Otro",
+                $"zh-so-{Guid.NewGuid():N}",
+                _adminId
+            );
             db.Tenants.AddRange(tenant, foreign);
             await db.SaveChangesAsync();
             TenantId = tenant.Id;
             ForeignTenantId = foreign.Id;
 
-            var company = Company.CreateManaged(TenantId, $"179{TenantId:N}"[..13], "Empresa Stock Lookup", createdBy: _adminId);
+            var company = Company.CreateManaged(
+                TenantId,
+                $"179{TenantId:N}"[..13],
+                "Empresa Stock Lookup",
+                createdBy: _adminId
+            );
             db.Companies.Add(company);
-            var user = IdentityUser.Create($"sl-{Guid.NewGuid():N}"[..12], "Inv", "Test", $"sl-{Guid.NewGuid():N}@test.com", "TEST_PASSWORD_HASH", _adminId);
+            var user = IdentityUser.Create(
+                $"sl-{Guid.NewGuid():N}"[..12],
+                "Inv",
+                "Test",
+                $"sl-{Guid.NewGuid():N}@test.com",
+                "TEST_PASSWORD_HASH",
+                _adminId
+            );
             db.IdentityUsers.Add(user);
             var itemType = ItemTypeDefinition.Create(TenantId, "MERCH", "Mercadería", 1, _adminId);
-            var foreignType = ItemTypeDefinition.Create(ForeignTenantId, "MERCH", "Mercadería", 1, _adminId);
+            var foreignType = ItemTypeDefinition.Create(
+                ForeignTenantId,
+                "MERCH",
+                "Mercadería",
+                1,
+                _adminId
+            );
             db.Set<ItemTypeDefinition>().AddRange(itemType, foreignType);
             await db.SaveChangesAsync();
-            db.CompanyUserMemberships.Add(CompanyUserMembership.Create(company.Id, user.Id, "Admin", null, _adminId));
+            db.CompanyUserMemberships.Add(
+                CompanyUserMembership.Create(company.Id, user.Id, "Admin", null, _adminId)
+            );
             await db.SaveChangesAsync();
             companyId = company.Id;
             userId = user.Id;
@@ -70,11 +95,16 @@ public sealed class ItemLookupStockFilterFixture : IAsyncLifetime
             _foreignItemTypeId = foreignType.Id;
         }
 
-        App = _factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
-            services.AddScoped<IRuntimePermissionAuthorizer, AllowAllPermissionAuthorizer>()));
+        App = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureTestServices(services =>
+                services.AddScoped<IRuntimePermissionAuthorizer, AllowAllPermissionAuthorizer>()
+            )
+        );
         Client = App.CreateClient();
         Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
-            "Bearer", TestJwtFactory.CreateSessionJwt(TenantId, userId, companyId, "Admin"));
+            "Bearer",
+            TestJwtFactory.CreateSessionJwt(TenantId, userId, companyId, "Admin")
+        );
         _factory.MutableTenant.TenantId = TenantId;
         _factory.MutableCompany.CompanyId = companyId;
         _factory.MutableUser.UserId = userId;
@@ -87,7 +117,13 @@ public sealed class ItemLookupStockFilterFixture : IAsyncLifetime
     }
 
     /// <summary>Crea un ítem; <paramref name="foreign"/> = en otro tenant.</summary>
-    public async Task SeedAsync(string sku, bool tracksStock, string? description = null, bool active = true, bool foreign = false)
+    public async Task SeedAsync(
+        string sku,
+        bool tracksStock,
+        string? description = null,
+        bool active = true,
+        bool foreign = false
+    )
     {
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
@@ -127,8 +163,12 @@ public sealed class ItemLookupStockFilterHttpTests : IClassFixture<ItemLookupSto
         var text = await response.Content.ReadAsStringAsync();
         response.StatusCode.Should().Be(HttpStatusCode.OK, text);
         var data = JsonDocument.Parse(text).RootElement.GetProperty("data");
-        var items = data.GetProperty("items").EnumerateArray()
-            .Select(i => new Row(i.GetProperty("sku").GetString()!, i.GetProperty("tracksStock").GetBoolean()))
+        var items = data.GetProperty("items")
+            .EnumerateArray()
+            .Select(i => new Row(
+                i.GetProperty("sku").GetString()!,
+                i.GetProperty("tracksStock").GetBoolean()
+            ))
             .ToList();
         return new Page(items, data.GetProperty("totalCount").GetInt32());
     }
@@ -192,8 +232,12 @@ public sealed class ItemLookupStockFilterHttpTests : IClassFixture<ItemLookupSto
         await _f.SeedAsync($"{term}-D01", tracksStock: true);
         await _f.SeedAsync($"{term}-E01", tracksStock: true);
 
-        var first = await GetAsync($"search={term}&isActive=true&tracksStock=true&pageSize=2&pageNumber=1");
-        var second = await GetAsync($"search={term}&isActive=true&tracksStock=true&pageSize=2&pageNumber=2");
+        var first = await GetAsync(
+            $"search={term}&isActive=true&tracksStock=true&pageSize=2&pageNumber=1"
+        );
+        var second = await GetAsync(
+            $"search={term}&isActive=true&tracksStock=true&pageSize=2&pageNumber=2"
+        );
 
         first.TotalCount.Should().Be(3);
         first.Items.Select(r => r.Sku).Should().Equal($"{term}-B01", $"{term}-D01");
@@ -204,9 +248,22 @@ public sealed class ItemLookupStockFilterHttpTests : IClassFixture<ItemLookupSto
     public async Task Busqueda_por_descripcion_combinada_con_el_filtro_e_isActive()
     {
         var term = Term();
-        await _f.SeedAsync($"X{Guid.NewGuid():N}"[..12], tracksStock: true, description: $"Arroz {term} grano");
-        await _f.SeedAsync($"Y{Guid.NewGuid():N}"[..12], tracksStock: false, description: $"Arroz {term} servicio");
-        await _f.SeedAsync($"W{Guid.NewGuid():N}"[..12], tracksStock: true, description: $"Arroz {term} inactivo", active: false);
+        await _f.SeedAsync(
+            $"X{Guid.NewGuid():N}"[..12],
+            tracksStock: true,
+            description: $"Arroz {term} grano"
+        );
+        await _f.SeedAsync(
+            $"Y{Guid.NewGuid():N}"[..12],
+            tracksStock: false,
+            description: $"Arroz {term} servicio"
+        );
+        await _f.SeedAsync(
+            $"W{Guid.NewGuid():N}"[..12],
+            tracksStock: true,
+            description: $"Arroz {term} inactivo",
+            active: false
+        );
 
         var page = await GetAsync($"search={term}&isActive=true&tracksStock=true");
 

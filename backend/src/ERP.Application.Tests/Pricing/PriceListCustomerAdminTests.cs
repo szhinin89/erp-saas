@@ -43,7 +43,14 @@ public sealed class PriceListCustomerAdminTests
         }
 
         public AssignCustomerToPriceListHandler BuildAssignHandler() =>
-            new(Assignments.Object, PriceLists.Object, BusinessPartners.Object, Tenant.Object, Company.Object, User.Object);
+            new(
+                Assignments.Object,
+                PriceLists.Object,
+                BusinessPartners.Object,
+                Tenant.Object,
+                Company.Object,
+                User.Object
+            );
 
         public DisablePriceListCustomerHandler BuildDisableHandler() =>
             new(Assignments.Object, Tenant.Object, User.Object);
@@ -53,7 +60,15 @@ public sealed class PriceListCustomerAdminTests
     }
 
     private static PriceList CreateList(string code) =>
-        PriceList.Create(TenantId, CompanyId, code, $"Lista {code}", "USD", isDefault: false, createdBy: UserId);
+        PriceList.Create(
+            TenantId,
+            CompanyId,
+            code,
+            $"Lista {code}",
+            "USD",
+            isDefault: false,
+            createdBy: UserId
+        );
 
     private static BusinessPartner CreateCustomer() =>
         BusinessPartner.Create(TenantId, "05", "1710034065", null, "Cliente de prueba", UserId);
@@ -64,18 +79,27 @@ public sealed class PriceListCustomerAdminTests
         var f = new Fixture();
         var list = CreateList("A");
         var customer = CreateCustomer();
-        f.PriceLists.Setup(r => r.GetByIdAsync(TenantId, list.Id, It.IsAny<CancellationToken>())).ReturnsAsync(list);
-        f.BusinessPartners.Setup(r => r.GetByIdAsync(CustomerId, It.IsAny<CancellationToken>())).ReturnsAsync(customer);
-        f.Assignments
-            .Setup(r => r.GetByCustomerAsync(TenantId, CustomerId, It.IsAny<CancellationToken>()))
+        f.PriceLists.Setup(r => r.GetByIdAsync(TenantId, list.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(list);
+        f.BusinessPartners.Setup(r => r.GetByIdAsync(CustomerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(customer);
+        f.Assignments.Setup(r =>
+                r.GetByCustomerAsync(TenantId, CustomerId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(Array.Empty<PriceListCustomer>());
 
-        var result = await f.BuildAssignHandler().Handle(
-            new AssignCustomerToPriceListCommand(list.Id, CustomerId), CancellationToken.None);
+        var result = await f.BuildAssignHandler()
+            .Handle(
+                new AssignCustomerToPriceListCommand(list.Id, CustomerId),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.Status.Should().Be(PriceListCustomerAssignStatus.Assigned);
-        f.Assignments.Verify(r => r.AddAsync(It.IsAny<PriceListCustomer>(), It.IsAny<CancellationToken>()), Times.Once);
+        f.Assignments.Verify(
+            r => r.AddAsync(It.IsAny<PriceListCustomer>(), It.IsAny<CancellationToken>()),
+            Times.Once
+        );
         f.Assignments.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -84,19 +108,28 @@ public sealed class PriceListCustomerAdminTests
     {
         var f = new Fixture();
         var list = CreateList("A");
-        f.PriceLists.Setup(r => r.GetByIdAsync(TenantId, list.Id, It.IsAny<CancellationToken>())).ReturnsAsync(list);
+        f.PriceLists.Setup(r => r.GetByIdAsync(TenantId, list.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(list);
         var assignment = PriceListCustomer.Create(TenantId, CompanyId, list.Id, CustomerId, UserId);
-        f.Assignments
-            .Setup(r => r.GetByPriceListAsync(TenantId, list.Id, It.IsAny<CancellationToken>()))
+        f.Assignments.Setup(r =>
+                r.GetByPriceListAsync(TenantId, list.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { assignment });
-        f.BusinessPartners
-            .Setup(r => r.GetDisplayInfoByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Dictionary<Guid, BusinessPartnerDisplayInfo>
-            {
-                [CustomerId] = new(CustomerId, "Cliente VIP", null, "1710034065"),
-            });
+        f.BusinessPartners.Setup(r =>
+                r.GetDisplayInfoByIdsAsync(
+                    It.IsAny<IEnumerable<Guid>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new Dictionary<Guid, BusinessPartnerDisplayInfo>
+                {
+                    [CustomerId] = new(CustomerId, "Cliente VIP", null, "1710034065"),
+                }
+            );
 
-        var result = await f.BuildListHandler().Handle(new GetPriceListCustomersQuery(list.Id), CancellationToken.None);
+        var result = await f.BuildListHandler()
+            .Handle(new GetPriceListCustomersQuery(list.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         var row = result.Value!.Single();
@@ -111,12 +144,16 @@ public sealed class PriceListCustomerAdminTests
         var f = new Fixture();
         var list = CreateList("A");
         var assignment = PriceListCustomer.Create(TenantId, CompanyId, list.Id, CustomerId, UserId);
-        f.Assignments
-            .Setup(r => r.FindByKeyAsync(TenantId, list.Id, CustomerId, It.IsAny<CancellationToken>()))
+        f.Assignments.Setup(r =>
+                r.FindByKeyAsync(TenantId, list.Id, CustomerId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(assignment);
 
-        var result = await f.BuildDisableHandler().Handle(
-            new DisablePriceListCustomerCommand(list.Id, CustomerId), CancellationToken.None);
+        var result = await f.BuildDisableHandler()
+            .Handle(
+                new DisablePriceListCustomerCommand(list.Id, CustomerId),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         assignment.IsActive.Should().BeFalse();
@@ -131,19 +168,28 @@ public sealed class PriceListCustomerAdminTests
         var customer = CreateCustomer();
         var assignment = PriceListCustomer.Create(TenantId, CompanyId, list.Id, CustomerId, UserId);
         assignment.Disable(UserId);
-        f.PriceLists.Setup(r => r.GetByIdAsync(TenantId, list.Id, It.IsAny<CancellationToken>())).ReturnsAsync(list);
-        f.BusinessPartners.Setup(r => r.GetByIdAsync(CustomerId, It.IsAny<CancellationToken>())).ReturnsAsync(customer);
-        f.Assignments
-            .Setup(r => r.GetByCustomerAsync(TenantId, CustomerId, It.IsAny<CancellationToken>()))
+        f.PriceLists.Setup(r => r.GetByIdAsync(TenantId, list.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(list);
+        f.BusinessPartners.Setup(r => r.GetByIdAsync(CustomerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(customer);
+        f.Assignments.Setup(r =>
+                r.GetByCustomerAsync(TenantId, CustomerId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { assignment });
 
-        var result = await f.BuildAssignHandler().Handle(
-            new AssignCustomerToPriceListCommand(list.Id, CustomerId), CancellationToken.None);
+        var result = await f.BuildAssignHandler()
+            .Handle(
+                new AssignCustomerToPriceListCommand(list.Id, CustomerId),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.Status.Should().Be(PriceListCustomerAssignStatus.Assigned);
         assignment.IsActive.Should().BeTrue();
-        f.Assignments.Verify(r => r.AddAsync(It.IsAny<PriceListCustomer>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.Assignments.Verify(
+            r => r.AddAsync(It.IsAny<PriceListCustomer>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -153,14 +199,20 @@ public sealed class PriceListCustomerAdminTests
         var list = CreateList("A");
         var customer = CreateCustomer();
         var assignment = PriceListCustomer.Create(TenantId, CompanyId, list.Id, CustomerId, UserId);
-        f.PriceLists.Setup(r => r.GetByIdAsync(TenantId, list.Id, It.IsAny<CancellationToken>())).ReturnsAsync(list);
-        f.BusinessPartners.Setup(r => r.GetByIdAsync(CustomerId, It.IsAny<CancellationToken>())).ReturnsAsync(customer);
-        f.Assignments
-            .Setup(r => r.GetByCustomerAsync(TenantId, CustomerId, It.IsAny<CancellationToken>()))
+        f.PriceLists.Setup(r => r.GetByIdAsync(TenantId, list.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(list);
+        f.BusinessPartners.Setup(r => r.GetByIdAsync(CustomerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(customer);
+        f.Assignments.Setup(r =>
+                r.GetByCustomerAsync(TenantId, CustomerId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { assignment });
 
-        var result = await f.BuildAssignHandler().Handle(
-            new AssignCustomerToPriceListCommand(list.Id, CustomerId), CancellationToken.None);
+        var result = await f.BuildAssignHandler()
+            .Handle(
+                new AssignCustomerToPriceListCommand(list.Id, CustomerId),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.Status.Should().Be(PriceListCustomerAssignStatus.AlreadyActive);
@@ -174,16 +226,29 @@ public sealed class PriceListCustomerAdminTests
         var listA = CreateList("A");
         var listB = CreateList("B");
         var customer = CreateCustomer();
-        var assignmentA = PriceListCustomer.Create(TenantId, CompanyId, listA.Id, CustomerId, UserId);
-        f.PriceLists.Setup(r => r.GetByIdAsync(TenantId, listB.Id, It.IsAny<CancellationToken>())).ReturnsAsync(listB);
-        f.PriceLists.Setup(r => r.GetByIdAsync(TenantId, listA.Id, It.IsAny<CancellationToken>())).ReturnsAsync(listA);
-        f.BusinessPartners.Setup(r => r.GetByIdAsync(CustomerId, It.IsAny<CancellationToken>())).ReturnsAsync(customer);
-        f.Assignments
-            .Setup(r => r.GetByCustomerAsync(TenantId, CustomerId, It.IsAny<CancellationToken>()))
+        var assignmentA = PriceListCustomer.Create(
+            TenantId,
+            CompanyId,
+            listA.Id,
+            CustomerId,
+            UserId
+        );
+        f.PriceLists.Setup(r => r.GetByIdAsync(TenantId, listB.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(listB);
+        f.PriceLists.Setup(r => r.GetByIdAsync(TenantId, listA.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(listA);
+        f.BusinessPartners.Setup(r => r.GetByIdAsync(CustomerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(customer);
+        f.Assignments.Setup(r =>
+                r.GetByCustomerAsync(TenantId, CustomerId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { assignmentA });
 
-        var result = await f.BuildAssignHandler().Handle(
-            new AssignCustomerToPriceListCommand(listB.Id, CustomerId), CancellationToken.None);
+        var result = await f.BuildAssignHandler()
+            .Handle(
+                new AssignCustomerToPriceListCommand(listB.Id, CustomerId),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.Status.Should().Be(PriceListCustomerAssignStatus.Conflict);
@@ -200,20 +265,35 @@ public sealed class PriceListCustomerAdminTests
         var listA = CreateList("A");
         var listB = CreateList("B");
         var customer = CreateCustomer();
-        var assignmentA = PriceListCustomer.Create(TenantId, CompanyId, listA.Id, CustomerId, UserId);
-        f.PriceLists.Setup(r => r.GetByIdAsync(TenantId, listB.Id, It.IsAny<CancellationToken>())).ReturnsAsync(listB);
-        f.BusinessPartners.Setup(r => r.GetByIdAsync(CustomerId, It.IsAny<CancellationToken>())).ReturnsAsync(customer);
-        f.Assignments
-            .Setup(r => r.GetByCustomerAsync(TenantId, CustomerId, It.IsAny<CancellationToken>()))
+        var assignmentA = PriceListCustomer.Create(
+            TenantId,
+            CompanyId,
+            listA.Id,
+            CustomerId,
+            UserId
+        );
+        f.PriceLists.Setup(r => r.GetByIdAsync(TenantId, listB.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(listB);
+        f.BusinessPartners.Setup(r => r.GetByIdAsync(CustomerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(customer);
+        f.Assignments.Setup(r =>
+                r.GetByCustomerAsync(TenantId, CustomerId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { assignmentA });
 
-        var result = await f.BuildAssignHandler().Handle(
-            new AssignCustomerToPriceListCommand(listB.Id, CustomerId, ConfirmSwitch: true), CancellationToken.None);
+        var result = await f.BuildAssignHandler()
+            .Handle(
+                new AssignCustomerToPriceListCommand(listB.Id, CustomerId, ConfirmSwitch: true),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.Status.Should().Be(PriceListCustomerAssignStatus.Switched);
         assignmentA.IsActive.Should().BeFalse();
-        f.Assignments.Verify(r => r.AddAsync(It.IsAny<PriceListCustomer>(), It.IsAny<CancellationToken>()), Times.Once);
+        f.Assignments.Verify(
+            r => r.AddAsync(It.IsAny<PriceListCustomer>(), It.IsAny<CancellationToken>()),
+            Times.Once
+        );
         f.Assignments.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -222,11 +302,16 @@ public sealed class PriceListCustomerAdminTests
     {
         var f = new Fixture();
         var list = CreateList("A");
-        f.PriceLists.Setup(r => r.GetByIdAsync(TenantId, list.Id, It.IsAny<CancellationToken>())).ReturnsAsync(list);
-        f.BusinessPartners.Setup(r => r.GetByIdAsync(CustomerId, It.IsAny<CancellationToken>())).ReturnsAsync((BusinessPartner?)null);
+        f.PriceLists.Setup(r => r.GetByIdAsync(TenantId, list.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(list);
+        f.BusinessPartners.Setup(r => r.GetByIdAsync(CustomerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((BusinessPartner?)null);
 
-        var result = await f.BuildAssignHandler().Handle(
-            new AssignCustomerToPriceListCommand(list.Id, CustomerId), CancellationToken.None);
+        var result = await f.BuildAssignHandler()
+            .Handle(
+                new AssignCustomerToPriceListCommand(list.Id, CustomerId),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeFalse();
         f.Assignments.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -239,15 +324,22 @@ public sealed class PriceListCustomerAdminTests
         // tenant/empresa — se simula ese fail-closed devolviendo null, exactamente lo que
         // GetByIdAsync real produce para un id fuera de scope.
         var f = new Fixture();
-        f.PriceLists
-            .Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        f.PriceLists.Setup(r =>
+                r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((PriceList?)null);
 
-        var result = await f.BuildAssignHandler().Handle(
-            new AssignCustomerToPriceListCommand(Guid.NewGuid(), CustomerId), CancellationToken.None);
+        var result = await f.BuildAssignHandler()
+            .Handle(
+                new AssignCustomerToPriceListCommand(Guid.NewGuid(), CustomerId),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeFalse();
-        f.BusinessPartners.Verify(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.BusinessPartners.Verify(
+            r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
         f.Assignments.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -255,15 +347,22 @@ public sealed class PriceListCustomerAdminTests
     public async Task Listar_clientes_de_lista_de_otro_tenant_devuelve_NotFound()
     {
         var f = new Fixture();
-        f.PriceLists
-            .Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        f.PriceLists.Setup(r =>
+                r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((PriceList?)null);
 
-        var result = await f.BuildListHandler().Handle(new GetPriceListCustomersQuery(Guid.NewGuid()), CancellationToken.None);
+        var result = await f.BuildListHandler()
+            .Handle(new GetPriceListCustomersQuery(Guid.NewGuid()), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         f.Assignments.Verify(
-            r => r.GetByPriceListAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            r =>
+                r.GetByPriceListAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }

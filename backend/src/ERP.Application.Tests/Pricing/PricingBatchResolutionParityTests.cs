@@ -41,13 +41,15 @@ public sealed class PricingBatchResolutionParityTests
         public Mock<ICompanyClock> CompanyClock { get; } = new();
 
         public IPricingAdjustmentStrategyResolver Strategies { get; } =
-            new PricingAdjustmentStrategyResolver(new IPricingAdjustmentStrategy[]
-            {
-                new PercentDiscountStrategy(),
-                new PercentMarkupStrategy(),
-                new FixedAdjustmentStrategy(),
-                new FixedPriceStrategy(),
-            });
+            new PricingAdjustmentStrategyResolver(
+                new IPricingAdjustmentStrategy[]
+                {
+                    new PercentDiscountStrategy(),
+                    new PercentMarkupStrategy(),
+                    new FixedAdjustmentStrategy(),
+                    new FixedPriceStrategy(),
+                }
+            );
 
         // Estado mutable por lista — permite registrar asignaciones/reglas incrementalmente y
         // que tanto los mocks "por clave" (single) como los "por lista" (batch) lean siempre el
@@ -76,7 +78,8 @@ public sealed class PricingBatchResolutionParityTests
             );
 
         public void RegisterItem(Item item) =>
-            Items.Setup(r => r.GetByIdLightAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+            Items
+                .Setup(r => r.GetByIdLightAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(item);
 
         public void RegisterItemsBatch(params Item[] items)
@@ -84,31 +87,42 @@ public sealed class PricingBatchResolutionParityTests
             foreach (var item in items)
                 RegisterItem(item);
             Items
-                .Setup(r => r.GetByIdsLightAsync(
-                    It.Is<IReadOnlyCollection<Guid>>(ids => items.All(i => ids.Contains(i.Id))),
-                    TenantId,
-                    It.IsAny<CancellationToken>()
-                ))
+                .Setup(r =>
+                    r.GetByIdsLightAsync(
+                        It.Is<IReadOnlyCollection<Guid>>(ids => items.All(i => ids.Contains(i.Id))),
+                        TenantId,
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync(items);
         }
 
         public void RegisterList(PriceList list)
         {
-            PriceLists.Setup(r => r.GetByIdAsync(TenantId, list.Id, It.IsAny<CancellationToken>()))
+            PriceLists
+                .Setup(r => r.GetByIdAsync(TenantId, list.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(list);
             if (!_assignmentsByList.ContainsKey(list.Id))
             {
                 _assignmentsByList[list.Id] = new List<PriceListItem>();
                 Assignments
-                    .Setup(a => a.GetByPriceListAsync(TenantId, list.Id, It.IsAny<CancellationToken>()))
-                    .Returns(() => Task.FromResult<IReadOnlyList<PriceListItem>>(_assignmentsByList[list.Id]));
+                    .Setup(a =>
+                        a.GetByPriceListAsync(TenantId, list.Id, It.IsAny<CancellationToken>())
+                    )
+                    .Returns(() =>
+                        Task.FromResult<IReadOnlyList<PriceListItem>>(_assignmentsByList[list.Id])
+                    );
             }
             if (!_rulesByList.ContainsKey(list.Id))
             {
                 _rulesByList[list.Id] = new List<PricingRule>();
                 Rules
-                    .Setup(r => r.GetByPriceListAsync(TenantId, list.Id, It.IsAny<CancellationToken>()))
-                    .Returns(() => Task.FromResult<IReadOnlyList<PricingRule>>(_rulesByList[list.Id]));
+                    .Setup(r =>
+                        r.GetByPriceListAsync(TenantId, list.Id, It.IsAny<CancellationToken>())
+                    )
+                    .Returns(() =>
+                        Task.FromResult<IReadOnlyList<PricingRule>>(_rulesByList[list.Id])
+                    );
             }
         }
 
@@ -117,7 +131,9 @@ public sealed class PricingBatchResolutionParityTests
             var assignment = PriceListItem.Create(TenantId, CompanyId, list.Id, item.Id, UserId);
             _assignmentsByList[list.Id].Add(assignment);
             Assignments
-                .Setup(a => a.FindByKeyAsync(TenantId, list.Id, item.Id, It.IsAny<CancellationToken>()))
+                .Setup(a =>
+                    a.FindByKeyAsync(TenantId, list.Id, item.Id, It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(assignment);
         }
 
@@ -128,16 +144,33 @@ public sealed class PricingBatchResolutionParityTests
             // Deshabilitada: nunca aparece en GetByPriceListAsync (ya filtra IsActive) — solo se
             // registra el FindByKeyAsync puntual que sí la devuelve (para el resolver single).
             Assignments
-                .Setup(a => a.FindByKeyAsync(TenantId, list.Id, item.Id, It.IsAny<CancellationToken>()))
+                .Setup(a =>
+                    a.FindByKeyAsync(TenantId, list.Id, item.Id, It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(assignment);
         }
 
         public void SetException(PriceList list, Item item, PricingRuleType type, decimal value)
         {
-            var rule = PricingRule.Create(TenantId, CompanyId, list.Id, item.Id, type, value, UserId);
+            var rule = PricingRule.Create(
+                TenantId,
+                CompanyId,
+                list.Id,
+                item.Id,
+                type,
+                value,
+                UserId
+            );
             _rulesByList[list.Id].Add(rule);
             Rules
-                .Setup(r => r.GetActiveForItemInListAsync(TenantId, list.Id, item.Id, It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetActiveForItemInListAsync(
+                        TenantId,
+                        list.Id,
+                        item.Id,
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync(rule);
         }
 
@@ -149,9 +182,17 @@ public sealed class PricingBatchResolutionParityTests
 
     private static Item CreateItem(decimal basePrice = 100m) =>
         Item.Create(
-            TenantId, $"SKU-{Guid.NewGuid():N}"[..12], "Item de prueba", "Item de prueba", ItemTypeId, "UNIT",
-            ItemTaxConfig.Create("10", "10"), ItemSaleConfig.Create(isForSale: true),
-            ItemStockConfig.Create(), UserId, baseSalePrice: basePrice
+            TenantId,
+            $"SKU-{Guid.NewGuid():N}"[..12],
+            "Item de prueba",
+            "Item de prueba",
+            ItemTypeId,
+            "UNIT",
+            ItemTaxConfig.Create("10", "10"),
+            ItemSaleConfig.Create(isForSale: true),
+            ItemStockConfig.Create(),
+            UserId,
+            baseSalePrice: basePrice
         );
 
     private static PriceList CreateList(
@@ -160,20 +201,31 @@ public sealed class PricingBatchResolutionParityTests
         decimal? ruleValue = 10m
     ) =>
         PriceList.Create(
-            TenantId, CompanyId, code, $"Lista {code}", "USD",
-            isDefault: code == "DEFAULT", createdBy: UserId, ruleType: ruleType, ruleValue: ruleValue
+            TenantId,
+            CompanyId,
+            code,
+            $"Lista {code}",
+            "USD",
+            isDefault: code == "DEFAULT",
+            createdBy: UserId,
+            ruleType: ruleType,
+            ruleValue: ruleValue
         );
 
-    private static PriceListSelectionResult Candidate(PriceList list, PriceListSelectionSource source) =>
-        new(list.Id, list.Name, source);
+    private static PriceListSelectionResult Candidate(
+        PriceList list,
+        PriceListSelectionSource source
+    ) => new(list.Id, list.Name, source);
 
     private async Task AssertSingleAndBatchMatchAsync(Fixture f, Item item, Guid? customerId)
     {
-        var single = await f.Build().ResolveAsync(new PricingContext(item.Id, customerId), CancellationToken.None);
-        var batch = await f.Build().ResolveManyAsync(
-            new PricingBatchContext(new[] { item.Id }, customerId),
-            CancellationToken.None
-        );
+        var single = await f.Build()
+            .ResolveAsync(new PricingContext(item.Id, customerId), CancellationToken.None);
+        var batch = await f.Build()
+            .ResolveManyAsync(
+                new PricingBatchContext(new[] { item.Id }, customerId),
+                CancellationToken.None
+            );
 
         single.IsSuccess.Should().BeTrue(single.Error);
         batch.IsSuccess.Should().BeTrue(batch.Error);
@@ -325,20 +377,27 @@ public sealed class PricingBatchResolutionParityTests
             Candidate(defaultList, PriceListSelectionSource.CompanyDefault)
         );
 
-        var batch = await f.Build().ResolveManyAsync(
-            new PricingBatchContext(
-                new[] { itemInCustomerList.Id, itemOnlyInDefault.Id, itemUnassigned.Id },
-                CustomerId
-            ),
-            CancellationToken.None
-        );
+        var batch = await f.Build()
+            .ResolveManyAsync(
+                new PricingBatchContext(
+                    new[] { itemInCustomerList.Id, itemOnlyInDefault.Id, itemUnassigned.Id },
+                    CustomerId
+                ),
+                CancellationToken.None
+            );
 
         batch.IsSuccess.Should().BeTrue(batch.Error);
         batch.Value!.Should().HaveCount(3);
         batch.Value![itemInCustomerList.Id].UnitPrice.Should().Be(90m);
-        batch.Value![itemInCustomerList.Id].SelectionSource.Should().Be(PriceListSelectionSource.Customer);
+        batch
+            .Value![itemInCustomerList.Id]
+            .SelectionSource.Should()
+            .Be(PriceListSelectionSource.Customer);
         batch.Value![itemOnlyInDefault.Id].UnitPrice.Should().Be(240m);
-        batch.Value![itemOnlyInDefault.Id].SelectionSource.Should().Be(PriceListSelectionSource.CompanyDefault);
+        batch
+            .Value![itemOnlyInDefault.Id]
+            .SelectionSource.Should()
+            .Be(PriceListSelectionSource.CompanyDefault);
         batch.Value![itemUnassigned.Id].PriceListId.Should().BeNull();
         batch.Value![itemUnassigned.Id].UnitPrice.Should().Be(50m);
 
@@ -358,10 +417,18 @@ public sealed class PricingBatchResolutionParityTests
             Times.Exactly(2)
         );
         f.Items.Verify(
-            r => r.GetByIdsLightAsync(It.IsAny<IReadOnlyCollection<Guid>>(), TenantId, It.IsAny<CancellationToken>()),
+            r =>
+                r.GetByIdsLightAsync(
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    TenantId,
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Once
         );
-        f.Selection.Verify(s => s.ResolveAsync(CustomerId, It.IsAny<CancellationToken>()), Times.Once);
+        f.Selection.Verify(
+            s => s.ResolveAsync(CustomerId, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -375,13 +442,25 @@ public sealed class PricingBatchResolutionParityTests
         f.AssignActive(defaultList, item);
         f.SetCandidates(Candidate(defaultList, PriceListSelectionSource.CompanyDefault));
 
-        await f.Build().ResolveManyAsync(new PricingBatchContext(new[] { item.Id }, CustomerId), CancellationToken.None);
+        await f.Build()
+            .ResolveManyAsync(
+                new PricingBatchContext(new[] { item.Id }, CustomerId),
+                CancellationToken.None
+            );
 
         f.Items.Verify(
-            r => r.GetByIdsLightAsync(It.IsAny<IReadOnlyCollection<Guid>>(), TenantId, It.IsAny<CancellationToken>()),
+            r =>
+                r.GetByIdsLightAsync(
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    TenantId,
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Once
         );
-        f.PriceLists.Verify(r => r.GetByIdAsync(TenantId, defaultList.Id, It.IsAny<CancellationToken>()), Times.Once);
+        f.PriceLists.Verify(
+            r => r.GetByIdAsync(TenantId, defaultList.Id, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
         f.Assignments.Verify(
             a => a.GetByPriceListAsync(TenantId, defaultList.Id, It.IsAny<CancellationToken>()),
             Times.Once
@@ -397,10 +476,11 @@ public sealed class PricingBatchResolutionParityTests
     {
         var f = new Fixture();
 
-        var result = await f.Build().ResolveManyAsync(
-            new PricingBatchContext(Array.Empty<Guid>(), CustomerId),
-            CancellationToken.None
-        );
+        var result = await f.Build()
+            .ResolveManyAsync(
+                new PricingBatchContext(Array.Empty<Guid>(), CustomerId),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.Should().BeEmpty();

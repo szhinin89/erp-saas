@@ -17,7 +17,8 @@ public sealed class BatchDownloadPurchaseReceptionXmlValidatorTests
     [Fact]
     public void Rejects_a_batch_larger_than_the_maximum()
     {
-        var ids = Enumerable.Range(0, BatchDownloadPurchaseReceptionXmlValidator.MaxBatchSize + 1)
+        var ids = Enumerable
+            .Range(0, BatchDownloadPurchaseReceptionXmlValidator.MaxBatchSize + 1)
             .Select(_ => Guid.NewGuid())
             .ToList();
         var result = _validator.Validate(new BatchDownloadPurchaseReceptionXmlCommand(ids));
@@ -36,7 +37,8 @@ public sealed class BatchDownloadPurchaseReceptionXmlValidatorTests
     [Fact]
     public void Accepts_a_valid_batch()
     {
-        var ids = Enumerable.Range(0, BatchDownloadPurchaseReceptionXmlValidator.MaxBatchSize)
+        var ids = Enumerable
+            .Range(0, BatchDownloadPurchaseReceptionXmlValidator.MaxBatchSize)
             .Select(_ => Guid.NewGuid())
             .ToList();
         var result = _validator.Validate(new BatchDownloadPurchaseReceptionXmlCommand(ids));

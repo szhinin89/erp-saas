@@ -151,7 +151,10 @@ public static class DependencyInjection
         services.AddScoped<ICustomerImportSheetReader, ClosedXmlCustomerImportSheetReader>();
         services.AddScoped<ISupplierImportSheetReader, ClosedXmlSupplierImportSheetReader>();
         services.AddScoped<IItemImportSheetReader, ClosedXmlItemImportSheetReader>();
-        services.AddScoped<IInitialStockImportSheetReader, ClosedXmlInitialStockImportSheetReader>();
+        services.AddScoped<
+            IInitialStockImportSheetReader,
+            ClosedXmlInitialStockImportSheetReader
+        >();
 
         services.AddScoped<IBusinessPartnerRepository, BusinessPartnerRepository>();
         services.AddScoped<ILegalEntityTypeRepository, LegalEntityTypeRepository>();
@@ -167,14 +170,8 @@ public static class DependencyInjection
         services.AddScoped<ICustomerCreditRatingRepository, CustomerCreditRatingRepository>();
         services.AddScoped<ILoyaltyTierRepository, LoyaltyTierRepository>();
         services.AddScoped<ICustomerInvoiceFormatRepository, CustomerInvoiceFormatRepository>();
-        services.AddScoped<
-            ICustomerClassificationRepository,
-            CustomerClassificationRepository
-        >();
-        services.AddScoped<
-            ICompanyBpSalesSettingsRepository,
-            CompanyBpSalesSettingsRepository
-        >();
+        services.AddScoped<ICustomerClassificationRepository, CustomerClassificationRepository>();
+        services.AddScoped<ICompanyBpSalesSettingsRepository, CompanyBpSalesSettingsRepository>();
         services.AddScoped<
             ICompanyBpPurchaseSettingsRepository,
             CompanyBpPurchaseSettingsRepository
@@ -942,8 +939,10 @@ public static class DependencyInjection
             ERP.Infrastructure.Persistence.Repositories.Sales.InvoiceItemSearchRepository
         >();
         // Fuente del instante "ahora" de CompanyClock (BCL); los tests de frontera de fecha la fijan.
-        Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions
-            .TryAddSingleton(services, TimeProvider.System);
+        Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddSingleton(
+            services,
+            TimeProvider.System
+        );
         services.AddScoped<
             ERP.Application.Common.Services.ICompanyClock,
             ERP.Infrastructure.Persistence.Services.CompanyClock
@@ -1066,7 +1065,6 @@ public static class DependencyInjection
             ERP.Infrastructure.Services.IdentificationUsageValidator
         >();
 
-
         // ── Communications BC ───────────────────────────────────────────────
         services.AddScoped<ICommunicationOutboxRepository, CommunicationOutboxRepository>();
         services.AddScoped<ICommunicationTemplateRepository, CommunicationTemplateRepository>();
@@ -1074,10 +1072,16 @@ public static class DependencyInjection
         services.AddScoped<IEmailSender, SmtpEmailSender>();
         services.AddScoped<CommunicationOutboxDeliveryStore>();
         services.AddScoped<ICommunicationOutboxProcessor, CommunicationOutboxProcessor>();
-        services.AddScoped<ERP.Application.Modules.Communications.ElectronicDocuments.IElectronicDocumentCommunicationReconciliationQuery, ElectronicDocumentCommunicationReconciliationQuery>();
+        services.AddScoped<
+            ERP.Application.Modules.Communications.ElectronicDocuments.IElectronicDocumentCommunicationReconciliationQuery,
+            ElectronicDocumentCommunicationReconciliationQuery
+        >();
         // Posición de la reconciliación entre corridas (process-local; perderla solo reinicia desde el más antiguo).
         services.AddSingleton<ElectronicDocumentCommunicationReconciliationCursor>();
-        services.AddScoped<IElectronicDocumentCommunicationReconciler, ElectronicDocumentCommunicationReconciler>();
+        services.AddScoped<
+            IElectronicDocumentCommunicationReconciler,
+            ElectronicDocumentCommunicationReconciler
+        >();
         // ── Configuration BC ──────────────────────────────────────────────────
         services.AddScoped<
             ERP.Domain.Configuration.Interfaces.ISriSettingsRepository,

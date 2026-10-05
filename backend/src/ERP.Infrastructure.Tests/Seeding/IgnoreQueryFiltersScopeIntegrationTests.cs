@@ -1,3 +1,4 @@
+using System.Data.Common;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Domain.Branches.Entities;
@@ -24,7 +25,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging.Abstractions;
 using Npgsql;
-using System.Data.Common;
 using Testcontainers.PostgreSql;
 
 namespace ERP.Infrastructure.Tests.Seeding;
@@ -48,18 +48,55 @@ public sealed class IgnoreQueryFiltersScopeIntegrationTests : IAsyncLifetime
         await using var db = CreateContext();
         await db.Database.MigrateAsync();
 
-        var tenantA = Tenant.Create("Scope Tenant A", $"scope-a-{Guid.NewGuid():N}"[..16], _actorId);
-        var tenantB = Tenant.Create("Scope Tenant B", $"scope-b-{Guid.NewGuid():N}"[..16], _actorId);
-        var companyA = Company.CreateManaged(tenantA.Id, "1790012345001", "Company A", createdBy: _actorId);
-        var companyB = Company.CreateManaged(tenantA.Id, "1790012345002", "Company B", createdBy: _actorId);
-        var companyC = Company.CreateManaged(tenantB.Id, "1790012345003", "Company C", createdBy: _actorId);
+        var tenantA = Tenant.Create(
+            "Scope Tenant A",
+            $"scope-a-{Guid.NewGuid():N}"[..16],
+            _actorId
+        );
+        var tenantB = Tenant.Create(
+            "Scope Tenant B",
+            $"scope-b-{Guid.NewGuid():N}"[..16],
+            _actorId
+        );
+        var companyA = Company.CreateManaged(
+            tenantA.Id,
+            "1790012345001",
+            "Company A",
+            createdBy: _actorId
+        );
+        var companyB = Company.CreateManaged(
+            tenantA.Id,
+            "1790012345002",
+            "Company B",
+            createdBy: _actorId
+        );
+        var companyC = Company.CreateManaged(
+            tenantB.Id,
+            "1790012345003",
+            "Company C",
+            createdBy: _actorId
+        );
 
         db.Tenants.AddRange(tenantA, tenantB);
         db.Companies.AddRange(companyA, companyB, companyC);
         await db.SaveChangesAsync();
 
-        var supplierA = BusinessPartner.Create(tenantA.Id, "04", "1791352688001", 2, "Supplier A", _actorId);
-        var supplierB = BusinessPartner.Create(tenantB.Id, "04", "1791352688001", 2, "Supplier B", _actorId);
+        var supplierA = BusinessPartner.Create(
+            tenantA.Id,
+            "04",
+            "1791352688001",
+            2,
+            "Supplier A",
+            _actorId
+        );
+        var supplierB = BusinessPartner.Create(
+            tenantB.Id,
+            "04",
+            "1791352688001",
+            2,
+            "Supplier B",
+            _actorId
+        );
         var paymentTermA = PaymentTerm.Create(tenantA.Id, "CONT", "Contado", 1, 0, _actorId);
         var paymentTermB = PaymentTerm.Create(tenantB.Id, "CONT", "Contado", 1, 0, _actorId);
         var itemTypeA = ItemTypeDefinition.Create(tenantA.Id, "MERCH", "Mercadería", 1, _actorId);
@@ -74,9 +111,33 @@ public sealed class IgnoreQueryFiltersScopeIntegrationTests : IAsyncLifetime
         db.Items.AddRange(itemA, itemB);
         await db.SaveChangesAsync();
 
-        var scopeA = await CreateCompanyScopeAsync(db, tenantA, companyA, supplierA, paymentTermA, itemA, 1);
-        var scopeB = await CreateCompanyScopeAsync(db, tenantA, companyB, supplierA, paymentTermA, itemA, 2);
-        var scopeC = await CreateCompanyScopeAsync(db, tenantB, companyC, supplierB, paymentTermB, itemB, 3);
+        var scopeA = await CreateCompanyScopeAsync(
+            db,
+            tenantA,
+            companyA,
+            supplierA,
+            paymentTermA,
+            itemA,
+            1
+        );
+        var scopeB = await CreateCompanyScopeAsync(
+            db,
+            tenantA,
+            companyB,
+            supplierA,
+            paymentTermA,
+            itemA,
+            2
+        );
+        var scopeC = await CreateCompanyScopeAsync(
+            db,
+            tenantB,
+            companyC,
+            supplierB,
+            paymentTermB,
+            itemB,
+            3
+        );
         _scopes = [scopeA, scopeB, scopeC];
     }
 
@@ -96,8 +157,8 @@ public sealed class IgnoreQueryFiltersScopeIntegrationTests : IAsyncLifetime
         bankResult.TenantsProcessed.Should().Be(2);
         bankResult.RowsInserted.Should().Be(18);
 
-        var bankCounts = await db.Banks
-            .IgnoreQueryFilters()
+        var bankCounts = await db
+            .Banks.IgnoreQueryFilters()
             .GroupBy(bank => bank.TenantId)
             .Select(group => new { TenantId = group.Key, Count = group.Count() })
             .ToDictionaryAsync(row => row.TenantId, row => row.Count);
@@ -118,17 +179,22 @@ public sealed class IgnoreQueryFiltersScopeIntegrationTests : IAsyncLifetime
         cashResult.CompaniesProcessed.Should().Be(3);
         cashResult.RowsUpdated.Should().Be(3);
 
-        var cashRegisters = await cashDb.CashRegisters
-            .IgnoreQueryFilters()
+        var cashRegisters = await cashDb
+            .CashRegisters.IgnoreQueryFilters()
             .ToDictionaryAsync(register => register.Id);
         foreach (var scope in _scopes)
-            cashRegisters[scope.CashRegisterId].AccountingAccountId.Should().Be(scope.CajaGeneralAccountId);
-        cashRegisters[_scopes[0].ConfiguredCashRegisterId].AccountingAccountId
-            .Should()
+            cashRegisters[scope.CashRegisterId]
+                .AccountingAccountId.Should()
+                .Be(scope.CajaGeneralAccountId);
+        cashRegisters[_scopes[0].ConfiguredCashRegisterId]
+            .AccountingAccountId.Should()
             .Be(_scopes[0].AlternateAccountId, "a manual account must never be overwritten");
-        cashRegisters[_scopes[0].ConcurrentCashRegisterId!.Value].AccountingAccountId
-            .Should()
-            .Be(_scopes[0].AlternateAccountId, "the second read must preserve an account assigned after the initial scan");
+        cashRegisters[_scopes[0].ConcurrentCashRegisterId!.Value]
+            .AccountingAccountId.Should()
+            .Be(
+                _scopes[0].AlternateAccountId,
+                "the second read must preserve an account assigned after the initial scan"
+            );
 
         var shadowInCompanyB = JournalEntry.Create(
             _scopes[1].TenantId,
@@ -170,19 +236,27 @@ public sealed class IgnoreQueryFiltersScopeIntegrationTests : IAsyncLifetime
 
         foreach (var scope in _scopes)
         {
-            var fact = postingEngine.Facts.Single(item => item.SourceEventId == scope.PurchaseReturnId);
+            var fact = postingEngine.Facts.Single(item =>
+                item.SourceEventId == scope.PurchaseReturnId
+            );
             fact.TenantId.Should().Be(scope.TenantId);
             fact.CompanyId.Should().Be(scope.CompanyId);
         }
 
-        var returnAEntries = await db.JournalEntries
-            .IgnoreQueryFilters()
+        var returnAEntries = await db
+            .JournalEntries.IgnoreQueryFilters()
             .Where(entry => entry.SourceEventId == _scopes[0].PurchaseReturnId)
             .ToListAsync();
-        returnAEntries.Should().Contain(entry =>
-            entry.TenantId == _scopes[0].TenantId && entry.CompanyId == _scopes[0].CompanyId);
-        returnAEntries.Should().Contain(entry =>
-            entry.TenantId == _scopes[1].TenantId && entry.CompanyId == _scopes[1].CompanyId);
+        returnAEntries
+            .Should()
+            .Contain(entry =>
+                entry.TenantId == _scopes[0].TenantId && entry.CompanyId == _scopes[0].CompanyId
+            );
+        returnAEntries
+            .Should()
+            .Contain(entry =>
+                entry.TenantId == _scopes[1].TenantId && entry.CompanyId == _scopes[1].CompanyId
+            );
 
         var secondApply = await remediation.RunAsync(apply: true);
         secondApply.AlreadyPostedCount.Should().Be(3);
@@ -201,9 +275,26 @@ public sealed class IgnoreQueryFiltersScopeIntegrationTests : IAsyncLifetime
                 PaymentMethod.Create(tenantA, "EFECTIVO", "Efectivo", false, false, 1, _actorId),
                 PaymentMethod.Create(tenantA, "TARJETA", "Tarjeta", true, false, 2, _actorId),
                 PaymentMethod.Create(tenantA, "CREDITO", "Crédito", false, true, 5, _actorId),
-                PaymentMethod.Create(tenantA, "CHEQUE", "Cheque", true, false, 4, _actorId, sriPaymentMethodCode: "01"),
+                PaymentMethod.Create(
+                    tenantA,
+                    "CHEQUE",
+                    "Cheque",
+                    true,
+                    false,
+                    4,
+                    _actorId,
+                    sriPaymentMethodCode: "01"
+                ),
                 PaymentMethod.Create(tenantB, "EFECTIVO", "Efectivo", false, false, 1, _actorId),
-                PaymentMethod.Create(tenantB, "TRANSFERENCIA", "Transferencia", true, false, 3, _actorId)
+                PaymentMethod.Create(
+                    tenantB,
+                    "TRANSFERENCIA",
+                    "Transferencia",
+                    true,
+                    false,
+                    3,
+                    _actorId
+                )
             );
             await seedDb.SaveChangesAsync();
         }
@@ -221,15 +312,19 @@ public sealed class IgnoreQueryFiltersScopeIntegrationTests : IAsyncLifetime
         first.RowsUpdated.Should().Be(4);
         first.SkippedNoMapping.Should().Be(1, "CREDITO no tiene código SRI sugerido");
         first.SkippedInactiveCatalog.Should().Be(0);
-        JobTenantContext.Current.Should().Be(Guid.Empty, "el contexto de job se restaura al terminar");
+        JobTenantContext
+            .Current.Should()
+            .Be(Guid.Empty, "el contexto de job se restaura al terminar");
 
-        saveScope.SavedTenants.Should().BeEquivalentTo(
-            new[] { tenantA, tenantB },
-            "un SaveChanges por tenant, cada uno dentro de su propio JobExecutionContext"
-        );
+        saveScope
+            .SavedTenants.Should()
+            .BeEquivalentTo(
+                new[] { tenantA, tenantB },
+                "un SaveChanges por tenant, cada uno dentro de su propio JobExecutionContext"
+            );
 
-        var codes = await db.PaymentMethods
-            .AsNoTracking()
+        var codes = await db
+            .PaymentMethods.AsNoTracking()
             .IgnoreQueryFilters()
             .Where(pm => pm.TenantId == tenantA || pm.TenantId == tenantB)
             .ToDictionaryAsync(pm => (pm.TenantId, pm.Code), pm => pm.SriPaymentMethodCode);
@@ -356,21 +451,23 @@ public sealed class IgnoreQueryFiltersScopeIntegrationTests : IAsyncLifetime
             _actorId
         );
         configuredRegister.SetAccountingAccount(alternate.Id, _actorId);
-        CashRegister? concurrentRegister = ordinal == 1
-            ? CashRegister.Create(
-                tenant.Id,
-                company.Id,
-                branch.Id,
-                $"CASH-RACE-{ordinal}",
-                "Account assigned after initial scan",
-                _actorId
-            )
-            : null;
+        CashRegister? concurrentRegister =
+            ordinal == 1
+                ? CashRegister.Create(
+                    tenant.Id,
+                    company.Id,
+                    branch.Id,
+                    $"CASH-RACE-{ordinal}",
+                    "Account assigned after initial scan",
+                    _actorId
+                )
+                : null;
         db.Branches.Add(branch);
         db.Warehouses.Add(warehouse);
         db.Accounts.AddRange(cajaGeneral, alternate);
         db.CashRegisters.AddRange(register, configuredRegister);
-        if (concurrentRegister is not null) db.CashRegisters.Add(concurrentRegister);
+        if (concurrentRegister is not null)
+            db.CashRegisters.Add(concurrentRegister);
         await db.SaveChangesAsync();
 
         var invoice = PurchaseInvoice.CreateDraft(
@@ -457,7 +554,11 @@ public sealed class IgnoreQueryFiltersScopeIntegrationTests : IAsyncLifetime
             periodDate.Year,
             periodDate.Month,
             new DateOnly(periodDate.Year, periodDate.Month, 1),
-            new DateOnly(periodDate.Year, periodDate.Month, DateTime.DaysInMonth(periodDate.Year, periodDate.Month)),
+            new DateOnly(
+                periodDate.Year,
+                periodDate.Month,
+                DateTime.DaysInMonth(periodDate.Year, periodDate.Month)
+            ),
             _actorId
         );
         db.AccountingPeriods.Add(period);
@@ -479,18 +580,19 @@ public sealed class IgnoreQueryFiltersScopeIntegrationTests : IAsyncLifetime
         );
     }
 
-    private static Item CreateItem(Guid tenantId, Guid itemTypeId, string sku) => Item.Create(
-        tenantId,
-        sku,
-        sku,
-        sku,
-        itemTypeId,
-        "UNIT",
-        taxConfig: ItemTaxConfig.Create("10", "10"),
-        saleConfig: ItemSaleConfig.Create(isForSale: true),
-        stockConfig: ItemStockConfig.Create(tracksStock: true),
-        createdBy: Guid.NewGuid()
-    );
+    private static Item CreateItem(Guid tenantId, Guid itemTypeId, string sku) =>
+        Item.Create(
+            tenantId,
+            sku,
+            sku,
+            sku,
+            itemTypeId,
+            "UNIT",
+            taxConfig: ItemTaxConfig.Create("10", "10"),
+            saleConfig: ItemSaleConfig.Create(isForSale: true),
+            stockConfig: ItemStockConfig.Create(tracksStock: true),
+            createdBy: Guid.NewGuid()
+        );
 
     private sealed record CompanyScope(
         Guid TenantId,
@@ -524,10 +626,14 @@ public sealed class IgnoreQueryFiltersScopeIntegrationTests : IAsyncLifetime
         {
             Facts.Add(fact);
             var scope = scopes.Single(item => item.CompanyId == fact.CompanyId);
-            if (scope.TenantId != fact.TenantId
+            if (
+                scope.TenantId != fact.TenantId
                 || currentTenant.TenantId != fact.TenantId
-                || currentCompany.CompanyId != fact.CompanyId)
-                throw new InvalidOperationException("Posting fact escaped its tenant/company scope.");
+                || currentCompany.CompanyId != fact.CompanyId
+            )
+                throw new InvalidOperationException(
+                    "Posting fact escaped its tenant/company scope."
+                );
             var entry = JournalEntry.Create(
                 fact.TenantId,
                 fact.CompanyId,
@@ -541,9 +647,11 @@ public sealed class IgnoreQueryFiltersScopeIntegrationTests : IAsyncLifetime
                 actorId
             );
             db.JournalEntries.Add(entry);
-            return Task.FromResult(Result<PostingOutcomeDto>.Success(
-                new PostingOutcomeDto(entry.Id, PostingOutcomeStatus.Created)
-            ));
+            return Task.FromResult(
+                Result<PostingOutcomeDto>.Success(
+                    new PostingOutcomeDto(entry.Id, PostingOutcomeStatus.Created)
+                )
+            );
         }
 
         public Task<bool> IsAmountKindConfiguredAsync(
@@ -571,10 +679,18 @@ public sealed class IgnoreQueryFiltersScopeIntegrationTests : IAsyncLifetime
             CancellationToken cancellationToken = default
         )
         {
-            if (!_updated
-                && command.CommandText.Contains("cash_registers", StringComparison.OrdinalIgnoreCase)
-                && command.CommandText.Contains("accounting_account_id", StringComparison.OrdinalIgnoreCase)
-                && command.CommandText.Contains("IS NULL", StringComparison.OrdinalIgnoreCase))
+            if (
+                !_updated
+                && command.CommandText.Contains(
+                    "cash_registers",
+                    StringComparison.OrdinalIgnoreCase
+                )
+                && command.CommandText.Contains(
+                    "accounting_account_id",
+                    StringComparison.OrdinalIgnoreCase
+                )
+                && command.CommandText.Contains("IS NULL", StringComparison.OrdinalIgnoreCase)
+            )
             {
                 _updated = true;
                 await using var connection = new NpgsqlConnection(connectionString);
@@ -606,16 +722,20 @@ public sealed class IgnoreQueryFiltersScopeIntegrationTests : IAsyncLifetime
             CancellationToken cancellationToken = default
         )
         {
-            var writtenTenants = eventData.Context!.ChangeTracker
-                .Entries<PaymentMethod>()
-                .Where(entry => entry.State is not EntityState.Unchanged and not EntityState.Detached)
+            var writtenTenants = eventData
+                .Context!.ChangeTracker.Entries<PaymentMethod>()
+                .Where(entry =>
+                    entry.State is not EntityState.Unchanged and not EntityState.Detached
+                )
                 .Select(entry => entry.Entity.TenantId)
                 .Distinct()
                 .ToList();
             if (writtenTenants.Count > 0)
             {
                 writtenTenants.Should().ContainSingle("un SaveChanges nunca mezcla tenants");
-                writtenTenants[0].Should().Be(JobTenantContext.Current, "solo se escribe el tenant del scope activo");
+                writtenTenants[0]
+                    .Should()
+                    .Be(JobTenantContext.Current, "solo se escribe el tenant del scope activo");
                 SavedTenants.Add(writtenTenants[0]);
             }
 
@@ -625,11 +745,13 @@ public sealed class IgnoreQueryFiltersScopeIntegrationTests : IAsyncLifetime
 
     private sealed class NoOpPublisher : IPublisher
     {
-        public Task Publish(object notification, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
         public Task Publish<TNotification>(
             TNotification notification,
             CancellationToken cancellationToken = default
-        ) where TNotification : INotification => Task.CompletedTask;
+        )
+            where TNotification : INotification => Task.CompletedTask;
     }
 }

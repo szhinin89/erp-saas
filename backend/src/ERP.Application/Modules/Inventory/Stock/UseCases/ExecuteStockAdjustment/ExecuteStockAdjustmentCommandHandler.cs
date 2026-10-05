@@ -123,7 +123,9 @@ public sealed class ExecuteStockAdjustmentCommandHandler
         var uid = _user.UserId;
         var effectiveDate = await _companyClock.TodayAsync(adj.CompanyId, tid, ct);
         var precision = await _precision.GetEffectiveAsync(ct);
-        var movementType = isIngreso ? StockMovementType.PositiveAdjust : StockMovementType.NegativeAdjust;
+        var movementType = isIngreso
+            ? StockMovementType.PositiveAdjust
+            : StockMovementType.NegativeAdjust;
 
         foreach (var line in adj.Lines)
         {

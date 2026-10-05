@@ -1,8 +1,8 @@
+using System.Security.Cryptography;
+using System.Text;
 using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Communications.Constants;
 using ERP.Domain.Modules.Communications.Enums;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace ERP.Domain.Modules.Communications.ValueObjects;
 
@@ -68,7 +68,10 @@ public sealed record CommunicationIdentity
                 nameof(scope)
             );
         if (!definition.Channels.Contains(channel))
-            throw new ArgumentException($"El propósito {definition.Code} no admite el canal {channel}.", nameof(channel));
+            throw new ArgumentException(
+                $"El propósito {definition.Code} no admite el canal {channel}.",
+                nameof(channel)
+            );
         if (!Enum.IsDefined(recipientRole))
             throw new ArgumentException("Rol de destinatario inválido.", nameof(recipientRole));
 
@@ -79,9 +82,14 @@ public sealed record CommunicationIdentity
     public CommunicationIdentity ForResend(int sequence)
     {
         if (sequence < 1)
-            throw new ArgumentOutOfRangeException(nameof(sequence), "La secuencia de reenvío empieza en 1.");
+            throw new ArgumentOutOfRangeException(
+                nameof(sequence),
+                "La secuencia de reenvío empieza en 1."
+            );
         if (!CommunicationPurposes.Get(Purpose).AllowsManualResend)
-            throw new DomainRuleViolationException($"El propósito {Purpose} no admite reenvío manual.");
+            throw new DomainRuleViolationException(
+                $"El propósito {Purpose} no admite reenvío manual."
+            );
 
         return new(Scope, Purpose, Channel, Source, RecipientRole, sequence);
     }

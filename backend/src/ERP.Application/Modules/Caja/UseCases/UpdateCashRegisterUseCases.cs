@@ -152,7 +152,10 @@ public sealed class UpdateCashRegisterHandler
                 );
         }
 
-        if (cmd.AccountingAccountId != entity.AccountingAccountId && cmd.AccountingAccountId.HasValue)
+        if (
+            cmd.AccountingAccountId != entity.AccountingAccountId
+            && cmd.AccountingAccountId.HasValue
+        )
         {
             var account = await _accountRepo.GetByIdAsync(
                 tid,

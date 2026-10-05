@@ -66,7 +66,8 @@ public sealed class PurchaseCreditNoteTests
         IEnumerable<PurchaseCreditNote.TaxSummaryDraftLineInput>? taxSummaryLines = null,
         Guid? createClientRequestId = null,
         string createRequestPayloadHash = "hash-create-default",
-        PurchaseCreditNoteApplicationType applicationType = PurchaseCreditNoteApplicationType.Discount
+        PurchaseCreditNoteApplicationType applicationType =
+            PurchaseCreditNoteApplicationType.Discount
     ) =>
         PurchaseCreditNote.CreateDraft(
             TenantId,
@@ -82,7 +83,12 @@ public sealed class PurchaseCreditNoteTests
             authorizationDate: null,
             issueDate: DateOnly.FromDateTime(DateTime.UtcNow),
             reason,
-            lines ?? (taxSummaryLines is null ? new[] { Line() } : Array.Empty<PurchaseCreditNote.DraftLineInput>()),
+            lines
+                ?? (
+                    taxSummaryLines is null
+                        ? new[] { Line() }
+                        : Array.Empty<PurchaseCreditNote.DraftLineInput>()
+                ),
             taxSummaryLines ?? Array.Empty<PurchaseCreditNote.TaxSummaryDraftLineInput>(),
             UserId,
             createClientRequestId ?? Guid.NewGuid(),
@@ -273,8 +279,7 @@ public sealed class PurchaseCreditNoteTests
         var creditNote = CreateDraft();
         creditNote.Authorize(1000m, UserId, Guid.NewGuid(), "hash-authorize-005");
 
-        var act = () =>
-            creditNote.Authorize(1000m, UserId, Guid.NewGuid(), "hash-authorize-006");
+        var act = () => creditNote.Authorize(1000m, UserId, Guid.NewGuid(), "hash-authorize-006");
 
         act.Should().Throw<DomainRuleViolationException>();
     }
@@ -318,7 +323,13 @@ public sealed class PurchaseCreditNoteTests
         var creditNote = CreateDraft(
             taxSummaryLines: new[]
             {
-                TaxSummaryLine(vatCode: "10", vatRate: 15m, iceCode: "3023", iceRate: 10m, taxableBase: 100m),
+                TaxSummaryLine(
+                    vatCode: "10",
+                    vatRate: 15m,
+                    iceCode: "3023",
+                    iceRate: 10m,
+                    taxableBase: 100m
+                ),
             }
         );
         var totalDue = creditNote.TotalAmount;
@@ -334,7 +345,8 @@ public sealed class PurchaseCreditNoteTests
 
         evt.IceAmount.Should().Be(creditNote.IceAmount);
         evt.IceAmount.Should().Be(10m); // 100 * 10% = 10, mismo cálculo que CreateDraft_con_TaxSummaryLines_calcula_IceAmount_con_SriTaxCalculator
-        evt.TotalAmount.Should().Be(creditNote.Subtotal + creditNote.IceAmount + creditNote.VatAmount);
+        evt.TotalAmount.Should()
+            .Be(creditNote.Subtotal + creditNote.IceAmount + creditNote.VatAmount);
     }
 
     // ── TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-2) ────────────────
@@ -455,7 +467,12 @@ public sealed class PurchaseCreditNoteTests
         var creditNote = CreateDraft(
             taxSummaryLines: new[]
             {
-                TaxSummaryLine(vatRate: 15m, taxableBase: 100m, sourceTaxableBase: 100m, sourceIrbpnrAmount: 0m),
+                TaxSummaryLine(
+                    vatRate: 15m,
+                    taxableBase: 100m,
+                    sourceTaxableBase: 100m,
+                    sourceIrbpnrAmount: 0m
+                ),
             }
         );
 
@@ -594,8 +611,7 @@ public sealed class PurchaseCreditNoteTests
         var creditNote = CreateDraft();
         creditNote.Cancel("Motivo", UserId, Guid.NewGuid(), "hash-cancel-003");
 
-        var act = () =>
-            creditNote.Cancel("Otro motivo", UserId, Guid.NewGuid(), "hash-cancel-004");
+        var act = () => creditNote.Cancel("Otro motivo", UserId, Guid.NewGuid(), "hash-cancel-004");
 
         act.Should().Throw<DomainRuleViolationException>();
     }
@@ -628,7 +644,8 @@ public sealed class PurchaseCreditNoteTests
     {
         var creditNote = CreateDraft(applicationType: PurchaseCreditNoteApplicationType.Return);
 
-        var act = () => creditNote.Authorize(100_000m, UserId, Guid.NewGuid(), "hash-authorize-return");
+        var act = () =>
+            creditNote.Authorize(100_000m, UserId, Guid.NewGuid(), "hash-authorize-return");
 
         act.Should().Throw<DomainRuleViolationException>();
         creditNote.Status.Should().Be(PurchaseCreditNoteStatus.Draft);
@@ -675,12 +692,19 @@ public sealed class PurchaseCreditNoteTests
     public void CreateDraft_con_TaxSummaryLines_calcula_TotalAmount_TaxableBase_mas_IceAmount_mas_VatAmount()
     {
         var creditNote = CreateDraft(
-            taxSummaryLines: new[] { TaxSummaryLine(vatCode: "10", vatRate: 15m, taxableBase: 100m) }
+            taxSummaryLines: new[]
+            {
+                TaxSummaryLine(vatCode: "10", vatRate: 15m, taxableBase: 100m),
+            }
         );
 
         var summary = creditNote.TaxSummaries.Single();
-        summary.TotalAmount.Should().Be(summary.TaxableBase + summary.IceAmount + summary.VatAmount);
-        creditNote.TotalAmount.Should().Be(creditNote.Subtotal + creditNote.IceAmount + creditNote.VatAmount);
+        summary
+            .TotalAmount.Should()
+            .Be(summary.TaxableBase + summary.IceAmount + summary.VatAmount);
+        creditNote
+            .TotalAmount.Should()
+            .Be(creditNote.Subtotal + creditNote.IceAmount + creditNote.VatAmount);
     }
 
     [Fact]
@@ -709,8 +733,7 @@ public sealed class PurchaseCreditNoteTests
     [Fact]
     public void CreateDraft_con_TaxSummaryLines_rechaza_TaxableBase_no_positiva()
     {
-        var act = () =>
-            CreateDraft(taxSummaryLines: new[] { TaxSummaryLine(taxableBase: 0m) });
+        var act = () => CreateDraft(taxSummaryLines: new[] { TaxSummaryLine(taxableBase: 0m) });
 
         act.Should().Throw<ArgumentException>();
     }

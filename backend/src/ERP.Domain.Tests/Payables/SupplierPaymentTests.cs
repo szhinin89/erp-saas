@@ -47,7 +47,16 @@ public sealed class SupplierPaymentTests
     [Fact]
     public void Create_valido_1_medio_1_aplicacion_1_allocation()
     {
-        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 300m, TransactionDate: PaymentDate) };
+        var methods = new[]
+        {
+            new SupplierPaymentMethodLineInput(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                null,
+                300m,
+                TransactionDate: PaymentDate
+            ),
+        };
         var applications = new[] { new SupplierPaymentApplicationLineInput(Guid.NewGuid(), 300m) };
         var allocations = new[] { new SupplierPaymentAllocationInput(0, 0, 300m) };
 
@@ -73,8 +82,20 @@ public sealed class SupplierPaymentTests
         var destinationB = Guid.NewGuid();
         var methods = new[]
         {
-            new SupplierPaymentMethodLineInput(Guid.NewGuid(), destinationA, null, 100m, TransactionDate: PaymentDate),
-            new SupplierPaymentMethodLineInput(Guid.NewGuid(), destinationB, null, 200m, TransactionDate: PaymentDate),
+            new SupplierPaymentMethodLineInput(
+                Guid.NewGuid(),
+                destinationA,
+                null,
+                100m,
+                TransactionDate: PaymentDate
+            ),
+            new SupplierPaymentMethodLineInput(
+                Guid.NewGuid(),
+                destinationB,
+                null,
+                200m,
+                TransactionDate: PaymentDate
+            ),
         };
         var applications = new[] { new SupplierPaymentApplicationLineInput(Guid.NewGuid(), 300m) };
         var allocations = new[]
@@ -102,8 +123,20 @@ public sealed class SupplierPaymentTests
     {
         var methods = new[]
         {
-            new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 100m, TransactionDate: PaymentDate),
-            new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 200m, TransactionDate: PaymentDate),
+            new SupplierPaymentMethodLineInput(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                null,
+                100m,
+                TransactionDate: PaymentDate
+            ),
+            new SupplierPaymentMethodLineInput(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                null,
+                200m,
+                TransactionDate: PaymentDate
+            ),
         };
         var applications = new[] { new SupplierPaymentApplicationLineInput(Guid.NewGuid(), 300m) };
         var allocations = new[]
@@ -123,7 +156,16 @@ public sealed class SupplierPaymentTests
     [Fact]
     public void Create_valido_1_medio_2_cuotas()
     {
-        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 300m, TransactionDate: PaymentDate) };
+        var methods = new[]
+        {
+            new SupplierPaymentMethodLineInput(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                null,
+                300m,
+                TransactionDate: PaymentDate
+            ),
+        };
         var applications = new[]
         {
             new SupplierPaymentApplicationLineInput(Guid.NewGuid(), 100m),
@@ -148,8 +190,20 @@ public sealed class SupplierPaymentTests
     {
         var methods = new[]
         {
-            new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 150m, TransactionDate: PaymentDate),
-            new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 150m, TransactionDate: PaymentDate),
+            new SupplierPaymentMethodLineInput(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                null,
+                150m,
+                TransactionDate: PaymentDate
+            ),
+            new SupplierPaymentMethodLineInput(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                null,
+                150m,
+                TransactionDate: PaymentDate
+            ),
         };
         var applications = new[]
         {
@@ -173,7 +227,16 @@ public sealed class SupplierPaymentTests
     [Fact]
     public void Bloquea_si_suma_medios_no_coincide_con_suma_aplicaciones()
     {
-        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 300m, TransactionDate: PaymentDate) };
+        var methods = new[]
+        {
+            new SupplierPaymentMethodLineInput(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                null,
+                300m,
+                TransactionDate: PaymentDate
+            ),
+        };
         var applications = new[] { new SupplierPaymentApplicationLineInput(Guid.NewGuid(), 250m) };
         var allocations = new[] { new SupplierPaymentAllocationInput(0, 0, 250m) };
 
@@ -185,7 +248,16 @@ public sealed class SupplierPaymentTests
     [Fact]
     public void Bloquea_si_suma_allocations_no_coincide_con_total()
     {
-        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 300m, TransactionDate: PaymentDate) };
+        var methods = new[]
+        {
+            new SupplierPaymentMethodLineInput(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                null,
+                300m,
+                TransactionDate: PaymentDate
+            ),
+        };
         var applications = new[] { new SupplierPaymentApplicationLineInput(Guid.NewGuid(), 300m) };
         var allocations = new[] { new SupplierPaymentAllocationInput(0, 0, 250m) };
 
@@ -199,8 +271,20 @@ public sealed class SupplierPaymentTests
     {
         var methods = new[]
         {
-            new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 100m, TransactionDate: PaymentDate),
-            new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 200m, TransactionDate: PaymentDate),
+            new SupplierPaymentMethodLineInput(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                null,
+                100m,
+                TransactionDate: PaymentDate
+            ),
+            new SupplierPaymentMethodLineInput(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                null,
+                200m,
+                TransactionDate: PaymentDate
+            ),
         };
         var applications = new[] { new SupplierPaymentApplicationLineInput(Guid.NewGuid(), 300m) };
         // El medio 1 (200) solo se distribuye 150 — el otro medio compensa el total pero deja
@@ -219,7 +303,16 @@ public sealed class SupplierPaymentTests
     [Fact]
     public void Bloquea_si_una_aplicacion_no_esta_cubierta_al_100_por_ciento()
     {
-        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 300m, TransactionDate: PaymentDate) };
+        var methods = new[]
+        {
+            new SupplierPaymentMethodLineInput(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                null,
+                300m,
+                TransactionDate: PaymentDate
+            ),
+        };
         var applications = new[]
         {
             new SupplierPaymentApplicationLineInput(Guid.NewGuid(), 100m),
@@ -243,7 +336,16 @@ public sealed class SupplierPaymentTests
     [InlineData(-10)]
     public void Bloquea_monto_de_medio_menor_o_igual_a_cero(decimal amount)
     {
-        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, amount, TransactionDate: PaymentDate) };
+        var methods = new[]
+        {
+            new SupplierPaymentMethodLineInput(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                null,
+                amount,
+                TransactionDate: PaymentDate
+            ),
+        };
         var applications = new[] { new SupplierPaymentApplicationLineInput(Guid.NewGuid(), 300m) };
         var allocations = new[] { new SupplierPaymentAllocationInput(0, 0, 300m) };
 
@@ -257,8 +359,20 @@ public sealed class SupplierPaymentTests
     [InlineData(-10)]
     public void Bloquea_monto_de_aplicacion_menor_o_igual_a_cero(decimal amount)
     {
-        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 300m, TransactionDate: PaymentDate) };
-        var applications = new[] { new SupplierPaymentApplicationLineInput(Guid.NewGuid(), amount) };
+        var methods = new[]
+        {
+            new SupplierPaymentMethodLineInput(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                null,
+                300m,
+                TransactionDate: PaymentDate
+            ),
+        };
+        var applications = new[]
+        {
+            new SupplierPaymentApplicationLineInput(Guid.NewGuid(), amount),
+        };
         var allocations = new[] { new SupplierPaymentAllocationInput(0, 0, 300m) };
 
         var act = () => CreatePayment(300m, methods, applications, allocations);
@@ -271,7 +385,16 @@ public sealed class SupplierPaymentTests
     [InlineData(-10)]
     public void Bloquea_monto_total_menor_o_igual_a_cero(decimal amount)
     {
-        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 300m, TransactionDate: PaymentDate) };
+        var methods = new[]
+        {
+            new SupplierPaymentMethodLineInput(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                null,
+                300m,
+                TransactionDate: PaymentDate
+            ),
+        };
         var applications = new[] { new SupplierPaymentApplicationLineInput(Guid.NewGuid(), 300m) };
         var allocations = new[] { new SupplierPaymentAllocationInput(0, 0, 300m) };
 
@@ -283,7 +406,16 @@ public sealed class SupplierPaymentTests
     [Fact]
     public void DisplayNumber_usa_receipt_number_cuando_existe()
     {
-        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 300m, TransactionDate: PaymentDate) };
+        var methods = new[]
+        {
+            new SupplierPaymentMethodLineInput(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                null,
+                300m,
+                TransactionDate: PaymentDate
+            ),
+        };
         var applications = new[] { new SupplierPaymentApplicationLineInput(Guid.NewGuid(), 300m) };
         var allocations = new[] { new SupplierPaymentAllocationInput(0, 0, 300m) };
 
@@ -302,11 +434,26 @@ public sealed class SupplierPaymentTests
     [Fact]
     public void DisplayNumber_usa_system_number_cuando_no_hay_receipt_number()
     {
-        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 300m, TransactionDate: PaymentDate) };
+        var methods = new[]
+        {
+            new SupplierPaymentMethodLineInput(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                null,
+                300m,
+                TransactionDate: PaymentDate
+            ),
+        };
         var applications = new[] { new SupplierPaymentApplicationLineInput(Guid.NewGuid(), 300m) };
         var allocations = new[] { new SupplierPaymentAllocationInput(0, 0, 300m) };
 
-        var payment = CreatePayment(300m, methods, applications, allocations, systemNumber: "00000042");
+        var payment = CreatePayment(
+            300m,
+            methods,
+            applications,
+            allocations,
+            systemNumber: "00000042"
+        );
 
         payment.DisplayNumber.Should().Be("00000042");
     }
@@ -356,8 +503,20 @@ public sealed class SupplierPaymentTests
 
     private static SupplierPayment CreateSimplePayment(decimal amount = 300m)
     {
-        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, amount, TransactionDate: PaymentDate) };
-        var applications = new[] { new SupplierPaymentApplicationLineInput(Guid.NewGuid(), amount) };
+        var methods = new[]
+        {
+            new SupplierPaymentMethodLineInput(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                null,
+                amount,
+                TransactionDate: PaymentDate
+            ),
+        };
+        var applications = new[]
+        {
+            new SupplierPaymentApplicationLineInput(Guid.NewGuid(), amount),
+        };
         var allocations = new[] { new SupplierPaymentAllocationInput(0, 0, amount) };
         return CreatePayment(amount, methods, applications, allocations);
     }
@@ -369,7 +528,12 @@ public sealed class SupplierPaymentTests
         var reversedBy = Guid.NewGuid();
         var reversedAt = DateTime.UtcNow;
 
-        payment.Reverse("Error de digitación", reversedBy, reversedAt, bankReversalReason: SupplierPaymentBankReversalReason.NotExecuted);
+        payment.Reverse(
+            "Error de digitación",
+            reversedBy,
+            reversedAt,
+            bankReversalReason: SupplierPaymentBankReversalReason.NotExecuted
+        );
 
         payment.Status.Should().Be(SupplierPaymentStatus.Reversed);
         payment.ReversedAtUtc.Should().Be(reversedAt);
@@ -382,30 +546,59 @@ public sealed class SupplierPaymentTests
     {
         var destinationId = Guid.NewGuid();
         var installmentId = Guid.NewGuid();
-        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), destinationId, null, 300m, TransactionDate: PaymentDate) };
+        var methods = new[]
+        {
+            new SupplierPaymentMethodLineInput(
+                Guid.NewGuid(),
+                destinationId,
+                null,
+                300m,
+                TransactionDate: PaymentDate
+            ),
+        };
         var applications = new[] { new SupplierPaymentApplicationLineInput(installmentId, 300m) };
         var allocations = new[] { new SupplierPaymentAllocationInput(0, 0, 300m) };
         var payment = CreatePayment(300m, methods, applications, allocations);
 
-        payment.Reverse("Duplicado", Guid.NewGuid(), DateTime.UtcNow, bankReversalReason: SupplierPaymentBankReversalReason.NotExecuted);
+        payment.Reverse(
+            "Duplicado",
+            Guid.NewGuid(),
+            DateTime.UtcNow,
+            bankReversalReason: SupplierPaymentBankReversalReason.NotExecuted
+        );
 
         var evt = payment.DomainEvents.OfType<SupplierPaymentReversedEvent>().Single();
         evt.SupplierPaymentId.Should().Be(payment.Id);
         evt.TotalAmount.Should().Be(300m);
         evt.ReverseReason.Should().Be("Duplicado");
         evt.MethodLines.Should()
-            .BeEquivalentTo(new[] { new SupplierPaymentConfirmedMethodLine(destinationId, null, 300m) });
+            .BeEquivalentTo(
+                new[] { new SupplierPaymentConfirmedMethodLine(destinationId, null, 300m) }
+            );
         evt.ApplicationLines.Should()
-            .BeEquivalentTo(new[] { new SupplierPaymentReversedApplicationLine(installmentId, 300m) });
+            .BeEquivalentTo(
+                new[] { new SupplierPaymentReversedApplicationLine(installmentId, 300m) }
+            );
     }
 
     [Fact]
     public void Bloquea_doble_reversa()
     {
         var payment = CreateSimplePayment();
-        payment.Reverse("Primer motivo", Guid.NewGuid(), DateTime.UtcNow, bankReversalReason: SupplierPaymentBankReversalReason.NotExecuted);
+        payment.Reverse(
+            "Primer motivo",
+            Guid.NewGuid(),
+            DateTime.UtcNow,
+            bankReversalReason: SupplierPaymentBankReversalReason.NotExecuted
+        );
 
-        var act = () => payment.Reverse("Segundo intento", Guid.NewGuid(), DateTime.UtcNow, bankReversalReason: SupplierPaymentBankReversalReason.NotExecuted);
+        var act = () =>
+            payment.Reverse(
+                "Segundo intento",
+                Guid.NewGuid(),
+                DateTime.UtcNow,
+                bankReversalReason: SupplierPaymentBankReversalReason.NotExecuted
+            );
 
         act.Should().Throw<DomainRuleViolationException>();
     }
@@ -415,10 +608,18 @@ public sealed class SupplierPaymentTests
     {
         var payment = CreateSimplePayment();
 
-        var act = () => payment.Reverse("   ", Guid.NewGuid(), DateTime.UtcNow, bankReversalReason: SupplierPaymentBankReversalReason.NotExecuted);
+        var act = () =>
+            payment.Reverse(
+                "   ",
+                Guid.NewGuid(),
+                DateTime.UtcNow,
+                bankReversalReason: SupplierPaymentBankReversalReason.NotExecuted
+            );
 
         act.Should().Throw<ArgumentException>();
-        payment.Status.Should().Be(SupplierPaymentStatus.Confirmed, "un intento inválido no debe mutar el estado");
+        payment
+            .Status.Should()
+            .Be(SupplierPaymentStatus.Confirmed, "un intento inválido no debe mutar el estado");
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -439,7 +640,14 @@ public sealed class SupplierPaymentTests
         var bankDate = PaymentDate.AddDays(-2);
 
         var payment = CreateSingle(
-            new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 50m, "OP-1", TransactionDate: bankDate)
+            new SupplierPaymentMethodLineInput(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                null,
+                50m,
+                "OP-1",
+                TransactionDate: bankDate
+            )
         );
 
         payment.MethodLines[0].TransactionDate.Should().Be(bankDate);
@@ -449,7 +657,15 @@ public sealed class SupplierPaymentTests
     public void Fuente_bancaria_sin_fecha_es_invalida_nunca_se_completa_con_PaymentDate()
     {
         var act = () =>
-            CreateSingle(new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 50m, TransactionDate: null));
+            CreateSingle(
+                new SupplierPaymentMethodLineInput(
+                    Guid.NewGuid(),
+                    Guid.NewGuid(),
+                    null,
+                    50m,
+                    TransactionDate: null
+                )
+            );
 
         act.Should().Throw<ArgumentException>();
     }
@@ -459,7 +675,13 @@ public sealed class SupplierPaymentTests
     {
         var act = () =>
             CreateSingle(
-                new SupplierPaymentMethodLineInput(Guid.NewGuid(), null, Guid.NewGuid(), 50m, TransactionDate: PaymentDate)
+                new SupplierPaymentMethodLineInput(
+                    Guid.NewGuid(),
+                    null,
+                    Guid.NewGuid(),
+                    50m,
+                    TransactionDate: PaymentDate
+                )
             );
 
         act.Should().Throw<ArgumentException>();
@@ -468,7 +690,9 @@ public sealed class SupplierPaymentTests
     [Fact]
     public void LinkCashMovement_vincula_sesion_y_movimiento_una_sola_vez()
     {
-        var payment = CreateSingle(new SupplierPaymentMethodLineInput(Guid.NewGuid(), null, Guid.NewGuid(), 50m));
+        var payment = CreateSingle(
+            new SupplierPaymentMethodLineInput(Guid.NewGuid(), null, Guid.NewGuid(), 50m)
+        );
         var line = payment.MethodLines[0];
         var sessionId = Guid.NewGuid();
         var movementId = Guid.NewGuid();
@@ -484,9 +708,18 @@ public sealed class SupplierPaymentTests
     [Fact]
     public void LinkCashMovement_rechaza_fuente_bancaria()
     {
-        var payment = CreateSingle(new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 50m, TransactionDate: PaymentDate));
+        var payment = CreateSingle(
+            new SupplierPaymentMethodLineInput(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                null,
+                50m,
+                TransactionDate: PaymentDate
+            )
+        );
 
-        var act = () => payment.LinkCashMovement(payment.MethodLines[0].Id, Guid.NewGuid(), Guid.NewGuid());
+        var act = () =>
+            payment.LinkCashMovement(payment.MethodLines[0].Id, Guid.NewGuid(), Guid.NewGuid());
 
         act.Should().Throw<DomainRuleViolationException>();
     }
@@ -497,7 +730,9 @@ public sealed class SupplierPaymentTests
 
     private static SupplierPayment CreateLinkedCashPayment(decimal amount)
     {
-        var payment = CreateSingle(new SupplierPaymentMethodLineInput(Guid.NewGuid(), null, Guid.NewGuid(), amount));
+        var payment = CreateSingle(
+            new SupplierPaymentMethodLineInput(Guid.NewGuid(), null, Guid.NewGuid(), amount)
+        );
         payment.LinkCashMovement(payment.MethodLines[0].Id, Guid.NewGuid(), Guid.NewGuid());
         return payment;
     }
@@ -507,7 +742,13 @@ public sealed class SupplierPaymentTests
     {
         var payment = CreateLinkedCashPayment(50m);
 
-        var act = () => payment.Reverse("Duplicado", Guid.NewGuid(), DateTime.UtcNow, cashNotDeliveredConfirmed: false);
+        var act = () =>
+            payment.Reverse(
+                "Duplicado",
+                Guid.NewGuid(),
+                DateTime.UtcNow,
+                cashNotDeliveredConfirmed: false
+            );
 
         act.Should().Throw<DomainRuleViolationException>();
         payment.Status.Should().Be(SupplierPaymentStatus.Confirmed);
@@ -516,9 +757,17 @@ public sealed class SupplierPaymentTests
     [Fact]
     public void Reversa_de_fuente_de_caja_sin_trazabilidad_de_sesion_se_rechaza()
     {
-        var payment = CreateSingle(new SupplierPaymentMethodLineInput(Guid.NewGuid(), null, Guid.NewGuid(), 50m));
+        var payment = CreateSingle(
+            new SupplierPaymentMethodLineInput(Guid.NewGuid(), null, Guid.NewGuid(), 50m)
+        );
 
-        var act = () => payment.Reverse("Duplicado", Guid.NewGuid(), DateTime.UtcNow, cashNotDeliveredConfirmed: true);
+        var act = () =>
+            payment.Reverse(
+                "Duplicado",
+                Guid.NewGuid(),
+                DateTime.UtcNow,
+                cashNotDeliveredConfirmed: true
+            );
 
         act.Should().Throw<DomainRuleViolationException>();
     }
@@ -526,12 +775,26 @@ public sealed class SupplierPaymentTests
     [Fact]
     public void Reversa_de_fuente_bancaria_exige_motivo_estructurado_y_lo_registra()
     {
-        var payment = CreateSingle(new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 50m, "OP-1", TransactionDate: PaymentDate));
+        var payment = CreateSingle(
+            new SupplierPaymentMethodLineInput(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                null,
+                50m,
+                "OP-1",
+                TransactionDate: PaymentDate
+            )
+        );
 
         var withoutReason = () => payment.Reverse("Error", Guid.NewGuid(), DateTime.UtcNow);
         withoutReason.Should().Throw<DomainRuleViolationException>();
 
-        payment.Reverse("Error", Guid.NewGuid(), DateTime.UtcNow, bankReversalReason: SupplierPaymentBankReversalReason.RejectedByBank);
+        payment.Reverse(
+            "Error",
+            Guid.NewGuid(),
+            DateTime.UtcNow,
+            bankReversalReason: SupplierPaymentBankReversalReason.RejectedByBank
+        );
         payment.ReversalBankReason.Should().Be(SupplierPaymentBankReversalReason.RejectedByBank);
         payment.ReversalCashNotDeliveredConfirmed.Should().BeNull();
     }
@@ -541,7 +804,12 @@ public sealed class SupplierPaymentTests
     {
         var payment = CreateLinkedCashPayment(50m);
 
-        payment.Reverse("Duplicado", Guid.NewGuid(), DateTime.UtcNow, cashNotDeliveredConfirmed: true);
+        payment.Reverse(
+            "Duplicado",
+            Guid.NewGuid(),
+            DateTime.UtcNow,
+            cashNotDeliveredConfirmed: true
+        );
 
         payment.Status.Should().Be(SupplierPaymentStatus.Reversed);
         payment.ReversalCashNotDeliveredConfirmed.Should().BeTrue();
@@ -556,7 +824,16 @@ public sealed class SupplierPaymentTests
     [Fact]
     public void ConfirmedBy_es_el_originador_por_defecto_y_el_ejecutor_cuando_se_informa()
     {
-        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 300m, TransactionDate: PaymentDate) };
+        var methods = new[]
+        {
+            new SupplierPaymentMethodLineInput(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                null,
+                300m,
+                TransactionDate: PaymentDate
+            ),
+        };
         var applications = new[] { new SupplierPaymentApplicationLineInput(Guid.NewGuid(), 300m) };
         var allocations = new[] { new SupplierPaymentAllocationInput(0, 0, 300m) };
 
@@ -565,9 +842,23 @@ public sealed class SupplierPaymentTests
 
         var executor = Guid.NewGuid();
         var executed = SupplierPayment.Create(
-            TenantId, CompanyId, BranchId, SupplierId, PaymentDate, 300m, "00000002", null,
-            methods, applications, allocations, CreatedBy, confirmedBy: executor);
-        executed.CreatedBy.Should().Be(CreatedBy, "el originador sigue siendo quien preparó el pago");
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            PaymentDate,
+            300m,
+            "00000002",
+            null,
+            methods,
+            applications,
+            allocations,
+            CreatedBy,
+            confirmedBy: executor
+        );
+        executed
+            .CreatedBy.Should()
+            .Be(CreatedBy, "el originador sigue siendo quien preparó el pago");
         executed.ConfirmedByUserId.Should().Be(executor);
     }
 }

@@ -44,12 +44,15 @@ public sealed record RetryRetentionAnnulmentFinalizationCommand(Guid RequestId)
 
 // ── Validators ───────────────────────────────────────────────────────────
 
-public sealed class SubmitRetentionAnnulmentValidator : AbstractValidator<SubmitRetentionAnnulmentCommand>
+public sealed class SubmitRetentionAnnulmentValidator
+    : AbstractValidator<SubmitRetentionAnnulmentCommand>
 {
     public SubmitRetentionAnnulmentValidator()
     {
         RuleFor(x => x.RequestId).NotEmpty();
-        RuleFor(x => x.SubmittedOn).NotEmpty().WithMessage("La fecha de presentación es obligatoria.");
+        RuleFor(x => x.SubmittedOn)
+            .NotEmpty()
+            .WithMessage("La fecha de presentación es obligatoria.");
         RuleFor(x => x.Reference).MaximumLength(RetentionAnnulmentRequest.ReferenceMaxLen);
         RuleFor(x => x.Notes).MaximumLength(RetentionAnnulmentRequest.NotesMaxLen);
     }
@@ -61,7 +64,8 @@ public sealed class VerifyRetentionAnnulmentWithSriValidator
     public VerifyRetentionAnnulmentWithSriValidator() => RuleFor(x => x.RequestId).NotEmpty();
 }
 
-public sealed class AbandonRetentionAnnulmentValidator : AbstractValidator<AbandonRetentionAnnulmentCommand>
+public sealed class AbandonRetentionAnnulmentValidator
+    : AbstractValidator<AbandonRetentionAnnulmentCommand>
 {
     public AbandonRetentionAnnulmentValidator()
     {
@@ -119,16 +123,25 @@ public sealed class RetentionAnnulmentAccess
     /// usuario puede operar (permiso de anular el origen). Devuelve el Result de fallo (404 si no existe
     /// o no es visible; 403 si es visible pero falta el permiso de acción).
     /// </summary>
-    public async Task<(RetentionAnnulmentRequest? Request, Result<RetentionAnnulmentRequestDto>? Failure)> AuthorizeAsync(
-        Guid requestId,
-        CancellationToken ct
-    )
+    public async Task<(
+        RetentionAnnulmentRequest? Request,
+        Result<RetentionAnnulmentRequestDto>? Failure
+    )> AuthorizeAsync(Guid requestId, CancellationToken ct)
     {
-        var request = await _requests.GetByIdAsync(_tenant.TenantId, _company.CompanyId, requestId, ct);
+        var request = await _requests.GetByIdAsync(
+            _tenant.TenantId,
+            _company.CompanyId,
+            requestId,
+            ct
+        );
         if (request is null)
             return (null, NotFound());
 
-        var retention = await _retentions.GetByIdAsync(_tenant.TenantId, request.RetentionDocumentId, ct);
+        var retention = await _retentions.GetByIdAsync(
+            _tenant.TenantId,
+            request.RetentionDocumentId,
+            ct
+        );
         if (
             retention is null
             || retention.CompanyId != _company.CompanyId
@@ -227,7 +240,10 @@ public sealed class SubmitRetentionAnnulmentHandler
         return await _access.ToDtoAsync(
             current is null
                 ? verified
-                : Result<RetentionAnnulmentRequest>.Success(current, ApiResponseCodes.Retentions.SriVerificationFailed),
+                : Result<RetentionAnnulmentRequest>.Success(
+                    current,
+                    ApiResponseCodes.Retentions.SriVerificationFailed
+                ),
             ct
         );
     }
@@ -311,7 +327,10 @@ public sealed class AbandonRetentionAnnulmentHandler
 }
 
 public sealed class RetryRetentionAnnulmentFinalizationHandler
-    : IRequestHandler<RetryRetentionAnnulmentFinalizationCommand, Result<RetentionAnnulmentRequestDto>>
+    : IRequestHandler<
+        RetryRetentionAnnulmentFinalizationCommand,
+        Result<RetentionAnnulmentRequestDto>
+    >
 {
     private readonly RetentionAnnulmentAccess _access;
     private readonly IRetentionAnnulmentService _service;

@@ -97,7 +97,11 @@ public sealed class PurchaseWarehouseBranchGuardTests
         );
         roleRepo
             .Setup(r =>
-                r.GetByTypeAsync(SupplierId, Domain.MasterData.Enums.RoleType.Supplier, It.IsAny<CancellationToken>())
+                r.GetByTypeAsync(
+                    SupplierId,
+                    Domain.MasterData.Enums.RoleType.Supplier,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(role);
         return roleRepo;
@@ -107,8 +111,18 @@ public sealed class PurchaseWarehouseBranchGuardTests
     {
         var resolver = new Mock<IPaymentTermDefaultResolver>();
         resolver
-            .Setup(r => r.ResolveForPurchaseAsync(SupplierId, It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<PaymentTerm>.Success(PaymentTerm.Create(TenantId, "CONTADO", "Contado", 1, 0, UserId)));
+            .Setup(r =>
+                r.ResolveForPurchaseAsync(
+                    SupplierId,
+                    It.IsAny<Guid?>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                Result<PaymentTerm>.Success(
+                    PaymentTerm.Create(TenantId, "CONTADO", "Contado", 1, 0, UserId)
+                )
+            );
         return resolver;
     }
 
@@ -155,7 +169,10 @@ public sealed class PurchaseWarehouseBranchGuardTests
         var result = await handler.Handle(BuildCreateCommand(WhInBranchA), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        repo.Verify(r => r.AddAsync(It.IsAny<PurchaseInvoice>(), It.IsAny<CancellationToken>()), Times.Once);
+        repo.Verify(
+            r => r.AddAsync(It.IsAny<PurchaseInvoice>(), It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -185,7 +202,10 @@ public sealed class PurchaseWarehouseBranchGuardTests
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
         result.Error.Should().Be(WarehouseBranchGuard.CrossBranchMessage);
-        repo.Verify(r => r.AddAsync(It.IsAny<PurchaseInvoice>(), It.IsAny<CancellationToken>()), Times.Never);
+        repo.Verify(
+            r => r.AddAsync(It.IsAny<PurchaseInvoice>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
         repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -248,8 +268,10 @@ public sealed class PurchaseWarehouseBranchGuardTests
     {
         var inv = CreateExistingDraft(BranchA, WhInBranchA);
         var repo = new Mock<IPurchaseInvoiceRepository>();
-        repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())).ReturnsAsync(inv);
-        repo.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
+        repo.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         var handler = BuildUpdateHandler(repo, BuildWarehouseRepo());
 
@@ -273,7 +295,8 @@ public sealed class PurchaseWarehouseBranchGuardTests
     {
         var inv = CreateExistingDraft(BranchA, WhInBranchA);
         var repo = new Mock<IPurchaseInvoiceRepository>();
-        repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())).ReturnsAsync(inv);
+        repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
 
         var handler = BuildUpdateHandler(repo, BuildWarehouseRepo());
 
@@ -304,7 +327,8 @@ public sealed class PurchaseWarehouseBranchGuardTests
         var inv = CreateExistingDraft(BranchA, WhInBranchB);
 
         var repo = new Mock<IPurchaseInvoiceRepository>();
-        repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())).ReturnsAsync(inv);
+        repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
 
         var stockRepo = new Mock<IStockRepository>();
         var itemRepo = new Mock<IItemRepository>();
@@ -342,31 +366,35 @@ public sealed class PurchaseWarehouseBranchGuardTests
             ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.Transmission().Object
         );
 
-        var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new ConfirmPurchaseCommand(inv.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be(WarehouseBranchGuard.CrossBranchMessage);
         inv.Status.Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Draft);
         stockRepo.Verify(
-            s => s.AppendMovementAsync(
-                It.IsAny<Guid>(),
-                It.IsAny<Guid>(),
-                It.IsAny<Guid>(),
-                It.IsAny<Guid>(),
-                It.IsAny<ERP.Domain.Modules.Inventory.Enums.StockMovementType>(),
-                It.IsAny<decimal>(),
-                It.IsAny<string>(),
-                It.IsAny<DateOnly>(),
-                It.IsAny<string?>(),
-                It.IsAny<Guid?>(),
-                It.IsAny<string?>(),
-                It.IsAny<Guid>(),
-                It.IsAny<decimal?>(),
-                It.IsAny<Guid?>(),
-                It.IsAny<Guid?>(),
-                It.IsAny<CancellationToken>(),
-                It.IsAny<Guid?>()
-            ),
+            s =>
+                s.AppendMovementAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<ERP.Domain.Modules.Inventory.Enums.StockMovementType>(),
+                    It.IsAny<decimal>(),
+                    It.IsAny<string>(),
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<string?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<string?>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<decimal?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<Guid?>()
+                ),
             Times.Never
         );
     }

@@ -46,8 +46,7 @@ public sealed class ReturnToGlobalHandlerTests
 
         f.CurrentOperatorContext.Setup(c => c.IsOperatorMode).Returns(true);
         f.CurrentOperatorContext.Setup(c => c.GlobalAdminUserId).Returns(user.Id);
-        f.AccessRepo
-            .Setup(r =>
+        f.AccessRepo.Setup(r =>
                 r.GetActiveGlobalUserRoleAsync(
                     user.Id,
                     SecurityRoles.Admin,
@@ -57,11 +56,9 @@ public sealed class ReturnToGlobalHandlerTests
             .ReturnsAsync(globalRole);
         f.AccessRepo.Setup(r => r.GetUserByIdAsync(user.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
-        f.TokenService
-            .Setup(s => s.GenerateSessionToken(user, Guid.Empty, SecurityRoles.Admin))
+        f.TokenService.Setup(s => s.GenerateSessionToken(user, Guid.Empty, SecurityRoles.Admin))
             .Returns("global-jwt");
-        f.RefreshTokenService
-            .Setup(s =>
+        f.RefreshTokenService.Setup(s =>
                 s.CreateAsync(
                     user.Id,
                     Guid.Empty,
@@ -93,11 +90,12 @@ public sealed class ReturnToGlobalHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         f.AccessRepo.Verify(
-            r => r.GetActiveGlobalUserRoleAsync(
-                It.IsAny<Guid>(),
-                It.IsAny<string>(),
-                It.IsAny<CancellationToken>()
-            ),
+            r =>
+                r.GetActiveGlobalUserRoleAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }
@@ -109,8 +107,7 @@ public sealed class ReturnToGlobalHandlerTests
         var adminId = Guid.NewGuid();
         f.CurrentOperatorContext.Setup(c => c.IsOperatorMode).Returns(true);
         f.CurrentOperatorContext.Setup(c => c.GlobalAdminUserId).Returns(adminId);
-        f.AccessRepo
-            .Setup(r =>
+        f.AccessRepo.Setup(r =>
                 r.GetActiveGlobalUserRoleAsync(
                     adminId,
                     SecurityRoles.Admin,

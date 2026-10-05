@@ -30,7 +30,11 @@ public sealed class CompanyClock : ICompanyClock
         Guid companyId,
         Guid tenantId,
         CancellationToken ct = default
-    ) => CompanyTimeZone.LocalDate(UtcNow, await ResolveCompanyTimeZoneAsync(companyId, tenantId, ct));
+    ) =>
+        CompanyTimeZone.LocalDate(
+            UtcNow,
+            await ResolveCompanyTimeZoneAsync(companyId, tenantId, ct)
+        );
 
     public async Task<DateOnly> LocalDateAsync(
         Guid companyId,
@@ -59,7 +63,10 @@ public sealed class CompanyClock : ICompanyClock
         DateOnly day,
         CancellationToken ct = default
     ) =>
-        CompanyTimeZone.DayUtcRange(day, await ResolveCompanyTimeZoneAsync(companyId, tenantId, ct));
+        CompanyTimeZone.DayUtcRange(
+            day,
+            await ResolveCompanyTimeZoneAsync(companyId, tenantId, ct)
+        );
 
     public async Task<DateTime> CompanyLocalToUtcAsync(
         Guid companyId,

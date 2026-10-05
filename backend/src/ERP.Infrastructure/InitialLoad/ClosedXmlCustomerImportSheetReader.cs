@@ -32,7 +32,9 @@ public sealed class ClosedXmlCustomerImportSheetReader : ICustomerImportSheetRea
         {
             var sheet = workbook.Worksheets.FirstOrDefault(w => !IsInstructionsSheet(w.Name));
             if (sheet is null)
-                throw new DomainRuleViolationException("El archivo no contiene ninguna hoja de datos.");
+                throw new DomainRuleViolationException(
+                    "El archivo no contiene ninguna hoja de datos."
+                );
 
             var headerRow = sheet.Row(1);
             var columnIndexes = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -55,10 +57,9 @@ public sealed class ClosedXmlCustomerImportSheetReader : ICustomerImportSheetRea
                 var values = new Dictionary<string, string?>();
                 foreach (var column in CustomerImportColumns.All)
                 {
-                    var value =
-                        columnIndexes.TryGetValue(column, out var colIndex)
-                            ? row.Cell(colIndex).GetString().Trim()
-                            : null;
+                    var value = columnIndexes.TryGetValue(column, out var colIndex)
+                        ? row.Cell(colIndex).GetString().Trim()
+                        : null;
                     values[column] = string.IsNullOrEmpty(value) ? null : value;
                 }
                 rows.Add(values);
@@ -96,9 +97,12 @@ public sealed class ClosedXmlCustomerImportSheetReader : ICustomerImportSheetRea
         var instructions = workbook.Worksheets.Add("Instrucciones");
         instructions.Cell(1, 1).Value = "Cómo llenar esta plantilla";
         instructions.Cell(1, 1).Style.Font.Bold = true;
-        instructions.Cell(3, 1).Value = "Tipo Identificación / Número Identificación / Razón Social son obligatorios.";
-        instructions.Cell(4, 1).Value = "Tipo Identificación: código SRI — 04 = RUC, 05 = Cédula, 06 = Pasaporte, 07 = Consumidor Final, 08 = Exterior.";
-        instructions.Cell(5, 1).Value = "Límite de Crédito y Días de Pago son numéricos, sin símbolos.";
+        instructions.Cell(3, 1).Value =
+            "Tipo Identificación / Número Identificación / Razón Social son obligatorios.";
+        instructions.Cell(4, 1).Value =
+            "Tipo Identificación: código SRI — 04 = RUC, 05 = Cédula, 06 = Pasaporte, 07 = Consumidor Final, 08 = Exterior.";
+        instructions.Cell(5, 1).Value =
+            "Límite de Crédito y Días de Pago son numéricos, sin símbolos.";
         instructions.Cell(6, 1).Value = "No modifique los encabezados de la fila 1.";
         instructions.Columns().AdjustToContents();
 

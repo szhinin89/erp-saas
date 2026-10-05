@@ -108,8 +108,9 @@ public sealed class InvoiceDefaultsResolverTests
         var f = new Fixture();
         var warehouse = MakeWarehouse(BranchId, CompanyId);
         f.SetBranchWarehouseSetting(warehouse.Id.ToString());
-        f.WarehouseRepo
-            .Setup(r => r.GetByIdAsync(TenantId, warehouse.Id, It.IsAny<CancellationToken>()))
+        f.WarehouseRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, warehouse.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(warehouse);
 
         var result = await f.BuildResolver().GetAsync(TenantId, CompanyId, BranchId, default);
@@ -136,13 +137,8 @@ public sealed class InvoiceDefaultsResolverTests
         var otherBranchId = Guid.NewGuid();
         var warehouseFromOtherBranch = MakeWarehouse(otherBranchId, CompanyId);
         f.SetBranchWarehouseSetting(warehouseFromOtherBranch.Id.ToString());
-        f.WarehouseRepo
-            .Setup(r =>
-                r.GetByIdAsync(
-                    TenantId,
-                    warehouseFromOtherBranch.Id,
-                    It.IsAny<CancellationToken>()
-                )
+        f.WarehouseRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, warehouseFromOtherBranch.Id, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(warehouseFromOtherBranch);
 
@@ -169,8 +165,9 @@ public sealed class InvoiceDefaultsResolverTests
         var f = new Fixture();
         f.SetBranchWarehouseSetting(null);
         var mainWarehouse = MakeWarehouse(BranchId, CompanyId, isMain: true);
-        f.WarehouseRepo
-            .Setup(r => r.GetMainForBranchAsync(TenantId, BranchId, It.IsAny<CancellationToken>()))
+        f.WarehouseRepo.Setup(r =>
+                r.GetMainForBranchAsync(TenantId, BranchId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(mainWarehouse);
 
         var result = await f.BuildResolver().GetAsync(TenantId, CompanyId, BranchId, default);
@@ -185,8 +182,9 @@ public sealed class InvoiceDefaultsResolverTests
     {
         var f = new Fixture();
         f.SetBranchWarehouseSetting(null);
-        f.WarehouseRepo
-            .Setup(r => r.GetMainForBranchAsync(TenantId, BranchId, It.IsAny<CancellationToken>()))
+        f.WarehouseRepo.Setup(r =>
+                r.GetMainForBranchAsync(TenantId, BranchId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((Warehouse?)null);
 
         var result = await f.BuildResolver().GetAsync(TenantId, CompanyId, BranchId, default);
@@ -201,8 +199,9 @@ public sealed class InvoiceDefaultsResolverTests
     {
         var f = new Fixture();
         f.SetBranchWarehouseSetting(null);
-        f.WarehouseRepo
-            .Setup(r => r.GetMainForBranchAsync(TenantId, BranchId, It.IsAny<CancellationToken>()))
+        f.WarehouseRepo.Setup(r =>
+                r.GetMainForBranchAsync(TenantId, BranchId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((Warehouse?)null);
 
         await f.BuildResolver().GetAsync(TenantId, CompanyId, BranchId, default);
@@ -269,8 +268,7 @@ public sealed class InvoiceDefaultsResolverTests
     {
         var f = new Fixture();
         var paymentTermId = Guid.NewGuid();
-        f.OrgRepo
-            .Setup(r =>
+        f.OrgRepo.Setup(r =>
                 r.GetAllForScopeAsync(
                     TenantId,
                     CompanyId,

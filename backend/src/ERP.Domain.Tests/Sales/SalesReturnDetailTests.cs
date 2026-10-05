@@ -153,10 +153,18 @@ public sealed class SalesReturnDetailTests
     public void Create_con_ICE_Percentage_sincroniza_IVA_e_ICE()
     {
         var line = SalesReturnDetail.Create(
-            ReturnId, TenantId, OriginalInvoiceDetailId, "Producto con ICE",
-            quantity: 1m, unitPrice: 100m, discountPct: 0m,
-            vatCode: "2", vatRate: 15m, uomCode: "UNIT",
-            iceCode: "3010", iceRate: 10m
+            ReturnId,
+            TenantId,
+            OriginalInvoiceDetailId,
+            "Producto con ICE",
+            quantity: 1m,
+            unitPrice: 100m,
+            discountPct: 0m,
+            vatCode: "2",
+            vatRate: 15m,
+            uomCode: "UNIT",
+            iceCode: "3010",
+            iceRate: 10m
         );
 
         line.Taxes.Should().HaveCount(2);
@@ -168,15 +176,24 @@ public sealed class SalesReturnDetailTests
     public void Create_con_ICE_Specific_conserva_el_monto_ya_prorrateado_sin_recalcularlo()
     {
         var line = SalesReturnDetail.Create(
-            ReturnId, TenantId, OriginalInvoiceDetailId, "Producto con ICE específico",
-            quantity: 3m, unitPrice: 100m, discountPct: 0m,
-            vatCode: "2", vatRate: 15m, uomCode: "UNIT",
-            iceCode: "3053", iceRate: 0m,
+            ReturnId,
+            TenantId,
+            OriginalInvoiceDetailId,
+            "Producto con ICE específico",
+            quantity: 3m,
+            unitPrice: 100m,
+            discountPct: 0m,
+            vatCode: "2",
+            vatRate: 15m,
+            uomCode: "UNIT",
+            iceCode: "3053",
+            iceRate: 0m,
             iceCalculationType: SriTaxCalculationType.Specific,
             iceExactAmount: 1.50m // ya prorrateado por Application
         );
 
-        line.IceAmount.Should().Be(1.50m, "un ICE específico nunca se recalcula desde una tarifa porcentual");
+        line.IceAmount.Should()
+            .Be(1.50m, "un ICE específico nunca se recalcula desde una tarifa porcentual");
         line.VatAmount.Should().Be(45.23m); // (300 + 1.50) * 15% = 45.225, redondeado AwayFromZero
         line.Taxes.Should().Contain(t => t.TaxCode == "3" && t.TaxAmount == 1.50m);
     }
@@ -185,19 +202,30 @@ public sealed class SalesReturnDetailTests
     public void ReplaceTaxes_con_IRBPNR_lo_agrega_sin_tocar_IVA_ni_ICE()
     {
         var line = SalesReturnDetail.Create(
-            ReturnId, TenantId, OriginalInvoiceDetailId, "Producto con IRBPNR",
-            quantity: 12m, unitPrice: 0.5837m, discountPct: 0m,
-            vatCode: "2", vatRate: 15m, uomCode: "UNIT"
+            ReturnId,
+            TenantId,
+            OriginalInvoiceDetailId,
+            "Producto con IRBPNR",
+            quantity: 12m,
+            unitPrice: 0.5837m,
+            discountPct: 0m,
+            vatCode: "2",
+            vatRate: 15m,
+            uomCode: "UNIT"
         );
 
-        line.ReplaceTaxes(
-            [
-                SalesReturnDetailTax.Create(
-                    line.Id, TenantId, "5", "5001", "IRBPNR", 0.02m,
-                    SriTaxCalculationType.Specific, 0.24m
-                ),
-            ]
-        );
+        line.ReplaceTaxes([
+            SalesReturnDetailTax.Create(
+                line.Id,
+                TenantId,
+                "5",
+                "5001",
+                "IRBPNR",
+                0.02m,
+                SriTaxCalculationType.Specific,
+                0.24m
+            ),
+        ]);
 
         line.IrbpnrCode.Should().Be("5001");
         line.IrbpnrAmount.Should().Be(0.24m);
@@ -209,19 +237,31 @@ public sealed class SalesReturnDetailTests
     public void IVA_ICE_e_IRBPNR_combinados_se_reflejan_en_TaxInclusiveTotal()
     {
         var line = SalesReturnDetail.Create(
-            ReturnId, TenantId, OriginalInvoiceDetailId, "Producto completo",
-            quantity: 1m, unitPrice: 100m, discountPct: 0m,
-            vatCode: "2", vatRate: 15m, uomCode: "UNIT",
-            iceCode: "3010", iceRate: 10m
+            ReturnId,
+            TenantId,
+            OriginalInvoiceDetailId,
+            "Producto completo",
+            quantity: 1m,
+            unitPrice: 100m,
+            discountPct: 0m,
+            vatCode: "2",
+            vatRate: 15m,
+            uomCode: "UNIT",
+            iceCode: "3010",
+            iceRate: 10m
         );
-        line.ReplaceTaxes(
-            [
-                SalesReturnDetailTax.Create(
-                    line.Id, TenantId, "5", "5001", "IRBPNR", 0.02m,
-                    SriTaxCalculationType.Specific, 0.02m
-                ),
-            ]
-        );
+        line.ReplaceTaxes([
+            SalesReturnDetailTax.Create(
+                line.Id,
+                TenantId,
+                "5",
+                "5001",
+                "IRBPNR",
+                0.02m,
+                SriTaxCalculationType.Specific,
+                0.02m
+            ),
+        ]);
 
         line.TaxInclusiveTotal.Should()
             .Be(line.TaxableBase + line.IceAmount + line.VatAmount + line.IrbpnrAmount);

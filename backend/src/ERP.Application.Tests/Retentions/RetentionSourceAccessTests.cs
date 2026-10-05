@@ -37,7 +37,11 @@ public sealed class RetentionSourceAccessTests
         public Mock<IRetentionRidePdfService> PdfService { get; } = new();
         public RetentionDocument Retention { get; }
 
-        public Fixture(RetentionSourceDocumentType sourceType, string[] granted, Guid? companyId = null)
+        public Fixture(
+            RetentionSourceDocumentType sourceType,
+            string[] granted,
+            Guid? companyId = null
+        )
         {
             Retention = RetentionDocument.Create(
                 TenantId,
@@ -53,7 +57,12 @@ public sealed class RetentionSourceAccessTests
                 .Setup(r => r.GetByIdAsync(TenantId, Retention.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Retention);
             XmlService
-                .Setup(s => s.GenerateXmlAsync(It.IsAny<ElectronicDocumentSourceReference>(), It.IsAny<CancellationToken>()))
+                .Setup(s =>
+                    s.GenerateXmlAsync(
+                        It.IsAny<ElectronicDocumentSourceReference>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync(
                     Result<ElectronicDocumentXml>.Success(
                         new ElectronicDocumentXml(
@@ -69,14 +78,30 @@ public sealed class RetentionSourceAccessTests
                 );
             PdfService
                 .Setup(s =>
-                    s.GeneratePdfAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>())
+                    s.GeneratePdfAsync(
+                        It.IsAny<string>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid?>(),
+                        It.IsAny<Guid?>(),
+                        It.IsAny<CancellationToken>()
+                    )
                 )
                 .ReturnsAsync(Result<byte[]>.Success([1, 2, 3]));
 
             var authorizer = new Mock<IRuntimePermissionAuthorizer>();
             authorizer
-                .Setup(a => a.IsAuthorizedAsync(It.IsAny<string>(), UserId, It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((string key, Guid _, string _, CancellationToken _) => granted.Contains(key));
+                .Setup(a =>
+                    a.IsAuthorizedAsync(
+                        It.IsAny<string>(),
+                        UserId,
+                        It.IsAny<string>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(
+                    (string key, Guid _, string _, CancellationToken _) => granted.Contains(key)
+                );
             Access = new RetentionSourceAccess(
                 authorizer.Object,
                 Mock.Of<ICurrentUser>(u => u.UserId == UserId),
@@ -86,26 +111,47 @@ public sealed class RetentionSourceAccessTests
             );
         }
 
-        private ICurrentTenant Tenant { get; } = Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId);
-        private ICurrentCompany Company { get; } = Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId);
+        private ICurrentTenant Tenant { get; } =
+            Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId);
+        private ICurrentCompany Company { get; } =
+            Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId);
         private RetentionSourceAccess Access { get; }
 
         public Task<Result<ElectronicDocumentXml>> GetXmlAsync() =>
-            new GenerateRetentionXmlHandler(XmlService.Object, Tenant, Company, Access)
-                .Handle(new GenerateRetentionXmlQuery(Retention.Id), CancellationToken.None);
+            new GenerateRetentionXmlHandler(XmlService.Object, Tenant, Company, Access).Handle(
+                new GenerateRetentionXmlQuery(Retention.Id),
+                CancellationToken.None
+            );
 
         public Task<Result<byte[]>> GetRideAsync() =>
-            new GenerateRetentionRidePdfHandler(XmlService.Object, PdfService.Object, Tenant, Company, Access)
-                .Handle(new GenerateRetentionRidePdfQuery(Retention.Id), CancellationToken.None);
+            new GenerateRetentionRidePdfHandler(
+                XmlService.Object,
+                PdfService.Object,
+                Tenant,
+                Company,
+                Access
+            ).Handle(new GenerateRetentionRidePdfQuery(Retention.Id), CancellationToken.None);
 
         public void VerifyNothingGenerated()
         {
             XmlService.Verify(
-                s => s.GenerateXmlAsync(It.IsAny<ElectronicDocumentSourceReference>(), It.IsAny<CancellationToken>()),
+                s =>
+                    s.GenerateXmlAsync(
+                        It.IsAny<ElectronicDocumentSourceReference>(),
+                        It.IsAny<CancellationToken>()
+                    ),
                 Times.Never
             );
             PdfService.Verify(
-                s => s.GeneratePdfAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()),
+                s =>
+                    s.GeneratePdfAsync(
+                        It.IsAny<string>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid?>(),
+                        It.IsAny<Guid?>(),
+                        It.IsAny<CancellationToken>()
+                    ),
                 Times.Never
             );
         }
@@ -170,7 +216,11 @@ public sealed class RetentionSourceAccessTests
     [Fact]
     public async Task Retencion_de_otra_empresa_se_deniega_aun_con_permiso_del_origen()
     {
-        var fx = new Fixture(RetentionSourceDocumentType.PurchaseInvoice, PurchasesUser, companyId: Guid.NewGuid());
+        var fx = new Fixture(
+            RetentionSourceDocumentType.PurchaseInvoice,
+            PurchasesUser,
+            companyId: Guid.NewGuid()
+        );
 
         (await fx.GetXmlAsync()).Code.Should().Be(ApiResponseCodes.Common.NotFound);
         fx.VerifyNothingGenerated();

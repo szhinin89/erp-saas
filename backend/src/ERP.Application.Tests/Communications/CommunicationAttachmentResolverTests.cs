@@ -1,3 +1,4 @@
+using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.Communications.Services;
@@ -17,7 +18,6 @@ using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using System.Text;
 
 namespace ERP.Application.Tests.Communications;
 
@@ -37,31 +37,66 @@ public sealed class CommunicationAttachmentResolverTests
     {
         var storage = new InMemoryStorage { ["tenant/x/file.txt"] = [1, 2, 3] };
         var message = Message();
-        message.AddAttachment(CommunicationAttachmentType.Generic, "a.bin", "application/octet-stream", null, [9, 9], UserId);
-        message.AddAttachment(CommunicationAttachmentType.Generic, "b.txt", "text/plain", "tenant/x/file.txt", null, UserId);
+        message.AddAttachment(
+            CommunicationAttachmentType.Generic,
+            "a.bin",
+            "application/octet-stream",
+            null,
+            [9, 9],
+            UserId
+        );
+        message.AddAttachment(
+            CommunicationAttachmentType.Generic,
+            "b.txt",
+            "text/plain",
+            "tenant/x/file.txt",
+            null,
+            UserId
+        );
 
         var resolved = await Resolver(storage).ResolveAsync(message);
 
-        resolved.Select(a => (a.FileName, a.Content)).Should().BeEquivalentTo(new[] { ("a.bin", new byte[] { 9, 9 }), ("b.txt", new byte[] { 1, 2, 3 }) });
+        resolved
+            .Select(a => (a.FileName, a.Content))
+            .Should()
+            .BeEquivalentTo(
+                new[] { ("a.bin", new byte[] { 9, 9 }), ("b.txt", new byte[] { 1, 2, 3 }) }
+            );
     }
 
     [Fact]
     public async Task Ruta_inexistente_en_el_almacenamiento_es_fallo_reintentable()
     {
         var message = Message();
-        message.AddAttachment(CommunicationAttachmentType.Generic, "b.txt", "text/plain", "no/existe.txt", null, UserId);
+        message.AddAttachment(
+            CommunicationAttachmentType.Generic,
+            "b.txt",
+            "text/plain",
+            "no/existe.txt",
+            null,
+            UserId
+        );
 
         var act = () => Resolver(new InMemoryStorage()).ResolveAsync(message);
 
-        (await act.Should().ThrowAsync<CommunicationAttachmentException>()).Which.Code
-            .Should().Be(ApiResponseCodes.Communications.AttachmentUnavailable);
+        (await act.Should().ThrowAsync<CommunicationAttachmentException>())
+            .Which.Code.Should()
+            .Be(ApiResponseCodes.Communications.AttachmentUnavailable);
     }
 
     [Fact]
     public async Task Referencia_sin_proveedor_del_tipo_falla_cerrado()
     {
         var message = Message();
-        message.AddAttachment(CommunicationAttachmentType.ReportPdf, "r.pdf", "application/pdf", null, null, UserId, Guid.NewGuid());
+        message.AddAttachment(
+            CommunicationAttachmentType.ReportPdf,
+            "r.pdf",
+            "application/pdf",
+            null,
+            null,
+            UserId,
+            Guid.NewGuid()
+        );
 
         var act = () => Resolver(new InMemoryStorage()).ResolveAsync(message);
 
@@ -72,12 +107,24 @@ public sealed class CommunicationAttachmentResolverTests
     public async Task XML_autorizado_lo_entrega_ElectronicDocuments_byte_a_byte()
     {
         var document = AuthorizedDocument("edocs/aut.xml");
-        var xml = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes("<factura>ñ</factura>")).ToArray();
+        var xml = Encoding
+            .UTF8.GetPreamble()
+            .Concat(Encoding.UTF8.GetBytes("<factura>ñ</factura>"))
+            .ToArray();
         var storage = new InMemoryStorage { ["edocs/aut.xml"] = xml };
         var message = Message();
-        message.AddAttachment(CommunicationAttachmentType.AuthorizedXml, "f-autorizado.xml", "application/xml", null, null, UserId, document.Id);
+        message.AddAttachment(
+            CommunicationAttachmentType.AuthorizedXml,
+            "f-autorizado.xml",
+            "application/xml",
+            null,
+            null,
+            UserId,
+            document.Id
+        );
 
-        var resolved = await Resolver(storage, XmlProvider(document, storage)).ResolveAsync(message);
+        var resolved = await Resolver(storage, XmlProvider(document, storage))
+            .ResolveAsync(message);
 
         resolved.Single().Content.Should().Equal(xml, "sin re-codificar: es el comprobante legal");
     }
@@ -88,7 +135,15 @@ public sealed class CommunicationAttachmentResolverTests
         var document = AuthorizedDocument("edocs/aut.xml");
         var storage = new InMemoryStorage();
         var message = Message(otherCompany: true);
-        message.AddAttachment(CommunicationAttachmentType.AuthorizedXml, "f.xml", "application/xml", null, null, UserId, document.Id);
+        message.AddAttachment(
+            CommunicationAttachmentType.AuthorizedXml,
+            "f.xml",
+            "application/xml",
+            null,
+            null,
+            UserId,
+            document.Id
+        );
 
         var act = () => Resolver(storage, XmlProvider(document, storage)).ResolveAsync(message);
 
@@ -100,13 +155,33 @@ public sealed class CommunicationAttachmentResolverTests
     {
         var storage = new InMemoryStorage { ["ride/f.pdf"] = [37, 80, 68, 70] };
         var message = Message();
-        message.AddAttachment(CommunicationAttachmentType.RidePdf, "f-RIDE.pdf", "application/pdf", null, null, UserId, Guid.NewGuid());
-        var (provider, sender) = RideProvider(storage, new RideGenerationResultDto(RideOutcome.Generated, "ride/f.pdf", null, null));
+        message.AddAttachment(
+            CommunicationAttachmentType.RidePdf,
+            "f-RIDE.pdf",
+            "application/pdf",
+            null,
+            null,
+            UserId,
+            Guid.NewGuid()
+        );
+        var (provider, sender) = RideProvider(
+            storage,
+            new RideGenerationResultDto(RideOutcome.Generated, "ride/f.pdf", null, null)
+        );
 
         var resolved = await Resolver(storage, provider).ResolveAsync(message);
 
         resolved.Single().Content.Should().Equal(37, 80, 68, 70);
-        sender.Verify(s => s.Send(It.Is<GetOrGenerateRideQuery>(q => q.SourceModule == "Sales" && q.SourceEntityId == message.SourceId), It.IsAny<CancellationToken>()), Times.Once);
+        sender.Verify(
+            s =>
+                s.Send(
+                    It.Is<GetOrGenerateRideQuery>(q =>
+                        q.SourceModule == "Sales" && q.SourceEntityId == message.SourceId
+                    ),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -114,8 +189,19 @@ public sealed class CommunicationAttachmentResolverTests
     {
         var storage = new InMemoryStorage();
         var message = Message();
-        message.AddAttachment(CommunicationAttachmentType.RidePdf, "f-RIDE.pdf", "application/pdf", null, null, UserId, Guid.NewGuid());
-        var (provider, _) = RideProvider(storage, new RideGenerationResultDto(RideOutcome.Failed, null, null, "render_pipeline_error"));
+        message.AddAttachment(
+            CommunicationAttachmentType.RidePdf,
+            "f-RIDE.pdf",
+            "application/pdf",
+            null,
+            null,
+            UserId,
+            Guid.NewGuid()
+        );
+        var (provider, _) = RideProvider(
+            storage,
+            new RideGenerationResultDto(RideOutcome.Failed, null, null, "render_pipeline_error")
+        );
 
         var resolved = await Resolver(storage, provider).ResolveAsync(message);
 
@@ -127,8 +213,19 @@ public sealed class CommunicationAttachmentResolverTests
     {
         var storage = new InMemoryStorage();
         var message = Message();
-        message.AddAttachment(CommunicationAttachmentType.RidePdf, "f-RIDE.pdf", "application/pdf", null, null, UserId, Guid.NewGuid());
-        var (provider, _) = RideProvider(storage, new RideGenerationResultDto(RideOutcome.PendingSource, null, null, "source_xml_pending"));
+        message.AddAttachment(
+            CommunicationAttachmentType.RidePdf,
+            "f-RIDE.pdf",
+            "application/pdf",
+            null,
+            null,
+            UserId,
+            Guid.NewGuid()
+        );
+        var (provider, _) = RideProvider(
+            storage,
+            new RideGenerationResultDto(RideOutcome.PendingSource, null, null, "source_xml_pending")
+        );
 
         var act = () => Resolver(storage, provider).ResolveAsync(message);
 
@@ -137,8 +234,10 @@ public sealed class CommunicationAttachmentResolverTests
 
     // ── helpers ───────────────────────────────────────────────────────────────────────────
 
-    private static CommunicationAttachmentResolver Resolver(IFileStorage storage, params ICommunicationAttachmentContentProvider[] providers) =>
-        new(storage, providers, NullLogger<CommunicationAttachmentResolver>.Instance);
+    private static CommunicationAttachmentResolver Resolver(
+        IFileStorage storage,
+        params ICommunicationAttachmentContentProvider[] providers
+    ) => new(storage, providers, NullLogger<CommunicationAttachmentResolver>.Instance);
 
     private static CommunicationOutbox Message(bool otherCompany = false)
     {
@@ -150,46 +249,89 @@ public sealed class CommunicationAttachmentResolverTests
             CommunicationRecipientRole.Customer
         );
         return CommunicationOutbox.CreateEmail(
-            identity, "Cliente", "c@test.com",
-            new CommunicationTemplateUsage(CommunicationPurposes.SalesInvoiceAuthorized, 1, CommunicationTemplateSource.Default),
-            "Factura", "<p>x</p>", null, CommunicationPriority.Normal, null, 3, UserId);
+            identity,
+            "Cliente",
+            "c@test.com",
+            new CommunicationTemplateUsage(
+                CommunicationPurposes.SalesInvoiceAuthorized,
+                1,
+                CommunicationTemplateSource.Default
+            ),
+            "Factura",
+            "<p>x</p>",
+            null,
+            CommunicationPriority.Normal,
+            null,
+            3,
+            UserId
+        );
     }
 
     private static ElectronicDocument AuthorizedDocument(string xmlPath)
     {
-        var document = ElectronicDocument.Create(TenantId, CompanyId, ElectronicDocumentType.Invoice, "Sales", Guid.NewGuid(), UserId);
+        var document = ElectronicDocument.Create(
+            TenantId,
+            CompanyId,
+            ElectronicDocumentType.Invoice,
+            "Sales",
+            Guid.NewGuid(),
+            UserId
+        );
         document.SetEnvironment("1");
         document.MarkXmlGenerated("edocs/draft.xml", "1.1.0", "1.1.0", UserId);
         document.MarkSigned("edocs/signed.xml", AccessKey.Create(AccessKeyValue), UserId);
         document.MarkSent(UserId);
         document.MarkReceived(UserId);
-        document.MarkAuthorized(AuthorizationNumber.Create(AccessKeyValue), DateTime.UtcNow, xmlPath, UserId);
+        document.MarkAuthorized(
+            AuthorizationNumber.Create(AccessKeyValue),
+            DateTime.UtcNow,
+            xmlPath,
+            UserId
+        );
         return document;
     }
 
-    private static ElectronicDocumentAuthorizedXmlAttachmentProvider XmlProvider(ElectronicDocument document, IFileStorage storage)
+    private static ElectronicDocumentAuthorizedXmlAttachmentProvider XmlProvider(
+        ElectronicDocument document,
+        IFileStorage storage
+    )
     {
         var repository = new Mock<IElectronicDocumentRepository>();
-        repository.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>())).ReturnsAsync(document);
+        repository
+            .Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
         return new ElectronicDocumentAuthorizedXmlAttachmentProvider(repository.Object, storage);
     }
 
-    private static (RidePdfCommunicationAttachmentProvider, Mock<ISender>) RideProvider(IFileStorage storage, RideGenerationResultDto ride)
+    private static (RidePdfCommunicationAttachmentProvider, Mock<ISender>) RideProvider(
+        IFileStorage storage,
+        RideGenerationResultDto ride
+    )
     {
         var sender = new Mock<ISender>();
-        sender.Setup(s => s.Send(It.IsAny<GetOrGenerateRideQuery>(), It.IsAny<CancellationToken>()))
+        sender
+            .Setup(s => s.Send(It.IsAny<GetOrGenerateRideQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<RideGenerationResultDto>.Success(ride));
         return (new RidePdfCommunicationAttachmentProvider(sender.Object, storage), sender);
     }
 
     private sealed class InMemoryStorage : Dictionary<string, byte[]>, IFileStorage
     {
-        public Task<string> SaveAsync(string relativePath, Stream content, CancellationToken cancellationToken = default) =>
-            throw new NotSupportedException();
+        public Task<string> SaveAsync(
+            string relativePath,
+            Stream content,
+            CancellationToken cancellationToken = default
+        ) => throw new NotSupportedException();
 
-        public Task<Stream?> GetAsync(string storedPath, CancellationToken cancellationToken = default) =>
-            Task.FromResult<Stream?>(TryGetValue(storedPath, out var bytes) ? new MemoryStream(bytes) : null);
+        public Task<Stream?> GetAsync(
+            string storedPath,
+            CancellationToken cancellationToken = default
+        ) =>
+            Task.FromResult<Stream?>(
+                TryGetValue(storedPath, out var bytes) ? new MemoryStream(bytes) : null
+            );
 
-        public Task DeleteAsync(string storedPath, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task DeleteAsync(string storedPath, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 }

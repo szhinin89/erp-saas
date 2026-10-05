@@ -221,7 +221,10 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
         );
 
         var services = new ServiceCollection();
-        services.AddScoped<ERP.Application.Common.Services.ICompanyClock, ERP.Infrastructure.Persistence.Services.CompanyClock>();
+        services.AddScoped<
+            ERP.Application.Common.Services.ICompanyClock,
+            ERP.Infrastructure.Persistence.Services.CompanyClock
+        >();
         services.AddLogging();
         services.AddSingleton<ERP.Application.Modules.Companies.ICompanyPrecisionPolicyProvider>(
             ERP.Infrastructure.Tests.TestData.StandardPrecisionPolicyProvider.Instance
@@ -488,22 +491,20 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
 
         // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3) — mismo orden que Compras: ReplaceTaxes
         // antes de ApplyTaxes.
-        line.ReplaceTaxes(
-            [
-                ERP.Domain.Modules.Sales.Entities.SalesInvoiceDetailTax.Create(
-                    line.Id,
-                    _tenantId,
-                    "5",
-                    "5001",
-                    "IRBPNR",
-                    0.10m,
-                    ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific,
-                    line.TaxableBase,
-                    0.30m,
-                    ERP.Domain.Modules.Sales.Enums.SalesTaxSource.Calculated
-                ),
-            ]
-        );
+        line.ReplaceTaxes([
+            ERP.Domain.Modules.Sales.Entities.SalesInvoiceDetailTax.Create(
+                line.Id,
+                _tenantId,
+                "5",
+                "5001",
+                "IRBPNR",
+                0.10m,
+                ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific,
+                line.TaxableBase,
+                0.30m,
+                ERP.Domain.Modules.Sales.Enums.SalesTaxSource.Calculated
+            ),
+        ]);
         // IVA 15% + ICE 10% (Percentage) — Fase 3 completada: IceCode/IceRate/IceAmount ahora
         // computados desde _taxes en Ventas también, nunca un escalar paralelo.
         line.ApplyTaxes("10", 15m, "IVA", "3072", 10m, "ICE bebidas");
@@ -559,7 +560,8 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
         entry.Lines.Should().HaveCount(5, "GrandTotal + Subtotal + TaxVat + TaxIce + TaxIrbpnr");
         var totalDebit = entry.Lines.Sum(l => l.Debit);
         var totalCredit = entry.Lines.Sum(l => l.Credit);
-        totalDebit.Should()
+        totalDebit
+            .Should()
             .Be(
                 totalCredit,
                 "el asiento debe balancear con IVA+ICE+IRBPNR incluidos tras completar Fase 3"
@@ -720,9 +722,7 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
         var act = async () => await db.SaveChangesAsync();
 
         await act.Should()
-            .ThrowAsync<
-                ERP.Application.Modules.Sales.Exceptions.SalesInvoicePostingFailedException
-            >(
+            .ThrowAsync<ERP.Application.Modules.Sales.Exceptions.SalesInvoicePostingFailedException>(
                 because: "el asiento Sales/InvoiceIssued es obligatorio — un fallo del Posting "
                     + "Engine debe revertir la autorización completa, nunca dejarla a medias"
             );
@@ -785,10 +785,16 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
                 1,
                 because: "el Posting Engine ya garantiza idempotencia por SourceEventId (Fase 3.1)"
             );
-        (await verifyDb.Set<ERP.Domain.Modules.Caja.Entities.CashMovement>().CountAsync(m => m.ReferenceId == inv.Id))
+        (
+            await verifyDb
+                .Set<ERP.Domain.Modules.Caja.Entities.CashMovement>()
+                .CountAsync(m => m.ReferenceId == inv.Id)
+        )
             .Should()
             .Be(1, because: "Caja es idempotente por origen: una factura, a lo sumo un SaleIncome");
-        (await SessionBalanceAsync(verifyDb)).Should().Be(100m, because: "ningún efectivo duplicado");
+        (await SessionBalanceAsync(verifyDb))
+            .Should()
+            .Be(100m, because: "ningún efectivo duplicado");
     }
 
     [Fact]
@@ -870,9 +876,16 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
                 1,
                 because: "un único JournalEntry, sin importar cuántas veces se redistribuya el mismo evento concurrentemente"
             );
-        (await verifyDb.Set<ERP.Domain.Modules.Caja.Entities.CashMovement>().CountAsync(m => m.ReferenceId == inv.Id))
+        (
+            await verifyDb
+                .Set<ERP.Domain.Modules.Caja.Entities.CashMovement>()
+                .CountAsync(m => m.ReferenceId == inv.Id)
+        )
             .Should()
-            .Be(1, because: "solo la autorización real registra efectivo; la redistribución no toca la caja");
+            .Be(
+                1,
+                because: "solo la autorización real registra efectivo; la redistribución no toca la caja"
+            );
     }
 
     // ── COMPRAS-METODO-ZH-01A2: Kardex sequence retry keeps domain events exactly once ─────────
@@ -884,15 +897,42 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
         Guid warehouseId;
         await using (var seed = CreateContext())
         {
-            var wh = ERP.Domain.Modules.Inventory.Entities.Warehouse.Create(_tenantId, _branchId, "Bodega R", "BR",
-                null, null, null, null, null, null, null, null, null, _createdBy, _companyId);
+            var wh = ERP.Domain.Modules.Inventory.Entities.Warehouse.Create(
+                _tenantId,
+                _branchId,
+                "Bodega R",
+                "BR",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                _createdBy,
+                _companyId
+            );
             seed.Set<ERP.Domain.Modules.Inventory.Entities.Warehouse>().Add(wh);
             await seed.SaveChangesAsync();
             warehouseId = wh.Id;
             var seedRepo = RetryStockRepository(seed);
-            await seedRepo.AppendMovementAsync(_tenantId, _companyId, productId, warehouseId,
-                ERP.Domain.Modules.Inventory.Enums.StockMovementType.PositiveAdjust, 100m, "UNIT", issueDate,
-                "Stock inicial", null, null, _createdBy, unitCost: 1m);
+            await seedRepo.AppendMovementAsync(
+                _tenantId,
+                _companyId,
+                productId,
+                warehouseId,
+                ERP.Domain.Modules.Inventory.Enums.StockMovementType.PositiveAdjust,
+                100m,
+                "UNIT",
+                issueDate,
+                "Stock inicial",
+                null,
+                null,
+                _createdBy,
+                unitCost: 1m
+            );
             await seedRepo.SaveChangesWithSequenceRetryAsync();
         }
 
@@ -902,52 +942,123 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
         db.SalesInvoices.Add(inv);
         await db.SaveChangesAsync();
         var stock = RetryStockRepository(db);
-        await stock.AppendMovementAsync(_tenantId, _companyId, productId, warehouseId,
-            ERP.Domain.Modules.Inventory.Enums.StockMovementType.SaleExit, -1m, "UNIT", issueDate,
-            inv.InvoiceNumber, inv.Id, "SalesInvoice", _createdBy);
+        await stock.AppendMovementAsync(
+            _tenantId,
+            _companyId,
+            productId,
+            warehouseId,
+            ERP.Domain.Modules.Inventory.Enums.StockMovementType.SaleExit,
+            -1m,
+            "UNIT",
+            issueDate,
+            inv.InvoiceNumber,
+            inv.Id,
+            "SalesInvoice",
+            _createdBy
+        );
         inv.Authorize(_createdBy);
 
         // Another sale of the same product/warehouse commits first: our first save collides.
         await using (var other = CreateContext())
         {
             var otherRepo = RetryStockRepository(other);
-            await otherRepo.AppendMovementAsync(_tenantId, _companyId, productId, warehouseId,
-                ERP.Domain.Modules.Inventory.Enums.StockMovementType.SaleExit, -1m, "UNIT", issueDate,
-                "otra venta", null, null, _createdBy);
+            await otherRepo.AppendMovementAsync(
+                _tenantId,
+                _companyId,
+                productId,
+                warehouseId,
+                ERP.Domain.Modules.Inventory.Enums.StockMovementType.SaleExit,
+                -1m,
+                "UNIT",
+                issueDate,
+                "otra venta",
+                null,
+                null,
+                _createdBy
+            );
             await otherRepo.SaveChangesWithSequenceRetryAsync();
         }
 
         await stock.SaveChangesWithSequenceRetryAsync();
 
         await using var verify = CreateContext();
-        (await verify.SalesInvoices.AsNoTracking().SingleAsync(x => x.Id == inv.Id)).Status.ToString()
-            .Should().Be("Authorized");
-        var entryTypes = await verify.JournalEntries.Where(x => x.SourceEventId == inv.Id)
-            .Select(x => x.SourceEventType).ToListAsync();
+        (await verify.SalesInvoices.AsNoTracking().SingleAsync(x => x.Id == inv.Id))
+            .Status.ToString()
+            .Should()
+            .Be("Authorized");
+        var entryTypes = await verify
+            .JournalEntries.Where(x => x.SourceEventId == inv.Id)
+            .Select(x => x.SourceEventType)
+            .ToListAsync();
         entryTypes.Should().Contain("InvoiceIssued").And.OnlyHaveUniqueItems();
-        (await verify.Set<ERP.Domain.Modules.Caja.Entities.CashMovement>().CountAsync(m => m.ReferenceId == inv.Id)).Should().Be(1);
-        var movements = await verify.Set<ERP.Domain.Modules.Inventory.Entities.StockMovement>()
-            .Where(m => m.ProductId == productId).OrderBy(m => m.SequenceNumber).ToListAsync();
+        (
+            await verify
+                .Set<ERP.Domain.Modules.Caja.Entities.CashMovement>()
+                .CountAsync(m => m.ReferenceId == inv.Id)
+        )
+            .Should()
+            .Be(1);
+        var movements = await verify
+            .Set<ERP.Domain.Modules.Inventory.Entities.StockMovement>()
+            .Where(m => m.ProductId == productId)
+            .OrderBy(m => m.SequenceNumber)
+            .ToListAsync();
         movements.Select(m => m.SequenceNumber).Should().Equal(1L, 2L, 3L);
-        movements.Should().ContainSingle(m => m.SourceDocId == inv.Id).Which.SequenceNumber.Should().Be(3L);
-        (await verify.OutboxMessages.CountAsync(m => m.EventName.Contains("SalesInvoiceAuthorized")
-            && m.Payload.Contains(inv.Id.ToString()))).Should().Be(1);
+        movements
+            .Should()
+            .ContainSingle(m => m.SourceDocId == inv.Id)
+            .Which.SequenceNumber.Should()
+            .Be(3L);
+        (
+            await verify.OutboxMessages.CountAsync(m =>
+                m.EventName.Contains("SalesInvoiceAuthorized")
+                && m.Payload.Contains(inv.Id.ToString())
+            )
+        )
+            .Should()
+            .Be(1);
     }
 
-    private ERP.Infrastructure.Persistence.Repositories.Inventory.StockRepository RetryStockRepository(ErpDbContext db) =>
-        new(db, new FixedCurrentCompany(_companyId), new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator(),
-            ERP.Infrastructure.Tests.TestData.StandardPrecisionPolicyProvider.Instance);
+    private ERP.Infrastructure.Persistence.Repositories.Inventory.StockRepository RetryStockRepository(
+        ErpDbContext db
+    ) =>
+        new(
+            db,
+            new FixedCurrentCompany(_companyId),
+            new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator(),
+            ERP.Infrastructure.Tests.TestData.StandardPrecisionPolicyProvider.Instance
+        );
 
     // ── ZH-SALES-CASH-CONCURRENCY-HARDENING-01 ───────────────────────────────────
 
     private async Task<decimal> SessionBalanceAsync(ErpDbContext db) =>
-        (await db.CashSessions.AsNoTracking().Include(x => x.Movements).SingleAsync(x => x.Id == _cashSessionId)).CurrentBalance;
+        (
+            await db
+                .CashSessions.AsNoTracking()
+                .Include(x => x.Movements)
+                .SingleAsync(x => x.Id == _cashSessionId)
+        ).CurrentBalance;
 
     private async Task<Guid> SeedWarehouseAsync()
     {
         await using var seed = CreateContext();
-        var wh = ERP.Domain.Modules.Inventory.Entities.Warehouse.Create(_tenantId, _branchId, "Bodega", $"B{Random.Shared.Next(100, 999)}",
-            null, null, null, null, null, null, null, null, null, _createdBy, _companyId);
+        var wh = ERP.Domain.Modules.Inventory.Entities.Warehouse.Create(
+            _tenantId,
+            _branchId,
+            "Bodega",
+            $"B{Random.Shared.Next(100, 999)}",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            _createdBy,
+            _companyId
+        );
         seed.Set<ERP.Domain.Modules.Inventory.Entities.Warehouse>().Add(wh);
         await seed.SaveChangesAsync();
         return wh.Id;
@@ -978,24 +1089,58 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
             // …y otro escritor (contexto con el interceptor oficial, ADR-020) la modifica en medio.
             var (other, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
             var s2 = await other.CashSessions.SingleAsync(x => x.Id == _cashSessionId);
-            s2.RecordMovement(ERP.Domain.Modules.Caja.Enums.CashMovementType.SaleIncome, 5m, "otra venta", _createdBy);
+            s2.RecordMovement(
+                ERP.Domain.Modules.Caja.Enums.CashMovementType.SaleIncome,
+                5m,
+                "otra venta",
+                _createdBy
+            );
             await other.SaveChangesAsync();
         }
 
         var stock = RetryStockRepository(db);
-        await stock.AppendMovementAsync(_tenantId, _companyId, productId, warehouseId,
-            ERP.Domain.Modules.Inventory.Enums.StockMovementType.PositiveAdjust, 10m, "UNIT", issueDate,
-            inv.InvoiceNumber, inv.Id, "SalesInvoice", _createdBy, unitCost: 1m);
+        await stock.AppendMovementAsync(
+            _tenantId,
+            _companyId,
+            productId,
+            warehouseId,
+            ERP.Domain.Modules.Inventory.Enums.StockMovementType.PositiveAdjust,
+            10m,
+            "UNIT",
+            issueDate,
+            inv.InvoiceNumber,
+            inv.Id,
+            "SalesInvoice",
+            _createdBy,
+            unitCost: 1m
+        );
         inv.Authorize(_createdBy);
 
         await stock.SaveChangesWithSequenceRetryAsync();
 
         await using var verify = CreateContext();
-        (await verify.SalesInvoices.AsNoTracking().SingleAsync(x => x.Id == inv.Id)).Status.ToString().Should().Be("Authorized");
+        (await verify.SalesInvoices.AsNoTracking().SingleAsync(x => x.Id == inv.Id))
+            .Status.ToString()
+            .Should()
+            .Be("Authorized");
         (await verify.JournalEntries.CountAsync(x => x.SourceEventId == inv.Id)).Should().Be(1);
-        (await verify.Set<ERP.Domain.Modules.Caja.Entities.CashMovement>().CountAsync(m => m.ReferenceId == inv.Id)).Should().Be(1);
-        (await verify.Set<ERP.Domain.Modules.Inventory.Entities.StockMovement>().CountAsync(m => m.SourceDocId == inv.Id)).Should().Be(1);
-        (await SessionBalanceAsync(verify)).Should().Be(105m, because: "5 del otro flujo + 100 de esta venta");
+        (
+            await verify
+                .Set<ERP.Domain.Modules.Caja.Entities.CashMovement>()
+                .CountAsync(m => m.ReferenceId == inv.Id)
+        )
+            .Should()
+            .Be(1);
+        (
+            await verify
+                .Set<ERP.Domain.Modules.Inventory.Entities.StockMovement>()
+                .CountAsync(m => m.SourceDocId == inv.Id)
+        )
+            .Should()
+            .Be(1);
+        (await SessionBalanceAsync(verify))
+            .Should()
+            .Be(105m, because: "5 del otro flujo + 100 de esta venta");
     }
 
     /// <summary>
@@ -1015,26 +1160,60 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
         await db.SaveChangesAsync();
 
         var stock = RetryStockRepository(db);
-        await stock.AppendMovementAsync(_tenantId, _companyId, Guid.NewGuid(), warehouseId,
-            ERP.Domain.Modules.Inventory.Enums.StockMovementType.PositiveAdjust, 10m, "UNIT", issueDate,
-            inv.InvoiceNumber, inv.Id, "SalesInvoice", _createdBy, unitCost: 1m);
+        await stock.AppendMovementAsync(
+            _tenantId,
+            _companyId,
+            Guid.NewGuid(),
+            warehouseId,
+            ERP.Domain.Modules.Inventory.Enums.StockMovementType.PositiveAdjust,
+            10m,
+            "UNIT",
+            issueDate,
+            inv.InvoiceNumber,
+            inv.Id,
+            "SalesInvoice",
+            _createdBy,
+            unitCost: 1m
+        );
         inv.Authorize(_createdBy);
 
         var act = async () => await stock.SaveChangesWithSequenceRetryAsync();
-        await act.Should().ThrowAsync<ERP.Application.Modules.Sales.Exceptions.SalesInvoicePostingFailedException>();
+        await act.Should()
+            .ThrowAsync<ERP.Application.Modules.Sales.Exceptions.SalesInvoicePostingFailedException>();
 
         await using var verify = CreateContext();
-        (await verify.SalesInvoices.AsNoTracking().SingleAsync(x => x.Id == inv.Id)).Status.ToString().Should().Be("Draft");
-        (await verify.Set<ERP.Domain.Modules.Inventory.Entities.StockMovement>().CountAsync(m => m.SourceDocId == inv.Id)).Should().Be(0);
+        (await verify.SalesInvoices.AsNoTracking().SingleAsync(x => x.Id == inv.Id))
+            .Status.ToString()
+            .Should()
+            .Be("Draft");
+        (
+            await verify
+                .Set<ERP.Domain.Modules.Inventory.Entities.StockMovement>()
+                .CountAsync(m => m.SourceDocId == inv.Id)
+        )
+            .Should()
+            .Be(0);
         (await verify.JournalEntries.CountAsync(x => x.SourceEventId == inv.Id)).Should().Be(0);
-        (await verify.Set<ERP.Domain.Modules.Caja.Entities.CashMovement>().CountAsync(m => m.ReferenceId == inv.Id)).Should().Be(0);
-        (await verify.OutboxMessages.CountAsync(m => m.Payload.Contains(inv.Id.ToString()))).Should().Be(0);
+        (
+            await verify
+                .Set<ERP.Domain.Modules.Caja.Entities.CashMovement>()
+                .CountAsync(m => m.ReferenceId == inv.Id)
+        )
+            .Should()
+            .Be(0);
+        (await verify.OutboxMessages.CountAsync(m => m.Payload.Contains(inv.Id.ToString())))
+            .Should()
+            .Be(0);
         (await SessionBalanceAsync(verify)).Should().Be(0m);
     }
 
     private async Task<SalesInvoice> LoadInvoiceAsync(ErpDbContext db, Guid id) =>
-        (await new ERP.Infrastructure.Persistence.Repositories.Sales.SalesInvoiceRepository(db, new FixedCurrentCompany(_companyId))
-            .GetByIdAsync(_tenantId, id))!;
+        (
+            await new ERP.Infrastructure.Persistence.Repositories.Sales.SalesInvoiceRepository(
+                db,
+                new FixedCurrentCompany(_companyId)
+            ).GetByIdAsync(_tenantId, id)
+        )!;
 
     /// <summary>
     /// A — dos ventas DISTINTAS autorizadas a la vez sobre la misma CashSession (cada una en su
@@ -1064,7 +1243,9 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
                 await draftDb.SaveChangesAsync();
             }
 
-            var go = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var go = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously
+            );
             Task AuthorizeAsync(Guid id) =>
                 Task.Run(async () =>
                 {
@@ -1079,8 +1260,12 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
 
             var tasks = ids.Select(AuthorizeAsync).ToArray();
             go.SetResult(true);
-            await FluentActions.Awaiting(() => Task.WhenAll(tasks)).Should().NotThrowAsync(
-                because: $"ronda {round}: la sesión se bloquea y recarga, no hay conflicto por xmin");
+            await FluentActions
+                .Awaiting(() => Task.WhenAll(tasks))
+                .Should()
+                .NotThrowAsync(
+                    because: $"ronda {round}: la sesión se bloquea y recarga, no hay conflicto por xmin"
+                );
             invoiceIds.AddRange(ids);
         }
 
@@ -1088,7 +1273,13 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
         foreach (var id in invoiceIds)
         {
             (await verify.JournalEntries.CountAsync(x => x.SourceEventId == id)).Should().Be(1);
-            (await verify.Set<ERP.Domain.Modules.Caja.Entities.CashMovement>().CountAsync(m => m.ReferenceId == id)).Should().Be(1);
+            (
+                await verify
+                    .Set<ERP.Domain.Modules.Caja.Entities.CashMovement>()
+                    .CountAsync(m => m.ReferenceId == id)
+            )
+                .Should()
+                .Be(1);
         }
         (await SessionBalanceAsync(verify)).Should().Be(100m * 2 * rounds);
     }
@@ -1106,9 +1297,21 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
         inv.Authorize(_createdBy);
         await seedDb.SaveChangesAsync();
 
-        var evt = new SalesInvoiceAuthorizedEvent(inv.Id, inv.InvoiceNumber, inv.AuthorizedGrandTotal!.Value,
-            _createdBy, _cashSessionId, _tenantId, _companyId, issueDate, inv.Subtotal, inv.TotalVat, inv.TotalIce,
-            inv.TotalDiscount, physicalCashApplied: 100m);
+        var evt = new SalesInvoiceAuthorizedEvent(
+            inv.Id,
+            inv.InvoiceNumber,
+            inv.AuthorizedGrandTotal!.Value,
+            _createdBy,
+            _cashSessionId,
+            _tenantId,
+            _companyId,
+            issueDate,
+            inv.Subtotal,
+            inv.TotalVat,
+            inv.TotalIce,
+            inv.TotalDiscount,
+            physicalCashApplied: 100m
+        );
 
         var go = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         Task RedeliverAsync() =>
@@ -1128,7 +1331,13 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
 
         await using var verify = CreateContext();
         (await verify.JournalEntries.CountAsync(x => x.SourceEventId == inv.Id)).Should().Be(1);
-        (await verify.Set<ERP.Domain.Modules.Caja.Entities.CashMovement>().CountAsync(m => m.ReferenceId == inv.Id)).Should().Be(1);
+        (
+            await verify
+                .Set<ERP.Domain.Modules.Caja.Entities.CashMovement>()
+                .CountAsync(m => m.ReferenceId == inv.Id)
+        )
+            .Should()
+            .Be(1);
         (await SessionBalanceAsync(verify)).Should().Be(100m);
     }
 
@@ -1166,14 +1375,28 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
         go.SetResult(true);
         var outcomes = await Task.WhenAll(a, b);
 
-        outcomes.Count(e => e is null).Should().Be(1, because: "una sola transición Draft → Authorized");
+        outcomes
+            .Count(e => e is null)
+            .Should()
+            .Be(1, because: "una sola transición Draft → Authorized");
         outcomes.Single(e => e is not null).Should().BeOfType<DbUpdateConcurrencyException>();
 
         await using var verify = CreateContext();
-        (await verify.SalesInvoices.AsNoTracking().SingleAsync(x => x.Id == draft.Id)).Status.ToString().Should().Be("Authorized");
+        (await verify.SalesInvoices.AsNoTracking().SingleAsync(x => x.Id == draft.Id))
+            .Status.ToString()
+            .Should()
+            .Be("Authorized");
         (await verify.JournalEntries.CountAsync(x => x.SourceEventId == draft.Id)).Should().Be(1);
-        (await verify.Set<ERP.Domain.Modules.Caja.Entities.CashMovement>().CountAsync(m => m.ReferenceId == draft.Id)).Should().Be(1);
-        (await verify.OutboxMessages.CountAsync(m => m.Payload.Contains(draft.Id.ToString()))).Should().Be(1);
+        (
+            await verify
+                .Set<ERP.Domain.Modules.Caja.Entities.CashMovement>()
+                .CountAsync(m => m.ReferenceId == draft.Id)
+        )
+            .Should()
+            .Be(1);
+        (await verify.OutboxMessages.CountAsync(m => m.Payload.Contains(draft.Id.ToString())))
+            .Should()
+            .Be(1);
         (await SessionBalanceAsync(verify)).Should().Be(100m);
     }
 

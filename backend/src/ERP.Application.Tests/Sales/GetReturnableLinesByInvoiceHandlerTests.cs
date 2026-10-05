@@ -322,7 +322,12 @@ public sealed class GetReturnableLinesByInvoiceHandlerTests
         var tenant = Mock.Of<ERP.Application.Common.ICurrentTenant>(t => t.TenantId == TenantId);
         var branch = Mock.Of<ERP.Application.Common.ICurrentBranch>(b => b.BranchId == BranchId);
 
-        return new GetReturnableLinesByInvoiceHandler(invoiceRepo.Object, returnRepo, tenant, branch);
+        return new GetReturnableLinesByInvoiceHandler(
+            invoiceRepo.Object,
+            returnRepo,
+            tenant,
+            branch
+        );
     }
 
     /// <summary>

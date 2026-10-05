@@ -273,7 +273,10 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
         services.AddScoped<ICompanyBankAccountRepository, CompanyBankAccountRepository>();
         services.AddScoped<ICashRegisterRepository, CashRegisterRepository>();
         services.AddSingleton<TimeProvider>(AccountingDateBoundary.Clock);
-        services.AddScoped<ERP.Application.Common.Services.ICompanyClock, ERP.Infrastructure.Persistence.Services.CompanyClock>();
+        services.AddScoped<
+            ERP.Application.Common.Services.ICompanyClock,
+            ERP.Infrastructure.Persistence.Services.CompanyClock
+        >();
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(CollectionAppliedPostingTranslator).Assembly)
         );
@@ -480,15 +483,26 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
     [InlineData(true, true)]
     [InlineData(false, false)]
     [InlineData(true, false)]
-    public async Task Explicit_bank_or_cash_posts_selected_account_or_rolls_back(bool cash, bool postable)
+    public async Task Explicit_bank_or_cash_posts_selected_account_or_rolls_back(
+        bool cash,
+        bool postable
+    )
     {
         var date = new DateOnly(2026, 7, 15);
         var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
         await using var context = db;
         await SeedRuleAndPeriodAsync(db, date);
-        var account = Account.Create(_tenantId, _companyId, AccountCode.Create("1.9.99"),
-            "Selected treasury account", null, AccountType.Asset, AccountNature.Debit,
-            allowsPosting: postable, createdBy: _createdBy);
+        var account = Account.Create(
+            _tenantId,
+            _companyId,
+            AccountCode.Create("1.9.99"),
+            "Selected treasury account",
+            null,
+            AccountType.Asset,
+            AccountNature.Debit,
+            allowsPosting: postable,
+            createdBy: _createdBy
+        );
         db.Accounts.Add(account);
         Guid? bankId = null;
         Guid? cashId = null;
@@ -502,8 +516,16 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
         {
             var bank = Bank.Create(_tenantId, "BANK", "Test bank", null, _createdBy);
             db.Banks.Add(bank);
-            var bankAccount = CompanyBankAccount.Create(_tenantId, _companyId, bank.Id,
-                BankAccountType.Checking, "123456", "Selected bank", account.Id, _createdBy);
+            var bankAccount = CompanyBankAccount.Create(
+                _tenantId,
+                _companyId,
+                bank.Id,
+                BankAccountType.Checking,
+                "123456",
+                "Selected bank",
+                account.Id,
+                _createdBy
+            );
             db.CompanyBankAccounts.Add(bankAccount);
             bankId = bankAccount.Id;
         }
@@ -513,7 +535,9 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
             CompanyBankAccountId = bankId,
             CashRegisterId = cashId,
         };
-        var act = () => BuildHandler(db, _tenantId, _companyId, _createdBy).Handle(command, CancellationToken.None);
+        var act = () =>
+            BuildHandler(db, _tenantId, _companyId, _createdBy)
+                .Handle(command, CancellationToken.None);
         if (!postable)
         {
             await act.Should().ThrowAsync<DomainRuleViolationException>();

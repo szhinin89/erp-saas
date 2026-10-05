@@ -45,7 +45,11 @@ public sealed class PriceListSelectionResolver : IPriceListSelectionResolver
         PriceList? customerList = null;
         if (customerId.HasValue)
         {
-            var customerAssignments = await _customerLists.GetByCustomerAsync(tenantId, customerId.Value, ct);
+            var customerAssignments = await _customerLists.GetByCustomerAsync(
+                tenantId,
+                customerId.Value,
+                ct
+            );
             var activeCustomerAssignment = customerAssignments.FirstOrDefault(a => a.IsActive);
             if (activeCustomerAssignment is not null)
             {

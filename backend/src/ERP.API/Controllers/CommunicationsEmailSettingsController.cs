@@ -38,7 +38,10 @@ public sealed class CommunicationsEmailSettingsController : ControllerBase
     /// <summary>Devuelve la configuración SMTP efectiva de la empresa actual (nunca el password en texto plano).</summary>
     [HttpGet]
     [Authorize(Policy = $"perm:{CommunicationsPermissions.View}")]
-    [ProducesResponseType(typeof(ApiResponse<CommunicationEmailSettingsDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<CommunicationEmailSettingsDto>),
+        StatusCodes.Status200OK
+    )]
     public async Task<IActionResult> Get(CancellationToken cancellationToken = default)
     {
         var result = await _mediator.Send(new GetCompanyEmailSettingsQuery(), cancellationToken);
@@ -48,7 +51,10 @@ public sealed class CommunicationsEmailSettingsController : ControllerBase
     /// <summary>Actualiza la configuración SMTP de la empresa actual.</summary>
     [HttpPut]
     [Authorize(Policy = $"perm:{CommunicationsPermissions.Configure}")]
-    [ProducesResponseType(typeof(ApiResponse<CommunicationEmailSettingsDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<CommunicationEmailSettingsDto>),
+        StatusCodes.Status200OK
+    )]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Update(
         [FromBody] UpdateCompanyEmailSettingsCommand command,

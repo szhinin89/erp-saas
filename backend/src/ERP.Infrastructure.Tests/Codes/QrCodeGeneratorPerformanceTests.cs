@@ -1,8 +1,8 @@
+using System.Diagnostics;
 using ERP.Application.Codes;
 using ERP.Infrastructure.Codes;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
-using System.Diagnostics;
 using Xunit.Abstractions;
 
 namespace ERP.Infrastructure.Tests.Codes;

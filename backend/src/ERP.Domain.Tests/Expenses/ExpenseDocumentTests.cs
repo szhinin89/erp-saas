@@ -127,13 +127,26 @@ public sealed class ExpenseDocumentTests
     {
         var document = CreateDraftDocument();
         var lineA = ExpenseLine.Create(
-            document.Id, TenantId, ExpenseSubcategoryId, ExpenseAccountId,
-            "Internet", 1m, 100m, "2", vatRate: 15m
+            document.Id,
+            TenantId,
+            ExpenseSubcategoryId,
+            ExpenseAccountId,
+            "Internet",
+            1m,
+            100m,
+            "2",
+            vatRate: 15m
         );
         var accountB = Guid.NewGuid();
         var lineB = ExpenseLine.Create(
-            document.Id, TenantId, Guid.NewGuid(), accountB,
-            "Suministros", 1m, 50m, "0"
+            document.Id,
+            TenantId,
+            Guid.NewGuid(),
+            accountB,
+            "Suministros",
+            1m,
+            50m,
+            "0"
         );
         document.ReplaceLines([lineA, lineB], UserId);
 
@@ -148,9 +161,11 @@ public sealed class ExpenseDocumentTests
 
         var raised = document.DomainEvents.OfType<ExpenseDocumentConfirmedEvent>().Single();
         raised.LineAllocations.Should().HaveCount(2);
-        raised.LineAllocations.Should()
+        raised
+            .LineAllocations.Should()
             .Contain(a => a.AccountingAccountId == ExpenseAccountId && a.Amount == 100m);
-        raised.LineAllocations.Should()
+        raised
+            .LineAllocations.Should()
             .Contain(a => a.AccountingAccountId == accountB && a.Amount == 50m);
         raised.TotalVat.Should().Be(15m);
         raised.GrandTotal.Should().Be(165m);
@@ -161,12 +176,21 @@ public sealed class ExpenseDocumentTests
     {
         var document = CreateDraftDocument();
         var line = ExpenseLine.Create(
-            document.Id, TenantId, ExpenseSubcategoryId, ExpenseAccountId,
-            "Internet", 1m, 100m, "0"
+            document.Id,
+            TenantId,
+            ExpenseSubcategoryId,
+            ExpenseAccountId,
+            "Internet",
+            1m,
+            100m,
+            "0"
         );
         document.ReplaceLines([line], UserId);
         document.Confirm(
-            new Dictionary<Guid, (Guid, string?, string?)> { [line.Id] = (ExpenseAccountId, null, null) },
+            new Dictionary<Guid, (Guid, string?, string?)>
+            {
+                [line.Id] = (ExpenseAccountId, null, null),
+            },
             UserId
         );
 
@@ -259,8 +283,15 @@ public sealed class ExpenseDocumentTests
     {
         var document = CreateDraftDocument();
         var line = ExpenseLine.Create(
-            document.Id, TenantId, ExpenseSubcategoryId, ExpenseAccountId,
-            "Internet", 1m, 100m, "2", vatRate: 15m
+            document.Id,
+            TenantId,
+            ExpenseSubcategoryId,
+            ExpenseAccountId,
+            "Internet",
+            1m,
+            100m,
+            "2",
+            vatRate: 15m
         );
         document.ReplaceLines([line], UserId);
         document.Confirm(
@@ -305,9 +336,21 @@ public sealed class ExpenseDocumentTests
     public void CreateDraft_normaliza_TaxSupportCode_vacio_a_null()
     {
         var document = ExpenseDocument.CreateDraft(
-            TenantId, CompanyId, BranchId, SupplierId, "Proveedor Servicios", "1790012345001",
-            DateOnly.FromDateTime(DateTime.UtcNow), DateOnly.FromDateTime(DateTime.UtcNow),
-            "01", "001-001-000000001", PaymentTermId, "Contado", 1, 0, UserId,
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            "Proveedor Servicios",
+            "1790012345001",
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            "01",
+            "001-001-000000001",
+            PaymentTermId,
+            "Contado",
+            1,
+            0,
+            UserId,
             taxSupportCode: "   "
         );
 
@@ -318,9 +361,21 @@ public sealed class ExpenseDocumentTests
     public void CreateDraft_recorta_y_persiste_TaxSupportCode_con_contenido_real()
     {
         var document = ExpenseDocument.CreateDraft(
-            TenantId, CompanyId, BranchId, SupplierId, "Proveedor Servicios", "1790012345001",
-            DateOnly.FromDateTime(DateTime.UtcNow), DateOnly.FromDateTime(DateTime.UtcNow),
-            "01", "001-001-000000001", PaymentTermId, "Contado", 1, 0, UserId,
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            "Proveedor Servicios",
+            "1790012345001",
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            "01",
+            "001-001-000000001",
+            PaymentTermId,
+            "Contado",
+            1,
+            0,
+            UserId,
             taxSupportCode: " 02 "
         );
 
@@ -341,9 +396,18 @@ public sealed class ExpenseDocumentTests
         var document = CreateDraftDocument();
 
         document.UpdateDraft(
-            SupplierId, "Proveedor Servicios", "1790012345001",
-            document.IssueDate, document.AccountingDate, document.DocumentType, document.DocumentNumber,
-            PaymentTermId, "Contado", 1, 0, UserId,
+            SupplierId,
+            "Proveedor Servicios",
+            "1790012345001",
+            document.IssueDate,
+            document.AccountingDate,
+            document.DocumentType,
+            document.DocumentNumber,
+            PaymentTermId,
+            "Contado",
+            1,
+            0,
+            UserId,
             taxSupportCode: "02"
         );
 
@@ -355,9 +419,18 @@ public sealed class ExpenseDocumentTests
     {
         var document = CreateDraftDocument();
         document.UpdateDraft(
-            SupplierId, "Proveedor Servicios", "1790012345001",
-            document.IssueDate, document.AccountingDate, document.DocumentType, document.DocumentNumber,
-            PaymentTermId, "Contado", 1, 0, UserId,
+            SupplierId,
+            "Proveedor Servicios",
+            "1790012345001",
+            document.IssueDate,
+            document.AccountingDate,
+            document.DocumentType,
+            document.DocumentNumber,
+            PaymentTermId,
+            "Contado",
+            1,
+            0,
+            UserId,
             taxSupportCode: "02"
         );
 
@@ -365,9 +438,18 @@ public sealed class ExpenseDocumentTests
         // opcionales de UpdateDraft (Notes, AuthorizationNumber): el default null sobreescribe,
         // no preserva el valor anterior. UpdateDraft reemplaza el estado completo del borrador.
         document.UpdateDraft(
-            SupplierId, "Proveedor Servicios", "1790012345001",
-            document.IssueDate, document.AccountingDate, document.DocumentType, document.DocumentNumber,
-            PaymentTermId, "Contado", 1, 0, UserId
+            SupplierId,
+            "Proveedor Servicios",
+            "1790012345001",
+            document.IssueDate,
+            document.AccountingDate,
+            document.DocumentType,
+            document.DocumentNumber,
+            PaymentTermId,
+            "Contado",
+            1,
+            0,
+            UserId
         );
 
         document.TaxSupportCode.Should().BeNull();

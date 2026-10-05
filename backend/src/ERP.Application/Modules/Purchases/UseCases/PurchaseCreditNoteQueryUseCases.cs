@@ -80,20 +80,18 @@ public sealed class GetPurchaseCreditNoteByIdHandler
             return Result<PurchaseCreditNoteDto>.NotFound("Nota de crédito no encontrada.");
 
         var invoice = await _invoiceRepo.GetByIdAsync(tid, creditNote.PurchaseInvoiceId, ct);
-        var payable =
-            invoice is null
-                ? null
-                : await _payableRepo.GetByOriginAsync(
-                    tid,
-                    _c.CompanyId,
-                    AccountsPayableOriginType.PurchaseInvoice,
-                    invoice.Id,
-                    ct
-                );
-        var receptionDoc =
-            creditNote.ReceptionDocumentId is { } receptionDocumentId
-                ? await _receptionRepo.GetByIdAsync(tid, receptionDocumentId, ct)
-                : null;
+        var payable = invoice is null
+            ? null
+            : await _payableRepo.GetByOriginAsync(
+                tid,
+                _c.CompanyId,
+                AccountsPayableOriginType.PurchaseInvoice,
+                invoice.Id,
+                ct
+            );
+        var receptionDoc = creditNote.ReceptionDocumentId is { } receptionDocumentId
+            ? await _receptionRepo.GetByIdAsync(tid, receptionDocumentId, ct)
+            : null;
 
         var dto = CreditNoteMap.ToDto(
             creditNote,
@@ -142,23 +140,29 @@ public sealed class GetPurchaseCreditNoteByIdHandler
         var invoiceLinesById = invoice.Lines.ToDictionary(l => l.Id);
 
         var itemIds = dto
-            .Lines.Where(l => l.PurchaseInvoiceDetailId is { } id && invoiceLinesById.ContainsKey(id))
+            .Lines.Where(l =>
+                l.PurchaseInvoiceDetailId is { } id && invoiceLinesById.ContainsKey(id)
+            )
             .Select(l => invoiceLinesById[l.PurchaseInvoiceDetailId!.Value].ItemId)
             .Where(id => id is not null)
             .Select(id => id!.Value)
             .Distinct()
             .ToList();
-        var items = itemIds.Count == 0
-            ? []
-            : await _itemRepo.GetByIdsLightAsync(itemIds, tenantId, ct);
+        var items =
+            itemIds.Count == 0 ? [] : await _itemRepo.GetByIdsLightAsync(itemIds, tenantId, ct);
         var itemsById = items.ToDictionary(
             i => i.Id,
             (Domain.Modules.Items.Entities.Item i) => (Sku: i.Code.SKU, Name: i.Code.ShortName)
         );
 
         var warehouseIds = dto
-            .Lines.Where(l => l.PurchaseInvoiceDetailId is { } id && invoiceLinesById.ContainsKey(id))
-            .Select(l => invoiceLinesById[l.PurchaseInvoiceDetailId!.Value].WarehouseId ?? invoice.GlobalWarehouseId)
+            .Lines.Where(l =>
+                l.PurchaseInvoiceDetailId is { } id && invoiceLinesById.ContainsKey(id)
+            )
+            .Select(l =>
+                invoiceLinesById[l.PurchaseInvoiceDetailId!.Value].WarehouseId
+                ?? invoice.GlobalWarehouseId
+            )
             .Where(w => w is not null)
             .Select(w => w!.Value)
             .Distinct()
@@ -174,25 +178,36 @@ public sealed class GetPurchaseCreditNoteByIdHandler
         var enrichedLines = dto
             .Lines.Select(l =>
             {
-                if (l.PurchaseInvoiceDetailId is not { } detailId
-                    || !invoiceLinesById.TryGetValue(detailId, out var invoiceLine))
+                if (
+                    l.PurchaseInvoiceDetailId is not { } detailId
+                    || !invoiceLinesById.TryGetValue(detailId, out var invoiceLine)
+                )
                     return l;
 
                 var warehouseId = invoiceLine.WarehouseId ?? invoice.GlobalWarehouseId;
                 return l with
                 {
-                    ItemSku = invoiceLine.ItemId is { } itemId && itemsById.TryGetValue(itemId, out var item)
-                        ? item.Sku
+                    ItemSku =
+                        invoiceLine.ItemId is { } itemId
+                        && itemsById.TryGetValue(itemId, out var item)
+                            ? item.Sku
+                            : null,
+                    ItemName =
+                        invoiceLine.ItemId is { } itemId2
+                        && itemsById.TryGetValue(itemId2, out var item2)
+                            ? item2.Name
+                            : null,
+                    WarehouseName = warehouseId is { } whId
+                        ? warehouseNamesById.GetValueOrDefault(whId)
                         : null,
-                    ItemName = invoiceLine.ItemId is { } itemId2 && itemsById.TryGetValue(itemId2, out var item2)
-                        ? item2.Name
-                        : null,
-                    WarehouseName = warehouseId is { } whId ? warehouseNamesById.GetValueOrDefault(whId) : null,
                 };
             })
             .ToList();
 
-        return dto with { Lines = enrichedLines };
+        return dto with
+        {
+            Lines = enrichedLines,
+        };
     }
 }
 

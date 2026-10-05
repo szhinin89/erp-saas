@@ -1,6 +1,6 @@
+using System.Globalization;
 using ERP.Domain.Common;
 using ERP.Domain.Exceptions;
-using System.Globalization;
 
 namespace ERP.Domain.Modules.Company.Entities;
 

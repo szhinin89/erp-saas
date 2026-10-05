@@ -62,7 +62,11 @@ public sealed class PurchaseIceSpecificResolutionTests
         );
         roleRepo
             .Setup(r =>
-                r.GetByTypeAsync(SupplierId, Domain.MasterData.Enums.RoleType.Supplier, It.IsAny<CancellationToken>())
+                r.GetByTypeAsync(
+                    SupplierId,
+                    Domain.MasterData.Enums.RoleType.Supplier,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(role);
         return roleRepo;
@@ -72,8 +76,18 @@ public sealed class PurchaseIceSpecificResolutionTests
     {
         var resolver = new Mock<IPaymentTermDefaultResolver>();
         resolver
-            .Setup(r => r.ResolveForPurchaseAsync(SupplierId, It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<PaymentTerm>.Success(PaymentTerm.Create(TenantId, "CONTADO", "Contado", 1, 0, UserId)));
+            .Setup(r =>
+                r.ResolveForPurchaseAsync(
+                    SupplierId,
+                    It.IsAny<Guid?>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                Result<PaymentTerm>.Success(
+                    PaymentTerm.Create(TenantId, "CONTADO", "Contado", 1, 0, UserId)
+                )
+            );
         return resolver;
     }
 
@@ -108,7 +122,10 @@ public sealed class PurchaseIceSpecificResolutionTests
         return tax;
     }
 
-    private static CreatePurchaseDraftHandler BuildCreateHandler(Mock<IPurchaseInvoiceRepository> repo, Mock<PurchaseTaxResolver> tax) =>
+    private static CreatePurchaseDraftHandler BuildCreateHandler(
+        Mock<IPurchaseInvoiceRepository> repo,
+        Mock<PurchaseTaxResolver> tax
+    ) =>
         new(
             repo.Object,
             BuildActiveSupplierRepo().Object,
@@ -154,7 +171,16 @@ public sealed class PurchaseIceSpecificResolutionTests
             "01",
             "001-001-000000001",
             DateOnly.FromDateTime(DateTime.UtcNow),
-            [new PurchaseLineInput(null, "Bebida azucarada", 10m, 5m, "10", IceCode: IceSpecificCode)]
+            [
+                new PurchaseLineInput(
+                    null,
+                    "Bebida azucarada",
+                    10m,
+                    5m,
+                    "10",
+                    IceCode: IceSpecificCode
+                ),
+            ]
         );
 
         var result = await handler.Handle(cmd, CancellationToken.None);
@@ -183,7 +209,16 @@ public sealed class PurchaseIceSpecificResolutionTests
             "01",
             "001-001-000000001",
             DateOnly.FromDateTime(DateTime.UtcNow),
-            [new PurchaseLineInput(null, "Producto con ICE %", 1m, 100m, "10", IceCode: IcePercentageCode)]
+            [
+                new PurchaseLineInput(
+                    null,
+                    "Producto con ICE %",
+                    1m,
+                    100m,
+                    "10",
+                    IceCode: IcePercentageCode
+                ),
+            ]
         );
 
         var result = await handler.Handle(cmd, CancellationToken.None);
@@ -270,13 +305,18 @@ public sealed class PurchaseIceSpecificResolutionTests
 
         var inv = CreateExistingDraftWithLine(line);
         var repo = new Mock<IPurchaseInvoiceRepository>();
-        repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())).ReturnsAsync(inv);
-        repo.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
+        repo.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         var tax = BuildTaxResolver();
         var handler = BuildRecalculateHandler(repo, tax);
 
-        var result = await handler.Handle(new RecalculatePurchaseCommand(inv.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new RecalculatePurchaseCommand(inv.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.Lines[0].IceAmount.Should().Be(0.20m);
@@ -301,13 +341,18 @@ public sealed class PurchaseIceSpecificResolutionTests
         );
         var inv = CreateExistingDraftWithLine(line);
         var repo = new Mock<IPurchaseInvoiceRepository>();
-        repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())).ReturnsAsync(inv);
-        repo.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
+        repo.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         var tax = BuildTaxResolver();
         var handler = BuildRecalculateHandler(repo, tax);
 
-        var result = await handler.Handle(new RecalculatePurchaseCommand(inv.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new RecalculatePurchaseCommand(inv.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.Lines[0].IceAmount.Should().Be(50m);
@@ -327,13 +372,18 @@ public sealed class PurchaseIceSpecificResolutionTests
         );
         var inv = CreateExistingDraftWithLine(line);
         var repo = new Mock<IPurchaseInvoiceRepository>();
-        repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())).ReturnsAsync(inv);
-        repo.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
+        repo.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         var tax = BuildTaxResolver();
         var handler = BuildRecalculateHandler(repo, tax);
 
-        var result = await handler.Handle(new RecalculatePurchaseCommand(inv.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new RecalculatePurchaseCommand(inv.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.Lines[0].IceAmount.Should().Be(0m);

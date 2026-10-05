@@ -398,7 +398,9 @@ public sealed class SupplierCredit : AuditableEntity, ITenantScopedEntity, IComp
     )
     {
         if (SourceType != SupplierCreditSourceType.SupplierPayment)
-            throw new DomainRuleViolationException("Este crédito no se originó en un pago a proveedor.");
+            throw new DomainRuleViolationException(
+                "Este crédito no se originó en un pago a proveedor."
+            );
         EnsureIntact(
             "No se puede reversar el pago porque el anticipo que generó ya fue aplicado o reembolsado."
         );

@@ -73,7 +73,10 @@ public sealed class ExpenseCategoriesControllerTests
     [InlineData(nameof(ExpenseCategoriesController.Create), ExpensePermissions.CatalogCreate)]
     [InlineData(nameof(ExpenseCategoriesController.Update), ExpensePermissions.CatalogUpdate)]
     [InlineData(nameof(ExpenseCategoriesController.Activate), ExpensePermissions.CatalogActivate)]
-    [InlineData(nameof(ExpenseCategoriesController.Deactivate), ExpensePermissions.CatalogDeactivate)]
+    [InlineData(
+        nameof(ExpenseCategoriesController.Deactivate),
+        ExpensePermissions.CatalogDeactivate
+    )]
     public void Cada_endpoint_expone_su_permiso_propio(string methodName, string permission)
     {
         var method = typeof(ExpenseCategoriesController).GetMethod(methodName)!;
@@ -146,8 +149,7 @@ public sealed class ExpenseCategoriesControllerTests
         );
 
         response.Should().BeOfType<OkObjectResult>();
-        sent
-            .Should()
+        sent.Should()
             .BeEquivalentTo(
                 new UpdateExpenseCategoryNodeCommand(id, "ADM", "Administrativos", null, "Notas")
             );

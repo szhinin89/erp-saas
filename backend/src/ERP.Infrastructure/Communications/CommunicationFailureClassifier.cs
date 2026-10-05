@@ -1,7 +1,7 @@
-using ERP.Application.Modules.Communications.Services;
-using ERP.Domain.Modules.Communications.Enums;
 using System.Net.Mail;
 using System.Net.Sockets;
+using ERP.Application.Modules.Communications.Services;
+using ERP.Domain.Modules.Communications.Enums;
 
 namespace ERP.Infrastructure.Communications;
 
@@ -46,7 +46,8 @@ public static class CommunicationFailureClassifier
         {
             SmtpFailedRecipientsException many when many.InnerExceptions.Length > 0 =>
                 $"smtp:{(int)many.InnerExceptions[0].StatusCode}",
-            SmtpException smtp when smtp.StatusCode != SmtpStatusCode.GeneralFailure => $"smtp:{(int)smtp.StatusCode}",
+            SmtpException smtp when smtp.StatusCode != SmtpStatusCode.GeneralFailure =>
+                $"smtp:{(int)smtp.StatusCode}",
             _ => null,
         };
 
@@ -59,16 +60,21 @@ public static class CommunicationFailureClassifier
         exception switch
         {
             TimeoutException timeout => $"{nameof(TimeoutException)}: {timeout.Message}",
-            CommunicationAttachmentException attachment => $"{attachment.Code}: {attachment.Message}",
+            CommunicationAttachmentException attachment =>
+                $"{attachment.Code}: {attachment.Message}",
             _ when ProviderCode(exception) is { } code => $"{exception.GetType().Name} ({code})",
             _ => exception.GetType().Name,
         };
 
-    private static CommunicationFailureCategory ClassifyRecipients(SmtpFailedRecipientsException many)
+    private static CommunicationFailureCategory ClassifyRecipients(
+        SmtpFailedRecipientsException many
+    )
     {
         // Todos los destinatarios fallidos: si alguno es transitorio, se reintenta; el email lleva un
         // único "To", así que en la práctica decide ese destinatario.
-        var categories = many.InnerExceptions.Select(e => ClassifyStatus((int)e.StatusCode)).ToList();
+        var categories = many
+            .InnerExceptions.Select(e => ClassifyStatus((int)e.StatusCode))
+            .ToList();
         if (categories.Count == 0)
             return ClassifyStatus((int)many.StatusCode);
         return categories.Contains(CommunicationFailureCategory.Transient)
@@ -81,11 +87,9 @@ public static class CommunicationFailureClassifier
         // GeneralFailure: no hubo respuesta SMTP (conexión/DNS/TLS) — decide la causa interna.
         if (smtp.StatusCode == SmtpStatusCode.GeneralFailure)
         {
-            return FindInner<SocketException>(smtp) is { } socket
-                ? ClassifySocket(socket)
-                : FindInner<IOException>(smtp) is not null
-                    ? CommunicationFailureCategory.Transient
-                    : CommunicationFailureCategory.Unknown;
+            return FindInner<SocketException>(smtp) is { } socket ? ClassifySocket(socket)
+                : FindInner<IOException>(smtp) is not null ? CommunicationFailureCategory.Transient
+                : CommunicationFailureCategory.Unknown;
         }
 
         return ClassifyStatus((int)smtp.StatusCode);
@@ -106,14 +110,19 @@ public static class CommunicationFailureClassifier
         socket.SocketErrorCode switch
         {
             // El host configurado no existe/no resuelve: no se arregla reintentando.
-            SocketError.HostNotFound or SocketError.NoData => CommunicationFailureCategory.Configuration,
+            SocketError.HostNotFound or SocketError.NoData =>
+                CommunicationFailureCategory.Configuration,
             _ => CommunicationFailureCategory.Transient,
         };
 
     private static T? FindInner<T>(Exception exception)
         where T : Exception
     {
-        for (var current = exception.InnerException; current is not null; current = current.InnerException)
+        for (
+            var current = exception.InnerException;
+            current is not null;
+            current = current.InnerException
+        )
         {
             if (current is T match)
                 return match;

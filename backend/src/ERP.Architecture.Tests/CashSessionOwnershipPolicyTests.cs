@@ -1,8 +1,8 @@
+using System.Reflection;
 using ERP.API.Controllers;
 using ERP.Domain.Kernel.Permissions;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authorization;
-using System.Reflection;
 
 namespace ERP.Architecture.Tests;
 
@@ -19,17 +19,45 @@ public sealed class CashSessionOwnershipPolicyTests
     public static TheoryData<Type, string, string> SessionMutatingEndpoints =>
         new()
         {
-            { typeof(CashSessionController), nameof(CashSessionController.Close), CajaPermissions.Close },
-            { typeof(CashSessionController), nameof(CashSessionController.RecordMovement), CajaPermissions.Record },
-            { typeof(SupplierPaymentsController), nameof(SupplierPaymentsController.Register), SupplierPaymentsPermissions.Create },
-            { typeof(SupplierPaymentsController), nameof(SupplierPaymentsController.Reverse), SupplierPaymentsPermissions.Reverse },
-            { typeof(SupplierCreditController), nameof(SupplierCreditController.Refund), FinancePermissions.Update },
-            { typeof(SupplierCreditController), nameof(SupplierCreditController.ReverseRefund), FinancePermissions.Update },
+            {
+                typeof(CashSessionController),
+                nameof(CashSessionController.Close),
+                CajaPermissions.Close
+            },
+            {
+                typeof(CashSessionController),
+                nameof(CashSessionController.RecordMovement),
+                CajaPermissions.Record
+            },
+            {
+                typeof(SupplierPaymentsController),
+                nameof(SupplierPaymentsController.Register),
+                SupplierPaymentsPermissions.Create
+            },
+            {
+                typeof(SupplierPaymentsController),
+                nameof(SupplierPaymentsController.Reverse),
+                SupplierPaymentsPermissions.Reverse
+            },
+            {
+                typeof(SupplierCreditController),
+                nameof(SupplierCreditController.Refund),
+                FinancePermissions.Update
+            },
+            {
+                typeof(SupplierCreditController),
+                nameof(SupplierCreditController.ReverseRefund),
+                FinancePermissions.Update
+            },
         };
 
     [Theory]
     [MemberData(nameof(SessionMutatingEndpoints))]
-    public void Endpoint_que_mueve_una_CashSession_exige_su_permiso(Type controller, string action, string permission)
+    public void Endpoint_que_mueve_una_CashSession_exige_su_permiso(
+        Type controller,
+        string action,
+        string permission
+    )
     {
         var method = controller.GetMethod(action, BindingFlags.Public | BindingFlags.Instance);
         method.Should().NotBeNull($"{controller.Name}.{action} debe existir");
@@ -39,7 +67,11 @@ public sealed class CashSessionOwnershipPolicyTests
             .Select(a => a.Policy)
             .ToList();
 
-        policies.Should().Contain($"perm:{permission}",
-            $"{controller.Name}.{action} mueve una CashSession: la propiedad de la sesión nunca reemplaza al permiso");
+        policies
+            .Should()
+            .Contain(
+                $"perm:{permission}",
+                $"{controller.Name}.{action} mueve una CashSession: la propiedad de la sesión nunca reemplaza al permiso"
+            );
     }
 }

@@ -149,8 +149,7 @@ public sealed class DocumentSequenceCompanyScopeTests : IAsyncLifetime
         await using (var db = CreateContext(_companyBId))
         {
             var repo = new DocumentSequenceRepository(db);
-            var act = async () =>
-                await repo.CaptureNextAsync(_tenantId, _companyBId, epId, "01");
+            var act = async () => await repo.CaptureNextAsync(_tenantId, _companyBId, epId, "01");
 
             await act.Should()
                 .ThrowAsync<InvalidOperationException>(

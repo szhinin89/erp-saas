@@ -50,7 +50,11 @@ public sealed class ItemUnitConversionConfiguration : IEntityTypeConfiguration<I
             .HasColumnName("to_uom_code")
             .HasMaxLength(10)
             .IsRequired();
-        builder.Property(x => x.Factor).HasColumnName("factor").HasColumnType("numeric(18,10)").IsRequired();
+        builder
+            .Property(x => x.Factor)
+            .HasColumnName("factor")
+            .HasColumnType("numeric(18,10)")
+            .IsRequired();
         builder.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
@@ -114,7 +118,10 @@ public sealed class ItemPackagingLevelConfiguration : IEntityTypeConfiguration<I
             .IsRequired();
         builder.Property(x => x.UomCode).HasColumnName("uom_code").HasMaxLength(10).IsRequired();
         builder.Property(x => x.Barcode).HasColumnName("barcode").HasMaxLength(100);
-        builder.Property(x => x.Weight).HasColumnName("weight").HasPrecision(10, ItemPrecision.PackagingWeight);
+        builder
+            .Property(x => x.Weight)
+            .HasColumnName("weight")
+            .HasPrecision(10, ItemPrecision.PackagingWeight);
         builder.Property(x => x.IsBaseUnit).HasColumnName("is_base_unit").IsRequired();
         builder
             .Property(x => x.IsPurchaseDefault)

@@ -67,10 +67,13 @@ public sealed class SalesInvoiceAuthorizedHandler
         // Idempotencia por origen estable: una factura se autoriza una sola vez, así que tiene como
         // máximo un SaleIncome (ReferenceType SalesInvoice + ReferenceId = la factura). Una
         // re-entrega del mismo evento no crea otro movimiento; ventas distintas nunca coinciden.
-        if (session.Movements.Any(m =>
+        if (
+            session.Movements.Any(m =>
                 m.MovementType == CashMovementType.SaleIncome
                 && m.ReferenceType == CashReferenceType.SalesInvoice
-                && m.ReferenceId == e.InvoiceId))
+                && m.ReferenceId == e.InvoiceId
+            )
+        )
         {
             _logger.LogInformation(
                 "SaleIncome for invoice {InvoiceNumber} ({InvoiceId}) already recorded in session {SessionId} — redelivery ignored.",

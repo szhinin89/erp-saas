@@ -42,12 +42,27 @@ public sealed class SalesCreditRequirementPolicyTests
                     r.GetAsync(TenantId, CompanyId, BranchId, It.IsAny<CancellationToken>())
                 )
                 .ReturnsAsync(
-                    new InvoiceDefaultsResult(null, null, null, null, null, "None", true, Array.Empty<string>())
+                    new InvoiceDefaultsResult(
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        "None",
+                        true,
+                        Array.Empty<string>()
+                    )
                 );
         }
 
         public SalesCreditRequirementPolicy Build() =>
-            new(PaymentTerms.Object, InvoiceDefaults.Object, Tenant.Object, Company.Object, Branch.Object);
+            new(
+                PaymentTerms.Object,
+                InvoiceDefaults.Object,
+                Tenant.Object,
+                Company.Object,
+                Branch.Object
+            );
     }
 
     [Fact]
@@ -55,16 +70,23 @@ public sealed class SalesCreditRequirementPolicyTests
     {
         var f = new Fixture();
 
-        var result = await f.Build().ResolveCompanyOrManualAsync(
-            dueDate: new DateOnly(2026, 8, 1),
-            hasManualSchedule: false,
-            CancellationToken.None
-        );
+        var result = await f.Build()
+            .ResolveCompanyOrManualAsync(
+                dueDate: new DateOnly(2026, 8, 1),
+                hasManualSchedule: false,
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value.Should().BeNull();
         f.InvoiceDefaults.Verify(
-            r => r.GetAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()),
+            r =>
+                r.GetAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never,
             "dueDate manual no debe siquiera consultar el default de empresa"
         );
@@ -75,11 +97,12 @@ public sealed class SalesCreditRequirementPolicyTests
     {
         var f = new Fixture();
 
-        var result = await f.Build().ResolveCompanyOrManualAsync(
-            dueDate: null,
-            hasManualSchedule: true,
-            CancellationToken.None
-        );
+        var result = await f.Build()
+            .ResolveCompanyOrManualAsync(
+                dueDate: null,
+                hasManualSchedule: true,
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value.Should().BeNull();
@@ -90,16 +113,26 @@ public sealed class SalesCreditRequirementPolicyTests
     {
         var f = new Fixture();
         var pt = PaymentTerm.Create(TenantId, "30D", "Crédito 30 días", 1, 30, UserId);
-        f.InvoiceDefaults
-            .Setup(r => r.GetAsync(TenantId, CompanyId, BranchId, It.IsAny<CancellationToken>()))
+        f.InvoiceDefaults.Setup(r =>
+                r.GetAsync(TenantId, CompanyId, BranchId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(
-                new InvoiceDefaultsResult(null, null, pt.Id, null, null, "None", true, Array.Empty<string>())
+                new InvoiceDefaultsResult(
+                    null,
+                    null,
+                    pt.Id,
+                    null,
+                    null,
+                    "None",
+                    true,
+                    Array.Empty<string>()
+                )
             );
-        f.PaymentTerms
-            .Setup(r => r.GetByIdAsync(TenantId, pt.Id, It.IsAny<CancellationToken>()))
+        f.PaymentTerms.Setup(r => r.GetByIdAsync(TenantId, pt.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(pt);
 
-        var result = await f.Build().ResolveCompanyOrManualAsync(null, false, CancellationToken.None);
+        var result = await f.Build()
+            .ResolveCompanyOrManualAsync(null, false, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value.Should().Be(pt);
@@ -111,16 +144,26 @@ public sealed class SalesCreditRequirementPolicyTests
         var f = new Fixture();
         var pt = PaymentTerm.Create(TenantId, "30D", "Crédito 30 días", 1, 30, UserId);
         pt.Disable(UserId);
-        f.InvoiceDefaults
-            .Setup(r => r.GetAsync(TenantId, CompanyId, BranchId, It.IsAny<CancellationToken>()))
+        f.InvoiceDefaults.Setup(r =>
+                r.GetAsync(TenantId, CompanyId, BranchId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(
-                new InvoiceDefaultsResult(null, null, pt.Id, null, null, "None", true, Array.Empty<string>())
+                new InvoiceDefaultsResult(
+                    null,
+                    null,
+                    pt.Id,
+                    null,
+                    null,
+                    "None",
+                    true,
+                    Array.Empty<string>()
+                )
             );
-        f.PaymentTerms
-            .Setup(r => r.GetByIdAsync(TenantId, pt.Id, It.IsAny<CancellationToken>()))
+        f.PaymentTerms.Setup(r => r.GetByIdAsync(TenantId, pt.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(pt);
 
-        var result = await f.Build().ResolveCompanyOrManualAsync(null, false, CancellationToken.None);
+        var result = await f.Build()
+            .ResolveCompanyOrManualAsync(null, false, CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be(SalesCreditRequirementPolicy.MissingCreditRuleMessage);
@@ -131,12 +174,15 @@ public sealed class SalesCreditRequirementPolicyTests
     {
         var f = new Fixture();
 
-        var result = await f.Build().ResolveCompanyOrManualAsync(null, false, CancellationToken.None);
+        var result = await f.Build()
+            .ResolveCompanyOrManualAsync(null, false, CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Be(
-            "Debe definir una fecha de vencimiento, cuotas o una condición de pago para el saldo pendiente."
-        );
+        result
+            .Error.Should()
+            .Be(
+                "Debe definir una fecha de vencimiento, cuotas o una condición de pago para el saldo pendiente."
+            );
     }
 
     [Fact]
@@ -144,8 +190,9 @@ public sealed class SalesCreditRequirementPolicyTests
     {
         var f = new Fixture();
         var contado = PaymentTerm.Create(TenantId, PaymentTermCodes.Cash, "Contado", 1, 0, UserId);
-        f.PaymentTerms
-            .Setup(r => r.GetByCodeAsync(TenantId, PaymentTermCodes.Cash, It.IsAny<CancellationToken>()))
+        f.PaymentTerms.Setup(r =>
+                r.GetByCodeAsync(TenantId, PaymentTermCodes.Cash, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(contado);
 
         var result = await f.Build().GetCashFallbackAsync(CancellationToken.None);
@@ -158,8 +205,9 @@ public sealed class SalesCreditRequirementPolicyTests
     public async Task GetCashFallbackAsync_sin_Contado_sembrado_falla_con_mensaje_claro()
     {
         var f = new Fixture();
-        f.PaymentTerms
-            .Setup(r => r.GetByCodeAsync(TenantId, PaymentTermCodes.Cash, It.IsAny<CancellationToken>()))
+        f.PaymentTerms.Setup(r =>
+                r.GetByCodeAsync(TenantId, PaymentTermCodes.Cash, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((PaymentTerm?)null);
 
         var result = await f.Build().GetCashFallbackAsync(CancellationToken.None);

@@ -34,8 +34,18 @@ public static class PrecisionPolicyTestDouble
             TaxDecimals: 2,
             AccountingDecimals: 2,
             FiscalPercentageDecimals: ERP.Domain.Common.FiscalPrecision.Percentage,
-            WarehouseCapacityDecimals: ERP.Domain.Modules.Inventory.Entities.WarehousePrecision.Capacity,
-            CreditInstallmentPercentageDecimals: ERP.Domain.Modules.Finance.Entities.CreditTermsPrecision.InstallmentPercentage,
+            WarehouseCapacityDecimals: ERP.Domain
+                .Modules
+                .Inventory
+                .Entities
+                .WarehousePrecision
+                .Capacity,
+            CreditInstallmentPercentageDecimals: ERP.Domain
+                .Modules
+                .Finance
+                .Entities
+                .CreditTermsPrecision
+                .InstallmentPercentage,
             PackagingWeightDecimals: ERP.Domain.Modules.Items.Entities.ItemPrecision.PackagingWeight
         );
 

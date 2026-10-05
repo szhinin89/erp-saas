@@ -45,7 +45,14 @@ public sealed class SalesInvoiceEmissionTypeAndTenderedTests
     }
 
     private static SalesInvoicePayment CashPayment(decimal applied) =>
-        SalesInvoicePayment.Create(Guid.NewGuid(), TenantId, Guid.NewGuid(), "EFECTIVO", "Efectivo", applied);
+        SalesInvoicePayment.Create(
+            Guid.NewGuid(),
+            TenantId,
+            Guid.NewGuid(),
+            "EFECTIVO",
+            "Efectivo",
+            applied
+        );
 
     [Fact]
     public void Tendered_mayor_al_aplicado_deriva_el_vuelto_sin_cambiar_el_aplicado()

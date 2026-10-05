@@ -32,7 +32,9 @@ public sealed class StockAdjustmentExecuteCancelTests
     private static ICompanyClock StubCompanyClock()
     {
         var mock = new Mock<ICompanyClock>();
-        mock.Setup(c => c.TodayAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        mock.Setup(c =>
+                c.TodayAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(AdjustmentDate);
         return mock.Object;
     }
@@ -115,7 +117,8 @@ public sealed class StockAdjustmentExecuteCancelTests
             Branch.Setup(b => b.BranchId).Returns(BranchId);
             User.Setup(u => u.UserId).Returns(UserId);
 
-            AdjRepo.Setup(r => r.GetByIdAsync(TenantId, adj.Id, It.IsAny<CancellationToken>()))
+            AdjRepo
+                .Setup(r => r.GetByIdAsync(TenantId, adj.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(adj);
             WarehouseRepo
                 .Setup(r => r.GetByIdAsync(TenantId, WarehouseId, It.IsAny<CancellationToken>()))
@@ -143,7 +146,16 @@ public sealed class StockAdjustmentExecuteCancelTests
         string allowed = InventoryAdjustmentReason.Ambos,
         bool requiresNotes = false
     ) =>
-        InventoryAdjustmentReason.Create(TenantId, null, "MERMA", "Merma", allowed, requiresNotes, 1, UserId);
+        InventoryAdjustmentReason.Create(
+            TenantId,
+            null,
+            "MERMA",
+            "Merma",
+            allowed,
+            requiresNotes,
+            1,
+            UserId
+        );
 
     [Fact]
     public async Task Create_no_llama_AppendMovementAsync()
@@ -163,13 +175,15 @@ public sealed class StockAdjustmentExecuteCancelTests
 
         // Stock inicial: 10 unidades a costo promedio 8 (valor total 80). AppendMovementAsync real
         // aplicaría: newValue = 80 + 5*10 = 130; newQty = 15; newAvg = 130/15 = 8.6667.
-        harness.StockRepo
-            .Setup(r => r.GetStockAsync(TenantId, WarehouseId, ItemId, It.IsAny<CancellationToken>()))
+        harness
+            .StockRepo.Setup(r =>
+                r.GetStockAsync(TenantId, WarehouseId, ItemId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(CurrentStock.Create(TenantId, ItemId, WarehouseId, UserId, CompanyId));
 
         StockMovement? captured = null;
-        harness.StockRepo
-            .Setup(r =>
+        harness
+            .StockRepo.Setup(r =>
                 r.AppendMovementAsync(
                     TenantId,
                     CompanyId,
@@ -239,7 +253,8 @@ public sealed class StockAdjustmentExecuteCancelTests
                 }
             );
 
-        var result = await harness.BuildHandler()
+        var result = await harness
+            .BuildHandler()
             .Handle(new ExecuteStockAdjustmentCommand(adj.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
@@ -262,11 +277,14 @@ public sealed class StockAdjustmentExecuteCancelTests
     {
         var adj = CreateDraft(StockAdjustment.MovementTypeEgreso, 100m, null);
         var harness = new ExecuteHarness(adj, CreateReason());
-        harness.StockRepo
-            .Setup(r => r.GetStockAsync(TenantId, WarehouseId, ItemId, It.IsAny<CancellationToken>()))
+        harness
+            .StockRepo.Setup(r =>
+                r.GetStockAsync(TenantId, WarehouseId, ItemId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((CurrentStock?)null); // 0 disponible
 
-        var result = await harness.BuildHandler()
+        var result = await harness
+            .BuildHandler()
             .Handle(new ExecuteStockAdjustmentCommand(adj.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
@@ -304,7 +322,8 @@ public sealed class StockAdjustmentExecuteCancelTests
         reason.Disable(UserId);
         var harness = new ExecuteHarness(adj, reason);
 
-        var result = await harness.BuildHandler()
+        var result = await harness
+            .BuildHandler()
             .Handle(new ExecuteStockAdjustmentCommand(adj.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
@@ -317,7 +336,8 @@ public sealed class StockAdjustmentExecuteCancelTests
         var reason = CreateReason(InventoryAdjustmentReason.Egreso);
         var harness = new ExecuteHarness(adj, reason);
 
-        var result = await harness.BuildHandler()
+        var result = await harness
+            .BuildHandler()
             .Handle(new ExecuteStockAdjustmentCommand(adj.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
@@ -361,7 +381,8 @@ public sealed class StockAdjustmentExecuteCancelTests
         var reason = CreateReason(requiresNotes: true);
         var harness = new ExecuteHarness(adj, reason);
 
-        var result = await harness.BuildHandler()
+        var result = await harness
+            .BuildHandler()
             .Handle(new ExecuteStockAdjustmentCommand(adj.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
@@ -374,7 +395,8 @@ public sealed class StockAdjustmentExecuteCancelTests
         adj.Execute(UserId);
         var harness = new ExecuteHarness(adj, CreateReason());
 
-        var result = await harness.BuildHandler()
+        var result = await harness
+            .BuildHandler()
             .Handle(new ExecuteStockAdjustmentCommand(adj.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
@@ -414,7 +436,8 @@ public sealed class StockAdjustmentExecuteCancelTests
             Tenant.Setup(t => t.TenantId).Returns(TenantId);
             Branch.Setup(b => b.BranchId).Returns(BranchId);
             User.Setup(u => u.UserId).Returns(UserId);
-            AdjRepo.Setup(r => r.GetByIdAsync(TenantId, adj.Id, It.IsAny<CancellationToken>()))
+            AdjRepo
+                .Setup(r => r.GetByIdAsync(TenantId, adj.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(adj);
             WarehouseRepo
                 .Setup(r => r.GetByIdAsync(TenantId, WarehouseId, It.IsAny<CancellationToken>()))
@@ -443,7 +466,8 @@ public sealed class StockAdjustmentExecuteCancelTests
         var adj = CreateDraft(StockAdjustment.MovementTypeIngreso, 5m, 10m); // still Draft
         var harness = new CancelHarness(adj);
 
-        var result = await harness.BuildHandler()
+        var result = await harness
+            .BuildHandler()
             .Handle(new CancelStockAdjustmentCommand(adj.Id, "motivo"), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
@@ -478,8 +502,8 @@ public sealed class StockAdjustmentExecuteCancelTests
         var adj = CreateDraft(StockAdjustment.MovementTypeIngreso, 5m, 10m);
         adj.Execute(UserId);
         var harness = new CancelHarness(adj);
-        harness.StockRepo
-            .Setup(r =>
+        harness
+            .StockRepo.Setup(r =>
                 r.AppendMovementAsync(
                     TenantId,
                     CompanyId,
@@ -523,8 +547,12 @@ public sealed class StockAdjustmentExecuteCancelTests
                 )
             );
 
-        var result = await harness.BuildHandler()
-            .Handle(new CancelStockAdjustmentCommand(adj.Id, "Error de digitación"), CancellationToken.None);
+        var result = await harness
+            .BuildHandler()
+            .Handle(
+                new CancelStockAdjustmentCommand(adj.Id, "Error de digitación"),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         adj.Status.Should().Be("Cancelled");
@@ -535,8 +563,12 @@ public sealed class StockAdjustmentExecuteCancelTests
         );
 
         // Doble anulación rechazada
-        var secondAttempt = await harness.BuildHandler()
-            .Handle(new CancelStockAdjustmentCommand(adj.Id, "Segundo intento"), CancellationToken.None);
+        var secondAttempt = await harness
+            .BuildHandler()
+            .Handle(
+                new CancelStockAdjustmentCommand(adj.Id, "Segundo intento"),
+                CancellationToken.None
+            );
         secondAttempt.IsSuccess.Should().BeFalse();
     }
 }

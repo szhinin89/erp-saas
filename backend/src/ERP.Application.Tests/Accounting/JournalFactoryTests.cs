@@ -336,7 +336,8 @@ public sealed class JournalFactoryTests
         var m = new Mocks();
         m.SetupRule(rule);
 
-        var result = await m.BuildEngine().PostAsync(Fact(grandTotal: 115m, allocations: allocations));
+        var result = await m.BuildEngine()
+            .PostAsync(Fact(grandTotal: 115m, allocations: allocations));
 
         result.IsSuccess.Should().BeTrue();
         m.Captured!.Lines.Should().HaveCount(4); // 1 crédito fijo + 3 allocations
@@ -365,7 +366,8 @@ public sealed class JournalFactoryTests
         var m = new Mocks();
         m.SetupRule(rule);
 
-        var result = await m.BuildEngine().PostAsync(Fact(grandTotal: 115m, allocations: allocations));
+        var result = await m.BuildEngine()
+            .PostAsync(Fact(grandTotal: 115m, allocations: allocations));
 
         result.IsSuccess.Should().BeTrue();
         m.Captured!.Lines.Sum(l => l.Debit).Should().Be(m.Captured.Lines.Sum(l => l.Credit));
@@ -397,13 +399,29 @@ public sealed class JournalFactoryTests
     public async Task PostingAmountKind_Retention_resuelve_PostingFact_RetainedAmount()
     {
         var accountId = Guid.NewGuid();
-        var rule = PostingRule.Create(TenantId, CompanyId, "Retentions", "DocumentIssued", null, null, null, CreatedBy);
+        var rule = PostingRule.Create(
+            TenantId,
+            CompanyId,
+            "Retentions",
+            "DocumentIssued",
+            null,
+            null,
+            null,
+            CreatedBy
+        );
         rule.AddLine(accountId, AccountNature.Debit, PostingAmountKind.Retention);
         rule.AddLine(Guid.NewGuid(), AccountNature.Credit, PostingAmountKind.Retention);
 
         var m = new Mocks();
-        m.PostingRules
-            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Retentions", "DocumentIssued", It.IsAny<CancellationToken>()))
+        m.PostingRules.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Retentions",
+                    "DocumentIssued",
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(rule);
 
         var result = await m.BuildEngine().PostAsync(RetentionFact(4.50m));
@@ -424,21 +442,43 @@ public sealed class JournalFactoryTests
     {
         var accountsPayableAccount = Guid.NewGuid();
         var retentionPayableAccount = Guid.NewGuid();
-        var rule = PostingRule.Create(TenantId, CompanyId, "Retentions", "DocumentIssued", null, null, null, CreatedBy);
+        var rule = PostingRule.Create(
+            TenantId,
+            CompanyId,
+            "Retentions",
+            "DocumentIssued",
+            null,
+            null,
+            null,
+            CreatedBy
+        );
         rule.AddLine(accountsPayableAccount, AccountNature.Debit, PostingAmountKind.Retention);
         rule.AddLine(retentionPayableAccount, AccountNature.Credit, PostingAmountKind.Retention);
 
         var m = new Mocks();
-        m.PostingRules
-            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Retentions", "DocumentIssued", It.IsAny<CancellationToken>()))
+        m.PostingRules.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Retentions",
+                    "DocumentIssued",
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(rule);
 
         var result = await m.BuildEngine().PostAsync(RetentionFact(4.50m));
 
         result.IsSuccess.Should().BeTrue();
         m.Captured!.Lines.Should().HaveCount(2);
-        m.Captured.Lines.Should().Contain(l => l.AccountId == accountsPayableAccount && l.Debit == 4.50m && l.Credit == 0m);
-        m.Captured.Lines.Should().Contain(l => l.AccountId == retentionPayableAccount && l.Credit == 4.50m && l.Debit == 0m);
+        m.Captured.Lines.Should()
+            .Contain(l =>
+                l.AccountId == accountsPayableAccount && l.Debit == 4.50m && l.Credit == 0m
+            );
+        m.Captured.Lines.Should()
+            .Contain(l =>
+                l.AccountId == retentionPayableAccount && l.Credit == 4.50m && l.Debit == 0m
+            );
         m.Captured.Lines.Sum(l => l.Debit).Should().Be(m.Captured.Lines.Sum(l => l.Credit));
         // Post() invoca EnsureBalanced() internamente — un asiento desbalanceado nunca llega a Posted.
         m.Captured.Status.Should().Be(JournalEntryStatus.Posted);
@@ -448,8 +488,15 @@ public sealed class JournalFactoryTests
     public async Task Sin_PostingRule_configurada_para_Retentions_el_posting_falla_fail_closed()
     {
         var m = new Mocks();
-        m.PostingRules
-            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Retentions", "DocumentIssued", It.IsAny<CancellationToken>()))
+        m.PostingRules.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Retentions",
+                    "DocumentIssued",
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync((PostingRule?)null);
 
         var result = await m.BuildEngine().PostAsync(RetentionFact());
@@ -488,7 +535,16 @@ public sealed class JournalFactoryTests
         Guid incomeAccount
     )
     {
-        var rule = PostingRule.Create(TenantId, CompanyId, "Retentions", "DocumentIssued", null, null, null, CreatedBy);
+        var rule = PostingRule.Create(
+            TenantId,
+            CompanyId,
+            "Retentions",
+            "DocumentIssued",
+            null,
+            null,
+            null,
+            CreatedBy
+        );
         rule.AddLine(payablesAccount, AccountNature.Debit, PostingAmountKind.Retention);
         rule.AddLine(vatAccount, AccountNature.Credit, PostingAmountKind.RetentionVat);
         rule.AddLine(incomeAccount, AccountNature.Credit, PostingAmountKind.RetentionIncome);
@@ -506,16 +562,27 @@ public sealed class JournalFactoryTests
         var rule = ThreeLineRetentionRule(payablesAccount, vatAccount, incomeAccount);
 
         var m = new Mocks();
-        m.PostingRules
-            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Retentions", "DocumentIssued", It.IsAny<CancellationToken>()))
+        m.PostingRules.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Retentions",
+                    "DocumentIssued",
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(rule);
 
-        var result = await m.BuildEngine().PostAsync(RetentionFactByComponent(retainedVat: 10.5m, retainedIncome: 0m));
+        var result = await m.BuildEngine()
+            .PostAsync(RetentionFactByComponent(retainedVat: 10.5m, retainedIncome: 0m));
 
         result.IsSuccess.Should().BeTrue();
-        m.Captured!.Lines.Should().HaveCount(2, because: "la línea de Renta se omite: su monto resuelto es 0");
-        m.Captured.Lines.Should().Contain(l => l.AccountId == payablesAccount && l.Debit == 10.5m && l.Credit == 0m);
-        m.Captured.Lines.Should().Contain(l => l.AccountId == vatAccount && l.Credit == 10.5m && l.Debit == 0m);
+        m.Captured!.Lines.Should()
+            .HaveCount(2, because: "la línea de Renta se omite: su monto resuelto es 0");
+        m.Captured.Lines.Should()
+            .Contain(l => l.AccountId == payablesAccount && l.Debit == 10.5m && l.Credit == 0m);
+        m.Captured.Lines.Should()
+            .Contain(l => l.AccountId == vatAccount && l.Credit == 10.5m && l.Debit == 0m);
         m.Captured.Lines.Should().NotContain(l => l.AccountId == incomeAccount);
         m.Captured.Lines.Sum(l => l.Debit).Should().Be(m.Captured.Lines.Sum(l => l.Credit));
         m.Captured.Status.Should().Be(JournalEntryStatus.Posted);
@@ -532,16 +599,27 @@ public sealed class JournalFactoryTests
         var rule = ThreeLineRetentionRule(payablesAccount, vatAccount, incomeAccount);
 
         var m = new Mocks();
-        m.PostingRules
-            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Retentions", "DocumentIssued", It.IsAny<CancellationToken>()))
+        m.PostingRules.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Retentions",
+                    "DocumentIssued",
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(rule);
 
-        var result = await m.BuildEngine().PostAsync(RetentionFactByComponent(retainedVat: 0m, retainedIncome: 1.75m));
+        var result = await m.BuildEngine()
+            .PostAsync(RetentionFactByComponent(retainedVat: 0m, retainedIncome: 1.75m));
 
         result.IsSuccess.Should().BeTrue();
-        m.Captured!.Lines.Should().HaveCount(2, because: "la línea de IVA se omite: su monto resuelto es 0");
-        m.Captured.Lines.Should().Contain(l => l.AccountId == payablesAccount && l.Debit == 1.75m && l.Credit == 0m);
-        m.Captured.Lines.Should().Contain(l => l.AccountId == incomeAccount && l.Credit == 1.75m && l.Debit == 0m);
+        m.Captured!.Lines.Should()
+            .HaveCount(2, because: "la línea de IVA se omite: su monto resuelto es 0");
+        m.Captured.Lines.Should()
+            .Contain(l => l.AccountId == payablesAccount && l.Debit == 1.75m && l.Credit == 0m);
+        m.Captured.Lines.Should()
+            .Contain(l => l.AccountId == incomeAccount && l.Credit == 1.75m && l.Debit == 0m);
         m.Captured.Lines.Should().NotContain(l => l.AccountId == vatAccount);
         m.Captured.Lines.Sum(l => l.Debit).Should().Be(m.Captured.Lines.Sum(l => l.Credit));
         m.Captured.Status.Should().Be(JournalEntryStatus.Posted);
@@ -559,17 +637,28 @@ public sealed class JournalFactoryTests
         var rule = ThreeLineRetentionRule(payablesAccount, vatAccount, incomeAccount);
 
         var m = new Mocks();
-        m.PostingRules
-            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Retentions", "DocumentIssued", It.IsAny<CancellationToken>()))
+        m.PostingRules.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Retentions",
+                    "DocumentIssued",
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(rule);
 
-        var result = await m.BuildEngine().PostAsync(RetentionFactByComponent(retainedVat: 30.00m, retainedIncome: 1.75m));
+        var result = await m.BuildEngine()
+            .PostAsync(RetentionFactByComponent(retainedVat: 30.00m, retainedIncome: 1.75m));
 
         result.IsSuccess.Should().BeTrue();
         m.Captured!.Lines.Should().HaveCount(3);
-        m.Captured.Lines.Should().Contain(l => l.AccountId == payablesAccount && l.Debit == 31.75m && l.Credit == 0m);
-        m.Captured.Lines.Should().Contain(l => l.AccountId == vatAccount && l.Credit == 30.00m && l.Debit == 0m);
-        m.Captured.Lines.Should().Contain(l => l.AccountId == incomeAccount && l.Credit == 1.75m && l.Debit == 0m);
+        m.Captured.Lines.Should()
+            .Contain(l => l.AccountId == payablesAccount && l.Debit == 31.75m && l.Credit == 0m);
+        m.Captured.Lines.Should()
+            .Contain(l => l.AccountId == vatAccount && l.Credit == 30.00m && l.Debit == 0m);
+        m.Captured.Lines.Should()
+            .Contain(l => l.AccountId == incomeAccount && l.Credit == 1.75m && l.Debit == 0m);
         m.Captured.Lines.Sum(l => l.Debit).Should().Be(m.Captured.Lines.Sum(l => l.Credit));
         m.Captured.Lines.Sum(l => l.Debit).Should().Be(31.75m);
         m.Captured.Status.Should().Be(JournalEntryStatus.Posted);

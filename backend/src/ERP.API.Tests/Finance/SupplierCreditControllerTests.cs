@@ -191,7 +191,11 @@ public sealed class SupplierCreditControllerTests
             return Result<SupplierCreditDto>.Success(SampleDto(id));
         });
 
-        await controller.Apply(id, new ApplySupplierCreditRequest(Guid.NewGuid(), 40m, Guid.NewGuid()), CancellationToken.None);
+        await controller.Apply(
+            id,
+            new ApplySupplierCreditRequest(Guid.NewGuid(), 40m, Guid.NewGuid()),
+            CancellationToken.None
+        );
 
         sent.Should().HaveCount(2);
         sent[1].Should().BeOfType<GetSupplierCreditByIdQuery>().Which.Id.Should().Be(id);
@@ -202,7 +206,11 @@ public sealed class SupplierCreditControllerTests
             failed.Add(req);
             return Result<SupplierCreditDto>.ValidationFailure("x");
         });
-        await failing.Apply(id, new ApplySupplierCreditRequest(Guid.NewGuid(), 40m, Guid.NewGuid()), CancellationToken.None);
+        await failing.Apply(
+            id,
+            new ApplySupplierCreditRequest(Guid.NewGuid(), 40m, Guid.NewGuid()),
+            CancellationToken.None
+        );
         failed.Should().ContainSingle();
     }
 

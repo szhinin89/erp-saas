@@ -53,7 +53,10 @@ public sealed class SetDefaultPriceListHandlerTests
         repo.Setup(r => r.GetByIdAsync(TenantId, id, It.IsAny<CancellationToken>()))
             .ReturnsAsync((PriceList?)null);
 
-        var result = await handler.Handle(new SetDefaultPriceListCommand(id), CancellationToken.None);
+        var result = await handler.Handle(
+            new SetDefaultPriceListCommand(id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);

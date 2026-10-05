@@ -1,3 +1,7 @@
+using System.Reflection;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using ERP.API.Attributes;
 using ERP.API.Tests.Support;
 using FluentAssertions;
@@ -6,10 +10,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
-using System.Reflection;
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Nodes;
 
 namespace ERP.API.Tests.Integration;
 
@@ -52,19 +52,27 @@ public sealed class CompaniesApiSurfaceSnapshotTests : IAsyncLifetime
         if (Environment.GetEnvironmentVariable("ZH_UPDATE_SNAPSHOTS") == "1")
         {
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            File.WriteAllText(path, actual, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            File.WriteAllText(
+                path,
+                actual,
+                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false)
+            );
             return;
         }
 
         File.Exists(path).Should().BeTrue($"falta el snapshot {name}");
-        actual.Should().Be(File.ReadAllText(path).ReplaceLineEndings("\n"), $"la superficie de {name} cambió");
+        actual
+            .Should()
+            .Be(File.ReadAllText(path).ReplaceLineEndings("\n"), $"la superficie de {name} cambió");
     }
 
     private static JsonNode? Canonical(JsonNode? node) =>
         node switch
         {
-            JsonObject o => new JsonObject(o.OrderBy(p => p.Key, StringComparer.Ordinal)
-                .Select(p => KeyValuePair.Create(p.Key, Canonical(p.Value)))),
+            JsonObject o => new JsonObject(
+                o.OrderBy(p => p.Key, StringComparer.Ordinal)
+                    .Select(p => KeyValuePair.Create(p.Key, Canonical(p.Value)))
+            ),
             JsonArray a => new JsonArray(a.Select(Canonical).ToArray()),
             null => null,
             _ => JsonNode.Parse(node.ToJsonString()),
@@ -77,17 +85,29 @@ public sealed class CompaniesApiSurfaceSnapshotTests : IAsyncLifetime
     [Fact]
     public void Rutas_metodos_y_policies_efectivas_no_cambian()
     {
-        var endpoints = _factory.Services.GetRequiredService<EndpointDataSource>().Endpoints
-            .OfType<RouteEndpoint>()
-            .Where(e => e.RoutePattern.RawText?.TrimStart('/').StartsWith(RoutePrefix, StringComparison.Ordinal) == true)
+        var endpoints = _factory
+            .Services.GetRequiredService<EndpointDataSource>()
+            .Endpoints.OfType<RouteEndpoint>()
+            .Where(e =>
+                e.RoutePattern.RawText?.TrimStart('/')
+                    .StartsWith(RoutePrefix, StringComparison.Ordinal) == true
+            )
             .Select(e =>
             {
-                var methods = string.Join(",", e.Metadata.GetMetadata<HttpMethodMetadata>()?.HttpMethods ?? []);
-                var policies = e.Metadata.GetOrderedMetadata<IAuthorizeData>()
+                var methods = string.Join(
+                    ",",
+                    e.Metadata.GetMetadata<HttpMethodMetadata>()?.HttpMethods ?? []
+                );
+                var policies = e
+                    .Metadata.GetOrderedMetadata<IAuthorizeData>()
                     .Select(a => a.Policy ?? "(default)")
                     .OrderBy(p => p, StringComparer.Ordinal);
-                var anonymous = e.Metadata.GetMetadata<IAllowAnonymous>() is not null ? " [AllowAnonymous]" : "";
-                var consumes = e.Metadata.GetMetadata<ConsumesAttribute>() is { } c ? $" consumes={string.Join(",", c.ContentTypes)}" : "";
+                var anonymous = e.Metadata.GetMetadata<IAllowAnonymous>() is not null
+                    ? " [AllowAnonymous]"
+                    : "";
+                var consumes = e.Metadata.GetMetadata<ConsumesAttribute>() is { } c
+                    ? $" consumes={string.Join(",", c.ContentTypes)}"
+                    : "";
                 return $"{methods} /{e.RoutePattern.RawText!.TrimStart('/')} policies=[{string.Join(", ", policies)}]{anonymous}{consumes}";
             })
             .OrderBy(l => l, StringComparer.Ordinal)
@@ -100,12 +120,17 @@ public sealed class CompaniesApiSurfaceSnapshotTests : IAsyncLifetime
     [Fact]
     public async Task Documento_OpenAPI_de_las_rutas_de_empresas_no_cambia()
     {
-        var json = JsonNode.Parse(await _factory.CreateClient().GetStringAsync("/swagger/v1/swagger.json"))!;
+        var json = JsonNode.Parse(
+            await _factory.CreateClient().GetStringAsync("/swagger/v1/swagger.json")
+        )!;
 
-        var paths = new JsonObject(json["paths"]!.AsObject()
-            .Where(p => p.Key.StartsWith("/" + RoutePrefix, StringComparison.Ordinal))
-            .OrderBy(p => p.Key, StringComparer.Ordinal)
-            .Select(p => KeyValuePair.Create(p.Key, Canonical(p.Value))));
+        var paths = new JsonObject(
+            json["paths"]!
+                .AsObject()
+                .Where(p => p.Key.StartsWith("/" + RoutePrefix, StringComparison.Ordinal))
+                .OrderBy(p => p.Key, StringComparer.Ordinal)
+                .Select(p => KeyValuePair.Create(p.Key, Canonical(p.Value)))
+        );
         var surface = new JsonObject
         {
             ["paths"] = paths,
@@ -113,7 +138,10 @@ public sealed class CompaniesApiSurfaceSnapshotTests : IAsyncLifetime
         };
 
         paths.Count.Should().BeGreaterThan(0);
-        MatchSnapshot("companies-openapi.json", surface.ToJsonString(Pretty).ReplaceLineEndings("\n") + "\n");
+        MatchSnapshot(
+            "companies-openapi.json",
+            surface.ToJsonString(Pretty).ReplaceLineEndings("\n") + "\n"
+        );
     }
 
     [Fact]
@@ -123,25 +151,44 @@ public sealed class CompaniesApiSurfaceSnapshotTests : IAsyncLifetime
         // GetEntryAssembly): fila por [AppFeature] de clase y de acción HTTP; el padre de una acción
         // es su ParentPermission explícito o el permiso del [AppFeature] de su controller.
         var rows = new List<string>();
-        foreach (var type in typeof(Program).Assembly.GetTypes()
-                     .Where(t => t.IsPublic && !t.IsAbstract && typeof(ControllerBase).IsAssignableFrom(t)))
+        foreach (
+            var type in typeof(Program)
+                .Assembly.GetTypes()
+                .Where(t =>
+                    t.IsPublic && !t.IsAbstract && typeof(ControllerBase).IsAssignableFrom(t)
+                )
+        )
         {
             var classAttr = type.GetCustomAttribute<AppFeatureAttribute>(inherit: true);
             if (classAttr is not null && !string.IsNullOrWhiteSpace(classAttr.Permission))
                 rows.Add(Row(classAttr, classAttr.ParentPermission));
 
-            foreach (var method in type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
+            foreach (
+                var method in type.GetMethods(
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly
+                )
+            )
             {
                 if (!method.GetCustomAttributes(inherit: true).OfType<HttpMethodAttribute>().Any())
                     continue;
                 var methodAttr = method.GetCustomAttribute<AppFeatureAttribute>(inherit: false);
                 if (methodAttr is null || string.IsNullOrWhiteSpace(methodAttr.Permission))
                     continue;
-                rows.Add(Row(methodAttr, !string.IsNullOrWhiteSpace(methodAttr.ParentPermission) ? methodAttr.ParentPermission : classAttr?.Permission));
+                rows.Add(
+                    Row(
+                        methodAttr,
+                        !string.IsNullOrWhiteSpace(methodAttr.ParentPermission)
+                            ? methodAttr.ParentPermission
+                            : classAttr?.Permission
+                    )
+                );
             }
         }
 
-        MatchSnapshot("app-features.txt", string.Join("\n", rows.Distinct().OrderBy(r => r, StringComparer.Ordinal)) + "\n");
+        MatchSnapshot(
+            "app-features.txt",
+            string.Join("\n", rows.Distinct().OrderBy(r => r, StringComparer.Ordinal)) + "\n"
+        );
 
         static string Row(AppFeatureAttribute a, string? parent) =>
             $"{a.Permission.Trim()} | {a.Name} | {a.Icon} | {a.Path} | parent={parent?.Trim()} | sort={a.SortOrder} | menu={a.IsVisibleInMenu}";

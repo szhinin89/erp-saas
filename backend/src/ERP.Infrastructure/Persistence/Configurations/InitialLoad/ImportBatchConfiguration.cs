@@ -51,7 +51,13 @@ public sealed class ImportBatchConfiguration : IEntityTypeConfiguration<ImportBa
             .HasDatabaseName("ix_import_batches_company");
 
         builder
-            .HasIndex(x => new { x.TenantId, x.CompanyId, x.ImportType, x.Status })
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.CompanyId,
+                x.ImportType,
+                x.Status,
+            })
             .HasDatabaseName("ix_import_batches_company_type_status");
     }
 }

@@ -35,7 +35,10 @@ public sealed class ListCompaniesHandler
     {
         var subResult = await _accessGuard.RequireActiveTenantAsync(cancellationToken);
         if (!subResult.IsSuccess)
-            return Result<IReadOnlyList<CompanyListItemDto>>.Failure(subResult.Error!, subResult.Code);
+            return Result<IReadOnlyList<CompanyListItemDto>>.Failure(
+                subResult.Error!,
+                subResult.Code
+            );
 
         var tenantId = subResult.Value!;
         var memberships = await _access.GetActiveCompanyUserMembershipsForUserSystemAsync(

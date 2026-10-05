@@ -18,7 +18,10 @@ public readonly record struct ClientRequestKey
     public ClientRequestKey(Guid id, string payloadHash)
     {
         if (id == Guid.Empty)
-            throw new ArgumentException("El identificador de la intención es obligatorio.", nameof(id));
+            throw new ArgumentException(
+                "El identificador de la intención es obligatorio.",
+                nameof(id)
+            );
         if (string.IsNullOrWhiteSpace(payloadHash) || payloadHash.Length != PayloadHashLength)
             throw new ArgumentException(
                 $"La huella de la intención debe tener {PayloadHashLength} caracteres.",

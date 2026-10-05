@@ -1,3 +1,4 @@
+using System.Xml.Schema;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Application.Modules.ElectronicDocuments.SchemaValidation;
 using ERP.Application.Modules.ElectronicDocuments.XmlBuilders;
@@ -6,7 +7,6 @@ using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Infrastructure.Services.ElectronicDocuments;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
-using System.Xml.Schema;
 
 namespace ERP.Application.Tests.ElectronicDocuments;
 

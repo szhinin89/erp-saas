@@ -82,7 +82,13 @@ public sealed class ElectronicDocumentSriAnnulment : IElectronicDocumentSriAnnul
         CancellationToken ct = default
     )
     {
-        var document = await LoadUnderLockAsync(tenantId, companyId, sourceModule, sourceEntityId, ct);
+        var document = await LoadUnderLockAsync(
+            tenantId,
+            companyId,
+            sourceModule,
+            sourceEntityId,
+            ct
+        );
         if (document is null)
             return Result<ElectronicDocument>.ValidationFailure(
                 "El comprobante electrónico de la retención no existe."
@@ -112,7 +118,13 @@ public sealed class ElectronicDocumentSriAnnulment : IElectronicDocumentSriAnnul
         CancellationToken ct = default
     )
     {
-        var document = await LoadUnderLockAsync(tenantId, companyId, sourceModule, sourceEntityId, ct);
+        var document = await LoadUnderLockAsync(
+            tenantId,
+            companyId,
+            sourceModule,
+            sourceEntityId,
+            ct
+        );
         if (document is null)
             return Result<ElectronicDocument>.ValidationFailure(
                 "El comprobante electrónico de la retención no existe."
@@ -138,7 +150,13 @@ public sealed class ElectronicDocumentSriAnnulment : IElectronicDocumentSriAnnul
         CancellationToken ct = default
     )
     {
-        var document = await LoadUnderLockAsync(tenantId, companyId, sourceModule, sourceEntityId, ct);
+        var document = await LoadUnderLockAsync(
+            tenantId,
+            companyId,
+            sourceModule,
+            sourceEntityId,
+            ct
+        );
         if (document is null)
             return Result<ElectronicDocument>.ValidationFailure(
                 "El comprobante electrónico de la retención no existe."
@@ -172,7 +190,12 @@ public sealed class ElectronicDocumentSriAnnulment : IElectronicDocumentSriAnnul
             );
 
         await guard.EvaluateAsync(tenantId, companyId, sourceEntityId, lockForUpdate: true, ct);
-        var document = await _repository.GetBySourceAsync(tenantId, sourceModule, sourceEntityId, ct);
+        var document = await _repository.GetBySourceAsync(
+            tenantId,
+            sourceModule,
+            sourceEntityId,
+            ct
+        );
         if (document is null || document.CompanyId != companyId)
             return null;
         await _repository.ReloadAsync(document, ct);

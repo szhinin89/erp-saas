@@ -15,16 +15,46 @@ public sealed class CommunicationTemplateResolverTests
 {
     private static readonly Guid TenantId = Guid.NewGuid();
     private static readonly Guid CompanyId = Guid.NewGuid();
-    private static readonly CommunicationScope Company = CommunicationScope.Company(TenantId, CompanyId);
+    private static readonly CommunicationScope Company = CommunicationScope.Company(
+        TenantId,
+        CompanyId
+    );
     private const string Key = CommunicationPurposes.SalesInvoiceAuthorized;
 
-    private static CommunicationTemplate Override(string subject = "Su factura {{InvoiceNumber}}", string? html = "<p>{{CustomerName}}</p>") =>
-        CommunicationTemplate.Create(TenantId, CompanyId, null, Key, "Factura", CommunicationChannel.Email, subject, html, null, "es", Guid.Empty);
+    private static CommunicationTemplate Override(
+        string subject = "Su factura {{InvoiceNumber}}",
+        string? html = "<p>{{CustomerName}}</p>"
+    ) =>
+        CommunicationTemplate.Create(
+            TenantId,
+            CompanyId,
+            null,
+            Key,
+            "Factura",
+            CommunicationChannel.Email,
+            subject,
+            html,
+            null,
+            "es",
+            Guid.Empty
+        );
 
-    private static (CommunicationTemplateResolver Resolver, Mock<ICommunicationTemplateRepository> Repo) Build(CommunicationTemplate? companyOverride)
+    private static (
+        CommunicationTemplateResolver Resolver,
+        Mock<ICommunicationTemplateRepository> Repo
+    ) Build(CommunicationTemplate? companyOverride)
     {
         var repo = new Mock<ICommunicationTemplateRepository>();
-        repo.Setup(r => r.GetActiveAsync(TenantId, CompanyId, CommunicationChannel.Email, Key, "es", It.IsAny<CancellationToken>()))
+        repo.Setup(r =>
+                r.GetActiveAsync(
+                    TenantId,
+                    CompanyId,
+                    CommunicationChannel.Email,
+                    Key,
+                    "es",
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(companyOverride);
         return (new CommunicationTemplateResolver(repo.Object), repo);
     }
@@ -43,7 +73,13 @@ public sealed class CommunicationTemplateResolverTests
     public async Task Override_activo_de_la_empresa_se_usa_con_su_revision_y_el_contrato_del_default()
     {
         var companyOverride = Override();
-        companyOverride.UpdateContent("Factura", "Su factura {{InvoiceNumber}} ({{IssuerName}})", "<p>{{CustomerName}}</p>", null, Guid.Empty);
+        companyOverride.UpdateContent(
+            "Factura",
+            "Su factura {{InvoiceNumber}} ({{IssuerName}})",
+            "<p>{{CustomerName}}</p>",
+            null,
+            Guid.Empty
+        );
         var (resolver, _) = Build(companyOverride);
 
         var result = await resolver.ResolveAsync(Company, Key);
@@ -52,7 +88,9 @@ public sealed class CommunicationTemplateResolverTests
         result.Value!.Source.Should().Be(CommunicationTemplateSource.CompanyOverride);
         result.Value.Version.Should().Be(2, "la versión registrada de un override es su revisión");
         result.Value.SubjectTemplate.Should().Be("Su factura {{InvoiceNumber}} ({{IssuerName}})");
-        result.Value.Variables.Should().BeEquivalentTo(CommunicationDefaultTemplates.SalesInvoiceAuthorizedV1.Variables);
+        result
+            .Value.Variables.Should()
+            .BeEquivalentTo(CommunicationDefaultTemplates.SalesInvoiceAuthorizedV1.Variables);
     }
 
     [Fact]
@@ -83,10 +121,18 @@ public sealed class CommunicationTemplateResolverTests
         var (resolver, repo) = Build(null);
 
         var unknown = await resolver.ResolveAsync(Company, "NO_EXISTE");
-        var reservedWithoutDefault = await resolver.ResolveAsync(CommunicationScope.System, CommunicationPurposes.PasswordReset);
+        var reservedWithoutDefault = await resolver.ResolveAsync(
+            CommunicationScope.System,
+            CommunicationPurposes.PasswordReset
+        );
 
         unknown.Code.Should().Be(ApiResponseCodes.Communications.TemplateNotFound);
-        reservedWithoutDefault.Code.Should().Be(ApiResponseCodes.Communications.TemplateNotFound, "PASSWORD_RESET no tiene template productivo todavía");
+        reservedWithoutDefault
+            .Code.Should()
+            .Be(
+                ApiResponseCodes.Communications.TemplateNotFound,
+                "PASSWORD_RESET no tiene template productivo todavía"
+            );
         repo.VerifyNoOtherCalls();
     }
 }

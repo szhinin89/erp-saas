@@ -67,7 +67,8 @@ public static class ApiResponseCodes
         /// representación oficial única y coherente (sin versión vigente, ambigua, sin código XML o tasa
         /// distinta). Error de configuración fiscal: el XML no se genera (fail-closed).
         /// </summary>
-        public const string FiscalCatalogConfigurationError = "SRI_FISCAL_CATALOG_CONFIGURATION_ERROR";
+        public const string FiscalCatalogConfigurationError =
+            "SRI_FISCAL_CATALOG_CONFIGURATION_ERROR";
 
         /// <summary>
         /// ZH-SRI-ANEXO26-PROVIDER-RUC-01 (ADR-038 D6) — la información adicional compuesta viola una
@@ -81,7 +82,8 @@ public static class ApiResponseCodes
         /// exigible para el comprobante y la configuración global del proveedor está incompleta
         /// (deshabilitada, sin fecha de vigencia o sin RUC válido). El XML no se genera (fail-closed).
         /// </summary>
-        public const string SystemProviderRucNotConfigured = "SRI_SYSTEM_PROVIDER_RUC_NOT_CONFIGURED";
+        public const string SystemProviderRucNotConfigured =
+            "SRI_SYSTEM_PROVIDER_RUC_NOT_CONFIGURED";
     }
 
     /// <summary>
@@ -125,7 +127,8 @@ public static class ApiResponseCodes
         public const string AnnulmentFinalized = "RETENTION_ANNULMENT_FINALIZED";
 
         /// <summary>Éxito parcial: ANULADO registrado, pero la anulación del origen quedó pendiente de reintento.</summary>
-        public const string AnnulmentFinalizationPending = "RETENTION_ANNULMENT_FINALIZATION_PENDING";
+        public const string AnnulmentFinalizationPending =
+            "RETENTION_ANNULMENT_FINALIZATION_PENDING";
 
         // ZH-RETENTION-SRI-ANNULMENT-01B — resultado de la verificación en ConsultaComprobante (200: la
         // consulta se ejecutó; el estado fiscal lo informa el SRI, nunca el usuario).
@@ -143,7 +146,11 @@ public static class ApiResponseCodes
         public const string SriVerificationFailed = "RETENTION_ANNULMENT_SRI_VERIFICATION_FAILED";
 
         /// <summary>La CxP del origen está retenida por una anulación en trámite (pagos/créditos/ajustes bloqueados).</summary>
-        public const string AnnulmentPending =
-            ERP.Domain.Modules.Payables.Exceptions.RetentionAnnulmentPendingException.ErrorCode;
+        public const string AnnulmentPending = ERP.Domain
+            .Modules
+            .Payables
+            .Exceptions
+            .RetentionAnnulmentPendingException
+            .ErrorCode;
     }
 }

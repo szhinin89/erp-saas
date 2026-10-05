@@ -263,9 +263,7 @@ public sealed class ExpenseCategoryUseCasesTests
         var category = CategoryNode(type);
         var subcategory = SubcategoryNode(category);
         var repo = CategoryRepo();
-        repo.Setup(r =>
-                r.GetByIdAsync(TenantId, subcategory.Id, It.IsAny<CancellationToken>())
-            )
+        repo.Setup(r => r.GetByIdAsync(TenantId, subcategory.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(subcategory);
         var handler = CreateHandler(repo.Object);
 
@@ -346,9 +344,7 @@ public sealed class ExpenseCategoryUseCasesTests
     [Fact]
     public async Task Create_Subcategory_con_cuenta_no_postable_se_bloquea()
     {
-        var result = await CreateSubcategoryWithAccountAsync(
-            ExpenseAccount(allowsPosting: false)
-        );
+        var result = await CreateSubcategoryWithAccountAsync(ExpenseAccount(allowsPosting: false));
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
@@ -383,9 +379,9 @@ public sealed class ExpenseCategoryUseCasesTests
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
     }
 
-    private static async Task<Result<ERP.Application.Modules.Expenses.DTOs.ExpenseCategoryNodeDto>> CreateSubcategoryWithAccountAsync(
-        Account? account
-    )
+    private static async Task<
+        Result<ERP.Application.Modules.Expenses.DTOs.ExpenseCategoryNodeDto>
+    > CreateSubcategoryWithAccountAsync(Account? account)
     {
         var type = TypeNode();
         var category = CategoryNode(type);

@@ -42,7 +42,10 @@ public interface IPaymentRepository
     /// comprobante SRI, ver ADR-026 §7); puede ser null.
     /// </summary>
     Task<
-        IReadOnlyDictionary<Guid, (Guid PartnerId, decimal Amount, DateOnly PaymentDate, string? Reference, string Status)>
+        IReadOnlyDictionary<
+            Guid,
+            (Guid PartnerId, decimal Amount, DateOnly PaymentDate, string? Reference, string Status)
+        >
     > GetJournalSourceSummariesByIdsAsync(
         Guid tenantId,
         Guid companyId,

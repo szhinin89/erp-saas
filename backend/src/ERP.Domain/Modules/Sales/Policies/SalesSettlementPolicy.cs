@@ -7,7 +7,11 @@ namespace ERP.Domain.Modules.Sales.Policies;
 /// (ver <see cref="SalesPaymentModality"/> para la señal equivalente a nivel de forma de pago).
 /// Único punto de este cálculo — nunca repetido ad-hoc en un handler.
 /// </summary>
-public readonly record struct SalesSettlementResult(decimal Total, decimal CashApplied, decimal PendingBalance)
+public readonly record struct SalesSettlementResult(
+    decimal Total,
+    decimal CashApplied,
+    decimal PendingBalance
+)
 {
     /// <summary>true cuando el saldo pendiente es cero dentro de la tolerancia de redondeo del
     /// módulo (<see cref="SalesSettlementPolicy.Tolerance"/>) — no exige condición de pago,

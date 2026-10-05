@@ -47,9 +47,12 @@ public sealed class BranchScopeBehavior<TRequest, TResponse>
         if (!result.IsSuccess)
             throw result.Code switch
             {
-                ApiResponseCodes.Common.Unauthorized => new UnauthorizedAccessException(result.Error),
-                ApiResponseCodes.Common.CompanyScopeForbidden =>
-                    CompanyScopeException.AccessDenied(result.Error),
+                ApiResponseCodes.Common.Unauthorized => new UnauthorizedAccessException(
+                    result.Error
+                ),
+                ApiResponseCodes.Common.CompanyScopeForbidden => CompanyScopeException.AccessDenied(
+                    result.Error
+                ),
                 _ => BranchScopeException.AccessDenied(result.Error),
             };
 

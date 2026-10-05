@@ -30,11 +30,22 @@ public sealed class GetCustomerPriceListContextQueryHandlerTests
         var mayorista = Guid.NewGuid();
         var general = Guid.NewGuid();
         var handler = Build(
-            new PriceListSelectionResult(mayorista, "MAYORISTA001", PriceListSelectionSource.Customer),
-            new PriceListSelectionResult(general, "Lista General", PriceListSelectionSource.CompanyDefault)
+            new PriceListSelectionResult(
+                mayorista,
+                "MAYORISTA001",
+                PriceListSelectionSource.Customer
+            ),
+            new PriceListSelectionResult(
+                general,
+                "Lista General",
+                PriceListSelectionSource.CompanyDefault
+            )
         );
 
-        var result = await handler.Handle(new GetCustomerPriceListContextQuery(CustomerId), default);
+        var result = await handler.Handle(
+            new GetCustomerPriceListContextQuery(CustomerId),
+            default
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.CustomerPriceListId.Should().Be(mayorista);
@@ -48,10 +59,17 @@ public sealed class GetCustomerPriceListContextQueryHandlerTests
     {
         var general = Guid.NewGuid();
         var handler = Build(
-            new PriceListSelectionResult(general, "Lista General", PriceListSelectionSource.CompanyDefault)
+            new PriceListSelectionResult(
+                general,
+                "Lista General",
+                PriceListSelectionSource.CompanyDefault
+            )
         );
 
-        var result = await handler.Handle(new GetCustomerPriceListContextQuery(CustomerId), default);
+        var result = await handler.Handle(
+            new GetCustomerPriceListContextQuery(CustomerId),
+            default
+        );
 
         result.Value!.CustomerPriceListId.Should().BeNull();
         result.Value.CustomerPriceListName.Should().BeNull();
@@ -66,7 +84,10 @@ public sealed class GetCustomerPriceListContextQueryHandlerTests
             new PriceListSelectionResult(shared, "MAYORISTA001", PriceListSelectionSource.Customer)
         );
 
-        var result = await handler.Handle(new GetCustomerPriceListContextQuery(CustomerId), default);
+        var result = await handler.Handle(
+            new GetCustomerPriceListContextQuery(CustomerId),
+            default
+        );
 
         result.Value!.CustomerPriceListId.Should().Be(shared);
         result.Value.CompanyDefaultPriceListId.Should().BeNull();
@@ -75,7 +96,8 @@ public sealed class GetCustomerPriceListContextQueryHandlerTests
     [Fact]
     public async Task Sin_candidatos_devuelve_todo_null()
     {
-        var result = await Build().Handle(new GetCustomerPriceListContextQuery(CustomerId), default);
+        var result = await Build()
+            .Handle(new GetCustomerPriceListContextQuery(CustomerId), default);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value.Should().Be(new CustomerPriceListContextDto(null, null, null, null));
@@ -92,6 +114,9 @@ public sealed class GetCustomerPriceListContextQueryHandlerTests
 
         await handler.Handle(new GetCustomerPriceListContextQuery(CustomerId), default);
 
-        selection.Verify(s => s.ResolveAsync(CustomerId, It.IsAny<CancellationToken>()), Times.Once);
+        selection.Verify(
+            s => s.ResolveAsync(CustomerId, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 }

@@ -51,15 +51,30 @@ public sealed class AssignBusinessPartnerRoleHandler
     {
         // Configs primero (mismo orden que antes aplicaba el controller: supplier, carrier,
         // customer): un invariante violado responde el 400 histórico antes de cualquier lectura.
-        var supplierConfig = cmd.SupplierConfig is null ? default : RoleConfigFactory.Build(cmd.SupplierConfig);
+        var supplierConfig = cmd.SupplierConfig is null
+            ? default
+            : RoleConfigFactory.Build(cmd.SupplierConfig);
         if (!supplierConfig.IsValid)
-            return Result<BusinessPartnerRoleDto>.ValidationFailure(supplierConfig.Error!, RoleConfigFactory.InvalidConfigCode);
-        var carrierConfig = cmd.CarrierConfig is null ? default : RoleConfigFactory.Build(cmd.CarrierConfig);
+            return Result<BusinessPartnerRoleDto>.ValidationFailure(
+                supplierConfig.Error!,
+                RoleConfigFactory.InvalidConfigCode
+            );
+        var carrierConfig = cmd.CarrierConfig is null
+            ? default
+            : RoleConfigFactory.Build(cmd.CarrierConfig);
         if (!carrierConfig.IsValid)
-            return Result<BusinessPartnerRoleDto>.ValidationFailure(carrierConfig.Error!, RoleConfigFactory.InvalidConfigCode);
-        var customerConfig = cmd.CustomerConfig is null ? default : RoleConfigFactory.Build(cmd.CustomerConfig);
+            return Result<BusinessPartnerRoleDto>.ValidationFailure(
+                carrierConfig.Error!,
+                RoleConfigFactory.InvalidConfigCode
+            );
+        var customerConfig = cmd.CustomerConfig is null
+            ? default
+            : RoleConfigFactory.Build(cmd.CustomerConfig);
         if (!customerConfig.IsValid)
-            return Result<BusinessPartnerRoleDto>.ValidationFailure(customerConfig.Error!, RoleConfigFactory.InvalidConfigCode);
+            return Result<BusinessPartnerRoleDto>.ValidationFailure(
+                customerConfig.Error!,
+                RoleConfigFactory.InvalidConfigCode
+            );
 
         var bp = await _bpRepo.GetByIdAsync(cmd.BusinessPartnerId, cancellationToken);
         if (bp is null)

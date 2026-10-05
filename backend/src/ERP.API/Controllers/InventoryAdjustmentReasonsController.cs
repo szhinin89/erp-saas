@@ -52,7 +52,11 @@ public sealed class InventoryAdjustmentReasonsController : ControllerBase
             new ListInventoryAdjustmentReasonsQuery(companyId, includeInactive),
             ct
         );
-        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<InventoryAdjustmentReasonDto>());
+        return this.ToOkOrBadRequest(
+            result,
+            "OK",
+            () => Array.Empty<InventoryAdjustmentReasonDto>()
+        );
     }
 
     /// <summary>Crea un motivo de ajuste de inventario.</summary>

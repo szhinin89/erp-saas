@@ -75,7 +75,9 @@ public sealed class CancelStockAdjustmentCommandHandler
         var isIngreso = adj.MovementType == StockAdjustment.MovementTypeIngreso;
         // Reversa siempre en tipo contrario: un Ingreso posteó PositiveAdjust, su reversa es
         // NegativeAdjust (y viceversa) — nunca reutiliza el mismo tipo de movimiento original.
-        var reversalType = isIngreso ? StockMovementType.NegativeAdjust : StockMovementType.PositiveAdjust;
+        var reversalType = isIngreso
+            ? StockMovementType.NegativeAdjust
+            : StockMovementType.PositiveAdjust;
         var reference = $"ANULACIÓN: {adj.AdjustmentNumber}";
 
         foreach (var line in adj.Lines)

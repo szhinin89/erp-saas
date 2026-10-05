@@ -29,50 +29,73 @@ public sealed class SystemProviderRucAdditionalInfoContributorTests
             Guid.NewGuid(),
             Guid.NewGuid(),
             issueDate,
-            new ElectronicDocumentIssuerData("1790012345001", "Emisor S.A.", null, "Matriz", null, true)
+            new ElectronicDocumentIssuerData(
+                "1790012345001",
+                "Emisor S.A.",
+                null,
+                "Matriz",
+                null,
+                true
+            )
         );
 
     private static Task<Result<IReadOnlyList<ElectronicDocumentAdditionalField>>> Contribute(
         Mock<ISystemProviderSettingsRepository> settings,
         DateOnly issueDate,
         ElectronicDocumentType type = ElectronicDocumentType.Invoice
-    ) => new SystemProviderRucAdditionalInfoContributor(settings.Object).ContributeAsync(Context(issueDate, type));
+    ) =>
+        new SystemProviderRucAdditionalInfoContributor(settings.Object).ContributeAsync(
+            Context(issueDate, type)
+        );
 
-    private static void ShouldEmitRuc(Result<IReadOnlyList<ElectronicDocumentAdditionalField>> result)
+    private static void ShouldEmitRuc(
+        Result<IReadOnlyList<ElectronicDocumentAdditionalField>> result
+    )
     {
         result.IsSuccess.Should().BeTrue(result.Error);
-        result.Value.Should().Equal(
-            new ElectronicDocumentAdditionalField(
-                SriAdditionalInfoFieldNames.SystemProviderRuc,
-                AdditionalInfoTestDoubles.ProviderRuc
-            )
-        );
+        result
+            .Value.Should()
+            .Equal(
+                new ElectronicDocumentAdditionalField(
+                    SriAdditionalInfoFieldNames.SystemProviderRuc,
+                    AdditionalInfoTestDoubles.ProviderRuc
+                )
+            );
     }
 
-    private static void ShouldEmitNothing(Result<IReadOnlyList<ElectronicDocumentAdditionalField>> result)
+    private static void ShouldEmitNothing(
+        Result<IReadOnlyList<ElectronicDocumentAdditionalField>> result
+    )
     {
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value.Should().BeEmpty();
     }
 
-    private static void ShouldFailClosed(Result<IReadOnlyList<ElectronicDocumentAdditionalField>> result)
+    private static void ShouldFailClosed(
+        Result<IReadOnlyList<ElectronicDocumentAdditionalField>> result
+    )
     {
         result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.SystemProviderRucNotConfigured);
+        result
+            .Code.Should()
+            .Be(ApiResponseCodes.ElectronicDocuments.SystemProviderRucNotConfigured);
         result.Error.Should().NotBeNullOrWhiteSpace();
     }
 
     [Fact]
     public async Task Fila_A_sin_fecha_y_deshabilitado_no_emite_campo()
     {
-        ShouldEmitNothing(await Contribute(AdditionalInfoTestDoubles.ProviderSettings(false, null), EffectiveDate));
+        ShouldEmitNothing(
+            await Contribute(AdditionalInfoTestDoubles.ProviderSettings(false, null), EffectiveDate)
+        );
     }
 
     [Fact]
     public async Task Fila_A_sin_configuracion_no_emite_campo()
     {
         var repo = new Mock<ISystemProviderSettingsRepository>();
-        repo.Setup(r => r.GetAsync(It.IsAny<CancellationToken>())).ReturnsAsync((SystemProviderSettings?)null);
+        repo.Setup(r => r.GetAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync((SystemProviderSettings?)null);
 
         ShouldEmitNothing(await Contribute(repo, EffectiveDate));
     }
@@ -80,7 +103,9 @@ public sealed class SystemProviderRucAdditionalInfoContributorTests
     [Fact]
     public async Task Fila_B_sin_fecha_y_habilitado_falla_cerrado()
     {
-        ShouldFailClosed(await Contribute(AdditionalInfoTestDoubles.ProviderSettings(true, null), EffectiveDate));
+        ShouldFailClosed(
+            await Contribute(AdditionalInfoTestDoubles.ProviderSettings(true, null), EffectiveDate)
+        );
     }
 
     [Fact]
@@ -111,7 +136,12 @@ public sealed class SystemProviderRucAdditionalInfoContributorTests
     [Fact]
     public async Task Fila_D_emision_igual_a_la_fecha_emite_RUC_Proveedor()
     {
-        ShouldEmitRuc(await Contribute(AdditionalInfoTestDoubles.ProviderSettings(true, EffectiveDate), EffectiveDate));
+        ShouldEmitRuc(
+            await Contribute(
+                AdditionalInfoTestDoubles.ProviderSettings(true, EffectiveDate),
+                EffectiveDate
+            )
+        );
     }
 
     [Fact]
@@ -166,7 +196,10 @@ public sealed class SystemProviderRucAdditionalInfoContributorTests
             .GetParameters()
             .Select(p => p.ParameterType)
             .Should()
-            .Equal([typeof(ISystemProviderSettingsRepository)], "no debe depender de un reloj ni de tenant/empresa");
+            .Equal(
+                [typeof(ISystemProviderSettingsRepository)],
+                "no debe depender de un reloj ni de tenant/empresa"
+            );
     }
 
     [Theory]
@@ -176,7 +209,10 @@ public sealed class SystemProviderRucAdditionalInfoContributorTests
     [InlineData(ElectronicDocumentType.DebitNote, false)]
     [InlineData(ElectronicDocumentType.ShippingGuide, false)]
     [InlineData(ElectronicDocumentType.PurchaseSettlement, false)]
-    public void Aplica_a_los_tipos_electronicos_implementados_01_04_07(ElectronicDocumentType type, bool applies)
+    public void Aplica_a_los_tipos_electronicos_implementados_01_04_07(
+        ElectronicDocumentType type,
+        bool applies
+    )
     {
         var contributor = new SystemProviderRucAdditionalInfoContributor(
             AdditionalInfoTestDoubles.ProviderSettings(true, EffectiveDate).Object

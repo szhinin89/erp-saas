@@ -163,19 +163,22 @@ public sealed class GetJournalEntryByIdHandler
         // ACCOUNTING-REVERSALS-05: resuelve el par de reverso (Original/Reverse) para que el
         // detalle pueda mostrar número/fecha del asiento vinculado sin una segunda llamada del
         // frontend — 0 a 2 lookups por Id adicionales, aceptables en una vista de detalle.
-        var originalEntry =
-            entry.OriginalJournalEntryId is { } originalId
-                ? await _repo.GetByIdAsync(tenantId, companyId, originalId, ct)
-                : null;
-        var reverseEntry =
-            entry.ReverseJournalEntryId is { } reverseId
-                ? await _repo.GetByIdAsync(tenantId, companyId, reverseId, ct)
-                : null;
+        var originalEntry = entry.OriginalJournalEntryId is { } originalId
+            ? await _repo.GetByIdAsync(tenantId, companyId, originalId, ct)
+            : null;
+        var reverseEntry = entry.ReverseJournalEntryId is { } reverseId
+            ? await _repo.GetByIdAsync(tenantId, companyId, reverseId, ct)
+            : null;
 
         var sourceRequests = new List<JournalEntrySourceRequest> { Map.ToSourceRequest(entry) };
         if (originalEntry is not null)
             sourceRequests.Add(Map.ToSourceRequest(originalEntry));
-        var sources = await _sourceResolver.ResolveManyAsync(tenantId, companyId, sourceRequests, ct);
+        var sources = await _sourceResolver.ResolveManyAsync(
+            tenantId,
+            companyId,
+            sourceRequests,
+            ct
+        );
 
         sources.TryGetValue(entry.Id, out var ownSource);
         // Un asiento de reverso lleva SourceModule="Accounting"/SourceEventType="Reversal" (ver
@@ -185,9 +188,12 @@ public sealed class GetJournalEntryByIdHandler
         // documental o una referencia clara").
         var source =
             ownSource
-            ?? (originalEntry is not null && sources.TryGetValue(originalEntry.Id, out var inherited)
-                ? WithReversalPrefix(inherited, entry)
-                : null);
+            ?? (
+                originalEntry is not null
+                && sources.TryGetValue(originalEntry.Id, out var inherited)
+                    ? WithReversalPrefix(inherited, entry)
+                    : null
+            );
 
         return Result<JournalEntryDetailDto>.Success(
             Map.ToDetailDto(entry, accountsById, source, originalEntry, reverseEntry)
@@ -207,12 +213,18 @@ public sealed class GetJournalEntryByIdHandler
         JournalEntry entry
     ) =>
         entry.SourceModule == "Accounting" && entry.SourceEventType == "Reversal"
-            ? inherited with { SourceDocumentType = $"Reverso de {inherited.SourceDocumentType}" }
+            ? inherited with
+            {
+                SourceDocumentType = $"Reverso de {inherited.SourceDocumentType}",
+            }
             : inherited;
 }
 
 public sealed class GetJournalEntriesBySourceHandler
-    : IRequestHandler<GetJournalEntriesBySourceQuery, Result<IReadOnlyList<JournalEntryListItemDto>>>
+    : IRequestHandler<
+        GetJournalEntriesBySourceQuery,
+        Result<IReadOnlyList<JournalEntryListItemDto>>
+    >
 {
     private readonly IJournalEntryRepository _repo;
     private readonly IJournalEntrySourceResolver _sourceResolver;
@@ -299,7 +311,9 @@ file static class Map
     /// pidió); Sales/Purchases quedan fuera por ahora — extenderlo es aditivo (agregar el módulo
     /// aquí), nunca requiere tocar JournalFactory ni el posting.
     /// </summary>
-    private static readonly HashSet<string> LineDisplayDescriptionModules = new(StringComparer.Ordinal)
+    private static readonly HashSet<string> LineDisplayDescriptionModules = new(
+        StringComparer.Ordinal
+    )
     {
         "Expenses",
         "Payables",

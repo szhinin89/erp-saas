@@ -1,3 +1,7 @@
+using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using ERP.API.Tests.Support;
 using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Inventory.Enums;
@@ -7,10 +11,6 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
-using System.Net;
-using System.Net.Http.Json;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using Xunit.Abstractions;
 
 namespace ERP.API.Tests.Integration;
@@ -73,7 +73,10 @@ public sealed class SalesCancelAuthorizedReturnRuleTests : IClassFixture<SalesRe
     {
         var text = await http.Content.ReadAsStringAsync();
         var json = string.IsNullOrWhiteSpace(text) ? default : JsonDocument.Parse(text).RootElement;
-        var code = json.ValueKind == JsonValueKind.Object && json.TryGetProperty("code", out var c) ? c.GetString() ?? "" : "";
+        var code =
+            json.ValueKind == JsonValueKind.Object && json.TryGetProperty("code", out var c)
+                ? c.GetString() ?? ""
+                : "";
         return new Response(http.StatusCode, code);
     }
 
@@ -82,48 +85,108 @@ public sealed class SalesCancelAuthorizedReturnRuleTests : IClassFixture<SalesRe
         var userId = await _f.CreateUserWithBranchAccessAsync();
         _f.SetActiveContext(userId);
         var cashRegisterId = await _f.CreateCashRegisterAsync();
-        var open = await _f.Client.PostAsJsonAsync("/api/v1/cash-sessions/open", new { cashRegisterId, openingAmount = 500m });
+        var open = await _f.Client.PostAsJsonAsync(
+            "/api/v1/cash-sessions/open",
+            new { cashRegisterId, openingAmount = 500m }
+        );
         open.StatusCode.Should().Be(HttpStatusCode.Created, await open.Content.ReadAsStringAsync());
 
         const decimal unitPrice = 50m;
-        var vat = Math.Round(SoldQuantity * unitPrice * _f.VatPercentage / 100m, 2, MidpointRounding.AwayFromZero);
-        var create = await _f.Client.PostAsJsonAsync("/api/v1/sales", new
-        {
-            customerId = _f.CustomerId,
-            issueDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1)).ToString("yyyy-MM-dd"),
-            paymentTermId = credit ? _f.CreditPaymentTermId : _f.CashPaymentTermId,
-            lines = new[]
+        var vat = Math.Round(
+            SoldQuantity * unitPrice * _f.VatPercentage / 100m,
+            2,
+            MidpointRounding.AwayFromZero
+        );
+        var create = await _f.Client.PostAsJsonAsync(
+            "/api/v1/sales",
+            new
             {
-                new { itemId = _f.ItemId, description = "Producto anulación", quantity = SoldQuantity, unitPrice, vatCode = _f.VatCode, warehouseId = _f.WarehouseId },
-            },
-            payments = new[] { new { paymentMethodId = credit ? _f.CreditPaymentMethodId : _f.PaymentMethodId, amount = SoldQuantity * unitPrice + vat } },
-        });
-        create.StatusCode.Should().Be(HttpStatusCode.Created, await create.Content.ReadAsStringAsync());
-        var draft = (await create.Content.ReadFromJsonAsync<SrEnvelope<SrSalesInvoiceResponseDto>>(JsonOptions))!.Data!;
+                customerId = _f.CustomerId,
+                issueDate = DateOnly
+                    .FromDateTime(DateTime.UtcNow.AddDays(-1))
+                    .ToString("yyyy-MM-dd"),
+                paymentTermId = credit ? _f.CreditPaymentTermId : _f.CashPaymentTermId,
+                lines = new[]
+                {
+                    new
+                    {
+                        itemId = _f.ItemId,
+                        description = "Producto anulación",
+                        quantity = SoldQuantity,
+                        unitPrice,
+                        vatCode = _f.VatCode,
+                        warehouseId = _f.WarehouseId,
+                    },
+                },
+                payments = new[]
+                {
+                    new
+                    {
+                        paymentMethodId = credit ? _f.CreditPaymentMethodId : _f.PaymentMethodId,
+                        amount = SoldQuantity * unitPrice + vat,
+                    },
+                },
+            }
+        );
+        create
+            .StatusCode.Should()
+            .Be(HttpStatusCode.Created, await create.Content.ReadAsStringAsync());
+        var draft = (
+            await create.Content.ReadFromJsonAsync<SrEnvelope<SrSalesInvoiceResponseDto>>(
+                JsonOptions
+            )
+        )!.Data!;
         var authorize = await _f.Client.PostAsync($"/api/v1/sales/{draft.Id}/authorize", null);
-        authorize.StatusCode.Should().Be(HttpStatusCode.OK, await authorize.Content.ReadAsStringAsync());
-        var invoice = (await authorize.Content.ReadFromJsonAsync<SrEnvelope<SrSalesInvoiceResponseDto>>(JsonOptions))!.Data!;
+        authorize
+            .StatusCode.Should()
+            .Be(HttpStatusCode.OK, await authorize.Content.ReadAsStringAsync());
+        var invoice = (
+            await authorize.Content.ReadFromJsonAsync<SrEnvelope<SrSalesInvoiceResponseDto>>(
+                JsonOptions
+            )
+        )!.Data!;
         return new Sale(invoice.Id, invoice.Lines.Single().Id, credit);
     }
 
     private async Task<Return> CreateReturnDraftAsync(Sale sale, decimal quantity)
     {
-        var response = await _f.Client.PostAsJsonAsync("/api/v1/sales/returns", new
-        {
-            salesInvoiceId = sale.InvoiceId,
-            reason = "Devolución",
-            lines = new[] { new { invoiceDetailId = sale.LineId, quantity } },
-        });
-        response.StatusCode.Should().Be(HttpStatusCode.Created, await response.Content.ReadAsStringAsync());
-        var draft = (await response.Content.ReadFromJsonAsync<SrEnvelope<SalesReturnResponseDto>>(JsonOptions))!.Data!;
+        var response = await _f.Client.PostAsJsonAsync(
+            "/api/v1/sales/returns",
+            new
+            {
+                salesInvoiceId = sale.InvoiceId,
+                reason = "Devolución",
+                lines = new[] { new { invoiceDetailId = sale.LineId, quantity } },
+            }
+        );
+        response
+            .StatusCode.Should()
+            .Be(HttpStatusCode.Created, await response.Content.ReadAsStringAsync());
+        var draft = (
+            await response.Content.ReadFromJsonAsync<SrEnvelope<SalesReturnResponseDto>>(
+                JsonOptions
+            )
+        )!.Data!;
         return new Return(draft.Id, draft.GrandTotal);
     }
 
     private async Task<Response> AuthorizeReturnAsync(Sale sale, Return salesReturn) =>
-        await ReadAsync(await _f.Client.PostAsJsonAsync($"/api/v1/sales/returns/{salesReturn.Id}/authorize", new
-        {
-            refundAllocations = new[] { new { method = sale.Credit ? "ReceivableCredit" : "Cash", amount = salesReturn.GrandTotal } },
-        }));
+        await ReadAsync(
+            await _f.Client.PostAsJsonAsync(
+                $"/api/v1/sales/returns/{salesReturn.Id}/authorize",
+                new
+                {
+                    refundAllocations = new[]
+                    {
+                        new
+                        {
+                            method = sale.Credit ? "ReceivableCredit" : "Cash",
+                            amount = salesReturn.GrandTotal,
+                        },
+                    },
+                }
+            )
+        );
 
     private async Task<Return> CreateAuthorizedReturnAsync(Sale sale, decimal quantity)
     {
@@ -133,38 +196,86 @@ public sealed class SalesCancelAuthorizedReturnRuleTests : IClassFixture<SalesRe
     }
 
     private async Task<Response> CancelAsync(Sale sale) =>
-        await ReadAsync(await _f.Client.PostAsJsonAsync($"/api/v1/sales/{sale.InvoiceId}/cancel", new { reason = "Anulación" }));
+        await ReadAsync(
+            await _f.Client.PostAsJsonAsync(
+                $"/api/v1/sales/{sale.InvoiceId}/cancel",
+                new { reason = "Anulación" }
+            )
+        );
 
     private async Task<State> StateAsync(Sale sale)
     {
         using var scope = _f.CreateDbScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
-        var invoice = await db.SalesInvoices.IgnoreQueryFilters().AsNoTracking().SingleAsync(x => x.Id == sale.InvoiceId);
-        var returns = await db.SalesReturns.IgnoreQueryFilters().AsNoTracking()
-            .Where(r => r.SalesInvoiceId == sale.InvoiceId).Select(r => new { r.Id, r.Status }).ToListAsync();
+        var invoice = await db
+            .SalesInvoices.IgnoreQueryFilters()
+            .AsNoTracking()
+            .SingleAsync(x => x.Id == sale.InvoiceId);
+        var returns = await db
+            .SalesReturns.IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(r => r.SalesInvoiceId == sale.InvoiceId)
+            .Select(r => new { r.Id, r.Status })
+            .ToListAsync();
         var returnIds = returns.Select(r => r.Id).ToList();
-        var invoiceStock = await db.StockMovements.IgnoreQueryFilters()
+        var invoiceStock = await db
+            .StockMovements.IgnoreQueryFilters()
             .Where(m => m.SourceDocId == sale.InvoiceId && m.SourceDocType == "SalesInvoice")
-            .Select(m => new { m.MovementType, m.Quantity }).ToListAsync();
-        var returnedIn = await db.StockMovements.IgnoreQueryFilters()
-            .Where(m => m.SourceDocId != null && returnIds.Contains(m.SourceDocId.Value) && m.SourceDocType == "SalesReturn")
-            .SumAsync(m => (decimal?)m.Quantity) ?? 0m;
-        var cashRefunds = await db.CashMovements.IgnoreQueryFilters().CountAsync(m =>
-            m.ReferenceId != null && returnIds.Contains(m.ReferenceId.Value) && m.MovementType == CashMovementType.SaleRefund);
-        var receivable = await db.SalesReceivables.IgnoreQueryFilters().AsNoTracking()
-            .Where(r => r.InvoiceId == sale.InvoiceId).Select(r => new { r.OriginalAmount, r.Status }).SingleOrDefaultAsync();
-        var invoiceEntries = await db.JournalEntries.IgnoreQueryFilters().Where(j => j.SourceEventId == sale.InvoiceId).Select(j => j.Id).ToListAsync();
-        var reversed = await db.JournalEntries.IgnoreQueryFilters().CountAsync(j =>
-            j.OriginalJournalEntryId != null && invoiceEntries.Contains(j.OriginalJournalEntryId.Value));
-        var returnEntries = await db.JournalEntries.IgnoreQueryFilters().CountAsync(j => returnIds.Contains(j.SourceEventId));
-        var creditNotes = await db.SalesReturns.IgnoreQueryFilters().CountAsync(r => r.SalesInvoiceId == sale.InvoiceId && r.CreditNoteDocumentNumber != null);
+            .Select(m => new { m.MovementType, m.Quantity })
+            .ToListAsync();
+        var returnedIn =
+            await db
+                .StockMovements.IgnoreQueryFilters()
+                .Where(m =>
+                    m.SourceDocId != null
+                    && returnIds.Contains(m.SourceDocId.Value)
+                    && m.SourceDocType == "SalesReturn"
+                )
+                .SumAsync(m => (decimal?)m.Quantity)
+            ?? 0m;
+        var cashRefunds = await db
+            .CashMovements.IgnoreQueryFilters()
+            .CountAsync(m =>
+                m.ReferenceId != null
+                && returnIds.Contains(m.ReferenceId.Value)
+                && m.MovementType == CashMovementType.SaleRefund
+            );
+        var receivable = await db
+            .SalesReceivables.IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(r => r.InvoiceId == sale.InvoiceId)
+            .Select(r => new { r.OriginalAmount, r.Status })
+            .SingleOrDefaultAsync();
+        var invoiceEntries = await db
+            .JournalEntries.IgnoreQueryFilters()
+            .Where(j => j.SourceEventId == sale.InvoiceId)
+            .Select(j => j.Id)
+            .ToListAsync();
+        var reversed = await db
+            .JournalEntries.IgnoreQueryFilters()
+            .CountAsync(j =>
+                j.OriginalJournalEntryId != null
+                && invoiceEntries.Contains(j.OriginalJournalEntryId.Value)
+            );
+        var returnEntries = await db
+            .JournalEntries.IgnoreQueryFilters()
+            .CountAsync(j => returnIds.Contains(j.SourceEventId));
+        var creditNotes = await db
+            .SalesReturns.IgnoreQueryFilters()
+            .CountAsync(r =>
+                r.SalesInvoiceId == sale.InvoiceId && r.CreditNoteDocumentNumber != null
+            );
         return new State(
             invoice.Status,
             returns.Count(r => r.Status == SalesReturnStatus.Authorized),
             returns.Count(r => r.Status == SalesReturnStatus.Draft),
-            invoiceStock.Where(m => m.MovementType == StockMovementType.SaleExit).Sum(m => Math.Abs(m.Quantity)),
+            invoiceStock
+                .Where(m => m.MovementType == StockMovementType.SaleExit)
+                .Sum(m => Math.Abs(m.Quantity)),
             Math.Abs(returnedIn),
-            invoiceStock.Where(m => m.MovementType == StockMovementType.SaleReturn).Sum(m => Math.Abs(m.Quantity)),
+            invoiceStock
+                .Where(m => m.MovementType == StockMovementType.SaleReturn)
+                .Sum(m => Math.Abs(m.Quantity)),
             cashRefunds,
             receivable?.OriginalAmount,
             receivable?.Status,
@@ -183,13 +294,17 @@ public sealed class SalesCancelAuthorizedReturnRuleTests : IClassFixture<SalesRe
     /// </summary>
     private static void AssertNeverOverReversed(State s)
     {
-        (s.ReturnedIn + s.CancelledIn).Should().BeLessThanOrEqualTo(s.SoldOut, "Kardex: devuelto + anulado ≤ vendido");
+        (s.ReturnedIn + s.CancelledIn)
+            .Should()
+            .BeLessThanOrEqualTo(s.SoldOut, "Kardex: devuelto + anulado ≤ vendido");
         if (s.InvoiceStatus == SalesInvoiceStatus.Cancelled)
         {
-            s.AuthorizedReturns.Should().Be(0, "una factura anulada no puede tener devoluciones autorizadas");
+            s.AuthorizedReturns.Should()
+                .Be(0, "una factura anulada no puede tener devoluciones autorizadas");
             s.CashRefunds.Should().Be(0, "sin reembolso además de la anulación");
             s.ReturnEntries.Should().Be(0, "sin asiento de devolución además del reverso completo");
-            s.InvoiceEntriesReversed.Should().Be(s.InvoiceEntries, "cada asiento de la factura se reversa una vez");
+            s.InvoiceEntriesReversed.Should()
+                .Be(s.InvoiceEntries, "cada asiento de la factura se reversa una vez");
             s.CancelledIn.Should().Be(s.SoldOut);
         }
         else
@@ -211,7 +326,10 @@ public sealed class SalesCancelAuthorizedReturnRuleTests : IClassFixture<SalesRe
     [InlineData(2, false)] // B + C: total, reembolso en efectivo
     [InlineData(1, true)] //  A + D: parcial, crédito a CxC
     [InlineData(2, true)] //  B + D: total, crédito a CxC
-    public async Task Factura_con_devolucion_autorizada_no_puede_anularse_y_no_duplica_efectos(int returnedQuantity, bool credit)
+    public async Task Factura_con_devolucion_autorizada_no_puede_anularse_y_no_duplica_efectos(
+        int returnedQuantity,
+        bool credit
+    )
     {
         var sale = await CreateSaleAsync(credit);
         await CreateAuthorizedReturnAsync(sale, returnedQuantity);
@@ -220,7 +338,11 @@ public sealed class SalesCancelAuthorizedReturnRuleTests : IClassFixture<SalesRe
         var cancel = await CancelAsync(sale);
 
         var after = await StateAsync(sale);
-        Log($"devuelto {returnedQuantity}/{SoldQuantity} {(credit ? "crédito CxC" : "efectivo")}", after, cancel);
+        Log(
+            $"devuelto {returnedQuantity}/{SoldQuantity} {(credit ? "crédito CxC" : "efectivo")}",
+            after,
+            cancel
+        );
         cancel.Status.Should().Be(HttpStatusCode.UnprocessableEntity);
         cancel.Code.Should().Be(DomainRuleViolation);
         after.Should().Be(before, "la anulación rechazada no deja ningún efecto");
@@ -251,16 +373,22 @@ public sealed class SalesCancelAuthorizedReturnRuleTests : IClassFixture<SalesRe
 
         (await CancelAsync(sale)).Status.Should().Be(HttpStatusCode.OK);
         var afterCancel = await StateAsync(sale);
-        afterCancel.DraftReturns.Should().Be(1, "el Draft no tiene efectos: la anulación no lo toca");
+        afterCancel
+            .DraftReturns.Should()
+            .Be(1, "el Draft no tiene efectos: la anulación no lo toca");
 
         var authorize = await AuthorizeReturnAsync(sale, draft);
 
-        authorize.Status.Should().Be(HttpStatusCode.UnprocessableEntity, "una factura anulada no admite devoluciones");
+        authorize
+            .Status.Should()
+            .Be(HttpStatusCode.UnprocessableEntity, "una factura anulada no admite devoluciones");
         var after = await StateAsync(sale);
         after.Should().Be(afterCancel);
         AssertNeverOverReversed(after);
         // El Draft sigue cancelable por su propio flujo (inocuo).
-        (await _f.Client.DeleteAsync($"/api/v1/sales/returns/{draft.Id}")).IsSuccessStatusCode.Should().BeTrue();
+        (await _f.Client.DeleteAsync($"/api/v1/sales/returns/{draft.Id}"))
+            .IsSuccessStatusCode.Should()
+            .BeTrue();
     }
 
     [Fact]
@@ -268,7 +396,9 @@ public sealed class SalesCancelAuthorizedReturnRuleTests : IClassFixture<SalesRe
     {
         var sale = await CreateSaleAsync();
         var cancelledDraft = await CreateReturnDraftAsync(sale, 1m);
-        (await _f.Client.DeleteAsync($"/api/v1/sales/returns/{cancelledDraft.Id}")).IsSuccessStatusCode.Should().BeTrue();
+        (await _f.Client.DeleteAsync($"/api/v1/sales/returns/{cancelledDraft.Id}"))
+            .IsSuccessStatusCode.Should()
+            .BeTrue();
         await CreateAuthorizedReturnAsync(sale, 1m);
 
         var cancel = await CancelAsync(sale);
@@ -284,11 +414,17 @@ public sealed class SalesCancelAuthorizedReturnRuleTests : IClassFixture<SalesRe
     {
         string connectionString;
         using (var scope = _f.CreateDbScope())
-            connectionString = scope.ServiceProvider.GetRequiredService<ErpDbContext>().Database.GetConnectionString()!;
+            connectionString = scope
+                .ServiceProvider.GetRequiredService<ErpDbContext>()
+                .Database.GetConnectionString()!;
         var connection = new NpgsqlConnection(connectionString);
         await connection.OpenAsync();
         var tx = await connection.BeginTransactionAsync();
-        await using var cmd = new NpgsqlCommand("SELECT 1 FROM sales_invoices WHERE id = @id FOR UPDATE", connection, tx);
+        await using var cmd = new NpgsqlCommand(
+            "SELECT 1 FROM sales_invoices WHERE id = @id FOR UPDATE",
+            connection,
+            tx
+        );
         cmd.Parameters.AddWithValue("id", invoiceId);
         await cmd.ExecuteScalarAsync();
         return tx;
@@ -301,13 +437,17 @@ public sealed class SalesCancelAuthorizedReturnRuleTests : IClassFixture<SalesRe
         var deadline = DateTime.UtcNow.AddSeconds(20);
         while (true)
         {
-            var waiting = await db.Database
-                .SqlQueryRaw<int>("SELECT count(*)::int AS \"Value\" FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND query ILIKE '%sales_invoices%FOR UPDATE%'")
+            var waiting = await db
+                .Database.SqlQueryRaw<int>(
+                    "SELECT count(*)::int AS \"Value\" FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND query ILIKE '%sales_invoices%FOR UPDATE%'"
+                )
                 .SingleAsync();
             if (waiting >= expected)
                 return;
             if (DateTime.UtcNow > deadline)
-                throw new TimeoutException($"Esperaba {expected} requests bloqueadas en la factura; hay {waiting}.");
+                throw new TimeoutException(
+                    $"Esperaba {expected} requests bloqueadas en la factura; hay {waiting}."
+                );
             await Task.Delay(50);
         }
     }
@@ -327,7 +467,8 @@ public sealed class SalesCancelAuthorizedReturnRuleTests : IClassFixture<SalesRe
             var sale = await CreateSaleAsync();
             var draft = await CreateReturnDraftAsync(sale, 1m);
             var holder = await HoldInvoiceLockAsync(sale.InvoiceId);
-            Task<Response> authorizeTask, cancelTask;
+            Task<Response> authorizeTask,
+                cancelTask;
             try
             {
                 authorizeTask = AuthorizeReturnAsync(sale, draft);
@@ -345,7 +486,12 @@ public sealed class SalesCancelAuthorizedReturnRuleTests : IClassFixture<SalesRe
             var after = await StateAsync(sale);
             Log($"ronda {round}", after, authorize, cancel);
             authorize.Status.Should().Be(HttpStatusCode.OK);
-            cancel.Status.Should().Be(HttpStatusCode.UnprocessableEntity, "la anulación ve la devolución ya autorizada bajo el lock");
+            cancel
+                .Status.Should()
+                .Be(
+                    HttpStatusCode.UnprocessableEntity,
+                    "la anulación ve la devolución ya autorizada bajo el lock"
+                );
             cancel.Code.Should().Be(DomainRuleViolation);
             AssertNeverOverReversed(after);
         }
@@ -366,7 +512,10 @@ public sealed class SalesCancelAuthorizedReturnRuleTests : IClassFixture<SalesRe
 
             var after = await StateAsync(sale);
             Log($"ronda {round}", after, authorize, cancel);
-            new[] { authorize, cancel }.Count(r => r.Status == HttpStatusCode.OK).Should().Be(1, "solo uno de los dos caminos revierte la venta");
+            new[] { authorize, cancel }
+                .Count(r => r.Status == HttpStatusCode.OK)
+                .Should()
+                .Be(1, "solo uno de los dos caminos revierte la venta");
             new[] { authorize, cancel }.Should().OnlyContain(r => (int)r.Status < 500);
             AssertNeverOverReversed(after);
         }
@@ -385,7 +534,10 @@ public sealed class SalesCancelAuthorizedReturnRuleTests : IClassFixture<SalesRe
             var after = await StateAsync(sale);
             Log($"ronda {round}", after, responses);
             responses.Count(r => r.Status == HttpStatusCode.OK).Should().Be(1);
-            responses.Single(r => r.Status != HttpStatusCode.OK).Code.Should().Be(DomainRuleViolation);
+            responses
+                .Single(r => r.Status != HttpStatusCode.OK)
+                .Code.Should()
+                .Be(DomainRuleViolation);
             AssertNeverOverReversed(after);
         }
     }

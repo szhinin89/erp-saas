@@ -80,11 +80,7 @@ public sealed class ImportBatch : AuditableEntity, ICompanyOperationalEntity
         Guid updatedBy
     )
     {
-        EnsureStatus(
-            "adjuntar un archivo",
-            ImportStatus.Draft,
-            ImportStatus.Uploaded
-        );
+        EnsureStatus("adjuntar un archivo", ImportStatus.Draft, ImportStatus.Uploaded);
 
         var file = ImportBatchFile.Create(TenantId, Id, storedPath, fileName, sizeBytes, updatedBy);
         _files.Add(file);
@@ -156,12 +152,7 @@ public sealed class ImportBatch : AuditableEntity, ICompanyOperationalEntity
 
     public void Cancel(Guid updatedBy)
     {
-        EnsureStatus(
-            "cancelar",
-            ImportStatus.Draft,
-            ImportStatus.Uploaded,
-            ImportStatus.Validated
-        );
+        EnsureStatus("cancelar", ImportStatus.Draft, ImportStatus.Uploaded, ImportStatus.Validated);
         Status = ImportStatus.Cancelled;
         CancelledAt = DateTime.UtcNow;
         SetUpdated(updatedBy);

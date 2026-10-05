@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using ERP.Application;
 using ERP.Application.Access.Authorization;
 using ERP.Application.Audit;
@@ -36,8 +38,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using System.Globalization;
-using System.Text;
 using Testcontainers.PostgreSql;
 
 namespace ERP.Infrastructure.Tests.Modules.Purchases.PurchaseReception;
@@ -101,29 +101,50 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
         services.AddApplication();
         services.AddLogging();
         services.AddDistributedMemoryCache();
-        services.AddDbContext<ErpDbContext>(o => o
-            .UseNpgsql(_postgres.GetConnectionString())
-            .AddInterceptors(new NewChildEntityTrackingInterceptor()));
+        services.AddDbContext<ErpDbContext>(o =>
+            o.UseNpgsql(_postgres.GetConnectionString())
+                .AddInterceptors(new NewChildEntityTrackingInterceptor())
+        );
         services.AddScoped(_ => Mock.Of<ICurrentTenant>(t => t.TenantId == _tenantId));
         services.AddScoped<ICurrentCompany>(_ => new FixedCurrentCompany(() => _companyId));
-        services.AddScoped(_ => Mock.Of<ICurrentBranch>(b =>
-            b.BranchId == _branchId && b.HasBranchContext && b.IsAuthenticated));
-        services.AddScoped(_ => Mock.Of<ICurrentUser>(u =>
-            u.UserId == _userId && u.IsAuthenticated && u.Role == "Admin"));
+        services.AddScoped(_ =>
+            Mock.Of<ICurrentBranch>(b =>
+                b.BranchId == _branchId && b.HasBranchContext && b.IsAuthenticated
+            )
+        );
+        services.AddScoped(_ =>
+            Mock.Of<ICurrentUser>(u =>
+                u.UserId == _userId && u.IsAuthenticated && u.Role == "Admin"
+            )
+        );
         services.AddScoped(_ => AllowCompany());
         services.AddScoped(_ => AllowBranch());
-        services.AddScoped(_ => Mock.Of<IRuntimePermissionAuthorizer>(a =>
-            a.IsAuthorizedAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>())
-                == Task.FromResult(true)));
+        services.AddScoped(_ =>
+            Mock.Of<IRuntimePermissionAuthorizer>(a =>
+                a.IsAuthorizedAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ) == Task.FromResult(true)
+            )
+        );
         services.AddScoped(typeof(IAuditWriter<>), typeof(EfAuditWriter<>));
         services.AddScoped(typeof(IAuditReader<>), typeof(EfAuditReader<>));
         services.AddScoped<IAuditService, AuditService>();
-        services.AddScoped<IAuditContext>(_ => new FixedAuditContext(() => _tenantId, () => _companyId, _userId));
+        services.AddScoped<IAuditContext>(_ => new FixedAuditContext(
+            () => _tenantId,
+            () => _companyId,
+            _userId
+        ));
         services.AddScoped<IItemRepository, ItemRepository>();
         services.AddScoped<ICategoryNodeRepository, CategoryNodeRepository>();
         services.AddScoped<IItemCatalogRepository, ItemCatalogRepository>();
         services.AddScoped<IItemTypeRepository, ItemTypeRepository>();
-        services.AddScoped<IPurchaseReceptionDocumentRepository, PurchaseReceptionDocumentRepository>();
+        services.AddScoped<
+            IPurchaseReceptionDocumentRepository,
+            PurchaseReceptionDocumentRepository
+        >();
         services.AddScoped<IPurchaseInvoiceRepository, PurchaseInvoiceRepository>();
         services.AddScoped<IBusinessPartnerRepository, BusinessPartnerRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -135,7 +156,9 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
         services.AddScoped<IPurchaseXmlDraftParser, PurchaseXmlDraftParser>();
         // ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A: ConfirmPurchaseHandler inicia la transmisión de la
         // retención tras el commit; este test confirma sin retención y no cablea ElectronicDocuments.
-        services.AddScoped(_ => ERP.Infrastructure.Tests.TestData.RetentionElectronicTestWiring.NoOpTransmission());
+        services.AddScoped(_ =>
+            ERP.Infrastructure.Tests.TestData.RetentionElectronicTestWiring.NoOpTransmission()
+        );
         ConfigurePurchaseServices(services);
         return services.BuildServiceProvider();
     }
@@ -143,47 +166,131 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
     private ICompanyAccessGuard AllowCompany()
     {
         var guard = new Mock<ICompanyAccessGuard>();
-        guard.Setup(g => g.RequireActiveTenantAsync(It.IsAny<CancellationToken>()))
+        guard
+            .Setup(g => g.RequireActiveTenantAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<Guid>.Success(_tenantId));
-        guard.Setup(g => g.RequireMembershipAsync(It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<CompanyAccessContext>.Success(
-                new CompanyAccessContext(_userId, _tenantId, _companyId, "Admin", true, true)));
-        guard.Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<CompanyAccessContext>.Success(
-                new CompanyAccessContext(_userId, _tenantId, _companyId, "Admin", true, true)));
+        guard
+            .Setup(g =>
+                g.RequireMembershipAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<bool>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                Result<CompanyAccessContext>.Success(
+                    new CompanyAccessContext(_userId, _tenantId, _companyId, "Admin", true, true)
+                )
+            );
+        guard
+            .Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                Result<CompanyAccessContext>.Success(
+                    new CompanyAccessContext(_userId, _tenantId, _companyId, "Admin", true, true)
+                )
+            );
         return guard.Object;
     }
 
     private IBranchAccessGuard AllowBranch()
     {
         var guard = new Mock<IBranchAccessGuard>();
-        guard.Setup(g => g.RequireBranchAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<BranchAccessContext>.Success(
-                new BranchAccessContext(_userId, _tenantId, _companyId, _branchId, "Matriz", true)));
+        guard
+            .Setup(g => g.RequireBranchAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                Result<BranchAccessContext>.Success(
+                    new BranchAccessContext(
+                        _userId,
+                        _tenantId,
+                        _companyId,
+                        _branchId,
+                        "Matriz",
+                        true
+                    )
+                )
+            );
         // BranchScopeBehavior valida la sucursal activa vía RequireCurrentBranchAsync.
-        guard.Setup(g => g.RequireCurrentBranchAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<BranchAccessContext>.Success(
-                new BranchAccessContext(_userId, _tenantId, _companyId, _branchId, "Matriz", true)));
+        guard
+            .Setup(g => g.RequireCurrentBranchAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                Result<BranchAccessContext>.Success(
+                    new BranchAccessContext(
+                        _userId,
+                        _tenantId,
+                        _companyId,
+                        _branchId,
+                        "Matriz",
+                        true
+                    )
+                )
+            );
         return guard.Object;
     }
 
     private async Task SeedAsync(ErpDbContext db)
     {
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _userId);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _userId);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: _userId
+        );
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
         await db.SaveChangesAsync();
         _tenantId = tenant.Id;
         _companyId = company.Id;
 
-        var branch = Branch.Create(tenant.Id, "Matriz", "Av. Principal 123", "B01", null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            isMainBranch: true, createdBy: _userId, companyId: company.Id);
-        var supplier = BusinessPartner.Create(tenant.Id, "04", "1710034065001", 1, "Distribuidora XML", _userId);
+        var branch = Branch.Create(
+            tenant.Id,
+            "Matriz",
+            "Av. Principal 123",
+            "B01",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            isMainBranch: true,
+            createdBy: _userId,
+            companyId: company.Id
+        );
+        var supplier = BusinessPartner.Create(
+            tenant.Id,
+            "04",
+            "1710034065001",
+            1,
+            "Distribuidora XML",
+            _userId
+        );
         var itemType = ItemTypeDefinition.Create(tenant.Id, "MERCH", "Mercadería", 1, _userId);
-        var brands = new[] { Brand.Create(tenant.Id, "MA", "Marca A", _userId), Brand.Create(tenant.Id, "MB", "Marca B", _userId) };
-        var parent = ItemCategoryNode.Create(tenant.Id, "ABA", "Abarrotes", CategoryNodeLevel.Family, _userId);
+        var brands = new[]
+        {
+            Brand.Create(tenant.Id, "MA", "Marca A", _userId),
+            Brand.Create(tenant.Id, "MB", "Marca B", _userId),
+        };
+        var parent = ItemCategoryNode.Create(
+            tenant.Id,
+            "ABA",
+            "Abarrotes",
+            CategoryNodeLevel.Family,
+            _userId
+        );
         db.Branches.Add(branch);
         db.BusinessPartners.Add(supplier);
         db.Set<ItemTypeDefinition>().Add(itemType);
@@ -192,8 +299,22 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
         await db.SaveChangesAsync();
         var leaves = new[]
         {
-            ItemCategoryNode.Create(tenant.Id, "GRA", "Granos", CategoryNodeLevel.Category, _userId, parent.Id),
-            ItemCategoryNode.Create(tenant.Id, "BEB", "Bebidas", CategoryNodeLevel.Category, _userId, parent.Id),
+            ItemCategoryNode.Create(
+                tenant.Id,
+                "GRA",
+                "Granos",
+                CategoryNodeLevel.Category,
+                _userId,
+                parent.Id
+            ),
+            ItemCategoryNode.Create(
+                tenant.Id,
+                "BEB",
+                "Bebidas",
+                CategoryNodeLevel.Category,
+                _userId,
+                parent.Id
+            ),
         };
         db.ItemCategoryNodes.AddRange(leaves);
         await db.SaveChangesAsync();
@@ -209,12 +330,31 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
         for (var i = 0; i < KnownCount + LinkCount; i++)
         {
             var known = i < KnownCount;
-            var item = Item.Create(tenant.Id, $"EX-{i:D3}", $"Existente {i}", $"Existente {i}", itemType.Id, UnitUom,
-                ItemTaxConfig.Create("0", "0"), ItemSaleConfig.Create(true), ItemStockConfig.Create(true), _userId,
-                baseSalePrice: 5m);
-            item.ReplacePackagingLevels([("Unidad", 1, 1m, UnitUom, null, null, true, true, true)], _userId);
+            var item = Item.Create(
+                tenant.Id,
+                $"EX-{i:D3}",
+                $"Existente {i}",
+                $"Existente {i}",
+                itemType.Id,
+                UnitUom,
+                ItemTaxConfig.Create("0", "0"),
+                ItemSaleConfig.Create(true),
+                ItemStockConfig.Create(true),
+                _userId,
+                baseSalePrice: 5m
+            );
+            item.ReplacePackagingLevels(
+                [("Unidad", 1, 1m, UnitUom, null, null, true, true, true)],
+                _userId
+            );
             if (known)
-                item.AddSupplierCode($"K-{i:D3}", true, supplier.Id, _userId, item.PackagingLevels[0].Id);
+                item.AddSupplierCode(
+                    $"K-{i:D3}",
+                    true,
+                    supplier.Id,
+                    _userId,
+                    item.PackagingLevels[0].Id
+                );
             else
                 _linkTargets[$"L-{i - KnownCount:D3}"] = (item.Id, item.PackagingLevels[0].Id);
             db.Items.Add(item);
@@ -224,7 +364,12 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
 
     // ── XML helpers ──────────────────────────────────────────────────────────────────────────
 
-    private static IEnumerable<(string Code, string Description, decimal Qty, decimal Price)> InvoiceLines()
+    private static IEnumerable<(
+        string Code,
+        string Description,
+        decimal Qty,
+        decimal Price
+    )> InvoiceLines()
     {
         for (var i = 0; i < KnownCount; i++)
             yield return ($"K-{i:D3}", $"PRODUCTO CONOCIDO {i}", 2m, 1.50m);
@@ -236,7 +381,10 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
             yield return ($"B-{i:D3}", $"PROD NUEVO {i} 500GR CJ X12", 1m, 11.40m);
     }
 
-    private static string BuildXml(string sequential, IEnumerable<(string Code, string Description, decimal Qty, decimal Price)> lines)
+    private static string BuildXml(
+        string sequential,
+        IEnumerable<(string Code, string Description, decimal Qty, decimal Price)> lines
+    )
     {
         static string N(decimal v) => v.ToString("0.00", CultureInfo.InvariantCulture);
         var detail = new StringBuilder();
@@ -245,11 +393,13 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
         {
             var subtotal = qty * price;
             total += subtotal;
-            detail.Append($"<detalle><codigoPrincipal>{code}</codigoPrincipal><descripcion>{description}</descripcion>"
-                + $"<cantidad>{N(qty)}</cantidad><precioUnitario>{N(price)}</precioUnitario><descuento>0.00</descuento>"
-                + $"<precioTotalSinImpuesto>{N(subtotal)}</precioTotalSinImpuesto><impuestos><impuesto><codigo>2</codigo>"
-                + $"<codigoPorcentaje>0</codigoPorcentaje><tarifa>0</tarifa><baseImponible>{N(subtotal)}</baseImponible>"
-                + "<valor>0.00</valor></impuesto></impuestos></detalle>");
+            detail.Append(
+                $"<detalle><codigoPrincipal>{code}</codigoPrincipal><descripcion>{description}</descripcion>"
+                    + $"<cantidad>{N(qty)}</cantidad><precioUnitario>{N(price)}</precioUnitario><descuento>0.00</descuento>"
+                    + $"<precioTotalSinImpuesto>{N(subtotal)}</precioTotalSinImpuesto><impuestos><impuesto><codigo>2</codigo>"
+                    + $"<codigoPorcentaje>0</codigoPorcentaje><tarifa>0</tarifa><baseImponible>{N(subtotal)}</baseImponible>"
+                    + "<valor>0.00</valor></impuesto></impuestos></detalle>"
+            );
         }
         return "<factura><infoTributaria><ruc>1710034065001</ruc><razonSocial>Distribuidora XML</razonSocial>"
             + $"<codDoc>01</codDoc><estab>001</estab><ptoEmi>001</ptoEmi><secuencial>{sequential}</secuencial>"
@@ -262,18 +412,55 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
     private async Task<Guid> ReceiveInvoiceAsync(bool repeatBox = false)
     {
         var sequential = $"{++_invoiceSequence:D9}";
-        var xml = BuildXml(sequential, repeatBox ? InvoiceLines().Concat(InvoiceLines().Where(l => l.Code == "B-000")) : InvoiceLines());
+        var xml = BuildXml(
+            sequential,
+            repeatBox
+                ? InvoiceLines().Concat(InvoiceLines().Where(l => l.Code == "B-000"))
+                : InvoiceLines()
+        );
         await using var scope = _services.CreateAsyncScope();
         var sp = scope.ServiceProvider;
-        var document = PurchaseReceptionDocument.Create(_tenantId, _companyId, _branchId,
-            PurchaseReceptionSourceDocType.Invoice, "1710034065001", "Distribuidora XML", _supplierId,
-            sequential.PadLeft(49, '7'), $"001-001-{sequential}", new DateOnly(2026, 9, 27), null, 0m, 0m, 0m, _userId);
-        var processor = new PurchaseReceptionDetailProcessor(sp.GetRequiredService<IPurchaseXmlDraftParser>(),
-            sp.GetRequiredService<IItemRepository>(), sp.GetRequiredService<IItemMatchFinder>(),
-            NullLogger<PurchaseReceptionDetailProcessor>.Instance);
-        var processed = await processor.ProcessAsync(document.Id, _tenantId, _supplierId, xml, CancellationToken.None);
-        document.AttachSriAuthorization(sequential.PadLeft(49, '7'), DateTime.UtcNow, xml, DateTime.UtcNow,
-            processed.Lines, _userId, processed.DocTypeCode, processed.SriPaymentMethodCode, processed.Processing);
+        var document = PurchaseReceptionDocument.Create(
+            _tenantId,
+            _companyId,
+            _branchId,
+            PurchaseReceptionSourceDocType.Invoice,
+            "1710034065001",
+            "Distribuidora XML",
+            _supplierId,
+            sequential.PadLeft(49, '7'),
+            $"001-001-{sequential}",
+            new DateOnly(2026, 9, 27),
+            null,
+            0m,
+            0m,
+            0m,
+            _userId
+        );
+        var processor = new PurchaseReceptionDetailProcessor(
+            sp.GetRequiredService<IPurchaseXmlDraftParser>(),
+            sp.GetRequiredService<IItemRepository>(),
+            sp.GetRequiredService<IItemMatchFinder>(),
+            NullLogger<PurchaseReceptionDetailProcessor>.Instance
+        );
+        var processed = await processor.ProcessAsync(
+            document.Id,
+            _tenantId,
+            _supplierId,
+            xml,
+            CancellationToken.None
+        );
+        document.AttachSriAuthorization(
+            sequential.PadLeft(49, '7'),
+            DateTime.UtcNow,
+            xml,
+            DateTime.UtcNow,
+            processed.Lines,
+            _userId,
+            processed.DocTypeCode,
+            processed.SriPaymentMethodCode,
+            processed.Processing
+        );
         var repo = sp.GetRequiredService<IPurchaseReceptionDocumentRepository>();
         await repo.AddAsync(document);
         await repo.SaveChangesAsync();
@@ -283,11 +470,16 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
     private async Task<PurchaseReceptionDocument> LoadAsync(Guid documentId)
     {
         await using var scope = _services.CreateAsyncScope();
-        return (await scope.ServiceProvider.GetRequiredService<IPurchaseReceptionDocumentRepository>()
-            .GetByIdAsync(_tenantId, documentId))!;
+        return (
+            await scope
+                .ServiceProvider.GetRequiredService<IPurchaseReceptionDocumentRepository>()
+                .GetByIdAsync(_tenantId, documentId)
+        )!;
     }
 
-    private async Task<ResolvePurchaseReceptionLinesResultDto> ResolveAsync(ResolvePurchaseReceptionLinesCommand command)
+    private async Task<ResolvePurchaseReceptionLinesResultDto> ResolveAsync(
+        ResolvePurchaseReceptionLinesCommand command
+    )
     {
         await using var scope = _services.CreateAsyncScope();
         var result = await scope.ServiceProvider.GetRequiredService<IMediator>().Send(command);
@@ -297,25 +489,34 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
 
     // ── Batch built the way the UI does: bulk-assigned fields + individual corrections ──────
 
-    private ResolvePurchaseReceptionLinesCommand BuildBatch(PurchaseReceptionDocument document, string skuPrefix)
+    private ResolvePurchaseReceptionLinesCommand BuildBatch(
+        PurchaseReceptionDocument document,
+        string skuPrefix
+    )
     {
-        var byCode = document.Lines.GroupBy(l => l.SupplierCode!).ToDictionary(g => g.Key, g => g.First());
-        var newItems = Enumerable.Range(0, NewCount).Select(i => new ResolveReceptionNewItemInput(
-            Key: $"n{i}",
-            Sku: $"{skuPrefix}{i:D3}",
-            // ERP name normalized by the user; the XML description stays on the reception line.
-            ShortName: $"Producto nuevo {i} 500 g",
-            Description: $"Producto nuevo {i} presentación 500 g",
-            ItemTypeId: _itemTypeId,
-            CategoryNodeId: _categories[i % 2],
-            BrandId: _brands[i < 12 ? 0 : 1],
-            DefaultUomCode: UnitUom,
-            Barcode: $"77{skuPrefix.GetHashCode() & 0xFFFF:D5}{i:D6}",
-            BarcodeType: "Internal",
-            SaleVatCode: "0",
-            PurchaseVatCode: "0",
-            ExciseTaxCode: null,
-            BaseSalePrice: 1.35m)).ToList();
+        var byCode = document
+            .Lines.GroupBy(l => l.SupplierCode!)
+            .ToDictionary(g => g.Key, g => g.First());
+        var newItems = Enumerable
+            .Range(0, NewCount)
+            .Select(i => new ResolveReceptionNewItemInput(
+                Key: $"n{i}",
+                Sku: $"{skuPrefix}{i:D3}",
+                // ERP name normalized by the user; the XML description stays on the reception line.
+                ShortName: $"Producto nuevo {i} 500 g",
+                Description: $"Producto nuevo {i} presentación 500 g",
+                ItemTypeId: _itemTypeId,
+                CategoryNodeId: _categories[i % 2],
+                BrandId: _brands[i < 12 ? 0 : 1],
+                DefaultUomCode: UnitUom,
+                Barcode: $"77{skuPrefix.GetHashCode() & 0xFFFF:D5}{i:D6}",
+                BarcodeType: "Internal",
+                SaleVatCode: "0",
+                PurchaseVatCode: "0",
+                ExciseTaxCode: null,
+                BaseSalePrice: 1.35m
+            ))
+            .ToList();
 
         var lines = new List<ResolveReceptionLineInput>();
         for (var i = 0; i < LinkCount; i++)
@@ -326,8 +527,15 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
         for (var i = 0; i < NewCount; i++)
             lines.Add(new(byCode[$"N-{i:D3}"].Id, NewItemKey: $"n{i}"));
         for (var i = 0; i < BoxCount; i++)
-            lines.Add(new(byCode[$"B-{i:D3}"].Id, NewItemKey: $"n{i}", PresentationFactor: 12m,
-                PresentationName: "Caja x12", PresentationUomCode: BoxUom));
+            lines.Add(
+                new(
+                    byCode[$"B-{i:D3}"].Id,
+                    NewItemKey: $"n{i}",
+                    PresentationFactor: 12m,
+                    PresentationName: "Caja x12",
+                    PresentationUomCode: BoxUom
+                )
+            );
         return new ResolvePurchaseReceptionLinesCommand(newItems, lines);
     }
 
@@ -340,7 +548,10 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
         var pendingBeforeId = await ReceiveInvoiceAsync(); // downloaded before resolving (same batch)
         var first = await LoadAsync(firstId);
         first.Lines.Should().HaveCount(100);
-        first.Lines.Count(l => l.MatchStatus == ItemMatchStatus.AutoMatched).Should().Be(KnownCount);
+        first
+            .Lines.Count(l => l.MatchStatus == ItemMatchStatus.AutoMatched)
+            .Should()
+            .Be(KnownCount);
         var exceptions = first.Lines.Count(l => l.ItemId is null);
         exceptions.Should().Be(LinkCount + NewCount + BoxCount);
 
@@ -350,14 +561,20 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
         outcome.ItemsCreated.Should().Be(NewCount);
         outcome.LinesLinked.Should().Be(exceptions);
         outcome.EquivalencesLearned.Should().Be(exceptions);
-        outcome.Lines.Where(l => l.ConversionFactor == 12m).Should().HaveCount(BoxCount)
+        outcome
+            .Lines.Where(l => l.ConversionFactor == 12m)
+            .Should()
+            .HaveCount(BoxCount)
             .And.OnlyContain(l => l.UomCode == BoxUom && l.BaseUomCode == UnitUom);
 
         await using (var scope = _services.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
-            var created = await db.Items.Include(i => i.PackagingLevels).Include(i => i.SupplierCodes)
-                .Where(i => i.Code.SKU.StartsWith("NV-")).ToListAsync();
+            var created = await db
+                .Items.Include(i => i.PackagingLevels)
+                .Include(i => i.SupplierCodes)
+                .Where(i => i.Code.SKU.StartsWith("NV-"))
+                .ToListAsync();
             created.Should().HaveCount(NewCount);
             created.Count(i => i.BrandId == _brands[0]).Should().Be(12);
             created.Count(i => i.CategoryNodeId == _categories[0]).Should().Be(NewCount / 2);
@@ -368,37 +585,69 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
             var box = withBox.PackagingLevels.Single(p => !p.IsBaseUnit);
             (unit.BaseQuantity, unit.UomCode).Should().Be((1m, UnitUom));
             (box.BaseQuantity, box.UomCode, box.Name).Should().Be((12m, BoxUom, "Caja x12"));
-            withBox.SupplierCodes.Single(c => c.Code == "N-000").PackagingLevelId.Should().Be(unit.Id);
-            withBox.SupplierCodes.Single(c => c.Code == "B-000").PackagingLevelId.Should().Be(box.Id);
-            created.Single(i => i.Code.SKU == "NV-020").PackagingLevels.Should().ContainSingle(p => p.IsBaseUnit);
-            var linked = await db.Items.Include(i => i.SupplierCodes).SingleAsync(i => i.Id == _linkTargets["L-000"].ItemId);
-            linked.SupplierCodes.Single(c => c.Code == "L-000").PackagingLevelId.Should().Be(_linkTargets["L-000"].BaseLevelId);
+            withBox
+                .SupplierCodes.Single(c => c.Code == "N-000")
+                .PackagingLevelId.Should()
+                .Be(unit.Id);
+            withBox
+                .SupplierCodes.Single(c => c.Code == "B-000")
+                .PackagingLevelId.Should()
+                .Be(box.Id);
+            created
+                .Single(i => i.Code.SKU == "NV-020")
+                .PackagingLevels.Should()
+                .ContainSingle(p => p.IsBaseUnit);
+            var linked = await db
+                .Items.Include(i => i.SupplierCodes)
+                .SingleAsync(i => i.Id == _linkTargets["L-000"].ItemId);
+            linked
+                .SupplierCodes.Single(c => c.Code == "L-000")
+                .PackagingLevelId.Should()
+                .Be(_linkTargets["L-000"].BaseLevelId);
         }
 
         var resolved = await LoadAsync(firstId);
         resolved.Lines.Should().HaveCount(100).And.OnlyContain(l => l.ItemId != null);
-        resolved.Lines.Single(l => l.SupplierCode == "N-000").Description.Should().Be("PROD NUEVO 0 500GR",
-            "the supplier XML description is kept for traceability; only the ERP name was normalized");
+        resolved
+            .Lines.Single(l => l.SupplierCode == "N-000")
+            .Description.Should()
+            .Be(
+                "PROD NUEVO 0 500GR",
+                "the supplier XML description is kept for traceability; only the ERP name was normalized"
+            );
 
         // Same batch, downloaded earlier: its pending lines learn the new equivalences.
         await using (var scope = _services.CreateAsyncScope())
         {
-            var repo = scope.ServiceProvider.GetRequiredService<IPurchaseReceptionDocumentRepository>();
+            var repo =
+                scope.ServiceProvider.GetRequiredService<IPurchaseReceptionDocumentRepository>();
             var earlier = (await repo.GetByIdAsync(_tenantId, pendingBeforeId))!;
-            (await scope.ServiceProvider.GetRequiredService<IPurchaseReceptionAutoMatcher>()
-                .RefreshAsync(earlier, CancellationToken.None)).Should().Be(exceptions);
+            (
+                await scope
+                    .ServiceProvider.GetRequiredService<IPurchaseReceptionAutoMatcher>()
+                    .RefreshAsync(earlier, CancellationToken.None)
+            )
+                .Should()
+                .Be(exceptions);
             await repo.SaveChangesAsync();
         }
-        (await LoadAsync(pendingBeforeId)).Lines.Should().OnlyContain(l => l.MatchStatus == ItemMatchStatus.AutoMatched);
+        (await LoadAsync(pendingBeforeId))
+            .Lines.Should()
+            .OnlyContain(l => l.MatchStatus == ItemMatchStatus.AutoMatched);
 
         // A new XML with the same codes needs no intervention; the box code keeps its conversion.
         var next = await LoadAsync(await ReceiveInvoiceAsync());
-        next.Lines.Should().HaveCount(100).And.OnlyContain(l => l.MatchStatus == ItemMatchStatus.AutoMatched);
+        next.Lines.Should()
+            .HaveCount(100)
+            .And.OnlyContain(l => l.MatchStatus == ItemMatchStatus.AutoMatched);
         await using (var scope = _services.CreateAsyncScope())
         {
-            var match = await scope.ServiceProvider.GetRequiredService<IItemRepository>()
+            var match = await scope
+                .ServiceProvider.GetRequiredService<IItemRepository>()
                 .GetSupplierCodeMatchAsync(_supplierId, "B-003", _tenantId);
-            (match!.PackagingBaseQuantity, match.PackagingUomCode, match.BaseUomCode).Should().Be((12m, BoxUom, UnitUom));
+            (match!.PackagingBaseQuantity, match.PackagingUomCode, match.BaseUomCode)
+                .Should()
+                .Be((12m, BoxUom, UnitUom));
         }
     }
 
@@ -408,9 +657,9 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
         var document = await LoadAsync(await ReceiveInvoiceAsync());
         var batch = BuildBatch(document, "BAD-");
         var newItems = batch.NewItems.ToList();
-        newItems[1] = newItems[1] with { Sku = "EX-000" };           // SKU already exists
-        newItems[2] = newItems[2] with { Sku = newItems[3].Sku };    // SKU repeated in the batch
-        newItems[4] = newItems[4] with { BaseSalePrice = 0m };       // required sale price
+        newItems[1] = newItems[1] with { Sku = "EX-000" }; // SKU already exists
+        newItems[2] = newItems[2] with { Sku = newItems[3].Sku }; // SKU repeated in the batch
+        newItems[4] = newItems[4] with { BaseSalePrice = 0m }; // required sale price
         var itemsBefore = await CountItemsAsync();
 
         var outcome = await ResolveAsync(batch with { NewItems = newItems });
@@ -418,7 +667,10 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
         outcome.Applied.Should().BeFalse();
         outcome.Errors.Select(e => e.NewItemKey).Should().Contain(["n1", "n3", "n4"]);
         (await CountItemsAsync()).Should().Be(itemsBefore);
-        (await LoadAsync(document.Id)).Lines.Count(l => l.ItemId is null).Should().Be(LinkCount + NewCount + BoxCount);
+        (await LoadAsync(document.Id))
+            .Lines.Count(l => l.ItemId is null)
+            .Should()
+            .Be(LinkCount + NewCount + BoxCount);
     }
 
     [Fact]
@@ -428,22 +680,37 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
         var batch = BuildBatch(document, "RB-");
         var newItems = batch.NewItems.ToList();
         // Passes pre-validation but CreateItem rejects a non-leaf category on the 6th product.
-        newItems[5] = newItems[5] with { CategoryNodeId = _parentCategoryId };
+        newItems[5] = newItems[5] with
+        {
+            CategoryNodeId = _parentCategoryId,
+        };
         var itemsBefore = await CountItemsAsync();
 
         await using var failedScope = _services.CreateAsyncScope();
-        var failed = await failedScope.ServiceProvider.GetRequiredService<IMediator>()
+        var failed = await failedScope
+            .ServiceProvider.GetRequiredService<IMediator>()
             .Send(batch with { NewItems = newItems });
         var outcome = failed.Value!;
         outcome.Applied.Should().BeFalse();
         outcome.Errors.Should().ContainSingle().Which.NewItemKey.Should().Be("n5");
-        (await failedScope.ServiceProvider.GetRequiredService<ErpDbContext>().SaveChangesAsync()).Should().Be(0,
-            "a later save in the same scope must not resurrect rolled-back entities");
-        (await CountItemsAsync()).Should().Be(itemsBefore, "the five products created before the failure are rolled back");
+        (await failedScope.ServiceProvider.GetRequiredService<ErpDbContext>().SaveChangesAsync())
+            .Should()
+            .Be(0, "a later save in the same scope must not resurrect rolled-back entities");
+        (await CountItemsAsync())
+            .Should()
+            .Be(itemsBefore, "the five products created before the failure are rolled back");
         await using var scope = _services.CreateAsyncScope();
-        (await scope.ServiceProvider.GetRequiredService<IItemRepository>()
-            .SupplierCodeExistsAsync(_supplierId, "L-000", _tenantId)).Should().BeFalse();
-        (await LoadAsync(document.Id)).Lines.Count(l => l.ItemId is null).Should().Be(LinkCount + NewCount + BoxCount);
+        (
+            await scope
+                .ServiceProvider.GetRequiredService<IItemRepository>()
+                .SupplierCodeExistsAsync(_supplierId, "L-000", _tenantId)
+        )
+            .Should()
+            .BeFalse();
+        (await LoadAsync(document.Id))
+            .Lines.Count(l => l.ItemId is null)
+            .Should()
+            .Be(LinkCount + NewCount + BoxCount);
     }
 
     private async Task<int> CountItemsAsync()
@@ -458,7 +725,12 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
         var document = await LoadAsync(await ReceiveInvoiceAsync(repeatBox: true));
         var batch = BuildBatch(document, "AUTO-");
         // Match the actual UI default SKU: supplier code, including a purchase by box.
-        batch = batch with { NewItems = batch.NewItems.Select((item, i) => i == 0 ? item with { Sku = "B-000" } : item).ToList() };
+        batch = batch with
+        {
+            NewItems = batch
+                .NewItems.Select((item, i) => i == 0 ? item with { Sku = "B-000" } : item)
+                .ToList(),
+        };
         var outcome = await ResolveAsync(batch);
         outcome.Applied.Should().BeTrue(string.Join(" | ", outcome.Errors.Select(e => e.Message)));
         outcome.LinesAutoMatched.Should().Be(1);
@@ -489,7 +761,10 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
     {
         var document = await LoadAsync(await ReceiveInvoiceAsync());
         var before = await CountItemsAsync();
-        var results = await Task.WhenAll(ResolveAsync(BuildBatch(document, "WIN-A-")), ResolveAsync(BuildBatch(document, "WIN-B-")));
+        var results = await Task.WhenAll(
+            ResolveAsync(BuildBatch(document, "WIN-A-")),
+            ResolveAsync(BuildBatch(document, "WIN-B-"))
+        );
         results.Count(r => r.Applied).Should().Be(1);
         results.Single(r => !r.Applied).Errors.Should().NotBeEmpty();
         (await CountItemsAsync()).Should().Be(before + NewCount);
@@ -518,6 +793,9 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
         }
         _tenantId = originalTenant;
         (await CountItemsAsync()).Should().Be(before);
-        (await LoadAsync(document.Id)).Lines.Count(l => l.ItemId is null).Should().Be(LinkCount + NewCount + BoxCount);
+        (await LoadAsync(document.Id))
+            .Lines.Count(l => l.ItemId is null)
+            .Should()
+            .Be(LinkCount + NewCount + BoxCount);
     }
 }

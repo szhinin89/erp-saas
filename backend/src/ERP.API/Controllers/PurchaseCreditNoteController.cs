@@ -42,10 +42,7 @@ public sealed class PurchaseCreditNoteController : ControllerBase
     /// <response code="422">Datos inválidos, factura sin saldo pendiente, documento de recepción inconsistente, o duplicado.</response>
     [HttpPost]
     [Authorize(Policy = $"perm:{PurchasePermissions.Create}")]
-    [ProducesResponseType(
-        typeof(ApiResponse<PurchaseCreditNoteDto>),
-        StatusCodes.Status201Created
-    )]
+    [ProducesResponseType(typeof(ApiResponse<PurchaseCreditNoteDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> CreateDraft(
@@ -280,4 +277,7 @@ public sealed record AuthorizePurchaseCreditNoteRequest(Guid ClientRequestId);
 public sealed record CancelPurchaseCreditNoteRequest(string Reason, Guid ClientRequestId);
 
 /// <summary>Cuerpo de <see cref="PurchaseCreditNoteController.LinkReturn"/>.</summary>
-public sealed record LinkPurchaseCreditNoteToReturnRequest(Guid PurchaseReturnId, Guid ClientRequestId);
+public sealed record LinkPurchaseCreditNoteToReturnRequest(
+    Guid PurchaseReturnId,
+    Guid ClientRequestId
+);

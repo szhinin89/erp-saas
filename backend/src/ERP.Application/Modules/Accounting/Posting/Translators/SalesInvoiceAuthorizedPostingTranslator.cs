@@ -80,8 +80,16 @@ public sealed class SalesInvoiceAuthorizedPostingTranslator
         // cent-rounded taxable bases, so equal rounding preserves that exact difference.
         // JournalFactory then omits a discount that rounds to zero before it becomes a line.
         // The fiscal event and its six-decimal discount remain unchanged.
-        var accountingSubtotal = Math.Round(e.Subtotal, FiscalPrecision.TaxAmount, MidpointRounding.AwayFromZero);
-        var accountingDiscount = Math.Round(e.TotalDiscount, FiscalPrecision.TaxAmount, MidpointRounding.AwayFromZero);
+        var accountingSubtotal = Math.Round(
+            e.Subtotal,
+            FiscalPrecision.TaxAmount,
+            MidpointRounding.AwayFromZero
+        );
+        var accountingDiscount = Math.Round(
+            e.TotalDiscount,
+            FiscalPrecision.TaxAmount,
+            MidpointRounding.AwayFromZero
+        );
 
         var fact = new PostingFact(
             e.TenantId!.Value,

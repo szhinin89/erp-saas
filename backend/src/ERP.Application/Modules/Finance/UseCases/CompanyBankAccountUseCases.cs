@@ -52,7 +52,8 @@ public sealed record GetCompanyBankAccountListQuery(bool? IsActive)
 
 // ── Validators ──────────────────────────────────────────────────────────
 
-public sealed class CreateCompanyBankAccountValidator : AbstractValidator<CreateCompanyBankAccountCommand>
+public sealed class CreateCompanyBankAccountValidator
+    : AbstractValidator<CreateCompanyBankAccountCommand>
 {
     public CreateCompanyBankAccountValidator()
     {
@@ -72,7 +73,8 @@ public sealed class CreateCompanyBankAccountValidator : AbstractValidator<Create
     }
 }
 
-public sealed class UpdateCompanyBankAccountValidator : AbstractValidator<UpdateCompanyBankAccountCommand>
+public sealed class UpdateCompanyBankAccountValidator
+    : AbstractValidator<UpdateCompanyBankAccountCommand>
 {
     public UpdateCompanyBankAccountValidator()
     {
@@ -137,7 +139,9 @@ public sealed class CreateCompanyBankAccountHandler
         if (bank is null)
             return Result<CompanyBankAccountDto>.NotFound("El banco indicado no existe.");
         if (!bank.IsActive)
-            return Result<CompanyBankAccountDto>.ValidationFailure("El banco indicado está inactivo.");
+            return Result<CompanyBankAccountDto>.ValidationFailure(
+                "El banco indicado está inactivo."
+            );
 
         var account = await _accounts.GetByIdAsync(tid, cid, cmd.AccountingAccountId, ct);
         if (account is null)
@@ -327,7 +331,9 @@ public sealed class GetCompanyBankAccountListHandler
     )
     {
         var items = await _repo.GetListAsync(_t.TenantId, q.IsActive, ct);
-        return Result<IReadOnlyList<CompanyBankAccountDto>>.Success(items.Select(Map.ToDto).ToList());
+        return Result<IReadOnlyList<CompanyBankAccountDto>>.Success(
+            items.Select(Map.ToDto).ToList()
+        );
     }
 }
 

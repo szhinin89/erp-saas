@@ -60,8 +60,7 @@ public sealed class GetCompanyUserBranchesAdminHandler
                 search: null,
                 cancellationToken: cancellationToken
             )
-        )
-            .ToList();
+        ).ToList();
 
         var authorizations = await _companyUserBranchRepository.GetByMembershipAsync(
             membership.Id,

@@ -11,17 +11,22 @@ namespace ERP.Domain.Configuration.Definitions.Modules;
 /// </summary>
 public static class PrintingConfigurationDefinitions
 {
-    private static readonly string[] ReceiptModes = ["AskBeforePrint", "AlwaysPrint", "NeverAutoPrint"];
+    private static readonly string[] ReceiptModes =
+    [
+        "AskBeforePrint",
+        "AlwaysPrint",
+        "NeverAutoPrint",
+    ];
     private static readonly string[] PaperWidths = ["80mm", "58mm"];
 
     public static IEnumerable<ConfigurationDefinition> All()
     {
-        yield return Enum(
-            OrgSettingKeys.Printing.SalesReceiptMode,
-            ReceiptModes,
-            "AskBeforePrint"
+        yield return Enum(OrgSettingKeys.Printing.SalesReceiptMode, ReceiptModes, "AskBeforePrint");
+        yield return Int(
+            OrgSettingKeys.Printing.SalesReceiptCopies,
+            value => IsIntInRange(value, 1, 3),
+            "1"
         );
-        yield return Int(OrgSettingKeys.Printing.SalesReceiptCopies, value => IsIntInRange(value, 1, 3), "1");
         yield return Enum(OrgSettingKeys.Printing.SalesReceiptPaperWidth, PaperWidths, "80mm") with
         {
             DeveloperNotes =
@@ -67,7 +72,11 @@ public static class PrintingConfigurationDefinitions
             Validator = validator,
         };
 
-    private static ConfigurationDefinition Enum(string key, string[] allowedValues, string defaultValue) =>
+    private static ConfigurationDefinition Enum(
+        string key,
+        string[] allowedValues,
+        string defaultValue
+    ) =>
         new()
         {
             Key = key,

@@ -172,7 +172,8 @@ public sealed class GetPaymentMethodsHandler
 
     internal static PaymentMethodDto ToDto(
         PaymentMethod pm,
-        IReadOnlyDictionary<Guid, Domain.Modules.Sales.Entities.PaymentMethodAccount>? accountMap = null
+        IReadOnlyDictionary<Guid, Domain.Modules.Sales.Entities.PaymentMethodAccount>? accountMap =
+            null
     )
     {
         var source = ResolveAccountSource(pm);
@@ -407,7 +408,8 @@ public sealed class SetPaymentMethodAccountValidator
     {
         RuleFor(x => x.PaymentMethodId)
             .MustAsync(
-                async (id, ct) => await paymentMethodRepo.GetByIdAsync(t.TenantId, id, ct) is not null
+                async (id, ct) =>
+                    await paymentMethodRepo.GetByIdAsync(t.TenantId, id, ct) is not null
             )
             .WithMessage("Método de pago no encontrado.");
 

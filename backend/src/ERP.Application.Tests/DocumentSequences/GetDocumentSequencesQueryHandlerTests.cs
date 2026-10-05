@@ -29,7 +29,8 @@ public sealed class GetDocumentSequencesQueryHandlerTests
             .Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyList<DocumentSequence>)Array.Empty<DocumentSequence>());
 
-        var result = await CreateHandler().Handle(new GetDocumentSequencesQuery(), CancellationToken.None);
+        var result = await CreateHandler()
+            .Handle(new GetDocumentSequencesQuery(), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeEmpty();
@@ -48,7 +49,8 @@ public sealed class GetDocumentSequencesQueryHandlerTests
             .Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyList<DocumentSequence>)new[] { configuredNotUsed, used });
 
-        var result = await CreateHandler().Handle(new GetDocumentSequencesQuery(), CancellationToken.None);
+        var result = await CreateHandler()
+            .Handle(new GetDocumentSequencesQuery(), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().HaveCount(2);

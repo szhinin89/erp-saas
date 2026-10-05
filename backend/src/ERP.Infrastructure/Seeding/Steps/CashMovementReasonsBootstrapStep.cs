@@ -17,7 +17,12 @@ public sealed partial class CashMovementReasonsBootstrapStep : ICompanyBootstrap
 {
     public int Order => CompanyBootstrapStepOrder.CashMovementReasons;
 
-    private static readonly (string Code, string Name, CashMovementType Type, int Sort)[] DefaultReasons =
+    private static readonly (
+        string Code,
+        string Name,
+        CashMovementType Type,
+        int Sort
+    )[] DefaultReasons =
     [
         ("INGRESO_CAJA_CHICA", "Ingreso de caja chica", CashMovementType.ManualIncome, 1),
         ("OTRO_INGRESO", "Otro ingreso", CashMovementType.ManualIncome, 2),
@@ -61,7 +66,15 @@ public sealed partial class CashMovementReasonsBootstrapStep : ICompanyBootstrap
             if (existingSet.Contains(code))
                 continue;
 
-            var reason = CashMovementReason.Create(tenantId, companyId, code, name, type, sort, actorId);
+            var reason = CashMovementReason.Create(
+                tenantId,
+                companyId,
+                code,
+                name,
+                type,
+                sort,
+                actorId
+            );
             _db.CashMovementReasons.Add(reason);
             added++;
         }

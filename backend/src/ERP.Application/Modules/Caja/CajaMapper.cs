@@ -81,23 +81,26 @@ internal static class CajaMapper
         IReadOnlyDictionary<Guid, PaymentMethod> methodById
     )
     {
-        var expectedCash = s.Status == CashSessionStatus.Closed
-            ? s.ExpectedAmount ?? s.CurrentBalance
-            : s.CurrentBalance;
+        var expectedCash =
+            s.Status == CashSessionStatus.Closed
+                ? s.ExpectedAmount ?? s.CurrentBalance
+                : s.CurrentBalance;
 
         var invoiceCount = collectionRows.Select(r => r.InvoiceId).Distinct().Count();
         var totalInvoiced = collectionRows.GroupBy(r => r.InvoiceId).Sum(g => g.First().GrandTotal);
 
-        var saleIncomeCash = s.Movements
-            .Where(m => m.MovementType == CashMovementType.SaleIncome)
+        var saleIncomeCash = s
+            .Movements.Where(m => m.MovementType == CashMovementType.SaleIncome)
             .Sum(m => m.Amount);
-        var manualIncomeCash = s.Movements
-            .Where(m => m.MovementType == CashMovementType.ManualIncome)
+        var manualIncomeCash = s
+            .Movements.Where(m => m.MovementType == CashMovementType.ManualIncome)
             .Sum(m => m.Amount);
         // "Egresos manuales" = acciones deliberadas del cajero (ManualExpense/Withdrawal) — nunca
         // incluye SaleRefund, que es el reverso automático de una devolución, no una acción manual.
-        var manualExpenseCash = s.Movements
-            .Where(m => m.MovementType is CashMovementType.ManualExpense or CashMovementType.Withdrawal)
+        var manualExpenseCash = s
+            .Movements.Where(m =>
+                m.MovementType is CashMovementType.ManualExpense or CashMovementType.Withdrawal
+            )
             .Sum(m => m.Amount);
 
         var byMethod = collectionRows
@@ -114,7 +117,9 @@ internal static class CajaMapper
                     g.Sum(r => r.Amount)
                 );
             })
-            .OrderBy(m => PaymentMethodDisplayOrder.Rank(methodById.GetValueOrDefault(m.PaymentMethodId)))
+            .OrderBy(m =>
+                PaymentMethodDisplayOrder.Rank(methodById.GetValueOrDefault(m.PaymentMethodId))
+            )
             .ThenBy(m => m.PaymentMethodName)
             .ToList();
 

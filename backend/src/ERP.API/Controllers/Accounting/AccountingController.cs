@@ -209,5 +209,4 @@ public sealed class AccountingController : ControllerBase
             ),
             "OK"
         );
-
 }

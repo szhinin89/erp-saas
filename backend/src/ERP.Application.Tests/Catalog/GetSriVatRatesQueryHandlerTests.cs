@@ -23,7 +23,9 @@ public sealed class GetSriVatRatesQueryHandlerTests
     {
         var repo = new Mock<ISriCatalogLookupRepository>();
         DateOnly? capturedToday = null;
-        repo.Setup(r => r.GetActiveVatRatesAsync(It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+        repo.Setup(r =>
+                r.GetActiveVatRatesAsync(It.IsAny<DateOnly>(), It.IsAny<CancellationToken>())
+            )
             .Callback<DateOnly, CancellationToken>((today, _) => capturedToday = today)
             .ReturnsAsync(Array.Empty<ERP.Domain.Modules.SriCatalogs.Entities.SriVatRate>());
 

@@ -116,13 +116,22 @@ public sealed class RegisterCollectionCommandHandlerTests
     [Fact]
     public async Task Cobro_valido_aplica_el_pago_y_actualiza_el_saldo_de_la_CxC()
     {
-        var (payments, receivables, bankAccounts, cashRegisters, tenant, company, user) = BuildMocks();
+        var (payments, receivables, bankAccounts, cashRegisters, tenant, company, user) =
+            BuildMocks();
         var receivable = CreateReceivable(100m);
         receivables
             .Setup(r => r.GetByIdAsync(TenantId, receivable.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(receivable);
 
-        var handler = BuildHandler(payments, receivables, bankAccounts, cashRegisters, tenant, company, user);
+        var handler = BuildHandler(
+            payments,
+            receivables,
+            bankAccounts,
+            cashRegisters,
+            tenant,
+            company,
+            user
+        );
         var cmd = new RegisterCollectionCommand(
             CustomerId,
             60m,
@@ -152,7 +161,8 @@ public sealed class RegisterCollectionCommandHandlerTests
     [Fact]
     public async Task Cobro_valido_publica_CollectionAppliedEvent_en_el_Payment_persistido()
     {
-        var (payments, receivables, bankAccounts, cashRegisters, tenant, company, user) = BuildMocks();
+        var (payments, receivables, bankAccounts, cashRegisters, tenant, company, user) =
+            BuildMocks();
         var receivable = CreateReceivable(100m);
         receivables
             .Setup(r => r.GetByIdAsync(TenantId, receivable.Id, It.IsAny<CancellationToken>()))
@@ -171,7 +181,15 @@ public sealed class RegisterCollectionCommandHandlerTests
             )
             .Returns(Task.CompletedTask);
 
-        var handler = BuildHandler(payments, receivables, bankAccounts, cashRegisters, tenant, company, user);
+        var handler = BuildHandler(
+            payments,
+            receivables,
+            bankAccounts,
+            cashRegisters,
+            tenant,
+            company,
+            user
+        );
         var cmd = new RegisterCollectionCommand(
             CustomerId,
             100m,
@@ -191,7 +209,8 @@ public sealed class RegisterCollectionCommandHandlerTests
     [Fact]
     public async Task Cobro_con_InstallmentId_lo_propaga_a_la_linea_de_aplicacion_del_pago()
     {
-        var (payments, receivables, bankAccounts, cashRegisters, tenant, company, user) = BuildMocks();
+        var (payments, receivables, bankAccounts, cashRegisters, tenant, company, user) =
+            BuildMocks();
         var receivable = CreateReceivable(100m);
         receivable.GenerateInstallments(new DateOnly(2026, 7, 30), 30, 2);
         var installmentId = receivable.Installments[0].Id;
@@ -212,7 +231,15 @@ public sealed class RegisterCollectionCommandHandlerTests
             )
             .Returns(Task.CompletedTask);
 
-        var handler = BuildHandler(payments, receivables, bankAccounts, cashRegisters, tenant, company, user);
+        var handler = BuildHandler(
+            payments,
+            receivables,
+            bankAccounts,
+            cashRegisters,
+            tenant,
+            company,
+            user
+        );
         var cmd = new RegisterCollectionCommand(
             CustomerId,
             50m,
@@ -232,14 +259,23 @@ public sealed class RegisterCollectionCommandHandlerTests
     [Fact]
     public async Task Cobro_que_excede_el_saldo_pendiente_retorna_ValidationFailure_sin_lanzar()
     {
-        var (payments, receivables, bankAccounts, cashRegisters, tenant, company, user) = BuildMocks();
+        var (payments, receivables, bankAccounts, cashRegisters, tenant, company, user) =
+            BuildMocks();
         var receivable = CreateReceivable(100m);
         receivable.RegisterCollection(70m, UserId); // saldo restante: 30
         receivables
             .Setup(r => r.GetByIdAsync(TenantId, receivable.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(receivable);
 
-        var handler = BuildHandler(payments, receivables, bankAccounts, cashRegisters, tenant, company, user);
+        var handler = BuildHandler(
+            payments,
+            receivables,
+            bankAccounts,
+            cashRegisters,
+            tenant,
+            company,
+            user
+        );
         var cmd = new RegisterCollectionCommand(
             CustomerId,
             50m,
@@ -263,13 +299,22 @@ public sealed class RegisterCollectionCommandHandlerTests
     [Fact]
     public async Task Cobro_sobre_CxC_inexistente_retorna_NotFound()
     {
-        var (payments, receivables, bankAccounts, cashRegisters, tenant, company, user) = BuildMocks();
+        var (payments, receivables, bankAccounts, cashRegisters, tenant, company, user) =
+            BuildMocks();
         var missingId = Guid.NewGuid();
         receivables
             .Setup(r => r.GetByIdAsync(TenantId, missingId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((SalesReceivable?)null);
 
-        var handler = BuildHandler(payments, receivables, bankAccounts, cashRegisters, tenant, company, user);
+        var handler = BuildHandler(
+            payments,
+            receivables,
+            bankAccounts,
+            cashRegisters,
+            tenant,
+            company,
+            user
+        );
         var cmd = new RegisterCollectionCommand(
             CustomerId,
             50m,
@@ -289,7 +334,8 @@ public sealed class RegisterCollectionCommandHandlerTests
     [Fact]
     public async Task Cobro_repartido_entre_dos_CxC_actualiza_el_saldo_de_ambas()
     {
-        var (payments, receivables, bankAccounts, cashRegisters, tenant, company, user) = BuildMocks();
+        var (payments, receivables, bankAccounts, cashRegisters, tenant, company, user) =
+            BuildMocks();
         var receivableA = CreateReceivable(100m);
         var receivableB = SalesReceivable.Create(
             TenantId,
@@ -306,7 +352,15 @@ public sealed class RegisterCollectionCommandHandlerTests
             .Setup(r => r.GetByIdAsync(TenantId, receivableB.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(receivableB);
 
-        var handler = BuildHandler(payments, receivables, bankAccounts, cashRegisters, tenant, company, user);
+        var handler = BuildHandler(
+            payments,
+            receivables,
+            bankAccounts,
+            cashRegisters,
+            tenant,
+            company,
+            user
+        );
         var cmd = new RegisterCollectionCommand(
             CustomerId,
             80m,
@@ -331,7 +385,8 @@ public sealed class RegisterCollectionCommandHandlerTests
     [Fact]
     public async Task Cobro_con_destino_financiero_valido_lo_propaga_al_Payment()
     {
-        var (payments, receivables, bankAccounts, cashRegisters, tenant, company, user) = BuildMocks();
+        var (payments, receivables, bankAccounts, cashRegisters, tenant, company, user) =
+            BuildMocks();
         var receivable = CreateReceivable(100m);
         var destination = CashDestination();
         receivables
@@ -354,7 +409,15 @@ public sealed class RegisterCollectionCommandHandlerTests
             )
             .Returns(Task.CompletedTask);
 
-        var handler = BuildHandler(payments, receivables, bankAccounts, cashRegisters, tenant, company, user);
+        var handler = BuildHandler(
+            payments,
+            receivables,
+            bankAccounts,
+            cashRegisters,
+            tenant,
+            company,
+            user
+        );
         var cmd = new RegisterCollectionCommand(
             CustomerId,
             60m,
@@ -375,7 +438,8 @@ public sealed class RegisterCollectionCommandHandlerTests
     [Fact]
     public async Task Cobro_con_destino_financiero_inactivo_retorna_ValidationFailure_sin_bloquear_por_falta_de_mapeo()
     {
-        var (payments, receivables, bankAccounts, cashRegisters, tenant, company, user) = BuildMocks();
+        var (payments, receivables, bankAccounts, cashRegisters, tenant, company, user) =
+            BuildMocks();
         var receivable = CreateReceivable(100m);
         var destination = CashDestination(isActive: false);
         receivables
@@ -385,7 +449,15 @@ public sealed class RegisterCollectionCommandHandlerTests
             .Setup(f => f.GetByIdAsync(TenantId, destination.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(destination);
 
-        var handler = BuildHandler(payments, receivables, bankAccounts, cashRegisters, tenant, company, user);
+        var handler = BuildHandler(
+            payments,
+            receivables,
+            bankAccounts,
+            cashRegisters,
+            tenant,
+            company,
+            user
+        );
         var cmd = new RegisterCollectionCommand(
             CustomerId,
             60m,
@@ -413,13 +485,22 @@ public sealed class RegisterCollectionCommandHandlerTests
     [Fact]
     public async Task Cobro_sin_destino_financiero_no_consulta_el_repositorio_y_no_bloquea()
     {
-        var (payments, receivables, bankAccounts, cashRegisters, tenant, company, user) = BuildMocks();
+        var (payments, receivables, bankAccounts, cashRegisters, tenant, company, user) =
+            BuildMocks();
         var receivable = CreateReceivable(100m);
         receivables
             .Setup(r => r.GetByIdAsync(TenantId, receivable.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(receivable);
 
-        var handler = BuildHandler(payments, receivables, bankAccounts, cashRegisters, tenant, company, user);
+        var handler = BuildHandler(
+            payments,
+            receivables,
+            bankAccounts,
+            cashRegisters,
+            tenant,
+            company,
+            user
+        );
         var cmd = new RegisterCollectionCommand(
             CustomerId,
             60m,

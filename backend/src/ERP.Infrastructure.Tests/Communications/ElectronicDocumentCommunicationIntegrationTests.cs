@@ -1,3 +1,4 @@
+using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Modules.Ride.UseCases.GetOrGenerateRide;
 using ERP.Domain.Modules.Communications.Constants;
@@ -8,7 +9,6 @@ using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Moq;
-using System.Text;
 
 namespace ERP.Infrastructure.Tests.Communications;
 
@@ -27,7 +27,9 @@ public sealed class ElectronicDocumentCommunicationIntegrationTests
     private readonly CommunicationOutboxDeliveryIntegrationTests.Database _db;
     private readonly ElectronicDocumentCommunicationFlow _flow;
 
-    public ElectronicDocumentCommunicationIntegrationTests(CommunicationOutboxDeliveryIntegrationTests.Database db)
+    public ElectronicDocumentCommunicationIntegrationTests(
+        CommunicationOutboxDeliveryIntegrationTests.Database db
+    )
     {
         _db = db;
         _flow = new ElectronicDocumentCommunicationFlow(db);
@@ -50,10 +52,19 @@ public sealed class ElectronicDocumentCommunicationIntegrationTests
     {
         var invoice = _flow.Invoice(_db.TenantA, _db.CompanyA, "cliente@example.com");
 
-        var document = await _flow.AuthorizeAsync(_db.TenantA, _db.CompanyA, ElectronicDocumentType.Invoice, "Sales", invoice.Id);
+        var document = await _flow.AuthorizeAsync(
+            _db.TenantA,
+            _db.CompanyA,
+            ElectronicDocumentType.Invoice,
+            "Sales",
+            invoice.Id
+        );
 
-        _flow.RideSender.Verify(s => s.Send(It.IsAny<GetOrGenerateRideQuery>(), It.IsAny<CancellationToken>()), Times.Never,
-            "el RIDE no se genera dentro de la transacción fiscal");
+        _flow.RideSender.Verify(
+            s => s.Send(It.IsAny<GetOrGenerateRideQuery>(), It.IsAny<CancellationToken>()),
+            Times.Never,
+            "el RIDE no se genera dentro de la transacción fiscal"
+        );
         var row = (await RowsAsync()).Should().ContainSingle().Subject;
         row.Purpose.Should().Be(CommunicationPurposes.SalesInvoiceAuthorized);
         row.Status.Should().Be(CommunicationStatus.Pending);
@@ -62,7 +73,11 @@ public sealed class ElectronicDocumentCommunicationIntegrationTests
         row.SourceId.Should().Be(invoice.Id);
         row.RecipientRole.Should().Be(CommunicationRecipientRole.Customer);
         row.Subject.Should().Be("Factura autorizada 001-001-000000001 - ZH Demo");
-        (await AttachmentsAsync(row.Id)).Should().OnlyContain(a => a.ReferenceId == document.Id && a.FileStoragePath == null && a.BinaryContent == null);
+        (await AttachmentsAsync(row.Id))
+            .Should()
+            .OnlyContain(a =>
+                a.ReferenceId == document.Id && a.FileStoragePath == null && a.BinaryContent == null
+            );
 
         var sender = new CapturingEmailSender();
         await _flow.RunProcessorAsync(sender);
@@ -79,7 +94,13 @@ public sealed class ElectronicDocumentCommunicationIntegrationTests
         var invoice = _flow.Invoice(_db.TenantA, _db.CompanyA, "cliente@example.com");
         var salesReturn = _flow.CreditNote(invoice);
 
-        var document = await _flow.AuthorizeAsync(_db.TenantA, _db.CompanyA, ElectronicDocumentType.CreditNote, "Sales", salesReturn.Id);
+        var document = await _flow.AuthorizeAsync(
+            _db.TenantA,
+            _db.CompanyA,
+            ElectronicDocumentType.CreditNote,
+            "Sales",
+            salesReturn.Id
+        );
 
         var row = (await RowsAsync()).Should().ContainSingle().Subject;
         row.Purpose.Should().Be(CommunicationPurposes.SalesCreditNoteAuthorized);
@@ -89,7 +110,9 @@ public sealed class ElectronicDocumentCommunicationIntegrationTests
         row.TemplateKey.Should().Be(CommunicationPurposes.SalesCreditNoteAuthorized);
         row.TemplateSource.Should().Be(CommunicationTemplateSource.Default);
         row.Subject.Should().Be("Nota de credito autorizada 001-001-000000009 - ZH Demo");
-        row.BodyText.Should().Contain("Factura modificada: 001-001-000000001").And.Contain("Total: USD 40.00");
+        row.BodyText.Should()
+            .Contain("Factura modificada: 001-001-000000001")
+            .And.Contain("Total: USD 40.00");
 
         var sender = new CapturingEmailSender();
         await _flow.RunProcessorAsync(sender);
@@ -104,7 +127,13 @@ public sealed class ElectronicDocumentCommunicationIntegrationTests
     {
         var retention = _flow.Retention(_db.TenantA, _db.CompanyA, "proveedor@example.com");
 
-        var document = await _flow.AuthorizeAsync(_db.TenantA, _db.CompanyA, ElectronicDocumentType.Retention, "Retentions", retention.Id);
+        var document = await _flow.AuthorizeAsync(
+            _db.TenantA,
+            _db.CompanyA,
+            ElectronicDocumentType.Retention,
+            "Retentions",
+            retention.Id
+        );
 
         var row = (await RowsAsync()).Should().ContainSingle().Subject;
         row.Purpose.Should().Be(CommunicationPurposes.RetentionAuthorized);
@@ -128,11 +157,15 @@ public sealed class ElectronicDocumentCommunicationIntegrationTests
     [InlineData(ElectronicDocumentType.Invoice)]
     [InlineData(ElectronicDocumentType.CreditNote)]
     [InlineData(ElectronicDocumentType.Retention)]
-    public async Task Sin_correo_queda_Failed_RECIPIENT_MISSING_sin_envio_y_la_autorizacion_se_conserva(ElectronicDocumentType type)
+    public async Task Sin_correo_queda_Failed_RECIPIENT_MISSING_sin_envio_y_la_autorizacion_se_conserva(
+        ElectronicDocumentType type
+    )
     {
         var document = await AuthorizeAsync(type, email: null);
 
-        (await DocumentAsync(document.Id)).CurrentState.Should().Be(ElectronicDocumentState.Authorized);
+        (await DocumentAsync(document.Id))
+            .CurrentState.Should()
+            .Be(ElectronicDocumentState.Authorized);
         var row = (await RowsAsync()).Should().ContainSingle().Subject;
         row.Status.Should().Be(CommunicationStatus.Failed);
         row.FailureCategory.Should().Be(CommunicationFailureCategory.Permanent);
@@ -146,7 +179,9 @@ public sealed class ElectronicDocumentCommunicationIntegrationTests
         sender.Sent.Should().BeEmpty();
 
         await _flow.RepublishAsync(document);
-        (await _flow.Reconciler().ReconcileAsync()).Examined.Should().Be(0, "una fila Failed es evidencia: no se reencola");
+        (await _flow.Reconciler().ReconcileAsync())
+            .Examined.Should()
+            .Be(0, "una fila Failed es evidencia: no se reencola");
         (await RowsAsync()).Should().ContainSingle();
     }
 
@@ -156,19 +191,36 @@ public sealed class ElectronicDocumentCommunicationIntegrationTests
     [InlineData(ElectronicDocumentType.Invoice, CommunicationPurposes.SalesInvoiceAuthorized)]
     [InlineData(ElectronicDocumentType.CreditNote, CommunicationPurposes.SalesCreditNoteAuthorized)]
     [InlineData(ElectronicDocumentType.Retention, CommunicationPurposes.RetentionAuthorized)]
-    public async Task Override_invalido_de_cada_tipo_deja_Failed_Configuration_sin_contenido_ni_envio(ElectronicDocumentType type, string purpose)
+    public async Task Override_invalido_de_cada_tipo_deja_Failed_Configuration_sin_contenido_ni_envio(
+        ElectronicDocumentType type,
+        string purpose
+    )
     {
         await using (var ctx = _db.Context())
         {
-            ctx.CommunicationTemplates.Add(CommunicationTemplate.Create(
-                _db.TenantA, _db.CompanyA, null, purpose, "Personalizada", CommunicationChannel.Email,
-                "Asunto {{NoDeclarada}}", "<p>x</p>", null, "es", Guid.Empty));
+            ctx.CommunicationTemplates.Add(
+                CommunicationTemplate.Create(
+                    _db.TenantA,
+                    _db.CompanyA,
+                    null,
+                    purpose,
+                    "Personalizada",
+                    CommunicationChannel.Email,
+                    "Asunto {{NoDeclarada}}",
+                    "<p>x</p>",
+                    null,
+                    "es",
+                    Guid.Empty
+                )
+            );
             await ctx.SaveChangesAsync();
         }
 
         var document = await AuthorizeAsync(type, email: "destino@example.com");
 
-        (await DocumentAsync(document.Id)).CurrentState.Should().Be(ElectronicDocumentState.Authorized);
+        (await DocumentAsync(document.Id))
+            .CurrentState.Should()
+            .Be(ElectronicDocumentState.Authorized);
         var row = (await RowsAsync()).Should().ContainSingle().Subject;
         row.Purpose.Should().Be(purpose);
         row.Status.Should().Be(CommunicationStatus.Failed);
@@ -201,38 +253,69 @@ public sealed class ElectronicDocumentCommunicationIntegrationTests
     [Fact]
     public async Task Reconciliacion_encola_lo_que_el_evento_no_encolo_una_sola_vez()
     {
-        var document = await AuthorizeAsync(ElectronicDocumentType.CreditNote, "cliente@example.com", publish: false);
+        var document = await AuthorizeAsync(
+            ElectronicDocumentType.CreditNote,
+            "cliente@example.com",
+            publish: false
+        );
         (await RowsAsync()).Should().BeEmpty("simula que el evento se perdió");
 
         var first = await _flow.Reconciler().ReconcileAsync();
         var second = await _flow.Reconciler().ReconcileAsync();
 
-        first.Should().Be(new ERP.Infrastructure.Communications.ElectronicDocumentCommunicationReconciliationSummary(1, 1, 0, 0, 0));
+        first
+            .Should()
+            .Be(
+                new ERP.Infrastructure.Communications.ElectronicDocumentCommunicationReconciliationSummary(
+                    1,
+                    1,
+                    0,
+                    0,
+                    0
+                )
+            );
         second.Examined.Should().Be(0, "ya tiene comunicación");
         var row = (await RowsAsync()).Should().ContainSingle().Subject;
         row.Purpose.Should().Be(CommunicationPurposes.SalesCreditNoteAuthorized);
         row.SourceId.Should().Be(document.SourceEntityId);
 
         await _flow.RepublishAsync(document);
-        (await RowsAsync()).Should().ContainSingle("evento tardío + reconciliación = misma identidad");
+        (await RowsAsync())
+            .Should()
+            .ContainSingle("evento tardío + reconciliación = misma identidad");
     }
 
     [Fact]
     public async Task Reconciliacion_concurrente_con_eventos_duplicados_produce_una_sola_fila_por_comprobante()
     {
         var documents = new List<ElectronicDocument>();
-        foreach (var type in new[] { ElectronicDocumentType.Invoice, ElectronicDocumentType.CreditNote, ElectronicDocumentType.Retention })
+        foreach (
+            var type in new[]
+            {
+                ElectronicDocumentType.Invoice,
+                ElectronicDocumentType.CreditNote,
+                ElectronicDocumentType.Retention,
+            }
+        )
             documents.Add(await AuthorizeAsync(type, "destino@example.com", publish: false));
 
-        var runs = Enumerable.Range(0, 6).Select(_ => Task.Run(() => _flow.Reconciler().ReconcileAsync()))
-            .Concat<Task>(documents.SelectMany(d => Enumerable.Range(0, 3).Select(_ => Task.Run(() => _flow.RepublishAsync(d)))))
+        var runs = Enumerable
+            .Range(0, 6)
+            .Select(_ => Task.Run(() => _flow.Reconciler().ReconcileAsync()))
+            .Concat<Task>(
+                documents.SelectMany(d =>
+                    Enumerable.Range(0, 3).Select(_ => Task.Run(() => _flow.RepublishAsync(d)))
+                )
+            )
             .ToList();
         await Task.WhenAll(runs);
 
         var rows = await RowsAsync();
         rows.Should().HaveCount(3);
         rows.Select(r => r.IdempotencyKey).Should().OnlyHaveUniqueItems();
-        rows.Select(r => r.SourceId).Should().BeEquivalentTo(documents.Select(d => d.SourceEntityId));
+        rows.Select(r => r.SourceId)
+            .Should()
+            .BeEquivalentTo(documents.Select(d => d.SourceEntityId));
 
         var sender = new CapturingEmailSender();
         await _flow.RunProcessorAsync(sender);
@@ -244,7 +327,9 @@ public sealed class ElectronicDocumentCommunicationIntegrationTests
     {
         await AuthorizeAsync(ElectronicDocumentType.Invoice, "cliente@example.com", publish: false);
 
-        (await _flow.Reconciler(clockOffset: TimeSpan.Zero).ReconcileAsync()).Examined.Should().Be(0, "recién autorizado: el evento aún puede estar en curso");
+        (await _flow.Reconciler(clockOffset: TimeSpan.Zero).ReconcileAsync())
+            .Examined.Should()
+            .Be(0, "recién autorizado: el evento aún puede estar en curso");
 
         _flow.DisableEmailOnAuthorization(_db.CompanyA);
         (await _flow.Reconciler().ReconcileAsync()).Examined.Should().Be(0);
@@ -257,7 +342,11 @@ public sealed class ElectronicDocumentCommunicationIntegrationTests
     public async Task Comprobante_autorizado_hace_mas_de_7_dias_sin_comunicacion_se_reconcilia_una_sola_vez()
     {
         // 1-3. Authorized hace 30 días, política habilitada (default del flujo), sin CommunicationOutbox.
-        var document = await AuthorizeAsync(ElectronicDocumentType.Invoice, "cliente@example.com", publish: false);
+        var document = await AuthorizeAsync(
+            ElectronicDocumentType.Invoice,
+            "cliente@example.com",
+            publish: false
+        );
         await _flow.BackdateAsync(document, TimeSpan.FromDays(30));
         (await RowsAsync()).Should().BeEmpty();
 
@@ -280,8 +369,16 @@ public sealed class ElectronicDocumentCommunicationIntegrationTests
     [Fact]
     public async Task Faltantes_se_procesan_del_mas_antiguo_al_mas_nuevo()
     {
-        var reciente = await AuthorizeAsync(ElectronicDocumentType.Invoice, "a@example.com", publish: false);
-        var antiguo = await AuthorizeAsync(ElectronicDocumentType.Retention, "b@example.com", publish: false);
+        var reciente = await AuthorizeAsync(
+            ElectronicDocumentType.Invoice,
+            "a@example.com",
+            publish: false
+        );
+        var antiguo = await AuthorizeAsync(
+            ElectronicDocumentType.Retention,
+            "b@example.com",
+            publish: false
+        );
         await _flow.BackdateAsync(reciente, TimeSpan.FromDays(10));
         await _flow.BackdateAsync(antiguo, TimeSpan.FromDays(400));
 
@@ -289,7 +386,10 @@ public sealed class ElectronicDocumentCommunicationIntegrationTests
         (await RowsAsync()).Single().SourceId.Should().Be(antiguo.SourceEntityId);
 
         await _flow.Reconciler(maxPerRun: 1).ReconcileAsync();
-        (await RowsAsync()).Select(r => r.SourceId).Should().BeEquivalentTo(new[] { antiguo.SourceEntityId, reciente.SourceEntityId });
+        (await RowsAsync())
+            .Select(r => r.SourceId)
+            .Should()
+            .BeEquivalentTo(new[] { antiguo.SourceEntityId, reciente.SourceEntityId });
     }
 
     [Fact]
@@ -300,19 +400,36 @@ public sealed class ElectronicDocumentCommunicationIntegrationTests
         var anomalos = new List<ElectronicDocument>();
         for (var i = 0; i < 3; i++)
         {
-            var huerfano = await _flow.AuthorizeAsync(_db.TenantA, _db.CompanyA, ElectronicDocumentType.Invoice, "Sales", Guid.NewGuid(), publish: false);
+            var huerfano = await _flow.AuthorizeAsync(
+                _db.TenantA,
+                _db.CompanyA,
+                ElectronicDocumentType.Invoice,
+                "Sales",
+                Guid.NewGuid(),
+                publish: false
+            );
             await _flow.BackdateAsync(huerfano, TimeSpan.FromDays(100 + i));
             anomalos.Add(huerfano);
         }
-        var elegible = await AuthorizeAsync(ElectronicDocumentType.Invoice, "cliente@example.com", publish: false);
+        var elegible = await AuthorizeAsync(
+            ElectronicDocumentType.Invoice,
+            "cliente@example.com",
+            publish: false
+        );
         await _flow.BackdateAsync(elegible, TimeSpan.FromDays(50));
 
         var run1 = await _flow.Reconciler(maxPerRun: 2).ReconcileAsync();
-        run1.Should().Match<ERP.Infrastructure.Communications.ElectronicDocumentCommunicationReconciliationSummary>(s => s.Examined == 2 && s.Skipped == 2 && !s.Wrapped);
+        run1.Should()
+            .Match<ERP.Infrastructure.Communications.ElectronicDocumentCommunicationReconciliationSummary>(
+                s => s.Examined == 2 && s.Skipped == 2 && !s.Wrapped
+            );
         (await RowsAsync()).Should().BeEmpty();
 
         var run2 = await _flow.Reconciler(maxPerRun: 2).ReconcileAsync();
-        run2.Should().Match<ERP.Infrastructure.Communications.ElectronicDocumentCommunicationReconciliationSummary>(s => s.Examined == 2 && s.Queued == 1);
+        run2.Should()
+            .Match<ERP.Infrastructure.Communications.ElectronicDocumentCommunicationReconciliationSummary>(
+                s => s.Examined == 2 && s.Queued == 1
+            );
         (await RowsAsync()).Should().ContainSingle(r => r.SourceId == elegible.SourceEntityId);
 
         // Al llegar al final vuelve al más antiguo: los anómalos se reexaminan (por si su origen se corrige).
@@ -328,45 +445,106 @@ public sealed class ElectronicDocumentCommunicationIntegrationTests
     {
         var invoiceA = _flow.Invoice(_db.TenantA, _db.CompanyA, "a@example.com");
         var invoiceB = _flow.Invoice(_db.TenantB, _db.CompanyB, "b@example.com");
-        await _flow.AuthorizeAsync(_db.TenantA, _db.CompanyA, ElectronicDocumentType.Invoice, "Sales", invoiceA.Id);
-        await _flow.AuthorizeAsync(_db.TenantB, _db.CompanyB, ElectronicDocumentType.Invoice, "Sales", invoiceB.Id, publish: false);
+        await _flow.AuthorizeAsync(
+            _db.TenantA,
+            _db.CompanyA,
+            ElectronicDocumentType.Invoice,
+            "Sales",
+            invoiceA.Id
+        );
+        await _flow.AuthorizeAsync(
+            _db.TenantB,
+            _db.CompanyB,
+            ElectronicDocumentType.Invoice,
+            "Sales",
+            invoiceB.Id,
+            publish: false
+        );
 
         var summary = await _flow.Reconciler().ReconcileAsync();
 
-        summary.Queued.Should().Be(1, "solo B faltaba; la reconciliación cruza tenants con el patrón autorizado");
+        summary
+            .Queued.Should()
+            .Be(1, "solo B faltaba; la reconciliación cruza tenants con el patrón autorizado");
         var rows = await RowsAsync();
         rows.Should().HaveCount(2);
-        rows.Single(r => r.SourceId == invoiceA.Id).Should().Match<CommunicationOutbox>(r => r.TenantId == _db.TenantA && r.CompanyId == _db.CompanyA && r.RecipientEmail == "a@example.com");
-        rows.Single(r => r.SourceId == invoiceB.Id).Should().Match<CommunicationOutbox>(r => r.TenantId == _db.TenantB && r.CompanyId == _db.CompanyB && r.RecipientEmail == "b@example.com");
+        rows.Single(r => r.SourceId == invoiceA.Id)
+            .Should()
+            .Match<CommunicationOutbox>(r =>
+                r.TenantId == _db.TenantA
+                && r.CompanyId == _db.CompanyA
+                && r.RecipientEmail == "a@example.com"
+            );
+        rows.Single(r => r.SourceId == invoiceB.Id)
+            .Should()
+            .Match<CommunicationOutbox>(r =>
+                r.TenantId == _db.TenantB
+                && r.CompanyId == _db.CompanyB
+                && r.RecipientEmail == "b@example.com"
+            );
 
         // Un comprobante de A con un origen que solo existe en B no se resuelve: el contributor busca en el tenant del comprobante.
-        await _flow.AuthorizeAsync(_db.TenantA, _db.CompanyA, ElectronicDocumentType.Invoice, "Sales", invoiceB.Id);
+        await _flow.AuthorizeAsync(
+            _db.TenantA,
+            _db.CompanyA,
+            ElectronicDocumentType.Invoice,
+            "Sales",
+            invoiceB.Id
+        );
         (await RowsAsync()).Should().HaveCount(2);
 
         var sender = new CapturingEmailSender();
         await _flow.RunProcessorAsync(sender);
-        sender.Sent.Select(m => m.ToEmail).Should().BeEquivalentTo("a@example.com", "b@example.com");
+        sender
+            .Sent.Select(m => m.ToEmail)
+            .Should()
+            .BeEquivalentTo("a@example.com", "b@example.com");
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────────────────
 
-    private async Task<ElectronicDocument> AuthorizeAsync(ElectronicDocumentType type, string? email, bool publish = true)
+    private async Task<ElectronicDocument> AuthorizeAsync(
+        ElectronicDocumentType type,
+        string? email,
+        bool publish = true
+    )
     {
         var (module, sourceId) = type switch
         {
-            ElectronicDocumentType.Invoice => ("Sales", _flow.Invoice(_db.TenantA, _db.CompanyA, email).Id),
-            ElectronicDocumentType.CreditNote => ("Sales", _flow.CreditNote(_flow.Invoice(_db.TenantA, _db.CompanyA, email)).Id),
+            ElectronicDocumentType.Invoice => (
+                "Sales",
+                _flow.Invoice(_db.TenantA, _db.CompanyA, email).Id
+            ),
+            ElectronicDocumentType.CreditNote => (
+                "Sales",
+                _flow.CreditNote(_flow.Invoice(_db.TenantA, _db.CompanyA, email)).Id
+            ),
             _ => ("Retentions", _flow.Retention(_db.TenantA, _db.CompanyA, email).Id),
         };
-        return await _flow.AuthorizeAsync(_db.TenantA, _db.CompanyA, type, module, sourceId, publish);
+        return await _flow.AuthorizeAsync(
+            _db.TenantA,
+            _db.CompanyA,
+            type,
+            module,
+            sourceId,
+            publish
+        );
     }
 
-    private void AssertLegalAttachments(ERP.Application.Modules.Communications.Services.EmailMessage sent, ElectronicDocument document, string number)
+    private void AssertLegalAttachments(
+        ERP.Application.Modules.Communications.Services.EmailMessage sent,
+        ElectronicDocument document,
+        string number
+    )
     {
         sent.Attachments.Should().HaveCount(2);
         var xml = sent.Attachments.Single(a => a.ContentType == "application/xml");
         xml.FileName.Should().Be($"{number}-autorizado.xml");
-        xml.Content.Should().Equal(_flow.Storage[document.AuthorizedXmlPath!], "el XML autorizado lo entrega ElectronicDocuments desde su almacenamiento");
+        xml.Content.Should()
+            .Equal(
+                _flow.Storage[document.AuthorizedXmlPath!],
+                "el XML autorizado lo entrega ElectronicDocuments desde su almacenamiento"
+            );
         var ride = sent.Attachments.Single(a => a.ContentType == "application/pdf");
         ride.FileName.Should().Be($"{number}-RIDE.pdf");
         Encoding.ASCII.GetString(ride.Content).Should().Be($"%PDF-{document.SourceEntityId}");
@@ -381,13 +559,19 @@ public sealed class ElectronicDocumentCommunicationIntegrationTests
     private async Task<List<CommunicationOutboxAttachment>> AttachmentsAsync(Guid communicationId)
     {
         await using var ctx = _db.Context();
-        return await ctx.Set<CommunicationOutboxAttachment>().IgnoreQueryFilters().AsNoTracking()
-            .Where(a => a.CommunicationOutboxId == communicationId).ToListAsync();
+        return await ctx.Set<CommunicationOutboxAttachment>()
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(a => a.CommunicationOutboxId == communicationId)
+            .ToListAsync();
     }
 
     private async Task<ElectronicDocument> DocumentAsync(Guid id)
     {
         await using var ctx = _db.Context();
-        return await ctx.ElectronicDocuments.IgnoreQueryFilters().AsNoTracking().SingleAsync(d => d.Id == id);
+        return await ctx
+            .ElectronicDocuments.IgnoreQueryFilters()
+            .AsNoTracking()
+            .SingleAsync(d => d.Id == id);
     }
 }

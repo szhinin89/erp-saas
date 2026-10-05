@@ -9,7 +9,11 @@ namespace ERP.Domain.MasterData.Entities;
 /// para empresas existentes. Reemplaza el HashSet fijo CustomerRoleConfig.ValidSegments.
 /// Solo lectura desde el frontend en este bloque — CRUD administrativo queda fuera de alcance.
 /// </summary>
-public sealed class CustomerSegment : MasterEntity, ITenantScopedEntity, ICompanyOperationalEntity, IClassificationCatalogEntity
+public sealed class CustomerSegment
+    : MasterEntity,
+        ITenantScopedEntity,
+        ICompanyOperationalEntity,
+        IClassificationCatalogEntity
 {
     public const int CodeMaxLength = 50;
     public const int NameMaxLength = 120;

@@ -45,8 +45,7 @@ public sealed class GetCompanyOperationalReadinessQueryHandler
                     .Sections.Select(s => new CompanyOperationalReadinessSectionDto(
                         Code: s.Code,
                         Status: s.Status.ToString(),
-                        Items: s
-                            .Items.Select(i => new CompanyOperationalReadinessItemDto(
+                        Items: s.Items.Select(i => new CompanyOperationalReadinessItemDto(
                                 Code: i.Code,
                                 Status: i.Status.ToString(),
                                 Severity: i.Severity.ToString(),

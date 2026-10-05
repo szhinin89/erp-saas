@@ -1,8 +1,8 @@
+using System.Text.Json;
 using ERP.Application.Common;
 using MediatR;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
-using System.Text.Json;
 
 namespace ERP.Application.Behaviors;
 

@@ -52,10 +52,7 @@ public sealed class SalesController : ControllerBase
 
     [HttpGet("invoices/{invoiceId:guid}/receipt-print-payload")]
     [Authorize(Policy = $"perm:{SalesPermissions.View}")]
-    public async Task<IActionResult> GetReceiptPrintPayload(
-        Guid invoiceId,
-        CancellationToken ct
-    ) =>
+    public async Task<IActionResult> GetReceiptPrintPayload(Guid invoiceId, CancellationToken ct) =>
         this.ToOkOrNotFound(
             await _mediator.Send(new GetSalesReceiptPrintPayloadQuery(invoiceId), ct)
         );
@@ -150,7 +147,12 @@ public sealed class SalesController : ControllerBase
     ) =>
         this.ToOkOrBadRequest(
             await _mediator.Send(
-                new SearchItemsForInvoiceQuery(q ?? string.Empty, warehouseId, pageSize, customerId),
+                new SearchItemsForInvoiceQuery(
+                    q ?? string.Empty,
+                    warehouseId,
+                    pageSize,
+                    customerId
+                ),
                 ct
             ),
             "OK"
@@ -167,7 +169,10 @@ public sealed class SalesController : ControllerBase
         Guid itemId,
         [FromQuery] Guid? customerId,
         CancellationToken ct
-    ) => this.ToOkOrBadRequest(await _mediator.Send(new GetSalesItemPricingQuery(itemId, customerId), ct));
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new GetSalesItemPricingQuery(itemId, customerId), ct)
+        );
 
     /// <summary>
     /// SALES-CUSTOMER-REPRICING-PREVIEW-06C1: previsualiza cómo cambiaría el precio de un

@@ -52,7 +52,11 @@ public sealed class RetentionsPostingRuleSeedIntegrationTests : IAsyncLifetime
         await db.Database.MigrateAsync();
 
         _createdBy = Guid.NewGuid();
-        var tenant = Tenant.Create("RETSEED Tenant", $"retseed-{Guid.NewGuid():N}"[..16], _createdBy);
+        var tenant = Tenant.Create(
+            "RETSEED Tenant",
+            $"retseed-{Guid.NewGuid():N}"[..16],
+            _createdBy
+        );
         var company = Company.CreateManaged(
             tenant.Id,
             "1790012345001",
@@ -70,8 +74,14 @@ public sealed class RetentionsPostingRuleSeedIntegrationTests : IAsyncLifetime
         // toda Company nueva: Plan de Cuentas retail + AccountingPeriod + MinimalPostingRules
         // (incluye "Retentions"/"DocumentIssued" desde RETENTIONS-POSTING-RULE-SEED-01H). Sin
         // ningún fixture local de PostingRule.
-        var bootstrapStep = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
-        await bootstrapStep.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _createdBy));
+        var bootstrapStep = new AccountingBootstrapStep(
+            db,
+            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+            NullLogger<AccountingBootstrapStep>.Instance
+        );
+        await bootstrapStep.ExecuteAsync(
+            new CompanyBootstrapContext(_tenantId, _companyId, _createdBy)
+        );
     }
 
     public async Task DisposeAsync() => await _postgres.DisposeAsync();
@@ -100,10 +110,18 @@ public sealed class RetentionsPostingRuleSeedIntegrationTests : IAsyncLifetime
             .UseNpgsql(_postgres.GetConnectionString() + ";Include Error Detail=true")
             .EnableSensitiveDataLogging()
             .Options;
-        var db = new ErpDbContext(options, new FixedCurrentTenant(_tenantId), deferred, new FixedCurrentCompany(_companyId));
+        var db = new ErpDbContext(
+            options,
+            new FixedCurrentTenant(_tenantId),
+            deferred,
+            new FixedCurrentCompany(_companyId)
+        );
 
         var services = new ServiceCollection();
-        services.AddScoped<ERP.Application.Common.Services.ICompanyClock, ERP.Infrastructure.Persistence.Services.CompanyClock>();
+        services.AddScoped<
+            ERP.Application.Common.Services.ICompanyClock,
+            ERP.Infrastructure.Persistence.Services.CompanyClock
+        >();
         services.AddLogging();
         services.AddSingleton(db);
         services.AddSingleton<ICurrentTenant>(new FixedCurrentTenant(_tenantId));
@@ -115,7 +133,9 @@ public sealed class RetentionsPostingRuleSeedIntegrationTests : IAsyncLifetime
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<IPostingEngine, PostingEngine>();
         services.AddMediatR(cfg =>
-            cfg.RegisterServicesFromAssembly(typeof(RetentionDocumentIssuedPostingTranslator).Assembly)
+            cfg.RegisterServicesFromAssembly(
+                typeof(RetentionDocumentIssuedPostingTranslator).Assembly
+            )
         );
 
         var provider = services.BuildServiceProvider();
@@ -151,23 +171,42 @@ public sealed class RetentionsPostingRuleSeedIntegrationTests : IAsyncLifetime
         await db.SaveChangesAsync();
 
         await using var verifyDb = CreateContext();
-        var entry = await verifyDb.JournalEntries.Include(x => x.Lines)
-            .SingleAsync(x => x.SourceModule == "Retentions" && x.SourceEventId == retentionDocumentId);
+        var entry = await verifyDb
+            .JournalEntries.Include(x => x.Lines)
+            .SingleAsync(x =>
+                x.SourceModule == "Retentions" && x.SourceEventId == retentionDocumentId
+            );
 
         entry.Status.Should().Be(JournalEntryStatus.Posted);
         entry.Lines.Should().HaveCount(2);
-        entry.Lines.Sum(l => l.Debit).Should().Be(entry.Lines.Sum(l => l.Credit), "el asiento debe quedar balanceado (Σdebe == Σhaber)");
+        entry
+            .Lines.Sum(l => l.Debit)
+            .Should()
+            .Be(
+                entry.Lines.Sum(l => l.Credit),
+                "el asiento debe quedar balanceado (Σdebe == Σhaber)"
+            );
         entry.Lines.Sum(l => l.Debit).Should().Be(10.5m);
 
-        var accountsById = await verifyDb.Accounts
-            .Where(a => a.CompanyId == _companyId)
+        var accountsById = await verifyDb
+            .Accounts.Where(a => a.CompanyId == _companyId)
             .ToDictionaryAsync(a => a.Id, a => a.Code.Value);
 
         var debitLine = entry.Lines.Single(l => l.Debit > 0);
-        accountsById[debitLine.AccountId].Should().Be("2.1.01.001", "Debe = CxP proveedor, cuenta del plan sembrado, no un fixture local");
+        accountsById[debitLine.AccountId]
+            .Should()
+            .Be(
+                "2.1.01.001",
+                "Debe = CxP proveedor, cuenta del plan sembrado, no un fixture local"
+            );
 
         var creditLine = entry.Lines.Single(l => l.Credit > 0);
-        accountsById[creditLine.AccountId].Should().Be("2.1.02.002", "Haber = Retenciones IVA por pagar, cuenta del plan sembrado, no un fixture local");
+        accountsById[creditLine.AccountId]
+            .Should()
+            .Be(
+                "2.1.02.002",
+                "Haber = Retenciones IVA por pagar, cuenta del plan sembrado, no un fixture local"
+            );
     }
 
     /// <summary>
@@ -182,7 +221,9 @@ public sealed class RetentionsPostingRuleSeedIntegrationTests : IAsyncLifetime
         await using (var setupDb = CreateContext())
         {
             var rule = await setupDb.PostingRules.SingleAsync(r =>
-                r.CompanyId == _companyId && r.SourceModule == "Retentions" && r.FactType == "DocumentIssued"
+                r.CompanyId == _companyId
+                && r.SourceModule == "Retentions"
+                && r.FactType == "DocumentIssued"
             );
             setupDb.PostingRules.Remove(rule);
             await setupDb.SaveChangesAsync();
@@ -206,7 +247,8 @@ public sealed class RetentionsPostingRuleSeedIntegrationTests : IAsyncLifetime
 
         var act = async () => await publisher.Publish(evt);
 
-        await act.Should().ThrowAsync<ERP.Application.Modules.Retentions.Exceptions.RetentionPostingFailedException>();
+        await act.Should()
+            .ThrowAsync<ERP.Application.Modules.Retentions.Exceptions.RetentionPostingFailedException>();
     }
 
     private sealed class DeferredPublisher : IPublisher
@@ -216,7 +258,10 @@ public sealed class RetentionsPostingRuleSeedIntegrationTests : IAsyncLifetime
         public Task Publish(object notification, CancellationToken cancellationToken = default) =>
             Inner!.Publish(notification, cancellationToken);
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
             where TNotification : INotification => Inner!.Publish(notification, cancellationToken);
     }
 
@@ -235,9 +280,13 @@ public sealed class RetentionsPostingRuleSeedIntegrationTests : IAsyncLifetime
 
     private sealed class NoOpPublisher : IPublisher
     {
-        public Task Publish(object notification, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
             where TNotification : INotification => Task.CompletedTask;
     }
 }

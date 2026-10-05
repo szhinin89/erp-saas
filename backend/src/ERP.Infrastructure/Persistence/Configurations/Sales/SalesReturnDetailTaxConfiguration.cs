@@ -5,7 +5,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 namespace ERP.Infrastructure.Persistence.Configurations.Sales;
 
 /// <summary>TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-3).</summary>
-public sealed class SalesReturnDetailTaxConfiguration : IEntityTypeConfiguration<SalesReturnDetailTax>
+public sealed class SalesReturnDetailTaxConfiguration
+    : IEntityTypeConfiguration<SalesReturnDetailTax>
 {
     public void Configure(EntityTypeBuilder<SalesReturnDetailTax> builder)
     {

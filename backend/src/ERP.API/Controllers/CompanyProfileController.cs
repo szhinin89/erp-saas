@@ -74,7 +74,10 @@ public sealed class CompanyProfileController : ControllerBase
             return this.ApiBadRequest("Debe adjuntar un archivo de imagen.");
 
         await using var upload = await BufferedFormFile.CreateAsync(file, cancellationToken);
-        var result = await _mediator.Send(new UploadCompanyLogoCommand(upload.Content), cancellationToken);
+        var result = await _mediator.Send(
+            new UploadCompanyLogoCommand(upload.Content),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 
@@ -83,7 +86,10 @@ public sealed class CompanyProfileController : ControllerBase
     public async Task<IActionResult> GetLogoContent(CancellationToken cancellationToken = default)
     {
         var result = await _mediator.Send(new GetCompanyLogoContentQuery(), cancellationToken);
-        return this.ToFileOrNotFound(result, content => File(content.Content, content.ContentType, content.FileName));
+        return this.ToFileOrNotFound(
+            result,
+            content => File(content.Content, content.ContentType, content.FileName)
+        );
     }
 
     [HttpPut("profile/fiscal")]
@@ -170,7 +176,10 @@ public sealed class CompanyProfileController : ControllerBase
     )
     {
         var result = await _mediator.Send(new GetCompanyLogoAltContentQuery(), cancellationToken);
-        return this.ToFileOrNotFound(result, content => File(content.Content, content.ContentType, content.FileName));
+        return this.ToFileOrNotFound(
+            result,
+            content => File(content.Content, content.ContentType, content.FileName)
+        );
     }
 
     [HttpGet("profile/fiscal-policy")]

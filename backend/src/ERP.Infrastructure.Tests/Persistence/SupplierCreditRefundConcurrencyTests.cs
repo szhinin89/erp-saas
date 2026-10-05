@@ -276,9 +276,19 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
         );
         db.Set<PaymentMethod>().Add(paymentMethod);
         // 02D-B — medio ↔ destino: la caja solo admite un medio de efectivo físico.
-        db.Set<PaymentMethod>().Add(
-            PaymentMethod.Create(_tenantId, "CASH", "Efectivo", false, false, 2, _userId, affectsPhysicalCash: true)
-        );
+        db.Set<PaymentMethod>()
+            .Add(
+                PaymentMethod.Create(
+                    _tenantId,
+                    "CASH",
+                    "Efectivo",
+                    false,
+                    false,
+                    2,
+                    _userId,
+                    affectsPhysicalCash: true
+                )
+            );
         await db.SaveChangesAsync();
         _paymentMethodId = paymentMethod.Id;
     }
@@ -677,9 +687,23 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
         var creditId = await SeedCreditAsync(100m);
         var cri = Guid.NewGuid();
 
-        var first = await ExecuteRegisterAsync(creditId, _companyBankAccountId, null, "TRANSFER", 40m, cri);
+        var first = await ExecuteRegisterAsync(
+            creditId,
+            _companyBankAccountId,
+            null,
+            "TRANSFER",
+            40m,
+            cri
+        );
         first.Success.Should().BeTrue(first.Error);
-        var retry = await ExecuteRegisterAsync(creditId, _companyBankAccountId, null, "TRANSFER", 40m, cri);
+        var retry = await ExecuteRegisterAsync(
+            creditId,
+            _companyBankAccountId,
+            null,
+            "TRANSFER",
+            40m,
+            cri
+        );
         retry.Success.Should().BeTrue(retry.Error);
 
         await using var verify = CreateContext();
@@ -695,9 +719,23 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
         var creditId = await SeedCreditAsync(100m);
         var cri = Guid.NewGuid();
 
-        var first = await ExecuteRegisterAsync(creditId, _companyBankAccountId, null, "TRANSFER", 40m, cri);
+        var first = await ExecuteRegisterAsync(
+            creditId,
+            _companyBankAccountId,
+            null,
+            "TRANSFER",
+            40m,
+            cri
+        );
         first.Success.Should().BeTrue(first.Error);
-        var second = await ExecuteRegisterAsync(creditId, _companyBankAccountId, null, "TRANSFER", 25m, cri);
+        var second = await ExecuteRegisterAsync(
+            creditId,
+            _companyBankAccountId,
+            null,
+            "TRANSFER",
+            25m,
+            cri
+        );
         second.Success.Should().BeFalse();
 
         await using var verify = CreateContext();
@@ -732,9 +770,23 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
         var creditId = await SeedCreditAsync(100m);
         var cri = Guid.NewGuid();
 
-        var first = await ExecuteRegisterAsync(creditId, _companyBankAccountId, null, "TRANSFER", 40m, cri);
+        var first = await ExecuteRegisterAsync(
+            creditId,
+            _companyBankAccountId,
+            null,
+            "TRANSFER",
+            40m,
+            cri
+        );
         first.Success.Should().BeTrue(first.Error);
-        var retry = await ExecuteRegisterAsync(creditId, _companyBankAccountId, null, "TRANSFER", 40m, cri);
+        var retry = await ExecuteRegisterAsync(
+            creditId,
+            _companyBankAccountId,
+            null,
+            "TRANSFER",
+            40m,
+            cri
+        );
 
         retry.Success.Should().BeTrue(retry.Error);
         retry.Value!.Amount.Should().Be(first.Value!.Amount);
@@ -1044,7 +1096,9 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
     {
         // ZH-BACKEND-SECURITY-ERROR-FINAL-HARDENING-01: clasificación técnica real (único punto).
         public string? ClassifyFailureCode(Exception exception) =>
-            new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator().ClassifyFailureCode(exception);
+            new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator().ClassifyFailureCode(
+                exception
+            );
 
         public bool TryGetUniqueViolation(Exception exception, out DatabaseUniqueViolationInfo info)
         {
@@ -1093,12 +1147,19 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
     }
 
     /// <summary>Conexión externa que retiene FOR UPDATE sobre la sesión (mismo lock que los handlers).</summary>
-    private async Task<(NpgsqlConnection Connection, NpgsqlTransaction Transaction)> HoldSessionLockAsync(Guid sessionId)
+    private async Task<(
+        NpgsqlConnection Connection,
+        NpgsqlTransaction Transaction
+    )> HoldSessionLockAsync(Guid sessionId)
     {
         var connection = new NpgsqlConnection(_postgres.GetConnectionString());
         await connection.OpenAsync();
         var transaction = await connection.BeginTransactionAsync();
-        await using var cmd = new NpgsqlCommand("SELECT 1 FROM cash_sessions WHERE id = @id FOR UPDATE", connection, transaction);
+        await using var cmd = new NpgsqlCommand(
+            "SELECT 1 FROM cash_sessions WHERE id = @id FOR UPDATE",
+            connection,
+            transaction
+        );
         cmd.Parameters.AddWithValue("id", sessionId);
         await cmd.ExecuteNonQueryAsync();
         return (connection, transaction);
@@ -1122,13 +1183,22 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
                 return;
             await Task.Delay(50);
         }
-        waiting.Should().BeGreaterThanOrEqualTo(expected, "las operaciones deben competir por la misma CashSession");
+        waiting
+            .Should()
+            .BeGreaterThanOrEqualTo(
+                expected,
+                "las operaciones deben competir por la misma CashSession"
+            );
     }
 
     private async Task<CashSession> LoadSessionAsync(Guid sessionId)
     {
         await using var verify = CreateContext();
-        return await verify.Set<CashSession>().AsNoTracking().Include(x => x.Movements).FirstAsync(x => x.Id == sessionId);
+        return await verify
+            .Set<CashSession>()
+            .AsNoTracking()
+            .Include(x => x.Movements)
+            .FirstAsync(x => x.Id == sessionId);
     }
 
     [Fact]
@@ -1143,26 +1213,50 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
         await using (blocker)
         await using (blockerTx)
         {
-            var refundA = Task.Run(() => ExecuteRegisterAsync(creditA, null, _cashRegisterId, "CASH", 40m, Guid.NewGuid()));
-            var refundB = Task.Run(() => ExecuteRegisterAsync(creditB, null, _cashRegisterId, "CASH", 40m, Guid.NewGuid()));
+            var refundA = Task.Run(() =>
+                ExecuteRegisterAsync(creditA, null, _cashRegisterId, "CASH", 40m, Guid.NewGuid())
+            );
+            var refundB = Task.Run(() =>
+                ExecuteRegisterAsync(creditB, null, _cashRegisterId, "CASH", 40m, Guid.NewGuid())
+            );
             await WaitForLockWaitersAsync(2);
             await blockerTx.CommitAsync();
             var results = await Task.WhenAll(refundA, refundB);
 
-            results.Should().OnlyContain(r => r.Success, "serializados, ambos reembolsos legítimos confirman — ningún deadlock");
+            results
+                .Should()
+                .OnlyContain(
+                    r => r.Success,
+                    "serializados, ambos reembolsos legítimos confirman — ningún deadlock"
+                );
 
             var session = await LoadSessionAsync(sessionId);
-            var refundMovements = session.Movements
-                .Where(m => m.ReferenceType == ERP.Domain.Modules.Caja.Enums.CashReferenceType.SupplierCreditRefund)
+            var refundMovements = session
+                .Movements.Where(m =>
+                    m.ReferenceType
+                    == ERP.Domain.Modules.Caja.Enums.CashReferenceType.SupplierCreditRefund
+                )
                 .ToList();
             refundMovements.Should().HaveCount(2);
-            refundMovements.Select(m => m.ReferenceId).Should().BeEquivalentTo(results.Select(r => (Guid?)r.Value!.Id));
-            refundMovements.Should().OnlyContain(m => m.MovementType == ERP.Domain.Modules.Caja.Enums.CashMovementType.ManualIncome && m.Amount == 40m);
+            refundMovements
+                .Select(m => m.ReferenceId)
+                .Should()
+                .BeEquivalentTo(results.Select(r => (Guid?)r.Value!.Id));
+            refundMovements
+                .Should()
+                .OnlyContain(m =>
+                    m.MovementType == ERP.Domain.Modules.Caja.Enums.CashMovementType.ManualIncome
+                    && m.Amount == 40m
+                );
             session.CurrentBalance.Should().Be(80m);
 
             await using var verify = CreateContext();
             (await verify.Set<SupplierCreditRefundTransaction>().CountAsync()).Should().Be(2);
-            var credits = await verify.Set<SupplierCredit>().AsNoTracking().Where(c => c.Id == creditA || c.Id == creditB).ToListAsync();
+            var credits = await verify
+                .Set<SupplierCredit>()
+                .AsNoTracking()
+                .Where(c => c.Id == creditA || c.Id == creditB)
+                .ToListAsync();
             credits.Should().OnlyContain(c => c.AvailableAmount == 60m);
         }
     }
@@ -1173,32 +1267,69 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
         var creditA = await SeedCreditAsync(100m);
         var creditB = await SeedCreditAsync(100m);
         var sessionId = await OpenCashSessionAsync(0m);
-        var original = await ExecuteRegisterAsync(creditA, null, _cashRegisterId, "CASH", 40m, Guid.NewGuid());
+        var original = await ExecuteRegisterAsync(
+            creditA,
+            null,
+            _cashRegisterId,
+            "CASH",
+            40m,
+            Guid.NewGuid()
+        );
         original.Success.Should().BeTrue(original.Error);
 
         var (blocker, blockerTx) = await HoldSessionLockAsync(sessionId);
         await using (blocker)
         await using (blockerTx)
         {
-            var reversal = Task.Run(() => ExecuteReverseAsync(creditA, original.Value!.Id, "Reembolso duplicado", Guid.NewGuid()));
-            var refundB = Task.Run(() => ExecuteRegisterAsync(creditB, null, _cashRegisterId, "CASH", 25m, Guid.NewGuid()));
+            var reversal = Task.Run(() =>
+                ExecuteReverseAsync(
+                    creditA,
+                    original.Value!.Id,
+                    "Reembolso duplicado",
+                    Guid.NewGuid()
+                )
+            );
+            var refundB = Task.Run(() =>
+                ExecuteRegisterAsync(creditB, null, _cashRegisterId, "CASH", 25m, Guid.NewGuid())
+            );
             await WaitForLockWaitersAsync(2);
             await blockerTx.CommitAsync();
             var results = await Task.WhenAll(reversal, refundB);
 
-            results.Should().OnlyContain(r => r.Success, "reversa y reembolso se serializan — ningún deadlock");
+            results
+                .Should()
+                .OnlyContain(r => r.Success, "reversa y reembolso se serializan — ningún deadlock");
 
             var session = await LoadSessionAsync(sessionId);
             // 0 + 40 (reembolso original) − 40 (reversa) + 25 (reembolso B)
             session.CurrentBalance.Should().Be(25m);
-            var ofOriginal = session.Movements.Where(m => m.ReferenceId == original.Value!.Id).ToList();
-            ofOriginal.Should().HaveCount(2, "ingreso original intacto + egreso compensatorio, ambos con referencia al reembolso original");
-            ofOriginal.Should().ContainSingle(m => m.MovementType == ERP.Domain.Modules.Caja.Enums.CashMovementType.ManualIncome);
-            ofOriginal.Should().ContainSingle(m => m.MovementType == ERP.Domain.Modules.Caja.Enums.CashMovementType.ManualExpense);
-            session.Movements.Should().ContainSingle(m => m.ReferenceId == results[1].Value!.Id && m.Amount == 25m);
+            var ofOriginal = session
+                .Movements.Where(m => m.ReferenceId == original.Value!.Id)
+                .ToList();
+            ofOriginal
+                .Should()
+                .HaveCount(
+                    2,
+                    "ingreso original intacto + egreso compensatorio, ambos con referencia al reembolso original"
+                );
+            ofOriginal
+                .Should()
+                .ContainSingle(m =>
+                    m.MovementType == ERP.Domain.Modules.Caja.Enums.CashMovementType.ManualIncome
+                );
+            ofOriginal
+                .Should()
+                .ContainSingle(m =>
+                    m.MovementType == ERP.Domain.Modules.Caja.Enums.CashMovementType.ManualExpense
+                );
+            session
+                .Movements.Should()
+                .ContainSingle(m => m.ReferenceId == results[1].Value!.Id && m.Amount == 25m);
 
             await using var verify = CreateContext();
-            (await verify.Set<SupplierCreditRefundTransaction>().CountAsync()).Should().Be(3, "original + reversa + reembolso B, sin parciales");
+            (await verify.Set<SupplierCreditRefundTransaction>().CountAsync())
+                .Should()
+                .Be(3, "original + reversa + reembolso B, sin parciales");
         }
     }
 
@@ -1215,22 +1346,45 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
         var sessionId = await OpenCashSessionAsync(100m);
 
         await using var callerDb = CreateContext();
-        var callerRepo = new CashSessionRepository(callerDb, new FixedCurrentCompany(() => _companyId));
+        var callerRepo = new CashSessionRepository(
+            callerDb,
+            new FixedCurrentCompany(() => _companyId)
+        );
         var trackedBeforeLock = await callerRepo.GetByIdAsync(_tenantId, sessionId);
         trackedBeforeLock!.CurrentBalance.Should().Be(100m);
 
         await using (var otherDb = CreateContext())
         {
-            var other = await otherDb.Set<CashSession>().Include(x => x.Movements).FirstAsync(x => x.Id == sessionId);
-            other.RecordMovement(ERP.Domain.Modules.Caja.Enums.CashMovementType.ManualIncome, 50m, "Ingreso concurrente", _userId);
+            var other = await otherDb
+                .Set<CashSession>()
+                .Include(x => x.Movements)
+                .FirstAsync(x => x.Id == sessionId);
+            other.RecordMovement(
+                ERP.Domain.Modules.Caja.Enums.CashMovementType.ManualIncome,
+                50m,
+                "Ingreso concurrente",
+                _userId
+            );
             await otherDb.SaveChangesAsync();
         }
 
         await using var tx = await callerDb.Database.BeginTransactionAsync();
-        var locked = await callerRepo.GetOpenByCashRegisterForUpdateAsync(_tenantId, _cashRegisterId);
-        locked.Should().BeSameAs(trackedBeforeLock, "identity resolution: misma instancia trackeada");
-        locked!.CurrentBalance.Should().Be(150m, "bajo el lock se ve el movimiento ya confirmado por la otra transacción");
-        locked.RecordMovement(ERP.Domain.Modules.Caja.Enums.CashMovementType.ManualExpense, 30m, "Egreso bajo lock", _userId);
+        var locked = await callerRepo.GetOpenByCashRegisterForUpdateAsync(
+            _tenantId,
+            _cashRegisterId
+        );
+        locked
+            .Should()
+            .BeSameAs(trackedBeforeLock, "identity resolution: misma instancia trackeada");
+        locked!
+            .CurrentBalance.Should()
+            .Be(150m, "bajo el lock se ve el movimiento ya confirmado por la otra transacción");
+        locked.RecordMovement(
+            ERP.Domain.Modules.Caja.Enums.CashMovementType.ManualExpense,
+            30m,
+            "Egreso bajo lock",
+            _userId
+        );
         await callerDb.SaveChangesAsync();
         await tx.CommitAsync();
 

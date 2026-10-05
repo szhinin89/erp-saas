@@ -39,7 +39,11 @@ public sealed class ProfilesTenantScopeTests
 
         var profileOfAnotherTenant = Guid.NewGuid();
         repo.Setup(r =>
-                r.GetProfileByIdAsync(TenantId, profileOfAnotherTenant, It.IsAny<CancellationToken>())
+                r.GetProfileByIdAsync(
+                    TenantId,
+                    profileOfAnotherTenant,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((AccessProfile?)null);
 
@@ -78,7 +82,11 @@ public sealed class ProfilesTenantScopeTests
 
         var profileOfAnotherTenant = Guid.NewGuid();
         repo.Setup(r =>
-                r.GetProfileByIdAsync(TenantId, profileOfAnotherTenant, It.IsAny<CancellationToken>())
+                r.GetProfileByIdAsync(
+                    TenantId,
+                    profileOfAnotherTenant,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((AccessProfile?)null);
 
@@ -111,7 +119,11 @@ public sealed class ProfilesTenantScopeTests
 
         var profileOfAnotherTenant = Guid.NewGuid();
         repo.Setup(r =>
-                r.GetProfileByIdAsync(TenantId, profileOfAnotherTenant, It.IsAny<CancellationToken>())
+                r.GetProfileByIdAsync(
+                    TenantId,
+                    profileOfAnotherTenant,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((AccessProfile?)null);
 

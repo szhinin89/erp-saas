@@ -61,7 +61,12 @@ public sealed class PurchaseCreditNoteDiscountPostingIntegrationTests : IAsyncLi
         await db.Database.MigrateAsync();
 
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _createdBy);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _createdBy);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: _createdBy
+        );
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
         await db.SaveChangesAsync();
@@ -69,20 +74,54 @@ public sealed class PurchaseCreditNoteDiscountPostingIntegrationTests : IAsyncLi
         _companyId = company.Id;
 
         var branch = Branch.Create(
-            tenantId: _tenantId, name: "Matriz", address: "Av. Principal 123", code: "B01",
-            description: null, reference: null, postalCode: null, phone: null, secondaryPhone: null,
-            email: null, website: null, managerName: null, managerPosition: null, managerEmail: null,
-            managerPhone: null, countryId: null, provinceId: null, cantonId: null, parishId: null,
-            latitude: null, longitude: null, openingDate: null, internalNotes: null,
-            isMainBranch: true, createdBy: _createdBy, companyId: _companyId
+            tenantId: _tenantId,
+            name: "Matriz",
+            address: "Av. Principal 123",
+            code: "B01",
+            description: null,
+            reference: null,
+            postalCode: null,
+            phone: null,
+            secondaryPhone: null,
+            email: null,
+            website: null,
+            managerName: null,
+            managerPosition: null,
+            managerEmail: null,
+            managerPhone: null,
+            countryId: null,
+            provinceId: null,
+            cantonId: null,
+            parishId: null,
+            latitude: null,
+            longitude: null,
+            openingDate: null,
+            internalNotes: null,
+            isMainBranch: true,
+            createdBy: _createdBy,
+            companyId: _companyId
         );
         db.Branches.Add(branch);
         await db.SaveChangesAsync();
         _branchId = branch.Id;
 
-        var supplier = BusinessPartner.Create(_tenantId, "05", "1710034065", 1, "Proveedor Test", _createdBy);
+        var supplier = BusinessPartner.Create(
+            _tenantId,
+            "05",
+            "1710034065",
+            1,
+            "Proveedor Test",
+            _createdBy
+        );
         db.BusinessPartners.Add(supplier);
-        var paymentTerm = PaymentTerm.Create(_tenantId, "CONT", "Contado", installments: 1, daysBetweenInstallments: 0, _createdBy);
+        var paymentTerm = PaymentTerm.Create(
+            _tenantId,
+            "CONT",
+            "Contado",
+            installments: 1,
+            daysBetweenInstallments: 0,
+            _createdBy
+        );
         db.Add(paymentTerm);
         await db.SaveChangesAsync();
         _supplierId = supplier.Id;
@@ -91,8 +130,18 @@ public sealed class PurchaseCreditNoteDiscountPostingIntegrationTests : IAsyncLi
         // Plan de cuentas + PostingRules REALES (incluida la corrección de este ticket) — no una
         // regla sintética: esta suite existe justamente para probar que el seed real usa la cuenta
         // correcta, nunca inventario.
-        var bootstrap = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
-        await bootstrap.ExecuteAsync(new ERP.Application.Common.Interfaces.CompanyBootstrapContext(_tenantId, _companyId, _createdBy));
+        var bootstrap = new AccountingBootstrapStep(
+            db,
+            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+            NullLogger<AccountingBootstrapStep>.Instance
+        );
+        await bootstrap.ExecuteAsync(
+            new ERP.Application.Common.Interfaces.CompanyBootstrapContext(
+                _tenantId,
+                _companyId,
+                _createdBy
+            )
+        );
     }
 
     public async Task DisposeAsync() => await _postgres.DisposeAsync();
@@ -103,7 +152,10 @@ public sealed class PurchaseCreditNoteDiscountPostingIntegrationTests : IAsyncLi
             .UseNpgsql(_postgres.GetConnectionString())
             .Options;
         return new ErpDbContext(
-            options, new FixedCurrentTenant(_tenantId), publisher ?? new NoOpPublisher(), new FixedCurrentCompany(_companyId)
+            options,
+            new FixedCurrentTenant(_tenantId),
+            publisher ?? new NoOpPublisher(),
+            new FixedCurrentCompany(_companyId)
         );
     }
 
@@ -114,13 +166,23 @@ public sealed class PurchaseCreditNoteDiscountPostingIntegrationTests : IAsyncLi
         var options = new DbContextOptionsBuilder<ErpDbContext>()
             .UseNpgsql(_postgres.GetConnectionString() + ";Include Error Detail=true")
             .EnableSensitiveDataLogging()
-            .AddInterceptors(new ERP.Infrastructure.Persistence.Interceptors.NewChildEntityTrackingInterceptor())
+            .AddInterceptors(
+                new ERP.Infrastructure.Persistence.Interceptors.NewChildEntityTrackingInterceptor()
+            )
             .Options;
-        var db = new ErpDbContext(options, new FixedCurrentTenant(_tenantId), deferred, new FixedCurrentCompany(_companyId));
+        var db = new ErpDbContext(
+            options,
+            new FixedCurrentTenant(_tenantId),
+            deferred,
+            new FixedCurrentCompany(_companyId)
+        );
 
         var services = new ServiceCollection();
         services.AddSingleton<TimeProvider>(AccountingDateBoundary.Clock);
-        services.AddScoped<ERP.Application.Common.Services.ICompanyClock, ERP.Infrastructure.Persistence.Services.CompanyClock>();
+        services.AddScoped<
+            ERP.Application.Common.Services.ICompanyClock,
+            ERP.Infrastructure.Persistence.Services.CompanyClock
+        >();
         services.AddLogging();
         services.AddSingleton(db);
         services.AddSingleton<ICurrentTenant>(new FixedCurrentTenant(_tenantId));
@@ -133,8 +195,16 @@ public sealed class PurchaseCreditNoteDiscountPostingIntegrationTests : IAsyncLi
         services.AddScoped<IPostingEngine, PostingEngine>();
         services.AddScoped(typeof(IAuditWriter<>), typeof(EfAuditWriter<>));
         services.AddScoped<IAuditService, AuditService>();
-        services.AddScoped<IAuditContext>(_ => new FixedAuditContext(() => _tenantId, () => _companyId, Guid.NewGuid()));
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(PurchaseCreditNoteAuthorizedPostingTranslator).Assembly));
+        services.AddScoped<IAuditContext>(_ => new FixedAuditContext(
+            () => _tenantId,
+            () => _companyId,
+            Guid.NewGuid()
+        ));
+        services.AddMediatR(cfg =>
+            cfg.RegisterServicesFromAssembly(
+                typeof(PurchaseCreditNoteAuthorizedPostingTranslator).Assembly
+            )
+        );
 
         var provider = services.BuildServiceProvider();
         deferred.Inner = provider.GetRequiredService<IPublisher>();
@@ -146,40 +216,72 @@ public sealed class PurchaseCreditNoteDiscountPostingIntegrationTests : IAsyncLi
         // Año del "hoy" de la empresa (el que usa el traductor vía ICompanyClock), no el año UTC:
         // el 31-dic desde las 19:00 Ecuador el año UTC ya es el siguiente (ZH-ACCOUNTING-DATE-BOUNDARY-01).
         var currentYear = AccountingDateBoundary.CompanyToday.Year;
-        var hasPeriod = await db.AccountingPeriods.AnyAsync(p => p.CompanyId == _companyId && p.FiscalYear == currentYear);
+        var hasPeriod = await db.AccountingPeriods.AnyAsync(p =>
+            p.CompanyId == _companyId && p.FiscalYear == currentYear
+        );
         if (!hasPeriod)
         {
             db.AccountingPeriods.Add(
                 ERP.Domain.Modules.Accounting.Entities.AccountingPeriod.Create(
-                    _tenantId, _companyId, currentYear, 1,
-                    new DateOnly(currentYear, 1, 1), new DateOnly(currentYear, 12, 31), _createdBy
+                    _tenantId,
+                    _companyId,
+                    currentYear,
+                    1,
+                    new DateOnly(currentYear, 1, 1),
+                    new DateOnly(currentYear, 12, 31),
+                    _createdBy
                 )
             );
             await db.SaveChangesAsync();
         }
     }
 
-    private async Task<(PurchaseInvoice Invoice, AccountsPayable Payable)> SeedConfirmedInvoiceAsync(
-        ErpDbContext db, decimal lineTotal = 100m
-    )
+    private async Task<(
+        PurchaseInvoice Invoice,
+        AccountsPayable Payable
+    )> SeedConfirmedInvoiceAsync(ErpDbContext db, decimal lineTotal = 100m)
     {
         var inv = PurchaseInvoice.CreateDraft(
-            _tenantId, _companyId, _branchId, _supplierId, "Proveedor Test", "1791352688001",
-            "01", $"001-001-{Random.Shared.Next(100000, 999999)}",
-            AccountingDateBoundary.CompanyToday.AddDays(-5), _createdBy,
-            _paymentTermId, "Contado", 1, 30
+            _tenantId,
+            _companyId,
+            _branchId,
+            _supplierId,
+            "Proveedor Test",
+            "1791352688001",
+            "01",
+            $"001-001-{Random.Shared.Next(100000, 999999)}",
+            AccountingDateBoundary.CompanyToday.AddDays(-5),
+            _createdBy,
+            _paymentTermId,
+            "Contado",
+            1,
+            30
         );
         var line = PurchaseInvoiceDetail.Create(
-            inv.Id, _tenantId, "Producto con descuento", quantity: 1m, unitPrice: lineTotal,
-            vatCode: "2", uomCode: "UNIT"
+            inv.Id,
+            _tenantId,
+            "Producto con descuento",
+            quantity: 1m,
+            unitPrice: lineTotal,
+            vatCode: "2",
+            uomCode: "UNIT"
         );
         line.ApplyTaxes("2", 15m, "IVA", null, 0m, null);
         inv.ReplaceLines(new[] { line }, _createdBy);
         inv.Confirm(_createdBy);
 
         var payable = AccountsPayable.CreateFromOrigin(
-            _tenantId, _companyId, _branchId, _supplierId, AccountsPayableOriginType.PurchaseInvoice,
-            inv.Id, "01", inv.InvoiceNumber, inv.IssueDate, inv.IssueDate, _createdBy
+            _tenantId,
+            _companyId,
+            _branchId,
+            _supplierId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            inv.Id,
+            "01",
+            inv.InvoiceNumber,
+            inv.IssueDate,
+            inv.IssueDate,
+            _createdBy
         );
         payable.AddInstallment(1, inv.IssueDate.AddDays(30), lineTotal * 1.15m);
 
@@ -198,22 +300,54 @@ public sealed class PurchaseCreditNoteDiscountPostingIntegrationTests : IAsyncLi
         var summary = inv.TaxSummaries.Should().ContainSingle().Which;
 
         var creditNote = PurchaseCreditNote.CreateDraft(
-            _tenantId, _companyId, _branchId, _supplierId, inv.Id, null,
-            PurchaseCreditNoteApplicationType.Discount, "001-001-000000005", null, null, null,
-            AccountingDateBoundary.CompanyToday, "Descuento por pronto pago",
+            _tenantId,
+            _companyId,
+            _branchId,
+            _supplierId,
+            inv.Id,
+            null,
+            PurchaseCreditNoteApplicationType.Discount,
+            "001-001-000000005",
+            null,
+            null,
+            null,
+            AccountingDateBoundary.CompanyToday,
+            "Descuento por pronto pago",
             Array.Empty<PurchaseCreditNote.DraftLineInput>(),
-            [new(summary.Id, summary.VatCode, summary.VatRate, summary.VatName, summary.IceCode,
-                summary.IceRate, summary.IceName, 20m, summary.IrbpnrCode, summary.IrbpnrRate,
-                summary.IrbpnrName, summary.TaxableBase, summary.IrbpnrAmount)],
-            _createdBy, Guid.NewGuid(), "create-hash"
+            [
+                new(
+                    summary.Id,
+                    summary.VatCode,
+                    summary.VatRate,
+                    summary.VatName,
+                    summary.IceCode,
+                    summary.IceRate,
+                    summary.IceName,
+                    20m,
+                    summary.IrbpnrCode,
+                    summary.IrbpnrRate,
+                    summary.IrbpnrName,
+                    summary.TaxableBase,
+                    summary.IrbpnrAmount
+                ),
+            ],
+            _createdBy,
+            Guid.NewGuid(),
+            "create-hash"
         );
-        creditNote.Authorize(payable.OutstandingAmount, _createdBy, Guid.NewGuid(), "authorize-hash");
+        creditNote.Authorize(
+            payable.OutstandingAmount,
+            _createdBy,
+            Guid.NewGuid(),
+            "authorize-hash"
+        );
 
         db.PurchaseCreditNotes.Add(creditNote);
         await db.SaveChangesAsync();
 
         await using var verifyDb = CreateContext();
-        var entry = await verifyDb.JournalEntries.Include(e => e.Lines)
+        var entry = await verifyDb
+            .JournalEntries.Include(e => e.Lines)
             .FirstOrDefaultAsync(x => x.SourceEventId == creditNote.Id);
         entry.Should().NotBeNull();
         entry!.Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.JournalEntryStatus.Posted);
@@ -223,21 +357,44 @@ public sealed class PurchaseCreditNoteDiscountPostingIntegrationTests : IAsyncLi
         // Asiento balanceado (§19.1bis).
         entry.Lines.Sum(l => l.Debit).Should().Be(entry.Lines.Sum(l => l.Credit));
 
-        var accountsById = await verifyDb.Accounts
-            .Where(a => a.CompanyId == _companyId)
+        var accountsById = await verifyDb
+            .Accounts.Where(a => a.CompanyId == _companyId)
             .ToDictionaryAsync(a => a.Id, a => a.Code.Value);
 
-        var creditedCodes = entry.Lines.Where(l => l.Credit > 0).Select(l => accountsById[l.AccountId]).ToList();
-        creditedCodes.Should().Contain("4.2.01.002", "el descuento debe acreditar la cuenta de descuentos obtenidos en compras");
-        creditedCodes.Should().NotContain("1.1.04.001", "una NC por descuento nunca debe tocar Inventario mercaderias");
+        var creditedCodes = entry
+            .Lines.Where(l => l.Credit > 0)
+            .Select(l => accountsById[l.AccountId])
+            .ToList();
+        creditedCodes
+            .Should()
+            .Contain(
+                "4.2.01.002",
+                "el descuento debe acreditar la cuenta de descuentos obtenidos en compras"
+            );
+        creditedCodes
+            .Should()
+            .NotContain(
+                "1.1.04.001",
+                "una NC por descuento nunca debe tocar Inventario mercaderias"
+            );
 
-        var debitedCodes = entry.Lines.Where(l => l.Debit > 0).Select(l => accountsById[l.AccountId]).ToList();
+        var debitedCodes = entry
+            .Lines.Where(l => l.Debit > 0)
+            .Select(l => accountsById[l.AccountId])
+            .ToList();
         debitedCodes.Should().Contain("2.1.01.001", "reduce CxP proveedores");
 
         // No crea PurchaseReturn ni mueve Kardex.
-        (await verifyDb.PurchaseReturns.CountAsync(r => r.PurchaseInvoiceId == inv.Id)).Should().Be(0);
-        (await verifyDb.Set<ERP.Domain.Modules.Inventory.Entities.StockMovement>()
-            .CountAsync(m => m.SourceDocId == creditNote.Id)).Should().Be(0);
+        (await verifyDb.PurchaseReturns.CountAsync(r => r.PurchaseInvoiceId == inv.Id))
+            .Should()
+            .Be(0);
+        (
+            await verifyDb
+                .Set<ERP.Domain.Modules.Inventory.Entities.StockMovement>()
+                .CountAsync(m => m.SourceDocId == creditNote.Id)
+        )
+            .Should()
+            .Be(0);
     }
 
     private sealed class DeferredPublisher : IPublisher
@@ -247,7 +404,10 @@ public sealed class PurchaseCreditNoteDiscountPostingIntegrationTests : IAsyncLi
         public Task Publish(object notification, CancellationToken cancellationToken = default) =>
             Inner!.Publish(notification, cancellationToken);
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
             where TNotification : INotification => Inner!.Publish(notification, cancellationToken);
     }
 
@@ -266,9 +426,13 @@ public sealed class PurchaseCreditNoteDiscountPostingIntegrationTests : IAsyncLi
 
     private sealed class NoOpPublisher : IPublisher
     {
-        public Task Publish(object notification, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
             where TNotification : INotification => Task.CompletedTask;
     }
 }

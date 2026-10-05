@@ -23,7 +23,9 @@ public sealed class UpdateCompanyBrandingCommandValidator
 
         RuleFor(x => x.SecondaryColor)
             .Matches(HexColorPattern)
-            .WithMessage("El color secundario debe ser un color hexadecimal válido (#RGB o #RRGGBB).")
+            .WithMessage(
+                "El color secundario debe ser un color hexadecimal válido (#RGB o #RRGGBB)."
+            )
             .When(x => !string.IsNullOrWhiteSpace(x.SecondaryColor));
 
         RuleFor(x => x.Slogan)
@@ -32,6 +34,8 @@ public sealed class UpdateCompanyBrandingCommandValidator
 
         RuleFor(x => x.DocumentFooterText)
             .MaximumLength(MaxFooterTextLength)
-            .WithMessage($"El pie de página de documentos no puede superar {MaxFooterTextLength} caracteres.");
+            .WithMessage(
+                $"El pie de página de documentos no puede superar {MaxFooterTextLength} caracteres."
+            );
     }
 }

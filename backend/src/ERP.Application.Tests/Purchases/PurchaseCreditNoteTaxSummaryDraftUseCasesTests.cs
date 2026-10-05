@@ -73,10 +73,17 @@ public sealed class PurchaseCreditNoteTaxSummaryDraftUseCasesTests
         invoice.Confirm(UserId);
 
         var payable = AccountsPayable.CreateFromOrigin(
-            TenantId, CompanyId, BranchId, SupplierId,
-            AccountsPayableOriginType.PurchaseInvoice, invoice.Id,
-            "01", "001-001-000000001",
-            invoice.IssueDate, invoice.IssueDate, UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            invoice.Id,
+            "01",
+            "001-001-000000001",
+            invoice.IssueDate,
+            invoice.IssueDate,
+            UserId
         );
         payable.AddInstallment(1, invoice.IssueDate.AddDays(30), invoice.GrandTotal);
 
@@ -118,7 +125,11 @@ public sealed class PurchaseCreditNoteTaxSummaryDraftUseCasesTests
                 .ReturnsAsync((PurchaseCreditNote?)null);
             CreditNoteRepo
                 .Setup(r =>
-                    r.ExistsByAccessKeyAsync(TenantId, It.IsAny<string>(), It.IsAny<CancellationToken>())
+                    r.ExistsByAccessKeyAsync(
+                        TenantId,
+                        It.IsAny<string>(),
+                        It.IsAny<CancellationToken>()
+                    )
                 )
                 .ReturnsAsync(false);
             CreditNoteRepo
@@ -246,36 +257,65 @@ public sealed class PurchaseCreditNoteTaxSummaryDraftUseCasesTests
     )
     {
         var invoice = PurchaseInvoice.CreateDraft(
-            TenantId, CompanyId, BranchId, SupplierId, "Proveedor Test", "1234567890001",
-            "01", $"001-001-{Random.Shared.Next(100000000, 999999999)}",
-            DateOnly.FromDateTime(DateTime.UtcNow), UserId, PaymentTermId, "Contado", 1, 30,
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            "Proveedor Test",
+            "1234567890001",
+            "01",
+            $"001-001-{Random.Shared.Next(100000000, 999999999)}",
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            UserId,
+            PaymentTermId,
+            "Contado",
+            1,
+            30,
             globalWarehouseId: WarehouseId
         );
         var line = PurchaseInvoiceDetail.Create(
-            invoice.Id, TenantId, "Producto con IRBPNR",
-            quantity: 1, unitPrice: unitPrice, vatCode: vatCode, uomCode: "UNIT",
-            itemId: ItemId, warehouseId: WarehouseId
+            invoice.Id,
+            TenantId,
+            "Producto con IRBPNR",
+            quantity: 1,
+            unitPrice: unitPrice,
+            vatCode: vatCode,
+            uomCode: "UNIT",
+            itemId: ItemId,
+            warehouseId: WarehouseId
         );
         invoice.ReplaceLines(new[] { line }, UserId);
         // ReplaceTaxes ANTES de ApplyTaxes (mismo orden que ReceptionTaxHelper en producción) —
         // ApplyTaxes solo re-sincroniza IVA/ICE, nunca toca IRBPNR ya presente.
-        line.ReplaceTaxes(
-            [
-                ERP.Domain.Modules.Purchases.Entities.PurchaseInvoiceDetailTax.Create(
-                    line.Id, TenantId, "5", irbpnrCode, "IRBPNR", irbpnrRate,
-                    ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific,
-                    line.TaxableBase, irbpnrAmount,
-                    ERP.Domain.Modules.Purchases.Enums.PurchaseTaxSource.Xml
-                ),
-            ]
-        );
+        line.ReplaceTaxes([
+            ERP.Domain.Modules.Purchases.Entities.PurchaseInvoiceDetailTax.Create(
+                line.Id,
+                TenantId,
+                "5",
+                irbpnrCode,
+                "IRBPNR",
+                irbpnrRate,
+                ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific,
+                line.TaxableBase,
+                irbpnrAmount,
+                ERP.Domain.Modules.Purchases.Enums.PurchaseTaxSource.Xml
+            ),
+        ]);
         line.ApplyTaxes(vatCode, vatRate, "IVA 15%", null, 0m, null);
         invoice.Confirm(UserId);
 
         var payable = AccountsPayable.CreateFromOrigin(
-            TenantId, CompanyId, BranchId, SupplierId,
-            AccountsPayableOriginType.PurchaseInvoice, invoice.Id,
-            "01", "001-001-000000002", invoice.IssueDate, invoice.IssueDate, UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            invoice.Id,
+            "01",
+            "001-001-000000002",
+            invoice.IssueDate,
+            invoice.IssueDate,
+            UserId
         );
         payable.AddInstallment(1, invoice.IssueDate.AddDays(30), invoice.GrandTotal);
 
@@ -290,8 +330,9 @@ public sealed class PurchaseCreditNoteTaxSummaryDraftUseCasesTests
         source.IrbpnrAmount.Should().Be(1.00m); // precondición: la factura sí tiene IRBPNR agregado
         var m = new Mocks(f);
         PurchaseCreditNote? captured = null;
-        m.CreditNoteRepo
-            .Setup(r => r.AddAsync(It.IsAny<PurchaseCreditNote>(), It.IsAny<CancellationToken>()))
+        m.CreditNoteRepo.Setup(r =>
+                r.AddAsync(It.IsAny<PurchaseCreditNote>(), It.IsAny<CancellationToken>())
+            )
             .Callback<PurchaseCreditNote, CancellationToken>((cn, _) => captured = cn)
             .Returns(Task.CompletedTask);
         var handler = m.BuildCreateHandler();
@@ -299,9 +340,17 @@ public sealed class PurchaseCreditNoteTaxSummaryDraftUseCasesTests
         // Crédito parcial: 300 de los 1000 de TaxableBase → fracción 0.3 sobre IRBPNR también.
         var result = await handler.Handle(
             new CreateDraftPurchaseCreditNoteCommand(
-                Guid.NewGuid(), f.Invoice.Id, null, PurchaseCreditNoteApplicationType.Discount,
-                "001-001-000000021", null, null, null, DateOnly.FromDateTime(DateTime.UtcNow),
-                "Descuento parcial con IRBPNR", Array.Empty<PurchaseCreditNoteDraftLineInput>(),
+                Guid.NewGuid(),
+                f.Invoice.Id,
+                null,
+                PurchaseCreditNoteApplicationType.Discount,
+                "001-001-000000021",
+                null,
+                null,
+                null,
+                DateOnly.FromDateTime(DateTime.UtcNow),
+                "Descuento parcial con IRBPNR",
+                Array.Empty<PurchaseCreditNoteDraftLineInput>(),
                 new[] { new PurchaseCreditNoteTaxSummaryLineInput(source.Id, 300m) }
             ),
             CancellationToken.None
@@ -322,17 +371,26 @@ public sealed class PurchaseCreditNoteTaxSummaryDraftUseCasesTests
         var source = f.Invoice.TaxSummaries.Single();
         var m = new Mocks(f);
         PurchaseCreditNote? captured = null;
-        m.CreditNoteRepo
-            .Setup(r => r.AddAsync(It.IsAny<PurchaseCreditNote>(), It.IsAny<CancellationToken>()))
+        m.CreditNoteRepo.Setup(r =>
+                r.AddAsync(It.IsAny<PurchaseCreditNote>(), It.IsAny<CancellationToken>())
+            )
             .Callback<PurchaseCreditNote, CancellationToken>((cn, _) => captured = cn)
             .Returns(Task.CompletedTask);
         var handler = m.BuildCreateHandler();
 
         var result = await handler.Handle(
             new CreateDraftPurchaseCreditNoteCommand(
-                Guid.NewGuid(), f.Invoice.Id, null, PurchaseCreditNoteApplicationType.Discount,
-                "001-001-000000022", null, null, null, DateOnly.FromDateTime(DateTime.UtcNow),
-                "Descuento sin IRBPNR", Array.Empty<PurchaseCreditNoteDraftLineInput>(),
+                Guid.NewGuid(),
+                f.Invoice.Id,
+                null,
+                PurchaseCreditNoteApplicationType.Discount,
+                "001-001-000000022",
+                null,
+                null,
+                null,
+                DateOnly.FromDateTime(DateTime.UtcNow),
+                "Descuento sin IRBPNR",
+                Array.Empty<PurchaseCreditNoteDraftLineInput>(),
                 new[] { new PurchaseCreditNoteTaxSummaryLineInput(source.Id, 200m) }
             ),
             CancellationToken.None
@@ -364,34 +422,63 @@ public sealed class PurchaseCreditNoteTaxSummaryDraftUseCasesTests
     public async Task CreateDraft_TaxSummaryLines_ICE_e_IRBPNR_combinados_revierten_los_tres_impuestos()
     {
         var invoice = PurchaseInvoice.CreateDraft(
-            TenantId, CompanyId, BranchId, SupplierId, "Proveedor Test", "1234567890001",
-            "01", $"001-001-{Random.Shared.Next(100000000, 999999999)}",
-            DateOnly.FromDateTime(DateTime.UtcNow), UserId, PaymentTermId, "Contado", 1, 30,
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            "Proveedor Test",
+            "1234567890001",
+            "01",
+            $"001-001-{Random.Shared.Next(100000000, 999999999)}",
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            UserId,
+            PaymentTermId,
+            "Contado",
+            1,
+            30,
             globalWarehouseId: WarehouseId
         );
         var line = PurchaseInvoiceDetail.Create(
-            invoice.Id, TenantId, "Producto con ICE e IRBPNR",
-            quantity: 1, unitPrice: 1000m, vatCode: "10", uomCode: "UNIT",
-            itemId: ItemId, warehouseId: WarehouseId
+            invoice.Id,
+            TenantId,
+            "Producto con ICE e IRBPNR",
+            quantity: 1,
+            unitPrice: 1000m,
+            vatCode: "10",
+            uomCode: "UNIT",
+            itemId: ItemId,
+            warehouseId: WarehouseId
         );
         invoice.ReplaceLines(new[] { line }, UserId);
-        line.ReplaceTaxes(
-            [
-                ERP.Domain.Modules.Purchases.Entities.PurchaseInvoiceDetailTax.Create(
-                    line.Id, TenantId, "5", "5001", "IRBPNR", 0.02m,
-                    ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific,
-                    line.TaxableBase, 1.00m,
-                    ERP.Domain.Modules.Purchases.Enums.PurchaseTaxSource.Xml
-                ),
-            ]
-        );
+        line.ReplaceTaxes([
+            ERP.Domain.Modules.Purchases.Entities.PurchaseInvoiceDetailTax.Create(
+                line.Id,
+                TenantId,
+                "5",
+                "5001",
+                "IRBPNR",
+                0.02m,
+                ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific,
+                line.TaxableBase,
+                1.00m,
+                ERP.Domain.Modules.Purchases.Enums.PurchaseTaxSource.Xml
+            ),
+        ]);
         line.ApplyTaxes("10", 15m, "IVA 15%", "3023", 10m, "ICE 10%");
         invoice.Confirm(UserId);
 
         var payable = AccountsPayable.CreateFromOrigin(
-            TenantId, CompanyId, BranchId, SupplierId,
-            AccountsPayableOriginType.PurchaseInvoice, invoice.Id,
-            "01", "001-001-000000003", invoice.IssueDate, invoice.IssueDate, UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            invoice.Id,
+            "01",
+            "001-001-000000003",
+            invoice.IssueDate,
+            invoice.IssueDate,
+            UserId
         );
         payable.AddInstallment(1, invoice.IssueDate.AddDays(30), invoice.GrandTotal);
 
@@ -399,17 +486,26 @@ public sealed class PurchaseCreditNoteTaxSummaryDraftUseCasesTests
         var source = f.Invoice.TaxSummaries.Single();
         var m = new Mocks(f);
         PurchaseCreditNote? captured = null;
-        m.CreditNoteRepo
-            .Setup(r => r.AddAsync(It.IsAny<PurchaseCreditNote>(), It.IsAny<CancellationToken>()))
+        m.CreditNoteRepo.Setup(r =>
+                r.AddAsync(It.IsAny<PurchaseCreditNote>(), It.IsAny<CancellationToken>())
+            )
             .Callback<PurchaseCreditNote, CancellationToken>((cn, _) => captured = cn)
             .Returns(Task.CompletedTask);
         var handler = m.BuildCreateHandler();
 
         var result = await handler.Handle(
             new CreateDraftPurchaseCreditNoteCommand(
-                Guid.NewGuid(), f.Invoice.Id, null, PurchaseCreditNoteApplicationType.Discount,
-                "001-001-000000023", null, null, null, DateOnly.FromDateTime(DateTime.UtcNow),
-                "Descuento total con ICE e IRBPNR", Array.Empty<PurchaseCreditNoteDraftLineInput>(),
+                Guid.NewGuid(),
+                f.Invoice.Id,
+                null,
+                PurchaseCreditNoteApplicationType.Discount,
+                "001-001-000000023",
+                null,
+                null,
+                null,
+                DateOnly.FromDateTime(DateTime.UtcNow),
+                "Descuento total con ICE e IRBPNR",
+                Array.Empty<PurchaseCreditNoteDraftLineInput>(),
                 new[] { new PurchaseCreditNoteTaxSummaryLineInput(source.Id, source.TaxableBase) }
             ),
             CancellationToken.None

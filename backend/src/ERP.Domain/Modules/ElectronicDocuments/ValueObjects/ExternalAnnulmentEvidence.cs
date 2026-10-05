@@ -19,7 +19,10 @@ public sealed record ExternalAnnulmentEvidence
     public ExternalAnnulmentEvidence(DateOnly annulledOn, string reference, Guid confirmedBy)
     {
         if (annulledOn == default)
-            throw new ArgumentException("La fecha de anulación del SRI es obligatoria.", nameof(annulledOn));
+            throw new ArgumentException(
+                "La fecha de anulación del SRI es obligatoria.",
+                nameof(annulledOn)
+            );
         if (string.IsNullOrWhiteSpace(reference))
             throw new ArgumentException(
                 "La referencia/evidencia de la anulación del SRI es obligatoria.",

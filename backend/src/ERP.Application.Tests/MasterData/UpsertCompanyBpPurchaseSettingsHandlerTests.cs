@@ -44,15 +44,22 @@ public sealed class UpsertCompanyBpPurchaseSettingsHandlerTests
                 .ReturnsAsync(Supplier);
 
             var role = BusinessPartnerRole.Create(
-                TenantId, SupplierId, RoleType.Supplier, UserId,
+                TenantId,
+                SupplierId,
+                RoleType.Supplier,
+                UserId,
                 ERP.Domain.MasterData.ValueObjects.SupplierRoleConfig.Create()
             );
             RoleRepo
-                .Setup(r => r.GetByTypeAsync(SupplierId, RoleType.Supplier, It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetByTypeAsync(SupplierId, RoleType.Supplier, It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(role);
 
             PtRepo
-                .Setup(r => r.GetByIdAsync(TenantId, ActivePaymentTerm.Id, It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetByIdAsync(TenantId, ActivePaymentTerm.Id, It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(ActivePaymentTerm);
 
             SettingsRepo
@@ -61,7 +68,14 @@ public sealed class UpsertCompanyBpPurchaseSettingsHandlerTests
         }
 
         public UpsertCompanyBpPurchaseSettingsHandler BuildHandler() =>
-            new(SettingsRepo.Object, BpRepo.Object, RoleRepo.Object, PtRepo.Object, Ctx.Object, DbEx.Object);
+            new(
+                SettingsRepo.Object,
+                BpRepo.Object,
+                RoleRepo.Object,
+                PtRepo.Object,
+                Ctx.Object,
+                DbEx.Object
+            );
     }
 
     [Fact]
@@ -88,9 +102,16 @@ public sealed class UpsertCompanyBpPurchaseSettingsHandlerTests
     public async Task Actualiza_configuracion_existente()
     {
         var f = new Fixture();
-        var existing = CompanyBpPurchaseSettings.Create(TenantId, CompanyId, SupplierId, null, UserId);
-        f.SettingsRepo
-            .Setup(r => r.GetByBusinessPartnerAsync(SupplierId, It.IsAny<CancellationToken>()))
+        var existing = CompanyBpPurchaseSettings.Create(
+            TenantId,
+            CompanyId,
+            SupplierId,
+            null,
+            UserId
+        );
+        f.SettingsRepo.Setup(r =>
+                r.GetByBusinessPartnerAsync(SupplierId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(existing);
 
         var handler = f.BuildHandler();
@@ -112,10 +133,15 @@ public sealed class UpsertCompanyBpPurchaseSettingsHandlerTests
     {
         var f = new Fixture();
         var existing = CompanyBpPurchaseSettings.Create(
-            TenantId, CompanyId, SupplierId, f.ActivePaymentTerm.Id, UserId
+            TenantId,
+            CompanyId,
+            SupplierId,
+            f.ActivePaymentTerm.Id,
+            UserId
         );
-        f.SettingsRepo
-            .Setup(r => r.GetByBusinessPartnerAsync(SupplierId, It.IsAny<CancellationToken>()))
+        f.SettingsRepo.Setup(r =>
+                r.GetByBusinessPartnerAsync(SupplierId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(existing);
 
         var handler = f.BuildHandler();
@@ -132,8 +158,7 @@ public sealed class UpsertCompanyBpPurchaseSettingsHandlerTests
     public async Task Rechaza_proveedor_inexistente()
     {
         var f = new Fixture();
-        f.BpRepo
-            .Setup(r => r.GetByIdAsync(SupplierId, It.IsAny<CancellationToken>()))
+        f.BpRepo.Setup(r => r.GetByIdAsync(SupplierId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((BusinessPartner?)null);
 
         var handler = f.BuildHandler();
@@ -166,8 +191,9 @@ public sealed class UpsertCompanyBpPurchaseSettingsHandlerTests
     public async Task Rechaza_sin_rol_Supplier_activo()
     {
         var f = new Fixture();
-        f.RoleRepo
-            .Setup(r => r.GetByTypeAsync(SupplierId, RoleType.Supplier, It.IsAny<CancellationToken>()))
+        f.RoleRepo.Setup(r =>
+                r.GetByTypeAsync(SupplierId, RoleType.Supplier, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((BusinessPartnerRole?)null);
 
         var handler = f.BuildHandler();
@@ -185,8 +211,7 @@ public sealed class UpsertCompanyBpPurchaseSettingsHandlerTests
     {
         var f = new Fixture();
         var missingId = Guid.NewGuid();
-        f.PtRepo
-            .Setup(r => r.GetByIdAsync(TenantId, missingId, It.IsAny<CancellationToken>()))
+        f.PtRepo.Setup(r => r.GetByIdAsync(TenantId, missingId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((PaymentTerm?)null);
 
         var handler = f.BuildHandler();
@@ -219,12 +244,15 @@ public sealed class UpsertCompanyBpPurchaseSettingsHandlerTests
     public async Task Conflicto_de_unicidad_devuelve_Conflict()
     {
         var f = new Fixture();
-        f.SettingsRepo
-            .Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+        f.SettingsRepo.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("duplicate key"));
-        var violationInfo = new DatabaseUniqueViolationInfo("23505", "uq_cbps_company_bp", "master_company_bp_purchase_settings", null);
-        f.DbEx
-            .Setup(d => d.TryGetUniqueViolation(It.IsAny<Exception>(), out violationInfo))
+        var violationInfo = new DatabaseUniqueViolationInfo(
+            "23505",
+            "uq_cbps_company_bp",
+            "master_company_bp_purchase_settings",
+            null
+        );
+        f.DbEx.Setup(d => d.TryGetUniqueViolation(It.IsAny<Exception>(), out violationInfo))
             .Returns(true);
 
         var handler = f.BuildHandler();
@@ -247,8 +275,9 @@ public sealed class UpsertCompanyBpPurchaseSettingsHandlerTests
         var f = new Fixture();
         f.Ctx.Setup(c => c.CompanyId).Returns(companyA);
         CompanyBpPurchaseSettings? captured = null;
-        f.SettingsRepo
-            .Setup(r => r.AddAsync(It.IsAny<CompanyBpPurchaseSettings>(), It.IsAny<CancellationToken>()))
+        f.SettingsRepo.Setup(r =>
+                r.AddAsync(It.IsAny<CompanyBpPurchaseSettings>(), It.IsAny<CancellationToken>())
+            )
             .Callback<CompanyBpPurchaseSettings, CancellationToken>((s, _) => captured = s)
             .Returns(Task.CompletedTask);
 

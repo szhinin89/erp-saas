@@ -74,14 +74,31 @@ public sealed class SupplierCreditReadModelIntegrationTests : IAsyncLifetime
         await using var db = CreateContext();
         await db.Database.MigrateAsync();
 
-        var user = IdentityUser.Create("tesorero", "Ana", "Tesorera", "ana@example.com", "hash", Guid.NewGuid());
+        var user = IdentityUser.Create(
+            "tesorero",
+            "Ana",
+            "Tesorera",
+            "ana@example.com",
+            "hash",
+            Guid.NewGuid()
+        );
         db.IdentityUsers.Add(user);
         await db.SaveChangesAsync();
         _userId = user.Id;
 
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _userId);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _userId);
-        var otherCompany = Company.CreateManaged(tenant.Id, "1790098765001", "Otra S.A.", createdBy: _userId);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: _userId
+        );
+        var otherCompany = Company.CreateManaged(
+            tenant.Id,
+            "1790098765001",
+            "Otra S.A.",
+            createdBy: _userId
+        );
         db.Tenants.Add(tenant);
         db.Companies.AddRange(company, otherCompany);
         await db.SaveChangesAsync();
@@ -91,9 +108,30 @@ public sealed class SupplierCreditReadModelIntegrationTests : IAsyncLifetime
 
         var branch = NewBranch(_companyId, "001");
         var otherBranch = NewBranch(_otherCompanyId, "002");
-        var supplier = BusinessPartner.Create(_tenantId, "05", "1710034065", 1, "Distribuidora Andina", _userId);
-        var otherSupplier = BusinessPartner.Create(_tenantId, "05", "1710034073", 1, "Comercial Costa", _userId);
-        var paymentTerm = PaymentTerm.Create(_tenantId, "CONT", "Contado", installments: 1, daysBetweenInstallments: 0, _userId);
+        var supplier = BusinessPartner.Create(
+            _tenantId,
+            "05",
+            "1710034065",
+            1,
+            "Distribuidora Andina",
+            _userId
+        );
+        var otherSupplier = BusinessPartner.Create(
+            _tenantId,
+            "05",
+            "1710034073",
+            1,
+            "Comercial Costa",
+            _userId
+        );
+        var paymentTerm = PaymentTerm.Create(
+            _tenantId,
+            "CONT",
+            "Contado",
+            installments: 1,
+            daysBetweenInstallments: 0,
+            _userId
+        );
         db.Branches.AddRange(branch, otherBranch);
         db.BusinessPartners.AddRange(supplier, otherSupplier);
         db.Add(paymentTerm);
@@ -104,32 +142,91 @@ public sealed class SupplierCreditReadModelIntegrationTests : IAsyncLifetime
         _otherSupplierId = otherSupplier.Id;
         _paymentTermId = paymentTerm.Id;
 
-        var ledger = Account.Create(_tenantId, _companyId, AccountCode.Create("1.1.02.001"), "Bancos",
-            null, AccountType.Asset, AccountNature.Debit, allowsPosting: true, createdBy: _userId);
-        var transfer = PaymentMethod.Create(_tenantId, "TRANSFER", "Transferencia", true, false, 1, _userId, PaymentMethodDetailType.Transfer);
+        var ledger = Account.Create(
+            _tenantId,
+            _companyId,
+            AccountCode.Create("1.1.02.001"),
+            "Bancos",
+            null,
+            AccountType.Asset,
+            AccountNature.Debit,
+            allowsPosting: true,
+            createdBy: _userId
+        );
+        var transfer = PaymentMethod.Create(
+            _tenantId,
+            "TRANSFER",
+            "Transferencia",
+            true,
+            false,
+            1,
+            _userId,
+            PaymentMethodDetailType.Transfer
+        );
         var bank = Bank.Create(_tenantId, "PICHINCHA", "Banco Pichincha", "Pichincha", _userId);
         db.Accounts.Add(ledger);
         db.PaymentMethods.Add(transfer);
         db.Banks.Add(bank);
         await db.SaveChangesAsync();
-        var bankAccount = CompanyBankAccount.Create(_tenantId, _companyId, bank.Id, BankAccountType.Checking,
-            "2200123456", "Banco Pichincha CTE", ledger.Id, _userId);
+        var bankAccount = CompanyBankAccount.Create(
+            _tenantId,
+            _companyId,
+            bank.Id,
+            BankAccountType.Checking,
+            "2200123456",
+            "Banco Pichincha CTE",
+            ledger.Id,
+            _userId
+        );
         db.CompanyBankAccounts.Add(bankAccount);
 
         var warehouse = ERP.Domain.Modules.Inventory.Entities.Warehouse.Create(
-            _tenantId, _branchId, "Bodega Principal", "BOD-01", null, null, null, null, null, null, null, null, null,
-            _userId, _companyId, isMain: true);
-        var itemType = ERP.Domain.Modules.Items.Entities.ItemTypeDefinition.Create(_tenantId, "MERCH", "Mercadería", 1, _userId);
+            _tenantId,
+            _branchId,
+            "Bodega Principal",
+            "BOD-01",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            _userId,
+            _companyId,
+            isMain: true
+        );
+        var itemType = ERP.Domain.Modules.Items.Entities.ItemTypeDefinition.Create(
+            _tenantId,
+            "MERCH",
+            "Mercadería",
+            1,
+            _userId
+        );
         db.Add(warehouse);
         db.Add(itemType);
         await db.SaveChangesAsync();
         var item = ERP.Domain.Modules.Items.Entities.Item.Create(
-            _tenantId, sku: $"SKU-{Guid.NewGuid():N}"[..12], shortName: "Producto", description: "Producto",
-            itemTypeId: itemType.Id, defaultUomCode: "UNIT",
-            taxConfig: ERP.Domain.Modules.Items.ValueObjects.ItemTaxConfig.Create(saleVatCode: "10", purchaseVatCode: "10"),
-            saleConfig: ERP.Domain.Modules.Items.ValueObjects.ItemSaleConfig.Create(isForSale: true),
-            stockConfig: ERP.Domain.Modules.Items.ValueObjects.ItemStockConfig.Create(tracksStock: true),
-            createdBy: _userId);
+            _tenantId,
+            sku: $"SKU-{Guid.NewGuid():N}"[..12],
+            shortName: "Producto",
+            description: "Producto",
+            itemTypeId: itemType.Id,
+            defaultUomCode: "UNIT",
+            taxConfig: ERP.Domain.Modules.Items.ValueObjects.ItemTaxConfig.Create(
+                saleVatCode: "10",
+                purchaseVatCode: "10"
+            ),
+            saleConfig: ERP.Domain.Modules.Items.ValueObjects.ItemSaleConfig.Create(
+                isForSale: true
+            ),
+            stockConfig: ERP.Domain.Modules.Items.ValueObjects.ItemStockConfig.Create(
+                tracksStock: true
+            ),
+            createdBy: _userId
+        );
         db.Add(item);
         await db.SaveChangesAsync();
 
@@ -143,8 +240,31 @@ public sealed class SupplierCreditReadModelIntegrationTests : IAsyncLifetime
 
     private Branch NewBranch(Guid companyId, string code) =>
         Branch.Create(
-            _tenantId, $"Sucursal {code}", "Av. Principal 123", code, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, true, _userId,
+            _tenantId,
+            $"Sucursal {code}",
+            "Av. Principal 123",
+            code,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            true,
+            _userId,
             companyId: companyId
         );
 
@@ -163,16 +283,49 @@ public sealed class SupplierCreditReadModelIntegrationTests : IAsyncLifetime
 
     /// <summary>Anticipo real: pago sin CxP (100% remanente) → crédito origen SupplierPayment.</summary>
     private async Task<(Guid CreditId, SupplierPayment Payment)> SeedAdvanceAsync(
-        decimal amount, Guid? supplierId = null, Guid? companyId = null, Guid? branchId = null, DateOnly? paymentDate = null)
+        decimal amount,
+        Guid? supplierId = null,
+        Guid? companyId = null,
+        Guid? branchId = null,
+        DateOnly? paymentDate = null
+    )
     {
         await using var db = CreateContext(companyId);
         var payment = SupplierPayment.Create(
-            _tenantId, companyId ?? _companyId, branchId ?? _branchId, supplierId ?? _supplierId, paymentDate ?? _today, amount,
-            $"SP-{Guid.NewGuid():N}"[..12], $"REC-{Guid.NewGuid():N}"[..12],
-            [new SupplierPaymentMethodLineInput(_transferMethodId, _companyBankAccountId, null, amount, "OP-1", TransactionDate: paymentDate ?? _today)],
-            [], [], _userId, unappliedAmountConfirmed: true, allowWithoutPayable: true);
+            _tenantId,
+            companyId ?? _companyId,
+            branchId ?? _branchId,
+            supplierId ?? _supplierId,
+            paymentDate ?? _today,
+            amount,
+            $"SP-{Guid.NewGuid():N}"[..12],
+            $"REC-{Guid.NewGuid():N}"[..12],
+            [
+                new SupplierPaymentMethodLineInput(
+                    _transferMethodId,
+                    _companyBankAccountId,
+                    null,
+                    amount,
+                    "OP-1",
+                    TransactionDate: paymentDate ?? _today
+                ),
+            ],
+            [],
+            [],
+            _userId,
+            unappliedAmountConfirmed: true,
+            allowWithoutPayable: true
+        );
         var credit = SupplierCredit.CreateFromSupplierPayment(
-            _tenantId, companyId ?? _companyId, branchId ?? _branchId, supplierId ?? _supplierId, "USD", payment.Id, amount, _userId);
+            _tenantId,
+            companyId ?? _companyId,
+            branchId ?? _branchId,
+            supplierId ?? _supplierId,
+            "USD",
+            payment.Id,
+            amount,
+            _userId
+        );
         db.SupplierPayments.Add(payment);
         db.Set<SupplierCredit>().Add(credit);
         await db.SaveChangesAsync();
@@ -184,33 +337,90 @@ public sealed class SupplierCreditReadModelIntegrationTests : IAsyncLifetime
     {
         await using var db = CreateContext();
         var invoice = PurchaseInvoice.CreateDraft(
-            _tenantId, _companyId, _branchId, _supplierId, "Distribuidora Andina", "1710034065001", "01",
-            $"001-001-{Random.Shared.Next(100000, 999999)}", _today, _userId, _paymentTermId, "Contado", 1, 30);
+            _tenantId,
+            _companyId,
+            _branchId,
+            _supplierId,
+            "Distribuidora Andina",
+            "1710034065001",
+            "01",
+            $"001-001-{Random.Shared.Next(100000, 999999)}",
+            _today,
+            _userId,
+            _paymentTermId,
+            "Contado",
+            1,
+            30
+        );
         invoice.ReplaceLines(
-            [PurchaseInvoiceDetail.Create(invoice.Id, _tenantId, "Producto", quantity: 1m, unitPrice: amount, vatCode: "10", uomCode: "UNIT")],
-            _userId);
+            [
+                PurchaseInvoiceDetail.Create(
+                    invoice.Id,
+                    _tenantId,
+                    "Producto",
+                    quantity: 1m,
+                    unitPrice: amount,
+                    vatCode: "10",
+                    uomCode: "UNIT"
+                ),
+            ],
+            _userId
+        );
         invoice.Confirm(_userId);
         var payable = AccountsPayable.CreateFromOrigin(
-            _tenantId, _companyId, _branchId, _supplierId, AccountsPayableOriginType.PurchaseInvoice, invoice.Id,
-            "01", invoice.InvoiceNumber, _today, _today, _userId);
+            _tenantId,
+            _companyId,
+            _branchId,
+            _supplierId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            invoice.Id,
+            "01",
+            invoice.InvoiceNumber,
+            _today,
+            _today,
+            _userId
+        );
         payable.AddInstallment(1, _today.AddDays(30), invoice.GrandTotal);
         payable.RegisterPayment(payable.TotalAmount, _userId);
 
         var ret = PurchaseReturn.CreateDraft(
-            _tenantId, _companyId, _branchId, invoice.Id, _supplierId, "Producto defectuoso",
+            _tenantId,
+            _companyId,
+            _branchId,
+            invoice.Id,
+            _supplierId,
+            "Producto defectuoso",
             [new PurchaseReturn.DraftLineInput(invoice.Lines[0].Id, _itemId, 1m, _warehouseId)],
-            _userId, Guid.NewGuid(), "hash-draft");
+            _userId,
+            Guid.NewGuid(),
+            "hash-draft"
+        );
         var line = invoice.Lines[0];
         var credit = ret.Authorize(
             Random.Shared.Next(1, 99999999).ToString("D8"),
             new Dictionary<Guid, PurchaseReturn.OriginalLineSnapshot>
             {
-                [line.Id] = new(line.Quantity, line.LineSubtotal, line.DiscountAmount, line.VatAmount, line.IceAmount,
-                    line.VatCode, line.VatRate, line.IceCode, line.IceRate, line.LandedUnitCost,
-                    Array.Empty<PurchaseReturn.OriginalLineTaxSnapshot>()),
+                [line.Id] = new(
+                    line.Quantity,
+                    line.LineSubtotal,
+                    line.DiscountAmount,
+                    line.VatAmount,
+                    line.IceAmount,
+                    line.VatCode,
+                    line.VatRate,
+                    line.IceCode,
+                    line.IceRate,
+                    line.LandedUnitCost,
+                    Array.Empty<PurchaseReturn.OriginalLineTaxSnapshot>()
+                ),
             },
-            balanceDueBeforeApplication: 0m, invoice.CurrencyCode, hasIssuedRetention: false,
-            _userId, Guid.NewGuid(), "hash-authorize")!;
+            balanceDueBeforeApplication: 0m,
+            invoice.CurrencyCode,
+            hasIssuedRetention: false,
+            _userId,
+            Guid.NewGuid(),
+            "hash-authorize"
+        )!;
 
         db.PurchaseInvoices.Add(invoice);
         db.AccountsPayables.Add(payable);
@@ -224,8 +434,18 @@ public sealed class SupplierCreditReadModelIntegrationTests : IAsyncLifetime
     {
         await using var db = CreateContext();
         var payable = AccountsPayable.CreateFromOrigin(
-            _tenantId, _companyId, _branchId, _supplierId, AccountsPayableOriginType.ExpenseDocument, Guid.NewGuid(),
-            "EXP", "GAS-000777", _today, _today, _userId);
+            _tenantId,
+            _companyId,
+            _branchId,
+            _supplierId,
+            AccountsPayableOriginType.ExpenseDocument,
+            Guid.NewGuid(),
+            "EXP",
+            "GAS-000777",
+            _today,
+            _today,
+            _userId
+        );
         payable.AddInstallment(1, _today.AddDays(30), total);
         db.AccountsPayables.Add(payable);
         await db.SaveChangesAsync();
@@ -234,14 +454,20 @@ public sealed class SupplierCreditReadModelIntegrationTests : IAsyncLifetime
 
     // ── Queries / comandos reales ──────────────────────────────────────────
 
-    private async Task<SupplierCreditListResultDto> ListAsync(GetSupplierCreditListQuery query, Guid? companyId = null)
+    private async Task<SupplierCreditListResultDto> ListAsync(
+        GetSupplierCreditListQuery query,
+        Guid? companyId = null
+    )
     {
         await using var db = CreateContext(companyId);
         var company = new FixedCurrentCompany(() => companyId ?? _companyId);
         var result = await new GetSupplierCreditListHandler(
-                new SupplierCreditRepository(db, company), new BusinessPartnerRepository(db), new CompanyRepository(db),
-                new FixedCurrentTenant(() => _tenantId), company)
-            .Handle(query, CancellationToken.None);
+            new SupplierCreditRepository(db, company),
+            new BusinessPartnerRepository(db),
+            new CompanyRepository(db),
+            new FixedCurrentTenant(() => _tenantId),
+            company
+        ).Handle(query, CancellationToken.None);
         result.IsSuccess.Should().BeTrue(result.Error);
         return result.Value!;
     }
@@ -251,10 +477,15 @@ public sealed class SupplierCreditReadModelIntegrationTests : IAsyncLifetime
         await using var db = CreateContext(companyId);
         var company = new FixedCurrentCompany(() => companyId ?? _companyId);
         return await new GetSupplierCreditByIdHandler(
-                new SupplierCreditRepository(db, company), new SupplierCreditRefundTransactionRepository(db, company),
-                new AccountsPayableRepository(db), new BusinessPartnerRepository(db), new AccessRepository(db),
-                new CompanyRepository(db), new PaymentMethodRepository(db), new FixedCurrentTenant(() => _tenantId))
-            .Handle(new GetSupplierCreditByIdQuery(creditId), CancellationToken.None);
+            new SupplierCreditRepository(db, company),
+            new SupplierCreditRefundTransactionRepository(db, company),
+            new AccountsPayableRepository(db),
+            new BusinessPartnerRepository(db),
+            new AccessRepository(db),
+            new CompanyRepository(db),
+            new PaymentMethodRepository(db),
+            new FixedCurrentTenant(() => _tenantId)
+        ).Handle(new GetSupplierCreditByIdQuery(creditId), CancellationToken.None);
     }
 
     private async Task<T> RunAsync<T>(Func<ErpDbContext, FixedCurrentCompany, Task<Result<T>>> run)
@@ -266,35 +497,111 @@ public sealed class SupplierCreditReadModelIntegrationTests : IAsyncLifetime
     }
 
     private Task<SupplierCreditDto> ApplyAsync(Guid creditId, Guid payableId, decimal amount) =>
-        RunAsync((db, c) => new ApplySupplierCreditHandler(
-                new SupplierCreditRepository(db, c), new AccountsPayableRepository(db), new PurchaseInvoiceRepository(db, c),
-                new PurchaseReturnRepository(db, c), new CompanyRepository(db), new UnitOfWork(db),
-                new PostgresDatabaseExceptionTranslator(), new FixedCurrentTenant(() => _tenantId), new FixedCurrentUser(_userId))
-            .Handle(new ApplySupplierCreditCommand(creditId, payableId, amount, Guid.NewGuid()), CancellationToken.None));
+        RunAsync(
+            (db, c) =>
+                new ApplySupplierCreditHandler(
+                    new SupplierCreditRepository(db, c),
+                    new AccountsPayableRepository(db),
+                    new PurchaseInvoiceRepository(db, c),
+                    new PurchaseReturnRepository(db, c),
+                    new CompanyRepository(db),
+                    new UnitOfWork(db),
+                    new PostgresDatabaseExceptionTranslator(),
+                    new FixedCurrentTenant(() => _tenantId),
+                    new FixedCurrentUser(_userId)
+                ).Handle(
+                    new ApplySupplierCreditCommand(creditId, payableId, amount, Guid.NewGuid()),
+                    CancellationToken.None
+                )
+        );
 
-    private Task<SupplierCreditDto> ReverseApplicationAsync(Guid creditId, Guid movementId, Guid payableId) =>
-        RunAsync((db, c) => new ReverseSupplierCreditApplicationHandler(
-                new SupplierCreditRepository(db, c), new AccountsPayableRepository(db), new PurchaseReturnRepository(db, c),
-                new UnitOfWork(db), new PostgresDatabaseExceptionTranslator(), new FixedCurrentTenant(() => _tenantId),
-                new FixedCurrentUser(_userId))
-            .Handle(new ReverseSupplierCreditApplicationCommand(creditId, movementId, payableId, Guid.NewGuid()), CancellationToken.None));
+    private Task<SupplierCreditDto> ReverseApplicationAsync(
+        Guid creditId,
+        Guid movementId,
+        Guid payableId
+    ) =>
+        RunAsync(
+            (db, c) =>
+                new ReverseSupplierCreditApplicationHandler(
+                    new SupplierCreditRepository(db, c),
+                    new AccountsPayableRepository(db),
+                    new PurchaseReturnRepository(db, c),
+                    new UnitOfWork(db),
+                    new PostgresDatabaseExceptionTranslator(),
+                    new FixedCurrentTenant(() => _tenantId),
+                    new FixedCurrentUser(_userId)
+                ).Handle(
+                    new ReverseSupplierCreditApplicationCommand(
+                        creditId,
+                        movementId,
+                        payableId,
+                        Guid.NewGuid()
+                    ),
+                    CancellationToken.None
+                )
+        );
 
-    private Task<SupplierCreditRefundTransactionDto> RefundAsync(Guid creditId, decimal amount, string reference) =>
-        RunAsync((db, c) => new RegisterSupplierCreditRefundHandler(
-                new SupplierCreditRepository(db, c), new SupplierCreditRefundTransactionRepository(db, c),
-                new CompanyBankAccountRepository(db, c), new CashRegisterRepository(db, c), new AccountRepository(db),
-                new PaymentMethodRepository(db), new CashSessionRepository(db, c), new CompanyRepository(db), new UnitOfWork(db),
-                new PostgresDatabaseExceptionTranslator(), new FixedCurrentTenant(() => _tenantId), new FixedCurrentUser(_userId))
-            .Handle(new RegisterSupplierCreditRefundCommand(creditId, _companyBankAccountId, null, "TRANSFER", amount, _today, reference, Guid.NewGuid()),
-                CancellationToken.None));
+    private Task<SupplierCreditRefundTransactionDto> RefundAsync(
+        Guid creditId,
+        decimal amount,
+        string reference
+    ) =>
+        RunAsync(
+            (db, c) =>
+                new RegisterSupplierCreditRefundHandler(
+                    new SupplierCreditRepository(db, c),
+                    new SupplierCreditRefundTransactionRepository(db, c),
+                    new CompanyBankAccountRepository(db, c),
+                    new CashRegisterRepository(db, c),
+                    new AccountRepository(db),
+                    new PaymentMethodRepository(db),
+                    new CashSessionRepository(db, c),
+                    new CompanyRepository(db),
+                    new UnitOfWork(db),
+                    new PostgresDatabaseExceptionTranslator(),
+                    new FixedCurrentTenant(() => _tenantId),
+                    new FixedCurrentUser(_userId)
+                ).Handle(
+                    new RegisterSupplierCreditRefundCommand(
+                        creditId,
+                        _companyBankAccountId,
+                        null,
+                        "TRANSFER",
+                        amount,
+                        _today,
+                        reference,
+                        Guid.NewGuid()
+                    ),
+                    CancellationToken.None
+                )
+        );
 
-    private Task<SupplierCreditRefundTransactionDto> ReverseRefundAsync(Guid creditId, Guid refundTransactionId, string reason) =>
-        RunAsync((db, c) => new ReverseSupplierCreditRefundHandler(
-                new SupplierCreditRepository(db, c), new SupplierCreditRefundTransactionRepository(db, c),
-                new CashSessionRepository(db, c), new UnitOfWork(db), new PostgresDatabaseExceptionTranslator(),
-                new FixedCurrentTenant(() => _tenantId), new FixedCurrentUser(_userId))
-            .Handle(new ReverseSupplierCreditRefundCommand(creditId, refundTransactionId, reason, _today.AddDays(1), Guid.NewGuid()),
-                CancellationToken.None));
+    private Task<SupplierCreditRefundTransactionDto> ReverseRefundAsync(
+        Guid creditId,
+        Guid refundTransactionId,
+        string reason
+    ) =>
+        RunAsync(
+            (db, c) =>
+                new ReverseSupplierCreditRefundHandler(
+                    new SupplierCreditRepository(db, c),
+                    new SupplierCreditRefundTransactionRepository(db, c),
+                    new CashSessionRepository(db, c),
+                    new UnitOfWork(db),
+                    new PostgresDatabaseExceptionTranslator(),
+                    new FixedCurrentTenant(() => _tenantId),
+                    new FixedCurrentUser(_userId)
+                ).Handle(
+                    new ReverseSupplierCreditRefundCommand(
+                        creditId,
+                        refundTransactionId,
+                        reason,
+                        _today.AddDays(1),
+                        Guid.NewGuid()
+                    ),
+                    CancellationToken.None
+                )
+        );
 
     // ── Tests ──────────────────────────────────────────────────────────────
 
@@ -302,7 +609,10 @@ public sealed class SupplierCreditReadModelIntegrationTests : IAsyncLifetime
     public async Task Listado_expone_proveedor_real_y_origen_de_devolucion_y_de_pago_con_fecha()
     {
         var (returnCreditId, ret) = await SeedReturnCreditAsync(50m);
-        var (advanceCreditId, payment) = await SeedAdvanceAsync(20m, paymentDate: new DateOnly(2026, 9, 10));
+        var (advanceCreditId, payment) = await SeedAdvanceAsync(
+            20m,
+            paymentDate: new DateOnly(2026, 9, 10)
+        );
 
         var items = (await ListAsync(new GetSupplierCreditListQuery())).Items;
 
@@ -311,18 +621,28 @@ public sealed class SupplierCreditReadModelIntegrationTests : IAsyncLifetime
         fromReturn.SourceType.Should().Be("PurchaseReturn");
         fromReturn.SourceDocumentId.Should().Be(ret.Id);
         fromReturn.SourceDocumentNumber.Should().Be(ret.ReturnNumber);
-        fromReturn.SourceDate.Should().Be(
-            CompanyTimeZone.LocalDate(ret.AuthorizedAtUtc!.Value, CompanyTimeZone.Resolve("America/Guayaquil")),
-            "la devolución no tiene fecha de negocio: su fecha es la autorización en la zona de la empresa");
+        fromReturn
+            .SourceDate.Should()
+            .Be(
+                CompanyTimeZone.LocalDate(
+                    ret.AuthorizedAtUtc!.Value,
+                    CompanyTimeZone.Resolve("America/Guayaquil")
+                ),
+                "la devolución no tiene fecha de negocio: su fecha es la autorización en la zona de la empresa"
+            );
         fromReturn.IsOpen.Should().BeTrue();
 
         var fromPayment = items.Single(i => i.Id == advanceCreditId);
         fromPayment.SupplierName.Should().Be("Distribuidora Andina");
         fromPayment.SourceType.Should().Be("SupplierPayment");
         fromPayment.SourceDocumentId.Should().Be(payment.Id);
-        fromPayment.SourceDocumentNumber.Should().Be(payment.SystemNumber, "número del sistema, no el recibo externo");
+        fromPayment
+            .SourceDocumentNumber.Should()
+            .Be(payment.SystemNumber, "número del sistema, no el recibo externo");
         fromPayment.SourceDate.Should().Be(new DateOnly(2026, 9, 10));
-        (fromPayment.OriginalAmount, fromPayment.AvailableAmount, fromPayment.CurrencyCode).Should().Be((20m, 20m, "USD"));
+        (fromPayment.OriginalAmount, fromPayment.AvailableAmount, fromPayment.CurrencyCode)
+            .Should()
+            .Be((20m, 20m, "USD"));
     }
 
     [Fact]
@@ -335,35 +655,69 @@ public sealed class SupplierCreditReadModelIntegrationTests : IAsyncLifetime
         var payableId = await SeedExpensePayableAsync(100m);
         await ApplyAsync(closedCreditId, payableId, 15m);
 
-        (await ListAsync(new GetSupplierCreditListQuery(SupplierId: _otherSupplierId))).Items
-            .Select(i => i.Id).Should().Equal(otherSupplierCreditId);
-        (await ListAsync(new GetSupplierCreditListQuery(SourceType: SupplierCreditSourceType.PurchaseReturn))).Items
-            .Select(i => i.Id).Should().Equal(returnCreditId);
-        var payments = await ListAsync(new GetSupplierCreditListQuery(SourceType: SupplierCreditSourceType.SupplierPayment));
-        payments.Items.Select(i => i.Id).Should().BeEquivalentTo([advanceCreditId, otherSupplierCreditId, closedCreditId]);
+        (await ListAsync(new GetSupplierCreditListQuery(SupplierId: _otherSupplierId)))
+            .Items.Select(i => i.Id)
+            .Should()
+            .Equal(otherSupplierCreditId);
+        (
+            await ListAsync(
+                new GetSupplierCreditListQuery(SourceType: SupplierCreditSourceType.PurchaseReturn)
+            )
+        )
+            .Items.Select(i => i.Id)
+            .Should()
+            .Equal(returnCreditId);
+        var payments = await ListAsync(
+            new GetSupplierCreditListQuery(SourceType: SupplierCreditSourceType.SupplierPayment)
+        );
+        payments
+            .Items.Select(i => i.Id)
+            .Should()
+            .BeEquivalentTo([advanceCreditId, otherSupplierCreditId, closedCreditId]);
         payments.Total.Should().Be(3);
 
         var closed = await ListAsync(new GetSupplierCreditListQuery(IsOpen: false));
         closed.Items.Select(i => i.Id).Should().Equal(closedCreditId);
         closed.Items.Single().IsOpen.Should().BeFalse();
-        (await ListAsync(new GetSupplierCreditListQuery(IsOpen: true))).Items
-            .Should().NotContain(i => i.Id == closedCreditId).And.HaveCount(3);
-        (await ListAsync(new GetSupplierCreditListQuery(SupplierId: _supplierId, SourceType: SupplierCreditSourceType.SupplierPayment, IsOpen: true)))
-            .Items.Select(i => i.Id).Should().Equal(advanceCreditId);
+        (await ListAsync(new GetSupplierCreditListQuery(IsOpen: true)))
+            .Items.Should()
+            .NotContain(i => i.Id == closedCreditId)
+            .And.HaveCount(3);
+        (
+            await ListAsync(
+                new GetSupplierCreditListQuery(
+                    SupplierId: _supplierId,
+                    SourceType: SupplierCreditSourceType.SupplierPayment,
+                    IsOpen: true
+                )
+            )
+        )
+            .Items.Select(i => i.Id)
+            .Should()
+            .Equal(advanceCreditId);
     }
 
     [Fact]
     public async Task Saldos_de_otra_empresa_no_aparecen_ni_se_pueden_leer()
     {
         var (ownCreditId, _) = await SeedAdvanceAsync(20m);
-        var (foreignCreditId, _) = await SeedAdvanceAsync(40m, companyId: _otherCompanyId, branchId: _otherBranchId);
+        var (foreignCreditId, _) = await SeedAdvanceAsync(
+            40m,
+            companyId: _otherCompanyId,
+            branchId: _otherBranchId
+        );
 
         var own = await ListAsync(new GetSupplierCreditListQuery());
         own.Items.Select(i => i.Id).Should().Equal(ownCreditId);
         own.Total.Should().Be(1);
-        (await DetailAsync(foreignCreditId)).IsSuccess.Should().BeFalse("fail-closed: fuera de la empresa operativa");
+        (await DetailAsync(foreignCreditId))
+            .IsSuccess.Should()
+            .BeFalse("fail-closed: fuera de la empresa operativa");
 
-        (await ListAsync(new GetSupplierCreditListQuery(), _otherCompanyId)).Items.Select(i => i.Id).Should().Equal(foreignCreditId);
+        (await ListAsync(new GetSupplierCreditListQuery(), _otherCompanyId))
+            .Items.Select(i => i.Id)
+            .Should()
+            .Equal(foreignCreditId);
     }
 
     [Fact]
@@ -383,8 +737,10 @@ public sealed class SupplierCreditReadModelIntegrationTests : IAsyncLifetime
         }
 
         pages.Select(p => p.Id).Should().OnlyHaveUniqueItems().And.BeEquivalentTo(ids);
-        (await ListAsync(new GetSupplierCreditListQuery(1, 2))).Items.Select(i => i.Id)
-            .Should().Equal(pages.Take(2).Select(p => p.Id), "mismo orden en lecturas repetidas");
+        (await ListAsync(new GetSupplierCreditListQuery(1, 2)))
+            .Items.Select(i => i.Id)
+            .Should()
+            .Equal(pages.Take(2).Select(p => p.Id), "mismo orden en lecturas repetidas");
     }
 
     [Fact]
@@ -403,37 +759,97 @@ public sealed class SupplierCreditReadModelIntegrationTests : IAsyncLifetime
 
         detail.IsSuccess.Should().BeTrue(detail.Error);
         var dto = detail.Value!;
-        (dto.SupplierName, dto.SourceType, dto.SourceSupplierPaymentId, dto.SourcePurchaseReturnId, dto.SourceDocumentNumber, dto.SourceDate)
-            .Should().Be(("Distribuidora Andina", "SupplierPayment", payment.Id, (Guid?)null, payment.SystemNumber, _today));
+        (
+            dto.SupplierName,
+            dto.SourceType,
+            dto.SourceSupplierPaymentId,
+            dto.SourcePurchaseReturnId,
+            dto.SourceDocumentNumber,
+            dto.SourceDate
+        )
+            .Should()
+            .Be(
+                (
+                    "Distribuidora Andina",
+                    "SupplierPayment",
+                    payment.Id,
+                    (Guid?)null,
+                    payment.SystemNumber,
+                    _today
+                )
+            );
         (dto.OriginalAmount, dto.AvailableAmount).Should().Be((100m, 100m));
-        dto.Movements.Select(m => m.MovementType).Should().Equal(
-            "Application", "Refund", "ReversalOfRefund", "ReversalOfApplication");
+        dto.Movements.Select(m => m.MovementType)
+            .Should()
+            .Equal("Application", "Refund", "ReversalOfRefund", "ReversalOfApplication");
         dto.Movements.Should().BeInAscendingOrder(m => m.CreatedAtUtc);
-        dto.Movements.Should().OnlyContain(m => m.CreatedByUserId == _userId && m.CreatedByName == "Ana Tesorera");
+        dto.Movements.Should()
+            .OnlyContain(m => m.CreatedByUserId == _userId && m.CreatedByName == "Ana Tesorera");
 
         var application = dto.Movements[0];
-        (application.Amount, application.AccountsPayableId, application.PayableDocumentNumber, application.PayableOriginType)
-            .Should().Be((30m, payableId, "GAS-000777", "ExpenseDocument"));
+        (
+            application.Amount,
+            application.AccountsPayableId,
+            application.PayableDocumentNumber,
+            application.PayableOriginType
+        )
+            .Should()
+            .Be((30m, payableId, "GAS-000777", "ExpenseDocument"));
         application.RefundTransactionId.Should().BeNull();
 
         var refundMovement = dto.Movements[1];
-        (refundMovement.Amount, refundMovement.RefundTransactionId, refundMovement.EffectiveDate, refundMovement.DestinationType,
-                refundMovement.DestinationName, refundMovement.PaymentMethodCode, refundMovement.PaymentMethodName,
-                refundMovement.ReferenceNumber, refundMovement.Reason)
-            .Should().Be((25m, refund.Id, _today, "Bank", "Banco Pichincha CTE", "TRANSFER", "Transferencia", "TRX-445566", (string?)null));
+        (
+            refundMovement.Amount,
+            refundMovement.RefundTransactionId,
+            refundMovement.EffectiveDate,
+            refundMovement.DestinationType,
+            refundMovement.DestinationName,
+            refundMovement.PaymentMethodCode,
+            refundMovement.PaymentMethodName,
+            refundMovement.ReferenceNumber,
+            refundMovement.Reason
+        )
+            .Should()
+            .Be(
+                (
+                    25m,
+                    refund.Id,
+                    _today,
+                    "Bank",
+                    "Banco Pichincha CTE",
+                    "TRANSFER",
+                    "Transferencia",
+                    "TRX-445566",
+                    (string?)null
+                )
+            );
         refundMovement.AccountsPayableId.Should().BeNull();
 
         var refundReversal = dto.Movements[2];
         refundReversal.ReversalOfMovementId.Should().Be(refundMovement.Id);
         refundMovement.ReversedByMovementId.Should().Be(refundReversal.Id);
-        (refundReversal.Reason, refundReversal.EffectiveDate, refundReversal.DestinationType, refundReversal.ReferenceNumber)
-            .Should().Be(("Transferencia devuelta por el banco", _today.AddDays(1), "Bank", (string?)null));
+        (
+            refundReversal.Reason,
+            refundReversal.EffectiveDate,
+            refundReversal.DestinationType,
+            refundReversal.ReferenceNumber
+        )
+            .Should()
+            .Be(("Transferencia devuelta por el banco", _today.AddDays(1), "Bank", (string?)null));
 
         var applicationReversal = dto.Movements[3];
         applicationReversal.ReversalOfMovementId.Should().Be(application.Id);
         application.ReversedByMovementId.Should().Be(applicationReversal.Id);
-        (applicationReversal.AccountsPayableId, applicationReversal.PayableDocumentNumber, applicationReversal.Reason)
-            .Should().Be((payableId, "GAS-000777", (string?)null), "la reversa de aplicación no guarda motivo en el dominio");
+        (
+            applicationReversal.AccountsPayableId,
+            applicationReversal.PayableDocumentNumber,
+            applicationReversal.Reason
+        )
+            .Should()
+            .Be(
+                (payableId, "GAS-000777", (string?)null),
+                "la reversa de aplicación no guarda motivo en el dominio"
+            );
     }
 
     /// <summary>
@@ -454,8 +870,10 @@ public sealed class SupplierCreditReadModelIntegrationTests : IAsyncLifetime
         async Task<SupplierCreditOpenBalance> BalanceAsync()
         {
             await using var db = CreateContext();
-            return await new SupplierCreditRepository(db, new FixedCurrentCompany(() => _companyId))
-                .GetOpenBalanceBySupplierAsync(_tenantId, _supplierId, CancellationToken.None);
+            return await new SupplierCreditRepository(
+                db,
+                new FixedCurrentCompany(() => _companyId)
+            ).GetOpenBalanceBySupplierAsync(_tenantId, _supplierId, CancellationToken.None);
         }
 
         (await BalanceAsync()).Should().Be(new SupplierCreditOpenBalance(50m, 2, null));
@@ -471,9 +889,13 @@ public sealed class SupplierCreditReadModelIntegrationTests : IAsyncLifetime
 
     private sealed class NoOpPublisher : IPublisher
     {
-        public Task Publish(object notification, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
             where TNotification : INotification => Task.CompletedTask;
     }
 

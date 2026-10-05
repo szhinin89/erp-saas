@@ -67,7 +67,7 @@ public sealed class SalesReturnDetail : IMustHaveTenant
     /// </summary>
     public SriTaxCalculationType IceCalculationType =>
         _taxes.FirstOrDefault(t => t.TaxCode == IceSriTaxCode)?.CalculationType
-            ?? SriTaxCalculationType.Percentage;
+        ?? SriTaxCalculationType.Percentage;
 
     public bool IsFrozen { get; private set; }
 
@@ -80,9 +80,11 @@ public sealed class SalesReturnDetail : IMustHaveTenant
     private const string IrbpnrSriTaxCode = SriTaxCategoryCodes.Irbpnr;
 
     /// <summary>IRBPNR nunca se trata como ICE — código, catálogo y resolución siempre separados.</summary>
-    public string? IrbpnrCode => _taxes.FirstOrDefault(t => t.TaxCode == IrbpnrSriTaxCode)?.TaxRateCode;
+    public string? IrbpnrCode =>
+        _taxes.FirstOrDefault(t => t.TaxCode == IrbpnrSriTaxCode)?.TaxRateCode;
     public decimal? IrbpnrRate => _taxes.FirstOrDefault(t => t.TaxCode == IrbpnrSriTaxCode)?.Rate;
-    public decimal IrbpnrAmount => _taxes.Where(t => t.TaxCode == IrbpnrSriTaxCode).Sum(t => t.TaxAmount);
+    public decimal IrbpnrAmount =>
+        _taxes.Where(t => t.TaxCode == IrbpnrSriTaxCode).Sum(t => t.TaxAmount);
 
     // ── Calculated (NOT persisted) ──────────────────────────────────────
     public decimal LineSubtotal => Quantity * UnitPrice;

@@ -139,11 +139,12 @@ public sealed class ImportPurchaseReceptionHandler
                 // Historial ("Ver NC anulada") — solo tiene sentido consultarlo cuando no hay una
                 // activa bloqueando el reintento; con una activa, la UI ya muestra "NC ya procesada".
                 if (creditNoteId is null)
-                    cancelledCreditNoteId = await _creditNoteRepo.GetLatestCancelledIdByReceptionDocumentIdAsync(
-                        _tenant.TenantId,
-                        document.Id,
-                        cancellationToken
-                    );
+                    cancelledCreditNoteId =
+                        await _creditNoteRepo.GetLatestCancelledIdByReceptionDocumentIdAsync(
+                            _tenant.TenantId,
+                            document.Id,
+                            cancellationToken
+                        );
             }
 
             itemDtos.Add(

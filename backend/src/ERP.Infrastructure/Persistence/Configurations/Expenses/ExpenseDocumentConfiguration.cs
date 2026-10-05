@@ -76,9 +76,7 @@ public sealed class ExpenseDocumentConfiguration : IEntityTypeConfiguration<Expe
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<int>().IsRequired();
 
         // EXPENSES-FROM-RECEPTION-01 — mismo patrón que PurchaseCreditNote.ReceptionDocumentId/AccessKey.
-        builder
-            .Property(x => x.ReceptionDocumentId)
-            .HasColumnName("reception_document_id");
+        builder.Property(x => x.ReceptionDocumentId).HasColumnName("reception_document_id");
         builder
             .Property(x => x.AccessKey)
             .HasColumnName("access_key")
@@ -214,11 +212,21 @@ public sealed class ExpenseDocumentConfiguration : IEntityTypeConfiguration<Expe
             .HasDatabaseName("uq_expense_documents_tenant_company_supplier_type_number");
 
         builder
-            .HasIndex(x => new { x.TenantId, x.CompanyId, x.IssueDate })
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.CompanyId,
+                x.IssueDate,
+            })
             .HasDatabaseName("ix_expense_documents_tenant_company_issue_date");
 
         builder
-            .HasIndex(x => new { x.TenantId, x.CompanyId, x.Status })
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.CompanyId,
+                x.Status,
+            })
             .HasDatabaseName("ix_expense_documents_tenant_company_status");
     }
 }

@@ -149,7 +149,10 @@ public sealed class AuthControllerTests
             )
         );
 
-        var response = await controller.Refresh(new RefreshRequest("raw-token"), CancellationToken.None);
+        var response = await controller.Refresh(
+            new RefreshRequest("raw-token"),
+            CancellationToken.None
+        );
 
         response.Should().BeOfType<OkObjectResult>();
         var setCookieHeaders = controller.ControllerContext.HttpContext.Response.Headers.SetCookie;
@@ -163,7 +166,10 @@ public sealed class AuthControllerTests
             Result<AuthResponseDto>.Failure("Sesión expirada. Inicia sesión nuevamente.")
         );
 
-        var response = await controller.Refresh(new RefreshRequest("raw-token"), CancellationToken.None);
+        var response = await controller.Refresh(
+            new RefreshRequest("raw-token"),
+            CancellationToken.None
+        );
 
         response.Should().BeOfType<UnauthorizedObjectResult>();
     }
@@ -175,7 +181,10 @@ public sealed class AuthControllerTests
             Result<AuthResponseDto>.Failure("Refresh token revocado. Inicia sesión nuevamente.")
         );
 
-        var response = await controller.Refresh(new RefreshRequest("raw-token"), CancellationToken.None);
+        var response = await controller.Refresh(
+            new RefreshRequest("raw-token"),
+            CancellationToken.None
+        );
 
         response.Should().BeOfType<UnauthorizedObjectResult>();
     }
@@ -279,7 +288,8 @@ public sealed class AuthControllerTests
         sentRequest.Should().Be(new LogoutCommand("raw-refresh-token", false));
 
         var setCookieHeaders = controller.ControllerContext.HttpContext.Response.Headers.SetCookie;
-        setCookieHeaders.Should()
+        setCookieHeaders
+            .Should()
             .Contain(
                 h => h.Contains("erp_refresh_token=") && h.Contains("expires="),
                 "el logout debe emitir un Set-Cookie que expira/borra erp_refresh_token"
@@ -299,8 +309,12 @@ public sealed class AuthControllerTests
         response.Should().BeOfType<BadRequestObjectResult>();
 
         var setCookieHeaders = controller.ControllerContext.HttpContext.Response.Headers.SetCookie;
-        setCookieHeaders.Should()
-            .Contain(h => h.Contains("erp_refresh_token="), "la cookie debe limpiarse aunque el comando falle");
+        setCookieHeaders
+            .Should()
+            .Contain(
+                h => h.Contains("erp_refresh_token="),
+                "la cookie debe limpiarse aunque el comando falle"
+            );
     }
 
     // ── ZH-SCOPE-ERROR-SEMANTICS-01: contrato HTTP de login (sin enumeración, 409 solo tras autenticar) ──
@@ -309,7 +323,11 @@ public sealed class AuthControllerTests
     {
         var obj = response.Should().BeAssignableTo<ObjectResult>().Subject;
         var body = obj.Value.Should().BeOfType<ERP.API.Contracts.ApiResponse<object>>().Subject;
-        return (obj.StatusCode!.Value, body.Code, System.Text.Json.JsonSerializer.Serialize(body.Data));
+        return (
+            obj.StatusCode!.Value,
+            body.Code,
+            System.Text.Json.JsonSerializer.Serialize(body.Data)
+        );
     }
 
     [Fact]
@@ -318,10 +336,20 @@ public sealed class AuthControllerTests
         // LoginHandler devuelve el MISMO Failure sin código para usuario inexistente, contraseña
         // incorrecta e inactivo sin contraseña (LoginHandlerTests); aquí se fija que ese fallo sale
         // siempre 401 con cuerpo idéntico, sin importar qué credencial falló.
-        var failure = Result<AuthResponseDto>.Failure(ERP.Application.Auth.UseCases.Login.LoginHandler.InvalidCredentialsMessage);
+        var failure = Result<AuthResponseDto>.Failure(
+            ERP.Application.Auth.UseCases.Login.LoginHandler.InvalidCredentialsMessage
+        );
 
-        var a = await BuildController(_ => failure).Login(new ERP.Application.Auth.UseCases.Login.LoginCommand("no-existe", "x"), CancellationToken.None);
-        var b = await BuildController(_ => failure).Login(new ERP.Application.Auth.UseCases.Login.LoginCommand("ana.perez", "mala"), CancellationToken.None);
+        var a = await BuildController(_ => failure)
+            .Login(
+                new ERP.Application.Auth.UseCases.Login.LoginCommand("no-existe", "x"),
+                CancellationToken.None
+            );
+        var b = await BuildController(_ => failure)
+            .Login(
+                new ERP.Application.Auth.UseCases.Login.LoginCommand("ana.perez", "mala"),
+                CancellationToken.None
+            );
 
         Read(a).Should().Be(Read(b));
         Read(a).Status.Should().Be(401);
@@ -331,9 +359,15 @@ public sealed class AuthControllerTests
     [Fact]
     public async Task Login_con_conflicto_de_sesion_tras_credenciales_validas_es_409_CONFLICT()
     {
-        var conflict = Result<AuthResponseDto>.Conflict("No se pudo iniciar la sesión. Intenta nuevamente.");
+        var conflict = Result<AuthResponseDto>.Conflict(
+            "No se pudo iniciar la sesión. Intenta nuevamente."
+        );
 
-        var response = await BuildController(_ => conflict).Login(new ERP.Application.Auth.UseCases.Login.LoginCommand("ana.perez", "ok"), CancellationToken.None);
+        var response = await BuildController(_ => conflict)
+            .Login(
+                new ERP.Application.Auth.UseCases.Login.LoginCommand("ana.perez", "ok"),
+                CancellationToken.None
+            );
 
         Read(response).Status.Should().Be(409);
         Read(response).Code.Should().Be(ApiResponseCodes.Common.Conflict);
@@ -344,9 +378,15 @@ public sealed class AuthControllerTests
     {
         // CompanyUserPreferencesLoginResolver (sucursal preferida ya no autorizada) — solo corre
         // después de VerifyPassword; su código sale por la tabla única.
-        var failure = Result<AuthResponseDto>.ValidationFailure("La sucursal preferida ya no está autorizada.");
+        var failure = Result<AuthResponseDto>.ValidationFailure(
+            "La sucursal preferida ya no está autorizada."
+        );
 
-        var response = await BuildController(_ => failure).Login(new ERP.Application.Auth.UseCases.Login.LoginCommand("ana.perez", "ok"), CancellationToken.None);
+        var response = await BuildController(_ => failure)
+            .Login(
+                new ERP.Application.Auth.UseCases.Login.LoginCommand("ana.perez", "ok"),
+                CancellationToken.None
+            );
 
         Read(response).Status.Should().Be(422);
     }

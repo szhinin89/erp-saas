@@ -85,6 +85,7 @@ public interface IRetentionEligibilityService
     /// <param name="supplierId">Proveedor/sujeto a retener, resuelto del documento origen.</param>
     /// <param name="vatRetainableBase">Base retenible de IVA del documento origen (p. ej. <c>ExpenseDocument.TotalVat</c>).</param>
     /// <param name="incomeRetainableBase">Base retenible de Renta del documento origen (p. ej. suma de <c>TaxableBase</c> de líneas).</param>
+    /// <param name="ct"></param>
     Task<RetentionEligibilityResult> EvaluateAsync(
         Guid tenantId,
         Guid companyId,

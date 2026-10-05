@@ -104,7 +104,13 @@ public sealed class PostingRuleUseCasesTests
         var handler = m.BuildCreateHandler();
 
         var result = await handler.Handle(
-            new CreatePostingRuleCommand("Sales", "InvoiceIssued", Guid.NewGuid(), Guid.NewGuid(), null),
+            new CreatePostingRuleCommand(
+                "Sales",
+                "InvoiceIssued",
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                null
+            ),
             CancellationToken.None
         );
 
@@ -130,7 +136,14 @@ public sealed class PostingRuleUseCasesTests
                 null,
                 null,
                 null,
-                new[] { new PostingRuleLineInput(account.Id, AccountNature.Debit, PostingAmountKind.GrandTotal) }
+                new[]
+                {
+                    new PostingRuleLineInput(
+                        account.Id,
+                        AccountNature.Debit,
+                        PostingAmountKind.GrandTotal
+                    ),
+                }
             ),
             CancellationToken.None
         );
@@ -162,8 +175,16 @@ public sealed class PostingRuleUseCasesTests
                 null,
                 new[]
                 {
-                    new PostingRuleLineInput(inactive.Id, AccountNature.Debit, PostingAmountKind.GrandTotal),
-                    new PostingRuleLineInput(active.Id, AccountNature.Credit, PostingAmountKind.Subtotal),
+                    new PostingRuleLineInput(
+                        inactive.Id,
+                        AccountNature.Debit,
+                        PostingAmountKind.GrandTotal
+                    ),
+                    new PostingRuleLineInput(
+                        active.Id,
+                        AccountNature.Credit,
+                        PostingAmountKind.Subtotal
+                    ),
                 }
             ),
             CancellationToken.None
@@ -205,8 +226,16 @@ public sealed class PostingRuleUseCasesTests
                 null,
                 new[]
                 {
-                    new PostingRuleLineInput(summary.Id, AccountNature.Debit, PostingAmountKind.GrandTotal),
-                    new PostingRuleLineInput(active.Id, AccountNature.Credit, PostingAmountKind.Subtotal),
+                    new PostingRuleLineInput(
+                        summary.Id,
+                        AccountNature.Debit,
+                        PostingAmountKind.GrandTotal
+                    ),
+                    new PostingRuleLineInput(
+                        active.Id,
+                        AccountNature.Credit,
+                        PostingAmountKind.Subtotal
+                    ),
                 }
             ),
             CancellationToken.None
@@ -236,8 +265,16 @@ public sealed class PostingRuleUseCasesTests
                 null,
                 new[]
                 {
-                    new PostingRuleLineInput(Guid.NewGuid(), AccountNature.Debit, PostingAmountKind.GrandTotal),
-                    new PostingRuleLineInput(active.Id, AccountNature.Credit, PostingAmountKind.Subtotal),
+                    new PostingRuleLineInput(
+                        Guid.NewGuid(),
+                        AccountNature.Debit,
+                        PostingAmountKind.GrandTotal
+                    ),
+                    new PostingRuleLineInput(
+                        active.Id,
+                        AccountNature.Credit,
+                        PostingAmountKind.Subtotal
+                    ),
                 }
             ),
             CancellationToken.None
@@ -272,8 +309,16 @@ public sealed class PostingRuleUseCasesTests
                 null,
                 new[]
                 {
-                    new PostingRuleLineInput(l1.Id, AccountNature.Debit, PostingAmountKind.GrandTotal),
-                    new PostingRuleLineInput(l2.Id, AccountNature.Credit, PostingAmountKind.Subtotal),
+                    new PostingRuleLineInput(
+                        l1.Id,
+                        AccountNature.Debit,
+                        PostingAmountKind.GrandTotal
+                    ),
+                    new PostingRuleLineInput(
+                        l2.Id,
+                        AccountNature.Credit,
+                        PostingAmountKind.Subtotal
+                    ),
                 }
             ),
             CancellationToken.None
@@ -305,8 +350,16 @@ public sealed class PostingRuleUseCasesTests
                 null,
                 new[]
                 {
-                    new PostingRuleLineInput(debit.Id, AccountNature.Debit, PostingAmountKind.GrandTotal),
-                    new PostingRuleLineInput(credit.Id, AccountNature.Credit, PostingAmountKind.Subtotal),
+                    new PostingRuleLineInput(
+                        debit.Id,
+                        AccountNature.Debit,
+                        PostingAmountKind.GrandTotal
+                    ),
+                    new PostingRuleLineInput(
+                        credit.Id,
+                        AccountNature.Credit,
+                        PostingAmountKind.Subtotal
+                    ),
                 }
             ),
             CancellationToken.None
@@ -327,11 +380,21 @@ public sealed class PostingRuleUseCasesTests
     {
         var debit = PostableAccount("1.1.01");
         var credit = PostableAccount("4.1.01");
-        var rule = PostingRule.Create(TenantId, CompanyId, "Sales", "InvoiceIssued", debit.Id, credit.Id, null, CreatedBy);
+        var rule = PostingRule.Create(
+            TenantId,
+            CompanyId,
+            "Sales",
+            "InvoiceIssued",
+            debit.Id,
+            credit.Id,
+            null,
+            CreatedBy
+        );
 
         var m = new Mocks();
-        m.PostingRules
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, rule.Id, It.IsAny<CancellationToken>()))
+        m.PostingRules.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, rule.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(rule);
 
         var newCredit = Account.Create(
@@ -354,7 +417,8 @@ public sealed class PostingRuleUseCasesTests
         );
 
         result.IsSuccess.Should().BeFalse();
-        rule.CreditAccountId.Should().Be(credit.Id, because: "no debe mutarse si la validación falla");
+        rule.CreditAccountId.Should()
+            .Be(credit.Id, because: "no debe mutarse si la validación falla");
         m.PostingRules.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -363,11 +427,21 @@ public sealed class PostingRuleUseCasesTests
     {
         var debit = PostableAccount("1.1.01");
         var credit = PostableAccount("4.1.01");
-        var rule = PostingRule.Create(TenantId, CompanyId, "Sales", "InvoiceIssued", debit.Id, credit.Id, null, CreatedBy);
+        var rule = PostingRule.Create(
+            TenantId,
+            CompanyId,
+            "Sales",
+            "InvoiceIssued",
+            debit.Id,
+            credit.Id,
+            null,
+            CreatedBy
+        );
 
         var m = new Mocks();
-        m.PostingRules
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, rule.Id, It.IsAny<CancellationToken>()))
+        m.PostingRules.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, rule.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(rule);
 
         var newDebit = PostableAccount("1.1.02");
@@ -393,15 +467,25 @@ public sealed class PostingRuleUseCasesTests
     {
         var debit = PostableAccount("1.1.03.001");
         var credit = PostableAccount("4.1.01.001");
-        var rule = PostingRule.Create(TenantId, CompanyId, "Sales", "InvoiceIssued", null, null, null, CreatedBy);
+        var rule = PostingRule.Create(
+            TenantId,
+            CompanyId,
+            "Sales",
+            "InvoiceIssued",
+            null,
+            null,
+            null,
+            CreatedBy
+        );
         rule.AddLine(debit.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
         rule.AddLine(credit.Id, AccountNature.Credit, PostingAmountKind.Subtotal);
 
         var m = new Mocks();
         m.RegisterAccount(debit);
         m.RegisterAccount(credit);
-        m.PostingRules
-            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+        m.PostingRules.Setup(r =>
+                r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { rule });
 
         var handler = new GetPostingRulesHandler(
@@ -434,15 +518,25 @@ public sealed class PostingRuleUseCasesTests
         var debit = PostableAccount("1.1.03.001");
         var credit = PostableAccount("4.1.01.001");
         credit.Disable(CreatedBy);
-        var rule = PostingRule.Create(TenantId, CompanyId, "Sales", "InvoiceIssued", null, null, null, CreatedBy);
+        var rule = PostingRule.Create(
+            TenantId,
+            CompanyId,
+            "Sales",
+            "InvoiceIssued",
+            null,
+            null,
+            null,
+            CreatedBy
+        );
         rule.AddLine(debit.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
         rule.AddLine(credit.Id, AccountNature.Credit, PostingAmountKind.Subtotal);
 
         var m = new Mocks();
         m.RegisterAccount(debit);
         m.RegisterAccount(credit);
-        m.PostingRules
-            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+        m.PostingRules.Setup(r =>
+                r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { rule });
 
         var handler = new GetPostingRulesHandler(
@@ -454,7 +548,10 @@ public sealed class PostingRuleUseCasesTests
 
         var result = await handler.Handle(new GetPostingRulesQuery(), CancellationToken.None);
 
-        result.Value!.Single().Lines.Should().Contain(l => l.AccountId == credit.Id && !l.AccountIsActive);
+        result
+            .Value!.Single()
+            .Lines.Should()
+            .Contain(l => l.AccountId == credit.Id && !l.AccountIsActive);
     }
 
     [Fact]
@@ -462,15 +559,25 @@ public sealed class PostingRuleUseCasesTests
     {
         var debit = PostableAccount("1.1.03.001");
         var credit = PostableAccount("4.1.01.001");
-        var rule = PostingRule.Create(TenantId, CompanyId, "Sales", "InvoiceIssued", null, null, null, CreatedBy);
+        var rule = PostingRule.Create(
+            TenantId,
+            CompanyId,
+            "Sales",
+            "InvoiceIssued",
+            null,
+            null,
+            null,
+            CreatedBy
+        );
         rule.AddLine(debit.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
         rule.AddLine(credit.Id, AccountNature.Credit, PostingAmountKind.Subtotal);
 
         var m = new Mocks();
         m.RegisterAccount(debit);
         m.RegisterAccount(credit);
-        m.PostingRules
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, rule.Id, It.IsAny<CancellationToken>()))
+        m.PostingRules.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, rule.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(rule);
 
         var handler = new GetPostingRuleByIdHandler(
@@ -480,9 +587,14 @@ public sealed class PostingRuleUseCasesTests
             m.Company.Object
         );
 
-        var result = await handler.Handle(new GetPostingRuleByIdQuery(rule.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetPostingRuleByIdQuery(rule.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
-        result.Value!.Lines.Should().Contain(l => l.AccountId == debit.Id && l.AccountCode == "1.1.03.001");
+        result
+            .Value!.Lines.Should()
+            .Contain(l => l.AccountId == debit.Id && l.AccountCode == "1.1.03.001");
     }
 }

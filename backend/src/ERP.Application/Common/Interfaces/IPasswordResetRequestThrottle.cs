@@ -7,5 +7,8 @@ namespace ERP.Application.Common.Interfaces;
 public interface IPasswordResetRequestThrottle
 {
     /// <summary>Devuelve <c>false</c> si el email ya agotó su cupo en la ventana vigente.</summary>
-    Task<bool> TryAcquireAsync(string normalizedEmail, CancellationToken cancellationToken = default);
+    Task<bool> TryAcquireAsync(
+        string normalizedEmail,
+        CancellationToken cancellationToken = default
+    );
 }

@@ -94,13 +94,22 @@ public sealed class CancelSalesInvoiceHandlerTests
         Domain.Modules.Sales.Entities.SalesReceivable? receivable = null;
         if (withPaidReceivable)
         {
-            receivable = Domain.Modules.Sales.Entities.SalesReceivable.Create(TenantId, CompanyId, inv.Id, CustomerId, 100m, UserId);
+            receivable = Domain.Modules.Sales.Entities.SalesReceivable.Create(
+                TenantId,
+                CompanyId,
+                inv.Id,
+                CustomerId,
+                100m,
+                UserId
+            );
             receivable.RegisterCollection(40m, UserId);
         }
 
         var receivableRepo = new Mock<ISalesReceivableRepository>();
         receivableRepo
-            .Setup(r => r.GetByInvoiceIdForUpdateAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByInvoiceIdForUpdateAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(receivable);
 
         var stockRepo = new Mock<IStockRepository>();
@@ -110,7 +119,9 @@ public sealed class CancelSalesInvoiceHandlerTests
 
         var edocRepo = new Mock<IElectronicDocumentRepository>();
         edocRepo
-            .Setup(e => e.GetBySourceAsync(TenantId, "Sales", inv.Id, It.IsAny<CancellationToken>()))
+            .Setup(e =>
+                e.GetBySourceAsync(TenantId, "Sales", inv.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((ElectronicDocument?)null);
 
         var tenant = new Mock<ICurrentTenant>();
@@ -324,7 +335,11 @@ public sealed class CancelSalesInvoiceHandlerTests
         );
 
         result.Code.Should().Be(ApiResponseCodes.Common.DomainRuleViolation);
-        result.Error.Should().Be("No se puede anular: No se puede cancelar una cuenta por cobrar con pagos registrados.");
+        result
+            .Error.Should()
+            .Be(
+                "No se puede anular: No se puede cancelar una cuenta por cobrar con pagos registrados."
+            );
         inv.Status.Should().NotBe(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Cancelled);
     }
 }

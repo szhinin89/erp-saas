@@ -14,7 +14,10 @@ public sealed class ExpenseLineConfiguration : IEntityTypeConfiguration<ExpenseL
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").IsRequired();
         builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
-        builder.Property(x => x.ExpenseDocumentId).HasColumnName("expense_document_id").IsRequired();
+        builder
+            .Property(x => x.ExpenseDocumentId)
+            .HasColumnName("expense_document_id")
+            .IsRequired();
         builder
             .Property(x => x.ExpenseSubcategoryId)
             .HasColumnName("expense_subcategory_id")
@@ -75,10 +78,7 @@ public sealed class ExpenseLineConfiguration : IEntityTypeConfiguration<ExpenseL
             .Property(x => x.SnapshotVatName)
             .HasColumnName("snapshot_vat_name")
             .HasMaxLength(ExpenseLine.VatNameMaxLen);
-        builder
-            .Property(x => x.Notes)
-            .HasColumnName("notes")
-            .HasMaxLength(ExpenseLine.NotesMaxLen);
+        builder.Property(x => x.Notes).HasColumnName("notes").HasMaxLength(ExpenseLine.NotesMaxLen);
         builder.Property(x => x.SortOrder).HasColumnName("sort_order").IsRequired();
 
         builder.Ignore(x => x.LineSubtotal);
@@ -97,9 +97,7 @@ public sealed class ExpenseLineConfiguration : IEntityTypeConfiguration<ExpenseL
             .HasForeignKey(x => x.SnapshotAccountingAccountId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder
-            .HasIndex(x => x.ExpenseDocumentId)
-            .HasDatabaseName("ix_expense_lines_document");
+        builder.HasIndex(x => x.ExpenseDocumentId).HasDatabaseName("ix_expense_lines_document");
 
         builder.HasIndex(x => x.TenantId).HasDatabaseName("ix_expense_lines_tenant");
 

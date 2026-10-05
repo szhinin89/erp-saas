@@ -15,15 +15,16 @@ public static class UtcDateTime
     /// offset explícito, p. ej. "2026-09-25T14:38:00-05:00"). Unspecified → rechazado
     /// (<see cref="ArgumentException"/>, HTTP 400): el contrato API exige ISO-8601 con "Z" u offset.
     /// </summary>
-    public static DateTime EnsureUtc(DateTime value) => value.Kind switch
-    {
-        DateTimeKind.Utc => value,
-        DateTimeKind.Local => value.ToUniversalTime(),
-        _ => throw new ArgumentException(
-            $"Instante sin zona horaria ({value:yyyy-MM-ddTHH:mm:ss}). Enviar ISO-8601 UTC terminado en 'Z' "
-                + "(o con offset); una hora local de empresa se convierte vía ICompanyClock.CompanyLocalToUtcAsync."
-        ),
-    };
+    public static DateTime EnsureUtc(DateTime value) =>
+        value.Kind switch
+        {
+            DateTimeKind.Utc => value,
+            DateTimeKind.Local => value.ToUniversalTime(),
+            _ => throw new ArgumentException(
+                $"Instante sin zona horaria ({value:yyyy-MM-ddTHH:mm:ss}). Enviar ISO-8601 UTC terminado en 'Z' "
+                    + "(o con offset); una hora local de empresa se convierte vía ICompanyClock.CompanyLocalToUtcAsync."
+            ),
+        };
 
     public static DateTime? EnsureUtc(DateTime? value) =>
         value.HasValue ? EnsureUtc(value.Value) : null;

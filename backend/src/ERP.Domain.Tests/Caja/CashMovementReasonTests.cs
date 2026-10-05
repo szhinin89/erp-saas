@@ -19,7 +19,13 @@ public sealed class CashMovementReasonTests
     public void Create_con_datos_validos_asigna_TenantId_y_CompanyId()
     {
         var reason = CashMovementReason.Create(
-            TenantId, CompanyId, "INGRESO_X", "Ingreso X", CashMovementType.ManualIncome, 1, UserId
+            TenantId,
+            CompanyId,
+            "INGRESO_X",
+            "Ingreso X",
+            CashMovementType.ManualIncome,
+            1,
+            UserId
         );
 
         reason.TenantId.Should().Be(TenantId);
@@ -34,7 +40,13 @@ public sealed class CashMovementReasonTests
     public void Create_normaliza_Code_a_mayusculas()
     {
         var reason = CashMovementReason.Create(
-            TenantId, CompanyId, "ingreso_x", "Ingreso X", CashMovementType.ManualIncome, 1, UserId
+            TenantId,
+            CompanyId,
+            "ingreso_x",
+            "Ingreso X",
+            CashMovementType.ManualIncome,
+            1,
+            UserId
         );
 
         reason.Code.Should().Be("INGRESO_X");
@@ -43,9 +55,16 @@ public sealed class CashMovementReasonTests
     [Fact]
     public void Create_sin_CompanyId_falla()
     {
-        var act = () => CashMovementReason.Create(
-            TenantId, Guid.Empty, "X", "X", CashMovementType.ManualIncome, 1, UserId
-        );
+        var act = () =>
+            CashMovementReason.Create(
+                TenantId,
+                Guid.Empty,
+                "X",
+                "X",
+                CashMovementType.ManualIncome,
+                1,
+                UserId
+            );
 
         act.Should().Throw<ArgumentException>();
     }
@@ -56,12 +75,10 @@ public sealed class CashMovementReasonTests
     [InlineData(CashMovementType.SaleRefund)]
     public void Create_con_tipo_de_sistema_falla(CashMovementType systemType)
     {
-        var act = () => CashMovementReason.Create(
-            TenantId, CompanyId, "X", "X", systemType, 1, UserId
-        );
+        var act = () =>
+            CashMovementReason.Create(TenantId, CompanyId, "X", "X", systemType, 1, UserId);
 
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*Opening/SaleIncome/SaleRefund*");
+        act.Should().Throw<ArgumentException>().WithMessage("*Opening/SaleIncome/SaleRefund*");
     }
 
     [Theory]
@@ -71,7 +88,13 @@ public sealed class CashMovementReasonTests
     public void Create_con_tipo_manual_funciona(CashMovementType manualType)
     {
         var reason = CashMovementReason.Create(
-            TenantId, CompanyId, "X", "X", manualType, 1, UserId
+            TenantId,
+            CompanyId,
+            "X",
+            "X",
+            manualType,
+            1,
+            UserId
         );
 
         reason.MovementType.Should().Be(manualType);
@@ -83,16 +106,21 @@ public sealed class CashMovementReasonTests
         // TREASURY-CASH-MOVEMENT-REASONS-ADMIN-03A — MovementType es inmutable tras crear, igual
         // que Code: Update ya ni siquiera recibe un parámetro para cambiarlo.
         var reason = CashMovementReason.Create(
-            TenantId, CompanyId, "ORIGINAL", "Nombre original", CashMovementType.ManualIncome, 1, UserId
+            TenantId,
+            CompanyId,
+            "ORIGINAL",
+            "Nombre original",
+            CashMovementType.ManualIncome,
+            1,
+            UserId
         );
 
         reason.Update("Nombre nuevo", 5, UserId);
 
         reason.Code.Should().Be("ORIGINAL", "Code es inmutable tras la creación");
-        reason.MovementType.Should().Be(
-            CashMovementType.ManualIncome,
-            "MovementType es inmutable tras la creación"
-        );
+        reason
+            .MovementType.Should()
+            .Be(CashMovementType.ManualIncome, "MovementType es inmutable tras la creación");
         reason.Name.Should().Be("Nombre nuevo");
         reason.SortOrder.Should().Be(5);
     }
@@ -101,7 +129,13 @@ public sealed class CashMovementReasonTests
     public void Update_con_nombre_vacio_falla()
     {
         var reason = CashMovementReason.Create(
-            TenantId, CompanyId, "X", "X", CashMovementType.ManualIncome, 1, UserId
+            TenantId,
+            CompanyId,
+            "X",
+            "X",
+            CashMovementType.ManualIncome,
+            1,
+            UserId
         );
 
         var act = () => reason.Update("", 1, UserId);
@@ -113,7 +147,13 @@ public sealed class CashMovementReasonTests
     public void Disable_y_Enable_alternan_IsActive_sin_borrar_el_registro()
     {
         var reason = CashMovementReason.Create(
-            TenantId, CompanyId, "X", "X", CashMovementType.ManualIncome, 1, UserId
+            TenantId,
+            CompanyId,
+            "X",
+            "X",
+            CashMovementType.ManualIncome,
+            1,
+            UserId
         );
 
         reason.Disable(UserId);

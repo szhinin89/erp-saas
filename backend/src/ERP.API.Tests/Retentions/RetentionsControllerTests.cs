@@ -125,9 +125,13 @@ public sealed class RetentionsControllerTests
 
         var response = await controller.GetElectronicXml(Guid.NewGuid(), CancellationToken.None);
 
-        response.Should().BeOfType<NotFoundObjectResult>()
-            .Which.Value.Should().BeOfType<ApiResponse<object>>()
-            .Which.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        response
+            .Should()
+            .BeOfType<NotFoundObjectResult>()
+            .Which.Value.Should()
+            .BeOfType<ApiResponse<object>>()
+            .Which.Code.Should()
+            .Be(ApiResponseCodes.Common.NotFound);
     }
 
     // ── GET {id}/ride/pdf ─────────────────────────────────────────────────
@@ -272,11 +276,38 @@ public sealed class RetentionsControllerTests
         ERP.Domain.Modules.Retentions.Enums.RetentionAnnulmentStatus status
     ) =>
         new(
-            Guid.NewGuid(), Guid.NewGuid(), ERP.Domain.Modules.Retentions.Enums.RetentionSourceDocumentType.PurchaseInvoice,
-            Guid.NewGuid(), status, "Motivo", Guid.NewGuid(), DateTime.UtcNow, new string('1', 49), "001-001-000000001",
-            new DateOnly(2026, 9, 17), "1791352688001", "Proveedor", new DateOnly(2026, 10, 7), false,
-            null, null, null, null, null, null, null, null, 0, null, false,
-            null, null, null, null, 0, false
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            ERP.Domain.Modules.Retentions.Enums.RetentionSourceDocumentType.PurchaseInvoice,
+            Guid.NewGuid(),
+            status,
+            "Motivo",
+            Guid.NewGuid(),
+            DateTime.UtcNow,
+            new string('1', 49),
+            "001-001-000000001",
+            new DateOnly(2026, 9, 17),
+            "1791352688001",
+            "Proveedor",
+            new DateOnly(2026, 10, 7),
+            false,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            0,
+            null,
+            false,
+            null,
+            null,
+            null,
+            null,
+            0,
+            false
         );
 
     [Fact]
@@ -287,12 +318,23 @@ public sealed class RetentionsControllerTests
         {
             captured = (SubmitRetentionAnnulmentCommand)req;
             return Result<ERP.Application.Modules.Retentions.DTOs.RetentionAnnulmentRequestDto>.Success(
-                SampleAnnulment(ERP.Domain.Modules.Retentions.Enums.RetentionAnnulmentStatus.PendingSriResolution));
+                SampleAnnulment(
+                    ERP.Domain
+                        .Modules
+                        .Retentions
+                        .Enums
+                        .RetentionAnnulmentStatus
+                        .PendingSriResolution
+                )
+            );
         });
         var id = Guid.NewGuid();
 
         var response = await controller.SubmitAnnulment(
-            id, new SubmitRetentionAnnulmentRequest(new DateOnly(2026, 9, 20), "T-1", null), CancellationToken.None);
+            id,
+            new SubmitRetentionAnnulmentRequest(new DateOnly(2026, 9, 20), "T-1", null),
+            CancellationToken.None
+        );
 
         response.Should().BeOfType<OkObjectResult>();
         captured!.RequestId.Should().Be(id);
@@ -307,25 +349,44 @@ public sealed class RetentionsControllerTests
         {
             captured = (VerifyRetentionAnnulmentWithSriCommand)req;
             return Result<ERP.Application.Modules.Retentions.DTOs.RetentionAnnulmentRequestDto>.Success(
-                SampleAnnulment(ERP.Domain.Modules.Retentions.Enums.RetentionAnnulmentStatus.PendingSriResolution),
-                ApiResponseCodes.Retentions.SriAnnulmentPending);
+                SampleAnnulment(
+                    ERP.Domain
+                        .Modules
+                        .Retentions
+                        .Enums
+                        .RetentionAnnulmentStatus
+                        .PendingSriResolution
+                ),
+                ApiResponseCodes.Retentions.SriAnnulmentPending
+            );
         });
         var id = Guid.NewGuid();
 
         var response = await controller.VerifyAnnulmentWithSri(id, CancellationToken.None);
 
         captured!.RequestId.Should().Be(id);
-        ((OkObjectResult)response).Value.Should().BeAssignableTo<ApiResponse<ERP.Application.Modules.Retentions.DTOs.RetentionAnnulmentRequestDto>>()
-            .Which.Code.Should().Be(ApiResponseCodes.Retentions.SriAnnulmentPending);
+        ((OkObjectResult)response)
+            .Value.Should()
+            .BeAssignableTo<
+                ApiResponse<ERP.Application.Modules.Retentions.DTOs.RetentionAnnulmentRequestDto>
+            >()
+            .Which.Code.Should()
+            .Be(ApiResponseCodes.Retentions.SriAnnulmentPending);
     }
 
     [Fact]
     public async Task VerifyAnnulmentWithSri_maps_forbidden_to_403()
     {
         var controller = BuildController(_ =>
-            Result<ERP.Application.Modules.Retentions.DTOs.RetentionAnnulmentRequestDto>.Forbidden("sin permiso"));
+            Result<ERP.Application.Modules.Retentions.DTOs.RetentionAnnulmentRequestDto>.Forbidden(
+                "sin permiso"
+            )
+        );
 
-        var response = await controller.VerifyAnnulmentWithSri(Guid.NewGuid(), CancellationToken.None);
+        var response = await controller.VerifyAnnulmentWithSri(
+            Guid.NewGuid(),
+            CancellationToken.None
+        );
 
         ((ObjectResult)response).StatusCode.Should().Be(403);
     }
@@ -333,14 +394,30 @@ public sealed class RetentionsControllerTests
     [Fact]
     public void Test9_no_hay_endpoint_para_declarar_el_estado_fiscal()
     {
-        var actions = typeof(RetentionsController).GetMethods()
-            .Where(m => m.GetCustomAttributes(typeof(Microsoft.AspNetCore.Mvc.HttpPostAttribute), false).Length > 0)
+        var actions = typeof(RetentionsController)
+            .GetMethods()
+            .Where(m =>
+                m.GetCustomAttributes(
+                    typeof(Microsoft.AspNetCore.Mvc.HttpPostAttribute),
+                    false
+                ).Length > 0
+            )
             .ToList();
 
-        actions.Select(m => m.Name).Should().NotContain(n => n.Contains("Resolve", StringComparison.Ordinal));
-        actions.SelectMany(m => m.GetParameters()).SelectMany(p => p.ParameterType.GetProperties())
-            .Where(p => p.PropertyType == typeof(ERP.Domain.Modules.ElectronicDocuments.Enums.SriFiscalStatus)
-                || p.PropertyType == typeof(ERP.Domain.Modules.ElectronicDocuments.Enums.SriFiscalStatus?))
-            .Should().BeEmpty();
+        actions
+            .Select(m => m.Name)
+            .Should()
+            .NotContain(n => n.Contains("Resolve", StringComparison.Ordinal));
+        actions
+            .SelectMany(m => m.GetParameters())
+            .SelectMany(p => p.ParameterType.GetProperties())
+            .Where(p =>
+                p.PropertyType
+                    == typeof(ERP.Domain.Modules.ElectronicDocuments.Enums.SriFiscalStatus)
+                || p.PropertyType
+                    == typeof(ERP.Domain.Modules.ElectronicDocuments.Enums.SriFiscalStatus?)
+            )
+            .Should()
+            .BeEmpty();
     }
 }

@@ -69,7 +69,10 @@ public sealed class SupplierPaymentMethodLine : IMustHaveTenant
     )
     {
         if (paymentMethodId == Guid.Empty)
-            throw new ArgumentException("El medio de pago es obligatorio.", nameof(paymentMethodId));
+            throw new ArgumentException(
+                "El medio de pago es obligatorio.",
+                nameof(paymentMethodId)
+            );
         if (companyBankAccountId is null && cashRegisterId is null)
             throw new ArgumentException(
                 "La caja o cuenta bancaria destino es obligatoria.",
@@ -81,7 +84,10 @@ public sealed class SupplierPaymentMethodLine : IMustHaveTenant
                 nameof(cashRegisterId)
             );
         if (amount <= 0)
-            throw new ArgumentException("El monto del medio de pago debe ser mayor a cero.", nameof(amount));
+            throw new ArgumentException(
+                "El monto del medio de pago debe ser mayor a cero.",
+                nameof(amount)
+            );
         if (companyBankAccountId is not null && transactionDate is null)
             throw new ArgumentException(
                 "La fecha de la transacción bancaria es obligatoria.",
@@ -102,7 +108,9 @@ public sealed class SupplierPaymentMethodLine : IMustHaveTenant
             CompanyBankAccountId = companyBankAccountId,
             CashRegisterId = cashRegisterId,
             Amount = amount,
-            ReferenceNumber = string.IsNullOrWhiteSpace(referenceNumber) ? null : referenceNumber.Trim(),
+            ReferenceNumber = string.IsNullOrWhiteSpace(referenceNumber)
+                ? null
+                : referenceNumber.Trim(),
             CheckNumber = string.IsNullOrWhiteSpace(checkNumber) ? null : checkNumber.Trim(),
             CheckDate = checkDate,
             Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
@@ -124,7 +132,10 @@ public sealed class SupplierPaymentMethodLine : IMustHaveTenant
         if (cashSessionId == Guid.Empty)
             throw new ArgumentException("La sesión de caja es obligatoria.", nameof(cashSessionId));
         if (cashMovementId == Guid.Empty)
-            throw new ArgumentException("El movimiento de caja es obligatorio.", nameof(cashMovementId));
+            throw new ArgumentException(
+                "El movimiento de caja es obligatorio.",
+                nameof(cashMovementId)
+            );
 
         CashSessionId = cashSessionId;
         CashMovementId = cashMovementId;

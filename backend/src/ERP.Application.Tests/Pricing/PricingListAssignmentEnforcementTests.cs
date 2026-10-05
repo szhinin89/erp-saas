@@ -100,24 +100,25 @@ public sealed class PricingListAssignmentEnforcementTests
         );
 
     private static IPricingAdjustmentStrategyResolver RealStrategies() =>
-        new PricingAdjustmentStrategyResolver(new IPricingAdjustmentStrategy[]
-        {
-            new PercentDiscountStrategy(),
-            new PercentMarkupStrategy(),
-            new FixedAdjustmentStrategy(),
-            new FixedPriceStrategy(),
-        });
+        new PricingAdjustmentStrategyResolver(
+            new IPricingAdjustmentStrategy[]
+            {
+                new PercentDiscountStrategy(),
+                new PercentMarkupStrategy(),
+                new FixedAdjustmentStrategy(),
+                new FixedPriceStrategy(),
+            }
+        );
 
     private void SetupItemAndList(Fixture f, Item item, PriceList priceList)
     {
-        f.Items
-            .Setup(r => r.GetByIdLightAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+        f.Items.Setup(r => r.GetByIdLightAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(item);
-        f.PriceLists
-            .Setup(r => r.GetByIdAsync(TenantId, priceList.Id, It.IsAny<CancellationToken>()))
+        f.PriceLists.Setup(r =>
+                r.GetByIdAsync(TenantId, priceList.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(priceList);
-        f.PriceLists
-            .Setup(r => r.GetAllAsync(TenantId, true, null, It.IsAny<CancellationToken>()))
+        f.PriceLists.Setup(r => r.GetAllAsync(TenantId, true, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new[] { priceList });
     }
 
@@ -129,11 +130,18 @@ public sealed class PricingListAssignmentEnforcementTests
         var item = CreateItem(100m);
         var priceList = CreatePriceList(PricingRuleType.PercentMarkup, 20m);
         SetupItemAndList(f, item, priceList);
-        f.Assignments
-            .Setup(a => a.FindByKeyAsync(TenantId, priceList.Id, item.Id, It.IsAny<CancellationToken>()))
+        f.Assignments.Setup(a =>
+                a.FindByKeyAsync(TenantId, priceList.Id, item.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(PriceListItem.Create(TenantId, CompanyId, priceList.Id, item.Id, UserId));
-        f.Rules
-            .Setup(r => r.GetActiveForItemInListAsync(TenantId, priceList.Id, item.Id, It.IsAny<CancellationToken>()))
+        f.Rules.Setup(r =>
+                r.GetActiveForItemInListAsync(
+                    TenantId,
+                    priceList.Id,
+                    item.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync((PricingRule?)null);
         f.Strategies.Setup(s => s.Resolve(It.IsAny<PricingRuleType>()))
             .Returns((PricingRuleType t) => strategies.Resolve(t));
@@ -154,12 +162,27 @@ public sealed class PricingListAssignmentEnforcementTests
         var item = CreateItem(100m);
         var priceList = CreatePriceList(PricingRuleType.PercentMarkup, 20m);
         SetupItemAndList(f, item, priceList);
-        f.Assignments
-            .Setup(a => a.FindByKeyAsync(TenantId, priceList.Id, item.Id, It.IsAny<CancellationToken>()))
+        f.Assignments.Setup(a =>
+                a.FindByKeyAsync(TenantId, priceList.Id, item.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(PriceListItem.Create(TenantId, CompanyId, priceList.Id, item.Id, UserId));
-        var exception = PricingRule.Create(TenantId, CompanyId, priceList.Id, item.Id, PricingRuleType.PercentDiscount, 10m, UserId);
-        f.Rules
-            .Setup(r => r.GetActiveForItemInListAsync(TenantId, priceList.Id, item.Id, It.IsAny<CancellationToken>()))
+        var exception = PricingRule.Create(
+            TenantId,
+            CompanyId,
+            priceList.Id,
+            item.Id,
+            PricingRuleType.PercentDiscount,
+            10m,
+            UserId
+        );
+        f.Rules.Setup(r =>
+                r.GetActiveForItemInListAsync(
+                    TenantId,
+                    priceList.Id,
+                    item.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(exception);
         f.Strategies.Setup(s => s.Resolve(It.IsAny<PricingRuleType>()))
             .Returns((PricingRuleType t) => strategies.Resolve(t));
@@ -179,8 +202,9 @@ public sealed class PricingListAssignmentEnforcementTests
         var item = CreateItem(100m);
         var priceList = CreatePriceList(PricingRuleType.PercentMarkup, 20m);
         SetupItemAndList(f, item, priceList);
-        f.Assignments
-            .Setup(a => a.FindByKeyAsync(TenantId, priceList.Id, item.Id, It.IsAny<CancellationToken>()))
+        f.Assignments.Setup(a =>
+                a.FindByKeyAsync(TenantId, priceList.Id, item.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((PriceListItem?)null);
 
         var result = await f.Build().ResolveAsync(item.Id, priceList.Id, CancellationToken.None);
@@ -191,7 +215,13 @@ public sealed class PricingListAssignmentEnforcementTests
         result.Value!.UnitPrice.Should().Be(100m);
         result.Value!.RuleApplied.Should().BeNull();
         f.Rules.Verify(
-            r => r.GetActiveForItemInListAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            r =>
+                r.GetActiveForItemInListAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }
@@ -205,8 +235,9 @@ public sealed class PricingListAssignmentEnforcementTests
         SetupItemAndList(f, item, priceList);
         var assignment = PriceListItem.Create(TenantId, CompanyId, priceList.Id, item.Id, UserId);
         assignment.Disable(UserId);
-        f.Assignments
-            .Setup(a => a.FindByKeyAsync(TenantId, priceList.Id, item.Id, It.IsAny<CancellationToken>()))
+        f.Assignments.Setup(a =>
+                a.FindByKeyAsync(TenantId, priceList.Id, item.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(assignment);
 
         var result = await f.Build().ResolveAsync(item.Id, priceList.Id, CancellationToken.None);
@@ -225,11 +256,13 @@ public sealed class PricingListAssignmentEnforcementTests
         var otherListId = Guid.NewGuid();
         SetupItemAndList(f, item, priceList);
         // Activo en OTRA lista — no en la que se está resolviendo.
-        f.Assignments
-            .Setup(a => a.FindByKeyAsync(TenantId, otherListId, item.Id, It.IsAny<CancellationToken>()))
+        f.Assignments.Setup(a =>
+                a.FindByKeyAsync(TenantId, otherListId, item.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(PriceListItem.Create(TenantId, CompanyId, otherListId, item.Id, UserId));
-        f.Assignments
-            .Setup(a => a.FindByKeyAsync(TenantId, priceList.Id, item.Id, It.IsAny<CancellationToken>()))
+        f.Assignments.Setup(a =>
+                a.FindByKeyAsync(TenantId, priceList.Id, item.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((PriceListItem?)null);
 
         var result = await f.Build().ResolveAsync(item.Id, priceList.Id, CancellationToken.None);
@@ -255,7 +288,13 @@ public sealed class PricingListAssignmentEnforcementTests
         // Orden correcto: vigencia se evalúa ANTES que asignación — una lista que ya no aplica
         // nunca debería disparar una consulta extra de asignación.
         f.Assignments.Verify(
-            a => a.FindByKeyAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            a =>
+                a.FindByKeyAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }
@@ -269,19 +308,27 @@ public sealed class PricingListAssignmentEnforcementTests
         var item = CreateItem(100m);
         var priceList = CreatePriceList(PricingRuleType.PercentMarkup, 20m, isDefault: true);
         SetupItemAndList(fExplicit, item, priceList);
-        fExplicit.Assignments
-            .Setup(a => a.FindByKeyAsync(TenantId, priceList.Id, item.Id, It.IsAny<CancellationToken>()))
+        fExplicit
+            .Assignments.Setup(a =>
+                a.FindByKeyAsync(TenantId, priceList.Id, item.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((PriceListItem?)null);
 
-        var resultExplicit = await fExplicit.Build().ResolveAsync(item.Id, priceList.Id, CancellationToken.None);
+        var resultExplicit = await fExplicit
+            .Build()
+            .ResolveAsync(item.Id, priceList.Id, CancellationToken.None);
 
         var fDefault = new Fixture();
         SetupItemAndList(fDefault, item, priceList);
-        fDefault.Assignments
-            .Setup(a => a.FindByKeyAsync(TenantId, priceList.Id, item.Id, It.IsAny<CancellationToken>()))
+        fDefault
+            .Assignments.Setup(a =>
+                a.FindByKeyAsync(TenantId, priceList.Id, item.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((PriceListItem?)null);
 
-        var resultDefault = await fDefault.Build().ResolveAsync(item.Id, null, CancellationToken.None);
+        var resultDefault = await fDefault
+            .Build()
+            .ResolveAsync(item.Id, null, CancellationToken.None);
 
         resultExplicit.IsSuccess.Should().BeTrue();
         resultDefault.IsSuccess.Should().BeTrue();
@@ -300,8 +347,9 @@ public sealed class PricingListAssignmentEnforcementTests
         // Ninguna configuración para TenantId → Moq devuelve el default (null) para cualquier
         // combinación no configurada explícitamente, incluida otra tenant — fail-closed por
         // ausencia de match, igual que ForOperationalScope a nivel de repositorio real.
-        f.Assignments
-            .Setup(a => a.FindByKeyAsync(TenantId, priceList.Id, item.Id, It.IsAny<CancellationToken>()))
+        f.Assignments.Setup(a =>
+                a.FindByKeyAsync(TenantId, priceList.Id, item.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((PriceListItem?)null);
 
         var result = await f.Build().ResolveAsync(item.Id, priceList.Id, CancellationToken.None);

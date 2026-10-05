@@ -35,8 +35,12 @@ public sealed class Bank : MasterEntity, ITenantScopedEntity
         string countryCode = DefaultCountryCode
     )
     {
-        var (normalizedCountryCode, normalizedCode, normalizedName, normalizedShortName) =
-            Validate(countryCode, code, name, shortName);
+        var (normalizedCountryCode, normalizedCode, normalizedName, normalizedShortName) = Validate(
+            countryCode,
+            code,
+            name,
+            shortName
+        );
 
         var bank = new Bank
         {
@@ -88,12 +92,12 @@ public sealed class Bank : MasterEntity, ITenantScopedEntity
         SetUpdated(updatedBy);
     }
 
-    private static (
-        string CountryCode,
-        string Code,
-        string Name,
-        string? ShortName
-    ) Validate(string countryCode, string code, string name, string? shortName)
+    private static (string CountryCode, string Code, string Name, string? ShortName) Validate(
+        string countryCode,
+        string code,
+        string name,
+        string? shortName
+    )
     {
         if (string.IsNullOrWhiteSpace(countryCode))
             throw new ArgumentException("El país es obligatorio.", nameof(countryCode));

@@ -1,3 +1,4 @@
+using System.Xml.Schema;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Common.Interfaces.SRI;
@@ -13,7 +14,6 @@ using ERP.Domain.Modules.ElectronicDocuments.Interfaces;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using System.Xml.Schema;
 
 namespace ERP.Application.Tests.ElectronicDocuments;
 
@@ -148,7 +148,10 @@ public sealed class ElectronicDocumentIssuerRetentionTests
             )
             .ReturnsAsync(
                 Result<ElectronicDocumentStoredXmlPaths>.Success(
-                    new ElectronicDocumentStoredXmlPaths("draft/retention.xml", "signed/retention.xml")
+                    new ElectronicDocumentStoredXmlPaths(
+                        "draft/retention.xml",
+                        "signed/retention.xml"
+                    )
                 )
             );
 
@@ -214,7 +217,14 @@ public sealed class ElectronicDocumentIssuerRetentionTests
     }
 
     private static RegisterElectronicDocumentRequest SampleRequest() =>
-        new(TenantId, CompanyId, ElectronicDocumentType.Retention, "Retentions", SourceEntityId, UserId);
+        new(
+            TenantId,
+            CompanyId,
+            ElectronicDocumentType.Retention,
+            "Retentions",
+            SourceEntityId,
+            UserId
+        );
 
     [Fact]
     public async Task RegisterAsync_processes_retention_through_the_supplier_without_touching_the_commercial_path()

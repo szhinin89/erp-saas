@@ -37,7 +37,9 @@ public sealed class SupplierPaymentReversedPostingTranslatorTests
 
         public void RegisterCashRegister(CashRegister cashRegister) =>
             CashRegisters
-                .Setup(r => r.GetByIdAsync(TenantId, cashRegister.Id, It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetByIdAsync(TenantId, cashRegister.Id, It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(cashRegister);
     }
 
@@ -57,8 +59,10 @@ public sealed class SupplierPaymentReversedPostingTranslatorTests
         return destination;
     }
 
-    private static SupplierPaymentConfirmedMethodLine CashLine(CashRegister destination, decimal amount) =>
-        new(null, destination.Id, amount);
+    private static SupplierPaymentConfirmedMethodLine CashLine(
+        CashRegister destination,
+        decimal amount
+    ) => new(null, destination.Id, amount);
 
     private static SupplierPaymentReversedEvent Event(
         IReadOnlyList<SupplierPaymentConfirmedMethodLine> methodLines,
@@ -85,11 +89,14 @@ public sealed class SupplierPaymentReversedPostingTranslatorTests
         m.RegisterCashRegister(destination);
 
         PostingFact? captured = null;
-        m.PostingEngine
-            .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
+        m.PostingEngine.Setup(e =>
+                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
+            )
             .Callback<PostingFact, CancellationToken>((fact, _) => captured = fact)
             .ReturnsAsync(
-                Result<PostingOutcomeDto>.Success(new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created))
+                Result<PostingOutcomeDto>.Success(
+                    new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)
+                )
             );
 
         var supplierPaymentId = Guid.NewGuid();
@@ -101,12 +108,16 @@ public sealed class SupplierPaymentReversedPostingTranslatorTests
         captured!.SourceModule.Should().Be("Payables");
         captured.FactType.Should().Be("SupplierPaymentReversed");
         captured.SourceEventId.Should().Be(supplierPaymentId);
-        captured.GrandTotal.Should().Be(300m, "el Haber de CxP se resuelve vía PostingRule con GrandTotal");
+        captured
+            .GrandTotal.Should()
+            .Be(300m, "el Haber de CxP se resuelve vía PostingRule con GrandTotal");
         captured.Allocations.Should().ContainSingle();
         var allocation = captured.Allocations!.Single();
         allocation.AccountingAccountId.Should().Be(destination.AccountingAccountId!.Value);
         allocation.Amount.Should().Be(300m);
-        allocation.Nature.Should().Be(AccountNature.Debit, "el reverso invierte: Debe caja/banco, Haber CxP");
+        allocation
+            .Nature.Should()
+            .Be(AccountNature.Debit, "el reverso invierte: Debe caja/banco, Haber CxP");
     }
 
     [Fact]
@@ -119,17 +130,17 @@ public sealed class SupplierPaymentReversedPostingTranslatorTests
         m.RegisterCashRegister(destinationB);
 
         PostingFact? captured = null;
-        m.PostingEngine
-            .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
+        m.PostingEngine.Setup(e =>
+                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
+            )
             .Callback<PostingFact, CancellationToken>((fact, _) => captured = fact)
             .ReturnsAsync(
-                Result<PostingOutcomeDto>.Success(new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created))
+                Result<PostingOutcomeDto>.Success(
+                    new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)
+                )
             );
 
-        var evt = Event(
-            new[] { CashLine(destinationA, 100m), CashLine(destinationB, 200m) },
-            300m
-        );
+        var evt = Event(new[] { CashLine(destinationA, 100m), CashLine(destinationB, 200m) }, 300m);
 
         await m.BuildTranslator().Handle(evt, CancellationToken.None);
 
@@ -144,10 +155,13 @@ public sealed class SupplierPaymentReversedPostingTranslatorTests
         var m = new Mocks();
         var destination = Destination();
         m.RegisterCashRegister(destination);
-        m.PostingEngine
-            .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
+        m.PostingEngine.Setup(e =>
+                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(
-                Result<PostingOutcomeDto>.Success(new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created))
+                Result<PostingOutcomeDto>.Success(
+                    new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)
+                )
             );
 
         var evt = Event(new[] { CashLine(destination, 100m) }, 100m);
@@ -163,10 +177,14 @@ public sealed class SupplierPaymentReversedPostingTranslatorTests
         var m = new Mocks();
         var destination = Destination();
         m.RegisterCashRegister(destination);
-        m.PostingEngine
-            .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
+        m.PostingEngine.Setup(e =>
+                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(
-                Result<PostingOutcomeDto>.ValidationFailure("No existe regla de contabilización.", "RULE_NOT_FOUND")
+                Result<PostingOutcomeDto>.ValidationFailure(
+                    "No existe regla de contabilización.",
+                    "RULE_NOT_FOUND"
+                )
             );
 
         var evt = Event(new[] { CashLine(destination, 100m) }, 100m);

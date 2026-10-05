@@ -78,7 +78,7 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
     /// </summary>
     public SriTaxCalculationType IceCalculationType =>
         _taxes.FirstOrDefault(t => t.TaxCode == IceSriTaxCode)?.CalculationType
-            ?? SriTaxCalculationType.Percentage;
+        ?? SriTaxCalculationType.Percentage;
 
     // ── Impuestos por línea (FLOW-READY-02F.1) — snapshot fiel del XML, incluye IVA/ICE/IRBPNR ──
     private readonly List<PurchaseInvoiceDetailTax> _taxes = new();
@@ -94,16 +94,19 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
     public decimal? IrbpnrRate => _taxes.FirstOrDefault(t => t.TaxCode == IrbpnrSriTaxCode)?.Rate;
     public string? SnapshotIrbpnrName =>
         _taxes.FirstOrDefault(t => t.TaxCode == IrbpnrSriTaxCode)?.TaxName;
-    public decimal IrbpnrAmount => _taxes.Where(t => t.TaxCode == IrbpnrSriTaxCode).Sum(t => t.TaxAmount);
+    public decimal IrbpnrAmount =>
+        _taxes.Where(t => t.TaxCode == IrbpnrSriTaxCode).Sum(t => t.TaxAmount);
 
     /// <summary>Monto exacto de IVA tal como vino en el XML (Source=Xml) — snapshot fiel del comprobante.</summary>
     public decimal? XmlVatAmount =>
-        _taxes.FirstOrDefault(t => t.TaxCode == VatSriTaxCode && t.Source == PurchaseTaxSource.Xml)
+        _taxes
+            .FirstOrDefault(t => t.TaxCode == VatSriTaxCode && t.Source == PurchaseTaxSource.Xml)
             ?.TaxAmount;
 
     /// <summary>Monto exacto de ICE tal como vino en el XML (Source=Xml) — snapshot fiel del comprobante.</summary>
     public decimal? XmlIceAmount =>
-        _taxes.FirstOrDefault(t => t.TaxCode == IceSriTaxCode && t.Source == PurchaseTaxSource.Xml)
+        _taxes
+            .FirstOrDefault(t => t.TaxCode == IceSriTaxCode && t.Source == PurchaseTaxSource.Xml)
             ?.TaxAmount;
 
     // ── Warehouse (logistic reference) ──────────────────────────────────
@@ -311,7 +314,8 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
         // catálogo SRI hagan que la compra deje de cuadrar contra el comprobante original. Aplica en
         // Create/Update/Confirm/DistributeCost por igual, sin tocar esos call sites.
         var xmlVatAmount = XmlVatAmount;
-        var xmlIceAmount = iceCalculationType == SriTaxCalculationType.Percentage ? XmlIceAmount : null;
+        var xmlIceAmount =
+            iceCalculationType == SriTaxCalculationType.Percentage ? XmlIceAmount : null;
 
         VatCode = vatCode.Trim();
         VatRate = vatRate;
@@ -535,7 +539,8 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
     /// </summary>
     private void SyncVatIntoCollection()
     {
-        var vatSource = _taxes.FirstOrDefault(t => t.TaxCode == VatSriTaxCode)?.Source
+        var vatSource =
+            _taxes.FirstOrDefault(t => t.TaxCode == VatSriTaxCode)?.Source
             ?? PurchaseTaxSource.Calculated;
         UpsertTaxRow(
             VatSriTaxCode,

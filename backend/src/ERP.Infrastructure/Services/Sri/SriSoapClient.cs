@@ -1,11 +1,11 @@
+using System.Text;
+using System.Xml;
 using ERP.Application.Common.Config;
 using ERP.Application.Common.Interfaces.SRI;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.ElectronicDocuments.ValueObjects;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Text;
-using System.Xml;
 
 namespace ERP.Infrastructure.Services.Sri;
 
@@ -250,7 +250,11 @@ public sealed partial class SriSoapClient
         SoapPostResult posted;
         try
         {
-            posted = await PostSoapCoreAsync(endpointUrl, BuildConsultaEnvelope(accessKey), cancellationToken);
+            posted = await PostSoapCoreAsync(
+                endpointUrl,
+                BuildConsultaEnvelope(accessKey),
+                cancellationToken
+            );
         }
         catch (SriSoapFaultException ex)
         {
@@ -266,7 +270,9 @@ public sealed partial class SriSoapClient
             var timedOut = posted.Failure == SoapTransportFailure.Timeout;
             return new SriDocumentStatusResult
             {
-                Outcome = timedOut ? SriStatusQueryOutcome.Timeout : SriStatusQueryOutcome.Unavailable,
+                Outcome = timedOut
+                    ? SriStatusQueryOutcome.Timeout
+                    : SriStatusQueryOutcome.Unavailable,
                 ErrorMessage = timedOut
                     ? "El servicio de consulta del SRI no respondió a tiempo."
                     : "No se pudo contactar al servicio de consulta del SRI."
@@ -284,7 +290,8 @@ public sealed partial class SriSoapClient
             return new SriDocumentStatusResult
             {
                 Outcome = SriStatusQueryOutcome.Unknown,
-                ErrorMessage = "El SRI respondió con un contenido que no pudo interpretarse como XML válido.",
+                ErrorMessage =
+                    "El SRI respondió con un contenido que no pudo interpretarse como XML válido.",
                 RawResponse = posted.Body,
             };
         }
@@ -345,7 +352,9 @@ public sealed partial class SriSoapClient
               <soapenv:Header/>
               <soapenv:Body>
                 <ec:consultarEstadoAutorizacionComprobante>
-                  <claveAcceso>{System.Security.SecurityElement.Escape(accessKey.Trim())}</claveAcceso>
+                  <claveAcceso>{System.Security.SecurityElement.Escape(
+                accessKey.Trim()
+            )}</claveAcceso>
                 </ec:consultarEstadoAutorizacionComprobante>
               </soapenv:Body>
             </soapenv:Envelope>
@@ -391,7 +400,11 @@ public sealed partial class SriSoapClient
         HttpStatus = 3,
     }
 
-    private readonly record struct SoapPostResult(string? Body, SoapTransportFailure Failure, string? Detail);
+    private readonly record struct SoapPostResult(
+        string? Body,
+        SoapTransportFailure Failure,
+        string? Detail
+    );
 
     /// <summary>
     /// Mismo POST/reintentos/SOAP Fault que <see cref="PostSoapAsync"/> (que delega aquí), pero
@@ -627,7 +640,10 @@ public sealed partial class SriSoapClient
     /// RECHAZADA en cualquiera de los dos se trata como consulta rechazada, NUNCA como estado fiscal.
     /// Una respuesta para otra clave de acceso se descarta (Unknown).
     /// </summary>
-    private static SriDocumentStatusResult ParseConsultaResponse(string soap, string requestedAccessKey)
+    private static SriDocumentStatusResult ParseConsultaResponse(
+        string soap,
+        string requestedAccessKey
+    )
     {
         var doc = LoadXml(soap);
         var messages = SelectMensajeNodes(doc).Select(ToSriMessage).ToList();
@@ -675,7 +691,9 @@ public sealed partial class SriSoapClient
 
         return new SriDocumentStatusResult
         {
-            Outcome = fiscal is null ? SriStatusQueryOutcome.Unknown : SriStatusQueryOutcome.Success,
+            Outcome = fiscal is null
+                ? SriStatusQueryOutcome.Unknown
+                : SriStatusQueryOutcome.Success,
             FiscalStatus = fiscal ?? SriFiscalStatus.Unknown,
             RawAuthorizationStatus = rawAuthorizationStatus,
             RawQueryStatus = rawQueryStatus,
@@ -753,7 +771,10 @@ public sealed partial class SriSoapClient
         if (string.IsNullOrWhiteSpace(wsdlUrl))
             return null;
         var recepcion = RecepcionEndpoint(wsdlUrl);
-        return recepcion.Contains("RecepcionComprobantesOffline", StringComparison.OrdinalIgnoreCase)
+        return recepcion.Contains(
+            "RecepcionComprobantesOffline",
+            StringComparison.OrdinalIgnoreCase
+        )
             ? recepcion.Replace(
                 "RecepcionComprobantesOffline",
                 "ConsultaComprobante",
@@ -786,7 +807,10 @@ public sealed partial class SriSoapClient
     )]
     private partial void LogSriCheckingAuthorization(int n, int max, string key);
 
-    [LoggerMessage(Level = LogLevel.Debug, Message = "[SRI] Consultando estado (ConsultaComprobante): {Key}")]
+    [LoggerMessage(
+        Level = LogLevel.Debug,
+        Message = "[SRI] Consultando estado (ConsultaComprobante): {Key}"
+    )]
     private partial void LogSriQueryingStatus(string key);
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "[SRI] Estado: {Estado} — esperando {Delay}s")]

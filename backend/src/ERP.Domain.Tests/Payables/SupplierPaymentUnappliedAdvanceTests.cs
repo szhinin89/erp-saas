@@ -71,7 +71,13 @@ public sealed class SupplierPaymentUnappliedAdvanceTests
     public void Pago_parcial_de_una_cuota_es_valido_sin_remanente()
     {
         // Cuota con saldo 180, pago 100 aplicado completo a la cuota (pago parcial de la deuda).
-        var payment = Create(100m, [Bank(100m)], [new(Guid.NewGuid(), 100m)], [new(0, 0, 100m)], confirm: false);
+        var payment = Create(
+            100m,
+            [Bank(100m)],
+            [new(Guid.NewGuid(), 100m)],
+            [new(0, 0, 100m)],
+            confirm: false
+        );
 
         payment.UnappliedAmount.Should().Be(0m);
     }
@@ -79,7 +85,13 @@ public sealed class SupplierPaymentUnappliedAdvanceTests
     [Fact]
     public void Excedente_confirmado_deriva_Applied_y_Unapplied_exactos_y_los_publica_en_el_evento()
     {
-        var payment = Create(200m, [Bank(200m)], [new(Guid.NewGuid(), 180m)], [new(0, 0, 180m)], confirm: true);
+        var payment = Create(
+            200m,
+            [Bank(200m)],
+            [new(Guid.NewGuid(), 180m)],
+            [new(0, 0, 180m)],
+            confirm: true
+        );
 
         payment.Status.Should().Be(SupplierPaymentStatus.Confirmed);
         payment.AppliedAmount.Should().Be(180m);
@@ -93,7 +105,14 @@ public sealed class SupplierPaymentUnappliedAdvanceTests
     [Fact]
     public void Excedente_sin_confirmacion_explicita_lanza()
     {
-        var act = () => Create(200m, [Bank(200m)], [new(Guid.NewGuid(), 180m)], [new(0, 0, 180m)], confirm: false);
+        var act = () =>
+            Create(
+                200m,
+                [Bank(200m)],
+                [new(Guid.NewGuid(), 180m)],
+                [new(0, 0, 180m)],
+                confirm: false
+            );
 
         act.Should().Throw<DomainRuleViolationException>().WithMessage("*20.00 sin aplicar*");
     }
@@ -101,7 +120,14 @@ public sealed class SupplierPaymentUnappliedAdvanceTests
     [Fact]
     public void Aplicaciones_mayores_al_total_lanzan()
     {
-        var act = () => Create(100m, [Bank(100m)], [new(Guid.NewGuid(), 120m)], [new(0, 0, 100m)], confirm: true);
+        var act = () =>
+            Create(
+                100m,
+                [Bank(100m)],
+                [new(Guid.NewGuid(), 120m)],
+                [new(0, 0, 100m)],
+                confirm: true
+            );
 
         act.Should().Throw<DomainRuleViolationException>();
     }
@@ -109,7 +135,8 @@ public sealed class SupplierPaymentUnappliedAdvanceTests
     [Fact]
     public void Sin_aplicaciones_y_sin_politica_de_empresa_lanza_aunque_se_confirme()
     {
-        var act = () => Create(200m, [Bank(200m)], [], [], confirm: true, allowWithoutPayable: false);
+        var act = () =>
+            Create(200m, [Bank(200m)], [], [], confirm: true, allowWithoutPayable: false);
 
         act.Should().Throw<ArgumentException>().WithMessage("*sin una cuenta por pagar*");
     }
@@ -122,13 +149,18 @@ public sealed class SupplierPaymentUnappliedAdvanceTests
         payment.AppliedAmount.Should().Be(0m);
         payment.UnappliedAmount.Should().Be(200m);
         payment.AllocationLines.Should().BeEmpty();
-        payment.DomainEvents.OfType<SupplierPaymentConfirmedEvent>().Single().AppliedAmount.Should().Be(0m);
+        payment
+            .DomainEvents.OfType<SupplierPaymentConfirmedEvent>()
+            .Single()
+            .AppliedAmount.Should()
+            .Be(0m);
     }
 
     [Fact]
     public void Sin_aplicaciones_con_politica_pero_sin_confirmar_lanza()
     {
-        var act = () => Create(200m, [Bank(200m)], [], [], confirm: false, allowWithoutPayable: true);
+        var act = () =>
+            Create(200m, [Bank(200m)], [], [], confirm: false, allowWithoutPayable: true);
 
         act.Should().Throw<DomainRuleViolationException>();
     }
@@ -136,7 +168,15 @@ public sealed class SupplierPaymentUnappliedAdvanceTests
     [Fact]
     public void Sin_aplicaciones_no_admite_distribuciones()
     {
-        var act = () => Create(200m, [Bank(200m)], [], [new(0, 0, 50m)], confirm: true, allowWithoutPayable: true);
+        var act = () =>
+            Create(
+                200m,
+                [Bank(200m)],
+                [],
+                [new(0, 0, 50m)],
+                confirm: true,
+                allowWithoutPayable: true
+            );
 
         act.Should().Throw<ArgumentException>();
     }
@@ -171,16 +211,33 @@ public sealed class SupplierPaymentUnappliedAdvanceTests
 
         payment.UnappliedAmount.Should().Be(50m);
         var bank = payment.MethodLines[1];
-        (bank.Amount - payment.AllocationLines.Where(a => a.SupplierPaymentMethodLineId == bank.Id).Sum(a => a.Amount))
-            .Should().Be(50m);
+        (
+            bank.Amount
+            - payment
+                .AllocationLines.Where(a => a.SupplierPaymentMethodLineId == bank.Id)
+                .Sum(a => a.Amount)
+        )
+            .Should()
+            .Be(50m);
     }
 
     [Fact]
     public void Reversa_publica_Applied_del_pago_original()
     {
-        var payment = Create(200m, [Bank(200m)], [new(Guid.NewGuid(), 180m)], [new(0, 0, 180m)], confirm: true);
+        var payment = Create(
+            200m,
+            [Bank(200m)],
+            [new(Guid.NewGuid(), 180m)],
+            [new(0, 0, 180m)],
+            confirm: true
+        );
 
-        payment.Reverse("Error", CreatedBy, DateTime.UtcNow, bankReversalReason: SupplierPaymentBankReversalReason.NotExecuted);
+        payment.Reverse(
+            "Error",
+            CreatedBy,
+            DateTime.UtcNow,
+            bankReversalReason: SupplierPaymentBankReversalReason.NotExecuted
+        );
 
         var evt = payment.DomainEvents.OfType<SupplierPaymentReversedEvent>().Single();
         evt.AppliedAmount.Should().Be(180m);

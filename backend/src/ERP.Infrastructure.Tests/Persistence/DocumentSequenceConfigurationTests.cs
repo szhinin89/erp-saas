@@ -176,8 +176,11 @@ public sealed class DocumentSequenceConfigurationTests : IAsyncLifetime
         var existing = await repo.GetByEmissionPointAndDocTypeAsync(epId, "07");
 
         existing.Should().NotBeNull();
-        existing!.HasBeenUsed.Should()
-            .BeTrue("CaptureNextAsync ya entregó un número real, aunque nunca pasó por CaptureAndIncrement()");
+        existing!
+            .HasBeenUsed.Should()
+            .BeTrue(
+                "CaptureNextAsync ya entregó un número real, aunque nunca pasó por CaptureAndIncrement()"
+            );
 
         var act = () => existing.ConfigureNextNumber(9000);
 

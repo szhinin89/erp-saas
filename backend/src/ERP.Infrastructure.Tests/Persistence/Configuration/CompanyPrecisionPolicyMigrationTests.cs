@@ -32,7 +32,9 @@ public sealed class CompanyPrecisionPolicyMigrationTests : IAsyncLifetime
 
     private ErpDbContext CreateContext(Guid tenantId = default, Guid companyId = default) =>
         new(
-            new DbContextOptionsBuilder<ErpDbContext>().UseNpgsql(_postgres.GetConnectionString()).Options,
+            new DbContextOptionsBuilder<ErpDbContext>()
+                .UseNpgsql(_postgres.GetConnectionString())
+                .Options,
             new FixedCurrentTenant(tenantId),
             new NoOpPublisher(),
             new FixedCurrentCompany(companyId)
@@ -77,8 +79,18 @@ public sealed class CompanyPrecisionPolicyMigrationTests : IAsyncLifetime
 
         var createdBy = Guid.NewGuid();
         var tenant = Tenant.Create("Test Tenant 4", $"test-{Guid.NewGuid():N}"[..16], createdBy);
-        var companyA = Company.CreateManaged(tenant.Id, "1790012345004", "A S.A.", createdBy: createdBy);
-        var companyB = Company.CreateManaged(tenant.Id, "1790012345005", "B S.A.", createdBy: createdBy);
+        var companyA = Company.CreateManaged(
+            tenant.Id,
+            "1790012345004",
+            "A S.A.",
+            createdBy: createdBy
+        );
+        var companyB = Company.CreateManaged(
+            tenant.Id,
+            "1790012345005",
+            "B S.A.",
+            createdBy: createdBy
+        );
         db.Tenants.Add(tenant);
         db.Companies.AddRange(companyA, companyB);
         await db.SaveChangesAsync();

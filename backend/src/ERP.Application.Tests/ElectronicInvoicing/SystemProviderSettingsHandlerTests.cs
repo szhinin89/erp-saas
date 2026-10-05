@@ -31,9 +31,11 @@ public sealed class SystemProviderSettingsHandlerTests
     public async Task Get_sin_registro_devuelve_valores_por_defecto_no_configurado()
     {
         var f = new Fixture();
-        f.Repo.Setup(r => r.GetAsync(It.IsAny<CancellationToken>())).ReturnsAsync((SystemProviderSettings?)null);
+        f.Repo.Setup(r => r.GetAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync((SystemProviderSettings?)null);
 
-        var result = await f.BuildGetHandler().Handle(new GetSystemProviderSettingsQuery(), CancellationToken.None);
+        var result = await f.BuildGetHandler()
+            .Handle(new GetSystemProviderSettingsQuery(), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.IsFullyConfigured.Should().BeFalse();
@@ -44,7 +46,8 @@ public sealed class SystemProviderSettingsHandlerTests
     public async Task Upsert_primera_vez_crea_el_singleton()
     {
         var f = new Fixture();
-        f.Repo.Setup(r => r.GetAsync(It.IsAny<CancellationToken>())).ReturnsAsync((SystemProviderSettings?)null);
+        f.Repo.Setup(r => r.GetAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync((SystemProviderSettings?)null);
 
         var result = await f.BuildUpsertHandler()
             .Handle(
@@ -61,7 +64,10 @@ public sealed class SystemProviderSettingsHandlerTests
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.Enabled.Should().BeTrue();
         result.Value.IsFullyConfigured.Should().BeTrue();
-        f.Repo.Verify(r => r.AddAsync(It.IsAny<SystemProviderSettings>(), It.IsAny<CancellationToken>()), Times.Once);
+        f.Repo.Verify(
+            r => r.AddAsync(It.IsAny<SystemProviderSettings>(), It.IsAny<CancellationToken>()),
+            Times.Once
+        );
         f.Repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -69,7 +75,8 @@ public sealed class SystemProviderSettingsHandlerTests
     public async Task Upsert_habilitar_sin_datos_completos_devuelve_ValidationFailure()
     {
         var f = new Fixture();
-        f.Repo.Setup(r => r.GetAsync(It.IsAny<CancellationToken>())).ReturnsAsync((SystemProviderSettings?)null);
+        f.Repo.Setup(r => r.GetAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync((SystemProviderSettings?)null);
 
         var result = await f.BuildUpsertHandler()
             .HandleWithDomainRules(
@@ -78,7 +85,10 @@ public sealed class SystemProviderSettingsHandlerTests
             );
 
         result.IsSuccess.Should().BeFalse();
-        f.Repo.Verify(r => r.AddAsync(It.IsAny<SystemProviderSettings>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.Repo.Verify(
+            r => r.AddAsync(It.IsAny<SystemProviderSettings>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -101,7 +111,10 @@ public sealed class SystemProviderSettingsHandlerTests
             );
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        f.Repo.Verify(r => r.AddAsync(It.IsAny<SystemProviderSettings>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.Repo.Verify(
+            r => r.AddAsync(It.IsAny<SystemProviderSettings>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
         f.Repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -113,14 +126,22 @@ public sealed class SystemProviderSettingsHandlerTests
     public void Validator_rechaza_habilitar_sin_EffectiveDate_y_asocia_el_error_al_campo()
     {
         var result = Validator.Validate(
-            new UpsertSystemProviderSettingsCommand("1790012345001", "ZH Technologies S.A.", "J62021002", null, Enabled: true)
+            new UpsertSystemProviderSettingsCommand(
+                "1790012345001",
+                "ZH Technologies S.A.",
+                "J62021002",
+                null,
+                Enabled: true
+            )
         );
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().ContainSingle(e =>
-            e.PropertyName == nameof(UpsertSystemProviderSettingsCommand.EffectiveDate)
-            && e.ErrorMessage == SystemProviderSettings.EnabledWithoutEffectiveDateMessage
-        );
+        result
+            .Errors.Should()
+            .ContainSingle(e =>
+                e.PropertyName == nameof(UpsertSystemProviderSettingsCommand.EffectiveDate)
+                && e.ErrorMessage == SystemProviderSettings.EnabledWithoutEffectiveDateMessage
+            );
     }
 
     [Theory]
@@ -129,18 +150,34 @@ public sealed class SystemProviderSettingsHandlerTests
     public void Validator_rechaza_habilitar_con_RUC_invalido(string ruc)
     {
         var result = Validator.Validate(
-            new UpsertSystemProviderSettingsCommand(ruc, "ZH Technologies S.A.", "J62021002", new DateOnly(2026, 11, 3), Enabled: true)
+            new UpsertSystemProviderSettingsCommand(
+                ruc,
+                "ZH Technologies S.A.",
+                "J62021002",
+                new DateOnly(2026, 11, 3),
+                Enabled: true
+            )
         );
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(UpsertSystemProviderSettingsCommand.Ruc));
+        result
+            .Errors.Should()
+            .Contain(e => e.PropertyName == nameof(UpsertSystemProviderSettingsCommand.Ruc));
     }
 
     [Fact]
     public void Validator_permite_deshabilitado_sin_EffectiveDate()
     {
         Validator
-            .Validate(new UpsertSystemProviderSettingsCommand("1790012345001", null, null, null, Enabled: false))
+            .Validate(
+                new UpsertSystemProviderSettingsCommand(
+                    "1790012345001",
+                    null,
+                    null,
+                    null,
+                    Enabled: false
+                )
+            )
             .IsValid.Should()
             .BeTrue();
     }
@@ -154,7 +191,13 @@ public sealed class SystemProviderSettingsHandlerTests
 
         var result = await f.BuildUpsertHandler()
             .HandleWithDomainRules(
-                new UpsertSystemProviderSettingsCommand("1790012345001", "ZH Technologies S.A.", "J62021002", null, Enabled: true),
+                new UpsertSystemProviderSettingsCommand(
+                    "1790012345001",
+                    "ZH Technologies S.A.",
+                    "J62021002",
+                    null,
+                    Enabled: true
+                ),
                 CancellationToken.None
             );
 

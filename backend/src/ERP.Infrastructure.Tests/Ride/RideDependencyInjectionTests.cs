@@ -45,7 +45,10 @@ public sealed class RideDependencyInjectionTests
     private static ServiceProvider BuildProvider()
     {
         var services = new ServiceCollection();
-        services.AddScoped<ERP.Application.Common.Services.ICompanyClock, ERP.Infrastructure.Persistence.Services.CompanyClock>();
+        services.AddScoped<
+            ERP.Application.Common.Services.ICompanyClock,
+            ERP.Infrastructure.Persistence.Services.CompanyClock
+        >();
         var configuration = new ConfigurationBuilder().Build();
 
         services.AddSingleton<IConfiguration>(configuration);
@@ -112,7 +115,10 @@ public sealed class RideDependencyInjectionTests
         services.AddScoped<IRidePdfDocumentRepository, RidePdfDocumentRepository>();
         services.AddScoped<IRideXmlParserResolver, RideXmlParserResolver>();
         services.AddScoped<IRideXmlParser, InvoiceRideXmlParser>();
-        services.AddScoped<ERP.Application.Modules.Companies.ICompanyPrecisionPolicyRepository, ERP.Infrastructure.Persistence.Repositories.CompanyConfig.CompanyPrecisionPolicyRepository>();
+        services.AddScoped<
+            ERP.Application.Modules.Companies.ICompanyPrecisionPolicyRepository,
+            ERP.Infrastructure.Persistence.Repositories.CompanyConfig.CompanyPrecisionPolicyRepository
+        >();
         services.AddScoped<IRideTemplateResolver, RideTemplateResolver>();
         services.AddScoped<IRideTemplate, DefaultInvoiceRideTemplate>();
         services.AddScoped<IRideSourceXmlProvider, ElectronicDocumentRideSourceXmlProvider>();

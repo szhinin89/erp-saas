@@ -169,19 +169,36 @@ public sealed class SwitchBranchHandlerTests
         var userId = Guid.NewGuid();
         var oldBranchId = Guid.NewGuid();
 
-        var activeSession = UserSession.Create(tenantId, companyId, userId, oldBranchId, "terminal-1");
-        f.UserSessions
-            .Setup(r => r.GetActiveSessionsAsync(userId, tenantId, It.IsAny<CancellationToken>()))
+        var activeSession = UserSession.Create(
+            tenantId,
+            companyId,
+            userId,
+            oldBranchId,
+            "terminal-1"
+        );
+        f.UserSessions.Setup(r =>
+                r.GetActiveSessionsAsync(userId, tenantId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { activeSession });
         f.Guard.Setup(g => g.RequireBranchAsync(newBranchId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(
                 Result<BranchAccessContext>.Success(
-                    new BranchAccessContext(userId, tenantId, companyId, newBranchId, "Sucursal Norte", false)
+                    new BranchAccessContext(
+                        userId,
+                        tenantId,
+                        companyId,
+                        newBranchId,
+                        "Sucursal Norte",
+                        false
+                    )
                 )
             );
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new SwitchBranchCommand(newBranchId), CancellationToken.None);
+        var result = await handler.Handle(
+            new SwitchBranchCommand(newBranchId),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         activeSession.BranchId.Should().Be(newBranchId);
@@ -217,13 +234,17 @@ public sealed class SwitchBranchHandlerTests
             );
 
         UserSession? created = null;
-        f.UserSessions
-            .Setup(r => r.AddAsync(It.IsAny<UserSession>(), It.IsAny<CancellationToken>()))
+        f.UserSessions.Setup(r =>
+                r.AddAsync(It.IsAny<UserSession>(), It.IsAny<CancellationToken>())
+            )
             .Callback<UserSession, CancellationToken>((s, _) => created = s)
             .Returns(Task.CompletedTask);
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new SwitchBranchCommand(branchId), CancellationToken.None);
+        var result = await handler.Handle(
+            new SwitchBranchCommand(branchId),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         f.UserSessions.Verify(
@@ -255,7 +276,8 @@ public sealed class SwitchBranchHandlerTests
         f.Guard.Setup(g => g.RequireBranchAsync(branchId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<BranchAccessContext>.Failure("rechazo", code));
 
-        var result = await f.BuildHandler().Handle(new SwitchBranchCommand(branchId), CancellationToken.None);
+        var result = await f.BuildHandler()
+            .Handle(new SwitchBranchCommand(branchId), CancellationToken.None);
 
         (result.Code, result.Error).Should().Be((code, "rechazo"));
     }

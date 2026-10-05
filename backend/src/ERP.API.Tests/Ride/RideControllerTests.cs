@@ -252,8 +252,10 @@ public sealed class RideControllerTests
 
         var obj = response.Should().BeAssignableTo<ObjectResult>().Subject;
         obj.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
-        obj.Value.Should().BeOfType<ApiResponse<object>>()
-            .Which.Code.Should().Be(ApiResponseCodes.Common.BadRequest);
+        obj.Value.Should()
+            .BeOfType<ApiResponse<object>>()
+            .Which.Code.Should()
+            .Be(ApiResponseCodes.Common.BadRequest);
     }
 
     [Theory]
@@ -262,7 +264,9 @@ public sealed class RideControllerTests
     [InlineData(ApiResponseCodes.Common.SriCommunicationError, StatusCodes.Status502BadGateway)]
     public async Task GetContent_coded_failure_maps_like_GetOrGenerate(string code, int status)
     {
-        var controller = BuildController(_ => Result<RideGenerationResultDto>.Failure("detalle", code));
+        var controller = BuildController(_ =>
+            Result<RideGenerationResultDto>.Failure("detalle", code)
+        );
 
         var content = await controller.GetContent("Sales", Guid.NewGuid(), CancellationToken.None);
         var json = await controller.GetOrGenerate("Sales", Guid.NewGuid(), CancellationToken.None);
@@ -282,15 +286,25 @@ public sealed class RideControllerTests
             )
         );
 
-        var nonexistent = await controller.GetContent("Sales", Guid.NewGuid(), CancellationToken.None);
-        var otherCompany = await controller.GetContent("Sales", Guid.NewGuid(), CancellationToken.None);
+        var nonexistent = await controller.GetContent(
+            "Sales",
+            Guid.NewGuid(),
+            CancellationToken.None
+        );
+        var otherCompany = await controller.GetContent(
+            "Sales",
+            Guid.NewGuid(),
+            CancellationToken.None
+        );
 
         foreach (var response in new[] { nonexistent, otherCompany })
         {
             var obj = response.Should().BeAssignableTo<ObjectResult>().Subject;
             obj.StatusCode.Should().Be(StatusCodes.Status404NotFound);
-            obj.Value.Should().BeOfType<ApiResponse<object>>()
-                .Which.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+            obj.Value.Should()
+                .BeOfType<ApiResponse<object>>()
+                .Which.Code.Should()
+                .Be(ApiResponseCodes.Common.NotFound);
         }
     }
 }

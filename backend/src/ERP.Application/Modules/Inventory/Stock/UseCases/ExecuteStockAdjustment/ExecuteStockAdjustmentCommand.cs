@@ -9,7 +9,8 @@ public sealed record ExecuteStockAdjustmentCommand(Guid Id)
     : IRequest<Result<StockAdjustmentDto>>,
         IBranchScopedRequest;
 
-public sealed class ExecuteStockAdjustmentValidator : AbstractValidator<ExecuteStockAdjustmentCommand>
+public sealed class ExecuteStockAdjustmentValidator
+    : AbstractValidator<ExecuteStockAdjustmentCommand>
 {
     public ExecuteStockAdjustmentValidator()
     {

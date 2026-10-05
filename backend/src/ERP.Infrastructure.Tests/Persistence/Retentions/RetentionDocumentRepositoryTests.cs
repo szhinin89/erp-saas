@@ -46,7 +46,12 @@ public sealed class RetentionDocumentRepositoryTests : IAsyncLifetime
         await db.Database.MigrateAsync();
 
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _userId);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _userId);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: _userId
+        );
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
 
@@ -73,13 +78,20 @@ public sealed class RetentionDocumentRepositoryTests : IAsyncLifetime
 
     private ErpDbContext CreateContext(Guid tenantId, Guid companyId) =>
         new(
-            new DbContextOptionsBuilder<ErpDbContext>().UseNpgsql(_postgres.GetConnectionString()).Options,
+            new DbContextOptionsBuilder<ErpDbContext>()
+                .UseNpgsql(_postgres.GetConnectionString())
+                .Options,
             new FixedCurrentTenant(tenantId),
             new NoOpPublisher(),
             new FixedCurrentCompany(companyId)
         );
 
-    private RetentionDocument NewDraft(Guid tenantId, Guid companyId, Guid sourceId, decimal vat = 15m)
+    private RetentionDocument NewDraft(
+        Guid tenantId,
+        Guid companyId,
+        Guid sourceId,
+        decimal vat = 15m
+    )
     {
         var doc = RetentionDocument.Create(
             tenantId,
@@ -260,7 +272,10 @@ public sealed class RetentionDocumentRepositoryTests : IAsyncLifetime
     {
         var sourceId = Guid.NewGuid();
         await using var writeDb = CreateContext(_tenantId, _companyId);
-        var writeRepo = new RetentionDocumentRepository(writeDb, new FixedCurrentCompany(_companyId));
+        var writeRepo = new RetentionDocumentRepository(
+            writeDb,
+            new FixedCurrentCompany(_companyId)
+        );
         var doc = NewDraft(_tenantId, _companyId, sourceId);
         await writeRepo.AddAsync(doc);
         await writeDb.SaveChangesAsync();
@@ -396,7 +411,10 @@ public sealed class RetentionDocumentRepositoryTests : IAsyncLifetime
     {
         var sourceId = Guid.NewGuid();
         await using var writeDb = CreateContext(_tenantId, _companyId);
-        var writeRepo = new RetentionDocumentRepository(writeDb, new FixedCurrentCompany(_companyId));
+        var writeRepo = new RetentionDocumentRepository(
+            writeDb,
+            new FixedCurrentCompany(_companyId)
+        );
         var doc = NewDraft(_tenantId, _companyId, sourceId);
         doc.Issue("001-001-000000007", new DateOnly(2026, 9, 3), _userId);
         await writeRepo.AddAsync(doc);

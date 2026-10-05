@@ -22,7 +22,8 @@ public sealed class CompanyBankAccountRepository : ICompanyBankAccountRepository
         Guid id,
         CancellationToken ct = default
     ) =>
-        _db.CompanyBankAccounts.ForOperationalScope(tenantId, _company)
+        _db
+            .CompanyBankAccounts.ForOperationalScope(tenantId, _company)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
 
     public async Task<CompanyBankAccount?> GetByIdForShareAsync(

@@ -68,14 +68,11 @@ public sealed class InvoiceItemSearchRepository : IInvoiceItemSearchRepository
                 // tiene su propio barcode impreso) debe rankear igual que un barcode exacto de
                 // ItemVariantBarcode — es igualmente un escaneo real, no una coincidencia de texto.
                 HasPackagingBarcodeExact = i.PackagingLevels.Any(p =>
-                    p.IsActive
-                    && p.Barcode != null
-                    && EF.Functions.ILike(p.Barcode, trimmedQuery)
+                    p.IsActive && p.Barcode != null && EF.Functions.ILike(p.Barcode, trimmedQuery)
                 ),
                 SkuExact = EF.Functions.ILike(i.Code.SKU, trimmedQuery),
                 SkuPartial = EF.Functions.ILike(i.Code.SKU, pattern),
-                NamePartial =
-                    EF.Functions.ILike(i.Code.ShortName, pattern)
+                NamePartial = EF.Functions.ILike(i.Code.ShortName, pattern)
                     || EF.Functions.ILike(i.Code.Description, pattern),
                 ShortNameForSort = i.Code.ShortName,
             })
@@ -85,9 +82,9 @@ public sealed class InvoiceItemSearchRepository : IInvoiceItemSearchRepository
                 x.Id,
                 x.ShortNameForSort,
                 Rank = (x.HasBarcodeExact || x.HasPackagingBarcodeExact) ? 0
-                    : x.SkuExact ? 1
-                    : (x.HasBarcodePartial || x.SkuPartial) ? 2
-                    : 3,
+                : x.SkuExact ? 1
+                : (x.HasBarcodePartial || x.SkuPartial) ? 2
+                : 3,
             })
             .OrderBy(x => x.Rank)
             .ThenBy(x => x.ShortNameForSort)
@@ -150,7 +147,8 @@ public sealed class InvoiceItemSearchRepository : IInvoiceItemSearchRepository
                 // compatibility mirror, ya no se lee para decisiones nuevas).
                 i.SpecialTaxConfigurations.Where(c =>
                         c.IsActive
-                        && c.SriTaxCategoryCode == ERP.Domain.Modules.Purchases.SriTaxCategoryCodes.Ice
+                        && c.SriTaxCategoryCode
+                            == ERP.Domain.Modules.Purchases.SriTaxCategoryCodes.Ice
                     )
                     .Select(c => c.TaxCatalogCode)
                     .FirstOrDefault(),
@@ -168,7 +166,9 @@ public sealed class InvoiceItemSearchRepository : IInvoiceItemSearchRepository
                     ))
                     .ToList(),
                 i.PackagingLevels.Where(p =>
-                        p.IsActive && p.Barcode != null && EF.Functions.ILike(p.Barcode, trimmedQuery)
+                        p.IsActive
+                        && p.Barcode != null
+                        && EF.Functions.ILike(p.Barcode, trimmedQuery)
                     )
                     .Select(p => (Guid?)p.Id)
                     .FirstOrDefault()
@@ -177,9 +177,7 @@ public sealed class InvoiceItemSearchRepository : IInvoiceItemSearchRepository
 
         // Contains() no garantiza el orden de rankedIds — se reordena en memoria (pageSize
         // acotado a 20 por SearchItemsForInvoiceHandler, sin costo real).
-        var order = rankedIds
-            .Select((id, idx) => (id, idx))
-            .ToDictionary(t => t.id, t => t.idx);
+        var order = rankedIds.Select((id, idx) => (id, idx)).ToDictionary(t => t.id, t => t.idx);
         matches.Sort((a, b) => order[a.Id].CompareTo(order[b.Id]));
         return matches;
     }

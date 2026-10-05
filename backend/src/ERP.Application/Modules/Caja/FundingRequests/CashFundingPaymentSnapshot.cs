@@ -23,9 +23,16 @@ public sealed record CashFundingPaymentMethodLineV1(
     DateOnly? TransactionDate
 );
 
-public sealed record CashFundingPaymentApplicationLineV1(Guid AccountsPayableInstallmentId, decimal AmountApplied);
+public sealed record CashFundingPaymentApplicationLineV1(
+    Guid AccountsPayableInstallmentId,
+    decimal AmountApplied
+);
 
-public sealed record CashFundingPaymentAllocationV1(int MethodLineIndex, int ApplicationLineIndex, decimal Amount);
+public sealed record CashFundingPaymentAllocationV1(
+    int MethodLineIndex,
+    int ApplicationLineIndex,
+    decimal Amount
+);
 
 public sealed record CashFundingPaymentSnapshotV1(
     Guid SupplierId,
@@ -155,6 +162,8 @@ public static class CashFundingPaymentSnapshot
     }
 
     /// <summary>Efectivo total pedido a una caja (Σ de sus líneas).</summary>
-    public static decimal CashAmountFor(CashFundingPaymentSnapshotV1 snapshot, Guid cashRegisterId) =>
-        snapshot.MethodLines.Where(l => l.CashRegisterId == cashRegisterId).Sum(l => l.Amount);
+    public static decimal CashAmountFor(
+        CashFundingPaymentSnapshotV1 snapshot,
+        Guid cashRegisterId
+    ) => snapshot.MethodLines.Where(l => l.CashRegisterId == cashRegisterId).Sum(l => l.Amount);
 }

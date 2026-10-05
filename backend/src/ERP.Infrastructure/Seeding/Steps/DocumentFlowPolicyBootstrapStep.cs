@@ -24,7 +24,10 @@ public sealed partial class DocumentFlowPolicyBootstrapStep : ICompanyBootstrapS
     private readonly ErpDbContext _db;
     private readonly ILogger<DocumentFlowPolicyBootstrapStep> _logger;
 
-    public DocumentFlowPolicyBootstrapStep(ErpDbContext db, ILogger<DocumentFlowPolicyBootstrapStep> logger)
+    public DocumentFlowPolicyBootstrapStep(
+        ErpDbContext db,
+        ILogger<DocumentFlowPolicyBootstrapStep> logger
+    )
     {
         _db = db;
         _logger = logger;
@@ -47,7 +50,10 @@ public sealed partial class DocumentFlowPolicyBootstrapStep : ICompanyBootstrapS
             var exists = await _db
                 .DocumentFlowPolicies.AsPlatformQuery()
                 .AnyAsync(
-                    p => p.TenantId == tenantId && p.CompanyId == companyId && p.DocumentTypeCode == docTypeCode,
+                    p =>
+                        p.TenantId == tenantId
+                        && p.CompanyId == companyId
+                        && p.DocumentTypeCode == docTypeCode,
                     cancellationToken
                 );
 
@@ -57,9 +63,10 @@ public sealed partial class DocumentFlowPolicyBootstrapStep : ICompanyBootstrapS
                 continue;
             }
 
-            var policy = docTypeCode == DocTypeCodes.ExpenseDocument
-                ? BuildExpenseDocumentDefault(tenantId, companyId, actorId)
-                : BuildLegacyDefault(tenantId, companyId, docTypeCode, actorId);
+            var policy =
+                docTypeCode == DocTypeCodes.ExpenseDocument
+                    ? BuildExpenseDocumentDefault(tenantId, companyId, actorId)
+                    : BuildLegacyDefault(tenantId, companyId, docTypeCode, actorId);
 
             _db.DocumentFlowPolicies.Add(policy);
             LogPolicySeeded(docTypeCode, companyId);
@@ -69,7 +76,11 @@ public sealed partial class DocumentFlowPolicyBootstrapStep : ICompanyBootstrapS
     }
 
     /// <summary>Política obligatoria inicial de DOCUMENT-FLOW-POLICY-01 para ExpenseDocument (GASDOC).</summary>
-    private static DocumentFlowPolicy BuildExpenseDocumentDefault(Guid tenantId, Guid companyId, Guid actorId) =>
+    private static DocumentFlowPolicy BuildExpenseDocumentDefault(
+        Guid tenantId,
+        Guid companyId,
+        Guid actorId
+    ) =>
         DocumentFlowPolicy.Create(
             tenantId: tenantId,
             companyId: companyId,

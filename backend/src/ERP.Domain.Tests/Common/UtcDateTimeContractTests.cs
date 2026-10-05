@@ -20,7 +20,8 @@ public sealed class UtcDateTimeContractTests
     [Fact]
     public void EnsureUtc_rechaza_una_hora_sin_zona()
     {
-        var act = () => UtcDateTime.EnsureUtc(new DateTime(2026, 9, 25, 14, 38, 0, DateTimeKind.Unspecified));
+        var act = () =>
+            UtcDateTime.EnsureUtc(new DateTime(2026, 9, 25, 14, 38, 0, DateTimeKind.Unspecified));
         act.Should().Throw<ArgumentException>();
     }
 

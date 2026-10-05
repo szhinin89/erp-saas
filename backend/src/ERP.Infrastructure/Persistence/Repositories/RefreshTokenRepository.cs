@@ -1,7 +1,7 @@
+using System.Collections.Concurrent;
 using ERP.Domain.Auth.Entities;
 using ERP.Domain.Auth.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Concurrent;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 

@@ -14,7 +14,8 @@ namespace ERP.Application.Auth.UseCases.ReturnToGlobal;
 /// <see cref="ICurrentOperatorContext.IsOperatorMode"/> en el paso 1 — documentado también en
 /// <c>GlobalAuthController</c>.
 /// </summary>
-public sealed class ReturnToGlobalHandler : IRequestHandler<ReturnToGlobalCommand, Result<AuthResponseDto>>
+public sealed class ReturnToGlobalHandler
+    : IRequestHandler<ReturnToGlobalCommand, Result<AuthResponseDto>>
 {
     private static readonly Guid GlobalTenantId = Guid.Empty;
 
@@ -41,7 +42,10 @@ public sealed class ReturnToGlobalHandler : IRequestHandler<ReturnToGlobalComman
         CancellationToken cancellationToken
     )
     {
-        if (!_currentOperatorContext.IsOperatorMode || _currentOperatorContext.GlobalAdminUserId is null)
+        if (
+            !_currentOperatorContext.IsOperatorMode
+            || _currentOperatorContext.GlobalAdminUserId is null
+        )
             return Result<AuthResponseDto>.Failure(
                 "Esta sesión no proviene de un operador global."
             );
@@ -54,7 +58,9 @@ public sealed class ReturnToGlobalHandler : IRequestHandler<ReturnToGlobalComman
             cancellationToken
         );
         if (globalRole is null)
-            return Result<AuthResponseDto>.Failure("Rol de administrador global ya no está activo.");
+            return Result<AuthResponseDto>.Failure(
+                "Rol de administrador global ya no está activo."
+            );
 
         var user = await _accessRepository.GetUserByIdAsync(globalAdminUserId, cancellationToken);
         if (user is null || !user.IsActive)

@@ -36,7 +36,10 @@ internal static class SalesReceiptPrintPayloadMapper
         var tendered = payments.Where(p => p.TenderedAmount.HasValue).ToList();
         if (tendered.Count == 0)
             return (null, null);
-        return (tendered.Sum(p => p.TenderedAmount!.Value), tendered.Sum(p => p.ChangeAmount!.Value));
+        return (
+            tendered.Sum(p => p.TenderedAmount!.Value),
+            tendered.Sum(p => p.ChangeAmount!.Value)
+        );
     }
 
     public static (string? EstablishmentCode, string? EmissionPointCode) ResolveSriCodes(
@@ -50,18 +53,14 @@ internal static class SalesReceiptPrintPayloadMapper
         var establishmentCode =
             !string.IsNullOrWhiteSpace(emissionPointEstablishmentCode)
                 ? emissionPointEstablishmentCode
-                : split.Length >= 1
-                    ? split[0]
-                    : null;
+            : split.Length >= 1 ? split[0]
+            : null;
 
         var resolvedEmissionPointCode =
-            !string.IsNullOrWhiteSpace(cashSessionEmissionPointCode)
-                ? cashSessionEmissionPointCode
-                : !string.IsNullOrWhiteSpace(emissionPointCode)
-                    ? emissionPointCode
-                    : split.Length >= 2
-                        ? split[1]
-                        : null;
+            !string.IsNullOrWhiteSpace(cashSessionEmissionPointCode) ? cashSessionEmissionPointCode
+            : !string.IsNullOrWhiteSpace(emissionPointCode) ? emissionPointCode
+            : split.Length >= 2 ? split[1]
+            : null;
 
         return (establishmentCode, resolvedEmissionPointCode);
     }

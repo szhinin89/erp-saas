@@ -47,7 +47,12 @@ public sealed class SalesPaymentScheduleRepositoryTests : IAsyncLifetime
 
         _createdBy = Guid.NewGuid();
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _createdBy);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _createdBy);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: _createdBy
+        );
         var branch = Branch.Create(
             tenant.Id,
             "Matriz",
@@ -76,13 +81,32 @@ public sealed class SalesPaymentScheduleRepositoryTests : IAsyncLifetime
             createdBy: _createdBy,
             companyId: company.Id
         );
-        var customer = BusinessPartner.Create(tenant.Id, "05", "1710034065", 1, "Cliente Test", _createdBy);
+        var customer = BusinessPartner.Create(
+            tenant.Id,
+            "05",
+            "1710034065",
+            1,
+            "Cliente Test",
+            _createdBy
+        );
         var establishment = Establishment.Create(
-            tenant.Id, branchId: branch.Id, company.Id, code: "001", name: "Matriz Test",
-            address: "Av. Principal 123", phone: null, isMain: true, createdBy: _createdBy
+            tenant.Id,
+            branchId: branch.Id,
+            company.Id,
+            code: "001",
+            name: "Matriz Test",
+            address: "Av. Principal 123",
+            phone: null,
+            isMain: true,
+            createdBy: _createdBy
         );
         var cashRegister = CashRegister.Create(
-            tenant.Id, company.Id, branch.Id, "CAJA-01", "Caja Principal", _createdBy
+            tenant.Id,
+            company.Id,
+            branch.Id,
+            "CAJA-01",
+            "Caja Principal",
+            _createdBy
         );
 
         db.Tenants.Add(tenant);
@@ -94,16 +118,30 @@ public sealed class SalesPaymentScheduleRepositoryTests : IAsyncLifetime
         await db.SaveChangesAsync();
 
         var emissionPoint = EmissionPoint.Create(
-            tenant.Id, company.Id, establishment.Id, code: "001", name: "PE-001",
+            tenant.Id,
+            company.Id,
+            establishment.Id,
+            code: "001",
+            name: "PE-001",
             emissionType: ERP.Domain.Modules.Company.Enums.EmissionType.Electronic,
-            isDefault: true, createdBy: _createdBy
+            isDefault: true,
+            createdBy: _createdBy
         );
         db.EmissionPoints.Add(emissionPoint);
         await db.SaveChangesAsync();
 
         var cashSession = CashSession.Open(
-            tenant.Id, company.Id, branch.Id, _createdBy, cashRegister.Id,
-            "CAJA-01", "Caja Principal", emissionPoint.Id, "001", 0m, _createdBy
+            tenant.Id,
+            company.Id,
+            branch.Id,
+            _createdBy,
+            cashRegister.Id,
+            "CAJA-01",
+            "Caja Principal",
+            emissionPoint.Id,
+            "001",
+            0m,
+            _createdBy
         );
         db.CashSessions.Add(cashSession);
         await db.SaveChangesAsync();
@@ -119,23 +157,43 @@ public sealed class SalesPaymentScheduleRepositoryTests : IAsyncLifetime
 
     private ErpDbContext CreateContext() =>
         new(
-            new DbContextOptionsBuilder<ErpDbContext>().UseNpgsql(_postgres.GetConnectionString()).Options,
+            new DbContextOptionsBuilder<ErpDbContext>()
+                .UseNpgsql(_postgres.GetConnectionString())
+                .Options,
             new FixedCurrentTenant(_tenantId),
             new NoOpPublisher(),
             new FixedCurrentCompany(_companyId)
         );
 
-    private SalesInvoice CreateDraftWithLine(decimal unitPrice = 100m, int installments = 2, int daysBetween = 30)
+    private SalesInvoice CreateDraftWithLine(
+        decimal unitPrice = 100m,
+        int installments = 2,
+        int daysBetween = 30
+    )
     {
         var pt = PaymentTermSnapshot.Create(Guid.NewGuid(), "Test", installments, daysBetween);
         var inv = SalesInvoice.CreateDraft(
-            _tenantId, _companyId, _branchId, _customerId,
+            _tenantId,
+            _companyId,
+            _branchId,
+            _customerId,
             CustomerSnapshot.Create("Cliente Test", "1710034065", "05"),
-            "DRAFT-SPS-TEST", new DateOnly(2026, 1, 1), _createdBy, pt,
+            "DRAFT-SPS-TEST",
+            new DateOnly(2026, 1, 1),
+            _createdBy,
+            pt,
             cashSessionId: _cashSessionId,
             emissionType: EmissionType.Physical
         );
-        var line = SalesInvoiceDetail.Create(inv.Id, _tenantId, "Producto Test", 1, unitPrice, "0", "UNIT");
+        var line = SalesInvoiceDetail.Create(
+            inv.Id,
+            _tenantId,
+            "Producto Test",
+            1,
+            unitPrice,
+            "0",
+            "UNIT"
+        );
         inv.ReplaceLines(new[] { line }, _createdBy);
         return inv;
     }
@@ -159,8 +217,10 @@ public sealed class SalesPaymentScheduleRepositoryTests : IAsyncLifetime
         }
 
         await using var read = CreateContext();
-        var reloaded = await new SalesInvoiceRepository(read, new FixedCurrentCompany(_companyId))
-            .GetByIdAsync(_tenantId, inv.Id);
+        var reloaded = await new SalesInvoiceRepository(
+            read,
+            new FixedCurrentCompany(_companyId)
+        ).GetByIdAsync(_tenantId, inv.Id);
 
         reloaded.Should().NotBeNull();
         reloaded!.PaymentSchedules.Should().HaveCount(2);
@@ -192,8 +252,7 @@ public sealed class SalesPaymentScheduleRepositoryTests : IAsyncLifetime
         }
 
         await using var read = CreateContext();
-        var remaining = await read
-            .Set<SalesPaymentSchedule>()
+        var remaining = await read.Set<SalesPaymentSchedule>()
             .IgnoreQueryFilters()
             .Where(s => s.SalesInvoiceId == inv.Id)
             .CountAsync();
@@ -221,8 +280,7 @@ public sealed class SalesPaymentScheduleRepositoryTests : IAsyncLifetime
         }
 
         await using var read = CreateContext();
-        var remaining = await read
-            .Set<SalesPaymentSchedule>()
+        var remaining = await read.Set<SalesPaymentSchedule>()
             .IgnoreQueryFilters()
             .Where(s => s.SalesInvoiceId == inv.Id)
             .CountAsync();
@@ -248,7 +306,10 @@ public sealed class SalesPaymentScheduleRepositoryTests : IAsyncLifetime
         public Task Publish(object notification, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
             where TNotification : INotification => Task.CompletedTask;
     }
 }

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using ERP.API.Extensions;
 using ERP.Application.Common;
 using FluentAssertions;
@@ -5,7 +6,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
-using System.Text.Json;
 
 namespace ERP.API.Tests.Extensions;
 
@@ -23,9 +23,11 @@ public sealed class ResultStatusMappingTests
         public string EnvironmentName { get; set; } = "Production";
         public string ApplicationName { get; set; } = "ERP.API.Tests";
         public string WebRootPath { get; set; } = "";
-        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; } = null!;
+        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; } =
+            null!;
         public string ContentRootPath { get; set; } = "";
-        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } = null!;
+        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } =
+            null!;
     }
 
     private sealed class TestController : ControllerBase;
@@ -38,7 +40,10 @@ public sealed class ResultStatusMappingTests
         {
             ControllerContext = new ControllerContext
             {
-                HttpContext = new DefaultHttpContext { RequestServices = services.BuildServiceProvider() },
+                HttpContext = new DefaultHttpContext
+                {
+                    RequestServices = services.BuildServiceProvider(),
+                },
             },
         };
     }
@@ -47,10 +52,12 @@ public sealed class ResultStatusMappingTests
     {
         var obj = result.Should().BeAssignableTo<ObjectResult>().Subject;
         var json = JsonSerializer.SerializeToElement(obj.Value);
-        var errors = json.TryGetProperty("Data", out var data) && data.ValueKind == JsonValueKind.Object
+        var errors =
+            json.TryGetProperty("Data", out var data)
+            && data.ValueKind == JsonValueKind.Object
             && data.TryGetProperty("errors", out var e)
-            ? e.EnumerateArray().Select(x => x.GetString()!).ToArray()
-            : [];
+                ? e.EnumerateArray().Select(x => x.GetString()!).ToArray()
+                : [];
         return (obj.StatusCode ?? 200, json.GetProperty("Code").GetString(), errors);
     }
 
@@ -84,24 +91,48 @@ public sealed class ResultStatusMappingTests
 
     [Theory]
     [MemberData(nameof(CodedFailures))]
-    public void ToOkOrBadRequest_y_ToCreatedOrBadRequest_usan_la_misma_tabla(string code, int status)
+    public void ToOkOrBadRequest_y_ToCreatedOrBadRequest_usan_la_misma_tabla(
+        string code,
+        int status
+    )
     {
         var failure = Result<string>.Failure("mensaje de dominio", code);
 
-        Read(Controller().ToOkOrBadRequest(failure)).Should().BeEquivalentTo((status, code, Expected(code, "mensaje de dominio")));
-        Read(Controller().ToCreatedOrBadRequest(failure)).Should().BeEquivalentTo((status, code, Expected(code, "mensaje de dominio")));
-        Read(Controller().ApiFailure(failure)).Should().BeEquivalentTo((status, code, Expected(code, "mensaje de dominio")));
+        Read(Controller().ToOkOrBadRequest(failure))
+            .Should()
+            .BeEquivalentTo((status, code, Expected(code, "mensaje de dominio")));
+        Read(Controller().ToCreatedOrBadRequest(failure))
+            .Should()
+            .BeEquivalentTo((status, code, Expected(code, "mensaje de dominio")));
+        Read(Controller().ApiFailure(failure))
+            .Should()
+            .BeEquivalentTo((status, code, Expected(code, "mensaje de dominio")));
     }
 
     [Fact]
     public void ApiFailure_sin_codigo_usa_el_fallback_del_endpoint_y_con_codigo_lo_ignora()
     {
         var uncoded = Result<string>.Failure("Refresh token inválido.");
-        var rateLimited = Result<string>.Failure("Demasiados intentos.", ApiResponseCodes.Common.RateLimited);
+        var rateLimited = Result<string>.Failure(
+            "Demasiados intentos.",
+            ApiResponseCodes.Common.RateLimited
+        );
 
-        Read(Controller().ApiFailure(uncoded)).Should().BeEquivalentTo((400, ApiResponseCodes.Common.BadRequest, new[] { "Refresh token inválido." }));
-        Read(Controller().ApiFailure(uncoded, ApiResponseCodes.Common.Unauthorized)).Should().BeEquivalentTo((401, ApiResponseCodes.Common.Unauthorized, new[] { "Refresh token inválido." }));
-        Read(Controller().ApiFailure(rateLimited, ApiResponseCodes.Common.Unauthorized)).Should().BeEquivalentTo((429, ApiResponseCodes.Common.RateLimited, new[] { "Demasiados intentos." }));
+        Read(Controller().ApiFailure(uncoded))
+            .Should()
+            .BeEquivalentTo(
+                (400, ApiResponseCodes.Common.BadRequest, new[] { "Refresh token inválido." })
+            );
+        Read(Controller().ApiFailure(uncoded, ApiResponseCodes.Common.Unauthorized))
+            .Should()
+            .BeEquivalentTo(
+                (401, ApiResponseCodes.Common.Unauthorized, new[] { "Refresh token inválido." })
+            );
+        Read(Controller().ApiFailure(rateLimited, ApiResponseCodes.Common.Unauthorized))
+            .Should()
+            .BeEquivalentTo(
+                (429, ApiResponseCodes.Common.RateLimited, new[] { "Demasiados intentos." })
+            );
     }
 
     [Fact]
@@ -110,14 +141,17 @@ public sealed class ResultStatusMappingTests
         // Deuda ADR-027 Fase 1 (códigos de módulo aún literales): documentada, no silenciosa.
         var failure = Result<string>.ValidationFailure("Período cerrado.", "PERIOD_NOT_OPEN");
 
-        Read(Controller().ToOkOrBadRequest(failure)).Should().BeEquivalentTo((400, "PERIOD_NOT_OPEN", new[] { "Período cerrado." }));
+        Read(Controller().ToOkOrBadRequest(failure))
+            .Should()
+            .BeEquivalentTo((400, "PERIOD_NOT_OPEN", new[] { "Período cerrado." }));
     }
 
     [Theory]
     [MemberData(nameof(CodedFailures))]
     public void ToOkOrNotFound_traduce_cada_codigo_con_la_tabla_unica(string code, int status)
     {
-        var result = Controller().ToOkOrNotFound(Result<string>.Failure("mensaje de dominio", code));
+        var result = Controller()
+            .ToOkOrNotFound(Result<string>.Failure("mensaje de dominio", code));
 
         Read(result).Should().BeEquivalentTo((status, code, Expected(code, "mensaje de dominio")));
     }
@@ -126,7 +160,8 @@ public sealed class ResultStatusMappingTests
     [MemberData(nameof(CodedFailures))]
     public void ToFileOrNotFound_usa_la_misma_regla_para_fallos(string code, int status)
     {
-        var result = Controller().ToFileOrNotFound(Result<string>.Failure("mensaje", code), _ => new EmptyResult());
+        var result = Controller()
+            .ToFileOrNotFound(Result<string>.Failure("mensaje", code), _ => new EmptyResult());
 
         Read(result).Should().BeEquivalentTo((status, code, Expected(code, "mensaje")));
     }
@@ -134,16 +169,23 @@ public sealed class ResultStatusMappingTests
     [Fact]
     public void Todo_fallo_con_codigo_se_responde_igual_que_ToOkOrBadRequest()
     {
-        var codes = typeof(ApiResponseCodes.Common).GetFields()
+        var codes = typeof(ApiResponseCodes.Common)
+            .GetFields()
             .Where(f => f.IsLiteral)
             .Select(f => (string)f.GetRawConstantValue()!)
-            .Where(c => c is not ApiResponseCodes.Common.Ok and not ApiResponseCodes.Common.Created);
+            .Where(c =>
+                c is not ApiResponseCodes.Common.Ok and not ApiResponseCodes.Common.Created
+            );
 
         foreach (var code in codes)
         {
             var failure = Result<string>.Failure("x", code);
-            Read(Controller().ToOkOrNotFound(failure)).Should().BeEquivalentTo(Read(Controller().ToOkOrBadRequest(failure)), code);
-            Read(Controller().ToFileOrNotFound(failure, _ => new EmptyResult())).Should().BeEquivalentTo(Read(Controller().ToOkOrBadRequest(failure)), code);
+            Read(Controller().ToOkOrNotFound(failure))
+                .Should()
+                .BeEquivalentTo(Read(Controller().ToOkOrBadRequest(failure)), code);
+            Read(Controller().ToFileOrNotFound(failure, _ => new EmptyResult()))
+                .Should()
+                .BeEquivalentTo(Read(Controller().ToOkOrBadRequest(failure)), code);
         }
     }
 
@@ -152,15 +194,32 @@ public sealed class ResultStatusMappingTests
     {
         var failure = Result<string>.Failure("Sucursal no encontrada.");
 
-        Read(Controller().ToOkOrNotFound(failure)).Should().BeEquivalentTo((404, ApiResponseCodes.Common.NotFound, new[] { "Sucursal no encontrada." }));
-        Read(Controller().ToFileOrNotFound(failure, _ => new EmptyResult())).Should().BeEquivalentTo((404, ApiResponseCodes.Common.NotFound, new[] { "Sucursal no encontrada." }));
+        Read(Controller().ToOkOrNotFound(failure))
+            .Should()
+            .BeEquivalentTo(
+                (404, ApiResponseCodes.Common.NotFound, new[] { "Sucursal no encontrada." })
+            );
+        Read(Controller().ToFileOrNotFound(failure, _ => new EmptyResult()))
+            .Should()
+            .BeEquivalentTo(
+                (404, ApiResponseCodes.Common.NotFound, new[] { "Sucursal no encontrada." })
+            );
     }
 
     [Fact]
     public void Exito_no_cambia()
     {
-        Read(Controller().ToOkOrNotFound(Result<string>.Success("valor"))).Should().BeEquivalentTo((200, ApiResponseCodes.Common.Ok, Array.Empty<string>()));
-        Controller().ToFileOrNotFound(Result<string>.Success("valor"), v => new ContentResult { Content = v })
-            .Should().BeOfType<ContentResult>().Which.Content.Should().Be("valor");
+        Read(Controller().ToOkOrNotFound(Result<string>.Success("valor")))
+            .Should()
+            .BeEquivalentTo((200, ApiResponseCodes.Common.Ok, Array.Empty<string>()));
+        Controller()
+            .ToFileOrNotFound(
+                Result<string>.Success("valor"),
+                v => new ContentResult { Content = v }
+            )
+            .Should()
+            .BeOfType<ContentResult>()
+            .Which.Content.Should()
+            .Be("valor");
     }
 }

@@ -68,9 +68,18 @@ public sealed record CashSessionDto(
     DateTime? UpdatedAt
 );
 
-/// <param name="ReasonId">TREASURY-CASH-MANUAL-MOVEMENTS-01 — null en movimientos de sistema (Opening/SaleIncome/SaleRefund) y en histórico anterior a este ticket.</param>
+/// <param name="Id"></param>
+
+/// <param name="MovementType"></param>
+/// <param name="Amount"></param>
+/// <param name="Description"></param>
+/// <param name="CreatedAt"></param>
+/// <param name="CreatedBy"></param>/// <param name="ReasonId">TREASURY-CASH-MANUAL-MOVEMENTS-01 — null en movimientos de sistema (Opening/SaleIncome/SaleRefund) y en histórico anterior a este ticket.</param>
 /// <param name="ReasonName">Snapshot del nombre del motivo al momento del movimiento — nunca se resincroniza si el motivo cambia después.</param>
 /// <param name="CreatedByName">Nombre del usuario que registró el movimiento — resuelto en batch (IAccessRepository), null si el usuario ya no existe.</param>
+/// <param name="ReferenceType"></param>
+/// <param name="ReferenceId"></param>
+/// <param name="ReferenceNumber"></param>
 public sealed record CashMovementDto(
     Guid Id,
     string MovementType,
@@ -116,20 +125,36 @@ public sealed record CashClosingCountDto(
 /// <see cref="ByPaymentMethod"/> vienen de SalesInvoice+SalesInvoicePayment+PaymentMethod
 /// (informativo, calculado en vivo, nunca persistido) — ver <see cref="CashSessionCollectionSummaryDto"/>.
 /// </summary>
+/// <param name="Id"></param>
+/// <param name="UserId"></param>
 /// <param name="UserName">Cajero que abrió el turno — resuelto en batch (IAccessRepository), null si el usuario ya no existe.</param>
+/// <param name="CashRegisterId"></param>
+/// <param name="CashRegisterCodeSnapshot"></param>
+/// <param name="CashRegisterNameSnapshot"></param>
+/// <param name="EmissionPointId"></param>
+/// <param name="EmissionPointCodeSnapshot"></param>
+/// <param name="OpenedAt"></param>
+/// <param name="OpeningAmount"></param>
+/// <param name="Status"></param>
+/// <param name="CurrentBalance"></param>
 /// <param name="ClosedByName">Quien cerró el turno — null si sigue abierto o el usuario ya no existe.</param>
+/// <param name="Difference"></param>
 /// <param name="ExpectedCash">
 /// Efectivo físico esperado ahora mismo: <see cref="CurrentBalance"/> si el turno sigue abierto,
 /// o el <c>ExpectedAmount</c> congelado al momento del cierre si ya cerró (mismo valor,
 /// distinto momento de lectura — nunca dos cálculos).
 /// </param>
 /// <param name="CountedAmount">Solo turnos cerrados — monto físico contado en el arqueo.</param>
+/// <param name="MovementCount"></param>
+/// <param name="ClosedAt"></param>
+/// <param name="ClosedBy"></param>
 /// <param name="InvoiceCount">Facturas AUTORIZADAS del turno (Draft/Cancelled excluidas).</param>
 /// <param name="TotalInvoiced">Suma de GrandTotal de esas facturas (una vez por factura).</param>
 /// <param name="SaleIncomeCash">Solo ventas en Efectivo que movieron el cajón físico (CashMovementType.SaleIncome) — subconjunto de TotalInvoiced/TotalCollected, no un monto adicional.</param>
 /// <param name="ManualIncomeCash">Ingresos manuales de caja (CashMovementType.ManualIncome).</param>
 /// <param name="ManualExpenseCash">Egresos manuales de caja (ManualExpense + Withdrawal) — no incluye SaleRefund (reverso automático de una devolución, no una acción manual).</param>
 /// <param name="ByPaymentMethod">Desglose informativo por forma — mismo criterio que <see cref="CashSessionCollectionByMethodDto"/> pero sin el detalle por factura (ver el detalle del turno para eso).</param>
+/// <param name="CreatedAt"></param>
 public sealed record CashSessionListDto(
     Guid Id,
     Guid UserId,
@@ -208,8 +233,12 @@ public sealed record CashSessionListResponse(
 /// <param name="DefaultWarehouseName"></param>
 /// <param name="DefaultCustomerId"></param>
 /// <param name="DefaultCustomerName"></param>
+/// <param name="AccountingAccountId"></param>
 /// <param name="CreatedAt"></param>
 /// <param name="UpdatedAt"></param>
+/// <param name="HasOpenSession"></param>
+/// <param name="OpenSessionControlledByCurrentUser"></param>
+/// <param name="OpenSessionUserName"></param>
 public sealed record CashRegisterDto(
     Guid Id,
     Guid BranchId,

@@ -98,7 +98,9 @@ public sealed class CacheHealthProbe
     }
 
     /// <summary>Latencia de set+get; si cualquier paso falla: writeReadOk=false (latencia -1 si no llegó a medirse).</summary>
-    private async Task<(bool WriteReadOk, long LatencyMs)> RoundTripAsync(CancellationToken cancellationToken)
+    private async Task<(bool WriteReadOk, long LatencyMs)> RoundTripAsync(
+        CancellationToken cancellationToken
+    )
     {
         var probeValue = Guid.NewGuid().ToString("N");
         long latencyMs = -1;
@@ -108,7 +110,10 @@ public sealed class CacheHealthProbe
             await _cache.SetStringAsync(
                 ProbeKey,
                 probeValue,
-                new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(15) },
+                new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(15),
+                },
                 cancellationToken
             );
             var read = await _cache.GetStringAsync(ProbeKey, cancellationToken);

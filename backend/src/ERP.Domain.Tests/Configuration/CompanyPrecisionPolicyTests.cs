@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Configuration.Entities;
+using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Enums;
 using FluentAssertions;
 

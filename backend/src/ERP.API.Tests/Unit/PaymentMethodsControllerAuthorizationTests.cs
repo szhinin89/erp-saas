@@ -1,8 +1,8 @@
+using System.Reflection;
 using ERP.API.Controllers;
 using ERP.Domain.Kernel.Permissions;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authorization;
-using System.Reflection;
 
 namespace ERP.API.Tests.Unit;
 
@@ -51,11 +51,11 @@ public sealed class PaymentMethodsControllerAuthorizationTests
     )
     {
         var authorize = GetAuthorize(methodName);
-        authorize.Policy
-            .Should()
+        authorize
+            .Policy.Should()
             .Be($"perm:{AccountingPermissions.DestinationsSalesCollectionsUpdate}");
-        authorize.Policy
-            .Should()
+        authorize
+            .Policy.Should()
             .NotBe(
                 $"perm:{SalesPermissions.Update}",
                 $"{methodName} ya no debe depender de SalesPermissions"
@@ -74,9 +74,10 @@ public sealed class PaymentMethodsControllerAuthorizationTests
         // (que solo lista, activa/desactiva y asigna cuenta). Siguen siendo un concepto comercial
         // de Ventas, no de Contabilidad — se deja fijado explícitamente para que un cambio futuro
         // no las mueva por accidente al tocar este archivo.
-        var expectedPermission = methodName == nameof(PaymentMethodsController.Create)
-            ? SalesPermissions.Create
-            : SalesPermissions.Update;
+        var expectedPermission =
+            methodName == nameof(PaymentMethodsController.Create)
+                ? SalesPermissions.Create
+                : SalesPermissions.Update;
         var authorize = GetAuthorize(methodName);
         authorize.Policy.Should().Be($"perm:{expectedPermission}");
     }

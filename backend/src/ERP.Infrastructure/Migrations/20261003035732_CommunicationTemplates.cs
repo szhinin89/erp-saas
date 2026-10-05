@@ -16,7 +16,8 @@ namespace ERP.Infrastructure.Migrations
                 type: "integer",
                 nullable: false,
                 // Overrides existentes (si los hubiera) parten en la revisión 1, igual que uno nuevo.
-                defaultValue: 1);
+                defaultValue: 1
+            );
 
             migrationBuilder.AlterColumn<string>(
                 name: "subject",
@@ -26,33 +27,38 @@ namespace ERP.Infrastructure.Migrations
                 nullable: true,
                 oldClrType: typeof(string),
                 oldType: "character varying(300)",
-                oldMaxLength: 300);
+                oldMaxLength: 300
+            );
 
             migrationBuilder.AddColumn<string>(
                 name: "template_key",
                 table: "communication_outbox",
                 type: "character varying(100)",
                 maxLength: 100,
-                nullable: true);
+                nullable: true
+            );
 
             migrationBuilder.AddColumn<string>(
                 name: "template_payload_json",
                 table: "communication_outbox",
                 type: "text",
-                nullable: true);
+                nullable: true
+            );
 
             migrationBuilder.AddColumn<string>(
                 name: "template_source",
                 table: "communication_outbox",
                 type: "character varying(30)",
                 maxLength: 30,
-                nullable: true);
+                nullable: true
+            );
 
             migrationBuilder.AddColumn<int>(
                 name: "template_version",
                 table: "communication_outbox",
                 type: "integer",
-                nullable: true);
+                nullable: true
+            );
 
             // Backfill solo de lo demostrable: hasta esta versión el único productor
             // (SalesInvoiceAuthorizedCommunicationHandler) armaba asunto/cuerpo en código, sin template.
@@ -71,7 +77,8 @@ namespace ERP.Infrastructure.Migrations
             migrationBuilder.AddCheckConstraint(
                 name: "ck_communication_outbox_content",
                 table: "communication_outbox",
-                sql: "status IN ('Failed', 'Cancelled') OR (subject IS NOT NULL AND (body_html IS NOT NULL OR body_text IS NOT NULL))");
+                sql: "status IN ('Failed', 'Cancelled') OR (subject IS NOT NULL AND (body_html IS NOT NULL OR body_text IS NOT NULL))"
+            );
         }
 
         /// <inheritdoc />
@@ -79,27 +86,21 @@ namespace ERP.Infrastructure.Migrations
         {
             migrationBuilder.DropCheckConstraint(
                 name: "ck_communication_outbox_content",
-                table: "communication_outbox");
+                table: "communication_outbox"
+            );
 
-            migrationBuilder.DropColumn(
-                name: "revision",
-                table: "communication_templates");
+            migrationBuilder.DropColumn(name: "revision", table: "communication_templates");
 
-            migrationBuilder.DropColumn(
-                name: "template_key",
-                table: "communication_outbox");
+            migrationBuilder.DropColumn(name: "template_key", table: "communication_outbox");
 
             migrationBuilder.DropColumn(
                 name: "template_payload_json",
-                table: "communication_outbox");
+                table: "communication_outbox"
+            );
 
-            migrationBuilder.DropColumn(
-                name: "template_source",
-                table: "communication_outbox");
+            migrationBuilder.DropColumn(name: "template_source", table: "communication_outbox");
 
-            migrationBuilder.DropColumn(
-                name: "template_version",
-                table: "communication_outbox");
+            migrationBuilder.DropColumn(name: "template_version", table: "communication_outbox");
 
             migrationBuilder.AlterColumn<string>(
                 name: "subject",
@@ -111,7 +112,8 @@ namespace ERP.Infrastructure.Migrations
                 oldClrType: typeof(string),
                 oldType: "character varying(300)",
                 oldMaxLength: 300,
-                oldNullable: true);
+                oldNullable: true
+            );
         }
     }
 }

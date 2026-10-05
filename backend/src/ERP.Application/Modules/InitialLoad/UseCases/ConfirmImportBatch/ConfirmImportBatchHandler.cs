@@ -56,7 +56,9 @@ public sealed partial class ConfirmImportBatchHandler
             cancellationToken
         );
         if (batch is null)
-            return Result<ImportBatchConfirmResultDto>.NotFound("Lote de importación no encontrado.");
+            return Result<ImportBatchConfirmResultDto>.NotFound(
+                "Lote de importación no encontrado."
+            );
 
         if (!_processors.TryGetValue(batch.ImportType, out var processor))
             return Result<ImportBatchConfirmResultDto>.ValidationFailure(
@@ -191,9 +193,15 @@ public sealed partial class ConfirmImportBatchHandler
 
     private const string BatchInternalErrorMessage = "Error interno del sistema.";
 
-    [LoggerMessage(Level = LogLevel.Error, Message = "Fila {RowNumber} del lote {BatchId} falló por un error interno")]
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "Fila {RowNumber} del lote {BatchId} falló por un error interno"
+    )]
     private partial void LogRowFailed(Exception ex, Guid batchId, int rowNumber);
 
-    [LoggerMessage(Level = LogLevel.Error, Message = "Confirmación del lote {BatchId} falló por un error interno")]
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "Confirmación del lote {BatchId} falló por un error interno"
+    )]
     private partial void LogBatchFailed(Exception ex, Guid batchId);
 }

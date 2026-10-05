@@ -29,7 +29,8 @@ namespace ERP.Infrastructure.Communications;
 /// límite anterior.
 /// </para>
 /// </summary>
-public sealed class ElectronicDocumentCommunicationReconciliationQuery : IElectronicDocumentCommunicationReconciliationQuery
+public sealed class ElectronicDocumentCommunicationReconciliationQuery
+    : IElectronicDocumentCommunicationReconciliationQuery
 {
     private readonly ErpDbContext _db;
 
@@ -56,8 +57,8 @@ public sealed class ElectronicDocumentCommunicationReconciliationQuery : IElectr
         var afterCreatedAt = after?.CreatedAtUtc ?? DateTime.UnixEpoch;
         var afterId = after?.ElectronicDocumentId ?? Guid.Empty;
 
-        var rows = await _db.Database
-            .SqlQuery<CandidateRow>(
+        var rows = await _db
+            .Database.SqlQuery<CandidateRow>(
                 $"""
                 WITH missing AS MATERIALIZED (
                     SELECT ed.tenant_id, ed.company_id, ed.id, ed.created_at
@@ -87,8 +88,12 @@ public sealed class ElectronicDocumentCommunicationReconciliationQuery : IElectr
             .ToListAsync(ct);
 
         // timestamptz: Npgsql ya devuelve created_at con Kind = Utc.
-        return rows
-            .Select(r => new ElectronicDocumentCommunicationCandidate(r.TenantId, r.CompanyId, r.ElectronicDocumentId, r.CreatedAtUtc))
+        return rows.Select(r => new ElectronicDocumentCommunicationCandidate(
+                r.TenantId,
+                r.CompanyId,
+                r.ElectronicDocumentId,
+                r.CreatedAtUtc
+            ))
             .ToList();
     }
 

@@ -39,7 +39,8 @@ public static class SriModule
         SortOrder = 10,
         Id = "51000000-0000-4000-9000-000000000001",
         ParentId = "51000000-0000-4000-9000-000000000010",
-        RelatedActionPermissionsCsv = ElectronicDocumentsPermissions.Detail + ","
+        RelatedActionPermissionsCsv = ElectronicDocumentsPermissions.Detail
+            + ","
             + ElectronicDocumentsPermissions.Retry
     )]
     public const string ElectronicDocumentsMonitor = "/sri/electronic-documents/monitor";

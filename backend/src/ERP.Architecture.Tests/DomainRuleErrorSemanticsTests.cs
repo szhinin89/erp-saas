@@ -1,5 +1,5 @@
-using FluentAssertions;
 using System.Text.RegularExpressions;
+using FluentAssertions;
 
 namespace ERP.Architecture.Tests;
 
@@ -41,16 +41,20 @@ public sealed class DomainRuleErrorSemanticsTests
                 var type = m.Groups["type"].Value;
                 var filter = m.Groups["filter"].Value;
                 var body = Body(text, m.Index + m.Length - 1);
-                var byType = type is "InvalidOperationException" or "System.InvalidOperationException";
-                var byFilter = filter.Contains("InvalidOperationException") && body.Contains("Result<");
+                var byType =
+                    type is "InvalidOperationException" or "System.InvalidOperationException";
+                var byFilter =
+                    filter.Contains("InvalidOperationException") && body.Contains("Result<");
                 if (byType || (byFilter && !parserBoundary))
                     violations.Add($"{Rel(root, file)}:{Line(text, m.Index)}: {m.Value.Trim()}");
             }
         }
 
-        violations.Should().BeEmpty(
-            "InvalidOperationException es técnica (500); una regla de negocio es DomainRuleViolationException y la traduce DomainRuleBehavior"
-        );
+        violations
+            .Should()
+            .BeEmpty(
+                "InvalidOperationException es técnica (500); una regla de negocio es DomainRuleViolationException y la traduce DomainRuleBehavior"
+            );
     }
 
     [Fact]
@@ -63,15 +67,22 @@ public sealed class DomainRuleErrorSemanticsTests
         {
             foreach (Match m in Regex.Matches(text, @"new\s+InvalidOperationException\(\s*"))
             {
-                var message = text.Substring(m.Index + m.Length, Math.Min(40, text.Length - m.Index - m.Length));
+                var message = text.Substring(
+                    m.Index + m.Length,
+                    Math.Min(40, text.Length - m.Index - m.Length)
+                );
                 if (!Regex.IsMatch(message, @"^\$?@?""Invariante violada"))
-                    violations.Add($"{Rel(root, file)}:{Line(text, m.Index)}: {message.Split('\n')[0]}");
+                    violations.Add(
+                        $"{Rel(root, file)}:{Line(text, m.Index)}: {message.Split('\n')[0]}"
+                    );
             }
         }
 
-        violations.Should().BeEmpty(
-            "una regla de negocio del dominio se lanza como DomainRuleViolationException; InvalidOperationException solo para 'Invariante violada: …'"
-        );
+        violations
+            .Should()
+            .BeEmpty(
+                "una regla de negocio del dominio se lanza como DomainRuleViolationException; InvalidOperationException solo para 'Invariante violada: …'"
+            );
     }
 
     [Fact]
@@ -84,7 +95,10 @@ public sealed class DomainRuleErrorSemanticsTests
         {
             foreach (Match m in CatchClause.Matches(text))
             {
-                if (!m.Groups["type"].Value.EndsWith("DomainRuleViolationException", StringComparison.Ordinal))
+                if (
+                    !m.Groups["type"]
+                        .Value.EndsWith("DomainRuleViolationException", StringComparison.Ordinal)
+                )
                     continue;
                 var var = m.Groups["var"].Success ? m.Groups["var"].Value : "ex";
                 var body = Body(text, m.Index + m.Length - 1);
@@ -93,7 +107,9 @@ public sealed class DomainRuleErrorSemanticsTests
             }
         }
 
-        violations.Should().BeEmpty("la traducción regla → Result es única: Result<T>.FromDomainRule(ex)");
+        violations
+            .Should()
+            .BeEmpty("la traducción regla → Result es única: Result<T>.FromDomainRule(ex)");
     }
 
     private static string Body(string text, int openBrace)
@@ -111,7 +127,13 @@ public sealed class DomainRuleErrorSemanticsTests
 
     private static IEnumerable<(string File, string Text)> SourceFiles(string root, string project)
     {
-        foreach (var file in Directory.EnumerateFiles(Path.Combine(root, project), "*.cs", SearchOption.AllDirectories))
+        foreach (
+            var file in Directory.EnumerateFiles(
+                Path.Combine(root, project),
+                "*.cs",
+                SearchOption.AllDirectories
+            )
+        )
         {
             var normalized = file.Replace('\\', '/');
             if (normalized.Contains("/bin/") || normalized.Contains("/obj/"))
@@ -123,7 +145,8 @@ public sealed class DomainRuleErrorSemanticsTests
 
     private static int Line(string text, int index) => text[..index].Count(c => c == '\n') + 1;
 
-    private static string Rel(string root, string file) => Path.GetRelativePath(root, file).Replace('\\', '/');
+    private static string Rel(string root, string file) =>
+        Path.GetRelativePath(root, file).Replace('\\', '/');
 
     private static string BackendSrcRoot()
     {

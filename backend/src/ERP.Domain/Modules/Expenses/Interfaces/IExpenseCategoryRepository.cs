@@ -5,11 +5,7 @@ namespace ERP.Domain.Modules.Expenses.Interfaces;
 
 public interface IExpenseCategoryRepository
 {
-    Task<ExpenseCategoryNode?> GetByIdAsync(
-        Guid tenantId,
-        Guid id,
-        CancellationToken ct = default
-    );
+    Task<ExpenseCategoryNode?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default);
 
     Task<IReadOnlyList<ExpenseCategoryNode>> GetChildrenAsync(
         Guid tenantId,
@@ -24,11 +20,7 @@ public interface IExpenseCategoryRepository
         CancellationToken ct = default
     );
 
-    Task<bool> HasActiveChildrenAsync(
-        Guid tenantId,
-        Guid parentId,
-        CancellationToken ct = default
-    );
+    Task<bool> HasActiveChildrenAsync(Guid tenantId, Guid parentId, CancellationToken ct = default);
 
     Task<bool> CodeExistsAsync(
         Guid tenantId,

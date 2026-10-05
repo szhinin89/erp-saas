@@ -93,7 +93,12 @@ public sealed class RetentionEligibilityService : IRetentionEligibilityService
                 continue;
             }
             resolvedCandidates.Add(
-                new RetentionEligibilityCandidate(info.TaxType, info.Code, info.Name, info.Percentage)
+                new RetentionEligibilityCandidate(
+                    info.TaxType,
+                    info.Code,
+                    info.Name,
+                    info.Percentage
+                )
             );
         }
 
@@ -136,8 +141,14 @@ public sealed class RetentionEligibilityService : IRetentionEligibilityService
             );
         }
 
-        var candidates = (canRetainVat ? vatCandidates : Enumerable.Empty<RetentionEligibilityCandidate>())
-            .Concat(canRetainIncome ? incomeCandidates : Enumerable.Empty<RetentionEligibilityCandidate>())
+        var candidates = (
+            canRetainVat ? vatCandidates : Enumerable.Empty<RetentionEligibilityCandidate>()
+        )
+            .Concat(
+                canRetainIncome
+                    ? incomeCandidates
+                    : Enumerable.Empty<RetentionEligibilityCandidate>()
+            )
             .ToList();
 
         return new RetentionEligibilityResult(

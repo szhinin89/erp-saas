@@ -9,6 +9,4 @@ public sealed record MatchItemCommand(
     Guid PurchaseReceptionLineId,
     Guid ItemId,
     Guid? PackagingLevelId = null
-)
-    : IRequest<Result<PurchaseReceptionLineMatchDto>>,
-        IBranchScopedRequest;
+) : IRequest<Result<PurchaseReceptionLineMatchDto>>, IBranchScopedRequest;

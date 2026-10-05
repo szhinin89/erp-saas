@@ -19,7 +19,8 @@ public sealed class AddSupplierRetentionDefaultValidator
 
         RuleFor(x => x.SriRetentionCodeId)
             .MustAsync(
-                async (id, ct) => await retentionCodeResolver.GetSelectableByIdAsync(id, ct) is not null
+                async (id, ct) =>
+                    await retentionCodeResolver.GetSelectableByIdAsync(id, ct) is not null
             )
             .WithMessage(
                 "SriRetentionCodeId no corresponde a un código activo del catálogo sri_retention_code."

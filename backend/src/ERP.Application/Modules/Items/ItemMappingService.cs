@@ -83,13 +83,12 @@ internal static class ItemMappingService
             ? new Dictionary<Guid, string>()
             : new Dictionary<Guid, string> { [itemType.Id] = itemType.Name };
 
-        var supplierInfo =
-            businessPartnerRepo is null
-                ? new Dictionary<Guid, BusinessPartnerDisplayInfo>()
-                : await businessPartnerRepo.GetDisplayInfoByIdsAsync(
-                    item.SupplierCodes.Where(s => s.IsActive).Select(s => s.SupplierId),
-                    ct
-                );
+        var supplierInfo = businessPartnerRepo is null
+            ? new Dictionary<Guid, BusinessPartnerDisplayInfo>()
+            : await businessPartnerRepo.GetDisplayInfoByIdsAsync(
+                item.SupplierCodes.Where(s => s.IsActive).Select(s => s.SupplierId),
+                ct
+            );
 
         return ToDetailDto(item, uomMap, vatMap, iceMap, itemTypeNames, supplierInfo);
     }
@@ -154,7 +153,8 @@ internal static class ItemMappingService
                 ? pv.Name
                 : null,
             exciseTaxCode,
-            !string.IsNullOrWhiteSpace(exciseTaxCode) && iceMap.TryGetValue(exciseTaxCode, out var ice)
+            !string.IsNullOrWhiteSpace(exciseTaxCode)
+            && iceMap.TryGetValue(exciseTaxCode, out var ice)
                 ? ice.Name
                 : null
         );
@@ -163,7 +163,8 @@ internal static class ItemMappingService
     private static string? ResolveExciseTaxCode(Item item) =>
         item
             .SpecialTaxConfigurations.FirstOrDefault(c =>
-                c.IsActive && c.SriTaxCategoryCode == ERP.Domain.Modules.Purchases.SriTaxCategoryCodes.Ice
+                c.IsActive
+                && c.SriTaxCategoryCode == ERP.Domain.Modules.Purchases.SriTaxCategoryCodes.Ice
             )
             ?.TaxCatalogCode;
 

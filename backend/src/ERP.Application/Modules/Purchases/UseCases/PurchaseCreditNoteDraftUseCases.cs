@@ -1,3 +1,6 @@
+using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Companies;
@@ -11,9 +14,6 @@ using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 using FluentValidation;
 using MediatR;
-using System.Globalization;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace ERP.Application.Modules.Purchases.UseCases;
 
@@ -91,7 +91,9 @@ public sealed class CreateDraftPurchaseCreditNoteValidator
             .WithMessage("La factura afectada es obligatoria.");
         RuleFor(x => x.ApplicationType)
             .IsInEnum()
-            .WithMessage("El tipo de aplicación de la nota de crédito (Devolución/Descuento) es obligatorio.");
+            .WithMessage(
+                "El tipo de aplicación de la nota de crédito (Devolución/Descuento) es obligatorio."
+            );
         RuleFor(x => x.CreditNoteNumber)
             .NotEmpty()
             .WithMessage("El número de nota de crédito es obligatorio.")
@@ -105,7 +107,11 @@ public sealed class CreateDraftPurchaseCreditNoteValidator
             .WithMessage("El motivo/concepto es obligatorio.")
             .MaximumLength(PurchaseCreditNote.ReasonMaxLen);
         RuleFor(x => x)
-            .Must(x => x.Lines.Count > 0 || (x.TaxSummaryLines?.Count ?? 0) > 0 || (x.ReturnLines?.Count ?? 0) > 0)
+            .Must(x =>
+                x.Lines.Count > 0
+                || (x.TaxSummaryLines?.Count ?? 0) > 0
+                || (x.ReturnLines?.Count ?? 0) > 0
+            )
             .WithMessage("Debe incluir al menos una línea o un resumen fiscal aplicado.");
         RuleForEach(x => x.Lines)
             .ChildRules(line =>
@@ -121,11 +127,12 @@ public sealed class CreateDraftPurchaseCreditNoteValidator
                     .GreaterThanOrEqualTo(0)
                     .WithMessage("El IVA de la línea no puede ser negativo.");
             });
-        RuleForEach(x => x.ReturnLines).ChildRules(line =>
-        {
-            line.RuleFor(l => l.OriginalInvoiceDetailId).NotEmpty();
-            line.RuleFor(l => l.Quantity).GreaterThan(0).PrecisionScale(20, 6, true); // capacidad máxima; los decimales efectivos los aplica quantityDecimals (ERP-PRECISION-OPERATIONAL-05B)
-        });
+        RuleForEach(x => x.ReturnLines)
+            .ChildRules(line =>
+            {
+                line.RuleFor(l => l.OriginalInvoiceDetailId).NotEmpty();
+                line.RuleFor(l => l.Quantity).GreaterThan(0).PrecisionScale(20, 6, true); // capacidad máxima; los decimales efectivos los aplica quantityDecimals (ERP-PRECISION-OPERATIONAL-05B)
+            });
         RuleForEach(x => x.TaxSummaryLines)
             .ChildRules(line =>
             {
@@ -334,7 +341,8 @@ public sealed class CreateDraftPurchaseCreditNoteHandler
         if (taxSummaryError is not null)
             return Result<PurchaseCreditNoteDto>.ValidationFailure(taxSummaryError);
 
-        var lines = cmd.Lines.Select(l => new PurchaseCreditNote.DraftLineInput(
+        var lines = cmd
+            .Lines.Select(l => new PurchaseCreditNote.DraftLineInput(
                 l.Description,
                 l.Subtotal,
                 l.VatCode,
@@ -347,21 +355,46 @@ public sealed class CreateDraftPurchaseCreditNoteHandler
         if (cmd.ApplicationType == PurchaseCreditNoteApplicationType.Return)
         {
             if (cmd.Lines.Count > 0)
-                return Result<PurchaseCreditNoteDto>.ValidationFailure("No se permiten líneas libres en una devolución.");
-            var resolved = await CreditNoteReturnLines.ResolveAsync(invoice, cmd.ReturnLines ?? [],
-                _returnRepo!, tid, (await _precision.GetEffectiveAsync(ct)).QuantityDecimals, ct);
+                return Result<PurchaseCreditNoteDto>.ValidationFailure(
+                    "No se permiten líneas libres en una devolución."
+                );
+            var resolved = await CreditNoteReturnLines.ResolveAsync(
+                invoice,
+                cmd.ReturnLines ?? [],
+                _returnRepo!,
+                tid,
+                (await _precision.GetEffectiveAsync(ct)).QuantityDecimals,
+                ct
+            );
             if (resolved.Error is not null)
                 return Result<PurchaseCreditNoteDto>.ValidationFailure(resolved.Error);
             lines = resolved.Fiscal;
             var total = lines.Sum(l => l.Subtotal + l.VatAmount + l.IceAmount + l.IrbpnrAmount);
             if (receptionDoc is not null && Math.Abs(total - receptionDoc.TotalAmount) > 0.01m)
-                return Result<PurchaseCreditNoteDto>.ValidationFailure("El total de productos a devolver no coincide con la NC/XML recibido.");
-            purchaseReturn = PurchaseReturn.CreateDraft(tid, _c.CompanyId, _b.BranchId, invoice.Id,
-                invoice.SupplierId, cmd.Reason, resolved.Returns, _u.UserId, cmd.ClientRequestId,
-                CreatePurchaseReturnDraftHandler.ComputePayloadHash(invoice.Id, cmd.Reason, cmd.ReturnLines!));
+                return Result<PurchaseCreditNoteDto>.ValidationFailure(
+                    "El total de productos a devolver no coincide con la NC/XML recibido."
+                );
+            purchaseReturn = PurchaseReturn.CreateDraft(
+                tid,
+                _c.CompanyId,
+                _b.BranchId,
+                invoice.Id,
+                invoice.SupplierId,
+                cmd.Reason,
+                resolved.Returns,
+                _u.UserId,
+                cmd.ClientRequestId,
+                CreatePurchaseReturnDraftHandler.ComputePayloadHash(
+                    invoice.Id,
+                    cmd.Reason,
+                    cmd.ReturnLines!
+                )
+            );
         }
         else if ((cmd.ReturnLines?.Count ?? 0) > 0)
-            return Result<PurchaseCreditNoteDto>.ValidationFailure("Descuento no permite productos a devolver.");
+            return Result<PurchaseCreditNoteDto>.ValidationFailure(
+                "Descuento no permite productos a devolver."
+            );
 
         PurchaseCreditNote creditNote;
         try
@@ -558,8 +591,14 @@ public sealed class CreateDraftPurchaseCreditNoteHandler
             cmd.Reason.Trim(),
             string.Join('\u0001', canonicalLines),
             string.Join('\u0001', canonicalTaxSummaryLines),
-            string.Join('|', (cmd.ReturnLines ?? []).OrderBy(l => l.OriginalInvoiceDetailId)
-                .Select(l => $"{l.OriginalInvoiceDetailId:D}:{l.Quantity.ToString(CultureInfo.InvariantCulture)}"))
+            string.Join(
+                '|',
+                (cmd.ReturnLines ?? [])
+                    .OrderBy(l => l.OriginalInvoiceDetailId)
+                    .Select(l =>
+                        $"{l.OriginalInvoiceDetailId:D}:{l.Quantity.ToString(CultureInfo.InvariantCulture)}"
+                    )
+            )
         );
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(canonical));
         return Convert.ToHexString(bytes);
@@ -685,14 +724,19 @@ public sealed class UpdatePurchaseCreditNoteDraftHandler
 
         if (creditNote.ApplicationType == PurchaseCreditNoteApplicationType.Return)
             return Result<PurchaseCreditNoteDto>.ValidationFailure(
-                "Edite los productos desde la devolución vinculada; la NC se actualiza junto con ella.");
+                "Edite los productos desde la devolución vinculada; la NC se actualiza junto con ella."
+            );
 
         // La clave fiscal copiada desde recepción no puede ser reemplazada al editar el borrador.
         if (creditNote.ReceptionDocumentId is not null)
             cmd = cmd with { AccessKey = creditNote.AccessKey };
 
         if (
-            !string.Equals(creditNote.CreditNoteNumber, cmd.CreditNoteNumber.Trim(), StringComparison.Ordinal)
+            !string.Equals(
+                creditNote.CreditNoteNumber,
+                cmd.CreditNoteNumber.Trim(),
+                StringComparison.Ordinal
+            )
             && await _creditNoteRepo.ExistsBySupplierAndCreditNoteNumberAsync(
                 tid,
                 _c.CompanyId,
@@ -738,7 +782,8 @@ public sealed class UpdatePurchaseCreditNoteDraftHandler
         if (taxSummaryError is not null)
             return Result<PurchaseCreditNoteDto>.ValidationFailure(taxSummaryError);
 
-        var lines = cmd.Lines.Select(l => new PurchaseCreditNote.DraftLineInput(
+        var lines = cmd
+            .Lines.Select(l => new PurchaseCreditNote.DraftLineInput(
                 l.Description,
                 l.Subtotal,
                 l.VatCode,

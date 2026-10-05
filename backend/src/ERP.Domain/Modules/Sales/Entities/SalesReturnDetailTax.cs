@@ -50,10 +50,7 @@ public sealed class SalesReturnDetailTax : IMustHaveTenant
         if (string.IsNullOrWhiteSpace(taxCode))
             throw new ArgumentException("El código de impuesto es obligatorio.", nameof(taxCode));
         if (string.IsNullOrWhiteSpace(taxRateCode))
-            throw new ArgumentException(
-                "El código de tarifa es obligatorio.",
-                nameof(taxRateCode)
-            );
+            throw new ArgumentException("El código de tarifa es obligatorio.", nameof(taxRateCode));
         if (string.IsNullOrWhiteSpace(taxName))
             throw new ArgumentException("El nombre del impuesto es obligatorio.", nameof(taxName));
         if (taxAmount < 0)

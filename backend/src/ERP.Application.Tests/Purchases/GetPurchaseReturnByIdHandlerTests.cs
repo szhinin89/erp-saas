@@ -53,7 +53,15 @@ public sealed class GetPurchaseReturnByIdHandlerTests
                     )
                 )
                 .ReturnsAsync(
-                    new Dictionary<Guid, (string InvoiceNumber, string SupplierName, string Status, DateOnly IssueDate)>()
+                    new Dictionary<
+                        Guid,
+                        (
+                            string InvoiceNumber,
+                            string SupplierName,
+                            string Status,
+                            DateOnly IssueDate
+                        )
+                    >()
                 );
             CreditNoteRepo
                 .Setup(r =>
@@ -98,7 +106,12 @@ public sealed class GetPurchaseReturnByIdHandlerTests
             "Producto en mal estado",
             new[]
             {
-                new PurchaseReturn.DraftLineInput(Guid.NewGuid(), itemId ?? ItemId, 2m, WarehouseId),
+                new PurchaseReturn.DraftLineInput(
+                    Guid.NewGuid(),
+                    itemId ?? ItemId,
+                    2m,
+                    WarehouseId
+                ),
             },
             UserId,
             Guid.NewGuid(),
@@ -127,7 +140,15 @@ public sealed class GetPurchaseReturnByIdHandlerTests
             BranchId,
             name,
             "BOD-01",
-            null, null, null, null, null, null, null, null, null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
             UserId,
             CompanyId,
             isMain: true
@@ -139,11 +160,11 @@ public sealed class GetPurchaseReturnByIdHandlerTests
         var item = BuildItem("SKU-001", "Producto de prueba");
         var purchaseReturn = BuildAuthorizedReturn(item.Id);
         var m = new Mocks();
-        m.ReturnRepo
-            .Setup(r => r.GetByIdAsync(TenantId, purchaseReturn.Id, It.IsAny<CancellationToken>()))
+        m.ReturnRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, purchaseReturn.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(purchaseReturn);
-        m.ItemRepo
-            .Setup(r =>
+        m.ItemRepo.Setup(r =>
                 r.GetByIdsLightAsync(
                     It.Is<IReadOnlyCollection<Guid>>(ids => ids.Contains(item.Id)),
                     TenantId,
@@ -152,8 +173,9 @@ public sealed class GetPurchaseReturnByIdHandlerTests
             )
             .ReturnsAsync(new[] { item });
         var warehouse = BuildWarehouse("Bodega Principal");
-        m.WarehouseRepo
-            .Setup(r => r.GetByIdAsync(TenantId, WarehouseId, It.IsAny<CancellationToken>()))
+        m.WarehouseRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, WarehouseId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(warehouse);
 
         var handler = m.BuildHandler();
@@ -177,11 +199,11 @@ public sealed class GetPurchaseReturnByIdHandlerTests
     {
         var purchaseReturn = BuildAuthorizedReturn();
         var m = new Mocks();
-        m.ReturnRepo
-            .Setup(r => r.GetByIdAsync(TenantId, purchaseReturn.Id, It.IsAny<CancellationToken>()))
+        m.ReturnRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, purchaseReturn.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(purchaseReturn);
-        m.ItemRepo
-            .Setup(r =>
+        m.ItemRepo.Setup(r =>
                 r.GetByIdsLightAsync(
                     It.IsAny<IReadOnlyCollection<Guid>>(),
                     TenantId,
@@ -189,8 +211,9 @@ public sealed class GetPurchaseReturnByIdHandlerTests
                 )
             )
             .ReturnsAsync(Array.Empty<Item>());
-        m.WarehouseRepo
-            .Setup(r => r.GetByIdAsync(TenantId, WarehouseId, It.IsAny<CancellationToken>()))
+        m.WarehouseRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, WarehouseId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((Warehouse?)null);
 
         var handler = m.BuildHandler();
@@ -214,10 +237,20 @@ public sealed class GetPurchaseReturnByIdHandlerTests
             "00000001",
             new Dictionary<Guid, PurchaseReturn.OriginalLineSnapshot>
             {
-                [purchaseReturn.Lines[0].OriginalInvoiceDetailId] = new PurchaseReturn.OriginalLineSnapshot(
-                    10m, 100m, 0m, 15m, 0m, "10", 15m, null, 0m, 10m,
-                    Array.Empty<PurchaseReturn.OriginalLineTaxSnapshot>()
-                ),
+                [purchaseReturn.Lines[0].OriginalInvoiceDetailId] =
+                    new PurchaseReturn.OriginalLineSnapshot(
+                        10m,
+                        100m,
+                        0m,
+                        15m,
+                        0m,
+                        "10",
+                        15m,
+                        null,
+                        0m,
+                        10m,
+                        Array.Empty<PurchaseReturn.OriginalLineTaxSnapshot>()
+                    ),
             },
             balanceDueBeforeApplication: 100m,
             currencyCode: "USD",
@@ -247,11 +280,11 @@ public sealed class GetPurchaseReturnByIdHandlerTests
         purchaseReturn.LinkSupplierCreditNote(receptionDoc.Id, UserId, Guid.NewGuid(), "link-hash");
 
         var m = new Mocks();
-        m.ReturnRepo
-            .Setup(r => r.GetByIdAsync(TenantId, purchaseReturn.Id, It.IsAny<CancellationToken>()))
+        m.ReturnRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, purchaseReturn.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(purchaseReturn);
-        m.ItemRepo
-            .Setup(r =>
+        m.ItemRepo.Setup(r =>
                 r.GetByIdsLightAsync(
                     It.IsAny<IReadOnlyCollection<Guid>>(),
                     TenantId,
@@ -259,11 +292,13 @@ public sealed class GetPurchaseReturnByIdHandlerTests
                 )
             )
             .ReturnsAsync(Array.Empty<Item>());
-        m.WarehouseRepo
-            .Setup(r => r.GetByIdAsync(TenantId, WarehouseId, It.IsAny<CancellationToken>()))
+        m.WarehouseRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, WarehouseId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((Warehouse?)null);
-        m.ReceptionRepo
-            .Setup(r => r.GetByIdAsync(TenantId, receptionDoc.Id, It.IsAny<CancellationToken>()))
+        m.ReceptionRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, receptionDoc.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(receptionDoc);
 
         var handler = m.BuildHandler();
@@ -276,7 +311,9 @@ public sealed class GetPurchaseReturnByIdHandlerTests
         result.Value!.SupplierCreditNoteInvoiceNumber.Should().Be("001-001-000000099");
         result.Value.SupplierCreditNoteAccessKey.Should().Be("AK-12345");
         result.Value.SupplierCreditNoteIssueDate.Should().Be(receptionDoc.IssueDate);
-        result.Value.SupplierCreditNoteAuthorizationDate.Should().Be(receptionDoc.AuthorizationDate);
+        result
+            .Value.SupplierCreditNoteAuthorizationDate.Should()
+            .Be(receptionDoc.AuthorizationDate);
         result.Value.SupplierCreditNoteTotalAmount.Should().Be(115m);
     }
 
@@ -285,11 +322,11 @@ public sealed class GetPurchaseReturnByIdHandlerTests
     {
         var purchaseReturn = BuildAuthorizedReturn();
         var m = new Mocks();
-        m.ReturnRepo
-            .Setup(r => r.GetByIdAsync(TenantId, purchaseReturn.Id, It.IsAny<CancellationToken>()))
+        m.ReturnRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, purchaseReturn.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(purchaseReturn);
-        m.ItemRepo
-            .Setup(r =>
+        m.ItemRepo.Setup(r =>
                 r.GetByIdsLightAsync(
                     It.IsAny<IReadOnlyCollection<Guid>>(),
                     TenantId,
@@ -297,21 +334,31 @@ public sealed class GetPurchaseReturnByIdHandlerTests
                 )
             )
             .ReturnsAsync(Array.Empty<Item>());
-        m.WarehouseRepo
-            .Setup(r => r.GetByIdAsync(TenantId, WarehouseId, It.IsAny<CancellationToken>()))
+        m.WarehouseRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, WarehouseId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((Warehouse?)null);
-        m.InvoiceRepo
-            .Setup(r =>
+        m.InvoiceRepo.Setup(r =>
                 r.GetJournalSourceSummariesByIdsAsync(
                     TenantId,
-                    It.Is<IReadOnlyCollection<Guid>>(ids => ids.Contains(purchaseReturn.PurchaseInvoiceId)),
+                    It.Is<IReadOnlyCollection<Guid>>(ids =>
+                        ids.Contains(purchaseReturn.PurchaseInvoiceId)
+                    ),
                     It.IsAny<CancellationToken>()
                 )
             )
             .ReturnsAsync(
-                new Dictionary<Guid, (string InvoiceNumber, string SupplierName, string Status, DateOnly IssueDate)>
+                new Dictionary<
+                    Guid,
+                    (string InvoiceNumber, string SupplierName, string Status, DateOnly IssueDate)
+                >
                 {
-                    [purchaseReturn.PurchaseInvoiceId] = ("001-001-000000042", "Proveedor Test", "Confirmed", DateOnly.FromDateTime(DateTime.UtcNow)),
+                    [purchaseReturn.PurchaseInvoiceId] = (
+                        "001-001-000000042",
+                        "Proveedor Test",
+                        "Confirmed",
+                        DateOnly.FromDateTime(DateTime.UtcNow)
+                    ),
                 }
             );
 
@@ -355,11 +402,11 @@ public sealed class GetPurchaseReturnByIdHandlerTests
         creditNote.LinkPurchaseReturn(purchaseReturn.Id, UserId);
 
         var m = new Mocks();
-        m.ReturnRepo
-            .Setup(r => r.GetByIdAsync(TenantId, purchaseReturn.Id, It.IsAny<CancellationToken>()))
+        m.ReturnRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, purchaseReturn.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(purchaseReturn);
-        m.ItemRepo
-            .Setup(r =>
+        m.ItemRepo.Setup(r =>
                 r.GetByIdsLightAsync(
                     It.IsAny<IReadOnlyCollection<Guid>>(),
                     TenantId,
@@ -367,12 +414,16 @@ public sealed class GetPurchaseReturnByIdHandlerTests
                 )
             )
             .ReturnsAsync(Array.Empty<Item>());
-        m.WarehouseRepo
-            .Setup(r => r.GetByIdAsync(TenantId, WarehouseId, It.IsAny<CancellationToken>()))
+        m.WarehouseRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, WarehouseId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((Warehouse?)null);
-        m.CreditNoteRepo
-            .Setup(r =>
-                r.GetByLinkedPurchaseReturnIdAsync(TenantId, purchaseReturn.Id, It.IsAny<CancellationToken>())
+        m.CreditNoteRepo.Setup(r =>
+                r.GetByLinkedPurchaseReturnIdAsync(
+                    TenantId,
+                    purchaseReturn.Id,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(creditNote);
 
@@ -392,11 +443,11 @@ public sealed class GetPurchaseReturnByIdHandlerTests
     {
         var purchaseReturn = BuildAuthorizedReturn();
         var m = new Mocks();
-        m.ReturnRepo
-            .Setup(r => r.GetByIdAsync(TenantId, purchaseReturn.Id, It.IsAny<CancellationToken>()))
+        m.ReturnRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, purchaseReturn.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(purchaseReturn);
-        m.ItemRepo
-            .Setup(r =>
+        m.ItemRepo.Setup(r =>
                 r.GetByIdsLightAsync(
                     It.IsAny<IReadOnlyCollection<Guid>>(),
                     TenantId,
@@ -404,8 +455,9 @@ public sealed class GetPurchaseReturnByIdHandlerTests
                 )
             )
             .ReturnsAsync(Array.Empty<Item>());
-        m.WarehouseRepo
-            .Setup(r => r.GetByIdAsync(TenantId, WarehouseId, It.IsAny<CancellationToken>()))
+        m.WarehouseRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, WarehouseId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((Warehouse?)null);
 
         var handler = m.BuildHandler();
@@ -435,17 +487,29 @@ public sealed class GetPurchaseReturnByIdHandlerTests
         var purchaseReturn = BuildAuthorizedReturn();
         var creditId = Guid.NewGuid();
         var m = new Mocks();
-        m.ReturnRepo
-            .Setup(r => r.GetByIdAsync(TenantId, purchaseReturn.Id, It.IsAny<CancellationToken>()))
+        m.ReturnRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, purchaseReturn.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(purchaseReturn);
-        m.ItemRepo
-            .Setup(r => r.GetByIdsLightAsync(It.IsAny<IReadOnlyCollection<Guid>>(), TenantId, It.IsAny<CancellationToken>()))
+        m.ItemRepo.Setup(r =>
+                r.GetByIdsLightAsync(
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    TenantId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(Array.Empty<Item>());
-        m.SupplierCreditRepo
-            .Setup(r => r.GetIdBySourcePurchaseReturnIdAsync(TenantId, purchaseReturn.Id, It.IsAny<CancellationToken>()))
+        m.SupplierCreditRepo.Setup(r =>
+                r.GetIdBySourcePurchaseReturnIdAsync(
+                    TenantId,
+                    purchaseReturn.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(generated ? creditId : null);
 
-        var result = await m.BuildHandler().Handle(new GetPurchaseReturnByIdQuery(purchaseReturn.Id), CancellationToken.None);
+        var result = await m.BuildHandler()
+            .Handle(new GetPurchaseReturnByIdQuery(purchaseReturn.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.SupplierCreditId.Should().Be(generated ? creditId : null);

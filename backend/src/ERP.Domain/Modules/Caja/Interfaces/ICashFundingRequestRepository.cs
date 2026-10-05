@@ -17,7 +17,11 @@ public interface ICashFundingRequestRepository
     /// transacción ambiente, seguido de recarga (estado vigente bajo el lock). Se adquiere SIEMPRE
     /// después del lock de la <c>CashSession</c> objetivo.
     /// </summary>
-    Task<CashFundingRequest?> GetByIdForUpdateAsync(Guid tenantId, Guid id, CancellationToken ct = default);
+    Task<CashFundingRequest?> GetByIdForUpdateAsync(
+        Guid tenantId,
+        Guid id,
+        CancellationToken ct = default
+    );
 
     /// <summary>Idempotencia de la creación: solicitud ya registrada con este ClientRequestId (o null).</summary>
     Task<CashFundingRequest?> GetByClientRequestIdAsync(

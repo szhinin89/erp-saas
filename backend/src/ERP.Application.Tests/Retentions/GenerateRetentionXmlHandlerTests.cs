@@ -71,8 +71,7 @@ public sealed class GenerateRetentionXmlHandlerTests
     {
         var fx = new Fixture();
         var xml = SampleXml();
-        fx.XmlService
-            .Setup(s =>
+        fx.XmlService.Setup(s =>
                 s.GenerateXmlAsync(
                     new ElectronicDocumentSourceReference(TenantId, CompanyId, RetentionId),
                     It.IsAny<CancellationToken>()
@@ -101,8 +100,7 @@ public sealed class GenerateRetentionXmlHandlerTests
     public async Task Handle_propagates_a_not_found_failure_for_an_unknown_retention()
     {
         var fx = new Fixture();
-        fx.XmlService
-            .Setup(s =>
+        fx.XmlService.Setup(s =>
                 s.GenerateXmlAsync(
                     It.IsAny<ElectronicDocumentSourceReference>(),
                     It.IsAny<CancellationToken>()
@@ -123,8 +121,7 @@ public sealed class GenerateRetentionXmlHandlerTests
     public async Task Handle_propagates_a_validation_failure_for_a_draft_retention()
     {
         var fx = new Fixture();
-        fx.XmlService
-            .Setup(s =>
+        fx.XmlService.Setup(s =>
                 s.GenerateXmlAsync(
                     It.IsAny<ElectronicDocumentSourceReference>(),
                     It.IsAny<CancellationToken>()
@@ -144,20 +141,27 @@ public sealed class GenerateRetentionXmlHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("emitida");
     }
+
     [Fact]
     public async Task Handle_returns_not_found_without_generating_when_the_origin_is_not_viewable()
     {
         var fx = new Fixture();
-        fx.Access
-            .Setup(a => a.FindViewableAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        fx.Access.Setup(a => a.FindViewableAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((ERP.Domain.Modules.Retentions.Entities.RetentionDocument?)null);
 
-        var result = await fx.Handler.Handle(new GenerateRetentionXmlQuery(RetentionId), CancellationToken.None);
+        var result = await fx.Handler.Handle(
+            new GenerateRetentionXmlQuery(RetentionId),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
         fx.XmlService.Verify(
-            s => s.GenerateXmlAsync(It.IsAny<ElectronicDocumentSourceReference>(), It.IsAny<CancellationToken>()),
+            s =>
+                s.GenerateXmlAsync(
+                    It.IsAny<ElectronicDocumentSourceReference>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }

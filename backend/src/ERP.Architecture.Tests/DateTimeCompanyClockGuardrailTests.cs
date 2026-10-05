@@ -68,13 +68,34 @@ public sealed class DateTimeCompanyClockGuardrailTests
             if (!Directory.Exists(projectDir))
                 continue;
 
-            foreach (var file in Directory.EnumerateFiles(projectDir, "*.cs", SearchOption.AllDirectories))
+            foreach (
+                var file in Directory.EnumerateFiles(
+                    projectDir,
+                    "*.cs",
+                    SearchOption.AllDirectories
+                )
+            )
             {
-                if (file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+                if (
+                    file.Contains(
+                        $"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}",
+                        StringComparison.Ordinal
+                    )
+                )
                     continue;
-                if (file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+                if (
+                    file.Contains(
+                        $"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}",
+                        StringComparison.Ordinal
+                    )
+                )
                     continue;
-                if (file.Contains($"{Path.DirectorySeparatorChar}Migrations{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+                if (
+                    file.Contains(
+                        $"{Path.DirectorySeparatorChar}Migrations{Path.DirectorySeparatorChar}",
+                        StringComparison.Ordinal
+                    )
+                )
                     continue;
 
                 var relative = Path.GetRelativePath(backendSrcRoot, file).Replace('\\', '/');
@@ -102,7 +123,8 @@ public sealed class DateTimeCompanyClockGuardrailTests
                     + "ICompanyClock.TodayAsync/LocalDateAsync (día operativo de la empresa). Si el "
                     + "hallazgo es un uso técnico legítimo (auditoría, token, certificado, lock), "
                     + "agregarlo a AllowedFiles con el motivo documentado — nunca silenciar sin "
-                    + "justificación.\n" + string.Join("\n", violations)
+                    + "justificación.\n"
+                    + string.Join("\n", violations)
             );
     }
 
@@ -145,7 +167,8 @@ public sealed class DateTimeCompanyClockGuardrailTests
             .BeEmpty(
                 "una hora sin zona solo se convierte con ICompanyClock/CompanyTimeZone (hora de "
                     + "empresa → UTC) y una fecha de negocio viaja como DateOnly — nunca SpecifyKind "
-                    + "ni DateOnly.ToDateTime.\n" + string.Join("\n", violations)
+                    + "ni DateOnly.ToDateTime.\n"
+                    + string.Join("\n", violations)
             );
     }
 
@@ -163,7 +186,8 @@ public sealed class DateTimeCompanyClockGuardrailTests
             .Should()
             .BeEmpty(
                 "la zona del servidor nunca es la de la empresa: presentar/derivar con "
-                    + "ICompanyClock (Company.Timezone).\n" + string.Join("\n", violations)
+                    + "ICompanyClock (Company.Timezone).\n"
+                    + string.Join("\n", violations)
             );
     }
 
@@ -187,7 +211,9 @@ public sealed class DateTimeCompanyClockGuardrailTests
             {
                 var call = BalancedCall(code, match.Index + match.Length - 1);
                 if (!call.Contains("DateTimeStyles", StringComparison.Ordinal))
-                    violations.Add($"{relative}:{LineOf(code, match.Index)} — '{match.Value}' sin DateTimeStyles");
+                    violations.Add(
+                        $"{relative}:{LineOf(code, match.Index)} — '{match.Value}' sin DateTimeStyles"
+                    );
             }
         }
 
@@ -215,7 +241,9 @@ public sealed class DateTimeCompanyClockGuardrailTests
             {
                 var call = BalancedCall(code, match.Index + match.Length - 1);
                 if (!call.Contains("InvariantCulture", StringComparison.Ordinal))
-                    violations.Add($"{relative}:{LineOf(code, match.Index)} — '{match.Value}' sin InvariantCulture");
+                    violations.Add(
+                        $"{relative}:{LineOf(code, match.Index)} — '{match.Value}' sin InvariantCulture"
+                    );
             }
         }
 
@@ -242,7 +270,9 @@ public sealed class DateTimeCompanyClockGuardrailTests
                     @"\bDateTimeOffset\??\s+\w+\s*[,;)={]"
                 )
             )
-                violations.Add($"{relative}:{LineOf(code, match.Index)} — DateTimeOffset declarado: '{match.Value.Trim()}'");
+                violations.Add(
+                    $"{relative}:{LineOf(code, match.Index)} — DateTimeOffset declarado: '{match.Value.Trim()}'"
+                );
 
             foreach (
                 System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(
@@ -250,13 +280,16 @@ public sealed class DateTimeCompanyClockGuardrailTests
                     @"(?<!const\s)\bstring\??\s+\w*(?:Date|At|Utc)\s*[,)=;{]"
                 )
             )
-                violations.Add($"{relative}:{LineOf(code, match.Index)} — fecha como string: '{match.Value.Trim()}'");
+                violations.Add(
+                    $"{relative}:{LineOf(code, match.Index)} — fecha como string: '{match.Value.Trim()}'"
+                );
         }
 
         violations
             .Should()
             .BeEmpty(
-                "fecha de negocio = DateOnly; instante = DateTime Kind=Utc.\n" + string.Join("\n", violations)
+                "fecha de negocio = DateOnly; instante = DateTime Kind=Utc.\n"
+                    + string.Join("\n", violations)
             );
     }
 
@@ -287,20 +320,33 @@ public sealed class DateTimeCompanyClockGuardrailTests
             .Should()
             .BeEmpty(
                 "filtro por día = [FromQuery] DateOnly; filtro instante = [FromQuery] DateTime "
-                    + "<nombre>Utc.\n" + string.Join("\n", violations)
+                    + "<nombre>Utc.\n"
+                    + string.Join("\n", violations)
             );
     }
 
     [Fact]
     public void Borde_HTTP_registra_el_contrato_de_instante_UTC()
     {
-        var program = File.ReadAllText(Path.Combine(ResolveBackendSrcRoot(), "ERP.API", "Program.cs"));
+        var program = File.ReadAllText(
+            Path.Combine(ResolveBackendSrcRoot(), "ERP.API", "Program.cs")
+        );
 
-        program.Should().Contain("UtcInstantModelBinderProvider", "DateTime en query/route exige zona explícita");
-        program.Should().Contain("UtcInstantJsonConverter", "DateTime en JSON exige/emite UTC con 'Z'");
+        program
+            .Should()
+            .Contain(
+                "UtcInstantModelBinderProvider",
+                "DateTime en query/route exige zona explícita"
+            );
+        program
+            .Should()
+            .Contain("UtcInstantJsonConverter", "DateTime en JSON exige/emite UTC con 'Z'");
     }
 
-    private static List<string> ScanProductionLines(Func<string, string, bool> isViolation, string label)
+    private static List<string> ScanProductionLines(
+        Func<string, string, bool> isViolation,
+        string label
+    )
     {
         var violations = new List<string>();
         foreach (var (relative, file) in ProductionFilePaths())
@@ -323,7 +369,13 @@ public sealed class DateTimeCompanyClockGuardrailTests
             var projectDir = Path.Combine(backendSrcRoot, project);
             if (!Directory.Exists(projectDir))
                 continue;
-            foreach (var file in Directory.EnumerateFiles(projectDir, "*.cs", SearchOption.AllDirectories))
+            foreach (
+                var file in Directory.EnumerateFiles(
+                    projectDir,
+                    "*.cs",
+                    SearchOption.AllDirectories
+                )
+            )
             {
                 if (
                     file.Contains($"{sep}bin{sep}", StringComparison.Ordinal)
@@ -344,7 +396,9 @@ public sealed class DateTimeCompanyClockGuardrailTests
             var code = string.Join(
                 "\n",
                 File.ReadAllLines(file)
-                    .Select(l => l.TrimStart().StartsWith("//", StringComparison.Ordinal) ? string.Empty : l)
+                    .Select(l =>
+                        l.TrimStart().StartsWith("//", StringComparison.Ordinal) ? string.Empty : l
+                    )
             );
             yield return (relative, code);
         }

@@ -68,7 +68,12 @@ public sealed class PostingEngineTests
     // con los montos fijos de Fact(). ACCOUNTING-POSTING-RULES-AUDIT-03: las 3 cuentas se crean
     // primero (Account.Create asigna su Id) y la regla referencia esos Id reales — PostingAccountGuard
     // resuelve cada AccountId contra IAccountRepository, así que deben existir en los mocks.
-    private static (PostingRule Rule, Account Debit, Account CreditSubtotal, Account CreditVat) RuleWithAccounts()
+    private static (
+        PostingRule Rule,
+        Account Debit,
+        Account CreditSubtotal,
+        Account CreditVat
+    ) RuleWithAccounts()
     {
         var debit = PostableAccount("1.1.01");
         var creditSubtotal = PostableAccount("4.1.01");
@@ -474,7 +479,16 @@ public sealed class PostingEngineTests
         var creditSubtotal = PostableAccount("4.1.02");
         var creditVat = PostableAccount("2.1.02");
 
-        var rule = PostingRule.Create(TenantId, CompanyId, "Sales", "InvoiceIssued", null, null, null, CreatedBy);
+        var rule = PostingRule.Create(
+            TenantId,
+            CompanyId,
+            "Sales",
+            "InvoiceIssued",
+            null,
+            null,
+            null,
+            CreatedBy
+        );
         rule.AddLine(debit.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
         rule.AddLine(creditSubtotal.Id, AccountNature.Credit, PostingAmountKind.Subtotal);
         rule.AddLine(creditVat.Id, AccountNature.Credit, PostingAmountKind.TaxVat);

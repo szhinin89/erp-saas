@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Net.Mail;
 using ERP.Application.Modules.Communications.Services;
 using ERP.Domain.Modules.Communications.Entities;
 using ERP.Domain.Modules.Communications.Enums;
@@ -12,8 +14,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Npgsql;
-using System.Collections.Concurrent;
-using System.Net.Mail;
 using Testcontainers.PostgreSql;
 
 namespace ERP.Infrastructure.Tests.Communications;
@@ -39,7 +39,9 @@ public sealed class CommunicationOutboxDeliveryIntegrationTests
     public async Task InitializeAsync()
     {
         await using var ctx = _db.Context();
-        await ctx.Database.ExecuteSqlRawAsync("DELETE FROM communication_outbox_attachments; DELETE FROM communication_outbox;");
+        await ctx.Database.ExecuteSqlRawAsync(
+            "DELETE FROM communication_outbox_attachments; DELETE FROM communication_outbox;"
+        );
     }
 
     public Task DisposeAsync() => Task.CompletedTask;
@@ -52,20 +54,42 @@ public sealed class CommunicationOutboxDeliveryIntegrationTests
         var ids = await SeedAsync(_db.CompanyA, count: 40);
         var deliveries = new ConcurrentBag<(int Worker, Guid Id)>();
 
-        await Task.WhenAll(Enumerable.Range(1, 3).Select(worker => Task.Run(async () =>
-        {
-            var sender = new FakeSender(async (msg, ct) =>
-            {
-                await Task.Delay(5, ct);
-                deliveries.Add((worker, msg.CommunicationId!.Value));
-            });
-            await RunAsync(sender, _db.ConnectionString);
-        })));
+        await Task.WhenAll(
+            Enumerable
+                .Range(1, 3)
+                .Select(worker =>
+                    Task.Run(async () =>
+                    {
+                        var sender = new FakeSender(
+                            async (msg, ct) =>
+                            {
+                                await Task.Delay(5, ct);
+                                deliveries.Add((worker, msg.CommunicationId!.Value));
+                            }
+                        );
+                        await RunAsync(sender, _db.ConnectionString);
+                    })
+                )
+        );
 
-        deliveries.Select(d => d.Id).Should().BeEquivalentTo(ids, "cada mensaje se entrega una sola vez");
+        deliveries
+            .Select(d => d.Id)
+            .Should()
+            .BeEquivalentTo(ids, "cada mensaje se entrega una sola vez");
         deliveries.GroupBy(d => d.Id).Should().OnlyContain(g => g.Count() == 1);
-        deliveries.Select(d => d.Worker).Distinct().Count().Should().BeGreaterThan(1, "el trabajo se repartió entre workers");
-        (await RowsAsync()).Should().OnlyContain(r => r.Status == CommunicationStatus.Sent && r.ClaimToken == null && r.LeaseUntilUtc == null);
+        deliveries
+            .Select(d => d.Worker)
+            .Distinct()
+            .Count()
+            .Should()
+            .BeGreaterThan(1, "el trabajo se repartió entre workers");
+        (await RowsAsync())
+            .Should()
+            .OnlyContain(r =>
+                r.Status == CommunicationStatus.Sent
+                && r.ClaimToken == null
+                && r.LeaseUntilUtc == null
+            );
     }
 
     // ── 21. Dos nodos: contextos, pools de conexión y processors independientes ──────────
@@ -75,15 +99,29 @@ public sealed class CommunicationOutboxDeliveryIntegrationTests
     {
         var ids = await SeedAsync(_db.CompanyA, count: 30);
         var deliveries = new ConcurrentBag<Guid>();
-        var sender = new FakeSender(async (msg, ct) =>
-        {
-            await Task.Delay(5, ct);
-            deliveries.Add(msg.CommunicationId!.Value);
-        });
+        var sender = new FakeSender(
+            async (msg, ct) =>
+            {
+                await Task.Delay(5, ct);
+                deliveries.Add(msg.CommunicationId!.Value);
+            }
+        );
 
         await Task.WhenAll(
-            Task.Run(() => RunAsync(sender, _db.ConnectionStringFor("node-a"), new MutableTimeProvider(_time.GetUtcNow()))),
-            Task.Run(() => RunAsync(sender, _db.ConnectionStringFor("node-b"), new MutableTimeProvider(_time.GetUtcNow())))
+            Task.Run(() =>
+                RunAsync(
+                    sender,
+                    _db.ConnectionStringFor("node-a"),
+                    new MutableTimeProvider(_time.GetUtcNow())
+                )
+            ),
+            Task.Run(() =>
+                RunAsync(
+                    sender,
+                    _db.ConnectionStringFor("node-b"),
+                    new MutableTimeProvider(_time.GetUtcNow())
+                )
+            )
         );
 
         deliveries.Should().BeEquivalentTo(ids);
@@ -108,9 +146,13 @@ public sealed class CommunicationOutboxDeliveryIntegrationTests
         claimA!.Recovered.Should().BeFalse();
 
         (await storeB.ClaimNextAsync(t0.AddMinutes(1), CommunicationDeliveryTiming.Lease))
-            .Should().BeNull("el lease de A sigue vigente");
+            .Should()
+            .BeNull("el lease de A sigue vigente");
 
-        var claimB = await storeB.ClaimNextAsync(t0 + CommunicationDeliveryTiming.Lease + TimeSpan.FromSeconds(1), CommunicationDeliveryTiming.Lease);
+        var claimB = await storeB.ClaimNextAsync(
+            t0 + CommunicationDeliveryTiming.Lease + TimeSpan.FromSeconds(1),
+            CommunicationDeliveryTiming.Lease
+        );
         claimB.Should().NotBeNull();
         claimB!.Id.Should().Be(id);
         claimB.ClaimToken.Should().NotBe(claimA.ClaimToken);
@@ -119,15 +161,29 @@ public sealed class CommunicationOutboxDeliveryIntegrationTests
 
         using (JobExecutionContext.Begin(_db.TenantA, _db.CompanyA))
         {
-            (await storeA.MarkSentAsync(claimA, EmailDeliveryReceipt.WithoutProviderId, t0)).Should().BeFalse("A perdió el claim");
-            (await storeA.MarkFailedAsync(claimA, new(CommunicationStatus.Failed, 9, null), CommunicationFailureCategory.Permanent, "tarde", null, t0))
-                .Should().BeFalse();
+            (await storeA.MarkSentAsync(claimA, EmailDeliveryReceipt.WithoutProviderId, t0))
+                .Should()
+                .BeFalse("A perdió el claim");
+            (
+                await storeA.MarkFailedAsync(
+                    claimA,
+                    new(CommunicationStatus.Failed, 9, null),
+                    CommunicationFailureCategory.Permanent,
+                    "tarde",
+                    null,
+                    t0
+                )
+            )
+                .Should()
+                .BeFalse();
 
             var row = await RowAsync(id);
             row.Status.Should().Be(CommunicationStatus.Processing);
             row.ClaimToken.Should().Be(claimB.ClaimToken);
 
-            (await storeB.MarkSentAsync(claimB, EmailDeliveryReceipt.WithoutProviderId, t0)).Should().BeTrue();
+            (await storeB.MarkSentAsync(claimB, EmailDeliveryReceipt.WithoutProviderId, t0))
+                .Should()
+                .BeTrue();
         }
 
         (await RowAsync(id)).Status.Should().Be(CommunicationStatus.Sent);
@@ -140,10 +196,23 @@ public sealed class CommunicationOutboxDeliveryIntegrationTests
     {
         var id = (await SeedAsync(_db.CompanyA, count: 1)).Single();
         await using (var dead = _db.Context())
-            (await new CommunicationOutboxDeliveryStore(dead).ClaimNextAsync(_time.Now, CommunicationDeliveryTiming.Lease)).Should().NotBeNull();
+            (
+                await new CommunicationOutboxDeliveryStore(dead).ClaimNextAsync(
+                    _time.Now,
+                    CommunicationDeliveryTiming.Lease
+                )
+            )
+                .Should()
+                .NotBeNull();
 
         var deliveries = new ConcurrentBag<Guid>();
-        var sender = new FakeSender((msg, _) => { deliveries.Add(msg.CommunicationId!.Value); return Task.CompletedTask; });
+        var sender = new FakeSender(
+            (msg, _) =>
+            {
+                deliveries.Add(msg.CommunicationId!.Value);
+                return Task.CompletedTask;
+            }
+        );
 
         _time.Advance(TimeSpan.FromMinutes(1));
         await RunAsync(sender, _db.ConnectionString, _time);
@@ -163,7 +232,10 @@ public sealed class CommunicationOutboxDeliveryIntegrationTests
     {
         var id = (await SeedAsync(_db.CompanyA, count: 1, maxRetries: 1)).Single();
         await using (var dead = _db.Context())
-            await new CommunicationOutboxDeliveryStore(dead).ClaimNextAsync(_time.Now, CommunicationDeliveryTiming.Lease);
+            await new CommunicationOutboxDeliveryStore(dead).ClaimNextAsync(
+                _time.Now,
+                CommunicationDeliveryTiming.Lease
+            );
 
         var sender = new FakeSender((_, _) => Task.CompletedTask);
         _time.Advance(CommunicationDeliveryTiming.Lease + TimeSpan.FromSeconds(1));
@@ -181,8 +253,13 @@ public sealed class CommunicationOutboxDeliveryIntegrationTests
     [Fact]
     public async Task Sender_que_excede_el_timeout_queda_Transient_reprogramado_y_no_en_Processing()
     {
-        CommunicationDeliveryTiming.MaxSmtpTimeout.Add(CommunicationDeliveryTiming.WorkMargin)
-            .Should().BeLessThan(CommunicationDeliveryTiming.Lease, "timeout < lease para cualquier configuración");
+        CommunicationDeliveryTiming
+            .MaxSmtpTimeout.Add(CommunicationDeliveryTiming.WorkMargin)
+            .Should()
+            .BeLessThan(
+                CommunicationDeliveryTiming.Lease,
+                "timeout < lease para cualquier configuración"
+            );
 
         var id = (await SeedAsync(_db.CompanyA, count: 1)).Single();
         var sender = new FakeSender((_, ct) => Task.Delay(Timeout.Infinite, ct));
@@ -233,14 +310,24 @@ public sealed class CommunicationOutboxDeliveryIntegrationTests
         var permanent = (await SeedAsync(_db.CompanyA, count: 1, subject: "permanent")).Single();
         var transient = (await SeedAsync(_db.CompanyA, count: 1, subject: "transient")).Single();
         var unknown = (await SeedAsync(_db.CompanyA, count: 1, subject: "unknown")).Single();
-        var exhausted = (await SeedAsync(_db.CompanyA, count: 1, subject: "exhausted", maxRetries: 1)).Single();
+        var exhausted = (
+            await SeedAsync(_db.CompanyA, count: 1, subject: "exhausted", maxRetries: 1)
+        ).Single();
 
-        var sender = new FakeSender((msg, _) => throw (msg.Subject switch
-        {
-            "permanent" => new SmtpFailedRecipientException(SmtpStatusCode.MailboxUnavailable, "x@test.com"),
-            "unknown" => new InvalidOperationException("no clasificado"),
-            _ => (Exception)new SmtpException(SmtpStatusCode.ServiceNotAvailable),
-        }));
+        var sender = new FakeSender(
+            (msg, _) =>
+                throw (
+                    msg.Subject switch
+                    {
+                        "permanent" => new SmtpFailedRecipientException(
+                            SmtpStatusCode.MailboxUnavailable,
+                            "x@test.com"
+                        ),
+                        "unknown" => new InvalidOperationException("no clasificado"),
+                        _ => (Exception)new SmtpException(SmtpStatusCode.ServiceNotAvailable),
+                    }
+                )
+        );
 
         await RunAsync(sender, _db.ConnectionString, _time);
 
@@ -292,14 +379,24 @@ public sealed class CommunicationOutboxDeliveryIntegrationTests
         await RunAsync(sender, _db.ConnectionString, _time, resolver);
 
         messageIds.Should().HaveCount(2);
-        messageIds[1].Should().Be(messageIds[0], "la identidad del mensaje no depende de la configuración SMTP");
-        messageIds[0].Should().Contain(id.ToString("N")).And.NotContain("dominio-a").And.NotContain("dominio-b");
+        messageIds[1]
+            .Should()
+            .Be(messageIds[0], "la identidad del mensaje no depende de la configuración SMTP");
+        messageIds[0]
+            .Should()
+            .Contain(id.ToString("N"))
+            .And.NotContain("dominio-a")
+            .And.NotContain("dominio-b");
     }
 
     /// <summary>Arma el MailMessage real (como SmtpEmailSender), captura su Message-ID y falla Transient.</summary>
     private sealed class MessageIdCapturingSender(List<string> messageIds) : IEmailSender
     {
-        public Task<EmailDeliveryReceipt> SendAsync(EmailMessage message, CommunicationEmailSettings settings, CancellationToken ct = default)
+        public Task<EmailDeliveryReceipt> SendAsync(
+            EmailMessage message,
+            CommunicationEmailSettings settings,
+            CancellationToken ct = default
+        )
         {
             using var mail = SmtpEmailSender.BuildMailMessage(message, settings);
             messageIds.Add(mail.Headers["Message-ID"]!);
@@ -311,12 +408,30 @@ public sealed class CommunicationOutboxDeliveryIntegrationTests
     {
         public string SenderEmail { get; set; } = senderEmail;
 
-        public Task<CommunicationEmailSettings> ResolveEmailAsync(CancellationToken ct = default) => Resolve();
+        public Task<CommunicationEmailSettings> ResolveEmailAsync(CancellationToken ct = default) =>
+            Resolve();
 
-        public Task<CommunicationEmailSettings> ResolveEmailAsync(CommunicationScope scope, CancellationToken ct = default) => Resolve();
+        public Task<CommunicationEmailSettings> ResolveEmailAsync(
+            CommunicationScope scope,
+            CancellationToken ct = default
+        ) => Resolve();
 
         private Task<CommunicationEmailSettings> Resolve() =>
-            Task.FromResult(new CommunicationEmailSettings(true, "smtp.test", 587, null, null, SenderEmail, null, true, null, 3, "es"));
+            Task.FromResult(
+                new CommunicationEmailSettings(
+                    true,
+                    "smtp.test",
+                    587,
+                    null,
+                    null,
+                    SenderEmail,
+                    null,
+                    true,
+                    null,
+                    3,
+                    "es"
+                )
+            );
     }
 
     // ── 27. Multi-tenant ──────────────────────────────────────────────────────────────────
@@ -327,15 +442,24 @@ public sealed class CommunicationOutboxDeliveryIntegrationTests
         var idsA = await SeedAsync(_db.CompanyA, count: 6);
         var idsB = await SeedAsync(_db.CompanyB, count: 6);
         var used = new ConcurrentDictionary<Guid, (string Sender, Guid ContextCompany)>();
-        var sender = new FakeSender((msg, _) =>
-        {
-            used[msg.CommunicationId!.Value] = (msg.SenderEmailUsed!, JobCompanyContext.Current);
-            return Task.CompletedTask;
-        });
+        var sender = new FakeSender(
+            (msg, _) =>
+            {
+                used[msg.CommunicationId!.Value] = (
+                    msg.SenderEmailUsed!,
+                    JobCompanyContext.Current
+                );
+                return Task.CompletedTask;
+            }
+        );
 
         await Task.WhenAll(
-            Task.Run(() => RunAsync(sender, _db.ConnectionString, new MutableTimeProvider(_time.GetUtcNow()))),
-            Task.Run(() => RunAsync(sender, _db.ConnectionString, new MutableTimeProvider(_time.GetUtcNow())))
+            Task.Run(() =>
+                RunAsync(sender, _db.ConnectionString, new MutableTimeProvider(_time.GetUtcNow()))
+            ),
+            Task.Run(() =>
+                RunAsync(sender, _db.ConnectionString, new MutableTimeProvider(_time.GetUtcNow()))
+            )
         );
 
         used.Keys.Should().BeEquivalentTo(idsA.Concat(idsB));
@@ -359,7 +483,8 @@ public sealed class CommunicationOutboxDeliveryIntegrationTests
 
         (await duplicate.Should().ThrowAsync<DbUpdateException>())
             .WithInnerException<PostgresException>()
-            .Which.ConstraintName.Should().Be("ux_communication_outbox_idempotency");
+            .Which.ConstraintName.Should()
+            .Be("ux_communication_outbox_idempotency");
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────────────────
@@ -393,18 +518,33 @@ public sealed class CommunicationOutboxDeliveryIntegrationTests
     {
         var tenantId = companyId == _db.CompanyA ? _db.TenantA : _db.TenantB;
         await using var ctx = _db.Context();
-        var rows = Enumerable.Range(0, count)
-            .Select(i => CommunicationOutbox.CreateEmail(
-                CommunicationIdentity.For(
-                    CommunicationScope.Company(tenantId, companyId),
-                    Purpose,
-                    CommunicationChannel.Email,
-                    new CommunicationSource("Sales", "SalesInvoice", sourceId ?? Guid.NewGuid()),
-                    CommunicationRecipientRole.Customer
-                ),
-                null, $"cliente{i}@test.com", new CommunicationTemplateUsage(Purpose, 1, CommunicationTemplateSource.Default),
-                subject ?? $"msg-{Guid.NewGuid():N}", "<p>x</p>", null,
-                CommunicationPriority.Normal, DateTime.UtcNow.AddMinutes(-1), maxRetries, Guid.Empty))
+        var rows = Enumerable
+            .Range(0, count)
+            .Select(i =>
+                CommunicationOutbox.CreateEmail(
+                    CommunicationIdentity.For(
+                        CommunicationScope.Company(tenantId, companyId),
+                        Purpose,
+                        CommunicationChannel.Email,
+                        new CommunicationSource(
+                            "Sales",
+                            "SalesInvoice",
+                            sourceId ?? Guid.NewGuid()
+                        ),
+                        CommunicationRecipientRole.Customer
+                    ),
+                    null,
+                    $"cliente{i}@test.com",
+                    new CommunicationTemplateUsage(Purpose, 1, CommunicationTemplateSource.Default),
+                    subject ?? $"msg-{Guid.NewGuid():N}",
+                    "<p>x</p>",
+                    null,
+                    CommunicationPriority.Normal,
+                    DateTime.UtcNow.AddMinutes(-1),
+                    maxRetries,
+                    Guid.Empty
+                )
+            )
             .ToList();
         ctx.CommunicationOutbox.AddRange(rows);
         await ctx.SaveChangesAsync();
@@ -414,7 +554,10 @@ public sealed class CommunicationOutboxDeliveryIntegrationTests
     private async Task<CommunicationOutbox> RowAsync(Guid id)
     {
         await using var ctx = _db.Context();
-        return await ctx.CommunicationOutbox.IgnoreQueryFilters().AsNoTracking().SingleAsync(x => x.Id == id);
+        return await ctx
+            .CommunicationOutbox.IgnoreQueryFilters()
+            .AsNoTracking()
+            .SingleAsync(x => x.Id == id);
     }
 
     private async Task<List<CommunicationOutbox>> RowsAsync()
@@ -437,7 +580,10 @@ public sealed class CommunicationOutboxDeliveryIntegrationTests
         public string ConnectionString => _pg.GetConnectionString();
 
         public string ConnectionStringFor(string applicationName) =>
-            new NpgsqlConnectionStringBuilder(ConnectionString) { ApplicationName = applicationName }.ConnectionString;
+            new NpgsqlConnectionStringBuilder(ConnectionString)
+            {
+                ApplicationName = applicationName,
+            }.ConnectionString;
 
         public async Task InitializeAsync()
         {
@@ -449,47 +595,83 @@ public sealed class CommunicationOutboxDeliveryIntegrationTests
             var tenantB = Tenant.Create("B", $"b-{Guid.NewGuid():N}"[..16], actor);
             ctx.Tenants.AddRange(tenantA, tenantB);
             await ctx.SaveChangesAsync();
-            var companyA = Company.CreateManaged(tenantA.Id, "1790012345001", "Empresa A", createdBy: actor);
-            var companyB = Company.CreateManaged(tenantB.Id, "1790012346001", "Empresa B", createdBy: actor);
+            var companyA = Company.CreateManaged(
+                tenantA.Id,
+                "1790012345001",
+                "Empresa A",
+                createdBy: actor
+            );
+            var companyB = Company.CreateManaged(
+                tenantB.Id,
+                "1790012346001",
+                "Empresa B",
+                createdBy: actor
+            );
             ctx.Companies.AddRange(companyA, companyB);
             await ctx.SaveChangesAsync();
-            (TenantA, CompanyA, TenantB, CompanyB) = (tenantA.Id, companyA.Id, tenantB.Id, companyB.Id);
+            (TenantA, CompanyA, TenantB, CompanyB) = (
+                tenantA.Id,
+                companyA.Id,
+                tenantB.Id,
+                companyB.Id
+            );
         }
 
         public Task DisposeAsync() => _pg.DisposeAsync().AsTask();
 
         /// <summary>Contexto como en producción: tenant/empresa desde JobExecutionContext (sin HttpContext).</summary>
-        public ErpDbContext Context(string? connectionString = null, MediatR.IPublisher? publisher = null)
+        public ErpDbContext Context(
+            string? connectionString = null,
+            MediatR.IPublisher? publisher = null
+        )
         {
             var accessor = new HttpContextAccessor();
             var options = new DbContextOptionsBuilder<ErpDbContext>()
                 .UseNpgsql(connectionString ?? ConnectionString)
                 .Options;
-            return new ErpDbContext(options, new CurrentTenantService(accessor), publisher ?? new NoPublisher(), new CurrentCompanyService(accessor));
+            return new ErpDbContext(
+                options,
+                new CurrentTenantService(accessor),
+                publisher ?? new NoPublisher(),
+                new CurrentCompanyService(accessor)
+            );
         }
     }
 
     /// <summary>Sender de prueba: registra cada llamada y el remitente efectivamente usado.</summary>
-    private sealed class FakeSender(Func<RecordedMessage, CancellationToken, Task> behavior) : IEmailSender
+    private sealed class FakeSender(Func<RecordedMessage, CancellationToken, Task> behavior)
+        : IEmailSender
     {
         private int _calls;
         public int Calls => _calls;
 
-        public async Task<EmailDeliveryReceipt> SendAsync(EmailMessage message, CommunicationEmailSettings settings, CancellationToken ct = default)
+        public async Task<EmailDeliveryReceipt> SendAsync(
+            EmailMessage message,
+            CommunicationEmailSettings settings,
+            CancellationToken ct = default
+        )
         {
             Interlocked.Increment(ref _calls);
-            await behavior(new RecordedMessage(message.CommunicationId, message.Subject, settings.SenderEmail), ct);
+            await behavior(
+                new RecordedMessage(message.CommunicationId, message.Subject, settings.SenderEmail),
+                ct
+            );
             return EmailDeliveryReceipt.WithoutProviderId;
         }
     }
 
-    private sealed record RecordedMessage(Guid? CommunicationId, string Subject, string? SenderEmailUsed);
+    private sealed record RecordedMessage(
+        Guid? CommunicationId,
+        string Subject,
+        string? SenderEmailUsed
+    );
 
     /// <summary>
     /// Resuelve por el alcance EXPLÍCITO (como el resolver real): remitente por empresa; System usa el
     /// remitente de instancia. El sender verifica además el contexto ambiente abierto por el processor.
     /// </summary>
-    private sealed class ScopedResolver(bool canSend = true, TimeSpan? timeout = null) : ICommunicationSettingsResolver
+    private sealed class ScopedResolver(bool canSend = true, TimeSpan? timeout = null)
+        : ICommunicationSettingsResolver
     {
         private int _calls;
         public int Calls => _calls;
@@ -498,13 +680,30 @@ public sealed class CommunicationOutboxDeliveryIntegrationTests
         public static string SenderFor(Guid companyId) => $"{companyId:N}@sender.test";
 
         public Task<CommunicationEmailSettings> ResolveEmailAsync(CancellationToken ct = default) =>
-            throw new InvalidOperationException("El processor debe resolver con el alcance explícito de la fila.");
+            throw new InvalidOperationException(
+                "El processor debe resolver con el alcance explícito de la fila."
+            );
 
-        public Task<CommunicationEmailSettings> ResolveEmailAsync(CommunicationScope scope, CancellationToken ct = default)
+        public Task<CommunicationEmailSettings> ResolveEmailAsync(
+            CommunicationScope scope,
+            CancellationToken ct = default
+        )
         {
             Interlocked.Increment(ref _calls);
             return Task.FromResult(
-                new CommunicationEmailSettings(canSend, "smtp.test", 587, null, null, scope.CompanyId is { } company ? SenderFor(company) : InstanceSender, null, true, null, 3, "es")
+                new CommunicationEmailSettings(
+                    canSend,
+                    "smtp.test",
+                    587,
+                    null,
+                    null,
+                    scope.CompanyId is { } company ? SenderFor(company) : InstanceSender,
+                    null,
+                    true,
+                    null,
+                    3,
+                    "es"
+                )
                 {
                     SmtpTimeout = timeout ?? CommunicationDeliveryTiming.DefaultSmtpTimeout,
                 }
@@ -516,15 +715,21 @@ public sealed class CommunicationOutboxDeliveryIntegrationTests
     {
         private DateTimeOffset _now = start;
         public DateTime Now => _now.UtcDateTime;
+
         public void Advance(TimeSpan delta) => _now += delta;
+
         public override DateTimeOffset GetUtcNow() => _now;
     }
 
     private sealed class NoPublisher : MediatR.IPublisher
     {
-        public Task Publish(object notification, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
             where TNotification : MediatR.INotification => Task.CompletedTask;
     }
 }

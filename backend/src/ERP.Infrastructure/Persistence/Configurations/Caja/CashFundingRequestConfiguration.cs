@@ -20,7 +20,10 @@ public sealed class CashFundingRequestConfiguration : IEntityTypeConfiguration<C
             "cash_funding_requests",
             t =>
             {
-                t.HasCheckConstraint("chk_cash_funding_requests_cash_amount_positive", "\"cash_amount\" > 0");
+                t.HasCheckConstraint(
+                    "chk_cash_funding_requests_cash_amount_positive",
+                    "\"cash_amount\" > 0"
+                );
                 t.HasCheckConstraint(
                     "chk_cash_funding_requests_total_covers_cash",
                     "\"total_amount\" >= \"cash_amount\""
@@ -36,7 +39,10 @@ public sealed class CashFundingRequestConfiguration : IEntityTypeConfiguration<C
                     "(\"status\" = 1 AND \"resolved_by_user_id\" IS NULL AND \"resolved_at_utc\" IS NULL) "
                         + "OR (\"status\" <> 1 AND \"resolved_by_user_id\" IS NOT NULL AND \"resolved_at_utc\" IS NOT NULL)"
                 );
-                t.HasCheckConstraint("chk_cash_funding_requests_payload_version", "\"payload_version\" >= 1");
+                t.HasCheckConstraint(
+                    "chk_cash_funding_requests_payload_version",
+                    "\"payload_version\" >= 1"
+                );
             }
         );
 
@@ -48,9 +54,20 @@ public sealed class CashFundingRequestConfiguration : IEntityTypeConfiguration<C
         builder.Property(x => x.CashRegisterId).HasColumnName("cash_register_id").IsRequired();
         builder.Property(x => x.CashSessionId).HasColumnName("cash_session_id").IsRequired();
         builder.Property(x => x.SupplierId).HasColumnName("supplier_id").IsRequired();
-        builder.Property(x => x.TotalAmount).HasColumnName("total_amount").HasPrecision(18, 2).IsRequired();
-        builder.Property(x => x.CashAmount).HasColumnName("cash_amount").HasPrecision(18, 2).IsRequired();
-        builder.Property(x => x.RequestedByUserId).HasColumnName("requested_by_user_id").IsRequired();
+        builder
+            .Property(x => x.TotalAmount)
+            .HasColumnName("total_amount")
+            .HasPrecision(18, 2)
+            .IsRequired();
+        builder
+            .Property(x => x.CashAmount)
+            .HasColumnName("cash_amount")
+            .HasPrecision(18, 2)
+            .IsRequired();
+        builder
+            .Property(x => x.RequestedByUserId)
+            .HasColumnName("requested_by_user_id")
+            .IsRequired();
         builder.Property(x => x.RequestedAtUtc).HasColumnName("requested_at_utc").IsRequired();
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<int>().IsRequired();
         builder.Property(x => x.ResolvedByUserId).HasColumnName("resolved_by_user_id");
@@ -60,7 +77,11 @@ public sealed class CashFundingRequestConfiguration : IEntityTypeConfiguration<C
             .HasColumnName("resolution_reason")
             .HasMaxLength(CashFundingRequest.ResolutionReasonMaxLen);
         builder.Property(x => x.SupplierPaymentId).HasColumnName("supplier_payment_id");
-        builder.Property(x => x.PaymentPayload).HasColumnName("payment_payload").HasColumnType("jsonb").IsRequired();
+        builder
+            .Property(x => x.PaymentPayload)
+            .HasColumnName("payment_payload")
+            .HasColumnType("jsonb")
+            .IsRequired();
         builder.Property(x => x.PayloadVersion).HasColumnName("payload_version").IsRequired();
         builder
             .Property(x => x.PayloadHash)
@@ -78,9 +99,21 @@ public sealed class CashFundingRequestConfiguration : IEntityTypeConfiguration<C
             .ValueGeneratedOnAddOrUpdate()
             .IsConcurrencyToken();
 
-        builder.HasOne<Company>().WithMany().HasForeignKey(x => x.CompanyId).OnDelete(DeleteBehavior.Restrict);
-        builder.HasOne<CashRegister>().WithMany().HasForeignKey(x => x.CashRegisterId).OnDelete(DeleteBehavior.Restrict);
-        builder.HasOne<CashSession>().WithMany().HasForeignKey(x => x.CashSessionId).OnDelete(DeleteBehavior.Restrict);
+        builder
+            .HasOne<Company>()
+            .WithMany()
+            .HasForeignKey(x => x.CompanyId)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder
+            .HasOne<CashRegister>()
+            .WithMany()
+            .HasForeignKey(x => x.CashRegisterId)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder
+            .HasOne<CashSession>()
+            .WithMany()
+            .HasForeignKey(x => x.CashSessionId)
+            .OnDelete(DeleteBehavior.Restrict);
         builder
             .HasOne<SupplierPayment>()
             .WithMany()
@@ -91,12 +124,24 @@ public sealed class CashFundingRequestConfiguration : IEntityTypeConfiguration<C
         // ── Indexes ──────────────────────────────────────────────────────
         // Bandeja del cajero: solicitudes de una sesión por estado.
         builder
-            .HasIndex(x => new { x.TenantId, x.CompanyId, x.CashSessionId, x.Status })
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.CompanyId,
+                x.CashSessionId,
+                x.Status,
+            })
             .HasDatabaseName("ix_cash_funding_requests_tenant_company_session_status");
 
         // "Mis solicitudes": por solicitante y estado.
         builder
-            .HasIndex(x => new { x.TenantId, x.CompanyId, x.RequestedByUserId, x.Status })
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.CompanyId,
+                x.RequestedByUserId,
+                x.Status,
+            })
             .HasDatabaseName("ix_cash_funding_requests_tenant_company_requester_status");
 
         builder

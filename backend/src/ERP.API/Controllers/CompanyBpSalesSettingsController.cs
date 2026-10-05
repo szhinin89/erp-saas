@@ -24,14 +24,11 @@ public sealed class CompanyBpSalesSettingsController : ControllerBase
 
     [HttpGet]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersView}")]
-    [ProducesResponseType(
-typeof(ApiResponse<CompanyBpSalesSettingsDto>),
-StatusCodes.Status200OK
-)]
+    [ProducesResponseType(typeof(ApiResponse<CompanyBpSalesSettingsDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetSettings(
-[FromRoute] Guid bpId,
-CancellationToken cancellationToken = default
-)
+        [FromRoute] Guid bpId,
+        CancellationToken cancellationToken = default
+    )
     {
         var result = await _mediator.Send(
             new GetCompanyBpSalesSettingsQuery(bpId),
@@ -42,17 +39,14 @@ CancellationToken cancellationToken = default
 
     [HttpPut]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersConfigureCompany}")]
-    [ProducesResponseType(
-typeof(ApiResponse<CompanyBpSalesSettingsDto>),
-StatusCodes.Status200OK
-)]
+    [ProducesResponseType(typeof(ApiResponse<CompanyBpSalesSettingsDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpsertSettings(
-[FromRoute] Guid bpId,
-[FromBody] UpsertSalesSettingsRequest body,
-CancellationToken cancellationToken = default
-)
+        [FromRoute] Guid bpId,
+        [FromBody] UpsertSalesSettingsRequest body,
+        CancellationToken cancellationToken = default
+    )
     {
         var cmd = new UpsertCompanyBpSalesSettingsCommand(bpId, body.PaymentTermId);
         var result = await _mediator.Send(cmd, cancellationToken);

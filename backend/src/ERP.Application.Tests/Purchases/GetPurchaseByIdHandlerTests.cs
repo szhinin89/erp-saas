@@ -34,7 +34,8 @@ public sealed class GetPurchaseByIdHandlerTests
             Branch.Setup(b => b.BranchId).Returns(branchContextId ?? BranchId);
         }
 
-        public GetPurchaseByIdHandler BuildHandler() => new(Repo.Object, Tenant.Object, Branch.Object);
+        public GetPurchaseByIdHandler BuildHandler() =>
+            new(Repo.Object, Tenant.Object, Branch.Object);
     }
 
     private static PurchaseInvoice CreateInvoice(Guid branchId) =>

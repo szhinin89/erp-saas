@@ -211,7 +211,10 @@ public sealed class PurchaseReturnCancelledPostingIntegrationTests : IAsyncLifet
 
         var services = new ServiceCollection();
         services.AddSingleton<TimeProvider>(AccountingDateBoundary.Clock);
-        services.AddScoped<ERP.Application.Common.Services.ICompanyClock, ERP.Infrastructure.Persistence.Services.CompanyClock>();
+        services.AddScoped<
+            ERP.Application.Common.Services.ICompanyClock,
+            ERP.Infrastructure.Persistence.Services.CompanyClock
+        >();
         services.AddLogging();
         services.AddSingleton(db);
         services.AddSingleton<ICurrentTenant>(new FixedCurrentTenant(tenantId));
@@ -262,12 +265,42 @@ public sealed class PurchaseReturnCancelledPostingIntegrationTests : IAsyncLifet
                 createdBy: _createdBy
             );
 
-        var appliedToPayableAcc = NewAccount("2.1", "CxP aplicada", AccountType.Liability, AccountNature.Debit);
-        var supplierCreditAcc = NewAccount("1.1", "Crédito proveedor", AccountType.Asset, AccountNature.Debit);
-        var costVarianceDebitAcc = NewAccount("5.9", "Variación de costo (gasto)", AccountType.Expense, AccountNature.Debit);
-        var historicalCostAcc = NewAccount("1.3", "Inventario", AccountType.Asset, AccountNature.Credit);
-        var returnedVatAcc = NewAccount("1.4", "IVA en compras", AccountType.Asset, AccountNature.Credit);
-        var costVarianceCreditAcc = NewAccount("4.9", "Variación de costo (ingreso)", AccountType.Income, AccountNature.Credit);
+        var appliedToPayableAcc = NewAccount(
+            "2.1",
+            "CxP aplicada",
+            AccountType.Liability,
+            AccountNature.Debit
+        );
+        var supplierCreditAcc = NewAccount(
+            "1.1",
+            "Crédito proveedor",
+            AccountType.Asset,
+            AccountNature.Debit
+        );
+        var costVarianceDebitAcc = NewAccount(
+            "5.9",
+            "Variación de costo (gasto)",
+            AccountType.Expense,
+            AccountNature.Debit
+        );
+        var historicalCostAcc = NewAccount(
+            "1.3",
+            "Inventario",
+            AccountType.Asset,
+            AccountNature.Credit
+        );
+        var returnedVatAcc = NewAccount(
+            "1.4",
+            "IVA en compras",
+            AccountType.Asset,
+            AccountNature.Credit
+        );
+        var costVarianceCreditAcc = NewAccount(
+            "4.9",
+            "Variación de costo (ingreso)",
+            AccountType.Income,
+            AccountNature.Credit
+        );
 
         db.Accounts.AddRange(
             appliedToPayableAcc,
@@ -278,23 +311,81 @@ public sealed class PurchaseReturnCancelledPostingIntegrationTests : IAsyncLifet
             costVarianceCreditAcc
         );
 
-        var authorizedRule = PostingRule.Create(_tenantId, _companyId, "Purchases", "PurchaseReturn", null, null, null, _createdBy);
-        authorizedRule.AddLine(appliedToPayableAcc.Id, AccountNature.Debit, PostingAmountKind.AppliedToPayable);
-        authorizedRule.AddLine(supplierCreditAcc.Id, AccountNature.Debit, PostingAmountKind.SupplierCredit);
-        authorizedRule.AddLine(costVarianceDebitAcc.Id, AccountNature.Debit, PostingAmountKind.CostVarianceDebit);
-        authorizedRule.AddLine(historicalCostAcc.Id, AccountNature.Credit, PostingAmountKind.HistoricalCost);
+        var authorizedRule = PostingRule.Create(
+            _tenantId,
+            _companyId,
+            "Purchases",
+            "PurchaseReturn",
+            null,
+            null,
+            null,
+            _createdBy
+        );
+        authorizedRule.AddLine(
+            appliedToPayableAcc.Id,
+            AccountNature.Debit,
+            PostingAmountKind.AppliedToPayable
+        );
+        authorizedRule.AddLine(
+            supplierCreditAcc.Id,
+            AccountNature.Debit,
+            PostingAmountKind.SupplierCredit
+        );
+        authorizedRule.AddLine(
+            costVarianceDebitAcc.Id,
+            AccountNature.Debit,
+            PostingAmountKind.CostVarianceDebit
+        );
+        authorizedRule.AddLine(
+            historicalCostAcc.Id,
+            AccountNature.Credit,
+            PostingAmountKind.HistoricalCost
+        );
         authorizedRule.AddLine(returnedVatAcc.Id, AccountNature.Credit, PostingAmountKind.TaxVat);
-        authorizedRule.AddLine(costVarianceCreditAcc.Id, AccountNature.Credit, PostingAmountKind.CostVarianceCredit);
+        authorizedRule.AddLine(
+            costVarianceCreditAcc.Id,
+            AccountNature.Credit,
+            PostingAmountKind.CostVarianceCredit
+        );
 
         // Espejo exacto: mismas cuentas/AmountKind, naturaleza invertida — mismo criterio que
         // MinimalPostingRules ("Purchases","PurchaseReturnCancelled") en AccountingBootstrapStep.
-        var cancelledRule = PostingRule.Create(_tenantId, _companyId, "Purchases", "PurchaseReturnCancelled", null, null, null, _createdBy);
-        cancelledRule.AddLine(appliedToPayableAcc.Id, AccountNature.Credit, PostingAmountKind.AppliedToPayable);
-        cancelledRule.AddLine(supplierCreditAcc.Id, AccountNature.Credit, PostingAmountKind.SupplierCredit);
-        cancelledRule.AddLine(costVarianceDebitAcc.Id, AccountNature.Credit, PostingAmountKind.CostVarianceDebit);
-        cancelledRule.AddLine(historicalCostAcc.Id, AccountNature.Debit, PostingAmountKind.HistoricalCost);
+        var cancelledRule = PostingRule.Create(
+            _tenantId,
+            _companyId,
+            "Purchases",
+            "PurchaseReturnCancelled",
+            null,
+            null,
+            null,
+            _createdBy
+        );
+        cancelledRule.AddLine(
+            appliedToPayableAcc.Id,
+            AccountNature.Credit,
+            PostingAmountKind.AppliedToPayable
+        );
+        cancelledRule.AddLine(
+            supplierCreditAcc.Id,
+            AccountNature.Credit,
+            PostingAmountKind.SupplierCredit
+        );
+        cancelledRule.AddLine(
+            costVarianceDebitAcc.Id,
+            AccountNature.Credit,
+            PostingAmountKind.CostVarianceDebit
+        );
+        cancelledRule.AddLine(
+            historicalCostAcc.Id,
+            AccountNature.Debit,
+            PostingAmountKind.HistoricalCost
+        );
         cancelledRule.AddLine(returnedVatAcc.Id, AccountNature.Debit, PostingAmountKind.TaxVat);
-        cancelledRule.AddLine(costVarianceCreditAcc.Id, AccountNature.Debit, PostingAmountKind.CostVarianceCredit);
+        cancelledRule.AddLine(
+            costVarianceCreditAcc.Id,
+            AccountNature.Debit,
+            PostingAmountKind.CostVarianceCredit
+        );
 
         var period = AccountingPeriod.Create(
             _tenantId,
@@ -302,7 +393,11 @@ public sealed class PurchaseReturnCancelledPostingIntegrationTests : IAsyncLifet
             entryDate.Year,
             entryDate.Month,
             new DateOnly(entryDate.Year, entryDate.Month, 1),
-            new DateOnly(entryDate.Year, entryDate.Month, DateTime.DaysInMonth(entryDate.Year, entryDate.Month)),
+            new DateOnly(
+                entryDate.Year,
+                entryDate.Month,
+                DateTime.DaysInMonth(entryDate.Year, entryDate.Month)
+            ),
             _createdBy
         );
 
@@ -412,7 +507,12 @@ public sealed class PurchaseReturnCancelledPostingIntegrationTests : IAsyncLifet
             "Producto defectuoso",
             new[]
             {
-                new PurchaseReturn.DraftLineInput(inv.Lines[0].Id, _itemId, returnQuantity, _warehouseId),
+                new PurchaseReturn.DraftLineInput(
+                    inv.Lines[0].Id,
+                    _itemId,
+                    returnQuantity,
+                    _warehouseId
+                ),
             },
             _createdBy,
             Guid.NewGuid(),
@@ -470,10 +570,9 @@ public sealed class PurchaseReturnCancelledPostingIntegrationTests : IAsyncLifet
         // vuelve al valor original, pero no se genera asiento reverso").
         await using (var verifyBefore = CreateContext())
         {
-            var authorizedEntry = await verifyBefore
-                .JournalEntries.FirstOrDefaultAsync(x =>
-                    x.SourceEventId == ret.Id && x.SourceEventType == "PurchaseReturn"
-                );
+            var authorizedEntry = await verifyBefore.JournalEntries.FirstOrDefaultAsync(x =>
+                x.SourceEventId == ret.Id && x.SourceEventType == "PurchaseReturn"
+            );
             authorizedEntry.Should().NotBeNull();
         }
 
@@ -493,7 +592,9 @@ public sealed class PurchaseReturnCancelledPostingIntegrationTests : IAsyncLifet
 
         var totalDebit = reversalEntry.Lines.Sum(l => l.Debit);
         var totalCredit = reversalEntry.Lines.Sum(l => l.Credit);
-        totalDebit.Should().Be(totalCredit, because: "el reverso también debe quedar balanceado (§19.1bis)");
+        totalDebit
+            .Should()
+            .Be(totalCredit, because: "el reverso también debe quedar balanceado (§19.1bis)");
         totalDebit
             .Should()
             .Be(
@@ -505,13 +606,17 @@ public sealed class PurchaseReturnCancelledPostingIntegrationTests : IAsyncLifet
 
         // Verifica la inversión Debe↔Haber real (no solo el total): el mismo monto que fue Debe de
         // CxP al autorizar debe volver a ser Haber de CxP al cancelar.
-        var appliedToPayableAccountId = (await verifyDb
+        var appliedToPayableAccountId = (
+            await verifyDb
                 .JournalEntries.Include(e => e.Lines)
-                .FirstAsync(x => x.SourceEventId == ret.Id && x.SourceEventType == "PurchaseReturn"))
+                .FirstAsync(x => x.SourceEventId == ret.Id && x.SourceEventType == "PurchaseReturn")
+        )
             .Lines.Single(l => l.Debit == ret.AppliedToPayableAmount!.Value)
             .AccountId;
 
-        var reversalPayableLine = reversalEntry.Lines.Single(l => l.AccountId == appliedToPayableAccountId);
+        var reversalPayableLine = reversalEntry.Lines.Single(l =>
+            l.AccountId == appliedToPayableAccountId
+        );
         reversalPayableLine.Credit.Should().Be(ret.AppliedToPayableAmount!.Value);
         reversalPayableLine.Debit.Should().Be(0m);
     }
@@ -546,7 +651,9 @@ public sealed class PurchaseReturnCancelledPostingIntegrationTests : IAsyncLifet
         await db.SaveChangesAsync();
 
         await using var verifyDb = CreateContext();
-        var entry = await verifyDb.JournalEntries.FirstOrDefaultAsync(x => x.SourceEventId == ret.Id);
+        var entry = await verifyDb.JournalEntries.FirstOrDefaultAsync(x =>
+            x.SourceEventId == ret.Id
+        );
         entry.Should().BeNull();
     }
 
@@ -594,7 +701,9 @@ public sealed class PurchaseReturnCancelledPostingIntegrationTests : IAsyncLifet
     {
         // ZH-BACKEND-SECURITY-ERROR-FINAL-HARDENING-01: clasificación técnica real (único punto).
         public string? ClassifyFailureCode(Exception exception) =>
-            new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator().ClassifyFailureCode(exception);
+            new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator().ClassifyFailureCode(
+                exception
+            );
 
         public bool TryGetUniqueViolation(
             Exception exception,

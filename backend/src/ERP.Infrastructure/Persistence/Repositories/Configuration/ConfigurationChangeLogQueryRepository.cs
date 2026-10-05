@@ -20,10 +20,9 @@ public sealed class ConfigurationChangeLogQueryRepository : IConfigurationChange
         // (ver doc de ConfigurationChangeLogQuery), exactamente lo mismo que ya aplica ese filtro
         // para ConfigurationChangeLog (ITenantScopedEntity + ICompanyScopedEntity). El Where
         // explícito se mantiene por claridad/defensa en profundidad, sin ningún bypass.
-        var q = _db
-            .ConfigurationChangeLogs.Where(l =>
-                l.TenantId == query.TenantId && l.CompanyId == query.CompanyId
-            );
+        var q = _db.ConfigurationChangeLogs.Where(l =>
+            l.TenantId == query.TenantId && l.CompanyId == query.CompanyId
+        );
 
         if (!string.IsNullOrWhiteSpace(query.EntityType))
             q = q.Where(l => l.EntityType == query.EntityType);

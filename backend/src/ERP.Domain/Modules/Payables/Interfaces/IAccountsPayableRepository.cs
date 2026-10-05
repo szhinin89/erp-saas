@@ -53,7 +53,9 @@ public interface IAccountsPayableRepository
     /// sola consulta, sin tracking, acotada a tenant + empresa) — lectura del historial de
     /// aplicaciones de un saldo a favor. Ids ajenos o inexistentes no aparecen en el diccionario.
     /// </summary>
-    Task<IReadOnlyDictionary<Guid, (string DocumentNumber, AccountsPayableOriginType OriginType)>> GetDocumentRefsByIdsAsync(
+    Task<
+        IReadOnlyDictionary<Guid, (string DocumentNumber, AccountsPayableOriginType OriginType)>
+    > GetDocumentRefsByIdsAsync(
         Guid tenantId,
         Guid companyId,
         IReadOnlyCollection<Guid> ids,
@@ -65,7 +67,17 @@ public interface IAccountsPayableRepository
     /// tracking, acotada a tenant + empresa): documento, origen y número de cuota, para mostrar las
     /// aplicaciones de una solicitud de efectivo. Cuotas ajenas o inexistentes no aparecen.
     /// </summary>
-    Task<IReadOnlyDictionary<Guid, (Guid AccountsPayableId, string DocumentNumber, AccountsPayableOriginType OriginType, int InstallmentNumber)>> GetInstallmentRefsByIdsAsync(
+    Task<
+        IReadOnlyDictionary<
+            Guid,
+            (
+                Guid AccountsPayableId,
+                string DocumentNumber,
+                AccountsPayableOriginType OriginType,
+                int InstallmentNumber
+            )
+        >
+    > GetInstallmentRefsByIdsAsync(
         Guid tenantId,
         Guid companyId,
         IReadOnlyCollection<Guid> installmentIds,

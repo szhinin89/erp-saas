@@ -47,7 +47,10 @@ public sealed record RetentionAnnulmentRequestDto(
     bool CanAbandon
 )
 {
-    public static RetentionAnnulmentRequestDto From(RetentionAnnulmentRequest r, DateOnly companyToday) =>
+    public static RetentionAnnulmentRequestDto From(
+        RetentionAnnulmentRequest r,
+        DateOnly companyToday
+    ) =>
         new(
             r.Id,
             r.RetentionDocumentId,

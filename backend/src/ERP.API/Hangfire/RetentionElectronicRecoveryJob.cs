@@ -142,7 +142,13 @@ public sealed partial class RetentionElectronicRecoveryJob : IRetentionElectroni
                 await using var scope = _scopeFactory.CreateAsyncScope();
                 await scope
                     .ServiceProvider.GetRequiredService<IRetentionAnnulmentService>()
-                    .VerifyWithSriAsync(tenantId, companyId, requestId, Guid.Empty, cancellationToken);
+                    .VerifyWithSriAsync(
+                        tenantId,
+                        companyId,
+                        requestId,
+                        Guid.Empty,
+                        cancellationToken
+                    );
             }
             catch (Exception ex)
             {

@@ -22,7 +22,9 @@ public sealed class DistributedFixedWindowRateLimitRedisTests : IAsyncLifetime
     private readonly IContainer _redis = new ContainerBuilder()
         .WithImage("redis:7-alpine")
         .WithPortBinding(6379, true)
-        .WithWaitStrategy(Wait.ForUnixContainer().UntilMessageIsLogged("Ready to accept connections"))
+        .WithWaitStrategy(
+            Wait.ForUnixContainer().UntilMessageIsLogged("Ready to accept connections")
+        )
         .Build();
 
     private ConnectionMultiplexer _nodeA = null!;
@@ -57,7 +59,8 @@ public sealed class DistributedFixedWindowRateLimitRedisTests : IAsyncLifetime
         );
 
         var granted = await DistributedFixedWindowRateLimitConcurrencyTests.RunConcurrentlyAsync(
-            () => throttle.TryAcquireAsync("ana@test.com")
+            () =>
+                throttle.TryAcquireAsync("ana@test.com")
         );
 
         granted.Should().Be(Limit);
@@ -72,7 +75,10 @@ public sealed class DistributedFixedWindowRateLimitRedisTests : IAsyncLifetime
         var turn = 0;
 
         var granted = await DistributedFixedWindowRateLimitConcurrencyTests.RunConcurrentlyAsync(
-            () => (Interlocked.Increment(ref turn) % 2 == 0 ? nodeA : nodeB).TryAcquireAsync("multi@test.com")
+            () =>
+                (Interlocked.Increment(ref turn) % 2 == 0 ? nodeA : nodeB).TryAcquireAsync(
+                    "multi@test.com"
+                )
         );
 
         granted.Should().Be(Limit);
@@ -94,7 +100,10 @@ public sealed class DistributedFixedWindowRateLimitRedisTests : IAsyncLifetime
         key.ToString().Should().NotContain("ttl").And.NotContain("@");
         var ttl = await _nodeA.GetDatabase().KeyTimeToLiveAsync(key);
         ttl.Should().NotBeNull();
-        ttl!.Value.Should().BeGreaterThan(TimeSpan.FromMinutes(59)).And.BeLessThanOrEqualTo(TimeSpan.FromMinutes(60));
+        ttl!
+            .Value.Should()
+            .BeGreaterThan(TimeSpan.FromMinutes(59))
+            .And.BeLessThanOrEqualTo(TimeSpan.FromMinutes(60));
     }
 
     [Fact]
@@ -107,7 +116,8 @@ public sealed class DistributedFixedWindowRateLimitRedisTests : IAsyncLifetime
         );
 
         var granted = await DistributedFixedWindowRateLimitConcurrencyTests.RunConcurrentlyAsync(
-            () => limiter.TryAcquireAsync("user:42", Limit, TimeSpan.FromMinutes(1))
+            () =>
+                limiter.TryAcquireAsync("user:42", Limit, TimeSpan.FromMinutes(1))
         );
 
         granted.Should().Be(Limit);

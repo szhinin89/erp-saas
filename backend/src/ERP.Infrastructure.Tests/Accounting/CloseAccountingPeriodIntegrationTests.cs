@@ -212,7 +212,10 @@ public sealed class CloseAccountingPeriodIntegrationTests : IAsyncLifetime
 
         await using var db = CreateContext();
         var result = await BuildHandler(db, _tenantId, _companyId, _createdBy)
-            .HandleWithDomainRules(new CloseAccountingPeriodCommand(period.Id), CancellationToken.None);
+            .HandleWithDomainRules(
+                new CloseAccountingPeriodCommand(period.Id),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("sin publicar");

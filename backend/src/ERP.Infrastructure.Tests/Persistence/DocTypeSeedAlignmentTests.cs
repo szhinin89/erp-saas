@@ -39,7 +39,10 @@ public sealed class DocTypeSeedAlignmentTests
 
         seededCodes
             .Should()
-            .Contain(code, $"DocTypeCodes.{constantName} debe seguir existiendo activo en el seed de DocType");
+            .Contain(
+                code,
+                $"DocTypeCodes.{constantName} debe seguir existiendo activo en el seed de DocType"
+            );
     }
 
     [Theory]
@@ -47,7 +50,10 @@ public sealed class DocTypeSeedAlignmentTests
     [InlineData(DocTypeCodes.SalesCreditNote, "04")]
     [InlineData(DocTypeCodes.PurchaseCreditNote, "04")]
     [InlineData(DocTypeCodes.ExpenseWithholding, "07")]
-    public void Expected_SRI_mappings_exist_in_the_DocTypeSriMap_seed(string docTypeCode, string sriDocTypeCode)
+    public void Expected_SRI_mappings_exist_in_the_DocTypeSriMap_seed(
+        string docTypeCode,
+        string sriDocTypeCode
+    )
     {
         var seededMap = GetSeededSriMap();
 

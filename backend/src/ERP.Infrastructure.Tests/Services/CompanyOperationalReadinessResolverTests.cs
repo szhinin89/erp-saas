@@ -50,11 +50,19 @@ public sealed class CompanyOperationalReadinessResolverTests
         public Fixture()
         {
             CompanyRepo
-                .Setup(r => r.GetByIdForTenantAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetByIdForTenantAsync(CompanyId, TenantId, It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync((CompanyEntity?)null);
             BranchRepo
                 .Setup(r =>
-                    r.GetByCompanyAsync(TenantId, CompanyId, true, null, It.IsAny<CancellationToken>())
+                    r.GetByCompanyAsync(
+                        TenantId,
+                        CompanyId,
+                        true,
+                        null,
+                        It.IsAny<CancellationToken>()
+                    )
                 )
                 .ReturnsAsync(Array.Empty<Branch>());
             EstablishmentRepo
@@ -68,13 +76,17 @@ public sealed class CompanyOperationalReadinessResolverTests
                 )
                 .ReturnsAsync((EmissionPointEntity?)null);
             WarehouseRepo
-                .Setup(r =>
-                    r.GetAsync(TenantId, true, null, null, It.IsAny<CancellationToken>())
-                )
+                .Setup(r => r.GetAsync(TenantId, true, null, null, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Array.Empty<Warehouse>());
             CashRegisterRepo
                 .Setup(r =>
-                    r.GetAllByCompanyAsync(TenantId, CompanyId, true, null, It.IsAny<CancellationToken>())
+                    r.GetAllByCompanyAsync(
+                        TenantId,
+                        CompanyId,
+                        true,
+                        null,
+                        It.IsAny<CancellationToken>()
+                    )
                 )
                 .ReturnsAsync(Array.Empty<CashRegister>());
             PriceListRepo
@@ -88,22 +100,45 @@ public sealed class CompanyOperationalReadinessResolverTests
                 .ReturnsAsync(Array.Empty<ERP.Domain.Modules.Items.Entities.Item>());
             InvoiceDefaultsResolver
                 .Setup(r =>
-                    r.GetAsync(TenantId, CompanyId, It.IsAny<Guid?>(), It.IsAny<CancellationToken>())
+                    r.GetAsync(
+                        TenantId,
+                        CompanyId,
+                        It.IsAny<Guid?>(),
+                        It.IsAny<CancellationToken>()
+                    )
                 )
                 .ReturnsAsync(
-                    new InvoiceDefaultsResult(null, null, null, null, null, "None", true, Array.Empty<string>())
+                    new InvoiceDefaultsResult(
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        "None",
+                        true,
+                        Array.Empty<string>()
+                    )
                 );
             SalesFiscalPolicyResolver
                 .Setup(r => r.GetEffectivePolicyAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(
-                    new SalesFiscalPolicyResult(true, 0m, ConsumerFinalMaxAmountSource.Fallback, null)
+                    new SalesFiscalPolicyResult(
+                        true,
+                        0m,
+                        ConsumerFinalMaxAmountSource.Fallback,
+                        null
+                    )
                 );
             BrandingResolver
                 .Setup(r => r.GetAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(CompanyBrandingSettings.Empty());
             CatalogConfigResolver
                 .Setup(r =>
-                    r.ResolveMaxCategoryDepthAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+                    r.ResolveMaxCategoryDepthAsync(
+                        TenantId,
+                        CompanyId,
+                        It.IsAny<CancellationToken>()
+                    )
                 )
                 .ReturnsAsync(3);
         }
@@ -223,27 +258,44 @@ public sealed class CompanyOperationalReadinessResolverTests
             CompanyId,
             isMain: true
         );
-        var cashRegister = CashRegister.Create(TenantId, CompanyId, branch.Id, "CAJA-01", "Caja Principal", UserId);
+        var cashRegister = CashRegister.Create(
+            TenantId,
+            CompanyId,
+            branch.Id,
+            "CAJA-01",
+            "Caja Principal",
+            UserId
+        );
 
-        f.BranchRepo
-            .Setup(r =>
+        f.BranchRepo.Setup(r =>
                 r.GetByCompanyAsync(TenantId, CompanyId, true, null, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(new[] { branch });
-        f.EstablishmentRepo
-            .Setup(r => r.GetMainByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+        f.EstablishmentRepo.Setup(r =>
+                r.GetMainByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(establishment);
-        f.EmissionPointRepo
-            .Setup(r => r.GetDefaultForCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+        f.EmissionPointRepo.Setup(r =>
+                r.GetDefaultForCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(emissionPoint);
-        f.WarehouseRepo
-            .Setup(r => r.GetMainForBranchAsync(TenantId, branch.Id, It.IsAny<CancellationToken>()))
+        f.WarehouseRepo.Setup(r =>
+                r.GetMainForBranchAsync(TenantId, branch.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(warehouse);
-        f.WarehouseRepo
-            .Setup(r => r.GetAsync(TenantId, true, null, null, It.IsAny<CancellationToken>()))
+        f.WarehouseRepo.Setup(r =>
+                r.GetAsync(TenantId, true, null, null, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { warehouse });
-        f.CashRegisterRepo
-            .Setup(r => r.GetAllByCompanyAsync(TenantId, CompanyId, true, null, It.IsAny<CancellationToken>()))
+        f.CashRegisterRepo.Setup(r =>
+                r.GetAllByCompanyAsync(
+                    TenantId,
+                    CompanyId,
+                    true,
+                    null,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(new[] { cashRegister });
 
         var result = await f.Build().GetAsync(TenantId, CompanyId, default);
@@ -268,8 +320,7 @@ public sealed class CompanyOperationalReadinessResolverTests
             createdBy: UserId
         );
         // Sin AttachCertificate: CertP12Path queda null.
-        f.SriRepo
-            .Setup(r => r.GetByCompanyIdAsync(CompanyId, It.IsAny<CancellationToken>()))
+        f.SriRepo.Setup(r => r.GetByCompanyIdAsync(CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(sriSettings);
 
         var result = await f.Build().GetAsync(TenantId, CompanyId, default);
@@ -286,8 +337,7 @@ public sealed class CompanyOperationalReadinessResolverTests
     public async Task Con_invoice_defaults_completos_y_price_list_default_seccion_ventas_Ready()
     {
         var f = new Fixture();
-        f.InvoiceDefaultsResolver
-            .Setup(r =>
+        f.InvoiceDefaultsResolver.Setup(r =>
                 r.GetAsync(TenantId, CompanyId, It.IsAny<Guid?>(), It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(
@@ -311,8 +361,7 @@ public sealed class CompanyOperationalReadinessResolverTests
             isDefault: true,
             createdBy: UserId
         );
-        f.PriceListRepo
-            .Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>()))
+        f.PriceListRepo.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(priceList);
 
         var result = await f.Build().GetAsync(TenantId, CompanyId, default);
@@ -326,8 +375,7 @@ public sealed class CompanyOperationalReadinessResolverTests
     public async Task Sin_lista_de_precios_default_ventas_queda_Missing_por_item_bloqueante()
     {
         var f = new Fixture();
-        f.PriceListRepo
-            .Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>()))
+        f.PriceListRepo.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((PriceList?)null);
 
         var result = await f.Build().GetAsync(TenantId, CompanyId, default);
@@ -345,8 +393,7 @@ public sealed class CompanyOperationalReadinessResolverTests
     public async Task Bodega_default_no_configurada_con_seleccion_manual_permitida_es_Warning_no_bloqueante()
     {
         var f = new Fixture();
-        f.InvoiceDefaultsResolver
-            .Setup(r =>
+        f.InvoiceDefaultsResolver.Setup(r =>
                 r.GetAsync(TenantId, CompanyId, It.IsAny<Guid?>(), It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(
@@ -382,8 +429,9 @@ public sealed class CompanyOperationalReadinessResolverTests
     public async Task Branding_incompleto_es_Warning_nunca_bloqueante()
     {
         var f = new Fixture();
-        f.BrandingResolver
-            .Setup(r => r.GetAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+        f.BrandingResolver.Setup(r =>
+                r.GetAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(CompanyBrandingSettings.Empty());
 
         var result = await f.Build().GetAsync(TenantId, CompanyId, default);
@@ -435,7 +483,10 @@ public sealed class CompanyOperationalReadinessResolverTests
         var f = new Fixture();
         await f.Build().GetAsync(TenantId, CompanyId, default);
 
-        f.CompanyRepo.Verify(r => r.AddAsync(It.IsAny<CompanyEntity>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.CompanyRepo.Verify(
+            r => r.AddAsync(It.IsAny<CompanyEntity>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
         f.BranchRepo.Verify(
             r => r.AddAsync(It.IsAny<Branch>(), It.IsAny<CancellationToken>()),
             Times.Never
@@ -468,9 +519,18 @@ public sealed class CompanyOperationalReadinessResolverTests
         f.PriceListRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
         f.WarehouseRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
         f.BranchRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
-        f.EstablishmentRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
-        f.EmissionPointRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
-        f.CashRegisterRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        f.EstablishmentRepo.Verify(
+            r => r.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        f.EmissionPointRepo.Verify(
+            r => r.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        f.CashRegisterRepo.Verify(
+            r => r.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Never
+        );
         f.CompanyRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 }

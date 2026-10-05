@@ -13,7 +13,10 @@ namespace ERP.Domain.Modules.Caja.Entities;
 /// <see cref="CashMovementType.Withdrawal"/>) — nunca a los tipos de sistema (Opening/SaleIncome/
 /// SaleRefund), que no admiten motivo elegido por el usuario.
 /// </summary>
-public sealed class CashMovementReason : MasterEntity, ITenantScopedEntity, ICompanyOperationalEntity
+public sealed class CashMovementReason
+    : MasterEntity,
+        ITenantScopedEntity,
+        ICompanyOperationalEntity
 {
     public const int CodeMaxLen = 30;
     public const int NameMaxLen = 100;

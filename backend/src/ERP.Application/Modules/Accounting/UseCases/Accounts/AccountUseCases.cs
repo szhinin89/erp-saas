@@ -149,7 +149,11 @@ public sealed class CreateAccountHandler : IRequestHandler<CreateAccountCommand,
         // ParentAccountId indicado (o su ausencia) debe coincidir con el padre canónico implicado
         // por el código, para que Create/Update nunca puedan reintroducir manualmente el mismo
         // tipo de inconsistencia que corrigió el backfill (ver AccountHierarchyDiagnostics).
-        var canonicalParentError = Map.ValidateCanonicalParent(cmd.Code, cmd.ParentAccountId, accounts);
+        var canonicalParentError = Map.ValidateCanonicalParent(
+            cmd.Code,
+            cmd.ParentAccountId,
+            accounts
+        );
         if (canonicalParentError is not null)
             return Result<AccountDto>.ValidationFailure(canonicalParentError);
 
@@ -438,9 +442,9 @@ public sealed class GetAccountByIdHandler : IRequestHandler<GetAccountByIdQuery,
         if (account is null)
             return Result<AccountDto>.NotFound("Cuenta no encontrada.");
 
-        var byId = (
-            await _repo.GetByCompanyAsync(_t.TenantId, _c.CompanyId, ct)
-        ).ToDictionary(a => a.Id);
+        var byId = (await _repo.GetByCompanyAsync(_t.TenantId, _c.CompanyId, ct)).ToDictionary(a =>
+            a.Id
+        );
         return Result<AccountDto>.Success(Map.ToDto(account, byId));
     }
 }
@@ -465,9 +469,9 @@ public sealed class GetAccountByCodeHandler
         if (account is null)
             return Result<AccountDto>.NotFound("Cuenta no encontrada.");
 
-        var byId = (
-            await _repo.GetByCompanyAsync(_t.TenantId, _c.CompanyId, ct)
-        ).ToDictionary(a => a.Id);
+        var byId = (await _repo.GetByCompanyAsync(_t.TenantId, _c.CompanyId, ct)).ToDictionary(a =>
+            a.Id
+        );
         return Result<AccountDto>.Success(Map.ToDto(account, byId));
     }
 }
@@ -508,7 +512,8 @@ file static class Map
 
     public static AccountDto ToDto(Account a, IReadOnlyDictionary<Guid, Account> byId)
     {
-        Account? parent = a.ParentAccountId is { } pid && byId.TryGetValue(pid, out var p) ? p : null;
+        Account? parent =
+            a.ParentAccountId is { } pid && byId.TryGetValue(pid, out var p) ? p : null;
 
         return new(
             a.Id,

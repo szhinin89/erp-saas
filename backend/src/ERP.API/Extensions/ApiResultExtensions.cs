@@ -123,19 +123,31 @@ public static class ApiResultExtensions
         if (ApiErrorStatus.ExposesDetail(code))
             return ApiError(controller, code, result.Error);
 
-        var logger = controller.HttpContext.RequestServices.GetService<ILoggerFactory>()
+        var logger = controller
+            .HttpContext.RequestServices.GetService<ILoggerFactory>()
             ?.CreateLogger(typeof(ApiResultExtensions));
         if (logger is not null)
-            LogSuppressedDetail(logger, code, controller.HttpContext.Request.Path, result.Error, null);
+            LogSuppressedDetail(
+                logger,
+                code,
+                controller.HttpContext.Request.Path,
+                result.Error,
+                null
+            );
         return ApiError(controller, code, null);
     }
 
-    private static readonly Action<ILogger, string, PathString, string, Exception?> LogSuppressedDetail =
-        LoggerMessage.Define<string, PathString, string>(
-            LogLevel.Error,
-            new EventId(1, nameof(LogSuppressedDetail)),
-            "Fallo {Code} en {Path} (detalle no expuesto al cliente): {Detail}"
-        );
+    private static readonly Action<
+        ILogger,
+        string,
+        PathString,
+        string,
+        Exception?
+    > LogSuppressedDetail = LoggerMessage.Define<string, PathString, string>(
+        LogLevel.Error,
+        new EventId(1, nameof(LogSuppressedDetail)),
+        "Fallo {Code} en {Path} (detalle no expuesto al cliente): {Detail}"
+    );
 
     /// <summary>
     /// Lectura de un recurso: éxito → 200. Un fallo CON <c>Code</c> se traduce con la tabla única

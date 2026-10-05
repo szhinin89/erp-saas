@@ -185,7 +185,10 @@ public sealed class MasterDataClassificationSeeder
         Func<Guid, Guid, string, string, int, Guid, TEntity> factory,
         CancellationToken ct
     )
-        where TEntity : MasterEntity, ITenantScopedEntity, ICompanyOperationalEntity, IClassificationCatalogEntity
+        where TEntity : MasterEntity,
+            ITenantScopedEntity,
+            ICompanyOperationalEntity,
+            IClassificationCatalogEntity
     {
         var existingCodes = await set.IgnoreQueryFilters()
             .Where(e => e.TenantId == tenantId && e.CompanyId == companyId)

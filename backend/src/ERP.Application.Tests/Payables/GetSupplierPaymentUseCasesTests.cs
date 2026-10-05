@@ -21,7 +21,10 @@ public sealed class GetSupplierPaymentUseCasesTests
     private static readonly Guid SupplierId = Guid.NewGuid();
     private static readonly Guid UserId = Guid.NewGuid();
 
-    private static SupplierPayment CreatePayment(string systemNumber = "00000001", Guid? installmentId = null)
+    private static SupplierPayment CreatePayment(
+        string systemNumber = "00000001",
+        Guid? installmentId = null
+    )
     {
         var methodId = Guid.NewGuid();
         var destinationId = Guid.NewGuid();
@@ -34,8 +37,20 @@ public sealed class GetSupplierPaymentUseCasesTests
             100m,
             systemNumber,
             null,
-            new[] { new SupplierPaymentMethodLineInput(methodId, destinationId, null, 100m, TransactionDate: new DateOnly(2026, 8, 28)) },
-            new[] { new SupplierPaymentApplicationLineInput(installmentId ?? Guid.NewGuid(), 100m) },
+            new[]
+            {
+                new SupplierPaymentMethodLineInput(
+                    methodId,
+                    destinationId,
+                    null,
+                    100m,
+                    TransactionDate: new DateOnly(2026, 8, 28)
+                ),
+            },
+            new[]
+            {
+                new SupplierPaymentApplicationLineInput(installmentId ?? Guid.NewGuid(), 100m),
+            },
             new[] { new SupplierPaymentAllocationInput(0, 0, 100m) },
             UserId
         );
@@ -46,9 +61,17 @@ public sealed class GetSupplierPaymentUseCasesTests
     {
         var issueDate = new DateOnly(2026, 8, 1);
         var payable = AccountsPayable.CreateFromOrigin(
-            TenantId, CompanyId, BranchId, SupplierId,
-            AccountsPayableOriginType.PurchaseInvoice, Guid.NewGuid(), "01",
-            "001-001-000031760", issueDate, issueDate, UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            Guid.NewGuid(),
+            "01",
+            "001-001-000031760",
+            issueDate,
+            issueDate,
+            UserId
         );
         payable.AddInstallment(1, new DateOnly(2026, 9, 3), 100m);
         installmentId = payable.Installments[0].Id;
@@ -63,13 +86,23 @@ public sealed class GetSupplierPaymentUseCasesTests
         var tenant = new Mock<ICurrentTenant>();
         tenant.Setup(t => t.TenantId).Returns(TenantId);
         var payment = CreatePayment();
-        repo.Setup(r => r.GetByIdAsync(TenantId, payment.Id, It.IsAny<CancellationToken>())).ReturnsAsync(payment);
+        repo.Setup(r => r.GetByIdAsync(TenantId, payment.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(payment);
         accountsPayables
-            .Setup(r => r.GetByInstallmentIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByInstallmentIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((AccountsPayable?)null);
 
-        var handler = new GetSupplierPaymentByIdHandler(repo.Object, accountsPayables.Object, tenant.Object);
-        var result = await handler.Handle(new GetSupplierPaymentByIdQuery(payment.Id), CancellationToken.None);
+        var handler = new GetSupplierPaymentByIdHandler(
+            repo.Object,
+            accountsPayables.Object,
+            tenant.Object
+        );
+        var result = await handler.Handle(
+            new GetSupplierPaymentByIdQuery(payment.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.SystemNumber.Should().Be("00000001");
@@ -90,13 +123,23 @@ public sealed class GetSupplierPaymentUseCasesTests
         var accountsPayables = new Mock<IAccountsPayableRepository>();
         var tenant = new Mock<ICurrentTenant>();
         tenant.Setup(t => t.TenantId).Returns(TenantId);
-        repo.Setup(r => r.GetByIdAsync(TenantId, payment.Id, It.IsAny<CancellationToken>())).ReturnsAsync(payment);
+        repo.Setup(r => r.GetByIdAsync(TenantId, payment.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(payment);
         accountsPayables
-            .Setup(r => r.GetByInstallmentIdAsync(TenantId, installmentId, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByInstallmentIdAsync(TenantId, installmentId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(payable);
 
-        var handler = new GetSupplierPaymentByIdHandler(repo.Object, accountsPayables.Object, tenant.Object);
-        var result = await handler.Handle(new GetSupplierPaymentByIdQuery(payment.Id), CancellationToken.None);
+        var handler = new GetSupplierPaymentByIdHandler(
+            repo.Object,
+            accountsPayables.Object,
+            tenant.Object
+        );
+        var result = await handler.Handle(
+            new GetSupplierPaymentByIdQuery(payment.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         var line = result.Value!.ApplicationLines.Should().ContainSingle().Subject;
@@ -117,19 +160,39 @@ public sealed class GetSupplierPaymentUseCasesTests
     {
         var payable = CreatePayableWithInstallment(out var installmentId);
         var payment = CreatePayment(installmentId: installmentId);
-        payment.Reverse("Duplicado", UserId, DateTime.UtcNow, bankReversalReason: ERP.Domain.Modules.Payables.Enums.SupplierPaymentBankReversalReason.NotExecuted);
+        payment.Reverse(
+            "Duplicado",
+            UserId,
+            DateTime.UtcNow,
+            bankReversalReason: ERP.Domain
+                .Modules
+                .Payables
+                .Enums
+                .SupplierPaymentBankReversalReason
+                .NotExecuted
+        );
 
         var repo = new Mock<ISupplierPaymentRepository>();
         var accountsPayables = new Mock<IAccountsPayableRepository>();
         var tenant = new Mock<ICurrentTenant>();
         tenant.Setup(t => t.TenantId).Returns(TenantId);
-        repo.Setup(r => r.GetByIdAsync(TenantId, payment.Id, It.IsAny<CancellationToken>())).ReturnsAsync(payment);
+        repo.Setup(r => r.GetByIdAsync(TenantId, payment.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(payment);
         accountsPayables
-            .Setup(r => r.GetByInstallmentIdAsync(TenantId, installmentId, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByInstallmentIdAsync(TenantId, installmentId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(payable);
 
-        var handler = new GetSupplierPaymentByIdHandler(repo.Object, accountsPayables.Object, tenant.Object);
-        var result = await handler.Handle(new GetSupplierPaymentByIdQuery(payment.Id), CancellationToken.None);
+        var handler = new GetSupplierPaymentByIdHandler(
+            repo.Object,
+            accountsPayables.Object,
+            tenant.Object
+        );
+        var result = await handler.Handle(
+            new GetSupplierPaymentByIdQuery(payment.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.Status.Should().Be("Reversed");
@@ -151,13 +214,23 @@ public sealed class GetSupplierPaymentUseCasesTests
         var accountsPayables = new Mock<IAccountsPayableRepository>();
         var tenant = new Mock<ICurrentTenant>();
         tenant.Setup(t => t.TenantId).Returns(TenantId);
-        repo.Setup(r => r.GetByIdAsync(TenantId, payment.Id, It.IsAny<CancellationToken>())).ReturnsAsync(payment);
+        repo.Setup(r => r.GetByIdAsync(TenantId, payment.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(payment);
         accountsPayables
-            .Setup(r => r.GetByInstallmentIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByInstallmentIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((AccountsPayable?)null);
 
-        var handler = new GetSupplierPaymentByIdHandler(repo.Object, accountsPayables.Object, tenant.Object);
-        var result = await handler.Handle(new GetSupplierPaymentByIdQuery(payment.Id), CancellationToken.None);
+        var handler = new GetSupplierPaymentByIdHandler(
+            repo.Object,
+            accountsPayables.Object,
+            tenant.Object
+        );
+        var result = await handler.Handle(
+            new GetSupplierPaymentByIdQuery(payment.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         var line = result.Value!.ApplicationLines.Should().ContainSingle().Subject;
@@ -177,8 +250,15 @@ public sealed class GetSupplierPaymentUseCasesTests
         repo.Setup(r => r.GetByIdAsync(TenantId, missingId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((SupplierPayment?)null);
 
-        var handler = new GetSupplierPaymentByIdHandler(repo.Object, accountsPayables.Object, tenant.Object);
-        var result = await handler.Handle(new GetSupplierPaymentByIdQuery(missingId), CancellationToken.None);
+        var handler = new GetSupplierPaymentByIdHandler(
+            repo.Object,
+            accountsPayables.Object,
+            tenant.Object
+        );
+        var result = await handler.Handle(
+            new GetSupplierPaymentByIdQuery(missingId),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
@@ -200,13 +280,23 @@ public sealed class GetSupplierPaymentUseCasesTests
             )
             .ReturnsAsync((new[] { payment }, 1));
         partners
-            .Setup(p => p.GetNamesByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
+            .Setup(p =>
+                p.GetNamesByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(
                 new Dictionary<Guid, string> { [SupplierId] = "Proveedor de Prueba S.A." }
             );
 
-        var handler = new GetSupplierPaymentsListHandler(repo.Object, partners.Object, tenant.Object, company.Object);
-        var result = await handler.Handle(new GetSupplierPaymentsListQuery(), CancellationToken.None);
+        var handler = new GetSupplierPaymentsListHandler(
+            repo.Object,
+            partners.Object,
+            tenant.Object,
+            company.Object
+        );
+        var result = await handler.Handle(
+            new GetSupplierPaymentsListQuery(),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Items.Should().ContainSingle();

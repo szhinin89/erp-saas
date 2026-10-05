@@ -10,7 +10,10 @@ public sealed class CommunicationTemplateRendererTests
 {
     private const string Key = "TEST_TEMPLATE";
 
-    private sealed record Model(IReadOnlyDictionary<string, string?> Values, string TemplateKey = Key) : ICommunicationTemplateModel
+    private sealed record Model(
+        IReadOnlyDictionary<string, string?> Values,
+        string TemplateKey = Key
+    ) : ICommunicationTemplateModel
     {
         public IReadOnlyDictionary<string, string?> ToVariables() => Values;
     }
@@ -21,14 +24,23 @@ public sealed class CommunicationTemplateRendererTests
         string? text = "Hola {{Name}}\n{{Note}}",
         params CommunicationTemplateVariable[] variables
     ) =>
-        new(Key, 1, CommunicationTemplateSource.Default, subject, html, text,
-            variables.Length > 0 ? variables : [new("Name"), new("Note", Required: false)]);
+        new(
+            Key,
+            1,
+            CommunicationTemplateSource.Default,
+            subject,
+            html,
+            text,
+            variables.Length > 0 ? variables : [new("Name"), new("Note", Required: false)]
+        );
 
     private static Model Values(params (string Name, string? Value)[] values) =>
         new(values.ToDictionary(v => v.Name, v => v.Value));
 
-    private static Result<RenderedCommunicationTemplate> Render(CommunicationTemplateDefinition template, ICommunicationTemplateModel model) =>
-        CommunicationTemplateRenderer.Render(template, model);
+    private static Result<RenderedCommunicationTemplate> Render(
+        CommunicationTemplateDefinition template,
+        ICommunicationTemplateModel model
+    ) => CommunicationTemplateRenderer.Render(template, model);
 
     // 1-4. Template válido: asunto, HTML y texto.
     [Fact]
@@ -48,7 +60,9 @@ public sealed class CommunicationTemplateRendererTests
     [Fact]
     public void Placeholders_admiten_espacios_internos()
     {
-        Render(Template(subject: "Hola {{ Name }}"), Values(("Name", "Ana"))).Value!.Subject.Should().Be("Hola Ana");
+        Render(Template(subject: "Hola {{ Name }}"), Values(("Name", "Ana")))
+            .Value!.Subject.Should()
+            .Be("Hola Ana");
     }
 
     // 5. Variable obligatoria faltante.
@@ -68,14 +82,19 @@ public sealed class CommunicationTemplateRendererTests
     [Fact]
     public void Variable_obligatoria_no_aportada_falla_cerrado()
     {
-        Render(Template(), Values(("Note", "x"))).Code.Should().Be(ApiResponseCodes.Communications.TemplateRenderFailed);
+        Render(Template(), Values(("Note", "x")))
+            .Code.Should()
+            .Be(ApiResponseCodes.Communications.TemplateRenderFailed);
     }
 
     // 6. Placeholder desconocido en el template.
     [Fact]
     public void Placeholder_no_declarado_en_el_contrato_falla()
     {
-        var result = Render(Template(html: "<p>{{Name}} {{Password}}</p>"), Values(("Name", "Ana")));
+        var result = Render(
+            Template(html: "<p>{{Name}} {{Password}}</p>"),
+            Values(("Name", "Ana"))
+        );
 
         result.Code.Should().Be(ApiResponseCodes.Communications.TemplateInvalid);
         result.Error.Should().Contain("Password");
@@ -89,7 +108,9 @@ public sealed class CommunicationTemplateRendererTests
     [InlineData("Hola {{Name.Address}}")]
     public void Placeholder_mal_formado_o_sin_resolver_falla(string subject)
     {
-        Render(Template(subject: subject), Values(("Name", "Ana"))).Code.Should().Be(ApiResponseCodes.Communications.TemplateInvalid);
+        Render(Template(subject: subject), Values(("Name", "Ana")))
+            .Code.Should()
+            .Be(ApiResponseCodes.Communications.TemplateInvalid);
     }
 
     [Fact]
@@ -98,28 +119,45 @@ public sealed class CommunicationTemplateRendererTests
         var result = Render(Template(), Values(("Name", "Ana"), ("Token", "secreto-123")));
 
         result.Code.Should().Be(ApiResponseCodes.Communications.TemplateRenderFailed);
-        result.Error.Should().NotContain("secreto-123", "los errores nombran variables, nunca valores");
+        result
+            .Error.Should()
+            .NotContain("secreto-123", "los errores nombran variables, nunca valores");
     }
 
     [Fact]
     public void Modelo_de_otro_template_falla()
     {
-        var other = new Model(new Dictionary<string, string?> { ["Name"] = "Ana" }, TemplateKey: "OTRO");
+        var other = new Model(
+            new Dictionary<string, string?> { ["Name"] = "Ana" },
+            TemplateKey: "OTRO"
+        );
 
-        Render(Template(), other).Code.Should().Be(ApiResponseCodes.Communications.TemplateRenderFailed);
+        Render(Template(), other)
+            .Code.Should()
+            .Be(ApiResponseCodes.Communications.TemplateRenderFailed);
     }
 
     // 8 y 10. Escape HTML; no se ejecuta ni se inserta HTML crudo.
     [Fact]
     public void Html_escapa_toda_variable_y_nunca_inserta_script()
     {
-        var result = Render(Template(), Values(("Name", "<script>alert(1)</script>"), ("Note", "<b>raw</b> & \"q\"")));
-
-        result.Value!.Html.Should().Be(
-            "<p>Hola &lt;script&gt;alert(1)&lt;/script&gt;</p><p>&lt;b&gt;raw&lt;/b&gt; &amp; &quot;q&quot;</p>"
+        var result = Render(
+            Template(),
+            Values(("Name", "<script>alert(1)</script>"), ("Note", "<b>raw</b> & \"q\""))
         );
+
+        result
+            .Value!.Html.Should()
+            .Be(
+                "<p>Hola &lt;script&gt;alert(1)&lt;/script&gt;</p><p>&lt;b&gt;raw&lt;/b&gt; &amp; &quot;q&quot;</p>"
+            );
         result.Value.Html.Should().NotContain("<script>").And.NotContain("<b>");
-        result.Value.Text.Should().Be("Hola <script>alert(1)</script>\n<b>raw</b> & \"q\"", "el texto plano no lleva HTML ni escape");
+        result
+            .Value.Text.Should()
+            .Be(
+                "Hola <script>alert(1)</script>\n<b>raw</b> & \"q\"",
+                "el texto plano no lleva HTML ni escape"
+            );
     }
 
     [Fact]
@@ -158,33 +196,48 @@ public sealed class CommunicationTemplateRendererTests
 
         result.Value!.Subject.Should().Be("Hola Peña Ñandú José");
         result.Value.Text.Should().Be("Hola Peña Ñandú José\n€ ✓");
-        System.Net.WebUtility.HtmlDecode(result.Value.Html!).Should().Be("<p>Hola Peña Ñandú José</p><p>€ ✓</p>");
+        System
+            .Net.WebUtility.HtmlDecode(result.Value.Html!)
+            .Should()
+            .Be("<p>Hola Peña Ñandú José</p><p>€ ✓</p>");
     }
 
     [Fact]
     public void Asunto_es_texto_de_una_linea()
     {
-        Render(Template(), Values(("Name", "Ana\r\nBcc: x@y.com"))).Value!.Subject.Should().Be("Hola Ana  Bcc: x@y.com");
+        Render(Template(), Values(("Name", "Ana\r\nBcc: x@y.com")))
+            .Value!.Subject.Should()
+            .Be("Hola Ana  Bcc: x@y.com");
     }
 
     [Fact]
     public void Template_sin_asunto_o_sin_cuerpo_es_invalido()
     {
-        Render(Template(subject: " "), Values(("Name", "Ana"))).Code.Should().Be(ApiResponseCodes.Communications.TemplateInvalid);
-        Render(Template(html: null, text: null), Values(("Name", "Ana"))).Code.Should().Be(ApiResponseCodes.Communications.TemplateInvalid);
+        Render(Template(subject: " "), Values(("Name", "Ana")))
+            .Code.Should()
+            .Be(ApiResponseCodes.Communications.TemplateInvalid);
+        Render(Template(html: null, text: null), Values(("Name", "Ana")))
+            .Code.Should()
+            .Be(ApiResponseCodes.Communications.TemplateInvalid);
     }
 
     [Fact]
     public void Resultado_que_excede_los_limites_de_la_comunicacion_falla()
     {
-        Render(Template(), Values(("Name", new string('x', 400)))).Code.Should().Be(ApiResponseCodes.Communications.TemplateRenderFailed);
+        Render(Template(), Values(("Name", new string('x', 400))))
+            .Code.Should()
+            .Be(ApiResponseCodes.Communications.TemplateRenderFailed);
     }
 
     [Fact]
     public void Defaults_registrados_cumplen_su_propio_contrato()
     {
         CommunicationDefaultTemplates.All.Should().NotBeEmpty();
-        CommunicationDefaultTemplates.All.Should().OnlyContain(t => CommunicationTemplateRenderer.Validate(t).IsSuccess);
-        CommunicationDefaultTemplates.All.Should().OnlyContain(t => t.Source == CommunicationTemplateSource.Default && t.Version >= 1);
+        CommunicationDefaultTemplates
+            .All.Should()
+            .OnlyContain(t => CommunicationTemplateRenderer.Validate(t).IsSuccess);
+        CommunicationDefaultTemplates
+            .All.Should()
+            .OnlyContain(t => t.Source == CommunicationTemplateSource.Default && t.Version >= 1);
     }
 }

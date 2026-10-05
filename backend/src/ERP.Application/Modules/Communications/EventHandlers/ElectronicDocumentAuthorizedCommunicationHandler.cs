@@ -42,14 +42,22 @@ public sealed partial class ElectronicDocumentAuthorizedCommunicationHandler
             if (notification.TenantId is not { } tenantId)
                 return;
 
-            var document = await _electronicDocuments.GetByIdAsync(tenantId, notification.ElectronicDocumentId, ct);
+            var document = await _electronicDocuments.GetByIdAsync(
+                tenantId,
+                notification.ElectronicDocumentId,
+                ct
+            );
             if (document is null)
             {
                 LogDocumentMissing(notification.ElectronicDocumentId);
                 return;
             }
 
-            await _communications.RequestAsync(document, ElectronicDocumentCommunicationTrigger.AuthorizedEvent, ct);
+            await _communications.RequestAsync(
+                document,
+                ElectronicDocumentCommunicationTrigger.AuthorizedEvent,
+                ct
+            );
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -57,11 +65,19 @@ public sealed partial class ElectronicDocumentAuthorizedCommunicationHandler
         }
     }
 
-    [LoggerMessage(EventId = 4233, EventName = "ElectronicDocumentCommunicationSourceMissing", Level = LogLevel.Warning,
-        Message = "Communications: authorized ElectronicDocument {ElectronicDocumentId} not found; no communication requested")]
+    [LoggerMessage(
+        EventId = 4233,
+        EventName = "ElectronicDocumentCommunicationSourceMissing",
+        Level = LogLevel.Warning,
+        Message = "Communications: authorized ElectronicDocument {ElectronicDocumentId} not found; no communication requested"
+    )]
     private partial void LogDocumentMissing(Guid electronicDocumentId);
 
-    [LoggerMessage(EventId = 4234, EventName = "ElectronicDocumentCommunicationFailed", Level = LogLevel.Warning,
-        Message = "Communications: could not request communication for authorized ElectronicDocument {ElectronicDocumentId}; SRI authorization is kept and reconciliation will retry")]
+    [LoggerMessage(
+        EventId = 4234,
+        EventName = "ElectronicDocumentCommunicationFailed",
+        Level = LogLevel.Warning,
+        Message = "Communications: could not request communication for authorized ElectronicDocument {ElectronicDocumentId}; SRI authorization is kept and reconciliation will retry"
+    )]
     private partial void LogUnexpectedFailure(Guid electronicDocumentId, Exception ex);
 }

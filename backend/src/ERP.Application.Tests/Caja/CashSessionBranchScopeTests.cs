@@ -36,7 +36,17 @@ public sealed class CashSessionBranchScopeTests
         bool allowManualInOutMovements = true
     ) =>
         new(
-            SalesPos: new SalesPosPreferences(true, false, true, 0m, null, false, false, null, null),
+            SalesPos: new SalesPosPreferences(
+                true,
+                false,
+                true,
+                0m,
+                null,
+                false,
+                false,
+                null,
+                null
+            ),
             Cash: new CashPreferences(
                 true,
                 allowCloseWithDifference,
@@ -47,7 +57,15 @@ public sealed class CashSessionBranchScopeTests
             ),
             Purchases: new PurchasesPreferences(null, true, true, true, false),
             Inventory: new InventoryPreferences(false, true, false, 0m),
-            Printing: new PrintingPreferences("AskBeforePrint", 1, "80mm", false, true, true, false),
+            Printing: new PrintingPreferences(
+                "AskBeforePrint",
+                1,
+                "80mm",
+                false,
+                true,
+                true,
+                false
+            ),
             ElectronicDocuments: new ElectronicDocumentsPreferences(true, 3, true, true),
             Notifications: new NotificationsPreferences(true, false, "es")
         );
@@ -154,8 +172,7 @@ public sealed class CashSessionBranchScopeTests
     {
         var session = CreateOpenSession(BranchAId);
         var f = new CloseFixture(activeBranchId: BranchAId);
-        f.Preferences
-            .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
+        f.Preferences.Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(DefaultPreferences(requireReasonForDifference: true));
         f.Repo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(session);
@@ -179,8 +196,7 @@ public sealed class CashSessionBranchScopeTests
     {
         var session = CreateOpenSession(BranchAId);
         var f = new CloseFixture(activeBranchId: BranchAId);
-        f.Preferences
-            .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
+        f.Preferences.Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(DefaultPreferences(requireReasonForDifference: false));
         f.Repo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(session);
@@ -204,8 +220,7 @@ public sealed class CashSessionBranchScopeTests
     {
         var session = CreateOpenSession(BranchAId);
         var f = new CloseFixture(activeBranchId: BranchAId);
-        f.Preferences
-            .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
+        f.Preferences.Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(DefaultPreferences(allowCloseWithDifference: false));
         f.Repo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(session);
@@ -229,8 +244,7 @@ public sealed class CashSessionBranchScopeTests
     {
         var session = CreateOpenSession(BranchAId);
         var f = new CloseFixture(activeBranchId: BranchAId);
-        f.Preferences
-            .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
+        f.Preferences.Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(DefaultPreferences(maxAllowedDifference: 5m));
         f.Repo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(session);
@@ -255,8 +269,7 @@ public sealed class CashSessionBranchScopeTests
     {
         var session = CreateOpenSession(BranchAId);
         var f = new CloseFixture(activeBranchId: BranchAId);
-        f.Preferences
-            .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
+        f.Preferences.Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(DefaultPreferences(maxAllowedDifference: 50m));
         f.Repo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(session);
@@ -293,7 +306,8 @@ public sealed class CashSessionBranchScopeTests
             User.Setup(u => u.UserId).Returns(UserId);
             // TREASURY-CASH-MANUAL-MOVEMENTS-COMPANY-SETTING-05 — default habilitado: preserva el
             // comportamiento de los tests existentes de esta clase, que no ejercitan el gate.
-            Preferences.Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
+            Preferences
+                .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(DefaultPreferences());
         }
 
@@ -301,18 +315,32 @@ public sealed class CashSessionBranchScopeTests
         public Guid SetupValidReason(Guid companyId)
         {
             var reason = ERP.Domain.Modules.Caja.Entities.CashMovementReason.Create(
-                TenantId, companyId, "INGRESO", "Ingreso manual",
-                ERP.Domain.Modules.Caja.Enums.CashMovementType.ManualIncome, 1, UserId
+                TenantId,
+                companyId,
+                "INGRESO",
+                "Ingreso manual",
+                ERP.Domain.Modules.Caja.Enums.CashMovementType.ManualIncome,
+                1,
+                UserId
             );
             ReasonRepo
-                .Setup(r => r.GetByIdAsync(TenantId, companyId, reason.Id, It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetByIdAsync(TenantId, companyId, reason.Id, It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(reason);
             return reason.Id;
         }
 
         public RecordCashMovementHandler BuildHandler() =>
-            new(Repo.Object, ReasonRepo.Object, new Mock<IUnitOfWork>().Object,
-                Tenant.Object, Branch.Object, User.Object, Preferences.Object);
+            new(
+                Repo.Object,
+                ReasonRepo.Object,
+                new Mock<IUnitOfWork>().Object,
+                Tenant.Object,
+                Branch.Object,
+                User.Object,
+                Preferences.Object
+            );
     }
 
     [Fact]
@@ -320,13 +348,22 @@ public sealed class CashSessionBranchScopeTests
     {
         var session = CreateOpenSession(BranchBId);
         var f = new MovementFixture(activeBranchId: BranchAId);
-        f.Repo.Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+        f.Repo.Setup(r =>
+                r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(session);
         var reasonId = f.SetupValidReason(session.CompanyId);
 
         var result = await f.BuildHandler()
             .Handle(
-                new RecordCashMovementCommand(session.Id, "ManualIncome", reasonId, 20m, "Ingreso manual", ClientRequestId: Guid.NewGuid()),
+                new RecordCashMovementCommand(
+                    session.Id,
+                    "ManualIncome",
+                    reasonId,
+                    20m,
+                    "Ingreso manual",
+                    ClientRequestId: Guid.NewGuid()
+                ),
                 CancellationToken.None
             );
 
@@ -340,13 +377,22 @@ public sealed class CashSessionBranchScopeTests
     {
         var session = CreateOpenSession(BranchAId);
         var f = new MovementFixture(activeBranchId: BranchAId);
-        f.Repo.Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+        f.Repo.Setup(r =>
+                r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(session);
         var reasonId = f.SetupValidReason(session.CompanyId);
 
         var result = await f.BuildHandler()
             .Handle(
-                new RecordCashMovementCommand(session.Id, "ManualIncome", reasonId, 20m, "Ingreso manual", ClientRequestId: Guid.NewGuid()),
+                new RecordCashMovementCommand(
+                    session.Id,
+                    "ManualIncome",
+                    reasonId,
+                    20m,
+                    "Ingreso manual",
+                    ClientRequestId: Guid.NewGuid()
+                ),
                 CancellationToken.None
             );
 
@@ -370,12 +416,24 @@ public sealed class CashSessionBranchScopeTests
             Tenant.Setup(t => t.TenantId).Returns(TenantId);
             Branch.Setup(b => b.BranchId).Returns(activeBranchId);
             AccessRepo
-                .Setup(r => r.GetUsersByIdsAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetUsersByIdsAsync(
+                        It.IsAny<IReadOnlyCollection<Guid>>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync(Array.Empty<IdentityUser>());
         }
 
         public GetCashSessionByIdHandler BuildHandler() =>
-            new(Repo.Object, EpRepo.Object, CrRepo.Object, AccessRepo.Object, Tenant.Object, Branch.Object);
+            new(
+                Repo.Object,
+                EpRepo.Object,
+                CrRepo.Object,
+                AccessRepo.Object,
+                Tenant.Object,
+                Branch.Object
+            );
     }
 
     [Fact]
@@ -453,16 +511,29 @@ public sealed class CashSessionBranchScopeTests
             .ReturnsAsync((new List<CashSession> { CreateOpenSession(BranchAId) }, 1));
         var invoiceRepo = new Mock<ISalesInvoiceRepository>();
         invoiceRepo
-            .Setup(r => r.GetCollectionSummaryByCashSessionsAsync(
-                It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetCollectionSummaryByCashSessionsAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(Array.Empty<SalesInvoiceCashSessionPaymentRow>());
         var paymentMethodRepo = new Mock<IPaymentMethodRepository>();
         paymentMethodRepo
-            .Setup(r => r.ListAsync(It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.ListAsync(It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(Array.Empty<PaymentMethod>());
         var accessRepo = new Mock<IAccessRepository>();
         accessRepo
-            .Setup(r => r.GetUsersByIdsAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetUsersByIdsAsync(
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(Array.Empty<IdentityUser>());
 
         var handler = new GetCashSessionListHandler(
@@ -508,16 +579,29 @@ public sealed class CashSessionBranchScopeTests
             .ReturnsAsync((new List<CashSession> { CreateOpenSession(BranchBId) }, 1));
         var invoiceRepo = new Mock<ISalesInvoiceRepository>();
         invoiceRepo
-            .Setup(r => r.GetCollectionSummaryByCashSessionsAsync(
-                It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetCollectionSummaryByCashSessionsAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(Array.Empty<SalesInvoiceCashSessionPaymentRow>());
         var paymentMethodRepo = new Mock<IPaymentMethodRepository>();
         paymentMethodRepo
-            .Setup(r => r.ListAsync(It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.ListAsync(It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(Array.Empty<PaymentMethod>());
         var accessRepo = new Mock<IAccessRepository>();
         accessRepo
-            .Setup(r => r.GetUsersByIdsAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetUsersByIdsAsync(
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(Array.Empty<IdentityUser>());
 
         var handler = new GetCashSessionListHandler(
@@ -541,13 +625,25 @@ public sealed class CashSessionBranchScopeTests
     // 02E-C — el cierre bloquea la sesión FOR UPDATE (delegado a la configuración de GetByIdAsync) y
     // cancela las solicitudes de efectivo pendientes (ninguna en estos escenarios).
     private static void WireCloseLocks(Mock<ICashSessionRepository> repo) =>
-        repo.Setup(r => r.GetByIdForUpdateAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        repo.Setup(r =>
+                r.GetByIdForUpdateAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .Returns((Guid t, Guid id, CancellationToken c) => repo.Object.GetByIdAsync(t, id, c));
 
     private static ICashFundingRequestRepository NoPendingFundingRequests()
     {
         var mock = new Mock<ICashFundingRequestRepository>();
-        mock.Setup(r => r.ListPendingBySessionForUpdateAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        mock.Setup(r =>
+                r.ListPendingBySessionForUpdateAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(Array.Empty<ERP.Domain.Modules.Caja.Entities.CashFundingRequest>());
         return mock.Object;
     }

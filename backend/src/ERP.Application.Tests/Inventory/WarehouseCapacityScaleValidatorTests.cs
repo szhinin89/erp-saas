@@ -1,10 +1,10 @@
+using System.Globalization;
 using ERP.Application.Modules.Inventory.Warehouses.UseCases;
 using ERP.Application.Modules.Inventory.Warehouses.UseCases.CreateWarehouse;
 using ERP.Application.Modules.Inventory.Warehouses.UseCases.UpdateWarehouse;
 using ERP.Domain.Modules.Inventory.Entities;
 using FluentAssertions;
 using FluentValidation.Results;
-using System.Globalization;
 
 namespace ERP.Application.Tests.Inventory;
 
@@ -21,10 +21,35 @@ public sealed class WarehouseCapacityScaleValidatorTests
     private static IEnumerable<ValidationResult> ValidateBoth(decimal? capacity) =>
         [
             CreateValidator.Validate(
-                new CreateWarehouseCommand(Guid.NewGuid(), "Bodega", null, null, null, null, null, null, null, capacity, null)
+                new CreateWarehouseCommand(
+                    Guid.NewGuid(),
+                    "Bodega",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    capacity,
+                    null
+                )
             ),
             UpdateValidator.Validate(
-                new UpdateWarehouseCommand(Guid.NewGuid(), Guid.NewGuid(), "Bodega", null, null, null, null, null, null, null, capacity, null)
+                new UpdateWarehouseCommand(
+                    Guid.NewGuid(),
+                    Guid.NewGuid(),
+                    "Bodega",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    capacity,
+                    null
+                )
             ),
         ];
 
@@ -54,9 +79,12 @@ public sealed class WarehouseCapacityScaleValidatorTests
         foreach (var result in ValidateBoth(decimal.Parse(capacity, CultureInfo.InvariantCulture)))
         {
             result.IsValid.Should().BeFalse();
-            result.Errors.Should().ContainSingle(e =>
-                e.PropertyName == "Capacity" && e.ErrorMessage == WarehouseCapacityRules.ScaleMessage
-            );
+            result
+                .Errors.Should()
+                .ContainSingle(e =>
+                    e.PropertyName == "Capacity"
+                    && e.ErrorMessage == WarehouseCapacityRules.ScaleMessage
+                );
         }
     }
 
@@ -64,6 +92,8 @@ public sealed class WarehouseCapacityScaleValidatorTests
     public void Regla_existente_no_negativa_intacta()
     {
         foreach (var result in ValidateBoth(-1m))
-            result.Errors.Should().Contain(e => e.ErrorMessage == "La capacidad no puede ser negativa.");
+            result
+                .Errors.Should()
+                .Contain(e => e.ErrorMessage == "La capacidad no puede ser negativa.");
     }
 }

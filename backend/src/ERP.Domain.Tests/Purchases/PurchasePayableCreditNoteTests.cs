@@ -23,10 +23,17 @@ public sealed class PurchasePayableCreditNoteTests
     private static AccountsPayable Create(decimal totalAmount = 1000m)
     {
         var payable = AccountsPayable.CreateFromOrigin(
-            TenantId, CompanyId, BranchId, SupplierId,
-            AccountsPayableOriginType.PurchaseInvoice, PurchaseId,
-            "01", "001-001-000000001",
-            new DateOnly(2026, 8, 27), new DateOnly(2026, 8, 27), UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            PurchaseId,
+            "01",
+            "001-001-000000001",
+            new DateOnly(2026, 8, 27),
+            new DateOnly(2026, 8, 27),
+            UserId
         );
         payable.AddInstallment(1, new DateOnly(2026, 9, 26), totalAmount);
         return payable;

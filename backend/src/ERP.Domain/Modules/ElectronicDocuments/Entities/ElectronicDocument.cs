@@ -262,7 +262,10 @@ public sealed class ElectronicDocument
     /// </summary>
     public void MarkSent(Guid updatedBy)
     {
-        if (CurrentState is not (ElectronicDocumentState.Signed or ElectronicDocumentState.Dispatching))
+        if (
+            CurrentState
+            is not (ElectronicDocumentState.Signed or ElectronicDocumentState.Dispatching)
+        )
             throw new DomainRuleViolationException(
                 $"Solo se puede marcar como enviado desde Signed o Dispatching (estado actual: {CurrentState})."
             );
@@ -507,7 +510,13 @@ public sealed class ElectronicDocument
         SetUpdated(updatedBy);
 
         RaiseDomainEvent(
-            new ElectronicDocumentDispatchingEvent(TenantId, Id, DocumentType, fromState, CurrentState)
+            new ElectronicDocumentDispatchingEvent(
+                TenantId,
+                Id,
+                DocumentType,
+                fromState,
+                CurrentState
+            )
         );
     }
 

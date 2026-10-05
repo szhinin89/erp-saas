@@ -1,7 +1,7 @@
-using ERP.Application.Common;
-using ERP.Domain.Modules.Communications.Entities;
 using System.Net;
 using System.Text.RegularExpressions;
+using ERP.Application.Common;
+using ERP.Domain.Modules.Communications.Entities;
 
 namespace ERP.Application.Modules.Communications.Templates;
 
@@ -28,7 +28,10 @@ public static partial class CommunicationTemplateRenderer
     {
         if (string.IsNullOrWhiteSpace(template.SubjectTemplate))
             return Invalid(template, "el asunto está vacío");
-        if (string.IsNullOrWhiteSpace(template.HtmlTemplate) && string.IsNullOrWhiteSpace(template.TextTemplate))
+        if (
+            string.IsNullOrWhiteSpace(template.HtmlTemplate)
+            && string.IsNullOrWhiteSpace(template.TextTemplate)
+        )
             return Invalid(template, "no tiene cuerpo HTML ni texto");
 
         var declared = template.Variables.Select(v => v.Name).ToHashSet(StringComparer.Ordinal);
@@ -38,11 +41,17 @@ public static partial class CommunicationTemplateRenderer
             {
                 var name = match.Groups[1].Value;
                 if (!declared.Contains(name))
-                    return Invalid(template, $"el {part} usa el placeholder no declarado {{{{{name}}}}}");
+                    return Invalid(
+                        template,
+                        $"el {part} usa el placeholder no declarado {{{{{name}}}}}"
+                    );
             }
 
             var residue = Placeholder().Replace(content, string.Empty);
-            if (residue.Contains("{{", StringComparison.Ordinal) || residue.Contains("}}", StringComparison.Ordinal))
+            if (
+                residue.Contains("{{", StringComparison.Ordinal)
+                || residue.Contains("}}", StringComparison.Ordinal)
+            )
                 return Invalid(template, $"el {part} tiene un placeholder mal formado");
         }
 
@@ -56,7 +65,10 @@ public static partial class CommunicationTemplateRenderer
     {
         var validation = Validate(template);
         if (!validation.IsSuccess)
-            return Result<RenderedCommunicationTemplate>.Failure(validation.Error!, validation.Code);
+            return Result<RenderedCommunicationTemplate>.Failure(
+                validation.Error!,
+                validation.Code
+            );
 
         if (!string.Equals(model.TemplateKey, template.Key, StringComparison.Ordinal))
             return RenderFailed(template, $"el modelo pertenece al template {model.TemplateKey}");
@@ -65,7 +77,10 @@ public static partial class CommunicationTemplateRenderer
         var declared = template.Variables.ToDictionary(v => v.Name, StringComparer.Ordinal);
         var undeclared = variables.Keys.FirstOrDefault(name => !declared.ContainsKey(name));
         if (undeclared is not null)
-            return RenderFailed(template, $"el modelo aporta la variable no declarada {undeclared}");
+            return RenderFailed(
+                template,
+                $"el modelo aporta la variable no declarada {undeclared}"
+            );
 
         var missing = template.Variables.FirstOrDefault(v =>
             v.Required && string.IsNullOrWhiteSpace(variables.GetValueOrDefault(v.Name))
@@ -76,24 +91,49 @@ public static partial class CommunicationTemplateRenderer
         var subject = Replace(template.SubjectTemplate, variables, value => value)
             .Replace("\r", " ", StringComparison.Ordinal)
             .Replace("\n", " ", StringComparison.Ordinal);
-        var html = template.HtmlTemplate is null ? null : Replace(template.HtmlTemplate, variables, WebUtility.HtmlEncode);
-        var text = template.TextTemplate is null ? null : Replace(template.TextTemplate, variables, value => value);
+        var html = template.HtmlTemplate is null
+            ? null
+            : Replace(template.HtmlTemplate, variables, WebUtility.HtmlEncode);
+        var text = template.TextTemplate is null
+            ? null
+            : Replace(template.TextTemplate, variables, value => value);
 
-        if (string.IsNullOrWhiteSpace(subject) || subject.Trim().Length > CommunicationOutbox.SubjectMaxLen)
-            return RenderFailed(template, $"el asunto renderizado está vacío o supera {CommunicationOutbox.SubjectMaxLen} caracteres");
-        if (html?.Length > CommunicationOutbox.BodyMaxLen || text?.Length > CommunicationOutbox.BodyMaxLen)
-            return RenderFailed(template, $"el cuerpo renderizado supera {CommunicationOutbox.BodyMaxLen} caracteres");
+        if (
+            string.IsNullOrWhiteSpace(subject)
+            || subject.Trim().Length > CommunicationOutbox.SubjectMaxLen
+        )
+            return RenderFailed(
+                template,
+                $"el asunto renderizado está vacío o supera {CommunicationOutbox.SubjectMaxLen} caracteres"
+            );
+        if (
+            html?.Length > CommunicationOutbox.BodyMaxLen
+            || text?.Length > CommunicationOutbox.BodyMaxLen
+        )
+            return RenderFailed(
+                template,
+                $"el cuerpo renderizado supera {CommunicationOutbox.BodyMaxLen} caracteres"
+            );
 
-        return Result<RenderedCommunicationTemplate>.Success(new RenderedCommunicationTemplate(template.Usage, subject, html, text));
+        return Result<RenderedCommunicationTemplate>.Success(
+            new RenderedCommunicationTemplate(template.Usage, subject, html, text)
+        );
     }
 
     private static string Replace(
         string content,
         IReadOnlyDictionary<string, string?> variables,
         Func<string, string> encode
-    ) => Placeholder().Replace(content, match => encode(variables.GetValueOrDefault(match.Groups[1].Value) ?? string.Empty));
+    ) =>
+        Placeholder()
+            .Replace(
+                content,
+                match => encode(variables.GetValueOrDefault(match.Groups[1].Value) ?? string.Empty)
+            );
 
-    private static IEnumerable<(string Part, string Content)> Parts(CommunicationTemplateDefinition template)
+    private static IEnumerable<(string Part, string Content)> Parts(
+        CommunicationTemplateDefinition template
+    )
     {
         yield return ("asunto", template.SubjectTemplate);
         if (template.HtmlTemplate is not null)
@@ -108,7 +148,10 @@ public static partial class CommunicationTemplateRenderer
             ApiResponseCodes.Communications.TemplateInvalid
         );
 
-    private static Result<RenderedCommunicationTemplate> RenderFailed(CommunicationTemplateDefinition template, string reason) =>
+    private static Result<RenderedCommunicationTemplate> RenderFailed(
+        CommunicationTemplateDefinition template,
+        string reason
+    ) =>
         Result<RenderedCommunicationTemplate>.Failure(
             $"No se pudo renderizar {template.Key} v{template.Version} ({template.Source}): {reason}.",
             ApiResponseCodes.Communications.TemplateRenderFailed

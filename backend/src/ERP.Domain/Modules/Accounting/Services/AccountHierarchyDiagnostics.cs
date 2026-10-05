@@ -39,7 +39,10 @@ public sealed record AccountHierarchyIssue(
     string Detail
 );
 
-public sealed record AccountHierarchyReport(int TotalAccounts, IReadOnlyList<AccountHierarchyIssue> Issues)
+public sealed record AccountHierarchyReport(
+    int TotalAccounts,
+    IReadOnlyList<AccountHierarchyIssue> Issues
+)
 {
     public int CountOf(AccountHierarchyIssueType type) => Issues.Count(i => i.Type == type);
 }
@@ -155,9 +158,7 @@ public static class AccountHierarchyDiagnostics
                 if (!byId.TryGetValue(accountId, out var account))
                     continue;
 
-                var isLeaf = !(
-                    childCountByParentId.TryGetValue(accountId, out var cc) && cc > 0
-                );
+                var isLeaf = !(childCountByParentId.TryGetValue(accountId, out var cc) && cc > 0);
                 if (!isLeaf || !account.IsActive || !account.AllowsPosting)
                     issues.Add(
                         new(
@@ -173,7 +174,10 @@ public static class AccountHierarchyDiagnostics
         return new AccountHierarchyReport(accounts.Count, issues);
     }
 
-    private static int ComputeParentChainDepth(Account account, IReadOnlyDictionary<Guid, Account> byId)
+    private static int ComputeParentChainDepth(
+        Account account,
+        IReadOnlyDictionary<Guid, Account> byId
+    )
     {
         var depth = 0;
         var current = account;

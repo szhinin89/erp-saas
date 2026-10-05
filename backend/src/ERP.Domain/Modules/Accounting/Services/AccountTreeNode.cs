@@ -68,7 +68,8 @@ public static class AccountTreeBuilder
             .Select(c => BuildNode(c, level + 1, childrenByParentId, balances))
             .ToList();
 
-        var ownBalance = balances is not null && balances.TryGetValue(account.Id, out var b) ? b : 0m;
+        var ownBalance =
+            balances is not null && balances.TryGetValue(account.Id, out var b) ? b : 0m;
         var rolledUpBalance = ownBalance + children.Sum(c => c.Balance);
 
         return new AccountTreeNode(

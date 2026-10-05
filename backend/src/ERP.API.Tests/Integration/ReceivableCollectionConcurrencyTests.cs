@@ -1,11 +1,11 @@
+using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
 using ERP.Domain.Modules.Finance.Enums;
 using ERP.Infrastructure.Persistence;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using System.Net;
-using System.Net.Http.Json;
-using System.Text.Json;
 
 namespace ERP.API.Tests.Integration;
 
@@ -17,7 +17,8 @@ namespace ERP.API.Tests.Integration;
 /// efecto (ni cobro, ni asiento, ni outbox). Todo se verifica desde un DbContext independiente.
 /// </summary>
 [Trait("Category", "PostgreSql")]
-public sealed class ReceivableCollectionConcurrencyTests : IClassFixture<FinancialCommandIdempotencyFixture>
+public sealed class ReceivableCollectionConcurrencyTests
+    : IClassFixture<FinancialCommandIdempotencyFixture>
 {
     private const string CollectionsUrl = "/api/v1/finance/collections";
     private const string DomainRuleViolation = "DOMAIN_RULE_VIOLATION";
@@ -31,42 +32,75 @@ public sealed class ReceivableCollectionConcurrencyTests : IClassFixture<Financi
     private sealed record Response(HttpStatusCode Status, string Code, Guid? Id);
 
     /// <summary>Estado persistido de la CxC + Σ de aplicaciones de cobros confirmados sobre ella.</summary>
-    private sealed record ReceivableState(decimal Paid, decimal Balance, string Status, decimal AppliedByCollections, int Collections);
+    private sealed record ReceivableState(
+        decimal Paid,
+        decimal Balance,
+        string Status,
+        decimal AppliedByCollections,
+        int Collections
+    );
 
     private static async Task<Response> PostAsync(HttpClient client, object body)
     {
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         var http = await client.PostAsJsonAsync(CollectionsUrl, body, timeout.Token);
-        var json = JsonDocument.Parse(await http.Content.ReadAsStringAsync(timeout.Token)).RootElement;
+        var json = JsonDocument
+            .Parse(await http.Content.ReadAsStringAsync(timeout.Token))
+            .RootElement;
         var code = json.TryGetProperty("code", out var c) ? c.GetString() ?? "" : "";
-        Guid? id = json.TryGetProperty("data", out var d) && d.ValueKind == JsonValueKind.Object && d.TryGetProperty("id", out var i)
-            ? i.GetGuid()
-            : null;
+        Guid? id =
+            json.TryGetProperty("data", out var d)
+            && d.ValueKind == JsonValueKind.Object
+            && d.TryGetProperty("id", out var i)
+                ? i.GetGuid()
+                : null;
         return new Response(http.StatusCode, code, id);
     }
 
-    private static Task<Response[]> PostConcurrentlyAsync(HttpClient client, params object[] bodies) =>
-        Task.WhenAll(bodies.Select(b => PostAsync(client, b)));
+    private static Task<Response[]> PostConcurrentlyAsync(
+        HttpClient client,
+        params object[] bodies
+    ) => Task.WhenAll(bodies.Select(b => PostAsync(client, b)));
 
-    private object Collection(Guid receivableId, decimal amount, Guid? clientRequestId = null, Guid? cashRegisterId = null) => new
-    {
-        customerId = _f.CustomerId,
-        amount,
-        paymentDate = _f.Today,
-        paymentMethodId = _f.CashMethodId,
-        reference = (string?)null,
-        lines = new[] { new { documentId = receivableId, installmentId = (Guid?)null, appliedAmount = amount } },
-        cashRegisterId,
-        clientRequestId = clientRequestId ?? Guid.NewGuid(),
-    };
+    private object Collection(
+        Guid receivableId,
+        decimal amount,
+        Guid? clientRequestId = null,
+        Guid? cashRegisterId = null
+    ) =>
+        new
+        {
+            customerId = _f.CustomerId,
+            amount,
+            paymentDate = _f.Today,
+            paymentMethodId = _f.CashMethodId,
+            reference = (string?)null,
+            lines = new[]
+            {
+                new
+                {
+                    documentId = receivableId,
+                    installmentId = (Guid?)null,
+                    appliedAmount = amount,
+                },
+            },
+            cashRegisterId,
+            clientRequestId = clientRequestId ?? Guid.NewGuid(),
+        };
 
     private async Task<ReceivableState> StateAsync(Guid receivableId)
     {
         using var scope = _f.CreateDbScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
-        var receivable = await db.SalesReceivables.IgnoreQueryFilters().AsNoTracking().SingleAsync(r => r.Id == receivableId);
-        var lines = await db.Payments.IgnoreQueryFilters()
-            .Where(p => p.Status == PaymentStatus.Applied && p.Direction == PaymentDirection.Collection)
+        var receivable = await db
+            .SalesReceivables.IgnoreQueryFilters()
+            .AsNoTracking()
+            .SingleAsync(r => r.Id == receivableId);
+        var lines = await db
+            .Payments.IgnoreQueryFilters()
+            .Where(p =>
+                p.Status == PaymentStatus.Applied && p.Direction == PaymentDirection.Collection
+            )
             .SelectMany(p => p.Lines)
             .Where(l => l.ReceivableId == receivableId)
             .Select(l => new { l.PaymentId, l.AppliedAmount })
@@ -82,8 +116,15 @@ public sealed class ReceivableCollectionConcurrencyTests : IClassFixture<Financi
 
     private static void AssertConsistent(ReceivableState state, decimal original)
     {
-        state.AppliedByCollections.Should().BeLessThanOrEqualTo(original, "Σ aplicaciones nunca supera el monto original");
-        state.Paid.Should().Be(state.AppliedByCollections, "el saldo persistido coincide con las aplicaciones confirmadas");
+        state
+            .AppliedByCollections.Should()
+            .BeLessThanOrEqualTo(original, "Σ aplicaciones nunca supera el monto original");
+        state
+            .Paid.Should()
+            .Be(
+                state.AppliedByCollections,
+                "el saldo persistido coincide con las aplicaciones confirmadas"
+            );
         state.Balance.Should().Be(original - state.AppliedByCollections);
     }
 
@@ -97,7 +138,11 @@ public sealed class ReceivableCollectionConcurrencyTests : IClassFixture<Financi
         var client = _f.CreateClient(op.UserId);
         var before = await _f.CountEffectsAsync(receivableId: receivable);
 
-        var responses = await PostConcurrentlyAsync(client, Collection(receivable, 60m), Collection(receivable, 40m));
+        var responses = await PostConcurrentlyAsync(
+            client,
+            Collection(receivable, 60m),
+            Collection(receivable, 40m)
+        );
 
         responses.Should().OnlyContain(r => r.Status == HttpStatusCode.Created);
         responses.Select(r => r.Id).Distinct().Should().HaveCount(2);
@@ -119,7 +164,11 @@ public sealed class ReceivableCollectionConcurrencyTests : IClassFixture<Financi
         var client = _f.CreateClient(op.UserId);
         var before = await _f.CountEffectsAsync(receivableId: receivable);
 
-        var responses = await PostConcurrentlyAsync(client, Collection(receivable, 80m), Collection(receivable, 80m));
+        var responses = await PostConcurrentlyAsync(
+            client,
+            Collection(receivable, 80m),
+            Collection(receivable, 80m)
+        );
 
         responses.Count(r => r.Status == HttpStatusCode.Created).Should().Be(1);
         var loser = responses.Single(r => r.Status != HttpStatusCode.Created);
@@ -151,8 +200,13 @@ public sealed class ReceivableCollectionConcurrencyTests : IClassFixture<Financi
         );
 
         responses.Count(r => r.Status == HttpStatusCode.Created).Should().Be(5);
-        responses.Where(r => r.Status != HttpStatusCode.Created)
-            .Should().HaveCount(2).And.OnlyContain(r => r.Status == HttpStatusCode.UnprocessableEntity && r.Code == DomainRuleViolation);
+        responses
+            .Where(r => r.Status != HttpStatusCode.Created)
+            .Should()
+            .HaveCount(2)
+            .And.OnlyContain(r =>
+                r.Status == HttpStatusCode.UnprocessableEntity && r.Code == DomainRuleViolation
+            );
         var state = await StateAsync(receivable);
         AssertConsistent(state, 100m);
         state.Paid.Should().Be(100m);
@@ -191,7 +245,11 @@ public sealed class ReceivableCollectionConcurrencyTests : IClassFixture<Financi
         var keyA = Guid.NewGuid();
         var keyB = Guid.NewGuid();
 
-        var responses = await PostConcurrentlyAsync(client, Collection(receivable, 80m, keyA), Collection(receivable, 80m, keyB));
+        var responses = await PostConcurrentlyAsync(
+            client,
+            Collection(receivable, 80m, keyA),
+            Collection(receivable, 80m, keyB)
+        );
         var winnerIndex = Array.FindIndex(responses, r => r.Status == HttpStatusCode.Created);
         winnerIndex.Should().BeGreaterThanOrEqualTo(0);
         var (winnerKey, loserKey) = winnerIndex == 0 ? (keyA, keyB) : (keyB, keyA);
@@ -201,7 +259,9 @@ public sealed class ReceivableCollectionConcurrencyTests : IClassFixture<Financi
         var retry = await PostAsync(client, Collection(receivable, 80m, loserKey));
         retry.Status.Should().Be(HttpStatusCode.UnprocessableEntity);
         retry.Code.Should().Be(DomainRuleViolation);
-        (await _f.CountEffectsAsync(receivableId: receivable)).Should().Be(before, "el reintento rechazado no deja efectos");
+        (await _f.CountEffectsAsync(receivableId: receivable))
+            .Should()
+            .Be(before, "el reintento rechazado no deja efectos");
 
         // El ganador reintentado responde su mismo cobro (replay) sin efectos nuevos.
         var replay = await PostAsync(client, Collection(receivable, 80m, winnerKey));
@@ -228,8 +288,15 @@ public sealed class ReceivableCollectionConcurrencyTests : IClassFixture<Financi
         var client = _f.CreateClient(op.UserId);
 
         // 150 no cabe nunca: se rechaza DESPUÉS de tomar el lock (rollback) mientras 30 compite.
-        var responses = await PostConcurrentlyAsync(client, Collection(receivable, 150m), Collection(receivable, 30m));
-        responses.Select(r => r.Status).Should().BeEquivalentTo(new[] { HttpStatusCode.Created, HttpStatusCode.UnprocessableEntity });
+        var responses = await PostConcurrentlyAsync(
+            client,
+            Collection(receivable, 150m),
+            Collection(receivable, 30m)
+        );
+        responses
+            .Select(r => r.Status)
+            .Should()
+            .BeEquivalentTo(new[] { HttpStatusCode.Created, HttpStatusCode.UnprocessableEntity });
 
         // Un cobro posterior no espera ningún lock residual (PostAsync falla por timeout si lo hiciera).
         var next = await PostAsync(client, Collection(receivable, 70m));
@@ -246,7 +313,10 @@ public sealed class ReceivableCollectionConcurrencyTests : IClassFixture<Financi
         var op = await _f.CreateOperatorAsync();
         var receivable = await _f.CreateReceivableAsync(100m);
         var client = _f.CreateClient(op.UserId);
-        var before = await _f.CountEffectsAsync(receivableId: receivable, sessionId: op.CashSessionId);
+        var before = await _f.CountEffectsAsync(
+            receivableId: receivable,
+            sessionId: op.CashSessionId
+        );
 
         var responses = await PostConcurrentlyAsync(
             client,
@@ -255,11 +325,17 @@ public sealed class ReceivableCollectionConcurrencyTests : IClassFixture<Financi
         );
 
         responses.Count(r => r.Status == HttpStatusCode.Created).Should().Be(1);
-        responses.Single(r => r.Status != HttpStatusCode.Created).Code.Should().Be(DomainRuleViolation);
+        responses
+            .Single(r => r.Status != HttpStatusCode.Created)
+            .Code.Should()
+            .Be(DomainRuleViolation);
         var state = await StateAsync(receivable);
         AssertConsistent(state, 100m);
         state.Paid.Should().Be(60m);
-        var after = await _f.CountEffectsAsync(receivableId: receivable, sessionId: op.CashSessionId);
+        var after = await _f.CountEffectsAsync(
+            receivableId: receivable,
+            sessionId: op.CashSessionId
+        );
         after.CashMovements.Should().Be(before.CashMovements, "el cobro no crea CashMovement");
         after.JournalEntries.Should().Be(before.JournalEntries + 1);
     }
@@ -272,7 +348,11 @@ public sealed class ReceivableCollectionConcurrencyTests : IClassFixture<Financi
         var client = _f.CreateClient(op.UserId);
         var before = await _f.CountEffectsAsync(receivableId: foreign);
 
-        var responses = await PostConcurrentlyAsync(client, Collection(foreign, 60m), Collection(foreign, 40m));
+        var responses = await PostConcurrentlyAsync(
+            client,
+            Collection(foreign, 60m),
+            Collection(foreign, 40m)
+        );
 
         responses.Should().OnlyContain(r => r.Status == HttpStatusCode.NotFound);
         (await _f.CountEffectsAsync(receivableId: foreign)).Should().Be(before);

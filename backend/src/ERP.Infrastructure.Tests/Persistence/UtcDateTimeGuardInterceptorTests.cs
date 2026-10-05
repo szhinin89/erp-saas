@@ -188,10 +188,8 @@ public sealed class UtcDateTimeGuardInterceptorTests : IAsyncLifetime
         );
 
         db.CashSessions.Add(session);
-        db.Entry(session).Property(nameof(CashSession.OpenedAt)).CurrentValue = DateTime.SpecifyKind(
-            DateTime.UtcNow,
-            DateTimeKind.Unspecified
-        );
+        db.Entry(session).Property(nameof(CashSession.OpenedAt)).CurrentValue =
+            DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
 
         var act = () => db.SaveChangesAsync();
         var exception = await act.Should().ThrowAsync<UnspecifiedDateTimeKindException>();
@@ -219,10 +217,8 @@ public sealed class UtcDateTimeGuardInterceptorTests : IAsyncLifetime
         );
 
         db.CashSessions.Add(session);
-        db.Entry(session).Property(nameof(CashSession.OpenedAt)).CurrentValue = DateTime.SpecifyKind(
-            DateTime.UtcNow,
-            DateTimeKind.Local
-        );
+        db.Entry(session).Property(nameof(CashSession.OpenedAt)).CurrentValue =
+            DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Local);
 
         var act = () => db.SaveChangesAsync();
         var exception = await act.Should().ThrowAsync<UnspecifiedDateTimeKindException>();
@@ -274,11 +270,15 @@ public sealed class UtcDateTimeGuardInterceptorTests : IAsyncLifetime
 
         await using (var db = CreateContext(readTimeZone))
         {
-            var persisted = await db.StockTransfers.AsNoTracking().SingleAsync(t => t.Id == transferId);
+            var persisted = await db
+                .StockTransfers.AsNoTracking()
+                .SingleAsync(t => t.Id == transferId);
             persisted.TransferDate.Should().Be(businessDate);
             persisted.ConfirmedAt!.Value.Kind.Should().Be(DateTimeKind.Utc);
             // timestamptz guarda microsegundos: mismo instante (sin ±5h), truncado a µs.
-            persisted.ConfirmedAt.Value.Should().BeCloseTo(confirmedAt, TimeSpan.FromMilliseconds(1));
+            persisted
+                .ConfirmedAt.Value.Should()
+                .BeCloseTo(confirmedAt, TimeSpan.FromMilliseconds(1));
 
             var rawDate = await db
                 .Database.SqlQueryRaw<string>(
@@ -327,7 +327,9 @@ public sealed class UtcDateTimeGuardInterceptorTests : IAsyncLifetime
 
         await using (var db = CreateContext())
         {
-            var persisted = await db.StockTransfers.AsNoTracking().SingleAsync(t => t.Id == transferId);
+            var persisted = await db
+                .StockTransfers.AsNoTracking()
+                .SingleAsync(t => t.Id == transferId);
             // ZH-TEMPORAL-CONTRACT-02: columna date — el día de negocio vuelve idéntico.
             persisted.TransferDate.Should().Be(businessDate);
         }

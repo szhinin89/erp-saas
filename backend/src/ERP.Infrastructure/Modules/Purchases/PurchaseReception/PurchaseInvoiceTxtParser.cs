@@ -1,8 +1,8 @@
+using System.Globalization;
+using System.Text;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Models;
-using System.Globalization;
-using System.Text;
 
 namespace ERP.Infrastructure.Modules.Purchases.PurchaseReception;
 
@@ -117,8 +117,10 @@ public sealed class PurchaseInvoiceTxtParser : IPurchaseReceptionParser
 
         try
         {
-            new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true)
-                .GetString(bytes);
+            new UTF8Encoding(
+                encoderShouldEmitUTF8Identifier: false,
+                throwOnInvalidBytes: true
+            ).GetString(bytes);
             return Encoding.UTF8;
         }
         catch (DecoderFallbackException)

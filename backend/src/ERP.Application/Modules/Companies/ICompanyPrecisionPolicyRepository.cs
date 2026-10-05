@@ -9,7 +9,11 @@ namespace ERP.Application.Modules.Companies;
 /// </summary>
 public interface ICompanyPrecisionPolicyRepository
 {
-    Task<CompanyPrecisionPolicy?> FindAsync(Guid tenantId, Guid companyId, CancellationToken ct = default);
+    Task<CompanyPrecisionPolicy?> FindAsync(
+        Guid tenantId,
+        Guid companyId,
+        CancellationToken ct = default
+    );
 
     Task AddAsync(CompanyPrecisionPolicy policy, CancellationToken ct = default);
 
@@ -21,5 +25,9 @@ public interface ICompanyPrecisionPolicyRepository
     /// asiento contable Posted). Usado para decidir si la policy debe bloquearse antes de aplicar
     /// un update.
     /// </summary>
-    Task<bool> HasRealOperationsAsync(Guid tenantId, Guid companyId, CancellationToken ct = default);
+    Task<bool> HasRealOperationsAsync(
+        Guid tenantId,
+        Guid companyId,
+        CancellationToken ct = default
+    );
 }

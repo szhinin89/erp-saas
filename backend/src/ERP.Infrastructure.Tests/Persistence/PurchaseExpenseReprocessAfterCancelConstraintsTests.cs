@@ -198,14 +198,33 @@ public sealed class PurchaseExpenseReprocessAfterCancelConstraintsTests : IAsync
         db.Accounts.Add(expenseAccount);
         await db.SaveChangesAsync();
 
-        var type = ExpenseCategoryNode.CreateType(tenant.Id, company.Id, "TIPO-TEST", "Tipo Gasto Test", _userId);
+        var type = ExpenseCategoryNode.CreateType(
+            tenant.Id,
+            company.Id,
+            "TIPO-TEST",
+            "Tipo Gasto Test",
+            _userId
+        );
         db.ExpenseCategoryNodes.Add(type);
         await db.SaveChangesAsync();
-        var category = ExpenseCategoryNode.CreateCategory(tenant.Id, company.Id, type, "CAT-TEST", "Categoria Test", _userId);
+        var category = ExpenseCategoryNode.CreateCategory(
+            tenant.Id,
+            company.Id,
+            type,
+            "CAT-TEST",
+            "Categoria Test",
+            _userId
+        );
         db.ExpenseCategoryNodes.Add(category);
         await db.SaveChangesAsync();
         var subcategory = ExpenseCategoryNode.CreateSubcategory(
-            tenant.Id, company.Id, category, "SUB-TEST", "Subcategoria Test", expenseAccount.Id, _userId
+            tenant.Id,
+            company.Id,
+            category,
+            "SUB-TEST",
+            "Subcategoria Test",
+            expenseAccount.Id,
+            _userId
         );
         db.ExpenseCategoryNodes.Add(subcategory);
         await db.SaveChangesAsync();
@@ -432,7 +451,9 @@ public sealed class PurchaseExpenseReprocessAfterCancelConstraintsTests : IAsync
                 x.SupplierId == ctx.SupplierId && x.InvoiceNumber == invoiceNumber
             )
             .ToListAsync();
-        invoicesForNumber.Should().HaveCount(2, "el historial se mantiene — la compra anulada nunca se borra");
+        invoicesForNumber
+            .Should()
+            .HaveCount(2, "el historial se mantiene — la compra anulada nunca se borra");
         invoicesForNumber.Should().ContainSingle(x => x.Status == PurchaseStatus.Cancelled);
         invoicesForNumber.Should().ContainSingle(x => x.Status == PurchaseStatus.Confirmed);
     }
@@ -682,9 +703,10 @@ public sealed class PurchaseExpenseReprocessAfterCancelConstraintsTests : IAsync
         db2.ExpenseDocuments.Add(BuildConfirmedExpense(ctx, "001-001-000000602", accessKey));
         var act = async () => await db2.SaveChangesAsync();
 
-        await act.Should().NotThrowAsync(
-            "una compra Cancelled con el mismo AccessKey ya no debe bloquear crear el gasto"
-        );
+        await act.Should()
+            .NotThrowAsync(
+                "una compra Cancelled con el mismo AccessKey ya no debe bloquear crear el gasto"
+            );
     }
 
     [Fact]
@@ -731,9 +753,10 @@ public sealed class PurchaseExpenseReprocessAfterCancelConstraintsTests : IAsync
         db2.PurchaseInvoices.Add(BuildConfirmedInvoice(ctx, "001-001-000000606", accessKey));
         var act = async () => await db2.SaveChangesAsync();
 
-        await act.Should().NotThrowAsync(
-            "un gasto Cancelled con el mismo AccessKey ya no debe bloquear crear la compra"
-        );
+        await act.Should()
+            .NotThrowAsync(
+                "un gasto Cancelled con el mismo AccessKey ya no debe bloquear crear la compra"
+            );
     }
 
     [Fact]
@@ -760,13 +783,22 @@ public sealed class PurchaseExpenseReprocessAfterCancelConstraintsTests : IAsync
     // exigen que el bloqueo venga de ESE trigger (constraint uq_purchase_expense_access_key), no de
     // otro índice.
 
-    private static async Task<PostgresException> SaveExpectingExclusivityViolation(ErpDbContext db, string message)
+    private static async Task<PostgresException> SaveExpectingExclusivityViolation(
+        ErpDbContext db,
+        string message
+    )
     {
-        var ex = await FluentActions.Invoking(() => db.SaveChangesAsync()).Should().ThrowAsync<DbUpdateException>();
+        var ex = await FluentActions
+            .Invoking(() => db.SaveChangesAsync())
+            .Should()
+            .ThrowAsync<DbUpdateException>();
         return AssertExclusivityViolation(ex.Which.InnerException, message);
     }
 
-    private static PostgresException AssertExclusivityViolation(Exception? exception, string message)
+    private static PostgresException AssertExclusivityViolation(
+        Exception? exception,
+        string message
+    )
     {
         var pg = exception.Should().BeOfType<PostgresException>().Subject;
         pg.SqlState.Should().Be(PostgresErrorCodes.UniqueViolation);
@@ -791,13 +823,23 @@ public sealed class PurchaseExpenseReprocessAfterCancelConstraintsTests : IAsync
 
         await using (var dbExpense = CreateContext(ctx.TenantId, ctx.CompanyId))
         {
-            dbExpense.ExpenseDocuments.Add(BuildConfirmedExpense(ctx, "001-001-000000703", purchaseKey));
-            await SaveExpectingExclusivityViolation(dbExpense, "La factura ya fue registrada como compra.");
+            dbExpense.ExpenseDocuments.Add(
+                BuildConfirmedExpense(ctx, "001-001-000000703", purchaseKey)
+            );
+            await SaveExpectingExclusivityViolation(
+                dbExpense,
+                "La factura ya fue registrada como compra."
+            );
         }
 
         await using var dbPurchase = CreateContext(ctx.TenantId, ctx.CompanyId);
-        dbPurchase.PurchaseInvoices.Add(BuildConfirmedInvoice(ctx, "001-001-000000704", expenseKey));
-        await SaveExpectingExclusivityViolation(dbPurchase, "La factura ya fue registrada como gasto.");
+        dbPurchase.PurchaseInvoices.Add(
+            BuildConfirmedInvoice(ctx, "001-001-000000704", expenseKey)
+        );
+        await SaveExpectingExclusivityViolation(
+            dbPurchase,
+            "La factura ya fue registrada como gasto."
+        );
     }
 
     [Fact]
@@ -816,18 +858,31 @@ public sealed class PurchaseExpenseReprocessAfterCancelConstraintsTests : IAsync
         }
         await using (var dbCancel = CreateContext(ctx.TenantId, ctx.CompanyId))
         {
-            (await dbCancel.PurchaseInvoices.SingleAsync(x => x.Id == invoiceId)).Cancel("Era un gasto", _userId);
+            (await dbCancel.PurchaseInvoices.SingleAsync(x => x.Id == invoiceId)).Cancel(
+                "Era un gasto",
+                _userId
+            );
             await dbCancel.SaveChangesAsync();
         }
         await using (var dbExpense = CreateContext(ctx.TenantId, ctx.CompanyId))
         {
-            dbExpense.ExpenseDocuments.Add(BuildConfirmedExpense(ctx, "001-001-000000712", accessKey));
-            await FluentActions.Invoking(() => dbExpense.SaveChangesAsync()).Should().NotThrowAsync();
+            dbExpense.ExpenseDocuments.Add(
+                BuildConfirmedExpense(ctx, "001-001-000000712", accessKey)
+            );
+            await FluentActions
+                .Invoking(() => dbExpense.SaveChangesAsync())
+                .Should()
+                .NotThrowAsync();
         }
 
         await using var dbRepurchase = CreateContext(ctx.TenantId, ctx.CompanyId);
-        dbRepurchase.PurchaseInvoices.Add(BuildConfirmedInvoice(ctx, "001-001-000000713", accessKey));
-        await SaveExpectingExclusivityViolation(dbRepurchase, "La factura ya fue registrada como gasto.");
+        dbRepurchase.PurchaseInvoices.Add(
+            BuildConfirmedInvoice(ctx, "001-001-000000713", accessKey)
+        );
+        await SaveExpectingExclusivityViolation(
+            dbRepurchase,
+            "La factura ya fue registrada como gasto."
+        );
     }
 
     [Fact]
@@ -839,7 +894,9 @@ public sealed class PurchaseExpenseReprocessAfterCancelConstraintsTests : IAsync
 
         await using (var dbA = CreateContext(tenantA.TenantId, tenantA.CompanyId))
         {
-            dbA.PurchaseInvoices.Add(BuildConfirmedInvoice(tenantA, "001-001-000000721", accessKey));
+            dbA.PurchaseInvoices.Add(
+                BuildConfirmedInvoice(tenantA, "001-001-000000721", accessKey)
+            );
             await dbA.SaveChangesAsync();
         }
 
@@ -880,21 +937,34 @@ public sealed class PurchaseExpenseReprocessAfterCancelConstraintsTests : IAsync
         // independiente de qué flujo de la app cambie la clave.
         await using var dbUpdate = CreateContext(ctx.TenantId, ctx.CompanyId);
         var toExpenseKey = await FluentActions
-            .Invoking(() => dbUpdate.Database.ExecuteSqlInterpolatedAsync(
-                $"UPDATE purchase_invoices SET access_key = {expenseKey} WHERE id = {purchase.Id}"))
+            .Invoking(() =>
+                dbUpdate.Database.ExecuteSqlInterpolatedAsync(
+                    $"UPDATE purchase_invoices SET access_key = {expenseKey} WHERE id = {purchase.Id}"
+                )
+            )
             .Should()
             .ThrowAsync<PostgresException>();
         AssertExclusivityViolation(toExpenseKey.Which, "La factura ya fue registrada como gasto.");
 
         var toPurchaseKey = await FluentActions
-            .Invoking(() => dbUpdate.Database.ExecuteSqlInterpolatedAsync(
-                $"UPDATE expense_documents SET access_key = {purchaseKey} WHERE id = {expense.Id}"))
+            .Invoking(() =>
+                dbUpdate.Database.ExecuteSqlInterpolatedAsync(
+                    $"UPDATE expense_documents SET access_key = {purchaseKey} WHERE id = {expense.Id}"
+                )
+            )
             .Should()
             .ThrowAsync<PostgresException>();
-        AssertExclusivityViolation(toPurchaseKey.Which, "La factura ya fue registrada como compra.");
+        AssertExclusivityViolation(
+            toPurchaseKey.Which,
+            "La factura ya fue registrada como compra."
+        );
 
-        (await dbUpdate.PurchaseInvoices.AsNoTracking().SingleAsync(x => x.Id == purchase.Id)).AccessKey.Should().Be(purchaseKey);
-        (await dbUpdate.ExpenseDocuments.AsNoTracking().SingleAsync(x => x.Id == expense.Id)).AccessKey.Should().Be(expenseKey);
+        (await dbUpdate.PurchaseInvoices.AsNoTracking().SingleAsync(x => x.Id == purchase.Id))
+            .AccessKey.Should()
+            .Be(purchaseKey);
+        (await dbUpdate.ExpenseDocuments.AsNoTracking().SingleAsync(x => x.Id == expense.Id))
+            .AccessKey.Should()
+            .Be(expenseKey);
     }
 
     // ── Test doubles mínimos ─────────────────────────────────────────────

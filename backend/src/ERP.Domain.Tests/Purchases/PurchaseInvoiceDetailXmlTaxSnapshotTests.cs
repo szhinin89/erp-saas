@@ -17,7 +17,11 @@ public sealed class PurchaseInvoiceDetailXmlTaxSnapshotTests
 {
     private static readonly Guid TenantId = Guid.NewGuid();
 
-    private static PurchaseInvoiceDetail CreateLine(decimal quantity, decimal unitPrice, string vatCode) =>
+    private static PurchaseInvoiceDetail CreateLine(
+        decimal quantity,
+        decimal unitPrice,
+        string vatCode
+    ) =>
         PurchaseInvoiceDetail.Create(
             invoiceId: Guid.NewGuid(),
             tenantId: TenantId,
@@ -35,26 +39,28 @@ public sealed class PurchaseInvoiceDetailXmlTaxSnapshotTests
         // recalcularía a 12.98 * 15% = 1.947 => redondeado 1.95, que es el bug reportado.
         var line = CreateLine(1, 12.98m, "4");
 
-        line.ReplaceTaxes(
-            [
-                PurchaseInvoiceDetailTax.Create(
-                    line.Id,
-                    TenantId,
-                    "2",
-                    "4",
-                    "IVA 15%",
-                    15m,
-                    SriTaxCalculationType.Percentage,
-                    12.98m,
-                    1.61m,
-                    PurchaseTaxSource.Xml
-                ),
-            ]
-        );
+        line.ReplaceTaxes([
+            PurchaseInvoiceDetailTax.Create(
+                line.Id,
+                TenantId,
+                "2",
+                "4",
+                "IVA 15%",
+                15m,
+                SriTaxCalculationType.Percentage,
+                12.98m,
+                1.61m,
+                PurchaseTaxSource.Xml
+            ),
+        ]);
 
         line.ApplyTaxes("4", 15m, "IVA 15%", null, 0m, null);
 
-        line.VatAmount.Should().Be(1.61m, "el snapshot exacto del XML debe prevalecer sobre el recálculo por tarifa (que daría 1.95)");
+        line.VatAmount.Should()
+            .Be(
+                1.61m,
+                "el snapshot exacto del XML debe prevalecer sobre el recálculo por tarifa (que daría 1.95)"
+            );
     }
 
     [Fact]
@@ -63,34 +69,32 @@ public sealed class PurchaseInvoiceDetailXmlTaxSnapshotTests
         // Base 12.98 + IVA 1.61 + ICE 0.00 + IRBPNR 0.24 = Total línea 14.83 (caso exacto del ticket).
         var line = CreateLine(1, 12.98m, "4");
 
-        line.ReplaceTaxes(
-            [
-                PurchaseInvoiceDetailTax.Create(
-                    line.Id,
-                    TenantId,
-                    "2",
-                    "4",
-                    "IVA 15%",
-                    15m,
-                    SriTaxCalculationType.Percentage,
-                    12.98m,
-                    1.61m,
-                    PurchaseTaxSource.Xml
-                ),
-                PurchaseInvoiceDetailTax.Create(
-                    line.Id,
-                    TenantId,
-                    "5",
-                    "5001",
-                    "IRBPNR",
-                    0.02m,
-                    SriTaxCalculationType.Specific,
-                    12.98m,
-                    0.24m,
-                    PurchaseTaxSource.Xml
-                ),
-            ]
-        );
+        line.ReplaceTaxes([
+            PurchaseInvoiceDetailTax.Create(
+                line.Id,
+                TenantId,
+                "2",
+                "4",
+                "IVA 15%",
+                15m,
+                SriTaxCalculationType.Percentage,
+                12.98m,
+                1.61m,
+                PurchaseTaxSource.Xml
+            ),
+            PurchaseInvoiceDetailTax.Create(
+                line.Id,
+                TenantId,
+                "5",
+                "5001",
+                "IRBPNR",
+                0.02m,
+                SriTaxCalculationType.Specific,
+                12.98m,
+                0.24m,
+                PurchaseTaxSource.Xml
+            ),
+        ]);
 
         line.ApplyTaxes("4", 15m, "IVA 15%", null, 0m, null);
 
@@ -108,7 +112,11 @@ public sealed class PurchaseInvoiceDetailXmlTaxSnapshotTests
         // Sin ReplaceTaxes — línea manual, _taxes vacío.
         line.ApplyTaxes("4", 15m, "IVA 15%", null, 0m, null);
 
-        line.VatAmount.Should().Be(15m, "sin snapshot XML el comportamiento histórico (recálculo por tarifa) no debe romperse");
+        line.VatAmount.Should()
+            .Be(
+                15m,
+                "sin snapshot XML el comportamiento histórico (recálculo por tarifa) no debe romperse"
+            );
     }
 
     [Fact]
@@ -116,26 +124,28 @@ public sealed class PurchaseInvoiceDetailXmlTaxSnapshotTests
     {
         var line = CreateLine(1, 100m, "4");
 
-        line.ReplaceTaxes(
-            [
-                PurchaseInvoiceDetailTax.Create(
-                    line.Id,
-                    TenantId,
-                    "2",
-                    "4",
-                    "IVA 15%",
-                    15m,
-                    SriTaxCalculationType.Percentage,
-                    100m,
-                    9.99m,
-                    PurchaseTaxSource.Calculated
-                ),
-            ]
-        );
+        line.ReplaceTaxes([
+            PurchaseInvoiceDetailTax.Create(
+                line.Id,
+                TenantId,
+                "2",
+                "4",
+                "IVA 15%",
+                15m,
+                SriTaxCalculationType.Percentage,
+                100m,
+                9.99m,
+                PurchaseTaxSource.Calculated
+            ),
+        ]);
 
         line.ApplyTaxes("4", 15m, "IVA 15%", null, 0m, null);
 
-        line.VatAmount.Should().Be(15m, "un snapshot Source=Calculated no es un monto documental exacto del XML — no debe prevalecer");
+        line.VatAmount.Should()
+            .Be(
+                15m,
+                "un snapshot Source=Calculated no es un monto documental exacto del XML — no debe prevalecer"
+            );
     }
 
     [Fact]
@@ -143,25 +153,27 @@ public sealed class PurchaseInvoiceDetailXmlTaxSnapshotTests
     {
         var line = CreateLine(1, 100m, "4");
 
-        line.ReplaceTaxes(
-            [
-                PurchaseInvoiceDetailTax.Create(
-                    line.Id,
-                    TenantId,
-                    "3",
-                    "3041",
-                    "ICE 10%",
-                    10m,
-                    SriTaxCalculationType.Percentage,
-                    100m,
-                    9.87m,
-                    PurchaseTaxSource.Xml
-                ),
-            ]
-        );
+        line.ReplaceTaxes([
+            PurchaseInvoiceDetailTax.Create(
+                line.Id,
+                TenantId,
+                "3",
+                "3041",
+                "ICE 10%",
+                10m,
+                SriTaxCalculationType.Percentage,
+                100m,
+                9.87m,
+                PurchaseTaxSource.Xml
+            ),
+        ]);
 
         line.ApplyTaxes("4", 4m, "IVA 4%", "3041", 10m, "ICE 10%");
 
-        line.IceAmount.Should().Be(9.87m, "el snapshot exacto del XML debe prevalecer sobre el recálculo por tarifa (que daría 10.00)");
+        line.IceAmount.Should()
+            .Be(
+                9.87m,
+                "el snapshot exacto del XML debe prevalecer sobre el recálculo por tarifa (que daría 10.00)"
+            );
     }
 }

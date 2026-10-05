@@ -94,7 +94,9 @@ public sealed class BusinessPartnerRoleRepository : IBusinessPartnerRoleReposito
     /// resultados de búsqueda. Solo mira roles activos: un rol revocado no cuenta como
     /// "ya es cliente/proveedor" (ver ADR-BP-12, semántica UPSERT de AssignRole).
     /// </summary>
-    public async Task<IReadOnlyDictionary<Guid, (bool IsCustomer, bool IsSupplier)>> GetActiveRoleFlagsByBpIdsAsync(
+    public async Task<
+        IReadOnlyDictionary<Guid, (bool IsCustomer, bool IsSupplier)>
+    > GetActiveRoleFlagsByBpIdsAsync(
         IEnumerable<Guid> businessPartnerIds,
         CancellationToken cancellationToken = default
     )
@@ -113,14 +115,14 @@ public sealed class BusinessPartnerRoleRepository : IBusinessPartnerRoleReposito
             .Select(r => new { r.BusinessPartnerId, r.RoleType })
             .ToListAsync(cancellationToken);
 
-        return rows
-            .GroupBy(r => r.BusinessPartnerId)
+        return rows.GroupBy(r => r.BusinessPartnerId)
             .ToDictionary(
                 g => g.Key,
-                g => (
-                    IsCustomer: g.Any(x => x.RoleType == RoleType.Customer),
-                    IsSupplier: g.Any(x => x.RoleType == RoleType.Supplier)
-                )
+                g =>
+                    (
+                        IsCustomer: g.Any(x => x.RoleType == RoleType.Customer),
+                        IsSupplier: g.Any(x => x.RoleType == RoleType.Supplier)
+                    )
             );
     }
 

@@ -1,3 +1,4 @@
+using System.Reflection;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.MasterData.Services;
@@ -26,7 +27,6 @@ using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Models;
 using FluentAssertions;
 using Moq;
-using System.Reflection;
 
 namespace ERP.Application.Tests.Expenses;
 
@@ -37,18 +37,49 @@ public sealed class ExpenseDocumentDraftUseCasesTests
     private static readonly Guid BranchId = Guid.NewGuid();
     private static readonly Guid UserId = Guid.NewGuid();
 
-    private static PurchaseReceptionDocument SetupReception(Fixture fx,
-        PurchaseReceptionSourceDocType type = PurchaseReceptionSourceDocType.Invoice, bool verified = true, bool withoutSupplier = false)
+    private static PurchaseReceptionDocument SetupReception(
+        Fixture fx,
+        PurchaseReceptionSourceDocType type = PurchaseReceptionSourceDocType.Invoice,
+        bool verified = true,
+        bool withoutSupplier = false
+    )
     {
         var cmd = fx.ValidCreateCommand();
-        var doc = PurchaseReceptionDocument.Create(TenantId, CompanyId, BranchId, type,
-            fx.Supplier.Identification.Number, "Proveedor", withoutSupplier ? null : fx.Supplier.Id, new string('1', 49),
-            cmd.DocumentNumber, cmd.IssueDate, null, 10m, 0m, 10m, UserId);
+        var doc = PurchaseReceptionDocument.Create(
+            TenantId,
+            CompanyId,
+            BranchId,
+            type,
+            fx.Supplier.Identification.Number,
+            "Proveedor",
+            withoutSupplier ? null : fx.Supplier.Id,
+            new string('1', 49),
+            cmd.DocumentNumber,
+            cmd.IssueDate,
+            null,
+            10m,
+            0m,
+            10m,
+            UserId
+        );
         if (verified)
-            doc.AttachSriAuthorization(doc.AccessKey, DateTime.UtcNow, "<factura/>", DateTime.UtcNow,
-                [], UserId, "01", null, PurchaseReceptionProcessingOutcome.Failed("Sin detalle"));
-        fx.Receptions.Setup(r => r.GetByIdAsync(TenantId, doc.Id, It.IsAny<CancellationToken>())).ReturnsAsync(doc);
-        fx.Receptions.Setup(r => r.GetByAccessKeyAsync(TenantId, doc.AccessKey, It.IsAny<CancellationToken>())).ReturnsAsync(doc);
+            doc.AttachSriAuthorization(
+                doc.AccessKey,
+                DateTime.UtcNow,
+                "<factura/>",
+                DateTime.UtcNow,
+                [],
+                UserId,
+                "01",
+                null,
+                PurchaseReceptionProcessingOutcome.Failed("Sin detalle")
+            );
+        fx.Receptions.Setup(r => r.GetByIdAsync(TenantId, doc.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(doc);
+        fx.Receptions.Setup(r =>
+                r.GetByAccessKeyAsync(TenantId, doc.AccessKey, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(doc);
         return doc;
     }
 
@@ -59,23 +90,41 @@ public sealed class ExpenseDocumentDraftUseCasesTests
     {
         var fx = new Fixture();
         var doc = SetupReception(fx, withoutSupplier: true);
-        fx.Partners.Setup(r => r.GetByIdentificationAsync(TaxIdentification.SriRuc, doc.SupplierRuc, It.IsAny<CancellationToken>()))
+        fx.Partners.Setup(r =>
+                r.GetByIdentificationAsync(
+                    TaxIdentification.SriRuc,
+                    doc.SupplierRuc,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(exists ? fx.Supplier : null);
-        var handler = new CreateExpenseDraftFromReceptionHandler(fx.Receptions.Object, fx.Purchases.Object,
-            fx.Docs.Object, fx.Partners.Object, fx.Roles.Object, Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
-            Mock.Of<ICurrentUser>(u => u.UserId == UserId));
+        var handler = new CreateExpenseDraftFromReceptionHandler(
+            fx.Receptions.Object,
+            fx.Purchases.Object,
+            fx.Docs.Object,
+            fx.Partners.Object,
+            fx.Roles.Object,
+            Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
+            Mock.Of<ICurrentUser>(u => u.UserId == UserId)
+        );
         var result = await handler.Handle(new(doc.Id), default);
         result.IsSuccess.Should().Be(exists, result.Error);
         if (exists)
         {
             result.Value!.SupplierId.Should().Be(fx.Supplier.Id);
             doc.SupplierId.Should().Be(fx.Supplier.Id);
-            fx.Receptions.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+            fx.Receptions.Verify(
+                r => r.SaveChangesAsync(It.IsAny<CancellationToken>()),
+                Times.Once
+            );
         }
         else
         {
             result.Error.Should().Contain("Cree primero el proveedor");
-            fx.Receptions.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+            fx.Receptions.Verify(
+                r => r.SaveChangesAsync(It.IsAny<CancellationToken>()),
+                Times.Never
+            );
         }
     }
 
@@ -87,12 +136,22 @@ public sealed class ExpenseDocumentDraftUseCasesTests
         var fx = new Fixture();
         var doc = SetupReception(fx);
         if (missing)
-            fx.Partners.Setup(r => r.GetByIdAsync(fx.Supplier.Id, It.IsAny<CancellationToken>())).ReturnsAsync((BusinessPartner?)null);
+            fx.Partners.Setup(r => r.GetByIdAsync(fx.Supplier.Id, It.IsAny<CancellationToken>()))
+                .ReturnsAsync((BusinessPartner?)null);
         else
             fx.Supplier.Deactivate(UserId);
-        var result = await fx.CreateHandler.Handle(fx.ValidCreateCommand() with { ReceptionDocumentId = doc.Id }, default);
+        var result = await fx.CreateHandler.Handle(
+            fx.ValidCreateCommand() with
+            {
+                ReceptionDocumentId = doc.Id,
+            },
+            default
+        );
         result.IsSuccess.Should().BeFalse();
-        fx.Docs.Verify(r => r.AddAsync(It.IsAny<ExpenseDocument>(), It.IsAny<CancellationToken>()), Times.Never);
+        fx.Docs.Verify(
+            r => r.AddAsync(It.IsAny<ExpenseDocument>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -100,9 +159,24 @@ public sealed class ExpenseDocumentDraftUseCasesTests
     {
         var fx = new Fixture();
         var doc = SetupReception(fx);
-        var result = await fx.CreateHandler.Handle(fx.ValidCreateCommand() with { ReceptionDocumentId = doc.Id }, default);
+        var result = await fx.CreateHandler.Handle(
+            fx.ValidCreateCommand() with
+            {
+                ReceptionDocumentId = doc.Id,
+            },
+            default
+        );
         result.IsSuccess.Should().BeTrue(result.Error);
-        fx.Docs.Verify(r => r.AddAsync(It.Is<ExpenseDocument>(e => e.ReceptionDocumentId == doc.Id && e.AccessKey == doc.AccessKey), It.IsAny<CancellationToken>()), Times.Once);
+        fx.Docs.Verify(
+            r =>
+                r.AddAsync(
+                    It.Is<ExpenseDocument>(e =>
+                        e.ReceptionDocumentId == doc.Id && e.AccessKey == doc.AccessKey
+                    ),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
     }
 
     [Theory]
@@ -114,29 +188,78 @@ public sealed class ExpenseDocumentDraftUseCasesTests
         var doc = SetupReception(fx, PurchaseReceptionSourceDocType.CreditNote);
         if (preview)
         {
-            var result = await new CreateExpenseDraftFromReceptionHandler(fx.Receptions.Object, fx.Purchases.Object,
-                fx.Docs.Object, fx.Partners.Object, fx.Roles.Object, Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId), Mock.Of<ICurrentUser>(u => u.UserId == UserId))
-                .Handle(new(doc.Id), default);
+            var result = await new CreateExpenseDraftFromReceptionHandler(
+                fx.Receptions.Object,
+                fx.Purchases.Object,
+                fx.Docs.Object,
+                fx.Partners.Object,
+                fx.Roles.Object,
+                Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
+                Mock.Of<ICurrentUser>(u => u.UserId == UserId)
+            ).Handle(new(doc.Id), default);
             result.IsSuccess.Should().BeFalse();
         }
         else
         {
-            var result = await fx.CreateHandler.Handle(fx.ValidCreateCommand() with { ReceptionDocumentId = doc.Id }, default);
+            var result = await fx.CreateHandler.Handle(
+                fx.ValidCreateCommand() with
+                {
+                    ReceptionDocumentId = doc.Id,
+                },
+                default
+            );
             result.IsSuccess.Should().BeFalse();
         }
-        fx.Docs.Verify(r => r.AddAsync(It.IsAny<ExpenseDocument>(), It.IsAny<CancellationToken>()), Times.Never);
+        fx.Docs.Verify(
+            r => r.AddAsync(It.IsAny<ExpenseDocument>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
     public async Task Reception_rejects_missing_unverified_and_tampered_source()
     {
         var fx = new Fixture();
-        (await fx.CreateHandler.Handle(fx.ValidCreateCommand() with { ReceptionDocumentId = Guid.NewGuid() }, default)).IsSuccess.Should().BeFalse();
+        (
+            await fx.CreateHandler.Handle(
+                fx.ValidCreateCommand() with
+                {
+                    ReceptionDocumentId = Guid.NewGuid(),
+                },
+                default
+            )
+        )
+            .IsSuccess.Should()
+            .BeFalse();
         var imported = SetupReception(fx, verified: false);
-        (await fx.CreateHandler.Handle(fx.ValidCreateCommand() with { ReceptionDocumentId = imported.Id }, default)).IsSuccess.Should().BeFalse();
+        (
+            await fx.CreateHandler.Handle(
+                fx.ValidCreateCommand() with
+                {
+                    ReceptionDocumentId = imported.Id,
+                },
+                default
+            )
+        )
+            .IsSuccess.Should()
+            .BeFalse();
         var verified = SetupReception(fx);
-        (await fx.CreateHandler.Handle(fx.ValidCreateCommand() with { ReceptionDocumentId = verified.Id, AccessKey = new string('2', 49) }, default)).IsSuccess.Should().BeFalse();
-        fx.Docs.Verify(r => r.AddAsync(It.IsAny<ExpenseDocument>(), It.IsAny<CancellationToken>()), Times.Never);
+        (
+            await fx.CreateHandler.Handle(
+                fx.ValidCreateCommand() with
+                {
+                    ReceptionDocumentId = verified.Id,
+                    AccessKey = new string('2', 49),
+                },
+                default
+            )
+        )
+            .IsSuccess.Should()
+            .BeFalse();
+        fx.Docs.Verify(
+            r => r.AddAsync(It.IsAny<ExpenseDocument>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Theory]
@@ -146,11 +269,26 @@ public sealed class ExpenseDocumentDraftUseCasesTests
     {
         var fx = new Fixture();
         var doc = SetupReception(fx);
-        fx.Docs.Setup(r => r.ExistsByAccessKeyAsync(TenantId, doc.AccessKey, It.IsAny<CancellationToken>())).ReturnsAsync(!byId);
-        fx.Docs.Setup(r => r.ExistsByReceptionDocumentIdAsync(TenantId, doc.Id, It.IsAny<CancellationToken>())).ReturnsAsync(byId);
-        var result = await fx.CreateHandler.Handle(fx.ValidCreateCommand() with { ReceptionDocumentId = doc.Id }, default);
+        fx.Docs.Setup(r =>
+                r.ExistsByAccessKeyAsync(TenantId, doc.AccessKey, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(!byId);
+        fx.Docs.Setup(r =>
+                r.ExistsByReceptionDocumentIdAsync(TenantId, doc.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(byId);
+        var result = await fx.CreateHandler.Handle(
+            fx.ValidCreateCommand() with
+            {
+                ReceptionDocumentId = doc.Id,
+            },
+            default
+        );
         result.Code.Should().Be(ApiResponseCodes.Common.Conflict);
-        fx.Docs.Verify(r => r.AddAsync(It.IsAny<ExpenseDocument>(), It.IsAny<CancellationToken>()), Times.Never);
+        fx.Docs.Verify(
+            r => r.AddAsync(It.IsAny<ExpenseDocument>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -158,12 +296,39 @@ public sealed class ExpenseDocumentDraftUseCasesTests
     {
         var fx = new Fixture();
         var doc = SetupReception(fx);
-        var purchase = PurchaseInvoice.CreateDraft(TenantId, CompanyId, BranchId, fx.Supplier.Id, "Proveedor", fx.Supplier.Identification.Number, "01",
-            doc.InvoiceNumber, doc.IssueDate, UserId, fx.PaymentTerm.Id, "Contado", 1, 0, accessKey: doc.AccessKey);
-        fx.Purchases.Setup(r => r.GetByAccessKeyAsync(TenantId, doc.AccessKey, It.IsAny<CancellationToken>())).ReturnsAsync(purchase);
-        var result = await fx.CreateHandler.Handle(fx.ValidCreateCommand() with { ReceptionDocumentId = doc.Id }, default);
+        var purchase = PurchaseInvoice.CreateDraft(
+            TenantId,
+            CompanyId,
+            BranchId,
+            fx.Supplier.Id,
+            "Proveedor",
+            fx.Supplier.Identification.Number,
+            "01",
+            doc.InvoiceNumber,
+            doc.IssueDate,
+            UserId,
+            fx.PaymentTerm.Id,
+            "Contado",
+            1,
+            0,
+            accessKey: doc.AccessKey
+        );
+        fx.Purchases.Setup(r =>
+                r.GetByAccessKeyAsync(TenantId, doc.AccessKey, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(purchase);
+        var result = await fx.CreateHandler.Handle(
+            fx.ValidCreateCommand() with
+            {
+                ReceptionDocumentId = doc.Id,
+            },
+            default
+        );
         result.Code.Should().Be(ApiResponseCodes.Common.Conflict);
-        fx.Docs.Verify(r => r.AddAsync(It.IsAny<ExpenseDocument>(), It.IsAny<CancellationToken>()), Times.Never);
+        fx.Docs.Verify(
+            r => r.AddAsync(It.IsAny<ExpenseDocument>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -192,7 +357,10 @@ public sealed class ExpenseDocumentDraftUseCasesTests
         result.Value.GrandTotal.Should().Be(218.50m);
         result.Value.Lines.Single().Description.Should().Be(fx.Subcategory.Name);
         result.Value.Lines.Single().SnapshotAccountingAccountCode.Should().Be("6.1.01.001");
-        fx.Docs.Verify(r => r.AddAsync(It.IsAny<ExpenseDocument>(), It.IsAny<CancellationToken>()), Times.Once);
+        fx.Docs.Verify(
+            r => r.AddAsync(It.IsAny<ExpenseDocument>(), It.IsAny<CancellationToken>()),
+            Times.Once
+        );
         fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -215,23 +383,30 @@ public sealed class ExpenseDocumentDraftUseCasesTests
     public async Task Create_Draft_bloqueado_cuando_politica_GASDOC_es_DirectCreation()
     {
         var fx = new Fixture();
-        fx.WorkflowPolicy
-            .Setup(w =>
+        fx.WorkflowPolicy.Setup(w =>
                 w.EnsureDraftCreationAllowedAsync(
                     CompanyId,
                     DocTypeCodes.ExpenseDocument,
                     It.IsAny<CancellationToken>()
                 )
             )
-            .ThrowsAsync(DocumentFlowPolicyViolationException.DraftNotAllowed(DocTypeCodes.ExpenseDocument));
+            .ThrowsAsync(
+                DocumentFlowPolicyViolationException.DraftNotAllowed(DocTypeCodes.ExpenseDocument)
+            );
 
         var result = await fx.CreateHandler.Handle(fx.ValidCreateCommand(), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
-        result.Error.Should()
-            .Be("La política de la empresa no permite guardar borradores para documentos de gasto.");
-        fx.Docs.Verify(r => r.AddAsync(It.IsAny<ExpenseDocument>(), It.IsAny<CancellationToken>()), Times.Never);
+        result
+            .Error.Should()
+            .Be(
+                "La política de la empresa no permite guardar borradores para documentos de gasto."
+            );
+        fx.Docs.Verify(
+            r => r.AddAsync(It.IsAny<ExpenseDocument>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -243,7 +418,9 @@ public sealed class ExpenseDocumentDraftUseCasesTests
         var result = new CreateExpenseDraftValidator().Validate(command);
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(CreateExpenseDraftCommand.SupplierId));
+        result
+            .Errors.Should()
+            .Contain(e => e.PropertyName == nameof(CreateExpenseDraftCommand.SupplierId));
     }
 
     [Fact]
@@ -255,15 +432,18 @@ public sealed class ExpenseDocumentDraftUseCasesTests
         var result = new CreateExpenseDraftValidator().Validate(command);
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(CreateExpenseDraftCommand.Lines));
+        result
+            .Errors.Should()
+            .Contain(e => e.PropertyName == nameof(CreateExpenseDraftCommand.Lines));
     }
 
     [Fact]
     public async Task Create_con_nodo_que_no_es_Subcategory_se_bloquea()
     {
         var fx = new Fixture();
-        fx.CategoryRepo
-            .Setup(r => r.GetByIdAsync(TenantId, fx.Category.Id, It.IsAny<CancellationToken>()))
+        fx.CategoryRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, fx.Category.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(fx.Category);
 
         var result = await fx.CreateHandler.Handle(
@@ -291,7 +471,11 @@ public sealed class ExpenseDocumentDraftUseCasesTests
     public async Task Create_con_subcategoria_sin_cuenta_contable_se_bloquea()
     {
         var fx = new Fixture();
-        SetPrivateProperty<Guid?>(fx.Subcategory, nameof(ExpenseCategoryNode.AccountingAccountId), null);
+        SetPrivateProperty<Guid?>(
+            fx.Subcategory,
+            nameof(ExpenseCategoryNode.AccountingAccountId),
+            null
+        );
 
         var result = await fx.CreateHandler.Handle(fx.ValidCreateCommand(), CancellationToken.None);
 
@@ -318,7 +502,8 @@ public sealed class ExpenseDocumentDraftUseCasesTests
         var result = await fx.CreateHandler.Handle(fx.ValidCreateCommand(), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
-        result.Code.Should()
+        result
+            .Code.Should()
             .Be(
                 scenario == "other_company"
                     ? ApiResponseCodes.Common.NotFound
@@ -332,8 +517,7 @@ public sealed class ExpenseDocumentDraftUseCasesTests
         var fx = new Fixture();
         var document = fx.ExistingDraftDocument();
         SetPrivateProperty(document, nameof(ExpenseDocument.Status), ExpenseStatus.Confirmed);
-        fx.Docs
-            .Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+        fx.Docs.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
 
         var result = await fx.UpdateHandler.Handle(
@@ -390,8 +574,7 @@ public sealed class ExpenseDocumentDraftUseCasesTests
         var fx = new Fixture();
         fx.SetSupplierDefaultTaxSupportCode("01");
         var document = fx.ExistingDraftDocument();
-        fx.Docs
-            .Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+        fx.Docs.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
         var command = fx.ValidUpdateCommand(document.Id) with { TaxSupportCode = "02" };
 
@@ -435,10 +618,9 @@ public sealed class ExpenseDocumentDraftUseCasesTests
 
     private static void SetPrivateProperty<T>(object target, string propertyName, T value)
     {
-        var property = target.GetType().GetProperty(
-            propertyName,
-            BindingFlags.Public | BindingFlags.Instance
-        );
+        var property = target
+            .GetType()
+            .GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
         property!.SetValue(target, value);
     }
 
@@ -497,7 +679,9 @@ public sealed class ExpenseDocumentDraftUseCasesTests
                 SupplierRoleConfig.Create(defaultTaxSupportCode: code)
             );
             Roles
-                .Setup(r => r.GetByTypeAsync(Supplier.Id, RoleType.Supplier, It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetByTypeAsync(Supplier.Id, RoleType.Supplier, It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(role);
         }
 
@@ -519,8 +703,21 @@ public sealed class ExpenseDocumentDraftUseCasesTests
         public Fixture()
         {
             Account = ExpenseAccount();
-            Type = ExpenseCategoryNode.CreateType(TenantId, CompanyId, "ADM", "Administrativos", UserId);
-            Category = ExpenseCategoryNode.CreateCategory(TenantId, CompanyId, Type, "OFF", "Oficina", UserId);
+            Type = ExpenseCategoryNode.CreateType(
+                TenantId,
+                CompanyId,
+                "ADM",
+                "Administrativos",
+                UserId
+            );
+            Category = ExpenseCategoryNode.CreateCategory(
+                TenantId,
+                CompanyId,
+                Type,
+                "OFF",
+                "Oficina",
+                UserId
+            );
             Subcategory = ExpenseCategoryNode.CreateSubcategory(
                 TenantId,
                 CompanyId,
@@ -556,7 +753,13 @@ public sealed class ExpenseDocumentDraftUseCasesTests
                 )
                 .ReturnsAsync(SupplierRole);
             PtResolver
-                .Setup(r => r.ResolveForPurchaseAsync(Supplier.Id, It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.ResolveForPurchaseAsync(
+                        Supplier.Id,
+                        It.IsAny<Guid?>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync(Result<PaymentTerm>.Success(PaymentTerm));
             CategoryRepo
                 .Setup(r => r.GetByIdAsync(TenantId, Subcategory.Id, It.IsAny<CancellationToken>()))
@@ -605,15 +808,19 @@ public sealed class ExpenseDocumentDraftUseCasesTests
         {
             Accounts
                 .Setup(r =>
-                    r.GetByIdAsync(TenantId, CompanyId, Subcategory.AccountingAccountId!.Value, It.IsAny<CancellationToken>())
+                    r.GetByIdAsync(
+                        TenantId,
+                        CompanyId,
+                        Subcategory.AccountingAccountId!.Value,
+                        It.IsAny<CancellationToken>()
+                    )
                 )
                 .ReturnsAsync(account);
         }
 
         public CreateExpenseDraftCommand ValidCreateCommand(
             params ExpenseDraftLineRequest[]? lines
-        ) =>
-            ValidCreateCommand((IReadOnlyList<ExpenseDraftLineRequest>?)lines);
+        ) => ValidCreateCommand((IReadOnlyList<ExpenseDraftLineRequest>?)lines);
 
         public CreateExpenseDraftCommand ValidCreateCommand(
             IReadOnlyList<ExpenseDraftLineRequest>? lines = null
@@ -673,9 +880,5 @@ file static class ExpenseDraftCommandExtensions
     public static CreateExpenseDraftCommand WithSupplier(
         this CreateExpenseDraftCommand command,
         Guid supplierId
-    ) =>
-        command with
-        {
-            SupplierId = supplierId,
-        };
+    ) => command with { SupplierId = supplierId };
 }

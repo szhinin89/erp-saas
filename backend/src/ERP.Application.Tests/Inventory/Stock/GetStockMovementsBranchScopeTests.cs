@@ -71,8 +71,9 @@ public sealed class GetStockMovementsBranchScopeTests
     {
         var warehouseOfBranchB = CreateWarehouse(BranchBId);
         var f = new Fixture(activeBranchId: BranchAId);
-        f.WarehouseRepo
-            .Setup(r => r.GetByIdAsync(TenantId, warehouseOfBranchB.Id, It.IsAny<CancellationToken>()))
+        f.WarehouseRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, warehouseOfBranchB.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(warehouseOfBranchB);
 
         var result = await f.BuildHandler()
@@ -101,8 +102,9 @@ public sealed class GetStockMovementsBranchScopeTests
     {
         var f = new Fixture(activeBranchId: BranchAId);
         var missingWarehouseId = Guid.NewGuid();
-        f.WarehouseRepo
-            .Setup(r => r.GetByIdAsync(TenantId, missingWarehouseId, It.IsAny<CancellationToken>()))
+        f.WarehouseRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, missingWarehouseId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((Warehouse?)null);
 
         var result = await f.BuildHandler()
@@ -119,11 +121,11 @@ public sealed class GetStockMovementsBranchScopeTests
     {
         var warehouseOfBranchA = CreateWarehouse(BranchAId);
         var f = new Fixture(activeBranchId: BranchAId);
-        f.WarehouseRepo
-            .Setup(r => r.GetByIdAsync(TenantId, warehouseOfBranchA.Id, It.IsAny<CancellationToken>()))
+        f.WarehouseRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, warehouseOfBranchA.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(warehouseOfBranchA);
-        f.StockRepo
-            .Setup(r =>
+        f.StockRepo.Setup(r =>
                 r.GetMovementsAsync(
                     TenantId,
                     ItemId,

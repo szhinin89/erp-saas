@@ -48,10 +48,7 @@ public sealed class PurchaseReceptionLineTax : IMustHaveTenant
         if (string.IsNullOrWhiteSpace(taxCode))
             throw new ArgumentException("El código de impuesto es obligatorio.", nameof(taxCode));
         if (string.IsNullOrWhiteSpace(taxRateCode))
-            throw new ArgumentException(
-                "El código de tarifa es obligatorio.",
-                nameof(taxRateCode)
-            );
+            throw new ArgumentException("El código de tarifa es obligatorio.", nameof(taxRateCode));
 
         return new PurchaseReceptionLineTax
         {

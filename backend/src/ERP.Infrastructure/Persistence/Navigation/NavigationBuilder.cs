@@ -1,3 +1,4 @@
+using System.Text.Json;
 using ERP.Application.Access;
 using ERP.Application.Access.Caching;
 using ERP.Application.Common;
@@ -7,7 +8,6 @@ using ERP.Domain.Kernel.Security;
 using ERP.Domain.Navigation.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using System.Text.Json;
 
 namespace ERP.Infrastructure.Persistence.Navigation;
 
@@ -141,7 +141,9 @@ public sealed class NavigationBuilder : INavigationBuilder
             if (itemDtos.Count == 0)
                 continue;
 
-            result.Add(new NavMenuGroupDto(g.Id, g.Code, g.Icon, g.LabelKey, g.SortOrder, itemDtos));
+            result.Add(
+                new NavMenuGroupDto(g.Id, g.Code, g.Icon, g.LabelKey, g.SortOrder, itemDtos)
+            );
         }
 
         return result;

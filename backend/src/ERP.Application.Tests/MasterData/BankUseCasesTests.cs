@@ -62,8 +62,7 @@ public sealed class BankUseCasesTests
     {
         using var h = BuildHarness();
         var bank = NewBank();
-        h.Repo
-            .Setup(r => r.ListAsync(TenantId, false, null, It.IsAny<CancellationToken>()))
+        h.Repo.Setup(r => r.ListAsync(TenantId, false, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync([bank]);
 
         var result = await h.Mediator.Send(new ListBanksQuery());
@@ -77,8 +76,7 @@ public sealed class BankUseCasesTests
     public async Task GetById_no_encontrado_devuelve_NotFound()
     {
         using var h = BuildHarness();
-        h.Repo
-            .Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        h.Repo.Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Bank?)null);
 
         var result = await h.Mediator.Send(new GetBankByIdQuery(Guid.NewGuid()));
@@ -91,17 +89,27 @@ public sealed class BankUseCasesTests
     public async Task Create_con_codigo_duplicado_devuelve_Conflict()
     {
         using var h = BuildHarness();
-        h.Repo
-            .Setup(r =>
-                r.ExistsByCodeAsync(TenantId, "EC", "PICHINCHA", null, It.IsAny<CancellationToken>())
+        h.Repo.Setup(r =>
+                r.ExistsByCodeAsync(
+                    TenantId,
+                    "EC",
+                    "PICHINCHA",
+                    null,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(true);
 
-        var result = await h.Mediator.Send(new CreateBankCommand("PICHINCHA", "Banco Pichincha", null));
+        var result = await h.Mediator.Send(
+            new CreateBankCommand("PICHINCHA", "Banco Pichincha", null)
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.Conflict);
-        h.Repo.Verify(r => r.AddAsync(It.IsAny<Bank>(), It.IsAny<CancellationToken>()), Times.Never);
+        h.Repo.Verify(
+            r => r.AddAsync(It.IsAny<Bank>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
         h.Uow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -109,13 +117,20 @@ public sealed class BankUseCasesTests
     public async Task Create_exitoso_agrega_y_guarda()
     {
         using var h = BuildHarness();
-        h.Repo
-            .Setup(r =>
-                r.ExistsByCodeAsync(TenantId, "EC", "GUAYAQUIL", null, It.IsAny<CancellationToken>())
+        h.Repo.Setup(r =>
+                r.ExistsByCodeAsync(
+                    TenantId,
+                    "EC",
+                    "GUAYAQUIL",
+                    null,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(false);
 
-        var result = await h.Mediator.Send(new CreateBankCommand("GUAYAQUIL", "Banco Guayaquil", null));
+        var result = await h.Mediator.Send(
+            new CreateBankCommand("GUAYAQUIL", "Banco Guayaquil", null)
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Code.Should().Be("GUAYAQUIL");
@@ -128,8 +143,7 @@ public sealed class BankUseCasesTests
     {
         using var h = BuildHarness();
         var bank = NewBank();
-        h.Repo
-            .Setup(r => r.GetByIdAsync(TenantId, bank.Id, It.IsAny<CancellationToken>()))
+        h.Repo.Setup(r => r.GetByIdAsync(TenantId, bank.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(bank);
 
         var result = await h.Mediator.Send(
@@ -146,8 +160,7 @@ public sealed class BankUseCasesTests
     {
         using var h = BuildHarness();
         var bank = NewBank();
-        h.Repo
-            .Setup(r => r.GetByIdAsync(TenantId, bank.Id, It.IsAny<CancellationToken>()))
+        h.Repo.Setup(r => r.GetByIdAsync(TenantId, bank.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(bank);
 
         var disableResult = await h.Mediator.Send(new DisableBankCommand(bank.Id));

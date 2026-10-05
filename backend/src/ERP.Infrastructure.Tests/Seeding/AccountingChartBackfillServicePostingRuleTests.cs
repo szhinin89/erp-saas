@@ -26,6 +26,7 @@ namespace ERP.Infrastructure.Tests.Seeding;
 public sealed class AccountingChartBackfillServicePostingRuleTests
 {
     private readonly Guid _tenantId = Guid.NewGuid();
+
     // No es readonly: Company.Id lo asigna el propio agregado (BaseEntity, setter protegido) — se
     // captura el Id real generado por Company.CreateManaged en SeedActiveCompanyAsync y se usa
     // consistentemente para el resto del test (cuentas/reglas), en vez de forzar un Id externo.
@@ -41,7 +42,9 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
                 // TryCorrectLegacyRetentionsDocumentIssuedRule muta líneas de un PostingRule ya
                 // trackeado por una query previa; sin este interceptor (solo registrado vía
                 // DependencyInjection.cs en producción), EF clasifica mal la línea nueva.
-                .AddInterceptors(new ERP.Infrastructure.Persistence.Interceptors.NewChildEntityTrackingInterceptor())
+                .AddInterceptors(
+                    new ERP.Infrastructure.Persistence.Interceptors.NewChildEntityTrackingInterceptor()
+                )
                 .Options,
             new FixedCurrentTenant(_tenantId),
             new NoOpPublisher(),
@@ -52,7 +55,11 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
         new(
             db,
             new FakeHostEnvironment(isProduction: false),
-            new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance),
+            new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            ),
             NullLogger<AccountingChartBackfillService>.Instance
         );
 
@@ -85,7 +92,11 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
         {
             await SeedActiveCompanyAsync(db);
             // Bootstrap completo primero (deja la forma vigente de 3 líneas)...
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
@@ -104,14 +115,25 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
             await db.SaveChangesAsync();
 
             var payablesAccountId = (
-                await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "2.1.01.001")
+                await db.Accounts.SingleAsync(a =>
+                    a.CompanyId == _companyId && a.Code.Value == "2.1.01.001"
+                )
             ).Id;
             var vatAccountId = (
-                await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "2.1.02.002")
+                await db.Accounts.SingleAsync(a =>
+                    a.CompanyId == _companyId && a.Code.Value == "2.1.02.002"
+                )
             ).Id;
 
             var legacyRule = PostingRule.Create(
-                _tenantId, _companyId, "Retentions", "DocumentIssued", null, null, null, _actorId
+                _tenantId,
+                _companyId,
+                "Retentions",
+                "DocumentIssued",
+                null,
+                null,
+                null,
+                _actorId
             );
             legacyRule.AddLine(payablesAccountId, AccountNature.Debit, PostingAmountKind.Retention);
             legacyRule.AddLine(vatAccountId, AccountNature.Credit, PostingAmountKind.Retention);
@@ -129,10 +151,13 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
         var corrected = await verifyDb
             .PostingRules.Include(r => r.Lines)
             .SingleAsync(r =>
-                r.CompanyId == _companyId && r.SourceModule == "Retentions" && r.FactType == "DocumentIssued"
+                r.CompanyId == _companyId
+                && r.SourceModule == "Retentions"
+                && r.FactType == "DocumentIssued"
             );
         corrected.Lines.Should().HaveCount(3);
-        corrected.Lines.Select(l => l.AmountKind)
+        corrected
+            .Lines.Select(l => l.AmountKind)
             .Should()
             .BeEquivalentTo(
                 new[]
@@ -161,7 +186,11 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
         await using (var db = NewDbContext(dbName))
         {
             await SeedActiveCompanyAsync(db);
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
@@ -181,20 +210,41 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
             await db.SaveChangesAsync();
 
             var payableAccountId = (
-                await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "2.1.01.001")
+                await db.Accounts.SingleAsync(a =>
+                    a.CompanyId == _companyId && a.Code.Value == "2.1.01.001"
+                )
             ).Id;
             var inventoryAccountId = (
-                await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "1.1.04.001")
+                await db.Accounts.SingleAsync(a =>
+                    a.CompanyId == _companyId && a.Code.Value == "1.1.04.001"
+                )
             ).Id;
             var vatAccountId = (
-                await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "1.1.05.001")
+                await db.Accounts.SingleAsync(a =>
+                    a.CompanyId == _companyId && a.Code.Value == "1.1.05.001"
+                )
             ).Id;
 
             var legacyRule = PostingRule.Create(
-                _tenantId, _companyId, "Purchases", "PurchaseCreditNoteAuthorized", null, null, null, _actorId
+                _tenantId,
+                _companyId,
+                "Purchases",
+                "PurchaseCreditNoteAuthorized",
+                null,
+                null,
+                null,
+                _actorId
             );
-            legacyRule.AddLine(payableAccountId, AccountNature.Debit, PostingAmountKind.AppliedToPayable);
-            legacyRule.AddLine(inventoryAccountId, AccountNature.Credit, PostingAmountKind.Subtotal);
+            legacyRule.AddLine(
+                payableAccountId,
+                AccountNature.Debit,
+                PostingAmountKind.AppliedToPayable
+            );
+            legacyRule.AddLine(
+                inventoryAccountId,
+                AccountNature.Credit,
+                PostingAmountKind.Subtotal
+            );
             legacyRule.AddLine(inventoryAccountId, AccountNature.Credit, PostingAmountKind.TaxIce);
             legacyRule.AddLine(vatAccountId, AccountNature.Credit, PostingAmountKind.TaxVat);
             db.PostingRules.Add(legacyRule);
@@ -217,12 +267,19 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
             );
         corrected.Lines.Should().HaveCount(4);
         var discountAccountId = (
-            await verifyDb.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "4.2.01.002")
+            await verifyDb.Accounts.SingleAsync(a =>
+                a.CompanyId == _companyId && a.Code.Value == "4.2.01.002"
+            )
         ).Id;
         var inventoryAccountIdAfter = (
-            await verifyDb.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "1.1.04.001")
+            await verifyDb.Accounts.SingleAsync(a =>
+                a.CompanyId == _companyId && a.Code.Value == "1.1.04.001"
+            )
         ).Id;
-        corrected.Lines.Where(l => l.AmountKind is PostingAmountKind.Subtotal or PostingAmountKind.TaxIce)
+        corrected
+            .Lines.Where(l =>
+                l.AmountKind is PostingAmountKind.Subtotal or PostingAmountKind.TaxIce
+            )
             .Should()
             .OnlyContain(l => l.AccountId == discountAccountId);
         corrected.Lines.Should().NotContain(l => l.AccountId == inventoryAccountIdAfter);
@@ -254,7 +311,9 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
         var rule = await verifyDb
             .PostingRules.Include(r => r.Lines)
             .SingleAsync(r =>
-                r.CompanyId == _companyId && r.SourceModule == "Retentions" && r.FactType == "DocumentIssued"
+                r.CompanyId == _companyId
+                && r.SourceModule == "Retentions"
+                && r.FactType == "DocumentIssued"
             );
         rule.Lines.Should().HaveCount(3);
     }
@@ -273,7 +332,11 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
         await using (var db = NewDbContext(dbName))
         {
             await SeedActiveCompanyAsync(db);
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
@@ -299,7 +362,9 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
         var rules = await verifyDb
             .PostingRules.Include(r => r.Lines)
             .Where(r =>
-                r.CompanyId == _companyId && r.SourceModule == "Retentions" && r.FactType == "DocumentIssued"
+                r.CompanyId == _companyId
+                && r.SourceModule == "Retentions"
+                && r.FactType == "DocumentIssued"
             )
             .ToListAsync();
         rules.Should().ContainSingle();
@@ -307,7 +372,10 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
             .Lines.Select(l => l.Id)
             .OrderBy(id => id)
             .Should()
-            .BeEquivalentTo(originalLineIds, because: "ya está completa, EnsureAsync no debe tocarla");
+            .BeEquivalentTo(
+                originalLineIds,
+                because: "ya está completa, EnsureAsync no debe tocarla"
+            );
     }
 
     /// <summary>
@@ -327,20 +395,26 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
         await using (var db = NewDbContext(dbName))
         {
             await SeedActiveCompanyAsync(db);
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
         await using (var db = NewDbContext(dbName))
         {
             var expensesRule = await db.PostingRules.SingleAsync(r =>
-                r.CompanyId == _companyId && r.SourceModule == "Expenses" && r.FactType == "DocumentConfirmed"
+                r.CompanyId == _companyId
+                && r.SourceModule == "Expenses"
+                && r.FactType == "DocumentConfirmed"
             );
             db.PostingRules.Remove(expensesRule);
             await db.SaveChangesAsync();
 
-            otherRuleIds = await db.PostingRules
-                .Where(r => r.CompanyId == _companyId)
+            otherRuleIds = await db
+                .PostingRules.Where(r => r.CompanyId == _companyId)
                 .Select(r => r.Id)
                 .OrderBy(id => id)
                 .ToListAsync();
@@ -354,14 +428,21 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
 
         await using var verifyDb = NewDbContext(dbName);
         var rules = await verifyDb.PostingRules.Where(r => r.CompanyId == _companyId).ToListAsync();
-        rules.Should().Contain(r => r.SourceModule == "Expenses" && r.FactType == "DocumentConfirmed");
+        rules
+            .Should()
+            .Contain(r => r.SourceModule == "Expenses" && r.FactType == "DocumentConfirmed");
 
         var untouchedIds = rules
             .Where(r => !(r.SourceModule == "Expenses" && r.FactType == "DocumentConfirmed"))
             .Select(r => r.Id)
             .OrderBy(id => id)
             .ToList();
-        untouchedIds.Should().BeEquivalentTo(otherRuleIds, because: "el backfill no debe tocar las reglas que ya estaban completas");
+        untouchedIds
+            .Should()
+            .BeEquivalentTo(
+                otherRuleIds,
+                because: "el backfill no debe tocar las reglas que ya estaban completas"
+            );
     }
 
     /// <summary>
@@ -381,7 +462,11 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
         await using (var db = NewDbContext(dbName))
         {
             await SeedActiveCompanyAsync(db);
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
@@ -390,16 +475,22 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
             var expensesRule = await db
                 .PostingRules.Include(r => r.Lines)
                 .SingleAsync(r =>
-                    r.CompanyId == _companyId && r.SourceModule == "Expenses" && r.FactType == "DocumentConfirmed"
+                    r.CompanyId == _companyId
+                    && r.SourceModule == "Expenses"
+                    && r.FactType == "DocumentConfirmed"
                 );
             // Admin agrega una línea propia (p. ej. una cuenta puente adicional) — forma distinta
             // de la que el seed produciría, nunca debe revertirse ni completarse silenciosamente.
             var customAccountId = (
-                await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "6.4.01.001")
+                await db.Accounts.SingleAsync(a =>
+                    a.CompanyId == _companyId && a.Code.Value == "6.4.01.001"
+                )
             ).Id;
             expensesRule.AddLine(customAccountId, AccountNature.Debit, PostingAmountKind.Discount);
             await db.SaveChangesAsync();
-            customLineId = expensesRule.Lines.Single(l => l.AmountKind == PostingAmountKind.Discount).Id;
+            customLineId = expensesRule
+                .Lines.Single(l => l.AmountKind == PostingAmountKind.Discount)
+                .Id;
         }
 
         await using (var db = NewDbContext(dbName))
@@ -412,9 +503,15 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
         var rule = await verifyDb
             .PostingRules.Include(r => r.Lines)
             .SingleAsync(r =>
-                r.CompanyId == _companyId && r.SourceModule == "Expenses" && r.FactType == "DocumentConfirmed"
+                r.CompanyId == _companyId
+                && r.SourceModule == "Expenses"
+                && r.FactType == "DocumentConfirmed"
             );
-        rule.Lines.Should().HaveCount(3, because: "la línea personalizada se mantiene, el backfill no la quita ni la altera");
+        rule.Lines.Should()
+            .HaveCount(
+                3,
+                because: "la línea personalizada se mantiene, el backfill no la quita ni la altera"
+            );
         rule.Lines.Should().Contain(l => l.Id == customLineId);
     }
 
@@ -435,20 +532,26 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
         await using (var db = NewDbContext(dbName))
         {
             await SeedActiveCompanyAsync(db);
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
         await using (var db = NewDbContext(dbName))
         {
             var supplierCreditRule = await db.PostingRules.SingleAsync(r =>
-                r.CompanyId == _companyId && r.SourceModule == "Purchases" && r.FactType == "SupplierCreditApplied"
+                r.CompanyId == _companyId
+                && r.SourceModule == "Purchases"
+                && r.FactType == "SupplierCreditApplied"
             );
             db.PostingRules.Remove(supplierCreditRule);
             await db.SaveChangesAsync();
 
-            otherRuleIds = await db.PostingRules
-                .Where(r => r.CompanyId == _companyId)
+            otherRuleIds = await db
+                .PostingRules.Where(r => r.CompanyId == _companyId)
                 .Select(r => r.Id)
                 .OrderBy(id => id)
                 .ToListAsync();
@@ -462,14 +565,21 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
 
         await using var verifyDb = NewDbContext(dbName);
         var rules = await verifyDb.PostingRules.Where(r => r.CompanyId == _companyId).ToListAsync();
-        rules.Should().Contain(r => r.SourceModule == "Purchases" && r.FactType == "SupplierCreditApplied");
+        rules
+            .Should()
+            .Contain(r => r.SourceModule == "Purchases" && r.FactType == "SupplierCreditApplied");
 
         var untouchedIds = rules
             .Where(r => !(r.SourceModule == "Purchases" && r.FactType == "SupplierCreditApplied"))
             .Select(r => r.Id)
             .OrderBy(id => id)
             .ToList();
-        untouchedIds.Should().BeEquivalentTo(otherRuleIds, because: "el backfill no debe tocar las reglas que ya estaban completas");
+        untouchedIds
+            .Should()
+            .BeEquivalentTo(
+                otherRuleIds,
+                because: "el backfill no debe tocar las reglas que ya estaban completas"
+            );
     }
 
     /// <summary>
@@ -489,20 +599,26 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
         await using (var db = NewDbContext(dbName))
         {
             await SeedActiveCompanyAsync(db);
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
         await using (var db = NewDbContext(dbName))
         {
             var reversedRule = await db.PostingRules.SingleAsync(r =>
-                r.CompanyId == _companyId && r.SourceModule == "Purchases" && r.FactType == "SupplierCreditApplicationReversed"
+                r.CompanyId == _companyId
+                && r.SourceModule == "Purchases"
+                && r.FactType == "SupplierCreditApplicationReversed"
             );
             db.PostingRules.Remove(reversedRule);
             await db.SaveChangesAsync();
 
-            otherRuleIds = await db.PostingRules
-                .Where(r => r.CompanyId == _companyId)
+            otherRuleIds = await db
+                .PostingRules.Where(r => r.CompanyId == _companyId)
                 .Select(r => r.Id)
                 .OrderBy(id => id)
                 .ToListAsync();
@@ -516,14 +632,28 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
 
         await using var verifyDb = NewDbContext(dbName);
         var rules = await verifyDb.PostingRules.Where(r => r.CompanyId == _companyId).ToListAsync();
-        rules.Should().Contain(r => r.SourceModule == "Purchases" && r.FactType == "SupplierCreditApplicationReversed");
+        rules
+            .Should()
+            .Contain(r =>
+                r.SourceModule == "Purchases" && r.FactType == "SupplierCreditApplicationReversed"
+            );
 
         var untouchedReversedIds = rules
-            .Where(r => !(r.SourceModule == "Purchases" && r.FactType == "SupplierCreditApplicationReversed"))
+            .Where(r =>
+                !(
+                    r.SourceModule == "Purchases"
+                    && r.FactType == "SupplierCreditApplicationReversed"
+                )
+            )
             .Select(r => r.Id)
             .OrderBy(id => id)
             .ToList();
-        untouchedReversedIds.Should().BeEquivalentTo(otherRuleIds, because: "el backfill no debe tocar las reglas que ya estaban completas");
+        untouchedReversedIds
+            .Should()
+            .BeEquivalentTo(
+                otherRuleIds,
+                because: "el backfill no debe tocar las reglas que ya estaban completas"
+            );
     }
 
     /// <summary>
@@ -541,31 +671,48 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
         await using (var db = NewDbContext(dbName))
         {
             await SeedActiveCompanyAsync(db);
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
         await using (var db = NewDbContext(dbName))
         {
-            var refundRules = await db.PostingRules
-                .Where(r =>
+            var refundRules = await db
+                .PostingRules.Where(r =>
                     r.CompanyId == _companyId
                     && r.SourceModule == "Purchases"
-                    && (r.FactType == "SupplierCreditRefunded" || r.FactType == "SupplierCreditRefundReversed")
+                    && (
+                        r.FactType == "SupplierCreditRefunded"
+                        || r.FactType == "SupplierCreditRefundReversed"
+                    )
                 )
                 .ToListAsync();
             refundRules.Should().HaveCount(2);
             db.PostingRules.RemoveRange(refundRules);
 
-            var bankAccount = await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "1.1.02.001");
+            var bankAccount = await db.Accounts.SingleAsync(a =>
+                a.CompanyId == _companyId && a.Code.Value == "1.1.02.001"
+            );
             var obsolete = ERP.Domain.Modules.Accounting.Entities.PostingRule.Create(
-                _tenantId, _companyId, "Purchases", "SupplierCreditRefunded:2200123456", null, null, null, _actorId);
+                _tenantId,
+                _companyId,
+                "Purchases",
+                "SupplierCreditRefunded:2200123456",
+                null,
+                null,
+                null,
+                _actorId
+            );
             obsolete.AddLine(bankAccount.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
             db.PostingRules.Add(obsolete);
             await db.SaveChangesAsync();
 
-            otherRuleIds = await db.PostingRules
-                .Where(r => r.CompanyId == _companyId)
+            otherRuleIds = await db
+                .PostingRules.Where(r => r.CompanyId == _companyId)
                 .Select(r => r.Id)
                 .OrderBy(id => id)
                 .ToListAsync();
@@ -578,14 +725,27 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
 
         await using var verifyDb = NewDbContext(dbName);
         var rules = await verifyDb.PostingRules.Where(r => r.CompanyId == _companyId).ToListAsync();
-        rules.Should().ContainSingle(r => r.SourceModule == "Purchases" && r.FactType == "SupplierCreditRefunded");
-        rules.Should().ContainSingle(r => r.SourceModule == "Purchases" && r.FactType == "SupplierCreditRefundReversed");
         rules
-            .Where(r => r.FactType is not ("SupplierCreditRefunded" or "SupplierCreditRefundReversed"))
+            .Should()
+            .ContainSingle(r =>
+                r.SourceModule == "Purchases" && r.FactType == "SupplierCreditRefunded"
+            );
+        rules
+            .Should()
+            .ContainSingle(r =>
+                r.SourceModule == "Purchases" && r.FactType == "SupplierCreditRefundReversed"
+            );
+        rules
+            .Where(r =>
+                r.FactType is not ("SupplierCreditRefunded" or "SupplierCreditRefundReversed")
+            )
             .Select(r => r.Id)
             .OrderBy(id => id)
             .Should()
-            .BeEquivalentTo(otherRuleIds, because: "el backfill no toca reglas existentes, incluida la obsoleta por destino");
+            .BeEquivalentTo(
+                otherRuleIds,
+                because: "el backfill no toca reglas existentes, incluida la obsoleta por destino"
+            );
     }
 
     private sealed class FakeHostEnvironment(bool isProduction) : IHostEnvironment

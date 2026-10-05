@@ -21,7 +21,9 @@ public sealed class SalesInvoiceAuthorizedHandlerOrderTests
     public void Caja_se_registra_antes_que_los_traductores_contables_del_mismo_evento()
     {
         var services = new ServiceCollection();
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(SalesInvoiceAuthorizedHandler).Assembly));
+        services.AddMediatR(cfg =>
+            cfg.RegisterServicesFromAssembly(typeof(SalesInvoiceAuthorizedHandler).Assembly)
+        );
 
         var order = services
             .Where(d => d.ServiceType == typeof(INotificationHandler<SalesInvoiceAuthorizedEvent>))

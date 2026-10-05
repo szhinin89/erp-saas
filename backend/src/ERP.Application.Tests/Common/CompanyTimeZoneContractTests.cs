@@ -69,14 +69,20 @@ public sealed class CompanyTimeZoneContractTests
     public void DST_New_York_verano_invierno_salto_y_retroceso()
     {
         CompanyTimeZone.ToUtc(Wall(2026, 7, 1, 10, 0), NewYork).Should().Be(Utc(2026, 7, 1, 14, 0));
-        CompanyTimeZone.ToUtc(Wall(2026, 12, 1, 10, 0), NewYork).Should().Be(Utc(2026, 12, 1, 15, 0));
+        CompanyTimeZone
+            .ToUtc(Wall(2026, 12, 1, 10, 0), NewYork)
+            .Should()
+            .Be(Utc(2026, 12, 1, 15, 0));
 
         // Salto de primavera (08/03/2026 02:00 → 03:00): 02:30 no existe — se rechaza.
         var gap = () => CompanyTimeZone.ToUtc(Wall(2026, 3, 8, 2, 30), NewYork);
         gap.Should().Throw<ArgumentException>();
 
         // Retroceso de otoño (01/11/2026): 01:30 ocurre dos veces — horario estándar (EST, UTC-5).
-        CompanyTimeZone.ToUtc(Wall(2026, 11, 1, 1, 30), NewYork).Should().Be(Utc(2026, 11, 1, 6, 30));
+        CompanyTimeZone
+            .ToUtc(Wall(2026, 11, 1, 1, 30), NewYork)
+            .Should()
+            .Be(Utc(2026, 11, 1, 6, 30));
     }
 
     [Fact]
@@ -117,17 +123,23 @@ public sealed class CompanyTimeZoneContractTests
         var (start, end) = CompanyTimeZone.DayUtcRange(day, tz);
         CompanyTimeZone.LocalDate(start, tz).Should().Be(day);
         CompanyTimeZone.LocalDate(end.AddTicks(-1), tz).Should().Be(day);
-        day.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture).Should().Be("2026-09-25");
-        day.ToString("dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture).Should().Be("25/09/2026");
+        day.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)
+            .Should()
+            .Be("2026-09-25");
+        day.ToString("dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture)
+            .Should()
+            .Be("25/09/2026");
     }
 
     [Fact]
     public void Zona_vacia_o_desconocida_cae_a_la_zona_fiscal_nacional()
     {
-        CompanyTimeZone.ToUtc(Wall(2026, 9, 25, 14, 38), CompanyTimeZone.Resolve(null))
+        CompanyTimeZone
+            .ToUtc(Wall(2026, 9, 25, 14, 38), CompanyTimeZone.Resolve(null))
             .Should()
             .Be(Utc(2026, 9, 25, 19, 38));
-        CompanyTimeZone.ToUtc(Wall(2026, 9, 25, 14, 38), CompanyTimeZone.Resolve("Zona/Inexistente"))
+        CompanyTimeZone
+            .ToUtc(Wall(2026, 9, 25, 14, 38), CompanyTimeZone.Resolve("Zona/Inexistente"))
             .Should()
             .Be(Utc(2026, 9, 25, 19, 38));
     }

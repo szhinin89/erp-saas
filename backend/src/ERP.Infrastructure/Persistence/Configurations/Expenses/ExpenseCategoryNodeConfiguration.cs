@@ -6,8 +6,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ERP.Infrastructure.Persistence.Configurations.Expenses;
 
-public sealed class ExpenseCategoryNodeConfiguration
-    : IEntityTypeConfiguration<ExpenseCategoryNode>
+public sealed class ExpenseCategoryNodeConfiguration : IEntityTypeConfiguration<ExpenseCategoryNode>
 {
     public void Configure(EntityTypeBuilder<ExpenseCategoryNode> builder)
     {
@@ -127,7 +126,12 @@ public sealed class ExpenseCategoryNodeConfiguration
             .HasDatabaseName("uq_expense_category_nodes_parent_name");
 
         builder
-            .HasIndex(x => new { x.TenantId, x.CompanyId, x.IsActive })
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.CompanyId,
+                x.IsActive,
+            })
             .HasDatabaseName("ix_expense_category_nodes_tenant_company_active");
     }
 }

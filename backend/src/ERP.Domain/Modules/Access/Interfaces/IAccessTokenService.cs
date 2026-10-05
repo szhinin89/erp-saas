@@ -1,5 +1,5 @@
-using ERP.Domain.Access.Entities;
 using System.Security.Claims;
+using ERP.Domain.Access.Entities;
 
 namespace ERP.Domain.Access.Interfaces;
 

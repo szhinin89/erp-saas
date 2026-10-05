@@ -20,9 +20,14 @@ public sealed class SriIceAndIrbpnrSeedAlignmentTests
     {
         var seed = GetSeededIceRate("3053");
 
-        seed.Should().NotBeNull("el código ICE 3053 (Fanta/Arca Continental) debe existir en el catálogo global");
+        seed.Should()
+            .NotBeNull(
+                "el código ICE 3053 (Fanta/Arca Continental) debe existir en el catálogo global"
+            );
         ((bool)seed!["IsActive"]!).Should().BeTrue();
-        ((SriTaxCalculationType)seed["CalculationType"]!).Should().Be(SriTaxCalculationType.Specific);
+        ((SriTaxCalculationType)seed["CalculationType"]!)
+            .Should()
+            .Be(SriTaxCalculationType.Specific);
         // No se hardcodea una tarifa numérica — ver comentario en SriIceRateConfiguration.
         seed["Percentage"].Should().BeNull();
     }
@@ -34,7 +39,9 @@ public sealed class SriIceAndIrbpnrSeedAlignmentTests
 
         seed.Should().NotBeNull("el código IRBPNR 5001 debe existir en el catálogo global");
         ((bool)seed!["IsActive"]!).Should().BeTrue();
-        ((SriTaxCalculationType)seed["CalculationType"]!).Should().Be(SriTaxCalculationType.Specific);
+        ((SriTaxCalculationType)seed["CalculationType"]!)
+            .Should()
+            .Be(SriTaxCalculationType.Specific);
         ((decimal)seed["UnitValue"]!).Should().Be(0.02m);
     }
 
@@ -44,15 +51,28 @@ public sealed class SriIceAndIrbpnrSeedAlignmentTests
         // Regresión — agregar CalculationType/3053 no debe alterar los 13 códigos existentes.
         string[] historicos =
         [
-            "3011", "3021", "3041", "3051", "3071", "3072", "3073",
-            "3081", "3082", "3083", "3091", "3101", "3111",
+            "3011",
+            "3021",
+            "3041",
+            "3051",
+            "3071",
+            "3072",
+            "3073",
+            "3081",
+            "3082",
+            "3083",
+            "3091",
+            "3101",
+            "3111",
         ];
 
         foreach (var code in historicos)
         {
             var seed = GetSeededIceRate(code);
             seed.Should().NotBeNull($"el código histórico {code} no debe desaparecer del seed");
-            ((SriTaxCalculationType)seed!["CalculationType"]!).Should().Be(SriTaxCalculationType.Percentage);
+            ((SriTaxCalculationType)seed!["CalculationType"]!)
+                .Should()
+                .Be(SriTaxCalculationType.Percentage);
             ((decimal?)seed["Percentage"]).Should().NotBeNull();
         }
     }

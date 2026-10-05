@@ -94,10 +94,17 @@ public sealed class AuthorizePurchaseReturnHandlerTests
         _ = landedUnitCost;
 
         var payable = AccountsPayable.CreateFromOrigin(
-            TenantId, CompanyId, BranchId, SupplierId,
-            AccountsPayableOriginType.PurchaseInvoice, invoice.Id,
-            "01", "001-001-000000001",
-            invoice.IssueDate, invoice.IssueDate, UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            invoice.Id,
+            "01",
+            "001-001-000000001",
+            invoice.IssueDate,
+            invoice.IssueDate,
+            UserId
         );
         payable.AddInstallment(
             1,
@@ -134,7 +141,8 @@ public sealed class AuthorizePurchaseReturnHandlerTests
     private sealed class Mocks
     {
         public Mock<IPurchaseCreditNoteRepository> CreditNoteRepo { get; } = new();
-        public Mock<ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces.IPurchaseReceptionDocumentRepository> ReceptionRepo { get; } = new();
+        public Mock<ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces.IPurchaseReceptionDocumentRepository> ReceptionRepo { get; } =
+            new();
         public Mock<IPurchaseReturnRepository> ReturnRepo { get; } = new();
         public Mock<IPurchaseInvoiceRepository> InvoiceRepo { get; } = new();
         public Mock<IAccountsPayableRepository> PayableRepo { get; } = new();
@@ -343,49 +351,139 @@ public sealed class AuthorizePurchaseReturnHandlerTests
     [Fact]
     public async Task Editing_and_cancelling_linked_return_keeps_the_fiscal_note_in_sync()
     {
-        var f = BuildFixture(); var m = new Mocks(f);
-        var note = PurchaseCreditNote.CreateDraft(TenantId, CompanyId, BranchId, SupplierId, f.Invoice.Id,
-            null, PurchaseCreditNoteApplicationType.Return, "001-001-000000099", null, null, null,
-            f.Invoice.IssueDate, "Devolucion", [new("Producto 1", 300m, "10", 12m, 36m, f.Line.Id, 3m)],
-            [], UserId, Guid.NewGuid(), "hash");
+        var f = BuildFixture();
+        var m = new Mocks(f);
+        var note = PurchaseCreditNote.CreateDraft(
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            f.Invoice.Id,
+            null,
+            PurchaseCreditNoteApplicationType.Return,
+            "001-001-000000099",
+            null,
+            null,
+            null,
+            f.Invoice.IssueDate,
+            "Devolucion",
+            [new("Producto 1", 300m, "10", 12m, 36m, f.Line.Id, 3m)],
+            [],
+            UserId,
+            Guid.NewGuid(),
+            "hash"
+        );
         note.LinkPurchaseReturn(f.Return.Id, UserId);
-        m.CreditNoteRepo.Setup(r => r.GetByLinkedPurchaseReturnIdAsync(TenantId, f.Return.Id,
-            It.IsAny<CancellationToken>())).ReturnsAsync(note);
+        m.CreditNoteRepo.Setup(r =>
+                r.GetByLinkedPurchaseReturnIdAsync(
+                    TenantId,
+                    f.Return.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(note);
         var tenant = Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId);
         var user = Mock.Of<ICurrentUser>(u => u.UserId == UserId);
-        var update = new UpdatePurchaseReturnDraftHandler(m.ReturnRepo.Object, m.InvoiceRepo.Object,
-            tenant, user, PrecisionPolicyTestDouble.Mock(), m.CreditNoteRepo.Object, m.ReceptionRepo.Object);
-        var result = await update.Handle(new(f.Return.Id, "Cantidad corregida", [new(f.Line.Id, 2m)]), CancellationToken.None);
+        var update = new UpdatePurchaseReturnDraftHandler(
+            m.ReturnRepo.Object,
+            m.InvoiceRepo.Object,
+            tenant,
+            user,
+            PrecisionPolicyTestDouble.Mock(),
+            m.CreditNoteRepo.Object,
+            m.ReceptionRepo.Object
+        );
+        var result = await update.Handle(
+            new(f.Return.Id, "Cantidad corregida", [new(f.Line.Id, 2m)]),
+            CancellationToken.None
+        );
         result.IsSuccess.Should().BeTrue();
         note.TotalAmount.Should().Be(224m);
         note.Lines.Single().Quantity.Should().Be(2m);
         f.Return.Lines.Single().Quantity.Should().Be(2m);
-        var cancel = new CancelPurchaseReturnDraftHandler(m.ReturnRepo.Object, tenant, user, m.CreditNoteRepo.Object);
-        var cancelled = await cancel.Handle(new(f.Return.Id, Guid.NewGuid(), "Cancelada"), CancellationToken.None);
+        var cancel = new CancelPurchaseReturnDraftHandler(
+            m.ReturnRepo.Object,
+            tenant,
+            user,
+            m.CreditNoteRepo.Object
+        );
+        var cancelled = await cancel.Handle(
+            new(f.Return.Id, Guid.NewGuid(), "Cancelada"),
+            CancellationToken.None
+        );
         cancelled.IsSuccess.Should().BeTrue();
         note.Status.Should().Be(PurchaseCreditNoteStatus.Cancelled);
-        note.DomainEvents.Should().NotContain(e => e is ERP.Domain.Modules.Purchases.Events.PurchaseCreditNoteCancelledEvent);
+        note.DomainEvents.Should()
+            .NotContain(e =>
+                e is ERP.Domain.Modules.Purchases.Events.PurchaseCreditNoteCancelledEvent
+            );
     }
 
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task Linked_credit_note_authorizes_inventory_payable_accounting_event_and_reception(bool xmlMismatch)
+    public async Task Linked_credit_note_authorizes_inventory_payable_accounting_event_and_reception(
+        bool xmlMismatch
+    )
     {
-        var f = BuildFixture(); var m = new Mocks(f);
-        var doc = ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionDocument.Create(
-            TenantId, CompanyId, BranchId,
-            ERP.Domain.Modules.Purchases.PurchaseReception.Enums.PurchaseReceptionSourceDocType.CreditNote,
-            "1234567890001", "Proveedor", SupplierId, "AK-TEST", "001-001-000000099",
-            f.Invoice.IssueDate, DateTime.UtcNow, 300m, 36m, xmlMismatch ? 400m : 336m, UserId);
+        var f = BuildFixture();
+        var m = new Mocks(f);
+        var doc =
+            ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionDocument.Create(
+                TenantId,
+                CompanyId,
+                BranchId,
+                ERP.Domain
+                    .Modules
+                    .Purchases
+                    .PurchaseReception
+                    .Enums
+                    .PurchaseReceptionSourceDocType
+                    .CreditNote,
+                "1234567890001",
+                "Proveedor",
+                SupplierId,
+                "AK-TEST",
+                "001-001-000000099",
+                f.Invoice.IssueDate,
+                DateTime.UtcNow,
+                300m,
+                36m,
+                xmlMismatch ? 400m : 336m,
+                UserId
+            );
         doc.MarkVerified(UserId);
-        var note = PurchaseCreditNote.CreateDraft(TenantId, CompanyId, BranchId, SupplierId, f.Invoice.Id,
-            doc.Id, PurchaseCreditNoteApplicationType.Return, doc.InvoiceNumber, doc.AccessKey,
-            null, null, f.Invoice.IssueDate, "Devolucion", [new("Producto 1", 300m, "10", 12m, 36m, f.Line.Id, 3m)], [], UserId, Guid.NewGuid(), "hash");
+        var note = PurchaseCreditNote.CreateDraft(
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            f.Invoice.Id,
+            doc.Id,
+            PurchaseCreditNoteApplicationType.Return,
+            doc.InvoiceNumber,
+            doc.AccessKey,
+            null,
+            null,
+            f.Invoice.IssueDate,
+            "Devolucion",
+            [new("Producto 1", 300m, "10", 12m, 36m, f.Line.Id, 3m)],
+            [],
+            UserId,
+            Guid.NewGuid(),
+            "hash"
+        );
         note.LinkPurchaseReturn(f.Return.Id, UserId);
-        m.CreditNoteRepo.Setup(r => r.GetByLinkedPurchaseReturnIdAsync(TenantId, f.Return.Id,
-            It.IsAny<CancellationToken>())).ReturnsAsync(note);
-        m.ReceptionRepo.Setup(r => r.GetByIdAsync(TenantId, doc.Id, It.IsAny<CancellationToken>())).ReturnsAsync(doc);
+        m.CreditNoteRepo.Setup(r =>
+                r.GetByLinkedPurchaseReturnIdAsync(
+                    TenantId,
+                    f.Return.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(note);
+        m.ReceptionRepo.Setup(r => r.GetByIdAsync(TenantId, doc.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(doc);
         var before = f.Payable.OutstandingAmount;
         var command = new AuthorizePurchaseReturnCommand(f.Return.Id, Guid.NewGuid());
         var result = await m.BuildHandler().HandleWithDomainRules(command, CancellationToken.None);
@@ -399,12 +497,27 @@ public sealed class AuthorizePurchaseReturnHandlerTests
         }
         note.Status.Should().Be(PurchaseCreditNoteStatus.Authorized);
         f.Return.FiscalStatus.Should().Be(PurchaseReturnFiscalStatus.SupplierCreditNoteRegistered);
-        doc.Status.Should().Be(ERP.Domain.Modules.Purchases.PurchaseReception.Enums.PurchaseReceptionDocumentStatus.Processed);
+        doc.Status.Should()
+            .Be(
+                ERP.Domain
+                    .Modules
+                    .Purchases
+                    .PurchaseReception
+                    .Enums
+                    .PurchaseReceptionDocumentStatus
+                    .Processed
+            );
         doc.PurchaseId.Should().Be(f.Invoice.Id);
         f.Payable.OutstandingAmount.Should().Be(before - 336m);
         m.AppendedItemWarehouses.Should().HaveCount(1);
-        f.Return.DomainEvents.Should().ContainSingle(e => e is ERP.Domain.Modules.Purchases.Events.PurchaseReturnAuthorizedEvent);
-        note.DomainEvents.Should().NotContain(e => e is ERP.Domain.Modules.Purchases.Events.PurchaseCreditNoteAuthorizedEvent);
+        f.Return.DomainEvents.Should()
+            .ContainSingle(e =>
+                e is ERP.Domain.Modules.Purchases.Events.PurchaseReturnAuthorizedEvent
+            );
+        note.DomainEvents.Should()
+            .NotContain(e =>
+                e is ERP.Domain.Modules.Purchases.Events.PurchaseCreditNoteAuthorizedEvent
+            );
         var retry = await m.BuildHandler().HandleWithDomainRules(command, CancellationToken.None);
         retry.IsSuccess.Should().BeTrue();
         m.AppendedItemWarehouses.Should().HaveCount(1);
@@ -414,14 +527,24 @@ public sealed class AuthorizePurchaseReturnHandlerTests
     [Fact]
     public async Task Linked_credit_note_revalidates_prior_returns_before_any_inventory_movement()
     {
-        var f = BuildFixture(); var m = new Mocks(f);
-        m.ReturnRepo.Setup(r => r.GetReturnedQuantitiesByInvoiceDetailIdsAsync(TenantId,
-            It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+        var f = BuildFixture();
+        var m = new Mocks(f);
+        m.ReturnRepo.Setup(r =>
+                r.GetReturnedQuantitiesByInvoiceDetailIdsAsync(
+                    TenantId,
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(new Dictionary<Guid, decimal> { [f.Line.Id] = 8m });
-        var result = await m.BuildHandler().Handle(new(f.Return.Id, Guid.NewGuid()), CancellationToken.None);
+        var result = await m.BuildHandler()
+            .Handle(new(f.Return.Id, Guid.NewGuid()), CancellationToken.None);
         result.IsSuccess.Should().BeFalse();
         m.AppendedItemWarehouses.Should().BeEmpty();
-        m.ReturnRepo.Verify(r => r.AcquireFinancialLockAsync(TenantId, f.Invoice.Id, It.IsAny<CancellationToken>()), Times.Once);
+        m.ReturnRepo.Verify(
+            r => r.AcquireFinancialLockAsync(TenantId, f.Invoice.Id, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -452,43 +575,85 @@ public sealed class AuthorizePurchaseReturnHandlerTests
     public async Task Autorizacion_propaga_IRBPNR_desde_originalLine_Taxes_prorrateado_por_fraccion()
     {
         var invoice = PurchaseInvoice.CreateDraft(
-            TenantId, CompanyId, BranchId, SupplierId, "Proveedor Test", "1234567890001",
-            "01", "001-001-000000002", DateOnly.FromDateTime(DateTime.UtcNow), UserId,
-            PaymentTermId, "Contado", 1, 30, globalWarehouseId: WarehouseId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            "Proveedor Test",
+            "1234567890001",
+            "01",
+            "001-001-000000002",
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            UserId,
+            PaymentTermId,
+            "Contado",
+            1,
+            30,
+            globalWarehouseId: WarehouseId
         );
         var line = PurchaseInvoiceDetail.Create(
-            invoice.Id, TenantId, "Producto con IRBPNR",
-            quantity: 10m, unitPrice: 100m, vatCode: "10", uomCode: "UNIT",
-            itemId: ItemId, warehouseId: WarehouseId
+            invoice.Id,
+            TenantId,
+            "Producto con IRBPNR",
+            quantity: 10m,
+            unitPrice: 100m,
+            vatCode: "10",
+            uomCode: "UNIT",
+            itemId: ItemId,
+            warehouseId: WarehouseId
         );
         // ReplaceTaxes (Compras) reemplaza TODA la colección — debe llamarse ANTES de ApplyTaxes,
         // que re-sincroniza IVA/ICE sin tocar otras filas (mismo orden que ReceptionTaxHelper en
         // producción). IRBPNR: monto original 1.00 sobre la línea completa (10 unidades).
-        line.ReplaceTaxes(
-            [
-                PurchaseInvoiceDetailTax.Create(
-                    line.Id, TenantId, "5", "5001", "IRBPNR", 0.1m,
-                    ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific,
-                    line.TaxableBase, 1.00m, PurchaseTaxSource.Xml
-                ),
-            ]
-        );
+        line.ReplaceTaxes([
+            PurchaseInvoiceDetailTax.Create(
+                line.Id,
+                TenantId,
+                "5",
+                "5001",
+                "IRBPNR",
+                0.1m,
+                ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific,
+                line.TaxableBase,
+                1.00m,
+                PurchaseTaxSource.Xml
+            ),
+        ]);
         line.ApplyTaxes("10", 12m, "IVA", null, 0m, null);
         invoice.ReplaceLines(new[] { line }, UserId);
         invoice.Confirm(UserId);
         var confirmedLine = invoice.Lines.Single();
 
         var payable = AccountsPayable.CreateFromOrigin(
-            TenantId, CompanyId, BranchId, SupplierId,
-            AccountsPayableOriginType.PurchaseInvoice, invoice.Id,
-            "01", "001-001-000000002", invoice.IssueDate, invoice.IssueDate, UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            invoice.Id,
+            "01",
+            "001-001-000000002",
+            invoice.IssueDate,
+            invoice.IssueDate,
+            UserId
         );
-        payable.AddInstallment(1, invoice.IssueDate.AddDays(30), invoice.ConfirmedGrandTotal ?? confirmedLine.TaxInclusiveTotal);
+        payable.AddInstallment(
+            1,
+            invoice.IssueDate.AddDays(30),
+            invoice.ConfirmedGrandTotal ?? confirmedLine.TaxInclusiveTotal
+        );
 
         var purchaseReturn = PurchaseReturn.CreateDraft(
-            TenantId, CompanyId, BranchId, invoice.Id, SupplierId, "Producto en mal estado",
+            TenantId,
+            CompanyId,
+            BranchId,
+            invoice.Id,
+            SupplierId,
+            "Producto en mal estado",
             new[] { new PurchaseReturn.DraftLineInput(confirmedLine.Id, ItemId, 3m, WarehouseId) },
-            UserId, Guid.NewGuid(), "create-hash-irbpnr"
+            UserId,
+            Guid.NewGuid(),
+            "create-hash-irbpnr"
         );
 
         var f = new Fixture(invoice, confirmedLine, payable, purchaseReturn);
@@ -506,7 +671,8 @@ public sealed class AuthorizePurchaseReturnHandlerTests
         returnedLine.IrbpnrAmount.Should().Be(0.30m);
         returnedLine.Taxes.Should().Contain(t => t.TaxCode == "5" && t.TaxAmount == 0.30m);
         f.Return.AuthorizedIrbpnrTotal.Should().Be(0.30m);
-        f.Return.AuthorizedGrandTotal.Should().Be(f.Return.AuthorizedSubtotal + f.Return.AuthorizedVatTotal + 0.30m);
+        f.Return.AuthorizedGrandTotal.Should()
+            .Be(f.Return.AuthorizedSubtotal + f.Return.AuthorizedVatTotal + 0.30m);
     }
 
     [Fact]
@@ -516,46 +682,87 @@ public sealed class AuthorizePurchaseReturnHandlerTests
         // ConfirmPurchaseUseCases: si hay IRBPNR y no existe PostingRuleLine configurada, la
         // autorización debe bloquear ANTES de consumir el secuencial/persistir efectos.
         var invoice = PurchaseInvoice.CreateDraft(
-            TenantId, CompanyId, BranchId, SupplierId, "Proveedor Test", "1234567890001",
-            "01", "001-001-000000004", DateOnly.FromDateTime(DateTime.UtcNow), UserId,
-            PaymentTermId, "Contado", 1, 30, globalWarehouseId: WarehouseId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            "Proveedor Test",
+            "1234567890001",
+            "01",
+            "001-001-000000004",
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            UserId,
+            PaymentTermId,
+            "Contado",
+            1,
+            30,
+            globalWarehouseId: WarehouseId
         );
         var line = PurchaseInvoiceDetail.Create(
-            invoice.Id, TenantId, "Producto con IRBPNR",
-            quantity: 10m, unitPrice: 100m, vatCode: "10", uomCode: "UNIT",
-            itemId: ItemId, warehouseId: WarehouseId
+            invoice.Id,
+            TenantId,
+            "Producto con IRBPNR",
+            quantity: 10m,
+            unitPrice: 100m,
+            vatCode: "10",
+            uomCode: "UNIT",
+            itemId: ItemId,
+            warehouseId: WarehouseId
         );
-        line.ReplaceTaxes(
-            [
-                PurchaseInvoiceDetailTax.Create(
-                    line.Id, TenantId, "5", "5001", "IRBPNR", 0.1m,
-                    ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific,
-                    line.TaxableBase, 1.00m, PurchaseTaxSource.Xml
-                ),
-            ]
-        );
+        line.ReplaceTaxes([
+            PurchaseInvoiceDetailTax.Create(
+                line.Id,
+                TenantId,
+                "5",
+                "5001",
+                "IRBPNR",
+                0.1m,
+                ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific,
+                line.TaxableBase,
+                1.00m,
+                PurchaseTaxSource.Xml
+            ),
+        ]);
         line.ApplyTaxes("10", 12m, "IVA", null, 0m, null);
         invoice.ReplaceLines(new[] { line }, UserId);
         invoice.Confirm(UserId);
         var confirmedLine = invoice.Lines.Single();
 
         var payable = AccountsPayable.CreateFromOrigin(
-            TenantId, CompanyId, BranchId, SupplierId,
-            AccountsPayableOriginType.PurchaseInvoice, invoice.Id,
-            "01", "001-001-000000004", invoice.IssueDate, invoice.IssueDate, UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            invoice.Id,
+            "01",
+            "001-001-000000004",
+            invoice.IssueDate,
+            invoice.IssueDate,
+            UserId
         );
-        payable.AddInstallment(1, invoice.IssueDate.AddDays(30), invoice.ConfirmedGrandTotal ?? confirmedLine.TaxInclusiveTotal);
+        payable.AddInstallment(
+            1,
+            invoice.IssueDate.AddDays(30),
+            invoice.ConfirmedGrandTotal ?? confirmedLine.TaxInclusiveTotal
+        );
 
         var purchaseReturn = PurchaseReturn.CreateDraft(
-            TenantId, CompanyId, BranchId, invoice.Id, SupplierId, "Producto en mal estado",
+            TenantId,
+            CompanyId,
+            BranchId,
+            invoice.Id,
+            SupplierId,
+            "Producto en mal estado",
             new[] { new PurchaseReturn.DraftLineInput(confirmedLine.Id, ItemId, 3m, WarehouseId) },
-            UserId, Guid.NewGuid(), "create-hash-irbpnr-blocked"
+            UserId,
+            Guid.NewGuid(),
+            "create-hash-irbpnr-blocked"
         );
 
         var f = new Fixture(invoice, confirmedLine, payable, purchaseReturn);
         var m = new Mocks(f);
-        m.PostingEngine
-            .Setup(p =>
+        m.PostingEngine.Setup(p =>
                 p.IsAmountKindConfiguredAsync(
                     It.IsAny<Guid>(),
                     It.IsAny<Guid>(),
@@ -586,14 +793,32 @@ public sealed class AuthorizePurchaseReturnHandlerTests
         // (caso teórico — el backfill de Fase 4 ya cubre el caso real). El handler debe rechazar
         // explícitamente en vez de autorizar con un IVA inventado o en cero silencioso.
         var invoice = PurchaseInvoice.CreateDraft(
-            TenantId, CompanyId, BranchId, SupplierId, "Proveedor Test", "1234567890001",
-            "01", "001-001-000000003", DateOnly.FromDateTime(DateTime.UtcNow), UserId,
-            PaymentTermId, "Contado", 1, 30, globalWarehouseId: WarehouseId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            "Proveedor Test",
+            "1234567890001",
+            "01",
+            "001-001-000000003",
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            UserId,
+            PaymentTermId,
+            "Contado",
+            1,
+            30,
+            globalWarehouseId: WarehouseId
         );
         var line = PurchaseInvoiceDetail.Create(
-            invoice.Id, TenantId, "Producto sin taxes",
-            quantity: 10m, unitPrice: 100m, vatCode: "10", uomCode: "UNIT",
-            itemId: ItemId, warehouseId: WarehouseId
+            invoice.Id,
+            TenantId,
+            "Producto sin taxes",
+            quantity: 10m,
+            unitPrice: 100m,
+            vatCode: "10",
+            uomCode: "UNIT",
+            itemId: ItemId,
+            warehouseId: WarehouseId
         );
         // No se llama ApplyTaxes: _taxes queda vacío (escenario forzado, no alcanzable en el flujo
         // real desde que existe el backfill de Fase 4).
@@ -602,16 +827,31 @@ public sealed class AuthorizePurchaseReturnHandlerTests
         var confirmedLine = invoice.Lines.Single();
 
         var payable = AccountsPayable.CreateFromOrigin(
-            TenantId, CompanyId, BranchId, SupplierId,
-            AccountsPayableOriginType.PurchaseInvoice, invoice.Id,
-            "01", "001-001-000000003", invoice.IssueDate, invoice.IssueDate, UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            invoice.Id,
+            "01",
+            "001-001-000000003",
+            invoice.IssueDate,
+            invoice.IssueDate,
+            UserId
         );
         payable.AddInstallment(1, invoice.IssueDate.AddDays(30), 1000m);
 
         var purchaseReturn = PurchaseReturn.CreateDraft(
-            TenantId, CompanyId, BranchId, invoice.Id, SupplierId, "Producto en mal estado",
+            TenantId,
+            CompanyId,
+            BranchId,
+            invoice.Id,
+            SupplierId,
+            "Producto en mal estado",
             new[] { new PurchaseReturn.DraftLineInput(confirmedLine.Id, ItemId, 3m, WarehouseId) },
-            UserId, Guid.NewGuid(), "create-hash-sin-taxes"
+            UserId,
+            Guid.NewGuid(),
+            "create-hash-sin-taxes"
         );
 
         var f = new Fixture(invoice, confirmedLine, payable, purchaseReturn);
@@ -735,8 +975,7 @@ public sealed class AuthorizePurchaseReturnHandlerTests
             )
         );
         retention.Issue("001-001-000000001", DateOnly.FromDateTime(DateTime.UtcNow), UserId);
-        m.RetentionRepo
-            .Setup(r =>
+        m.RetentionRepo.Setup(r =>
                 r.GetBySourceAsync(
                     TenantId,
                     CompanyId,

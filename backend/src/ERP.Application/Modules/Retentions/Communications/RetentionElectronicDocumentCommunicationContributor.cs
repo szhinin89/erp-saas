@@ -1,3 +1,4 @@
+using System.Globalization;
 using ERP.Application.Common;
 using ERP.Application.MasterData.Services;
 using ERP.Application.Modules.Communications.ElectronicDocuments;
@@ -10,7 +11,6 @@ using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.Retentions;
 using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Domain.Modules.Retentions.Interfaces;
-using System.Globalization;
 
 namespace ERP.Application.Modules.Retentions.Communications;
 
@@ -21,15 +21,21 @@ namespace ERP.Application.Modules.Retentions.Communications;
 /// si no tiene, se devuelve null y la cola deja evidencia RECIPIENT_MISSING — nunca se inventa.
 /// Solo datos: ni asunto, ni HTML, ni adjuntos, ni outbox.
 /// </summary>
-public sealed class RetentionElectronicDocumentCommunicationContributor : IElectronicDocumentCommunicationContributor
+public sealed class RetentionElectronicDocumentCommunicationContributor
+    : IElectronicDocumentCommunicationContributor
 {
     public const string RetentionDocumentSourceType = "RetentionDocument";
 
-    private static readonly IReadOnlyDictionary<ElectronicDocumentType, ElectronicDocumentCommunicationTarget> Routes =
-        new Dictionary<ElectronicDocumentType, ElectronicDocumentCommunicationTarget>
-        {
-            [ElectronicDocumentType.Retention] = new(CommunicationPurposes.RetentionAuthorized, RetentionDocumentSourceType),
-        };
+    private static readonly IReadOnlyDictionary<
+        ElectronicDocumentType,
+        ElectronicDocumentCommunicationTarget
+    > Routes = new Dictionary<ElectronicDocumentType, ElectronicDocumentCommunicationTarget>
+    {
+        [ElectronicDocumentType.Retention] = new(
+            CommunicationPurposes.RetentionAuthorized,
+            RetentionDocumentSourceType
+        ),
+    };
 
     private readonly IRetentionDocumentRepository _retentions;
     private readonly IBusinessPartnerRepository _partners;
@@ -51,7 +57,10 @@ public sealed class RetentionElectronicDocumentCommunicationContributor : IElect
 
     public string SourceModule => RetentionElectronicDocumentSource.SourceModule;
 
-    public IReadOnlyDictionary<ElectronicDocumentType, ElectronicDocumentCommunicationTarget> Targets => Routes;
+    public IReadOnlyDictionary<
+        ElectronicDocumentType,
+        ElectronicDocumentCommunicationTarget
+    > Targets => Routes;
 
     public async Task<Result<ElectronicDocumentCommunicationContribution>> ContributeAsync(
         ElectronicDocumentCommunicationContext context,
@@ -59,14 +68,21 @@ public sealed class RetentionElectronicDocumentCommunicationContributor : IElect
     )
     {
         var document = context.Document;
-        var retention = await _retentions.GetByIdAsync(document.TenantId, document.SourceEntityId, ct);
+        var retention = await _retentions.GetByIdAsync(
+            document.TenantId,
+            document.SourceEntityId,
+            ct
+        );
         if (retention is null || retention.CompanyId != document.CompanyId)
             return Result<ElectronicDocumentCommunicationContribution>.Failure(
                 "La retención del comprobante no existe en la empresa.",
                 ApiResponseCodes.Communications.SourceNotFound
             );
 
-        if (retention.Status != RetentionStatus.Issued || string.IsNullOrWhiteSpace(retention.RetentionNumber))
+        if (
+            retention.Status != RetentionStatus.Issued
+            || string.IsNullOrWhiteSpace(retention.RetentionNumber)
+        )
             return Result<ElectronicDocumentCommunicationContribution>.Failure(
                 "La retención no está emitida.",
                 ApiResponseCodes.Communications.SourceNotEligible
@@ -79,7 +95,12 @@ public sealed class RetentionElectronicDocumentCommunicationContributor : IElect
                 ApiResponseCodes.Communications.SourceNotFound
             );
 
-        var (email, _) = await BusinessPartnerContactResolver.ResolveAsync(_contacts, _locations, subject.Id, ct);
+        var (email, _) = await BusinessPartnerContactResolver.ResolveAsync(
+            _contacts,
+            _locations,
+            subject.Id,
+            ct
+        );
         var supplierName = subject.Name.LegalName;
 
         return Result<ElectronicDocumentCommunicationContribution>.Success(
@@ -96,7 +117,10 @@ public sealed class RetentionElectronicDocumentCommunicationContributor : IElect
                     RetentionNumber: retention.RetentionNumber,
                     SourceDocumentNumber: retention.SourceDocumentNumber ?? "-",
                     AccessKey: document.AuthorizationNumber!.Value,
-                    TotalRetained: retention.TotalRetained.ToString("0.00", CultureInfo.InvariantCulture),
+                    TotalRetained: retention.TotalRetained.ToString(
+                        "0.00",
+                        CultureInfo.InvariantCulture
+                    ),
                     IssuerName: context.IssuerName
                 )
             )

@@ -32,7 +32,9 @@ public static class RetentionSubjectSection
                     .Row(row =>
                     {
                         row.RelativeItem(2)
-                            .Text($"Tipo Identificación: {subject.IdentificationType ?? string.Empty}")
+                            .Text(
+                                $"Tipo Identificación: {subject.IdentificationType ?? string.Empty}"
+                            )
                             .FontSize(9);
                         row.RelativeItem(3)
                             .Text($"Identificación: {subject.IdentificationNumber}")

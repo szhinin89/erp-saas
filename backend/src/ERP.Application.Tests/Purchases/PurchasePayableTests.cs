@@ -26,10 +26,17 @@ public sealed class PurchasePayableTests
     private static AccountsPayable Create(decimal totalAmount = 100m)
     {
         var payable = AccountsPayable.CreateFromOrigin(
-            TenantId, CompanyId, BranchId, SupplierId,
-            AccountsPayableOriginType.PurchaseInvoice, PurchaseId,
-            "01", "001-001-000000001",
-            new DateOnly(2026, 8, 27), new DateOnly(2026, 8, 27), UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            PurchaseId,
+            "01",
+            "001-001-000000001",
+            new DateOnly(2026, 8, 27),
+            new DateOnly(2026, 8, 27),
+            UserId
         );
         payable.AddInstallment(1, new DateOnly(2026, 9, 26), totalAmount);
         return payable;
@@ -38,10 +45,17 @@ public sealed class PurchasePayableTests
     private static AccountsPayable CreateWithThreeInstallments(decimal total = 300m)
     {
         var payable = AccountsPayable.CreateFromOrigin(
-            TenantId, CompanyId, BranchId, SupplierId,
-            AccountsPayableOriginType.PurchaseInvoice, PurchaseId,
-            "01", "001-001-000000001",
-            new DateOnly(2026, 8, 27), new DateOnly(2026, 8, 27), UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            PurchaseId,
+            "01",
+            "001-001-000000001",
+            new DateOnly(2026, 8, 27),
+            new DateOnly(2026, 8, 27),
+            UserId
         );
         var each = Math.Round(total / 3, 2);
         var last = total - each * 2;
@@ -72,7 +86,10 @@ public sealed class PurchasePayableTests
         payable.RetainedAmount.Should().Be(30m);
         payable.OutstandingAmount.Should().Be(270m);
         payable.Installments.Should().HaveCount(3);
-        payable.Installments.Sum(i => i.Amount).Should().Be(300m, "Amount es el monto original de la cuota, nunca se reprorratea");
+        payable
+            .Installments.Sum(i => i.Amount)
+            .Should()
+            .Be(300m, "Amount es el monto original de la cuota, nunca se reprorratea");
     }
 
     [Fact]
@@ -133,7 +150,9 @@ public sealed class PurchasePayableTests
 
         var act = () => payable.RegisterPayment(60m, UserId);
 
-        act.Should().Throw<DomainRuleViolationException>().WithMessage("*excede el saldo pendiente*");
+        act.Should()
+            .Throw<DomainRuleViolationException>()
+            .WithMessage("*excede el saldo pendiente*");
         payable.PaidAmount.Should().Be(60m);
     }
 

@@ -1,3 +1,4 @@
+using System.Text;
 using ERP.Application.Access.Authorization;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
@@ -18,7 +19,6 @@ using ERP.Infrastructure.Persistence.Services;
 using ERP.Infrastructure.Services.Sri;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using System.Text;
 
 namespace ERP.Infrastructure.Tests.TestData;
 
@@ -43,11 +43,13 @@ public sealed class SriBoundaryDouble
 
     /// <summary>Si se fija, SendAsync avisa que entró y espera esta señal (ventana después del reclamo).</summary>
     public TaskCompletionSource? HoldSend { get; set; }
-    public TaskCompletionSource SendEntered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    public TaskCompletionSource SendEntered { get; } =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     /// <summary>Si se fija, la firma avisa que entró y espera esta señal (ventana ANTES del reclamo).</summary>
     public TaskCompletionSource? HoldSign { get; set; }
-    public TaskCompletionSource SignEntered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    public TaskCompletionSource SignEntered { get; } =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     /// <summary>Estado que responde la consulta de autorización ("AUTORIZADO", "NO AUTORIZADO", "TIMEOUT").</summary>
     public string AuthorizationStatus { get; set; } = "AUTORIZADO";
@@ -60,13 +62,22 @@ public sealed class SriBoundaryDouble
         Files
             .Setup(f => f.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(() =>
-                new MemoryStream(Encoding.UTF8.GetBytes("<comprobanteRetencion><ds:Signature/></comprobanteRetencion>"))
+                new MemoryStream(
+                    Encoding.UTF8.GetBytes(
+                        "<comprobanteRetencion><ds:Signature/></comprobanteRetencion>"
+                    )
+                )
             );
 
         var supplier = new Mock<IElectronicDocumentXmlSupplier>();
         supplier.SetupGet(s => s.DocumentType).Returns(ElectronicDocumentType.Retention);
         supplier
-            .Setup(s => s.BuildXmlAsync(It.IsAny<ElectronicDocumentSourceReference>(), It.IsAny<CancellationToken>()))
+            .Setup(s =>
+                s.BuildXmlAsync(
+                    It.IsAny<ElectronicDocumentSourceReference>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(() =>
                 Result<ElectronicDocumentXml>.Success(
                     new ElectronicDocumentXml(
@@ -84,7 +95,9 @@ public sealed class SriBoundaryDouble
 
         var validator = new Mock<IElectronicDocumentSchemaValidator>();
         validator
-            .Setup(v => v.ValidateAsync(It.IsAny<ElectronicDocumentXml>(), It.IsAny<CancellationToken>()))
+            .Setup(v =>
+                v.ValidateAsync(It.IsAny<ElectronicDocumentXml>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(
                 new ElectronicDocumentSchemaValidationResult(
                     true,
@@ -94,11 +107,18 @@ public sealed class SriBoundaryDouble
                     ElectronicDocumentType.Retention
                 )
             );
-        Validators.Setup(r => r.Resolve(ElectronicDocumentType.Retention)).Returns(validator.Object);
+        Validators
+            .Setup(r => r.Resolve(ElectronicDocumentType.Retention))
+            .Returns(validator.Object);
 
         Signing
             .Setup(s =>
-                s.SignAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<ElectronicDocumentXml>(), It.IsAny<CancellationToken>())
+                s.SignAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<ElectronicDocumentXml>(),
+                    It.IsAny<CancellationToken>()
+                )
             )
             .Returns(
                 async (Guid _, Guid _, ElectronicDocumentXml xml, CancellationToken _) =>
@@ -144,8 +164,12 @@ public sealed class SriBoundaryDouble
                 if (HoldSend is not null)
                     await HoldSend.Task;
                 return ReceptionTransportFailure
-                    ? Result<SriReceptionResult>.Failure("No se pudo contactar al servicio de recepción del SRI.")
-                    : Result<SriReceptionResult>.Success(new SriReceptionResult { Status = "RECIBIDA" });
+                    ? Result<SriReceptionResult>.Failure(
+                        "No se pudo contactar al servicio de recepción del SRI."
+                    )
+                    : Result<SriReceptionResult>.Success(
+                        new SriReceptionResult { Status = "RECIBIDA" }
+                    );
             });
 
         Authorization
@@ -153,22 +177,34 @@ public sealed class SriBoundaryDouble
             .ReturnsAsync(
                 (Guid _, string key, CancellationToken _) =>
                     AuthorizationStatus == "TIMEOUT"
-                        ? Result<SriAuthorizationResult>.Failure("El SRI no respondió tras varios reintentos.")
+                        ? Result<SriAuthorizationResult>.Failure(
+                            "El SRI no respondió tras varios reintentos."
+                        )
                         : Result<SriAuthorizationResult>.Success(
                             new SriAuthorizationResult
                             {
                                 Status = AuthorizationStatus,
                                 AuthorizationNumber = key,
                                 AuthorizationDate = DateTime.UtcNow,
-                                ErrorMessage = AuthorizationStatus == "AUTORIZADO" ? null : "Rechazado (test)",
+                                ErrorMessage =
+                                    AuthorizationStatus == "AUTORIZADO" ? null : "Rechazado (test)",
                             }
                         )
             );
     }
 
-    public int SendCalls => Reception.Invocations.Count(i => i.Method.Name == nameof(IElectronicDocumentReceptionService.SendAsync));
-    public int AuthorizationCalls => Authorization.Invocations.Count(i => i.Method.Name == nameof(IElectronicDocumentAuthorizationService.CheckAsync));
-    public int SignCalls => Signing.Invocations.Count(i => i.Method.Name == nameof(IElectronicDocumentSigningService.SignAsync));
+    public int SendCalls =>
+        Reception.Invocations.Count(i =>
+            i.Method.Name == nameof(IElectronicDocumentReceptionService.SendAsync)
+        );
+    public int AuthorizationCalls =>
+        Authorization.Invocations.Count(i =>
+            i.Method.Name == nameof(IElectronicDocumentAuthorizationService.CheckAsync)
+        );
+    public int SignCalls =>
+        Signing.Invocations.Count(i =>
+            i.Method.Name == nameof(IElectronicDocumentSigningService.SignAsync)
+        );
 
     public static string NewAccessKey() =>
         string.Concat(Guid.NewGuid().ToByteArray().Select(b => (b % 10).ToString()))
@@ -198,7 +234,11 @@ public sealed class SriStatusQueryDouble : ISriDocumentStatusQuery
             _ => "",
         };
 
-    public Task<SriDocumentStatusResult> QueryAsync(string accessKey, string wsdlUrl, CancellationToken ct = default)
+    public Task<SriDocumentStatusResult> QueryAsync(
+        string accessKey,
+        string wsdlUrl,
+        CancellationToken ct = default
+    )
     {
         Interlocked.Increment(ref _calls);
         var success = Outcome == SriStatusQueryOutcome.Success;
@@ -210,9 +250,18 @@ public sealed class SriStatusQueryDouble : ISriDocumentStatusQuery
                 RawAuthorizationStatus = success ? Literal(FiscalStatus) : null,
                 RawQueryStatus = Outcome == SriStatusQueryOutcome.Rejected ? "RECHAZADA" : null,
                 AccessKey = accessKey,
-                Messages = Outcome == SriStatusQueryOutcome.Rejected
-                    ? [new SriMessage("99", "ERROR", "ERROR AL CONSULTAR DATOS DEL SERVICIO WEB", "No existen datos para los parámetros ingresados")]
-                    : [],
+                Messages =
+                    Outcome == SriStatusQueryOutcome.Rejected
+                        ?
+                        [
+                            new SriMessage(
+                                "99",
+                                "ERROR",
+                                "ERROR AL CONSULTAR DATOS DEL SERVICIO WEB",
+                                "No existen datos para los parámetros ingresados"
+                            ),
+                        ]
+                        : [],
                 ErrorMessage = success ? null : $"Consulta fallida (test): {Outcome}",
                 RawResponse = success
                     ? $"<EstadoAutorizacionComprobante><claveAcceso>{accessKey}</claveAcceso><estadoAutorizacion>{Literal(FiscalStatus)}</estadoAutorizacion></EstadoAutorizacionComprobante>"
@@ -223,21 +272,28 @@ public sealed class SriStatusQueryDouble : ISriDocumentStatusQuery
 }
 
 /// <summary>HTTP simulado para el <see cref="SriSoapClient"/> REAL (respuesta SOAP literal o excepción de transporte).</summary>
-public sealed class SriHttpDouble(Func<HttpResponseMessage> respond) : HttpMessageHandler, IHttpClientFactory
+public sealed class SriHttpDouble(Func<HttpResponseMessage> respond)
+    : HttpMessageHandler,
+        IHttpClientFactory
 {
     public int Calls { get; private set; }
 
     public static SriHttpDouble Soap(string body) =>
-        new(() => new HttpResponseMessage(System.Net.HttpStatusCode.OK)
-        {
-            Content = new StringContent(body, Encoding.UTF8, "text/xml"),
-        });
+        new(() =>
+            new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new StringContent(body, Encoding.UTF8, "text/xml"),
+            }
+        );
 
     public static SriHttpDouble Throwing(Func<Exception> failure) => new(() => throw failure());
 
     public HttpClient CreateClient(string name) => new(this, disposeHandler: false);
 
-    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
         Calls++;
         return Task.FromResult(respond());
@@ -247,22 +303,34 @@ public sealed class SriHttpDouble(Func<HttpResponseMessage> respond) : HttpMessa
 /// <summary>Cableado real (gate, anulación, emisor, transmisión) sobre un <see cref="ErpDbContext"/> de test.</summary>
 public static class RetentionElectronicTestWiring
 {
-    public static IElectronicDocumentSourceLifecycleGuardResolver Guards(ErpDbContext db, ICurrentCompany company) =>
+    public static IElectronicDocumentSourceLifecycleGuardResolver Guards(
+        ErpDbContext db,
+        ICurrentCompany company
+    ) =>
         new ElectronicDocumentSourceLifecycleGuardResolver(
             new IElectronicDocumentSourceLifecycleGuard[]
             {
-                new RetentionElectronicSourceLifecycleGuard(new RetentionDocumentRepository(db, company)),
+                new RetentionElectronicSourceLifecycleGuard(
+                    new RetentionDocumentRepository(db, company)
+                ),
             }
         );
 
-    public static IElectronicDocumentSourceCancellation Cancellation(ErpDbContext db, ICurrentCompany company) =>
+    public static IElectronicDocumentSourceCancellation Cancellation(
+        ErpDbContext db,
+        ICurrentCompany company
+    ) =>
         new ElectronicDocumentSourceCancellation(
             new ElectronicDocumentRepository(db, new CompanyClock(db)),
             Guards(db, company),
             new UnitOfWork(db)
         );
 
-    public static ElectronicDocumentIssuer Issuer(ErpDbContext db, ICurrentCompany company, SriBoundaryDouble sri) =>
+    public static ElectronicDocumentIssuer Issuer(
+        ErpDbContext db,
+        ICurrentCompany company,
+        SriBoundaryDouble sri
+    ) =>
         new(
             new ElectronicDocumentRepository(db, new CompanyClock(db)),
             sri.Suppliers.Object,
@@ -278,14 +346,21 @@ public static class RetentionElectronicTestWiring
             NullLogger<ElectronicDocumentIssuer>.Instance
         );
 
-    public static IRetentionElectronicTransmission Transmission(ErpDbContext db, ICurrentCompany company, SriBoundaryDouble sri) =>
+    public static IRetentionElectronicTransmission Transmission(
+        ErpDbContext db,
+        ICurrentCompany company,
+        SriBoundaryDouble sri
+    ) =>
         new RetentionElectronicTransmission(
             Issuer(db, company, sri),
             NullLogger<RetentionElectronicTransmission>.Instance
         );
 
     /// <summary>ZH-RETENTION-SRI-ANNULMENT-01 — registro real de la solicitud (lo usa la anulación del origen).</summary>
-    public static IRetentionAnnulmentRequester Requester(ErpDbContext db, ICurrentCompany company) =>
+    public static IRetentionAnnulmentRequester Requester(
+        ErpDbContext db,
+        ICurrentCompany company
+    ) =>
         new RetentionAnnulmentRequester(
             new RetentionAnnulmentRequestRepository(db),
             SriAnnulment(db, company),
@@ -294,7 +369,10 @@ public static class RetentionElectronicTestWiring
             NullLogger<RetentionAnnulmentRequester>.Instance
         );
 
-    public static IElectronicDocumentSriAnnulment SriAnnulment(ErpDbContext db, ICurrentCompany company) =>
+    public static IElectronicDocumentSriAnnulment SriAnnulment(
+        ErpDbContext db,
+        ICurrentCompany company
+    ) =>
         new ElectronicDocumentSriAnnulment(
             new ElectronicDocumentRepository(db, new CompanyClock(db)),
             Guards(db, company),
@@ -334,9 +412,16 @@ public static class RetentionElectronicTestWiring
     private static ISriSettingsRepository SriSettings(Guid companyId)
     {
         var settings = ERP.Domain.Configuration.Entities.SriSettings.Create(
-            Guid.NewGuid(), companyId, 1, 1, TestWsdlUrl, Guid.NewGuid());
+            Guid.NewGuid(),
+            companyId,
+            1,
+            1,
+            TestWsdlUrl,
+            Guid.NewGuid()
+        );
         var mock = new Mock<ISriSettingsRepository>();
-        mock.Setup(r => r.GetByCompanyIdAsync(companyId, It.IsAny<CancellationToken>())).ReturnsAsync(settings);
+        mock.Setup(r => r.GetByCompanyIdAsync(companyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(settings);
         return mock.Object;
     }
 
@@ -345,7 +430,13 @@ public static class RetentionElectronicTestWiring
     {
         var mock = new Mock<IRetentionElectronicTransmission>();
         mock.Setup(m =>
-                m.StartAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+                m.StartAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(Result<ElectronicDocumentDto>.Failure("no-op (test)"));
         return mock.Object;
@@ -356,9 +447,16 @@ public static class RetentionElectronicTestWiring
     {
         var mock = new Mock<IRuntimePermissionAuthorizer>();
         mock.Setup(a =>
-                a.IsAuthorizedAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>())
+                a.IsAuthorizedAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                )
             )
-            .ReturnsAsync((string key, Guid _, string _, CancellationToken _) => permissions.Contains(key));
+            .ReturnsAsync(
+                (string key, Guid _, string _, CancellationToken _) => permissions.Contains(key)
+            );
         return mock.Object;
     }
 }

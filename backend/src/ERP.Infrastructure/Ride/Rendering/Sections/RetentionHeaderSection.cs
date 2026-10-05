@@ -89,12 +89,7 @@ public static class RetentionHeaderSection
                     right.Spacing(2);
 
                     right.Item().Text($"R.U.C.: {issuer.IdentificationNumber}").Bold().FontSize(10);
-                    right
-                        .Item()
-                        .PaddingTop(4)
-                        .Text("COMPROBANTE DE RETENCIÓN")
-                        .Bold()
-                        .FontSize(12);
+                    right.Item().PaddingTop(4).Text("COMPROBANTE DE RETENCIÓN").Bold().FontSize(12);
                     right
                         .Item()
                         .PaddingTop(4)

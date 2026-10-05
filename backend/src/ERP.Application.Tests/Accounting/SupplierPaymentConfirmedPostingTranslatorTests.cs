@@ -41,11 +41,17 @@ public sealed class SupplierPaymentConfirmedPostingTranslatorTests
 
         public void RegisterCashRegister(CashRegister cashRegister) =>
             CashRegisters
-                .Setup(r => r.GetByIdAsync(TenantId, cashRegister.Id, It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetByIdAsync(TenantId, cashRegister.Id, It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(cashRegister);
     }
 
-    private static CashRegister Destination(Guid? companyId = null, bool isActive = true, bool withAccount = true)
+    private static CashRegister Destination(
+        Guid? companyId = null,
+        bool isActive = true,
+        bool withAccount = true
+    )
     {
         var destination = CashRegister.Create(
             TenantId,
@@ -77,12 +83,16 @@ public sealed class SupplierPaymentConfirmedPostingTranslatorTests
             methodLines
         );
 
-    private static SupplierPaymentConfirmedMethodLine CashLine(CashRegister destination, decimal amount) =>
-        new(null, destination.Id, amount);
+    private static SupplierPaymentConfirmedMethodLine CashLine(
+        CashRegister destination,
+        decimal amount
+    ) => new(null, destination.Id, amount);
 
     private void SetupSuccess(Mocks m) =>
-        m.PostingEngine
-            .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
+        m
+            .PostingEngine.Setup(e =>
+                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(
                 Result<PostingOutcomeDto>.Success(
                     new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)
@@ -98,11 +108,14 @@ public sealed class SupplierPaymentConfirmedPostingTranslatorTests
         m.RegisterCashRegister(destination);
 
         PostingFact? captured = null;
-        m.PostingEngine
-            .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
+        m.PostingEngine.Setup(e =>
+                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
+            )
             .Callback<PostingFact, CancellationToken>((fact, _) => captured = fact)
             .ReturnsAsync(
-                Result<PostingOutcomeDto>.Success(new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created))
+                Result<PostingOutcomeDto>.Success(
+                    new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)
+                )
             );
 
         var supplierPaymentId = Guid.NewGuid();
@@ -116,7 +129,9 @@ public sealed class SupplierPaymentConfirmedPostingTranslatorTests
         captured.SourceModule.Should().Be("Payables");
         captured.FactType.Should().Be("SupplierPaymentConfirmed");
         captured.SourceEventId.Should().Be(supplierPaymentId);
-        captured.GrandTotal.Should().Be(300m, "el Debe de CxP se resuelve vía PostingRule con GrandTotal");
+        captured
+            .GrandTotal.Should()
+            .Be(300m, "el Debe de CxP se resuelve vía PostingRule con GrandTotal");
         captured.Allocations.Should().ContainSingle();
         var allocation = captured.Allocations!.Single();
         allocation.AccountingAccountId.Should().Be(destination.AccountingAccountId!.Value);
@@ -134,23 +149,26 @@ public sealed class SupplierPaymentConfirmedPostingTranslatorTests
         m.RegisterCashRegister(destinationB);
 
         PostingFact? captured = null;
-        m.PostingEngine
-            .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
+        m.PostingEngine.Setup(e =>
+                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
+            )
             .Callback<PostingFact, CancellationToken>((fact, _) => captured = fact)
             .ReturnsAsync(
-                Result<PostingOutcomeDto>.Success(new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created))
+                Result<PostingOutcomeDto>.Success(
+                    new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)
+                )
             );
 
-        var evt = Event(
-            new[] { CashLine(destinationA, 100m), CashLine(destinationB, 200m) },
-            300m
-        );
+        var evt = Event(new[] { CashLine(destinationA, 100m), CashLine(destinationB, 200m) }, 300m);
 
         await m.BuildTranslator().Handle(evt, CancellationToken.None);
 
         captured!.Allocations.Should().HaveCount(2);
         captured.Allocations!.Should().OnlyContain(a => a.Nature == AccountNature.Credit);
-        captured.Allocations!.Sum(a => a.Amount).Should().Be(300m, "Debe (GrandTotal) debe balancear con la suma de créditos");
+        captured
+            .Allocations!.Sum(a => a.Amount)
+            .Should()
+            .Be(300m, "Debe (GrandTotal) debe balancear con la suma de créditos");
     }
 
     [Fact]
@@ -162,17 +180,17 @@ public sealed class SupplierPaymentConfirmedPostingTranslatorTests
             m.RegisterCashRegister(d);
 
         PostingFact? captured = null;
-        m.PostingEngine
-            .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
+        m.PostingEngine.Setup(e =>
+                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
+            )
             .Callback<PostingFact, CancellationToken>((fact, _) => captured = fact)
             .ReturnsAsync(
-                Result<PostingOutcomeDto>.Success(new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created))
+                Result<PostingOutcomeDto>.Success(
+                    new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)
+                )
             );
 
-        var evt = Event(
-            destinations.Select((d, i) => CashLine(d, 100m * (i + 1))).ToList(),
-            600m
-        );
+        var evt = Event(destinations.Select((d, i) => CashLine(d, 100m * (i + 1))).ToList(), 600m);
 
         await m.BuildTranslator().Handle(evt, CancellationToken.None);
 
@@ -194,10 +212,7 @@ public sealed class SupplierPaymentConfirmedPostingTranslatorTests
 
         // El mismo pago total (300) pudo haberse aplicado a 1 o a 2 cuotas — el evento no lo dice,
         // y el posting resultante (2 créditos, uno por medio) es idéntico en ambos casos.
-        var evt = Event(
-            new[] { CashLine(destinationA, 150m), CashLine(destinationB, 150m) },
-            300m
-        );
+        var evt = Event(new[] { CashLine(destinationA, 150m), CashLine(destinationB, 150m) }, 300m);
 
         var act = async () => await m.BuildTranslator().Handle(evt, CancellationToken.None);
 
@@ -233,10 +248,14 @@ public sealed class SupplierPaymentConfirmedPostingTranslatorTests
         var m = new Mocks();
         var destination = Destination();
         m.RegisterCashRegister(destination);
-        m.PostingEngine
-            .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
+        m.PostingEngine.Setup(e =>
+                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(
-                Result<PostingOutcomeDto>.ValidationFailure("No existe regla de contabilización.", "RULE_NOT_FOUND")
+                Result<PostingOutcomeDto>.ValidationFailure(
+                    "No existe regla de contabilización.",
+                    "RULE_NOT_FOUND"
+                )
             );
 
         var evt = Event(new[] { CashLine(destination, 100m) }, 100m);
@@ -252,11 +271,15 @@ public sealed class SupplierPaymentConfirmedPostingTranslatorTests
     {
         var m = new Mocks();
         var missingId = Guid.NewGuid();
-        m.CashRegisters
-            .Setup(f => f.GetByIdAsync(TenantId, missingId, It.IsAny<CancellationToken>()))
+        m.CashRegisters.Setup(f =>
+                f.GetByIdAsync(TenantId, missingId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((CashRegister?)null);
 
-        var evt = Event(new[] { new SupplierPaymentConfirmedMethodLine(null, missingId, 100m) }, 100m);
+        var evt = Event(
+            new[] { new SupplierPaymentConfirmedMethodLine(null, missingId, 100m) },
+            100m
+        );
 
         var act = async () => await m.BuildTranslator().Handle(evt, CancellationToken.None);
 

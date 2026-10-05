@@ -100,7 +100,13 @@ public class UpsertProfilePermissionsHandler
         // total dentro del tenant, igual que en RuntimePermissionAuthorizer) no puede otorgar un
         // permiso que él mismo no tiene efectivo en su contexto operativo actual. Revocar
         // (IsAllowed = false) nunca escala privilegios, así que no pasa por este chequeo.
-        if (!string.Equals(_currentUser.Role, SecurityRoles.Admin, StringComparison.OrdinalIgnoreCase))
+        if (
+            !string.Equals(
+                _currentUser.Role,
+                SecurityRoles.Admin,
+                StringComparison.OrdinalIgnoreCase
+            )
+        )
         {
             var grantingKeys = command
                 .Items.Where(i => i.IsAllowed && !string.IsNullOrWhiteSpace(i.PermissionKey))

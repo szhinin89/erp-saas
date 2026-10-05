@@ -61,10 +61,13 @@ public sealed class PurchaseCreditNoteTaxSummary : ICompanyOperationalEntity
     public decimal IceAmount => _taxes.Where(t => t.TaxCode == IceSriTaxCode).Sum(t => t.TaxAmount);
 
     /// <summary>IRBPNR nunca se trata como ICE — código, catálogo y resolución siempre separados.</summary>
-    public string? IrbpnrCode => _taxes.FirstOrDefault(t => t.TaxCode == IrbpnrSriTaxCode)?.TaxRateCode;
-    public decimal IrbpnrRate => _taxes.FirstOrDefault(t => t.TaxCode == IrbpnrSriTaxCode)?.Rate ?? 0m;
+    public string? IrbpnrCode =>
+        _taxes.FirstOrDefault(t => t.TaxCode == IrbpnrSriTaxCode)?.TaxRateCode;
+    public decimal IrbpnrRate =>
+        _taxes.FirstOrDefault(t => t.TaxCode == IrbpnrSriTaxCode)?.Rate ?? 0m;
     public string? IrbpnrName => _taxes.FirstOrDefault(t => t.TaxCode == IrbpnrSriTaxCode)?.TaxName;
-    public decimal IrbpnrAmount => _taxes.Where(t => t.TaxCode == IrbpnrSriTaxCode).Sum(t => t.TaxAmount);
+    public decimal IrbpnrAmount =>
+        _taxes.Where(t => t.TaxCode == IrbpnrSriTaxCode).Sum(t => t.TaxAmount);
 
     private PurchaseCreditNoteTaxSummary() { }
 

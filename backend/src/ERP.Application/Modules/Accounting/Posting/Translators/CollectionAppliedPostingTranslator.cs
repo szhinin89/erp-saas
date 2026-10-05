@@ -49,20 +49,37 @@ public sealed class CollectionAppliedPostingTranslator
     public async Task Handle(CollectionAppliedEvent e, CancellationToken ct)
     {
         if (e.CompanyBankAccountId is not null && e.CashRegisterId is not null)
-            throw new ERP.Domain.Exceptions.DomainRuleViolationException("A collection cannot target both bank and cash.");
+            throw new ERP.Domain.Exceptions.DomainRuleViolationException(
+                "A collection cannot target both bank and cash."
+            );
         Guid? overrideAccountId = null;
         if (e.CompanyBankAccountId is { } bankAccountId)
         {
             var bank = await _bankAccounts.GetByIdAsync(e.TenantId!.Value, bankAccountId, ct);
-            if (bank is null || bank.TenantId != e.TenantId || bank.CompanyId != e.CompanyId || !bank.IsActive)
-                throw new ERP.Domain.Exceptions.DomainRuleViolationException("The selected bank account is unavailable for this company.");
+            if (
+                bank is null
+                || bank.TenantId != e.TenantId
+                || bank.CompanyId != e.CompanyId
+                || !bank.IsActive
+            )
+                throw new ERP.Domain.Exceptions.DomainRuleViolationException(
+                    "The selected bank account is unavailable for this company."
+                );
             overrideAccountId = bank.AccountingAccountId;
         }
         else if (e.CashRegisterId is { } cashRegisterId)
         {
             var cash = await _cashRegisters.GetByIdAsync(e.TenantId!.Value, cashRegisterId, ct);
-            if (cash is null || cash.TenantId != e.TenantId || cash.CompanyId != e.CompanyId || !cash.IsActive || cash.AccountingAccountId is null)
-                throw new ERP.Domain.Exceptions.DomainRuleViolationException("The selected cash register is unavailable or has no accounting account.");
+            if (
+                cash is null
+                || cash.TenantId != e.TenantId
+                || cash.CompanyId != e.CompanyId
+                || !cash.IsActive
+                || cash.AccountingAccountId is null
+            )
+                throw new ERP.Domain.Exceptions.DomainRuleViolationException(
+                    "The selected cash register is unavailable or has no accounting account."
+                );
             overrideAccountId = cash.AccountingAccountId;
         }
 
@@ -88,7 +105,9 @@ public sealed class CollectionAppliedPostingTranslator
         if (!result.IsSuccess)
         {
             if (overrideAccountId is not null)
-                throw new ERP.Domain.Exceptions.DomainRuleViolationException($"Collection posting failed: {result.Code} - {result.Error}");
+                throw new ERP.Domain.Exceptions.DomainRuleViolationException(
+                    $"Collection posting failed: {result.Code} - {result.Error}"
+                );
             _logger.LogWarning(
                 "Posting failed for Collection {PaymentId}: {Code} — {Error}",
                 e.PaymentId,

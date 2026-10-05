@@ -54,7 +54,8 @@ public sealed record GetRetentionEligibilityQuery(
 
 // ── Validator ───────────────────────────────────────────────────────────
 
-public sealed class GetRetentionEligibilityValidator : AbstractValidator<GetRetentionEligibilityQuery>
+public sealed class GetRetentionEligibilityValidator
+    : AbstractValidator<GetRetentionEligibilityQuery>
 {
     public GetRetentionEligibilityValidator()
     {

@@ -85,15 +85,7 @@ public sealed class PurchaseCreditNoteDetailTests
     public void Create_rechaza_nota_de_credito_destino_vacia()
     {
         var act = () =>
-            PurchaseCreditNoteDetail.Create(
-                Guid.Empty,
-                TenantId,
-                "Descuento",
-                100m,
-                "2",
-                15m,
-                15m
-            );
+            PurchaseCreditNoteDetail.Create(Guid.Empty, TenantId, "Descuento", 100m, "2", 15m, 15m);
 
         act.Should().Throw<ArgumentException>();
     }

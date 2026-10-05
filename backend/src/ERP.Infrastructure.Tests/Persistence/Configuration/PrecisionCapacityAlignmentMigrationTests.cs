@@ -1,10 +1,10 @@
+using System.Globalization;
 using ERP.Application.Common;
 using ERP.Infrastructure.Persistence;
 using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
-using System.Globalization;
 using Testcontainers.PostgreSql;
 
 namespace ERP.Infrastructure.Tests.Persistence.Configuration;
@@ -30,7 +30,9 @@ public sealed class PrecisionCapacityAlignmentMigrationTests : IAsyncLifetime
 
     private ErpDbContext CreateContext() =>
         new(
-            new DbContextOptionsBuilder<ErpDbContext>().UseNpgsql(_postgres.GetConnectionString()).Options,
+            new DbContextOptionsBuilder<ErpDbContext>()
+                .UseNpgsql(_postgres.GetConnectionString())
+                .Options,
             new FixedTenant(),
             new NoOpPublisher(),
             new FixedCompany()
@@ -66,7 +68,14 @@ public sealed class PrecisionCapacityAlignmentMigrationTests : IAsyncLifetime
         }
 
         // Compra / costo / promedio → (22,10)
-        Add("purchase_invoice_details", 22, 10, "unit_price", "landed_unit_cost", "conversion_factor");
+        Add(
+            "purchase_invoice_details",
+            22,
+            10,
+            "unit_price",
+            "landed_unit_cost",
+            "conversion_factor"
+        );
         Add("purchase_reception_lines", 22, 10, "unit_price");
         Add("expense_lines", 22, 10, "unit_amount");
         Add("purchase_return_details", 22, 10, "unit_cost");
@@ -95,7 +104,14 @@ public sealed class PrecisionCapacityAlignmentMigrationTests : IAsyncLifetime
         );
         Add("sales_invoice_details", 20, 6, "quantity", "quantity_in_base_uom");
         Add("sales_return_details", 20, 6, "quantity", "quantity_in_base_uom");
-        Add("purchase_invoice_details", 20, 6, "quantity", "quantity_in_base_uom", "ordered_quantity");
+        Add(
+            "purchase_invoice_details",
+            20,
+            6,
+            "quantity",
+            "quantity_in_base_uom",
+            "ordered_quantity"
+        );
         Add("purchase_reception_lines", 20, 6, "quantity");
         Add("purchase_credit_note_details", 20, 6, "quantity");
         Add("purchase_return_details", 20, 6, "quantity");
@@ -136,7 +152,12 @@ public sealed class PrecisionCapacityAlignmentMigrationTests : IAsyncLifetime
         var failures = new List<string>();
         foreach (var row in ApprovedColumns())
         {
-            var (table, column, precision, scale) = ((string)row[0], (string)row[1], (int)row[2], (int)row[3]);
+            var (table, column, precision, scale) = (
+                (string)row[0],
+                (string)row[1],
+                (int)row[2],
+                (int)row[3]
+            );
             await using var cmd = new NpgsqlCommand(
                 "SELECT numeric_precision, numeric_scale FROM information_schema.columns "
                     + "WHERE table_schema='public' AND table_name=@t AND column_name=@c",
@@ -207,17 +228,27 @@ public sealed class PrecisionCapacityAlignmentMigrationTests : IAsyncLifetime
         );
         // item_unit_conversions / item_packaging_levels.
         await InsertAsync(conn, "item_unit_conversions", new() { ["factor"] = "0.3333333333" });
-        await InsertAsync(conn, "item_packaging_levels", new() { ["base_quantity"] = "24.0000000001" });
+        await InsertAsync(
+            conn,
+            "item_packaging_levels",
+            new() { ["base_quantity"] = "24.0000000001" }
+        );
 
-        (await ScalarAsync(conn, "SELECT unit_cost::text FROM stock_movements")).Should().Be("1234567.1234567891");
+        (await ScalarAsync(conn, "SELECT unit_cost::text FROM stock_movements"))
+            .Should()
+            .Be("1234567.1234567891");
         (await ScalarAsync(conn, "SELECT running_average_cost::text FROM stock_movements"))
             .Should()
             .Be("0.0000000001");
-        (await ScalarAsync(conn, "SELECT quantity::text FROM stock_movements")).Should().Be("2.654321");
+        (await ScalarAsync(conn, "SELECT quantity::text FROM stock_movements"))
+            .Should()
+            .Be("2.654321");
         (await ScalarAsync(conn, "SELECT total_stock_value::text FROM current_stocks"))
             .Should()
             .Be("9876543210.9876543219");
-        (await ScalarAsync(conn, "SELECT reserved_quantity::text FROM current_stocks")).Should().Be("123456.654321");
+        (await ScalarAsync(conn, "SELECT reserved_quantity::text FROM current_stocks"))
+            .Should()
+            .Be("123456.654321");
         (await ScalarAsync(conn, "SELECT unit_price::text FROM purchase_invoice_details"))
             .Should()
             .Be("0.1234567891");
@@ -227,8 +258,12 @@ public sealed class PrecisionCapacityAlignmentMigrationTests : IAsyncLifetime
         (await ScalarAsync(conn, "SELECT conversion_factor::text FROM purchase_invoice_details"))
             .Should()
             .Be("12.0000000001");
-        (await ScalarAsync(conn, "SELECT discount_pct::text FROM purchase_invoice_details")).Should().Be("12.345678");
-        (await ScalarAsync(conn, "SELECT factor::text FROM item_unit_conversions")).Should().Be("0.3333333333");
+        (await ScalarAsync(conn, "SELECT discount_pct::text FROM purchase_invoice_details"))
+            .Should()
+            .Be("12.345678");
+        (await ScalarAsync(conn, "SELECT factor::text FROM item_unit_conversions"))
+            .Should()
+            .Be("0.3333333333");
         (await ScalarAsync(conn, "SELECT base_quantity::text FROM item_packaging_levels"))
             .Should()
             .Be("24.0000000001");
@@ -244,14 +279,22 @@ public sealed class PrecisionCapacityAlignmentMigrationTests : IAsyncLifetime
             await db.Database.MigrateAsync();
         await using var conn = await OpenAsync();
         await ExecAsync(conn, "SET session_replication_role = replica");
-        await InsertAsync(conn, "sales_invoice_details", new()
-        {
-            ["unit_price"] = price,
-            ["quantity"] = "1.123456",
-            ["quantity_in_base_uom"] = "1.123456",
-        });
-        (await ScalarAsync(conn, "SELECT unit_price::text FROM sales_invoice_details")).Should().Be(price);
-        (await ScalarAsync(conn, "SELECT quantity::text FROM sales_invoice_details")).Should().Be("1.123456");
+        await InsertAsync(
+            conn,
+            "sales_invoice_details",
+            new()
+            {
+                ["unit_price"] = price,
+                ["quantity"] = "1.123456",
+                ["quantity_in_base_uom"] = "1.123456",
+            }
+        );
+        (await ScalarAsync(conn, "SELECT unit_price::text FROM sales_invoice_details"))
+            .Should()
+            .Be(price);
+        (await ScalarAsync(conn, "SELECT quantity::text FROM sales_invoice_details"))
+            .Should()
+            .Be("1.123456");
     }
 
     /// <summary>
@@ -259,7 +302,11 @@ public sealed class PrecisionCapacityAlignmentMigrationTests : IAsyncLifetime
     /// tipo; las columnas indicadas en <paramref name="values"/> reciben el valor de la prueba.
     /// (FKs desactivadas con session_replication_role=replica.)
     /// </summary>
-    private static async Task InsertAsync(NpgsqlConnection conn, string table, Dictionary<string, string> values)
+    private static async Task InsertAsync(
+        NpgsqlConnection conn,
+        string table,
+        Dictionary<string, string> values
+    )
     {
         var cols = new List<string>();
         var vals = new List<string>();
@@ -300,7 +347,10 @@ public sealed class PrecisionCapacityAlignmentMigrationTests : IAsyncLifetime
             vals.Add(v);
         }
 
-        await ExecAsync(conn, $"INSERT INTO {table} ({string.Join(",", cols)}) VALUES ({string.Join(",", vals)})");
+        await ExecAsync(
+            conn,
+            $"INSERT INTO {table} ({string.Join(",", cols)}) VALUES ({string.Join(",", vals)})"
+        );
     }
 
     [Fact]
@@ -342,7 +392,8 @@ public sealed class PrecisionCapacityAlignmentMigrationTests : IAsyncLifetime
         foreach (var (col, ok, bad) in limits)
         {
             await ExecAsync(conn, $"UPDATE company_precision_policy SET {col} = {ok}");
-            var act = async () => await ExecAsync(conn, $"UPDATE company_precision_policy SET {col} = {bad}");
+            var act = async () =>
+                await ExecAsync(conn, $"UPDATE company_precision_policy SET {col} = {bad}");
             await act.Should().ThrowAsync<PostgresException>($"{col} > {ok} debe violar el CHECK");
         }
     }

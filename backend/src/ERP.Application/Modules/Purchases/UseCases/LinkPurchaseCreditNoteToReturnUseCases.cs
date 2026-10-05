@@ -137,7 +137,9 @@ public sealed class LinkPurchaseCreditNoteToReturnHandler
         }
         catch (Exception ex) when (_dbEx.TryGetUniqueViolation(ex, out var info))
         {
-            var mapped = CreateDraftPurchaseCreditNoteHandler.MapUniqueViolation(info.ConstraintName);
+            var mapped = CreateDraftPurchaseCreditNoteHandler.MapUniqueViolation(
+                info.ConstraintName
+            );
             return Result<PurchaseCreditNoteDto>.ValidationFailure(
                 mapped ?? "Conflicto de datos duplicados al vincular la devolución de compra."
             );

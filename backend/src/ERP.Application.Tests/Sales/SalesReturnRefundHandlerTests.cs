@@ -126,7 +126,9 @@ public sealed class SalesReturnRefundHandlerTests
 
         var receivableRepo = new Mock<ISalesReceivableRepository>();
         receivableRepo
-            .Setup(r => r.GetByInvoiceIdForUpdateAsync(TenantId, InvoiceId, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByInvoiceIdForUpdateAsync(TenantId, InvoiceId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(receivable);
 
         var cashSessionCtx = new Mock<ICurrentCashSession>();
@@ -270,7 +272,9 @@ public sealed class SalesReturnRefundHandlerTests
         // (el handler de autorización revierte y DomainRuleBehavior traduce) — mismo mensaje.
         var act = () => handler.ExecuteAsync(salesReturn, TenantId, UserId, CancellationToken.None);
 
-        await act.Should().ThrowAsync<DomainRuleViolationException>().WithMessage("*excede el saldo pendiente*");
+        await act.Should()
+            .ThrowAsync<DomainRuleViolationException>()
+            .WithMessage("*excede el saldo pendiente*");
         receivable
             .OriginalAmount.Should()
             .Be(100m, because: "no debe mutar si la validación falla");
@@ -355,7 +359,9 @@ public sealed class SalesReturnRefundHandlerTests
     {
         var invoiceRepo = new Mock<ISalesInvoiceRepository>();
         invoiceRepo
-            .Setup(r => r.GetByIdForUpdateAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByIdForUpdateAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(invoice);
 
         var returnRepo = new Mock<ISalesReturnRepository>();

@@ -1,9 +1,9 @@
-using ERP.Domain.Kernel.Attributes;
-using ERP.Domain.Kernel.Navigation;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using ERP.Domain.Kernel.Attributes;
+using ERP.Domain.Kernel.Navigation;
 
 namespace ERP.Domain.Kernel;
 
@@ -33,7 +33,8 @@ public static class KernelRegistry
     /// (<c>GetPermissionCatalogHandler</c>) y para rechazar claves desconocidas al guardar permisos
     /// de perfil (<c>UpsertProfilePermissionsHandler</c>) — un solo cálculo, dos consumidores.
     /// </summary>
-    public static IReadOnlySet<string> AssignablePermissionKeys { get; } = BuildAssignablePermissionKeys();
+    public static IReadOnlySet<string> AssignablePermissionKeys { get; } =
+        BuildAssignablePermissionKeys();
 
     private static List<ModuleDefinition> BuildModules()
     {
@@ -139,7 +140,10 @@ public static class KernelRegistry
     private static IReadOnlyList<string>? SplitCsv(string? csv) =>
         csv is null
             ? null
-            : csv.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+            : csv.Split(
+                ',',
+                StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries
+            );
 
     private static HashSet<string> BuildAssignablePermissionKeys()
     {

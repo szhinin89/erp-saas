@@ -575,7 +575,9 @@ public sealed class AuthorizePurchaseReturnSequenceConcurrencyTests : IAsyncLife
     {
         // ZH-BACKEND-SECURITY-ERROR-FINAL-HARDENING-01: clasificación técnica real (único punto).
         public string? ClassifyFailureCode(Exception exception) =>
-            new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator().ClassifyFailureCode(exception);
+            new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator().ClassifyFailureCode(
+                exception
+            );
 
         public bool TryGetUniqueViolation(Exception exception, out DatabaseUniqueViolationInfo info)
         {

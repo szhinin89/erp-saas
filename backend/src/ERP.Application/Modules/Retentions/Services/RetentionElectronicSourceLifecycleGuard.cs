@@ -11,7 +11,8 @@ namespace ERP.Application.Modules.Retentions.Services;
 /// generan XML, firman, envían, reenvían ni reactivan su comprobante. Lee el estado actual de la BD
 /// filtrado por tenant y empresa (fail-closed: inexistente en ese alcance = no procesable).
 /// </summary>
-public sealed class RetentionElectronicSourceLifecycleGuard : IElectronicDocumentSourceLifecycleGuard
+public sealed class RetentionElectronicSourceLifecycleGuard
+    : IElectronicDocumentSourceLifecycleGuard
 {
     private readonly IRetentionDocumentRepository _retentions;
 

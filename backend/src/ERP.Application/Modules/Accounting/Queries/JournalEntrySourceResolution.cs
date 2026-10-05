@@ -269,7 +269,9 @@ public sealed class PurchaseJournalSourceResolver : IJournalEntrySourceModuleRes
     )
     {
         var creditNoteRequests = requests
-            .Where(r => r.SourceEventType is CreditNoteAuthorizedFactType or CreditNoteCancelledFactType)
+            .Where(r =>
+                r.SourceEventType is CreditNoteAuthorizedFactType or CreditNoteCancelledFactType
+            )
             .ToList();
         if (creditNoteRequests.Count == 0)
             return;
@@ -500,7 +502,9 @@ public sealed class PayablesJournalSourceResolver : IJournalEntrySourceModuleRes
     {
         var paymentRequests = requests
             .Where(r =>
-                r.SourceEventType is SupplierPaymentConfirmedFactType or SupplierPaymentReversedFactType
+                r.SourceEventType
+                    is SupplierPaymentConfirmedFactType
+                        or SupplierPaymentReversedFactType
             )
             .ToList();
         if (paymentRequests.Count == 0)

@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Caja;
@@ -12,8 +14,6 @@ using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Sales.Interfaces;
 using FluentValidation;
 using MediatR;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace ERP.Application.Modules.Finance.UseCases;
 
@@ -248,7 +248,10 @@ public sealed class RegisterSupplierCreditRefundHandler
                     cmd.CashRegisterId!.Value,
                     ct
                 );
-                if (cashRegisterForDestination is null || cashRegisterForDestination.CompanyId != credit.CompanyId)
+                if (
+                    cashRegisterForDestination is null
+                    || cashRegisterForDestination.CompanyId != credit.CompanyId
+                )
                 {
                     await _uow.RollbackAsync(ct);
                     // SC-020
@@ -264,7 +267,10 @@ public sealed class RegisterSupplierCreditRefundHandler
                         "La caja indicada no está activa."
                     );
                 }
-                if (cashRegisterForDestination.AccountingAccountId is not { } cashAccountingAccountId)
+                if (
+                    cashRegisterForDestination.AccountingAccountId
+                    is not { } cashAccountingAccountId
+                )
                 {
                     await _uow.RollbackAsync(ct);
                     return Result<SupplierCreditRefundTransactionDto>.ValidationFailure(
@@ -318,7 +324,9 @@ public sealed class RegisterSupplierCreditRefundHandler
             if (destinationError is not null)
             {
                 await _uow.RollbackAsync(ct);
-                return Result<SupplierCreditRefundTransactionDto>.ValidationFailure(destinationError);
+                return Result<SupplierCreditRefundTransactionDto>.ValidationFailure(
+                    destinationError
+                );
             }
             if (paymentMethod.RequiresReference && string.IsNullOrWhiteSpace(cmd.ExternalReference))
             {
@@ -410,7 +418,9 @@ public sealed class RegisterSupplierCreditRefundHandler
                     uid,
                     CashReferenceType.SupplierCreditRefund,
                     transaction.Id,
-                    SupplierCreditRefundCashReference.VisibleReference(transaction.ExternalReference)
+                    SupplierCreditRefundCashReference.VisibleReference(
+                        transaction.ExternalReference
+                    )
                 );
                 transaction.LinkCashMovement(cashSession.Id, cashMovement.Id);
             }
@@ -514,7 +524,8 @@ internal static class SupplierCreditRefundCashReference
 {
     public static string? VisibleReference(string? externalReference) =>
         string.IsNullOrWhiteSpace(externalReference)
-        || externalReference.Trim().Length > ERP.Domain.Modules.Caja.Entities.CashMovement.ReferenceNumberMaxLen
+        || externalReference.Trim().Length
+            > ERP.Domain.Modules.Caja.Entities.CashMovement.ReferenceNumberMaxLen
             ? null
             : externalReference.Trim();
 }

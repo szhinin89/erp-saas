@@ -60,14 +60,16 @@ public sealed class SalesPaymentScheduleTests
     [Fact]
     public void Create_rechaza_numero_de_cuota_menor_a_1()
     {
-        var act = () => SalesPaymentSchedule.Create(Guid.NewGuid(), TenantId, 0, new DateOnly(2026, 1, 1), 10m);
+        var act = () =>
+            SalesPaymentSchedule.Create(Guid.NewGuid(), TenantId, 0, new DateOnly(2026, 1, 1), 10m);
         act.Should().Throw<ArgumentException>();
     }
 
     [Fact]
     public void Create_rechaza_monto_cero_o_negativo()
     {
-        var act = () => SalesPaymentSchedule.Create(Guid.NewGuid(), TenantId, 1, new DateOnly(2026, 1, 1), 0m);
+        var act = () =>
+            SalesPaymentSchedule.Create(Guid.NewGuid(), TenantId, 1, new DateOnly(2026, 1, 1), 0m);
         act.Should().Throw<ArgumentException>();
     }
 
@@ -115,7 +117,14 @@ public sealed class SalesPaymentScheduleTests
     public void GeneratePaymentSchedule_fuera_de_Draft_lanza()
     {
         var inv = CreateDraftWithLine();
-        var payment = SalesInvoicePayment.Create(inv.Id, TenantId, Guid.NewGuid(), "01", "Efectivo", inv.GrandTotal);
+        var payment = SalesInvoicePayment.Create(
+            inv.Id,
+            TenantId,
+            Guid.NewGuid(),
+            "01",
+            "Efectivo",
+            inv.GrandTotal
+        );
         inv.ReplacePayments(new[] { payment }, UserId);
         inv.Authorize(UserId);
 
@@ -196,13 +205,23 @@ public sealed class SalesPaymentScheduleTests
         // No copiar el hueco de PurchaseInvoice.ReplacePaymentSchedule (no valida estado) —
         // Ventas SIEMPRE exige EnsureDraft() aquí.
         var inv = CreateDraftWithLine();
-        var payment = SalesInvoicePayment.Create(inv.Id, TenantId, Guid.NewGuid(), "01", "Efectivo", inv.GrandTotal);
+        var payment = SalesInvoicePayment.Create(
+            inv.Id,
+            TenantId,
+            Guid.NewGuid(),
+            "01",
+            "Efectivo",
+            inv.GrandTotal
+        );
         inv.ReplacePayments(new[] { payment }, UserId);
         inv.Authorize(UserId);
 
         var act = () =>
             inv.ReplacePaymentSchedule(
-                new List<(int, DateOnly, decimal, string?)> { (1, inv.IssueDate, inv.GrandTotal, null) }
+                new List<(int, DateOnly, decimal, string?)>
+                {
+                    (1, inv.IssueDate, inv.GrandTotal, null),
+                }
             );
 
         act.Should().Throw<DomainRuleViolationException>();

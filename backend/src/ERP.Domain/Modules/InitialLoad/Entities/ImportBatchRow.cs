@@ -38,7 +38,10 @@ public sealed class ImportBatchRow : AuditableEntity, ICompanyOperationalEntity
         if (rowNumber < 1)
             throw new ArgumentException("El número de fila debe ser mayor a 0.", nameof(rowNumber));
         if (string.IsNullOrWhiteSpace(rawDataJson))
-            throw new ArgumentException("Los datos crudos de la fila son obligatorios.", nameof(rawDataJson));
+            throw new ArgumentException(
+                "Los datos crudos de la fila son obligatorios.",
+                nameof(rawDataJson)
+            );
 
         var row = new ImportBatchRow
         {

@@ -95,7 +95,9 @@ public sealed class ElectronicDocumentRideSourceXmlProviderTests : IAsyncLifetim
         // ZH-EDOC-COMMUNICATIONS-01 — ElectronicDocumentAuthorizedCommunicationHandler (MediatR real, ver
         // comentario de clase) solo necesita el servicio genérico de comunicaciones: un test double vacío
         // alcanza (estos escenarios prueban el RIDE, no el correo).
-        services.AddScoped(_ => Mock.Of<ERP.Application.Modules.Communications.ElectronicDocuments.IElectronicDocumentCommunicationService>());
+        services.AddScoped(_ =>
+            Mock.Of<ERP.Application.Modules.Communications.ElectronicDocuments.IElectronicDocumentCommunicationService>()
+        );
         services.AddLogging();
         services.AddScoped<
             ERP.Application.Common.Services.ICompanyClock,

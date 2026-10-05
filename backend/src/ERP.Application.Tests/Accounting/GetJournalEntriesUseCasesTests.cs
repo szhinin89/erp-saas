@@ -20,7 +20,11 @@ public sealed class GetJournalEntriesUseCasesTests
     private static readonly Guid CompanyId = Guid.NewGuid();
     private static readonly Guid CreatedBy = Guid.NewGuid();
 
-    private static JournalEntry PostedEntryWithLines(Guid debitAccountId, Guid creditAccountId, int entryNumber = 1)
+    private static JournalEntry PostedEntryWithLines(
+        Guid debitAccountId,
+        Guid creditAccountId,
+        int entryNumber = 1
+    )
     {
         var entry = JournalEntry.Create(
             TenantId,
@@ -130,8 +134,7 @@ public sealed class GetJournalEntriesUseCasesTests
                 )
             )
             .ReturnsAsync((new List<JournalEntry> { entry }, 1));
-        m.SourceResolver
-            .Setup(r =>
+        m.SourceResolver.Setup(r =>
                 r.ResolveManyAsync(
                     TenantId,
                     CompanyId,
@@ -178,11 +181,13 @@ public sealed class GetJournalEntriesUseCasesTests
         var entry = PostedEntryWithLines(debitAccount.Id, creditAccount.Id);
 
         var m = new Mocks();
-        m.JournalEntries
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, entry.Id, It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, entry.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(entry);
-        m.Accounts
-            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new List<Account> { debitAccount, creditAccount });
         // SourceResolver mock por defecto ya devuelve diccionario vacío (documento no encontrado
         // o módulo sin resolver dedicado) — la query debe seguir teniendo éxito.
@@ -194,7 +199,10 @@ public sealed class GetJournalEntriesUseCasesTests
             m.Tenant.Object,
             m.Company.Object
         );
-        var result = await handler.Handle(new GetJournalEntryByIdQuery(entry.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetJournalEntryByIdQuery(entry.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.SourceDocumentType.Should().BeNull();
@@ -213,11 +221,13 @@ public sealed class GetJournalEntriesUseCasesTests
         var entry = PostedEntryWithLines(debitAccount.Id, creditAccount.Id);
 
         var m = new Mocks();
-        m.JournalEntries
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, entry.Id, It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, entry.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(entry);
-        m.Accounts
-            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new List<Account> { debitAccount, creditAccount });
 
         var handler = new GetJournalEntryByIdHandler(
@@ -227,7 +237,10 @@ public sealed class GetJournalEntriesUseCasesTests
             m.Tenant.Object,
             m.Company.Object
         );
-        var result = await handler.Handle(new GetJournalEntryByIdQuery(entry.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetJournalEntryByIdQuery(entry.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Lines.Should().HaveCount(2);
@@ -242,8 +255,9 @@ public sealed class GetJournalEntriesUseCasesTests
     public async Task GetJournalEntryById_asiento_inexistente_retorna_NotFound()
     {
         var m = new Mocks();
-        m.JournalEntries
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((JournalEntry?)null);
 
         var handler = new GetJournalEntryByIdHandler(
@@ -253,7 +267,10 @@ public sealed class GetJournalEntriesUseCasesTests
             m.Tenant.Object,
             m.Company.Object
         );
-        var result = await handler.Handle(new GetJournalEntryByIdQuery(Guid.NewGuid()), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetJournalEntryByIdQuery(Guid.NewGuid()),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
@@ -270,14 +287,17 @@ public sealed class GetJournalEntriesUseCasesTests
         var reversal = original.Reverse(CreatedBy, 2, "Factura anulada");
 
         var m = new Mocks();
-        m.JournalEntries
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, original.Id, It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, original.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(original);
-        m.JournalEntries
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, reversal.Id, It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, reversal.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(reversal);
-        m.Accounts
-            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new List<Account> { debitAccount, creditAccount });
 
         var handler = new GetJournalEntryByIdHandler(
@@ -287,7 +307,10 @@ public sealed class GetJournalEntriesUseCasesTests
             m.Tenant.Object,
             m.Company.Object
         );
-        var result = await handler.Handle(new GetJournalEntryByIdQuery(original.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetJournalEntryByIdQuery(original.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Status.Should().Be("Reversed");
@@ -305,19 +328,21 @@ public sealed class GetJournalEntriesUseCasesTests
         var reversal = original.Reverse(CreatedBy, 2, "Factura anulada");
 
         var m = new Mocks();
-        m.JournalEntries
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, reversal.Id, It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, reversal.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(reversal);
-        m.JournalEntries
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, original.Id, It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, original.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(original);
-        m.Accounts
-            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new List<Account> { debitAccount, creditAccount });
         // El asiento de reverso lleva SourceModule="Accounting" (no resuelve por sí mismo) — solo
         // el original ("Sales"/"InvoiceIssued") resuelve, y ese origen debe heredarse.
-        m.SourceResolver
-            .Setup(r =>
+        m.SourceResolver.Setup(r =>
                 r.ResolveManyAsync(
                     TenantId,
                     CompanyId,
@@ -346,7 +371,10 @@ public sealed class GetJournalEntriesUseCasesTests
             m.Tenant.Object,
             m.Company.Object
         );
-        var result = await handler.Handle(new GetJournalEntryByIdQuery(reversal.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetJournalEntryByIdQuery(reversal.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.OriginalJournalEntryId.Should().Be(original.Id);
@@ -387,17 +415,19 @@ public sealed class GetJournalEntriesUseCasesTests
         var reversal = original.Reverse(CreatedBy, 2, "Gasto anulado");
 
         var m = new Mocks();
-        m.JournalEntries
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, reversal.Id, It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, reversal.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(reversal);
-        m.JournalEntries
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, original.Id, It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, original.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(original);
-        m.Accounts
-            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new List<Account> { debitAccount, creditAccount });
-        m.SourceResolver
-            .Setup(r =>
+        m.SourceResolver.Setup(r =>
                 r.ResolveManyAsync(
                     TenantId,
                     CompanyId,
@@ -426,7 +456,10 @@ public sealed class GetJournalEntriesUseCasesTests
             m.Tenant.Object,
             m.Company.Object
         );
-        var result = await handler.Handle(new GetJournalEntryByIdQuery(reversal.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetJournalEntryByIdQuery(reversal.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.SourceDocumentType.Should().Be("Reverso de Gasto");
@@ -439,9 +472,14 @@ public sealed class GetJournalEntriesUseCasesTests
     {
         var entry = PostedEntryWithLines(Guid.NewGuid(), Guid.NewGuid());
         var m = new Mocks();
-        m.JournalEntries
-            .Setup(r =>
-                r.GetBySourceAsync(TenantId, CompanyId, "Sales", entry.SourceEventId, It.IsAny<CancellationToken>())
+        m.JournalEntries.Setup(r =>
+                r.GetBySourceAsync(
+                    TenantId,
+                    CompanyId,
+                    "Sales",
+                    entry.SourceEventId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(new List<JournalEntry> { entry });
 
@@ -525,14 +563,15 @@ public sealed class GetJournalEntriesUseCasesTests
         var entry = ExpenseConfirmedEntry(debitAccount.Id, creditAccount.Id, expenseId);
 
         var m = new Mocks();
-        m.JournalEntries
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, entry.Id, It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, entry.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(entry);
-        m.Accounts
-            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new List<Account> { debitAccount, creditAccount });
-        m.SourceResolver
-            .Setup(r =>
+        m.SourceResolver.Setup(r =>
                 r.ResolveManyAsync(
                     TenantId,
                     CompanyId,
@@ -561,15 +600,18 @@ public sealed class GetJournalEntriesUseCasesTests
             m.Tenant.Object,
             m.Company.Object
         );
-        var result = await handler.Handle(new GetJournalEntryByIdQuery(entry.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetJournalEntryByIdQuery(entry.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         var lines = result.Value!.Lines;
         lines.Should().HaveCount(2);
         lines[0].Description.Should().Be($"Expenses — DocumentConfirmed — {expenseId}");
-        lines[0].DisplayDescription.Should().Be(
-            "Gasto 001-500-000007861 — SYSTEMM-T MALDONADO & TORAL CIA LTDA."
-        );
+        lines[0]
+            .DisplayDescription.Should()
+            .Be("Gasto 001-500-000007861 — SYSTEMM-T MALDONADO & TORAL CIA LTDA.");
         // Descripción de negocio ("serv nube") nunca se reemplaza.
         lines[1].Description.Should().Be("serv nube");
         lines[1].DisplayDescription.Should().BeNull();
@@ -585,19 +627,21 @@ public sealed class GetJournalEntriesUseCasesTests
         var reversal = original.Reverse(CreatedBy, 2, "Gasto anulado");
 
         var m = new Mocks();
-        m.JournalEntries
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, reversal.Id, It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, reversal.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(reversal);
-        m.JournalEntries
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, original.Id, It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, original.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(original);
-        m.Accounts
-            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new List<Account> { debitAccount, creditAccount });
         // El reverso lleva SourceModule="Accounting" — no resuelve por sí mismo; solo el original
         // ("Expenses"/"DocumentConfirmed") resuelve, y ese origen se hereda con prefijo.
-        m.SourceResolver
-            .Setup(r =>
+        m.SourceResolver.Setup(r =>
                 r.ResolveManyAsync(
                     TenantId,
                     CompanyId,
@@ -626,16 +670,21 @@ public sealed class GetJournalEntriesUseCasesTests
             m.Tenant.Object,
             m.Company.Object
         );
-        var result = await handler.Handle(new GetJournalEntryByIdQuery(reversal.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetJournalEntryByIdQuery(reversal.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         var lines = result.Value!.Lines;
         lines.Should().HaveCount(2);
         // La línea automática copiada del original (mismo Description técnico) recibe el prefijo.
-        var autoLine = lines.Single(l => l.Description == $"Expenses — DocumentConfirmed — {expenseId}");
-        autoLine.DisplayDescription.Should().Be(
-            "Reverso de Gasto 001-500-000007861 — SYSTEMM-T MALDONADO & TORAL CIA LTDA."
+        var autoLine = lines.Single(l =>
+            l.Description == $"Expenses — DocumentConfirmed — {expenseId}"
         );
+        autoLine
+            .DisplayDescription.Should()
+            .Be("Reverso de Gasto 001-500-000007861 — SYSTEMM-T MALDONADO & TORAL CIA LTDA.");
         // La línea de negocio copiada también verbatim nunca se reemplaza.
         var businessLine = lines.Single(l => l.Description == "serv nube");
         businessLine.DisplayDescription.Should().BeNull();
@@ -647,17 +696,23 @@ public sealed class GetJournalEntriesUseCasesTests
         var debitAccount = NewAccount("2.1.01", "Cuentas por pagar");
         var creditAccount = NewAccount("1.1.01", "Bancos");
         var paymentId = Guid.NewGuid();
-        var entry = SupplierPaymentEntry("SupplierPaymentConfirmed", debitAccount.Id, creditAccount.Id, paymentId);
+        var entry = SupplierPaymentEntry(
+            "SupplierPaymentConfirmed",
+            debitAccount.Id,
+            creditAccount.Id,
+            paymentId
+        );
 
         var m = new Mocks();
-        m.JournalEntries
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, entry.Id, It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, entry.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(entry);
-        m.Accounts
-            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new List<Account> { debitAccount, creditAccount });
-        m.SourceResolver
-            .Setup(r =>
+        m.SourceResolver.Setup(r =>
                 r.ResolveManyAsync(
                     TenantId,
                     CompanyId,
@@ -686,12 +741,17 @@ public sealed class GetJournalEntriesUseCasesTests
             m.Tenant.Object,
             m.Company.Object
         );
-        var result = await handler.Handle(new GetJournalEntryByIdQuery(entry.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetJournalEntryByIdQuery(entry.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
-        result.Value!.Lines.Should().AllSatisfy(l =>
-            l.DisplayDescription.Should().Be("Pago a proveedor 00000003 — SISTEC")
-        );
+        result
+            .Value!.Lines.Should()
+            .AllSatisfy(l =>
+                l.DisplayDescription.Should().Be("Pago a proveedor 00000003 — SISTEC")
+            );
     }
 
     [Fact]
@@ -700,17 +760,23 @@ public sealed class GetJournalEntriesUseCasesTests
         var debitAccount = NewAccount("1.1.01", "Bancos");
         var creditAccount = NewAccount("2.1.01", "Cuentas por pagar");
         var paymentId = Guid.NewGuid();
-        var entry = SupplierPaymentEntry("SupplierPaymentReversed", debitAccount.Id, creditAccount.Id, paymentId);
+        var entry = SupplierPaymentEntry(
+            "SupplierPaymentReversed",
+            debitAccount.Id,
+            creditAccount.Id,
+            paymentId
+        );
 
         var m = new Mocks();
-        m.JournalEntries
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, entry.Id, It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, entry.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(entry);
-        m.Accounts
-            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new List<Account> { debitAccount, creditAccount });
-        m.SourceResolver
-            .Setup(r =>
+        m.SourceResolver.Setup(r =>
                 r.ResolveManyAsync(
                     TenantId,
                     CompanyId,
@@ -739,12 +805,17 @@ public sealed class GetJournalEntriesUseCasesTests
             m.Tenant.Object,
             m.Company.Object
         );
-        var result = await handler.Handle(new GetJournalEntryByIdQuery(entry.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetJournalEntryByIdQuery(entry.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
-        result.Value!.Lines.Should().AllSatisfy(l =>
-            l.DisplayDescription.Should().Be("Reversa de pago a proveedor 00000003 — SISTEC")
-        );
+        result
+            .Value!.Lines.Should()
+            .AllSatisfy(l =>
+                l.DisplayDescription.Should().Be("Reversa de pago a proveedor 00000003 — SISTEC")
+            );
     }
 
     [Fact]
@@ -756,11 +827,13 @@ public sealed class GetJournalEntriesUseCasesTests
         var entry = ExpenseConfirmedEntry(debitAccount.Id, creditAccount.Id, expenseId);
 
         var m = new Mocks();
-        m.JournalEntries
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, entry.Id, It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, entry.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(entry);
-        m.Accounts
-            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new List<Account> { debitAccount, creditAccount });
         // SourceResolver por defecto en Mocks() ya devuelve un diccionario vacío — simula un gasto
         // borrado/de otra empresa/tenant, exactamente el mismo fail-closed que ya cubren los tests
@@ -773,10 +846,16 @@ public sealed class GetJournalEntriesUseCasesTests
             m.Tenant.Object,
             m.Company.Object
         );
-        var result = await handler.Handle(new GetJournalEntryByIdQuery(entry.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetJournalEntryByIdQuery(entry.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Lines.Should().AllSatisfy(l => l.DisplayDescription.Should().BeNull());
-        result.Value.Lines[0].Description.Should().Be($"Expenses — DocumentConfirmed — {expenseId}");
+        result
+            .Value.Lines[0]
+            .Description.Should()
+            .Be($"Expenses — DocumentConfirmed — {expenseId}");
     }
 }

@@ -35,12 +35,24 @@ public sealed class GetDashboardKpisQueryHandlerTests
         DateOnly? capturedAsOf = null;
         reader
             .Setup(r =>
-                r.ReadAsync(TenantId, CompanyId, It.IsAny<DateOnly>(), It.IsAny<CancellationToken>())
+                r.ReadAsync(
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<CancellationToken>()
+                )
             )
-            .Callback<Guid, Guid, DateOnly, CancellationToken>((_, _, asOf, _) => capturedAsOf = asOf)
+            .Callback<Guid, Guid, DateOnly, CancellationToken>(
+                (_, _, asOf, _) => capturedAsOf = asOf
+            )
             .ReturnsAsync((Guid _, Guid _, DateOnly asOf, CancellationToken _) => SampleDto(asOf));
 
-        var handler = new GetDashboardKpisQueryHandler(reader.Object, tenant, company, companyClock.Object);
+        var handler = new GetDashboardKpisQueryHandler(
+            reader.Object,
+            tenant,
+            company,
+            companyClock.Object
+        );
 
         var result = await handler.Handle(new GetDashboardKpisQuery(), CancellationToken.None);
 
@@ -66,7 +78,12 @@ public sealed class GetDashboardKpisQueryHandlerTests
         var company = Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId);
         var companyClock = new Mock<ICompanyClock>();
 
-        var handler = new GetDashboardKpisQueryHandler(reader.Object, tenant, company, companyClock.Object);
+        var handler = new GetDashboardKpisQueryHandler(
+            reader.Object,
+            tenant,
+            company,
+            companyClock.Object
+        );
 
         var result = await handler.Handle(
             new GetDashboardKpisQuery(explicitAsOf),

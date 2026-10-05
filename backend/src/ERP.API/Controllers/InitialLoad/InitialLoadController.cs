@@ -41,7 +41,10 @@ public sealed class InitialLoadController : ControllerBase
 
     [HttpPost("batches")]
     [Authorize(Policy = $"perm:{InitialLoadPermissions.Create}")]
-    [ProducesResponseType(typeof(Contracts.ApiResponse<ImportBatchDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(
+        typeof(Contracts.ApiResponse<ImportBatchDto>),
+        StatusCodes.Status201Created
+    )]
     public async Task<IActionResult> CreateBatch(
         [FromBody] CreateImportBatchCommand command,
         CancellationToken ct

@@ -6,7 +6,8 @@ using MediatR;
 namespace ERP.Application.Modules.Inventory.AdjustmentReasons.UseCases.ToggleInventoryAdjustmentReason;
 
 public sealed record ToggleInventoryAdjustmentReasonCommand(Guid Id, bool Activate)
-    : IRequest<Result<InventoryAdjustmentReasonDto>>, ITenantScopedRequest;
+    : IRequest<Result<InventoryAdjustmentReasonDto>>,
+        ITenantScopedRequest;
 
 public sealed class ToggleInventoryAdjustmentReasonValidator
     : AbstractValidator<ToggleInventoryAdjustmentReasonCommand>

@@ -1,3 +1,4 @@
+using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.ElectronicDocuments.UseCases.GetElectronicDocumentXml;
@@ -6,7 +7,6 @@ using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.ElectronicDocuments.Interfaces;
 using FluentAssertions;
 using Moq;
-using System.Text;
 
 namespace ERP.Application.Tests.ElectronicDocuments;
 
@@ -42,7 +42,10 @@ public sealed class GetElectronicDocumentXmlQueryHandlerTests
             new(Repo.Object, FileStorage.Object, Tenant.Object, Company.Object);
     }
 
-    private static ElectronicDocument CreateDocumentWithDraftXml(Guid companyId, Guid sourceEntityId)
+    private static ElectronicDocument CreateDocumentWithDraftXml(
+        Guid companyId,
+        Guid sourceEntityId
+    )
     {
         var document = ElectronicDocument.Create(
             TenantId,
@@ -62,14 +65,25 @@ public sealed class GetElectronicDocumentXmlQueryHandlerTests
         var sourceEntityId = Guid.NewGuid();
         var document = CreateDocumentWithDraftXml(CompanyAId, sourceEntityId);
         var f = new Fixture(activeCompanyId: CompanyAId);
-        f.Repo.Setup(r => r.GetBySourceAsync(TenantId, SourceModule, sourceEntityId, It.IsAny<CancellationToken>()))
+        f.Repo.Setup(r =>
+                r.GetBySourceAsync(
+                    TenantId,
+                    SourceModule,
+                    sourceEntityId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(document);
         f.FileStorage.Setup(s => s.GetAsync(document.XmlDraftPath!, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new MemoryStream(Encoding.UTF8.GetBytes("<xml/>")));
 
         var result = await f.BuildHandler()
             .Handle(
-                new GetElectronicDocumentXmlQuery(SourceModule, sourceEntityId, ElectronicDocumentXmlVariant.Draft),
+                new GetElectronicDocumentXmlQuery(
+                    SourceModule,
+                    sourceEntityId,
+                    ElectronicDocumentXmlVariant.Draft
+                ),
                 CancellationToken.None
             );
 
@@ -83,12 +97,23 @@ public sealed class GetElectronicDocumentXmlQueryHandlerTests
         var sourceEntityId = Guid.NewGuid();
         var document = CreateDocumentWithDraftXml(CompanyBId, sourceEntityId);
         var f = new Fixture(activeCompanyId: CompanyAId);
-        f.Repo.Setup(r => r.GetBySourceAsync(TenantId, SourceModule, sourceEntityId, It.IsAny<CancellationToken>()))
+        f.Repo.Setup(r =>
+                r.GetBySourceAsync(
+                    TenantId,
+                    SourceModule,
+                    sourceEntityId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(document);
 
         var result = await f.BuildHandler()
             .Handle(
-                new GetElectronicDocumentXmlQuery(SourceModule, sourceEntityId, ElectronicDocumentXmlVariant.Draft),
+                new GetElectronicDocumentXmlQuery(
+                    SourceModule,
+                    sourceEntityId,
+                    ElectronicDocumentXmlVariant.Draft
+                ),
                 CancellationToken.None
             );
 
@@ -113,12 +138,23 @@ public sealed class GetElectronicDocumentXmlQueryHandlerTests
         var document = CreateDocumentWithDraftXml(CompanyAId, sourceEntityId);
         var f = new Fixture(activeCompanyId: CompanyAId);
         f.Tenant.Setup(t => t.TenantId).Returns(otherTenantId);
-        f.Repo.Setup(r => r.GetBySourceAsync(TenantId, SourceModule, sourceEntityId, It.IsAny<CancellationToken>()))
+        f.Repo.Setup(r =>
+                r.GetBySourceAsync(
+                    TenantId,
+                    SourceModule,
+                    sourceEntityId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(document);
 
         var result = await f.BuildHandler()
             .Handle(
-                new GetElectronicDocumentXmlQuery(SourceModule, sourceEntityId, ElectronicDocumentXmlVariant.Draft),
+                new GetElectronicDocumentXmlQuery(
+                    SourceModule,
+                    sourceEntityId,
+                    ElectronicDocumentXmlVariant.Draft
+                ),
                 CancellationToken.None
             );
 

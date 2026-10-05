@@ -39,15 +39,17 @@ public sealed class PurchaseInvoiceCostProrationConsistencyTests
         );
 
         var details = lines
-            .Select(l => PurchaseInvoiceDetail.Create(
-                inv.Id,
-                TenantId,
-                "Producto",
-                l.qty,
-                l.price,
-                "10",
-                "UNIT"
-            ))
+            .Select(l =>
+                PurchaseInvoiceDetail.Create(
+                    inv.Id,
+                    TenantId,
+                    "Producto",
+                    l.qty,
+                    l.price,
+                    "10",
+                    "UNIT"
+                )
+            )
             .ToList();
         inv.ReplaceLines(details, UserId);
         return inv;
@@ -61,7 +63,9 @@ public sealed class PurchaseInvoiceCostProrationConsistencyTests
         inv.DistributeAdditionalCost(PurchaseCostType.Freight, 12m, [inv.Lines[0].Id], UserId);
         inv.DistributeAdditionalCost(PurchaseCostType.OtherCost, 3m, [inv.Lines[1].Id], UserId);
         inv.Confirm(UserId);
-        var e = inv.DomainEvents.OfType<ERP.Domain.Modules.Purchases.Events.PurchaseInvoiceConfirmedEvent>().Single();
+        var e = inv
+            .DomainEvents.OfType<ERP.Domain.Modules.Purchases.Events.PurchaseInvoiceConfirmedEvent>()
+            .Single();
         e.Subtotal.Should().Be(200m);
         e.TotalDiscount.Should().Be(20m);
         e.CostSubtotal.Should().Be(195m);
@@ -79,13 +83,21 @@ public sealed class PurchaseInvoiceCostProrationConsistencyTests
         // Línea A: 100, Línea B: 300, Línea C: 233.33 (fuerza decimales no exactos) → flete 77.77.
         var invAdditional = CreateDraftWithLines((1m, 100m), (1m, 300m), (1m, 233.33m));
         var idsAdditional = invAdditional.Lines.Select(l => l.Id).ToArray();
-        invAdditional.DistributeAdditionalCost(PurchaseCostType.Freight, 77.77m, idsAdditional, UserId);
+        invAdditional.DistributeAdditionalCost(
+            PurchaseCostType.Freight,
+            77.77m,
+            idsAdditional,
+            UserId
+        );
 
         var invAbsolute = CreateDraftWithLines((1m, 100m), (1m, 300m), (1m, 233.33m));
         invAbsolute.DistributeCosts(77.77m, 0m, UserId);
 
         for (var i = 0; i < 3; i++)
-            invAdditional.Lines[i].FreightAllocated.Should().Be(invAbsolute.Lines[i].FreightAllocated);
+            invAdditional
+                .Lines[i]
+                .FreightAllocated.Should()
+                .Be(invAbsolute.Lines[i].FreightAllocated);
 
         invAdditional.Lines.Sum(l => l.FreightAllocated).Should().Be(77.77m);
         invAbsolute.Lines.Sum(l => l.FreightAllocated).Should().Be(77.77m);
@@ -133,12 +145,13 @@ public sealed class PurchaseInvoiceCostProrationConsistencyTests
     {
         var inv = CreateDraftWithLines((1m, 100m));
 
-        var act = () => inv.DistributeAdditionalCost(
-            PurchaseCostType.Freight,
-            10m,
-            Array.Empty<Guid>(),
-            UserId
-        );
+        var act = () =>
+            inv.DistributeAdditionalCost(
+                PurchaseCostType.Freight,
+                10m,
+                Array.Empty<Guid>(),
+                UserId
+            );
 
         act.Should().Throw<ArgumentException>().WithParameterName("includedLineIds");
     }
@@ -179,22 +192,20 @@ public sealed class PurchaseInvoiceCostProrationConsistencyTests
         var inv = CreateDraftWithLines((1m, 100m));
         var line = inv.Lines[0];
         line.ApplyTaxes("10", 15m, "IVA 15%", null, 0m, null);
-        line.ReplaceTaxes(
-            [
-                PurchaseInvoiceDetailTax.Create(
-                    line.Id,
-                    TenantId,
-                    "5",
-                    "5001",
-                    "IRBPNR",
-                    0.02m,
-                    SriTaxCalculationType.Specific,
-                    line.TaxableBase,
-                    0.48m,
-                    PurchaseTaxSource.Xml
-                ),
-            ]
-        );
+        line.ReplaceTaxes([
+            PurchaseInvoiceDetailTax.Create(
+                line.Id,
+                TenantId,
+                "5",
+                "5001",
+                "IRBPNR",
+                0.02m,
+                SriTaxCalculationType.Specific,
+                line.TaxableBase,
+                0.48m,
+                PurchaseTaxSource.Xml
+            ),
+        ]);
 
         var taxableBaseBefore = line.TaxableBase;
         var vatAmountBefore = line.VatAmount;

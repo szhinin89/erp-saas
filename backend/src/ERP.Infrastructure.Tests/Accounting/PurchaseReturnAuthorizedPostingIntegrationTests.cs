@@ -215,7 +215,10 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
 
         var services = new ServiceCollection();
         services.AddSingleton<TimeProvider>(AccountingDateBoundary.Clock);
-        services.AddScoped<ERP.Application.Common.Services.ICompanyClock, ERP.Infrastructure.Persistence.Services.CompanyClock>();
+        services.AddScoped<
+            ERP.Application.Common.Services.ICompanyClock,
+            ERP.Infrastructure.Persistence.Services.CompanyClock
+        >();
         services.AddLogging();
         services.AddSingleton(db);
         services.AddSingleton<ICurrentTenant>(new FixedCurrentTenant(tenantId));
@@ -437,10 +440,10 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
         await stockRepo.SaveChangesWithSequenceRetryAsync();
     }
 
-    private (PurchaseReturn ret, ERP.Domain.Modules.Payables.Entities.AccountsPayable payable) BuildAuthorizedReturn(
-        PurchaseInvoice inv,
-        decimal returnQuantity
-    )
+    private (
+        PurchaseReturn ret,
+        ERP.Domain.Modules.Payables.Entities.AccountsPayable payable
+    ) BuildAuthorizedReturn(PurchaseInvoice inv, decimal returnQuantity)
     {
         var payable = ERP.Domain.Modules.Payables.Entities.AccountsPayable.CreateFromOrigin(
             _tenantId,
@@ -513,7 +516,9 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task Autorizar_PurchaseReturn_genera_JournalEntry_Posted_balanceado(bool linkedCreditNote)
+    public async Task Autorizar_PurchaseReturn_genera_JournalEntry_Posted_balanceado(
+        bool linkedCreditNote
+    )
     {
         var issueDate = new DateOnly(2026, 7, 25);
         var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
@@ -530,12 +535,38 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
         if (linkedCreditNote)
         {
             var line = ret.Lines.Single();
-            note = PurchaseCreditNote.CreateDraft(_tenantId, _companyId, _branchId, _supplierId, inv.Id,
-                null, ERP.Domain.Modules.Purchases.Enums.PurchaseCreditNoteApplicationType.Return,
-                "001-001-000000099", null, null, null, issueDate, "Devolucion",
-                [new("Producto", line.ReturnedSubtotal!.Value, line.VatCode, line.VatRate,
-                    line.ReturnedVatAmount!.Value, line.OriginalInvoiceDetailId, line.Quantity,
-                    line.ReturnedIceAmount ?? 0m, line.IrbpnrAmount)], [], _createdBy, Guid.NewGuid(), "create-note");
+            note = PurchaseCreditNote.CreateDraft(
+                _tenantId,
+                _companyId,
+                _branchId,
+                _supplierId,
+                inv.Id,
+                null,
+                ERP.Domain.Modules.Purchases.Enums.PurchaseCreditNoteApplicationType.Return,
+                "001-001-000000099",
+                null,
+                null,
+                null,
+                issueDate,
+                "Devolucion",
+                [
+                    new(
+                        "Producto",
+                        line.ReturnedSubtotal!.Value,
+                        line.VatCode,
+                        line.VatRate,
+                        line.ReturnedVatAmount!.Value,
+                        line.OriginalInvoiceDetailId,
+                        line.Quantity,
+                        line.ReturnedIceAmount ?? 0m,
+                        line.IrbpnrAmount
+                    ),
+                ],
+                [],
+                _createdBy,
+                Guid.NewGuid(),
+                "create-note"
+            );
             note.LinkPurchaseReturn(ret.Id, _createdBy);
             note.CompleteLinkedReturn(ret, _createdBy);
             ret.RegisterLinkedCreditNote(note, _createdBy);
@@ -551,9 +582,12 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
 
         if (note is not null)
         {
-            (await verifyDb.PurchaseCreditNotes.SingleAsync(n => n.Id == note.Id)).Status
-                .Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseCreditNoteStatus.Authorized);
-            (await verifyDb.JournalEntries.CountAsync(e => e.SourceEventId == note.Id)).Should().Be(0);
+            (await verifyDb.PurchaseCreditNotes.SingleAsync(n => n.Id == note.Id))
+                .Status.Should()
+                .Be(ERP.Domain.Modules.Purchases.Enums.PurchaseCreditNoteStatus.Authorized);
+            (await verifyDb.JournalEntries.CountAsync(e => e.SourceEventId == note.Id))
+                .Should()
+                .Be(0);
         }
         entry.Should().NotBeNull();
         entry!.Status.Should().Be(JournalEntryStatus.Posted);
@@ -696,7 +730,9 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
     {
         // ZH-BACKEND-SECURITY-ERROR-FINAL-HARDENING-01: clasificación técnica real (único punto).
         public string? ClassifyFailureCode(Exception exception) =>
-            new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator().ClassifyFailureCode(exception);
+            new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator().ClassifyFailureCode(
+                exception
+            );
 
         public bool TryGetUniqueViolation(
             Exception exception,

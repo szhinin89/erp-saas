@@ -35,9 +35,11 @@ public sealed class DocumentSequenceTests
         sequence.ConfigureNextNumber(850);
 
         sequence.CurrentSeq.Should().Be(850);
-        sequence.HasBeenUsed.Should().BeFalse(
-            "configurar el número inicial no es una captura real — debe poder reconfigurarse de nuevo"
-        );
+        sequence
+            .HasBeenUsed.Should()
+            .BeFalse(
+                "configurar el número inicial no es una captura real — debe poder reconfigurarse de nuevo"
+            );
     }
 
     [Fact]

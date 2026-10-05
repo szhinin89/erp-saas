@@ -72,7 +72,9 @@ public sealed class CashSessionRepository : ICashSessionRepository
             return Array.Empty<CashSession>();
         return await Scoped(tenantId)
             .AsNoTracking()
-            .Where(x => cashRegisterIds.Contains(x.CashRegisterId) && x.Status == CashSessionStatus.Open)
+            .Where(x =>
+                cashRegisterIds.Contains(x.CashRegisterId) && x.Status == CashSessionStatus.Open
+            )
             .ToListAsync(ct);
     }
 

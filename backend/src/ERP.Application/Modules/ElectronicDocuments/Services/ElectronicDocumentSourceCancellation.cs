@@ -93,7 +93,12 @@ public sealed class ElectronicDocumentSourceCancellation : IElectronicDocumentSo
         // Lock del origen (el mismo del reclamo de envío) ANTES de leer el documento electrónico.
         await guard.EvaluateAsync(tenantId, companyId, sourceEntityId, lockForUpdate: true, ct);
 
-        var document = await _repository.GetBySourceAsync(tenantId, sourceModule, sourceEntityId, ct);
+        var document = await _repository.GetBySourceAsync(
+            tenantId,
+            sourceModule,
+            sourceEntityId,
+            ct
+        );
         if (document is null)
             return Result<ElectronicDocumentSourceCancellationOutcome>.Success(
                 ElectronicDocumentSourceCancellationOutcome.NoElectronicDocument

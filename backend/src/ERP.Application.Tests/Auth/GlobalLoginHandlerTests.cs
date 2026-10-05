@@ -26,23 +26,40 @@ public sealed class GlobalLoginHandlerTests
         public Mock<IRefreshTokenService> RefreshTokenService { get; } = new();
 
         public GlobalLoginHandler Build() =>
-            new(AccessRepo.Object, TokenService.Object, PasswordHasher.Object, RefreshTokenService.Object);
+            new(
+                AccessRepo.Object,
+                TokenService.Object,
+                PasswordHasher.Object,
+                RefreshTokenService.Object
+            );
     }
 
-    private static async Task<(ERP.Application.Common.Result<ERP.Application.Auth.DTOs.AuthResponseDto> Result, Fixture F)> Login(
-        IdentityUser? user,
-        bool passwordOk
-    )
+    private static async Task<(
+        ERP.Application.Common.Result<ERP.Application.Auth.DTOs.AuthResponseDto> Result,
+        Fixture F
+    )> Login(IdentityUser? user, bool passwordOk)
     {
         var f = new Fixture();
-        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
         f.PasswordHasher.Setup(h => h.VerifyPassword(Password, PasswordHash)).Returns(passwordOk);
-        return (await f.Build().Handle(new GlobalLoginCommand(Username, Password), CancellationToken.None), f);
+        return (
+            await f.Build()
+                .Handle(new GlobalLoginCommand(Username, Password), CancellationToken.None),
+            f
+        );
     }
 
     private static IdentityUser NewUser(bool active = true)
     {
-        var user = IdentityUser.Create(Username, "Admin", "Global", "admin@test.com", PasswordHash, Guid.NewGuid());
+        var user = IdentityUser.Create(
+            Username,
+            "Admin",
+            "Global",
+            "admin@test.com",
+            PasswordHash,
+            Guid.NewGuid()
+        );
         if (!active)
             user.Deactivate(Guid.NewGuid());
         return user;
@@ -57,7 +74,9 @@ public sealed class GlobalLoginHandlerTests
 
         nonexistent.Error.Should().Be("Credenciales inválidas.");
         (wrong.Error, wrong.Code).Should().Be((nonexistent.Error, nonexistent.Code));
-        (inactiveWrong.Error, inactiveWrong.Code).Should().Be((nonexistent.Error, nonexistent.Code));
+        (inactiveWrong.Error, inactiveWrong.Code)
+            .Should()
+            .Be((nonexistent.Error, nonexistent.Code));
         fNone.PasswordHasher.Verify(h => h.SimulatePasswordVerification(Password), Times.Once);
         fWrong.PasswordHasher.Verify(h => h.VerifyPassword(Password, PasswordHash), Times.Once);
         fInactive.PasswordHasher.Verify(h => h.VerifyPassword(Password, PasswordHash), Times.Once);

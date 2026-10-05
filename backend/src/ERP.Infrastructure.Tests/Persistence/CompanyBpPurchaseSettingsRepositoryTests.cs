@@ -43,7 +43,12 @@ public sealed class CompanyBpPurchaseSettingsRepositoryTests : IAsyncLifetime
             ? new FixedCurrentCompany(cid, hasCompanyContext: true)
             : new FixedCurrentCompany(Guid.Empty, hasCompanyContext: false);
 
-        return new ErpDbContext(options, new FixedCurrentTenant(tenantId), new NoOpPublisher(), company);
+        return new ErpDbContext(
+            options,
+            new FixedCurrentTenant(tenantId),
+            new NoOpPublisher(),
+            company
+        );
     }
 
     [Fact]
@@ -54,9 +59,26 @@ public sealed class CompanyBpPurchaseSettingsRepositoryTests : IAsyncLifetime
         await migrate.Database.MigrateAsync();
 
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], createdBy);
-        var companyA = Company.CreateManaged(tenant.Id, "1790012345005", "Empresa A", createdBy: createdBy);
-        var companyB = Company.CreateManaged(tenant.Id, "1790012345006", "Empresa B", createdBy: createdBy);
-        var supplier = BusinessPartner.Create(tenant.Id, "04", "1791352688005", 2, "Proveedor Compartido", createdBy);
+        var companyA = Company.CreateManaged(
+            tenant.Id,
+            "1790012345005",
+            "Empresa A",
+            createdBy: createdBy
+        );
+        var companyB = Company.CreateManaged(
+            tenant.Id,
+            "1790012345006",
+            "Empresa B",
+            createdBy: createdBy
+        );
+        var supplier = BusinessPartner.Create(
+            tenant.Id,
+            "04",
+            "1791352688005",
+            2,
+            "Proveedor Compartido",
+            createdBy
+        );
 
         await using var seed = CreateContext(tenant.Id);
         seed.Tenants.Add(tenant);
@@ -72,7 +94,13 @@ public sealed class CompanyBpPurchaseSettingsRepositoryTests : IAsyncLifetime
         {
             var repo = new CompanyBpPurchaseSettingsRepository(writeA);
             await repo.AddAsync(
-                CompanyBpPurchaseSettings.Create(tenant.Id, companyA.Id, supplier.Id, paymentTermA, createdBy)
+                CompanyBpPurchaseSettings.Create(
+                    tenant.Id,
+                    companyA.Id,
+                    supplier.Id,
+                    paymentTermA,
+                    createdBy
+                )
             );
             await repo.SaveChangesAsync();
         }
@@ -80,14 +108,21 @@ public sealed class CompanyBpPurchaseSettingsRepositoryTests : IAsyncLifetime
         {
             var repo = new CompanyBpPurchaseSettingsRepository(writeB);
             await repo.AddAsync(
-                CompanyBpPurchaseSettings.Create(tenant.Id, companyB.Id, supplier.Id, paymentTermB, createdBy)
+                CompanyBpPurchaseSettings.Create(
+                    tenant.Id,
+                    companyB.Id,
+                    supplier.Id,
+                    paymentTermB,
+                    createdBy
+                )
             );
             await repo.SaveChangesAsync();
         }
 
         await using var readAsA = CreateContext(tenant.Id, companyA.Id);
-        var resultForA = await new CompanyBpPurchaseSettingsRepository(readAsA)
-            .GetByBusinessPartnerAsync(supplier.Id);
+        var resultForA = await new CompanyBpPurchaseSettingsRepository(
+            readAsA
+        ).GetByBusinessPartnerAsync(supplier.Id);
 
         resultForA.Should().NotBeNull();
         resultForA!.CompanyId.Should().Be(companyA.Id);
@@ -101,7 +136,8 @@ public sealed class CompanyBpPurchaseSettingsRepositoryTests : IAsyncLifetime
         public string? Slug => null;
     }
 
-    private sealed class FixedCurrentCompany(Guid companyId, bool hasCompanyContext) : ICurrentCompany
+    private sealed class FixedCurrentCompany(Guid companyId, bool hasCompanyContext)
+        : ICurrentCompany
     {
         public Guid CompanyId => companyId;
         public bool IsAuthenticated => hasCompanyContext;

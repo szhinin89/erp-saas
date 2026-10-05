@@ -1,3 +1,5 @@
+using System.Reflection;
+using System.Text.Json;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Common;
@@ -5,8 +7,6 @@ using ERP.Application.Common.Exceptions;
 using ERP.Application.Common.Persistence;
 using ERP.Domain.Exceptions;
 using FluentValidation;
-using System.Reflection;
-using System.Text.Json;
 
 namespace ERP.API.Middleware;
 

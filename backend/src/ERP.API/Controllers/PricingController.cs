@@ -101,7 +101,10 @@ public sealed class PricingController : ControllerBase
     /// </summary>
     [HttpGet("customers/{customerId:guid}/price-list-context")]
     [Authorize(Policy = $"perm:{SalesPermissions.View}")]
-    public async Task<IActionResult> GetCustomerPriceListContext(Guid customerId, CancellationToken ct) =>
+    public async Task<IActionResult> GetCustomerPriceListContext(
+        Guid customerId,
+        CancellationToken ct
+    ) =>
         this.ToOkOrBadRequest(
             await _mediator.Send(new GetCustomerPriceListContextQuery(customerId), ct),
             "OK"
@@ -111,10 +114,7 @@ public sealed class PricingController : ControllerBase
     [HttpGet("price-lists/{id:guid}/customers")]
     [Authorize(Policy = $"perm:{PricingPermissions.View}")]
     public async Task<IActionResult> GetPriceListCustomers(Guid id, CancellationToken ct) =>
-        this.ToOkOrBadRequest(
-            await _mediator.Send(new GetPriceListCustomersQuery(id), ct),
-            "OK"
-        );
+        this.ToOkOrBadRequest(await _mediator.Send(new GetPriceListCustomersQuery(id), ct), "OK");
 
     /// <summary>
     /// Asigna un cliente a esta lista. Si el cliente ya tiene otra lista activa, devuelve

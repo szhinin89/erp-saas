@@ -39,7 +39,14 @@ public sealed class CustomerCategoryRepositoryIsolationTests : IAsyncLifetime
         await db.Database.MigrateAsync();
 
         db.CustomerCategories.Add(
-            CustomerCategory.CreateSystemSeeded(_tenantId, _companyA, "Retail", "Minorista", 1, _actor)
+            CustomerCategory.CreateSystemSeeded(
+                _tenantId,
+                _companyA,
+                "Retail",
+                "Minorista",
+                1,
+                _actor
+            )
         );
         db.CustomerCategories.Add(
             CustomerCategory.CreateSystemSeeded(_tenantId, _companyB, "VIP", "VIP", 1, _actor)

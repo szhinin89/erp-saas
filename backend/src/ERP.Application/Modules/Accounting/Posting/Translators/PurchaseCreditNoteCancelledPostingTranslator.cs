@@ -67,7 +67,8 @@ public sealed class PurchaseCreditNoteCancelledPostingTranslator
         );
 
         var original = candidates.FirstOrDefault(x =>
-            x.SourceEventType == CreditNoteAuthorizedFactType && x.Status == JournalEntryStatus.Posted
+            x.SourceEventType == CreditNoteAuthorizedFactType
+            && x.Status == JournalEntryStatus.Posted
         );
 
         if (original is null)

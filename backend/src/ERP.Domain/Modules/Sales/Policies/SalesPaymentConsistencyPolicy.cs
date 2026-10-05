@@ -7,7 +7,10 @@ namespace ERP.Domain.Modules.Sales.Policies;
 /// recalcular "es crédito" por separado en cada validación (ver el bug real de la factura
 /// 001-001-000000016: PaymentTerm Contado pagada con método Crédito, sin generar CxC).
 /// </summary>
-public readonly record struct SalesPaymentModality(bool IsCreditByTerm, bool IsCreditByPaymentMethod)
+public readonly record struct SalesPaymentModality(
+    bool IsCreditByTerm,
+    bool IsCreditByPaymentMethod
+)
 {
     /// <summary>Cualquier señal de crédito (término o método) marca la venta como crédito.</summary>
     public bool IsCreditSale => IsCreditByTerm || IsCreditByPaymentMethod;

@@ -105,10 +105,11 @@ public sealed class ApplySupplierCreditUseCasesTests
         public Mocks(Fixture f)
         {
             PayableRepo
-                .Setup(r =>
-                    r.GetOriginAsync(TenantId, PayableId, It.IsAny<CancellationToken>())
-                )
-                .ReturnsAsync(((AccountsPayableOriginType, Guid)?)(AccountsPayableOriginType.PurchaseInvoice, PurchaseInvoiceId));
+                .Setup(r => r.GetOriginAsync(TenantId, PayableId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(
+                    ((AccountsPayableOriginType, Guid)?)
+                        (AccountsPayableOriginType.PurchaseInvoice, PurchaseInvoiceId)
+                );
             PayableRepo
                 .Setup(r => r.GetByIdAsync(TenantId, PayableId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(f.Payable);
@@ -357,13 +358,23 @@ public sealed class ApplySupplierCreditUseCasesTests
     private static Mocks MocksFor(Fixture f, AccountsPayable payable)
     {
         var m = new Mocks(f);
-        m.PayableRepo.Setup(r => r.GetOriginAsync(TenantId, PayableId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(((AccountsPayableOriginType, Guid)?)(payable.OriginType, payable.OriginId));
+        m.PayableRepo.Setup(r =>
+                r.GetOriginAsync(TenantId, PayableId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                ((AccountsPayableOriginType, Guid)?)(payable.OriginType, payable.OriginId)
+            );
         m.PayableRepo.Setup(r => r.GetByIdAsync(TenantId, PayableId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(payable);
         m.CompanyRepo.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(ERP.Domain.Modules.Company.Entities.Company.CreateManaged(
-                TenantId, "1790012345001", "Test S.A.", createdBy: UserId));
+            .ReturnsAsync(
+                ERP.Domain.Modules.Company.Entities.Company.CreateManaged(
+                    TenantId,
+                    "1790012345001",
+                    "Test S.A.",
+                    createdBy: UserId
+                )
+            );
         return m;
     }
 
@@ -374,16 +385,22 @@ public sealed class ApplySupplierCreditUseCasesTests
         var expensePayable = BuildPayable(AccountsPayableOriginType.ExpenseDocument);
         var m = MocksFor(f, expensePayable);
 
-        var result = await m.BuildHandler().Handle(
-            new ApplySupplierCreditCommand(f.Credit.Id, PayableId, 30m, Guid.NewGuid()),
-            CancellationToken.None
-        );
+        var result = await m.BuildHandler()
+            .Handle(
+                new ApplySupplierCreditCommand(f.Credit.Id, PayableId, 30m, Guid.NewGuid()),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.AvailableAmount.Should().Be(70m);
         expensePayable.SupplierCreditAmount.Should().Be(30m);
         m.ReturnRepo.Verify(
-            r => r.AcquireFinancialLockAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            r =>
+                r.AcquireFinancialLockAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never,
             "Gastos no usa el Lock A de Compras; su concurrencia es el xmin de AccountsPayable"
         );
@@ -391,7 +408,10 @@ public sealed class ApplySupplierCreditUseCasesTests
             r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
-        m.CreditRepo.Verify(r => r.AcquireLockAsync(TenantId, f.Credit.Id, It.IsAny<CancellationToken>()), Times.Once);
+        m.CreditRepo.Verify(
+            r => r.AcquireLockAsync(TenantId, f.Credit.Id, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -401,17 +421,23 @@ public sealed class ApplySupplierCreditUseCasesTests
         var manualPayable = BuildPayable(AccountsPayableOriginType.Manual);
         var m = MocksFor(f, manualPayable);
 
-        var result = await m.BuildHandler().Handle(
-            new ApplySupplierCreditCommand(f.Credit.Id, PayableId, 30m, Guid.NewGuid()),
-            CancellationToken.None
-        );
+        var result = await m.BuildHandler()
+            .Handle(
+                new ApplySupplierCreditCommand(f.Credit.Id, PayableId, 30m, Guid.NewGuid()),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Manual");
         f.Credit.AvailableAmount.Should().Be(100m);
         manualPayable.SupplierCreditAmount.Should().Be(0m);
         m.CreditRepo.Verify(
-            r => r.AcquireLockAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            r =>
+                r.AcquireLockAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }
@@ -420,13 +446,17 @@ public sealed class ApplySupplierCreditUseCasesTests
     public async Task CxP_de_otra_empresa_del_mismo_tenant_se_rechaza_como_inexistente()
     {
         var f = BuildFixture(creditAmount: 100m);
-        var foreignPayable = BuildPayable(AccountsPayableOriginType.ExpenseDocument, companyId: Guid.NewGuid());
+        var foreignPayable = BuildPayable(
+            AccountsPayableOriginType.ExpenseDocument,
+            companyId: Guid.NewGuid()
+        );
         var m = MocksFor(f, foreignPayable);
 
-        var result = await m.BuildHandler().Handle(
-            new ApplySupplierCreditCommand(f.Credit.Id, PayableId, 30m, Guid.NewGuid()),
-            CancellationToken.None
-        );
+        var result = await m.BuildHandler()
+            .Handle(
+                new ApplySupplierCreditCommand(f.Credit.Id, PayableId, 30m, Guid.NewGuid()),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("La cuenta por pagar destino no existe.");

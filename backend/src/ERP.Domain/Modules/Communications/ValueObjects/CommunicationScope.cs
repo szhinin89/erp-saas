@@ -12,7 +12,12 @@ namespace ERP.Domain.Modules.Communications.ValueObjects;
 /// </summary>
 public sealed record CommunicationScope
 {
-    private CommunicationScope(CommunicationScopeKind kind, Guid? tenantId, Guid? companyId, Guid? branchId)
+    private CommunicationScope(
+        CommunicationScopeKind kind,
+        Guid? tenantId,
+        Guid? companyId,
+        Guid? branchId
+    )
     {
         Kind = kind;
         TenantId = tenantId;
@@ -25,25 +30,49 @@ public sealed record CommunicationScope
     public Guid? CompanyId { get; }
     public Guid? BranchId { get; }
 
-    public static CommunicationScope System { get; } = new(CommunicationScopeKind.System, null, null, null);
+    public static CommunicationScope System { get; } =
+        new(CommunicationScopeKind.System, null, null, null);
 
     public static CommunicationScope Company(Guid tenantId, Guid companyId, Guid? branchId = null)
     {
         if (tenantId == Guid.Empty)
-            throw new ArgumentException("Una comunicación de empresa requiere TenantId.", nameof(tenantId));
+            throw new ArgumentException(
+                "Una comunicación de empresa requiere TenantId.",
+                nameof(tenantId)
+            );
         if (companyId == Guid.Empty)
-            throw new ArgumentException("Una comunicación de empresa requiere CompanyId.", nameof(companyId));
+            throw new ArgumentException(
+                "Una comunicación de empresa requiere CompanyId.",
+                nameof(companyId)
+            );
 
-        return new(CommunicationScopeKind.Company, tenantId, companyId, branchId == Guid.Empty ? null : branchId);
+        return new(
+            CommunicationScopeKind.Company,
+            tenantId,
+            companyId,
+            branchId == Guid.Empty ? null : branchId
+        );
     }
 
     /// <summary>Reconstruye el alcance de una fila persistida; valida la misma invariante.</summary>
-    public static CommunicationScope From(CommunicationScopeKind kind, Guid? tenantId, Guid? companyId, Guid? branchId) =>
+    public static CommunicationScope From(
+        CommunicationScopeKind kind,
+        Guid? tenantId,
+        Guid? companyId,
+        Guid? branchId
+    ) =>
         kind switch
         {
-            CommunicationScopeKind.Company when tenantId is { } tenant && companyId is { } company =>
-                Company(tenant, company, branchId),
-            CommunicationScopeKind.System when tenantId is null && companyId is null && branchId is null => System,
-            _ => throw new ArgumentException($"Alcance de comunicación inválido: {kind} con tenant/empresa/sucursal inconsistentes."),
+            CommunicationScopeKind.Company
+                when tenantId is { } tenant && companyId is { } company => Company(
+                tenant,
+                company,
+                branchId
+            ),
+            CommunicationScopeKind.System
+                when tenantId is null && companyId is null && branchId is null => System,
+            _ => throw new ArgumentException(
+                $"Alcance de comunicación inválido: {kind} con tenant/empresa/sucursal inconsistentes."
+            ),
         };
 }

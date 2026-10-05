@@ -1,3 +1,4 @@
+using System.Reflection;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
@@ -9,7 +10,6 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Moq;
-using System.Reflection;
 
 namespace ERP.Infrastructure.Tests.ElectronicDocuments;
 

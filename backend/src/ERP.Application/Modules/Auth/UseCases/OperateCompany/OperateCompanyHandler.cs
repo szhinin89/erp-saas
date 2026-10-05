@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using ERP.Application.Auth.DTOs;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
@@ -7,7 +8,6 @@ using ERP.Domain.Kernel.Security;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
 using MediatR;
-using System.Security.Claims;
 
 namespace ERP.Application.Auth.UseCases.OperateCompany;
 

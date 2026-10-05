@@ -1,7 +1,7 @@
+using System.Reflection;
 using ERP.API.Middleware;
 using FluentAssertions;
 using NetArchTest.Rules;
-using System.Reflection;
 
 namespace ERP.Architecture.Tests;
 

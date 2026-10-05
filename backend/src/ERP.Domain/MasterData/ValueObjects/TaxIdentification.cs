@@ -240,7 +240,8 @@ public sealed record TaxIdentification
     /// módulo que necesite distinguir Consumidor Final de un cliente identificado debe usar este
     /// método en vez de comparar las constantes por su cuenta.
     /// </summary>
-    public bool IsConsumidorFinal() => Type == SriConsumidorFinal && Number == ConsumidorFinalNumber;
+    public bool IsConsumidorFinal() =>
+        Type == SriConsumidorFinal && Number == ConsumidorFinalNumber;
 
     public override string ToString() => $"{Type}:{Number}";
 }

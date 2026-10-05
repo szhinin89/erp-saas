@@ -1,3 +1,8 @@
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using ERP.API.Tests.Support;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Entities;
@@ -23,11 +28,6 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
-using System.Net;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace ERP.API.Tests.Integration;
 
@@ -511,9 +511,10 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
         );
         var expectedGrandTotal = quantity * unitPrice + expectedVat;
         var effectivePaymentTermId = paymentTermId ?? _f.CashPaymentTermId;
-        var effectivePaymentMethodId = effectivePaymentTermId == _f.CreditPaymentTermId
-            ? _f.CreditPaymentMethodId
-            : _f.PaymentMethodId;
+        var effectivePaymentMethodId =
+            effectivePaymentTermId == _f.CreditPaymentTermId
+                ? _f.CreditPaymentMethodId
+                : _f.PaymentMethodId;
 
         var createResponse = await _f.Client.PostAsJsonAsync(
             "/api/v1/sales",

@@ -28,8 +28,8 @@ internal static class RetentionDocumentMapper
             document.CancelReason,
             document.CancelledAt,
             document.CancelledBy,
-            document.Lines
-                .Select(l => new RetentionDocumentLineDto(
+            document
+                .Lines.Select(l => new RetentionDocumentLineDto(
                     l.Id,
                     l.TaxType,
                     l.RetentionCode,

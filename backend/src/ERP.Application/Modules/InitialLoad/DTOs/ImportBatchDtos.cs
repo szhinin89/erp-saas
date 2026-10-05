@@ -74,9 +74,7 @@ public sealed record ImportBatchConfirmResultDto(
 public sealed record ImportTemplateFileDto(byte[] Content, string FileName, string ContentType);
 
 /// <summary>Fila cruda leída del Excel por un <c>IImportProcessor</c>, keyed por encabezado de columna.</summary>
-public sealed record ImportReadResult(
-    IReadOnlyList<IReadOnlyDictionary<string, string?>> Rows
-);
+public sealed record ImportReadResult(IReadOnlyList<IReadOnlyDictionary<string, string?>> Rows);
 
 public sealed record RowValidationResult(
     string ParsedDataJson,
@@ -84,11 +82,17 @@ public sealed record RowValidationResult(
     IReadOnlyList<RowIssue> Issues
 );
 
-public sealed record RowIssue(ImportSeverity Severity, string Code, string Message, string? FieldName = null);
+public sealed record RowIssue(
+    ImportSeverity Severity,
+    string Code,
+    string Message,
+    string? FieldName = null
+);
 
 public sealed record RowConfirmResult(bool IsSuccess, Guid? BusinessPartnerId, string? Error)
 {
-    public static RowConfirmResult Success(Guid businessPartnerId) => new(true, businessPartnerId, null);
+    public static RowConfirmResult Success(Guid businessPartnerId) =>
+        new(true, businessPartnerId, null);
 
     public static RowConfirmResult Failed(string error) => new(false, null, error);
 }

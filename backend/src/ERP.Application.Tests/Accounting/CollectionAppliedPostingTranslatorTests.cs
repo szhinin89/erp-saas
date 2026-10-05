@@ -120,8 +120,9 @@ public sealed class CollectionAppliedPostingTranslatorTests
         var m = new Mocks();
         var accountId = Guid.NewGuid();
         var bankAccount = BankAccount(accountId);
-        m.BankAccounts
-            .Setup(r => r.GetByIdAsync(TenantId, bankAccount.Id, It.IsAny<CancellationToken>()))
+        m.BankAccounts.Setup(r =>
+                r.GetByIdAsync(TenantId, bankAccount.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(bankAccount);
         PostingFact? captured = null;
         m.PostingEngine.Setup(e =>
@@ -135,7 +136,10 @@ public sealed class CollectionAppliedPostingTranslatorTests
             );
 
         var translator = m.BuildTranslator();
-        await translator.Handle(Event(companyBankAccountId: bankAccount.Id), CancellationToken.None);
+        await translator.Handle(
+            Event(companyBankAccountId: bankAccount.Id),
+            CancellationToken.None
+        );
 
         captured.Should().NotBeNull();
         captured!.OverrideAccountId.Should().Be(accountId);
@@ -150,8 +154,9 @@ public sealed class CollectionAppliedPostingTranslatorTests
         var accountId = Guid.NewGuid();
         var bankAccount = BankAccount(accountId);
         bankAccount.Disable(Guid.NewGuid());
-        m.BankAccounts
-            .Setup(r => r.GetByIdAsync(TenantId, bankAccount.Id, It.IsAny<CancellationToken>()))
+        m.BankAccounts.Setup(r =>
+                r.GetByIdAsync(TenantId, bankAccount.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(bankAccount);
         PostingFact? captured = null;
         m.PostingEngine.Setup(e =>

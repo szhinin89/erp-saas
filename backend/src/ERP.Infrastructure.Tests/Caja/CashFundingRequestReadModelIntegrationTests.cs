@@ -1,3 +1,4 @@
+using System.Text.Json;
 using ERP.Application.Access.Authorization;
 using ERP.Application.Common;
 using ERP.Application.Modules.Caja.FundingRequests;
@@ -16,7 +17,6 @@ using ERP.Infrastructure.Services;
 using ERP.Infrastructure.Tests.Audit;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
 
 namespace ERP.Infrastructure.Tests.Caja;
 
@@ -30,64 +30,116 @@ public sealed partial class CashFundingRequestWorkflowIntegrationTests
 {
     private static readonly string[] NoPermissions = [];
     private static readonly string[] ViewOnly = [CajaPermissions.FundingRequestsView];
-    private static readonly string[] ViewAndFulfill = [CajaPermissions.FundingRequestsView, CajaPermissions.FundingRequestsFulfill];
+    private static readonly string[] ViewAndFulfill =
+    [
+        CajaPermissions.FundingRequestsView,
+        CajaPermissions.FundingRequestsFulfill,
+    ];
 
     private async Task SeedUsersAsync(ErpDbContext db)
     {
-        foreach (var (id, username, first, last) in new[]
-                 {
-                     (_cashier, "cajero", "Carla", "Cajera"),
-                     (_requester, "solicitante", "Sergio", "Compras"),
-                     (_stranger, "extrano", "Esteban", "Ajeno"),
-                 })
+        foreach (
+            var (id, username, first, last) in new[]
+            {
+                (_cashier, "cajero", "Carla", "Cajera"),
+                (_requester, "solicitante", "Sergio", "Compras"),
+                (_stranger, "extrano", "Esteban", "Ajeno"),
+            }
+        )
         {
-            var user = IdentityUser.Create(username, first, last, $"{username}@example.com", "hash", id);
+            var user = IdentityUser.Create(
+                username,
+                first,
+                last,
+                $"{username}@example.com",
+                "hash",
+                id
+            );
             typeof(IdentityUser).GetProperty(nameof(IdentityUser.Id))!.SetValue(user, id);
             db.IdentityUsers.Add(user);
         }
         await db.SaveChangesAsync();
     }
 
-    private sealed class FakeAuthorizer(IReadOnlyCollection<string> keys) : IRuntimePermissionAuthorizer
+    private sealed class FakeAuthorizer(IReadOnlyCollection<string> keys)
+        : IRuntimePermissionAuthorizer
     {
-        public Task<bool> IsAuthorizedAsync(string permissionKey, Guid userId, string role, CancellationToken cancellationToken = default) =>
-            Task.FromResult(keys.Contains(permissionKey));
+        public Task<bool> IsAuthorizedAsync(
+            string permissionKey,
+            Guid userId,
+            string role,
+            CancellationToken cancellationToken = default
+        ) => Task.FromResult(keys.Contains(permissionKey));
     }
 
     private async Task<Result<PagedResult<CashFundingRequestListItemDto>>> ListAsync(
-        Actor actor, string? status = null, Guid? cashRegisterId = null, Guid? requestedBy = null, int page = 1, int pageSize = 25)
+        Actor actor,
+        string? status = null,
+        Guid? cashRegisterId = null,
+        Guid? requestedBy = null,
+        int page = 1,
+        int pageSize = 25
+    )
     {
         await using var db = PlainContext(actor.CompanyId);
         var company = new FixedCurrentCompany(() => actor.CompanyId);
         return await new GetCashFundingRequestListHandler(
-                new CashFundingRequestRepository(db, company), new CashRegisterRepository(db, company),
-                new BusinessPartnerRepository(db), new AccessRepository(db), new FixedCurrentTenant(() => _tenantId),
-                new FixedBranch(actor.BranchId))
-            .Handle(new GetCashFundingRequestListQuery(status, cashRegisterId, requestedBy, page, pageSize), CancellationToken.None);
+            new CashFundingRequestRepository(db, company),
+            new CashRegisterRepository(db, company),
+            new BusinessPartnerRepository(db),
+            new AccessRepository(db),
+            new FixedCurrentTenant(() => _tenantId),
+            new FixedBranch(actor.BranchId)
+        ).Handle(
+            new GetCashFundingRequestListQuery(status, cashRegisterId, requestedBy, page, pageSize),
+            CancellationToken.None
+        );
     }
 
-    private async Task<Result<PagedResult<CashFundingRequestListItemDto>>> MineAsync(Actor actor, string? status = null, int page = 1, int pageSize = 25)
+    private async Task<Result<PagedResult<CashFundingRequestListItemDto>>> MineAsync(
+        Actor actor,
+        string? status = null,
+        int page = 1,
+        int pageSize = 25
+    )
     {
         await using var db = PlainContext(actor.CompanyId);
         var company = new FixedCurrentCompany(() => actor.CompanyId);
         return await new GetMyCashFundingRequestsHandler(
-                new CashFundingRequestRepository(db, company), new CashRegisterRepository(db, company),
-                new BusinessPartnerRepository(db), new AccessRepository(db), new FixedCurrentTenant(() => _tenantId),
-                company, new FixedUser(actor.UserId))
-            .Handle(new GetMyCashFundingRequestsQuery(status, page, pageSize), CancellationToken.None);
+            new CashFundingRequestRepository(db, company),
+            new CashRegisterRepository(db, company),
+            new BusinessPartnerRepository(db),
+            new AccessRepository(db),
+            new FixedCurrentTenant(() => _tenantId),
+            company,
+            new FixedUser(actor.UserId)
+        ).Handle(new GetMyCashFundingRequestsQuery(status, page, pageSize), CancellationToken.None);
     }
 
-    private async Task<Result<CashFundingRequestDto>> DetailAsync(Actor actor, Guid id, IReadOnlyCollection<string> permissions)
+    private async Task<Result<CashFundingRequestDto>> DetailAsync(
+        Actor actor,
+        Guid id,
+        IReadOnlyCollection<string> permissions
+    )
     {
         await using var db = PlainContext(actor.CompanyId);
         var company = new FixedCurrentCompany(() => actor.CompanyId);
         return await new GetCashFundingRequestByIdHandler(
-                new CashFundingRequestRepository(db, company), new CashSessionRepository(db, company),
-                new CashRegisterRepository(db, company), new BusinessPartnerRepository(db), new AccessRepository(db),
-                new CompanyBankAccountRepository(db, company), new PaymentMethodRepository(db), new AccountsPayableRepository(db),
-                new FakeAuthorizer(permissions), new AllowBranches(_tenantId, actor.CompanyId, actor.UserId, _branchId),
-                new FixedCurrentTenant(() => _tenantId), company, new FixedBranch(actor.BranchId), new FixedUser(actor.UserId))
-            .Handle(new GetCashFundingRequestByIdQuery(id), CancellationToken.None);
+            new CashFundingRequestRepository(db, company),
+            new CashSessionRepository(db, company),
+            new CashRegisterRepository(db, company),
+            new BusinessPartnerRepository(db),
+            new AccessRepository(db),
+            new CompanyBankAccountRepository(db, company),
+            new PaymentMethodRepository(db),
+            new AccountsPayableRepository(db),
+            new FakeAuthorizer(permissions),
+            new AllowBranches(_tenantId, actor.CompanyId, actor.UserId, _branchId),
+            new FixedCurrentTenant(() => _tenantId),
+            company,
+            new FixedBranch(actor.BranchId),
+            new FixedUser(actor.UserId)
+        ).Handle(new GetCashFundingRequestByIdQuery(id), CancellationToken.None);
     }
 
     private Actor Stranger => new(_stranger, _branchId, _companyId);
@@ -115,9 +167,13 @@ public sealed partial class CashFundingRequestWorkflowIntegrationTests
     {
         var id = await PendingAsync(10m);
 
-        (await DetailAsync(Stranger, id, NoPermissions)).Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        (await DetailAsync(Stranger, id, NoPermissions))
+            .Code.Should()
+            .Be(ApiResponseCodes.Common.NotFound);
         // Ni siquiera con el permiso de crear pagos: solo solicitante o `caja.funding-requests.view`.
-        (await DetailAsync(Stranger, id, [SupplierPaymentsPermissions.Create])).Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        (await DetailAsync(Stranger, id, [SupplierPaymentsPermissions.Create]))
+            .Code.Should()
+            .Be(ApiResponseCodes.Common.NotFound);
     }
 
     // ── 4–6: bandeja del cajero y aislamiento ───────────────────────────────
@@ -142,10 +198,15 @@ public sealed partial class CashFundingRequestWorkflowIntegrationTests
         var outsider = new Actor(_cashier, _branchId, _otherCompanyId);
 
         (await ListAsync(outsider)).Value!.TotalCount.Should().Be(0);
-        (await MineAsync(new Actor(_requester, _branchId, _otherCompanyId))).Value!.TotalCount.Should().Be(0);
-        (await DetailAsync(outsider, id, ViewAndFulfill)).Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        (await MineAsync(new Actor(_requester, _branchId, _otherCompanyId)))
+            .Value!.TotalCount.Should()
+            .Be(0);
+        (await DetailAsync(outsider, id, ViewAndFulfill))
+            .Code.Should()
+            .Be(ApiResponseCodes.Common.NotFound);
         (await DetailAsync(new Actor(_requester, _branchId, _otherCompanyId), id, NoPermissions))
-            .Code.Should().Be(ApiResponseCodes.Common.NotFound);
+            .Code.Should()
+            .Be(ApiResponseCodes.Common.NotFound);
     }
 
     [Fact]
@@ -155,7 +216,9 @@ public sealed partial class CashFundingRequestWorkflowIntegrationTests
         var otherBranchCashier = new Actor(_cashier, _otherBranchId, _companyId);
 
         (await ListAsync(otherBranchCashier)).Value!.TotalCount.Should().Be(0);
-        (await DetailAsync(otherBranchCashier, id, ViewAndFulfill)).Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        (await DetailAsync(otherBranchCashier, id, ViewAndFulfill))
+            .Code.Should()
+            .Be(ApiResponseCodes.Common.NotFound);
     }
 
     // ── 7–8: detalle y acciones derivadas ───────────────────────────────────
@@ -168,9 +231,13 @@ public sealed partial class CashFundingRequestWorkflowIntegrationTests
         var detail = await DetailAsync(Requester, id, NoPermissions);
 
         detail.IsSuccess.Should().BeTrue(detail.Error);
-        (detail.Value!.CanCancel, detail.Value.CanFulfill, detail.Value.CanReject).Should().Be((true, false, false));
+        (detail.Value!.CanCancel, detail.Value.CanFulfill, detail.Value.CanReject)
+            .Should()
+            .Be((true, false, false));
         // El solicitante ve la suya aunque la sucursal activa sea otra de la empresa.
-        (await DetailAsync(new Actor(_requester, _otherBranchId, _companyId), id, NoPermissions)).IsSuccess.Should().BeTrue();
+        (await DetailAsync(new Actor(_requester, _otherBranchId, _companyId), id, NoPermissions))
+            .IsSuccess.Should()
+            .BeTrue();
     }
 
     [Fact]
@@ -179,7 +246,9 @@ public sealed partial class CashFundingRequestWorkflowIntegrationTests
         var id = await PendingAsync(10m);
 
         var withFulfill = (await DetailAsync(Cashier, id, ViewAndFulfill)).Value!;
-        (withFulfill.CanFulfill, withFulfill.CanReject, withFulfill.CanCancel).Should().Be((true, true, false));
+        (withFulfill.CanFulfill, withFulfill.CanReject, withFulfill.CanCancel)
+            .Should()
+            .Be((true, true, false));
 
         var viewOnly = (await DetailAsync(Cashier, id, ViewOnly)).Value!;
         (viewOnly.CanFulfill, viewOnly.CanReject).Should().Be((false, false));
@@ -190,7 +259,9 @@ public sealed partial class CashFundingRequestWorkflowIntegrationTests
         (notOwner.Value!.CanFulfill, notOwner.Value.CanReject).Should().Be((false, false));
 
         // Sin view ni solicitante: invisible.
-        (await DetailAsync(Cashier, id, [CajaPermissions.FundingRequestsFulfill])).Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        (await DetailAsync(Cashier, id, [CajaPermissions.FundingRequestsFulfill]))
+            .Code.Should()
+            .Be(ApiResponseCodes.Common.NotFound);
     }
 
     [Fact]
@@ -226,8 +297,13 @@ public sealed partial class CashFundingRequestWorkflowIntegrationTests
         (await ListAsync(Cashier, cashRegisterId: Guid.NewGuid())).Value!.TotalCount.Should().Be(0);
         (await ListAsync(Cashier, requestedBy: _requester)).Value!.TotalCount.Should().Be(3);
         (await ListAsync(Cashier, requestedBy: _stranger)).Value!.TotalCount.Should().Be(0);
-        (await MineAsync(Requester, status: "Rejected")).Value!.Items.Select(i => i.Id).Should().Equal(b);
-        (await ListAsync(Cashier, status: "NoExiste")).Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        (await MineAsync(Requester, status: "Rejected"))
+            .Value!.Items.Select(i => i.Id)
+            .Should()
+            .Equal(b);
+        (await ListAsync(Cashier, status: "NoExiste"))
+            .Code.Should()
+            .Be(ApiResponseCodes.Common.ValidationError);
     }
 
     // ── 13–15: forma del DTO ────────────────────────────────────────────────
@@ -235,18 +311,34 @@ public sealed partial class CashFundingRequestWorkflowIntegrationTests
     [Fact]
     public async Task RM13_dtos_no_exponen_payload_ni_huella()
     {
-        foreach (var type in new[] { typeof(CashFundingRequestListItemDto), typeof(CashFundingRequestDto) })
-            type.GetProperties().Select(p => p.Name).Should()
-                .NotContain(n => n.Contains("Payload") || n.Contains("Hash") || n == "ClientRequestId");
+        foreach (
+            var type in new[]
+            {
+                typeof(CashFundingRequestListItemDto),
+                typeof(CashFundingRequestDto),
+            }
+        )
+            type.GetProperties()
+                .Select(p => p.Name)
+                .Should()
+                .NotContain(n =>
+                    n.Contains("Payload") || n.Contains("Hash") || n == "ClientRequestId"
+                );
 
         var id = await PendingAsync(10m);
         string hash;
         await using (var db = PlainContext())
-            hash = (await db.CashFundingRequests.AsNoTracking().SingleAsync(r => r.Id == id)).PayloadHash;
+            hash = (
+                await db.CashFundingRequests.AsNoTracking().SingleAsync(r => r.Id == id)
+            ).PayloadHash;
 
-        var json = JsonSerializer.Serialize((await DetailAsync(Requester, id, NoPermissions)).Value)
+        var json =
+            JsonSerializer.Serialize((await DetailAsync(Requester, id, NoPermissions)).Value)
             + JsonSerializer.Serialize((await MineAsync(Requester)).Value);
-        json.Should().NotContain(hash).And.NotContain("payment_payload").And.NotContain("PaymentPayload");
+        json.Should()
+            .NotContain(hash)
+            .And.NotContain("payment_payload")
+            .And.NotContain("PaymentPayload");
     }
 
     [Fact]
@@ -257,15 +349,33 @@ public sealed partial class CashFundingRequestWorkflowIntegrationTests
 
         var row = (await ListAsync(Cashier)).Value!.Items.Single();
         (row.SupplierName, row.CashRegisterName, row.RequestedByName, row.ResolvedByName)
-            .Should().Be(("Proveedor Test", "Caja Principal", "Sergio Compras", "Carla Cajera"));
+            .Should()
+            .Be(("Proveedor Test", "Caja Principal", "Sergio Compras", "Carla Cajera"));
         (row.Status, row.CashAmount, row.TotalAmount).Should().Be(("Rejected", 10m, 10m));
 
         var mineRow = (await MineAsync(Requester)).Value!.Items.Single();
-        (mineRow.SupplierName, mineRow.CashRegisterName).Should().Be(("Proveedor Test", "Caja Principal"));
+        (mineRow.SupplierName, mineRow.CashRegisterName)
+            .Should()
+            .Be(("Proveedor Test", "Caja Principal"));
 
         var detail = (await DetailAsync(Requester, id, NoPermissions)).Value!;
-        (detail.SupplierName, detail.CashRegisterName, detail.RequestedByName, detail.ResolvedByName, detail.ResolutionReason)
-            .Should().Be(("Proveedor Test", "Caja Principal", "Sergio Compras", "Carla Cajera", "Sin efectivo"));
+        (
+            detail.SupplierName,
+            detail.CashRegisterName,
+            detail.RequestedByName,
+            detail.ResolvedByName,
+            detail.ResolutionReason
+        )
+            .Should()
+            .Be(
+                (
+                    "Proveedor Test",
+                    "Caja Principal",
+                    "Sergio Compras",
+                    "Carla Cajera",
+                    "Sin efectivo"
+                )
+            );
     }
 
     [Fact]
@@ -283,17 +393,34 @@ public sealed partial class CashFundingRequestWorkflowIntegrationTests
         var detail = (await DetailAsync(Cashier, id, ViewOnly)).Value!;
 
         (detail.PaymentDate, detail.BranchId, detail.BranchName, detail.CashSessionId)
-            .Should().Be((Today, _branchId, "Sucursal 001", _cashSessionId));
+            .Should()
+            .Be((Today, _branchId, "Sucursal 001", _cashSessionId));
         var cash = detail.Sources.Single(s => s.Kind == "Cash");
         (cash.CashRegisterId, cash.CashRegisterName, cash.PaymentMethodName, cash.Amount)
-            .Should().Be((_cashRegisterId, "Caja Principal", "Efectivo", 30m));
+            .Should()
+            .Be((_cashRegisterId, "Caja Principal", "Efectivo", 30m));
         var bank = detail.Sources.Single(s => s.Kind == "Bank");
-        (bank.CompanyBankAccountId, bank.BankAccountName, bank.PaymentMethodName, bank.Amount, bank.ReferenceNumber, bank.TransactionDate)
-            .Should().Be((_bankAccountId, "Banco Pichincha CTE", "Transferencia", 20m, "OP-7788", Today));
+        (
+            bank.CompanyBankAccountId,
+            bank.BankAccountName,
+            bank.PaymentMethodName,
+            bank.Amount,
+            bank.ReferenceNumber,
+            bank.TransactionDate
+        )
+            .Should()
+            .Be((_bankAccountId, "Banco Pichincha CTE", "Transferencia", 20m, "OP-7788", Today));
 
         var application = detail.Applications.Single();
-        (application.AccountsPayableId, application.DocumentNumber, application.OriginType, application.InstallmentNumber, application.AmountApplied)
-            .Should().Be((payableId, documentNumber, "PurchaseInvoice", 1, 50m));
+        (
+            application.AccountsPayableId,
+            application.DocumentNumber,
+            application.OriginType,
+            application.InstallmentNumber,
+            application.AmountApplied
+        )
+            .Should()
+            .Be((payableId, documentNumber, "PurchaseInvoice", 1, 50m));
     }
 
     [Fact]
@@ -303,8 +430,12 @@ public sealed partial class CashFundingRequestWorkflowIntegrationTests
         var fulfilled = await FulfillAsync(Cashier, id);
         fulfilled.IsSuccess.Should().BeTrue(fulfilled.Error);
 
-        var row = (await ListAsync(Cashier, status: nameof(CashFundingRequestStatus.Fulfilled))).Value!.Items.Single();
-        (row.Id, row.SupplierPaymentId, row.ResolvedByName).Should().Be((id, fulfilled.Value!.SupplierPaymentId, "Carla Cajera"));
+        var row = (
+            await ListAsync(Cashier, status: nameof(CashFundingRequestStatus.Fulfilled))
+        ).Value!.Items.Single();
+        (row.Id, row.SupplierPaymentId, row.ResolvedByName)
+            .Should()
+            .Be((id, fulfilled.Value!.SupplierPaymentId, "Carla Cajera"));
     }
 
     // ── 02E-EF: listado de cajas con la sesión abierta (pago directo vs. solicitud) ──
@@ -318,25 +449,44 @@ public sealed partial class CashFundingRequestWorkflowIntegrationTests
             var company = new FixedCurrentCompany(() => _companyId);
             var sessions = new CashSessionRepository(db, company);
             var result = await new GetCashRegistersByCurrentBranchHandler(
-                    new CashRegisterRepository(db, company), new CashRegisterUsageGuard(sessions), sessions,
-                    new AccessRepository(db), new FixedCurrentTenant(() => _tenantId), new FixedBranch(_branchId),
-                    new FixedUser(userId))
-                .Handle(new GetCashRegistersByCurrentBranchQuery(true), CancellationToken.None);
+                new CashRegisterRepository(db, company),
+                new CashRegisterUsageGuard(sessions),
+                sessions,
+                new AccessRepository(db),
+                new FixedCurrentTenant(() => _tenantId),
+                new FixedBranch(_branchId),
+                new FixedUser(userId)
+            ).Handle(new GetCashRegistersByCurrentBranchQuery(true), CancellationToken.None);
             result.IsSuccess.Should().BeTrue(result.Error);
             return result.Value!.Single(r => r.Id == _cashRegisterId);
         }
 
         var asCashier = await RegisterAs(_cashier);
-        (asCashier.HasOpenSession, asCashier.OpenSessionControlledByCurrentUser, asCashier.OpenSessionUserName)
-            .Should().Be((true, true, "Carla Cajera"));
+        (
+            asCashier.HasOpenSession,
+            asCashier.OpenSessionControlledByCurrentUser,
+            asCashier.OpenSessionUserName
+        )
+            .Should()
+            .Be((true, true, "Carla Cajera"));
 
         var asRequester = await RegisterAs(_requester);
-        (asRequester.HasOpenSession, asRequester.OpenSessionControlledByCurrentUser, asRequester.OpenSessionUserName)
-            .Should().Be((true, false, "Carla Cajera"));
+        (
+            asRequester.HasOpenSession,
+            asRequester.OpenSessionControlledByCurrentUser,
+            asRequester.OpenSessionUserName
+        )
+            .Should()
+            .Be((true, false, "Carla Cajera"));
 
         (await CloseAsync(100m)).IsSuccess.Should().BeTrue();
         var closed = await RegisterAs(_requester);
-        (closed.HasOpenSession, closed.OpenSessionControlledByCurrentUser, closed.OpenSessionUserName)
-            .Should().Be((false, false, (string?)null));
+        (
+            closed.HasOpenSession,
+            closed.OpenSessionControlledByCurrentUser,
+            closed.OpenSessionUserName
+        )
+            .Should()
+            .Be((false, false, (string?)null));
     }
 }

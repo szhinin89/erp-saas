@@ -15,7 +15,11 @@ public sealed class SalesInvoiceDetailMultiTaxTests
 {
     private static readonly Guid TenantId = Guid.NewGuid();
 
-    private static SalesInvoiceDetail CreateLine(decimal quantity, decimal unitPrice, string vatCode) =>
+    private static SalesInvoiceDetail CreateLine(
+        decimal quantity,
+        decimal unitPrice,
+        string vatCode
+    ) =>
         SalesInvoiceDetail.Create(
             invoiceId: Guid.NewGuid(),
             tenantId: TenantId,
@@ -68,7 +72,11 @@ public sealed class SalesInvoiceDetailMultiTaxTests
         );
 
         line.IceCalculationType.Should().Be(SriTaxCalculationType.Specific);
-        line.IceAmount.Should().Be(iceEspecifico, "un impuesto específico nunca se recalcula desde una tarifa porcentual");
+        line.IceAmount.Should()
+            .Be(
+                iceEspecifico,
+                "un impuesto específico nunca se recalcula desde una tarifa porcentual"
+            );
         line.Taxes.Should().Contain(t => t.TaxCode == "3" && t.TaxAmount == iceEspecifico);
     }
 
@@ -117,22 +125,20 @@ public sealed class SalesInvoiceDetailMultiTaxTests
     {
         var line = CreateLine(24, 0.5837m, "4");
         line.ApplyTaxes("4", 4m, "IVA 4%", null, 0m, null);
-        line.ReplaceTaxes(
-            [
-                SalesInvoiceDetailTax.Create(
-                    line.Id,
-                    TenantId,
-                    "5",
-                    "5001",
-                    "IRBPNR",
-                    0.02m,
-                    SriTaxCalculationType.Specific,
-                    line.TaxableBase,
-                    0.48m,
-                    SalesTaxSource.Calculated
-                ),
-            ]
-        );
+        line.ReplaceTaxes([
+            SalesInvoiceDetailTax.Create(
+                line.Id,
+                TenantId,
+                "5",
+                "5001",
+                "IRBPNR",
+                0.02m,
+                SriTaxCalculationType.Specific,
+                line.TaxableBase,
+                0.48m,
+                SalesTaxSource.Calculated
+            ),
+        ]);
 
         line.TaxInclusiveTotal.Should()
             .Be(line.TaxableBase + line.IceAmount + line.VatAmount + line.IrbpnrAmount);
@@ -164,27 +170,27 @@ public sealed class SalesInvoiceDetailMultiTaxTests
             iceExactAmount: 1.23m
         );
 
-        line.ReplaceTaxes(
-            [
-                SalesInvoiceDetailTax.Create(
-                    line.Id,
-                    TenantId,
-                    "5",
-                    "5001",
-                    "IRBPNR",
-                    0.02m,
-                    SriTaxCalculationType.Specific,
-                    line.TaxableBase,
-                    0.48m,
-                    SalesTaxSource.Calculated
-                ),
-            ]
-        );
+        line.ReplaceTaxes([
+            SalesInvoiceDetailTax.Create(
+                line.Id,
+                TenantId,
+                "5",
+                "5001",
+                "IRBPNR",
+                0.02m,
+                SriTaxCalculationType.Specific,
+                line.TaxableBase,
+                0.48m,
+                SalesTaxSource.Calculated
+            ),
+        ]);
 
         line.IrbpnrAmount.Should().Be(0.48m);
         line.IrbpnrCode.Should().Be("5001");
-        line.IceAmount.Should().Be(1.23m, "ReplaceTaxes no debe tocar la fila de ICE administrada por ApplyTaxes");
-        line.Taxes.Should().HaveCount(3, "IVA + ICE (sincronizados por ApplyTaxes) + IRBPNR (ReplaceTaxes)");
+        line.IceAmount.Should()
+            .Be(1.23m, "ReplaceTaxes no debe tocar la fila de ICE administrada por ApplyTaxes");
+        line.Taxes.Should()
+            .HaveCount(3, "IVA + ICE (sincronizados por ApplyTaxes) + IRBPNR (ReplaceTaxes)");
     }
 
     [Fact]
@@ -199,8 +205,22 @@ public sealed class SalesInvoiceDetailMultiTaxTests
         var line = CreateLine(1, 100m, "4");
 
         line.ApplyTaxes("4", 15m, "IVA 15%", "3041", 10m, "Bebidas gaseosas con azúcar añadida");
-        line.ApplyTaxes("4", 15m, "IVA 15% (recalculado)", "3041", 10m, "Bebidas gaseosas con azúcar añadida");
-        line.ApplyTaxes("4", 15m, "IVA 15% (recalculado otra vez)", "3041", 10m, "Bebidas gaseosas con azúcar añadida");
+        line.ApplyTaxes(
+            "4",
+            15m,
+            "IVA 15% (recalculado)",
+            "3041",
+            10m,
+            "Bebidas gaseosas con azúcar añadida"
+        );
+        line.ApplyTaxes(
+            "4",
+            15m,
+            "IVA 15% (recalculado otra vez)",
+            "3041",
+            10m,
+            "Bebidas gaseosas con azúcar añadida"
+        );
 
         line.Taxes.Should().HaveCount(2, "1 fila IVA + 1 fila ICE, nunca duplicadas");
         line.Taxes.Where(t => t.TaxCode == "2").Should().ContainSingle();
@@ -214,7 +234,10 @@ public sealed class SalesInvoiceDetailMultiTaxTests
         var line = CreateLine(1, 100m, "4");
         line.ApplyTaxes("4", 4m, "IVA 4%", null, 0m, null);
         typeof(SalesInvoiceDetail)
-            .GetMethod("Freeze", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+            .GetMethod(
+                "Freeze",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance
+            )!
             .Invoke(line, null);
 
         var act = () => line.ReplaceTaxes([]);

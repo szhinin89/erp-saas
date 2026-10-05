@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common;
+using ERP.Application.Common;
 using ERP.Application.Modules.Companies;
 using ERP.Application.Modules.Companies.UseCases.PrecisionPolicy;
 using ERP.Domain.Configuration.Entities;
@@ -64,7 +64,9 @@ public sealed class CompanyPrecisionPolicyUseCasesTests
         var repo = new FakeRepo();
         // ERP-PRECISION-POLICY-SSOT-CLEANUP-04: la fila la crea el bootstrap de empresa, nunca la lectura.
         if (seed)
-            repo.Rows.Add(CompanyPrecisionPolicy.CreateStandardCommercial(tenantId, companyId, UserId));
+            repo.Rows.Add(
+                CompanyPrecisionPolicy.CreateStandardCommercial(tenantId, companyId, UserId)
+            );
         var tenant = new Mock<ICurrentTenant>();
         tenant.Setup(t => t.TenantId).Returns(tenantId);
         var company = new Mock<ICurrentCompany>();
@@ -101,14 +103,20 @@ public sealed class CompanyPrecisionPolicyUseCasesTests
         var dto = await provider.GetEffectiveAsync();
 
         dto.ProfileType.Should().Be("StandardCommercial");
-        dto.SalesUnitPriceDecimals.Should().Be(PrecisionPolicyDefinitions.Standard.SalesUnitPriceDecimals);
+        dto.SalesUnitPriceDecimals.Should()
+            .Be(PrecisionPolicyDefinitions.Standard.SalesUnitPriceDecimals);
     }
 
     [Fact]
     public async Task GetCompanyPrecisionPolicyHandler_retorna_la_policy_de_la_empresa_activa()
     {
         var (provider, repo, tenant, company) = BuildProvider(TenantA, CompanyA);
-        var handler = new GetCompanyPrecisionPolicyHandler(provider, repo, tenant.Object, company.Object);
+        var handler = new GetCompanyPrecisionPolicyHandler(
+            provider,
+            repo,
+            tenant.Object,
+            company.Object
+        );
 
         var result = await handler.Handle(
             new GetCompanyPrecisionPolicyQuery(),
@@ -123,9 +131,17 @@ public sealed class CompanyPrecisionPolicyUseCasesTests
     public async Task GetHandler_de_empresa_sin_policy_retorna_NotFound_sin_crear()
     {
         var (provider, repo, tenant, company) = BuildProvider(TenantA, CompanyA, seed: false);
-        var handler = new GetCompanyPrecisionPolicyHandler(provider, repo, tenant.Object, company.Object);
+        var handler = new GetCompanyPrecisionPolicyHandler(
+            provider,
+            repo,
+            tenant.Object,
+            company.Object
+        );
 
-        var result = await handler.Handle(new GetCompanyPrecisionPolicyQuery(), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetCompanyPrecisionPolicyQuery(),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
@@ -137,9 +153,17 @@ public sealed class CompanyPrecisionPolicyUseCasesTests
     {
         var (provider, repo, tenant, company) = BuildProvider(TenantA, CompanyA);
         repo.HasOperations = true;
-        var handler = new GetCompanyPrecisionPolicyHandler(provider, repo, tenant.Object, company.Object);
+        var handler = new GetCompanyPrecisionPolicyHandler(
+            provider,
+            repo,
+            tenant.Object,
+            company.Object
+        );
 
-        var result = await handler.Handle(new GetCompanyPrecisionPolicyQuery(), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetCompanyPrecisionPolicyQuery(),
+            CancellationToken.None
+        );
 
         result.Value!.IsLocked.Should().BeTrue();
         result.Value.LockedReason.Should().Be(GetCompanyPrecisionPolicyHandler.EffectiveLockReason);
@@ -150,9 +174,17 @@ public sealed class CompanyPrecisionPolicyUseCasesTests
     public async Task GetHandler_sin_operaciones_no_esta_bloqueada()
     {
         var (provider, repo, tenant, company) = BuildProvider(TenantA, CompanyA);
-        var handler = new GetCompanyPrecisionPolicyHandler(provider, repo, tenant.Object, company.Object);
+        var handler = new GetCompanyPrecisionPolicyHandler(
+            provider,
+            repo,
+            tenant.Object,
+            company.Object
+        );
 
-        var result = await handler.Handle(new GetCompanyPrecisionPolicyQuery(), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetCompanyPrecisionPolicyQuery(),
+            CancellationToken.None
+        );
 
         result.Value!.IsLocked.Should().BeFalse();
     }
@@ -161,10 +193,26 @@ public sealed class CompanyPrecisionPolicyUseCasesTests
     public async Task Update_de_empresa_sin_policy_retorna_NotFound_y_no_crea()
     {
         var (provider, repo, tenant, company) = BuildProvider(TenantA, CompanyA, seed: false);
-        var handler = new UpdateCompanyPrecisionPolicyHandler(repo, provider, tenant.Object, company.Object, MockUser());
+        var handler = new UpdateCompanyPrecisionPolicyHandler(
+            repo,
+            provider,
+            tenant.Object,
+            company.Object,
+            MockUser()
+        );
 
         var result = await handler.Handle(
-            new UpdateCompanyPrecisionPolicyCommand("StandardCommercial", 2, 4, 4, 2, 6, 6, 6, 0.01m),
+            new UpdateCompanyPrecisionPolicyCommand(
+                "StandardCommercial",
+                2,
+                4,
+                4,
+                2,
+                6,
+                6,
+                6,
+                0.01m
+            ),
             CancellationToken.None
         );
 
@@ -182,7 +230,9 @@ public sealed class CompanyPrecisionPolicyUseCasesTests
         );
 
         var meta = result.Value!;
-        meta.Fields.Select(f => f.Key).Should().Equal(PrecisionPolicyDefinitions.Fields.Select(f => f.Key));
+        meta.Fields.Select(f => f.Key)
+            .Should()
+            .Equal(PrecisionPolicyDefinitions.Fields.Select(f => f.Key));
         var sales = meta.Fields.Single(f => f.Key == "salesUnitPriceDecimals");
         (sales.Min, sales.Max, sales.DefaultValue).Should().Be((2m, 6m, 2m));
         // ERP-PRECISION-CAPACITY-05A: máximos aprobados expuestos por la metadata.
@@ -202,9 +252,17 @@ public sealed class CompanyPrecisionPolicyUseCasesTests
                 }
             );
         meta.Fields.Single(f => f.Key == "settlementToleranceAmount").Kind.Should().Be("Amount");
-        meta.Profiles.Select(p => p.ProfileType).Should().Equal("StandardCommercial", "HighPrecision");
-        meta.Profiles.Single(p => p.ProfileType == "HighPrecision").Values["conversionFactorDecimals"].Should().Be(8m);
-        meta.Profiles.Single(p => p.ProfileType == "StandardCommercial").Values["purchaseUnitPriceDecimals"].Should().Be(4m);
+        meta.Profiles.Select(p => p.ProfileType)
+            .Should()
+            .Equal("StandardCommercial", "HighPrecision");
+        meta.Profiles.Single(p => p.ProfileType == "HighPrecision")
+            .Values["conversionFactorDecimals"]
+            .Should()
+            .Be(8m);
+        meta.Profiles.Single(p => p.ProfileType == "StandardCommercial")
+            .Values["purchaseUnitPriceDecimals"]
+            .Should()
+            .Be(4m);
     }
 
     [Fact]
@@ -223,7 +281,10 @@ public sealed class CompanyPrecisionPolicyUseCasesTests
         validator.Validate(ok with { AverageCostDecimals = 11 }).IsValid.Should().BeFalse();
         validator.Validate(ok with { ConversionFactorDecimals = 11 }).IsValid.Should().BeFalse();
         validator.Validate(ok with { QuantityDecimals = 7 }).IsValid.Should().BeFalse();
-        validator.Validate(ok with { SettlementToleranceAmount = 0.03m }).IsValid.Should().BeFalse();
+        validator
+            .Validate(ok with { SettlementToleranceAmount = 0.03m })
+            .IsValid.Should()
+            .BeFalse();
         validator.Validate(ok with { ProfileType = "Nope" }).IsValid.Should().BeFalse();
     }
 
@@ -235,7 +296,14 @@ public sealed class CompanyPrecisionPolicyUseCasesTests
     public void SettlementTolerance_dentro_de_la_escala_money_es_valida(string tolerance)
     {
         var cmd = new UpdateCompanyPrecisionPolicyCommand(
-            "Custom", 2, 4, 4, 2, 6, 6, 6,
+            "Custom",
+            2,
+            4,
+            4,
+            2,
+            6,
+            6,
+            6,
             decimal.Parse(tolerance, System.Globalization.CultureInfo.InvariantCulture)
         );
         new UpdateCompanyPrecisionPolicyCommandValidator().Validate(cmd).IsValid.Should().BeTrue();
@@ -249,10 +317,13 @@ public sealed class CompanyPrecisionPolicyUseCasesTests
         var result = new UpdateCompanyPrecisionPolicyCommandValidator().Validate(cmd);
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e =>
-            e.PropertyName == nameof(UpdateCompanyPrecisionPolicyCommand.SettlementToleranceAmount)
-            && e.ErrorMessage.Contains(ERP.Domain.Common.FiscalPrecision.TaxAmount.ToString())
-        );
+        result
+            .Errors.Should()
+            .Contain(e =>
+                e.PropertyName
+                    == nameof(UpdateCompanyPrecisionPolicyCommand.SettlementToleranceAmount)
+                && e.ErrorMessage.Contains(ERP.Domain.Common.FiscalPrecision.TaxAmount.ToString())
+            );
     }
 
     [Fact]
@@ -300,11 +371,14 @@ public sealed class CompanyPrecisionPolicyUseCasesTests
 
         var dto = await provider.GetEffectiveAsync();
 
-        dto.WarehouseCapacityDecimals.Should().Be(ERP.Domain.Modules.Inventory.Entities.WarehousePrecision.Capacity);
+        dto.WarehouseCapacityDecimals.Should()
+            .Be(ERP.Domain.Modules.Inventory.Entities.WarehousePrecision.Capacity);
         dto.WarehouseCapacityDecimals.Should().Be(4); // warehouses.capacity numeric(18,4)
-        dto.CreditInstallmentPercentageDecimals.Should().Be(ERP.Domain.Modules.Finance.Entities.CreditTermsPrecision.InstallmentPercentage);
+        dto.CreditInstallmentPercentageDecimals.Should()
+            .Be(ERP.Domain.Modules.Finance.Entities.CreditTermsPrecision.InstallmentPercentage);
         dto.CreditInstallmentPercentageDecimals.Should().Be(2); // credit_installments.percentage numeric(5,2)
-        dto.PackagingWeightDecimals.Should().Be(ERP.Domain.Modules.Items.Entities.ItemPrecision.PackagingWeight);
+        dto.PackagingWeightDecimals.Should()
+            .Be(ERP.Domain.Modules.Items.Entities.ItemPrecision.PackagingWeight);
         dto.PackagingWeightDecimals.Should().Be(3); // item_packaging_levels.weight numeric(10,3)
     }
 
@@ -323,17 +397,7 @@ public sealed class CompanyPrecisionPolicyUseCasesTests
         );
 
         var result = await handler.Handle(
-            new UpdateCompanyPrecisionPolicyCommand(
-                "HighPrecision",
-                4,
-                6,
-                6,
-                4,
-                6,
-                6,
-                8,
-                0.01m
-            ),
+            new UpdateCompanyPrecisionPolicyCommand("HighPrecision", 4, 6, 6, 4, 6, 6, 8, 0.01m),
             CancellationToken.None
         );
 
@@ -425,17 +489,7 @@ public sealed class CompanyPrecisionPolicyUseCasesTests
         );
 
         var result = await handler.Handle(
-            new UpdateCompanyPrecisionPolicyCommand(
-                "HighPrecision",
-                4,
-                6,
-                6,
-                4,
-                6,
-                6,
-                8,
-                0.01m
-            ),
+            new UpdateCompanyPrecisionPolicyCommand("HighPrecision", 4, 6, 6, 4, 6, 6, 8, 0.01m),
             CancellationToken.None
         );
 
@@ -461,17 +515,7 @@ public sealed class CompanyPrecisionPolicyUseCasesTests
         );
 
         var result = await handler.Handle(
-            new UpdateCompanyPrecisionPolicyCommand(
-                "HighPrecision",
-                4,
-                6,
-                6,
-                4,
-                6,
-                6,
-                8,
-                0.01m
-            ),
+            new UpdateCompanyPrecisionPolicyCommand("HighPrecision", 4, 6, 6, 4, 6, 6, 8, 0.01m),
             CancellationToken.None
         );
 

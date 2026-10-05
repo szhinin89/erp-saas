@@ -131,7 +131,11 @@ public sealed class UpdateCompanyUserBranchesAdminHandlerTests
                     It.IsAny<CancellationToken>()
                 )
             )
-            .ReturnsAsync(companyBranches.Where(b => b.CompanyId == membership.CompanyId && b.IsActive).ToList());
+            .ReturnsAsync(
+                companyBranches
+                    .Where(b => b.CompanyId == membership.CompanyId && b.IsActive)
+                    .ToList()
+            );
         f.CompanyUserBranchRepo.Setup(r =>
                 r.GetByMembershipAsync(membership.Id, It.IsAny<CancellationToken>())
             )

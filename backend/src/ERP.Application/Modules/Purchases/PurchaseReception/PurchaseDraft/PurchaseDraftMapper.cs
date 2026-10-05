@@ -69,8 +69,7 @@ public static class PurchaseDraftMapper
                         BaseUomCode: packaging.BaseUomCode,
                         ConversionFactor: packaging.ConversionFactor,
                         QuantityInBaseUom: l.Quantity * packaging.ConversionFactor,
-                        Taxes: l.Taxes
-                            .Select(t => new PurchaseDraftLineTaxDto(
+                        Taxes: l.Taxes.Select(t => new PurchaseDraftLineTaxDto(
                                 t.TaxCode,
                                 t.TaxRateCode,
                                 t.Tarifa,
@@ -78,12 +77,13 @@ public static class PurchaseDraftMapper
                                 t.TaxAmount
                             ))
                             .ToList(),
-                        AdditionalFields: l.AdditionalFields
-                            .Select(f => new PurchaseDraftLineAdditionalFieldDto(
-                                f.Name,
-                                f.Value,
-                                f.Position
-                            ))
+                        AdditionalFields: l.AdditionalFields.Select(
+                                f => new PurchaseDraftLineAdditionalFieldDto(
+                                    f.Name,
+                                    f.Value,
+                                    f.Position
+                                )
+                            )
                             .ToList()
                     );
                 })

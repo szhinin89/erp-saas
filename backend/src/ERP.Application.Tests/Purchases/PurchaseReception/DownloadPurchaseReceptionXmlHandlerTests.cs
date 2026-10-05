@@ -26,7 +26,10 @@ public sealed class DownloadPurchaseReceptionXmlHandlerTests
     private static readonly Guid BranchId = Guid.NewGuid();
     private static readonly Guid UserId = Guid.NewGuid();
 
-    private static PurchaseReceptionDocument SampleDocument(Guid? supplierId = null, PurchaseReceptionSourceDocType sourceDocType = PurchaseReceptionSourceDocType.Invoice) =>
+    private static PurchaseReceptionDocument SampleDocument(
+        Guid? supplierId = null,
+        PurchaseReceptionSourceDocType sourceDocType = PurchaseReceptionSourceDocType.Invoice
+    ) =>
         PurchaseReceptionDocument.Create(
             TenantId,
             CompanyId,
@@ -109,13 +112,37 @@ public sealed class DownloadPurchaseReceptionXmlHandlerTests
     {
         var document = SampleDocument(sourceDocType: PurchaseReceptionSourceDocType.CreditNote);
         var (handler, repo, _, _, provider, invoiceProcessor) = BuildHandler();
-        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>())).ReturnsAsync(document);
-        provider.Setup(p => p.GetAuthorizedXmlAsync(TenantId, CompanyId, document.AccessKey, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new SriReceptionXmlQueryResult(true, document.AccessKey, DateTime.UtcNow, xml, null));
-        var result = await handler.Handle(new DownloadPurchaseReceptionXmlCommand(document.Id), CancellationToken.None);
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+        provider
+            .Setup(p =>
+                p.GetAuthorizedXmlAsync(
+                    TenantId,
+                    CompanyId,
+                    document.AccessKey,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new SriReceptionXmlQueryResult(true, document.AccessKey, DateTime.UtcNow, xml, null)
+            );
+        var result = await handler.Handle(
+            new DownloadPurchaseReceptionXmlCommand(document.Id),
+            CancellationToken.None
+        );
         result.IsSuccess.Should().BeFalse();
         document.Status.Should().Be(PurchaseReceptionDocumentStatus.Imported);
-        invoiceProcessor.Verify(p => p.ProcessAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        invoiceProcessor.Verify(
+            p =>
+                p.ProcessAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
         repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -133,10 +160,24 @@ public sealed class DownloadPurchaseReceptionXmlHandlerTests
             <descuento>0</descuento><precioTotalSinImpuesto>10</precioTotalSinImpuesto><impuestos><impuesto><codigo>2</codigo><codigoPorcentaje>4</codigoPorcentaje>
             <tarifa>15</tarifa><baseImponible>10</baseImponible><valor>1.5</valor></impuesto></impuestos></detalle></detalles></notaCredito>
             """;
-        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>())).ReturnsAsync(document);
-        provider.Setup(p => p.GetAuthorizedXmlAsync(TenantId, CompanyId, document.AccessKey, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new SriReceptionXmlQueryResult(true, document.AccessKey, DateTime.UtcNow, xml, null));
-        var result = await handler.Handle(new DownloadPurchaseReceptionXmlCommand(document.Id), CancellationToken.None);
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+        provider
+            .Setup(p =>
+                p.GetAuthorizedXmlAsync(
+                    TenantId,
+                    CompanyId,
+                    document.AccessKey,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new SriReceptionXmlQueryResult(true, document.AccessKey, DateTime.UtcNow, xml, null)
+            );
+        var result = await handler.Handle(
+            new DownloadPurchaseReceptionXmlCommand(document.Id),
+            CancellationToken.None
+        );
         result.IsSuccess.Should().BeTrue();
         document.Status.Should().Be(PurchaseReceptionDocumentStatus.Verified);
         document.DocTypeCode.Should().Be("04");
@@ -144,7 +185,17 @@ public sealed class DownloadPurchaseReceptionXmlHandlerTests
         document.ProcessingStatus.Should().Be(PurchaseReceptionProcessingStatus.Processed);
         document.Lines.Should().ContainSingle().Which.SupplierCode.Should().Be("NC-1");
         document.Lines.Single().TotalLine.Should().Be(11.5m);
-        invoiceProcessor.Verify(p => p.ProcessAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        invoiceProcessor.Verify(
+            p =>
+                p.ProcessAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
         repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 

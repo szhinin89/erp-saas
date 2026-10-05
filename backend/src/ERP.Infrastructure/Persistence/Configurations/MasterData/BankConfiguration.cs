@@ -50,7 +50,12 @@ public sealed class BankConfiguration : IEntityTypeConfiguration<Bank>
         // BANK-CATALOG-01: único por país + código (no solo código) — el catálogo ya está
         // preparado para más de un país, aunque hoy solo se sembra Ecuador.
         builder
-            .HasIndex(x => new { x.TenantId, x.CountryCode, x.Code })
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.CountryCode,
+                x.Code,
+            })
             .IsUnique()
             .HasDatabaseName("uq_master_banks_tenant_country_code");
     }

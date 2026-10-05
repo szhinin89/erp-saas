@@ -92,20 +92,36 @@ public sealed class CashFundingRequest : ICompanyOperationalEntity
         Require(cashSessionId, nameof(cashSessionId), "La sesión de caja objetivo es obligatoria.");
         Require(supplierId, nameof(supplierId), "El proveedor es obligatorio.");
         Require(requestedByUserId, nameof(requestedByUserId), "El solicitante es obligatorio.");
-        Require(clientRequestId, nameof(clientRequestId), "El identificador de idempotencia es obligatorio.");
+        Require(
+            clientRequestId,
+            nameof(clientRequestId),
+            "El identificador de idempotencia es obligatorio."
+        );
         if (cashAmount <= 0)
-            throw new ArgumentException("El efectivo solicitado debe ser mayor a cero.", nameof(cashAmount));
+            throw new ArgumentException(
+                "El efectivo solicitado debe ser mayor a cero.",
+                nameof(cashAmount)
+            );
         if (totalAmount < cashAmount)
             throw new ArgumentException(
                 "El total del pago no puede ser menor que el efectivo solicitado.",
                 nameof(totalAmount)
             );
         if (string.IsNullOrWhiteSpace(paymentPayload))
-            throw new ArgumentException("La intención de pago es obligatoria.", nameof(paymentPayload));
+            throw new ArgumentException(
+                "La intención de pago es obligatoria.",
+                nameof(paymentPayload)
+            );
         if (payloadVersion < 1)
-            throw new ArgumentException("La versión del snapshot debe ser 1 o mayor.", nameof(payloadVersion));
+            throw new ArgumentException(
+                "La versión del snapshot debe ser 1 o mayor.",
+                nameof(payloadVersion)
+            );
         if (string.IsNullOrWhiteSpace(payloadHash) || payloadHash.Length > PayloadHashMaxLen)
-            throw new ArgumentException("La huella del snapshot es obligatoria.", nameof(payloadHash));
+            throw new ArgumentException(
+                "La huella del snapshot es obligatoria.",
+                nameof(payloadHash)
+            );
 
         return new CashFundingRequest
         {
@@ -135,8 +151,16 @@ public sealed class CashFundingRequest : ICompanyOperationalEntity
     public void Fulfill(Guid fulfilledByUserId, Guid supplierPaymentId)
     {
         EnsurePending();
-        Require(fulfilledByUserId, nameof(fulfilledByUserId), "El cajero que entrega es obligatorio.");
-        Require(supplierPaymentId, nameof(supplierPaymentId), "El pago a proveedor es obligatorio.");
+        Require(
+            fulfilledByUserId,
+            nameof(fulfilledByUserId),
+            "El cajero que entrega es obligatorio."
+        );
+        Require(
+            supplierPaymentId,
+            nameof(supplierPaymentId),
+            "El pago a proveedor es obligatorio."
+        );
         Resolve(CashFundingRequestStatus.Fulfilled, fulfilledByUserId, reason: null);
         SupplierPaymentId = supplierPaymentId;
     }

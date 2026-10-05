@@ -34,7 +34,11 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
 
     private sealed record Fixture(PurchaseInvoice Invoice, AccountsPayable Payable);
 
-    private static Fixture BuildFixture(decimal totalAmount = 1000m, decimal paidAmount = 0m, bool secondLine = false)
+    private static Fixture BuildFixture(
+        decimal totalAmount = 1000m,
+        decimal paidAmount = 0m,
+        bool secondLine = false
+    )
     {
         var invoice = PurchaseInvoice.CreateDraft(
             TenantId,
@@ -68,11 +72,31 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
         var invoiceLines = new List<PurchaseInvoiceDetail> { line };
         if (secondLine)
         {
-            var other = PurchaseInvoiceDetail.Create(invoice.Id, TenantId, "Producto 2", 2, 50m,
-                "2", "UNIT", itemId: Guid.NewGuid(), warehouseId: WarehouseId);
-            other.ReplaceTaxes([PurchaseInvoiceDetailTax.Create(other.Id, TenantId, "5", "5001", "IRBPNR", 1m,
-                ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific,
-                other.TaxableBase, 2m, PurchaseTaxSource.Xml)]);
+            var other = PurchaseInvoiceDetail.Create(
+                invoice.Id,
+                TenantId,
+                "Producto 2",
+                2,
+                50m,
+                "2",
+                "UNIT",
+                itemId: Guid.NewGuid(),
+                warehouseId: WarehouseId
+            );
+            other.ReplaceTaxes([
+                PurchaseInvoiceDetailTax.Create(
+                    other.Id,
+                    TenantId,
+                    "5",
+                    "5001",
+                    "IRBPNR",
+                    1m,
+                    ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific,
+                    other.TaxableBase,
+                    2m,
+                    PurchaseTaxSource.Xml
+                ),
+            ]);
             other.ApplyTaxes("2", 15m, "IVA", "3000", 10m, "ICE");
             invoiceLines.Add(other);
         }
@@ -80,10 +104,17 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
         invoice.Confirm(UserId);
 
         var payable = AccountsPayable.CreateFromOrigin(
-            TenantId, CompanyId, BranchId, SupplierId,
-            AccountsPayableOriginType.PurchaseInvoice, invoice.Id,
-            "01", "001-001-000000001",
-            invoice.IssueDate, invoice.IssueDate, UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            invoice.Id,
+            "01",
+            "001-001-000000001",
+            invoice.IssueDate,
+            invoice.IssueDate,
+            UserId
         );
         payable.AddInstallment(1, invoice.IssueDate.AddDays(30), totalAmount);
         if (paidAmount > 0)
@@ -116,8 +147,13 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
             modifiedDocumentNumber: modifiedDocumentNumber
         );
 
-    private static IReadOnlyList<PurchaseCreditNoteDraftLineInput> OneLine(decimal subtotal = 100m) =>
-        new[] { new PurchaseCreditNoteDraftLineInput("Descuento", subtotal, "2", 15m, subtotal * 0.15m) };
+    private static IReadOnlyList<PurchaseCreditNoteDraftLineInput> OneLine(
+        decimal subtotal = 100m
+    ) =>
+        new[]
+        {
+            new PurchaseCreditNoteDraftLineInput("Descuento", subtotal, "2", 15m, subtotal * 0.15m),
+        };
 
     private sealed class Mocks
     {
@@ -130,8 +166,14 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
 
         public Mocks(Fixture f)
         {
-            ReturnRepo.Setup(r => r.GetReturnedQuantitiesByInvoiceDetailIdsAsync(TenantId,
-                It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            ReturnRepo
+                .Setup(r =>
+                    r.GetReturnedQuantitiesByInvoiceDetailIdsAsync(
+                        TenantId,
+                        It.IsAny<IReadOnlyCollection<Guid>>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync(new Dictionary<Guid, decimal>());
             InvoiceRepo
                 .Setup(r => r.GetByIdAsync(TenantId, f.Invoice.Id, It.IsAny<CancellationToken>()))
@@ -158,7 +200,11 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
                 .ReturnsAsync((PurchaseCreditNote?)null);
             CreditNoteRepo
                 .Setup(r =>
-                    r.ExistsByAccessKeyAsync(TenantId, It.IsAny<string>(), It.IsAny<CancellationToken>())
+                    r.ExistsByAccessKeyAsync(
+                        TenantId,
+                        It.IsAny<string>(),
+                        It.IsAny<CancellationToken>()
+                    )
                 )
                 .ReturnsAsync(false);
             CreditNoteRepo
@@ -209,7 +255,15 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
             );
 
         public UpdatePurchaseCreditNoteDraftHandler BuildUpdateHandler() =>
-            new(CreditNoteRepo.Object, InvoiceRepo.Object, PayableRepo.Object, DbEx.Object, FixedTenant(), FixedCompany(), FixedUser());
+            new(
+                CreditNoteRepo.Object,
+                InvoiceRepo.Object,
+                PayableRepo.Object,
+                DbEx.Object,
+                FixedTenant(),
+                FixedCompany(),
+                FixedUser()
+            );
     }
 
     private static ICurrentTenant FixedTenant()
@@ -251,15 +305,49 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
         var f = BuildFixture();
         var m = new Mocks(f);
         var reception = BuildReceptionDoc(SupplierId, f.Invoice.InvoiceNumber);
-        m.ReceptionRepo.Setup(r => r.GetByIdAsync(TenantId, reception.Id, It.IsAny<CancellationToken>())).ReturnsAsync(reception);
-        var result = await m.BuildCreateHandler().Handle(new CreateDraftPurchaseCreditNoteCommand(
-            Guid.NewGuid(), f.Invoice.Id, reception.Id, PurchaseCreditNoteApplicationType.Discount,
-            reception.InvoiceNumber, clientKey, null, null, f.Invoice.IssueDate, "Descuento", OneLine()), CancellationToken.None);
+        m.ReceptionRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, reception.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(reception);
+        var result = await m.BuildCreateHandler()
+            .Handle(
+                new CreateDraftPurchaseCreditNoteCommand(
+                    Guid.NewGuid(),
+                    f.Invoice.Id,
+                    reception.Id,
+                    PurchaseCreditNoteApplicationType.Discount,
+                    reception.InvoiceNumber,
+                    clientKey,
+                    null,
+                    null,
+                    f.Invoice.IssueDate,
+                    "Descuento",
+                    OneLine()
+                ),
+                CancellationToken.None
+            );
         result.IsSuccess.Should().BeTrue();
         result.Value!.AccessKey.Should().Be(reception.AccessKey);
         result.Value.ReceptionDocumentId.Should().Be(reception.Id);
-        m.CreditNoteRepo.Verify(r => r.ExistsByAccessKeyAsync(TenantId, reception.AccessKey, It.IsAny<CancellationToken>()), Times.Once);
-        m.CreditNoteRepo.Verify(r => r.AddAsync(It.Is<PurchaseCreditNote>(c => c.AccessKey == reception.AccessKey && c.ReceptionDocumentId == reception.Id), It.IsAny<CancellationToken>()), Times.Once);
+        m.CreditNoteRepo.Verify(
+            r =>
+                r.ExistsByAccessKeyAsync(
+                    TenantId,
+                    reception.AccessKey,
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+        m.CreditNoteRepo.Verify(
+            r =>
+                r.AddAsync(
+                    It.Is<PurchaseCreditNote>(c =>
+                        c.AccessKey == reception.AccessKey && c.ReceptionDocumentId == reception.Id
+                    ),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -267,14 +355,37 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
     {
         var f = BuildFixture();
         var m = new Mocks(f);
-        var reception = BuildReceptionDoc(SupplierId, sourceDocType: PurchaseReceptionSourceDocType.Invoice);
-        m.ReceptionRepo.Setup(r => r.GetByIdAsync(TenantId, reception.Id, It.IsAny<CancellationToken>())).ReturnsAsync(reception);
-        var result = await m.BuildCreateHandler().Handle(new CreateDraftPurchaseCreditNoteCommand(
-            Guid.NewGuid(), f.Invoice.Id, reception.Id, PurchaseCreditNoteApplicationType.Discount,
-            reception.InvoiceNumber, null, null, null, f.Invoice.IssueDate, "Descuento", OneLine()), CancellationToken.None);
+        var reception = BuildReceptionDoc(
+            SupplierId,
+            sourceDocType: PurchaseReceptionSourceDocType.Invoice
+        );
+        m.ReceptionRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, reception.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(reception);
+        var result = await m.BuildCreateHandler()
+            .Handle(
+                new CreateDraftPurchaseCreditNoteCommand(
+                    Guid.NewGuid(),
+                    f.Invoice.Id,
+                    reception.Id,
+                    PurchaseCreditNoteApplicationType.Discount,
+                    reception.InvoiceNumber,
+                    null,
+                    null,
+                    null,
+                    f.Invoice.IssueDate,
+                    "Descuento",
+                    OneLine()
+                ),
+                CancellationToken.None
+            );
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("no es una Nota de Crédito");
-        m.CreditNoteRepo.Verify(r => r.AddAsync(It.IsAny<PurchaseCreditNote>(), It.IsAny<CancellationToken>()), Times.Never);
+        m.CreditNoteRepo.Verify(
+            r => r.AddAsync(It.IsAny<PurchaseCreditNote>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -361,22 +472,49 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
     private static Fixture BuildFixtureWithVat15(decimal totalAmount = 100m)
     {
         var invoice = PurchaseInvoice.CreateDraft(
-            TenantId, CompanyId, BranchId, SupplierId, "Proveedor Test", "1234567890001",
-            "01", "001-001-000000002", DateOnly.FromDateTime(DateTime.UtcNow), UserId,
-            PaymentTermId, "Contado", 1, 30, globalWarehouseId: WarehouseId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            "Proveedor Test",
+            "1234567890001",
+            "01",
+            "001-001-000000002",
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            UserId,
+            PaymentTermId,
+            "Contado",
+            1,
+            30,
+            globalWarehouseId: WarehouseId
         );
         var line = PurchaseInvoiceDetail.Create(
-            invoice.Id, TenantId, "Producto gravado", quantity: 1, unitPrice: totalAmount,
-            vatCode: "2", uomCode: "UNIT", itemId: Guid.NewGuid(), warehouseId: WarehouseId
+            invoice.Id,
+            TenantId,
+            "Producto gravado",
+            quantity: 1,
+            unitPrice: totalAmount,
+            vatCode: "2",
+            uomCode: "UNIT",
+            itemId: Guid.NewGuid(),
+            warehouseId: WarehouseId
         );
         line.ApplyTaxes("2", 15m, "IVA", null, 0m, null);
         invoice.ReplaceLines(new[] { line }, UserId);
         invoice.Confirm(UserId);
 
         var payable = AccountsPayable.CreateFromOrigin(
-            TenantId, CompanyId, BranchId, SupplierId,
-            AccountsPayableOriginType.PurchaseInvoice, invoice.Id,
-            "01", invoice.InvoiceNumber, invoice.IssueDate, invoice.IssueDate, UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            invoice.Id,
+            "01",
+            invoice.InvoiceNumber,
+            invoice.IssueDate,
+            invoice.IssueDate,
+            UserId
         );
         payable.AddInstallment(1, invoice.IssueDate.AddDays(30), totalAmount * 1.15m);
 
@@ -483,7 +621,11 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
         );
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("Solo se pueden registrar notas de crédito sobre facturas de compra confirmadas.");
+        result
+            .Error.Should()
+            .Contain(
+                "Solo se pueden registrar notas de crédito sobre facturas de compra confirmadas."
+            );
         m.CreditNoteRepo.Verify(
             r => r.AddAsync(It.IsAny<PurchaseCreditNote>(), It.IsAny<CancellationToken>()),
             Times.Never
@@ -511,21 +653,40 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
         var result = validator.Validate(command);
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(CreateDraftPurchaseCreditNoteCommand.ApplicationType));
+        result
+            .Errors.Should()
+            .Contain(e =>
+                e.PropertyName == nameof(CreateDraftPurchaseCreditNoteCommand.ApplicationType)
+            );
     }
 
-    private static CreateDraftPurchaseCreditNoteCommand ReturnCommand(Fixture f,
-        IReadOnlyList<PurchaseReturnDraftLineInput> lines, Guid? receptionId = null) =>
-        new(Guid.NewGuid(), f.Invoice.Id, receptionId, PurchaseCreditNoteApplicationType.Return,
-            "001-001-000000013", null, null, null, f.Invoice.IssueDate, "Devolucion", [], ReturnLines: lines);
+    private static CreateDraftPurchaseCreditNoteCommand ReturnCommand(
+        Fixture f,
+        IReadOnlyList<PurchaseReturnDraftLineInput> lines,
+        Guid? receptionId = null
+    ) =>
+        new(
+            Guid.NewGuid(),
+            f.Invoice.Id,
+            receptionId,
+            PurchaseCreditNoteApplicationType.Return,
+            "001-001-000000013",
+            null,
+            null,
+            null,
+            f.Invoice.IssueDate,
+            "Devolucion",
+            [],
+            ReturnLines: lines
+        );
 
     [Fact]
     public async Task Return_partial_line_saves_linked_draft_and_server_amounts_without_financial_effects()
     {
         var f = BuildFixture();
         var m = new Mocks(f);
-        var result = await m.BuildCreateHandler().Handle(ReturnCommand(f,
-            [new(f.Invoice.Lines[0].Id, 0.25m)]), CancellationToken.None);
+        var result = await m.BuildCreateHandler()
+            .Handle(ReturnCommand(f, [new(f.Invoice.Lines[0].Id, 0.25m)]), CancellationToken.None);
         result.IsSuccess.Should().BeTrue();
         result.Value!.TotalAmount.Should().Be(250m);
         result.Value.Lines.Single().PurchaseInvoiceDetailId.Should().Be(f.Invoice.Lines[0].Id);
@@ -533,8 +694,14 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
         result.Value.LinkedPurchaseReturnId.Should().NotBeNull();
         result.Value.Status.Should().Be("Draft");
         f.Payable.OutstandingAmount.Should().Be(f.Payable.TotalAmount);
-        m.ReturnRepo.Verify(r => r.AddAsync(It.Is<PurchaseReturn>(x => x.Id == result.Value.LinkedPurchaseReturnId),
-            It.IsAny<CancellationToken>()), Times.Once);
+        m.ReturnRepo.Verify(
+            r =>
+                r.AddAsync(
+                    It.Is<PurchaseReturn>(x => x.Id == result.Value.LinkedPurchaseReturnId),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
         m.ReturnRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
         m.CreditNoteRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -544,8 +711,11 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
     {
         var f = BuildFixture(secondLine: true);
         var m = new Mocks(f);
-        var result = await m.BuildCreateHandler().Handle(ReturnCommand(f,
-            [new(f.Invoice.Lines[0].Id, .5m), new(f.Invoice.Lines[1].Id, 1m)]), CancellationToken.None);
+        var result = await m.BuildCreateHandler()
+            .Handle(
+                ReturnCommand(f, [new(f.Invoice.Lines[0].Id, .5m), new(f.Invoice.Lines[1].Id, 1m)]),
+                CancellationToken.None
+            );
         result.IsSuccess.Should().BeTrue();
         result.Value!.Lines.Should().HaveCount(2);
         result.Value.Subtotal.Should().Be(550m);
@@ -562,29 +732,52 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
     [InlineData(0.00001)]
     public async Task Return_rejects_invalid_quantity(decimal quantity)
     {
-        var f = BuildFixture(); var m = new Mocks(f);
-        var result = await m.BuildCreateHandler().Handle(ReturnCommand(f,
-            [new(f.Invoice.Lines[0].Id, quantity)]), CancellationToken.None);
+        var f = BuildFixture();
+        var m = new Mocks(f);
+        var result = await m.BuildCreateHandler()
+            .Handle(
+                ReturnCommand(f, [new(f.Invoice.Lines[0].Id, quantity)]),
+                CancellationToken.None
+            );
         result.IsSuccess.Should().BeFalse();
-        m.CreditNoteRepo.Verify(r => r.AddAsync(It.IsAny<PurchaseCreditNote>(), It.IsAny<CancellationToken>()), Times.Never);
+        m.CreditNoteRepo.Verify(
+            r => r.AddAsync(It.IsAny<PurchaseCreditNote>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
     public async Task Return_rejects_previous_partial_returns_foreign_products_duplicates_and_free_lines()
     {
-        var f = BuildFixture(); var m = new Mocks(f); var id = f.Invoice.Lines[0].Id;
-        m.ReturnRepo.Setup(r => r.GetReturnedQuantitiesByInvoiceDetailIdsAsync(TenantId,
-            It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+        var f = BuildFixture();
+        var m = new Mocks(f);
+        var id = f.Invoice.Lines[0].Id;
+        m.ReturnRepo.Setup(r =>
+                r.GetReturnedQuantitiesByInvoiceDetailIdsAsync(
+                    TenantId,
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(new Dictionary<Guid, decimal> { [id] = .75m });
-        foreach (var inputs in new PurchaseReturnDraftLineInput[][] {
-            [new(id, .3m)], [new(Guid.NewGuid(), .1m)], [new(id, .1m), new(id, .1m)] })
+        foreach (
+            var inputs in new PurchaseReturnDraftLineInput[][]
+            {
+                [new(id, .3m)],
+                [new(Guid.NewGuid(), .1m)],
+                [new(id, .1m), new(id, .1m)],
+            }
+        )
         {
-            var result = await m.BuildCreateHandler().Handle(ReturnCommand(f, inputs), CancellationToken.None);
+            var result = await m.BuildCreateHandler()
+                .Handle(ReturnCommand(f, inputs), CancellationToken.None);
             result.IsSuccess.Should().BeFalse();
         }
-        var free = await m.BuildCreateHandler().Handle(ReturnCommand(f, []) with { Lines = OneLine() }, CancellationToken.None);
+        var free = await m.BuildCreateHandler()
+            .Handle(ReturnCommand(f, []) with { Lines = OneLine() }, CancellationToken.None);
         free.IsSuccess.Should().BeFalse();
-        var valid = await m.BuildCreateHandler().Handle(ReturnCommand(f, [new(id, .25m)]), CancellationToken.None);
+        var valid = await m.BuildCreateHandler()
+            .Handle(ReturnCommand(f, [new(id, .25m)]), CancellationToken.None);
         valid.IsSuccess.Should().BeTrue();
     }
 
@@ -593,11 +786,18 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
     [InlineData(.2, false)]
     public async Task Return_validates_received_XML_total(decimal quantity, bool success)
     {
-        var f = BuildFixture(); var m = new Mocks(f);
+        var f = BuildFixture();
+        var m = new Mocks(f);
         var reception = BuildReceptionDoc(SupplierId, f.Invoice.InvoiceNumber);
-        m.ReceptionRepo.Setup(r => r.GetByIdAsync(TenantId, reception.Id, It.IsAny<CancellationToken>())).ReturnsAsync(reception);
-        var result = await m.BuildCreateHandler().Handle(ReturnCommand(f,
-            [new(f.Invoice.Lines[0].Id, quantity)], reception.Id), CancellationToken.None);
+        m.ReceptionRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, reception.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(reception);
+        var result = await m.BuildCreateHandler()
+            .Handle(
+                ReturnCommand(f, [new(f.Invoice.Lines[0].Id, quantity)], reception.Id),
+                CancellationToken.None
+            );
         result.IsSuccess.Should().Be(success);
     }
 
@@ -607,8 +807,7 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
         var f = BuildFixture();
         var doc = BuildReceptionDoc(SupplierId, modifiedDocumentNumber: f.Invoice.InvoiceNumber);
         var m = new Mocks(f);
-        m.ReceptionRepo
-            .Setup(r => r.GetByIdAsync(TenantId, doc.Id, It.IsAny<CancellationToken>()))
+        m.ReceptionRepo.Setup(r => r.GetByIdAsync(TenantId, doc.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(doc);
         var handler = m.BuildCreateHandler();
 
@@ -642,11 +841,9 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
         var f = BuildFixture();
         var doc = BuildReceptionDoc(SupplierId);
         var m = new Mocks(f);
-        m.ReceptionRepo
-            .Setup(r => r.GetByIdAsync(TenantId, doc.Id, It.IsAny<CancellationToken>()))
+        m.ReceptionRepo.Setup(r => r.GetByIdAsync(TenantId, doc.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(doc);
-        m.CreditNoteRepo
-            .Setup(r =>
+        m.CreditNoteRepo.Setup(r =>
                 r.ExistsByReceptionDocumentIdAsync(TenantId, doc.Id, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(true);
@@ -682,8 +879,7 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
         var otroProveedor = Guid.NewGuid();
         var doc = BuildReceptionDoc(otroProveedor);
         var m = new Mocks(f);
-        m.ReceptionRepo
-            .Setup(r => r.GetByIdAsync(TenantId, doc.Id, It.IsAny<CancellationToken>()))
+        m.ReceptionRepo.Setup(r => r.GetByIdAsync(TenantId, doc.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(doc);
         var handler = m.BuildCreateHandler();
 
@@ -714,8 +910,7 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
         var f = BuildFixture();
         var doc = BuildReceptionDoc(SupplierId, modifiedDocumentNumber: "OTRA-FACTURA-999");
         var m = new Mocks(f);
-        m.ReceptionRepo
-            .Setup(r => r.GetByIdAsync(TenantId, doc.Id, It.IsAny<CancellationToken>()))
+        m.ReceptionRepo.Setup(r => r.GetByIdAsync(TenantId, doc.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(doc);
         var handler = m.BuildCreateHandler();
 
@@ -787,7 +982,10 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
             .MapUniqueViolation("uq_purchase_credit_notes_tenant_company_supplier_number")
             .Should()
             .Contain("número para este proveedor");
-        CreateDraftPurchaseCreditNoteHandler.MapUniqueViolation("otro_constraint").Should().BeNull();
+        CreateDraftPurchaseCreditNoteHandler
+            .MapUniqueViolation("otro_constraint")
+            .Should()
+            .BeNull();
     }
 
     // ── 5. Update solo en Draft ──────────────────────────────────────────
@@ -819,8 +1017,9 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
         creditNote.Authorize(1000m, UserId, Guid.NewGuid(), "auth-hash");
 
         var m = new Mocks(f);
-        m.CreditNoteRepo
-            .Setup(r => r.GetByIdAsync(TenantId, creditNote.Id, It.IsAny<CancellationToken>()))
+        m.CreditNoteRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, creditNote.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(creditNote);
         var handler = m.BuildUpdateHandler();
 
@@ -840,7 +1039,10 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("ya no está en borrador");
-        m.CreditNoteRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        m.CreditNoteRepo.Verify(
+            r => r.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -869,8 +1071,9 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
         );
 
         var m = new Mocks(f);
-        m.CreditNoteRepo
-            .Setup(r => r.GetByIdAsync(TenantId, creditNote.Id, It.IsAny<CancellationToken>()))
+        m.CreditNoteRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, creditNote.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(creditNote);
         var handler = m.BuildUpdateHandler();
 
@@ -892,6 +1095,7 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
         result.Value!.Reason.Should().Be("Nuevo motivo");
         result.Value.TotalAmount.Should().Be(230m);
     }
+
     [Fact]
     public async Task UpdateDraft_preserves_reception_access_key()
     {
@@ -918,8 +1122,9 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
         );
 
         var m = new Mocks(f);
-        m.CreditNoteRepo
-            .Setup(r => r.GetByIdAsync(TenantId, creditNote.Id, It.IsAny<CancellationToken>()))
+        m.CreditNoteRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, creditNote.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(creditNote);
         var handler = m.BuildUpdateHandler();
 

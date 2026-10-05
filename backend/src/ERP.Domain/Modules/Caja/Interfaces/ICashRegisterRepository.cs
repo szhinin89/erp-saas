@@ -11,7 +11,11 @@ public interface ICashRegisterRepository
     /// real sobre la fila, para leer <see cref="CashRegister.AccountingAccountId"/> con la misma
     /// garantía de concurrencia que antes daba <c>legacy treasury destination</c> FOR SHARE.
     /// </summary>
-    Task<CashRegister?> GetByIdForShareAsync(Guid tenantId, Guid id, CancellationToken ct = default);
+    Task<CashRegister?> GetByIdForShareAsync(
+        Guid tenantId,
+        Guid id,
+        CancellationToken ct = default
+    );
     Task<IReadOnlyList<CashRegister>> GetByBranchAsync(
         Guid tenantId,
         Guid branchId,

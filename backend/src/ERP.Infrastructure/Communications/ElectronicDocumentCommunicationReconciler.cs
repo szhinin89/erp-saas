@@ -9,7 +9,9 @@ namespace ERP.Infrastructure.Communications;
 
 public interface IElectronicDocumentCommunicationReconciler
 {
-    Task<ElectronicDocumentCommunicationReconciliationSummary> ReconcileAsync(CancellationToken ct = default);
+    Task<ElectronicDocumentCommunicationReconciliationSummary> ReconcileAsync(
+        CancellationToken ct = default
+    );
 }
 
 /// <param name="Examined">Comprobantes entregados al servicio en esta corrida (≤ <see cref="ElectronicDocumentCommunicationReconciler.MaxPerRun"/>).</param>
@@ -35,8 +37,16 @@ public sealed class ElectronicDocumentCommunicationReconciliationCursor
 
     public ElectronicDocumentCommunicationCandidate? ResumeAfter
     {
-        get { lock (_gate) return _resumeAfter; }
-        set { lock (_gate) _resumeAfter = value; }
+        get
+        {
+            lock (_gate)
+                return _resumeAfter;
+        }
+        set
+        {
+            lock (_gate)
+                _resumeAfter = value;
+        }
     }
 }
 
@@ -67,7 +77,8 @@ public sealed class ElectronicDocumentCommunicationReconciliationCursor
 /// cada empresa y cada comprobante se procesan en su propio scope bajo <see cref="JobExecutionContext"/>.
 /// </para>
 /// </summary>
-public sealed partial class ElectronicDocumentCommunicationReconciler : IElectronicDocumentCommunicationReconciler
+public sealed partial class ElectronicDocumentCommunicationReconciler
+    : IElectronicDocumentCommunicationReconciler
 {
     public static readonly TimeSpan MinimumAge = TimeSpan.FromMinutes(5);
     public const int PageSize = 50;
@@ -95,13 +106,17 @@ public sealed partial class ElectronicDocumentCommunicationReconciler : IElectro
         _logger = logger;
     }
 
-    public async Task<ElectronicDocumentCommunicationReconciliationSummary> ReconcileAsync(CancellationToken ct = default)
+    public async Task<ElectronicDocumentCommunicationReconciliationSummary> ReconcileAsync(
+        CancellationToken ct = default
+    )
     {
         var lastChangeBefore = _time.GetUtcNow().UtcDateTime - MinimumAge;
 
         IReadOnlyList<ElectronicDocumentCommunicationRoute> routes;
         await using (var scope = _scopeFactory.CreateAsyncScope())
-            routes = scope.ServiceProvider.GetRequiredService<IElectronicDocumentCommunicationContributorResolver>().Routes;
+            routes = scope
+                .ServiceProvider.GetRequiredService<IElectronicDocumentCommunicationContributorResolver>()
+                .Routes;
 
         var summary = new Counter();
         var preferenceByCompany = new Dictionary<Guid, bool>();
@@ -114,9 +129,16 @@ public sealed partial class ElectronicDocumentCommunicationReconciler : IElectro
             IReadOnlyList<ElectronicDocumentCommunicationCandidate> page;
             await using (var scope = _scopeFactory.CreateAsyncScope())
             {
-                page = await scope.ServiceProvider
-                    .GetRequiredService<IElectronicDocumentCommunicationReconciliationQuery>()
-                    .GetMissingAsync(routes, lastChangeBefore, after, excludedCompanies, PageSize, ct);
+                page = await scope
+                    .ServiceProvider.GetRequiredService<IElectronicDocumentCommunicationReconciliationQuery>()
+                    .GetMissingAsync(
+                        routes,
+                        lastChangeBefore,
+                        after,
+                        excludedCompanies,
+                        PageSize,
+                        ct
+                    );
             }
 
             foreach (var candidate in page)
@@ -127,7 +149,11 @@ public sealed partial class ElectronicDocumentCommunicationReconciler : IElectro
 
                 if (!preferenceByCompany.TryGetValue(candidate.CompanyId, out var enabled))
                 {
-                    enabled = await IsEmailOnAuthorizationEnabledAsync(candidate.TenantId, candidate.CompanyId, ct);
+                    enabled = await IsEmailOnAuthorizationEnabledAsync(
+                        candidate.TenantId,
+                        candidate.CompanyId,
+                        ct
+                    );
                     preferenceByCompany[candidate.CompanyId] = enabled;
                     if (!enabled)
                         excludedCompanies.Add(candidate.CompanyId);
@@ -149,19 +175,30 @@ public sealed partial class ElectronicDocumentCommunicationReconciler : IElectro
 
         var result = summary.ToSummary(reachedEnd);
         if (result.Examined > 0)
-            LogRunCompleted(result.Examined, result.Queued, result.AlreadyQueued, result.Skipped, result.Failed, reachedEnd);
+            LogRunCompleted(
+                result.Examined,
+                result.Queued,
+                result.AlreadyQueued,
+                result.Skipped,
+                result.Failed,
+                reachedEnd
+            );
         return result;
     }
 
-    private async Task ReconcileOneAsync(ElectronicDocumentCommunicationCandidate candidate, Counter summary, CancellationToken ct)
+    private async Task ReconcileOneAsync(
+        ElectronicDocumentCommunicationCandidate candidate,
+        Counter summary,
+        CancellationToken ct
+    )
     {
         summary.Examined++;
         using var _ = JobExecutionContext.Begin(candidate.TenantId, candidate.CompanyId);
         try
         {
             await using var scope = _scopeFactory.CreateAsyncScope();
-            var document = await scope.ServiceProvider
-                .GetRequiredService<IElectronicDocumentRepository>()
+            var document = await scope
+                .ServiceProvider.GetRequiredService<IElectronicDocumentRepository>()
                 .GetByIdAsync(candidate.TenantId, candidate.ElectronicDocumentId, ct);
             if (document is null || document.CompanyId != candidate.CompanyId)
             {
@@ -169,15 +206,21 @@ public sealed partial class ElectronicDocumentCommunicationReconciler : IElectro
                 return;
             }
 
-            var result = await scope.ServiceProvider
-                .GetRequiredService<IElectronicDocumentCommunicationService>()
+            var result = await scope
+                .ServiceProvider.GetRequiredService<IElectronicDocumentCommunicationService>()
                 .RequestAsync(document, ElectronicDocumentCommunicationTrigger.Reconciliation, ct);
 
             switch (result.Outcome)
             {
                 case ElectronicDocumentCommunicationOutcome.Queued:
                     summary.Queued++;
-                    LogReconciled(candidate.ElectronicDocumentId, candidate.TenantId, candidate.CompanyId, result.CommunicationId!.Value, result.FailureCode);
+                    LogReconciled(
+                        candidate.ElectronicDocumentId,
+                        candidate.TenantId,
+                        candidate.CompanyId,
+                        result.CommunicationId!.Value,
+                        result.FailureCode
+                    );
                     break;
                 case ElectronicDocumentCommunicationOutcome.AlreadyQueued:
                     summary.AlreadyQueued++;
@@ -194,12 +237,16 @@ public sealed partial class ElectronicDocumentCommunicationReconciler : IElectro
         }
     }
 
-    private async Task<bool> IsEmailOnAuthorizationEnabledAsync(Guid tenantId, Guid companyId, CancellationToken ct)
+    private async Task<bool> IsEmailOnAuthorizationEnabledAsync(
+        Guid tenantId,
+        Guid companyId,
+        CancellationToken ct
+    )
     {
         using var _ = JobExecutionContext.Begin(tenantId, companyId);
         await using var scope = _scopeFactory.CreateAsyncScope();
-        var preferences = await scope.ServiceProvider
-            .GetRequiredService<IOperationalPreferencesResolver>()
+        var preferences = await scope
+            .ServiceProvider.GetRequiredService<IOperationalPreferencesResolver>()
             .ResolveAsync(tenantId, companyId, ct);
         return preferences.ElectronicDocuments.EmailOnAuthorization;
     }
@@ -217,15 +264,40 @@ public sealed partial class ElectronicDocumentCommunicationReconciler : IElectro
     }
 
     // Sin PII: solo identificadores y códigos.
-    [LoggerMessage(EventId = 4235, EventName = "ElectronicDocumentCommunicationReconciled", Level = LogLevel.Information,
-        Message = "Communications: reconciled ElectronicDocument {ElectronicDocumentId} tenant={TenantId} company={CompanyId} -> {CommunicationId} failure={FailureCode}")]
-    private partial void LogReconciled(Guid electronicDocumentId, Guid tenantId, Guid companyId, Guid communicationId, string? failureCode);
+    [LoggerMessage(
+        EventId = 4235,
+        EventName = "ElectronicDocumentCommunicationReconciled",
+        Level = LogLevel.Information,
+        Message = "Communications: reconciled ElectronicDocument {ElectronicDocumentId} tenant={TenantId} company={CompanyId} -> {CommunicationId} failure={FailureCode}"
+    )]
+    private partial void LogReconciled(
+        Guid electronicDocumentId,
+        Guid tenantId,
+        Guid companyId,
+        Guid communicationId,
+        string? failureCode
+    );
 
-    [LoggerMessage(EventId = 4236, EventName = "ElectronicDocumentCommunicationReconciliationFailed", Level = LogLevel.Warning,
-        Message = "Communications: reconciliation failed for ElectronicDocument {ElectronicDocumentId}; it will be retried on the next run")]
+    [LoggerMessage(
+        EventId = 4236,
+        EventName = "ElectronicDocumentCommunicationReconciliationFailed",
+        Level = LogLevel.Warning,
+        Message = "Communications: reconciliation failed for ElectronicDocument {ElectronicDocumentId}; it will be retried on the next run"
+    )]
     private partial void LogCandidateFailed(Guid electronicDocumentId, Exception ex);
 
-    [LoggerMessage(EventId = 4237, EventName = "ElectronicDocumentCommunicationReconciliationRun", Level = LogLevel.Information,
-        Message = "Communications: reconciliation examined={Examined} queued={Queued} alreadyQueued={AlreadyQueued} skipped={Skipped} failed={Failed} wrapped={Wrapped}")]
-    private partial void LogRunCompleted(int examined, int queued, int alreadyQueued, int skipped, int failed, bool wrapped);
+    [LoggerMessage(
+        EventId = 4237,
+        EventName = "ElectronicDocumentCommunicationReconciliationRun",
+        Level = LogLevel.Information,
+        Message = "Communications: reconciliation examined={Examined} queued={Queued} alreadyQueued={AlreadyQueued} skipped={Skipped} failed={Failed} wrapped={Wrapped}"
+    )]
+    private partial void LogRunCompleted(
+        int examined,
+        int queued,
+        int alreadyQueued,
+        int skipped,
+        int failed,
+        bool wrapped
+    );
 }

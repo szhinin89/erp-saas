@@ -78,9 +78,24 @@ public sealed class ElectronicDocumentRetryJobTenantContextTests : IAsyncLifetim
 
         var tenantA = TenantEntity.Create("RETRYA", $"retry-a-{Guid.NewGuid():N}"[..16], UserId);
         var tenantB = TenantEntity.Create("RETRYB", $"retry-b-{Guid.NewGuid():N}"[..16], UserId);
-        var companyA1 = CompanyEntity.CreateManaged(tenantA.Id, "1790012345001", "Empresa A1", createdBy: UserId);
-        var companyA2 = CompanyEntity.CreateManaged(tenantA.Id, "1790098765001", "Empresa A2", createdBy: UserId);
-        var companyB = CompanyEntity.CreateManaged(tenantB.Id, "1791234567001", "Empresa B", createdBy: UserId);
+        var companyA1 = CompanyEntity.CreateManaged(
+            tenantA.Id,
+            "1790012345001",
+            "Empresa A1",
+            createdBy: UserId
+        );
+        var companyA2 = CompanyEntity.CreateManaged(
+            tenantA.Id,
+            "1790098765001",
+            "Empresa A2",
+            createdBy: UserId
+        );
+        var companyB = CompanyEntity.CreateManaged(
+            tenantB.Id,
+            "1791234567001",
+            "Empresa B",
+            createdBy: UserId
+        );
         db.Tenants.AddRange(tenantA, tenantB);
         db.Companies.AddRange(companyA1, companyA2, companyB);
         await db.SaveChangesAsync();
@@ -112,7 +127,10 @@ public sealed class ElectronicDocumentRetryJobTenantContextTests : IAsyncLifetim
 
         foreach (var (documentId, owner) in new[] { (signed, _a1), (failed, _b) })
         {
-            var candidate = candidates.Should().ContainSingle(c => c.ElectronicDocumentId == documentId).Subject;
+            var candidate = candidates
+                .Should()
+                .ContainSingle(c => c.ElectronicDocumentId == documentId)
+                .Subject;
             candidate.TenantId.Should().Be(owner.TenantId);
             candidate.CompanyId.Should().Be(owner.CompanyId);
         }
@@ -131,7 +149,8 @@ public sealed class ElectronicDocumentRetryJobTenantContextTests : IAsyncLifetim
         call.TenantArgument.Should().Be(_a1.TenantId);
         call.ContextTenantId.Should().Be(_a1.TenantId);
         call.ContextCompanyId.Should().Be(_a1.CompanyId);
-        call.VisibleUnderContext.Should().BeTrue("bajo su propio contexto el filtro fail-closed lo deja ver");
+        call.VisibleUnderContext.Should()
+            .BeTrue("bajo su propio contexto el filtro fail-closed lo deja ver");
         (await ReadAsync(document)).RetryCount.Should().Be(1);
         JobTenantContext.Current.Should().Be(Guid.Empty, "el contexto no se filtra fuera del job");
         JobCompanyContext.Current.Should().Be(Guid.Empty);
@@ -161,7 +180,8 @@ public sealed class ElectronicDocumentRetryJobTenantContextTests : IAsyncLifetim
         using (JobExecutionContext.Begin(_a1.TenantId, _a1.CompanyId))
         {
             await using var scope = _provider.CreateAsyncScope();
-            var repository = scope.ServiceProvider.GetRequiredService<IElectronicDocumentRepository>();
+            var repository =
+                scope.ServiceProvider.GetRequiredService<IElectronicDocumentRepository>();
             (await repository.GetByIdAsync(_a1.TenantId, a2)).Should().BeNull();
             (await repository.GetByIdAsync(_b.TenantId, b)).Should().BeNull();
             (await repository.GetByIdAsync(_a1.TenantId, a1)).Should().NotBeNull();
@@ -173,8 +193,17 @@ public sealed class ElectronicDocumentRetryJobTenantContextTests : IAsyncLifetim
     {
         var authorized = await SeedAsync(_a1, ElectronicDocumentState.Authorized);
         var deadLetter = await SeedAsync(_a1, ElectronicDocumentState.DeadLetter);
-        var exhausted = await SeedAsync(_a1, ElectronicDocumentState.Signed, retryAttempts: ElectronicDocumentRetryPolicy.MaxAttempts);
-        var inBackoff = await SeedAsync(_b, ElectronicDocumentState.Signed, retryAttempts: 1, lastAttemptAgo: TimeSpan.Zero);
+        var exhausted = await SeedAsync(
+            _a1,
+            ElectronicDocumentState.Signed,
+            retryAttempts: ElectronicDocumentRetryPolicy.MaxAttempts
+        );
+        var inBackoff = await SeedAsync(
+            _b,
+            ElectronicDocumentState.Signed,
+            retryAttempts: 1,
+            lastAttemptAgo: TimeSpan.Zero
+        );
         var autoRetryOff = await SeedAsync(_a2, ElectronicDocumentState.Signed);
         _companiesWithAutoRetryDisabled.Add(_a2.CompanyId);
 
@@ -183,7 +212,9 @@ public sealed class ElectronicDocumentRetryJobTenantContextTests : IAsyncLifetim
         _issuerLog.Calls.Should().BeEmpty();
         (await ReadAsync(authorized)).CurrentState.Should().Be(ElectronicDocumentState.Authorized);
         (await ReadAsync(deadLetter)).CurrentState.Should().Be(ElectronicDocumentState.DeadLetter);
-        (await ReadAsync(exhausted)).RetryCount.Should().Be(ElectronicDocumentRetryPolicy.MaxAttempts);
+        (await ReadAsync(exhausted))
+            .RetryCount.Should()
+            .Be(ElectronicDocumentRetryPolicy.MaxAttempts);
         (await ReadAsync(inBackoff)).RetryCount.Should().Be(1);
         (await ReadAsync(autoRetryOff)).RetryCount.Should().Be(0);
     }
@@ -197,7 +228,9 @@ public sealed class ElectronicDocumentRetryJobTenantContextTests : IAsyncLifetim
         await RunJobAsync();
         await RunJobAsync();
 
-        _issuerLog.Calls.Should().HaveCount(2, "la segunda corrida cae dentro del backoff de la política");
+        _issuerLog
+            .Calls.Should()
+            .HaveCount(2, "la segunda corrida cae dentro del backoff de la política");
         (await ReadAsync(a1)).RetryCount.Should().Be(1);
         (await ReadAsync(b)).RetryCount.Should().Be(1);
     }
@@ -282,7 +315,13 @@ public sealed class ElectronicDocumentRetryJobTenantContextTests : IAsyncLifetim
     }
 
     private static string NewAccessKey() =>
-        string.Concat(Guid.NewGuid().ToByteArray().Select(b => (b % 10).ToString(System.Globalization.CultureInfo.InvariantCulture)))
+        string.Concat(
+                Guid.NewGuid()
+                    .ToByteArray()
+                    .Select(b =>
+                        (b % 10).ToString(System.Globalization.CultureInfo.InvariantCulture)
+                    )
+            )
             .PadRight(49, '7')[..49];
 
     private sealed record IssuerCall(
@@ -331,7 +370,9 @@ public sealed class ElectronicDocumentRetryJobTenantContextTests : IAsyncLifetim
                 )
             );
             if (document is null)
-                return Result<ElectronicDocumentDto>.NotFound("El documento electrónico no existe.");
+                return Result<ElectronicDocumentDto>.NotFound(
+                    "El documento electrónico no existe."
+                );
 
             document.MarkRetryAttempted(userId);
             await repository.SaveChangesAsync(ct);
@@ -342,8 +383,9 @@ public sealed class ElectronicDocumentRetryJobTenantContextTests : IAsyncLifetim
     private sealed class FakePreferencesResolver(HashSet<Guid> companiesWithAutoRetryDisabled)
         : IOperationalPreferencesResolver
     {
-        public Task<OperationalPreferences> ResolveAsync(CancellationToken cancellationToken = default) =>
-            throw new NotSupportedException("El job resuelve con tenant/empresa explícitos.");
+        public Task<OperationalPreferences> ResolveAsync(
+            CancellationToken cancellationToken = default
+        ) => throw new NotSupportedException("El job resuelve con tenant/empresa explícitos.");
 
         public Task<OperationalPreferences> ResolveAsync(
             Guid tenantId,
@@ -352,11 +394,29 @@ public sealed class ElectronicDocumentRetryJobTenantContextTests : IAsyncLifetim
         ) =>
             Task.FromResult(
                 new OperationalPreferences(
-                    SalesPos: new SalesPosPreferences(true, false, true, 0m, null, false, false, null, null),
+                    SalesPos: new SalesPosPreferences(
+                        true,
+                        false,
+                        true,
+                        0m,
+                        null,
+                        false,
+                        false,
+                        null,
+                        null
+                    ),
                     Cash: new CashPreferences(true, true, 0m, true, true, true),
                     Purchases: new PurchasesPreferences(null, true, true, true, false),
                     Inventory: new InventoryPreferences(false, true, false, 0m),
-                    Printing: new PrintingPreferences("AskBeforePrint", 1, "80mm", false, true, true, false),
+                    Printing: new PrintingPreferences(
+                        "AskBeforePrint",
+                        1,
+                        "80mm",
+                        false,
+                        true,
+                        true,
+                        false
+                    ),
                     ElectronicDocuments: new ElectronicDocumentsPreferences(
                         AutoRetryEnabled: !companiesWithAutoRetryDisabled.Contains(companyId),
                         MaxRetryAttempts: 3,

@@ -62,7 +62,10 @@ public sealed class CompanyScopeBehavior<TRequest, TResponse>
                 cancellationToken
             );
             if (!explicitAccess.IsSuccess)
-                throw Denied(explicitAccess, CompanyScopeException.AccessDenied(explicitAccess.Error));
+                throw Denied(
+                    explicitAccess,
+                    CompanyScopeException.AccessDenied(explicitAccess.Error)
+                );
         }
         else if (!_company.HasCompanyContext)
         {

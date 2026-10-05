@@ -77,4 +77,8 @@ public interface IRetentionDocumentRepository
 }
 
 /// <summary>Retención emitida que todavía no inició su transmisión electrónica.</summary>
-public sealed record RetentionElectronicStartCandidate(Guid TenantId, Guid CompanyId, Guid RetentionId);
+public sealed record RetentionElectronicStartCandidate(
+    Guid TenantId,
+    Guid CompanyId,
+    Guid RetentionId
+);

@@ -106,12 +106,19 @@ public sealed class RetentionElectronicDocumentXmlServiceTests
             Xml: "<comprobanteRetencion/>",
             Encoding: "UTF-8",
             Version: "1.0.0",
-            DocumentType: ERP.Domain.Modules.ElectronicDocuments.Enums.ElectronicDocumentType.Retention,
+            DocumentType: ERP.Domain
+                .Modules
+                .ElectronicDocuments
+                .Enums
+                .ElectronicDocumentType
+                .Retention,
             Environment: "1",
             AccessKey: new string('1', 49),
             GeneratedAtUtc: DateTime.UtcNow
         );
-        xmlBuilder.Setup(b => b.Build(data)).Returns(Result<ElectronicDocumentXml>.Success(expectedXml));
+        xmlBuilder
+            .Setup(b => b.Build(data))
+            .Returns(Result<ElectronicDocumentXml>.Success(expectedXml));
 
         var service = new RetentionElectronicDocumentXmlService(
             dataProvider.Object,
@@ -123,7 +130,10 @@ public sealed class RetentionElectronicDocumentXmlServiceTests
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value.Should().Be(expectedXml);
-        dataProvider.Verify(p => p.GetDataAsync(reference, It.IsAny<CancellationToken>()), Times.Once);
+        dataProvider.Verify(
+            p => p.GetDataAsync(reference, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
         xmlBuilder.Verify(b => b.Build(data), Times.Once);
     }
 
@@ -139,7 +149,9 @@ public sealed class RetentionElectronicDocumentXmlServiceTests
         var dataProvider = new Mock<IRetentionElectronicDocumentDataProvider>();
         dataProvider
             .Setup(p => p.GetDataAsync(reference, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<RetentionElectronicDocumentData>.NotFound("La retención no existe."));
+            .ReturnsAsync(
+                Result<RetentionElectronicDocumentData>.NotFound("La retención no existe.")
+            );
 
         var xmlBuilder = new Mock<IRetentionXmlBuilder>();
 
@@ -174,7 +186,11 @@ public sealed class RetentionElectronicDocumentXmlServiceTests
         var xmlBuilder = new Mock<IRetentionXmlBuilder>();
         xmlBuilder
             .Setup(b => b.Build(data))
-            .Returns(Result<ElectronicDocumentXml>.ValidationFailure("El secuencial debe tener 9 dígitos."));
+            .Returns(
+                Result<ElectronicDocumentXml>.ValidationFailure(
+                    "El secuencial debe tener 9 dígitos."
+                )
+            );
 
         var service = new RetentionElectronicDocumentXmlService(
             dataProvider.Object,

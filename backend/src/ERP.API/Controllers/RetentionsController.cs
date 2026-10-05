@@ -108,7 +108,12 @@ public sealed class RetentionsController : ControllerBase
     ) =>
         this.ToOkOrBadRequest(
             await _mediator.Send(
-                new SubmitRetentionAnnulmentCommand(requestId, request.SubmittedOn, request.Reference, request.Notes),
+                new SubmitRetentionAnnulmentCommand(
+                    requestId,
+                    request.SubmittedOn,
+                    request.Reference,
+                    request.Notes
+                ),
                 ct
             )
         );
@@ -131,17 +136,27 @@ public sealed class RetentionsController : ControllerBase
         CancellationToken ct
     ) =>
         this.ToOkOrBadRequest(
-            await _mediator.Send(new AbandonRetentionAnnulmentCommand(requestId, request.Reason), ct)
+            await _mediator.Send(
+                new AbandonRetentionAnnulmentCommand(requestId, request.Reason),
+                ct
+            )
         );
 
     /// <summary>Reintenta la anulación del documento origen tras un ANULADO cuya finalización falló.</summary>
     [HttpPost("annulments/{requestId:guid}/finalization")]
-    public async Task<IActionResult> RetryAnnulmentFinalization(Guid requestId, CancellationToken ct) =>
+    public async Task<IActionResult> RetryAnnulmentFinalization(
+        Guid requestId,
+        CancellationToken ct
+    ) =>
         this.ToOkOrBadRequest(
             await _mediator.Send(new RetryRetentionAnnulmentFinalizationCommand(requestId), ct)
         );
 }
 
-public sealed record SubmitRetentionAnnulmentRequest(DateOnly SubmittedOn, string? Reference, string? Notes);
+public sealed record SubmitRetentionAnnulmentRequest(
+    DateOnly SubmittedOn,
+    string? Reference,
+    string? Notes
+);
 
 public sealed record AbandonRetentionAnnulmentRequest(string Reason);

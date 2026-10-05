@@ -49,5 +49,10 @@ public interface ISriDocumentStatusQuery
 {
     /// <param name="accessKey">Clave de acceso de 49 dígitos.</param>
     /// <param name="wsdlUrl"><c>SriSettings.WsdlUrl</c> de la empresa (RecepcionComprobantesOffline); el endpoint de consulta se deriva de él (mismo ambiente).</param>
-    Task<SriDocumentStatusResult> QueryAsync(string accessKey, string wsdlUrl, CancellationToken ct = default);
+    /// <param name="ct"></param>
+    Task<SriDocumentStatusResult> QueryAsync(
+        string accessKey,
+        string wsdlUrl,
+        CancellationToken ct = default
+    );
 }

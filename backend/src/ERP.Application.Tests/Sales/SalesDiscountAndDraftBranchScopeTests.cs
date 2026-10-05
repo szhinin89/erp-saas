@@ -56,21 +56,39 @@ public sealed class SalesDiscountAndDraftBranchScopeTests
 
     private static OperationalPreferences DefaultPreferences() =>
         new(
-            SalesPos: new SalesPosPreferences(true, false, true, 0m, null, false, false, null, null),
+            SalesPos: new SalesPosPreferences(
+                true,
+                false,
+                true,
+                0m,
+                null,
+                false,
+                false,
+                null,
+                null
+            ),
             Cash: new CashPreferences(true, true, 0m, true, true, true),
             Purchases: new PurchasesPreferences(null, true, true, true, false),
             Inventory: new InventoryPreferences(false, true, false, 0m),
-            Printing: new PrintingPreferences("AskBeforePrint", 1, "80mm", false, true, true, false),
+            Printing: new PrintingPreferences(
+                "AskBeforePrint",
+                1,
+                "80mm",
+                false,
+                true,
+                true,
+                false
+            ),
             ElectronicDocuments: new ElectronicDocumentsPreferences(true, 3, true, true),
             Notifications: new NotificationsPreferences(true, false, "es")
         );
 
     // ── ApplySalesDiscountHandler ───────────────────────────────────────
 
-    private static (
-        ApplySalesDiscountHandler Handler,
-        SalesInvoice Invoice
-    ) BuildDiscountHandler(Guid invoiceBranchId, Guid activeBranchId)
+    private static (ApplySalesDiscountHandler Handler, SalesInvoice Invoice) BuildDiscountHandler(
+        Guid invoiceBranchId,
+        Guid activeBranchId
+    )
     {
         var inv = CreateDraftInvoice(invoiceBranchId);
 
@@ -79,7 +97,9 @@ public sealed class SalesDiscountAndDraftBranchScopeTests
             .ReturnsAsync(inv);
 
         var preferences = new Mock<IOperationalPreferencesResolver>();
-        preferences.Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>())).ReturnsAsync(DefaultPreferences());
+        preferences
+            .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DefaultPreferences());
 
         var handler = new ApplySalesDiscountHandler(
             repo.Object,
@@ -96,7 +116,10 @@ public sealed class SalesDiscountAndDraftBranchScopeTests
     public async Task ApplyDiscount_factura_de_otra_sucursal_retorna_NotFound()
     {
         var otherBranchId = Guid.NewGuid();
-        var (handler, inv) = BuildDiscountHandler(invoiceBranchId: BranchId, activeBranchId: otherBranchId);
+        var (handler, inv) = BuildDiscountHandler(
+            invoiceBranchId: BranchId,
+            activeBranchId: otherBranchId
+        );
 
         var result = await handler.Handle(
             new ApplySalesDiscountCommand(inv.Id, 10m),
@@ -111,7 +134,10 @@ public sealed class SalesDiscountAndDraftBranchScopeTests
     [Fact]
     public async Task ApplyDiscount_factura_de_la_misma_sucursal_se_aplica_correctamente()
     {
-        var (handler, inv) = BuildDiscountHandler(invoiceBranchId: BranchId, activeBranchId: BranchId);
+        var (handler, inv) = BuildDiscountHandler(
+            invoiceBranchId: BranchId,
+            activeBranchId: BranchId
+        );
 
         var result = await handler.Handle(
             new ApplySalesDiscountCommand(inv.Id, 10m),
@@ -123,10 +149,10 @@ public sealed class SalesDiscountAndDraftBranchScopeTests
 
     // ── UpdateSalesDraftHandler ─────────────────────────────────────────
 
-    private static (
-        UpdateSalesDraftHandler Handler,
-        SalesInvoice Invoice
-    ) BuildUpdateDraftHandler(Guid invoiceBranchId, Guid activeBranchId)
+    private static (UpdateSalesDraftHandler Handler, SalesInvoice Invoice) BuildUpdateDraftHandler(
+        Guid invoiceBranchId,
+        Guid activeBranchId
+    )
     {
         var inv = CreateDraftInvoice(invoiceBranchId);
 
@@ -143,26 +169,46 @@ public sealed class SalesDiscountAndDraftBranchScopeTests
             createdBy: UserId
         );
         var bpRepo = new Mock<IBusinessPartnerRepository>();
-        bpRepo.Setup(r => r.GetByIdAsync(CustomerId, It.IsAny<CancellationToken>())).ReturnsAsync(bp);
+        bpRepo
+            .Setup(r => r.GetByIdAsync(CustomerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(bp);
 
         var bpContactRepo = new Mock<IBusinessPartnerContactRepository>();
         bpContactRepo
-            .Setup(r => r.GetByBusinessPartnerAsync(It.IsAny<Guid>(), It.IsAny<bool?>(), It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByBusinessPartnerAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<bool?>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(Array.Empty<BusinessPartnerContact>());
         var bpLocationRepo = new Mock<IBusinessPartnerLocationRepository>();
         bpLocationRepo
-            .Setup(r => r.GetByBusinessPartnerAsync(It.IsAny<Guid>(), It.IsAny<bool?>(), It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByBusinessPartnerAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<bool?>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(Array.Empty<BusinessPartnerLocation>());
 
         var companyTaxRepo = new Mock<ICompanySpecialTaxResponsibilityRepository>();
         companyTaxRepo
             .Setup(r =>
-                r.GetResponsibleSriTaxCategoryCodesAsync(CompanyId, TenantId, It.IsAny<CancellationToken>())
+                r.GetResponsibleSriTaxCategoryCodesAsync(
+                    CompanyId,
+                    TenantId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(Array.Empty<string>());
 
         var preferences = new Mock<IOperationalPreferencesResolver>();
-        preferences.Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>())).ReturnsAsync(DefaultPreferences());
+        preferences
+            .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DefaultPreferences());
 
         // SALES-PRICING-TRACEABILITY-SNAPSHOT-07B: default "cliente sin lista propia" — evita
         // depender del comportamiento de Moq para un método sin configurar explícitamente.
@@ -206,7 +252,10 @@ public sealed class SalesDiscountAndDraftBranchScopeTests
     public async Task UpdateDraft_factura_de_otra_sucursal_retorna_NotFound()
     {
         var otherBranchId = Guid.NewGuid();
-        var (handler, inv) = BuildUpdateDraftHandler(invoiceBranchId: BranchId, activeBranchId: otherBranchId);
+        var (handler, inv) = BuildUpdateDraftHandler(
+            invoiceBranchId: BranchId,
+            activeBranchId: otherBranchId
+        );
 
         var result = await handler.Handle(BuildCommand(inv), CancellationToken.None);
 
@@ -217,7 +266,10 @@ public sealed class SalesDiscountAndDraftBranchScopeTests
     [Fact]
     public async Task UpdateDraft_factura_de_la_misma_sucursal_se_actualiza_correctamente()
     {
-        var (handler, inv) = BuildUpdateDraftHandler(invoiceBranchId: BranchId, activeBranchId: BranchId);
+        var (handler, inv) = BuildUpdateDraftHandler(
+            invoiceBranchId: BranchId,
+            activeBranchId: BranchId
+        );
 
         var result = await handler.Handle(BuildCommand(inv), CancellationToken.None);
 

@@ -110,10 +110,17 @@ public sealed class AccountsPayableTests
     {
         var act = () =>
             AccountsPayable.CreateFromOrigin(
-                TenantId, CompanyId, BranchId, Guid.Empty,
-                AccountsPayableOriginType.ExpenseDocument, OriginId,
-                "01", "001-001-000000001",
-                new DateOnly(2026, 8, 27), new DateOnly(2026, 8, 27), UserId
+                TenantId,
+                CompanyId,
+                BranchId,
+                Guid.Empty,
+                AccountsPayableOriginType.ExpenseDocument,
+                OriginId,
+                "01",
+                "001-001-000000001",
+                new DateOnly(2026, 8, 27),
+                new DateOnly(2026, 8, 27),
+                UserId
             );
 
         act.Should().Throw<ArgumentException>().WithMessage("*proveedor*");
@@ -124,10 +131,17 @@ public sealed class AccountsPayableTests
     {
         var act = () =>
             AccountsPayable.CreateFromOrigin(
-                TenantId, CompanyId, BranchId, SupplierId,
-                AccountsPayableOriginType.ExpenseDocument, Guid.Empty,
-                "01", "001-001-000000001",
-                new DateOnly(2026, 8, 27), new DateOnly(2026, 8, 27), UserId
+                TenantId,
+                CompanyId,
+                BranchId,
+                SupplierId,
+                AccountsPayableOriginType.ExpenseDocument,
+                Guid.Empty,
+                "01",
+                "001-001-000000001",
+                new DateOnly(2026, 8, 27),
+                new DateOnly(2026, 8, 27),
+                UserId
             );
 
         act.Should().Throw<ArgumentException>().WithMessage("*origen*");

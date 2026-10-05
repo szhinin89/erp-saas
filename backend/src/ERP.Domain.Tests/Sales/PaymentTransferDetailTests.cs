@@ -43,7 +43,12 @@ public sealed class PaymentTransferDetailTests
     public void Create_sin_cuenta_bancaria_lanza()
     {
         var act = () =>
-            PaymentTransferDetail.Create(PaymentId, Guid.Empty, "TRX-001", new DateOnly(2026, 9, 1));
+            PaymentTransferDetail.Create(
+                PaymentId,
+                Guid.Empty,
+                "TRX-001",
+                new DateOnly(2026, 9, 1)
+            );
 
         act.Should().Throw<ArgumentException>();
     }

@@ -16,7 +16,8 @@ public interface IPurchaseReceptionAutoMatcher
     Task<int> RefreshAsync(PurchaseReceptionDocument document, CancellationToken cancellationToken);
 }
 
-public sealed class PurchaseReceptionAutoMatcher(IItemRepository items) : IPurchaseReceptionAutoMatcher
+public sealed class PurchaseReceptionAutoMatcher(IItemRepository items)
+    : IPurchaseReceptionAutoMatcher
 {
     public async Task<int> RefreshAsync(
         PurchaseReceptionDocument document,

@@ -1,6 +1,6 @@
+using System.Globalization;
 using Microsoft.Extensions.Caching.Distributed;
 using StackExchange.Redis;
-using System.Globalization;
 
 namespace ERP.Infrastructure.Services;
 
@@ -48,7 +48,9 @@ internal static class DistributedFixedWindowRateLimit
         if (redis is not null)
             return await TryAcquireRedisAsync(redis, key, limit, window);
 
-        var stripe = Stripes[(int)((uint)StringComparer.Ordinal.GetHashCode(key) % (uint)Stripes.Length)];
+        var stripe = Stripes[
+            (int)((uint)StringComparer.Ordinal.GetHashCode(key) % (uint)Stripes.Length)
+        ];
         await stripe.WaitAsync(cancellationToken);
         try
         {

@@ -58,12 +58,32 @@ public sealed class StockMovement : AuditableEntity, ITenantScopedEntity, ICompa
     /// y <see cref="RunningStockValue"/> es responsabilidad exclusiva de
     /// <c>IStockRepository.AppendMovementAsync</c> — nunca se recalculan a partir de CurrentStock.
     /// </summary>
+    /// <param name="tenantId"></param>
+    /// <param name="branchId"></param>
+    /// <param name="productId"></param>
+    /// <param name="warehouseId"></param>
+    /// <param name="movementType"></param>
+    /// <param name="quantity"></param>
+    /// <param name="uomCode"></param>
+    /// <param name="previousQuantity"></param>
+    /// <param name="sequenceNumber"></param>
+    /// <param name="runningAverageCost"></param>
+    /// <param name="runningStockValue"></param>
+    /// <param name="effectiveDate"></param>
+    /// <param name="reference"></param>
+    /// <param name="sourceDocId"></param>
+    /// <param name="sourceDocType"></param>
+    /// <param name="createdBy"></param>
+    /// <param name="companyId"></param>
     /// <param name="unitCost">
     /// Costo unitario CAPTURADO (manual/de compra) para este movimiento — solo tiene valor cuando
     /// el caller efectivamente lo provee (p. ej. una entrada). Nunca se infiere de un promedio;
     /// una salida (venta, ajuste negativo) SIEMPRE lo deja en <c>null</c> — es la semántica que
     /// distingue "costo tecleado" de "costo de valuación resuelto internamente".
     /// </param>
+    /// <param name="lotId"></param>
+    /// <param name="serialId"></param>
+    /// <param name="sourceDocLineId"></param>
     /// <param name="valuationUnitCost">
     /// ACCOUNTING-INVENTORY-COGS-07 / TECH-DEBT-API-INVENTORY-ADJUSTMENT-FAILURE-01A — costo de
     /// valuación ya resuelto por el caller (típicamente el costo promedio corrido vigente ANTES
@@ -104,7 +124,9 @@ public sealed class StockMovement : AuditableEntity, ITenantScopedEntity, ICompa
                 "El costo unitario es obligatorio y debe ser mayor a cero para entradas de compra."
             );
         if (sequenceNumber <= 0)
-            throw new InvalidOperationException("Invariante violada: SequenceNumber debe ser mayor a cero.");
+            throw new InvalidOperationException(
+                "Invariante violada: SequenceNumber debe ser mayor a cero."
+            );
         if (string.IsNullOrWhiteSpace(uomCode))
             throw new InvalidOperationException(
                 "Invariante violada: UomCode es obligatorio para un movimiento de Kardex."

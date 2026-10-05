@@ -6,13 +6,19 @@ using MediatR;
 namespace ERP.Application.Modules.Sales.UseCases.PreviewSalesRepricing;
 
 public sealed class PreviewSalesRepricingQueryHandler
-    : IRequestHandler<PreviewSalesRepricingQuery, Result<IReadOnlyList<SalesRepricingPreviewItemDto>>>
+    : IRequestHandler<
+        PreviewSalesRepricingQuery,
+        Result<IReadOnlyList<SalesRepricingPreviewItemDto>>
+    >
 {
     private readonly IPricingResolver _pricing;
 
     private readonly ICompanyPrecisionPolicyProvider _precision;
 
-    public PreviewSalesRepricingQueryHandler(IPricingResolver pricing, ICompanyPrecisionPolicyProvider precision)
+    public PreviewSalesRepricingQueryHandler(
+        IPricingResolver pricing,
+        ICompanyPrecisionPolicyProvider precision
+    )
     {
         _pricing = pricing;
         _precision = precision;

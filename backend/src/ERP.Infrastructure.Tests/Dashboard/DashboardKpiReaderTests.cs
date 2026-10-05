@@ -315,8 +315,20 @@ public sealed class DashboardKpiReaderTests : IAsyncLifetime
         await using var seed = CreateContext(Guid.Empty);
         var infra = await CreateSalesInfraAsync(seed, "0002");
 
-        await AuthorizeInvoiceAsync(seed, infra, new DateOnly(2026, 8, 10), "001-001-000000001", 100m);
-        await AuthorizeInvoiceAsync(seed, infra, new DateOnly(2026, 7, 10), "001-001-000000002", 250m);
+        await AuthorizeInvoiceAsync(
+            seed,
+            infra,
+            new DateOnly(2026, 8, 10),
+            "001-001-000000001",
+            100m
+        );
+        await AuthorizeInvoiceAsync(
+            seed,
+            infra,
+            new DateOnly(2026, 7, 10),
+            "001-001-000000002",
+            250m
+        );
 
         await using var read = CreateContext(infra.CompanyId);
         var reader = new DashboardKpiReader(read, new FixedCurrentCompany(infra.CompanyId));
@@ -332,9 +344,27 @@ public sealed class DashboardKpiReaderTests : IAsyncLifetime
         await using var seed = CreateContext(Guid.Empty);
         var infra = await CreateSalesInfraAsync(seed, "0003");
 
-        await AuthorizeInvoiceAsync(seed, infra, new DateOnly(2026, 2, 5), "001-001-000000001", 100m);
-        await AuthorizeInvoiceAsync(seed, infra, new DateOnly(2026, 8, 10), "001-001-000000002", 50m);
-        await AuthorizeInvoiceAsync(seed, infra, new DateOnly(2025, 12, 31), "001-001-000000003", 999m);
+        await AuthorizeInvoiceAsync(
+            seed,
+            infra,
+            new DateOnly(2026, 2, 5),
+            "001-001-000000001",
+            100m
+        );
+        await AuthorizeInvoiceAsync(
+            seed,
+            infra,
+            new DateOnly(2026, 8, 10),
+            "001-001-000000002",
+            50m
+        );
+        await AuthorizeInvoiceAsync(
+            seed,
+            infra,
+            new DateOnly(2025, 12, 31),
+            "001-001-000000003",
+            999m
+        );
 
         await using var read = CreateContext(infra.CompanyId);
         var reader = new DashboardKpiReader(read, new FixedCurrentCompany(infra.CompanyId));
@@ -406,7 +436,11 @@ public sealed class DashboardKpiReaderTests : IAsyncLifetime
             100m,
             _createdBy
         );
-        openReceivable.GenerateInstallments(new DateOnly(2026, 9, 1), creditTermDays: 30, installmentCount: 1);
+        openReceivable.GenerateInstallments(
+            new DateOnly(2026, 9, 1),
+            creditTermDays: 30,
+            installmentCount: 1
+        );
 
         var settledReceivable = SalesReceivable.Create(
             _tenantId,
@@ -462,7 +496,11 @@ public sealed class DashboardKpiReaderTests : IAsyncLifetime
             100m,
             _createdBy
         );
-        overdue.GenerateInstallments(new DateOnly(2026, 6, 1), creditTermDays: 30, installmentCount: 1);
+        overdue.GenerateInstallments(
+            new DateOnly(2026, 6, 1),
+            creditTermDays: 30,
+            installmentCount: 1
+        );
 
         var current = SalesReceivable.Create(
             _tenantId,
@@ -472,7 +510,11 @@ public sealed class DashboardKpiReaderTests : IAsyncLifetime
             300m,
             _createdBy
         );
-        current.GenerateInstallments(new DateOnly(2026, 8, 1), creditTermDays: 60, installmentCount: 1);
+        current.GenerateInstallments(
+            new DateOnly(2026, 8, 1),
+            creditTermDays: 60,
+            installmentCount: 1
+        );
 
         seed.SalesReceivables.AddRange(overdue, current);
         await seed.SaveChangesAsync();
@@ -674,8 +716,7 @@ public sealed class DashboardKpiReaderTests : IAsyncLifetime
         );
         normalStock.ApplyMovement(50m, _createdBy);
 
-        seed.Set<CurrentStock>()
-            .AddRange(outOfStockStock, lowStockA, lowStockB, normalStock);
+        seed.Set<CurrentStock>().AddRange(outOfStockStock, lowStockA, lowStockB, normalStock);
         await seed.SaveChangesAsync();
         // noMovementItem nunca recibe fila de CurrentStock — debe contar como sin stock (0).
 
@@ -785,7 +826,12 @@ public sealed class DashboardKpiReaderTests : IAsyncLifetime
             companyId: companyId
         );
 
-    private sealed record SalesInfra(Guid CompanyId, Guid BranchId, Guid CashSessionId, Guid WarehouseId);
+    private sealed record SalesInfra(
+        Guid CompanyId,
+        Guid BranchId,
+        Guid CashSessionId,
+        Guid WarehouseId
+    );
 
     private sealed class FixedCurrentTenant(Guid tenantId) : ICurrentTenant
     {

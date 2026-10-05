@@ -11,7 +11,8 @@ namespace ERP.Application.Modules.Finance.Exceptions;
 /// persisten). Regla de negocio: deriva de <c>DomainRuleViolationException</c>, así que tras el
 /// rollback se traduce a DOMAIN_RULE_VIOLATION (DomainRuleBehavior / Result.FromDomainRule).
 /// </summary>
-public sealed class SupplierCreditRefundPostingFailedException : ERP.Domain.Exceptions.DomainRuleViolationException
+public sealed class SupplierCreditRefundPostingFailedException
+    : ERP.Domain.Exceptions.DomainRuleViolationException
 {
     public string? Code { get; }
 

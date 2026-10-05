@@ -104,8 +104,8 @@ public static class SalesReceivableDtoMapper
     )
     {
         // Cuota más próxima aún no saldada — es la que define "Vence" y la mora de la fila.
-        var nextDueInstallment = r.Installments
-            .Where(i => i.PaidAmount < i.Amount)
+        var nextDueInstallment = r
+            .Installments.Where(i => i.PaidAmount < i.Amount)
             .OrderBy(i => i.InstallmentNumber)
             .FirstOrDefault();
         var dueDate = nextDueInstallment?.DueDate;
@@ -139,8 +139,7 @@ public static class SalesReceivableDtoMapper
             statusLabel,
             r.Installments.Count,
             overdueDays,
-            r.Installments
-                .OrderBy(i => i.InstallmentNumber)
+            r.Installments.OrderBy(i => i.InstallmentNumber)
                 .Select(i => new SalesReceivableInstallmentDto(
                     i.Id,
                     i.InstallmentNumber,
@@ -317,9 +316,8 @@ public sealed class GetReceivablesListHandler
         var branchNames = branches.ToDictionary(b => b.Id, b => b.Name);
 
         var creatorIds = summaries.Values.Select(s => s.CreatedBy).Distinct().ToList();
-        var creators = creatorIds.Count == 0
-            ? []
-            : await _accessRepo.GetUsersByIdsAsync(creatorIds, ct);
+        var creators =
+            creatorIds.Count == 0 ? [] : await _accessRepo.GetUsersByIdsAsync(creatorIds, ct);
         var creatorNames = creators.ToDictionary(u => u.Id, u => u.FullName);
 
         var companyToday = await _companyClock.TodayAsync(_c.CompanyId, tid, ct);
@@ -330,9 +328,7 @@ public sealed class GetReceivablesListHandler
                 summaries.TryGetValue(r.InvoiceId, out var summary);
                 var hasSummary = summary != default;
                 string? branchName =
-                    hasSummary && branchNames.TryGetValue(summary.BranchId, out var bn)
-                        ? bn
-                        : null;
+                    hasSummary && branchNames.TryGetValue(summary.BranchId, out var bn) ? bn : null;
                 string? createdByName =
                     hasSummary && creatorNames.TryGetValue(summary.CreatedBy, out var un)
                         ? un

@@ -372,8 +372,12 @@ public sealed class PurchaseCreditNoteConstraintsTests : IAsyncLifetime
         var notesForReception = await verify
             .PurchaseCreditNotes.Where(c => c.ReceptionDocumentId == receptionDocumentId)
             .ToListAsync();
-        notesForReception.Should().HaveCount(2, "el historial se mantiene — la NC anulada nunca se borra");
-        notesForReception.Should().ContainSingle(c => c.Status == PurchaseCreditNoteStatus.Cancelled);
+        notesForReception
+            .Should()
+            .HaveCount(2, "el historial se mantiene — la NC anulada nunca se borra");
+        notesForReception
+            .Should()
+            .ContainSingle(c => c.Status == PurchaseCreditNoteStatus.Cancelled);
         notesForReception.Should().ContainSingle(c => c.Status == PurchaseCreditNoteStatus.Draft);
     }
 
@@ -461,8 +465,12 @@ public sealed class PurchaseCreditNoteConstraintsTests : IAsyncLifetime
         var notesForAccessKey = await verify
             .PurchaseCreditNotes.Where(c => c.AccessKey == accessKey)
             .ToListAsync();
-        notesForAccessKey.Should().HaveCount(2, "el historial se mantiene — la NC anulada nunca se borra");
-        notesForAccessKey.Should().ContainSingle(c => c.Status == PurchaseCreditNoteStatus.Cancelled);
+        notesForAccessKey
+            .Should()
+            .HaveCount(2, "el historial se mantiene — la NC anulada nunca se borra");
+        notesForAccessKey
+            .Should()
+            .ContainSingle(c => c.Status == PurchaseCreditNoteStatus.Cancelled);
         notesForAccessKey.Should().ContainSingle(c => c.Status == PurchaseCreditNoteStatus.Draft);
     }
 
@@ -490,7 +498,12 @@ public sealed class PurchaseCreditNoteConstraintsTests : IAsyncLifetime
                 accessKey: accessKey
             );
             if (authorize)
-                first.Authorize(first.TotalAmount, _userId, Guid.NewGuid(), $"hash-{Guid.NewGuid():N}");
+                first.Authorize(
+                    first.TotalAmount,
+                    _userId,
+                    Guid.NewGuid(),
+                    $"hash-{Guid.NewGuid():N}"
+                );
             db1.PurchaseCreditNotes.Add(first);
             await db1.SaveChangesAsync();
         }
@@ -507,7 +520,9 @@ public sealed class PurchaseCreditNoteConstraintsTests : IAsyncLifetime
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task ExistsByAccessKeyAsync_devuelve_true_para_NC_Draft_o_Authorized(bool authorize)
+    public async Task ExistsByAccessKeyAsync_devuelve_true_para_NC_Draft_o_Authorized(
+        bool authorize
+    )
     {
         var ctx = await SeedTenantAsync();
         var invoiceId = await CreateConfirmedInvoiceAsync(ctx);
@@ -515,17 +530,29 @@ public sealed class PurchaseCreditNoteConstraintsTests : IAsyncLifetime
 
         await using (var db = CreateContext(ctx.TenantId, ctx.CompanyId))
         {
-            var note = BuildDraft(ctx, invoiceId, _userId, "001-001-000010358", accessKey: accessKey);
+            var note = BuildDraft(
+                ctx,
+                invoiceId,
+                _userId,
+                "001-001-000010358",
+                accessKey: accessKey
+            );
             if (authorize)
-                note.Authorize(note.TotalAmount, _userId, Guid.NewGuid(), $"hash-{Guid.NewGuid():N}");
+                note.Authorize(
+                    note.TotalAmount,
+                    _userId,
+                    Guid.NewGuid(),
+                    $"hash-{Guid.NewGuid():N}"
+                );
             db.PurchaseCreditNotes.Add(note);
             await db.SaveChangesAsync();
         }
 
-        var repo = new ERP.Infrastructure.Persistence.Repositories.Purchases.PurchaseCreditNoteRepository(
-            CreateContext(ctx.TenantId, ctx.CompanyId),
-            new FixedCurrentCompany(() => ctx.CompanyId)
-        );
+        var repo =
+            new ERP.Infrastructure.Persistence.Repositories.Purchases.PurchaseCreditNoteRepository(
+                CreateContext(ctx.TenantId, ctx.CompanyId),
+                new FixedCurrentCompany(() => ctx.CompanyId)
+            );
 
         (await repo.ExistsByAccessKeyAsync(ctx.TenantId, accessKey)).Should().BeTrue();
     }
@@ -539,16 +566,23 @@ public sealed class PurchaseCreditNoteConstraintsTests : IAsyncLifetime
 
         await using (var db = CreateContext(ctx.TenantId, ctx.CompanyId))
         {
-            var note = BuildDraft(ctx, invoiceId, _userId, "001-001-000010359", accessKey: accessKey);
+            var note = BuildDraft(
+                ctx,
+                invoiceId,
+                _userId,
+                "001-001-000010359",
+                accessKey: accessKey
+            );
             note.Cancel("Anulada por error", _userId, Guid.NewGuid(), $"hash-{Guid.NewGuid():N}");
             db.PurchaseCreditNotes.Add(note);
             await db.SaveChangesAsync();
         }
 
-        var repo = new ERP.Infrastructure.Persistence.Repositories.Purchases.PurchaseCreditNoteRepository(
-            CreateContext(ctx.TenantId, ctx.CompanyId),
-            new FixedCurrentCompany(() => ctx.CompanyId)
-        );
+        var repo =
+            new ERP.Infrastructure.Persistence.Repositories.Purchases.PurchaseCreditNoteRepository(
+                CreateContext(ctx.TenantId, ctx.CompanyId),
+                new FixedCurrentCompany(() => ctx.CompanyId)
+            );
 
         (await repo.ExistsByAccessKeyAsync(ctx.TenantId, accessKey))
             .Should()
@@ -594,7 +628,9 @@ public sealed class PurchaseCreditNoteConstraintsTests : IAsyncLifetime
                 c.SupplierId == ctx.SupplierId && c.CreditNoteNumber == creditNoteNumber
             )
             .ToListAsync();
-        notesForNumber.Should().HaveCount(2, "el historial se mantiene — la NC anulada nunca se borra");
+        notesForNumber
+            .Should()
+            .HaveCount(2, "el historial se mantiene — la NC anulada nunca se borra");
         notesForNumber.Should().ContainSingle(c => c.Status == PurchaseCreditNoteStatus.Cancelled);
         notesForNumber.Should().ContainSingle(c => c.Status == PurchaseCreditNoteStatus.Draft);
     }
@@ -617,7 +653,12 @@ public sealed class PurchaseCreditNoteConstraintsTests : IAsyncLifetime
         {
             var first = BuildDraft(ctx, invoiceId1, _userId, creditNoteNumber);
             if (authorize)
-                first.Authorize(first.TotalAmount, _userId, Guid.NewGuid(), $"hash-{Guid.NewGuid():N}");
+                first.Authorize(
+                    first.TotalAmount,
+                    _userId,
+                    Guid.NewGuid(),
+                    $"hash-{Guid.NewGuid():N}"
+                );
             db1.PurchaseCreditNotes.Add(first);
             await db1.SaveChangesAsync();
         }
@@ -644,15 +685,21 @@ public sealed class PurchaseCreditNoteConstraintsTests : IAsyncLifetime
         {
             var note = BuildDraft(ctx, invoiceId, _userId, creditNoteNumber);
             if (authorize)
-                note.Authorize(note.TotalAmount, _userId, Guid.NewGuid(), $"hash-{Guid.NewGuid():N}");
+                note.Authorize(
+                    note.TotalAmount,
+                    _userId,
+                    Guid.NewGuid(),
+                    $"hash-{Guid.NewGuid():N}"
+                );
             db.PurchaseCreditNotes.Add(note);
             await db.SaveChangesAsync();
         }
 
-        var repo = new ERP.Infrastructure.Persistence.Repositories.Purchases.PurchaseCreditNoteRepository(
-            CreateContext(ctx.TenantId, ctx.CompanyId),
-            new FixedCurrentCompany(() => ctx.CompanyId)
-        );
+        var repo =
+            new ERP.Infrastructure.Persistence.Repositories.Purchases.PurchaseCreditNoteRepository(
+                CreateContext(ctx.TenantId, ctx.CompanyId),
+                new FixedCurrentCompany(() => ctx.CompanyId)
+            );
 
         (
             await repo.ExistsBySupplierAndCreditNoteNumberAsync(
@@ -681,10 +728,11 @@ public sealed class PurchaseCreditNoteConstraintsTests : IAsyncLifetime
             await db.SaveChangesAsync();
         }
 
-        var repo = new ERP.Infrastructure.Persistence.Repositories.Purchases.PurchaseCreditNoteRepository(
-            CreateContext(ctx.TenantId, ctx.CompanyId),
-            new FixedCurrentCompany(() => ctx.CompanyId)
-        );
+        var repo =
+            new ERP.Infrastructure.Persistence.Repositories.Purchases.PurchaseCreditNoteRepository(
+                CreateContext(ctx.TenantId, ctx.CompanyId),
+                new FixedCurrentCompany(() => ctx.CompanyId)
+            );
 
         (
             await repo.ExistsBySupplierAndCreditNoteNumberAsync(
@@ -723,16 +771,22 @@ public sealed class PurchaseCreditNoteConstraintsTests : IAsyncLifetime
                 receptionDocumentId: receptionDocumentId
             );
             if (authorize)
-                note.Authorize(note.TotalAmount, _userId, Guid.NewGuid(), $"hash-{Guid.NewGuid():N}");
+                note.Authorize(
+                    note.TotalAmount,
+                    _userId,
+                    Guid.NewGuid(),
+                    $"hash-{Guid.NewGuid():N}"
+                );
             db.PurchaseCreditNotes.Add(note);
             await db.SaveChangesAsync();
             noteId = note.Id;
         }
 
-        var repo = new ERP.Infrastructure.Persistence.Repositories.Purchases.PurchaseCreditNoteRepository(
-            CreateContext(ctx.TenantId, ctx.CompanyId),
-            new FixedCurrentCompany(() => ctx.CompanyId)
-        );
+        var repo =
+            new ERP.Infrastructure.Persistence.Repositories.Purchases.PurchaseCreditNoteRepository(
+                CreateContext(ctx.TenantId, ctx.CompanyId),
+                new FixedCurrentCompany(() => ctx.CompanyId)
+            );
 
         var found = await repo.GetIdByReceptionDocumentIdAsync(ctx.TenantId, receptionDocumentId);
         found.Should().Be(noteId);
@@ -761,10 +815,11 @@ public sealed class PurchaseCreditNoteConstraintsTests : IAsyncLifetime
             noteId = note.Id;
         }
 
-        var repo = new ERP.Infrastructure.Persistence.Repositories.Purchases.PurchaseCreditNoteRepository(
-            CreateContext(ctx.TenantId, ctx.CompanyId),
-            new FixedCurrentCompany(() => ctx.CompanyId)
-        );
+        var repo =
+            new ERP.Infrastructure.Persistence.Repositories.Purchases.PurchaseCreditNoteRepository(
+                CreateContext(ctx.TenantId, ctx.CompanyId),
+                new FixedCurrentCompany(() => ctx.CompanyId)
+            );
 
         (await repo.GetIdByReceptionDocumentIdAsync(ctx.TenantId, receptionDocumentId))
             .Should()
@@ -772,7 +827,12 @@ public sealed class PurchaseCreditNoteConstraintsTests : IAsyncLifetime
         (await repo.ExistsByReceptionDocumentIdAsync(ctx.TenantId, receptionDocumentId))
             .Should()
             .BeFalse();
-        (await repo.GetLatestCancelledIdByReceptionDocumentIdAsync(ctx.TenantId, receptionDocumentId))
+        (
+            await repo.GetLatestCancelledIdByReceptionDocumentIdAsync(
+                ctx.TenantId,
+                receptionDocumentId
+            )
+        )
             .Should()
             .Be(noteId, "el historial se conserva para \"Ver NC anulada\"");
     }
@@ -811,9 +871,7 @@ public sealed class PurchaseCreditNoteConstraintsTests : IAsyncLifetime
 
         await using (var db1 = CreateContext(ctx.TenantId, ctx.CompanyId))
         {
-            db1.PurchaseCreditNotes.Add(
-                BuildDraft(ctx, invoiceId1, _userId, "001-001-000000005")
-            );
+            db1.PurchaseCreditNotes.Add(BuildDraft(ctx, invoiceId1, _userId, "001-001-000000005"));
             await db1.SaveChangesAsync();
         }
 
@@ -867,9 +925,7 @@ public sealed class PurchaseCreditNoteConstraintsTests : IAsyncLifetime
 
         await using (var db = CreateContext(ctx.TenantId, ctx.CompanyId))
         {
-            db.PurchaseCreditNotes.Add(
-                BuildDraft(ctx, invoiceId, _userId, "001-001-000000007")
-            );
+            db.PurchaseCreditNotes.Add(BuildDraft(ctx, invoiceId, _userId, "001-001-000000007"));
             await db.SaveChangesAsync();
         }
 

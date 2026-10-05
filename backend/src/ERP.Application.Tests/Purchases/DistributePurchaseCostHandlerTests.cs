@@ -39,7 +39,17 @@ public sealed class DistributePurchaseCostHandlerTests
             0
         );
         var details = lines
-            .Select(l => PurchaseInvoiceDetail.Create(inv.Id, TenantId, "Producto", l.qty, l.price, "10", "UNIT"))
+            .Select(l =>
+                PurchaseInvoiceDetail.Create(
+                    inv.Id,
+                    TenantId,
+                    "Producto",
+                    l.qty,
+                    l.price,
+                    "10",
+                    "UNIT"
+                )
+            )
             .ToList();
         inv.ReplaceLines(details, UserId);
         return inv;
@@ -54,7 +64,8 @@ public sealed class DistributePurchaseCostHandlerTests
         repo = new Mock<IPurchaseInvoiceRepository>();
         repo.Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(invoice);
-        repo.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        repo.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         return new DistributePurchaseCostHandler(
             repo.Object,
@@ -114,7 +125,12 @@ public sealed class DistributePurchaseCostHandlerTests
         var handler = BuildHandler(null, out var repo);
 
         var result = await handler.Handle(
-            new DistributePurchaseCostCommand(Guid.NewGuid(), PurchaseCostType.Freight, 10m, new List<Guid> { Guid.NewGuid() }),
+            new DistributePurchaseCostCommand(
+                Guid.NewGuid(),
+                PurchaseCostType.Freight,
+                10m,
+                new List<Guid> { Guid.NewGuid() }
+            ),
             CancellationToken.None
         );
 
@@ -130,7 +146,12 @@ public sealed class DistributePurchaseCostHandlerTests
         var handler = BuildHandler(inv, out var repo);
 
         var result = await handler.Handle(
-            new DistributePurchaseCostCommand(inv.Id, PurchaseCostType.Freight, 10m, new List<Guid> { Guid.NewGuid() }),
+            new DistributePurchaseCostCommand(
+                inv.Id,
+                PurchaseCostType.Freight,
+                10m,
+                new List<Guid> { Guid.NewGuid() }
+            ),
             CancellationToken.None
         );
 
@@ -145,7 +166,12 @@ public sealed class DistributePurchaseCostHandlerTests
         var handler = BuildHandler(inv, out _);
 
         var result = await handler.Handle(
-            new DistributePurchaseCostCommand(inv.Id, PurchaseCostType.Freight, 10m, new List<Guid> { inv.Lines[0].Id }),
+            new DistributePurchaseCostCommand(
+                inv.Id,
+                PurchaseCostType.Freight,
+                10m,
+                new List<Guid> { inv.Lines[0].Id }
+            ),
             CancellationToken.None
         );
 
@@ -167,7 +193,12 @@ public sealed class DistributePurchaseCostHandlerTests
         var handler = BuildHandler(inv, out var repo, activeBranchId: Guid.NewGuid());
 
         var result = await handler.Handle(
-            new DistributePurchaseCostCommand(inv.Id, PurchaseCostType.Freight, 10m, new List<Guid> { inv.Lines[0].Id }),
+            new DistributePurchaseCostCommand(
+                inv.Id,
+                PurchaseCostType.Freight,
+                10m,
+                new List<Guid> { inv.Lines[0].Id }
+            ),
             CancellationToken.None
         );
 

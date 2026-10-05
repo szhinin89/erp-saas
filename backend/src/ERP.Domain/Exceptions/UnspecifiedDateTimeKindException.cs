@@ -15,7 +15,11 @@ public sealed class UnspecifiedDateTimeKindException : Exception
 {
     public string Code { get; } = "unspecified_datetime_kind";
 
-    public UnspecifiedDateTimeKindException(string entityName, string propertyName, DateTimeKind kind)
+    public UnspecifiedDateTimeKindException(
+        string entityName,
+        string propertyName,
+        DateTimeKind kind
+    )
         : base(
             $"{entityName}.{propertyName} tiene DateTimeKind.{kind}. Todo DateTime persistible debe "
                 + "normalizarse a UTC (DateTimeKind.Utc) antes de llegar a SaveChanges — usar "

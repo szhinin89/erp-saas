@@ -584,8 +584,7 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
         // SC-014 (§5.1 caso 5, diseño: "callejón sin salida documentado").
         await using (var db = CreateContext())
         {
-            var payable = await db
-                .Set<AccountsPayable>()
+            var payable = await db.Set<AccountsPayable>()
                 .Include(x => x.Installments)
                 .FirstAsync(x => x.Id == target.PayableId);
             payable.Cancel(_userId);
@@ -850,7 +849,9 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
     {
         // ZH-BACKEND-SECURITY-ERROR-FINAL-HARDENING-01: clasificación técnica real (único punto).
         public string? ClassifyFailureCode(Exception exception) =>
-            new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator().ClassifyFailureCode(exception);
+            new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator().ClassifyFailureCode(
+                exception
+            );
 
         public bool TryGetUniqueViolation(Exception exception, out DatabaseUniqueViolationInfo info)
         {

@@ -50,7 +50,10 @@ public sealed class CommunicationOutboxAttachment : SystemBaseEntity, IOptionalC
             throw new ArgumentException("El nombre del adjunto es obligatorio.", nameof(fileName));
 
         if (string.IsNullOrWhiteSpace(contentType))
-            throw new ArgumentException("El content type del adjunto es obligatorio.", nameof(contentType));
+            throw new ArgumentException(
+                "El content type del adjunto es obligatorio.",
+                nameof(contentType)
+            );
 
         if (
             string.IsNullOrWhiteSpace(fileStoragePath)
@@ -71,7 +74,11 @@ public sealed class CommunicationOutboxAttachment : SystemBaseEntity, IOptionalC
             AttachmentType = attachmentType,
             FileName = Trim(fileName, FileNameMaxLen, nameof(fileName)),
             ContentType = Trim(contentType, ContentTypeMaxLen, nameof(contentType)),
-            FileStoragePath = NormalizeOptional(fileStoragePath, FileStoragePathMaxLen, nameof(fileStoragePath)),
+            FileStoragePath = NormalizeOptional(
+                fileStoragePath,
+                FileStoragePathMaxLen,
+                nameof(fileStoragePath)
+            ),
             BinaryContent = binaryContent,
             ReferenceId = referenceId == Guid.Empty ? null : referenceId,
             CreatedAt = DateTime.UtcNow,
@@ -83,7 +90,10 @@ public sealed class CommunicationOutboxAttachment : SystemBaseEntity, IOptionalC
     {
         var normalized = value.Trim();
         if (normalized.Length > maxLength)
-            throw new ArgumentException($"El valor no puede superar {maxLength} caracteres.", paramName);
+            throw new ArgumentException(
+                $"El valor no puede superar {maxLength} caracteres.",
+                paramName
+            );
         return normalized;
     }
 

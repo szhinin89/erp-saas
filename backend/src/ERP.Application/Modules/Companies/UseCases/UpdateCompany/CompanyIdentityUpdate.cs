@@ -33,7 +33,10 @@ internal static class CompanyIdentityUpdate
     )
     {
         var taxId = identity.TaxId?.Trim();
-        if (!string.IsNullOrEmpty(taxId) && !string.Equals(taxId, entity.TaxIdentificationNumber, StringComparison.Ordinal))
+        if (
+            !string.IsNullOrEmpty(taxId)
+            && !string.Equals(taxId, entity.TaxIdentificationNumber, StringComparison.Ordinal)
+        )
         {
             var taken = await companies.GetByTaxIdentificationNumberAsync(taxId, cancellationToken);
             if (taken is not null && taken.Id != entity.Id)

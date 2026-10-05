@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using ERP.API.Tests.Support;
 using ERP.Application.Behaviors;
 using ERP.Application.Common;
@@ -11,7 +12,6 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using System.Collections.Concurrent;
 
 namespace ERP.API.Tests.Integration;
 
@@ -45,12 +45,17 @@ public sealed class DomainRulePipelineIntegrationTests : IAsyncLifetime
     public sealed class ProbeDeactivateTwiceHandler(ErpDbContext db, IUnitOfWork uow, Trace trace)
         : IRequestHandler<ProbeDeactivateTwiceCommand, Result<bool>>
     {
-        public async Task<Result<bool>> Handle(ProbeDeactivateTwiceCommand cmd, CancellationToken ct)
+        public async Task<Result<bool>> Handle(
+            ProbeDeactivateTwiceCommand cmd,
+            CancellationToken ct
+        )
         {
             await uow.BeginTransactionAsync(ct);
             try
             {
-                var partner = await db.BusinessPartners.IgnoreQueryFilters().SingleAsync(p => p.Id == cmd.PartnerId, ct);
+                var partner = await db
+                    .BusinessPartners.IgnoreQueryFilters()
+                    .SingleAsync(p => p.Id == cmd.PartnerId, ct);
                 partner.Deactivate(cmd.UserId); // válido: muta + evento de dominio
                 await db.SaveChangesAsync(ct); // flush DENTRO de la transacción (fila + outbox)
                 trace.Events.Enqueue("handler:flushed");
@@ -73,12 +78,16 @@ public sealed class DomainRulePipelineIntegrationTests : IAsyncLifetime
         public int Executions;
     }
 
-    public sealed record ProbeCachedQuery(string Key) : IRequest<Result<int>>, ICacheable, IPlatformScopedRequest
+    public sealed record ProbeCachedQuery(string Key)
+        : IRequest<Result<int>>,
+            ICacheable,
+            IPlatformScopedRequest
     {
         public int CacheTTL => 300;
     }
 
-    public sealed class ProbeCachedHandler(CacheSwitch sw) : IRequestHandler<ProbeCachedQuery, Result<int>>
+    public sealed class ProbeCachedHandler(CacheSwitch sw)
+        : IRequestHandler<ProbeCachedQuery, Result<int>>
     {
         public Task<Result<int>> Handle(ProbeCachedQuery request, CancellationToken ct)
         {
@@ -89,24 +98,36 @@ public sealed class DomainRulePipelineIntegrationTests : IAsyncLifetime
         }
     }
 
-    public sealed class OuterTraceBehavior<TRequest, TResponse>(Trace trace) : IPipelineBehavior<TRequest, TResponse>
+    public sealed class OuterTraceBehavior<TRequest, TResponse>(Trace trace)
+        : IPipelineBehavior<TRequest, TResponse>
         where TRequest : notnull
     {
-        public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken ct)
+        public async Task<TResponse> Handle(
+            TRequest request,
+            RequestHandlerDelegate<TResponse> next,
+            CancellationToken ct
+        )
         {
             if (request is not ProbeDeactivateTwiceCommand)
                 return await next(ct);
             trace.Events.Enqueue("outer:enter");
             var response = await next(ct);
-            trace.Events.Enqueue(response is Result<bool> r ? $"outer:exit(result:{r.Code})" : "outer:exit");
+            trace.Events.Enqueue(
+                response is Result<bool> r ? $"outer:exit(result:{r.Code})" : "outer:exit"
+            );
             return response;
         }
     }
 
-    public sealed class InnerTraceBehavior<TRequest, TResponse>(Trace trace) : IPipelineBehavior<TRequest, TResponse>
+    public sealed class InnerTraceBehavior<TRequest, TResponse>(Trace trace)
+        : IPipelineBehavior<TRequest, TResponse>
         where TRequest : notnull
     {
-        public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken ct)
+        public async Task<TResponse> Handle(
+            TRequest request,
+            RequestHandlerDelegate<TResponse> next,
+            CancellationToken ct
+        )
         {
             if (request is not ProbeDeactivateTwiceCommand)
                 return await next(ct);
@@ -144,7 +165,14 @@ public sealed class DomainRulePipelineIntegrationTests : IAsyncLifetime
             db.Tenants.Add(tenant);
             await db.SaveChangesAsync();
             _tenantId = tenant.Id;
-            var partner = BusinessPartner.Create(_tenantId, "05", "1710034065", 1, "Tercero Activo", _userId);
+            var partner = BusinessPartner.Create(
+                _tenantId,
+                "05",
+                "1710034065",
+                1,
+                "Tercero Activo",
+                _userId
+            );
             db.BusinessPartners.Add(partner);
             await db.SaveChangesAsync();
             _partnerId = partner.Id;
@@ -153,18 +181,34 @@ public sealed class DomainRulePipelineIntegrationTests : IAsyncLifetime
         _factory.MutableTenant.TenantId = _tenantId;
         _factory.MutableUser.UserId = _userId;
 
-        _app = _factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
-        {
-            services.AddSingleton<Trace>();
-            services.AddSingleton<CacheSwitch>();
-            services.AddTransient<IRequestHandler<ProbeDeactivateTwiceCommand, Result<bool>>, ProbeDeactivateTwiceHandler>();
-            services.AddTransient<IRequestHandler<ProbeCachedQuery, Result<int>>, ProbeCachedHandler>();
-            // Traza más externa: antes del primer behavior registrado por AddApplication.
-            var first = services.ToList().FindIndex(d => d.ServiceType == typeof(IPipelineBehavior<,>));
-            services.Insert(first, ServiceDescriptor.Transient(typeof(IPipelineBehavior<,>), typeof(OuterTraceBehavior<,>)));
-            // Traza más interna: después del último (inmediatamente antes del handler).
-            services.AddTransient(typeof(IPipelineBehavior<,>), typeof(InnerTraceBehavior<,>));
-        }));
+        _app = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureTestServices(services =>
+            {
+                services.AddSingleton<Trace>();
+                services.AddSingleton<CacheSwitch>();
+                services.AddTransient<
+                    IRequestHandler<ProbeDeactivateTwiceCommand, Result<bool>>,
+                    ProbeDeactivateTwiceHandler
+                >();
+                services.AddTransient<
+                    IRequestHandler<ProbeCachedQuery, Result<int>>,
+                    ProbeCachedHandler
+                >();
+                // Traza más externa: antes del primer behavior registrado por AddApplication.
+                var first = services
+                    .ToList()
+                    .FindIndex(d => d.ServiceType == typeof(IPipelineBehavior<,>));
+                services.Insert(
+                    first,
+                    ServiceDescriptor.Transient(
+                        typeof(IPipelineBehavior<,>),
+                        typeof(OuterTraceBehavior<,>)
+                    )
+                );
+                // Traza más interna: después del último (inmediatamente antes del handler).
+                services.AddTransient(typeof(IPipelineBehavior<,>), typeof(InnerTraceBehavior<,>));
+            })
+        );
     }
 
     public async Task DisposeAsync()
@@ -178,42 +222,51 @@ public sealed class DomainRulePipelineIntegrationTests : IAsyncLifetime
     {
         int outboxBefore;
         using (var scope = _app.Services.CreateScope())
-            outboxBefore = await scope.ServiceProvider.GetRequiredService<ErpDbContext>().OutboxMessages.CountAsync();
+            outboxBefore = await scope
+                .ServiceProvider.GetRequiredService<ErpDbContext>()
+                .OutboxMessages.CountAsync();
 
         Result<bool> result;
         IReadOnlyList<Type> registered;
         using (var scope = _app.Services.CreateScope())
         {
-            registered = scope.ServiceProvider
-                .GetServices<IPipelineBehavior<ProbeDeactivateTwiceCommand, Result<bool>>>()
+            registered = scope
+                .ServiceProvider.GetServices<
+                    IPipelineBehavior<ProbeDeactivateTwiceCommand, Result<bool>>
+                >()
                 .Select(b => b.GetType().GetGenericTypeDefinition())
                 .ToList();
-            result = await scope.ServiceProvider.GetRequiredService<IMediator>()
+            result = await scope
+                .ServiceProvider.GetRequiredService<IMediator>()
                 .Send(new ProbeDeactivateTwiceCommand(_partnerId, _userId));
         }
 
         // Orden resuelto por el contenedor real (externo → interno).
-        registered.Should().Equal(
-            typeof(OuterTraceBehavior<,>),
-            typeof(ValidationBehavior<,>),
-            typeof(CompanyScopeBehavior<,>),
-            typeof(BranchScopeBehavior<,>),
-            typeof(DomainRuleBehavior<,>),
-            typeof(CachingBehavior<,>),
-            typeof(InnerTraceBehavior<,>)
-        );
+        registered
+            .Should()
+            .Equal(
+                typeof(OuterTraceBehavior<,>),
+                typeof(ValidationBehavior<,>),
+                typeof(CompanyScopeBehavior<,>),
+                typeof(BranchScopeBehavior<,>),
+                typeof(DomainRuleBehavior<,>),
+                typeof(CachingBehavior<,>),
+                typeof(InnerTraceBehavior<,>)
+            );
 
         // Orden EFECTIVO de ejecución: el handler hace rollback, la excepción atraviesa los behaviors
         // internos y DomainRuleBehavior la convierte recién después.
         var trace = _app.Services.GetRequiredService<Trace>().Events.ToArray();
-        trace.Should().Equal(
-            "outer:enter",
-            "inner:enter",
-            "handler:flushed",
-            "handler:rolledback(active=False)",
-            "inner:exception(DomainRuleViolationException)",
-            $"outer:exit(result:{ApiResponseCodes.Common.DomainRuleViolation})"
-        );
+        trace
+            .Should()
+            .Equal(
+                "outer:enter",
+                "inner:enter",
+                "handler:flushed",
+                "handler:rolledback(active=False)",
+                "inner:exception(DomainRuleViolationException)",
+                $"outer:exit(result:{ApiResponseCodes.Common.DomainRuleViolation})"
+            );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.DomainRuleViolation);
@@ -222,9 +275,14 @@ public sealed class DomainRulePipelineIntegrationTests : IAsyncLifetime
         // Otra instancia de DbContext: ni la mutación ni el outbox del flush intermedio persisten.
         using var verify = _app.Services.CreateScope();
         var db = verify.ServiceProvider.GetRequiredService<ErpDbContext>();
-        var partner = await db.BusinessPartners.IgnoreQueryFilters().AsNoTracking().SingleAsync(p => p.Id == _partnerId);
+        var partner = await db
+            .BusinessPartners.IgnoreQueryFilters()
+            .AsNoTracking()
+            .SingleAsync(p => p.Id == _partnerId);
         partner.IsActive.Should().BeTrue("el flush dentro de la transacción se revirtió");
-        (await db.OutboxMessages.CountAsync()).Should().Be(outboxBefore, "el outbox del evento de desactivación no debe quedar parcial");
+        (await db.OutboxMessages.CountAsync())
+            .Should()
+            .Be(outboxBefore, "el outbox del evento de desactivación no debe quedar parcial");
     }
 
     [Fact]
@@ -246,7 +304,9 @@ public sealed class DomainRulePipelineIntegrationTests : IAsyncLifetime
         var cached = await Send();
 
         rejected.Code.Should().Be(ApiResponseCodes.Common.DomainRuleViolation);
-        valid.IsSuccess.Should().BeTrue("el rechazo no quedó en caché: el handler se ejecutó otra vez");
+        valid
+            .IsSuccess.Should()
+            .BeTrue("el rechazo no quedó en caché: el handler se ejecutó otra vez");
         sw.Executions.Should().Be(2);
         cached.Value.Should().Be(valid.Value, "la respuesta válida sí se cachea (control)");
         sw.Executions.Should().Be(2, "la tercera llamada sale de caché");

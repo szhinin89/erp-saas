@@ -52,8 +52,18 @@ public sealed class AccountsPayableSearchTests : IAsyncLifetime
         await db.Database.MigrateAsync();
 
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _userId);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _userId);
-        var companyB = Company.CreateManaged(tenant.Id, "1790012345002", "Test S.A. Dos", createdBy: _userId);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: _userId
+        );
+        var companyB = Company.CreateManaged(
+            tenant.Id,
+            "1790012345002",
+            "Test S.A. Dos",
+            createdBy: _userId
+        );
         db.Tenants.Add(tenant);
         db.Companies.AddRange(company, companyB);
         await db.SaveChangesAsync();
@@ -122,8 +132,22 @@ public sealed class AccountsPayableSearchTests : IAsyncLifetime
         _branchId = branch.Id;
         var branchBId = branchB.Id;
 
-        var acme = BusinessPartner.Create(_tenantId, "05", "1710034065", 1, "Acme Distribuidora", _userId);
-        var globex = BusinessPartner.Create(_tenantId, "05", "1710034073", 1, "Globex Corp", _userId);
+        var acme = BusinessPartner.Create(
+            _tenantId,
+            "05",
+            "1710034065",
+            1,
+            "Acme Distribuidora",
+            _userId
+        );
+        var globex = BusinessPartner.Create(
+            _tenantId,
+            "05",
+            "1710034073",
+            1,
+            "Globex Corp",
+            _userId
+        );
         db.BusinessPartners.AddRange(acme, globex);
         await db.SaveChangesAsync();
         _acmeSupplierId = acme.Id;
@@ -132,34 +156,66 @@ public sealed class AccountsPayableSearchTests : IAsyncLifetime
         var issueDate = new DateOnly(2026, 8, 1);
 
         var purchasePending = AccountsPayable.CreateFromOrigin(
-            _tenantId, _companyId, _branchId, _acmeSupplierId,
-            AccountsPayableOriginType.PurchaseInvoice, Guid.NewGuid(),
-            "01", "001-001-000000010", issueDate, issueDate, _userId
+            _tenantId,
+            _companyId,
+            _branchId,
+            _acmeSupplierId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            Guid.NewGuid(),
+            "01",
+            "001-001-000000010",
+            issueDate,
+            issueDate,
+            _userId
         );
         purchasePending.AddInstallment(1, new DateOnly(2026, 9, 15), 500m);
         _purchasePendingId = purchasePending.Id;
 
         var purchasePaid = AccountsPayable.CreateFromOrigin(
-            _tenantId, _companyId, _branchId, _globexSupplierId,
-            AccountsPayableOriginType.PurchaseInvoice, Guid.NewGuid(),
-            "01", "001-001-000000020", issueDate, issueDate, _userId
+            _tenantId,
+            _companyId,
+            _branchId,
+            _globexSupplierId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            Guid.NewGuid(),
+            "01",
+            "001-001-000000020",
+            issueDate,
+            issueDate,
+            _userId
         );
         purchasePaid.AddInstallment(1, new DateOnly(2026, 8, 20), 300m);
         purchasePaid.RegisterPayment(300m, _userId);
         _purchasePaidId = purchasePaid.Id;
 
         var expensePending = AccountsPayable.CreateFromOrigin(
-            _tenantId, _companyId, _branchId, _acmeSupplierId,
-            AccountsPayableOriginType.ExpenseDocument, Guid.NewGuid(),
-            "GTO", "GTO-000001", issueDate, issueDate, _userId
+            _tenantId,
+            _companyId,
+            _branchId,
+            _acmeSupplierId,
+            AccountsPayableOriginType.ExpenseDocument,
+            Guid.NewGuid(),
+            "GTO",
+            "GTO-000001",
+            issueDate,
+            issueDate,
+            _userId
         );
         expensePending.AddInstallment(1, new DateOnly(2026, 10, 1), 150m);
         _expensePendingId = expensePending.Id;
 
         var companyBPayable = AccountsPayable.CreateFromOrigin(
-            _tenantId, _companyBId, branchBId, _globexSupplierId,
-            AccountsPayableOriginType.PurchaseInvoice, Guid.NewGuid(),
-            "01", "001-001-000000099", issueDate, issueDate, _userId
+            _tenantId,
+            _companyBId,
+            branchBId,
+            _globexSupplierId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            Guid.NewGuid(),
+            "01",
+            "001-001-000000099",
+            issueDate,
+            issueDate,
+            _userId
         );
         companyBPayable.AddInstallment(1, new DateOnly(2026, 9, 20), 999m);
         _companyBPayableId = companyBPayable.Id;
@@ -173,7 +229,9 @@ public sealed class AccountsPayableSearchTests : IAsyncLifetime
 
     private ErpDbContext CreateContext(Guid? activeCompanyId = null) =>
         new(
-            new DbContextOptionsBuilder<ErpDbContext>().UseNpgsql(_postgres.GetConnectionString()).Options,
+            new DbContextOptionsBuilder<ErpDbContext>()
+                .UseNpgsql(_postgres.GetConnectionString())
+                .Options,
             new FixedCurrentTenant(_tenantId),
             new NoOpPublisher(),
             new FixedCurrentCompany(activeCompanyId ?? _companyId)
@@ -186,8 +244,16 @@ public sealed class AccountsPayableSearchTests : IAsyncLifetime
         var repo = new AccountsPayableRepository(db);
 
         var (items, total) = await repo.SearchAsync(
-            _tenantId, _companyId, AccountsPayableOriginType.PurchaseInvoice,
-            null, null, null, null, null, 1, 50
+            _tenantId,
+            _companyId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            null,
+            null,
+            null,
+            null,
+            null,
+            1,
+            50
         );
 
         total.Should().Be(2);
@@ -201,8 +267,16 @@ public sealed class AccountsPayableSearchTests : IAsyncLifetime
         var repo = new AccountsPayableRepository(db);
 
         var (items, total) = await repo.SearchAsync(
-            _tenantId, _companyId, AccountsPayableOriginType.ExpenseDocument,
-            null, null, null, null, null, 1, 50
+            _tenantId,
+            _companyId,
+            AccountsPayableOriginType.ExpenseDocument,
+            null,
+            null,
+            null,
+            null,
+            null,
+            1,
+            50
         );
 
         total.Should().Be(1);
@@ -216,8 +290,16 @@ public sealed class AccountsPayableSearchTests : IAsyncLifetime
         var repo = new AccountsPayableRepository(db);
 
         var (items, total) = await repo.SearchAsync(
-            _tenantId, _companyId, null,
-            AccountsPayableStatus.Paid, null, null, null, null, 1, 50
+            _tenantId,
+            _companyId,
+            null,
+            AccountsPayableStatus.Paid,
+            null,
+            null,
+            null,
+            null,
+            1,
+            50
         );
 
         total.Should().Be(1);
@@ -231,8 +313,16 @@ public sealed class AccountsPayableSearchTests : IAsyncLifetime
         var repo = new AccountsPayableRepository(db);
 
         var (items, total) = await repo.SearchAsync(
-            _tenantId, _companyId, null,
-            AccountsPayableStatus.Pending, null, null, null, null, 1, 50
+            _tenantId,
+            _companyId,
+            null,
+            AccountsPayableStatus.Pending,
+            null,
+            null,
+            null,
+            null,
+            1,
+            50
         );
 
         total.Should().Be(2);
@@ -246,8 +336,16 @@ public sealed class AccountsPayableSearchTests : IAsyncLifetime
         var repo = new AccountsPayableRepository(db);
 
         var (items, total) = await repo.SearchAsync(
-            _tenantId, _companyId, null, null, null, null, null,
-            "000000020", 1, 50
+            _tenantId,
+            _companyId,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "000000020",
+            1,
+            50
         );
 
         total.Should().Be(1);
@@ -261,8 +359,16 @@ public sealed class AccountsPayableSearchTests : IAsyncLifetime
         var repo = new AccountsPayableRepository(db);
 
         var (items, total) = await repo.SearchAsync(
-            _tenantId, _companyId, null, null, null, null, null,
-            "acme", 1, 50
+            _tenantId,
+            _companyId,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "acme",
+            1,
+            50
         );
 
         total.Should().Be(2);
@@ -276,9 +382,16 @@ public sealed class AccountsPayableSearchTests : IAsyncLifetime
         var repo = new AccountsPayableRepository(db);
 
         var (items, total) = await repo.SearchAsync(
-            _tenantId, _companyId, null, null, null,
-            new DateOnly(2026, 9, 1), new DateOnly(2026, 9, 30),
-            null, 1, 50
+            _tenantId,
+            _companyId,
+            null,
+            null,
+            null,
+            new DateOnly(2026, 9, 1),
+            new DateOnly(2026, 9, 30),
+            null,
+            1,
+            50
         );
 
         total.Should().Be(1);
@@ -292,8 +405,16 @@ public sealed class AccountsPayableSearchTests : IAsyncLifetime
         var repo = new AccountsPayableRepository(db);
 
         var (items, _) = await repo.SearchAsync(
-            _tenantId, _companyId, AccountsPayableOriginType.PurchaseInvoice,
-            null, null, null, null, null, 1, 50
+            _tenantId,
+            _companyId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            null,
+            null,
+            null,
+            null,
+            null,
+            1,
+            50
         );
 
         var pending = items.Single(x => x.Id == _purchasePendingId);
@@ -318,12 +439,20 @@ public sealed class AccountsPayableSearchTests : IAsyncLifetime
         {
             var repoCompanyA = new AccountsPayableRepository(dbCompanyA);
 
-            var propia = await repoCompanyA.GetByIdForCompanyAsync(_tenantId, _companyId, _purchasePendingId, default);
+            var propia = await repoCompanyA.GetByIdForCompanyAsync(
+                _tenantId,
+                _companyId,
+                _purchasePendingId,
+                default
+            );
             propia.Should().NotBeNull();
             propia.Id.Should().Be(_purchasePendingId);
 
             var deOtraEmpresa = await repoCompanyA.GetByIdForCompanyAsync(
-                _tenantId, _companyId, _companyBPayableId, default
+                _tenantId,
+                _companyId,
+                _companyBPayableId,
+                default
             );
             deOtraEmpresa.Should().BeNull("el Id pertenece a la Empresa B, nunca a la Empresa A");
         }
@@ -334,7 +463,10 @@ public sealed class AccountsPayableSearchTests : IAsyncLifetime
             var repoCompanyB = new AccountsPayableRepository(dbCompanyB);
 
             var suyaPropia = await repoCompanyB.GetByIdForCompanyAsync(
-                _tenantId, _companyBId, _companyBPayableId, default
+                _tenantId,
+                _companyBId,
+                _companyBPayableId,
+                default
             );
             suyaPropia.Should().NotBeNull();
             suyaPropia.Id.Should().Be(_companyBPayableId);
@@ -361,10 +493,12 @@ public sealed class AccountsPayableSearchTests : IAsyncLifetime
 
         var result = await repo.GetByIdAsync(_tenantId, _companyBPayableId, default);
 
-        result.Should().BeNull(
-            "el filtro global de EF Core (ICompanyOperationalEntity) ya bloquea el cruce de " +
-            "empresas aunque el método solo filtre explícitamente por TenantId"
-        );
+        result
+            .Should()
+            .BeNull(
+                "el filtro global de EF Core (ICompanyOperationalEntity) ya bloquea el cruce de "
+                    + "empresas aunque el método solo filtre explícitamente por TenantId"
+            );
     }
 
     private sealed class FixedCurrentTenant(Guid tenantId) : ICurrentTenant
@@ -385,7 +519,10 @@ public sealed class AccountsPayableSearchTests : IAsyncLifetime
         public Task Publish(object notification, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
             where TNotification : MediatR.INotification => Task.CompletedTask;
     }
 }

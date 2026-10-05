@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Common.Services;
@@ -12,8 +14,6 @@ using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 using FluentValidation;
 using MediatR;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace ERP.Application.Modules.Purchases.UseCases;
 
@@ -250,11 +250,7 @@ public sealed class CancelPurchaseReturnHandler
                         purchaseReturn.Id,
                         cmd.ClientRequestId
                     );
-                    credit.RegisterSourceReturnCancellation(
-                        uid,
-                        cmd.ClientRequestId,
-                        movementHash
-                    );
+                    credit.RegisterSourceReturnCancellation(uid, cmd.ClientRequestId, movementHash);
                 }
             }
 
@@ -264,8 +260,13 @@ public sealed class CancelPurchaseReturnHandler
                 cmd.Reason
             );
             purchaseReturn.Cancel(cmd.Reason, uid, cmd.ClientRequestId, cancelHash);
-            var creditNote = _creditNoteRepo is null ? null
-                : await _creditNoteRepo.GetByLinkedPurchaseReturnIdAsync(tid, purchaseReturn.Id, ct);
+            var creditNote = _creditNoteRepo is null
+                ? null
+                : await _creditNoteRepo.GetByLinkedPurchaseReturnIdAsync(
+                    tid,
+                    purchaseReturn.Id,
+                    ct
+                );
             creditNote?.CancelLinkedReturn(purchaseReturn, uid);
 
             // PURCHASE-RECEPTION-CREDIT-NOTE-CANCELLED-REPROCESS-01 — la NC/XML de recepción que
@@ -273,7 +274,10 @@ public sealed class CancelPurchaseReturnHandler
             // devolución nueva y limpia, nunca reutiliza la cancelada). Sin esto, el documento de
             // recepción se quedaba permanentemente "Procesado" (PurchaseId apuntando a la factura
             // afectada) aunque su única NC hubiera sido anulada — bloqueando cualquier reintento.
-            if (creditNote?.ReceptionDocumentId is { } receptionDocumentId && _receptionRepo is not null)
+            if (
+                creditNote?.ReceptionDocumentId is { } receptionDocumentId
+                && _receptionRepo is not null
+            )
             {
                 var receptionDoc = await _receptionRepo.GetByIdAsync(tid, receptionDocumentId, ct);
                 receptionDoc?.UnmarkProcessed(uid);

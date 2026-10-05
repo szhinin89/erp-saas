@@ -23,8 +23,17 @@ public sealed class ItemDomainRuleContractsTests
     private static (Item Item, ItemVariant Variant) ItemWithVariant()
     {
         var item = Item.Create(
-            TenantId, "SKU-001", "Item de prueba", "Descripción", Guid.NewGuid(), "UNIT",
-            ItemTaxConfig.Create("10", "10"), ItemSaleConfig.Create(), ItemStockConfig.Create(), UserId);
+            TenantId,
+            "SKU-001",
+            "Item de prueba",
+            "Descripción",
+            Guid.NewGuid(),
+            "UNIT",
+            ItemTaxConfig.Create("10", "10"),
+            ItemSaleConfig.Create(),
+            ItemStockConfig.Create(),
+            UserId
+        );
         var variant = item.AddVariant([], "SKU-V1", 1, UserId);
         return (item, variant);
     }
@@ -49,15 +58,35 @@ public sealed class ItemDomainRuleContractsTests
         var (item, variant) = ItemWithVariant();
         variant.AddBarcode("7501234567890", "EAN13", TenantId, UserId);
         var repo = new Mock<IItemRepository>();
-        repo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>())).ReturnsAsync(item);
-        repo.Setup(r => r.BarcodeExistsAsync(It.IsAny<string>(), TenantId, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        repo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item);
+        repo.Setup(r =>
+                r.BarcodeExistsAsync(It.IsAny<string>(), TenantId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(false);
         var catalog = new Mock<IItemCatalogRepository>();
-        catalog.Setup(c => c.BarcodeTypeExistsAndActiveAsync("EAN13", It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        catalog
+            .Setup(c => c.BarcodeTypeExistsAndActiveAsync("EAN13", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
 
-        var result = await new AddBarcodeHandler(repo.Object, catalog.Object, Tenant().Object, User().Object)
-            .Handle(new AddBarcodeCommand(item.Id, variant.Id, "7501234567890", "EAN13"), CancellationToken.None);
+        var result = await new AddBarcodeHandler(
+            repo.Object,
+            catalog.Object,
+            Tenant().Object,
+            User().Object
+        ).Handle(
+            new AddBarcodeCommand(item.Id, variant.Id, "7501234567890", "EAN13"),
+            CancellationToken.None
+        );
 
-        (result.Code, result.Error).Should().Be((ApiResponseCodes.Common.Conflict, "El código de barras '7501234567890' ya existe en esta variante."));
+        (result.Code, result.Error)
+            .Should()
+            .Be(
+                (
+                    ApiResponseCodes.Common.Conflict,
+                    "El código de barras '7501234567890' ya existe en esta variante."
+                )
+            );
         repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -66,12 +95,26 @@ public sealed class ItemDomainRuleContractsTests
     {
         var (item, variant) = ItemWithVariant();
         var repo = new Mock<IItemRepository>();
-        repo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>())).ReturnsAsync(item);
+        repo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item);
 
-        var result = await new DisableBarcodeHandler(repo.Object, Tenant().Object, User().Object)
-            .Handle(new DisableBarcodeCommand(item.Id, variant.Id, Guid.NewGuid()), CancellationToken.None);
+        var result = await new DisableBarcodeHandler(
+            repo.Object,
+            Tenant().Object,
+            User().Object
+        ).Handle(
+            new DisableBarcodeCommand(item.Id, variant.Id, Guid.NewGuid()),
+            CancellationToken.None
+        );
 
-        (result.Code, result.Error).Should().Be((ApiResponseCodes.Common.NotFound, "Código de barras no encontrado en esta variante."));
+        (result.Code, result.Error)
+            .Should()
+            .Be(
+                (
+                    ApiResponseCodes.Common.NotFound,
+                    "Código de barras no encontrado en esta variante."
+                )
+            );
         repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -80,12 +123,18 @@ public sealed class ItemDomainRuleContractsTests
     {
         var (item, _) = ItemWithVariant();
         var repo = new Mock<IItemRepository>();
-        repo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>())).ReturnsAsync(item);
+        repo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item);
 
-        var result = await new AddItemVariantCommandHandler(repo.Object, Tenant().Object, User().Object)
-            .Handle(new AddItemVariantCommand(item.Id, [], "SKU-V1", 2), CancellationToken.None);
+        var result = await new AddItemVariantCommandHandler(
+            repo.Object,
+            Tenant().Object,
+            User().Object
+        ).Handle(new AddItemVariantCommand(item.Id, [], "SKU-V1", 2), CancellationToken.None);
 
-        (result.Code, result.Error).Should().Be((ApiResponseCodes.Common.Conflict, "Ya existe una variante con SKU 'SKU-V1'."));
+        (result.Code, result.Error)
+            .Should()
+            .Be((ApiResponseCodes.Common.Conflict, "Ya existe una variante con SKU 'SKU-V1'."));
         repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 }

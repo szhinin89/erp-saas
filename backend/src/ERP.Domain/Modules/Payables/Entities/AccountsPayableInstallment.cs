@@ -29,7 +29,12 @@ public sealed class AccountsPayableInstallment : IMustHaveTenant
 
     public decimal OutstandingAmount =>
         Math.Round(
-            Amount - PaidAmount - RetainedAmount - ReturnCreditAmount - SupplierCreditAmount - CreditNoteAmount,
+            Amount
+                - PaidAmount
+                - RetainedAmount
+                - ReturnCreditAmount
+                - SupplierCreditAmount
+                - CreditNoteAmount,
             2,
             MidpointRounding.AwayFromZero
         );
@@ -62,7 +67,10 @@ public sealed class AccountsPayableInstallment : IMustHaveTenant
                 nameof(installmentNumber)
             );
         if (amount <= 0)
-            throw new ArgumentException("El monto de la cuota debe ser mayor a cero.", nameof(amount));
+            throw new ArgumentException(
+                "El monto de la cuota debe ser mayor a cero.",
+                nameof(amount)
+            );
 
         return new AccountsPayableInstallment
         {

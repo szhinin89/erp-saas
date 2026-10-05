@@ -16,29 +16,54 @@ public class DocTypeConfiguration : IEntityTypeConfiguration<DocType>
         builder.Property(x => x.IsActive).HasColumnName("is_active").HasDefaultValue(true);
 
         builder.HasData(
-            new DocType { Code = DocTypeCodes.SalesInvoice, Name = "Factura de Venta", IsActive = true },
+            new DocType
+            {
+                Code = DocTypeCodes.SalesInvoice,
+                Name = "Factura de Venta",
+                IsActive = true,
+            },
             new DocType
             {
                 Code = DocTypeCodes.SalesCreditNote,
                 Name = "Nota de Crédito de Venta",
                 IsActive = true,
             },
-            new DocType { Code = DocTypeCodes.PurchaseInvoice, Name = "Factura de Compra", IsActive = true },
+            new DocType
+            {
+                Code = DocTypeCodes.PurchaseInvoice,
+                Name = "Factura de Compra",
+                IsActive = true,
+            },
             new DocType
             {
                 Code = DocTypeCodes.PurchaseCreditNote,
                 Name = "Nota de Crédito de Compra",
                 IsActive = true,
             },
-            new DocType { Code = DocTypeCodes.ExpenseDocument, Name = "Documento de Gasto", IsActive = true },
+            new DocType
+            {
+                Code = DocTypeCodes.ExpenseDocument,
+                Name = "Documento de Gasto",
+                IsActive = true,
+            },
             new DocType
             {
                 Code = DocTypeCodes.ExpenseWithholding,
                 Name = "Retención en Gasto",
                 IsActive = true,
             },
-            new DocType { Code = DocTypeCodes.SupplierPayment, Name = "Pago a Proveedor", IsActive = true },
-            new DocType { Code = DocTypeCodes.CustomerCollection, Name = "Cobro a Cliente", IsActive = true },
+            new DocType
+            {
+                Code = DocTypeCodes.SupplierPayment,
+                Name = "Pago a Proveedor",
+                IsActive = true,
+            },
+            new DocType
+            {
+                Code = DocTypeCodes.CustomerCollection,
+                Name = "Cobro a Cliente",
+                IsActive = true,
+            },
             new DocType
             {
                 Code = DocTypeCodes.ManualJournalEntry,

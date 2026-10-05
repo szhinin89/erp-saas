@@ -63,7 +63,17 @@ public sealed class UpdateOperationalPreferencesCommandHandlerTests
         );
 
         var command = new UpdateOperationalPreferencesCommand(
-            SalesPos: new SalesPosPreferencesInput(true, false, false, 0, null, false, false, null, null),
+            SalesPos: new SalesPosPreferencesInput(
+                true,
+                false,
+                false,
+                0,
+                null,
+                false,
+                false,
+                null,
+                null
+            ),
             Cash: new CashPreferencesInput(true, false, 0, false, false, false),
             Purchases: null,
             Inventory: null,
@@ -78,6 +88,8 @@ public sealed class UpdateOperationalPreferencesCommandHandlerTests
         written.Should().NotBeEmpty();
         written.Should().OnlyContain(s => s.TenantId == ActiveTenantId);
         written.Should().OnlyContain(s => s.CompanyId == ActiveCompanyId);
-        written.Should().NotContain(s => s.TenantId == OtherTenantId || s.CompanyId == OtherCompanyId);
+        written
+            .Should()
+            .NotContain(s => s.TenantId == OtherTenantId || s.CompanyId == OtherCompanyId);
     }
 }

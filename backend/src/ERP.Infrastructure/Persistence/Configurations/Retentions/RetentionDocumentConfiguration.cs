@@ -58,7 +58,9 @@ public sealed class RetentionDocumentConfiguration : IEntityTypeConfiguration<Re
             .Property(x => x.SourceDocumentNumber)
             .HasColumnName("source_document_number")
             .HasMaxLength(30);
-        builder.Property(x => x.SourceDocumentIssueDate).HasColumnName("source_document_issue_date");
+        builder
+            .Property(x => x.SourceDocumentIssueDate)
+            .HasColumnName("source_document_issue_date");
         builder
             .Property(x => x.SourceDocumentAuthorizationNumber)
             .HasColumnName("source_document_authorization_number")

@@ -126,9 +126,7 @@ public sealed class PurchaseReceptionController : ControllerBase
         StatusCodes.Status200OK
     )]
     public async Task<IActionResult> GetXmlView(Guid id, CancellationToken ct) =>
-        this.ToOkOrBadRequest(
-            await _mediator.Send(new GetPurchaseReceptionXmlViewQuery(id), ct)
-        );
+        this.ToOkOrBadRequest(await _mediator.Send(new GetPurchaseReceptionXmlViewQuery(id), ct));
 
     // ── Item Matching ────────────────────────────────────────────────────
 

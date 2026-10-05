@@ -35,9 +35,12 @@ public static class CustomersModule
         SortOrder = 5,
         Id = "a1000000-0000-4000-9000-000000000101",
         ParentId = "8f31a57d-ed70-4e09-8031-393375bf40a5",
-        RelatedActionPermissionsCsv = MasterDataPermissions.BusinessPartnersCreate + ","
-            + MasterDataPermissions.BusinessPartnersUpdate + ","
-            + MasterDataPermissions.BusinessPartnersDisable + ","
+        RelatedActionPermissionsCsv = MasterDataPermissions.BusinessPartnersCreate
+            + ","
+            + MasterDataPermissions.BusinessPartnersUpdate
+            + ","
+            + MasterDataPermissions.BusinessPartnersDisable
+            + ","
             + MasterDataPermissions.BusinessPartnersConfigureCompany
     )]
     public const string Customers = "/customers";

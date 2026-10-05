@@ -17,7 +17,10 @@ internal sealed class StockAdjustmentLineResolver
 
     private readonly ICompanyPrecisionPolicyProvider _precision;
 
-    public StockAdjustmentLineResolver(IItemRepository itemRepo, ICompanyPrecisionPolicyProvider precision)
+    public StockAdjustmentLineResolver(
+        IItemRepository itemRepo,
+        ICompanyPrecisionPolicyProvider precision
+    )
     {
         _itemRepo = itemRepo;
         _precision = precision;

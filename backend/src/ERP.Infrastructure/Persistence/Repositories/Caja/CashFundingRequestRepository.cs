@@ -24,8 +24,11 @@ public sealed class CashFundingRequestRepository : ICashFundingRequestRepository
     private IQueryable<CashFundingRequest> Scoped(Guid tenantId) =>
         _db.CashFundingRequests.ForOperationalScope(tenantId, _company);
 
-    public Task<CashFundingRequest?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default) =>
-        Scoped(tenantId).FirstOrDefaultAsync(x => x.Id == id, ct);
+    public Task<CashFundingRequest?> GetByIdAsync(
+        Guid tenantId,
+        Guid id,
+        CancellationToken ct = default
+    ) => Scoped(tenantId).FirstOrDefaultAsync(x => x.Id == id, ct);
 
     public async Task<CashFundingRequest?> GetByIdForUpdateAsync(
         Guid tenantId,
@@ -50,7 +53,10 @@ public sealed class CashFundingRequestRepository : ICashFundingRequestRepository
         Guid tenantId,
         Guid clientRequestId,
         CancellationToken ct = default
-    ) => Scoped(tenantId).AsNoTracking().FirstOrDefaultAsync(x => x.ClientRequestId == clientRequestId, ct);
+    ) =>
+        Scoped(tenantId)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.ClientRequestId == clientRequestId, ct);
 
     public async Task<IReadOnlyList<CashFundingRequest>> ListBySessionAsync(
         Guid tenantId,
@@ -91,7 +97,9 @@ public sealed class CashFundingRequestRepository : ICashFundingRequestRepository
             ct
         );
         var pending = await Scoped(tenantId)
-            .Where(x => x.CashSessionId == cashSessionId && x.Status == CashFundingRequestStatus.Pending)
+            .Where(x =>
+                x.CashSessionId == cashSessionId && x.Status == CashFundingRequestStatus.Pending
+            )
             .OrderBy(x => x.Id)
             .ToListAsync(ct);
         foreach (var request in pending)

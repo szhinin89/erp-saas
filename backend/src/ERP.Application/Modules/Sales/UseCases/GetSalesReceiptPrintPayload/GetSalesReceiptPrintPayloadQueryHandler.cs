@@ -93,14 +93,13 @@ public sealed class GetSalesReceiptPrintPayloadQueryHandler
             invoice.CashSessionId,
             cancellationToken
         );
-        var emissionPoint =
-            invoice.EmissionPointId is null
-                ? null
-                : await _emissionPoints.GetByIdAsync(
-                    invoice.EmissionPointId.Value,
-                    _currentTenant.TenantId,
-                    cancellationToken
-                );
+        var emissionPoint = invoice.EmissionPointId is null
+            ? null
+            : await _emissionPoints.GetByIdAsync(
+                invoice.EmissionPointId.Value,
+                _currentTenant.TenantId,
+                cancellationToken
+            );
         var branding = await _branding.GetAsync(
             _currentTenant.TenantId,
             invoice.CompanyId,
@@ -140,7 +139,8 @@ public sealed class GetSalesReceiptPrintPayloadQueryHandler
                 AccessKey: electronicDocument?.AccessKey?.Value,
                 AuthorizationNumber: electronicDocument?.AuthorizationNumber?.Value,
                 AuthorizationDate: electronicDocument?.AuthorizationDate,
-                Lines: invoice.Lines.OrderBy(line => line.SortOrder)
+                Lines: invoice
+                    .Lines.OrderBy(line => line.SortOrder)
                     .Select(SalesReceiptPrintPayloadMapper.MapLine)
                     .ToArray(),
                 Totals: new SalesReceiptTotalsDto(
@@ -149,7 +149,8 @@ public sealed class GetSalesReceiptPrintPayloadQueryHandler
                     invoice.TotalVat,
                     invoice.GrandTotal
                 ),
-                Payments: invoice.Payments.OrderBy(payment => payment.CreatedAt)
+                Payments: invoice
+                    .Payments.OrderBy(payment => payment.CreatedAt)
                     .Select(SalesReceiptPrintPayloadMapper.MapPayment)
                     .ToArray(),
                 CashReceived: cashTendered.CashReceived,

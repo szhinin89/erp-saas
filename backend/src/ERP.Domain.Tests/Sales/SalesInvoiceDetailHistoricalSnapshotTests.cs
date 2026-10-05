@@ -104,7 +104,10 @@ public sealed class SalesInvoiceDetailHistoricalSnapshotTests
         // Freeze es internal — se invoca igual que lo hace SalesInvoice.Authorize() sobre cada
         // línea, vía reflexión, para no exponer el método a este ensamblado de test.
         typeof(SalesInvoiceDetail)
-            .GetMethod("Freeze", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+            .GetMethod(
+                "Freeze",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance
+            )!
             .Invoke(line, null);
 
         var act = () =>
@@ -120,8 +123,6 @@ public sealed class SalesInvoiceDetailHistoricalSnapshotTests
                 discountDescription: null
             );
 
-        act.Should()
-            .Throw<DomainRuleViolationException>()
-            .WithMessage("*autorizada*");
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*autorizada*");
     }
 }

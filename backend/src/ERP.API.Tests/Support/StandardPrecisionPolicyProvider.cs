@@ -30,9 +30,24 @@ public sealed class StandardPrecisionPolicyProvider : ICompanyPrecisionPolicyPro
                 TaxDecimals: 2,
                 AccountingDecimals: 2,
                 FiscalPercentageDecimals: ERP.Domain.Common.FiscalPrecision.Percentage,
-                WarehouseCapacityDecimals: ERP.Domain.Modules.Inventory.Entities.WarehousePrecision.Capacity,
-                CreditInstallmentPercentageDecimals: ERP.Domain.Modules.Finance.Entities.CreditTermsPrecision.InstallmentPercentage,
-                PackagingWeightDecimals: ERP.Domain.Modules.Items.Entities.ItemPrecision.PackagingWeight
+                WarehouseCapacityDecimals: ERP.Domain
+                    .Modules
+                    .Inventory
+                    .Entities
+                    .WarehousePrecision
+                    .Capacity,
+                CreditInstallmentPercentageDecimals: ERP.Domain
+                    .Modules
+                    .Finance
+                    .Entities
+                    .CreditTermsPrecision
+                    .InstallmentPercentage,
+                PackagingWeightDecimals: ERP.Domain
+                    .Modules
+                    .Items
+                    .Entities
+                    .ItemPrecision
+                    .PackagingWeight
             )
         );
 }

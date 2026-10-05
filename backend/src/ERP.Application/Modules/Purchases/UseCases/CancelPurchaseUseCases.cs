@@ -31,9 +31,7 @@ public sealed record CancelPurchaseCommand(
     Guid PurchaseInvoiceId,
     string Reason,
     bool RequestSriAnnulment = false
-)
-    : IRequest<Result<PurchaseInvoiceDto>>,
-        IBranchScopedRequest;
+) : IRequest<Result<PurchaseInvoiceDto>>, IBranchScopedRequest;
 
 /// <summary>
 /// Contexto explícito de una anulación de compra. Desde la API se arma con el contexto autenticado
@@ -150,7 +148,11 @@ public sealed class CancelPurchaseHandler
         var tid = ctx.TenantId;
         var cid = ctx.CompanyId;
         var uid = ctx.UserId;
-        var cmd = new CancelPurchaseCommand(ctx.PurchaseInvoiceId, ctx.Reason, ctx.RequestSriAnnulment);
+        var cmd = new CancelPurchaseCommand(
+            ctx.PurchaseInvoiceId,
+            ctx.Reason,
+            ctx.RequestSriAnnulment
+        );
 
         // Fase 3 (P0-02, Remediación transaccional 02) — cmd.PurchaseInvoiceId ya identifica
         // directamente qué Lock A adquirir: no se requiere ninguna carga de descubrimiento.
@@ -256,7 +258,9 @@ public sealed class CancelPurchaseHandler
                     if (
                         ctx.RequestSriAnnulment
                         && cancelRetentionResult.Code
-                            == ApiResponseCodes.ElectronicDocuments.SourceCancellationRequiresSriAnnulment
+                            == ApiResponseCodes
+                                .ElectronicDocuments
+                                .SourceCancellationRequiresSriAnnulment
                     )
                         return await RequestSriAnnulmentAsync(inv, retention, ctx, ct);
 

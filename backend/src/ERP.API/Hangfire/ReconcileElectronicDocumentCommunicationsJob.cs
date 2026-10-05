@@ -14,7 +14,8 @@ public interface IReconcileElectronicDocumentCommunicationsJob
 /// <see cref="IElectronicDocumentCommunicationReconciler"/>; el atributo solo evita trabajo duplicado
 /// (la exclusión real es la identidad única de la outbox).
 /// </summary>
-public sealed partial class ReconcileElectronicDocumentCommunicationsJob : IReconcileElectronicDocumentCommunicationsJob
+public sealed partial class ReconcileElectronicDocumentCommunicationsJob
+    : IReconcileElectronicDocumentCommunicationsJob
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<ReconcileElectronicDocumentCommunicationsJob> _logger;
@@ -34,8 +35,8 @@ public sealed partial class ReconcileElectronicDocumentCommunicationsJob : IReco
         await using var scope = _scopeFactory.CreateAsyncScope();
         try
         {
-            await scope.ServiceProvider
-                .GetRequiredService<IElectronicDocumentCommunicationReconciler>()
+            await scope
+                .ServiceProvider.GetRequiredService<IElectronicDocumentCommunicationReconciler>()
                 .ReconcileAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -44,6 +45,9 @@ public sealed partial class ReconcileElectronicDocumentCommunicationsJob : IReco
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Error, Message = "ReconcileElectronicDocumentCommunicationsJob failed")]
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "ReconcileElectronicDocumentCommunicationsJob failed"
+    )]
     private partial void LogReconciliationJobFailed(Exception ex);
 }

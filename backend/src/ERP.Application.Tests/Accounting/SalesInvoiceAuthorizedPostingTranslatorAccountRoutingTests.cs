@@ -111,8 +111,10 @@ public sealed class SalesInvoiceAuthorizedPostingTranslatorAccountRoutingTests
         fact.CashApplied.Should().Be(0m);
         fact.Allocations.Should().HaveCount(2);
         fact.Allocations!.Sum(a => a.Amount).Should().Be(100m);
-        fact.Allocations!.Should().Contain(a => a.AccountingAccountId == cajaAccountId && a.Amount == 60m);
-        fact.Allocations!.Should().Contain(a => a.AccountingAccountId == tarjetaAccountId && a.Amount == 40m);
+        fact.Allocations!.Should()
+            .Contain(a => a.AccountingAccountId == cajaAccountId && a.Amount == 60m);
+        fact.Allocations!.Should()
+            .Contain(a => a.AccountingAccountId == tarjetaAccountId && a.Amount == 40m);
     }
 
     [Fact]
@@ -130,13 +132,19 @@ public sealed class SalesInvoiceAuthorizedPostingTranslatorAccountRoutingTests
             )
         );
 
-        fact.CashApplied.Should().Be(60m, "el remanente no cubierto por allocations (Efectivo sin mapear) sigue yendo por la línea fija de la PostingRule");
+        fact.CashApplied.Should()
+            .Be(
+                60m,
+                "el remanente no cubierto por allocations (Efectivo sin mapear) sigue yendo por la línea fija de la PostingRule"
+            );
         fact.Allocations.Should().ContainSingle();
         fact.Allocations!.Single().AccountingAccountId.Should().Be(bancosAccountId);
         fact.Allocations!.Single().Amount.Should().Be(40m);
 
         // Nunca se pierde ni se duplica un centavo del Debe total.
-        (fact.CashApplied + fact.Allocations!.Sum(a => a.Amount)).Should().Be(100m);
+        (fact.CashApplied + fact.Allocations!.Sum(a => a.Amount))
+            .Should()
+            .Be(100m);
     }
 
     [Fact]

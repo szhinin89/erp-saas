@@ -51,8 +51,14 @@ public sealed class ExpensesCatalogBootstrapStepTests
         Guid actorId
     )
     {
-        var accountingStep = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
-        await accountingStep.ExecuteAsync(new CompanyBootstrapContext(tenantId, companyId, actorId));
+        var accountingStep = new AccountingBootstrapStep(
+            db,
+            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+            NullLogger<AccountingBootstrapStep>.Instance
+        );
+        await accountingStep.ExecuteAsync(
+            new CompanyBootstrapContext(tenantId, companyId, actorId)
+        );
     }
 
     [Fact]
@@ -61,14 +67,31 @@ public sealed class ExpensesCatalogBootstrapStepTests
         var dbName = Guid.NewGuid().ToString();
         await using var db = NewDbContext(dbName);
         await SeedFullRetailChartAsync(db, _tenantId, _companyId, _actorId);
-        var step = new ExpensesCatalogBootstrapStep(db, NullLogger<ExpensesCatalogBootstrapStep>.Instance);
+        var step = new ExpensesCatalogBootstrapStep(
+            db,
+            NullLogger<ExpensesCatalogBootstrapStep>.Instance
+        );
 
         await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
 
-        var nodes = await db.ExpenseCategoryNodes.Where(n => n.CompanyId == _companyId).ToListAsync();
-        nodes.Should().Contain(n => n.Level == ExpenseCategoryNodeLevel.Type && n.Name == "Gastos administrativos");
-        nodes.Should().Contain(n => n.Level == ExpenseCategoryNodeLevel.Category && n.Name == "Servicios basicos");
-        nodes.Should().Contain(n => n.Level == ExpenseCategoryNodeLevel.Subcategory && n.Name == "Energia electrica");
+        var nodes = await db
+            .ExpenseCategoryNodes.Where(n => n.CompanyId == _companyId)
+            .ToListAsync();
+        nodes
+            .Should()
+            .Contain(n =>
+                n.Level == ExpenseCategoryNodeLevel.Type && n.Name == "Gastos administrativos"
+            );
+        nodes
+            .Should()
+            .Contain(n =>
+                n.Level == ExpenseCategoryNodeLevel.Category && n.Name == "Servicios basicos"
+            );
+        nodes
+            .Should()
+            .Contain(n =>
+                n.Level == ExpenseCategoryNodeLevel.Subcategory && n.Name == "Energia electrica"
+            );
 
         var subcategory = nodes.Single(n => n.Name == "Energia electrica");
         var category = nodes.Single(n => n.Id == subcategory.ParentId);
@@ -76,7 +99,8 @@ public sealed class ExpensesCatalogBootstrapStepTests
         var type = nodes.Single(n => n.Id == category.ParentId);
         type.Name.Should().Be("Gastos administrativos");
 
-        nodes.Where(n => n.Level == ExpenseCategoryNodeLevel.Subcategory)
+        nodes
+            .Where(n => n.Level == ExpenseCategoryNodeLevel.Subcategory)
             .Should()
             .HaveCount(ExpensesCatalogBootstrapStep.TemplateItemCount);
     }
@@ -87,15 +111,22 @@ public sealed class ExpensesCatalogBootstrapStepTests
         var dbName = Guid.NewGuid().ToString();
         await using var db = NewDbContext(dbName);
         await SeedFullRetailChartAsync(db, _tenantId, _companyId, _actorId);
-        var step = new ExpensesCatalogBootstrapStep(db, NullLogger<ExpensesCatalogBootstrapStep>.Instance);
+        var step = new ExpensesCatalogBootstrapStep(
+            db,
+            NullLogger<ExpensesCatalogBootstrapStep>.Instance
+        );
 
         await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
 
-        var nodes = await db.ExpenseCategoryNodes.Where(n => n.CompanyId == _companyId).ToListAsync();
-        nodes.Where(n => n.Level != ExpenseCategoryNodeLevel.Subcategory)
+        var nodes = await db
+            .ExpenseCategoryNodes.Where(n => n.CompanyId == _companyId)
+            .ToListAsync();
+        nodes
+            .Where(n => n.Level != ExpenseCategoryNodeLevel.Subcategory)
             .Should()
             .OnlyContain(n => n.AccountingAccountId == null);
-        nodes.Where(n => n.Level == ExpenseCategoryNodeLevel.Subcategory)
+        nodes
+            .Where(n => n.Level == ExpenseCategoryNodeLevel.Subcategory)
             .Should()
             .OnlyContain(n => n.AccountingAccountId != null);
     }
@@ -108,21 +139,30 @@ public sealed class ExpensesCatalogBootstrapStepTests
         await using (var db = NewDbContext(dbName))
         {
             await SeedFullRetailChartAsync(db, _tenantId, _companyId, _actorId);
-            var step = new ExpensesCatalogBootstrapStep(db, NullLogger<ExpensesCatalogBootstrapStep>.Instance);
+            var step = new ExpensesCatalogBootstrapStep(
+                db,
+                NullLogger<ExpensesCatalogBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
         await using (var db = NewDbContext(dbName))
         {
-            var step = new ExpensesCatalogBootstrapStep(db, NullLogger<ExpensesCatalogBootstrapStep>.Instance);
+            var step = new ExpensesCatalogBootstrapStep(
+                db,
+                NullLogger<ExpensesCatalogBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
         await using var verifyDb = NewDbContext(dbName);
-        var nodes = await verifyDb.ExpenseCategoryNodes.Where(n => n.CompanyId == _companyId).ToListAsync();
+        var nodes = await verifyDb
+            .ExpenseCategoryNodes.Where(n => n.CompanyId == _companyId)
+            .ToListAsync();
         nodes.Where(n => n.Level == ExpenseCategoryNodeLevel.Type).Should().HaveCount(5);
         nodes.Where(n => n.Level == ExpenseCategoryNodeLevel.Category).Should().HaveCount(18);
-        nodes.Where(n => n.Level == ExpenseCategoryNodeLevel.Subcategory)
+        nodes
+            .Where(n => n.Level == ExpenseCategoryNodeLevel.Subcategory)
             .Should()
             .HaveCount(ExpensesCatalogBootstrapStep.TemplateItemCount);
     }
@@ -143,7 +183,10 @@ public sealed class ExpensesCatalogBootstrapStepTests
         var dbName = Guid.NewGuid().ToString();
         await using var db = NewDbContext(dbName);
         await SeedFullRetailChartAsync(db, _tenantId, _companyId, _actorId);
-        var step = new ExpensesCatalogBootstrapStep(db, NullLogger<ExpensesCatalogBootstrapStep>.Instance);
+        var step = new ExpensesCatalogBootstrapStep(
+            db,
+            NullLogger<ExpensesCatalogBootstrapStep>.Instance
+        );
 
         await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
 
@@ -173,16 +216,22 @@ public sealed class ExpensesCatalogBootstrapStepTests
 
         await using (var db = NewDbContext(dbName))
         {
-            var step = new ExpensesCatalogBootstrapStep(db, NullLogger<ExpensesCatalogBootstrapStep>.Instance);
+            var step = new ExpensesCatalogBootstrapStep(
+                db,
+                NullLogger<ExpensesCatalogBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
         await using var verifyDb = NewDbContext(dbName);
-        var nodes = await verifyDb.ExpenseCategoryNodes.Where(n => n.CompanyId == _companyId).ToListAsync();
+        var nodes = await verifyDb
+            .ExpenseCategoryNodes.Where(n => n.CompanyId == _companyId)
+            .ToListAsync();
         nodes.Should().NotContain(n => n.Name == "Energia electrica");
         nodes.Should().NotContain(n => n.Name == "Agua potable");
         nodes.Should().Contain(n => n.Name == "Arriendo de oficina");
-        nodes.Where(n => n.Level == ExpenseCategoryNodeLevel.Subcategory)
+        nodes
+            .Where(n => n.Level == ExpenseCategoryNodeLevel.Subcategory)
             .Should()
             .HaveCount(ExpensesCatalogBootstrapStep.TemplateItemCount - 6);
     }
@@ -207,10 +256,15 @@ public sealed class ExpensesCatalogBootstrapStepTests
         );
         await db.SaveChangesAsync();
 
-        var step = new ExpensesCatalogBootstrapStep(db, NullLogger<ExpensesCatalogBootstrapStep>.Instance);
+        var step = new ExpensesCatalogBootstrapStep(
+            db,
+            NullLogger<ExpensesCatalogBootstrapStep>.Instance
+        );
         await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
 
-        var nodes = await db.ExpenseCategoryNodes.Where(n => n.CompanyId == _companyId).ToListAsync();
+        var nodes = await db
+            .ExpenseCategoryNodes.Where(n => n.CompanyId == _companyId)
+            .ToListAsync();
         nodes.Should().NotContain(n => n.Name == "Papeleria y utiles");
     }
 
@@ -234,10 +288,15 @@ public sealed class ExpensesCatalogBootstrapStepTests
         );
         await db.SaveChangesAsync();
 
-        var step = new ExpensesCatalogBootstrapStep(db, NullLogger<ExpensesCatalogBootstrapStep>.Instance);
+        var step = new ExpensesCatalogBootstrapStep(
+            db,
+            NullLogger<ExpensesCatalogBootstrapStep>.Instance
+        );
         await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
 
-        var nodes = await db.ExpenseCategoryNodes.Where(n => n.CompanyId == _companyId).ToListAsync();
+        var nodes = await db
+            .ExpenseCategoryNodes.Where(n => n.CompanyId == _companyId)
+            .ToListAsync();
         nodes.Should().NotContain(n => n.Name == "Papeleria y utiles");
     }
 
@@ -261,10 +320,15 @@ public sealed class ExpensesCatalogBootstrapStepTests
         db.Accounts.Add(account);
         await db.SaveChangesAsync();
 
-        var step = new ExpensesCatalogBootstrapStep(db, NullLogger<ExpensesCatalogBootstrapStep>.Instance);
+        var step = new ExpensesCatalogBootstrapStep(
+            db,
+            NullLogger<ExpensesCatalogBootstrapStep>.Instance
+        );
         await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
 
-        var nodes = await db.ExpenseCategoryNodes.Where(n => n.CompanyId == _companyId).ToListAsync();
+        var nodes = await db
+            .ExpenseCategoryNodes.Where(n => n.CompanyId == _companyId)
+            .ToListAsync();
         nodes.Should().NotContain(n => n.Name == "Papeleria y utiles");
     }
 
@@ -289,13 +353,18 @@ public sealed class ExpensesCatalogBootstrapStepTests
         );
         await db.SaveChangesAsync();
 
-        var step = new ExpensesCatalogBootstrapStep(db, NullLogger<ExpensesCatalogBootstrapStep>.Instance);
+        var step = new ExpensesCatalogBootstrapStep(
+            db,
+            NullLogger<ExpensesCatalogBootstrapStep>.Instance
+        );
         await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
 
-        var nodes = await db.ExpenseCategoryNodes.Where(n => n.CompanyId == _companyId).ToListAsync();
+        var nodes = await db
+            .ExpenseCategoryNodes.Where(n => n.CompanyId == _companyId)
+            .ToListAsync();
         nodes.Should().NotContain(n => n.Name == "Papeleria y utiles");
-        var otherCompanyNodes = await db.ExpenseCategoryNodes
-            .Where(n => n.CompanyId == otherCompanyId)
+        var otherCompanyNodes = await db
+            .ExpenseCategoryNodes.Where(n => n.CompanyId == otherCompanyId)
             .ToListAsync();
         otherCompanyNodes.Should().BeEmpty();
     }
@@ -322,7 +391,10 @@ public sealed class ExpensesCatalogBootstrapStepTests
 
         await using (var db = NewDbContext(dbName))
         {
-            var step = new ExpensesCatalogBootstrapStep(db, NullLogger<ExpensesCatalogBootstrapStep>.Instance);
+            var step = new ExpensesCatalogBootstrapStep(
+                db,
+                NullLogger<ExpensesCatalogBootstrapStep>.Instance
+            );
             var backfill = new ExpensesCatalogBackfillService(
                 db,
                 new FakeHostEnvironment(isProduction: false),
@@ -333,8 +405,11 @@ public sealed class ExpensesCatalogBootstrapStepTests
         }
 
         await using var verifyDb = NewDbContext(dbName);
-        var nodes = await verifyDb.ExpenseCategoryNodes.Where(n => n.CompanyId == _companyId).ToListAsync();
-        nodes.Where(n => n.Level == ExpenseCategoryNodeLevel.Subcategory)
+        var nodes = await verifyDb
+            .ExpenseCategoryNodes.Where(n => n.CompanyId == _companyId)
+            .ToListAsync();
+        nodes
+            .Where(n => n.Level == ExpenseCategoryNodeLevel.Subcategory)
             .Should()
             .HaveCount(ExpensesCatalogBootstrapStep.TemplateItemCount);
     }
@@ -361,7 +436,10 @@ public sealed class ExpensesCatalogBootstrapStepTests
 
         await using (var db = NewDbContext(dbName))
         {
-            var step = new ExpensesCatalogBootstrapStep(db, NullLogger<ExpensesCatalogBootstrapStep>.Instance);
+            var step = new ExpensesCatalogBootstrapStep(
+                db,
+                NullLogger<ExpensesCatalogBootstrapStep>.Instance
+            );
             var backfill = new ExpensesCatalogBackfillService(
                 db,
                 new FakeHostEnvironment(isProduction: true),
@@ -372,7 +450,9 @@ public sealed class ExpensesCatalogBootstrapStepTests
         }
 
         await using var verifyDb = NewDbContext(dbName);
-        (await verifyDb.ExpenseCategoryNodes.CountAsync(n => n.CompanyId == _companyId)).Should().Be(0);
+        (await verifyDb.ExpenseCategoryNodes.CountAsync(n => n.CompanyId == _companyId))
+            .Should()
+            .Be(0);
     }
 
     [Fact]
@@ -418,24 +498,29 @@ public sealed class ExpensesCatalogBootstrapStepTests
             db.ExpenseCategoryNodes.Add(category);
 
             wrongAccountId = (
-                await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "6.1.01.002")
+                await db.Accounts.SingleAsync(a =>
+                    a.CompanyId == _companyId && a.Code.Value == "6.1.01.002"
+                )
             ).Id;
             correctAccountId = (
-                await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "6.1.01.003")
+                await db.Accounts.SingleAsync(a =>
+                    a.CompanyId == _companyId && a.Code.Value == "6.1.01.003"
+                )
             ).Id;
 
-            var subcategory = ERP.Domain.Modules.Expenses.Entities.ExpenseCategoryNode.CreateSubcategory(
-                _tenantId,
-                _companyId,
-                category,
-                "GS-001",
-                "Energia electrica",
-                wrongAccountId,
-                _actorId,
-                "Servicio basico deducible con comprobante autorizado",
-                isDeductible: true,
-                requiresInvoice: true
-            );
+            var subcategory =
+                ERP.Domain.Modules.Expenses.Entities.ExpenseCategoryNode.CreateSubcategory(
+                    _tenantId,
+                    _companyId,
+                    category,
+                    "GS-001",
+                    "Energia electrica",
+                    wrongAccountId,
+                    _actorId,
+                    "Servicio basico deducible con comprobante autorizado",
+                    isDeductible: true,
+                    requiresInvoice: true
+                );
             db.ExpenseCategoryNodes.Add(subcategory);
             subcategoryId = subcategory.Id;
 
@@ -444,7 +529,10 @@ public sealed class ExpensesCatalogBootstrapStepTests
 
         await using (var db = NewDbContext(dbName))
         {
-            var step = new ExpensesCatalogBootstrapStep(db, NullLogger<ExpensesCatalogBootstrapStep>.Instance);
+            var step = new ExpensesCatalogBootstrapStep(
+                db,
+                NullLogger<ExpensesCatalogBootstrapStep>.Instance
+            );
             var backfill = new ExpensesCatalogBackfillService(
                 db,
                 new FakeHostEnvironment(isProduction: false),
@@ -462,8 +550,11 @@ public sealed class ExpensesCatalogBootstrapStepTests
 
         // El resto del catálogo (58 subcategorías restantes) debe haberse creado por el paso de
         // creación del backfill, sin duplicar la que ya existía corregida.
-        var allNodes = await verifyDb.ExpenseCategoryNodes.Where(n => n.CompanyId == _companyId).ToListAsync();
-        allNodes.Where(n => n.Level == ExpenseCategoryNodeLevel.Subcategory)
+        var allNodes = await verifyDb
+            .ExpenseCategoryNodes.Where(n => n.CompanyId == _companyId)
+            .ToListAsync();
+        allNodes
+            .Where(n => n.Level == ExpenseCategoryNodeLevel.Subcategory)
             .Should()
             .HaveCount(ExpensesCatalogBootstrapStep.TemplateItemCount);
         allNodes.Should().OnlyContain(n => n.IsActive);
@@ -497,31 +588,35 @@ public sealed class ExpensesCatalogBootstrapStepTests
                 _actorId
             );
             db.ExpenseCategoryNodes.Add(customType);
-            var customCategory = ERP.Domain.Modules.Expenses.Entities.ExpenseCategoryNode.CreateCategory(
-                _tenantId,
-                _companyId,
-                customType,
-                "GC-CUSTOM",
-                "Categoria personalizada",
-                _actorId
-            );
+            var customCategory =
+                ERP.Domain.Modules.Expenses.Entities.ExpenseCategoryNode.CreateCategory(
+                    _tenantId,
+                    _companyId,
+                    customType,
+                    "GC-CUSTOM",
+                    "Categoria personalizada",
+                    _actorId
+                );
             db.ExpenseCategoryNodes.Add(customCategory);
 
             customAccountId = (
-                await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "6.1.01.002")
+                await db.Accounts.SingleAsync(a =>
+                    a.CompanyId == _companyId && a.Code.Value == "6.1.01.002"
+                )
             ).Id;
-            var customSubcategory = ERP.Domain.Modules.Expenses.Entities.ExpenseCategoryNode.CreateSubcategory(
-                _tenantId,
-                _companyId,
-                customCategory,
-                "GS-CUSTOM",
-                "Subcategoria personalizada del cliente",
-                customAccountId,
-                _actorId,
-                "Nodo de negocio propio del cliente, fuera del Template",
-                isDeductible: true,
-                requiresInvoice: true
-            );
+            var customSubcategory =
+                ERP.Domain.Modules.Expenses.Entities.ExpenseCategoryNode.CreateSubcategory(
+                    _tenantId,
+                    _companyId,
+                    customCategory,
+                    "GS-CUSTOM",
+                    "Subcategoria personalizada del cliente",
+                    customAccountId,
+                    _actorId,
+                    "Nodo de negocio propio del cliente, fuera del Template",
+                    isDeductible: true,
+                    requiresInvoice: true
+                );
             db.ExpenseCategoryNodes.Add(customSubcategory);
             customNodeId = customSubcategory.Id;
 
@@ -530,7 +625,10 @@ public sealed class ExpensesCatalogBootstrapStepTests
 
         await using (var db = NewDbContext(dbName))
         {
-            var step = new ExpensesCatalogBootstrapStep(db, NullLogger<ExpensesCatalogBootstrapStep>.Instance);
+            var step = new ExpensesCatalogBootstrapStep(
+                db,
+                NullLogger<ExpensesCatalogBootstrapStep>.Instance
+            );
             var backfill = new ExpensesCatalogBackfillService(
                 db,
                 new FakeHostEnvironment(isProduction: false),
@@ -575,7 +673,10 @@ public sealed class ExpensesCatalogBootstrapStepTests
 
         await using (var db = NewDbContext(dbName))
         {
-            var step = new ExpensesCatalogBootstrapStep(db, NullLogger<ExpensesCatalogBootstrapStep>.Instance);
+            var step = new ExpensesCatalogBootstrapStep(
+                db,
+                NullLogger<ExpensesCatalogBootstrapStep>.Instance
+            );
             var backfill = new ExpensesCatalogBackfillService(
                 db,
                 new FakeHostEnvironment(isProduction: false),
@@ -588,7 +689,9 @@ public sealed class ExpensesCatalogBootstrapStepTests
         await using var verifyDb = NewDbContext(dbName);
         // El backfill de gastos nunca crea/modifica cuentas contables (solo las lee) ni entidades
         // de Compras/Inventario/Kardex/POS/Pagos a proveedores/CxP/Payment/Collections.
-        (await verifyDb.Accounts.CountAsync(a => a.CompanyId == _companyId)).Should().Be(accountsBefore);
+        (await verifyDb.Accounts.CountAsync(a => a.CompanyId == _companyId))
+            .Should()
+            .Be(accountsBefore);
     }
 
     private sealed class FixedCurrentTenant(Guid tenantId) : ICurrentTenant
@@ -618,9 +721,8 @@ public sealed class ExpensesCatalogBootstrapStepTests
 
     private sealed class FakeHostEnvironment(bool isProduction) : IHostEnvironment
     {
-        public string EnvironmentName { get; set; } = isProduction
-            ? Environments.Production
-            : Environments.Development;
+        public string EnvironmentName { get; set; } =
+            isProduction ? Environments.Production : Environments.Development;
         public string ApplicationName { get; set; } = "ERP.Infrastructure.Tests";
         public string ContentRootPath { get; set; } = AppContext.BaseDirectory;
         public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } =

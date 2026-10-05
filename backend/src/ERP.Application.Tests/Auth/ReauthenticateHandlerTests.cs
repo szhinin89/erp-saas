@@ -92,7 +92,13 @@ public sealed class ReauthenticateHandlerTests
         var user = NewUser();
         var tenant = NewTenant();
         var company = NewCompany(tenant.Id);
-        var membership = CompanyUserMembership.Create(company.Id, user.Id, "Admin", null, CreatedBy);
+        var membership = CompanyUserMembership.Create(
+            company.Id,
+            user.Id,
+            "Admin",
+            null,
+            CreatedBy
+        );
 
         var f = BuildValidSessionFixture(user, tenant, company, membership);
         f.PasswordHasher.Setup(h => h.VerifyPassword(Password, PasswordHash)).Returns(true);
@@ -138,7 +144,13 @@ public sealed class ReauthenticateHandlerTests
         var user = NewUser();
         var tenant = NewTenant();
         var company = NewCompany(tenant.Id);
-        var membership = CompanyUserMembership.Create(company.Id, user.Id, "Admin", null, CreatedBy);
+        var membership = CompanyUserMembership.Create(
+            company.Id,
+            user.Id,
+            "Admin",
+            null,
+            CreatedBy
+        );
 
         var f = BuildValidSessionFixture(user, tenant, company, membership);
         f.PasswordHasher.Setup(h => h.VerifyPassword(Password, PasswordHash)).Returns(false);
@@ -154,7 +166,12 @@ public sealed class ReauthenticateHandlerTests
 
         // La sesión vigente sigue viva: una contraseña mal tipeada no debe forzar re-login.
         f.RefreshTokenService.Verify(
-            s => s.RevokeAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            s =>
+                s.RevokeAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
         f.RefreshTokenService.Verify(
@@ -177,7 +194,11 @@ public sealed class ReauthenticateHandlerTests
         f.RefreshTokenService.Setup(s =>
                 s.ValidateWithoutRotatingAsync(RawRefreshToken, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync(RefreshTokenValidationResult.Fail("Refresh token revocado. Inicia sesión nuevamente."));
+            .ReturnsAsync(
+                RefreshTokenValidationResult.Fail(
+                    "Refresh token revocado. Inicia sesión nuevamente."
+                )
+            );
 
         var handler = f.BuildHandler();
         var result = await handler.Handle(
@@ -200,7 +221,9 @@ public sealed class ReauthenticateHandlerTests
         f.RefreshTokenService.Setup(s =>
                 s.ValidateWithoutRotatingAsync(RawRefreshToken, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync(RefreshTokenValidationResult.Fail("Sesión expirada. Inicia sesión nuevamente."));
+            .ReturnsAsync(
+                RefreshTokenValidationResult.Fail("Sesión expirada. Inicia sesión nuevamente.")
+            );
 
         var handler = f.BuildHandler();
         var result = await handler.Handle(
@@ -255,7 +278,13 @@ public sealed class ReauthenticateHandlerTests
         var user = NewUser();
         var tenant = NewTenant();
         var company = NewCompany(tenant.Id);
-        var membership = CompanyUserMembership.Create(company.Id, user.Id, "Admin", null, CreatedBy);
+        var membership = CompanyUserMembership.Create(
+            company.Id,
+            user.Id,
+            "Admin",
+            null,
+            CreatedBy
+        );
         membership.Deactivate(CreatedBy);
 
         var f = BuildValidSessionFixture(user, tenant, company, membership);
@@ -288,7 +317,13 @@ public sealed class ReauthenticateHandlerTests
         var tenant = NewTenant();
         tenant.Deactivate(CreatedBy);
         var company = NewCompany(tenant.Id);
-        var membership = CompanyUserMembership.Create(company.Id, user.Id, "Admin", null, CreatedBy);
+        var membership = CompanyUserMembership.Create(
+            company.Id,
+            user.Id,
+            "Admin",
+            null,
+            CreatedBy
+        );
 
         var f = BuildValidSessionFixture(user, tenant, company, membership);
         f.PasswordHasher.Setup(h => h.VerifyPassword(Password, PasswordHash)).Returns(true);
@@ -311,7 +346,13 @@ public sealed class ReauthenticateHandlerTests
         var user = NewUser();
         var tenant = NewTenant();
         var company = NewCompany(tenant.Id);
-        var membership = CompanyUserMembership.Create(company.Id, user.Id, "Admin", null, CreatedBy);
+        var membership = CompanyUserMembership.Create(
+            company.Id,
+            user.Id,
+            "Admin",
+            null,
+            CreatedBy
+        );
         var f = BuildValidSessionFixture(user, tenant, company, membership);
         f.PasswordHasher.Setup(h => h.VerifyPassword(Password, PasswordHash)).Returns(true);
         f.TokenService.Setup(s => s.GenerateSessionToken(user, tenant.Id, membership.Role))
@@ -328,11 +369,18 @@ public sealed class ReauthenticateHandlerTests
             .ReturnsAsync(("new-refresh", DateTime.UtcNow.AddHours(8)));
 
         var handler = f.BuildHandler();
-        await handler.Handle(new ReauthenticateCommand(RawRefreshToken, Password), CancellationToken.None);
+        await handler.Handle(
+            new ReauthenticateCommand(RawRefreshToken, Password),
+            CancellationToken.None
+        );
 
-        f.AccessRepo.Verify(r => r.GetUserByIdAsync(user.Id, It.IsAny<CancellationToken>()), Times.Once);
         f.AccessRepo.Verify(
-            r => r.GetUserByIdAsync(It.Is<Guid>(id => id != user.Id), It.IsAny<CancellationToken>()),
+            r => r.GetUserByIdAsync(user.Id, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+        f.AccessRepo.Verify(
+            r =>
+                r.GetUserByIdAsync(It.Is<Guid>(id => id != user.Id), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }

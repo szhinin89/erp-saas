@@ -118,9 +118,11 @@ public sealed record GetCashFundingRequestListQuery(
 ) : IRequest<Result<PagedResult<CashFundingRequestListItemDto>>>, IBranchScopedRequest;
 
 /// <summary>"Mis solicitudes": el solicitante queda forzado al usuario autenticado (nunca del cliente).</summary>
-public sealed record GetMyCashFundingRequestsQuery(string? Status = null, int Page = 1, int PageSize = 25)
-    : IRequest<Result<PagedResult<CashFundingRequestListItemDto>>>,
-        ICompanyScopedRequest;
+public sealed record GetMyCashFundingRequestsQuery(
+    string? Status = null,
+    int Page = 1,
+    int PageSize = 25
+) : IRequest<Result<PagedResult<CashFundingRequestListItemDto>>>, ICompanyScopedRequest;
 
 /// <summary>
 /// Detalle: visible para el solicitante (su propia solicitud, en cualquier sucursal de la empresa)
@@ -148,7 +150,15 @@ internal static class CashFundingRequestReadModel
         IReadOnlyDictionary<Guid, string> Branches,
         IReadOnlyDictionary<Guid, string> BankAccounts,
         IReadOnlyDictionary<Guid, string> PaymentMethods,
-        IReadOnlyDictionary<Guid, (Guid AccountsPayableId, string DocumentNumber, string OriginType, int InstallmentNumber)> Installments,
+        IReadOnlyDictionary<
+            Guid,
+            (
+                Guid AccountsPayableId,
+                string DocumentNumber,
+                string OriginType,
+                int InstallmentNumber
+            )
+        > Installments,
         CashFundingPaymentSnapshotV1? Snapshot,
         bool CanFulfill,
         bool CanReject,
@@ -200,7 +210,8 @@ internal static class CashFundingRequestReadModel
         {
             return CashFundingPaymentSnapshot.Deserialize(r.PaymentPayload, r.PayloadVersion);
         }
-        catch (Exception ex) when (ex is InvalidOperationException or System.Text.Json.JsonException)
+        catch (Exception ex)
+            when (ex is InvalidOperationException or System.Text.Json.JsonException)
         {
             return null;
         }
@@ -242,7 +253,9 @@ internal static class CashFundingRequestReadModel
                     m.CashRegisterId,
                     m.CashRegisterId is { } cr ? ctx.CashRegisters.GetValueOrDefault(cr) : null,
                     m.CompanyBankAccountId,
-                    m.CompanyBankAccountId is { } ba ? ctx.BankAccounts.GetValueOrDefault(ba) : null,
+                    m.CompanyBankAccountId is { } ba
+                        ? ctx.BankAccounts.GetValueOrDefault(ba)
+                        : null,
                     m.Amount,
                     m.TransactionDate,
                     m.ReferenceNumber,
@@ -254,7 +267,10 @@ internal static class CashFundingRequestReadModel
             : snapshot
                 .ApplicationLines.Select(a =>
                 {
-                    var found = ctx.Installments.TryGetValue(a.AccountsPayableInstallmentId, out var info);
+                    var found = ctx.Installments.TryGetValue(
+                        a.AccountsPayableInstallmentId,
+                        out var info
+                    );
                     return new CashFundingRequestApplicationLine(
                         a.AccountsPayableInstallmentId,
                         found ? info.AccountsPayableId : null,
@@ -305,19 +321,27 @@ internal static class CashFundingRequestReadModel
         var distinct = ids.Where(id => id != Guid.Empty).Distinct().ToList();
         if (distinct.Count == 0)
             return new Dictionary<Guid, string>();
-        return (await access.GetUsersByIdsAsync(distinct, ct)).ToDictionary(u => u.Id, u => u.FullName);
+        return (await access.GetUsersByIdsAsync(distinct, ct)).ToDictionary(
+            u => u.Id,
+            u => u.FullName
+        );
     }
 
     public static IEnumerable<Guid> UserIdsOf(IEnumerable<CashFundingRequest> items) =>
         items.SelectMany(r =>
-            r.ResolvedByUserId is { } resolvedBy ? new[] { r.RequestedByUserId, resolvedBy } : new[] { r.RequestedByUserId }
+            r.ResolvedByUserId is { } resolvedBy
+                ? new[] { r.RequestedByUserId, resolvedBy }
+                : new[] { r.RequestedByUserId }
         );
 }
 
 // ── Handlers ─────────────────────────────────────────────────────────────
 
 public sealed class GetCashFundingRequestListHandler
-    : IRequestHandler<GetCashFundingRequestListQuery, Result<PagedResult<CashFundingRequestListItemDto>>>
+    : IRequestHandler<
+        GetCashFundingRequestListQuery,
+        Result<PagedResult<CashFundingRequestListItemDto>>
+    >
 {
     private readonly ICashFundingRequestRepository _requests;
     private readonly ICashRegisterRepository _cashRegisters;
@@ -349,9 +373,13 @@ public sealed class GetCashFundingRequestListHandler
     )
     {
         if (_b.BranchId == Guid.Empty)
-            return Result<PagedResult<CashFundingRequestListItemDto>>.ValidationFailure("Sucursal activa requerida.");
+            return Result<PagedResult<CashFundingRequestListItemDto>>.ValidationFailure(
+                "Sucursal activa requerida."
+            );
         if (!CashFundingRequestReadModel.TryParseStatus(q.Status, out var status))
-            return Result<PagedResult<CashFundingRequestListItemDto>>.ValidationFailure("Estado de solicitud no válido.");
+            return Result<PagedResult<CashFundingRequestListItemDto>>.ValidationFailure(
+                "Estado de solicitud no válido."
+            );
 
         var (page, pageSize) = CashFundingRequestReadModel.Normalize(q.Page, q.PageSize);
         var (items, total) = await _requests.SearchAsync(
@@ -365,13 +393,25 @@ public sealed class GetCashFundingRequestListHandler
             ct
         );
 
-        var suppliers = await _partners.GetNamesByIdsAsync(items.Select(x => x.SupplierId).Distinct(), ct);
-        var users = await CashFundingRequestReadModel.UserNamesAsync(_access, CashFundingRequestReadModel.UserIdsOf(items), ct);
-        var registers = items.Count == 0
-            ? new Dictionary<Guid, string>()
-            : (await _cashRegisters.GetByBranchAsync(_t.TenantId, _b.BranchId, null, ct)).ToDictionary(x => x.Id, x => x.Name);
+        var suppliers = await _partners.GetNamesByIdsAsync(
+            items.Select(x => x.SupplierId).Distinct(),
+            ct
+        );
+        var users = await CashFundingRequestReadModel.UserNamesAsync(
+            _access,
+            CashFundingRequestReadModel.UserIdsOf(items),
+            ct
+        );
+        var registers =
+            items.Count == 0
+                ? new Dictionary<Guid, string>()
+                : (
+                    await _cashRegisters.GetByBranchAsync(_t.TenantId, _b.BranchId, null, ct)
+                ).ToDictionary(x => x.Id, x => x.Name);
 
-        var dtos = items.Select(r => CashFundingRequestReadModel.ToListItem(r, suppliers, users, registers)).ToList();
+        var dtos = items
+            .Select(r => CashFundingRequestReadModel.ToListItem(r, suppliers, users, registers))
+            .ToList();
         return Result<PagedResult<CashFundingRequestListItemDto>>.Success(
             new PagedResult<CashFundingRequestListItemDto>(dtos, page, pageSize, total)
         );
@@ -379,7 +419,10 @@ public sealed class GetCashFundingRequestListHandler
 }
 
 public sealed class GetMyCashFundingRequestsHandler
-    : IRequestHandler<GetMyCashFundingRequestsQuery, Result<PagedResult<CashFundingRequestListItemDto>>>
+    : IRequestHandler<
+        GetMyCashFundingRequestsQuery,
+        Result<PagedResult<CashFundingRequestListItemDto>>
+    >
 {
     private readonly ICashFundingRequestRepository _requests;
     private readonly ICashRegisterRepository _cashRegisters;
@@ -416,9 +459,13 @@ public sealed class GetMyCashFundingRequestsHandler
         var (page, pageSize) = CashFundingRequestReadModel.Normalize(q.Page, q.PageSize);
         // Fail-closed: sin usuario autenticado no hay "mis" solicitudes.
         if (_u.UserId == Guid.Empty)
-            return Result<PagedResult<CashFundingRequestListItemDto>>.Success(new([], page, pageSize, 0));
+            return Result<PagedResult<CashFundingRequestListItemDto>>.Success(
+                new([], page, pageSize, 0)
+            );
         if (!CashFundingRequestReadModel.TryParseStatus(q.Status, out var status))
-            return Result<PagedResult<CashFundingRequestListItemDto>>.ValidationFailure("Estado de solicitud no válido.");
+            return Result<PagedResult<CashFundingRequestListItemDto>>.ValidationFailure(
+                "Estado de solicitud no válido."
+            );
 
         var (items, total) = await _requests.SearchAsync(
             _t.TenantId,
@@ -431,16 +478,31 @@ public sealed class GetMyCashFundingRequestsHandler
             ct
         );
 
-        var suppliers = await _partners.GetNamesByIdsAsync(items.Select(x => x.SupplierId).Distinct(), ct);
-        var users = await CashFundingRequestReadModel.UserNamesAsync(_access, CashFundingRequestReadModel.UserIdsOf(items), ct);
-        var registers = items.Count == 0
-            ? new Dictionary<Guid, string>()
-            : (await _cashRegisters.GetAllByCompanyAsync(_t.TenantId, _c.CompanyId, null, null, ct)).ToDictionary(
-                x => x.Id,
-                x => x.Name
-            );
+        var suppliers = await _partners.GetNamesByIdsAsync(
+            items.Select(x => x.SupplierId).Distinct(),
+            ct
+        );
+        var users = await CashFundingRequestReadModel.UserNamesAsync(
+            _access,
+            CashFundingRequestReadModel.UserIdsOf(items),
+            ct
+        );
+        var registers =
+            items.Count == 0
+                ? new Dictionary<Guid, string>()
+                : (
+                    await _cashRegisters.GetAllByCompanyAsync(
+                        _t.TenantId,
+                        _c.CompanyId,
+                        null,
+                        null,
+                        ct
+                    )
+                ).ToDictionary(x => x.Id, x => x.Name);
 
-        var dtos = items.Select(r => CashFundingRequestReadModel.ToListItem(r, suppliers, users, registers)).ToList();
+        var dtos = items
+            .Select(r => CashFundingRequestReadModel.ToListItem(r, suppliers, users, registers))
+            .ToList();
         return Result<PagedResult<CashFundingRequestListItemDto>>.Success(
             new PagedResult<CashFundingRequestListItemDto>(dtos, page, pageSize, total)
         );
@@ -511,7 +573,10 @@ public sealed class GetCashFundingRequestByIdHandler
         && (await _branchAccess.RequireBranchAsync(r.BranchId, ct)).IsSuccess
         && await HasPermissionAsync(CajaPermissions.FundingRequestsView, ct);
 
-    public async Task<Result<CashFundingRequestDto>> Handle(GetCashFundingRequestByIdQuery q, CancellationToken ct)
+    public async Task<Result<CashFundingRequestDto>> Handle(
+        GetCashFundingRequestByIdQuery q,
+        CancellationToken ct
+    )
     {
         var userId = _u.UserId;
         var r = await _requests.GetByIdAsync(_t.TenantId, q.Id, ct);
@@ -557,18 +622,31 @@ public sealed class GetCashFundingRequestByIdHandler
         if (snapshot is not null)
         {
             if (snapshot.MethodLines.Any(m => m.CompanyBankAccountId is not null))
-                bankAccounts = (await _bankAccounts.GetListAsync(_t.TenantId, null, ct)).ToDictionary(
-                    x => x.Id,
-                    x => x.DisplayName
-                );
+                bankAccounts = (
+                    await _bankAccounts.GetListAsync(_t.TenantId, null, ct)
+                ).ToDictionary(x => x.Id, x => x.DisplayName);
             if (snapshot.MethodLines.Count > 0)
-                methods = (await _paymentMethods.ListAsync(_t.TenantId, onlyActive: false, ct)).ToDictionary(
-                    x => x.Id,
-                    x => x.Name
+                methods = (
+                    await _paymentMethods.ListAsync(_t.TenantId, onlyActive: false, ct)
+                ).ToDictionary(x => x.Id, x => x.Name);
+            var installmentIds = snapshot
+                .ApplicationLines.Select(a => a.AccountsPayableInstallmentId)
+                .Distinct()
+                .ToList();
+            foreach (
+                var (id, info) in await _payables.GetInstallmentRefsByIdsAsync(
+                    _t.TenantId,
+                    _c.CompanyId,
+                    installmentIds,
+                    ct
+                )
+            )
+                installments[id] = (
+                    info.AccountsPayableId,
+                    info.DocumentNumber,
+                    info.OriginType.ToString(),
+                    info.InstallmentNumber
                 );
-            var installmentIds = snapshot.ApplicationLines.Select(a => a.AccountsPayableInstallmentId).Distinct().ToList();
-            foreach (var (id, info) in await _payables.GetInstallmentRefsByIdsAsync(_t.TenantId, _c.CompanyId, installmentIds, ct))
-                installments[id] = (info.AccountsPayableId, info.DocumentNumber, info.OriginType.ToString(), info.InstallmentNumber);
         }
 
         var ctx = new CashFundingRequestReadModel.DetailContext(

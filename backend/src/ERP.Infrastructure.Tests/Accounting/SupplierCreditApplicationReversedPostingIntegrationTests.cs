@@ -77,8 +77,25 @@ public sealed class SupplierCreditApplicationReversedPostingIntegrationTests : I
             "Matriz",
             "Av. Principal 123",
             "001",
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
             true,
             _createdBy,
             companyId: company.Id
@@ -105,7 +122,15 @@ public sealed class SupplierCreditApplicationReversedPostingIntegrationTests : I
             branch.Id,
             "Bodega Principal",
             "BOD-01",
-            null, null, null, null, null, null, null, null, null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
             _createdBy,
             company.Id,
             isMain: true
@@ -187,7 +212,10 @@ public sealed class SupplierCreditApplicationReversedPostingIntegrationTests : I
 
         var services = new ServiceCollection();
         services.AddSingleton<TimeProvider>(AccountingDateBoundary.Clock);
-        services.AddScoped<ERP.Application.Common.Services.ICompanyClock, ERP.Infrastructure.Persistence.Services.CompanyClock>();
+        services.AddScoped<
+            ERP.Application.Common.Services.ICompanyClock,
+            ERP.Infrastructure.Persistence.Services.CompanyClock
+        >();
         services.AddLogging();
         services.AddSingleton(db);
         services.AddSingleton<ICurrentTenant>(new FixedCurrentTenant(tenantId));
@@ -218,7 +246,9 @@ public sealed class SupplierCreditApplicationReversedPostingIntegrationTests : I
             Guid.NewGuid()
         ));
         services.AddMediatR(cfg =>
-            cfg.RegisterServicesFromAssembly(typeof(SupplierCreditApplicationReversedPostingTranslator).Assembly)
+            cfg.RegisterServicesFromAssembly(
+                typeof(SupplierCreditApplicationReversedPostingTranslator).Assembly
+            )
         );
 
         var provider = services.BuildServiceProvider();
@@ -232,10 +262,10 @@ public sealed class SupplierCreditApplicationReversedPostingIntegrationTests : I
     /// y su espejo "Purchases"/"SupplierCreditApplicationReversed" (misma cuenta/AmountKind, Debe↔Haber
     /// invertido) — necesarias para el ciclo completo Apply() → ReverseApplication() de este test.
     /// </summary>
-    private async Task<(Guid payableAccountId, Guid supplierCreditAccountId)> SeedRulesAndPeriodAsync(
-        ErpDbContext db,
-        DateOnly entryDate
-    )
+    private async Task<(
+        Guid payableAccountId,
+        Guid supplierCreditAccountId
+    )> SeedRulesAndPeriodAsync(ErpDbContext db, DateOnly entryDate)
     {
         Account NewAccount(string prefix, string name, AccountType type, AccountNature nature) =>
             Account.Create(
@@ -250,19 +280,55 @@ public sealed class SupplierCreditApplicationReversedPostingIntegrationTests : I
                 createdBy: _createdBy
             );
 
-        var payableAcc = NewAccount("2.1", "CxP proveedores", AccountType.Liability, AccountNature.Credit);
-        var supplierCreditAcc = NewAccount("1.1", "Anticipos a proveedores", AccountType.Asset, AccountNature.Debit);
+        var payableAcc = NewAccount(
+            "2.1",
+            "CxP proveedores",
+            AccountType.Liability,
+            AccountNature.Credit
+        );
+        var supplierCreditAcc = NewAccount(
+            "1.1",
+            "Anticipos a proveedores",
+            AccountType.Asset,
+            AccountNature.Debit
+        );
 
         db.Accounts.AddRange(payableAcc, supplierCreditAcc);
 
-        var appliedRule = PostingRule.Create(_tenantId, _companyId, "Purchases", "SupplierCreditApplied", null, null, null, _createdBy);
+        var appliedRule = PostingRule.Create(
+            _tenantId,
+            _companyId,
+            "Purchases",
+            "SupplierCreditApplied",
+            null,
+            null,
+            null,
+            _createdBy
+        );
         appliedRule.AddLine(payableAcc.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
-        appliedRule.AddLine(supplierCreditAcc.Id, AccountNature.Credit, PostingAmountKind.GrandTotal);
+        appliedRule.AddLine(
+            supplierCreditAcc.Id,
+            AccountNature.Credit,
+            PostingAmountKind.GrandTotal
+        );
 
         // Espejo exacto: mismas cuentas/AmountKind, naturaleza invertida — mismo criterio que
         // MinimalPostingRules ("Purchases","SupplierCreditApplicationReversed") en AccountingBootstrapStep.
-        var reversedRule = PostingRule.Create(_tenantId, _companyId, "Purchases", "SupplierCreditApplicationReversed", null, null, null, _createdBy);
-        reversedRule.AddLine(supplierCreditAcc.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
+        var reversedRule = PostingRule.Create(
+            _tenantId,
+            _companyId,
+            "Purchases",
+            "SupplierCreditApplicationReversed",
+            null,
+            null,
+            null,
+            _createdBy
+        );
+        reversedRule.AddLine(
+            supplierCreditAcc.Id,
+            AccountNature.Debit,
+            PostingAmountKind.GrandTotal
+        );
         reversedRule.AddLine(payableAcc.Id, AccountNature.Credit, PostingAmountKind.GrandTotal);
 
         db.PostingRules.AddRange(appliedRule, reversedRule);
@@ -273,7 +339,11 @@ public sealed class SupplierCreditApplicationReversedPostingIntegrationTests : I
             entryDate.Year,
             entryDate.Month,
             new DateOnly(entryDate.Year, entryDate.Month, 1),
-            new DateOnly(entryDate.Year, entryDate.Month, DateTime.DaysInMonth(entryDate.Year, entryDate.Month)),
+            new DateOnly(
+                entryDate.Year,
+                entryDate.Month,
+                DateTime.DaysInMonth(entryDate.Year, entryDate.Month)
+            ),
             _createdBy
         );
         db.AccountingPeriods.Add(period);
@@ -407,21 +477,30 @@ public sealed class SupplierCreditApplicationReversedPostingIntegrationTests : I
         db.AccountsPayables.Add(payable);
         await db.SaveChangesAsync();
 
-        var (credit, movementId) = BuildAndApplyCredit(payable, sourceReturnId, creditAmount: 50m, applyAmount: 30m);
+        var (credit, movementId) = BuildAndApplyCredit(
+            payable,
+            sourceReturnId,
+            creditAmount: 50m,
+            applyAmount: 30m
+        );
         db.SupplierCredits.Add(credit);
         await db.SaveChangesAsync();
 
         // Confirma primero que el asiento de aplicación sí existe — precondición del reverso.
         await using (var verifyBefore = CreateContext())
         {
-            var appliedEntry = await verifyBefore
-                .JournalEntries.FirstOrDefaultAsync(x =>
-                    x.SourceEventId == movementId && x.SourceEventType == "SupplierCreditApplied"
-                );
+            var appliedEntry = await verifyBefore.JournalEntries.FirstOrDefaultAsync(x =>
+                x.SourceEventId == movementId && x.SourceEventType == "SupplierCreditApplied"
+            );
             appliedEntry.Should().NotBeNull();
         }
 
-        var reversalMovement = credit.ReverseApplication(movementId, _createdBy, Guid.NewGuid(), "hash-reverse");
+        var reversalMovement = credit.ReverseApplication(
+            movementId,
+            _createdBy,
+            Guid.NewGuid(),
+            "hash-reverse"
+        );
         payable.ReverseSupplierCredit(30m, _createdBy);
         await db.SaveChangesAsync();
 
@@ -429,7 +508,8 @@ public sealed class SupplierCreditApplicationReversedPostingIntegrationTests : I
         var reversalEntry = await verifyDb
             .JournalEntries.Include(e => e.Lines)
             .SingleOrDefaultAsync(x =>
-                x.SourceEventId == reversalMovement.Id && x.SourceEventType == "SupplierCreditApplicationReversed"
+                x.SourceEventId == reversalMovement.Id
+                && x.SourceEventType == "SupplierCreditApplicationReversed"
             );
 
         reversalEntry.Should().NotBeNull();
@@ -455,7 +535,12 @@ public sealed class SupplierCreditApplicationReversedPostingIntegrationTests : I
         var reloadedPayable = await verifyDb
             .AccountsPayables.Include(p => p.Installments)
             .SingleAsync(p => p.Id == payable.Id);
-        reloadedPayable.OutstandingAmount.Should().Be(100m, because: "revertir la aplicación devuelve la CxP destino a su saldo original");
+        reloadedPayable
+            .OutstandingAmount.Should()
+            .Be(
+                100m,
+                because: "revertir la aplicación devuelve la CxP destino a su saldo original"
+            );
     }
 
     [Fact]
@@ -473,40 +558,58 @@ public sealed class SupplierCreditApplicationReversedPostingIntegrationTests : I
         db.AccountsPayables.Add(payable);
         await db.SaveChangesAsync();
 
-        var (credit, movementId) = BuildAndApplyCredit(payable, sourceReturnId, creditAmount: 50m, applyAmount: 20m);
+        var (credit, movementId) = BuildAndApplyCredit(
+            payable,
+            sourceReturnId,
+            creditAmount: 50m,
+            applyAmount: 20m
+        );
         db.SupplierCredits.Add(credit);
         await db.SaveChangesAsync();
 
-        var reversalMovement = credit.ReverseApplication(movementId, _createdBy, Guid.NewGuid(), "hash-reverse");
+        var reversalMovement = credit.ReverseApplication(
+            movementId,
+            _createdBy,
+            Guid.NewGuid(),
+            "hash-reverse"
+        );
         payable.ReverseSupplierCredit(20m, _createdBy);
         await db.SaveChangesAsync();
 
         await using var countDb1 = CreateContext();
         var countBefore = await countDb1.JournalEntries.CountAsync(x =>
-            x.SourceEventId == reversalMovement.Id && x.SourceEventType == "SupplierCreditApplicationReversed"
+            x.SourceEventId == reversalMovement.Id
+            && x.SourceEventType == "SupplierCreditApplicationReversed"
         );
         countBefore.Should().Be(1);
 
         // Re-publica el mismo evento de dominio (simula un reintento/duplicado de la infraestructura
         // de mensajería) directamente contra el traductor real, sin volver a mutar el agregado.
-        var replayedEvent = new ERP.Domain.Modules.Purchases.Events.SupplierCreditApplicationReversedEvent(
-            credit.Id,
-            reversalMovement.Id,
-            movementId,
-            payable.Id,
-            _tenantId,
-            _companyId,
-            20m,
-            credit.AvailableAmount,
-            _createdBy
-        );
+        var replayedEvent =
+            new ERP.Domain.Modules.Purchases.Events.SupplierCreditApplicationReversedEvent(
+                credit.Id,
+                reversalMovement.Id,
+                movementId,
+                payable.Id,
+                _tenantId,
+                _companyId,
+                20m,
+                credit.AvailableAmount,
+                _createdBy
+            );
         await publisher.Publish(replayedEvent);
 
         await using var countDb2 = CreateContext();
         var countAfter = await countDb2.JournalEntries.CountAsync(x =>
-            x.SourceEventId == reversalMovement.Id && x.SourceEventType == "SupplierCreditApplicationReversed"
+            x.SourceEventId == reversalMovement.Id
+            && x.SourceEventType == "SupplierCreditApplicationReversed"
         );
-        countAfter.Should().Be(1, because: "el Posting Engine es idempotente por (SourceModule, FactType, SourceEventId)");
+        countAfter
+            .Should()
+            .Be(
+                1,
+                because: "el Posting Engine es idempotente por (SourceModule, FactType, SourceEventId)"
+            );
     }
 
     private sealed class DeferredPublisher : IPublisher

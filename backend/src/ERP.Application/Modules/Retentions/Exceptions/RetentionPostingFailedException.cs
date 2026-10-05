@@ -12,7 +12,8 @@ namespace ERP.Application.Modules.Retentions.Exceptions;
 /// a persistirse (docs/decisions/RETENTIONS-MODULE-DESIGN-01.md § "Impacto contable": "una
 /// retención sin asiento sería un pasivo fiscal fantasma").
 /// </summary>
-public sealed class RetentionPostingFailedException : ERP.Domain.Exceptions.DomainRuleViolationException
+public sealed class RetentionPostingFailedException
+    : ERP.Domain.Exceptions.DomainRuleViolationException
 {
     public string? Code { get; }
 

@@ -1,9 +1,9 @@
+using System.Globalization;
 using ERP.Application.Common;
 using ERP.Domain.Configuration.Constants;
 using ERP.Domain.Configuration.Enums;
 using ERP.Domain.Configuration.Interfaces;
 using Microsoft.Extensions.Logging;
-using System.Globalization;
 
 namespace ERP.Infrastructure.Services;
 
@@ -42,8 +42,9 @@ public sealed class OperationalPreferencesResolver : IOperationalPreferencesReso
         _logger = logger;
     }
 
-    public Task<OperationalPreferences> ResolveAsync(CancellationToken cancellationToken = default) =>
-        ResolveAsync(_currentTenant.TenantId, _currentCompany.CompanyId, cancellationToken);
+    public Task<OperationalPreferences> ResolveAsync(
+        CancellationToken cancellationToken = default
+    ) => ResolveAsync(_currentTenant.TenantId, _currentCompany.CompanyId, cancellationToken);
 
     public async Task<OperationalPreferences> ResolveAsync(
         Guid tenantId,
@@ -74,7 +75,14 @@ public sealed class OperationalPreferencesResolver : IOperationalPreferencesReso
         {
             if (!lookup.TryGetValue(key, out var raw) || string.IsNullOrWhiteSpace(raw))
                 return fallback;
-            if (int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed))
+            if (
+                int.TryParse(
+                    raw,
+                    NumberStyles.Integer,
+                    CultureInfo.InvariantCulture,
+                    out var parsed
+                )
+            )
                 return parsed;
             LogCorrupt(key, raw);
             return fallback;
@@ -84,7 +92,14 @@ public sealed class OperationalPreferencesResolver : IOperationalPreferencesReso
         {
             if (!lookup.TryGetValue(key, out var raw) || string.IsNullOrWhiteSpace(raw))
                 return fallback;
-            if (decimal.TryParse(raw, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsed))
+            if (
+                decimal.TryParse(
+                    raw,
+                    NumberStyles.Number,
+                    CultureInfo.InvariantCulture,
+                    out var parsed
+                )
+            )
                 return parsed;
             LogCorrupt(key, raw);
             return fallback;
@@ -94,7 +109,14 @@ public sealed class OperationalPreferencesResolver : IOperationalPreferencesReso
         {
             if (!lookup.TryGetValue(key, out var raw) || string.IsNullOrWhiteSpace(raw))
                 return null;
-            if (decimal.TryParse(raw, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsed))
+            if (
+                decimal.TryParse(
+                    raw,
+                    NumberStyles.Number,
+                    CultureInfo.InvariantCulture,
+                    out var parsed
+                )
+            )
                 return parsed;
             LogCorrupt(key, raw);
             return null;
@@ -111,7 +133,9 @@ public sealed class OperationalPreferencesResolver : IOperationalPreferencesReso
         }
 
         string String(string key, string fallback) =>
-            lookup.TryGetValue(key, out var raw) && !string.IsNullOrWhiteSpace(raw) ? raw : fallback;
+            lookup.TryGetValue(key, out var raw) && !string.IsNullOrWhiteSpace(raw)
+                ? raw
+                : fallback;
 
         var salesPos = new SalesPosPreferences(
             RequireOpenCashSession: Bool(OrgSettingKeys.SalesPos.RequireOpenCashSession, true),

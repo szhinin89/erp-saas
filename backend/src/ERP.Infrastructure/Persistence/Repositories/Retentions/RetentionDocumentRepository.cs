@@ -33,8 +33,11 @@ public sealed class RetentionDocumentRepository : IRetentionDocumentRepository
     public Task AddAsync(RetentionDocument document, CancellationToken ct = default) =>
         _db.Set<RetentionDocument>().AddAsync(document, ct).AsTask();
 
-    public Task<RetentionDocument?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default) =>
-        Scoped(tenantId).Include(x => x.Lines).FirstOrDefaultAsync(x => x.Id == id, ct);
+    public Task<RetentionDocument?> GetByIdAsync(
+        Guid tenantId,
+        Guid id,
+        CancellationToken ct = default
+    ) => Scoped(tenantId).Include(x => x.Lines).FirstOrDefaultAsync(x => x.Id == id, ct);
 
     public Task<bool> ExistsActiveBySourceAsync(
         Guid tenantId,
@@ -60,20 +63,22 @@ public sealed class RetentionDocumentRepository : IRetentionDocumentRepository
         // Escalar leído de la BD (no de la instancia trackeada, que puede ser previa al lock).
         // ToListAsync no compone la consulta: el FOR UPDATE queda en la sentencia de nivel superior.
         var statuses = forUpdate
-            ? await _db.Database
-                .SqlQuery<int>(
+            ? await _db
+                .Database.SqlQuery<int>(
                     $"SELECT status AS \"Value\" FROM retention_documents WHERE tenant_id = {tenantId} AND company_id = {companyId} AND id = {id} FOR UPDATE"
                 )
                 .ToListAsync(ct)
-            : await _db.Database
-                .SqlQuery<int>(
+            : await _db
+                .Database.SqlQuery<int>(
                     $"SELECT status AS \"Value\" FROM retention_documents WHERE tenant_id = {tenantId} AND company_id = {companyId} AND id = {id}"
                 )
                 .ToListAsync(ct);
         return statuses.Count == 0 ? null : (RetentionStatus)statuses[0];
     }
 
-    public async Task<IReadOnlyList<RetentionElectronicStartCandidate>> GetPendingElectronicStartAsync(
+    public async Task<
+        IReadOnlyList<RetentionElectronicStartCandidate>
+    > GetPendingElectronicStartAsync(
         DateTime issuedBeforeUtc,
         int take,
         CancellationToken ct = default
@@ -89,7 +94,8 @@ public sealed class RetentionDocumentRepository : IRetentionDocumentRepository
             .Where(r => r.Status == RetentionStatus.Issued)
             .Where(r => r.UpdatedAt != null && r.UpdatedAt < issuedBeforeUtc)
             .Where(r =>
-                !_db.ElectronicDocuments.AsPlatformQuery()
+                !_db
+                    .ElectronicDocuments.AsPlatformQuery()
                     .Any(e =>
                         e.TenantId == r.TenantId
                         && e.SourceModule == RetentionElectronicDocumentSource.SourceModule

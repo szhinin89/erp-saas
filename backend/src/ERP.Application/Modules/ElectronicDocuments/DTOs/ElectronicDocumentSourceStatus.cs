@@ -56,7 +56,8 @@ public static class ElectronicDocumentSourceStatusMapper
                 ElectronicDocumentState.Discarded => ElectronicDocumentSourceStatus.Discarded,
                 ElectronicDocumentState.DeadLetter when document.CanBeDiscarded =>
                     ElectronicDocumentSourceStatus.Pending,
-                ElectronicDocumentState.AnnulmentPending => ElectronicDocumentSourceStatus.AnnulmentPending,
+                ElectronicDocumentState.AnnulmentPending =>
+                    ElectronicDocumentSourceStatus.AnnulmentPending,
                 ElectronicDocumentState.Cancelled => ElectronicDocumentSourceStatus.Annulled,
                 // Signed (histórico: ambiguo) y DeadLetter de un envío/consulta.
                 _ => ElectronicDocumentSourceStatus.RequiresReconciliation,

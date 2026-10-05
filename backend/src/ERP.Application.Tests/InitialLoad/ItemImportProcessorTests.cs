@@ -49,10 +49,17 @@ public sealed class ItemImportProcessorTests
             .Setup(x => x.GetByCodeAsync(TenantId, "Physical", It.IsAny<CancellationToken>()))
             .ReturnsAsync(itemType);
 
-        _sri.Setup(x => x.ResolveUomsAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
+        _sri.Setup(x =>
+                x.ResolveUomsAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new Dictionary<string, SriUomInfo> { ["19"] = new("UN", "Unidad") });
 
-        _sri.Setup(x => x.ResolveVatRatesAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
+        _sri.Setup(x =>
+                x.ResolveVatRatesAsync(
+                    It.IsAny<IEnumerable<string>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(new Dictionary<string, SriVatInfo> { ["2"] = new("IVA 15%", 15m) });
 
         var category = ItemCategoryNode.Create(
@@ -73,11 +80,18 @@ public sealed class ItemImportProcessorTests
 
         _itemRepo
             .Setup(x =>
-                x.ExistsBySkuAsync(It.IsAny<string>(), TenantId, null, It.IsAny<CancellationToken>())
+                x.ExistsBySkuAsync(
+                    It.IsAny<string>(),
+                    TenantId,
+                    null,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(false);
         _itemRepo
-            .Setup(x => x.BarcodeExistsAsync(It.IsAny<string>(), TenantId, It.IsAny<CancellationToken>()))
+            .Setup(x =>
+                x.BarcodeExistsAsync(It.IsAny<string>(), TenantId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(false);
     }
 
@@ -126,9 +140,11 @@ public sealed class ItemImportProcessorTests
         var result = await processor.ValidateRowAsync(1, row, false, CancellationToken.None);
 
         result.HasBlockingIssue.Should().BeFalse();
-        result.Issues.Should().ContainSingle(i =>
-            i.Code == "MISSING_SALE_PRICE" && i.Severity == ImportSeverity.Warning
-        );
+        result
+            .Issues.Should()
+            .ContainSingle(i =>
+                i.Code == "MISSING_SALE_PRICE" && i.Severity == ImportSeverity.Warning
+            );
         result.ParsedDataJson.Should().Contain("\"IsAvailableOnPOS\":false");
     }
 
@@ -145,9 +161,11 @@ public sealed class ItemImportProcessorTests
         var result = await processor.ValidateRowAsync(1, row, false, CancellationToken.None);
 
         result.HasBlockingIssue.Should().BeFalse();
-        result.Issues.Should().ContainSingle(i =>
-            i.Code == "PRICE_NOT_APPLIED" && i.Severity == ImportSeverity.Warning
-        );
+        result
+            .Issues.Should()
+            .ContainSingle(i =>
+                i.Code == "PRICE_NOT_APPLIED" && i.Severity == ImportSeverity.Warning
+            );
         result.ParsedDataJson.Should().Contain("\"IsAvailableOnPOS\":false");
     }
 
@@ -162,14 +180,20 @@ public sealed class ItemImportProcessorTests
         var result = await processor.ValidateRowAsync(1, row, false, CancellationToken.None);
 
         result.HasBlockingIssue.Should().BeTrue();
-        result.Issues.Should().ContainSingle(i => i.Code == "MISSING_REQUIRED_FIELD" && i.FieldName == ItemImportColumns.Name);
+        result
+            .Issues.Should()
+            .ContainSingle(i =>
+                i.Code == "MISSING_REQUIRED_FIELD" && i.FieldName == ItemImportColumns.Name
+            );
     }
 
     [Fact]
     public async Task Unidad_base_invalida_es_error_bloqueante()
     {
         SetupHappyPathCatalogs();
-        _sri.Setup(x => x.ResolveUomsAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
+        _sri.Setup(x =>
+                x.ResolveUomsAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new Dictionary<string, SriUomInfo>());
         var processor = BuildProcessor();
 
@@ -185,7 +209,12 @@ public sealed class ItemImportProcessorTests
         SetupHappyPathCatalogs();
         _itemRepo
             .Setup(x =>
-                x.ExistsBySkuAsync(It.IsAny<string>(), TenantId, null, It.IsAny<CancellationToken>())
+                x.ExistsBySkuAsync(
+                    It.IsAny<string>(),
+                    TenantId,
+                    null,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(true);
         var processor = BuildProcessor();
@@ -201,7 +230,9 @@ public sealed class ItemImportProcessorTests
     {
         SetupHappyPathCatalogs();
         _itemRepo
-            .Setup(x => x.BarcodeExistsAsync(It.IsAny<string>(), TenantId, It.IsAny<CancellationToken>()))
+            .Setup(x =>
+                x.BarcodeExistsAsync(It.IsAny<string>(), TenantId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(true);
         var processor = BuildProcessor();
 
@@ -222,7 +253,11 @@ public sealed class ItemImportProcessorTests
         var result = await processor.ValidateRowAsync(1, row, false, CancellationToken.None);
 
         result.HasBlockingIssue.Should().BeTrue();
-        result.Issues.Should().ContainSingle(i => i.Code == "MISSING_REQUIRED_FIELD" && i.FieldName == ItemImportColumns.Barcode1);
+        result
+            .Issues.Should()
+            .ContainSingle(i =>
+                i.Code == "MISSING_REQUIRED_FIELD" && i.FieldName == ItemImportColumns.Barcode1
+            );
     }
 
     [Fact]
@@ -247,7 +282,12 @@ public sealed class ItemImportProcessorTests
         var row = ValidRow();
         row[ItemImportColumns.CategoryName] = "Categoría Nueva";
 
-        var result = await processor.ValidateRowAsync(1, row, autoCreateCatalogValues: false, CancellationToken.None);
+        var result = await processor.ValidateRowAsync(
+            1,
+            row,
+            autoCreateCatalogValues: false,
+            CancellationToken.None
+        );
 
         result.HasBlockingIssue.Should().BeTrue();
         result.Issues.Should().ContainSingle(i => i.Code == "CATEGORY_NOT_FOUND");
@@ -261,12 +301,19 @@ public sealed class ItemImportProcessorTests
         var row = ValidRow();
         row[ItemImportColumns.CategoryName] = "Categoría Nueva";
 
-        var result = await processor.ValidateRowAsync(1, row, autoCreateCatalogValues: true, CancellationToken.None);
+        var result = await processor.ValidateRowAsync(
+            1,
+            row,
+            autoCreateCatalogValues: true,
+            CancellationToken.None
+        );
 
         result.HasBlockingIssue.Should().BeFalse();
-        result.Issues.Should().ContainSingle(i =>
-            i.Code == "CATEGORY_WILL_BE_CREATED" && i.Severity == ImportSeverity.Warning
-        );
+        result
+            .Issues.Should()
+            .ContainSingle(i =>
+                i.Code == "CATEGORY_WILL_BE_CREATED" && i.Severity == ImportSeverity.Warning
+            );
     }
 
     [Fact]
@@ -277,7 +324,12 @@ public sealed class ItemImportProcessorTests
         var row = ValidRow();
         row[ItemImportColumns.BrandName] = "Marca Nueva";
 
-        var result = await processor.ValidateRowAsync(1, row, autoCreateCatalogValues: false, CancellationToken.None);
+        var result = await processor.ValidateRowAsync(
+            1,
+            row,
+            autoCreateCatalogValues: false,
+            CancellationToken.None
+        );
 
         result.HasBlockingIssue.Should().BeTrue();
         result.Issues.Should().ContainSingle(i => i.Code == "BRAND_NOT_FOUND");
@@ -294,10 +346,19 @@ public sealed class ItemImportProcessorTests
         var row = ValidRow();
         row[ItemImportColumns.CategoryName] = null;
 
-        var result = await processor.ValidateRowAsync(1, row, autoCreateCatalogValues: true, CancellationToken.None);
+        var result = await processor.ValidateRowAsync(
+            1,
+            row,
+            autoCreateCatalogValues: true,
+            CancellationToken.None
+        );
 
         result.HasBlockingIssue.Should().BeTrue();
-        result.Issues.Should().ContainSingle(i => i.Code == "MISSING_REQUIRED_FIELD" && i.FieldName == ItemImportColumns.CategoryName);
+        result
+            .Issues.Should()
+            .ContainSingle(i =>
+                i.Code == "MISSING_REQUIRED_FIELD" && i.FieldName == ItemImportColumns.CategoryName
+            );
     }
 
     [Fact]
@@ -338,9 +399,11 @@ public sealed class ItemImportProcessorTests
         var result = await processor.ValidateRowAsync(1, row, false, CancellationToken.None);
 
         result.HasBlockingIssue.Should().BeFalse();
-        result.Issues.Should().ContainSingle(i =>
-            i.Code == "SUPPLIER_NOT_LINKED" && i.Severity == ImportSeverity.Warning
-        );
+        result
+            .Issues.Should()
+            .ContainSingle(i =>
+                i.Code == "SUPPLIER_NOT_LINKED" && i.Severity == ImportSeverity.Warning
+            );
         result.ParsedDataJson.Should().Contain("\"SupplierId\":null");
     }
 
@@ -361,7 +424,12 @@ public sealed class ItemImportProcessorTests
     public async Task Iva_invalido_es_error_bloqueante()
     {
         SetupHappyPathCatalogs();
-        _sri.Setup(x => x.ResolveVatRatesAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
+        _sri.Setup(x =>
+                x.ResolveVatRatesAsync(
+                    It.IsAny<IEnumerable<string>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(new Dictionary<string, SriVatInfo>());
         var processor = BuildProcessor();
         var row = ValidRow();

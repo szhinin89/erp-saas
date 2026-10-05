@@ -57,7 +57,9 @@ public sealed class XadesBesSigner
 
         using var rsa =
             cert.GetRSAPrivateKey()
-            ?? throw new ERP.Domain.Exceptions.DomainRuleViolationException("El certificado no contiene clave privada RSA.");
+            ?? throw new ERP.Domain.Exceptions.DomainRuleViolationException(
+                "El certificado no contiene clave privada RSA."
+            );
 
         // 2. Cargar XML
         var xmlDoc = new XmlDocument { PreserveWhitespace = false };

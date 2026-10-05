@@ -24,7 +24,10 @@ public sealed class BufferedFormFile : IAsyncDisposable
     /// <summary>Contenido listo para el command de Application (stream en posición 0).</summary>
     public MediaUploadContent Content { get; }
 
-    public static async Task<BufferedFormFile> CreateAsync(IFormFile file, CancellationToken cancellationToken)
+    public static async Task<BufferedFormFile> CreateAsync(
+        IFormFile file,
+        CancellationToken cancellationToken
+    )
     {
         ArgumentNullException.ThrowIfNull(file);
 

@@ -9,7 +9,11 @@ namespace ERP.Domain.MasterData.Entities;
 /// para empresas existentes. Reemplaza el HashSet fijo CustomerRoleConfig.ValidCreditRatings.
 /// Solo lectura desde el frontend en este bloque — CRUD administrativo queda fuera de alcance.
 /// </summary>
-public sealed class CustomerCreditRating : MasterEntity, ITenantScopedEntity, ICompanyOperationalEntity, IClassificationCatalogEntity
+public sealed class CustomerCreditRating
+    : MasterEntity,
+        ITenantScopedEntity,
+        ICompanyOperationalEntity,
+        IClassificationCatalogEntity
 {
     public const int CodeMaxLength = 10;
     public const int NameMaxLength = 120;

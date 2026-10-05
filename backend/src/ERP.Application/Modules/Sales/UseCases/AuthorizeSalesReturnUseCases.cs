@@ -166,7 +166,11 @@ public sealed class AuthorizeSalesReturnHandler
             // efecto (Kardex, reembolso, CxC, asiento, Nota de Crédito). Una anulación concurrente
             // espera a esta autorización, o esta ve la factura ya anulada y se rechaza sin efectos.
             // Orden de locks: advisory de la devolución → factura → CxC → secuencias.
-            var invoice = await _invoiceRepo.GetByIdForUpdateAsync(tid, salesReturn.SalesInvoiceId, ct);
+            var invoice = await _invoiceRepo.GetByIdForUpdateAsync(
+                tid,
+                salesReturn.SalesInvoiceId,
+                ct
+            );
             if (invoice is null || invoice.BranchId != _b.BranchId)
             {
                 await _uow.RollbackAsync(ct);

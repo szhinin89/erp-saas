@@ -53,7 +53,9 @@ public sealed class SalesInvoiceAuthorizedHandlerTests
         var session = OpenSession(Guid.NewGuid());
         var cashRepo = new Mock<ICashSessionRepository>();
         cashRepo
-            .Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(session);
 
         var handler = BuildHandler(cashRepo);
@@ -102,7 +104,9 @@ public sealed class SalesInvoiceAuthorizedHandlerTests
         var cashRepo = new Mock<ICashSessionRepository>();
         var missingSessionId = Guid.NewGuid();
         cashRepo
-            .Setup(r => r.GetByIdForUpdateAsync(TenantId, missingSessionId, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByIdForUpdateAsync(TenantId, missingSessionId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((CashSession?)null);
 
         var handler = BuildHandler(cashRepo);
@@ -135,7 +139,9 @@ public sealed class SalesInvoiceAuthorizedHandlerTests
         var session = OpenSession(Guid.NewGuid());
         var cashRepo = new Mock<ICashSessionRepository>();
         cashRepo
-            .Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(session);
 
         var handler = BuildHandler(cashRepo);
@@ -169,7 +175,9 @@ public sealed class SalesInvoiceAuthorizedHandlerTests
         var session = OpenSession(Guid.NewGuid());
         var cashRepo = new Mock<ICashSessionRepository>();
         cashRepo
-            .Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(session);
 
         var handler = BuildHandler(cashRepo);
@@ -204,7 +212,9 @@ public sealed class SalesInvoiceAuthorizedHandlerTests
         var session = OpenSession(Guid.NewGuid());
         var cashRepo = new Mock<ICashSessionRepository>();
         cashRepo
-            .Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(session);
 
         var handler = BuildHandler(cashRepo);
@@ -228,8 +238,7 @@ public sealed class SalesInvoiceAuthorizedHandlerTests
 
         await handler.Handle(evt, CancellationToken.None);
 
-        session.Movements.Should()
-            .NotContain(m => m.ReferenceNumber == "001-001-000000005");
+        session.Movements.Should().NotContain(m => m.ReferenceNumber == "001-001-000000005");
     }
 
     [Fact]
@@ -239,7 +248,9 @@ public sealed class SalesInvoiceAuthorizedHandlerTests
         var session = OpenSession(Guid.NewGuid());
         var cashRepo = new Mock<ICashSessionRepository>();
         cashRepo
-            .Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(session);
 
         var handler = BuildHandler(cashRepo);
@@ -276,7 +287,9 @@ public sealed class SalesInvoiceAuthorizedHandlerTests
         var session = OpenSession(Guid.NewGuid());
         var cashRepo = new Mock<ICashSessionRepository>();
         cashRepo
-            .Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(session);
 
         var handler = BuildHandler(cashRepo);
@@ -309,7 +322,9 @@ public sealed class SalesInvoiceAuthorizedHandlerTests
         var session = OpenSession(Guid.NewGuid());
         var cashRepo = new Mock<ICashSessionRepository>();
         cashRepo
-            .Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(session);
 
         var handler = BuildHandler(cashRepo);
@@ -342,7 +357,9 @@ public sealed class SalesInvoiceAuthorizedHandlerTests
         var session = OpenSession(Guid.NewGuid());
         var cashRepo = new Mock<ICashSessionRepository>();
         cashRepo
-            .Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(session);
 
         var handler = BuildHandler(cashRepo);
@@ -376,7 +393,9 @@ public sealed class SalesInvoiceAuthorizedHandlerTests
         var session = OpenSession(Guid.NewGuid());
         var cashRepo = new Mock<ICashSessionRepository>();
         cashRepo
-            .Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(session);
 
         var handler = BuildHandler(cashRepo);
@@ -405,9 +424,29 @@ public sealed class SalesInvoiceAuthorizedHandlerTests
 
     // ── ZH-SALES-CASH-CONCURRENCY-HARDENING-01 — idempotencia por origen (la factura) ────────
 
-    private static SalesInvoiceAuthorizedEvent CashSale(Guid invoiceId, string number, Guid sessionId, decimal amount) =>
-        new(invoiceId, number, amount, UserId, sessionId, TenantId, CompanyId, new DateOnly(2026, 9, 27),
-            amount, 0m, 0m, 0m, 0m, cashApplied: amount, physicalCashApplied: amount);
+    private static SalesInvoiceAuthorizedEvent CashSale(
+        Guid invoiceId,
+        string number,
+        Guid sessionId,
+        decimal amount
+    ) =>
+        new(
+            invoiceId,
+            number,
+            amount,
+            UserId,
+            sessionId,
+            TenantId,
+            CompanyId,
+            new DateOnly(2026, 9, 27),
+            amount,
+            0m,
+            0m,
+            0m,
+            0m,
+            cashApplied: amount,
+            physicalCashApplied: amount
+        );
 
     [Fact]
     public async Task Reentrega_del_mismo_evento_no_crea_otro_movimiento()
@@ -415,13 +454,21 @@ public sealed class SalesInvoiceAuthorizedHandlerTests
         var session = OpenSession(Guid.NewGuid());
         var cashRepo = new Mock<ICashSessionRepository>();
         cashRepo
-            .Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(session);
         var handler = BuildHandler(cashRepo);
         var invoiceId = Guid.NewGuid();
 
-        await handler.Handle(CashSale(invoiceId, "001-001-000000030", session.Id, 25m), CancellationToken.None);
-        await handler.Handle(CashSale(invoiceId, "001-001-000000030", session.Id, 25m), CancellationToken.None);
+        await handler.Handle(
+            CashSale(invoiceId, "001-001-000000030", session.Id, 25m),
+            CancellationToken.None
+        );
+        await handler.Handle(
+            CashSale(invoiceId, "001-001-000000030", session.Id, 25m),
+            CancellationToken.None
+        );
 
         session.Movements.Where(m => m.ReferenceId == invoiceId).Should().ContainSingle();
         session.CurrentBalance.Should().Be(25m);
@@ -433,16 +480,28 @@ public sealed class SalesInvoiceAuthorizedHandlerTests
         var session = OpenSession(Guid.NewGuid());
         var cashRepo = new Mock<ICashSessionRepository>();
         cashRepo
-            .Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(session);
         var handler = BuildHandler(cashRepo);
 
         // Mismo monto y número de venta distinto: la identidad es la factura, nunca monto/descripción.
-        await handler.Handle(CashSale(Guid.NewGuid(), "001-001-000000031", session.Id, 25m), CancellationToken.None);
-        await handler.Handle(CashSale(Guid.NewGuid(), "001-001-000000032", session.Id, 25m), CancellationToken.None);
+        await handler.Handle(
+            CashSale(Guid.NewGuid(), "001-001-000000031", session.Id, 25m),
+            CancellationToken.None
+        );
+        await handler.Handle(
+            CashSale(Guid.NewGuid(), "001-001-000000032", session.Id, 25m),
+            CancellationToken.None
+        );
 
-        session.Movements.Count(m => m.ReferenceType == ERP.Domain.Modules.Caja.Enums.CashReferenceType.SalesInvoice)
-            .Should().Be(2);
+        session
+            .Movements.Count(m =>
+                m.ReferenceType == ERP.Domain.Modules.Caja.Enums.CashReferenceType.SalesInvoice
+            )
+            .Should()
+            .Be(2);
         session.CurrentBalance.Should().Be(50m);
     }
 }

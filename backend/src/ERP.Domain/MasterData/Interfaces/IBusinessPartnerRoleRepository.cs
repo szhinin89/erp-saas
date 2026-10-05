@@ -42,7 +42,9 @@ public interface IBusinessPartnerRoleRepository
     /// resultados de búsqueda sin requerir llamadas adicionales por fila
     /// (ZH-MASTERDATA-PARTNER-SEARCH-ROLE-FLAGS-API-07).
     /// </summary>
-    Task<IReadOnlyDictionary<Guid, (bool IsCustomer, bool IsSupplier)>> GetActiveRoleFlagsByBpIdsAsync(
+    Task<
+        IReadOnlyDictionary<Guid, (bool IsCustomer, bool IsSupplier)>
+    > GetActiveRoleFlagsByBpIdsAsync(
         IEnumerable<Guid> businessPartnerIds,
         CancellationToken cancellationToken = default
     );

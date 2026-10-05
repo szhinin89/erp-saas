@@ -6,7 +6,11 @@ public interface IEmailSender
     /// Envía el mensaje. Debe respetar <paramref name="ct"/> y <see cref="CommunicationEmailSettings.SmtpTimeout"/>;
     /// un timeout se informa como <see cref="TimeoutException"/>.
     /// </summary>
-    Task<EmailDeliveryReceipt> SendAsync(EmailMessage message, CommunicationEmailSettings settings, CancellationToken ct = default);
+    Task<EmailDeliveryReceipt> SendAsync(
+        EmailMessage message,
+        CommunicationEmailSettings settings,
+        CancellationToken ct = default
+    );
 }
 
 /// <summary>
@@ -19,7 +23,13 @@ public sealed record EmailDeliveryReceipt(string? ProviderMessageId)
     public static EmailDeliveryReceipt WithoutProviderId { get; } = new((string?)null);
 }
 
-/// <param name="CommunicationId">
+/// <param name="ToEmail"></param>
+
+/// <param name="ToName"></param>
+/// <param name="Subject"></param>
+/// <param name="BodyHtml"></param>
+/// <param name="BodyText"></param>
+/// <param name="Attachments"></param>/// <param name="CommunicationId">
 /// Identidad estable de la comunicación (<c>CommunicationOutbox.Id</c>): el transporte deriva de ella
 /// un Message-ID idéntico en todos los reintentos. Null para envíos fuera de la outbox (correo de prueba).
 /// </param>

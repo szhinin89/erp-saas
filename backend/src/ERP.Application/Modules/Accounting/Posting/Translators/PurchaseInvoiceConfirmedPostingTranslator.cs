@@ -63,7 +63,9 @@ public sealed class PurchaseInvoiceConfirmedPostingTranslator
                 result.Error
             );
             throw new PurchasePostingFailedException(
-                result.Error ?? "No se pudo contabilizar la compra.", result.Code);
+                result.Error ?? "No se pudo contabilizar la compra.",
+                result.Code
+            );
         }
     }
 }

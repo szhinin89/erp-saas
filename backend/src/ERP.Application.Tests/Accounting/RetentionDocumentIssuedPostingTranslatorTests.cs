@@ -46,7 +46,8 @@ public sealed class RetentionDocumentIssuedPostingTranslatorTests
     {
         public Mock<IPostingEngine> PostingEngine { get; } = new();
 
-        public RetentionDocumentIssuedPostingTranslator BuildTranslator() => new(PostingEngine.Object);
+        public RetentionDocumentIssuedPostingTranslator BuildTranslator() =>
+            new(PostingEngine.Object);
     }
 
     [Fact]
@@ -55,12 +56,18 @@ public sealed class RetentionDocumentIssuedPostingTranslatorTests
         var m = new Mocks();
         var retentionId = Guid.NewGuid();
         PostingFact? captured = null;
-        m.PostingEngine
-            .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
+        m.PostingEngine.Setup(e =>
+                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
+            )
             .Callback<PostingFact, CancellationToken>((fact, _) => captured = fact)
-            .ReturnsAsync(Result<PostingOutcomeDto>.Success(new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)));
+            .ReturnsAsync(
+                Result<PostingOutcomeDto>.Success(
+                    new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)
+                )
+            );
 
-        await m.BuildTranslator().Handle(Event(retentionId, totalRetainedVat: 4.50m), CancellationToken.None);
+        await m.BuildTranslator()
+            .Handle(Event(retentionId, totalRetainedVat: 4.50m), CancellationToken.None);
 
         captured.Should().NotBeNull();
         captured!.TenantId.Should().Be(TenantId);
@@ -84,10 +91,15 @@ public sealed class RetentionDocumentIssuedPostingTranslatorTests
     {
         var m = new Mocks();
         PostingFact? captured = null;
-        m.PostingEngine
-            .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
+        m.PostingEngine.Setup(e =>
+                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
+            )
             .Callback<PostingFact, CancellationToken>((fact, _) => captured = fact)
-            .ReturnsAsync(Result<PostingOutcomeDto>.Success(new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)));
+            .ReturnsAsync(
+                Result<PostingOutcomeDto>.Success(
+                    new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)
+                )
+            );
 
         await m.BuildTranslator()
             .Handle(
@@ -96,7 +108,12 @@ public sealed class RetentionDocumentIssuedPostingTranslatorTests
             );
 
         captured.Should().NotBeNull();
-        captured!.RetainedAmount.Should().Be(31.75m, because: "el total sigue siendo el mismo campo para el Debe de CxP proveedor");
+        captured!
+            .RetainedAmount.Should()
+            .Be(
+                31.75m,
+                because: "el total sigue siendo el mismo campo para el Debe de CxP proveedor"
+            );
         captured.RetainedVatAmount.Should().Be(30.00m);
         captured.RetainedIncomeAmount.Should().Be(1.75m);
     }
@@ -108,13 +125,21 @@ public sealed class RetentionDocumentIssuedPostingTranslatorTests
     {
         var m = new Mocks();
         PostingFact? captured = null;
-        m.PostingEngine
-            .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
+        m.PostingEngine.Setup(e =>
+                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
+            )
             .Callback<PostingFact, CancellationToken>((fact, _) => captured = fact)
-            .ReturnsAsync(Result<PostingOutcomeDto>.Success(new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)));
+            .ReturnsAsync(
+                Result<PostingOutcomeDto>.Success(
+                    new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)
+                )
+            );
 
         await m.BuildTranslator()
-            .Handle(Event(totalRetainedVat: 10.5m, totalRetainedIncome: 0m), CancellationToken.None);
+            .Handle(
+                Event(totalRetainedVat: 10.5m, totalRetainedIncome: 0m),
+                CancellationToken.None
+            );
 
         captured!.RetainedVatAmount.Should().Be(10.5m);
         captured.RetainedIncomeAmount.Should().Be(0m);
@@ -124,9 +149,14 @@ public sealed class RetentionDocumentIssuedPostingTranslatorTests
     public async Task Posting_exitoso_no_lanza()
     {
         var m = new Mocks();
-        m.PostingEngine
-            .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<PostingOutcomeDto>.Success(new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)));
+        m.PostingEngine.Setup(e =>
+                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                Result<PostingOutcomeDto>.Success(
+                    new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)
+                )
+            );
 
         var act = async () => await m.BuildTranslator().Handle(Event(), CancellationToken.None);
 
@@ -137,9 +167,15 @@ public sealed class RetentionDocumentIssuedPostingTranslatorTests
     public async Task Posting_failure_lanza_RetentionPostingFailedException_en_vez_de_loguear_warning()
     {
         var m = new Mocks();
-        m.PostingEngine
-            .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<PostingOutcomeDto>.ValidationFailure("No existe regla de contabilizacion para Retentions.", "RULE_NOT_FOUND"));
+        m.PostingEngine.Setup(e =>
+                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                Result<PostingOutcomeDto>.ValidationFailure(
+                    "No existe regla de contabilizacion para Retentions.",
+                    "RULE_NOT_FOUND"
+                )
+            );
 
         var act = async () => await m.BuildTranslator().Handle(Event(), CancellationToken.None);
 

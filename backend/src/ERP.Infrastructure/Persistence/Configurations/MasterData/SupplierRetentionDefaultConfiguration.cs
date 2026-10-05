@@ -31,9 +31,20 @@ public sealed class SupplierRetentionDefaultConfiguration
             .Property(x => x.BusinessPartnerId)
             .HasColumnName("business_partner_id")
             .IsRequired();
-        builder.Property(x => x.SriRetentionCodeId).HasColumnName("sri_retention_code_id").IsRequired();
-        builder.Property(x => x.IsActive).HasColumnName("is_active").IsRequired().HasDefaultValue(true);
-        builder.Property(x => x.DisplayOrder).HasColumnName("display_order").IsRequired().HasDefaultValue(0);
+        builder
+            .Property(x => x.SriRetentionCodeId)
+            .HasColumnName("sri_retention_code_id")
+            .IsRequired();
+        builder
+            .Property(x => x.IsActive)
+            .HasColumnName("is_active")
+            .IsRequired()
+            .HasDefaultValue(true);
+        builder
+            .Property(x => x.DisplayOrder)
+            .HasColumnName("display_order")
+            .IsRequired()
+            .HasDefaultValue(0);
 
         // ── Audit ────────────────────────────────────────────────────────────
         builder.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
@@ -74,7 +85,13 @@ public sealed class SupplierRetentionDefaultConfiguration
             .HasDatabaseName("uq_srd_company_bp_code");
 
         builder
-            .HasIndex(x => new { x.TenantId, x.CompanyId, x.BusinessPartnerId, x.IsActive })
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.CompanyId,
+                x.BusinessPartnerId,
+                x.IsActive,
+            })
             .HasDatabaseName("ix_srd_company_bp_active");
     }
 }

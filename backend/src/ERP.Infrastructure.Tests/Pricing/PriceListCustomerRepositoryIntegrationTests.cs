@@ -69,15 +69,36 @@ public sealed class PriceListCustomerRepositoryIntegrationTests : IAsyncLifetime
         await db.Database.MigrateAsync();
 
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _userId);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _userId);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: _userId
+        );
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
         await db.SaveChangesAsync();
         _tenantId = tenant.Id;
         _companyId = company.Id;
 
-        var listA = PriceList.Create(_tenantId, _companyId, "A", "Lista A", "USD", isDefault: false, createdBy: _userId);
-        var listB = PriceList.Create(_tenantId, _companyId, "B", "Lista B", "USD", isDefault: false, createdBy: _userId);
+        var listA = PriceList.Create(
+            _tenantId,
+            _companyId,
+            "A",
+            "Lista A",
+            "USD",
+            isDefault: false,
+            createdBy: _userId
+        );
+        var listB = PriceList.Create(
+            _tenantId,
+            _companyId,
+            "B",
+            "Lista B",
+            "USD",
+            isDefault: false,
+            createdBy: _userId
+        );
         db.PriceLists.AddRange(listA, listB);
         await db.SaveChangesAsync();
         _priceListAId = listA.Id;
@@ -120,7 +141,13 @@ public sealed class PriceListCustomerRepositoryIntegrationTests : IAsyncLifetime
         await using (var scope = _serviceProvider.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
-            var assignment = PriceListCustomer.Create(_tenantId, _companyId, _priceListAId, customerId, _userId);
+            var assignment = PriceListCustomer.Create(
+                _tenantId,
+                _companyId,
+                _priceListAId,
+                customerId,
+                _userId
+            );
             db.PriceListCustomers.Add(assignment);
             await db.SaveChangesAsync();
             assignmentId = assignment.Id;
@@ -152,11 +179,21 @@ public sealed class PriceListCustomerRepositoryIntegrationTests : IAsyncLifetime
         await using var scope = _serviceProvider.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
 
-        var otherCompany = Company.CreateManaged(_tenantId, "1790012345002", "Otra S.A.", createdBy: _userId);
+        var otherCompany = Company.CreateManaged(
+            _tenantId,
+            "1790012345002",
+            "Otra S.A.",
+            createdBy: _userId
+        );
         db.Companies.Add(otherCompany);
         var otherCompanyList = PriceList.Create(
-            _tenantId, otherCompany.Id, "A", "Lista A (otra empresa)", "USD",
-            isDefault: false, createdBy: _userId
+            _tenantId,
+            otherCompany.Id,
+            "A",
+            "Lista A (otra empresa)",
+            "USD",
+            isDefault: false,
+            createdBy: _userId
         );
         db.PriceLists.Add(otherCompanyList);
         await db.SaveChangesAsync();
@@ -165,7 +202,13 @@ public sealed class PriceListCustomerRepositoryIntegrationTests : IAsyncLifetime
             PriceListCustomer.Create(_tenantId, _companyId, _priceListAId, customerId, _userId)
         );
         db.PriceListCustomers.Add(
-            PriceListCustomer.Create(_tenantId, otherCompany.Id, otherCompanyList.Id, customerId, _userId)
+            PriceListCustomer.Create(
+                _tenantId,
+                otherCompany.Id,
+                otherCompanyList.Id,
+                customerId,
+                _userId
+            )
         );
         var act = async () => await db.SaveChangesAsync();
 
@@ -191,19 +234,39 @@ public sealed class PriceListCustomerRepositoryIntegrationTests : IAsyncLifetime
                 PriceListCustomer.Create(_tenantId, _companyId, _priceListAId, customerId, _userId)
             );
 
-            var otherTenant = Tenant.Create("Otro Tenant", $"other-{Guid.NewGuid():N}"[..16], _userId);
+            var otherTenant = Tenant.Create(
+                "Otro Tenant",
+                $"other-{Guid.NewGuid():N}"[..16],
+                _userId
+            );
             db.Tenants.Add(otherTenant);
-            var otherCompany = Company.CreateManaged(otherTenant.Id, "1790012345003", "Otro S.A.", createdBy: _userId);
+            var otherCompany = Company.CreateManaged(
+                otherTenant.Id,
+                "1790012345003",
+                "Otro S.A.",
+                createdBy: _userId
+            );
             db.Companies.Add(otherCompany);
             await db.SaveChangesAsync();
             var otherList = PriceList.Create(
-                otherTenant.Id, otherCompany.Id, "A", "Lista otro tenant", "USD",
-                isDefault: false, createdBy: _userId
+                otherTenant.Id,
+                otherCompany.Id,
+                "A",
+                "Lista otro tenant",
+                "USD",
+                isDefault: false,
+                createdBy: _userId
             );
             db.PriceLists.Add(otherList);
             await db.SaveChangesAsync();
             db.PriceListCustomers.Add(
-                PriceListCustomer.Create(otherTenant.Id, otherCompany.Id, otherList.Id, customerId, _userId)
+                PriceListCustomer.Create(
+                    otherTenant.Id,
+                    otherCompany.Id,
+                    otherList.Id,
+                    customerId,
+                    _userId
+                )
             );
             await db.SaveChangesAsync();
 
@@ -215,8 +278,16 @@ public sealed class PriceListCustomerRepositoryIntegrationTests : IAsyncLifetime
         await using (var scope = _serviceProvider.CreateAsyncScope())
         {
             var repo = scope.ServiceProvider.GetRequiredService<IPriceListCustomerRepository>();
-            var resultsForOurTenant = await repo.GetByCustomerAsync(_tenantId, customerId, CancellationToken.None);
-            resultsForOurTenant.Should().ContainSingle().Which.PriceListId.Should().Be(_priceListAId);
+            var resultsForOurTenant = await repo.GetByCustomerAsync(
+                _tenantId,
+                customerId,
+                CancellationToken.None
+            );
+            resultsForOurTenant
+                .Should()
+                .ContainSingle()
+                .Which.PriceListId.Should()
+                .Be(_priceListAId);
         }
 
         // Cambia el contexto ambiental (Tenant+Company) a la "otra" empresa — mismo mecanismo
@@ -227,8 +298,16 @@ public sealed class PriceListCustomerRepositoryIntegrationTests : IAsyncLifetime
         await using (var scope = _serviceProvider.CreateAsyncScope())
         {
             var repo = scope.ServiceProvider.GetRequiredService<IPriceListCustomerRepository>();
-            var resultsForOtherTenant = await repo.GetByCustomerAsync(otherTenantId, customerId, CancellationToken.None);
-            resultsForOtherTenant.Should().ContainSingle().Which.PriceListId.Should().Be(otherListId);
+            var resultsForOtherTenant = await repo.GetByCustomerAsync(
+                otherTenantId,
+                customerId,
+                CancellationToken.None
+            );
+            resultsForOtherTenant
+                .Should()
+                .ContainSingle()
+                .Which.PriceListId.Should()
+                .Be(otherListId);
         }
     }
 
@@ -245,7 +324,13 @@ public sealed class PriceListCustomerRepositoryIntegrationTests : IAsyncLifetime
         await using (var scope = _serviceProvider.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
-            var assignment = PriceListCustomer.Create(_tenantId, _companyId, _priceListAId, customerId, _userId);
+            var assignment = PriceListCustomer.Create(
+                _tenantId,
+                _companyId,
+                _priceListAId,
+                customerId,
+                _userId
+            );
             db.PriceListCustomers.Add(assignment);
             await db.SaveChangesAsync();
             assignmentId = assignment.Id;
@@ -268,7 +353,11 @@ public sealed class PriceListCustomerRepositoryIntegrationTests : IAsyncLifetime
         {
             var db = verify.ServiceProvider.GetRequiredService<ErpDbContext>();
             var assignment = await db.PriceListCustomers.FirstAsync(a => a.Id == assignmentId);
-            assignment.IsActive.Should().BeTrue("el Disable() de la mitad 'vieja' debe revertirse junto con el INSERT fallido");
+            assignment
+                .IsActive.Should()
+                .BeTrue(
+                    "el Disable() de la mitad 'vieja' debe revertirse junto con el INSERT fallido"
+                );
         }
     }
 }

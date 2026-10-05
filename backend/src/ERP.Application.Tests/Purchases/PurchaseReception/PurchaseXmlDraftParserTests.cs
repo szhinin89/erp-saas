@@ -31,13 +31,26 @@ public sealed class PurchaseXmlDraftParserTests
         parsed.IsSuccess.Should().BeTrue(parsed.Error);
         var original = parsed.Value!.Lines.Single();
         var draft = ERP.Domain.Modules.Purchases.Entities.PurchaseInvoiceDetail.Create(
-            Guid.NewGuid(), Guid.NewGuid(), original.Description, original.Quantity,
-            original.UnitPrice, original.VatCode, "UNIT", discountPct: original.DiscountPct,
-            quantityDecimals: 6, unitCostDecimals: 10, exactDiscountAmount: original.Discount);
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            original.Description,
+            original.Quantity,
+            original.UnitPrice,
+            original.VatCode,
+            "UNIT",
+            discountPct: original.DiscountPct,
+            quantityDecimals: 6,
+            unitCostDecimals: 10,
+            exactDiscountAmount: original.Discount
+        );
 
         draft.UnitPrice.Should().Be(original.UnitPrice);
-        draft.DiscountAmount.Should().Be(original.Discount,
-            "un XML sin editar debe conservar el descuento al pasar a una línea operativa");
+        draft
+            .DiscountAmount.Should()
+            .Be(
+                original.Discount,
+                "un XML sin editar debe conservar el descuento al pasar a una línea operativa"
+            );
     }
 
     private sealed class FakeTaxCategoryCodeResolver : ISriTaxCategoryCodeResolver
@@ -371,8 +384,10 @@ public sealed class PurchaseXmlDraftParserTests
         // Nuevo: los 3 impuestos quedan capturados genéricamente, incluyendo IRBPNR (código "5"),
         // que antes se descartaba por completo.
         line.Taxes.Should().HaveCount(3);
-        line.Taxes.Should().Contain(t => t.TaxCode == "2" && t.TaxRateCode == "4" && t.TaxAmount == 0.56m);
-        line.Taxes.Should().Contain(t => t.TaxCode == "3" && t.TaxRateCode == "3053" && t.TaxAmount == 1.23m);
+        line.Taxes.Should()
+            .Contain(t => t.TaxCode == "2" && t.TaxRateCode == "4" && t.TaxAmount == 0.56m);
+        line.Taxes.Should()
+            .Contain(t => t.TaxCode == "3" && t.TaxRateCode == "3053" && t.TaxAmount == 1.23m);
         var irbpnr = line.Taxes.Should().ContainSingle(t => t.TaxCode == "5").Subject;
         irbpnr.TaxRateCode.Should().Be("5001");
         irbpnr.TaxAmount.Should().Be(0.48m);
@@ -392,8 +407,7 @@ public sealed class PurchaseXmlDraftParserTests
         // pero esos valores son en realidad de la PRIMERA línea del XML (SPRITE HARMONY 1350 PET(12)).
         // INCA-KOLA (segunda línea) trae IVA=1.95/IRBPNR=0.72/Total=15.65. Este test verifica ambas
         // líneas con sus valores reales correctos, sin mezclarlos.
-        const string xml =
-            """
+        const string xml = """
             <?xml version="1.0" encoding="UTF-8"?>
             <factura id="comprobante" version="2.1.0">
               <infoTributaria>
@@ -510,8 +524,12 @@ public sealed class PurchaseXmlDraftParserTests
         // detallesAdicionales que antes se descartaban por completo. "3 /  0" preserva el doble
         // espacio tal como lo declaró el proveedor — no se recorta ni normaliza.
         incaKola.AdditionalFields.Should().HaveCount(2);
-        incaKola.AdditionalFields.Should().ContainSingle(f => f.Name == "Unidad" && f.Value == "3 /  0" && f.Position == 0);
-        incaKola.AdditionalFields.Should().ContainSingle(f => f.Name == "valor2" && f.Value == "0.72" && f.Position == 1);
+        incaKola
+            .AdditionalFields.Should()
+            .ContainSingle(f => f.Name == "Unidad" && f.Value == "3 /  0" && f.Position == 0);
+        incaKola
+            .AdditionalFields.Should()
+            .ContainSingle(f => f.Name == "valor2" && f.Value == "0.72" && f.Position == 1);
     }
 
     [Fact]
@@ -562,8 +580,10 @@ public sealed class PurchaseXmlDraftParserTests
         result.IsSuccess.Should().BeTrue(result.Error);
         var line = result.Value!.Lines.Should().ContainSingle().Subject;
         line.AdditionalFields.Should().HaveCount(2);
-        line.AdditionalFields.Should().Contain(f => f.Name == "LOTE" && f.Value == "A4821" && f.Position == 0);
-        line.AdditionalFields.Should().Contain(f => f.Name == "LOTE" && f.Value == "B1190" && f.Position == 1);
+        line.AdditionalFields.Should()
+            .Contain(f => f.Name == "LOTE" && f.Value == "A4821" && f.Position == 0);
+        line.AdditionalFields.Should()
+            .Contain(f => f.Name == "LOTE" && f.Value == "B1190" && f.Position == 1);
     }
 
     [Fact]
@@ -589,10 +609,10 @@ public sealed class PurchaseXmlDraftParserTests
         result.IsSuccess.Should().BeTrue(result.Error);
         var line = result.Value!.Lines.Should().ContainSingle().Subject;
         line.AdditionalFields.Should().HaveCount(2);
-        line.AdditionalFields.Should().Contain(f => f.Name == "FECHA VENCIMIENTO" && f.Value == "31/12/2027");
-        line.AdditionalFields.Should().Contain(f =>
-            f.Name == "Número de Serie" && f.Value == "S/N° X-001 (línea A)"
-        );
+        line.AdditionalFields.Should()
+            .Contain(f => f.Name == "FECHA VENCIMIENTO" && f.Value == "31/12/2027");
+        line.AdditionalFields.Should()
+            .Contain(f => f.Name == "Número de Serie" && f.Value == "S/N° X-001 (línea A)");
     }
 
     [Fact]

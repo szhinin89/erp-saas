@@ -23,8 +23,23 @@ public sealed class GetAccountingReportsUseCasesTests
     private static readonly Guid CompanyId = Guid.NewGuid();
     private static readonly Guid CreatedBy = Guid.NewGuid();
 
-    private static Account NewAccount(string code, string name, AccountType type, AccountNature nature) =>
-        Account.Create(TenantId, CompanyId, AccountCode.Create(code), name, null, type, nature, true, CreatedBy);
+    private static Account NewAccount(
+        string code,
+        string name,
+        AccountType type,
+        AccountNature nature
+    ) =>
+        Account.Create(
+            TenantId,
+            CompanyId,
+            AccountCode.Create(code),
+            name,
+            null,
+            type,
+            nature,
+            true,
+            CreatedBy
+        );
 
     private static Mock<ICurrentTenant> Tenant()
     {
@@ -64,8 +79,16 @@ public sealed class GetAccountingReportsUseCasesTests
         var sales = NewAccount("4.1.01", "Ventas", AccountType.Income, AccountNature.Credit);
 
         var entry = JournalEntry.Create(
-            TenantId, CompanyId, new DateOnly(2026, 8, 1), Guid.NewGuid(), 2026,
-            "Sales", "InvoiceIssued", Guid.NewGuid(), "Factura test", CreatedBy
+            TenantId,
+            CompanyId,
+            new DateOnly(2026, 8, 1),
+            Guid.NewGuid(),
+            2026,
+            "Sales",
+            "InvoiceIssued",
+            Guid.NewGuid(),
+            "Factura test",
+            CreatedBy
         );
         entry.AddLine(cash.Id, null, 150m, 0m);
         entry.AddLine(sales.Id, null, 0m, 150m);
@@ -74,9 +97,14 @@ public sealed class GetAccountingReportsUseCasesTests
         var repo = new Mock<IJournalEntryRepository>();
         repo.Setup(r =>
                 r.GetPostedEntriesPageAsync(
-                    TenantId, CompanyId,
-                    It.IsAny<DateOnly>(), It.IsAny<DateOnly>(),
-                    null, null, 1, 50,
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<DateOnly>(),
+                    null,
+                    null,
+                    1,
+                    50,
                     It.IsAny<CancellationToken>()
                 )
             )
@@ -88,7 +116,11 @@ public sealed class GetAccountingReportsUseCasesTests
             .ReturnsAsync(new List<Account> { cash, sales });
 
         var handler = new GetGeneralJournalReportHandler(
-            repo.Object, accountRepo.Object, EmptyResolver().Object, Tenant().Object, Company().Object
+            repo.Object,
+            accountRepo.Object,
+            EmptyResolver().Object,
+            Tenant().Object,
+            Company().Object
         );
 
         var result = await handler.Handle(
@@ -116,14 +148,22 @@ public sealed class GetAccountingReportsUseCasesTests
         var repo = new Mock<IJournalEntryRepository>();
         repo.Setup(r =>
                 r.GetAccountLineTotalsAsync(
-                    TenantId, CompanyId, It.IsAny<DateOnly?>(), It.IsAny<DateOnly>(),
-                    It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<DateOnly?>(),
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
                 )
             )
             .ReturnsAsync(new Dictionary<Guid, (decimal TotalDebit, decimal TotalCredit)>());
         repo.Setup(r =>
                 r.GetPostedLinesByAccountAsync(
-                    TenantId, CompanyId, It.IsAny<Guid>(), It.IsAny<DateOnly>(), It.IsAny<DateOnly>(),
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<Guid>(),
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<DateOnly>(),
                     It.IsAny<CancellationToken>()
                 )
             )
@@ -135,7 +175,11 @@ public sealed class GetAccountingReportsUseCasesTests
             .ReturnsAsync(new List<Account> { a10, a2, a1 }); // orden de entrada deliberadamente desordenado
 
         var handler = new GetGeneralLedgerReportHandler(
-            repo.Object, accountRepo.Object, EmptyResolver().Object, Tenant().Object, Company().Object
+            repo.Object,
+            accountRepo.Object,
+            EmptyResolver().Object,
+            Tenant().Object,
+            Company().Object
         );
 
         var result = await handler.Handle(
@@ -143,7 +187,10 @@ public sealed class GetAccountingReportsUseCasesTests
             CancellationToken.None
         );
 
-        result.Value!.Accounts.Select(a => a.AccountCode).Should().Equal("1.1.1", "1.1.2", "1.1.10");
+        result
+            .Value!.Accounts.Select(a => a.AccountCode)
+            .Should()
+            .Equal("1.1.1", "1.1.2", "1.1.10");
     }
 
     [Fact]
@@ -159,14 +206,22 @@ public sealed class GetAccountingReportsUseCasesTests
         var repo = new Mock<IJournalEntryRepository>();
         repo.Setup(r =>
                 r.GetAccountLineTotalsAsync(
-                    TenantId, CompanyId, It.IsAny<DateOnly?>(), It.IsAny<DateOnly>(),
-                    It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<DateOnly?>(),
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
                 )
             )
             .ReturnsAsync(new Dictionary<Guid, (decimal TotalDebit, decimal TotalCredit)>());
         repo.Setup(r =>
                 r.GetPostedLinesByAccountAsync(
-                    TenantId, CompanyId, It.IsAny<Guid>(), It.IsAny<DateOnly>(), It.IsAny<DateOnly>(),
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<Guid>(),
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<DateOnly>(),
                     It.IsAny<CancellationToken>()
                 )
             )
@@ -178,13 +233,19 @@ public sealed class GetAccountingReportsUseCasesTests
             .ReturnsAsync(new List<Account> { a2, a9, a10 });
 
         var handler = new GetGeneralLedgerReportHandler(
-            repo.Object, accountRepo.Object, EmptyResolver().Object, Tenant().Object, Company().Object
+            repo.Object,
+            accountRepo.Object,
+            EmptyResolver().Object,
+            Tenant().Object,
+            Company().Object
         );
 
         var result = await handler.Handle(
             new GetGeneralLedgerReportQuery(
-                new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31),
-                AccountCodeFrom: "1.1.2", AccountCodeTo: "1.1.9"
+                new DateOnly(2026, 8, 1),
+                new DateOnly(2026, 8, 31),
+                AccountCodeFrom: "1.1.2",
+                AccountCodeTo: "1.1.9"
             ),
             CancellationToken.None
         );
@@ -201,13 +262,23 @@ public sealed class GetAccountingReportsUseCasesTests
         var repo = new Mock<IJournalEntryRepository>();
         repo.Setup(r =>
                 r.GetAccountLineTotalsAsync(
-                    TenantId, CompanyId, null, It.IsAny<DateOnly>(), null, It.IsAny<CancellationToken>()
+                    TenantId,
+                    CompanyId,
+                    null,
+                    It.IsAny<DateOnly>(),
+                    null,
+                    It.IsAny<CancellationToken>()
                 )
             )
             .ReturnsAsync(new Dictionary<Guid, (decimal TotalDebit, decimal TotalCredit)>());
         repo.Setup(r =>
                 r.GetAccountLineTotalsAsync(
-                    TenantId, CompanyId, It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), null, It.IsAny<CancellationToken>()
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<DateOnly>(),
+                    null,
+                    It.IsAny<CancellationToken>()
                 )
             )
             .ReturnsAsync(
@@ -223,7 +294,12 @@ public sealed class GetAccountingReportsUseCasesTests
             .Setup(a => a.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Account> { a10, a2 });
 
-        var handler = new GetTrialBalanceReportHandler(repo.Object, accountRepo.Object, Tenant().Object, Company().Object);
+        var handler = new GetTrialBalanceReportHandler(
+            repo.Object,
+            accountRepo.Object,
+            Tenant().Object,
+            Company().Object
+        );
 
         var result = await handler.Handle(
             new GetTrialBalanceReportQuery(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31)),
@@ -245,8 +321,12 @@ public sealed class GetAccountingReportsUseCasesTests
         var repo = new Mock<IJournalEntryRepository>();
         repo.Setup(r =>
                 r.GetAccountLineTotalsAsync(
-                    TenantId, CompanyId, It.IsAny<DateOnly>(), It.IsAny<DateOnly>(),
-                    It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
                 )
             )
             .ReturnsAsync(
@@ -265,7 +345,12 @@ public sealed class GetAccountingReportsUseCasesTests
             .Setup(a => a.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Account> { payroll, rent, cogs, salesB, salesA });
 
-        var handler = new GetIncomeStatementReportHandler(repo.Object, accountRepo.Object, Tenant().Object, Company().Object);
+        var handler = new GetIncomeStatementReportHandler(
+            repo.Object,
+            accountRepo.Object,
+            Tenant().Object,
+            Company().Object
+        );
 
         var result = await handler.Handle(
             new GetIncomeStatementReportQuery(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31)),
@@ -282,21 +367,33 @@ public sealed class GetAccountingReportsUseCasesTests
     [Fact]
     public async Task IncomeStatement_no_muestra_cuenta_agrupadora_sin_saldo_directo_como_movimiento()
     {
-        var group = NewAccount("6.1", "Gastos administrativos", AccountType.Expense, AccountNature.Debit);
+        var group = NewAccount(
+            "6.1",
+            "Gastos administrativos",
+            AccountType.Expense,
+            AccountNature.Debit
+        );
         var leaf = NewAccount("6.1.01", "Arriendo", AccountType.Expense, AccountNature.Debit);
 
         var repo = new Mock<IJournalEntryRepository>();
         repo.Setup(r =>
                 r.GetAccountLineTotalsAsync(
-                    TenantId, CompanyId, It.IsAny<DateOnly>(), It.IsAny<DateOnly>(),
-                    It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
                 )
             )
             .ReturnsAsync(
                 // La agrupadora nunca recibe líneas de asiento (Posting Engine solo postea a
                 // hojas AllowsPosting=true) — no aparece en totals, mismo criterio que produce
                 // este dict en producción.
-                new Dictionary<Guid, (decimal TotalDebit, decimal TotalCredit)> { [leaf.Id] = (50m, 0m) }
+                new Dictionary<Guid, (decimal TotalDebit, decimal TotalCredit)>
+                {
+                    [leaf.Id] = (50m, 0m),
+                }
             );
 
         var accountRepo = new Mock<IAccountRepository>();
@@ -304,7 +401,12 @@ public sealed class GetAccountingReportsUseCasesTests
             .Setup(a => a.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Account> { group, leaf });
 
-        var handler = new GetIncomeStatementReportHandler(repo.Object, accountRepo.Object, Tenant().Object, Company().Object);
+        var handler = new GetIncomeStatementReportHandler(
+            repo.Object,
+            accountRepo.Object,
+            Tenant().Object,
+            Company().Object
+        );
 
         var result = await handler.Handle(
             new GetIncomeStatementReportQuery(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31)),
@@ -320,15 +422,24 @@ public sealed class GetAccountingReportsUseCasesTests
     {
         var cashA = NewAccount("1.1.2", "Bancos B", AccountType.Asset, AccountNature.Debit);
         var cashB = NewAccount("1.1.10", "Bancos A", AccountType.Asset, AccountNature.Debit);
-        var payable = NewAccount("2.1.01", "Cuentas por pagar", AccountType.Liability, AccountNature.Credit);
+        var payable = NewAccount(
+            "2.1.01",
+            "Cuentas por pagar",
+            AccountType.Liability,
+            AccountNature.Credit
+        );
         var capitalA = NewAccount("3.1.2", "Capital B", AccountType.Equity, AccountNature.Credit);
         var capitalB = NewAccount("3.1.10", "Capital A", AccountType.Equity, AccountNature.Credit);
 
         var repo = new Mock<IJournalEntryRepository>();
         repo.Setup(r =>
                 r.GetAccountLineTotalsAsync(
-                    TenantId, CompanyId, null, It.IsAny<DateOnly>(),
-                    It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()
+                    TenantId,
+                    CompanyId,
+                    null,
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
                 )
             )
             .ReturnsAsync(
@@ -347,9 +458,17 @@ public sealed class GetAccountingReportsUseCasesTests
             .Setup(a => a.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Account> { capitalB, capitalA, payable, cashB, cashA });
 
-        var handler = new GetBalanceSheetReportHandler(repo.Object, accountRepo.Object, Tenant().Object, Company().Object);
+        var handler = new GetBalanceSheetReportHandler(
+            repo.Object,
+            accountRepo.Object,
+            Tenant().Object,
+            Company().Object
+        );
 
-        var result = await handler.Handle(new GetBalanceSheetReportQuery(new DateOnly(2026, 8, 31)), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetBalanceSheetReportQuery(new DateOnly(2026, 8, 31)),
+            CancellationToken.None
+        );
 
         // Orden macro: Activo → Pasivo → Patrimonio, garantizado estructuralmente.
         result.Value!.AssetLines.Select(l => l.AccountCode).Should().Equal("1.1.2", "1.1.10");
@@ -367,7 +486,10 @@ public sealed class GetAccountingReportsUseCasesTests
         var repo = new Mock<IJournalEntryRepository>();
         repo.Setup(r =>
                 r.GetAccountLineTotalsAsync(
-                    TenantId, CompanyId, null, new DateOnly(2026, 7, 31),
+                    TenantId,
+                    CompanyId,
+                    null,
+                    new DateOnly(2026, 7, 31),
                     It.Is<IReadOnlyCollection<Guid>>(ids => ids.Contains(cash.Id)),
                     It.IsAny<CancellationToken>()
                 )
@@ -380,7 +502,10 @@ public sealed class GetAccountingReportsUseCasesTests
             );
         repo.Setup(r =>
                 r.GetAccountLineTotalsAsync(
-                    TenantId, CompanyId, new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31),
+                    TenantId,
+                    CompanyId,
+                    new DateOnly(2026, 8, 1),
+                    new DateOnly(2026, 8, 31),
                     It.Is<IReadOnlyCollection<Guid>>(ids => ids.Contains(cash.Id)),
                     It.IsAny<CancellationToken>()
                 )
@@ -393,16 +518,41 @@ public sealed class GetAccountingReportsUseCasesTests
             );
         repo.Setup(r =>
                 r.GetPostedLinesByAccountAsync(
-                    TenantId, CompanyId, cash.Id,
-                    new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31),
+                    TenantId,
+                    CompanyId,
+                    cash.Id,
+                    new DateOnly(2026, 8, 1),
+                    new DateOnly(2026, 8, 31),
                     It.IsAny<CancellationToken>()
                 )
             )
             .ReturnsAsync(
                 new List<JournalEntryLineReportRow>
                 {
-                    new(Guid.NewGuid(), 10, new DateOnly(2026, 8, 5), "Cobro", "Finance", "CollectionApplied", Guid.NewGuid(), Guid.NewGuid(), 100m, 0m),
-                    new(Guid.NewGuid(), 11, new DateOnly(2026, 8, 10), "Pago", "Finance", "SupplierPaymentApplied", Guid.NewGuid(), Guid.NewGuid(), 0m, 50m),
+                    new(
+                        Guid.NewGuid(),
+                        10,
+                        new DateOnly(2026, 8, 5),
+                        "Cobro",
+                        "Finance",
+                        "CollectionApplied",
+                        Guid.NewGuid(),
+                        Guid.NewGuid(),
+                        100m,
+                        0m
+                    ),
+                    new(
+                        Guid.NewGuid(),
+                        11,
+                        new DateOnly(2026, 8, 10),
+                        "Pago",
+                        "Finance",
+                        "SupplierPaymentApplied",
+                        Guid.NewGuid(),
+                        Guid.NewGuid(),
+                        0m,
+                        50m
+                    ),
                 }
             );
 
@@ -412,11 +562,19 @@ public sealed class GetAccountingReportsUseCasesTests
             .ReturnsAsync(new List<Account> { cash });
 
         var handler = new GetGeneralLedgerReportHandler(
-            repo.Object, accountRepo.Object, EmptyResolver().Object, Tenant().Object, Company().Object
+            repo.Object,
+            accountRepo.Object,
+            EmptyResolver().Object,
+            Tenant().Object,
+            Company().Object
         );
 
         var result = await handler.Handle(
-            new GetGeneralLedgerReportQuery(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31), AccountId: cash.Id),
+            new GetGeneralLedgerReportQuery(
+                new DateOnly(2026, 8, 1),
+                new DateOnly(2026, 8, 31),
+                AccountId: cash.Id
+            ),
             CancellationToken.None
         );
 
@@ -442,14 +600,22 @@ public sealed class GetAccountingReportsUseCasesTests
         var repo = new Mock<IJournalEntryRepository>();
         repo.Setup(r =>
                 r.GetAccountLineTotalsAsync(
-                    TenantId, CompanyId, null, new DateOnly(2026, 7, 31), null,
+                    TenantId,
+                    CompanyId,
+                    null,
+                    new DateOnly(2026, 7, 31),
+                    null,
                     It.IsAny<CancellationToken>()
                 )
             )
             .ReturnsAsync(new Dictionary<Guid, (decimal TotalDebit, decimal TotalCredit)>());
         repo.Setup(r =>
                 r.GetAccountLineTotalsAsync(
-                    TenantId, CompanyId, new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31), null,
+                    TenantId,
+                    CompanyId,
+                    new DateOnly(2026, 8, 1),
+                    new DateOnly(2026, 8, 31),
+                    null,
                     It.IsAny<CancellationToken>()
                 )
             )
@@ -466,7 +632,12 @@ public sealed class GetAccountingReportsUseCasesTests
             .Setup(a => a.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Account> { cash, sales });
 
-        var handler = new GetTrialBalanceReportHandler(repo.Object, accountRepo.Object, Tenant().Object, Company().Object);
+        var handler = new GetTrialBalanceReportHandler(
+            repo.Object,
+            accountRepo.Object,
+            Tenant().Object,
+            Company().Object
+        );
 
         var result = await handler.Handle(
             new GetTrialBalanceReportQuery(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31)),
@@ -493,13 +664,23 @@ public sealed class GetAccountingReportsUseCasesTests
         var repo = new Mock<IJournalEntryRepository>();
         repo.Setup(r =>
                 r.GetAccountLineTotalsAsync(
-                    TenantId, CompanyId, null, It.IsAny<DateOnly>(), null, It.IsAny<CancellationToken>()
+                    TenantId,
+                    CompanyId,
+                    null,
+                    It.IsAny<DateOnly>(),
+                    null,
+                    It.IsAny<CancellationToken>()
                 )
             )
             .ReturnsAsync(new Dictionary<Guid, (decimal TotalDebit, decimal TotalCredit)>());
         repo.Setup(r =>
                 r.GetAccountLineTotalsAsync(
-                    TenantId, CompanyId, It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), null, It.IsAny<CancellationToken>()
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<DateOnly>(),
+                    null,
+                    It.IsAny<CancellationToken>()
                 )
             )
             .ReturnsAsync(
@@ -514,7 +695,12 @@ public sealed class GetAccountingReportsUseCasesTests
             .Setup(a => a.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Account> { cash, unused });
 
-        var handler = new GetTrialBalanceReportHandler(repo.Object, accountRepo.Object, Tenant().Object, Company().Object);
+        var handler = new GetTrialBalanceReportHandler(
+            repo.Object,
+            accountRepo.Object,
+            Tenant().Object,
+            Company().Object
+        );
 
         var result = await handler.Handle(
             new GetTrialBalanceReportQuery(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31)),
@@ -533,13 +719,23 @@ public sealed class GetAccountingReportsUseCasesTests
         var repo = new Mock<IJournalEntryRepository>();
         repo.Setup(r =>
                 r.GetAccountLineTotalsAsync(
-                    TenantId, CompanyId, null, It.IsAny<DateOnly>(), null, It.IsAny<CancellationToken>()
+                    TenantId,
+                    CompanyId,
+                    null,
+                    It.IsAny<DateOnly>(),
+                    null,
+                    It.IsAny<CancellationToken>()
                 )
             )
             .ReturnsAsync(new Dictionary<Guid, (decimal TotalDebit, decimal TotalCredit)>());
         repo.Setup(r =>
                 r.GetAccountLineTotalsAsync(
-                    TenantId, CompanyId, It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), null, It.IsAny<CancellationToken>()
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<DateOnly>(),
+                    null,
+                    It.IsAny<CancellationToken>()
                 )
             )
             .ReturnsAsync(
@@ -554,15 +750,26 @@ public sealed class GetAccountingReportsUseCasesTests
             .Setup(a => a.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Account> { cash, unused });
 
-        var handler = new GetTrialBalanceReportHandler(repo.Object, accountRepo.Object, Tenant().Object, Company().Object);
+        var handler = new GetTrialBalanceReportHandler(
+            repo.Object,
+            accountRepo.Object,
+            Tenant().Object,
+            Company().Object
+        );
 
         var result = await handler.Handle(
-            new GetTrialBalanceReportQuery(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31), IncludeZeroMovementAccounts: true),
+            new GetTrialBalanceReportQuery(
+                new DateOnly(2026, 8, 1),
+                new DateOnly(2026, 8, 31),
+                IncludeZeroMovementAccounts: true
+            ),
             CancellationToken.None
         );
 
         result.Value!.Lines.Should().HaveCount(2);
-        result.Value.Lines.Should().Contain(l => l.AccountId == unused.Id && l.OpeningDebit == 0m && l.ClosingDebit == 0m);
+        result
+            .Value.Lines.Should()
+            .Contain(l => l.AccountId == unused.Id && l.OpeningDebit == 0m && l.ClosingDebit == 0m);
     }
 
     // ── Estado de Resultados (ACCOUNTING-FINANCIAL-STATEMENTS-10) ─────────
@@ -577,8 +784,12 @@ public sealed class GetAccountingReportsUseCasesTests
         var repo = new Mock<IJournalEntryRepository>();
         repo.Setup(r =>
                 r.GetAccountLineTotalsAsync(
-                    TenantId, CompanyId, new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31),
-                    It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()
+                    TenantId,
+                    CompanyId,
+                    new DateOnly(2026, 8, 1),
+                    new DateOnly(2026, 8, 31),
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
                 )
             )
             .ReturnsAsync(
@@ -595,7 +806,12 @@ public sealed class GetAccountingReportsUseCasesTests
             .Setup(a => a.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Account> { sales, cogs, rent });
 
-        var handler = new GetIncomeStatementReportHandler(repo.Object, accountRepo.Object, Tenant().Object, Company().Object);
+        var handler = new GetIncomeStatementReportHandler(
+            repo.Object,
+            accountRepo.Object,
+            Tenant().Object,
+            Company().Object
+        );
 
         var result = await handler.Handle(
             new GetIncomeStatementReportQuery(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31)),
@@ -608,22 +824,37 @@ public sealed class GetAccountingReportsUseCasesTests
         result.Value.GrossProfit.Should().Be(400m);
         result.Value.TotalExpense.Should().Be(150m);
         result.Value.NetProfit.Should().Be(250m);
-        result.Value.IncomeLines.Should().ContainSingle(l => l.AccountId == sales.Id && l.Amount == 1000m);
-        result.Value.CostLines.Should().ContainSingle(l => l.AccountId == cogs.Id && l.Amount == 600m);
-        result.Value.ExpenseLines.Should().ContainSingle(l => l.AccountId == rent.Id && l.Amount == 150m);
+        result
+            .Value.IncomeLines.Should()
+            .ContainSingle(l => l.AccountId == sales.Id && l.Amount == 1000m);
+        result
+            .Value.CostLines.Should()
+            .ContainSingle(l => l.AccountId == cogs.Id && l.Amount == 600m);
+        result
+            .Value.ExpenseLines.Should()
+            .ContainSingle(l => l.AccountId == rent.Id && l.Amount == 150m);
     }
 
     [Fact]
     public async Task IncomeStatement_omite_cuentas_sin_movimiento_en_el_rango()
     {
         var sales = NewAccount("4.1.01", "Ventas", AccountType.Income, AccountNature.Credit);
-        var unusedExpense = NewAccount("6.1.02", "Publicidad", AccountType.Expense, AccountNature.Debit);
+        var unusedExpense = NewAccount(
+            "6.1.02",
+            "Publicidad",
+            AccountType.Expense,
+            AccountNature.Debit
+        );
 
         var repo = new Mock<IJournalEntryRepository>();
         repo.Setup(r =>
                 r.GetAccountLineTotalsAsync(
-                    TenantId, CompanyId, It.IsAny<DateOnly>(), It.IsAny<DateOnly>(),
-                    It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
                 )
             )
             .ReturnsAsync(
@@ -638,7 +869,12 @@ public sealed class GetAccountingReportsUseCasesTests
             .Setup(a => a.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Account> { sales, unusedExpense });
 
-        var handler = new GetIncomeStatementReportHandler(repo.Object, accountRepo.Object, Tenant().Object, Company().Object);
+        var handler = new GetIncomeStatementReportHandler(
+            repo.Object,
+            accountRepo.Object,
+            Tenant().Object,
+            Company().Object
+        );
 
         var result = await handler.Handle(
             new GetIncomeStatementReportQuery(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31)),
@@ -655,14 +891,28 @@ public sealed class GetAccountingReportsUseCasesTests
     public async Task BalanceSheet_calcula_activos_pasivos_patrimonio_y_reporta_cuadre()
     {
         var cash = NewAccount("1.1.01", "Caja", AccountType.Asset, AccountNature.Debit);
-        var payable = NewAccount("2.1.01", "Cuentas por pagar", AccountType.Liability, AccountNature.Credit);
-        var capital = NewAccount("3.1.01", "Capital social", AccountType.Equity, AccountNature.Credit);
+        var payable = NewAccount(
+            "2.1.01",
+            "Cuentas por pagar",
+            AccountType.Liability,
+            AccountNature.Credit
+        );
+        var capital = NewAccount(
+            "3.1.01",
+            "Capital social",
+            AccountType.Equity,
+            AccountNature.Credit
+        );
 
         var repo = new Mock<IJournalEntryRepository>();
         repo.Setup(r =>
                 r.GetAccountLineTotalsAsync(
-                    TenantId, CompanyId, null, new DateOnly(2026, 8, 31),
-                    It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()
+                    TenantId,
+                    CompanyId,
+                    null,
+                    new DateOnly(2026, 8, 31),
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
                 )
             )
             .ReturnsAsync(
@@ -679,9 +929,17 @@ public sealed class GetAccountingReportsUseCasesTests
             .Setup(a => a.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Account> { cash, payable, capital });
 
-        var handler = new GetBalanceSheetReportHandler(repo.Object, accountRepo.Object, Tenant().Object, Company().Object);
+        var handler = new GetBalanceSheetReportHandler(
+            repo.Object,
+            accountRepo.Object,
+            Tenant().Object,
+            Company().Object
+        );
 
-        var result = await handler.Handle(new GetBalanceSheetReportQuery(new DateOnly(2026, 8, 31)), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetBalanceSheetReportQuery(new DateOnly(2026, 8, 31)),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.TotalAssets.Should().Be(1000m);
@@ -695,13 +953,22 @@ public sealed class GetAccountingReportsUseCasesTests
     public async Task BalanceSheet_reporta_IsBalanced_false_cuando_activos_no_cuadran_con_pasivo_mas_patrimonio()
     {
         var cash = NewAccount("1.1.01", "Caja", AccountType.Asset, AccountNature.Debit);
-        var capital = NewAccount("3.1.01", "Capital social", AccountType.Equity, AccountNature.Credit);
+        var capital = NewAccount(
+            "3.1.01",
+            "Capital social",
+            AccountType.Equity,
+            AccountNature.Credit
+        );
 
         var repo = new Mock<IJournalEntryRepository>();
         repo.Setup(r =>
                 r.GetAccountLineTotalsAsync(
-                    TenantId, CompanyId, null, It.IsAny<DateOnly>(),
-                    It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()
+                    TenantId,
+                    CompanyId,
+                    null,
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
                 )
             )
             .ReturnsAsync(
@@ -720,9 +987,17 @@ public sealed class GetAccountingReportsUseCasesTests
             .Setup(a => a.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Account> { cash, capital });
 
-        var handler = new GetBalanceSheetReportHandler(repo.Object, accountRepo.Object, Tenant().Object, Company().Object);
+        var handler = new GetBalanceSheetReportHandler(
+            repo.Object,
+            accountRepo.Object,
+            Tenant().Object,
+            Company().Object
+        );
 
-        var result = await handler.Handle(new GetBalanceSheetReportQuery(new DateOnly(2026, 8, 31)), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetBalanceSheetReportQuery(new DateOnly(2026, 8, 31)),
+            CancellationToken.None
+        );
 
         result.Value!.Difference.Should().Be(400m);
         result.Value.IsBalanced.Should().BeFalse();

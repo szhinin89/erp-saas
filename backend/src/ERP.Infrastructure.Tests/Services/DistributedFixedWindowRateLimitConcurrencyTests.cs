@@ -19,7 +19,9 @@ public sealed class DistributedFixedWindowRateLimitConcurrencyTests
     [Fact]
     public async Task Memoria_20_solicitudes_concurrentes_misma_identidad_solo_3_obtienen_permiso()
     {
-        var cache = new MemoryDistributedCache(MsOptions.Create(new MemoryDistributedCacheOptions()));
+        var cache = new MemoryDistributedCache(
+            MsOptions.Create(new MemoryDistributedCacheOptions())
+        );
         var throttle = new PasswordResetRequestThrottle(cache, Options(Limit));
 
         var granted = await RunConcurrentlyAsync(() => throttle.TryAcquireAsync("ana@test.com"));
@@ -31,7 +33,9 @@ public sealed class DistributedFixedWindowRateLimitConcurrencyTests
     public async Task Memoria_cache_lenta_no_permite_carrera_entre_lectura_y_escritura()
     {
         // Ensancha la ventana Get→Set para que una implementación no atómica falle de forma determinista.
-        var cache = new SlowCache(new MemoryDistributedCache(MsOptions.Create(new MemoryDistributedCacheOptions())));
+        var cache = new SlowCache(
+            new MemoryDistributedCache(MsOptions.Create(new MemoryDistributedCacheOptions()))
+        );
         var throttle = new PasswordResetRequestThrottle(cache, Options(Limit));
 
         var granted = await RunConcurrentlyAsync(() => throttle.TryAcquireAsync("ana@test.com"));
@@ -44,19 +48,29 @@ public sealed class DistributedFixedWindowRateLimitConcurrencyTests
         using var start = new ManualResetEventSlim(false);
         var tasks = Enumerable
             .Range(0, Requests)
-            .Select(_ => Task.Run(async () =>
-            {
-                start.Wait();
-                return await acquire();
-            }))
+            .Select(_ =>
+                Task.Run(async () =>
+                {
+                    start.Wait();
+                    return await acquire();
+                })
+            )
             .ToArray();
         start.Set();
         var results = await Task.WhenAll(tasks);
         return results.Count(r => r);
     }
 
-    internal static Microsoft.Extensions.Options.IOptions<PasswordResetOptions> Options(int limit) =>
-        MsOptions.Create(new PasswordResetOptions { IdentityRequestLimit = limit, IdentityRequestWindowMinutes = 60 });
+    internal static Microsoft.Extensions.Options.IOptions<PasswordResetOptions> Options(
+        int limit
+    ) =>
+        MsOptions.Create(
+            new PasswordResetOptions
+            {
+                IdentityRequestLimit = limit,
+                IdentityRequestWindowMinutes = 60,
+            }
+        );
 
     private sealed class SlowCache(IDistributedCache inner) : IDistributedCache
     {
@@ -69,17 +83,24 @@ public sealed class DistributedFixedWindowRateLimitConcurrencyTests
             return value;
         }
 
-        public void Set(string key, byte[] value, DistributedCacheEntryOptions options) => inner.Set(key, value, options);
+        public void Set(string key, byte[] value, DistributedCacheEntryOptions options) =>
+            inner.Set(key, value, options);
 
-        public Task SetAsync(string key, byte[] value, DistributedCacheEntryOptions options, CancellationToken token = default) =>
-            inner.SetAsync(key, value, options, token);
+        public Task SetAsync(
+            string key,
+            byte[] value,
+            DistributedCacheEntryOptions options,
+            CancellationToken token = default
+        ) => inner.SetAsync(key, value, options, token);
 
         public void Refresh(string key) => inner.Refresh(key);
 
-        public Task RefreshAsync(string key, CancellationToken token = default) => inner.RefreshAsync(key, token);
+        public Task RefreshAsync(string key, CancellationToken token = default) =>
+            inner.RefreshAsync(key, token);
 
         public void Remove(string key) => inner.Remove(key);
 
-        public Task RemoveAsync(string key, CancellationToken token = default) => inner.RemoveAsync(key, token);
+        public Task RemoveAsync(string key, CancellationToken token = default) =>
+            inner.RemoveAsync(key, token);
     }
 }

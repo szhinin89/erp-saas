@@ -155,7 +155,10 @@ public sealed class ExpensesController : ControllerBase
         CancellationToken ct
     ) =>
         this.ToOkOrBadRequest(
-            await _mediator.Send(new CancelExpenseDocumentCommand(id, request.Reason, request.RequestSriAnnulment), ct)
+            await _mediator.Send(
+                new CancelExpenseDocumentCommand(id, request.Reason, request.RequestSriAnnulment),
+                ct
+            )
         );
 
     [HttpPost("confirmed")]
@@ -221,8 +224,8 @@ public sealed class ExpensesController : ControllerBase
                 request.AppliesRetention,
                 request.EmissionPointId,
                 request.IssueDate,
-                request.Lines?
-                    .Select(l => new IssueRetentionLineInput(
+                request
+                    .Lines?.Select(l => new IssueRetentionLineInput(
                         l.TaxType,
                         l.RetentionCode,
                         l.BaseAmount,

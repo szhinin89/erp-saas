@@ -16,7 +16,11 @@ public sealed class CompanyBpPurchaseSettingsTests
     public void Create_con_datos_validos_asigna_propiedades()
     {
         var entity = CompanyBpPurchaseSettings.Create(
-            TenantId, CompanyId, SupplierId, PaymentTermId, ActorId
+            TenantId,
+            CompanyId,
+            SupplierId,
+            PaymentTermId,
+            ActorId
         );
 
         entity.TenantId.Should().Be(TenantId);
@@ -30,7 +34,11 @@ public sealed class CompanyBpPurchaseSettingsTests
     public void Create_sin_PaymentTermId_es_valido_significa_sin_default_configurado()
     {
         var entity = CompanyBpPurchaseSettings.Create(
-            TenantId, CompanyId, SupplierId, paymentTermId: null, ActorId
+            TenantId,
+            CompanyId,
+            SupplierId,
+            paymentTermId: null,
+            ActorId
         );
 
         entity.PaymentTermId.Should().BeNull();
@@ -46,9 +54,14 @@ public sealed class CompanyBpPurchaseSettingsTests
         var companyId = emptyCompany ? Guid.Empty : CompanyId;
         var supplierId = emptySupplier ? Guid.Empty : SupplierId;
 
-        var act = () => CompanyBpPurchaseSettings.Create(
-            tenantId, companyId, supplierId, PaymentTermId, ActorId
-        );
+        var act = () =>
+            CompanyBpPurchaseSettings.Create(
+                tenantId,
+                companyId,
+                supplierId,
+                PaymentTermId,
+                ActorId
+            );
 
         act.Should().Throw<ArgumentException>();
     }
@@ -57,7 +70,11 @@ public sealed class CompanyBpPurchaseSettingsTests
     public void SetPaymentTerm_actualiza_el_default_y_UpdatedBy()
     {
         var entity = CompanyBpPurchaseSettings.Create(
-            TenantId, CompanyId, SupplierId, PaymentTermId, ActorId
+            TenantId,
+            CompanyId,
+            SupplierId,
+            PaymentTermId,
+            ActorId
         );
         var newPaymentTermId = Guid.NewGuid();
         var updatedBy = Guid.NewGuid();
@@ -72,7 +89,11 @@ public sealed class CompanyBpPurchaseSettingsTests
     public void SetPaymentTerm_con_null_limpia_el_default()
     {
         var entity = CompanyBpPurchaseSettings.Create(
-            TenantId, CompanyId, SupplierId, PaymentTermId, ActorId
+            TenantId,
+            CompanyId,
+            SupplierId,
+            PaymentTermId,
+            ActorId
         );
 
         entity.SetPaymentTerm(null, ActorId);

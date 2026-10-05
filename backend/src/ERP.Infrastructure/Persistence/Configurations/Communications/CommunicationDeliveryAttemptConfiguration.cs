@@ -9,7 +9,8 @@ namespace ERP.Infrastructure.Persistence.Configurations.Communications;
 /// CommunicationOutboxDeliveryStore (SQL). Un intento por claim: (comunicación, número) y el
 /// ClaimToken son únicos.
 /// </summary>
-public sealed class CommunicationDeliveryAttemptConfiguration : IEntityTypeConfiguration<CommunicationDeliveryAttempt>
+public sealed class CommunicationDeliveryAttemptConfiguration
+    : IEntityTypeConfiguration<CommunicationDeliveryAttempt>
 {
     public void Configure(EntityTypeBuilder<CommunicationDeliveryAttempt> builder)
     {
@@ -24,22 +25,46 @@ public sealed class CommunicationDeliveryAttemptConfiguration : IEntityTypeConfi
         builder.Property(x => x.ClaimToken).HasColumnName("claim_token").IsRequired();
         builder.Property(x => x.StartedAtUtc).HasColumnName("started_at_utc").IsRequired();
         builder.Property(x => x.CompletedAtUtc).HasColumnName("completed_at_utc");
-        builder.Property(x => x.Transport).HasColumnName("transport").HasMaxLength(CommunicationDeliveryAttempt.TransportMaxLen).IsRequired();
-        builder.Property(x => x.Result).HasColumnName("result").HasConversion<string>().HasMaxLength(20);
-        builder.Property(x => x.FailureCategory).HasColumnName("failure_category").HasConversion<string>().HasMaxLength(30);
-        builder.Property(x => x.ProviderCode).HasColumnName("provider_code").HasMaxLength(CommunicationDeliveryAttempt.ProviderCodeMaxLen);
-        builder.Property(x => x.ProviderMessageId).HasColumnName("provider_message_id").HasMaxLength(CommunicationDeliveryAttempt.ProviderMessageIdMaxLen);
-        builder.Property(x => x.ErrorSafeText).HasColumnName("error_safe_text").HasMaxLength(CommunicationDeliveryAttempt.ErrorSafeTextMaxLen);
+        builder
+            .Property(x => x.Transport)
+            .HasColumnName("transport")
+            .HasMaxLength(CommunicationDeliveryAttempt.TransportMaxLen)
+            .IsRequired();
+        builder
+            .Property(x => x.Result)
+            .HasColumnName("result")
+            .HasConversion<string>()
+            .HasMaxLength(20);
+        builder
+            .Property(x => x.FailureCategory)
+            .HasColumnName("failure_category")
+            .HasConversion<string>()
+            .HasMaxLength(30);
+        builder
+            .Property(x => x.ProviderCode)
+            .HasColumnName("provider_code")
+            .HasMaxLength(CommunicationDeliveryAttempt.ProviderCodeMaxLen);
+        builder
+            .Property(x => x.ProviderMessageId)
+            .HasColumnName("provider_message_id")
+            .HasMaxLength(CommunicationDeliveryAttempt.ProviderMessageIdMaxLen);
+        builder
+            .Property(x => x.ErrorSafeText)
+            .HasColumnName("error_safe_text")
+            .HasMaxLength(CommunicationDeliveryAttempt.ErrorSafeTextMaxLen);
 
-        builder.HasOne<CommunicationOutbox>()
+        builder
+            .HasOne<CommunicationOutbox>()
             .WithMany()
             .HasForeignKey(x => x.CommunicationId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasIndex(x => new { x.CommunicationId, x.AttemptNumber })
+        builder
+            .HasIndex(x => new { x.CommunicationId, x.AttemptNumber })
             .IsUnique()
             .HasDatabaseName("ux_communication_delivery_attempts_number");
-        builder.HasIndex(x => x.ClaimToken)
+        builder
+            .HasIndex(x => x.ClaimToken)
             .IsUnique()
             .HasDatabaseName("ux_communication_delivery_attempts_claim_token");
     }

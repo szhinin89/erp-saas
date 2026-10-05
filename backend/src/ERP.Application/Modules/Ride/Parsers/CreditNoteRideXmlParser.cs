@@ -1,8 +1,8 @@
+using System.Globalization;
+using System.Xml.Linq;
 using ERP.Application.Common;
 using ERP.Domain.Modules.Ride.Enums;
 using ERP.Domain.Modules.Ride.ValueObjects;
-using System.Globalization;
-using System.Xml.Linq;
 
 namespace ERP.Application.Modules.Ride.Parsers;
 

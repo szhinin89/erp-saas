@@ -66,7 +66,9 @@ public sealed class SupplierPaymentReversedPostingTranslator
                 ct
             );
 
-            allocations.Add(new PostingAllocation(accountId, methodLine.Amount, AccountNature.Debit));
+            allocations.Add(
+                new PostingAllocation(accountId, methodLine.Amount, AccountNature.Debit)
+            );
         }
 
         var fact = new PostingFact(

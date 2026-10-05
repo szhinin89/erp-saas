@@ -30,7 +30,10 @@ public sealed record CommunicationSource
             throw new ArgumentException("El valor es obligatorio.", paramName);
         var normalized = value.Trim();
         if (normalized.Length > maxLength || normalized.Contains('|'))
-            throw new ArgumentException($"El valor no puede superar {maxLength} caracteres ni contener '|'.", paramName);
+            throw new ArgumentException(
+                $"El valor no puede superar {maxLength} caracteres ni contener '|'.",
+                paramName
+            );
         return normalized;
     }
 }

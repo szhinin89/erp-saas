@@ -165,11 +165,18 @@ public sealed class CancelPurchaseHandlerTests
                 )
                 .ReturnsAsync((RetentionDocument?)null);
         }
-        var effectiveRetentionCanceller = retentionCanceller ?? new RetentionCanceller(payableRepo.Object, ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.NoElectronicDocument());
+        var effectiveRetentionCanceller =
+            retentionCanceller
+            ?? new RetentionCanceller(
+                payableRepo.Object,
+                ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.NoElectronicDocument()
+            );
 
         var companyClock = new Mock<ICompanyClock>();
         companyClock
-            .Setup(c => c.TodayAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(c =>
+                c.TodayAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new DateOnly(2026, 9, 17));
 
         return new CancelPurchaseHandler(
@@ -197,8 +204,15 @@ public sealed class CancelPurchaseHandlerTests
         var inv = CreateConfirmedInvoice();
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
-        payableRepo.Setup(r =>
-                r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
+        payableRepo
+            .Setup(r =>
+                r.GetByOriginAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountsPayableOriginType.PurchaseInvoice,
+                    inv.Id,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((AccountsPayable?)null);
         var handler = BuildHandler(repo, payableRepo, stockRepo, purchaseReturnRepo, uow);
@@ -222,8 +236,15 @@ public sealed class CancelPurchaseHandlerTests
         var inv = CreateConfirmedInvoiceWithPackagedLine();
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
-        payableRepo.Setup(r =>
-                r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
+        payableRepo
+            .Setup(r =>
+                r.GetByOriginAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountsPayableOriginType.PurchaseInvoice,
+                    inv.Id,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((AccountsPayable?)null);
         var handler = BuildHandler(repo, payableRepo, stockRepo, purchaseReturnRepo, uow);
@@ -267,8 +288,15 @@ public sealed class CancelPurchaseHandlerTests
         var inv = CreateConfirmedInvoice();
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
-        payableRepo.Setup(r =>
-                r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
+        payableRepo
+            .Setup(r =>
+                r.GetByOriginAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountsPayableOriginType.PurchaseInvoice,
+                    inv.Id,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((AccountsPayable?)null);
         var handler = BuildHandler(repo, payableRepo, stockRepo, purchaseReturnRepo, uow);
@@ -322,16 +350,31 @@ public sealed class CancelPurchaseHandlerTests
         var (repo, payableRepo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
         var inv = CreateConfirmedInvoice();
         var payable = AccountsPayable.CreateFromOrigin(
-            TenantId, CompanyId, BranchId, SupplierId,
-            AccountsPayableOriginType.PurchaseInvoice, inv.Id,
-            "01", "001-001-000000001", inv.IssueDate, inv.IssueDate, UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            inv.Id,
+            "01",
+            "001-001-000000001",
+            inv.IssueDate,
+            inv.IssueDate,
+            UserId
         );
         payable.AddInstallment(1, inv.IssueDate.AddDays(30), 100m);
         payable.RegisterPayment(30m, UserId);
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
-        payableRepo.Setup(r =>
-                r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
+        payableRepo
+            .Setup(r =>
+                r.GetByOriginAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountsPayableOriginType.PurchaseInvoice,
+                    inv.Id,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(payable);
 
@@ -357,16 +400,31 @@ public sealed class CancelPurchaseHandlerTests
         var (repo, payableRepo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
         var inv = CreateConfirmedInvoice();
         var payable = AccountsPayable.CreateFromOrigin(
-            TenantId, CompanyId, BranchId, SupplierId,
-            AccountsPayableOriginType.PurchaseInvoice, inv.Id,
-            "01", "001-001-000000001", inv.IssueDate, inv.IssueDate, UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            inv.Id,
+            "01",
+            "001-001-000000001",
+            inv.IssueDate,
+            inv.IssueDate,
+            UserId
         );
         payable.AddInstallment(1, inv.IssueDate.AddDays(30), 100m);
         payable.ApplySupplierCredit(40m, UserId);
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
-        payableRepo.Setup(r =>
-                r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
+        payableRepo
+            .Setup(r =>
+                r.GetByOriginAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountsPayableOriginType.PurchaseInvoice,
+                    inv.Id,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(payable);
 
@@ -429,15 +487,30 @@ public sealed class CancelPurchaseHandlerTests
         var (repo, payableRepo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
         var inv = CreateConfirmedInvoice();
         var payable = AccountsPayable.CreateFromOrigin(
-            TenantId, CompanyId, BranchId, SupplierId,
-            AccountsPayableOriginType.PurchaseInvoice, inv.Id,
-            "01", "001-001-000000001", inv.IssueDate, inv.IssueDate, UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            inv.Id,
+            "01",
+            "001-001-000000001",
+            inv.IssueDate,
+            inv.IssueDate,
+            UserId
         );
         payable.AddInstallment(1, inv.IssueDate.AddDays(30), 100m);
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
-        payableRepo.Setup(r =>
-                r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
+        payableRepo
+            .Setup(r =>
+                r.GetByOriginAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountsPayableOriginType.PurchaseInvoice,
+                    inv.Id,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(payable);
         purchaseReturnRepo
@@ -479,15 +552,30 @@ public sealed class CancelPurchaseHandlerTests
         var (repo, payableRepo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
         var inv = CreateConfirmedInvoice();
         var payable = AccountsPayable.CreateFromOrigin(
-            TenantId, CompanyId, BranchId, SupplierId,
-            AccountsPayableOriginType.PurchaseInvoice, inv.Id,
-            "01", "001-001-000000001", inv.IssueDate, inv.IssueDate, UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            inv.Id,
+            "01",
+            "001-001-000000001",
+            inv.IssueDate,
+            inv.IssueDate,
+            UserId
         );
         payable.AddInstallment(1, inv.IssueDate.AddDays(30), 100m);
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
-        payableRepo.Setup(r =>
-                r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
+        payableRepo
+            .Setup(r =>
+                r.GetByOriginAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountsPayableOriginType.PurchaseInvoice,
+                    inv.Id,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(payable);
         purchaseReturnRepo
@@ -531,8 +619,15 @@ public sealed class CancelPurchaseHandlerTests
         var inv = CreateConfirmedInvoice();
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
-        payableRepo.Setup(r =>
-                r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
+        payableRepo
+            .Setup(r =>
+                r.GetByOriginAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountsPayableOriginType.PurchaseInvoice,
+                    inv.Id,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((AccountsPayable?)null);
         using var cts = new CancellationTokenSource();
@@ -565,9 +660,16 @@ public sealed class CancelPurchaseHandlerTests
                 r.AcquireFinancialLockAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
             )
             .Returns(Task.CompletedTask);
-        payableRepo.InSequence(sequence)
+        payableRepo
+            .InSequence(sequence)
             .Setup(r =>
-                r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
+                r.GetByOriginAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountsPayableOriginType.PurchaseInvoice,
+                    inv.Id,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((AccountsPayable?)null);
         purchaseReturnRepo
@@ -671,21 +773,41 @@ public sealed class CancelPurchaseHandlerTests
         var (repo, payableRepo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
         var inv = CreateConfirmedInvoice();
         var payable = AccountsPayable.CreateFromOrigin(
-            TenantId, CompanyId, BranchId, SupplierId,
-            AccountsPayableOriginType.PurchaseInvoice, inv.Id,
-            "01", "001-001-000000001", inv.IssueDate, inv.IssueDate, UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            inv.Id,
+            "01",
+            "001-001-000000001",
+            inv.IssueDate,
+            inv.IssueDate,
+            UserId
         );
         payable.AddInstallment(1, inv.IssueDate.AddDays(30), 100m);
         payable.ApplyRetention(30m, UserId);
 
         var retention = RetentionDocument.Create(
-            TenantId, CompanyId, BranchId,
-            RetentionSourceDocumentType.PurchaseInvoice, inv.Id, SupplierId,
-            Guid.NewGuid(), UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            RetentionSourceDocumentType.PurchaseInvoice,
+            inv.Id,
+            SupplierId,
+            Guid.NewGuid(),
+            UserId
         );
         retention.AddLine(
             RetentionDocumentLine.Create(
-                retention.Id, TenantId, RetentionTaxType.Vat, "725", "Retención IVA", 100m, 30m, 30m
+                retention.Id,
+                TenantId,
+                RetentionTaxType.Vat,
+                "725",
+                "Retención IVA",
+                100m,
+                30m,
+                30m
             )
         );
         retention.Issue("001-001-000000001", inv.IssueDate, UserId);
@@ -694,21 +816,44 @@ public sealed class CancelPurchaseHandlerTests
             .ReturnsAsync(inv);
         payableRepo
             .Setup(r =>
-                r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
+                r.GetByOriginAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountsPayableOriginType.PurchaseInvoice,
+                    inv.Id,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(payable);
         purchaseReturnRepo
-            .Setup(r => r.ExistsAuthorizedByPurchaseInvoiceIdAsync(TenantId, CompanyId, inv.Id, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.ExistsAuthorizedByPurchaseInvoiceIdAsync(
+                    TenantId,
+                    CompanyId,
+                    inv.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(false);
         var retentionRepo = new Mock<IRetentionDocumentRepository>();
         retentionRepo
             .Setup(r =>
-                r.GetBySourceAsync(TenantId, CompanyId, RetentionSourceDocumentType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
+                r.GetBySourceAsync(
+                    TenantId,
+                    CompanyId,
+                    RetentionSourceDocumentType.PurchaseInvoice,
+                    inv.Id,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(retention);
 
         var handler = BuildHandler(
-            repo, payableRepo, stockRepo, purchaseReturnRepo, uow,
+            repo,
+            payableRepo,
+            stockRepo,
+            purchaseReturnRepo,
+            uow,
             retentionRepo: retentionRepo
         );
         var result = await handler.Handle(
@@ -808,8 +953,15 @@ public sealed class CancelPurchaseHandlerTests
         var receptionDoc = CreateProcessedReceptionDocument(accessKey, inv.Id);
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
-        payableRepo.Setup(r =>
-                r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
+        payableRepo
+            .Setup(r =>
+                r.GetByOriginAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountsPayableOriginType.PurchaseInvoice,
+                    inv.Id,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((AccountsPayable?)null);
         var receptionRepo = new Mock<IPurchaseReceptionDocumentRepository>();
@@ -817,7 +969,14 @@ public sealed class CancelPurchaseHandlerTests
             .Setup(r => r.GetByAccessKeyAsync(TenantId, accessKey, It.IsAny<CancellationToken>()))
             .ReturnsAsync(receptionDoc);
 
-        var handler = BuildHandler(repo, payableRepo, stockRepo, purchaseReturnRepo, uow, receptionRepo: receptionRepo);
+        var handler = BuildHandler(
+            repo,
+            payableRepo,
+            stockRepo,
+            purchaseReturnRepo,
+            uow,
+            receptionRepo: receptionRepo
+        );
         var result = await handler.Handle(
             new CancelPurchaseCommand(inv.Id, "Compra duplicada"),
             CancellationToken.None
@@ -840,13 +999,27 @@ public sealed class CancelPurchaseHandlerTests
         var inv = CreateConfirmedInvoice();
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
-        payableRepo.Setup(r =>
-                r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
+        payableRepo
+            .Setup(r =>
+                r.GetByOriginAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountsPayableOriginType.PurchaseInvoice,
+                    inv.Id,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((AccountsPayable?)null);
         var receptionRepo = new Mock<IPurchaseReceptionDocumentRepository>();
 
-        var handler = BuildHandler(repo, payableRepo, stockRepo, purchaseReturnRepo, uow, receptionRepo: receptionRepo);
+        var handler = BuildHandler(
+            repo,
+            payableRepo,
+            stockRepo,
+            purchaseReturnRepo,
+            uow,
+            receptionRepo: receptionRepo
+        );
         var result = await handler.Handle(
             new CancelPurchaseCommand(inv.Id, "Motivo"),
             CancellationToken.None
@@ -854,7 +1027,12 @@ public sealed class CancelPurchaseHandlerTests
 
         result.IsSuccess.Should().BeTrue(result.Error);
         receptionRepo.Verify(
-            r => r.GetByAccessKeyAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            r =>
+                r.GetByAccessKeyAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }
@@ -871,8 +1049,15 @@ public sealed class CancelPurchaseHandlerTests
         var receptionDoc = CreateProcessedReceptionDocument(accessKey, otherPurchaseId);
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
-        payableRepo.Setup(r =>
-                r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
+        payableRepo
+            .Setup(r =>
+                r.GetByOriginAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountsPayableOriginType.PurchaseInvoice,
+                    inv.Id,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((AccountsPayable?)null);
         var receptionRepo = new Mock<IPurchaseReceptionDocumentRepository>();
@@ -880,7 +1065,14 @@ public sealed class CancelPurchaseHandlerTests
             .Setup(r => r.GetByAccessKeyAsync(TenantId, accessKey, It.IsAny<CancellationToken>()))
             .ReturnsAsync(receptionDoc);
 
-        var handler = BuildHandler(repo, payableRepo, stockRepo, purchaseReturnRepo, uow, receptionRepo: receptionRepo);
+        var handler = BuildHandler(
+            repo,
+            payableRepo,
+            stockRepo,
+            purchaseReturnRepo,
+            uow,
+            receptionRepo: receptionRepo
+        );
         var result = await handler.Handle(
             new CancelPurchaseCommand(inv.Id, "Motivo"),
             CancellationToken.None

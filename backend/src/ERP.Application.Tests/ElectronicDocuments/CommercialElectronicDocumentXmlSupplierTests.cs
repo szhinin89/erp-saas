@@ -130,7 +130,9 @@ public sealed class CommercialElectronicDocumentXmlSupplierTests
         var provider = new Mock<IElectronicDocumentDataProvider>();
         provider
             .Setup(p => p.GetDataAsync(Reference, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<ElectronicDocumentData>.NotFound("El documento de origen no existe."));
+            .ReturnsAsync(
+                Result<ElectronicDocumentData>.NotFound("El documento de origen no existe.")
+            );
 
         var builder = new Mock<IElectronicDocumentXmlBuilder>();
 

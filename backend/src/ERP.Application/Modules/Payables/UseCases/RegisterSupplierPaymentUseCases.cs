@@ -240,10 +240,12 @@ public sealed class RegisterSupplierPaymentCommandValidator
             .Must((cmd, lines) => lines.Sum(l => l.AmountApplied) <= cmd.TotalAmount)
             .When(x => x.ApplicationLines is not null)
             .WithMessage("La suma aplicada a cuotas no puede superar el total del pago.");
-        RuleForEach(x => x.MethodLines).SetValidator(new SupplierPaymentMethodLineRequestValidator());
+        RuleForEach(x => x.MethodLines)
+            .SetValidator(new SupplierPaymentMethodLineRequestValidator());
         RuleForEach(x => x.ApplicationLines)
             .SetValidator(new SupplierPaymentApplicationLineRequestValidator());
-        RuleForEach(x => x.Allocations).SetValidator(new SupplierPaymentAllocationLineRequestValidator());
+        RuleForEach(x => x.Allocations)
+            .SetValidator(new SupplierPaymentAllocationLineRequestValidator());
     }
 }
 
@@ -252,10 +254,13 @@ public sealed class RegisterSupplierPaymentCommandValidator
 /// separado a propósito: <see cref="RegisterSupplierPaymentCommandValidator"/> valida la intención
 /// de pago y también la reutiliza la solicitud de efectivo (que tiene su propio ClientRequestId).
 /// </summary>
-public sealed class RegisterSupplierPaymentClientRequestValidator : AbstractValidator<RegisterSupplierPaymentCommand>
+public sealed class RegisterSupplierPaymentClientRequestValidator
+    : AbstractValidator<RegisterSupplierPaymentCommand>
 {
     public RegisterSupplierPaymentClientRequestValidator() =>
-        RuleFor(x => x.ClientRequestId).NotEmpty().WithMessage("El identificador de idempotencia es obligatorio.");
+        RuleFor(x => x.ClientRequestId)
+            .NotEmpty()
+            .WithMessage("El identificador de idempotencia es obligatorio.");
 }
 
 // ── Handler ─────────────────────────────────────────────────────────────
@@ -337,7 +342,13 @@ public sealed class RegisterSupplierPaymentCommandHandler
         {
             registration = await _registrar.RegisterAsync(
                 cmd,
-                new SupplierPaymentRegistrationContext(_t.TenantId, _c.CompanyId, _b.BranchId, userId, userId),
+                new SupplierPaymentRegistrationContext(
+                    _t.TenantId,
+                    _c.CompanyId,
+                    _b.BranchId,
+                    userId,
+                    userId
+                ),
                 ct,
                 key
             );
@@ -380,9 +391,14 @@ public sealed class RegisterSupplierPaymentCommandHandler
         if (!key.Matches(existing.RequestPayloadHash))
             return Result<SupplierPaymentDto>.Conflict(ClientRequestConflict);
 
-        var supplierCreditId = existing.UnappliedAmount > 0
-            ? await _supplierCredits.GetIdBySourceSupplierPaymentIdAsync(_t.TenantId, existing.Id, ct)
-            : null;
+        var supplierCreditId =
+            existing.UnappliedAmount > 0
+                ? await _supplierCredits.GetIdBySourceSupplierPaymentIdAsync(
+                    _t.TenantId,
+                    existing.Id,
+                    ct
+                )
+                : null;
         return Result<SupplierPaymentDto>.Success(
             SupplierPaymentDtoMapper.ToDto(existing, supplierCreditId: supplierCreditId),
             ApiResponseCodes.Common.Created
@@ -431,8 +447,7 @@ internal static class SupplierPaymentDtoMapper
             p.ReceiptNumber,
             p.DisplayNumber,
             p.Status.ToString(),
-            p.MethodLines
-                .Select(l => new SupplierPaymentMethodLineDto(
+            p.MethodLines.Select(l => new SupplierPaymentMethodLineDto(
                     l.Id,
                     l.PaymentMethodId,
                     l.CompanyBankAccountId,
@@ -447,8 +462,7 @@ internal static class SupplierPaymentDtoMapper
                     l.CashMovementId
                 ))
                 .ToList(),
-            p.ApplicationLines
-                .Select(l =>
+            p.ApplicationLines.Select(l =>
                 {
                     InstallmentDisplayInfo? info = null;
                     installmentDisplayInfo?.TryGetValue(l.AccountsPayableInstallmentId, out info);
@@ -464,8 +478,7 @@ internal static class SupplierPaymentDtoMapper
                     );
                 })
                 .ToList(),
-            p.AllocationLines
-                .Select(l => new SupplierPaymentAllocationLineDto(
+            p.AllocationLines.Select(l => new SupplierPaymentAllocationLineDto(
                     l.Id,
                     l.SupplierPaymentMethodLineId,
                     l.SupplierPaymentApplicationLineId,

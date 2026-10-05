@@ -44,7 +44,9 @@ public sealed class UpdateCompanyBrandingCommandValidatorTests
         );
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(UpdateCompanyBrandingCommand.PrimaryColor));
+        result
+            .Errors.Should()
+            .Contain(e => e.PropertyName == nameof(UpdateCompanyBrandingCommand.PrimaryColor));
     }
 
     [Fact]
@@ -55,7 +57,9 @@ public sealed class UpdateCompanyBrandingCommandValidatorTests
         );
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(UpdateCompanyBrandingCommand.Slogan));
+        result
+            .Errors.Should()
+            .Contain(e => e.PropertyName == nameof(UpdateCompanyBrandingCommand.Slogan));
     }
 
     [Fact]
@@ -68,6 +72,8 @@ public sealed class UpdateCompanyBrandingCommandValidatorTests
         result.IsValid.Should().BeFalse();
         result
             .Errors.Should()
-            .Contain(e => e.PropertyName == nameof(UpdateCompanyBrandingCommand.DocumentFooterText));
+            .Contain(e =>
+                e.PropertyName == nameof(UpdateCompanyBrandingCommand.DocumentFooterText)
+            );
     }
 }

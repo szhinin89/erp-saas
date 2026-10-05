@@ -44,7 +44,12 @@ public sealed class RawSqlDatabaseObjectsBaselineIntegrationTests : IAsyncLifeti
     {
         await using var db = CreateContext(Guid.Empty);
 
-        (await Scalar(db, "SELECT count(*)::int AS \"Value\" FROM pg_extension WHERE extname = 'pg_trgm'"))
+        (
+            await Scalar(
+                db,
+                "SELECT count(*)::int AS \"Value\" FROM pg_extension WHERE extname = 'pg_trgm'"
+            )
+        )
             .Should()
             .Be(1);
     }
@@ -62,12 +67,17 @@ public sealed class RawSqlDatabaseObjectsBaselineIntegrationTests : IAsyncLifeti
         "ix_items_description_trgm",
         "CREATE INDEX ix_items_description_trgm ON public.items USING gin (description gin_trgm_ops)"
     )]
-    public async Task Indice_raw_existe_con_su_definicion(string indexName, string expectedDefinition)
+    public async Task Indice_raw_existe_con_su_definicion(
+        string indexName,
+        string expectedDefinition
+    )
     {
         await using var db = CreateContext(Guid.Empty);
 
         var definition = await db
-            .Database.SqlQuery<string>($"SELECT indexdef AS \"Value\" FROM pg_indexes WHERE indexname = {indexName}")
+            .Database.SqlQuery<string>(
+                $"SELECT indexdef AS \"Value\" FROM pg_indexes WHERE indexname = {indexName}"
+            )
             .SingleAsync();
 
         definition.Should().Be(expectedDefinition);
@@ -78,10 +88,12 @@ public sealed class RawSqlDatabaseObjectsBaselineIntegrationTests : IAsyncLifeti
     {
         await using var db = CreateContext(Guid.Empty);
 
-        (await Scalar(
+        (
+            await Scalar(
                 db,
                 "SELECT count(*)::int AS \"Value\" FROM pg_proc WHERE proname = 'enforce_purchase_expense_exclusivity' AND prorettype = 'trigger'::regtype"
-            ))
+            )
+        )
             .Should()
             .Be(1);
     }
@@ -89,7 +101,10 @@ public sealed class RawSqlDatabaseObjectsBaselineIntegrationTests : IAsyncLifeti
     [Theory]
     [InlineData("tr_expense_purchase_exclusivity", "expense_documents")]
     [InlineData("tr_purchase_expense_exclusivity", "purchase_invoices")]
-    public async Task Trigger_de_exclusividad_existe_habilitado_sobre_su_tabla(string triggerName, string tableName)
+    public async Task Trigger_de_exclusividad_existe_habilitado_sobre_su_tabla(
+        string triggerName,
+        string tableName
+    )
     {
         await using var db = CreateContext(Guid.Empty);
 
@@ -158,7 +173,9 @@ public sealed class RawSqlDatabaseObjectsBaselineIntegrationTests : IAsyncLifeti
 
     private ErpDbContext CreateContext(Guid tenantId) =>
         new(
-            new DbContextOptionsBuilder<ErpDbContext>().UseNpgsql(_postgres.GetConnectionString()).Options,
+            new DbContextOptionsBuilder<ErpDbContext>()
+                .UseNpgsql(_postgres.GetConnectionString())
+                .Options,
             new FixedCurrentTenant(tenantId),
             new NoOpPublisher(),
             new FixedCurrentCompany()

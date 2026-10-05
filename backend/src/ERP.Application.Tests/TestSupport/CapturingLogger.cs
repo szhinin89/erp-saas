@@ -26,14 +26,24 @@ public sealed class CapturingLogger<T> : ILogger<T>
         var values = state is IEnumerable<KeyValuePair<string, object?>> pairs
             ? pairs.Select(p => $"{p.Key}={p.Value}").ToList()
             : new List<string>();
-        Entries.Add(new CapturedLogEntry(logLevel, eventId, formatter(state, exception), values, exception?.ToString()));
+        Entries.Add(
+            new CapturedLogEntry(
+                logLevel,
+                eventId,
+                formatter(state, exception),
+                values,
+                exception?.ToString()
+            )
+        );
     }
 
     /// <summary>Todo el contenido registrado (mensajes, valores y excepciones) como un solo texto.</summary>
     public string AllText() =>
         string.Join(
             "\n",
-            Entries.Select(e => $"{e.EventId.Name}|{e.Message}|{string.Join(";", e.Values)}|{e.Exception}")
+            Entries.Select(e =>
+                $"{e.EventId.Name}|{e.Message}|{string.Join(";", e.Values)}|{e.Exception}"
+            )
         );
 }
 

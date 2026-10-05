@@ -45,7 +45,11 @@ public sealed class GetPurchasesBySupplierReportQueryHandlerTests
             new(Repo.Object, Tenant.Object, Company.Object, CompanyClock.Object);
     }
 
-    private static PurchaseInvoice CreateInvoice(decimal unitPrice, bool confirm, bool cancel = false)
+    private static PurchaseInvoice CreateInvoice(
+        decimal unitPrice,
+        bool confirm,
+        bool cancel = false
+    )
     {
         var invoice = PurchaseInvoice.CreateDraft(
             TenantId,
@@ -111,7 +115,9 @@ public sealed class GetPurchasesBySupplierReportQueryHandlerTests
             .Handle(new GetPurchasesBySupplierReportQuery(), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        result.Value!.Items.Should().HaveCount(3, "todas las compras del rango siguen visibles para auditoría");
+        result
+            .Value!.Items.Should()
+            .HaveCount(3, "todas las compras del rango siguen visibles para auditoría");
         result.Value.Totals.Count.Should().Be(1);
         result.Value.Totals.GrandTotal.Should().Be(confirmed.GrandTotal);
     }

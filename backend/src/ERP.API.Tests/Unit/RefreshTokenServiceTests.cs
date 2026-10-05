@@ -170,7 +170,12 @@ public sealed class RefreshTokenServiceTests
         var userId = Guid.NewGuid();
         var tenantId = Guid.NewGuid();
 
-        var (rawToken, _) = await service.CreateAsync(userId, tenantId, null, RefreshUserType.Legacy);
+        var (rawToken, _) = await service.CreateAsync(
+            userId,
+            tenantId,
+            null,
+            RefreshUserType.Legacy
+        );
         var result = await service.ValidateAndRotateAsync(rawToken);
 
         result.IsValid.Should().BeTrue(result.Error);
@@ -187,7 +192,12 @@ public sealed class RefreshTokenServiceTests
         var userId = Guid.NewGuid();
         var tenantId = Guid.NewGuid();
 
-        var (rawToken, _) = await service.CreateAsync(userId, tenantId, null, RefreshUserType.Legacy);
+        var (rawToken, _) = await service.CreateAsync(
+            userId,
+            tenantId,
+            null,
+            RefreshUserType.Legacy
+        );
         var result = await service.ValidateAndRotateAsync(rawToken);
 
         result.IsValid.Should().BeFalse();
@@ -264,7 +274,9 @@ public sealed class RefreshTokenServiceTests
 
         var stored = repo.Stored[0];
         stored.ExpiresAt.Should().Be(stored.AbsoluteExpiresAt);
-        stored.ExpiresAt.Should().BeCloseTo(DateTime.UtcNow.AddMinutes(60), TimeSpan.FromMinutes(1));
+        stored
+            .ExpiresAt.Should()
+            .BeCloseTo(DateTime.UtcNow.AddMinutes(60), TimeSpan.FromMinutes(1));
     }
 
     // ── ValidateWithoutRotatingAsync (Fase 4 — Reautenticación) ──────────────

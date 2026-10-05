@@ -29,7 +29,10 @@ public sealed class ConfigurationChangeLogController : ControllerBase
 
     [HttpGet("change-log")]
     [Authorize(Policy = $"perm:{SettingsPermissions.CompaniesUpdate}")]
-    [ProducesResponseType(typeof(ApiResponse<ConfigurationChangeLogPageDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<ConfigurationChangeLogPageDto>),
+        StatusCodes.Status200OK
+    )]
     public async Task<IActionResult> GetChangeLog(
         [FromQuery] string? entityType,
         [FromQuery] Guid? entityId,
@@ -43,7 +46,16 @@ public sealed class ConfigurationChangeLogController : ControllerBase
     )
     {
         var result = await _mediator.Send(
-            new GetConfigurationChangeLogQuery(entityType, entityId, key, scope, fromUtc, toUtc, page, pageSize),
+            new GetConfigurationChangeLogQuery(
+                entityType,
+                entityId,
+                key,
+                scope,
+                fromUtc,
+                toUtc,
+                page,
+                pageSize
+            ),
             cancellationToken
         );
         return this.ToOkOrBadRequest(result);

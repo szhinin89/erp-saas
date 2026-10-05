@@ -69,7 +69,12 @@ public sealed class ConfigureDocumentSequenceHandlerTests
         // uno inexistente — mismo resultado NotFound en ambos casos.
         _emissionPointRepo
             .Setup(r =>
-                r.GetByIdForCompanyAsync(TenantId, CompanyId, EmissionPointId, It.IsAny<CancellationToken>())
+                r.GetByIdForCompanyAsync(
+                    TenantId,
+                    CompanyId,
+                    EmissionPointId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((EmissionPoint?)null);
 
@@ -97,7 +102,12 @@ public sealed class ConfigureDocumentSequenceHandlerTests
         var otherCompanyId = Guid.NewGuid();
         _emissionPointRepo
             .Setup(r =>
-                r.GetByIdForCompanyAsync(TenantId, CompanyId, EmissionPointId, It.IsAny<CancellationToken>())
+                r.GetByIdForCompanyAsync(
+                    TenantId,
+                    CompanyId,
+                    EmissionPointId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((EmissionPoint?)null);
         _emissionPointRepo
@@ -126,7 +136,12 @@ public sealed class ConfigureDocumentSequenceHandlerTests
     {
         _emissionPointRepo
             .Setup(r =>
-                r.GetByIdForCompanyAsync(TenantId, CompanyId, EmissionPointId, It.IsAny<CancellationToken>())
+                r.GetByIdForCompanyAsync(
+                    TenantId,
+                    CompanyId,
+                    EmissionPointId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(CreateEmissionPoint());
         _docTypeResolver
@@ -148,7 +163,12 @@ public sealed class ConfigureDocumentSequenceHandlerTests
     {
         _emissionPointRepo
             .Setup(r =>
-                r.GetByIdForCompanyAsync(TenantId, CompanyId, EmissionPointId, It.IsAny<CancellationToken>())
+                r.GetByIdForCompanyAsync(
+                    TenantId,
+                    CompanyId,
+                    EmissionPointId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(CreateEmissionPoint());
         _sequenceRepo
@@ -188,7 +208,12 @@ public sealed class ConfigureDocumentSequenceHandlerTests
 
         _emissionPointRepo
             .Setup(r =>
-                r.GetByIdForCompanyAsync(TenantId, CompanyId, EmissionPointId, It.IsAny<CancellationToken>())
+                r.GetByIdForCompanyAsync(
+                    TenantId,
+                    CompanyId,
+                    EmissionPointId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(CreateEmissionPoint());
         _sequenceRepo
@@ -225,7 +250,12 @@ public sealed class ConfigureDocumentSequenceHandlerTests
 
         _emissionPointRepo
             .Setup(r =>
-                r.GetByIdForCompanyAsync(TenantId, CompanyId, EmissionPointId, It.IsAny<CancellationToken>())
+                r.GetByIdForCompanyAsync(
+                    TenantId,
+                    CompanyId,
+                    EmissionPointId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(CreateEmissionPoint());
         _sequenceRepo
@@ -246,9 +276,6 @@ public sealed class ConfigureDocumentSequenceHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.Conflict);
-        _sequenceRepo.Verify(
-            r => r.SaveChangesAsync(It.IsAny<CancellationToken>()),
-            Times.Never
-        );
+        _sequenceRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 }

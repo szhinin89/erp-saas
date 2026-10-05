@@ -214,20 +214,25 @@ public sealed class ReverseSupplierCreditRefundUseCasesTests
         var f = BuildBankFixture(creditAmount: 100m, refundAmount: 40m);
         var m = new Mocks(f);
         m.TxRepo.Setup(r =>
-                r.GetBySupplierCreditMovementIdAsync(TenantId, f.RefundMovementId, It.IsAny<CancellationToken>())
+                r.GetBySupplierCreditMovementIdAsync(
+                    TenantId,
+                    f.RefundMovementId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(f.OriginalTx);
 
-        var result = await m.BuildHandler().Handle(
-            new ReverseSupplierCreditRefundCommand(
-                f.Credit.Id,
-                f.RefundMovementId,
-                "Reembolso duplicado por error",
-                DateOnly.FromDateTime(DateTime.UtcNow),
-                Guid.NewGuid()
-            ),
-            CancellationToken.None
-        );
+        var result = await m.BuildHandler()
+            .Handle(
+                new ReverseSupplierCreditRefundCommand(
+                    f.Credit.Id,
+                    f.RefundMovementId,
+                    "Reembolso duplicado por error",
+                    DateOnly.FromDateTime(DateTime.UtcNow),
+                    Guid.NewGuid()
+                ),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.OriginalTransactionId.Should().Be(f.OriginalTx.Id);
@@ -327,25 +332,34 @@ public sealed class ReverseSupplierCreditRefundUseCasesTests
             )
             .ReturnsAsync(session);
         m.CashSessionRepo.Setup(r =>
-                r.GetOpenByCashRegisterForUpdateAsync(TenantId, CashRegisterId, It.IsAny<CancellationToken>())
+                r.GetOpenByCashRegisterForUpdateAsync(
+                    TenantId,
+                    CashRegisterId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(session);
 
-        var result = await m.BuildHandler().Handle(
-            new ReverseSupplierCreditRefundCommand(
-                f.Credit.Id,
-                f.OriginalTx.Id,
-                "Motivo",
-                DateOnly.FromDateTime(DateTime.UtcNow),
-                Guid.NewGuid()
-            ),
-            CancellationToken.None
-        );
+        var result = await m.BuildHandler()
+            .Handle(
+                new ReverseSupplierCreditRefundCommand(
+                    f.Credit.Id,
+                    f.OriginalTx.Id,
+                    "Motivo",
+                    DateOnly.FromDateTime(DateTime.UtcNow),
+                    Guid.NewGuid()
+                ),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         var compensation = session.Movements.Single(x => x.Id == result.Value!.CashMovementId);
-        compensation.MovementType.Should().Be(ERP.Domain.Modules.Caja.Enums.CashMovementType.ManualExpense);
-        session.Movements.Should().HaveCount(3, "apertura + ingreso original intacto + egreso compensatorio");
+        compensation
+            .MovementType.Should()
+            .Be(ERP.Domain.Modules.Caja.Enums.CashMovementType.ManualExpense);
+        session
+            .Movements.Should()
+            .HaveCount(3, "apertura + ingreso original intacto + egreso compensatorio");
         session.CurrentBalance.Should().Be(balanceBeforeRefund);
     }
 
@@ -536,25 +550,34 @@ public sealed class ReverseSupplierCreditRefundUseCasesTests
             )
             .ReturnsAsync(session);
         m.CashSessionRepo.Setup(r =>
-                r.GetOpenByCashRegisterForUpdateAsync(TenantId, CashRegisterId, It.IsAny<CancellationToken>())
+                r.GetOpenByCashRegisterForUpdateAsync(
+                    TenantId,
+                    CashRegisterId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(session);
 
-        var result = await m.BuildHandler().Handle(
-            new ReverseSupplierCreditRefundCommand(
-                f.Credit.Id,
-                f.OriginalTx.Id,
-                "Motivo",
-                DateOnly.FromDateTime(DateTime.UtcNow),
-                Guid.NewGuid()
-            ),
-            CancellationToken.None
-        );
+        var result = await m.BuildHandler()
+            .Handle(
+                new ReverseSupplierCreditRefundCommand(
+                    f.Credit.Id,
+                    f.OriginalTx.Id,
+                    "Motivo",
+                    DateOnly.FromDateTime(DateTime.UtcNow),
+                    Guid.NewGuid()
+                ),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         var compensation = session.Movements.Single(x => x.Id == result.Value!.CashMovementId);
-        compensation.ReferenceType.Should().Be(ERP.Domain.Modules.Caja.Enums.CashReferenceType.SupplierCreditRefund);
-        compensation.ReferenceId.Should().Be(f.OriginalTx.Id, "la reversa apunta al reembolso ORIGINAL");
+        compensation
+            .ReferenceType.Should()
+            .Be(ERP.Domain.Modules.Caja.Enums.CashReferenceType.SupplierCreditRefund);
+        compensation
+            .ReferenceId.Should()
+            .Be(f.OriginalTx.Id, "la reversa apunta al reembolso ORIGINAL");
         result.Value!.OriginalTransactionId.Should().Be(f.OriginalTx.Id);
     }
 
@@ -566,8 +589,17 @@ public sealed class ReverseSupplierCreditRefundUseCasesTests
     public async Task Reversa_de_reembolso_en_caja_operada_por_otro_usuario_se_rechaza()
     {
         var foreignSession = CashSession.Open(
-            TenantId, CompanyId, BranchId, Guid.NewGuid(), CashRegisterId,
-            "CAJA-01", "Caja Matriz", Guid.NewGuid(), "001-001", 0m, Guid.NewGuid()
+            TenantId,
+            CompanyId,
+            BranchId,
+            Guid.NewGuid(),
+            CashRegisterId,
+            "CAJA-01",
+            "Caja Matriz",
+            Guid.NewGuid(),
+            "001-001",
+            0m,
+            Guid.NewGuid()
         );
         var f = BuildCashFixture(foreignSession.Id, refundAmount: 40m);
         var m = new Mocks(f);
@@ -576,20 +608,25 @@ public sealed class ReverseSupplierCreditRefundUseCasesTests
             )
             .ReturnsAsync(foreignSession);
         m.CashSessionRepo.Setup(r =>
-                r.GetOpenByCashRegisterForUpdateAsync(TenantId, CashRegisterId, It.IsAny<CancellationToken>())
+                r.GetOpenByCashRegisterForUpdateAsync(
+                    TenantId,
+                    CashRegisterId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(foreignSession);
 
-        var result = await m.BuildHandler().Handle(
-            new ReverseSupplierCreditRefundCommand(
-                f.Credit.Id,
-                f.OriginalTx.Id,
-                "Motivo",
-                DateOnly.FromDateTime(DateTime.UtcNow),
-                Guid.NewGuid()
-            ),
-            CancellationToken.None
-        );
+        var result = await m.BuildHandler()
+            .Handle(
+                new ReverseSupplierCreditRefundCommand(
+                    f.Credit.Id,
+                    f.OriginalTx.Id,
+                    "Motivo",
+                    DateOnly.FromDateTime(DateTime.UtcNow),
+                    Guid.NewGuid()
+                ),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("La caja seleccionada está siendo operada por otro usuario.");

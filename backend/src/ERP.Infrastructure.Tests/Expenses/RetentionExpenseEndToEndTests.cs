@@ -139,7 +139,14 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
             companyId: company.Id
         );
 
-        var paymentTerm = PaymentTerm.Create(tenant.Id, "RETQA-CONTADO", "Contado QA", 1, 0, _createdBy);
+        var paymentTerm = PaymentTerm.Create(
+            tenant.Id,
+            "RETQA-CONTADO",
+            "Contado QA",
+            1,
+            0,
+            _createdBy
+        );
 
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
@@ -153,9 +160,30 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         _paymentTermId = paymentTerm.Id;
 
         // ── Proveedores de prueba ──────────────────────────────────────────
-        var supplierNonExempt = BusinessPartner.Create(tenant.Id, "05", "1710034065", 1, "RETQA Proveedor No Exento", _createdBy);
-        var supplierExempt = BusinessPartner.Create(tenant.Id, "05", "1710034073", 1, "RETQA Proveedor Exento", _createdBy);
-        var supplierMissingCode = BusinessPartner.Create(tenant.Id, "05", "1710034081", 1, "RETQA Proveedor Codigo Faltante", _createdBy);
+        var supplierNonExempt = BusinessPartner.Create(
+            tenant.Id,
+            "05",
+            "1710034065",
+            1,
+            "RETQA Proveedor No Exento",
+            _createdBy
+        );
+        var supplierExempt = BusinessPartner.Create(
+            tenant.Id,
+            "05",
+            "1710034073",
+            1,
+            "RETQA Proveedor Exento",
+            _createdBy
+        );
+        var supplierMissingCode = BusinessPartner.Create(
+            tenant.Id,
+            "05",
+            "1710034081",
+            1,
+            "RETQA Proveedor Codigo Faltante",
+            _createdBy
+        );
         db.BusinessPartners.AddRange(supplierNonExempt, supplierExempt, supplierMissingCode);
         await db.SaveChangesAsync();
 
@@ -217,13 +245,28 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         // ── Retenciones predeterminadas por proveedor+empresa (lista dinámica) ─
         db.SupplierRetentionDefaults.AddRange(
             SupplierRetentionDefault.Create(
-                tenant.Id, company.Id, supplierNonExempt.Id, vatRetentionCode.Id, 0, _createdBy
+                tenant.Id,
+                company.Id,
+                supplierNonExempt.Id,
+                vatRetentionCode.Id,
+                0,
+                _createdBy
             ),
             SupplierRetentionDefault.Create(
-                tenant.Id, company.Id, supplierExempt.Id, vatRetentionCode.Id, 0, _createdBy
+                tenant.Id,
+                company.Id,
+                supplierExempt.Id,
+                vatRetentionCode.Id,
+                0,
+                _createdBy
             ),
             SupplierRetentionDefault.Create(
-                tenant.Id, company.Id, supplierMissingCode.Id, missingRetentionCode.Id, 0, _createdBy
+                tenant.Id,
+                company.Id,
+                supplierMissingCode.Id,
+                missingRetentionCode.Id,
+                0,
+                _createdBy
             )
         );
         await db.SaveChangesAsync();
@@ -237,23 +280,48 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         // categoría/subcategoría vía PostingFact.Allocations, no representable como PostingRuleLine
         // fija — mismo criterio documentado en AccountingBootstrapStep/MinimalPostingRules).
         var expenseAccount = Account.Create(
-            tenant.Id, company.Id, AccountCode.Create($"5.1.{Guid.NewGuid():N}"[..8]),
-            "RETQA Gasto Operativo", null, AccountType.Expense, AccountNature.Debit,
-            allowsPosting: true, createdBy: _createdBy
+            tenant.Id,
+            company.Id,
+            AccountCode.Create($"5.1.{Guid.NewGuid():N}"[..8]),
+            "RETQA Gasto Operativo",
+            null,
+            AccountType.Expense,
+            AccountNature.Debit,
+            allowsPosting: true,
+            createdBy: _createdBy
         );
         db.Accounts.Add(expenseAccount);
         await db.SaveChangesAsync();
 
         _expenseAccountId = expenseAccount.Id;
 
-        var type = ExpenseCategoryNode.CreateType(tenant.Id, company.Id, "RETQA-TIPO", "RETQA Tipo Gasto", _createdBy);
+        var type = ExpenseCategoryNode.CreateType(
+            tenant.Id,
+            company.Id,
+            "RETQA-TIPO",
+            "RETQA Tipo Gasto",
+            _createdBy
+        );
         db.ExpenseCategoryNodes.Add(type);
         await db.SaveChangesAsync();
-        var category = ExpenseCategoryNode.CreateCategory(tenant.Id, company.Id, type, "RETQA-CAT", "RETQA Categoria", _createdBy);
+        var category = ExpenseCategoryNode.CreateCategory(
+            tenant.Id,
+            company.Id,
+            type,
+            "RETQA-CAT",
+            "RETQA Categoria",
+            _createdBy
+        );
         db.ExpenseCategoryNodes.Add(category);
         await db.SaveChangesAsync();
         var subcategory = ExpenseCategoryNode.CreateSubcategory(
-            tenant.Id, company.Id, category, "RETQA-SUB", "RETQA Subcategoria", expenseAccount.Id, _createdBy
+            tenant.Id,
+            company.Id,
+            category,
+            "RETQA-SUB",
+            "RETQA Subcategoria",
+            expenseAccount.Id,
+            _createdBy
         );
         db.ExpenseCategoryNodes.Add(subcategory);
         await db.SaveChangesAsync();
@@ -293,7 +361,10 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         // ── DocumentFlowPolicy obligatoria para GASDOC (mismos defaults que
         // DocumentFlowPolicyBootstrapStep.BuildExpenseDocumentDefault) ────────────────
         var policy = DocumentFlowPolicy.Create(
-            tenant.Id, company.Id, DocTypeCodes.ExpenseDocument, isActive: true,
+            tenant.Id,
+            company.Id,
+            DocTypeCodes.ExpenseDocument,
+            isActive: true,
             creationMode: CreationMode.DraftRequired,
             confirmationMode: ConfirmationMode.ManualConfirmation,
             authorizationMode: AuthorizationMode.None,
@@ -320,7 +391,12 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         var options = new DbContextOptionsBuilder<ErpDbContext>()
             .UseNpgsql(_postgres.GetConnectionString())
             .Options;
-        return new ErpDbContext(options, new FixedCurrentTenant(_tenantId), publisher ?? new NoOpPublisher(), new FixedCurrentCompany(_companyId));
+        return new ErpDbContext(
+            options,
+            new FixedCurrentTenant(_tenantId),
+            publisher ?? new NoOpPublisher(),
+            new FixedCurrentCompany(_companyId)
+        );
     }
 
     /// <summary>Mismo mecanismo de producción (AddMediatR con escaneo de ensamblado) que
@@ -333,10 +409,18 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
             .UseNpgsql(_postgres.GetConnectionString() + ";Include Error Detail=true")
             .EnableSensitiveDataLogging()
             .Options;
-        var db = new ErpDbContext(options, new FixedCurrentTenant(_tenantId), deferred, new FixedCurrentCompany(_companyId));
+        var db = new ErpDbContext(
+            options,
+            new FixedCurrentTenant(_tenantId),
+            deferred,
+            new FixedCurrentCompany(_companyId)
+        );
 
         var services = new ServiceCollection();
-        services.AddScoped<ERP.Application.Common.Services.ICompanyClock, ERP.Infrastructure.Persistence.Services.CompanyClock>();
+        services.AddScoped<
+            ERP.Application.Common.Services.ICompanyClock,
+            ERP.Infrastructure.Persistence.Services.CompanyClock
+        >();
         services.AddLogging();
         services.AddSingleton(db);
         services.AddSingleton<ICurrentTenant>(new FixedCurrentTenant(_tenantId));
@@ -351,11 +435,26 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         services.AddScoped<IPostingEngine, PostingEngine>();
         // ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A — la anulación puede descartar el comprobante
         // electrónico (ElectronicDocumentDiscardedEvent → ElectronicDocumentAuditHandler).
-        services.AddScoped(typeof(ERP.Application.Audit.IAuditWriter<>), typeof(ERP.Infrastructure.Audit.EfAuditWriter<>));
-        services.AddScoped<ERP.Application.Audit.IAuditService, ERP.Infrastructure.Audit.AuditService>();
-        services.AddScoped<ERP.Application.Audit.IAuditContext>(_ =>
-            new ERP.Infrastructure.Tests.Audit.FixedAuditContext(() => _tenantId, () => _companyId, _createdBy));
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(ExpenseDocumentConfirmedPostingTranslator).Assembly));
+        services.AddScoped(
+            typeof(ERP.Application.Audit.IAuditWriter<>),
+            typeof(ERP.Infrastructure.Audit.EfAuditWriter<>)
+        );
+        services.AddScoped<
+            ERP.Application.Audit.IAuditService,
+            ERP.Infrastructure.Audit.AuditService
+        >();
+        services.AddScoped<ERP.Application.Audit.IAuditContext>(
+            _ => new ERP.Infrastructure.Tests.Audit.FixedAuditContext(
+                () => _tenantId,
+                () => _companyId,
+                _createdBy
+            )
+        );
+        services.AddMediatR(cfg =>
+            cfg.RegisterServicesFromAssembly(
+                typeof(ExpenseDocumentConfirmedPostingTranslator).Assembly
+            )
+        );
 
         var provider = services.BuildServiceProvider();
         deferred.Inner = provider.GetRequiredService<IPublisher>();
@@ -377,7 +476,11 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
     /// </summary>
     private async Task SeedAccountingChartAsync(ErpDbContext db)
     {
-        var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+        var step = new AccountingBootstrapStep(
+            db,
+            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+            NullLogger<AccountingBootstrapStep>.Instance
+        );
         await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _createdBy));
     }
 
@@ -393,16 +496,34 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
     {
         var supplier = await db.BusinessPartners.FirstAsync(x => x.Id == supplierId);
         var document = ExpenseDocument.CreateDraft(
-            _tenantId, _companyId, _branchId, supplierId,
-            supplier.Name.LegalName, supplier.Identification.Number,
-            new DateOnly(2026, 8, 15), new DateOnly(2026, 8, 15),
-            "01", documentNumber, _paymentTermId, "Contado QA", 1, 0, _createdBy,
+            _tenantId,
+            _companyId,
+            _branchId,
+            supplierId,
+            supplier.Name.LegalName,
+            supplier.Identification.Number,
+            new DateOnly(2026, 8, 15),
+            new DateOnly(2026, 8, 15),
+            "01",
+            documentNumber,
+            _paymentTermId,
+            "Contado QA",
+            1,
+            0,
+            _createdBy,
             dueDate: new DateOnly(2026, 8, 15),
             taxSupportCode: taxSupportCode
         );
         var line = ExpenseLine.Create(
-            document.Id, _tenantId, _subcategoryId, _expenseAccountId,
-            "RETQA Linea de gasto", 1m, unitAmount, "IVA15", vatRate
+            document.Id,
+            _tenantId,
+            _subcategoryId,
+            _expenseAccountId,
+            "RETQA Linea de gasto",
+            1m,
+            unitAmount,
+            "IVA15",
+            vatRate
         );
         document.ReplaceLines(new[] { line }, _createdBy);
 
@@ -413,7 +534,8 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
 
     private ConfirmExpenseDocumentHandler BuildConfirmHandler(
         ErpDbContext db,
-        ERP.Application.Modules.Retentions.Services.IRetentionElectronicTransmission? transmission = null
+        ERP.Application.Modules.Retentions.Services.IRetentionElectronicTransmission? transmission =
+            null
     ) =>
         new(
             new ExpenseDocumentRepository(db, new FixedCurrentCompany(_companyId)),
@@ -478,7 +600,10 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
     private GetRetentionBySourceHandler BuildGetRetentionHandler(ErpDbContext db) =>
         new(
             new RetentionDocumentRepository(db, new FixedCurrentCompany(_companyId)),
-            new ElectronicDocumentRepository(db, new ERP.Infrastructure.Persistence.Services.CompanyClock(db)),
+            new ElectronicDocumentRepository(
+                db,
+                new ERP.Infrastructure.Persistence.Services.CompanyClock(db)
+            ),
             new FixedCurrentTenant(_tenantId),
             new FixedCurrentCompany(_companyId),
             new FixedCurrentBranch(_branchId)
@@ -515,12 +640,20 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
 
         // Paso 2: elegibilidad sobre el borrador (Draft) — debe dar elegible para IVA.
         var eligibility = await BuildEligibilityHandler(db)
-            .Handle(new GetRetentionEligibilityQuery(RetentionSourceDocumentType.ExpenseDocument, expenseId), CancellationToken.None);
+            .Handle(
+                new GetRetentionEligibilityQuery(
+                    RetentionSourceDocumentType.ExpenseDocument,
+                    expenseId
+                ),
+                CancellationToken.None
+            );
         eligibility.IsSuccess.Should().BeTrue(because: eligibility.Error);
         eligibility.Value!.IsSupportedInThisPhase.Should().BeTrue();
         eligibility.Value.CanRetainVat.Should().BeTrue();
         eligibility.Value.IsSupplierExempt.Should().BeFalse();
-        eligibility.Value.Candidates.Should().ContainSingle(c => c.TaxType == "IVA" && c.RetentionCode == RetentionVatCode);
+        eligibility
+            .Value.Candidates.Should()
+            .ContainSingle(c => c.TaxType == "IVA" && c.RetentionCode == RetentionVatCode);
         // MissingRetentionCode agrega IVA e Income (RetentionEligibilityService.cs) — este fixture
         // deliberadamente NO configura DefaultRetentionIncomeCode (fuera de alcance de este
         // escenario, solo IVA), así que MissingRetentionCode=true es el resultado correcto y
@@ -528,18 +661,27 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
 
         // Paso 3: confirmar con RetentionIntent (VAT = 15, retenido 70% = 10.5).
         var confirmResult = await BuildConfirmHandler(db)
-            .Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)), CancellationToken.None);
+            .Handle(
+                new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)),
+                CancellationToken.None
+            );
 
         confirmResult.IsSuccess.Should().BeTrue(because: confirmResult.Error);
 
         // Paso 4: verificaciones.
         await using var verifyDb = CreateContext();
-        var document = await verifyDb.ExpenseDocuments.Include(x => x.Lines).FirstAsync(x => x.Id == expenseId);
+        var document = await verifyDb
+            .ExpenseDocuments.Include(x => x.Lines)
+            .FirstAsync(x => x.Id == expenseId);
         document.Status.Should().Be(ExpenseStatus.Confirmed);
         document.GrandTotal.Should().Be(115m);
 
-        var retention = await verifyDb.RetentionDocuments.Include(x => x.Lines)
-            .FirstAsync(x => x.SourceDocumentId == expenseId && x.SourceDocumentType == RetentionSourceDocumentType.ExpenseDocument);
+        var retention = await verifyDb
+            .RetentionDocuments.Include(x => x.Lines)
+            .FirstAsync(x =>
+                x.SourceDocumentId == expenseId
+                && x.SourceDocumentType == RetentionSourceDocumentType.ExpenseDocument
+            );
         retention.Status.Should().Be(RetentionStatus.Issued);
         retention.TotalRetained.Should().Be(10.5m);
         retention.TotalRetainedVat.Should().Be(10.5m);
@@ -558,28 +700,41 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         // BuildVatRetentionIntent no envía RetentionCodeDescription (contrato opcional, ver
         // IssueRetentionLineInput) — RetentionIssuer usa RetentionCode como respaldo, y "RETQA
         // retencion IVA 70%" sigue siendo la nota libre en Description (parámetro sin cambios).
-        retention.Lines.Should().OnlyContain(l => l.RetentionCodeDescription == RetentionVatCode);
+        retention
+            .Lines.Should()
+            .OnlyContain(l => l.RetentionCodeDescription == RetentionVatCode);
         retention.Lines.Should().OnlyContain(l => l.Description == "RETQA retencion IVA 70%");
 
-        var payable = await verifyDb.AccountsPayables.Include(x => x.Installments)
-            .FirstAsync(x => x.OriginType == AccountsPayableOriginType.ExpenseDocument && x.OriginId == expenseId);
+        var payable = await verifyDb
+            .AccountsPayables.Include(x => x.Installments)
+            .FirstAsync(x =>
+                x.OriginType == AccountsPayableOriginType.ExpenseDocument && x.OriginId == expenseId
+            );
         payable.OutstandingAmount.Should().Be(104.5m, "neto = bruto (115) - retenido (10.5)");
         payable.RetainedAmount.Should().Be(10.5m);
 
-        var retentionEntry = await verifyDb.JournalEntries.Include(x => x.Lines)
+        var retentionEntry = await verifyDb
+            .JournalEntries.Include(x => x.Lines)
             .FirstAsync(x => x.SourceModule == "Retentions" && x.SourceEventId == retention.Id);
         retentionEntry.Status.Should().Be(JournalEntryStatus.Posted);
         retentionEntry.Lines.Sum(l => l.Debit).Should().Be(retentionEntry.Lines.Sum(l => l.Credit));
         retentionEntry.Lines.Sum(l => l.Debit).Should().Be(10.5m);
 
-        var expenseEntry = await verifyDb.JournalEntries.Include(x => x.Lines)
+        var expenseEntry = await verifyDb
+            .JournalEntries.Include(x => x.Lines)
             .FirstAsync(x => x.SourceModule == "Expenses" && x.SourceEventId == expenseId);
         expenseEntry.Lines.Sum(l => l.Debit).Should().Be(expenseEntry.Lines.Sum(l => l.Credit));
         expenseEntry.Lines.Sum(l => l.Debit).Should().Be(115m);
 
         // Retención consultable desde el gasto vía GetRetentionBySourceQuery.
         var getRetention = await BuildGetRetentionHandler(db)
-            .Handle(new GetRetentionBySourceQuery(RetentionSourceDocumentType.ExpenseDocument, expenseId), CancellationToken.None);
+            .Handle(
+                new GetRetentionBySourceQuery(
+                    RetentionSourceDocumentType.ExpenseDocument,
+                    expenseId
+                ),
+                CancellationToken.None
+            );
         getRetention.IsSuccess.Should().BeTrue();
         getRetention.Value.Should().NotBeNull();
         getRetention.Value!.TotalRetained.Should().Be(10.5m);
@@ -604,7 +759,10 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
             {
                 var (db, _) = BuildWiredContext();
                 var result = await BuildConfirmHandler(db)
-                    .Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)), CancellationToken.None);
+                    .Handle(
+                        new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)),
+                        CancellationToken.None
+                    );
                 return result.IsSuccess;
             }
             catch (DbUpdateException)
@@ -619,19 +777,37 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
 
         outcomes.Count(ok => ok).Should().Be(1);
         await using var verifyDb = CreateContext();
-        (await verifyDb.ExpenseDocuments.SingleAsync(x => x.Id == expenseId)).Status.Should().Be(ExpenseStatus.Confirmed);
-        var retentions = await verifyDb.RetentionDocuments
-            .Where(x => x.SourceDocumentType == RetentionSourceDocumentType.ExpenseDocument && x.SourceDocumentId == expenseId)
+        (await verifyDb.ExpenseDocuments.SingleAsync(x => x.Id == expenseId))
+            .Status.Should()
+            .Be(ExpenseStatus.Confirmed);
+        var retentions = await verifyDb
+            .RetentionDocuments.Where(x =>
+                x.SourceDocumentType == RetentionSourceDocumentType.ExpenseDocument
+                && x.SourceDocumentId == expenseId
+            )
             .ToListAsync();
         retentions.Should().ContainSingle().Which.Status.Should().Be(RetentionStatus.Issued);
-        var payables = await verifyDb.AccountsPayables.Include(x => x.Installments)
-            .Where(x => x.OriginType == AccountsPayableOriginType.ExpenseDocument && x.OriginId == expenseId)
+        var payables = await verifyDb
+            .AccountsPayables.Include(x => x.Installments)
+            .Where(x =>
+                x.OriginType == AccountsPayableOriginType.ExpenseDocument && x.OriginId == expenseId
+            )
             .ToListAsync();
         payables.Should().ContainSingle().Which.RetainedAmount.Should().Be(10.5m);
-        (await verifyDb.JournalEntries.CountAsync(x => x.SourceModule == "Retentions" && x.SourceEventId == retentions[0].Id))
-            .Should().Be(1);
-        (await verifyDb.JournalEntries.CountAsync(x => x.SourceModule == "Expenses" && x.SourceEventId == expenseId))
-            .Should().Be(1);
+        (
+            await verifyDb.JournalEntries.CountAsync(x =>
+                x.SourceModule == "Retentions" && x.SourceEventId == retentions[0].Id
+            )
+        )
+            .Should()
+            .Be(1);
+        (
+            await verifyDb.JournalEntries.CountAsync(x =>
+                x.SourceModule == "Expenses" && x.SourceEventId == expenseId
+            )
+        )
+            .Should()
+            .Be(1);
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -652,18 +828,34 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         var expenseId = await CreateDraftExpenseAsync(db, _supplierNonExemptId, "RETQA-002");
 
         var eligibility = await BuildEligibilityHandler(db)
-            .Handle(new GetRetentionEligibilityQuery(RetentionSourceDocumentType.ExpenseDocument, expenseId), CancellationToken.None);
+            .Handle(
+                new GetRetentionEligibilityQuery(
+                    RetentionSourceDocumentType.ExpenseDocument,
+                    expenseId
+                ),
+                CancellationToken.None
+            );
         eligibility.Value!.CanRetainVat.Should().BeFalse();
 
         var confirmResult = await BuildConfirmHandler(db)
-            .Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)), CancellationToken.None);
+            .Handle(
+                new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)),
+                CancellationToken.None
+            );
 
         confirmResult.IsSuccess.Should().BeFalse("la empresa no está habilitada para retener IVA");
 
         await using var verifyDb = CreateContext();
         var document = await verifyDb.ExpenseDocuments.FirstAsync(x => x.Id == expenseId);
-        document.Status.Should().Be(ExpenseStatus.Draft, "la confirmación completa debe abortar, no quedar Confirmed sin retención");
-        (await verifyDb.RetentionDocuments.AnyAsync(x => x.SourceDocumentId == expenseId)).Should().BeFalse();
+        document
+            .Status.Should()
+            .Be(
+                ExpenseStatus.Draft,
+                "la confirmación completa debe abortar, no quedar Confirmed sin retención"
+            );
+        (await verifyDb.RetentionDocuments.AnyAsync(x => x.SourceDocumentId == expenseId))
+            .Should()
+            .BeFalse();
         (await verifyDb.AccountsPayables.AnyAsync(x => x.OriginId == expenseId)).Should().BeFalse();
     }
 
@@ -675,18 +867,31 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         var expenseId = await CreateDraftExpenseAsync(db, _supplierExemptId, "RETQA-003");
 
         var eligibility = await BuildEligibilityHandler(db)
-            .Handle(new GetRetentionEligibilityQuery(RetentionSourceDocumentType.ExpenseDocument, expenseId), CancellationToken.None);
+            .Handle(
+                new GetRetentionEligibilityQuery(
+                    RetentionSourceDocumentType.ExpenseDocument,
+                    expenseId
+                ),
+                CancellationToken.None
+            );
         eligibility.Value!.IsSupplierExempt.Should().BeTrue();
         eligibility.Value.CanRetainVat.Should().BeFalse();
 
         var confirmResult = await BuildConfirmHandler(db)
-            .Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)), CancellationToken.None);
+            .Handle(
+                new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)),
+                CancellationToken.None
+            );
 
         confirmResult.IsSuccess.Should().BeFalse("el proveedor esta exento de retencion");
 
         await using var verifyDb = CreateContext();
-        (await verifyDb.ExpenseDocuments.FirstAsync(x => x.Id == expenseId)).Status.Should().Be(ExpenseStatus.Draft);
-        (await verifyDb.RetentionDocuments.AnyAsync(x => x.SourceDocumentId == expenseId)).Should().BeFalse();
+        (await verifyDb.ExpenseDocuments.FirstAsync(x => x.Id == expenseId))
+            .Status.Should()
+            .Be(ExpenseStatus.Draft);
+        (await verifyDb.RetentionDocuments.AnyAsync(x => x.SourceDocumentId == expenseId))
+            .Should()
+            .BeFalse();
     }
 
     [Fact]
@@ -697,21 +902,42 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         var expenseId = await CreateDraftExpenseAsync(db, _supplierMissingCodeId, "RETQA-004");
 
         var eligibility = await BuildEligibilityHandler(db)
-            .Handle(new GetRetentionEligibilityQuery(RetentionSourceDocumentType.ExpenseDocument, expenseId), CancellationToken.None);
+            .Handle(
+                new GetRetentionEligibilityQuery(
+                    RetentionSourceDocumentType.ExpenseDocument,
+                    expenseId
+                ),
+                CancellationToken.None
+            );
         eligibility.Value!.MissingRetentionCode.Should().BeTrue();
         eligibility.Value.CanRetainVat.Should().BeFalse();
 
         var intent = new RetentionIntent(
-            true, _emissionPointId, new DateOnly(2026, 8, 15),
-            new[] { new IssueRetentionLineInput(RetentionTaxType.Vat, MissingRetentionVatCode, 15m, 70m, 10.5m) }
+            true,
+            _emissionPointId,
+            new DateOnly(2026, 8, 15),
+            new[]
+            {
+                new IssueRetentionLineInput(
+                    RetentionTaxType.Vat,
+                    MissingRetentionVatCode,
+                    15m,
+                    70m,
+                    10.5m
+                ),
+            }
         );
         var confirmResult = await BuildConfirmHandler(db)
             .Handle(new ConfirmExpenseDocumentCommand(expenseId, intent), CancellationToken.None);
 
-        confirmResult.IsSuccess.Should().BeFalse("no existe codigo de retencion activo en el catalogo SRI");
+        confirmResult
+            .IsSuccess.Should()
+            .BeFalse("no existe codigo de retencion activo en el catalogo SRI");
 
         await using var verifyDb = CreateContext();
-        (await verifyDb.ExpenseDocuments.FirstAsync(x => x.Id == expenseId)).Status.Should().Be(ExpenseStatus.Draft);
+        (await verifyDb.ExpenseDocuments.FirstAsync(x => x.Id == expenseId))
+            .Status.Should()
+            .Be(ExpenseStatus.Draft);
     }
 
     [Fact]
@@ -726,8 +952,12 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         var validation = new RetentionIntentValidator().Validate(intent);
 
         validation.IsValid.Should().BeFalse();
-        validation.Errors.Should().Contain(e => e.PropertyName == nameof(RetentionIntent.EmissionPointId));
-        validation.Errors.Should().Contain(e => e.PropertyName == nameof(RetentionIntent.IssueDate));
+        validation
+            .Errors.Should()
+            .Contain(e => e.PropertyName == nameof(RetentionIntent.EmissionPointId));
+        validation
+            .Errors.Should()
+            .Contain(e => e.PropertyName == nameof(RetentionIntent.IssueDate));
         validation.Errors.Should().Contain(e => e.PropertyName == nameof(RetentionIntent.Lines));
     }
 
@@ -742,12 +972,18 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         await SeedAccountingChartAsync(db);
         var expenseId = await CreateDraftExpenseAsync(db, _supplierNonExemptId, "RETQA-005");
         var confirmResult = await BuildConfirmHandler(db)
-            .Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)), CancellationToken.None);
+            .Handle(
+                new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)),
+                CancellationToken.None
+            );
         confirmResult.IsSuccess.Should().BeTrue(because: confirmResult.Error);
 
         var (dbCancel, _) = BuildWiredContext();
         var cancelResult = await BuildCancelHandler(dbCancel)
-            .Handle(new CancelExpenseDocumentCommand(expenseId, "RETQA cancelacion de prueba"), CancellationToken.None);
+            .Handle(
+                new CancelExpenseDocumentCommand(expenseId, "RETQA cancelacion de prueba"),
+                CancellationToken.None
+            );
 
         cancelResult.IsSuccess.Should().BeTrue(because: cancelResult.Error);
 
@@ -755,24 +991,37 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         var document = await verifyDb.ExpenseDocuments.FirstAsync(x => x.Id == expenseId);
         document.Status.Should().Be(ExpenseStatus.Cancelled);
 
-        var retention = await verifyDb.RetentionDocuments.FirstAsync(x => x.SourceDocumentId == expenseId);
+        var retention = await verifyDb.RetentionDocuments.FirstAsync(x =>
+            x.SourceDocumentId == expenseId
+        );
         retention.Status.Should().Be(RetentionStatus.Cancelled);
 
-        var payable = await verifyDb.AccountsPayables.Include(x => x.Installments)
+        var payable = await verifyDb
+            .AccountsPayables.Include(x => x.Installments)
             .FirstAsync(x => x.OriginId == expenseId);
         payable.RetainedAmount.Should().Be(0m, "la retencion se revierte completa");
         payable.Status.Should().Be(AccountsPayableStatus.Cancelled);
 
         // Asiento original de la retención queda Reversed, y su reverso balanceado existe.
-        var retentionEntry = await verifyDb.JournalEntries.FirstAsync(x => x.SourceModule == "Retentions" && x.SourceEventId == retention.Id);
+        var retentionEntry = await verifyDb.JournalEntries.FirstAsync(x =>
+            x.SourceModule == "Retentions" && x.SourceEventId == retention.Id
+        );
         retentionEntry.Status.Should().Be(JournalEntryStatus.Reversed);
-        var retentionReversal = await verifyDb.JournalEntries.Include(x => x.Lines)
-            .FirstAsync(x => x.SourceEventType == "Reversal" && x.SourceEventId == retentionEntry.Id);
-        retentionReversal.Lines.Sum(l => l.Debit).Should().Be(retentionReversal.Lines.Sum(l => l.Credit));
+        var retentionReversal = await verifyDb
+            .JournalEntries.Include(x => x.Lines)
+            .FirstAsync(x =>
+                x.SourceEventType == "Reversal" && x.SourceEventId == retentionEntry.Id
+            );
+        retentionReversal
+            .Lines.Sum(l => l.Debit)
+            .Should()
+            .Be(retentionReversal.Lines.Sum(l => l.Credit));
         retentionReversal.Lines.Sum(l => l.Debit).Should().Be(10.5m);
 
         // Asiento del gasto también reversado (EXPENSES-CANCEL-01, comportamiento preexistente).
-        var expenseEntry = await verifyDb.JournalEntries.FirstAsync(x => x.SourceModule == "Expenses" && x.SourceEventId == expenseId);
+        var expenseEntry = await verifyDb.JournalEntries.FirstAsync(x =>
+            x.SourceModule == "Expenses" && x.SourceEventId == expenseId
+        );
         expenseEntry.Status.Should().Be(JournalEntryStatus.Reversed);
     }
 
@@ -785,7 +1034,10 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         {
             var (db, _) = BuildWiredContext();
             var result = await BuildCancelHandler(db)
-                .Handle(new CancelExpenseDocumentCommand(expenseId, "RETQA anulacion"), CancellationToken.None);
+                .Handle(
+                    new CancelExpenseDocumentCommand(expenseId, "RETQA anulacion"),
+                    CancellationToken.None
+                );
             return (result.IsSuccess, result.Error);
         }
         catch (DbUpdateException ex)
@@ -797,16 +1049,30 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
     private async Task AssertRetentionReversedOnceAsync(Guid expenseId)
     {
         await using var verifyDb = CreateContext();
-        var retention = await verifyDb.RetentionDocuments.AsNoTracking().SingleAsync(x => x.SourceDocumentId == expenseId);
+        var retention = await verifyDb
+            .RetentionDocuments.AsNoTracking()
+            .SingleAsync(x => x.SourceDocumentId == expenseId);
         retention.Status.Should().Be(RetentionStatus.Cancelled);
-        var payable = await verifyDb.AccountsPayables.AsNoTracking().Include(x => x.Installments)
+        var payable = await verifyDb
+            .AccountsPayables.AsNoTracking()
+            .Include(x => x.Installments)
             .SingleAsync(x => x.OriginId == expenseId);
         payable.RetainedAmount.Should().Be(0m, "ReverseRetention se aplica exactamente una vez");
-        var issued = await verifyDb.JournalEntries.AsNoTracking()
-            .SingleAsync(x => x.SourceModule == "Retentions" && x.SourceEventType == "DocumentIssued" && x.SourceEventId == retention.Id);
+        var issued = await verifyDb
+            .JournalEntries.AsNoTracking()
+            .SingleAsync(x =>
+                x.SourceModule == "Retentions"
+                && x.SourceEventType == "DocumentIssued"
+                && x.SourceEventId == retention.Id
+            );
         issued.Status.Should().Be(JournalEntryStatus.Reversed);
-        (await verifyDb.JournalEntries.AsNoTracking().CountAsync(x => x.SourceEventType == "Reversal" && x.SourceEventId == issued.Id))
-            .Should().Be(1);
+        (
+            await verifyDb
+                .JournalEntries.AsNoTracking()
+                .CountAsync(x => x.SourceEventType == "Reversal" && x.SourceEventId == issued.Id)
+        )
+            .Should()
+            .Be(1);
     }
 
     [Fact]
@@ -815,12 +1081,25 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         var (db, _) = BuildWiredContext();
         await SeedAccountingChartAsync(db);
         var expenseId = await CreateDraftExpenseAsync(db, _supplierNonExemptId, "RETQA-CC1");
-        (await BuildConfirmHandler(db).Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)), CancellationToken.None))
-            .IsSuccess.Should().BeTrue();
+        (
+            await BuildConfirmHandler(db)
+                .Handle(
+                    new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)),
+                    CancellationToken.None
+                )
+        )
+            .IsSuccess.Should()
+            .BeTrue();
 
-        var results = await Task.WhenAll(TryCancelExpenseAsync(expenseId), TryCancelExpenseAsync(expenseId));
+        var results = await Task.WhenAll(
+            TryCancelExpenseAsync(expenseId),
+            TryCancelExpenseAsync(expenseId)
+        );
 
-        results.Count(r => r.Success).Should().Be(1, string.Join(" | ", results.Select(r => r.Error)));
+        results
+            .Count(r => r.Success)
+            .Should()
+            .Be(1, string.Join(" | ", results.Select(r => r.Error)));
         await AssertRetentionReversedOnceAsync(expenseId);
     }
 
@@ -830,8 +1109,15 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         var (db, _) = BuildWiredContext();
         await SeedAccountingChartAsync(db);
         var expenseId = await CreateDraftExpenseAsync(db, _supplierNonExemptId, "RETQA-CC2");
-        (await BuildConfirmHandler(db).Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)), CancellationToken.None))
-            .IsSuccess.Should().BeTrue();
+        (
+            await BuildConfirmHandler(db)
+                .Handle(
+                    new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)),
+                    CancellationToken.None
+                )
+        )
+            .IsSuccess.Should()
+            .BeTrue();
         (await TryCancelExpenseAsync(expenseId)).Success.Should().BeTrue();
 
         var retry = await TryCancelExpenseAsync(expenseId);
@@ -847,7 +1133,10 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         await SeedAccountingChartAsync(db);
         var expenseId = await CreateDraftExpenseAsync(db, _supplierNonExemptId, "RETQA-006");
         var confirmResult = await BuildConfirmHandler(db)
-            .Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)), CancellationToken.None);
+            .Handle(
+                new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)),
+                CancellationToken.None
+            );
         confirmResult.IsSuccess.Should().BeTrue(because: confirmResult.Error);
 
         // Aplica un pago mínimo directamente sobre la cuota (sin pasar por RegisterSupplierPaymentCommand
@@ -855,24 +1144,43 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         // allá de lo estrictamente necesario para forzar el bloqueo por pagos aplicados).
         await using (var paymentDb = CreateContext())
         {
-            var payableToPay = await paymentDb.AccountsPayables.Include(x => x.Installments)
+            var payableToPay = await paymentDb
+                .AccountsPayables.Include(x => x.Installments)
                 .FirstAsync(x => x.OriginId == expenseId);
-            payableToPay.RegisterPaymentToInstallment(payableToPay.Installments.Single().Id, 10m, _createdBy);
+            payableToPay.RegisterPaymentToInstallment(
+                payableToPay.Installments.Single().Id,
+                10m,
+                _createdBy
+            );
             await paymentDb.SaveChangesAsync();
         }
 
         var (dbCancel, _) = BuildWiredContext();
         var cancelResult = await BuildCancelHandler(dbCancel)
-            .Handle(new CancelExpenseDocumentCommand(expenseId, "RETQA cancelacion bloqueada"), CancellationToken.None);
+            .Handle(
+                new CancelExpenseDocumentCommand(expenseId, "RETQA cancelacion bloqueada"),
+                CancellationToken.None
+            );
 
         cancelResult.IsSuccess.Should().BeFalse("la CxP ya tiene un pago aplicado");
 
         await using var verifyDb = CreateContext();
         var document = await verifyDb.ExpenseDocuments.FirstAsync(x => x.Id == expenseId);
-        document.Status.Should().Be(ExpenseStatus.Confirmed, "el bloqueo no debe dejar el gasto a medias");
-        var retention = await verifyDb.RetentionDocuments.FirstAsync(x => x.SourceDocumentId == expenseId);
-        retention.Status.Should().Be(RetentionStatus.Issued, "la retencion no debe quedar cancelada si el bloqueo ocurrio");
-        var payable = await verifyDb.AccountsPayables.Include(x => x.Installments).FirstAsync(x => x.OriginId == expenseId);
+        document
+            .Status.Should()
+            .Be(ExpenseStatus.Confirmed, "el bloqueo no debe dejar el gasto a medias");
+        var retention = await verifyDb.RetentionDocuments.FirstAsync(x =>
+            x.SourceDocumentId == expenseId
+        );
+        retention
+            .Status.Should()
+            .Be(
+                RetentionStatus.Issued,
+                "la retencion no debe quedar cancelada si el bloqueo ocurrio"
+            );
+        var payable = await verifyDb
+            .AccountsPayables.Include(x => x.Installments)
+            .FirstAsync(x => x.OriginId == expenseId);
         payable.RetainedAmount.Should().Be(10.5m, "el bloqueo no debe alterar el estado de la CxP");
         payable.PaidAmount.Should().Be(10m);
     }
@@ -889,7 +1197,10 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         var expenseId = await CreateDraftExpenseAsync(db, _supplierNonExemptId, "RETQA-007");
 
         var confirmResult = await BuildConfirmHandler(db)
-            .Handle(new ConfirmExpenseDocumentCommand(expenseId, Retention: null), CancellationToken.None);
+            .Handle(
+                new ConfirmExpenseDocumentCommand(expenseId, Retention: null),
+                CancellationToken.None
+            );
 
         confirmResult.IsSuccess.Should().BeTrue(because: confirmResult.Error);
 
@@ -897,31 +1208,47 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         var document = await verifyDb.ExpenseDocuments.FirstAsync(x => x.Id == expenseId);
         document.Status.Should().Be(ExpenseStatus.Confirmed);
 
-        (await verifyDb.RetentionDocuments.AnyAsync(x => x.SourceDocumentId == expenseId)).Should().BeFalse("sin intencion de retencion, no debe crearse ninguna");
+        (await verifyDb.RetentionDocuments.AnyAsync(x => x.SourceDocumentId == expenseId))
+            .Should()
+            .BeFalse("sin intencion de retencion, no debe crearse ninguna");
 
-        var payable = await verifyDb.AccountsPayables.Include(x => x.Installments).FirstAsync(x => x.OriginId == expenseId);
+        var payable = await verifyDb
+            .AccountsPayables.Include(x => x.Installments)
+            .FirstAsync(x => x.OriginId == expenseId);
         payable.OutstandingAmount.Should().Be(115m, "bruto completo, sin neteo de retencion");
         payable.RetainedAmount.Should().Be(0m);
 
-        var expenseEntry = await verifyDb.JournalEntries.Include(x => x.Lines)
+        var expenseEntry = await verifyDb
+            .JournalEntries.Include(x => x.Lines)
             .FirstAsync(x => x.SourceModule == "Expenses" && x.SourceEventId == expenseId);
         expenseEntry.Lines.Sum(l => l.Debit).Should().Be(expenseEntry.Lines.Sum(l => l.Credit));
         expenseEntry.Lines.Sum(l => l.Debit).Should().Be(115m);
 
         // GetRetention debe devolver Success(null), nunca error, cuando no hay retencion.
         var getRetention = await BuildGetRetentionHandler(db)
-            .Handle(new GetRetentionBySourceQuery(RetentionSourceDocumentType.ExpenseDocument, expenseId), CancellationToken.None);
+            .Handle(
+                new GetRetentionBySourceQuery(
+                    RetentionSourceDocumentType.ExpenseDocument,
+                    expenseId
+                ),
+                CancellationToken.None
+            );
         getRetention.IsSuccess.Should().BeTrue();
         getRetention.Value.Should().BeNull();
 
         // Cancelar ese mismo gasto (sin retencion) también sigue funcionando igual.
         var (dbCancel, _) = BuildWiredContext();
         var cancelResult = await BuildCancelHandler(dbCancel)
-            .Handle(new CancelExpenseDocumentCommand(expenseId, "RETQA regresion cancelacion"), CancellationToken.None);
+            .Handle(
+                new CancelExpenseDocumentCommand(expenseId, "RETQA regresion cancelacion"),
+                CancellationToken.None
+            );
         cancelResult.IsSuccess.Should().BeTrue(because: cancelResult.Error);
 
         await using var verifyDb2 = CreateContext();
-        (await verifyDb2.ExpenseDocuments.FirstAsync(x => x.Id == expenseId)).Status.Should().Be(ExpenseStatus.Cancelled);
+        (await verifyDb2.ExpenseDocuments.FirstAsync(x => x.Id == expenseId))
+            .Status.Should()
+            .Be(ExpenseStatus.Cancelled);
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -939,14 +1266,22 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         // aplicado aquí directamente sobre el agregado (esa fase ya tiene su propia suite de tests
         // dedicada; no se repite el endpoint HTTP acá).
         var sequenceRepo = new DocumentSequenceRepository(db);
-        var sequence = DocumentSequence.Create(_tenantId, _companyId, _emissionPointId, SriDocumentTypeCodes.Withholding);
+        var sequence = DocumentSequence.Create(
+            _tenantId,
+            _companyId,
+            _emissionPointId,
+            SriDocumentTypeCodes.Withholding
+        );
         sequence.ConfigureNextNumber(850);
         await sequenceRepo.AddAsync(sequence);
         await sequenceRepo.SaveChangesAsync();
 
         var expenseId1 = await CreateDraftExpenseAsync(db, _supplierNonExemptId, "RETQA-SEQ-001");
         var confirm1 = await BuildConfirmHandler(db)
-            .Handle(new ConfirmExpenseDocumentCommand(expenseId1, BuildVatRetentionIntent(15m)), CancellationToken.None);
+            .Handle(
+                new ConfirmExpenseDocumentCommand(expenseId1, BuildVatRetentionIntent(15m)),
+                CancellationToken.None
+            );
         confirm1.IsSuccess.Should().BeTrue(because: confirm1.Error);
 
         // Contexto NUEVO para la segunda confirmación — mismo criterio que el resto de la suite
@@ -959,14 +1294,25 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         // nunca actualiza una entidad ya trackeada), produciendo un número duplicado que jamás
         // ocurre contra un DbContext fresco por request.
         var (dbSecond, _) = BuildWiredContext();
-        var expenseId2 = await CreateDraftExpenseAsync(dbSecond, _supplierNonExemptId, "RETQA-SEQ-002");
+        var expenseId2 = await CreateDraftExpenseAsync(
+            dbSecond,
+            _supplierNonExemptId,
+            "RETQA-SEQ-002"
+        );
         var confirm2 = await BuildConfirmHandler(dbSecond)
-            .Handle(new ConfirmExpenseDocumentCommand(expenseId2, BuildVatRetentionIntent(15m)), CancellationToken.None);
+            .Handle(
+                new ConfirmExpenseDocumentCommand(expenseId2, BuildVatRetentionIntent(15m)),
+                CancellationToken.None
+            );
         confirm2.IsSuccess.Should().BeTrue(because: confirm2.Error);
 
         await using var verifyDb = CreateContext();
-        var retention1 = await verifyDb.RetentionDocuments.FirstAsync(x => x.SourceDocumentId == expenseId1);
-        var retention2 = await verifyDb.RetentionDocuments.FirstAsync(x => x.SourceDocumentId == expenseId2);
+        var retention1 = await verifyDb.RetentionDocuments.FirstAsync(x =>
+            x.SourceDocumentId == expenseId1
+        );
+        var retention2 = await verifyDb.RetentionDocuments.FirstAsync(x =>
+            x.SourceDocumentId == expenseId2
+        );
 
         retention1.RetentionNumber.Should().Be("001-001-000000850");
         retention2.RetentionNumber.Should().Be("001-001-000000851");
@@ -989,27 +1335,36 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
 
         var expenseIds = new List<Guid>();
         for (var i = 0; i < n; i++)
-            expenseIds.Add(await CreateDraftExpenseAsync(seedDb, _supplierNonExemptId, $"RETQA-CONC-{i:D3}"));
+            expenseIds.Add(
+                await CreateDraftExpenseAsync(seedDb, _supplierNonExemptId, $"RETQA-CONC-{i:D3}")
+            );
 
         var results = await Task.WhenAll(
             expenseIds.Select(async expenseId =>
             {
                 var (db, _) = BuildWiredContext();
                 return await BuildConfirmHandler(db)
-                    .Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)), CancellationToken.None);
+                    .Handle(
+                        new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)),
+                        CancellationToken.None
+                    );
             })
         );
 
         results.Should().OnlyContain(r => r.IsSuccess);
 
         await using var verifyDb = CreateContext();
-        var numbers = await verifyDb.RetentionDocuments
-            .Where(x => expenseIds.Contains(x.SourceDocumentId))
+        var numbers = await verifyDb
+            .RetentionDocuments.Where(x => expenseIds.Contains(x.SourceDocumentId))
             .Select(x => x.RetentionNumber)
             .ToListAsync();
 
         numbers.Should().HaveCount(n);
-        numbers.Should().OnlyHaveUniqueItems("CaptureNextAsync debe seguir garantizando unicidad incluso bajo confirmaciones concurrentes de gastos con retención");
+        numbers
+            .Should()
+            .OnlyHaveUniqueItems(
+                "CaptureNextAsync debe seguir garantizando unicidad incluso bajo confirmaciones concurrentes de gastos con retención"
+            );
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -1022,16 +1377,23 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         var (db, _) = BuildWiredContext();
         await SeedAccountingChartAsync(db);
         var expenseId = await CreateDraftExpenseAsync(
-            db, _supplierNonExemptId, "RETQA-TAXSUP-001", taxSupportCode: "02"
+            db,
+            _supplierNonExemptId,
+            "RETQA-TAXSUP-001",
+            taxSupportCode: "02"
         );
 
         var confirmResult = await BuildConfirmHandler(db)
-            .Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)), CancellationToken.None);
+            .Handle(
+                new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)),
+                CancellationToken.None
+            );
         confirmResult.IsSuccess.Should().BeTrue(because: confirmResult.Error);
 
         await using var verifyDb = CreateContext();
-        var retention = await verifyDb.RetentionDocuments
-            .FirstAsync(x => x.SourceDocumentId == expenseId);
+        var retention = await verifyDb.RetentionDocuments.FirstAsync(x =>
+            x.SourceDocumentId == expenseId
+        );
 
         retention.SourceDocumentTaxSupportCode.Should().Be("02");
     }
@@ -1042,11 +1404,17 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         var (db, _) = BuildWiredContext();
         await SeedAccountingChartAsync(db);
         var expenseId = await CreateDraftExpenseAsync(
-            db, _supplierNonExemptId, "RETQA-TAXSUP-002", taxSupportCode: "02"
+            db,
+            _supplierNonExemptId,
+            "RETQA-TAXSUP-002",
+            taxSupportCode: "02"
         );
 
         var confirmResult = await BuildConfirmHandler(db)
-            .Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)), CancellationToken.None);
+            .Handle(
+                new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)),
+                CancellationToken.None
+            );
         confirmResult.IsSuccess.Should().BeTrue(because: confirmResult.Error);
 
         // El gasto ya está Confirmed (EnsureDraft bloquea UpdateDraft) — no hay forma real de
@@ -1060,18 +1428,24 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         await using (var mutateDb = CreateContext())
         {
             var liveDocument = await mutateDb.ExpenseDocuments.FirstAsync(x => x.Id == expenseId);
-            liveDocument.GetType()
+            liveDocument
+                .GetType()
                 .GetProperty(nameof(ExpenseDocument.TaxSupportCode))!
                 .SetValue(liveDocument, "04");
             await mutateDb.SaveChangesAsync();
         }
 
         await using var verifyDb = CreateContext();
-        var retention = await verifyDb.RetentionDocuments.FirstAsync(x => x.SourceDocumentId == expenseId);
+        var retention = await verifyDb.RetentionDocuments.FirstAsync(x =>
+            x.SourceDocumentId == expenseId
+        );
         var mutatedDocument = await verifyDb.ExpenseDocuments.FirstAsync(x => x.Id == expenseId);
 
-        mutatedDocument.TaxSupportCode.Should().Be("04", "confirma que la mutación directa sí ocurrió");
-        retention.SourceDocumentTaxSupportCode.Should()
+        mutatedDocument
+            .TaxSupportCode.Should()
+            .Be("04", "confirma que la mutación directa sí ocurrió");
+        retention
+            .SourceDocumentTaxSupportCode.Should()
             .Be("02", "el snapshot ya emitido nunca se recalcula desde el documento origen");
     }
 
@@ -1081,15 +1455,23 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         var (db, _) = BuildWiredContext();
         await SeedAccountingChartAsync(db);
         var expenseId = await CreateDraftExpenseAsync(
-            db, _supplierNonExemptId, "RETQA-TAXSUP-003", taxSupportCode: null
+            db,
+            _supplierNonExemptId,
+            "RETQA-TAXSUP-003",
+            taxSupportCode: null
         );
 
         var confirmResult = await BuildConfirmHandler(db)
-            .Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)), CancellationToken.None);
+            .Handle(
+                new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)),
+                CancellationToken.None
+            );
 
         confirmResult.IsSuccess.Should().BeTrue(because: confirmResult.Error);
         await using var verifyDb = CreateContext();
-        var retention = await verifyDb.RetentionDocuments.FirstAsync(x => x.SourceDocumentId == expenseId);
+        var retention = await verifyDb.RetentionDocuments.FirstAsync(x =>
+            x.SourceDocumentId == expenseId
+        );
         retention.SourceDocumentTaxSupportCode.Should().BeNull();
     }
 
@@ -1102,7 +1484,10 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         public Task Publish(object notification, CancellationToken cancellationToken = default) =>
             Inner!.Publish(notification, cancellationToken);
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
             where TNotification : INotification => Inner!.Publish(notification, cancellationToken);
     }
 
@@ -1138,9 +1523,13 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
 
     private sealed class NoOpPublisher : IPublisher
     {
-        public Task Publish(object notification, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
             where TNotification : INotification => Task.CompletedTask;
     }
 }

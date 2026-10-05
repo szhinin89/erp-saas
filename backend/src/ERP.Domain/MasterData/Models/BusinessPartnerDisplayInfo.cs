@@ -8,11 +8,8 @@ public sealed record BusinessPartnerDisplayInfo(
 )
 {
     public string? DisplayName =>
-        !string.IsNullOrWhiteSpace(TradeName)
-            ? TradeName
-            : !string.IsNullOrWhiteSpace(LegalName)
-                ? LegalName
-                : !string.IsNullOrWhiteSpace(IdentificationNumber)
-                    ? IdentificationNumber
-                    : null;
+        !string.IsNullOrWhiteSpace(TradeName) ? TradeName
+        : !string.IsNullOrWhiteSpace(LegalName) ? LegalName
+        : !string.IsNullOrWhiteSpace(IdentificationNumber) ? IdentificationNumber
+        : null;
 }

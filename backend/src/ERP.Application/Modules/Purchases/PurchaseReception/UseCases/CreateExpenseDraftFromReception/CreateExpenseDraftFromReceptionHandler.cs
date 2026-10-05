@@ -58,7 +58,9 @@ public sealed class CreateExpenseDraftFromReceptionHandler
             cancellationToken
         );
         if (document is null)
-            return Result<ExpenseReceptionDraftDto>.NotFound("El documento de recepción no existe.");
+            return Result<ExpenseReceptionDraftDto>.NotFound(
+                "El documento de recepción no existe."
+            );
 
         if (document.SourceDocType != PurchaseReceptionSourceDocType.Invoice)
             return Result<ExpenseReceptionDraftDto>.ValidationFailure(
@@ -90,22 +92,40 @@ public sealed class CreateExpenseDraftFromReceptionHandler
             document.AccessKey,
             cancellationToken
         );
-        if (existingExpense || await _expenseRepo.ExistsByReceptionDocumentIdAsync(
-            _tenant.TenantId, document.Id, cancellationToken))
+        if (
+            existingExpense
+            || await _expenseRepo.ExistsByReceptionDocumentIdAsync(
+                _tenant.TenantId,
+                document.Id,
+                cancellationToken
+            )
+        )
             return Result<ExpenseReceptionDraftDto>.Conflict(
                 "Ya existe un gasto registrado con esta clave de acceso SRI."
             );
 
         var resolved = await ReceptionSupplierResolver.ResolveAsync(
-            document, _bpRepo, _documentRepo, _tenant.TenantId, _user.UserId, cancellationToken);
+            document,
+            _bpRepo,
+            _documentRepo,
+            _tenant.TenantId,
+            _user.UserId,
+            cancellationToken
+        );
         if (!resolved.IsSuccess)
             return Result<ExpenseReceptionDraftDto>.Failure(resolved.Error!, resolved.Code);
         var supplier = resolved.Value!;
         var supplierId = supplier.Id;
 
-        var role = await _roles.GetByTypeAsync(supplierId, ERP.Domain.MasterData.Enums.RoleType.Supplier, cancellationToken);
+        var role = await _roles.GetByTypeAsync(
+            supplierId,
+            ERP.Domain.MasterData.Enums.RoleType.Supplier,
+            cancellationToken
+        );
         if (role is null || !role.IsActive || role.TenantId != _tenant.TenantId)
-            return Result<ExpenseReceptionDraftDto>.ValidationFailure("El tercero no tiene un rol de proveedor activo.");
+            return Result<ExpenseReceptionDraftDto>.ValidationFailure(
+                "El tercero no tiene un rol de proveedor activo."
+            );
 
         if (document.DocTypeCode != "01")
             return Result<ExpenseReceptionDraftDto>.ValidationFailure(

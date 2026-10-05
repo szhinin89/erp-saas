@@ -28,7 +28,8 @@ public static class BusinessPartnerContactResolver
         var email = primaryContact?.Contact.Email;
 
         var locations = await locationRepo.GetByBusinessPartnerAsync(businessPartnerId, true, ct);
-        var primaryLocation = locations.FirstOrDefault(l => l.IsPrimary) ?? locations.FirstOrDefault();
+        var primaryLocation =
+            locations.FirstOrDefault(l => l.IsPrimary) ?? locations.FirstOrDefault();
         var address = primaryLocation?.Address.AddressLine;
         if (string.IsNullOrWhiteSpace(email))
             email = primaryLocation?.Email;

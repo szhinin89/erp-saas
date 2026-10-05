@@ -36,7 +36,9 @@ public sealed partial class AccountingBootstrapStep
         canonical
             .Lines.Select(l => l.AccountCode)
             .Distinct()
-            .Where(code => !accounts.TryGetValue(code, out var a) || !a.IsActive || !a.AllowsPosting)
+            .Where(code =>
+                !accounts.TryGetValue(code, out var a) || !a.IsActive || !a.AllowsPosting
+            )
             .ToArray();
 
     /// <summary>"Canonical" (forma vigente exacta) o "Custom: …" (cualquier otra — nunca se sobrescribe).</summary>
@@ -45,14 +47,24 @@ public sealed partial class AccountingBootstrapStep
         Dictionary<string, AccountSeedLookup> accounts
     )
     {
-        if (!rule.IsActive || rule.TaxCode is not null || rule.DebitAccountId is not null || rule.CreditAccountId is not null)
+        if (
+            !rule.IsActive
+            || rule.TaxCode is not null
+            || rule.DebitAccountId is not null
+            || rule.CreditAccountId is not null
+        )
             return "Custom: inactive rule or customized header";
 
         var canonical = CanonicalSupplierCreditRefundRule(rule.FactType).Lines;
-        if (rule.Lines.Count != canonical.Count || canonical.Any(l => !accounts.ContainsKey(l.AccountCode)))
+        if (
+            rule.Lines.Count != canonical.Count
+            || canonical.Any(l => !accounts.ContainsKey(l.AccountCode))
+        )
             return "Custom: unrecognized line combination";
 
-        var expected = canonical.Select(l => (accounts[l.AccountCode].Id, l.Nature, l.AmountKind)).ToHashSet();
+        var expected = canonical
+            .Select(l => (accounts[l.AccountCode].Id, l.Nature, l.AmountKind))
+            .ToHashSet();
         return expected.SetEquals(rule.Lines.Select(l => (l.AccountId, l.Nature, l.AmountKind)))
             ? SupplierCreditRefundRuleCanonical
             : "Custom: unrecognized line combination";
@@ -60,7 +72,9 @@ public sealed partial class AccountingBootstrapStep
 
     // Bypass through the sanctioned PlatformQueryAccessor (no ambient tenant in a deployment
     // command); TenantId + CompanyId are re-applied explicitly in every query below.
-    internal async Task<IReadOnlyList<(string FactType, string Diagnostic)>> MaintainSupplierCreditRefundRulesAsync(
+    internal async Task<
+        IReadOnlyList<(string FactType, string Diagnostic)>
+    > MaintainSupplierCreditRefundRulesAsync(
         Guid tenantId,
         Guid companyId,
         Guid actorId,
@@ -68,15 +82,21 @@ public sealed partial class AccountingBootstrapStep
         CancellationToken cancellationToken
     )
     {
-        var rules = await _db.PostingRules.AsPlatformQuery().Include(r => r.Lines)
+        var rules = await _db
+            .PostingRules.AsPlatformQuery()
+            .Include(r => r.Lines)
             .Where(r =>
                 r.TenantId == tenantId
                 && r.CompanyId == companyId
                 && r.SourceModule == "Purchases"
-                && (r.FactType.StartsWith("SupplierCreditRefunded") || r.FactType.StartsWith("SupplierCreditRefundReversed"))
+                && (
+                    r.FactType.StartsWith("SupplierCreditRefunded")
+                    || r.FactType.StartsWith("SupplierCreditRefundReversed")
+                )
             )
             .ToListAsync(cancellationToken);
-        var accounts = await _db.Accounts.AsPlatformQuery()
+        var accounts = await _db
+            .Accounts.AsPlatformQuery()
             .Where(a => a.TenantId == tenantId && a.CompanyId == companyId)
             .ToDictionaryAsync(
                 a => a.Code.Value,
@@ -115,7 +135,12 @@ public sealed partial class AccountingBootstrapStep
             var invalid = InvalidCanonicalAccounts(canonical, accounts);
             if (invalid.Length > 0)
             {
-                results.Add((factType, $"{SupplierCreditRefundRuleMissing}; InvalidAccounts: {string.Join(", ", invalid)}; unchanged"));
+                results.Add(
+                    (
+                        factType,
+                        $"{SupplierCreditRefundRuleMissing}; InvalidAccounts: {string.Join(", ", invalid)}; unchanged"
+                    )
+                );
                 continue;
             }
 
@@ -125,20 +150,36 @@ public sealed partial class AccountingBootstrapStep
                 continue;
             }
 
-            var rule = PostingRule.Create(tenantId, companyId, "Purchases", factType, null, null, null, actorId);
+            var rule = PostingRule.Create(
+                tenantId,
+                companyId,
+                "Purchases",
+                factType,
+                null,
+                null,
+                null,
+                actorId
+            );
             foreach (var line in canonical.Lines)
                 rule.AddLine(accounts[line.AccountCode].Id, line.Nature, line.AmountKind);
             _db.PostingRules.Add(rule);
             changed = true;
-            results.Add((factType, $"{SupplierCreditRefundRuleMissing} -> {SupplierCreditRefundRuleCanonical}: created"));
+            results.Add(
+                (
+                    factType,
+                    $"{SupplierCreditRefundRuleMissing} -> {SupplierCreditRefundRuleCanonical}: created"
+                )
+            );
         }
 
         var obsoletePerDestination = rules.Count(r => r.FactType.Contains(':'));
         if (obsoletePerDestination > 0)
-            results.Add((
-                "SupplierCreditRefund*:{destino}",
-                $"Obsolete per-destination rules: {obsoletePerDestination} (no longer used; preserved, not deleted)"
-            ));
+            results.Add(
+                (
+                    "SupplierCreditRefund*:{destino}",
+                    $"Obsolete per-destination rules: {obsoletePerDestination} (no longer used; preserved, not deleted)"
+                )
+            );
 
         if (changed)
             await _db.SaveChangesAsync(cancellationToken);

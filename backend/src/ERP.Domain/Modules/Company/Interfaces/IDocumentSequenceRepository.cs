@@ -36,7 +36,9 @@ public interface IDocumentSequenceRepository
     /// configuración. Mismo criterio que <see cref="GetByEmissionPointAndDocTypeAsync"/>: nunca
     /// usar para capturar numeración.
     /// </summary>
-    Task<IReadOnlyList<DocumentSequence>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<DocumentSequence>> GetAllAsync(
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>
     /// Obtiene el DocumentSequence con bloqueo pesimista (SELECT FOR UPDATE).

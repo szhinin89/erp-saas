@@ -53,7 +53,9 @@ public sealed class AccountingDateBoundaryIntegrationTests : IAsyncLifetime
 
     private ErpDbContext CreateContext(Guid companyId) =>
         new(
-            new DbContextOptionsBuilder<ErpDbContext>().UseNpgsql(_postgres.GetConnectionString()).Options,
+            new DbContextOptionsBuilder<ErpDbContext>()
+                .UseNpgsql(_postgres.GetConnectionString())
+                .Options,
             new FixedCurrentTenant(_tenantId),
             new NoOpPublisher(),
             new FixedCurrentCompany(companyId)
@@ -65,18 +67,42 @@ public sealed class AccountingDateBoundaryIntegrationTests : IAsyncLifetime
     private async Task<Scenario> SeedAsync(params (int Year, int Month, bool Closed)[] periods)
     {
         await using var db = CreateContext(Guid.Empty);
-        var company = Company.CreateManaged(_tenantId, $"17{Guid.NewGuid():N}"[..13], "Frontera S.A.", createdBy: _createdBy);
+        var company = Company.CreateManaged(
+            _tenantId,
+            $"17{Guid.NewGuid():N}"[..13],
+            "Frontera S.A.",
+            createdBy: _createdBy
+        );
         company.Timezone.Should().Be("America/Guayaquil");
         db.Companies.Add(company);
         await db.SaveChangesAsync();
 
         Account NewAccount(string prefix, AccountType type, AccountNature nature) =>
-            Account.Create(_tenantId, company.Id, AccountCode.Create($"{prefix}.{Guid.NewGuid():N}"[..8]), prefix, null, type, nature, allowsPosting: true, createdBy: _createdBy);
+            Account.Create(
+                _tenantId,
+                company.Id,
+                AccountCode.Create($"{prefix}.{Guid.NewGuid():N}"[..8]),
+                prefix,
+                null,
+                type,
+                nature,
+                allowsPosting: true,
+                createdBy: _createdBy
+            );
         var debit = NewAccount("1.1", AccountType.Asset, AccountNature.Debit);
         var credit = NewAccount("4.1", AccountType.Income, AccountNature.Credit);
         var vat = NewAccount("2.1", AccountType.Liability, AccountNature.Credit);
         db.Accounts.AddRange(debit, credit, vat);
-        var rule = PostingRule.Create(_tenantId, company.Id, "Test", "BoundaryFact", null, null, null, _createdBy);
+        var rule = PostingRule.Create(
+            _tenantId,
+            company.Id,
+            "Test",
+            "BoundaryFact",
+            null,
+            null,
+            null,
+            _createdBy
+        );
         rule.AddLine(debit.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
         rule.AddLine(credit.Id, AccountNature.Credit, PostingAmountKind.Subtotal);
         rule.AddLine(vat.Id, AccountNature.Credit, PostingAmountKind.TaxVat);
@@ -86,8 +112,14 @@ public sealed class AccountingDateBoundaryIntegrationTests : IAsyncLifetime
         foreach (var (year, month, closed) in periods)
         {
             var period = AccountingPeriod.Create(
-                _tenantId, company.Id, year, month,
-                new DateOnly(year, month, 1), new DateOnly(year, month, DateTime.DaysInMonth(year, month)), _createdBy);
+                _tenantId,
+                company.Id,
+                year,
+                month,
+                new DateOnly(year, month, 1),
+                new DateOnly(year, month, DateTime.DaysInMonth(year, month)),
+                _createdBy
+            );
             if (closed)
                 period.Close(_createdBy, new JournalEntryClosureReadiness(false, false, false));
             db.AccountingPeriods.Add(period);
@@ -98,18 +130,37 @@ public sealed class AccountingDateBoundaryIntegrationTests : IAsyncLifetime
     }
 
     /// <summary>Mismo camino que un traductor sin fecha de negocio propia, con el reloj fijado.</summary>
-    private async Task<(DateOnly EntryDate, Result<PostingOutcomeDto> Result)> PostWithClockAsync(Guid companyId, DateTimeOffset utcNow)
+    private async Task<(DateOnly EntryDate, Result<PostingOutcomeDto> Result)> PostWithClockAsync(
+        Guid companyId,
+        DateTimeOffset utcNow
+    )
     {
         await using var db = CreateContext(companyId);
-        var entryDate = await new CompanyClock(db, new FixedTimeProvider(utcNow)).TodayAsync(companyId, _tenantId);
-        var fact = new PostingFact(_tenantId, companyId, "Test", "BoundaryFact", Guid.NewGuid(), entryDate, 100m, 15m, 0m, 0m, 115m);
+        var entryDate = await new CompanyClock(db, new FixedTimeProvider(utcNow)).TodayAsync(
+            companyId,
+            _tenantId
+        );
+        var fact = new PostingFact(
+            _tenantId,
+            companyId,
+            "Test",
+            "BoundaryFact",
+            Guid.NewGuid(),
+            entryDate,
+            100m,
+            15m,
+            0m,
+            0m,
+            115m
+        );
         var engine = new PostingEngine(
             new JournalEntryRepository(db),
             new PostingRuleRepository(db),
             new AccountingPeriodRepository(db),
             new JournalEntrySequenceRepository(db),
             new AccountRepository(db),
-            Microsoft.Extensions.Logging.Abstractions.NullLogger<PostingEngine>.Instance);
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<PostingEngine>.Instance
+        );
         await using var tx = await db.Database.BeginTransactionAsync();
         var result = await engine.PostAsync(fact);
         await db.SaveChangesAsync();
@@ -117,31 +168,77 @@ public sealed class AccountingDateBoundaryIntegrationTests : IAsyncLifetime
         return (entryDate, result);
     }
 
-    public static TheoryData<string, DateTimeOffset, DateOnly, int, int> Boundaries => new()
-    {
-        { "día normal", new DateTimeOffset(2026, 9, 15, 15, 0, 0, TimeSpan.Zero), new DateOnly(2026, 9, 15), 2026, 10 },
-        { "UTC ya 1-oct, empresa 30-sep", new DateTimeOffset(2026, 10, 1, 0, 30, 0, TimeSpan.Zero), new DateOnly(2026, 9, 30), 2026, 10 },
-        { "1-oct también en la empresa", new DateTimeOffset(2026, 10, 1, 5, 0, 0, TimeSpan.Zero), new DateOnly(2026, 10, 1), 2026, 9 },
-        { "UTC ya 1-ene, empresa 31-dic", new DateTimeOffset(2027, 1, 1, 4, 59, 59, TimeSpan.Zero), new DateOnly(2026, 12, 31), 2027, 1 },
-        { "1-ene también en la empresa", new DateTimeOffset(2027, 1, 1, 5, 0, 0, TimeSpan.Zero), new DateOnly(2027, 1, 1), 2026, 12 },
-    };
+    public static TheoryData<string, DateTimeOffset, DateOnly, int, int> Boundaries =>
+        new()
+        {
+            {
+                "día normal",
+                new DateTimeOffset(2026, 9, 15, 15, 0, 0, TimeSpan.Zero),
+                new DateOnly(2026, 9, 15),
+                2026,
+                10
+            },
+            {
+                "UTC ya 1-oct, empresa 30-sep",
+                new DateTimeOffset(2026, 10, 1, 0, 30, 0, TimeSpan.Zero),
+                new DateOnly(2026, 9, 30),
+                2026,
+                10
+            },
+            {
+                "1-oct también en la empresa",
+                new DateTimeOffset(2026, 10, 1, 5, 0, 0, TimeSpan.Zero),
+                new DateOnly(2026, 10, 1),
+                2026,
+                9
+            },
+            {
+                "UTC ya 1-ene, empresa 31-dic",
+                new DateTimeOffset(2027, 1, 1, 4, 59, 59, TimeSpan.Zero),
+                new DateOnly(2026, 12, 31),
+                2027,
+                1
+            },
+            {
+                "1-ene también en la empresa",
+                new DateTimeOffset(2027, 1, 1, 5, 0, 0, TimeSpan.Zero),
+                new DateOnly(2027, 1, 1),
+                2026,
+                12
+            },
+        };
 
     [Theory]
     [MemberData(nameof(Boundaries))]
     public async Task El_asiento_cae_en_el_periodo_del_dia_de_la_empresa(
-        string scenario, DateTimeOffset utcNow, DateOnly companyDate, int otherYear, int otherMonth)
+        string scenario,
+        DateTimeOffset utcNow,
+        DateOnly companyDate,
+        int otherYear,
+        int otherMonth
+    )
     {
-        var s = await SeedAsync((companyDate.Year, companyDate.Month, false), (otherYear, otherMonth, false));
+        var s = await SeedAsync(
+            (companyDate.Year, companyDate.Month, false),
+            (otherYear, otherMonth, false)
+        );
 
         var (entryDate, result) = await PostWithClockAsync(s.CompanyId, utcNow);
 
         entryDate.Should().Be(companyDate, scenario);
         result.IsSuccess.Should().BeTrue($"{scenario}: {result.Code} {result.Error}");
         await using var verify = CreateContext(s.CompanyId);
-        var entry = await verify.JournalEntries.IgnoreQueryFilters().Include(e => e.Lines)
+        var entry = await verify
+            .JournalEntries.IgnoreQueryFilters()
+            .Include(e => e.Lines)
             .SingleAsync(e => e.Id == result.Value!.JournalEntryId);
         entry.EntryDate.Should().Be(companyDate);
-        entry.AccountingPeriodId.Should().Be(s.Periods[(companyDate.Year, companyDate.Month)], "período del día de la empresa, no del día UTC");
+        entry
+            .AccountingPeriodId.Should()
+            .Be(
+                s.Periods[(companyDate.Year, companyDate.Month)],
+                "período del día de la empresa, no del día UTC"
+            );
         entry.FiscalYear.Should().Be(companyDate.Year);
         entry.Status.Should().Be(JournalEntryStatus.Posted);
         entry.Lines.Sum(l => l.Debit).Should().Be(115m);
@@ -158,7 +255,13 @@ public sealed class AccountingDateBoundaryIntegrationTests : IAsyncLifetime
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be("PERIOD_NOT_OPEN");
         await using var verify = CreateContext(s.CompanyId);
-        (await verify.JournalEntries.IgnoreQueryFilters().CountAsync(e => e.CompanyId == s.CompanyId)).Should().Be(0);
+        (
+            await verify
+                .JournalEntries.IgnoreQueryFilters()
+                .CountAsync(e => e.CompanyId == s.CompanyId)
+        )
+            .Should()
+            .Be(0);
     }
 
     [Fact]
@@ -166,13 +269,23 @@ public sealed class AccountingDateBoundaryIntegrationTests : IAsyncLifetime
     {
         var s = await SeedAsync((2026, 10, false));
 
-        var (entryDate, result) = await PostWithClockAsync(s.CompanyId, AccountingDateBoundary.UtcInstant);
+        var (entryDate, result) = await PostWithClockAsync(
+            s.CompanyId,
+            AccountingDateBoundary.UtcInstant
+        );
 
         entryDate.Should().Be(AccountingDateBoundary.CompanyToday);
         result.Code.Should().Be("PERIOD_NOT_OPEN");
         await using var verify = CreateContext(s.CompanyId);
-        (await verify.JournalEntries.IgnoreQueryFilters().CountAsync(e => e.CompanyId == s.CompanyId)).Should().Be(0);
+        (
+            await verify
+                .JournalEntries.IgnoreQueryFilters()
+                .CountAsync(e => e.CompanyId == s.CompanyId)
+        )
+            .Should()
+            .Be(0);
     }
+
     private sealed class FixedCurrentTenant(Guid tenantId) : ICurrentTenant
     {
         public Guid TenantId => tenantId;

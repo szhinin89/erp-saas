@@ -123,8 +123,12 @@ public static class CommunicationDefaultTemplates
     );
 
     private static readonly IReadOnlyDictionary<string, CommunicationTemplateDefinition> Defaults =
-        new[] { SalesInvoiceAuthorizedV1, SalesCreditNoteAuthorizedV1, RetentionAuthorizedV1 }
-            .ToDictionary(d => d.Key, StringComparer.Ordinal);
+        new[]
+        {
+            SalesInvoiceAuthorizedV1,
+            SalesCreditNoteAuthorizedV1,
+            RetentionAuthorizedV1,
+        }.ToDictionary(d => d.Key, StringComparer.Ordinal);
 
     public static IEnumerable<CommunicationTemplateDefinition> All => Defaults.Values;
 

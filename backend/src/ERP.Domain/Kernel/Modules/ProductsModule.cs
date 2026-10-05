@@ -35,7 +35,8 @@ public static class ProductsModule
         SortOrder = 10,
         Id = "a1000000-0000-4000-9000-000000000001",
         ParentId = "911bc892-ff7a-43d0-b0ff-ff75a747adbe",
-        RelatedActionPermissionsCsv = InventoryPermissions.ItemsCreate + ","
+        RelatedActionPermissionsCsv = InventoryPermissions.ItemsCreate
+            + ","
             + InventoryPermissions.ItemsEdit
     )]
     public const string Items = "/products/items";

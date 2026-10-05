@@ -165,7 +165,13 @@ public sealed class LoginHandlerTests
 
         var f = BuildValidLoginFixture(user, tenant, company, membership);
         f.BranchRepo.Setup(r =>
-                r.GetByCompanyAsync(tenant.Id, company.Id, true, null, It.IsAny<CancellationToken>())
+                r.GetByCompanyAsync(
+                    tenant.Id,
+                    company.Id,
+                    true,
+                    null,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(new[] { branch });
 
@@ -242,7 +248,13 @@ public sealed class LoginHandlerTests
         var f = BuildValidLoginFixture(user, tenant, company, membership);
         // Ninguna sucursal marcada como IsMainBranch → no hay resolución posible.
         f.BranchRepo.Setup(r =>
-                r.GetByCompanyAsync(tenant.Id, company.Id, true, null, It.IsAny<CancellationToken>())
+                r.GetByCompanyAsync(
+                    tenant.Id,
+                    company.Id,
+                    true,
+                    null,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(Array.Empty<Branch>());
         f.RefreshTokenService.Setup(s =>
@@ -409,7 +421,13 @@ public sealed class LoginHandlerTests
 
         var f = BuildValidLoginFixture(user, tenant, company, membership);
         f.BranchRepo.Setup(r =>
-                r.GetByCompanyAsync(tenant.Id, company.Id, true, null, It.IsAny<CancellationToken>())
+                r.GetByCompanyAsync(
+                    tenant.Id,
+                    company.Id,
+                    true,
+                    null,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(new[] { branch });
         f.Mediator.Setup(m =>
@@ -638,7 +656,13 @@ public sealed class LoginHandlerTests
                 )
             );
         f.BranchRepo.Setup(r =>
-                r.GetByCompanyAsync(tenant.Id, company.Id, true, null, It.IsAny<CancellationToken>())
+                r.GetByCompanyAsync(
+                    tenant.Id,
+                    company.Id,
+                    true,
+                    null,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(new[] { branch });
 
@@ -686,7 +710,13 @@ public sealed class LoginHandlerTests
 
         var f = BuildValidLoginFixture(user, tenant, company, membership);
         f.BranchRepo.Setup(r =>
-                r.GetByCompanyAsync(tenant.Id, company.Id, true, null, It.IsAny<CancellationToken>())
+                r.GetByCompanyAsync(
+                    tenant.Id,
+                    company.Id,
+                    true,
+                    null,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(new[] { branch });
 
@@ -865,7 +895,8 @@ public sealed class LoginHandlerTests
         f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
         f.PasswordHasher.Setup(h => h.VerifyPassword(Password, PasswordHash)).Returns(passwordOk);
-        return await f.BuildHandler().Handle(new LoginCommand(Username, Password), CancellationToken.None);
+        return await f.BuildHandler()
+            .Handle(new LoginCommand(Username, Password), CancellationToken.None);
     }
 
     [Fact]
@@ -880,9 +911,15 @@ public sealed class LoginHandlerTests
 
         nonexistent.IsSuccess.Should().BeFalse();
         nonexistent.Error.Should().Be(LoginHandler.InvalidCredentialsMessage);
-        nonexistent.Code.Should().BeNull("sin código → 401 UNAUTHORIZED por el fallback de AuthController");
-        (wrongPassword.Error, wrongPassword.Code).Should().Be((nonexistent.Error, nonexistent.Code));
-        (inactiveWrongPassword.Error, inactiveWrongPassword.Code).Should().Be((nonexistent.Error, nonexistent.Code));
+        nonexistent
+            .Code.Should()
+            .BeNull("sin código → 401 UNAUTHORIZED por el fallback de AuthController");
+        (wrongPassword.Error, wrongPassword.Code)
+            .Should()
+            .Be((nonexistent.Error, nonexistent.Code));
+        (inactiveWrongPassword.Error, inactiveWrongPassword.Code)
+            .Should()
+            .Be((nonexistent.Error, nonexistent.Code));
     }
 
     [Fact]
@@ -898,13 +935,17 @@ public sealed class LoginHandlerTests
 
     // ── ZH-BACKEND-SECURITY-ERROR-FINAL-HARDENING-01: sin enumeración por tiempo ──
 
-    private static async Task<(Result<AuthResponseDto> Result, Fixture F)> LoginTracked(IdentityUser? user, bool passwordOk)
+    private static async Task<(Result<AuthResponseDto> Result, Fixture F)> LoginTracked(
+        IdentityUser? user,
+        bool passwordOk
+    )
     {
         var f = new Fixture();
         f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
         f.PasswordHasher.Setup(h => h.VerifyPassword(Password, PasswordHash)).Returns(passwordOk);
-        var result = await f.BuildHandler().Handle(new LoginCommand(Username, Password), CancellationToken.None);
+        var result = await f.BuildHandler()
+            .Handle(new LoginCommand(Username, Password), CancellationToken.None);
         return (result, f);
     }
 
@@ -914,14 +955,19 @@ public sealed class LoginHandlerTests
         var (result, f) = await LoginTracked(null, passwordOk: false);
 
         f.PasswordHasher.Verify(h => h.SimulatePasswordVerification(Password), Times.Once);
-        f.PasswordHasher.Verify(h => h.VerifyPassword(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        f.PasswordHasher.Verify(
+            h => h.VerifyPassword(It.IsAny<string>(), It.IsAny<string>()),
+            Times.Never
+        );
         result.Error.Should().Be(LoginHandler.InvalidCredentialsMessage);
     }
 
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task Usuario_existente_con_contrasena_incorrecta_ejecuta_una_verificacion_real(bool active)
+    public async Task Usuario_existente_con_contrasena_incorrecta_ejecuta_una_verificacion_real(
+        bool active
+    )
     {
         var user = NewUser();
         if (!active)
@@ -931,8 +977,13 @@ public sealed class LoginHandlerTests
         var (nonexistent, _) = await LoginTracked(null, passwordOk: false);
 
         f.PasswordHasher.Verify(h => h.VerifyPassword(Password, PasswordHash), Times.Once);
-        f.PasswordHasher.Verify(h => h.SimulatePasswordVerification(It.IsAny<string>()), Times.Never);
+        f.PasswordHasher.Verify(
+            h => h.SimulatePasswordVerification(It.IsAny<string>()),
+            Times.Never
+        );
         // Misma respuesta que el usuario inexistente → mismo 401 y mismo cuerpo en AuthController.
-        (result.Error, result.Code).Should().Be((nonexistent.Error, nonexistent.Code));
+        (result.Error, result.Code)
+            .Should()
+            .Be((nonexistent.Error, nonexistent.Code));
     }
 }

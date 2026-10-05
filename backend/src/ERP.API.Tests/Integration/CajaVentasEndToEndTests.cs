@@ -1,3 +1,8 @@
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using ERP.API.Tests.Support;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Entities;
@@ -22,11 +27,6 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
-using System.Net;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace ERP.API.Tests.Integration;
 
@@ -388,7 +388,13 @@ public sealed class CajaVentasFlowFixture : IAsyncLifetime
         db.IdentityUsers.Add(user);
         await db.SaveChangesAsync();
 
-        var membership = CompanyUserMembership.Create(CompanyId, user.Id, role, profileId, _adminId);
+        var membership = CompanyUserMembership.Create(
+            CompanyId,
+            user.Id,
+            role,
+            profileId,
+            _adminId
+        );
         db.CompanyUserMemberships.Add(membership);
         await db.SaveChangesAsync();
 
@@ -402,7 +408,10 @@ public sealed class CajaVentasFlowFixture : IAsyncLifetime
     }
 
     /// <summary>Crea un AccessProfile con exactamente los permisos indicados (IsAllowed=true) — mismo patrón que InventoryAdjustmentsFlowFixture.</summary>
-    public async Task<Guid> CreateProfileWithPermissionsAsync(string name, params string[] permissionKeys)
+    public async Task<Guid> CreateProfileWithPermissionsAsync(
+        string name,
+        params string[] permissionKeys
+    )
     {
         using var scope = Factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
@@ -443,7 +452,18 @@ public sealed class CajaVentasFlowFixture : IAsyncLifetime
         using var scope = Factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         db.Set<OrgSetting>()
-            .Add(OrgSetting.Create(TenantId, CompanyId, OrgScope.Company, CompanyId, key, value, dataType, _adminId));
+            .Add(
+                OrgSetting.Create(
+                    TenantId,
+                    CompanyId,
+                    OrgScope.Company,
+                    CompanyId,
+                    key,
+                    value,
+                    dataType,
+                    _adminId
+                )
+            );
         await db.SaveChangesAsync();
     }
 
@@ -453,7 +473,13 @@ public sealed class CajaVentasFlowFixture : IAsyncLifetime
         using var scope = Factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var reason = CashMovementReason.Create(
-            TenantId, CompanyId, code, "Motivo E2E", CashMovementType.ManualIncome, 1, _adminId
+            TenantId,
+            CompanyId,
+            code,
+            "Motivo E2E",
+            CashMovementType.ManualIncome,
+            1,
+            _adminId
         );
         db.Set<CashMovementReason>().Add(reason);
         await db.SaveChangesAsync();
@@ -797,13 +823,20 @@ public sealed class CajaVentasEndToEndTests : IClassFixture<CajaVentasFlowFixtur
         ActAs(operatorUserId);
         var openResponse = await operatorClient.PostAsJsonAsync(
             "/api/v1/cash-sessions/open",
-            new { cashRegisterId = _f.CashRegisterA1Id, openingAmount = 100m, notes = (string?)null }
+            new
+            {
+                cashRegisterId = _f.CashRegisterA1Id,
+                openingAmount = 100m,
+                notes = (string?)null,
+            }
         );
         openResponse
             .StatusCode.Should()
             .Be(HttpStatusCode.Created, await openResponse.Content.ReadAsStringAsync());
         var session = (
-            await openResponse.Content.ReadFromJsonAsync<Envelope<CashSessionResponseDto>>(JsonOptions)
+            await openResponse.Content.ReadFromJsonAsync<Envelope<CashSessionResponseDto>>(
+                JsonOptions
+            )
         )!.Data!;
         var reasonId = await _f.CreateManualIncomeReasonAsync("PERM06-INGRESO");
 
@@ -863,7 +896,11 @@ public sealed class CajaVentasEndToEndTests : IClassFixture<CajaVentasFlowFixtur
             otherRecorderProfileId,
             _f.BranchAId
         );
-        var otherRecorderClient = _f.CreateClientForUser(otherRecorderUserId, "Operador", _f.BranchAId);
+        var otherRecorderClient = _f.CreateClientForUser(
+            otherRecorderUserId,
+            "Operador",
+            _f.BranchAId
+        );
         ActAs(otherRecorderUserId);
         var foreignMovementResponse = await otherRecorderClient.PostAsJsonAsync(
             $"/api/v1/cash-sessions/{session.Id}/movements",
@@ -879,9 +916,24 @@ public sealed class CajaVentasEndToEndTests : IClassFixture<CajaVentasFlowFixtur
             {
                 closingCounts = new[]
                 {
-                    new { denominationValue = 100m, denominationLabel = "$100", quantity = 1 },
-                    new { denominationValue = 10m, denominationLabel = "$10", quantity = 1 },
-                    new { denominationValue = 5m, denominationLabel = "$5", quantity = 1 },
+                    new
+                    {
+                        denominationValue = 100m,
+                        denominationLabel = "$100",
+                        quantity = 1,
+                    },
+                    new
+                    {
+                        denominationValue = 10m,
+                        denominationLabel = "$10",
+                        quantity = 1,
+                    },
+                    new
+                    {
+                        denominationValue = 5m,
+                        denominationLabel = "$5",
+                        quantity = 1,
+                    },
                 },
                 closeNotes = (string?)null,
             };
@@ -926,7 +978,6 @@ public sealed class CajaVentasEndToEndTests : IClassFixture<CajaVentasFlowFixtur
         // Restaura el contexto de usuario mutable compartido al admin (igual que antes).
         _f.SetActiveContext(adminUserId, _f.BranchAId);
     }
-
 }
 
 internal sealed record Envelope<T>(T? Data);

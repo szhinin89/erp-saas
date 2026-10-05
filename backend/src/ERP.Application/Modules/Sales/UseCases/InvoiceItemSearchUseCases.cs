@@ -92,9 +92,7 @@ public sealed class SearchItemsForInvoiceHandler
             );
         var pricingByItemId = pricingResult.Value!;
 
-        var results = matches
-            .Select(m => Enrich(m, vatMap, iceMap, pricingByItemId))
-            .ToList();
+        var results = matches.Select(m => Enrich(m, vatMap, iceMap, pricingByItemId)).ToList();
         return Result<IReadOnlyList<InvoiceItemSearchResultDto>>.Success(results);
     }
 
@@ -142,12 +140,19 @@ public sealed class SearchItemsForInvoiceHandler
         string? discountDescription = null;
         decimal? discountedSalePriceWithoutTax = null;
         decimal? discountedFinalSalePrice = null;
-        if (pricingByItemId.TryGetValue(match.Id, out var pricing) && pricing.RuleApplied is not null)
+        if (
+            pricingByItemId.TryGetValue(match.Id, out var pricing)
+            && pricing.RuleApplied is not null
+        )
         {
             priceListName = pricing.PriceListName;
             discountDescription = pricing.RuleDescription;
             discountedSalePriceWithoutTax = pricing.UnitPrice;
-            var (_, _, discountedTaxInclusive) = SriTaxCalculator.Compute(pricing.UnitPrice, vatPct, icePct);
+            var (_, _, discountedTaxInclusive) = SriTaxCalculator.Compute(
+                pricing.UnitPrice,
+                vatPct,
+                icePct
+            );
             discountedFinalSalePrice = discountedTaxInclusive;
         }
 

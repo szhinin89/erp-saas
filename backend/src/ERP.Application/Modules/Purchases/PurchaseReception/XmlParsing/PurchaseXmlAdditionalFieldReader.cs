@@ -29,8 +29,12 @@ internal static class PurchaseXmlAdditionalFieldReader
             .Select(
                 (d, index) =>
                     new XmlAdditionalField(
-                        Name: OptionalText(d, "nombre") ?? d.Attribute("nombre")?.Value ?? string.Empty,
-                        Value: OptionalText(d, "valor") ?? d.Attribute("valor")?.Value ?? string.Empty,
+                        Name: OptionalText(d, "nombre")
+                            ?? d.Attribute("nombre")?.Value
+                            ?? string.Empty,
+                        Value: OptionalText(d, "valor")
+                            ?? d.Attribute("valor")?.Value
+                            ?? string.Empty,
                         Position: index
                     )
             )

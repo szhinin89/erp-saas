@@ -36,9 +36,7 @@ public sealed record CancelExpenseDocumentCommand(
     Guid Id,
     string Reason,
     bool RequestSriAnnulment = false
-)
-    : IRequest<Result<ExpenseDocumentDetailDto>>,
-        IBranchScopedRequest;
+) : IRequest<Result<ExpenseDocumentDetailDto>>, IBranchScopedRequest;
 
 /// <summary>Contexto explícito de una anulación de gasto (ver <c>PurchaseCancellationContext</c>).</summary>
 public sealed record ExpenseCancellationContext(
@@ -141,13 +139,20 @@ public sealed class CancelExpenseDocumentHandler
         var tid = ctx.TenantId;
         var cid = ctx.CompanyId;
         var uid = ctx.UserId;
-        var cmd = new CancelExpenseDocumentCommand(ctx.ExpenseDocumentId, ctx.Reason, ctx.RequestSriAnnulment);
+        var cmd = new CancelExpenseDocumentCommand(
+            ctx.ExpenseDocumentId,
+            ctx.Reason,
+            ctx.RequestSriAnnulment
+        );
 
         await _uow.BeginTransactionAsync(ct);
         try
         {
             var document = await _repo.GetByIdAsync(tid, cmd.Id, ct);
-            if (document is null || (ctx.RequiredBranchId is Guid branchId && document.BranchId != branchId))
+            if (
+                document is null
+                || (ctx.RequiredBranchId is Guid branchId && document.BranchId != branchId)
+            )
             {
                 await _uow.RollbackAsync(ct);
                 return Result<ExpenseDocumentDetailDto>.NotFound("Gasto no encontrado.");
@@ -230,7 +235,9 @@ public sealed class CancelExpenseDocumentHandler
                     if (
                         ctx.RequestSriAnnulment
                         && cancelRetentionResult.Code
-                            == ApiResponseCodes.ElectronicDocuments.SourceCancellationRequiresSriAnnulment
+                            == ApiResponseCodes
+                                .ElectronicDocuments
+                                .SourceCancellationRequiresSriAnnulment
                     )
                         return await RequestSriAnnulmentAsync(document, retentionDocument, ctx, ct);
 
@@ -301,7 +308,9 @@ public sealed class CancelExpenseDocumentHandler
                 document.Id
             );
 
-            return Result<ExpenseDocumentDetailDto>.Success(ExpenseDocumentMapper.ToDetail(document));
+            return Result<ExpenseDocumentDetailDto>.Success(
+                ExpenseDocumentMapper.ToDetail(document)
+            );
         }
         catch
         {
@@ -326,7 +335,10 @@ public sealed class CancelExpenseDocumentHandler
         if (!requested.IsSuccess)
         {
             await _uow.RollbackAsync(ct);
-            return Result<ExpenseDocumentDetailDto>.ValidationFailure(requested.Error!, requested.Code);
+            return Result<ExpenseDocumentDetailDto>.ValidationFailure(
+                requested.Error!,
+                requested.Code
+            );
         }
 
         await _uow.SaveChangesAsync(ct);

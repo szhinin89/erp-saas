@@ -1,3 +1,7 @@
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text.Json;
 using ERP.API.Tests.Support;
 using ERP.Application.Access.Authorization;
 using ERP.Domain.Access.Entities;
@@ -10,10 +14,6 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using System.Net;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
-using System.Text.Json;
 
 namespace ERP.API.Tests.Integration;
 
@@ -56,14 +56,24 @@ public sealed class CompanyIdentityUpdateFixture : IAsyncLifetime
             TenantId = tenant.Id;
             ForeignTenantId = foreign.Id;
 
-            var user = IdentityUser.Create($"idn-{Guid.NewGuid():N}"[..12], "Admin", "Empresa", $"idn-{Guid.NewGuid():N}@test.com", "TEST_PASSWORD_HASH", _adminId);
+            var user = IdentityUser.Create(
+                $"idn-{Guid.NewGuid():N}"[..12],
+                "Admin",
+                "Empresa",
+                $"idn-{Guid.NewGuid():N}@test.com",
+                "TEST_PASSWORD_HASH",
+                _adminId
+            );
             db.IdentityUsers.Add(user);
             await db.SaveChangesAsync();
             UserId = user.Id;
         }
 
-        App = _factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
-            services.AddScoped<IRuntimePermissionAuthorizer, AllowAllPermissionAuthorizer>()));
+        App = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureTestServices(services =>
+                services.AddScoped<IRuntimePermissionAuthorizer, AllowAllPermissionAuthorizer>()
+            )
+        );
     }
 
     public async Task DisposeAsync()
@@ -79,12 +89,20 @@ public sealed class CompanyIdentityUpdateFixture : IAsyncLifetime
     {
         using var scope = CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
-        var company = Company.CreateManaged(tenantId, ruc ?? ValidRuc(), "Empresa Original", tradeName: "Original", createdBy: _adminId);
+        var company = Company.CreateManaged(
+            tenantId,
+            ruc ?? ValidRuc(),
+            "Empresa Original",
+            tradeName: "Original",
+            createdBy: _adminId
+        );
         db.Companies.Add(company);
         await db.SaveChangesAsync();
         if (tenantId == TenantId)
         {
-            db.CompanyUserMemberships.Add(CompanyUserMembership.Create(company.Id, UserId, "Admin", null, _adminId));
+            db.CompanyUserMemberships.Add(
+                CompanyUserMembership.Create(company.Id, UserId, "Admin", null, _adminId)
+            );
             await db.SaveChangesAsync();
         }
         return company.Id;
@@ -94,7 +112,10 @@ public sealed class CompanyIdentityUpdateFixture : IAsyncLifetime
     {
         using var scope = CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
-        return await db.Companies.IgnoreQueryFilters().AsNoTracking().SingleAsync(c => c.Id == companyId);
+        return await db
+            .Companies.IgnoreQueryFilters()
+            .AsNoTracking()
+            .SingleAsync(c => c.Id == companyId);
     }
 
     /// <summary>Cliente de un contexto: ICurrentTenant/ICurrentUser del host de test siguen al token.</summary>
@@ -144,25 +165,52 @@ public sealed class CompanyIdentityUpdateHttpTests : IClassFixture<CompanyIdenti
         global ? $"/api/v1/admin-core/companies/{id}" : $"/api/v1/companies/{id}";
 
     /// <summary>PUT al endpoint del contexto <paramref name="endpointGlobal"/> con el token del contexto <paramref name="tokenGlobal"/>.</summary>
-    private async Task<Response> SendAsync(bool endpointGlobal, bool tokenGlobal, Guid id, string legalName, string? tradeName, bool isActive, string? taxId)
+    private async Task<Response> SendAsync(
+        bool endpointGlobal,
+        bool tokenGlobal,
+        Guid id,
+        string legalName,
+        string? tradeName,
+        bool isActive,
+        string? taxId
+    )
     {
         using var client = _f.Client(tokenGlobal);
-        var http = await client.PutAsJsonAsync(Url(endpointGlobal, id), new { id, legalName, tradeName, isActive, taxId });
+        var http = await client.PutAsJsonAsync(
+            Url(endpointGlobal, id),
+            new
+            {
+                id,
+                legalName,
+                tradeName,
+                isActive,
+                taxId,
+            }
+        );
         var text = await http.Content.ReadAsStringAsync();
         string? code = null;
         if (!string.IsNullOrWhiteSpace(text) && text.TrimStart().StartsWith('{'))
-            code = JsonDocument.Parse(text).RootElement.TryGetProperty("code", out var c) ? c.GetString() : null;
+            code = JsonDocument.Parse(text).RootElement.TryGetProperty("code", out var c)
+                ? c.GetString()
+                : null;
         return new Response(http.StatusCode, code);
     }
 
     /// <summary>Cada contexto por su propio endpoint.</summary>
-    private Task<Response> Put(bool global, Guid id, string legalName, string? tradeName = null, bool isActive = true, string? taxId = null) =>
-        SendAsync(global, global, id, legalName, tradeName, isActive, taxId);
+    private Task<Response> Put(
+        bool global,
+        Guid id,
+        string legalName,
+        string? tradeName = null,
+        bool isActive = true,
+        string? taxId = null
+    ) => SendAsync(global, global, id, legalName, tradeName, isActive, taxId);
 
     private Task<Response> PutWithTokenAsync(bool endpointGlobal, bool tokenGlobal, Guid id) =>
         SendAsync(endpointGlobal, tokenGlobal, id, "Intento", null, true, null);
 
-    private Task<Guid> OwnCompanyAsync(string? ruc = null) => _f.CreateCompanyAsync(_f.TenantId, ruc);
+    private Task<Guid> OwnCompanyAsync(string? ruc = null) =>
+        _f.CreateCompanyAsync(_f.TenantId, ruc);
 
     // ── Misma regla desde ambos contextos ───────────────────────────────
 
@@ -174,7 +222,14 @@ public sealed class CompanyIdentityUpdateHttpTests : IClassFixture<CompanyIdenti
         var id = await OwnCompanyAsync();
         var ruc = CompanyIdentityUpdateFixture.ValidRuc();
 
-        var response = await Put(global, id, "  Nueva Razón  ", "  Comercial  ", isActive: false, taxId: $" {ruc} ");
+        var response = await Put(
+            global,
+            id,
+            "  Nueva Razón  ",
+            "  Comercial  ",
+            isActive: false,
+            taxId: $" {ruc} "
+        );
 
         response.Status.Should().Be(HttpStatusCode.OK, response.Code);
         var company = await _f.ReadAsync(id);
@@ -192,7 +247,10 @@ public sealed class CompanyIdentityUpdateHttpTests : IClassFixture<CompanyIdenti
     [InlineData(true, "1234567890123")]
     [InlineData(false, "17ABC")]
     [InlineData(true, "17ABC")]
-    public async Task RUC_invalido_misma_semantica_422_VALIDATION_ERROR_sin_cambios(bool global, string ruc)
+    public async Task RUC_invalido_misma_semantica_422_VALIDATION_ERROR_sin_cambios(
+        bool global,
+        string ruc
+    )
     {
         var id = await OwnCompanyAsync();
         var before = await _f.ReadAsync(id);
@@ -280,7 +338,9 @@ public sealed class CompanyIdentityUpdateHttpTests : IClassFixture<CompanyIdenti
     {
         var foreign = await _f.CreateCompanyAsync(_f.ForeignTenantId);
 
-        (await Put(global: true, foreign, "Editada por plataforma")).Status.Should().Be(HttpStatusCode.OK);
+        (await Put(global: true, foreign, "Editada por plataforma"))
+            .Status.Should()
+            .Be(HttpStatusCode.OK);
 
         (await _f.ReadAsync(foreign)).LegalName.Should().Be("Editada por plataforma");
     }

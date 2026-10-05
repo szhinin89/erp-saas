@@ -34,11 +34,7 @@ public sealed class ConfigurationDefinitionViolationException : ArgumentExceptio
     public static ConfigurationDefinitionViolationException ScopeNotAllowed(
         string key,
         OrgScope scope
-    ) =>
-        new(
-            "configuration_scope_not_allowed",
-            $"La key '{key}' no permite el scope '{scope}'."
-        );
+    ) => new("configuration_scope_not_allowed", $"La key '{key}' no permite el scope '{scope}'.");
 
     public static ConfigurationDefinitionViolationException DataTypeMismatch(
         string key,
@@ -50,7 +46,10 @@ public sealed class ConfigurationDefinitionViolationException : ArgumentExceptio
             $"La key '{key}' espera DataType '{expected}' según su definición, se recibió '{provided}'."
         );
 
-    public static ConfigurationDefinitionViolationException InvalidValue(string key, string? value) =>
+    public static ConfigurationDefinitionViolationException InvalidValue(
+        string key,
+        string? value
+    ) =>
         new(
             "configuration_value_invalid",
             $"El valor configurado para '{key}' no es válido para su definición."

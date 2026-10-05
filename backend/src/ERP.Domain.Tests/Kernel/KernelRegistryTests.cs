@@ -96,12 +96,16 @@ public sealed class KernelRegistryTests
         var companies = navigation.Single(n => n.RoutePath == "/companies");
         companies.Id.Should().Be(Guid.Parse("00000000-0000-4000-8000-000000000104"));
         companies.ParentItemId.Should().Be(enterpriseGroupId);
-        companies.PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.SettingsPermissions.CompaniesView);
+        companies
+            .PermissionKey.Should()
+            .Be(ERP.Domain.Kernel.Permissions.SettingsPermissions.CompaniesView);
 
         var company = navigation.Single(n => n.RoutePath == "/settings/company");
         company.Id.Should().Be(Guid.Parse("00000000-0000-4000-8000-000000000101"));
         company.ParentItemId.Should().Be(enterpriseGroupId);
-        company.PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.SettingsPermissions.CompanyView);
+        company
+            .PermissionKey.Should()
+            .Be(ERP.Domain.Kernel.Permissions.SettingsPermissions.CompanyView);
     }
 
     [Fact]
@@ -112,7 +116,9 @@ public sealed class KernelRegistryTests
         // MENU-MODULE-REORG-01: reparentado bajo el contenedor "Operación" de cada módulo
         // (antes "Documentos") — mismo Id/ruta/permiso, solo cambia el ParentId.
         var salesReturns = navigation.SingleOrDefault(n => n.RoutePath == "/sales/returns");
-        salesReturns.Should().NotBeNull("el listado de devoluciones de venta debe estar en el menú");
+        salesReturns
+            .Should()
+            .NotBeNull("el listado de devoluciones de venta debe estar en el menú");
         salesReturns!.ParentItemId.Should().Be(Guid.Parse("e4000000-0000-4000-9000-000000000010"));
         salesReturns.PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.SalesPermissions.View);
 
@@ -129,10 +135,18 @@ public sealed class KernelRegistryTests
         // PURCHASE-CREDIT-NOTE-ENTRY-SCREEN-DUAL-MODE-01 — mismo patrón: el menú apunta
         // exclusivamente al listado ("Nueva" es un botón dentro de esa pantalla), nunca directo a
         // /new ni a un detalle /{id}.
-        var purchaseCreditNotes = navigation.SingleOrDefault(n => n.RoutePath == "/purchases/credit-notes");
-        purchaseCreditNotes.Should().NotBeNull("el listado de notas de crédito de compra debe estar en el menú");
-        purchaseCreditNotes!.ParentItemId.Should().Be(Guid.Parse("e3000000-0000-4000-9000-000000000010"));
-        purchaseCreditNotes.PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.PurchasePermissions.View);
+        var purchaseCreditNotes = navigation.SingleOrDefault(n =>
+            n.RoutePath == "/purchases/credit-notes"
+        );
+        purchaseCreditNotes
+            .Should()
+            .NotBeNull("el listado de notas de crédito de compra debe estar en el menú");
+        purchaseCreditNotes!
+            .ParentItemId.Should()
+            .Be(Guid.Parse("e3000000-0000-4000-9000-000000000010"));
+        purchaseCreditNotes
+            .PermissionKey.Should()
+            .Be(ERP.Domain.Kernel.Permissions.PurchasePermissions.View);
         navigation.Should().NotContain(n => n.RoutePath == "/purchases/credit-notes/new");
         navigation.Should().NotContain(n => n.RoutePath.StartsWith("/purchases/credit-notes/"));
     }
@@ -185,19 +199,21 @@ public sealed class KernelRegistryTests
         // antes vivía dentro de "Compras", que ahora es su propio módulo separado.
         // URLS-MENU-ALIGNMENT-01: /finance/supplier-credits -> /suppliers/credits (misma
         // pantalla/Id, URL coherente con el módulo Proveedores).
-        var supplierCredits = navigation.SingleOrDefault(n =>
-            n.RoutePath == "/suppliers/credits"
-        );
+        var supplierCredits = navigation.SingleOrDefault(n => n.RoutePath == "/suppliers/credits");
         supplierCredits.Should().NotBeNull("créditos de proveedor debe estar en el menú");
         supplierCredits!.PermissionKey.Should().Be(financePermission);
         supplierCredits.GroupCode.Should().Be("suppliers");
-        supplierCredits.ParentItemId.Should().Be(Guid.Parse("40aa3390-e353-4cd4-92fb-3b4f01bee262"));
+        supplierCredits
+            .ParentItemId.Should()
+            .Be(Guid.Parse("40aa3390-e353-4cd4-92fb-3b4f01bee262"));
 
         navigation.Should().NotContain(n => n.RoutePath == "/finance/supplier-credits");
         navigation.Should().NotContain(n => n.RoutePath == "/suppliers/credits/:id");
         navigation
             .Should()
-            .NotContain(n => n.RoutePath.StartsWith("/suppliers/credits/", StringComparison.Ordinal));
+            .NotContain(n =>
+                n.RoutePath.StartsWith("/suppliers/credits/", StringComparison.Ordinal)
+            );
 
         // MAPA-MENU-ERP-SSOT-01: condiciones de pago/crédito se movieron de Configuración
         // (catálogo transversal) a Proveedores — el árbol objetivo las pide explícitamente bajo
@@ -208,7 +224,9 @@ public sealed class KernelRegistryTests
         var commercialTermsGroupId = Guid.Parse("3ac9c729-c29b-4e88-a1eb-b0d8073828c2");
 
         var creditTerms = navigation.Single(n => n.RoutePath == "/suppliers/credit-terms");
-        creditTerms.GroupCode.Should().Be("suppliers", "condiciones de crédito viven en Proveedores");
+        creditTerms
+            .GroupCode.Should()
+            .Be("suppliers", "condiciones de crédito viven en Proveedores");
         creditTerms.ParentItemId.Should().Be(commercialTermsGroupId);
         navigation.Should().NotContain(n => n.RoutePath == "/finance/credit-terms");
 
@@ -231,8 +249,12 @@ public sealed class KernelRegistryTests
 
         var payables = navigation.Where(n => n.RoutePath == "/payables").ToList();
         payables.Should().ContainSingle("debe existir exactamente una pantalla de CxP genérica");
-        payables[0].PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.PayablesPermissions.View);
-        payables[0].GroupCode.Should().Be("suppliers", "NAVIGATION-OPERATING-CYCLES-03: CxP vive en el ciclo proveedor");
+        payables[0]
+            .PermissionKey.Should()
+            .Be(ERP.Domain.Kernel.Permissions.PayablesPermissions.View);
+        payables[0]
+            .GroupCode.Should()
+            .Be("suppliers", "NAVIGATION-OPERATING-CYCLES-03: CxP vive en el ciclo proveedor");
     }
 
     [Fact]
@@ -248,21 +270,35 @@ public sealed class KernelRegistryTests
         navigation.Should().NotContain(n => n.RoutePath == "/api/v1/purchase-payables");
 
         var supplierPayments = navigation.Where(n => n.RoutePath == "/supplier-payments").ToList();
-        supplierPayments.Should().ContainSingle("debe existir exactamente un ítem de Pagos a proveedores");
-        supplierPayments[0].PermissionKey.Should()
+        supplierPayments
+            .Should()
+            .ContainSingle("debe existir exactamente un ítem de Pagos a proveedores");
+        supplierPayments[0]
+            .PermissionKey.Should()
             .Be(ERP.Domain.Kernel.Permissions.SupplierPaymentsPermissions.View);
-        supplierPayments[0].GroupCode.Should()
-            .Be("suppliers", "Pagos a proveedores debe vivir en el ciclo proveedor, junto a Cuentas por pagar");
+        supplierPayments[0]
+            .GroupCode.Should()
+            .Be(
+                "suppliers",
+                "Pagos a proveedores debe vivir en el ciclo proveedor, junto a Cuentas por pagar"
+            );
 
         var payables = navigation.Single(n => n.RoutePath == "/payables");
-        payables.GroupCode.Should().Be(
-            supplierPayments[0].GroupCode,
-            "ambos ítems deben compartir el mismo grupo — 'junto a', no anidados entre sí"
-        );
+        payables
+            .GroupCode.Should()
+            .Be(
+                supplierPayments[0].GroupCode,
+                "ambos ítems deben compartir el mismo grupo — 'junto a', no anidados entre sí"
+            );
         // NAV-HIERARCHY-UNIFY-01: ambos se anidan bajo la misma categoría "Cuentas por pagar" —
         // siguen siendo hermanos entre sí (ninguno es contenedor del otro), solo que ahora ese
         // contenedor común es explícito en vez de ser el módulo directamente.
-        supplierPayments[0].ParentItemId.Should().Be(payables.ParentItemId, "son ítems hermanos bajo la misma categoría, no uno contenedor del otro");
+        supplierPayments[0]
+            .ParentItemId.Should()
+            .Be(
+                payables.ParentItemId,
+                "son ítems hermanos bajo la misma categoría, no uno contenedor del otro"
+            );
         payables.ParentItemId.Should().Be(Guid.Parse("40aa3390-e353-4cd4-92fb-3b4f01bee262"));
     }
 
@@ -275,24 +311,29 @@ public sealed class KernelRegistryTests
         // Configuración). No debe faltar ni sobrar ninguna pantalla real.
         var navigation = KernelRegistry.Navigation;
 
-        var suppliersRoutes = navigation.Where(n => n.GroupCode == "suppliers")
+        var suppliersRoutes = navigation
+            .Where(n => n.GroupCode == "suppliers")
             .Select(n => n.RoutePath)
             .ToList();
 
         // URLS-MENU-ALIGNMENT-01: realineadas bajo /suppliers/* (Payables/SupplierPayments no
         // cambian, fuera del alcance explícito de ese ticket).
-        suppliersRoutes.Should().BeEquivalentTo(new[]
-        {
-            "/suppliers/management-group",
-            "/suppliers",
-            "/payables/group",
-            "/payables",
-            "/supplier-payments",
-            "/suppliers/credits",
-            "/suppliers/commercial-terms-group",
-            "/suppliers/payment-terms",
-            "/suppliers/credit-terms",
-        });
+        suppliersRoutes
+            .Should()
+            .BeEquivalentTo(
+                new[]
+                {
+                    "/suppliers/management-group",
+                    "/suppliers",
+                    "/payables/group",
+                    "/payables",
+                    "/supplier-payments",
+                    "/suppliers/credits",
+                    "/suppliers/commercial-terms-group",
+                    "/suppliers/payment-terms",
+                    "/suppliers/credit-terms",
+                }
+            );
     }
 
     [Fact]
@@ -302,25 +343,30 @@ public sealed class KernelRegistryTests
         // superior. Mismas rutas/permisos/Ids que tenía dentro de "suppliers".
         var navigation = KernelRegistry.Navigation;
 
-        var purchasesRoutes = navigation.Where(n => n.GroupCode == "purchases")
+        var purchasesRoutes = navigation
+            .Where(n => n.GroupCode == "purchases")
             .Select(n => n.RoutePath)
             .ToList();
 
-        purchasesRoutes.Should().BeEquivalentTo(new[]
-        {
-            "/purchases/operation-group",
-            "/purchases",
-            "/purchases/reception",
-            // PURCHASE-RETURNS-REMOVE-FROM-MAIN-MENU-01 — "Devoluciones de compra" ya no es
-            // ítem de menú; la ruta sigue existiendo como acceso técnico/secundario.
-            // PURCHASE-CREDIT-NOTE-ENTRY-SCREEN-DUAL-MODE-01 — listado de notas de crédito de
-            // compra; "Nueva" es un botón dentro de esa pantalla, nunca una entrada de menú propia.
-            "/purchases/credit-notes",
-            "/purchases/configuration-group",
-            "/settings/operations?tab=purchases",
-            "/purchases/reports-group",
-            "/reportes/compras",
-        });
+        purchasesRoutes
+            .Should()
+            .BeEquivalentTo(
+                new[]
+                {
+                    "/purchases/operation-group",
+                    "/purchases",
+                    "/purchases/reception",
+                    // PURCHASE-RETURNS-REMOVE-FROM-MAIN-MENU-01 — "Devoluciones de compra" ya no es
+                    // ítem de menú; la ruta sigue existiendo como acceso técnico/secundario.
+                    // PURCHASE-CREDIT-NOTE-ENTRY-SCREEN-DUAL-MODE-01 — listado de notas de crédito de
+                    // compra; "Nueva" es un botón dentro de esa pantalla, nunca una entrada de menú propia.
+                    "/purchases/credit-notes",
+                    "/purchases/configuration-group",
+                    "/settings/operations?tab=purchases",
+                    "/purchases/reports-group",
+                    "/reportes/compras",
+                }
+            );
     }
 
     [Fact]
@@ -330,16 +376,16 @@ public sealed class KernelRegistryTests
         // superior. Mismas rutas/permisos/Ids que tenía dentro de "suppliers".
         var navigation = KernelRegistry.Navigation;
 
-        var expensesRoutes = navigation.Where(n => n.GroupCode == "expenses")
+        var expensesRoutes = navigation
+            .Where(n => n.GroupCode == "expenses")
             .Select(n => n.RoutePath)
             .ToList();
 
-        expensesRoutes.Should().BeEquivalentTo(new[]
-        {
-            "/expenses/group",
-            "/expenses/documents",
-            "/expenses/categories",
-        });
+        expensesRoutes
+            .Should()
+            .BeEquivalentTo(
+                new[] { "/expenses/group", "/expenses/documents", "/expenses/categories" }
+            );
     }
 
     [Fact]
@@ -349,25 +395,30 @@ public sealed class KernelRegistryTests
         // (Destinos financieros, movido desde "settings").
         var navigation = KernelRegistry.Navigation;
 
-        var treasuryRoutes = navigation.Where(n => n.GroupCode == "treasury")
+        var treasuryRoutes = navigation
+            .Where(n => n.GroupCode == "treasury")
             .Select(n => n.RoutePath)
             .ToList();
 
-        treasuryRoutes.Should().BeEquivalentTo(new[]
-        {
-            "/treasury/cash/group",
-            "/treasury/cash",
-            // TREASURY-CASH-MOVEMENT-REASONS-ADMIN-03
-            "/treasury/cash/movement-reasons",
-            // ZH-CASH-FUNDING-REQUEST-API-02E-D
-            "/treasury/cash/funding-requests",
-            "/treasury/cash/configuration-group",
-            "/treasury/cash/registers",
-            "/settings/operations?tab=cash",
-            "/treasury/banks/group",
-            // TREASURY-BANK-ACCOUNTS-01
-            "/treasury/banks/accounts",
-        });
+        treasuryRoutes
+            .Should()
+            .BeEquivalentTo(
+                new[]
+                {
+                    "/treasury/cash/group",
+                    "/treasury/cash",
+                    // TREASURY-CASH-MOVEMENT-REASONS-ADMIN-03
+                    "/treasury/cash/movement-reasons",
+                    // ZH-CASH-FUNDING-REQUEST-API-02E-D
+                    "/treasury/cash/funding-requests",
+                    "/treasury/cash/configuration-group",
+                    "/treasury/cash/registers",
+                    "/settings/operations?tab=cash",
+                    "/treasury/banks/group",
+                    // TREASURY-BANK-ACCOUNTS-01
+                    "/treasury/banks/accounts",
+                }
+            );
     }
 
     [Fact]
@@ -379,18 +430,30 @@ public sealed class KernelRegistryTests
         var item = navigation.Single(n => n.RoutePath == "/treasury/cash/funding-requests");
         var cajaGroup = navigation.Single(n => n.RoutePath == "/treasury/cash/group");
 
-        item.PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.CajaPermissions.FundingRequestsView);
+        item.PermissionKey.Should()
+            .Be(ERP.Domain.Kernel.Permissions.CajaPermissions.FundingRequestsView);
         item.RelatedActionPermissionKeys.Should()
-            .BeEquivalentTo(new[] { ERP.Domain.Kernel.Permissions.CajaPermissions.FundingRequestsFulfill });
+            .BeEquivalentTo(
+                new[] { ERP.Domain.Kernel.Permissions.CajaPermissions.FundingRequestsFulfill }
+            );
         item.ParentItemId.Should().Be(cajaGroup.Id);
         item.LabelKey.Should().Be("app.nav.item.caja.fundingRequests");
-        cajaGroup.PermissionKeysAnyJson.Should().Contain(ERP.Domain.Kernel.Permissions.CajaPermissions.FundingRequestsView);
-        navigation.Where(n => n.GroupCode == "suppliers").Should().NotContain(n => n.RoutePath.Contains("funding"));
-        KernelRegistry.Permissions.Should().Contain(new[]
-        {
-            ERP.Domain.Kernel.Permissions.CajaPermissions.FundingRequestsView,
-            ERP.Domain.Kernel.Permissions.CajaPermissions.FundingRequestsFulfill,
-        });
+        cajaGroup
+            .PermissionKeysAnyJson.Should()
+            .Contain(ERP.Domain.Kernel.Permissions.CajaPermissions.FundingRequestsView);
+        navigation
+            .Where(n => n.GroupCode == "suppliers")
+            .Should()
+            .NotContain(n => n.RoutePath.Contains("funding"));
+        KernelRegistry
+            .Permissions.Should()
+            .Contain(
+                new[]
+                {
+                    ERP.Domain.Kernel.Permissions.CajaPermissions.FundingRequestsView,
+                    ERP.Domain.Kernel.Permissions.CajaPermissions.FundingRequestsFulfill,
+                }
+            );
     }
 
     [Fact]
@@ -400,17 +463,22 @@ public sealed class KernelRegistryTests
         // desde "sales") + Facturación electrónica (movida desde "settings").
         var navigation = KernelRegistry.Navigation;
 
-        var sriRoutes = navigation.Where(n => n.GroupCode == "sri")
+        var sriRoutes = navigation
+            .Where(n => n.GroupCode == "sri")
             .Select(n => n.RoutePath)
             .ToList();
 
-        sriRoutes.Should().BeEquivalentTo(new[]
-        {
-            "/sri/electronic-documents/group",
-            "/sri/electronic-documents/monitor",
-            "/sri/configuration/group",
-            "/sri/configuration/electronic-invoicing",
-        });
+        sriRoutes
+            .Should()
+            .BeEquivalentTo(
+                new[]
+                {
+                    "/sri/electronic-documents/group",
+                    "/sri/electronic-documents/monitor",
+                    "/sri/configuration/group",
+                    "/sri/configuration/electronic-invoicing",
+                }
+            );
     }
 
     [Fact]
@@ -421,7 +489,8 @@ public sealed class KernelRegistryTests
         // distinta de Cuentas por cobrar — no se inventa.
         var navigation = KernelRegistry.Navigation;
 
-        var customersRoutes = navigation.Where(n => n.GroupCode == "customers")
+        var customersRoutes = navigation
+            .Where(n => n.GroupCode == "customers")
             .Select(n => n.RoutePath)
             .ToList();
 
@@ -429,13 +498,17 @@ public sealed class KernelRegistryTests
         // para que ambas pantallas dejen de quedar sueltas bajo el módulo.
         // URLS-MENU-ALIGNMENT-01: /masterdata/customers -> /customers (Cuentas por cobrar no
         // cambia, fuera del alcance de ese ticket).
-        customersRoutes.Should().BeEquivalentTo(new[]
-        {
-            "/customers/management-group",
-            "/customers",
-            "/finance/receivables/group",
-            "/finance/receivables",
-        });
+        customersRoutes
+            .Should()
+            .BeEquivalentTo(
+                new[]
+                {
+                    "/customers/management-group",
+                    "/customers",
+                    "/finance/receivables/group",
+                    "/finance/receivables",
+                }
+            );
     }
 
     [Fact]
@@ -453,24 +526,32 @@ public sealed class KernelRegistryTests
 
         var stockReport = navigation.SingleOrDefault(n => n.RoutePath == "/reportes/stock");
         stockReport.Should().NotBeNull("el reporte de stock debe estar en el menú");
-        stockReport!.PermissionKey.Should()
+        stockReport!
+            .PermissionKey.Should()
             .Be(ERP.Domain.Kernel.Permissions.InventoryPermissions.StockView);
         stockReport.GroupCode.Should().Be("inventory");
         stockReport.ParentItemId.Should().Be(Guid.Parse("e2000000-0000-4000-9000-000000000030"));
 
         var purchasesReport = navigation.SingleOrDefault(n => n.RoutePath == "/reportes/compras");
         purchasesReport.Should().NotBeNull("el reporte de compras debe estar en el menú");
-        purchasesReport!.PermissionKey.Should()
+        purchasesReport!
+            .PermissionKey.Should()
             .Be(ERP.Domain.Kernel.Permissions.PurchasePermissions.View);
         // MAPA-MENU-ERP-SSOT-01: "Compras" es ahora su propio módulo de nivel superior, separado
         // de "suppliers" — mismo Id de contenedor, distinto GroupCode.
         purchasesReport.GroupCode.Should().Be("purchases");
-        purchasesReport.ParentItemId.Should().Be(Guid.Parse("e3000000-0000-4000-9000-000000000030"));
+        purchasesReport
+            .ParentItemId.Should()
+            .Be(Guid.Parse("e3000000-0000-4000-9000-000000000030"));
 
-        navigation.Should().NotContain(n => n.RoutePath.StartsWith("/reportes/", StringComparison.Ordinal)
-            && n.RoutePath != "/reportes/ventas"
-            && n.RoutePath != "/reportes/stock"
-            && n.RoutePath != "/reportes/compras");
+        navigation
+            .Should()
+            .NotContain(n =>
+                n.RoutePath.StartsWith("/reportes/", StringComparison.Ordinal)
+                && n.RoutePath != "/reportes/ventas"
+                && n.RoutePath != "/reportes/stock"
+                && n.RoutePath != "/reportes/compras"
+            );
     }
 
     [Fact]
@@ -498,7 +579,8 @@ public sealed class KernelRegistryTests
         {
             var item = navigation.Single(n => n.RoutePath == route);
             item.GroupCode.Should().Be("products", $"'{route}' debe pertenecer al módulo products");
-            item.ParentItemId.Should().Be(managementGroupId, $"'{route}' debe estar bajo la categoría Gestión de ítems");
+            item.ParentItemId.Should()
+                .Be(managementGroupId, $"'{route}' debe estar bajo la categoría Gestión de ítems");
         }
 
         var productsModule = KernelRegistry.Modules.Single(m => m.Code == "products");
@@ -514,20 +596,18 @@ public sealed class KernelRegistryTests
         // contenedores: Ventas/Configuración/Reportes.
         var navigation = KernelRegistry.Navigation;
 
-        foreach (var (groupCode, expectedCount) in new[]
-        {
-            ("sales", 3),
-            ("inventory", 3),
-        })
+        foreach (var (groupCode, expectedCount) in new[] { ("sales", 3), ("inventory", 3) })
         {
             var containers = navigation
                 .Where(n => n.GroupCode == groupCode && n.ParentItemId is null)
                 .ToList();
 
-            containers.Should().HaveCount(
-                expectedCount,
-                $"'{groupCode}' debe exponer exactamente {expectedCount} contenedores de primer nivel"
-            );
+            containers
+                .Should()
+                .HaveCount(
+                    expectedCount,
+                    $"'{groupCode}' debe exponer exactamente {expectedCount} contenedores de primer nivel"
+                );
         }
     }
 
@@ -552,8 +632,16 @@ public sealed class KernelRegistryTests
 
         actualContainerOrder.Should().Equal(expectedContainerOrder);
 
-        KernelRegistry.Navigation.Should().NotContain(n => n.GroupCode == "sales" && n.RoutePath.StartsWith("/cash", StringComparison.Ordinal));
-        KernelRegistry.Navigation.Should().NotContain(n => n.GroupCode == "sales" && n.RoutePath == "/electronic-documents/monitor");
+        KernelRegistry
+            .Navigation.Should()
+            .NotContain(n =>
+                n.GroupCode == "sales" && n.RoutePath.StartsWith("/cash", StringComparison.Ordinal)
+            );
+        KernelRegistry
+            .Navigation.Should()
+            .NotContain(n =>
+                n.GroupCode == "sales" && n.RoutePath == "/electronic-documents/monitor"
+            );
     }
 
     [Fact]
@@ -561,11 +649,7 @@ public sealed class KernelRegistryTests
     {
         // MAPA-MENU-ERP-SSOT-01: Caja (movida desde "sales") y Bancos (movido desde "settings")
         // — mismos Ids que tenían en sus módulos de origen.
-        var expectedContainerOrder = new[]
-        {
-            "/treasury/cash/group",
-            "/treasury/banks/group",
-        };
+        var expectedContainerOrder = new[] { "/treasury/cash/group", "/treasury/banks/group" };
 
         var actualContainerOrder = KernelRegistry
             .Navigation.Where(n => n.GroupCode == "treasury" && n.ParentItemId is null)
@@ -580,7 +664,9 @@ public sealed class KernelRegistryTests
         cajaSessions.ParentItemId.Should().Be(Guid.Parse("f5000000-0000-4000-9000-000000000010"));
 
         var cajaConfigGroupId = Guid.Parse("f5000000-0000-4000-9000-000000000030");
-        var cajaRegisters = KernelRegistry.Navigation.Single(n => n.RoutePath == "/treasury/cash/registers");
+        var cajaRegisters = KernelRegistry.Navigation.Single(n =>
+            n.RoutePath == "/treasury/cash/registers"
+        );
         cajaRegisters.GroupCode.Should().Be("treasury");
         cajaRegisters.ParentItemId.Should().Be(cajaConfigGroupId);
 
@@ -630,7 +716,9 @@ public sealed class KernelRegistryTests
         var navigation = KernelRegistry.Navigation;
 
         navigation.Should().NotContain(n => n.RoutePath == "/settings/financial-destinations");
-        navigation.Should().NotContain(n => n.RoutePath == "/treasury/banks/financial-destinations");
+        navigation
+            .Should()
+            .NotContain(n => n.RoutePath == "/treasury/banks/financial-destinations");
     }
 
     [Fact]
@@ -662,7 +750,11 @@ public sealed class KernelRegistryTests
         var communicationsEmail = navigation.SingleOrDefault(n =>
             n.RoutePath == "/settings/communications/email"
         );
-        communicationsEmail.Should().NotBeNull("correo SMTP debe estar en el menú de Configuración (COMMUNICATIONS-SETTINGS-UI-01B)");
+        communicationsEmail
+            .Should()
+            .NotBeNull(
+                "correo SMTP debe estar en el menú de Configuración (COMMUNICATIONS-SETTINGS-UI-01B)"
+            );
         communicationsEmail!.GroupCode.Should().Be("settings");
         communicationsEmail
             .PermissionKey.Should()
@@ -678,8 +770,12 @@ public sealed class KernelRegistryTests
         // genéricos de ningún otro catálogo.
         var navigation = KernelRegistry.Navigation;
 
-        var catalogsGroup = navigation.SingleOrDefault(n => n.RoutePath == "/settings/catalogs/group");
-        catalogsGroup.Should().NotBeNull("el contenedor Catálogos debe estar en el menú de Configuración");
+        var catalogsGroup = navigation.SingleOrDefault(n =>
+            n.RoutePath == "/settings/catalogs/group"
+        );
+        catalogsGroup
+            .Should()
+            .NotBeNull("el contenedor Catálogos debe estar en el menú de Configuración");
         catalogsGroup!.GroupCode.Should().Be("settings");
         catalogsGroup.ParentItemId.Should().BeNull();
 
@@ -687,8 +783,11 @@ public sealed class KernelRegistryTests
         banks.Should().NotBeNull("Bancos debe estar en el menú de Configuración > Catálogos");
         banks!.GroupCode.Should().Be("settings");
         banks.ParentItemId.Should().Be(catalogsGroup.Id);
-        banks.PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.SettingsPermissions.BanksView);
-        banks.RelatedActionPermissionKeys.Should()
+        banks
+            .PermissionKey.Should()
+            .Be(ERP.Domain.Kernel.Permissions.SettingsPermissions.BanksView);
+        banks
+            .RelatedActionPermissionKeys.Should()
             .BeEquivalentTo(
                 new[]
                 {
@@ -707,9 +806,11 @@ public sealed class KernelRegistryTests
         var operationalPreferences = navigation.SingleOrDefault(n =>
             n.RoutePath == "/settings/operations"
         );
-        operationalPreferences.Should().NotBeNull(
-            "preferencias operativas debe estar en el menú de Configuración (NAV-CONFIG-FIX-01)"
-        );
+        operationalPreferences
+            .Should()
+            .NotBeNull(
+                "preferencias operativas debe estar en el menú de Configuración (NAV-CONFIG-FIX-01)"
+            );
         operationalPreferences!.GroupCode.Should().Be("settings");
         operationalPreferences
             .PermissionKey.Should()
@@ -726,14 +827,20 @@ public sealed class KernelRegistryTests
         var navigation = KernelRegistry.Navigation;
 
         var users = navigation.Single(n => n.RoutePath == "/access/users");
-        users.PermissionKey.Should()
-            .Be(ERP.Domain.Kernel.Permissions.AccessPermissions.MembershipsView,
-                "el permiso del menú debe coincidir con el que exige CompanyUserMembershipsController");
+        users
+            .PermissionKey.Should()
+            .Be(
+                ERP.Domain.Kernel.Permissions.AccessPermissions.MembershipsView,
+                "el permiso del menú debe coincidir con el que exige CompanyUserMembershipsController"
+            );
 
         var roles = navigation.Single(n => n.RoutePath == "/admin/roles");
-        roles.PermissionKey.Should()
-            .Be(ERP.Domain.Kernel.Permissions.AccessPermissions.ProfilesView,
-                "el permiso del menú debe coincidir con el que exigen las mutaciones de AccessProfilesController");
+        roles
+            .PermissionKey.Should()
+            .Be(
+                ERP.Domain.Kernel.Permissions.AccessPermissions.ProfilesView,
+                "el permiso del menú debe coincidir con el que exigen las mutaciones de AccessProfilesController"
+            );
     }
 
     [Fact]
@@ -751,7 +858,8 @@ public sealed class KernelRegistryTests
 
         var delegation = navigation.Single(n => n.RoutePath == "/admin/security");
         delegation.GroupCode.Should().Be("admin");
-        delegation.PermissionKey.Should()
+        delegation
+            .PermissionKey.Should()
             .Be(ERP.Domain.Kernel.Permissions.AdminPermissions.DelegationView);
         delegation.SortOrder.Should().Be(40);
     }
@@ -766,11 +874,13 @@ public sealed class KernelRegistryTests
 
         var permissionsAssignment = navigation.Single(n => n.RoutePath == "/admin/permissions");
         permissionsAssignment.GroupCode.Should().Be("admin");
-        permissionsAssignment.PermissionKey.Should()
+        permissionsAssignment
+            .PermissionKey.Should()
             .Be(ERP.Domain.Kernel.Permissions.AccessPermissions.ProfilesView);
         permissionsAssignment.SortOrder.Should().Be(30);
         // NAV-HIERARCHY-UNIFY-01: se anida bajo la categoría "Usuarios y roles".
-        permissionsAssignment.ParentItemId.Should()
+        permissionsAssignment
+            .ParentItemId.Should()
             .Be(Guid.Parse("bd7b2326-c77b-4534-ad6f-a7edb19827d6"));
     }
 
@@ -788,9 +898,19 @@ public sealed class KernelRegistryTests
         var categories = adminItems.Where(n => n.PermissionKey is null).ToList();
 
         screens.Should().HaveCount(6);
-        screens.Should().OnlyContain(n => n.ParentItemId != null, "ninguna pantalla debe quedar suelta bajo el módulo");
+        screens
+            .Should()
+            .OnlyContain(
+                n => n.ParentItemId != null,
+                "ninguna pantalla debe quedar suelta bajo el módulo"
+            );
         categories.Should().HaveCount(2);
-        categories.Should().OnlyContain(n => n.ParentItemId == null, "las categorías son el único nivel de primer orden");
+        categories
+            .Should()
+            .OnlyContain(
+                n => n.ParentItemId == null,
+                "las categorías son el único nivel de primer orden"
+            );
     }
 
     [Fact]
@@ -803,7 +923,8 @@ public sealed class KernelRegistryTests
 
         var companies = navigation.Single(n => n.RoutePath == "/companies");
         companies.GroupCode.Should().Be("settings");
-        companies.PermissionKey.Should()
+        companies
+            .PermissionKey.Should()
             .Be(ERP.Domain.Kernel.Permissions.SettingsPermissions.CompaniesView);
         companies.Id.Should().Be(Guid.Parse("00000000-0000-4000-8000-000000000104"));
 
@@ -835,7 +956,9 @@ public sealed class KernelRegistryTests
             .OrderBy(n => n.SortOrder)
             .Select(n => n.RoutePath)
             .ToArray();
-        securityOrder.Should().Equal("/admin/security", "/admin/access/sessions", "/admin/activity");
+        securityOrder
+            .Should()
+            .Equal("/admin/security", "/admin/access/sessions", "/admin/activity");
 
         var topLevelOrder = KernelRegistry
             .Navigation.Where(n => n.GroupCode == "admin" && n.ParentItemId is null)
@@ -916,9 +1039,14 @@ public sealed class KernelRegistryTests
     {
         // El catálogo de permisos asignables (menú + acciones relacionadas) nunca debe exponer
         // una clave que no exista realmente en KernelRegistry.Permissions.
-        var allPermissions = new HashSet<string>(KernelRegistry.Permissions, StringComparer.Ordinal);
+        var allPermissions = new HashSet<string>(
+            KernelRegistry.Permissions,
+            StringComparer.Ordinal
+        );
 
-        KernelRegistry.AssignablePermissionKeys.Should().OnlyContain(k => allPermissions.Contains(k));
+        KernelRegistry
+            .AssignablePermissionKeys.Should()
+            .OnlyContain(k => allPermissions.Contains(k));
     }
 
     [Fact]
@@ -942,14 +1070,16 @@ public sealed class KernelRegistryTests
         // supplier-payments.create y .reverse deben aparecer como acciones relacionadas.
         var item = KernelRegistry.Navigation.Single(n => n.RoutePath == "/supplier-payments");
 
-        item.PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.SupplierPaymentsPermissions.View);
-        item.RelatedActionPermissionKeys.Should().BeEquivalentTo(
-            new[]
-            {
-                ERP.Domain.Kernel.Permissions.SupplierPaymentsPermissions.Create,
-                ERP.Domain.Kernel.Permissions.SupplierPaymentsPermissions.Reverse,
-            }
-        );
+        item.PermissionKey.Should()
+            .Be(ERP.Domain.Kernel.Permissions.SupplierPaymentsPermissions.View);
+        item.RelatedActionPermissionKeys.Should()
+            .BeEquivalentTo(
+                new[]
+                {
+                    ERP.Domain.Kernel.Permissions.SupplierPaymentsPermissions.Create,
+                    ERP.Domain.Kernel.Permissions.SupplierPaymentsPermissions.Reverse,
+                }
+            );
     }
 
     [Fact]
@@ -957,9 +1087,11 @@ public sealed class KernelRegistryTests
     {
         // Cada NavItem debe tener algún gate de permiso: o un Permission propio, o un
         // PermissionsAnyCsv (contenedor visual). Nunca ninguno de los dos.
-        KernelRegistry.Navigation.Should().OnlyContain(
-            n => n.PermissionKey != null || !string.IsNullOrEmpty(n.PermissionKeysAnyJson)
-        );
+        KernelRegistry
+            .Navigation.Should()
+            .OnlyContain(n =>
+                n.PermissionKey != null || !string.IsNullOrEmpty(n.PermissionKeysAnyJson)
+            );
     }
 
     [Fact]
@@ -970,18 +1102,30 @@ public sealed class KernelRegistryTests
         // contenedora (sin Permission propio) — ninguna pantalla real puede quedar suelta
         // directamente bajo el módulo. sales/inventory ya cumplían esta regla antes de este
         // ticket (ver Navigation_sales_and_inventory_expose_their_top_level_containers).
-        var migratedModules = new[] { "suppliers", "customers", "products", "accounting", "settings", "admin" };
+        var migratedModules = new[]
+        {
+            "suppliers",
+            "customers",
+            "products",
+            "accounting",
+            "settings",
+            "admin",
+        };
 
         var strayScreens = KernelRegistry
             .Navigation.Where(n =>
-                migratedModules.Contains(n.GroupCode) && n.ParentItemId == null && n.PermissionKey != null
+                migratedModules.Contains(n.GroupCode)
+                && n.ParentItemId == null
+                && n.PermissionKey != null
             )
             .Select(n => n.RoutePath)
             .ToList();
 
-        strayScreens.Should().BeEmpty(
-            "ninguna pantalla real debe quedar suelta directamente bajo el módulo (debe vivir dentro de una categoría)"
-        );
+        strayScreens
+            .Should()
+            .BeEmpty(
+                "ninguna pantalla real debe quedar suelta directamente bajo el módulo (debe vivir dentro de una categoría)"
+            );
     }
 
     [Fact]

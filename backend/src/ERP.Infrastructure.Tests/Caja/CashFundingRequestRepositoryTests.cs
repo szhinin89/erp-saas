@@ -63,8 +63,18 @@ public sealed class CashFundingRequestRepositoryTests : IAsyncLifetime
         await db.Database.MigrateAsync();
 
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _cashier);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _cashier);
-        var other = Company.CreateManaged(tenant.Id, "1790098765001", "Otra S.A.", createdBy: _cashier);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: _cashier
+        );
+        var other = Company.CreateManaged(
+            tenant.Id,
+            "1790098765001",
+            "Otra S.A.",
+            createdBy: _cashier
+        );
         db.Tenants.Add(tenant);
         db.Companies.AddRange(company, other);
         await db.SaveChangesAsync();
@@ -73,41 +83,143 @@ public sealed class CashFundingRequestRepositoryTests : IAsyncLifetime
         _otherCompanyId = other.Id;
 
         var branch = Branch.Create(
-            _tenantId, "Matriz", "Av. Principal 123", "001", null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, true, _cashier,
-            companyId: _companyId);
-        var supplier = BusinessPartner.Create(_tenantId, "05", "1710034065", 1, "Proveedor Test", _cashier);
+            _tenantId,
+            "Matriz",
+            "Av. Principal 123",
+            "001",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            true,
+            _cashier,
+            companyId: _companyId
+        );
+        var supplier = BusinessPartner.Create(
+            _tenantId,
+            "05",
+            "1710034065",
+            1,
+            "Proveedor Test",
+            _cashier
+        );
         db.Branches.Add(branch);
         db.BusinessPartners.Add(supplier);
         await db.SaveChangesAsync();
         _branchId = branch.Id;
         _supplierId = supplier.Id;
 
-        var ledger = Account.Create(_tenantId, _companyId, AccountCode.Create("1.1.02.001"), "Bancos",
-            null, AccountType.Asset, AccountNature.Debit, allowsPosting: true, createdBy: _cashier);
+        var ledger = Account.Create(
+            _tenantId,
+            _companyId,
+            AccountCode.Create("1.1.02.001"),
+            "Bancos",
+            null,
+            AccountType.Asset,
+            AccountNature.Debit,
+            allowsPosting: true,
+            createdBy: _cashier
+        );
         var bank = Bank.Create(_tenantId, "PICHINCHA", "Banco Pichincha", "Pichincha", _cashier);
-        var bankMethod = PaymentMethod.Create(_tenantId, "TRANSFER", "Transferencia", true, false, 1, _cashier, PaymentMethodDetailType.Transfer);
-        var cashMethod = PaymentMethod.Create(_tenantId, "CASH", "Efectivo", false, false, 2, _cashier, affectsPhysicalCash: true);
+        var bankMethod = PaymentMethod.Create(
+            _tenantId,
+            "TRANSFER",
+            "Transferencia",
+            true,
+            false,
+            1,
+            _cashier,
+            PaymentMethodDetailType.Transfer
+        );
+        var cashMethod = PaymentMethod.Create(
+            _tenantId,
+            "CASH",
+            "Efectivo",
+            false,
+            false,
+            2,
+            _cashier,
+            affectsPhysicalCash: true
+        );
         db.Accounts.Add(ledger);
         db.Banks.Add(bank);
         db.PaymentMethods.AddRange(bankMethod, cashMethod);
         await db.SaveChangesAsync();
-        var bankAccount = CompanyBankAccount.Create(_tenantId, _companyId, bank.Id, BankAccountType.Checking,
-            "2200123456", "Banco Pichincha CTE", ledger.Id, _cashier);
+        var bankAccount = CompanyBankAccount.Create(
+            _tenantId,
+            _companyId,
+            bank.Id,
+            BankAccountType.Checking,
+            "2200123456",
+            "Banco Pichincha CTE",
+            ledger.Id,
+            _cashier
+        );
         db.CompanyBankAccounts.Add(bankAccount);
 
-        var register = CashRegister.Create(_tenantId, _companyId, _branchId, "CAJA-01", "Caja Principal", _cashier);
+        var register = CashRegister.Create(
+            _tenantId,
+            _companyId,
+            _branchId,
+            "CAJA-01",
+            "Caja Principal",
+            _cashier
+        );
         register.SetAccountingAccount(ledger.Id, _cashier);
         db.CashRegisters.Add(register);
-        var establishment = Establishment.Create(_tenantId, _branchId, _companyId, "001", "Matriz", "Av. Principal 123", null, isMain: true, _cashier);
+        var establishment = Establishment.Create(
+            _tenantId,
+            _branchId,
+            _companyId,
+            "001",
+            "Matriz",
+            "Av. Principal 123",
+            null,
+            isMain: true,
+            _cashier
+        );
         db.Set<Establishment>().Add(establishment);
         await db.SaveChangesAsync();
-        var emissionPoint = EmissionPoint.Create(_tenantId, _companyId, establishment.Id, "001", "Punto 1",
-            ERP.Domain.Modules.Company.Enums.EmissionType.Electronic, isDefault: true, _cashier);
+        var emissionPoint = EmissionPoint.Create(
+            _tenantId,
+            _companyId,
+            establishment.Id,
+            "001",
+            "Punto 1",
+            ERP.Domain.Modules.Company.Enums.EmissionType.Electronic,
+            isDefault: true,
+            _cashier
+        );
         db.Set<EmissionPoint>().Add(emissionPoint);
         await db.SaveChangesAsync();
-        var session = CashSession.Open(_tenantId, _companyId, _branchId, _cashier, register.Id, "CAJA-01",
-            "Caja Principal", emissionPoint.Id, "001", 500m, _cashier);
+        var session = CashSession.Open(
+            _tenantId,
+            _companyId,
+            _branchId,
+            _cashier,
+            register.Id,
+            "CAJA-01",
+            "Caja Principal",
+            emissionPoint.Id,
+            "001",
+            500m,
+            _cashier
+        );
         db.Set<CashSession>().Add(session);
         await db.SaveChangesAsync();
 
@@ -139,7 +251,14 @@ public sealed class CashFundingRequestRepositoryTests : IAsyncLifetime
             200m,
             null,
             [
-                new SupplierPaymentMethodLineRequest(_bankMethodId, _bankAccountId, null, 120m, "OP-1", TransactionDate: new DateOnly(2026, 9, 20)),
+                new SupplierPaymentMethodLineRequest(
+                    _bankMethodId,
+                    _bankAccountId,
+                    null,
+                    120m,
+                    "OP-1",
+                    TransactionDate: new DateOnly(2026, 9, 20)
+                ),
                 new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 80m),
             ],
             [],
@@ -151,19 +270,29 @@ public sealed class CashFundingRequestRepositoryTests : IAsyncLifetime
     {
         var snapshot = CashFundingPaymentSnapshot.FromIntent(MixedIntent());
         return CashFundingRequest.Create(
-            _tenantId, _companyId, _branchId, _cashRegisterId, _cashSessionId, _supplierId,
-            snapshot.TotalAmount, CashFundingPaymentSnapshot.CashAmountFor(snapshot, _cashRegisterId),
+            _tenantId,
+            _companyId,
+            _branchId,
+            _cashRegisterId,
+            _cashSessionId,
+            _supplierId,
+            snapshot.TotalAmount,
+            CashFundingPaymentSnapshot.CashAmountFor(snapshot, _cashRegisterId),
             requester ?? _requester,
             CashFundingPaymentSnapshot.Serialize(snapshot),
             CashFundingPaymentSnapshot.CurrentVersion,
             CashFundingPaymentSnapshot.ComputeHash(snapshot),
-            clientRequestId ?? Guid.NewGuid());
+            clientRequestId ?? Guid.NewGuid()
+        );
     }
 
     private async Task<CashFundingRequest> AddAsync(CashFundingRequest request)
     {
         await using var db = CreateContext();
-        await new CashFundingRequestRepository(db, new FixedCurrentCompany(() => _companyId)).AddAsync(request);
+        await new CashFundingRequestRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        ).AddAsync(request);
         await db.SaveChangesAsync();
         return request;
     }
@@ -172,10 +301,31 @@ public sealed class CashFundingRequestRepositoryTests : IAsyncLifetime
     {
         await using var db = CreateContext();
         var payment = SupplierPayment.Create(
-            _tenantId, _companyId, _branchId, _supplierId, new DateOnly(2026, 9, 20), 50m,
-            $"SP-{Guid.NewGuid():N}"[..12], null,
-            [new SupplierPaymentMethodLineInput(_bankMethodId, _bankAccountId, null, 50m, "OP-9", TransactionDate: new DateOnly(2026, 9, 20))],
-            [], [], createdBy, unappliedAmountConfirmed: true, allowWithoutPayable: true, confirmedBy: confirmedBy);
+            _tenantId,
+            _companyId,
+            _branchId,
+            _supplierId,
+            new DateOnly(2026, 9, 20),
+            50m,
+            $"SP-{Guid.NewGuid():N}"[..12],
+            null,
+            [
+                new SupplierPaymentMethodLineInput(
+                    _bankMethodId,
+                    _bankAccountId,
+                    null,
+                    50m,
+                    "OP-9",
+                    TransactionDate: new DateOnly(2026, 9, 20)
+                ),
+            ],
+            [],
+            [],
+            createdBy,
+            unappliedAmountConfirmed: true,
+            allowWithoutPayable: true,
+            confirmedBy: confirmedBy
+        );
         db.SupplierPayments.Add(payment);
         await db.SaveChangesAsync();
         return payment;
@@ -189,15 +339,33 @@ public sealed class CashFundingRequestRepositoryTests : IAsyncLifetime
         var created = await AddAsync(NewRequest());
 
         await using var db = CreateContext();
-        var loaded = await new CashFundingRequestRepository(db, new FixedCurrentCompany(() => _companyId))
-            .GetByIdAsync(_tenantId, created.Id);
+        var loaded = await new CashFundingRequestRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        ).GetByIdAsync(_tenantId, created.Id);
 
         loaded.Should().NotBeNull();
-        (loaded!.Status, loaded.CashAmount, loaded.TotalAmount, loaded.RequestedByUserId, loaded.PayloadVersion)
-            .Should().Be((CashFundingRequestStatus.Pending, 80m, 200m, _requester, 1));
-        var reread = CashFundingPaymentSnapshot.Deserialize(loaded.PaymentPayload, loaded.PayloadVersion);
-        CashFundingPaymentSnapshot.ComputeHash(reread).Should().Be(loaded.PayloadHash, "jsonb normaliza el texto, no la intención");
-        CashFundingPaymentSnapshot.ToIntent(reread).Should().BeEquivalentTo(MixedIntent(), o => o.WithStrictOrdering());
+        (
+            loaded!.Status,
+            loaded.CashAmount,
+            loaded.TotalAmount,
+            loaded.RequestedByUserId,
+            loaded.PayloadVersion
+        )
+            .Should()
+            .Be((CashFundingRequestStatus.Pending, 80m, 200m, _requester, 1));
+        var reread = CashFundingPaymentSnapshot.Deserialize(
+            loaded.PaymentPayload,
+            loaded.PayloadVersion
+        );
+        CashFundingPaymentSnapshot
+            .ComputeHash(reread)
+            .Should()
+            .Be(loaded.PayloadHash, "jsonb normaliza el texto, no la intención");
+        CashFundingPaymentSnapshot
+            .ToIntent(reread)
+            .Should()
+            .BeEquivalentTo(MixedIntent(), o => o.WithStrictOrdering());
     }
 
     [Fact]
@@ -206,11 +374,16 @@ public sealed class CashFundingRequestRepositoryTests : IAsyncLifetime
         var created = await AddAsync(NewRequest());
 
         await using var db = CreateContext(_otherCompanyId);
-        var repo = new CashFundingRequestRepository(db, new FixedCurrentCompany(() => _otherCompanyId));
+        var repo = new CashFundingRequestRepository(
+            db,
+            new FixedCurrentCompany(() => _otherCompanyId)
+        );
         (await repo.GetByIdAsync(_tenantId, created.Id)).Should().BeNull();
         await using var tx = await db.Database.BeginTransactionAsync();
         (await repo.GetByIdForUpdateAsync(_tenantId, created.Id)).Should().BeNull();
-        (await repo.ListBySessionAsync(_tenantId, _cashSessionId, CashFundingRequestStatus.Pending)).Should().BeEmpty();
+        (await repo.ListBySessionAsync(_tenantId, _cashSessionId, CashFundingRequestStatus.Pending))
+            .Should()
+            .BeEmpty();
     }
 
     [Fact]
@@ -221,14 +394,18 @@ public sealed class CashFundingRequestRepositoryTests : IAsyncLifetime
 
         await using (var db = CreateContext())
         {
-            var found = await new CashFundingRequestRepository(db, new FixedCurrentCompany(() => _companyId))
-                .GetByClientRequestIdAsync(_tenantId, clientRequestId);
+            var found = await new CashFundingRequestRepository(
+                db,
+                new FixedCurrentCompany(() => _companyId)
+            ).GetByClientRequestIdAsync(_tenantId, clientRequestId);
             found!.Id.Should().Be(created.Id);
         }
 
         var duplicate = () => AddAsync(NewRequest(clientRequestId));
         (await duplicate.Should().ThrowAsync<DbUpdateException>())
-            .WithInnerException<PostgresException>().Which.SqlState.Should().Be("23505");
+            .WithInnerException<PostgresException>()
+            .Which.SqlState.Should()
+            .Be("23505");
     }
 
     [Fact]
@@ -244,14 +421,28 @@ public sealed class CashFundingRequestRepositoryTests : IAsyncLifetime
         var act = () => AddAsync(second);
 
         (await act.Should().ThrowAsync<DbUpdateException>())
-            .WithInnerException<PostgresException>().Which.ConstraintName.Should().Be("uq_cash_funding_requests_supplier_payment");
+            .WithInnerException<PostgresException>()
+            .Which.ConstraintName.Should()
+            .Be("uq_cash_funding_requests_supplier_payment");
     }
 
     [Theory]
-    [InlineData("UPDATE cash_funding_requests SET status = 2 WHERE id = @id", "chk_cash_funding_requests_payment_only_when_fulfilled")]
-    [InlineData("UPDATE cash_funding_requests SET status = 3 WHERE id = @id", "chk_cash_funding_requests_resolution_consistency")]
-    [InlineData("UPDATE cash_funding_requests SET cash_amount = 0 WHERE id = @id", "chk_cash_funding_requests_cash_amount_positive")]
-    [InlineData("UPDATE cash_funding_requests SET total_amount = 10 WHERE id = @id", "chk_cash_funding_requests_total_covers_cash")]
+    [InlineData(
+        "UPDATE cash_funding_requests SET status = 2 WHERE id = @id",
+        "chk_cash_funding_requests_payment_only_when_fulfilled"
+    )]
+    [InlineData(
+        "UPDATE cash_funding_requests SET status = 3 WHERE id = @id",
+        "chk_cash_funding_requests_resolution_consistency"
+    )]
+    [InlineData(
+        "UPDATE cash_funding_requests SET cash_amount = 0 WHERE id = @id",
+        "chk_cash_funding_requests_cash_amount_positive"
+    )]
+    [InlineData(
+        "UPDATE cash_funding_requests SET total_amount = 10 WHERE id = @id",
+        "chk_cash_funding_requests_total_covers_cash"
+    )]
     public async Task La_BD_rechaza_estados_inconsistentes(string sql, string constraint)
     {
         var created = await AddAsync(NewRequest());
@@ -262,7 +453,9 @@ public sealed class CashFundingRequestRepositoryTests : IAsyncLifetime
 
         var act = () => command.ExecuteNonQueryAsync();
 
-        (await act.Should().ThrowAsync<PostgresException>()).Which.ConstraintName.Should().Be(constraint);
+        (await act.Should().ThrowAsync<PostgresException>())
+            .Which.ConstraintName.Should()
+            .Be(constraint);
     }
 
     [Fact]
@@ -272,7 +465,10 @@ public sealed class CashFundingRequestRepositoryTests : IAsyncLifetime
 
         await using var first = CreateContext();
         await using var firstTx = await first.Database.BeginTransactionAsync();
-        var firstRepo = new CashFundingRequestRepository(first, new FixedCurrentCompany(() => _companyId));
+        var firstRepo = new CashFundingRequestRepository(
+            first,
+            new FixedCurrentCompany(() => _companyId)
+        );
         var locked = await firstRepo.GetByIdForUpdateAsync(_tenantId, created.Id);
         locked!.Reject(_cashier, "Sin efectivo");
 
@@ -280,21 +476,29 @@ public sealed class CashFundingRequestRepositoryTests : IAsyncLifetime
         {
             await using var second = CreateContext();
             await using var secondTx = await second.Database.BeginTransactionAsync();
-            var request = await new CashFundingRequestRepository(second, new FixedCurrentCompany(() => _companyId))
-                .GetByIdForUpdateAsync(_tenantId, created.Id);
+            var request = await new CashFundingRequestRepository(
+                second,
+                new FixedCurrentCompany(() => _companyId)
+            ).GetByIdForUpdateAsync(_tenantId, created.Id);
             var status = request!.Status;
             await secondTx.CommitAsync();
             return status;
         });
 
         await Task.Delay(1500);
-        secondTask.IsCompleted.Should().BeFalse("la segunda transacción espera el lock de la primera");
+        secondTask
+            .IsCompleted.Should()
+            .BeFalse("la segunda transacción espera el lock de la primera");
 
         await first.SaveChangesAsync();
         await firstTx.CommitAsync();
 
-        (await secondTask).Should().Be(CashFundingRequestStatus.Rejected,
-            "tras el lock se recarga el estado vigente: la solicitud ya no está Pending");
+        (await secondTask)
+            .Should()
+            .Be(
+                CashFundingRequestStatus.Rejected,
+                "tras el lock se recarga el estado vigente: la solicitud ya no está Pending"
+            );
     }
 
     [Fact]
@@ -311,11 +515,29 @@ public sealed class CashFundingRequestRepositoryTests : IAsyncLifetime
         var repo = new CashFundingRequestRepository(db, new FixedCurrentCompany(() => _companyId));
 
         (await repo.ListBySessionAsync(_tenantId, _cashSessionId, CashFundingRequestStatus.Pending))
-            .Select(r => r.Id).Should().BeEquivalentTo([pendingA.Id, pendingB.Id]);
-        (await repo.ListBySessionAsync(_tenantId, _cashSessionId, CashFundingRequestStatus.Rejected))
-            .Select(r => r.Id).Should().Equal(rejected.Id);
-        (await repo.ListByRequesterAsync(_tenantId, otherRequester, CashFundingRequestStatus.Pending))
-            .Select(r => r.Id).Should().Equal(pendingB.Id);
+            .Select(r => r.Id)
+            .Should()
+            .BeEquivalentTo([pendingA.Id, pendingB.Id]);
+        (
+            await repo.ListBySessionAsync(
+                _tenantId,
+                _cashSessionId,
+                CashFundingRequestStatus.Rejected
+            )
+        )
+            .Select(r => r.Id)
+            .Should()
+            .Equal(rejected.Id);
+        (
+            await repo.ListByRequesterAsync(
+                _tenantId,
+                otherRequester,
+                CashFundingRequestStatus.Pending
+            )
+        )
+            .Select(r => r.Id)
+            .Should()
+            .Equal(pendingB.Id);
     }
 
     [Fact]
@@ -330,9 +552,13 @@ public sealed class CashFundingRequestRepositoryTests : IAsyncLifetime
 
     private sealed class NoOpPublisher : IPublisher
     {
-        public Task Publish(object notification, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
             where TNotification : INotification => Task.CompletedTask;
     }
 }

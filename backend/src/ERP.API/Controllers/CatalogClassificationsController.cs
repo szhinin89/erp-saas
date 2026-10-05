@@ -48,5 +48,7 @@ public sealed class CatalogClassificationsController : ControllerBase
 
     [HttpGet("customer-classifications")]
     public async Task<IActionResult> GetCustomerClassifications(CancellationToken ct) =>
-        this.ToOkOrBadRequest(await _mediator.Send(new GetActiveCustomerClassificationsQuery(), ct));
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new GetActiveCustomerClassificationsQuery(), ct)
+        );
 }

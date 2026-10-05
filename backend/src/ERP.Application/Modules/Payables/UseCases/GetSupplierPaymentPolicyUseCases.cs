@@ -32,7 +32,9 @@ public sealed class GetSupplierPaymentPolicyHandler
     {
         var preferences = await _preferences.ResolveAsync(cancellationToken);
         return Result<SupplierPaymentPolicyDto>.Success(
-            new SupplierPaymentPolicyDto(preferences.Payables?.AllowSupplierPaymentWithoutPayable ?? false)
+            new SupplierPaymentPolicyDto(
+                preferences.Payables?.AllowSupplierPaymentWithoutPayable ?? false
+            )
         );
     }
 }

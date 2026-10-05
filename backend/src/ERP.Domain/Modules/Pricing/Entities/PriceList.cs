@@ -189,7 +189,15 @@ public sealed class PriceList : MasterEntity, ITenantScopedEntity, ICompanyOpera
         RuleValue = ruleValue;
         SetUpdated(updatedBy);
         RaiseDomainEvent(
-            new PriceListUpdatedEvent(TenantId, CompanyId, Id, oldRuleType, oldRuleValue, ruleType, ruleValue)
+            new PriceListUpdatedEvent(
+                TenantId,
+                CompanyId,
+                Id,
+                oldRuleType,
+                oldRuleValue,
+                ruleType,
+                ruleValue
+            )
         );
     }
 

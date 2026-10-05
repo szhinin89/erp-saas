@@ -50,15 +50,13 @@ public sealed class PurchaseInvoiceDetailTaxConfiguration
             .HasColumnName("tax_amount")
             .HasColumnType("numeric(18,2)")
             .IsRequired();
-        builder
-            .Property(x => x.Source)
-            .HasColumnName("source")
-            .HasConversion<int>()
-            .IsRequired();
+        builder.Property(x => x.Source).HasColumnName("source").HasConversion<int>().IsRequired();
 
         builder
             .HasIndex(x => x.PurchaseInvoiceDetailId)
             .HasDatabaseName("ix_purchase_invoice_detail_taxes_detail");
-        builder.HasIndex(x => x.TenantId).HasDatabaseName("ix_purchase_invoice_detail_taxes_tenant");
+        builder
+            .HasIndex(x => x.TenantId)
+            .HasDatabaseName("ix_purchase_invoice_detail_taxes_tenant");
     }
 }

@@ -12,7 +12,11 @@ public interface ISalesInvoiceRepository
     /// anulaciones concurrentes se serializan y la segunda ve el estado ya anulado. Alcance
     /// tenant + empresa; una factura ajena no se bloquea ni se devuelve (fail-closed).
     /// </summary>
-    Task<SalesInvoice?> GetByIdForUpdateAsync(Guid tenantId, Guid id, CancellationToken ct = default);
+    Task<SalesInvoice?> GetByIdForUpdateAsync(
+        Guid tenantId,
+        Guid id,
+        CancellationToken ct = default
+    );
     Task<(IReadOnlyList<SalesInvoice> Items, int Total)> GetPagedAsync(
         Guid tenantId,
         string? search,

@@ -143,7 +143,10 @@ public sealed class RidePipeline
             return Result<RideGenerationResultDto>.Failure(
                 "La empresa no tiene configuracion de precision."
             );
-        var precision = new RideLinePrecision(policy.QuantityDecimals, policy.SalesUnitPriceDecimals);
+        var precision = new RideLinePrecision(
+            policy.QuantityDecimals,
+            policy.SalesUnitPriceDecimals
+        );
         // Invalidate legacy F2 PDFs and keep cached rendering tied to its presentation scales.
         var templateVersion = precision.TemplateVersion;
 

@@ -36,7 +36,10 @@ public sealed class SupplierPaymentConfiguration : IEntityTypeConfiguration<Supp
             .HasColumnName("receipt_number")
             .HasMaxLength(SupplierPayment.ReceiptNumberMaxLen);
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<int>().IsRequired();
-        builder.Property(x => x.ConfirmedByUserId).HasColumnName("confirmed_by_user_id").IsRequired();
+        builder
+            .Property(x => x.ConfirmedByUserId)
+            .HasColumnName("confirmed_by_user_id")
+            .IsRequired();
         builder.Property(x => x.ReversedAtUtc).HasColumnName("reversed_at_utc");
         builder.Property(x => x.ReversedBy).HasColumnName("reversed_by");
         builder.Property(x => x.ReverseReason).HasColumnName("reverse_reason");
@@ -97,8 +100,16 @@ public sealed class SupplierPaymentConfiguration : IEntityTypeConfiguration<Supp
             .HasForeignKey(x => x.SupplierPaymentId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne<Company>().WithMany().HasForeignKey(x => x.CompanyId).OnDelete(DeleteBehavior.Restrict);
-        builder.HasOne<Branch>().WithMany().HasForeignKey(x => x.BranchId).OnDelete(DeleteBehavior.Restrict);
+        builder
+            .HasOne<Company>()
+            .WithMany()
+            .HasForeignKey(x => x.CompanyId)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder
+            .HasOne<Branch>()
+            .WithMany()
+            .HasForeignKey(x => x.BranchId)
+            .OnDelete(DeleteBehavior.Restrict);
         builder
             .HasOne<BusinessPartner>()
             .WithMany()
@@ -106,20 +117,42 @@ public sealed class SupplierPaymentConfiguration : IEntityTypeConfiguration<Supp
             .OnDelete(DeleteBehavior.Restrict);
 
         builder
-            .HasIndex(x => new { x.TenantId, x.CompanyId, x.SystemNumber })
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.CompanyId,
+                x.SystemNumber,
+            })
             .IsUnique()
             .HasDatabaseName("uq_supplier_payments_tenant_company_system_number");
 
         builder
-            .HasIndex(x => new { x.TenantId, x.CompanyId, x.SupplierId, x.PaymentDate })
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.CompanyId,
+                x.SupplierId,
+                x.PaymentDate,
+            })
             .HasDatabaseName("ix_supplier_payments_tenant_company_supplier_date");
 
         builder
-            .HasIndex(x => new { x.TenantId, x.CompanyId, x.Status })
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.CompanyId,
+                x.Status,
+            })
             .HasDatabaseName("ix_supplier_payments_tenant_company_status");
 
         builder
-            .HasIndex(x => new { x.TenantId, x.CompanyId, x.SupplierId, x.ReceiptNumber })
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.CompanyId,
+                x.SupplierId,
+                x.ReceiptNumber,
+            })
             .IsUnique()
             .HasDatabaseName("uq_supplier_payments_tenant_company_supplier_receipt_number")
             .HasFilter("\"receipt_number\" IS NOT NULL");

@@ -88,14 +88,23 @@ public sealed class PricingResolver : IPricingResolver
             );
 
         var companyToday = await _companyClock.TodayAsync(_c.CompanyId, tenantId, ct);
-        var listApplies = priceList is not null && priceList.IsActive && priceList.IsValidOn(companyToday);
+        var listApplies =
+            priceList is not null && priceList.IsActive && priceList.IsValidOn(companyToday);
 
         if (!listApplies)
             return Result<PricingResult>.Success(
                 BasePriceResult(itemId, basePrice, priceList?.CurrencyCode, priceDecimals)
             );
 
-        var resolved = await TryResolveAgainstListAsync(tenantId, itemId, priceList!, basePrice, null, priceDecimals, ct);
+        var resolved = await TryResolveAgainstListAsync(
+            tenantId,
+            itemId,
+            priceList!,
+            basePrice,
+            null,
+            priceDecimals,
+            ct
+        );
         return Result<PricingResult>.Success(
             resolved ?? BasePriceResult(itemId, basePrice, priceList!.CurrencyCode, priceDecimals)
         );
@@ -155,7 +164,9 @@ public sealed class PricingResolver : IPricingResolver
 
         // Ningún candidato tenía el ítem asignado y activo — mismo fallback final que la lista
         // explícita/default inaplicable.
-        return Result<PricingResult>.Success(BasePriceResult(context.ItemId, basePrice, null, priceDecimals));
+        return Result<PricingResult>.Success(
+            BasePriceResult(context.ItemId, basePrice, null, priceDecimals)
+        );
     }
 
     /// <summary>
@@ -212,8 +223,14 @@ public sealed class PricingResolver : IPricingResolver
                 continue;
             priceListsById[candidate.PriceListId] = priceList;
 
-            var assignments = await _assignments.GetByPriceListAsync(tenantId, candidate.PriceListId, ct);
-            assignedItemIdsByList[candidate.PriceListId] = assignments.Select(a => a.ItemId).ToHashSet();
+            var assignments = await _assignments.GetByPriceListAsync(
+                tenantId,
+                candidate.PriceListId,
+                ct
+            );
+            assignedItemIdsByList[candidate.PriceListId] = assignments
+                .Select(a => a.ItemId)
+                .ToHashSet();
 
             var rules = await _rules.GetByPriceListAsync(tenantId, candidate.PriceListId, ct);
             rulesByListAndItem[candidate.PriceListId] = rules.ToDictionary(r => r.ItemId);
@@ -236,7 +253,15 @@ public sealed class PricingResolver : IPricingResolver
                     continue;
 
                 rulesByListAndItem[candidate.PriceListId].TryGetValue(itemId, out var itemRule);
-                resolved = BuildResultForList(itemId, priceList, basePrice, itemRule, candidate.Source, _strategies, priceDecimals);
+                resolved = BuildResultForList(
+                    itemId,
+                    priceList,
+                    basePrice,
+                    itemRule,
+                    candidate.Source,
+                    _strategies,
+                    priceDecimals
+                );
                 break;
             }
 
@@ -267,7 +292,15 @@ public sealed class PricingResolver : IPricingResolver
             return null;
 
         var itemRule = await _rules.GetActiveForItemInListAsync(tenantId, priceList.Id, itemId, ct);
-        return BuildResultForList(itemId, priceList, basePrice, itemRule, selectionSource, _strategies, priceDecimals);
+        return BuildResultForList(
+            itemId,
+            priceList,
+            basePrice,
+            itemRule,
+            selectionSource,
+            _strategies,
+            priceDecimals
+        );
     }
 
     /// <summary>
@@ -290,9 +323,16 @@ public sealed class PricingResolver : IPricingResolver
         // Resolve Rule — regla específica del ítem (si existe) > regla general de la lista > sin
         // ajuste. Precedencia + redondeo: núcleo compartido con la simulación batch
         // (GetItemPricingSimulation) — nunca reimplementado aquí.
-        var (unitPrice, ruleApplied) = PricingCalculation.Resolve(basePrice, itemRule, priceList, strategies, priceDecimals);
-        var ruleDescription =
-            ruleApplied is null ? null : PricingCalculation.Summarize(itemRule, priceList).Description;
+        var (unitPrice, ruleApplied) = PricingCalculation.Resolve(
+            basePrice,
+            itemRule,
+            priceList,
+            strategies,
+            priceDecimals
+        );
+        var ruleDescription = ruleApplied is null
+            ? null
+            : PricingCalculation.Summarize(itemRule, priceList).Description;
 
         return new PricingResult(
             itemId,

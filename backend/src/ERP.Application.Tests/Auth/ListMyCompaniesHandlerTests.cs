@@ -93,13 +93,28 @@ public sealed class ListMyCompaniesHandlerTests
             .ReturnsAsync(
                 new[]
                 {
-                    CompanyUserMembership.Create(companyOfTenantA.Id, UserId, "Admin", null, UserId),
-                    CompanyUserMembership.Create(companyOfTenantB.Id, UserId, "Admin", null, UserId),
+                    CompanyUserMembership.Create(
+                        companyOfTenantA.Id,
+                        UserId,
+                        "Admin",
+                        null,
+                        UserId
+                    ),
+                    CompanyUserMembership.Create(
+                        companyOfTenantB.Id,
+                        UserId,
+                        "Admin",
+                        null,
+                        UserId
+                    ),
                 }
             );
         _companyRepo
             .Setup(r =>
-                r.GetByIdsAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>())
+                r.GetByIdsAsync(
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(new[] { companyOfTenantA, companyOfTenantB });
 
@@ -145,7 +160,12 @@ public sealed class ListMyCompaniesHandlerTests
     [Fact]
     public async Task Expone_estado_operativo_regimen_y_contabilidad_desde_la_entidad_company()
     {
-        var company = Company.CreateManaged(TenantA, "1790012345001", "Empresa A", createdBy: UserId);
+        var company = Company.CreateManaged(
+            TenantA,
+            "1790012345001",
+            "Empresa A",
+            createdBy: UserId
+        );
         var membership = CompanyUserMembership.Create(company.Id, UserId, "User", null, UserId);
 
         _currentUser.Setup(u => u.IsAuthenticated).Returns(true);
@@ -161,7 +181,10 @@ public sealed class ListMyCompaniesHandlerTests
             .ReturnsAsync(new[] { membership });
         _companyRepo
             .Setup(r =>
-                r.GetByIdsAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>())
+                r.GetByIdsAsync(
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(new[] { company });
 
@@ -179,8 +202,19 @@ public sealed class ListMyCompaniesHandlerTests
     [Fact]
     public async Task Rol_admin_recibe_assignedBranchCount_igual_al_total_sin_depender_de_CompanyUserBranch()
     {
-        var company = Company.CreateManaged(TenantA, "1790012345001", "Empresa A", createdBy: UserId);
-        var adminMembership = CompanyUserMembership.Create(company.Id, UserId, "Admin", null, UserId);
+        var company = Company.CreateManaged(
+            TenantA,
+            "1790012345001",
+            "Empresa A",
+            createdBy: UserId
+        );
+        var adminMembership = CompanyUserMembership.Create(
+            company.Id,
+            UserId,
+            "Admin",
+            null,
+            UserId
+        );
 
         _currentUser.Setup(u => u.IsAuthenticated).Returns(true);
         _currentUser.Setup(u => u.UserId).Returns(UserId);
@@ -195,7 +229,10 @@ public sealed class ListMyCompaniesHandlerTests
             .ReturnsAsync(new[] { adminMembership });
         _companyRepo
             .Setup(r =>
-                r.GetByIdsAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>())
+                r.GetByIdsAsync(
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(new[] { company });
         _branchRepo
@@ -228,7 +265,12 @@ public sealed class ListMyCompaniesHandlerTests
     [Fact]
     public async Task Rol_no_admin_recibe_assignedBranchCount_desde_CompanyUserBranch_no_desde_el_total()
     {
-        var company = Company.CreateManaged(TenantA, "1790012345001", "Empresa A", createdBy: UserId);
+        var company = Company.CreateManaged(
+            TenantA,
+            "1790012345001",
+            "Empresa A",
+            createdBy: UserId
+        );
         var membership = CompanyUserMembership.Create(company.Id, UserId, "User", null, UserId);
 
         _currentUser.Setup(u => u.IsAuthenticated).Returns(true);
@@ -244,7 +286,10 @@ public sealed class ListMyCompaniesHandlerTests
             .ReturnsAsync(new[] { membership });
         _companyRepo
             .Setup(r =>
-                r.GetByIdsAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>())
+                r.GetByIdsAsync(
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(new[] { company });
         _branchRepo

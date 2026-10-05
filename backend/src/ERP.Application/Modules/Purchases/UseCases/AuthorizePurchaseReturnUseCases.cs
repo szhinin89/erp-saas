@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Common.Services;
@@ -17,8 +19,6 @@ using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Domain.Modules.Retentions.Interfaces;
 using FluentValidation;
 using MediatR;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace ERP.Application.Modules.Purchases.UseCases;
 
@@ -87,7 +87,8 @@ public sealed class AuthorizePurchaseReturnHandler
         ICompanyClock companyClock,
         ICompanyPrecisionPolicyProvider precision,
         IPurchaseCreditNoteRepository? creditNoteRepo = null,
-        ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces.IPurchaseReceptionDocumentRepository? receptionRepo = null
+        ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces.IPurchaseReceptionDocumentRepository? receptionRepo =
+            null
     )
     {
         _precision = precision;
@@ -205,7 +206,8 @@ public sealed class AuthorizePurchaseReturnHandler
                 invoice.Id,
                 ct
             );
-            var hasIssuedRetention = retention is not null && retention.Status == RetentionStatus.Issued;
+            var hasIssuedRetention =
+                retention is not null && retention.Status == RetentionStatus.Issued;
 
             // ── PR-004 revalidado bajo lock (§10.2) + snapshot de línea original para Authorize() ──
             var detailIds = purchaseReturn.Lines.Select(l => l.OriginalInvoiceDetailId).ToList();
@@ -259,7 +261,9 @@ public sealed class AuthorizePurchaseReturnHandler
                         t.TaxAmount
                     ))
                     .ToList();
-                var originalVat = originalTaxes.FirstOrDefault(t => t.TaxCode == SriTaxCategoryCodes.Vat);
+                var originalVat = originalTaxes.FirstOrDefault(t =>
+                    t.TaxCode == SriTaxCategoryCodes.Vat
+                );
                 if (originalVat is null)
                 {
                     await _uow.RollbackAsync(ct);
@@ -268,7 +272,9 @@ public sealed class AuthorizePurchaseReturnHandler
                             + "un impuesto IVA registrado — no se puede autorizar la devolución."
                     );
                 }
-                var originalIce = originalTaxes.FirstOrDefault(t => t.TaxCode == SriTaxCategoryCodes.Ice);
+                var originalIce = originalTaxes.FirstOrDefault(t =>
+                    t.TaxCode == SriTaxCategoryCodes.Ice
+                );
 
                 originalLinesByDetailId[originalLine.Id] = new PurchaseReturn.OriginalLineSnapshot(
                     originalLine.Quantity,
@@ -334,37 +340,95 @@ public sealed class AuthorizePurchaseReturnHandler
                 }
             }
 
-            var creditNote = _creditNoteRepo is null ? null
-                : await _creditNoteRepo.GetByLinkedPurchaseReturnIdAsync(tid, purchaseReturn.Id, ct);
-            ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionDocument? reception = null;
+            var creditNote = _creditNoteRepo is null
+                ? null
+                : await _creditNoteRepo.GetByLinkedPurchaseReturnIdAsync(
+                    tid,
+                    purchaseReturn.Id,
+                    ct
+                );
+            ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionDocument? reception =
+                null;
             if (creditNote is not null)
             {
                 if (creditNote.Status != PurchaseCreditNoteStatus.Draft)
-                    throw new ERP.Domain.Exceptions.DomainRuleViolationException("La nota de crédito vinculada no está en borrador.");
-                var resolved = await CreditNoteReturnLines.ResolveAsync(invoice,
-                    purchaseReturn.Lines.Select(l => new PurchaseReturnDraftLineInput(l.OriginalInvoiceDetailId, l.Quantity)).ToList(),
-                    _returnRepo, tid, (await _precision.GetEffectiveAsync(ct)).QuantityDecimals, ct);
+                    throw new ERP.Domain.Exceptions.DomainRuleViolationException(
+                        "La nota de crédito vinculada no está en borrador."
+                    );
+                var resolved = await CreditNoteReturnLines.ResolveAsync(
+                    invoice,
+                    purchaseReturn
+                        .Lines.Select(l => new PurchaseReturnDraftLineInput(
+                            l.OriginalInvoiceDetailId,
+                            l.Quantity
+                        ))
+                        .ToList(),
+                    _returnRepo,
+                    tid,
+                    (await _precision.GetEffectiveAsync(ct)).QuantityDecimals,
+                    ct
+                );
                 if (resolved.Error is not null)
                     throw new ERP.Domain.Exceptions.DomainRuleViolationException(resolved.Error);
-                var total = resolved.Fiscal.Sum(l => l.Subtotal + l.VatAmount + l.IceAmount + l.IrbpnrAmount);
-                if (total != creditNote.TotalAmount || creditNote.Lines.Count != purchaseReturn.Lines.Count
-                    || creditNote.Lines.Any(l => !purchaseReturn.Lines.Any(r =>
-                        r.OriginalInvoiceDetailId == l.PurchaseInvoiceDetailId && r.Quantity == l.Quantity)))
-                    throw new ERP.Domain.Exceptions.DomainRuleViolationException("Las líneas o el total de la devolución no coinciden con la NC vinculada.");
+                var total = resolved.Fiscal.Sum(l =>
+                    l.Subtotal + l.VatAmount + l.IceAmount + l.IrbpnrAmount
+                );
+                if (
+                    total != creditNote.TotalAmount
+                    || creditNote.Lines.Count != purchaseReturn.Lines.Count
+                    || creditNote.Lines.Any(l =>
+                        !purchaseReturn.Lines.Any(r =>
+                            r.OriginalInvoiceDetailId == l.PurchaseInvoiceDetailId
+                            && r.Quantity == l.Quantity
+                        )
+                    )
+                )
+                    throw new ERP.Domain.Exceptions.DomainRuleViolationException(
+                        "Las líneas o el total de la devolución no coinciden con la NC vinculada."
+                    );
                 if (creditNote.ReceptionDocumentId is { } receptionId)
                 {
                     reception = await _receptionRepo!.GetByIdAsync(tid, receptionId, ct);
                     if (reception is null || Math.Abs(total - reception.TotalAmount) > 0.01m)
-                        throw new ERP.Domain.Exceptions.DomainRuleViolationException("El total de la devolución no coincide con la NC/XML recibido.");
-                    if (reception.CompanyId != creditNote.CompanyId
-                        || reception.SourceDocType != Domain.Modules.Purchases.PurchaseReception.Enums.PurchaseReceptionSourceDocType.CreditNote
-                        || reception.Status != Domain.Modules.Purchases.PurchaseReception.Enums.PurchaseReceptionDocumentStatus.Verified
+                        throw new ERP.Domain.Exceptions.DomainRuleViolationException(
+                            "El total de la devolución no coincide con la NC/XML recibido."
+                        );
+                    if (
+                        reception.CompanyId != creditNote.CompanyId
+                        || reception.SourceDocType
+                            != Domain
+                                .Modules
+                                .Purchases
+                                .PurchaseReception
+                                .Enums
+                                .PurchaseReceptionSourceDocType
+                                .CreditNote
+                        || reception.Status
+                            != Domain
+                                .Modules
+                                .Purchases
+                                .PurchaseReception
+                                .Enums
+                                .PurchaseReceptionDocumentStatus
+                                .Verified
                         || reception.PurchaseId is not null
-                        || (reception.SupplierId is { } supplierId && supplierId != invoice.SupplierId)
+                        || (
+                            reception.SupplierId is { } supplierId
+                            && supplierId != invoice.SupplierId
+                        )
                         || reception.AccessKey != creditNote.AccessKey
-                        || (!string.IsNullOrWhiteSpace(reception.ModifiedDocumentNumber)
-                            && !string.Equals(reception.ModifiedDocumentNumber.Trim(), invoice.InvoiceNumber.Trim(), StringComparison.OrdinalIgnoreCase)))
-                        throw new ERP.Domain.Exceptions.DomainRuleViolationException("La recepción de la NC ya no es válida para esta factura.");
+                        || (
+                            !string.IsNullOrWhiteSpace(reception.ModifiedDocumentNumber)
+                            && !string.Equals(
+                                reception.ModifiedDocumentNumber.Trim(),
+                                invoice.InvoiceNumber.Trim(),
+                                StringComparison.OrdinalIgnoreCase
+                            )
+                        )
+                    )
+                        throw new ERP.Domain.Exceptions.DomainRuleViolationException(
+                            "La recepción de la NC ya no es válida para esta factura."
+                        );
                 }
             }
 
@@ -388,11 +452,7 @@ public sealed class AuthorizePurchaseReturnHandler
                 authorizeHash
             );
 
-            var effectiveDate = await _companyClock.TodayAsync(
-                purchaseReturn.CompanyId,
-                tid,
-                ct
-            );
+            var effectiveDate = await _companyClock.TodayAsync(purchaseReturn.CompanyId, tid, ct);
             foreach (var line in purchaseReturn.Lines)
             {
                 await _stockRepo.AppendMovementAsync(

@@ -31,7 +31,9 @@ public sealed class ClosedXmlInitialStockImportSheetReader : IInitialStockImport
         {
             var sheet = workbook.Worksheets.FirstOrDefault(w => !IsInstructionsSheet(w.Name));
             if (sheet is null)
-                throw new DomainRuleViolationException("El archivo no contiene ninguna hoja de datos.");
+                throw new DomainRuleViolationException(
+                    "El archivo no contiene ninguna hoja de datos."
+                );
 
             var headerRow = sheet.Row(1);
             var columnIndexes = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -54,10 +56,9 @@ public sealed class ClosedXmlInitialStockImportSheetReader : IInitialStockImport
                 var values = new Dictionary<string, string?>();
                 foreach (var column in InitialStockImportColumns.All)
                 {
-                    var value =
-                        columnIndexes.TryGetValue(column, out var colIndex)
-                            ? row.Cell(colIndex).GetString().Trim()
-                            : null;
+                    var value = columnIndexes.TryGetValue(column, out var colIndex)
+                        ? row.Cell(colIndex).GetString().Trim()
+                        : null;
                     values[column] = string.IsNullOrEmpty(value) ? null : value;
                 }
                 rows.Add(values);

@@ -49,7 +49,10 @@ public sealed class UtcDateTimeGuardInterceptor : SaveChangesInterceptor
 
             foreach (var property in entry.Properties)
             {
-                if (property.Metadata.ClrType != typeof(DateTime) && property.Metadata.ClrType != typeof(DateTime?))
+                if (
+                    property.Metadata.ClrType != typeof(DateTime)
+                    && property.Metadata.ClrType != typeof(DateTime?)
+                )
                     continue;
 
                 if (property.CurrentValue is not DateTime value)

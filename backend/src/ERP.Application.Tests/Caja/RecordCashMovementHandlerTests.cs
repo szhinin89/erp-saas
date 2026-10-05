@@ -25,17 +25,44 @@ public sealed class RecordCashMovementHandlerTests
 
     private static CashSession OpenSession() =>
         CashSession.Open(
-            TenantId, CompanyId, BranchId, UserId, Guid.NewGuid(),
-            "CAJA-01", "Caja Principal", Guid.NewGuid(), "001", 100m, UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            UserId,
+            Guid.NewGuid(),
+            "CAJA-01",
+            "Caja Principal",
+            Guid.NewGuid(),
+            "001",
+            100m,
+            UserId
         );
 
     private static OperationalPreferences Preferences(bool allowManualInOutMovements = true) =>
         new(
-            SalesPos: new SalesPosPreferences(true, false, true, 0m, null, false, false, null, null),
+            SalesPos: new SalesPosPreferences(
+                true,
+                false,
+                true,
+                0m,
+                null,
+                false,
+                false,
+                null,
+                null
+            ),
             Cash: new CashPreferences(true, true, 0m, true, allowManualInOutMovements, true),
             Purchases: new PurchasesPreferences(null, true, true, true, false),
             Inventory: new InventoryPreferences(false, true, false, 0m),
-            Printing: new PrintingPreferences("AskBeforePrint", 1, "80mm", false, true, true, false),
+            Printing: new PrintingPreferences(
+                "AskBeforePrint",
+                1,
+                "80mm",
+                false,
+                true,
+                true,
+                false
+            ),
             ElectronicDocuments: new ElectronicDocumentsPreferences(true, 3, true, true),
             Notifications: new NotificationsPreferences(true, false, "es")
         );
@@ -48,7 +75,13 @@ public sealed class RecordCashMovementHandlerTests
     )
     {
         var reason = CashMovementReason.Create(
-            tenantId ?? TenantId, companyId ?? CompanyId, "MOTIVO", "Motivo de prueba", type, 1, UserId
+            tenantId ?? TenantId,
+            companyId ?? CompanyId,
+            "MOTIVO",
+            "Motivo de prueba",
+            type,
+            1,
+            UserId
         );
         if (!active)
             reason.Disable(UserId);
@@ -78,8 +111,15 @@ public sealed class RecordCashMovementHandlerTests
         }
 
         public RecordCashMovementHandler BuildHandler() =>
-            new(CashRepo.Object, ReasonRepo.Object, new Mock<IUnitOfWork>().Object,
-                Tenant.Object, Branch.Object, User.Object, PreferencesResolver.Object);
+            new(
+                CashRepo.Object,
+                ReasonRepo.Object,
+                new Mock<IUnitOfWork>().Object,
+                Tenant.Object,
+                Branch.Object,
+                User.Object,
+                PreferencesResolver.Object
+            );
     }
 
     private static RecordCashMovementCommand Command(
@@ -87,7 +127,15 @@ public sealed class RecordCashMovementHandlerTests
         Guid reasonId,
         string movementType = "ManualIncome",
         decimal amount = 20m
-    ) => new(sessionId, movementType, reasonId, amount, "Descripción de prueba", ClientRequestId: Guid.NewGuid());
+    ) =>
+        new(
+            sessionId,
+            movementType,
+            reasonId,
+            amount,
+            "Descripción de prueba",
+            ClientRequestId: Guid.NewGuid()
+        );
 
     // ── "motivo correcto" ────────────────────────────────────────────────
 
@@ -97,10 +145,17 @@ public sealed class RecordCashMovementHandlerTests
         var session = OpenSession();
         var reason = ValidReason();
         var f = new Fixture();
-        f.CashRepo.Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())).ReturnsAsync(session);
-        f.ReasonRepo.Setup(r => r.GetByIdAsync(TenantId, CompanyId, reason.Id, It.IsAny<CancellationToken>())).ReturnsAsync(reason);
+        f.CashRepo.Setup(r =>
+                r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(session);
+        f.ReasonRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, reason.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(reason);
 
-        var result = await f.BuildHandler().Handle(Command(session.Id, reason.Id), CancellationToken.None);
+        var result = await f.BuildHandler()
+            .Handle(Command(session.Id, reason.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.ReasonId.Should().Be(reason.Id);
@@ -118,12 +173,17 @@ public sealed class RecordCashMovementHandlerTests
         // El repo real filtraría por (TenantId, session.CompanyId) — un motivo de OtherCompanyId
         // nunca aparece en esa consulta, así que el mock simplemente no lo registra (simula "no existe").
         var f = new Fixture();
-        f.CashRepo.Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())).ReturnsAsync(session);
-        f.ReasonRepo
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        f.CashRepo.Setup(r =>
+                r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(session);
+        f.ReasonRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((CashMovementReason?)null);
 
-        var result = await f.BuildHandler().Handle(Command(session.Id, Guid.NewGuid()), CancellationToken.None);
+        var result = await f.BuildHandler()
+            .Handle(Command(session.Id, Guid.NewGuid()), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("no existe o no pertenece a esta empresa");
@@ -137,14 +197,19 @@ public sealed class RecordCashMovementHandlerTests
     {
         var session = OpenSession();
         var f = new Fixture();
-        f.CashRepo.Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())).ReturnsAsync(session);
+        f.CashRepo.Setup(r =>
+                r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(session);
         // Búsqueda scoped a (TenantId, CompanyId) — un motivo que solo existe bajo OtherTenantId
         // jamás se resuelve aquí, exactamente igual que "no existe".
-        f.ReasonRepo
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        f.ReasonRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((CashMovementReason?)null);
 
-        var result = await f.BuildHandler().Handle(Command(session.Id, Guid.NewGuid()), CancellationToken.None);
+        var result = await f.BuildHandler()
+            .Handle(Command(session.Id, Guid.NewGuid()), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("no existe o no pertenece a esta empresa");
@@ -158,10 +223,17 @@ public sealed class RecordCashMovementHandlerTests
         var session = OpenSession();
         var reason = ValidReason(active: false);
         var f = new Fixture();
-        f.CashRepo.Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())).ReturnsAsync(session);
-        f.ReasonRepo.Setup(r => r.GetByIdAsync(TenantId, CompanyId, reason.Id, It.IsAny<CancellationToken>())).ReturnsAsync(reason);
+        f.CashRepo.Setup(r =>
+                r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(session);
+        f.ReasonRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, reason.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(reason);
 
-        var result = await f.BuildHandler().Handle(Command(session.Id, reason.Id), CancellationToken.None);
+        var result = await f.BuildHandler()
+            .Handle(Command(session.Id, reason.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("inactivo");
@@ -176,11 +248,21 @@ public sealed class RecordCashMovementHandlerTests
         var session = OpenSession();
         var reason = ValidReason(type: CashMovementType.Withdrawal); // motivo de Retiro
         var f = new Fixture();
-        f.CashRepo.Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())).ReturnsAsync(session);
-        f.ReasonRepo.Setup(r => r.GetByIdAsync(TenantId, CompanyId, reason.Id, It.IsAny<CancellationToken>())).ReturnsAsync(reason);
+        f.CashRepo.Setup(r =>
+                r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(session);
+        f.ReasonRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, reason.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(reason);
 
         // Se intenta usar con ManualIncome — incompatible con el motivo (Withdrawal).
-        var result = await f.BuildHandler().Handle(Command(session.Id, reason.Id, movementType: "ManualIncome"), CancellationToken.None);
+        var result = await f.BuildHandler()
+            .Handle(
+                Command(session.Id, reason.Id, movementType: "ManualIncome"),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("no corresponde a este tipo de movimiento");
@@ -197,17 +279,27 @@ public sealed class RecordCashMovementHandlerTests
     {
         var session = OpenSession();
         var f = new Fixture();
-        f.CashRepo.Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())).ReturnsAsync(session);
+        f.CashRepo.Setup(r =>
+                r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(session);
 
-        var result = await f.BuildHandler().Handle(
-            Command(session.Id, Guid.NewGuid(), movementType: systemType),
-            CancellationToken.None
-        );
+        var result = await f.BuildHandler()
+            .Handle(
+                Command(session.Id, Guid.NewGuid(), movementType: systemType),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("no se puede registrar manualmente");
         f.ReasonRepo.Verify(
-            r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            r =>
+                r.GetByIdAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never,
             "ni siquiera debe consultarse el catálogo de motivos para un tipo de sistema"
         );
@@ -226,10 +318,17 @@ public sealed class RecordCashMovementHandlerTests
         var f = new Fixture();
         f.PreferencesResolver.Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(Preferences(allowManualInOutMovements: true));
-        f.CashRepo.Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())).ReturnsAsync(session);
-        f.ReasonRepo.Setup(r => r.GetByIdAsync(TenantId, CompanyId, reason.Id, It.IsAny<CancellationToken>())).ReturnsAsync(reason);
+        f.CashRepo.Setup(r =>
+                r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(session);
+        f.ReasonRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, reason.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(reason);
 
-        var result = await f.BuildHandler().Handle(Command(session.Id, reason.Id), CancellationToken.None);
+        var result = await f.BuildHandler()
+            .Handle(Command(session.Id, reason.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
     }
@@ -242,9 +341,13 @@ public sealed class RecordCashMovementHandlerTests
         var f = new Fixture();
         f.PreferencesResolver.Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(Preferences(allowManualInOutMovements: false));
-        f.CashRepo.Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())).ReturnsAsync(session);
+        f.CashRepo.Setup(r =>
+                r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(session);
 
-        var result = await f.BuildHandler().Handle(Command(session.Id, reason.Id), CancellationToken.None);
+        var result = await f.BuildHandler()
+            .Handle(Command(session.Id, reason.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("no permite registrar movimientos manuales");
@@ -252,10 +355,19 @@ public sealed class RecordCashMovementHandlerTests
         // Fail-closed antes de tocar el catálogo de motivos o la sesión — una API directa no
         // puede saltarse la restricción cambiando el motivo/tipo, porque nunca llega a validarlos.
         f.ReasonRepo.Verify(
-            r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            r =>
+                r.GetByIdAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
-        f.CashRepo.Verify(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.CashRepo.Verify(
+            r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -268,25 +380,47 @@ public sealed class RecordCashMovementHandlerTests
         var session = OpenSession();
         var reason = ValidReason();
         var f = new Fixture();
-        f.CashRepo.Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())).ReturnsAsync(session);
-        f.ReasonRepo.Setup(r => r.GetByIdAsync(TenantId, CompanyId, reason.Id, It.IsAny<CancellationToken>())).ReturnsAsync(reason);
+        f.CashRepo.Setup(r =>
+                r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(session);
+        f.ReasonRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, reason.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(reason);
 
         await f.BuildHandler().Handle(Command(session.Id, reason.Id), CancellationToken.None);
 
-        f.PreferencesResolver.Verify(p => p.ResolveAsync(It.IsAny<CancellationToken>()), Times.Once);
+        f.PreferencesResolver.Verify(
+            p => p.ResolveAsync(It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]
     public async Task Sesion_de_otra_sucursal_devuelve_NotFound_sin_consultar_el_motivo()
     {
         var session = CashSession.Open(
-            TenantId, CompanyId, Guid.NewGuid(), UserId, Guid.NewGuid(),
-            "CAJA-01", "Caja Principal", Guid.NewGuid(), "001", 0m, UserId
+            TenantId,
+            CompanyId,
+            Guid.NewGuid(),
+            UserId,
+            Guid.NewGuid(),
+            "CAJA-01",
+            "Caja Principal",
+            Guid.NewGuid(),
+            "001",
+            0m,
+            UserId
         );
         var f = new Fixture();
-        f.CashRepo.Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())).ReturnsAsync(session);
+        f.CashRepo.Setup(r =>
+                r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(session);
 
-        var result = await f.BuildHandler().Handle(Command(session.Id, Guid.NewGuid()), CancellationToken.None);
+        var result = await f.BuildHandler()
+            .Handle(Command(session.Id, Guid.NewGuid()), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);

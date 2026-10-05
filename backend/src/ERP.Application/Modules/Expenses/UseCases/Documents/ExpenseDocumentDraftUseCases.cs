@@ -68,8 +68,7 @@ public sealed record UpdateExpenseDraftCommand(
     string? TaxSupportCode = null
 ) : IRequest<Result<ExpenseDocumentDetailDto>>, IBranchScopedRequest, IExpenseDraftInput;
 
-public sealed class ListExpenseDocumentsValidator
-    : AbstractValidator<ListExpenseDocumentsQuery>
+public sealed class ListExpenseDocumentsValidator : AbstractValidator<ListExpenseDocumentsQuery>
 {
     public ListExpenseDocumentsValidator()
     {
@@ -84,8 +83,7 @@ public sealed class ListExpenseDocumentsValidator
     }
 }
 
-public sealed class GetExpenseDocumentByIdValidator
-    : AbstractValidator<GetExpenseDocumentByIdQuery>
+public sealed class GetExpenseDocumentByIdValidator : AbstractValidator<GetExpenseDocumentByIdQuery>
 {
     public GetExpenseDocumentByIdValidator() => RuleFor(x => x.Id).NotEmpty();
 }
@@ -118,9 +116,7 @@ internal sealed class ExpenseDraftHeaderRules<T> : AbstractValidator<T>
     {
         RuleFor(x => x.SupplierId).NotEmpty().WithMessage("El proveedor es obligatorio.");
         RuleFor(x => x.IssueDate).NotEmpty().WithMessage("La fecha de emision es obligatoria.");
-        RuleFor(x => x.AccountingDate)
-            .NotEmpty()
-            .WithMessage("La fecha contable es obligatoria.");
+        RuleFor(x => x.AccountingDate).NotEmpty().WithMessage("La fecha contable es obligatoria.");
         RuleFor(x => x.DocumentType)
             .NotEmpty()
             .MaximumLength(ExpenseDocument.DocumentTypeMaxLen)
@@ -178,6 +174,7 @@ public interface IExpenseDraftInput
     IReadOnlyList<ExpenseDraftLineRequest> Lines { get; }
     string? AuthorizationNumber { get; }
     string? Notes { get; }
+
     /// <summary>
     /// RETENTIONS-SOURCE-DOCUMENT-TAX-SUPPORT-02G — override explícito del código de sustento
     /// tributario SRI para este documento. <c>null</c> deja que
@@ -262,10 +259,16 @@ public sealed class CreateExpenseDraftHandler
         }
 
         if (cmd.DocumentType == SriDocumentTypeCodes.CreditNote)
-            return Result<ExpenseDocumentDetailDto>.ValidationFailure("Una nota de crédito no puede crear un gasto.");
+            return Result<ExpenseDocumentDetailDto>.ValidationFailure(
+                "Una nota de crédito no puede crear un gasto."
+            );
         if (cmd.ReceptionDocumentId is null && !string.IsNullOrWhiteSpace(cmd.AccessKey))
         {
-            var sourceDocument = await _receptionRepo.GetByAccessKeyAsync(_tenant.TenantId, cmd.AccessKey.Trim(), ct);
+            var sourceDocument = await _receptionRepo.GetByAccessKeyAsync(
+                _tenant.TenantId,
+                cmd.AccessKey.Trim(),
+                ct
+            );
             if (sourceDocument is not null)
                 cmd = cmd with { ReceptionDocumentId = sourceDocument.Id };
         }
@@ -273,17 +276,36 @@ public sealed class CreateExpenseDraftHandler
         if (cmd.ReceptionDocumentId is { } receptionId)
         {
             var preview = await new CreateExpenseDraftFromReceptionHandler(
-                _receptionRepo, _purchaseRepo, _repo, _businessPartners, _roles, _tenant, _user
+                _receptionRepo,
+                _purchaseRepo,
+                _repo,
+                _businessPartners,
+                _roles,
+                _tenant,
+                _user
             ).Handle(new CreateExpenseDraftFromReceptionQuery(receptionId), ct);
             if (!preview.IsSuccess)
                 return Result<ExpenseDocumentDetailDto>.Failure(preview.Error!, preview.Code);
             var source = preview.Value!;
-            if (cmd.SupplierId != source.SupplierId || cmd.DocumentType != source.DocumentType
-                || cmd.DocumentNumber != source.DocumentNumber || cmd.IssueDate != source.IssueDate
-                || (!string.IsNullOrWhiteSpace(cmd.AccessKey) && cmd.AccessKey.Trim() != source.AccessKey))
+            if (
+                cmd.SupplierId != source.SupplierId
+                || cmd.DocumentType != source.DocumentType
+                || cmd.DocumentNumber != source.DocumentNumber
+                || cmd.IssueDate != source.IssueDate
+                || (
+                    !string.IsNullOrWhiteSpace(cmd.AccessKey)
+                    && cmd.AccessKey.Trim() != source.AccessKey
+                )
+            )
                 return Result<ExpenseDocumentDetailDto>.ValidationFailure(
-                    "Los datos del gasto no coinciden con la factura recibida.");
-            cmd = cmd with { AccessKey = source.AccessKey, AuthorizationNumber = source.AuthorizationNumber, AuthorizationDate = source.AuthorizationDate };
+                    "Los datos del gasto no coinciden con la factura recibida."
+                );
+            cmd = cmd with
+            {
+                AccessKey = source.AccessKey,
+                AuthorizationNumber = source.AuthorizationNumber,
+                AuthorizationDate = source.AuthorizationDate,
+            };
         }
 
         var supplier = await ExpenseDraftRules.ResolveSupplierAsync(
@@ -333,7 +355,11 @@ public sealed class CreateExpenseDraftHandler
                     "Ya existe una compra registrada con esta clave de acceso SRI."
                 );
 
-            var existingExpense = await _repo.ExistsByAccessKeyAsync(_tenant.TenantId, accessKey, ct);
+            var existingExpense = await _repo.ExistsByAccessKeyAsync(
+                _tenant.TenantId,
+                accessKey,
+                ct
+            );
             if (existingExpense)
                 return Result<ExpenseDocumentDetailDto>.Conflict(
                     "Ya existe un gasto registrado con esta clave de acceso SRI."
@@ -396,12 +422,17 @@ public sealed class CreateExpenseDraftHandler
                 ExpenseDocumentMapper.ToDetail(document)
             );
         }
-        catch (Exception ex) when (_dbEx.TryGetUniqueViolation(ex, out var info)
-            && info.ConstraintName is "uq_purchase_expense_access_key"
-                or "uq_expense_documents_tenant_access_key"
-                or "uq_expense_documents_tenant_reception_document_id")
+        catch (Exception ex)
+            when (_dbEx.TryGetUniqueViolation(ex, out var info)
+                && info.ConstraintName
+                    is "uq_purchase_expense_access_key"
+                        or "uq_expense_documents_tenant_access_key"
+                        or "uq_expense_documents_tenant_reception_document_id"
+            )
         {
-            return Result<ExpenseDocumentDetailDto>.Conflict("La factura recibida ya fue registrada como compra o gasto.");
+            return Result<ExpenseDocumentDetailDto>.Conflict(
+                "La factura recibida ya fue registrada como compra o gasto."
+            );
         }
         catch (ArgumentException ex)
         {
@@ -587,7 +618,8 @@ public sealed class ListExpenseDocumentsHandler
         );
         return Result<ExpenseDocumentListResponse>.Success(
             new ExpenseDocumentListResponse(
-                items.Select(x =>
+                items
+                    .Select(x =>
                         ExpenseDocumentMapper.ToListItem(x, lineCounts.GetValueOrDefault(x.Id))
                     )
                     .ToList(),
@@ -635,11 +667,9 @@ public sealed class GetExpenseDocumentByIdHandler
 internal sealed record ExpenseDraftError(string Message, string Code)
 {
     public Result<T> ToResult<T>() =>
-        Code == ApiResponseCodes.Common.NotFound
-            ? Result<T>.NotFound(Message)
-            : Code == ApiResponseCodes.Common.Conflict
-                ? Result<T>.Conflict(Message)
-                : Result<T>.ValidationFailure(Message);
+        Code == ApiResponseCodes.Common.NotFound ? Result<T>.NotFound(Message)
+        : Code == ApiResponseCodes.Common.Conflict ? Result<T>.Conflict(Message)
+        : Result<T>.ValidationFailure(Message);
 }
 
 internal sealed record SupplierResolution(
@@ -706,7 +736,10 @@ internal static class ExpenseDraftRules
     /// aquí). <c>null</c> es un resultado válido cuando ninguna de las dos fuentes lo tiene — se
     /// documenta como gap conocido, no bloquea la creación del gasto.
     /// </summary>
-    public static string? ResolveTaxSupportCode(string? explicitCode, BusinessPartnerRole? supplierRole)
+    public static string? ResolveTaxSupportCode(
+        string? explicitCode,
+        BusinessPartnerRole? supplierRole
+    )
     {
         var trimmed = explicitCode?.Trim();
         return string.IsNullOrEmpty(trimmed)
@@ -746,11 +779,7 @@ internal static class ExpenseDraftRules
         var lines = new List<ExpenseLine>();
         foreach (var input in inputs)
         {
-            var category = await categories.GetByIdAsync(
-                tenantId,
-                input.ExpenseSubcategoryId,
-                ct
-            );
+            var category = await categories.GetByIdAsync(tenantId, input.ExpenseSubcategoryId, ct);
             if (category is null || category.CompanyId != companyId)
                 return new LineResolution(
                     null,

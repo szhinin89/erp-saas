@@ -72,7 +72,9 @@ public sealed class SupplierPaymentConfirmedPostingTranslator
                 ct
             );
 
-            allocations.Add(new PostingAllocation(accountId, methodLine.Amount, AccountNature.Credit));
+            allocations.Add(
+                new PostingAllocation(accountId, methodLine.Amount, AccountNature.Credit)
+            );
         }
 
         var fact = new PostingFact(

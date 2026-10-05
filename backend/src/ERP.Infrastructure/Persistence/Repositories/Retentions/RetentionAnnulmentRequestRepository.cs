@@ -60,7 +60,8 @@ public sealed class RetentionAnnulmentRequestRepository : IRetentionAnnulmentReq
         Guid retentionDocumentId,
         CancellationToken ct = default
     ) =>
-        _db.RetentionAnnulmentRequests.AsNoTracking()
+        _db
+            .RetentionAnnulmentRequests.AsNoTracking()
             .Where(x =>
                 x.TenantId == tenantId
                 && x.CompanyId == companyId
@@ -69,30 +70,36 @@ public sealed class RetentionAnnulmentRequestRepository : IRetentionAnnulmentReq
             .OrderByDescending(x => x.RequestedAtUtc)
             .FirstOrDefaultAsync(ct);
 
-    public async Task<IReadOnlyList<(Guid TenantId, Guid CompanyId, Guid RequestId)>> GetPendingFinalizationAsync(
-        int take,
-        CancellationToken ct = default
-    )
+    public async Task<
+        IReadOnlyList<(Guid TenantId, Guid CompanyId, Guid RequestId)>
+    > GetPendingFinalizationAsync(int take, CancellationToken ct = default)
     {
-        var rows = await _db.RetentionAnnulmentRequests
-            .AsPlatformQuery()
+        var rows = await _db
+            .RetentionAnnulmentRequests.AsPlatformQuery()
             .AsNoTracking()
             .Where(x => x.Status == RetentionAnnulmentStatus.Accepted && x.FinalizedAtUtc == null)
             .OrderBy(x => x.ResolvedAtUtc)
             .Take(take)
-            .Select(x => new { x.TenantId, x.CompanyId, x.Id })
+            .Select(x => new
+            {
+                x.TenantId,
+                x.CompanyId,
+                x.Id,
+            })
             .ToListAsync(ct);
         return rows.Select(row => (row.TenantId, row.CompanyId, row.Id)).ToList();
     }
 
-    public async Task<IReadOnlyList<(Guid TenantId, Guid CompanyId, Guid RequestId)>> GetDueForSriVerificationAsync(
+    public async Task<
+        IReadOnlyList<(Guid TenantId, Guid CompanyId, Guid RequestId)>
+    > GetDueForSriVerificationAsync(
         DateTime checkedBeforeUtc,
         int take,
         CancellationToken ct = default
     )
     {
-        var rows = await _db.RetentionAnnulmentRequests
-            .AsPlatformQuery()
+        var rows = await _db
+            .RetentionAnnulmentRequests.AsPlatformQuery()
             .AsNoTracking()
             .Where(x =>
                 x.Status == RetentionAnnulmentStatus.PendingSriResolution
@@ -100,7 +107,12 @@ public sealed class RetentionAnnulmentRequestRepository : IRetentionAnnulmentReq
             )
             .OrderBy(x => x.LastSriCheckAtUtc ?? x.SubmittedAtUtc)
             .Take(take)
-            .Select(x => new { x.TenantId, x.CompanyId, x.Id })
+            .Select(x => new
+            {
+                x.TenantId,
+                x.CompanyId,
+                x.Id,
+            })
             .ToListAsync(ct);
         return rows.Select(row => (row.TenantId, row.CompanyId, row.Id)).ToList();
     }

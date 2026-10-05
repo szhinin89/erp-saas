@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Net.Mail;
 using ERP.Application.Common;
 using ERP.Application.Modules.Communications.DTOs;
 using ERP.Application.Modules.Communications.Services;
@@ -17,8 +19,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Npgsql;
-using System.Collections.Concurrent;
-using System.Net.Mail;
 
 namespace ERP.Infrastructure.Tests.Communications;
 
@@ -36,12 +36,16 @@ public sealed class CommunicationContractIntegrationTests
     private readonly CommunicationOutboxDeliveryIntegrationTests.Database _db;
     private readonly MutableTimeProvider _time = new(DateTimeOffset.UtcNow.AddMinutes(1));
 
-    public CommunicationContractIntegrationTests(CommunicationOutboxDeliveryIntegrationTests.Database db) => _db = db;
+    public CommunicationContractIntegrationTests(
+        CommunicationOutboxDeliveryIntegrationTests.Database db
+    ) => _db = db;
 
     public async Task InitializeAsync()
     {
         await using var ctx = _db.Context();
-        await ctx.Database.ExecuteSqlRawAsync("DELETE FROM communication_outbox_attachments; DELETE FROM communication_outbox;");
+        await ctx.Database.ExecuteSqlRawAsync(
+            "DELETE FROM communication_outbox_attachments; DELETE FROM communication_outbox;"
+        );
     }
 
     public Task DisposeAsync() => Task.CompletedTask;
@@ -57,11 +61,14 @@ public sealed class CommunicationContractIntegrationTests
 
         (await VisibleFromAsync(_db.TenantA, _db.CompanyA)).Should().Equal(a.Id);
         (await VisibleFromAsync(_db.TenantB, _db.CompanyB)).Should().Equal(b.Id);
-        (await VisibleFromAsync(Guid.Empty, Guid.Empty)).Should().BeEmpty("sin contexto: fail-closed");
+        (await VisibleFromAsync(Guid.Empty, Guid.Empty))
+            .Should()
+            .BeEmpty("sin contexto: fail-closed");
 
         await using var platform = _db.Context();
         (await platform.CommunicationOutbox.IgnoreQueryFilters().Select(x => x.Id).ToListAsync())
-            .Should().BeEquivalentTo([a.Id, b.Id, system.Id], "solo la vía explícita de plataforma ve todo");
+            .Should()
+            .BeEquivalentTo([a.Id, b.Id, system.Id], "solo la vía explícita de plataforma ve todo");
     }
 
     [Fact]
@@ -69,16 +76,32 @@ public sealed class CommunicationContractIntegrationTests
     {
         var system = await EnqueueAsync(ResetRequest());
         var company = await EnqueueAsync(InvoiceRequest(CompanyScope(_db.TenantA, _db.CompanyA)));
-        var deliveries = new ConcurrentDictionary<Guid, (string? Sender, Guid ContextTenant, Guid ContextCompany)>();
-        var sender = new RecordingSender((msg, settings) =>
-            deliveries[msg.CommunicationId!.Value] = (settings.SenderEmail, JobTenantContext.Current, JobCompanyContext.Current));
+        var deliveries =
+            new ConcurrentDictionary<
+                Guid,
+                (string? Sender, Guid ContextTenant, Guid ContextCompany)
+            >();
+        var sender = new RecordingSender(
+            (msg, settings) =>
+                deliveries[msg.CommunicationId!.Value] = (
+                    settings.SenderEmail,
+                    JobTenantContext.Current,
+                    JobCompanyContext.Current
+                )
+        );
 
         await RunAsync(sender);
 
         deliveries[system.Id].Should().Be((ScopedResolver.InstanceSender, Guid.Empty, Guid.Empty));
-        deliveries[company.Id].Should().Be((ScopedResolver.SenderFor(_db.CompanyA), _db.TenantA, _db.CompanyA));
+        deliveries[company.Id]
+            .Should()
+            .Be((ScopedResolver.SenderFor(_db.CompanyA), _db.TenantA, _db.CompanyA));
         (await RowAsync(system.Id)).Status.Should().Be(CommunicationStatus.Sent);
-        (await AttemptsAsync(system.Id)).Should().ContainSingle().Which.Result.Should().Be(CommunicationAttemptResult.Sent);
+        (await AttemptsAsync(system.Id))
+            .Should()
+            .ContainSingle()
+            .Which.Result.Should()
+            .Be(CommunicationAttemptResult.Sent);
     }
 
     [Theory]
@@ -86,20 +109,28 @@ public sealed class CommunicationContractIntegrationTests
     [InlineData("System", false, true)]
     [InlineData("Company", false, true)]
     [InlineData("Company", true, false)]
-    public async Task Combinacion_invalida_de_alcance_no_persiste(string scopeKind, bool withTenant, bool withCompany)
+    public async Task Combinacion_invalida_de_alcance_no_persiste(
+        string scopeKind,
+        bool withTenant,
+        bool withCompany
+    )
     {
         await using var ctx = _db.Context();
-        var act = () => ctx.Database.ExecuteSqlInterpolatedAsync(
-            $"""
-            INSERT INTO communication_outbox (id, scope_kind, tenant_id, company_id, channel, purpose, recipient_email, subject,
-                body_text, status, priority, scheduled_at_utc, retry_count, max_retries, resend_sequence, created_at, created_by)
-            VALUES ({Guid.NewGuid()}, {scopeKind}, {(withTenant ? _db.TenantA : (Guid?)null)}, {(withCompany ? _db.CompanyA : (Guid?)null)},
-                'Email', 'P', 'a@b.c', 's', 't', 'Pending', 'Normal', {DateTime.UtcNow}, 0, 3, 0, {DateTime.UtcNow}, {Guid.Empty})
-            """
-        );
+        var act = () =>
+            ctx.Database.ExecuteSqlInterpolatedAsync(
+                $"""
+                INSERT INTO communication_outbox (id, scope_kind, tenant_id, company_id, channel, purpose, recipient_email, subject,
+                    body_text, status, priority, scheduled_at_utc, retry_count, max_retries, resend_sequence, created_at, created_by)
+                VALUES ({Guid.NewGuid()}, {scopeKind}, {(
+                    withTenant ? _db.TenantA : (Guid?)null
+                )}, {(withCompany ? _db.CompanyA : (Guid?)null)},
+                    'Email', 'P', 'a@b.c', 's', 't', 'Pending', 'Normal', {DateTime.UtcNow}, 0, 3, 0, {DateTime.UtcNow}, {Guid.Empty})
+                """
+            );
 
         (await act.Should().ThrowAsync<PostgresException>())
-            .Which.ConstraintName.Should().Be(CommunicationOutboxConfiguration.ScopeCheckConstraint);
+            .Which.ConstraintName.Should()
+            .Be(CommunicationOutboxConfiguration.ScopeCheckConstraint);
     }
 
     // ── 22. Encolado idempotente concurrente ─────────────────────────────────────────────
@@ -109,9 +140,15 @@ public sealed class CommunicationContractIntegrationTests
     {
         var request = InvoiceRequest(CompanyScope(_db.TenantA, _db.CompanyA));
 
-        var results = await Task.WhenAll(Enumerable.Range(0, 12).Select(_ => Task.Run(() => EnqueueAsync(request))));
+        var results = await Task.WhenAll(
+            Enumerable.Range(0, 12).Select(_ => Task.Run(() => EnqueueAsync(request)))
+        );
 
-        results.Select(r => r.Id).Distinct().Should().ContainSingle("todos reciben la misma comunicación");
+        results
+            .Select(r => r.Id)
+            .Distinct()
+            .Should()
+            .ContainSingle("todos reciben la misma comunicación");
         results.Count(r => !r.WasAlreadyQueued).Should().Be(1, "exactamente uno la creó");
         (await CountAsync(results[0].Id)).Should().Be(1);
     }
@@ -126,7 +163,9 @@ public sealed class CommunicationContractIntegrationTests
         await using var tx = await ctx.Database.BeginTransactionAsync();
         var duplicate = await QueueFor(ctx).EnqueueAsync(request);
         // La transacción sigue usable: una colisión con ON CONFLICT no la deja en estado abortado.
-        (await ctx.Database.SqlQuery<int>($"SELECT 1 AS \"Value\"").ToListAsync()).Should().Equal(1);
+        (await ctx.Database.SqlQuery<int>($"SELECT 1 AS \"Value\"").ToListAsync())
+            .Should()
+            .Equal(1);
         await tx.CommitAsync();
 
         duplicate.WasAlreadyQueued.Should().BeTrue();
@@ -137,7 +176,9 @@ public sealed class CommunicationContractIntegrationTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task Encolado_concurrente_espera_a_la_transaccion_que_tiene_la_misma_identidad(bool commit)
+    public async Task Encolado_concurrente_espera_a_la_transaccion_que_tiene_la_misma_identidad(
+        bool commit
+    )
     {
         var request = InvoiceRequest(CompanyScope(_db.TenantA, _db.CompanyA));
         await using var business = _db.Context();
@@ -146,7 +187,11 @@ public sealed class CommunicationContractIntegrationTests
 
         var competing = Task.Run(() => EnqueueAsync(request));
         await Task.Delay(300);
-        competing.IsCompleted.Should().BeFalse("PostgreSQL hace esperar al segundo INSERT hasta que la primera transacción termine");
+        competing
+            .IsCompleted.Should()
+            .BeFalse(
+                "PostgreSQL hace esperar al segundo INSERT hasta que la primera transacción termine"
+            );
 
         if (commit)
             await tx.CommitAsync();
@@ -161,7 +206,9 @@ public sealed class CommunicationContractIntegrationTests
         }
         else
         {
-            second.WasAlreadyQueued.Should().BeFalse("la primera revirtió: el segundo encolado crea la comunicación");
+            second
+                .WasAlreadyQueued.Should()
+                .BeFalse("la primera revirtió: el segundo encolado crea la comunicación");
             (await CountAsync(second.Id)).Should().Be(1);
         }
     }
@@ -172,7 +219,13 @@ public sealed class CommunicationContractIntegrationTests
         var original = InvoiceRequest(CompanyScope(_db.TenantA, _db.CompanyA));
         var first = await EnqueueAsync(original);
 
-        var second = await EnqueueAsync(original with { RecipientEmail = "otro-email@cliente.com", Template = CommunicationTestTemplates.Invoice("Otro nombre") });
+        var second = await EnqueueAsync(
+            original with
+            {
+                RecipientEmail = "otro-email@cliente.com",
+                Template = CommunicationTestTemplates.Invoice("Otro nombre"),
+            }
+        );
 
         second.WasAlreadyQueued.Should().BeTrue();
         second.Id.Should().Be(first.Id);
@@ -184,13 +237,23 @@ public sealed class CommunicationContractIntegrationTests
     {
         var request = InvoiceRequest(CompanyScope(_db.TenantA, _db.CompanyA)) with
         {
-            Attachments = [new QueueCommunicationAttachmentDto(CommunicationAttachmentType.AuthorizedXml, "f.xml", "application/xml", "edocs/f.xml")],
+            Attachments =
+            [
+                new QueueCommunicationAttachmentDto(
+                    CommunicationAttachmentType.AuthorizedXml,
+                    "f.xml",
+                    "application/xml",
+                    "edocs/f.xml"
+                ),
+            ],
         };
 
         var queued = await EnqueueAsync(request);
 
         await using var ctx = _db.Context();
-        var attachment = await ctx.CommunicationOutboxAttachments.IgnoreQueryFilters().SingleAsync(a => a.CommunicationOutboxId == queued.Id);
+        var attachment = await ctx
+            .CommunicationOutboxAttachments.IgnoreQueryFilters()
+            .SingleAsync(a => a.CommunicationOutboxId == queued.Id);
         attachment.TenantId.Should().Be(_db.TenantA);
         attachment.CompanyId.Should().Be(_db.CompanyA);
         (await RowAsync(queued.Id)).SourceModule.Should().Be("Sales");
@@ -203,11 +266,14 @@ public sealed class CommunicationContractIntegrationTests
     {
         var queued = await EnqueueAsync(InvoiceRequest(CompanyScope(_db.TenantA, _db.CompanyA)));
         var fail = true;
-        var sender = new RecordingSender((_, _) =>
-        {
-            if (fail)
-                throw new SmtpException(SmtpStatusCode.ServiceNotAvailable);
-        }, providerMessageId: "prov-42");
+        var sender = new RecordingSender(
+            (_, _) =>
+            {
+                if (fail)
+                    throw new SmtpException(SmtpStatusCode.ServiceNotAvailable);
+            },
+            providerMessageId: "prov-42"
+        );
 
         await RunAsync(sender);
         fail = false;
@@ -222,8 +288,14 @@ public sealed class CommunicationContractIntegrationTests
         attempts[0].ProviderCode.Should().Be("smtp:421");
         attempts[0].CompletedAtUtc.Should().NotBeNull();
         attempts[1].Result.Should().Be(CommunicationAttemptResult.Sent);
-        attempts[1].ProviderMessageId.Should().Be("prov-42", "se guarda el id REAL del proveedor si existe");
-        attempts.Should().OnlyContain(a => a.Transport == "smtp" && a.TenantId == _db.TenantA && a.CompanyId == _db.CompanyA);
+        attempts[1]
+            .ProviderMessageId.Should()
+            .Be("prov-42", "se guarda el id REAL del proveedor si existe");
+        attempts
+            .Should()
+            .OnlyContain(a =>
+                a.Transport == "smtp" && a.TenantId == _db.TenantA && a.CompanyId == _db.CompanyA
+            );
     }
 
     [Fact]
@@ -231,8 +303,14 @@ public sealed class CommunicationContractIntegrationTests
     {
         var queued = await EnqueueAsync(InvoiceRequest(CompanyScope(_db.TenantA, _db.CompanyA)));
         await using (var dead = _db.Context())
-            (await new CommunicationOutboxDeliveryStore(dead).ClaimNextAsync(_time.Now, CommunicationDeliveryTiming.Lease))!
-                .AttemptNumber.Should().Be(1);
+            (
+                await new CommunicationOutboxDeliveryStore(dead).ClaimNextAsync(
+                    _time.Now,
+                    CommunicationDeliveryTiming.Lease
+                )
+            )!
+                .AttemptNumber.Should()
+                .Be(1);
 
         (await AttemptsAsync(queued.Id)).Single().Result.Should().BeNull("intento en curso");
 
@@ -240,10 +318,10 @@ public sealed class CommunicationContractIntegrationTests
         await RunAsync(new RecordingSender((_, _) => { }));
 
         var attempts = await AttemptsAsync(queued.Id);
-        attempts.Select(a => (a.AttemptNumber, a.Result)).Should().Equal(
-            (1, CommunicationAttemptResult.Abandoned),
-            (2, CommunicationAttemptResult.Sent)
-        );
+        attempts
+            .Select(a => (a.AttemptNumber, a.Result))
+            .Should()
+            .Equal((1, CommunicationAttemptResult.Abandoned), (2, CommunicationAttemptResult.Sent));
         attempts[0].CompletedAtUtc.Should().NotBeNull();
         (await RowAsync(queued.Id)).Status.Should().Be(CommunicationStatus.Sent);
     }
@@ -258,21 +336,30 @@ public sealed class CommunicationContractIntegrationTests
         var storeB = new CommunicationOutboxDeliveryStore(ctxB);
 
         var claimA = (await storeA.ClaimNextAsync(_time.Now, CommunicationDeliveryTiming.Lease))!;
-        var claimB = (await storeB.ClaimNextAsync(_time.Now + CommunicationDeliveryTiming.Lease + TimeSpan.FromSeconds(1), CommunicationDeliveryTiming.Lease))!;
+        var claimB = (
+            await storeB.ClaimNextAsync(
+                _time.Now + CommunicationDeliveryTiming.Lease + TimeSpan.FromSeconds(1),
+                CommunicationDeliveryTiming.Lease
+            )
+        )!;
         claimB.AttemptNumber.Should().Be(2);
 
         using (JobExecutionContext.Begin(_db.TenantA, _db.CompanyA))
         {
-            (await storeA.MarkSentAsync(claimA, EmailDeliveryReceipt.WithoutProviderId, _time.Now)).Should().BeFalse();
-            (await storeB.MarkSentAsync(claimB, EmailDeliveryReceipt.WithoutProviderId, _time.Now)).Should().BeTrue();
+            (await storeA.MarkSentAsync(claimA, EmailDeliveryReceipt.WithoutProviderId, _time.Now))
+                .Should()
+                .BeFalse();
+            (await storeB.MarkSentAsync(claimB, EmailDeliveryReceipt.WithoutProviderId, _time.Now))
+                .Should()
+                .BeTrue();
         }
 
         (await RowAsync(queued.Id)).Status.Should().Be(CommunicationStatus.Sent);
         var attempts = await AttemptsAsync(queued.Id);
-        attempts.Select(a => (a.AttemptNumber, a.Result)).Should().Equal(
-            (1, CommunicationAttemptResult.ClaimLost),
-            (2, CommunicationAttemptResult.Sent)
-        );
+        attempts
+            .Select(a => (a.AttemptNumber, a.Result))
+            .Should()
+            .Equal((1, CommunicationAttemptResult.ClaimLost), (2, CommunicationAttemptResult.Sent));
         attempts[0].ErrorSafeText.Should().Contain("después de perder el claim");
     }
 
@@ -280,8 +367,13 @@ public sealed class CommunicationContractIntegrationTests
     public async Task El_historial_no_guarda_destinatario_ni_contenido()
     {
         var queued = await EnqueueAsync(InvoiceRequest(CompanyScope(_db.TenantA, _db.CompanyA)));
-        var sender = new RecordingSender((msg, _) =>
-            throw new SmtpFailedRecipientException(SmtpStatusCode.MailboxUnavailable, "cliente@test.com"));
+        var sender = new RecordingSender(
+            (msg, _) =>
+                throw new SmtpFailedRecipientException(
+                    SmtpStatusCode.MailboxUnavailable,
+                    "cliente@test.com"
+                )
+        );
 
         await RunAsync(sender);
 
@@ -293,7 +385,8 @@ public sealed class CommunicationContractIntegrationTests
 
     // ── helpers ───────────────────────────────────────────────────────────────────────────
 
-    private static CommunicationScope CompanyScope(Guid tenantId, Guid companyId) => CommunicationScope.Company(tenantId, companyId);
+    private static CommunicationScope CompanyScope(Guid tenantId, Guid companyId) =>
+        CommunicationScope.Company(tenantId, companyId);
 
     private static readonly Guid InvoiceSourceId = Guid.NewGuid();
 
@@ -361,34 +454,54 @@ public sealed class CommunicationContractIntegrationTests
         using var _ = JobExecutionContext.Begin(tenantId, companyId);
         var outbox = await ctx.CommunicationOutbox.Select(x => x.Id).ToListAsync();
         // Adjuntos e intentos comparten el mismo filtro de alcance.
-        (await ctx.CommunicationDeliveryAttempts.Where(a => !outbox.Contains(a.CommunicationId)).CountAsync()).Should().Be(0);
+        (
+            await ctx
+                .CommunicationDeliveryAttempts.Where(a => !outbox.Contains(a.CommunicationId))
+                .CountAsync()
+        )
+            .Should()
+            .Be(0);
         return outbox;
     }
 
     private async Task<CommunicationOutbox> RowAsync(Guid id)
     {
         await using var ctx = _db.Context();
-        return await ctx.CommunicationOutbox.IgnoreQueryFilters().AsNoTracking().SingleAsync(x => x.Id == id);
+        return await ctx
+            .CommunicationOutbox.IgnoreQueryFilters()
+            .AsNoTracking()
+            .SingleAsync(x => x.Id == id);
     }
 
     private async Task<int> CountAsync(Guid id)
     {
         await using var ctx = _db.Context();
-        return await ctx.CommunicationOutbox.IgnoreQueryFilters().CountAsync(x => x.Id == id || x.SourceId == InvoiceSourceId);
+        return await ctx
+            .CommunicationOutbox.IgnoreQueryFilters()
+            .CountAsync(x => x.Id == id || x.SourceId == InvoiceSourceId);
     }
 
     private async Task<List<CommunicationDeliveryAttempt>> AttemptsAsync(Guid communicationId)
     {
         await using var ctx = _db.Context();
-        return await ctx.CommunicationDeliveryAttempts.IgnoreQueryFilters().AsNoTracking()
+        return await ctx
+            .CommunicationDeliveryAttempts.IgnoreQueryFilters()
+            .AsNoTracking()
             .Where(a => a.CommunicationId == communicationId)
             .OrderBy(a => a.AttemptNumber)
             .ToListAsync();
     }
 
-    private sealed class RecordingSender(Action<EmailMessage, CommunicationEmailSettings> behavior, string? providerMessageId = null) : IEmailSender
+    private sealed class RecordingSender(
+        Action<EmailMessage, CommunicationEmailSettings> behavior,
+        string? providerMessageId = null
+    ) : IEmailSender
     {
-        public Task<EmailDeliveryReceipt> SendAsync(EmailMessage message, CommunicationEmailSettings settings, CancellationToken ct = default)
+        public Task<EmailDeliveryReceipt> SendAsync(
+            EmailMessage message,
+            CommunicationEmailSettings settings,
+            CancellationToken ct = default
+        )
         {
             behavior(message, settings);
             return Task.FromResult(new EmailDeliveryReceipt(providerMessageId));
@@ -405,10 +518,24 @@ public sealed class CommunicationContractIntegrationTests
         public Task<CommunicationEmailSettings> ResolveEmailAsync(CancellationToken ct = default) =>
             throw new InvalidOperationException("Se exige alcance explícito.");
 
-        public Task<CommunicationEmailSettings> ResolveEmailAsync(CommunicationScope scope, CancellationToken ct = default) =>
+        public Task<CommunicationEmailSettings> ResolveEmailAsync(
+            CommunicationScope scope,
+            CancellationToken ct = default
+        ) =>
             Task.FromResult(
-                new CommunicationEmailSettings(true, "smtp.test", 587, null, null,
-                    scope.CompanyId is { } company ? SenderFor(company) : InstanceSender, null, true, null, 3, "es")
+                new CommunicationEmailSettings(
+                    true,
+                    "smtp.test",
+                    587,
+                    null,
+                    null,
+                    scope.CompanyId is { } company ? SenderFor(company) : InstanceSender,
+                    null,
+                    true,
+                    null,
+                    3,
+                    "es"
+                )
             );
     }
 
@@ -416,7 +543,9 @@ public sealed class CommunicationContractIntegrationTests
     {
         private DateTimeOffset _now = start;
         public DateTime Now => _now.UtcDateTime;
+
         public void Advance(TimeSpan delta) => _now += delta;
+
         public override DateTimeOffset GetUtcNow() => _now;
     }
 }

@@ -76,7 +76,9 @@ public sealed class InitialStockImportProcessorTests
     private void SetupHappyPath(bool itemAvailableOnPos = true)
     {
         _itemRepo
-            .Setup(x => x.ResolveByAnyCodeAsync("PROD-0001", TenantId, It.IsAny<CancellationToken>()))
+            .Setup(x =>
+                x.ResolveByAnyCodeAsync("PROD-0001", TenantId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(AvailableItem(itemAvailableOnPos));
 
         _warehouseRepo
@@ -114,10 +116,14 @@ public sealed class InitialStockImportProcessorTests
     public async Task Sku_inexistente_es_error_bloqueante()
     {
         _itemRepo
-            .Setup(x => x.ResolveByAnyCodeAsync(It.IsAny<string>(), TenantId, It.IsAny<CancellationToken>()))
+            .Setup(x =>
+                x.ResolveByAnyCodeAsync(It.IsAny<string>(), TenantId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((Item?)null);
         _warehouseRepo
-            .Setup(x => x.GetAsync(TenantId, true, "Bodega Principal", null, It.IsAny<CancellationToken>()))
+            .Setup(x =>
+                x.GetAsync(TenantId, true, "Bodega Principal", null, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync([ActiveWarehouse()]);
         var processor = BuildProcessor();
 
@@ -131,10 +137,14 @@ public sealed class InitialStockImportProcessorTests
     public async Task Bodega_inexistente_es_error_bloqueante()
     {
         _itemRepo
-            .Setup(x => x.ResolveByAnyCodeAsync("PROD-0001", TenantId, It.IsAny<CancellationToken>()))
+            .Setup(x =>
+                x.ResolveByAnyCodeAsync("PROD-0001", TenantId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(AvailableItem());
         _warehouseRepo
-            .Setup(x => x.GetAsync(TenantId, true, "Bodega Principal", null, It.IsAny<CancellationToken>()))
+            .Setup(x =>
+                x.GetAsync(TenantId, true, "Bodega Principal", null, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync([]);
         var processor = BuildProcessor();
 
@@ -171,7 +181,12 @@ public sealed class InitialStockImportProcessorTests
         var result = await processor.ValidateRowAsync(1, row, false, CancellationToken.None);
 
         result.HasBlockingIssue.Should().BeTrue();
-        result.Issues.Should().ContainSingle(i => i.Code == "MISSING_REQUIRED_FIELD" && i.FieldName == InitialStockImportColumns.UnitCost);
+        result
+            .Issues.Should()
+            .ContainSingle(i =>
+                i.Code == "MISSING_REQUIRED_FIELD"
+                && i.FieldName == InitialStockImportColumns.UnitCost
+            );
     }
 
     [Fact]
@@ -213,9 +228,11 @@ public sealed class InitialStockImportProcessorTests
         var result = await processor.ValidateRowAsync(1, row, false, CancellationToken.None);
 
         result.HasBlockingIssue.Should().BeFalse();
-        result.Issues.Should().ContainSingle(i =>
-            i.Code == "CUTOFF_DATE_NOT_APPLIED" && i.Severity == ImportSeverity.Warning
-        );
+        result
+            .Issues.Should()
+            .ContainSingle(i =>
+                i.Code == "CUTOFF_DATE_NOT_APPLIED" && i.Severity == ImportSeverity.Warning
+            );
     }
 
     [Fact]
@@ -227,9 +244,11 @@ public sealed class InitialStockImportProcessorTests
         var result = await processor.ValidateRowAsync(1, ValidRow(), false, CancellationToken.None);
 
         result.HasBlockingIssue.Should().BeFalse();
-        result.Issues.Should().ContainSingle(i =>
-            i.Code == "ITEM_NOT_AVAILABLE_ON_POS" && i.Severity == ImportSeverity.Warning
-        );
+        result
+            .Issues.Should()
+            .ContainSingle(i =>
+                i.Code == "ITEM_NOT_AVAILABLE_ON_POS" && i.Severity == ImportSeverity.Warning
+            );
     }
 
     [Fact]
@@ -256,6 +275,8 @@ public sealed class InitialStockImportProcessorTests
 
         var result = await processor.ValidateRowAsync(1, row, false, CancellationToken.None);
 
-        result.Issues.Should().NotContain(i => i.FieldName == InitialStockImportColumns.Observation);
+        result
+            .Issues.Should()
+            .NotContain(i => i.FieldName == InitialStockImportColumns.Observation);
     }
 }

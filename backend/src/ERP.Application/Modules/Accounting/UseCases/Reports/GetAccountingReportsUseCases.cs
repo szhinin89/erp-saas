@@ -76,7 +76,8 @@ public sealed class GetGeneralLedgerReportQueryValidator
     }
 }
 
-public sealed class GetTrialBalanceReportQueryValidator : AbstractValidator<GetTrialBalanceReportQuery>
+public sealed class GetTrialBalanceReportQueryValidator
+    : AbstractValidator<GetTrialBalanceReportQuery>
 {
     public GetTrialBalanceReportQueryValidator()
     {
@@ -136,7 +137,8 @@ public sealed class GetGeneralJournalReportHandler
         var sources = await _sourceResolver.ResolveManyAsync(
             tenantId,
             companyId,
-            items.Select(e => new JournalEntrySourceRequest(
+            items
+                .Select(e => new JournalEntrySourceRequest(
                     e.Id,
                     e.SourceModule,
                     e.SourceEventType,
@@ -223,7 +225,10 @@ public sealed class GetGeneralLedgerReportHandler
         IReadOnlyList<Account> targetAccounts;
         if (q.AccountId is { } accountId)
             targetAccounts = allAccounts.Where(a => a.Id == accountId).ToList();
-        else if (!string.IsNullOrWhiteSpace(q.AccountCodeFrom) || !string.IsNullOrWhiteSpace(q.AccountCodeTo))
+        else if (
+            !string.IsNullOrWhiteSpace(q.AccountCodeFrom)
+            || !string.IsNullOrWhiteSpace(q.AccountCodeTo)
+        )
             // ACCOUNTING-REPORTS-HIERARCHY-SMOKE-01: el rango de código también debe comparar en
             // orden natural — con StringComparer.Ordinal, un rango "1.1.2".."1.1.9" excluía
             // incorrectamente "1.1.10" (ordinalmente "1.1.10" < "1.1.9" porque compara carácter a
@@ -231,16 +236,23 @@ public sealed class GetGeneralLedgerReportHandler
             // orden de la lista, para que filtro y orden sean consistentes entre sí.
             targetAccounts = allAccounts
                 .Where(a =>
-                    (string.IsNullOrWhiteSpace(q.AccountCodeFrom)
-                        || AccountCodeComparer.Instance.Compare(a.Code.Value, q.AccountCodeFrom) >= 0)
-                    && (string.IsNullOrWhiteSpace(q.AccountCodeTo)
-                        || AccountCodeComparer.Instance.Compare(a.Code.Value, q.AccountCodeTo) <= 0)
+                    (
+                        string.IsNullOrWhiteSpace(q.AccountCodeFrom)
+                        || AccountCodeComparer.Instance.Compare(a.Code.Value, q.AccountCodeFrom)
+                            >= 0
+                    )
+                    && (
+                        string.IsNullOrWhiteSpace(q.AccountCodeTo)
+                        || AccountCodeComparer.Instance.Compare(a.Code.Value, q.AccountCodeTo) <= 0
+                    )
                 )
                 .ToList();
         else
             targetAccounts = allAccounts;
 
-        targetAccounts = targetAccounts.OrderBy(a => a.Code.Value, AccountCodeComparer.Instance).ToList();
+        targetAccounts = targetAccounts
+            .OrderBy(a => a.Code.Value, AccountCodeComparer.Instance)
+            .ToList();
 
         if (targetAccounts.Count == 0)
             return Result<GetGeneralLedgerReportResponse>.Success(
@@ -269,7 +281,8 @@ public sealed class GetGeneralLedgerReportHandler
         var accountDtos = new List<GeneralLedgerAccountDto>();
         foreach (var account in targetAccounts)
         {
-            var isDebitNature = account.Nature == Domain.Modules.Accounting.Enums.AccountNature.Debit;
+            var isDebitNature =
+                account.Nature == Domain.Modules.Accounting.Enums.AccountNature.Debit;
 
             openingTotals.TryGetValue(account.Id, out var opening);
             var openingBalance = isDebitNature
@@ -303,9 +316,7 @@ public sealed class GetGeneralLedgerReportHandler
             var movements = new List<GeneralLedgerMovementDto>();
             foreach (var row in rows)
             {
-                runningBalance += isDebitNature
-                    ? row.Debit - row.Credit
-                    : row.Credit - row.Debit;
+                runningBalance += isDebitNature ? row.Debit - row.Credit : row.Credit - row.Debit;
 
                 sources.TryGetValue(row.JournalEntryId, out var source);
                 movements.Add(
@@ -413,7 +424,13 @@ public sealed class GetTrialBalanceReportHandler
             var openingNet = opening.TotalDebit - opening.TotalCredit;
             var closingNet = openingNet + period.TotalDebit - period.TotalCredit;
 
-            if (!q.IncludeZeroMovementAccounts && openingNet == 0m && closingNet == 0m && period.TotalDebit == 0m && period.TotalCredit == 0m)
+            if (
+                !q.IncludeZeroMovementAccounts
+                && openingNet == 0m
+                && closingNet == 0m
+                && period.TotalDebit == 0m
+                && period.TotalCredit == 0m
+            )
                 continue;
 
             lines.Add(
@@ -461,7 +478,8 @@ public sealed class GetTrialBalanceReportHandler
 /// saldo entre rangos en este sistema.
 /// </summary>
 public sealed record GetIncomeStatementReportQuery(DateOnly FromDate, DateOnly ToDate)
-    : IRequest<Result<GetIncomeStatementReportResponse>>, ICompanyScopedRequest;
+    : IRequest<Result<GetIncomeStatementReportResponse>>,
+        ICompanyScopedRequest;
 
 /// <summary>
 /// ACCOUNTING-FINANCIAL-STATEMENTS-10: Balance General — saldo acumulado (desde el inicio del
@@ -470,7 +488,8 @@ public sealed record GetIncomeStatementReportQuery(DateOnly FromDate, DateOnly T
 /// <c>IsBalanced</c> puede legítimamente ser <c>false</c> sin cierre contable.
 /// </summary>
 public sealed record GetBalanceSheetReportQuery(DateOnly AsOfDate)
-    : IRequest<Result<GetBalanceSheetReportResponse>>, ICompanyScopedRequest;
+    : IRequest<Result<GetBalanceSheetReportResponse>>,
+        ICompanyScopedRequest;
 
 public sealed class GetIncomeStatementReportQueryValidator
     : AbstractValidator<GetIncomeStatementReportQuery>
@@ -479,7 +498,8 @@ public sealed class GetIncomeStatementReportQueryValidator
         RuleFor(x => x.ToDate).GreaterThanOrEqualTo(x => x.FromDate);
 }
 
-public sealed class GetBalanceSheetReportQueryValidator : AbstractValidator<GetBalanceSheetReportQuery>
+public sealed class GetBalanceSheetReportQueryValidator
+    : AbstractValidator<GetBalanceSheetReportQuery>
 {
     public GetBalanceSheetReportQueryValidator() => RuleFor(x => x.AsOfDate).NotEmpty();
 }
@@ -515,7 +535,9 @@ public sealed class GetIncomeStatementReportHandler
 
         var allAccounts = await _accountRepo.GetByCompanyAsync(tenantId, companyId, ct);
         var relevantAccounts = allAccounts
-            .Where(a => a.AccountType is AccountType.Income or AccountType.Cost or AccountType.Expense)
+            .Where(a =>
+                a.AccountType is AccountType.Income or AccountType.Cost or AccountType.Expense
+            )
             .OrderBy(a => a.Code.Value, AccountCodeComparer.Instance)
             .ToList();
 
@@ -584,7 +606,9 @@ public sealed class GetBalanceSheetReportHandler
 
         var allAccounts = await _accountRepo.GetByCompanyAsync(tenantId, companyId, ct);
         var relevantAccounts = allAccounts
-            .Where(a => a.AccountType is AccountType.Asset or AccountType.Liability or AccountType.Equity)
+            .Where(a =>
+                a.AccountType is AccountType.Asset or AccountType.Liability or AccountType.Equity
+            )
             .OrderBy(a => a.Code.Value, AccountCodeComparer.Instance)
             .ToList();
 
@@ -642,7 +666,9 @@ file static class Map
             {
                 var t = totals[a.Id];
                 var amount =
-                    a.Nature == AccountNature.Debit ? t.TotalDebit - t.TotalCredit : t.TotalCredit - t.TotalDebit;
+                    a.Nature == AccountNature.Debit
+                        ? t.TotalDebit - t.TotalCredit
+                        : t.TotalCredit - t.TotalDebit;
                 return new FinancialStatementLineDto(a.Id, a.Code.Value, a.Name, amount);
             })
             .ToList();

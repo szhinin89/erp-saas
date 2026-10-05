@@ -49,8 +49,7 @@ public sealed class UpsertSriConfigurationCommandHandlerTests
     public async Task Primera_configuracion_audita_environment_emissiontype_wsdlurl_como_null_a_valor()
     {
         var f = new Fixture();
-        f.Repo
-            .Setup(r => r.GetByCompanyIdAsync(CompanyId, It.IsAny<CancellationToken>()))
+        f.Repo.Setup(r => r.GetByCompanyIdAsync(CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((SriSettings?)null);
 
         await f.BuildHandler()
@@ -63,7 +62,9 @@ public sealed class UpsertSriConfigurationCommandHandlerTests
             l =>
                 l.LogAsync(
                     It.Is<ConfigurationChangeLogEntry>(e =>
-                        e.EntityType == "SriSettings" && e.FieldName == "Environment" && e.OldValue == null
+                        e.EntityType == "SriSettings"
+                        && e.FieldName == "Environment"
+                        && e.OldValue == null
                     ),
                     It.IsAny<CancellationToken>()
                 ),
@@ -85,9 +86,15 @@ public sealed class UpsertSriConfigurationCommandHandlerTests
     public async Task Cambiar_ambiente_en_configuracion_existente_genera_log()
     {
         var f = new Fixture();
-        var existing = SriSettings.Create(TenantId, CompanyId, 1, 1, "https://wsdl.example/test", UserId);
-        f.Repo
-            .Setup(r => r.GetByCompanyIdAsync(CompanyId, It.IsAny<CancellationToken>()))
+        var existing = SriSettings.Create(
+            TenantId,
+            CompanyId,
+            1,
+            1,
+            "https://wsdl.example/test",
+            UserId
+        );
+        f.Repo.Setup(r => r.GetByCompanyIdAsync(CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existing);
 
         await f.BuildHandler()
@@ -112,9 +119,15 @@ public sealed class UpsertSriConfigurationCommandHandlerTests
     public async Task Cambiar_password_registra_Masked_nunca_el_valor_real()
     {
         var f = new Fixture();
-        var existing = SriSettings.Create(TenantId, CompanyId, 1, 1, "https://wsdl.example/test", UserId);
-        f.Repo
-            .Setup(r => r.GetByCompanyIdAsync(CompanyId, It.IsAny<CancellationToken>()))
+        var existing = SriSettings.Create(
+            TenantId,
+            CompanyId,
+            1,
+            1,
+            "https://wsdl.example/test",
+            UserId
+        );
+        f.Repo.Setup(r => r.GetByCompanyIdAsync(CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existing);
 
         const string realSecret = "mi-password-super-secreto";
@@ -129,7 +142,8 @@ public sealed class UpsertSriConfigurationCommandHandlerTests
                 l.LogAsync(
                     It.Is<ConfigurationChangeLogEntry>(e =>
                         e.FieldName == "CertPassword"
-                        && e.ValueType == ERP.Domain.Configuration.Enums.ConfigurationChangeValueType.Masked
+                        && e.ValueType
+                            == ERP.Domain.Configuration.Enums.ConfigurationChangeValueType.Masked
                         && e.IsSensitive
                         && (e.OldValue == null || !e.OldValue.Contains(realSecret))
                         && (e.NewValue == null || !e.NewValue.Contains(realSecret))
@@ -144,9 +158,15 @@ public sealed class UpsertSriConfigurationCommandHandlerTests
     public async Task No_cambiar_nada_no_genera_ningun_log()
     {
         var f = new Fixture();
-        var existing = SriSettings.Create(TenantId, CompanyId, 1, 1, "https://wsdl.example/test", UserId);
-        f.Repo
-            .Setup(r => r.GetByCompanyIdAsync(CompanyId, It.IsAny<CancellationToken>()))
+        var existing = SriSettings.Create(
+            TenantId,
+            CompanyId,
+            1,
+            1,
+            "https://wsdl.example/test",
+            UserId
+        );
+        f.Repo.Setup(r => r.GetByCompanyIdAsync(CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existing);
 
         await f.BuildHandler()

@@ -45,12 +45,19 @@ public sealed class ImportErrorSemanticsTests
             Ctx.Setup(c => c.CompanyId).Returns(Company);
             Ctx.Setup(c => c.UserId).Returns(User);
             Processor.Setup(p => p.ImportType).Returns(ImportType.Suppliers);
-            Batches.Setup(b => b.GetByIdAsync(batch.Id, Tenant, Company, It.IsAny<CancellationToken>()))
+            Batches
+                .Setup(b =>
+                    b.GetByIdAsync(batch.Id, Tenant, Company, It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(batch);
-            Files.Setup(f => f.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            Files
+                .Setup(f => f.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(() => new MemoryStream([1, 2, 3]));
-            Issues.Setup(i => i.AddAsync(It.IsAny<ImportBatchIssue>(), It.IsAny<CancellationToken>()))
-                .Callback<ImportBatchIssue, CancellationToken>((issue, _) => RecordedIssues.Add(issue))
+            Issues
+                .Setup(i => i.AddAsync(It.IsAny<ImportBatchIssue>(), It.IsAny<CancellationToken>()))
+                .Callback<ImportBatchIssue, CancellationToken>(
+                    (issue, _) => RecordedIssues.Add(issue)
+                )
                 .Returns(Task.CompletedTask);
         }
 
@@ -58,12 +65,25 @@ public sealed class ImportErrorSemanticsTests
             new() { [ImportType.Suppliers] = Processor.Object };
 
         public ValidateImportBatchHandler Validate() =>
-            new(Batches.Object, Rows.Object, Issues.Object, Files.Object, ProcessorMap, Ctx.Object,
-                NullLogger<ValidateImportBatchHandler>.Instance);
+            new(
+                Batches.Object,
+                Rows.Object,
+                Issues.Object,
+                Files.Object,
+                ProcessorMap,
+                Ctx.Object,
+                NullLogger<ValidateImportBatchHandler>.Instance
+            );
 
         public ConfirmImportBatchHandler Confirm() =>
-            new(Batches.Object, Rows.Object, Issues.Object, ProcessorMap, Ctx.Object,
-                NullLogger<ConfirmImportBatchHandler>.Instance);
+            new(
+                Batches.Object,
+                Rows.Object,
+                Issues.Object,
+                ProcessorMap,
+                Ctx.Object,
+                NullLogger<ConfirmImportBatchHandler>.Instance
+            );
     }
 
     private static ImportBatch UploadedBatch()
@@ -90,11 +110,19 @@ public sealed class ImportErrorSemanticsTests
         var batch = UploadedBatch();
         var f = new Fixture(batch);
         f.Processor.Setup(p => p.ReadAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new DomainRuleViolationException("El archivo no es un Excel (.xlsx) válido.", new InvalidOperationException(TechnicalDetail)));
+            .ThrowsAsync(
+                new DomainRuleViolationException(
+                    "El archivo no es un Excel (.xlsx) válido.",
+                    new InvalidOperationException(TechnicalDetail)
+                )
+            );
 
-        var result = await f.Validate().Handle(new ValidateImportBatchCommand(batch.Id), CancellationToken.None);
+        var result = await f.Validate()
+            .Handle(new ValidateImportBatchCommand(batch.Id), CancellationToken.None);
 
-        result.Error.Should().Be("No se pudo leer el archivo: El archivo no es un Excel (.xlsx) válido.");
+        result
+            .Error.Should()
+            .Be("No se pudo leer el archivo: El archivo no es un Excel (.xlsx) válido.");
         batch.Status.Should().Be(ImportStatus.Failed);
     }
 
@@ -106,7 +134,8 @@ public sealed class ImportErrorSemanticsTests
         f.Processor.Setup(p => p.ReadAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException(TechnicalDetail));
 
-        var result = await f.Validate().Handle(new ValidateImportBatchCommand(batch.Id), CancellationToken.None);
+        var result = await f.Validate()
+            .Handle(new ValidateImportBatchCommand(batch.Id), CancellationToken.None);
 
         result.Error.Should().Be("No se pudo leer el archivo.");
         batch.Status.Should().Be(ImportStatus.Failed);
@@ -120,7 +149,15 @@ public sealed class ImportErrorSemanticsTests
         var f = new Fixture(batch);
         var row = ImportBatchRow.Create(Tenant, Company, batch.Id, 1, "{}", User);
         row.SetParsedData("{}", hasBlockingIssue: false, User);
-        f.Rows.SetupSequence(r => r.GetValidRowsPageAsync(batch.Id, Tenant, Company, It.IsAny<int>(), It.IsAny<CancellationToken>()))
+        f.Rows.SetupSequence(r =>
+                r.GetValidRowsPageAsync(
+                    batch.Id,
+                    Tenant,
+                    Company,
+                    It.IsAny<int>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync([row])
             .ReturnsAsync([]);
         setup(f.Processor);
@@ -135,7 +172,10 @@ public sealed class ImportErrorSemanticsTests
     {
         var issue = await ConfirmOneRow(p =>
             p.Setup(x => x.ConfirmRowAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new DomainRuleViolationException("El BusinessPartner ya está inactivo.")));
+                .ThrowsAsync(
+                    new DomainRuleViolationException("El BusinessPartner ya está inactivo.")
+                )
+        );
 
         issue!.Code.Should().Be("CONFIRM_FAILED");
         issue.Message.Should().Be("El BusinessPartner ya está inactivo.");
@@ -146,10 +186,15 @@ public sealed class ImportErrorSemanticsTests
     {
         var issue = await ConfirmOneRow(p =>
             p.Setup(x => x.ConfirmRowAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new InvalidOperationException(TechnicalDetail)));
+                .ThrowsAsync(new InvalidOperationException(TechnicalDetail))
+        );
 
         issue!.Code.Should().Be("CONFIRM_FAILED");
-        issue.Message.Should().NotContain("Npgsql").And.NotContain("db.internal").And.Contain("Error interno");
+        issue
+            .Message.Should()
+            .NotContain("Npgsql")
+            .And.NotContain("db.internal")
+            .And.Contain("Error interno");
     }
 
     [Fact]
@@ -157,7 +202,8 @@ public sealed class ImportErrorSemanticsTests
     {
         var issue = await ConfirmOneRow(p =>
             p.Setup(x => x.ConfirmRowAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(RowConfirmResult.Failed("Identificación duplicada.")));
+                .ReturnsAsync(RowConfirmResult.Failed("Identificación duplicada."))
+        );
 
         issue!.Message.Should().Be("Identificación duplicada.");
     }
@@ -171,15 +217,28 @@ public sealed class ImportErrorSemanticsTests
         // escribió en el almacenamiento — antes quedaba huérfano.
         var batch = ValidatedBatch();
         var f = new Fixture(batch);
-        f.Files.Setup(x => x.SaveAsync(It.IsAny<string>(), It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+        f.Files.Setup(x =>
+                x.SaveAsync(It.IsAny<string>(), It.IsAny<Stream>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync("initial-load/stored.xlsx");
         var handler = new UploadImportFileHandler(f.Batches.Object, f.Files.Object, f.Ctx.Object);
-        var content = new MediaUploadContent(new MemoryStream([1, 2, 3]), "f.xlsx", "application/vnd.ms-excel", 3);
+        var content = new MediaUploadContent(
+            new MemoryStream([1, 2, 3]),
+            "f.xlsx",
+            "application/vnd.ms-excel",
+            3
+        );
 
-        var result = await handler.HandleWithDomainRules(new UploadImportFileCommand(batch.Id, content), CancellationToken.None);
+        var result = await handler.HandleWithDomainRules(
+            new UploadImportFileCommand(batch.Id, content),
+            CancellationToken.None
+        );
 
         result.Code.Should().Be(ApiResponseCodes.Common.DomainRuleViolation);
-        f.Files.Verify(x => x.DeleteAsync("initial-load/stored.xlsx", It.IsAny<CancellationToken>()), Times.Once);
+        f.Files.Verify(
+            x => x.DeleteAsync("initial-load/stored.xlsx", It.IsAny<CancellationToken>()),
+            Times.Once
+        );
         f.Batches.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 }

@@ -86,8 +86,7 @@ public sealed class GenerateRetentionRidePdfHandlerTests
         var xml = SampleXml();
         fx.SetupSuccessfulXml(xml);
         byte[] pdfBytes = [1, 2, 3, 4];
-        fx.PdfService
-            .Setup(p =>
+        fx.PdfService.Setup(p =>
                 p.GeneratePdfAsync(
                     xml.Xml,
                     TenantId,
@@ -113,8 +112,7 @@ public sealed class GenerateRetentionRidePdfHandlerTests
     public async Task Handle_propagates_the_xml_service_failure_without_calling_the_pdf_service()
     {
         var fx = new Fixture();
-        fx.XmlService
-            .Setup(s =>
+        fx.XmlService.Setup(s =>
                 s.GenerateXmlAsync(
                     It.IsAny<ElectronicDocumentSourceReference>(),
                     It.IsAny<CancellationToken>()
@@ -153,8 +151,7 @@ public sealed class GenerateRetentionRidePdfHandlerTests
         var fx = new Fixture();
         var xml = SampleXml();
         fx.SetupSuccessfulXml(xml);
-        fx.PdfService
-            .Setup(p =>
+        fx.PdfService.Setup(p =>
                 p.GeneratePdfAsync(
                     xml.Xml,
                     TenantId,
@@ -174,20 +171,27 @@ public sealed class GenerateRetentionRidePdfHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("No se pudo resolver el branding del RIDE.");
     }
+
     [Fact]
     public async Task Handle_returns_not_found_without_generating_when_the_origin_is_not_viewable()
     {
         var fx = new Fixture();
-        fx.Access
-            .Setup(a => a.FindViewableAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        fx.Access.Setup(a => a.FindViewableAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((ERP.Domain.Modules.Retentions.Entities.RetentionDocument?)null);
 
-        var result = await fx.Handler.Handle(new GenerateRetentionRidePdfQuery(RetentionId), CancellationToken.None);
+        var result = await fx.Handler.Handle(
+            new GenerateRetentionRidePdfQuery(RetentionId),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
         fx.XmlService.Verify(
-            s => s.GenerateXmlAsync(It.IsAny<ElectronicDocumentSourceReference>(), It.IsAny<CancellationToken>()),
+            s =>
+                s.GenerateXmlAsync(
+                    It.IsAny<ElectronicDocumentSourceReference>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }

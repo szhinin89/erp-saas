@@ -45,7 +45,8 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
         decimal creditNoteSubtotal = 100m,
         decimal creditNoteVat = 15m,
         Guid? receptionDocumentId = null,
-        PurchaseCreditNoteApplicationType applicationType = PurchaseCreditNoteApplicationType.Discount
+        PurchaseCreditNoteApplicationType applicationType =
+            PurchaseCreditNoteApplicationType.Discount
     )
     {
         var invoice = PurchaseInvoice.CreateDraft(
@@ -80,10 +81,17 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
         invoice.Confirm(UserId);
 
         var payable = AccountsPayable.CreateFromOrigin(
-            TenantId, CompanyId, BranchId, SupplierId,
-            AccountsPayableOriginType.PurchaseInvoice, invoice.Id,
-            "01", "001-001-000000001",
-            invoice.IssueDate, invoice.IssueDate, UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            invoice.Id,
+            "01",
+            "001-001-000000001",
+            invoice.IssueDate,
+            invoice.IssueDate,
+            UserId
         );
         payable.AddInstallment(1, invoice.IssueDate.AddDays(30), totalAmount);
         if (paidAmount > 0)
@@ -137,11 +145,17 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
         {
             CreditNoteRepo
                 .Setup(r =>
-                    r.GetPurchaseInvoiceIdAsync(TenantId, f.CreditNote.Id, It.IsAny<CancellationToken>())
+                    r.GetPurchaseInvoiceIdAsync(
+                        TenantId,
+                        f.CreditNote.Id,
+                        It.IsAny<CancellationToken>()
+                    )
                 )
                 .ReturnsAsync(f.Invoice.Id);
             CreditNoteRepo
-                .Setup(r => r.GetByIdAsync(TenantId, f.CreditNote.Id, It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetByIdAsync(TenantId, f.CreditNote.Id, It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(f.CreditNote);
             InvoiceRepo
                 .Setup(r => r.GetByIdAsync(TenantId, f.Invoice.Id, It.IsAny<CancellationToken>()))
@@ -236,36 +250,76 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
     public async Task Authorize_con_IRBPNR_sin_PostingRuleLine_configurada_bloquea_con_mensaje_claro()
     {
         var invoice = PurchaseInvoice.CreateDraft(
-            TenantId, CompanyId, BranchId, SupplierId, "Proveedor Test", "1234567890001",
-            "01", "001-001-000000006", DateOnly.FromDateTime(DateTime.UtcNow), UserId,
-            PaymentTermId, "Contado", 1, 30, globalWarehouseId: WarehouseId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            "Proveedor Test",
+            "1234567890001",
+            "01",
+            "001-001-000000006",
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            UserId,
+            PaymentTermId,
+            "Contado",
+            1,
+            30,
+            globalWarehouseId: WarehouseId
         );
         var line = PurchaseInvoiceDetail.Create(
-            invoice.Id, TenantId, "Producto 1", quantity: 1, unitPrice: 1000m,
-            vatCode: "0", uomCode: "UNIT", itemId: Guid.NewGuid(), warehouseId: WarehouseId
+            invoice.Id,
+            TenantId,
+            "Producto 1",
+            quantity: 1,
+            unitPrice: 1000m,
+            vatCode: "0",
+            uomCode: "UNIT",
+            itemId: Guid.NewGuid(),
+            warehouseId: WarehouseId
         );
         invoice.ReplaceLines(new[] { line }, UserId);
         invoice.Confirm(UserId);
 
         var payable = AccountsPayable.CreateFromOrigin(
-            TenantId, CompanyId, BranchId, SupplierId,
-            AccountsPayableOriginType.PurchaseInvoice, invoice.Id,
-            "01", "001-001-000000006", invoice.IssueDate, invoice.IssueDate, UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            invoice.Id,
+            "01",
+            "001-001-000000006",
+            invoice.IssueDate,
+            invoice.IssueDate,
+            UserId
         );
         payable.AddInstallment(1, invoice.IssueDate.AddDays(30), 1000m);
 
         var creditNote = PurchaseCreditNote.CreateDraft(
-            TenantId, CompanyId, BranchId, SupplierId, invoice.Id, null,
-            PurchaseCreditNoteApplicationType.Discount, "001-001-000000007",
-            null, null, null, DateOnly.FromDateTime(DateTime.UtcNow), "Descuento con IRBPNR",
-            new[]
-            {
-                new PurchaseCreditNote.DraftLineInput("Descuento", 100m, "2", 15m, 15m),
-            },
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            invoice.Id,
+            null,
+            PurchaseCreditNoteApplicationType.Discount,
+            "001-001-000000007",
+            null,
+            null,
+            null,
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            "Descuento con IRBPNR",
+            new[] { new PurchaseCreditNote.DraftLineInput("Descuento", 100m, "2", 15m, 15m) },
             new[]
             {
                 new PurchaseCreditNote.TaxSummaryDraftLineInput(
-                    Guid.NewGuid(), "2", 15m, "IVA", null, 0m, null,
+                    Guid.NewGuid(),
+                    "2",
+                    15m,
+                    "IVA",
+                    null,
+                    0m,
+                    null,
                     TaxableBase: 100m,
                     IrbpnrCode: "5001",
                     IrbpnrRate: 0.1m,
@@ -274,13 +328,14 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
                     SourceIrbpnrAmount: 6m
                 ),
             },
-            UserId, Guid.NewGuid(), "create-hash-irbpnr"
+            UserId,
+            Guid.NewGuid(),
+            "create-hash-irbpnr"
         );
 
         var f = new Fixture(invoice, payable, creditNote);
         var m = new Mocks(f);
-        m.PostingEngine
-            .Setup(p =>
+        m.PostingEngine.Setup(p =>
                 p.IsAmountKindConfiguredAsync(
                     It.IsAny<Guid>(),
                     It.IsAny<Guid>(),
@@ -332,7 +387,12 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
     public async Task Authorize_bloquea_cuando_TotalAmount_excede_BalanceDue_y_no_aplica_nada()
     {
         // BalanceDue = 1000 - 950 = 50; NC total = 115 > 50.
-        var f = BuildFixture(totalAmount: 1000m, paidAmount: 950m, creditNoteSubtotal: 100m, creditNoteVat: 15m);
+        var f = BuildFixture(
+            totalAmount: 1000m,
+            paidAmount: 950m,
+            creditNoteSubtotal: 100m,
+            creditNoteVat: 15m
+        );
         var m = new Mocks(f);
         var handler = m.BuildHandler();
 
@@ -397,8 +457,7 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
 
         var f = BuildFixture(totalAmount: 1000m, receptionDocumentId: doc.Id);
         var m = new Mocks(f);
-        m.ReceptionRepo
-            .Setup(r => r.GetByIdAsync(TenantId, doc.Id, It.IsAny<CancellationToken>()))
+        m.ReceptionRepo.Setup(r => r.GetByIdAsync(TenantId, doc.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(doc);
         var handler = m.BuildHandler();
 
@@ -436,8 +495,7 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
 
         var f = BuildFixture(totalAmount: 1000m, receptionDocumentId: doc.Id);
         var m = new Mocks(f);
-        m.ReceptionRepo
-            .Setup(r => r.GetByIdAsync(TenantId, doc.Id, It.IsAny<CancellationToken>()))
+        m.ReceptionRepo.Setup(r => r.GetByIdAsync(TenantId, doc.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(doc);
         var handler = m.BuildHandler();
 
@@ -468,7 +526,9 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
         var paramTypeNames = ctor.GetParameters().Select(p => p.ParameterType.Name).ToList();
 
         paramTypeNames.Should().NotContain("IStockRepository");
-        paramTypeNames.Should().NotContain(n => n.Contains("JournalEntry", StringComparison.Ordinal));
+        paramTypeNames
+            .Should()
+            .NotContain(n => n.Contains("JournalEntry", StringComparison.Ordinal));
         paramTypeNames.Should().Contain("IPostingEngine");
     }
 

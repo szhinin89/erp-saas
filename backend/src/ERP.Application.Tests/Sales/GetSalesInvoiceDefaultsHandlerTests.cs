@@ -46,8 +46,9 @@ public sealed class GetSalesInvoiceDefaultsHandlerTests
         var warehouseId = Guid.NewGuid();
         var emissionPointId = Guid.NewGuid();
         var paymentTermId = Guid.NewGuid();
-        f.Resolver
-            .Setup(r => r.GetAsync(TenantId, CompanyId, BranchId, It.IsAny<CancellationToken>()))
+        f.Resolver.Setup(r =>
+                r.GetAsync(TenantId, CompanyId, BranchId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(
                 new InvoiceDefaultsResult(
                     DefaultDocTypeCode: "01",
@@ -83,10 +84,18 @@ public sealed class GetSalesInvoiceDefaultsHandlerTests
     {
         var f = new Fixture();
         f.Branch.Setup(b => b.HasBranchContext).Returns(false);
-        f.Resolver
-            .Setup(r => r.GetAsync(TenantId, CompanyId, null, It.IsAny<CancellationToken>()))
+        f.Resolver.Setup(r => r.GetAsync(TenantId, CompanyId, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(
-                new InvoiceDefaultsResult(null, null, null, null, null, "None", true, Array.Empty<string>())
+                new InvoiceDefaultsResult(
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    "None",
+                    true,
+                    Array.Empty<string>()
+                )
             );
 
         var result = await f.BuildHandler().Handle(new GetSalesInvoiceDefaultsQuery(), default);

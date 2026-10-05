@@ -85,9 +85,23 @@ public sealed class CollectionPostingPipelineTests
             CreatedBy
         );
 
-    private static PostingRule Rule(string sourceModule, string factType, Guid debitAccountId, Guid creditAccountId)
+    private static PostingRule Rule(
+        string sourceModule,
+        string factType,
+        Guid debitAccountId,
+        Guid creditAccountId
+    )
     {
-        var rule = PostingRule.Create(TenantId, CompanyId, sourceModule, factType, null, null, null, CreatedBy);
+        var rule = PostingRule.Create(
+            TenantId,
+            CompanyId,
+            sourceModule,
+            factType,
+            null,
+            null,
+            null,
+            CreatedBy
+        );
         rule.AddLine(debitAccountId, AccountNature.Debit, PostingAmountKind.GrandTotal);
         rule.AddLine(creditAccountId, AccountNature.Credit, PostingAmountKind.GrandTotal);
         return rule;
@@ -145,9 +159,7 @@ public sealed class CollectionPostingPipelineTests
 
         public void RegisterBankAccount(CompanyBankAccount bankAccount) =>
             BankAccounts
-                .Setup(r =>
-                    r.GetByIdAsync(TenantId, bankAccount.Id, It.IsAny<CancellationToken>())
-                )
+                .Setup(r => r.GetByIdAsync(TenantId, bankAccount.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(bankAccount);
 
         public void RegisterAccount(Account account) =>
@@ -177,15 +189,35 @@ public sealed class CollectionPostingPipelineTests
         m.RegisterAccount(cash);
         m.RegisterAccount(receivable);
         var rule = Rule("Finance", "CollectionApplied", cash.Id, receivable.Id);
-        m.PostingRules
-            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Finance", "CollectionApplied", It.IsAny<CancellationToken>()))
+        m.PostingRules.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Finance",
+                    "CollectionApplied",
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(rule);
-        m.JournalEntries
-            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Finance", "CollectionApplied", It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Finance",
+                    "CollectionApplied",
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync((JournalEntry?)null);
 
         var engine = m.BuildEngine();
-        var translator = new CollectionAppliedPostingTranslator(engine, m.BankAccounts.Object, m.CashRegisters.Object, NullLogger<CollectionAppliedPostingTranslator>.Instance);
+        var translator = new CollectionAppliedPostingTranslator(
+            engine,
+            m.BankAccounts.Object,
+            m.CashRegisters.Object,
+            NullLogger<CollectionAppliedPostingTranslator>.Instance
+        );
 
         var paymentId = Guid.NewGuid();
         await translator.Handle(CollectionEvent(paymentId, 300m), CancellationToken.None);
@@ -195,8 +227,12 @@ public sealed class CollectionPostingPipelineTests
         entry.Status.Should().Be(JournalEntryStatus.Posted);
         entry.Lines.Should().HaveCount(2);
         entry.Lines.Sum(l => l.Debit).Should().Be(entry.Lines.Sum(l => l.Credit));
-        entry.Lines.Should().Contain(l => l.AccountId == cash.Id && l.Debit == 300m && l.Credit == 0m);
-        entry.Lines.Should().Contain(l => l.AccountId == receivable.Id && l.Credit == 300m && l.Debit == 0m);
+        entry
+            .Lines.Should()
+            .Contain(l => l.AccountId == cash.Id && l.Debit == 300m && l.Credit == 0m);
+        entry
+            .Lines.Should()
+            .Contain(l => l.AccountId == receivable.Id && l.Credit == 300m && l.Debit == 0m);
         entry.SourceModule.Should().Be("Finance");
         entry.SourceEventType.Should().Be("CollectionApplied");
         entry.SourceEventId.Should().Be(paymentId);
@@ -211,8 +247,15 @@ public sealed class CollectionPostingPipelineTests
         m.RegisterAccount(cash);
         m.RegisterAccount(receivable);
         var rule = Rule("Finance", "CollectionApplied", cash.Id, receivable.Id);
-        m.PostingRules
-            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Finance", "CollectionApplied", It.IsAny<CancellationToken>()))
+        m.PostingRules.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Finance",
+                    "CollectionApplied",
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(rule);
 
         var paymentId = Guid.NewGuid();
@@ -231,18 +274,30 @@ public sealed class CollectionPostingPipelineTests
         // La clave de idempotencia es (CompanyId, SourceModule, SourceEventId, FactType) — el
         // reprocesamiento del mismo evento debe encontrar este JournalEntry ya existente y
         // devolver AlreadyProcessed sin generar uno nuevo (PostingIdempotencyGuard).
-        m.JournalEntries
-            .Setup(r =>
-                r.FindByKeyAsync(TenantId, CompanyId, "Finance", "CollectionApplied", paymentId, It.IsAny<CancellationToken>())
+        m.JournalEntries.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Finance",
+                    "CollectionApplied",
+                    paymentId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(existing);
 
         var engine = m.BuildEngine();
-        var translator = new CollectionAppliedPostingTranslator(engine, m.BankAccounts.Object, m.CashRegisters.Object, NullLogger<CollectionAppliedPostingTranslator>.Instance);
+        var translator = new CollectionAppliedPostingTranslator(
+            engine,
+            m.BankAccounts.Object,
+            m.CashRegisters.Object,
+            NullLogger<CollectionAppliedPostingTranslator>.Instance
+        );
 
         await translator.Handle(CollectionEvent(paymentId, 300m), CancellationToken.None);
 
-        m.Captured.Should().BeNull("un hecho ya contabilizado nunca debe generar un segundo JournalEntry");
+        m.Captured.Should()
+            .BeNull("un hecho ya contabilizado nunca debe generar un segundo JournalEntry");
         m.JournalEntries.Verify(
             r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()),
             Times.Never
@@ -259,19 +314,40 @@ public sealed class CollectionPostingPipelineTests
         m.RegisterAccount(cash);
         m.RegisterAccount(receivable);
         var rule = Rule("Finance", "CollectionApplied", cash.Id, receivable.Id);
-        m.PostingRules
-            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Finance", "CollectionApplied", It.IsAny<CancellationToken>()))
+        m.PostingRules.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Finance",
+                    "CollectionApplied",
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(rule);
-        m.JournalEntries
-            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Finance", "CollectionApplied", It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Finance",
+                    "CollectionApplied",
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync((JournalEntry?)null);
 
         var engine = m.BuildEngine();
-        var translator = new CollectionAppliedPostingTranslator(engine, m.BankAccounts.Object, m.CashRegisters.Object, NullLogger<CollectionAppliedPostingTranslator>.Instance);
+        var translator = new CollectionAppliedPostingTranslator(
+            engine,
+            m.BankAccounts.Object,
+            m.CashRegisters.Object,
+            NullLogger<CollectionAppliedPostingTranslator>.Instance
+        );
 
         await translator.Handle(CollectionEvent(Guid.NewGuid(), 300m), CancellationToken.None);
 
-        m.Captured.Should().BeNull("una cuenta inválida nunca debe producir un asiento, ni siquiera parcial");
+        m.Captured.Should()
+            .BeNull("una cuenta inválida nunca debe producir un asiento, ni siquiera parcial");
         m.JournalEntries.Verify(
             r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()),
             Times.Never
@@ -294,15 +370,35 @@ public sealed class CollectionPostingPipelineTests
         m.RegisterBankAccount(destination);
         // La PostingRule sigue apuntando a Caja por defecto — el override debe ganar.
         var rule = Rule("Finance", "CollectionApplied", cashDefault.Id, receivable.Id);
-        m.PostingRules
-            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Finance", "CollectionApplied", It.IsAny<CancellationToken>()))
+        m.PostingRules.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Finance",
+                    "CollectionApplied",
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(rule);
-        m.JournalEntries
-            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Finance", "CollectionApplied", It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Finance",
+                    "CollectionApplied",
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync((JournalEntry?)null);
 
         var engine = m.BuildEngine();
-        var translator = new CollectionAppliedPostingTranslator(engine, m.BankAccounts.Object, m.CashRegisters.Object, NullLogger<CollectionAppliedPostingTranslator>.Instance);
+        var translator = new CollectionAppliedPostingTranslator(
+            engine,
+            m.BankAccounts.Object,
+            m.CashRegisters.Object,
+            NullLogger<CollectionAppliedPostingTranslator>.Instance
+        );
 
         var paymentId = Guid.NewGuid();
         await translator.Handle(
@@ -313,8 +409,12 @@ public sealed class CollectionPostingPipelineTests
         m.Captured.Should().NotBeNull();
         var entry = m.Captured!;
         entry.Lines.Sum(l => l.Debit).Should().Be(entry.Lines.Sum(l => l.Credit));
-        entry.Lines.Should().Contain(l => l.AccountId == bank.Id && l.Debit == 300m && l.Credit == 0m);
-        entry.Lines.Should().Contain(l => l.AccountId == receivable.Id && l.Credit == 300m && l.Debit == 0m);
+        entry
+            .Lines.Should()
+            .Contain(l => l.AccountId == bank.Id && l.Debit == 300m && l.Credit == 0m);
+        entry
+            .Lines.Should()
+            .Contain(l => l.AccountId == receivable.Id && l.Credit == 300m && l.Debit == 0m);
         entry.Lines.Should().NotContain(l => l.AccountId == cashDefault.Id);
     }
 
@@ -332,15 +432,35 @@ public sealed class CollectionPostingPipelineTests
         var destination = BankAccount(bank.Id);
         m.RegisterBankAccount(destination);
         var rule = Rule("Finance", "CollectionApplied", cashDefault.Id, receivable.Id);
-        m.PostingRules
-            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Finance", "CollectionApplied", It.IsAny<CancellationToken>()))
+        m.PostingRules.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Finance",
+                    "CollectionApplied",
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(rule);
-        m.JournalEntries
-            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Finance", "CollectionApplied", It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Finance",
+                    "CollectionApplied",
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync((JournalEntry?)null);
 
         var engine = m.BuildEngine();
-        var translator = new CollectionAppliedPostingTranslator(engine, m.BankAccounts.Object, m.CashRegisters.Object, NullLogger<CollectionAppliedPostingTranslator>.Instance);
+        var translator = new CollectionAppliedPostingTranslator(
+            engine,
+            m.BankAccounts.Object,
+            m.CashRegisters.Object,
+            NullLogger<CollectionAppliedPostingTranslator>.Instance
+        );
 
         var act = async () =>
             await translator.Handle(
@@ -349,7 +469,8 @@ public sealed class CollectionPostingPipelineTests
             );
 
         await act.Should().ThrowAsync<DomainRuleViolationException>();
-        m.Captured.Should().BeNull("la cuenta efectiva (override) es inválida — ningún asiento parcial");
+        m.Captured.Should()
+            .BeNull("la cuenta efectiva (override) es inválida — ningún asiento parcial");
         m.JournalEntries.Verify(
             r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()),
             Times.Never

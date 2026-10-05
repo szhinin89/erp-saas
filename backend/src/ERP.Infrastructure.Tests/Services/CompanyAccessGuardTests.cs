@@ -57,7 +57,12 @@ public sealed class CompanyAccessGuardTests
             );
     }
 
-    private static (Fixture f, Tenant tenant, Company company, Guid userId) BuildAuthenticatedContext()
+    private static (
+        Fixture f,
+        Tenant tenant,
+        Company company,
+        Guid userId
+    ) BuildAuthenticatedContext()
     {
         var f = new Fixture();
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], CreatedBy);
@@ -124,7 +129,11 @@ public sealed class CompanyAccessGuardTests
     public async Task RequireMembershipAsync_empresa_de_otro_tenant_rechaza_el_acceso_como_fuga_cross_company()
     {
         var (f, tenant, _, userId) = BuildAuthenticatedContext();
-        var otherTenant = Tenant.Create("Otro Tenant", $"other-{Guid.NewGuid():N}"[..16], CreatedBy);
+        var otherTenant = Tenant.Create(
+            "Otro Tenant",
+            $"other-{Guid.NewGuid():N}"[..16],
+            CreatedBy
+        );
         var companyDeOtroTenant = Company.CreateManaged(
             otherTenant.Id,
             "1790012345002",
@@ -132,7 +141,9 @@ public sealed class CompanyAccessGuardTests
             createdBy: CreatedBy
         );
 
-        f.Companies.Setup(c => c.GetByIdAsync(companyDeOtroTenant.Id, It.IsAny<CancellationToken>()))
+        f.Companies.Setup(c =>
+                c.GetByIdAsync(companyDeOtroTenant.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(companyDeOtroTenant);
 
         var guard = f.BuildGuard();
@@ -192,8 +203,9 @@ public sealed class CompanyAccessGuardTests
                 a.GetCompanyUserMembershipAsync(company.Id, userId, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync((CompanyUserMembership?)null);
-        f.OperatorAccessPolicy
-            .Setup(o => o.IsAuthorizedOperatorAsync(It.IsAny<CancellationToken>()))
+        f.OperatorAccessPolicy.Setup(o =>
+                o.IsAuthorizedOperatorAsync(It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(true);
 
         var guard = f.BuildGuard();
@@ -278,10 +290,7 @@ public sealed class CompanyAccessGuardTests
             .ReturnsAsync(membership);
 
         var guard = f.BuildGuard();
-        var result = await guard.RequireMembershipAsync(
-            company.Id,
-            requireActiveCompany: false
-        );
+        var result = await guard.RequireMembershipAsync(company.Id, requireActiveCompany: false);
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.CompanyId.Should().Be(company.Id);
@@ -294,7 +303,12 @@ public sealed class CompanyAccessGuardTests
     public async Task RequireMembershipAsync_empresa_inactiva_rechaza_acceso_operativo()
     {
         var (f, _, company, userId) = BuildAuthenticatedContext();
-        company.UpdateAdminIdentity(company.LegalName, company.TradeName, isActive: false, CreatedBy);
+        company.UpdateAdminIdentity(
+            company.LegalName,
+            company.TradeName,
+            isActive: false,
+            CreatedBy
+        );
         var membership = CompanyUserMembership.Create(company.Id, userId, "Admin", null, CreatedBy);
 
         f.Companies.Setup(c => c.GetByIdAsync(company.Id, It.IsAny<CancellationToken>()))
@@ -380,7 +394,12 @@ public sealed class CompanyAccessGuardTests
     {
         var (f, _, _, _) = BuildAuthenticatedContext();
         var tenantB = Tenant.Create("Tenant B", $"tb-{Guid.NewGuid():N}"[..16], CreatedBy);
-        var companyB = Company.CreateManaged(tenantB.Id, "1790012345009", "Empresa B S.A.", createdBy: CreatedBy);
+        var companyB = Company.CreateManaged(
+            tenantB.Id,
+            "1790012345009",
+            "Empresa B S.A.",
+            createdBy: CreatedBy
+        );
         f.Companies.Setup(c => c.GetByIdAsync(companyB.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(companyB);
         var guard = f.BuildGuard();
@@ -397,13 +416,22 @@ public sealed class CompanyAccessGuardTests
     {
         var (f, _, company, _) = BuildAuthenticatedContext();
         var tenantB = Tenant.Create("Tenant B", $"tb-{Guid.NewGuid():N}"[..16], CreatedBy);
-        var companyB = Company.CreateManaged(tenantB.Id, "1790012345009", "Empresa B S.A.", createdBy: CreatedBy);
-        f.Companies.Setup(c => c.GetByIdAsync(companyB.Id, It.IsAny<CancellationToken>())).ReturnsAsync(companyB);
-        f.Companies.Setup(c => c.GetByIdAsync(company.Id, It.IsAny<CancellationToken>())).ReturnsAsync(company);
+        var companyB = Company.CreateManaged(
+            tenantB.Id,
+            "1790012345009",
+            "Empresa B S.A.",
+            createdBy: CreatedBy
+        );
+        f.Companies.Setup(c => c.GetByIdAsync(companyB.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(companyB);
+        f.Companies.Setup(c => c.GetByIdAsync(company.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(company);
         f.CurrentCompany.Setup(c => c.HasCompanyContext).Returns(true);
         var guard = f.BuildGuard();
 
-        async Task<Result<ERP.Application.Modules.Companies.CompanyAccessContext>> WithHeader(Guid id)
+        async Task<Result<ERP.Application.Modules.Companies.CompanyAccessContext>> WithHeader(
+            Guid id
+        )
         {
             f.CurrentCompany.Setup(c => c.CompanyId).Returns(id);
             return await guard.RequireCurrentCompanyAsync();
@@ -427,8 +455,14 @@ public sealed class CompanyAccessGuardTests
         f.CurrentCompany.Setup(c => c.CompanyId).Returns(Guid.NewGuid());
         var guard = f.BuildGuard();
 
-        (await guard.RequireActiveTenantAsync()).Code.Should().Be(ApiResponseCodes.Common.Unauthorized);
-        (await guard.RequireMembershipAsync(Guid.NewGuid())).Code.Should().Be(ApiResponseCodes.Common.Unauthorized);
-        (await guard.RequireCurrentCompanyAsync()).Code.Should().Be(ApiResponseCodes.Common.Unauthorized);
+        (await guard.RequireActiveTenantAsync())
+            .Code.Should()
+            .Be(ApiResponseCodes.Common.Unauthorized);
+        (await guard.RequireMembershipAsync(Guid.NewGuid()))
+            .Code.Should()
+            .Be(ApiResponseCodes.Common.Unauthorized);
+        (await guard.RequireCurrentCompanyAsync())
+            .Code.Should()
+            .Be(ApiResponseCodes.Common.Unauthorized);
     }
 }

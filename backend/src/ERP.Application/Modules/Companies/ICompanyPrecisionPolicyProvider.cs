@@ -24,5 +24,8 @@ public interface ICompanyPrecisionPolicyProvider
 public sealed class CompanyPrecisionPolicyMissingException : InvalidOperationException
 {
     public CompanyPrecisionPolicyMissingException(Guid companyId)
-        : base($"La empresa {companyId} no tiene configuración de precisión (company_precision_policy).") { }
+        : base(
+            $"La empresa {companyId} no tiene configuración de precisión (company_precision_policy)."
+        )
+    { }
 }

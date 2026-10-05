@@ -1,9 +1,9 @@
+using System.Data.Common;
 using ERP.Domain.Modules.Communications.Entities;
 using ERP.Domain.Modules.Communications.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Npgsql;
-using System.Data.Common;
 
 namespace ERP.Infrastructure.Persistence.Repositories.Communications;
 
@@ -31,11 +31,16 @@ public sealed class CommunicationOutboxRepository : ICommunicationOutboxReposito
         _db = db;
     }
 
-    public async Task<CommunicationEnqueueResult> EnqueueAsync(CommunicationOutbox communication, CancellationToken ct = default)
+    public async Task<CommunicationEnqueueResult> EnqueueAsync(
+        CommunicationOutbox communication,
+        CancellationToken ct = default
+    )
     {
         ArgumentNullException.ThrowIfNull(communication);
         if (string.IsNullOrWhiteSpace(communication.IdempotencyKey))
-            throw new InvalidOperationException("Una comunicación encolada requiere su identidad (IdempotencyKey).");
+            throw new InvalidOperationException(
+                "Una comunicación encolada requiere su identidad (IdempotencyKey)."
+            );
 
         if (_db.Database.CurrentTransaction is not null)
             return await EnqueueCoreAsync(communication, ct);
@@ -50,7 +55,10 @@ public sealed class CommunicationOutboxRepository : ICommunicationOutboxReposito
         });
     }
 
-    private async Task<CommunicationEnqueueResult> EnqueueCoreAsync(CommunicationOutbox communication, CancellationToken ct)
+    private async Task<CommunicationEnqueueResult> EnqueueCoreAsync(
+        CommunicationOutbox communication,
+        CancellationToken ct
+    )
     {
         if (await InsertAsync(communication, onConflictDoNothing: true, ct) == 0)
         {
@@ -93,10 +101,14 @@ public sealed class CommunicationOutboxRepository : ICommunicationOutboxReposito
             var providerValue = value is null ? null : converter?.ConvertToProvider(value) ?? value;
 
             columns.Add($"\"{column}\"");
-            parameters.Add(new NpgsqlParameter($"p{parameters.Count}", providerValue ?? DBNull.Value));
+            parameters.Add(
+                new NpgsqlParameter($"p{parameters.Count}", providerValue ?? DBNull.Value)
+            );
         }
 
-        var qualifiedTable = table.Schema is null ? $"\"{table.Name}\"" : $"\"{table.Schema}\".\"{table.Name}\"";
+        var qualifiedTable = table.Schema is null
+            ? $"\"{table.Name}\""
+            : $"\"{table.Schema}\".\"{table.Name}\"";
         var sql =
             $"INSERT INTO {qualifiedTable} ({string.Join(", ", columns)}) "
             + $"VALUES ({string.Join(", ", parameters.Select(p => "@" + p.ParameterName))})"

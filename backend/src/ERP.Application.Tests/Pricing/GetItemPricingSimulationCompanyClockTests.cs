@@ -72,12 +72,10 @@ public sealed class GetItemPricingSimulationCompanyClockTests
     {
         var companyToday = new DateOnly(2026, 9, 17);
         var f = new Fixture();
-        f.CompanyClock
-            .Setup(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
+        f.CompanyClock.Setup(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(companyToday);
         var priceList = CreatePriceList(new DateOnly(2026, 9, 17));
-        f.PriceLists
-            .Setup(r => r.GetAllAsync(TenantId, true, null, It.IsAny<CancellationToken>()))
+        f.PriceLists.Setup(r => r.GetAllAsync(TenantId, true, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new[] { priceList });
 
         var result = await f.Build()
@@ -99,12 +97,10 @@ public sealed class GetItemPricingSimulationCompanyClockTests
     {
         var companyToday = new DateOnly(2026, 9, 18);
         var f = new Fixture();
-        f.CompanyClock
-            .Setup(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
+        f.CompanyClock.Setup(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(companyToday);
         var priceList = CreatePriceList(new DateOnly(2026, 9, 17));
-        f.PriceLists
-            .Setup(r => r.GetAllAsync(TenantId, true, null, It.IsAny<CancellationToken>()))
+        f.PriceLists.Setup(r => r.GetAllAsync(TenantId, true, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new[] { priceList });
 
         var result = await f.Build()

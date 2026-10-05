@@ -25,16 +25,20 @@ public sealed class SalesInvoiceCancelledPostingTranslatorTests
     private static readonly Guid CreatedBy = Guid.NewGuid();
 
     private static SalesInvoiceCancelledEvent Event(Guid invoiceId) =>
-        new(TenantId, invoiceId, CustomerId, "001-001-000000009", 115m, "Cliente se arrepintió", CompanyId);
+        new(
+            TenantId,
+            invoiceId,
+            CustomerId,
+            "001-001-000000009",
+            115m,
+            "Cliente se arrepintió",
+            CompanyId
+        );
 
     private static JournalEntry PostedEntry(Guid sourceEventId, string sourceEventType) =>
         BuildEntry(sourceEventId, sourceEventType, post: true);
 
-    private static JournalEntry BuildEntry(
-        Guid sourceEventId,
-        string sourceEventType,
-        bool post
-    )
+    private static JournalEntry BuildEntry(Guid sourceEventId, string sourceEventType, bool post)
     {
         var entry = JournalEntry.Create(
             TenantId,
@@ -108,25 +112,33 @@ public sealed class SalesInvoiceCancelledPostingTranslatorTests
         var invoiceIssued = PostedEntry(invoiceId, "InvoiceIssued");
         var cogs = PostedEntry(invoiceId, "CostOfGoodsSold");
         var m = new Mocks();
-        m.JournalEntries
-            .Setup(r =>
-                r.GetBySourceAsync(TenantId, CompanyId, "Sales", invoiceId, It.IsAny<CancellationToken>())
+        m.JournalEntries.Setup(r =>
+                r.GetBySourceAsync(
+                    TenantId,
+                    CompanyId,
+                    "Sales",
+                    invoiceId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(new List<JournalEntry> { invoiceIssued, cogs });
 
         var sentCommands = new List<ReverseJournalEntryCommand>();
-        m.Mediator
-            .Setup(x => x.Send(It.IsAny<ReverseJournalEntryCommand>(), It.IsAny<CancellationToken>()))
-            .Callback<IRequest<Result<ERP.Application.Modules.Accounting.DTOs.JournalEntryDto>>, CancellationToken>(
-                (cmd, _) => sentCommands.Add((ReverseJournalEntryCommand)cmd)
+        m.Mediator.Setup(x =>
+                x.Send(It.IsAny<ReverseJournalEntryCommand>(), It.IsAny<CancellationToken>())
             )
+            .Callback<
+                IRequest<Result<ERP.Application.Modules.Accounting.DTOs.JournalEntryDto>>,
+                CancellationToken
+            >((cmd, _) => sentCommands.Add((ReverseJournalEntryCommand)cmd))
             .ReturnsAsync(SuccessResult(invoiceIssued));
 
         var translator = m.BuildTranslator();
         await translator.Handle(Event(invoiceId), CancellationToken.None);
 
         sentCommands.Should().HaveCount(2);
-        sentCommands.Select(c => c.JournalEntryId)
+        sentCommands
+            .Select(c => c.JournalEntryId)
             .Should()
             .BeEquivalentTo(new[] { invoiceIssued.Id, cogs.Id });
         sentCommands.Should().OnlyContain(c => c.Reason.Contains("001-001-000000009"));
@@ -141,13 +153,19 @@ public sealed class SalesInvoiceCancelledPostingTranslatorTests
         var invoiceId = Guid.NewGuid();
         var invoiceIssued = PostedEntry(invoiceId, "InvoiceIssued");
         var m = new Mocks();
-        m.JournalEntries
-            .Setup(r =>
-                r.GetBySourceAsync(TenantId, CompanyId, "Sales", invoiceId, It.IsAny<CancellationToken>())
+        m.JournalEntries.Setup(r =>
+                r.GetBySourceAsync(
+                    TenantId,
+                    CompanyId,
+                    "Sales",
+                    invoiceId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(new List<JournalEntry> { invoiceIssued });
-        m.Mediator
-            .Setup(x => x.Send(It.IsAny<ReverseJournalEntryCommand>(), It.IsAny<CancellationToken>()))
+        m.Mediator.Setup(x =>
+                x.Send(It.IsAny<ReverseJournalEntryCommand>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(SuccessResult(invoiceIssued));
 
         var translator = m.BuildTranslator();
@@ -166,9 +184,14 @@ public sealed class SalesInvoiceCancelledPostingTranslatorTests
     {
         var invoiceId = Guid.NewGuid();
         var m = new Mocks();
-        m.JournalEntries
-            .Setup(r =>
-                r.GetBySourceAsync(TenantId, CompanyId, "Sales", invoiceId, It.IsAny<CancellationToken>())
+        m.JournalEntries.Setup(r =>
+                r.GetBySourceAsync(
+                    TenantId,
+                    CompanyId,
+                    "Sales",
+                    invoiceId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(new List<JournalEntry>());
 
@@ -194,9 +217,14 @@ public sealed class SalesInvoiceCancelledPostingTranslatorTests
         alreadyReversed.Reverse(CreatedBy, 2, "Ya reversado antes");
 
         var m = new Mocks();
-        m.JournalEntries
-            .Setup(r =>
-                r.GetBySourceAsync(TenantId, CompanyId, "Sales", invoiceId, It.IsAny<CancellationToken>())
+        m.JournalEntries.Setup(r =>
+                r.GetBySourceAsync(
+                    TenantId,
+                    CompanyId,
+                    "Sales",
+                    invoiceId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(new List<JournalEntry> { alreadyReversed });
 
@@ -216,22 +244,25 @@ public sealed class SalesInvoiceCancelledPostingTranslatorTests
         var invoiceIssued = PostedEntry(invoiceId, "InvoiceIssued");
         var cogs = PostedEntry(invoiceId, "CostOfGoodsSold");
         var m = new Mocks();
-        m.JournalEntries
-            .Setup(r =>
-                r.GetBySourceAsync(TenantId, CompanyId, "Sales", invoiceId, It.IsAny<CancellationToken>())
+        m.JournalEntries.Setup(r =>
+                r.GetBySourceAsync(
+                    TenantId,
+                    CompanyId,
+                    "Sales",
+                    invoiceId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(new List<JournalEntry> { invoiceIssued, cogs });
 
-        m.Mediator
-            .Setup(x =>
+        m.Mediator.Setup(x =>
                 x.Send(
                     It.Is<ReverseJournalEntryCommand>(c => c.JournalEntryId == invoiceIssued.Id),
                     It.IsAny<CancellationToken>()
                 )
             )
             .ReturnsAsync(SuccessResult(invoiceIssued));
-        m.Mediator
-            .Setup(x =>
+        m.Mediator.Setup(x =>
                 x.Send(
                     It.Is<ReverseJournalEntryCommand>(c => c.JournalEntryId == cogs.Id),
                     It.IsAny<CancellationToken>()

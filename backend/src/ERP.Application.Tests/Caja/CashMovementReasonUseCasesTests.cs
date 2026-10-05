@@ -38,14 +38,35 @@ public sealed class CashMovementReasonUseCasesTests
     public async Task List_filtra_por_tenant_company_y_movementType_activos()
     {
         var f = new Fixture();
-        f.Repo
-            .Setup(r => r.ListAsync(TenantId, CompanyId, CashMovementType.ManualIncome, false, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[]
-            {
-                CashMovementReason.Create(TenantId, CompanyId, "A", "A", CashMovementType.ManualIncome, 1, UserId),
-            });
+        f.Repo.Setup(r =>
+                r.ListAsync(
+                    TenantId,
+                    CompanyId,
+                    CashMovementType.ManualIncome,
+                    false,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new[]
+                {
+                    CashMovementReason.Create(
+                        TenantId,
+                        CompanyId,
+                        "A",
+                        "A",
+                        CashMovementType.ManualIncome,
+                        1,
+                        UserId
+                    ),
+                }
+            );
 
-        var handler = new GetCashMovementReasonsHandler(f.Repo.Object, f.Tenant.Object, f.Company.Object);
+        var handler = new GetCashMovementReasonsHandler(
+            f.Repo.Object,
+            f.Tenant.Object,
+            f.Company.Object
+        );
         var result = await handler.Handle(
             new GetCashMovementReasonsQuery("ManualIncome"),
             CancellationToken.None
@@ -54,7 +75,14 @@ public sealed class CashMovementReasonUseCasesTests
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value.Should().ContainSingle();
         f.Repo.Verify(
-            r => r.ListAsync(TenantId, CompanyId, CashMovementType.ManualIncome, false, It.IsAny<CancellationToken>()),
+            r =>
+                r.ListAsync(
+                    TenantId,
+                    CompanyId,
+                    CashMovementType.ManualIncome,
+                    false,
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Once
         );
     }
@@ -63,34 +91,58 @@ public sealed class CashMovementReasonUseCasesTests
     public async Task Create_rechaza_codigo_duplicado_en_la_misma_empresa()
     {
         var f = new Fixture();
-        f.Repo
-            .Setup(r => r.GetByCodeAsync(TenantId, CompanyId, "DUP", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(CashMovementReason.Create(TenantId, CompanyId, "DUP", "Existente", CashMovementType.ManualIncome, 1, UserId));
+        f.Repo.Setup(r =>
+                r.GetByCodeAsync(TenantId, CompanyId, "DUP", It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                CashMovementReason.Create(
+                    TenantId,
+                    CompanyId,
+                    "DUP",
+                    "Existente",
+                    CashMovementType.ManualIncome,
+                    1,
+                    UserId
+                )
+            );
 
-        var handler = new CreateCashMovementReasonHandler(f.Repo.Object, f.Tenant.Object, f.Company.Object, f.User.Object);
+        var handler = new CreateCashMovementReasonHandler(
+            f.Repo.Object,
+            f.Tenant.Object,
+            f.Company.Object,
+            f.User.Object
+        );
         var result = await handler.Handle(
             new CreateCashMovementReasonCommand("DUP", "Nuevo", "ManualIncome"),
             CancellationToken.None
         );
 
         result.IsSuccess.Should().BeFalse();
-        f.Repo.Verify(r => r.AddAsync(It.IsAny<CashMovementReason>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.Repo.Verify(
+            r => r.AddAsync(It.IsAny<CashMovementReason>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
     public async Task Create_persiste_con_TenantId_y_CompanyId_del_contexto_actual_nunca_del_body()
     {
         var f = new Fixture();
-        f.Repo
-            .Setup(r => r.GetByCodeAsync(TenantId, CompanyId, "NUEVO", It.IsAny<CancellationToken>()))
+        f.Repo.Setup(r =>
+                r.GetByCodeAsync(TenantId, CompanyId, "NUEVO", It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((CashMovementReason?)null);
         CashMovementReason? captured = null;
-        f.Repo
-            .Setup(r => r.AddAsync(It.IsAny<CashMovementReason>(), It.IsAny<CancellationToken>()))
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<CashMovementReason>(), It.IsAny<CancellationToken>()))
             .Callback<CashMovementReason, CancellationToken>((r, _) => captured = r)
             .Returns(Task.CompletedTask);
 
-        var handler = new CreateCashMovementReasonHandler(f.Repo.Object, f.Tenant.Object, f.Company.Object, f.User.Object);
+        var handler = new CreateCashMovementReasonHandler(
+            f.Repo.Object,
+            f.Tenant.Object,
+            f.Company.Object,
+            f.User.Object
+        );
         var result = await handler.Handle(
             new CreateCashMovementReasonCommand("NUEVO", "Motivo nuevo", "Withdrawal", 3),
             CancellationToken.None
@@ -109,11 +161,17 @@ public sealed class CashMovementReasonUseCasesTests
         var f = new Fixture();
         // El repo real filtra por (Tenant, Company) — un motivo de otra empresa nunca se
         // resuelve aquí, así que el mock simula "no encontrado" en ese scope.
-        f.Repo
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        f.Repo.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((CashMovementReason?)null);
 
-        var handler = new UpdateCashMovementReasonHandler(f.Repo.Object, f.Tenant.Object, f.Company.Object, f.User.Object);
+        var handler = new UpdateCashMovementReasonHandler(
+            f.Repo.Object,
+            f.Tenant.Object,
+            f.Company.Object,
+            f.User.Object
+        );
         var result = await handler.Handle(
             new UpdateCashMovementReasonCommand(Guid.NewGuid(), "X", 1),
             CancellationToken.None
@@ -131,14 +189,26 @@ public sealed class CashMovementReasonUseCasesTests
     public async Task Update_cambia_Name_y_SortOrder_pero_nunca_MovementType_ni_Code()
     {
         var reason = CashMovementReason.Create(
-            TenantId, CompanyId, "ORIGINAL", "Nombre original", CashMovementType.Withdrawal, 1, UserId
+            TenantId,
+            CompanyId,
+            "ORIGINAL",
+            "Nombre original",
+            CashMovementType.Withdrawal,
+            1,
+            UserId
         );
         var f = new Fixture();
-        f.Repo
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, reason.Id, It.IsAny<CancellationToken>()))
+        f.Repo.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, reason.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(reason);
 
-        var handler = new UpdateCashMovementReasonHandler(f.Repo.Object, f.Tenant.Object, f.Company.Object, f.User.Object);
+        var handler = new UpdateCashMovementReasonHandler(
+            f.Repo.Object,
+            f.Tenant.Object,
+            f.Company.Object,
+            f.User.Object
+        );
         var result = await handler.Handle(
             new UpdateCashMovementReasonCommand(reason.Id, "Nombre nuevo", 9),
             CancellationToken.None
@@ -149,21 +219,42 @@ public sealed class CashMovementReasonUseCasesTests
         result.Value.SortOrder.Should().Be(9);
         result.Value.Code.Should().Be("ORIGINAL");
         result.Value.MovementType.Should().Be(CashMovementType.Withdrawal.ToString());
-        reason.MovementType.Should().Be(
-            CashMovementType.Withdrawal,
-            "un registro existente nunca cambia de clasificación por una edición"
-        );
+        reason
+            .MovementType.Should()
+            .Be(
+                CashMovementType.Withdrawal,
+                "un registro existente nunca cambia de clasificación por una edición"
+            );
     }
 
     [Fact]
     public async Task Toggle_alterna_IsActive()
     {
-        var reason = CashMovementReason.Create(TenantId, CompanyId, "X", "X", CashMovementType.ManualIncome, 1, UserId);
+        var reason = CashMovementReason.Create(
+            TenantId,
+            CompanyId,
+            "X",
+            "X",
+            CashMovementType.ManualIncome,
+            1,
+            UserId
+        );
         var f = new Fixture();
-        f.Repo.Setup(r => r.GetByIdAsync(TenantId, CompanyId, reason.Id, It.IsAny<CancellationToken>())).ReturnsAsync(reason);
+        f.Repo.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, reason.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(reason);
 
-        var handler = new ToggleCashMovementReasonHandler(f.Repo.Object, f.Tenant.Object, f.Company.Object, f.User.Object);
-        var result = await handler.Handle(new ToggleCashMovementReasonCommand(reason.Id), CancellationToken.None);
+        var handler = new ToggleCashMovementReasonHandler(
+            f.Repo.Object,
+            f.Tenant.Object,
+            f.Company.Object,
+            f.User.Object
+        );
+        var result = await handler.Handle(
+            new ToggleCashMovementReasonCommand(reason.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.IsActive.Should().BeFalse();

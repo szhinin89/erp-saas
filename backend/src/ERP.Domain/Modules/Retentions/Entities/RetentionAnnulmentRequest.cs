@@ -21,7 +21,10 @@ namespace ERP.Domain.Modules.Retentions.Entities;
 /// No reutiliza <see cref="RetentionDocument.Status"/>: el estado de la solicitud es propio. Una
 /// retención tiene a lo sumo UNA solicitud abierta (índice único parcial en BD).
 /// </summary>
-public sealed class RetentionAnnulmentRequest : AuditableEntity, ITenantScopedEntity, ICompanyOperationalEntity
+public sealed class RetentionAnnulmentRequest
+    : AuditableEntity,
+        ITenantScopedEntity,
+        ICompanyOperationalEntity
 {
     public const int ReasonMaxLen = 500;
     public const int ReferenceMaxLen = 200;
@@ -87,11 +90,14 @@ public sealed class RetentionAnnulmentRequest : AuditableEntity, ITenantScopedEn
 
     /// <summary>La solicitud sigue en trámite (bloquea la CxP y cualquier otra solicitud).</summary>
     public bool IsOpen =>
-        Status is RetentionAnnulmentStatus.PendingSubmission or RetentionAnnulmentStatus.PendingSriResolution;
+        Status
+            is RetentionAnnulmentStatus.PendingSubmission
+                or RetentionAnnulmentStatus.PendingSriResolution;
 
     /// <summary>La última consulta al SRI confirmó AUTORIZADO: el comprobante sigue vigente.</summary>
     public bool SriReportsAuthorized =>
-        LastSriQueryOutcome == SriStatusQueryOutcome.Success && LastSriFiscalStatus == SriFiscalStatus.Authorized;
+        LastSriQueryOutcome == SriStatusQueryOutcome.Success
+        && LastSriFiscalStatus == SriFiscalStatus.Authorized;
 
     /// <summary>
     /// Se puede desistir: antes de presentar, o ya presentada cuando la última consulta al SRI confirmó
@@ -128,11 +134,17 @@ public sealed class RetentionAnnulmentRequest : AuditableEntity, ITenantScopedEn
                 "La retención no tiene número o fecha de emisión."
             );
         if (electronicDocumentId == Guid.Empty)
-            throw new ArgumentException("El comprobante electrónico es obligatorio.", nameof(electronicDocumentId));
+            throw new ArgumentException(
+                "El comprobante electrónico es obligatorio.",
+                nameof(electronicDocumentId)
+            );
         if (string.IsNullOrWhiteSpace(accessKey))
             throw new ArgumentException("La clave de acceso es obligatoria.", nameof(accessKey));
         if (requestedBy == Guid.Empty)
-            throw new ArgumentException("El usuario que solicita es obligatorio.", nameof(requestedBy));
+            throw new ArgumentException(
+                "El usuario que solicita es obligatorio.",
+                nameof(requestedBy)
+            );
 
         var request = new RetentionAnnulmentRequest
         {
@@ -150,7 +162,9 @@ public sealed class RetentionAnnulmentRequest : AuditableEntity, ITenantScopedEn
             AccessKey = accessKey.Trim(),
             RetentionNumber = retention.RetentionNumber,
             RetentionIssueDate = retention.IssueDate.Value,
-            ReceptorIdentification = string.IsNullOrWhiteSpace(receptorIdentification) ? "—" : receptorIdentification.Trim(),
+            ReceptorIdentification = string.IsNullOrWhiteSpace(receptorIdentification)
+                ? "—"
+                : receptorIdentification.Trim(),
             ReceptorName = string.IsNullOrWhiteSpace(receptorName) ? "—" : receptorName.Trim(),
             OrdinaryDeadline = RetentionAnnulmentDeadline.Ordinary(retention.IssueDate.Value),
         };
@@ -160,7 +174,12 @@ public sealed class RetentionAnnulmentRequest : AuditableEntity, ITenantScopedEn
     }
 
     /// <summary>El usuario registra que presentó la solicitud en SRI en Línea. No significa ANULADO.</summary>
-    public void MarkSubmitted(DateOnly submittedOn, string? reference, string? notes, Guid submittedBy)
+    public void MarkSubmitted(
+        DateOnly submittedOn,
+        string? reference,
+        string? notes,
+        Guid submittedBy
+    )
     {
         if (Status == RetentionAnnulmentStatus.PendingSriResolution)
             return;
@@ -169,7 +188,10 @@ public sealed class RetentionAnnulmentRequest : AuditableEntity, ITenantScopedEn
                 $"La solicitud ya no está pendiente de presentación (estado actual: {Status})."
             );
         if (submittedOn == default)
-            throw new ArgumentException("La fecha de presentación es obligatoria.", nameof(submittedOn));
+            throw new ArgumentException(
+                "La fecha de presentación es obligatoria.",
+                nameof(submittedOn)
+            );
         if (submittedOn < RetentionIssueDate)
             throw new DomainRuleViolationException(
                 "La fecha de presentación no puede ser anterior a la emisión de la retención."
@@ -236,7 +258,12 @@ public sealed class RetentionAnnulmentRequest : AuditableEntity, ITenantScopedEn
     /// la última consulta registrada sea ese ANULADO: no existe otra vía (ni manual) para aceptar.
     /// Idempotente: devuelve <c>false</c> si ya estaba aceptada.
     /// </summary>
-    public bool AcceptSriAnnulment(DateOnly verifiedOn, string evidenceReference, string? rawEvidence, Guid acceptedBy)
+    public bool AcceptSriAnnulment(
+        DateOnly verifiedOn,
+        string evidenceReference,
+        string? rawEvidence,
+        Guid acceptedBy
+    )
     {
         if (Status == RetentionAnnulmentStatus.Accepted)
             return false;
@@ -244,12 +271,18 @@ public sealed class RetentionAnnulmentRequest : AuditableEntity, ITenantScopedEn
             throw new DomainRuleViolationException(
                 $"La solicitud no está pendiente de resolución del SRI (estado actual: {Status})."
             );
-        if (LastSriQueryOutcome != SriStatusQueryOutcome.Success || LastSriFiscalStatus != SriFiscalStatus.Annulled)
+        if (
+            LastSriQueryOutcome != SriStatusQueryOutcome.Success
+            || LastSriFiscalStatus != SriFiscalStatus.Annulled
+        )
             throw new DomainRuleViolationException(
                 "Solo el SRI confirma la anulación: se requiere una consulta a ConsultaComprobante que informe ANULADO."
             );
         if (verifiedOn == default)
-            throw new ArgumentException("La fecha de verificación es obligatoria.", nameof(verifiedOn));
+            throw new ArgumentException(
+                "La fecha de verificación es obligatoria.",
+                nameof(verifiedOn)
+            );
         var from = Status;
         EvidenceReference = Required(
             evidenceReference,

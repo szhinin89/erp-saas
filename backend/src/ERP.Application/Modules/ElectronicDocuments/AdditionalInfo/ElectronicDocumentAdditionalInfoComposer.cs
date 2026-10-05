@@ -77,7 +77,11 @@ public sealed partial class ElectronicDocumentAdditionalInfoComposer
                     );
 
                 composed.Add(field);
-                LogNormativeFieldComposed(contributor.Id, field.Name, context.DocumentType.ToString());
+                LogNormativeFieldComposed(
+                    contributor.Id,
+                    field.Name,
+                    context.DocumentType.ToString()
+                );
             }
         }
 

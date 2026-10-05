@@ -50,8 +50,12 @@ public sealed class ElectronicDocumentDispatchLifecycleTests
 
         document.CurrentState.Should().Be(ElectronicDocumentState.Dispatching);
         document.LastAttemptUtc.Should().NotBeNull();
-        document.DomainEvents.OfType<ElectronicDocumentDispatchingEvent>().Should().ContainSingle()
-            .Which.FromState.Should().Be(ElectronicDocumentState.Signed);
+        document
+            .DomainEvents.OfType<ElectronicDocumentDispatchingEvent>()
+            .Should()
+            .ContainSingle()
+            .Which.FromState.Should()
+            .Be(ElectronicDocumentState.Signed);
     }
 
     [Theory]
@@ -73,7 +77,12 @@ public sealed class ElectronicDocumentDispatchLifecycleTests
 
         document.MarkSent(UserId);
         document.MarkReceived(UserId);
-        document.MarkAuthorized(AuthorizationNumber.Create(new string('4', 49)), DateTime.UtcNow, null, UserId);
+        document.MarkAuthorized(
+            AuthorizationNumber.Create(new string('4', 49)),
+            DateTime.UtcNow,
+            null,
+            UserId
+        );
 
         document.CurrentState.Should().Be(ElectronicDocumentState.Authorized);
     }
@@ -82,7 +91,12 @@ public sealed class ElectronicDocumentDispatchLifecycleTests
     public void Dispatching_resolves_directly_by_authorization_query_without_resending()
     {
         var authorized = Dispatching();
-        authorized.MarkAuthorized(AuthorizationNumber.Create(new string('4', 49)), DateTime.UtcNow, null, UserId);
+        authorized.MarkAuthorized(
+            AuthorizationNumber.Create(new string('4', 49)),
+            DateTime.UtcNow,
+            null,
+            UserId
+        );
         var rejected = Dispatching();
         rejected.MarkRejected("NO AUTORIZADO", UserId);
 
@@ -95,7 +109,12 @@ public sealed class ElectronicDocumentDispatchLifecycleTests
     {
         var document = Signed();
 
-        document.MarkAuthorized(AuthorizationNumber.Create(new string('4', 49)), DateTime.UtcNow, null, UserId);
+        document.MarkAuthorized(
+            AuthorizationNumber.Create(new string('4', 49)),
+            DateTime.UtcNow,
+            null,
+            UserId
+        );
 
         document.CurrentState.Should().Be(ElectronicDocumentState.Authorized);
     }
@@ -123,12 +142,22 @@ public sealed class ElectronicDocumentDispatchLifecycleTests
 
         document.CurrentState.Should().Be(ElectronicDocumentState.Discarded);
         document.LastError.Should().Be("Anulación automática por anulación de compra.");
-        document.DomainEvents.OfType<ElectronicDocumentDiscardedEvent>().Should().ContainSingle()
-            .Which.FromState.Should().Be(ElectronicDocumentState.Draft);
+        document
+            .DomainEvents.OfType<ElectronicDocumentDiscardedEvent>()
+            .Should()
+            .ContainSingle()
+            .Which.FromState.Should()
+            .Be(ElectronicDocumentState.Draft);
         document.CanBeDiscarded.Should().BeFalse();
-        ((Action)(() => document.MarkFailed("x", UserId))).Should().Throw<DomainRuleViolationException>();
-        ((Action)(() => document.MarkXmlGenerated("d.xml", "2.0.0", "2.0.0", UserId))).Should().Throw<DomainRuleViolationException>();
-        ((Action)(() => document.Reactivate(UserId))).Should().Throw<DomainRuleViolationException>();
+        ((Action)(() => document.MarkFailed("x", UserId)))
+            .Should()
+            .Throw<DomainRuleViolationException>();
+        ((Action)(() => document.MarkXmlGenerated("d.xml", "2.0.0", "2.0.0", UserId)))
+            .Should()
+            .Throw<DomainRuleViolationException>();
+        ((Action)(() => document.Reactivate(UserId)))
+            .Should()
+            .Throw<DomainRuleViolationException>();
     }
 
     [Fact]

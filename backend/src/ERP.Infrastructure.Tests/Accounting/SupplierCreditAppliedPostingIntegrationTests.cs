@@ -77,8 +77,25 @@ public sealed class SupplierCreditAppliedPostingIntegrationTests : IAsyncLifetim
             "Matriz",
             "Av. Principal 123",
             "001",
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
             true,
             _createdBy,
             companyId: company.Id
@@ -105,7 +122,15 @@ public sealed class SupplierCreditAppliedPostingIntegrationTests : IAsyncLifetim
             branch.Id,
             "Bodega Principal",
             "BOD-01",
-            null, null, null, null, null, null, null, null, null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
             _createdBy,
             company.Id,
             isMain: true
@@ -187,7 +212,10 @@ public sealed class SupplierCreditAppliedPostingIntegrationTests : IAsyncLifetim
 
         var services = new ServiceCollection();
         services.AddSingleton<TimeProvider>(AccountingDateBoundary.Clock);
-        services.AddScoped<ERP.Application.Common.Services.ICompanyClock, ERP.Infrastructure.Persistence.Services.CompanyClock>();
+        services.AddScoped<
+            ERP.Application.Common.Services.ICompanyClock,
+            ERP.Infrastructure.Persistence.Services.CompanyClock
+        >();
         services.AddLogging();
         services.AddSingleton(db);
         services.AddSingleton<ICurrentTenant>(new FixedCurrentTenant(tenantId));
@@ -217,7 +245,9 @@ public sealed class SupplierCreditAppliedPostingIntegrationTests : IAsyncLifetim
             Guid.NewGuid()
         ));
         services.AddMediatR(cfg =>
-            cfg.RegisterServicesFromAssembly(typeof(SupplierCreditAppliedPostingTranslator).Assembly)
+            cfg.RegisterServicesFromAssembly(
+                typeof(SupplierCreditAppliedPostingTranslator).Assembly
+            )
         );
 
         var provider = services.BuildServiceProvider();
@@ -227,10 +257,10 @@ public sealed class SupplierCreditAppliedPostingIntegrationTests : IAsyncLifetim
     }
 
     /// <summary>Siembra la única PostingRule real de MinimalPostingRules para este hecho: Debe CxP proveedores, Haber "Anticipos a proveedores".</summary>
-    private async Task<(Guid payableAccountId, Guid supplierCreditAccountId)> SeedRuleAndPeriodAsync(
-        ErpDbContext db,
-        DateOnly entryDate
-    )
+    private async Task<(
+        Guid payableAccountId,
+        Guid supplierCreditAccountId
+    )> SeedRuleAndPeriodAsync(ErpDbContext db, DateOnly entryDate)
     {
         Account NewAccount(string prefix, string name, AccountType type, AccountNature nature) =>
             Account.Create(
@@ -245,12 +275,31 @@ public sealed class SupplierCreditAppliedPostingIntegrationTests : IAsyncLifetim
                 createdBy: _createdBy
             );
 
-        var payableAcc = NewAccount("2.1", "CxP proveedores", AccountType.Liability, AccountNature.Credit);
-        var supplierCreditAcc = NewAccount("1.1", "Anticipos a proveedores", AccountType.Asset, AccountNature.Debit);
+        var payableAcc = NewAccount(
+            "2.1",
+            "CxP proveedores",
+            AccountType.Liability,
+            AccountNature.Credit
+        );
+        var supplierCreditAcc = NewAccount(
+            "1.1",
+            "Anticipos a proveedores",
+            AccountType.Asset,
+            AccountNature.Debit
+        );
 
         db.Accounts.AddRange(payableAcc, supplierCreditAcc);
 
-        var rule = PostingRule.Create(_tenantId, _companyId, "Purchases", "SupplierCreditApplied", null, null, null, _createdBy);
+        var rule = PostingRule.Create(
+            _tenantId,
+            _companyId,
+            "Purchases",
+            "SupplierCreditApplied",
+            null,
+            null,
+            null,
+            _createdBy
+        );
         rule.AddLine(payableAcc.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
         rule.AddLine(supplierCreditAcc.Id, AccountNature.Credit, PostingAmountKind.GrandTotal);
         db.PostingRules.Add(rule);
@@ -261,7 +310,11 @@ public sealed class SupplierCreditAppliedPostingIntegrationTests : IAsyncLifetim
             entryDate.Year,
             entryDate.Month,
             new DateOnly(entryDate.Year, entryDate.Month, 1),
-            new DateOnly(entryDate.Year, entryDate.Month, DateTime.DaysInMonth(entryDate.Year, entryDate.Month)),
+            new DateOnly(
+                entryDate.Year,
+                entryDate.Month,
+                DateTime.DaysInMonth(entryDate.Year, entryDate.Month)
+            ),
             _createdBy
         );
         db.AccountingPeriods.Add(period);
@@ -395,7 +448,12 @@ public sealed class SupplierCreditAppliedPostingIntegrationTests : IAsyncLifetim
         db.AccountsPayables.Add(payable);
         await db.SaveChangesAsync();
 
-        var (credit, movementId) = BuildAndApplyCredit(payable, sourceReturnId, creditAmount: 50m, applyAmount: 30m);
+        var (credit, movementId) = BuildAndApplyCredit(
+            payable,
+            sourceReturnId,
+            creditAmount: 50m,
+            applyAmount: 30m
+        );
         db.SupplierCredits.Add(credit);
         await db.SaveChangesAsync();
 
@@ -427,7 +485,9 @@ public sealed class SupplierCreditAppliedPostingIntegrationTests : IAsyncLifetim
         var reloadedPayable = await verifyDb
             .AccountsPayables.Include(p => p.Installments)
             .SingleAsync(p => p.Id == payable.Id);
-        reloadedPayable.OutstandingAmount.Should().Be(70m, because: "la CxP destino se reduce por el monto aplicado");
+        reloadedPayable
+            .OutstandingAmount.Should()
+            .Be(70m, because: "la CxP destino se reduce por el monto aplicado");
     }
 
     [Fact]
@@ -445,7 +505,12 @@ public sealed class SupplierCreditAppliedPostingIntegrationTests : IAsyncLifetim
         db.AccountsPayables.Add(payable);
         await db.SaveChangesAsync();
 
-        var (credit, movementId) = BuildAndApplyCredit(payable, sourceReturnId, creditAmount: 50m, applyAmount: 20m);
+        var (credit, movementId) = BuildAndApplyCredit(
+            payable,
+            sourceReturnId,
+            creditAmount: 50m,
+            applyAmount: 20m
+        );
         db.SupplierCredits.Add(credit);
         await db.SaveChangesAsync();
 
@@ -473,7 +538,12 @@ public sealed class SupplierCreditAppliedPostingIntegrationTests : IAsyncLifetim
         var countAfter = await countDb2.JournalEntries.CountAsync(x =>
             x.SourceEventId == movementId && x.SourceEventType == "SupplierCreditApplied"
         );
-        countAfter.Should().Be(1, because: "el Posting Engine es idempotente por (SourceModule, FactType, SourceEventId)");
+        countAfter
+            .Should()
+            .Be(
+                1,
+                because: "el Posting Engine es idempotente por (SourceModule, FactType, SourceEventId)"
+            );
     }
 
     private sealed class DeferredPublisher : IPublisher

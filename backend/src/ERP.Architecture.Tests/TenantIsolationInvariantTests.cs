@@ -1,6 +1,6 @@
+using System.Reflection;
 using ERP.Domain.Common;
 using FluentAssertions;
-using System.Reflection;
 
 namespace ERP.Architecture.Tests;
 

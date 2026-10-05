@@ -22,7 +22,9 @@ public sealed class DocumentFlowPolicyViolationException : DomainRuleViolationEx
             "La política de flujo documental no está configurada para este tipo de documento."
         );
 
-    public static DocumentFlowPolicyViolationException DocumentTypeDisabled(string documentTypeCode) =>
+    public static DocumentFlowPolicyViolationException DocumentTypeDisabled(
+        string documentTypeCode
+    ) =>
         new(
             "document_flow_policy.document_type_disabled",
             $"El tipo de documento '{documentTypeCode}' no está habilitado para esta empresa."

@@ -31,9 +31,17 @@ public static class SettingsModule
         LabelKey = "app.nav.item.settings.enterpriseGroup",
         SortOrder = 5,
         Id = "7eabb75d-1ccf-4a4a-a4ee-46a082a7e90d",
-        PermissionsAnyCsv = SettingsPermissions.CompaniesView + "," + SettingsPermissions.CompanyView
-            + "," + SettingsPermissions.BranchesView + "," + SettingsPermissions.EstablishmentsView
-            + "," + SettingsPermissions.EmissionPointsView + "," + SettingsPermissions.GeographyView
+        PermissionsAnyCsv = SettingsPermissions.CompaniesView
+            + ","
+            + SettingsPermissions.CompanyView
+            + ","
+            + SettingsPermissions.BranchesView
+            + ","
+            + SettingsPermissions.EstablishmentsView
+            + ","
+            + SettingsPermissions.EmissionPointsView
+            + ","
+            + SettingsPermissions.GeographyView
     )]
     public const string EnterpriseGroup = "/settings/enterprise-group";
 
@@ -67,8 +75,11 @@ public static class SettingsModule
         SortOrder = 20,
         Id = "a1000000-0000-4000-9000-000000000005",
         ParentId = "7eabb75d-1ccf-4a4a-a4ee-46a082a7e90d",
-        RelatedActionPermissionsCsv = SettingsPermissions.BranchesCreate + ","
-            + SettingsPermissions.BranchesUpdate + "," + SettingsPermissions.BranchesDelete
+        RelatedActionPermissionsCsv = SettingsPermissions.BranchesCreate
+            + ","
+            + SettingsPermissions.BranchesUpdate
+            + ","
+            + SettingsPermissions.BranchesDelete
     )]
     public const string Branches = "/settings/branches";
 
@@ -79,8 +90,11 @@ public static class SettingsModule
         SortOrder = 30,
         Id = "a1000000-0000-4000-9000-000000000010",
         ParentId = "7eabb75d-1ccf-4a4a-a4ee-46a082a7e90d",
-        RelatedActionPermissionsCsv = SettingsPermissions.EstablishmentsCreate + ","
-            + SettingsPermissions.EstablishmentsUpdate + "," + SettingsPermissions.EstablishmentsDisable
+        RelatedActionPermissionsCsv = SettingsPermissions.EstablishmentsCreate
+            + ","
+            + SettingsPermissions.EstablishmentsUpdate
+            + ","
+            + SettingsPermissions.EstablishmentsDisable
     )]
     public const string Establishments = "/settings/establishments";
 
@@ -91,8 +105,11 @@ public static class SettingsModule
         SortOrder = 40,
         Id = "a1000000-0000-4000-9000-00000000000f",
         ParentId = "7eabb75d-1ccf-4a4a-a4ee-46a082a7e90d",
-        RelatedActionPermissionsCsv = SettingsPermissions.EmissionPointsCreate + ","
-            + SettingsPermissions.EmissionPointsUpdate + "," + SettingsPermissions.EmissionPointsDelete
+        RelatedActionPermissionsCsv = SettingsPermissions.EmissionPointsCreate
+            + ","
+            + SettingsPermissions.EmissionPointsUpdate
+            + ","
+            + SettingsPermissions.EmissionPointsDelete
     )]
     public const string EmissionPoints = "/settings/emission-points";
 
@@ -152,8 +169,11 @@ public static class SettingsModule
         SortOrder = 10,
         Id = "9c7a1e20-0000-4000-8000-000000000002",
         ParentId = "9c7a1e20-0000-4000-8000-000000000001",
-        RelatedActionPermissionsCsv = SettingsPermissions.BanksCreate + ","
-            + SettingsPermissions.BanksUpdate + "," + SettingsPermissions.BanksManage
+        RelatedActionPermissionsCsv = SettingsPermissions.BanksCreate
+            + ","
+            + SettingsPermissions.BanksUpdate
+            + ","
+            + SettingsPermissions.BanksManage
     )]
     public const string Banks = "/settings/catalogs/banks";
 
@@ -184,7 +204,9 @@ public static class SettingsModule
         LabelKey = "app.nav.item.settings.systemGroup",
         SortOrder = 80,
         Id = "5ece43ac-3228-445b-9bd8-cf86baef2fa8",
-        PermissionsAnyCsv = OperationalPreferencesPermissions.View + "," + InitialLoadPermissions.View
+        PermissionsAnyCsv = OperationalPreferencesPermissions.View
+            + ","
+            + InitialLoadPermissions.View
     )]
     public const string SystemGroup = "/settings/system-group";
 
@@ -235,7 +257,9 @@ public static class SettingsModule
         SortOrder = 100,
         Id = "3679c0d4-3482-42cb-91dc-c3a270aa0e26",
         ParentId = "5ece43ac-3228-445b-9bd8-cf86baef2fa8",
-        RelatedActionPermissionsCsv = InitialLoadPermissions.Create + "," + InitialLoadPermissions.Confirm
+        RelatedActionPermissionsCsv = InitialLoadPermissions.Create
+            + ","
+            + InitialLoadPermissions.Confirm
     )]
     public const string InitialLoad = "/initial-load";
 }

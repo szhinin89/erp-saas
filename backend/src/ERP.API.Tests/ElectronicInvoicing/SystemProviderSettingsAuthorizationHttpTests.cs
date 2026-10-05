@@ -1,10 +1,10 @@
-using ERP.API.Tests.Support;
-using ERP.Domain.Configuration.Entities;
-using FluentAssertions;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ERP.API.Tests.Support;
+using ERP.Domain.Configuration.Entities;
+using FluentAssertions;
 
 namespace ERP.API.Tests.ElectronicInvoicing;
 
@@ -111,14 +111,23 @@ public sealed class SystemProviderSettingsAuthorizationHttpTests
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         doc.RootElement.GetProperty("code").GetString().Should().Be("VALIDATION_ERROR");
-        doc.RootElement.GetProperty("data").GetProperty("errors").GetProperty("effectiveDate")[0]
+        doc.RootElement.GetProperty("data")
+            .GetProperty("errors")
+            .GetProperty("effectiveDate")[0]
             .GetString()
             .Should()
             .Be(SystemProviderSettings.EnabledWithoutEffectiveDateMessage);
 
-        using var get = await SendAsync(SystemProviderSettingsAuthorizationHttpFixture.GlobalAdminToken());
+        using var get = await SendAsync(
+            SystemProviderSettingsAuthorizationHttpFixture.GlobalAdminToken()
+        );
         using var current = JsonDocument.Parse(await get.Content.ReadAsStringAsync());
-        current.RootElement.GetProperty("data").GetProperty("enabled").GetBoolean().Should().BeFalse();
+        current
+            .RootElement.GetProperty("data")
+            .GetProperty("enabled")
+            .GetBoolean()
+            .Should()
+            .BeFalse();
     }
 
     private async Task<HttpResponseMessage> SendAsync(string bearerToken)

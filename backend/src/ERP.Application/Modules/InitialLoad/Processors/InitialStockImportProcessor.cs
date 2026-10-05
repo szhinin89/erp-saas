@@ -1,3 +1,4 @@
+using System.Text.Json;
 using ERP.Application.Common;
 using ERP.Application.Modules.InitialLoad.DTOs;
 using ERP.Application.Modules.InitialLoad.Interfaces;
@@ -10,7 +11,6 @@ using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.Interfaces;
 using MediatR;
-using System.Text.Json;
 
 namespace ERP.Application.Modules.InitialLoad.Processors;
 
@@ -179,7 +179,9 @@ public sealed class InitialStockImportProcessor : IImportProcessor
             ct
         );
         if (!createResult.IsSuccess)
-            return RowConfirmResult.Failed(createResult.Error ?? "No se pudo crear el ajuste de inventario.");
+            return RowConfirmResult.Failed(
+                createResult.Error ?? "No se pudo crear el ajuste de inventario."
+            );
 
         var executeResult = await _mediator.Send(
             new ExecuteStockAdjustmentCommand(createResult.Value!.Id),
@@ -210,7 +212,11 @@ public sealed class InitialStockImportProcessor : IImportProcessor
     {
         if (string.IsNullOrWhiteSpace(sku) && string.IsNullOrWhiteSpace(barcode))
         {
-            AddMissing(issues, InitialStockImportColumns.Sku, "Debe indicar SKU o código de barras.");
+            AddMissing(
+                issues,
+                InitialStockImportColumns.Sku,
+                "Debe indicar SKU o código de barras."
+            );
             return null;
         }
 
@@ -391,7 +397,9 @@ public sealed class InitialStockImportProcessor : IImportProcessor
     {
         var existing = await _reasonRepo.GetByCodeAsync(_ctx.TenantId, ReasonCode, ct);
         if (existing is not null)
-            return existing.IsActive && existing.AllowsMovementType(StockAdjustment.MovementTypeIngreso)
+            return
+                existing.IsActive
+                && existing.AllowsMovementType(StockAdjustment.MovementTypeIngreso)
                 ? existing.Id
                 : null;
 

@@ -22,7 +22,11 @@ public sealed class InvoiceRideDocumentLayout : IRideDocumentLayout
     public RideBranding Branding { get; }
     public string QrPlaceholder { get; }
 
-    public InvoiceRideDocumentLayout(RideModel model, RideBranding branding, RideLinePrecision precision)
+    public InvoiceRideDocumentLayout(
+        RideModel model,
+        RideBranding branding,
+        RideLinePrecision precision
+    )
     {
         Precision = precision;
         Header = model.Header;

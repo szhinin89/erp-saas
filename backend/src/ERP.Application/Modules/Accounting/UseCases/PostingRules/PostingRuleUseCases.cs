@@ -218,7 +218,9 @@ public sealed class CreatePostingRuleHandler
             await _repo.AddAsync(rule, ct);
             await _repo.SaveChangesAsync(ct);
             var accounts = await _accountRepo.GetByCompanyAsync(tenantId, companyId, ct);
-            return Result<PostingRuleDto>.Success(Map.ToDto(rule, accounts.ToDictionary(a => a.Id)));
+            return Result<PostingRuleDto>.Success(
+                Map.ToDto(rule, accounts.ToDictionary(a => a.Id))
+            );
         }
         catch (ArgumentException ex)
         {
@@ -489,7 +491,10 @@ public sealed class GetPostingRuleByIdHandler
 /// </summary>
 file static class Map
 {
-    public static PostingRuleDto ToDto(PostingRule r, IReadOnlyDictionary<Guid, Account> accountsById) =>
+    public static PostingRuleDto ToDto(
+        PostingRule r,
+        IReadOnlyDictionary<Guid, Account> accountsById
+    ) =>
         new(
             r.Id,
             r.SourceModule,
@@ -498,9 +503,7 @@ file static class Map
             r.CreditAccountId,
             r.TaxCode,
             r.IsActive,
-            r.Lines.OrderBy(l => l.SortOrder)
-                .Select(l => ToLineDto(l, accountsById))
-                .ToList(),
+            r.Lines.OrderBy(l => l.SortOrder).Select(l => ToLineDto(l, accountsById)).ToList(),
             r.CreatedAt,
             r.UpdatedAt
         );

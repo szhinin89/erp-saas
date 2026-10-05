@@ -187,7 +187,12 @@ public sealed class AuthorizeSalesInvoiceHandler
 
             decimal iceRate = 0;
             string? iceName = null;
-            var iceCalculationType = ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Percentage;
+            var iceCalculationType = ERP.Domain
+                .Modules
+                .SriCatalogs
+                .Enums
+                .SriTaxCalculationType
+                .Percentage;
             decimal? iceExactAmount = null;
             if (!string.IsNullOrWhiteSpace(line.IceCode))
             {
@@ -245,7 +250,8 @@ public sealed class AuthorizeSalesInvoiceHandler
         // resueltos en este mismo recorrido (antes solo se usaban para cashApplied/isCredit) para
         // reutilizarlos más abajo al sincronizar SriPaymentMethodCode de cabecera, sin repetir la
         // consulta.
-        var resolvedPaymentMethods = new Dictionary<Guid, Domain.Modules.Sales.Entities.PaymentMethod>();
+        var resolvedPaymentMethods =
+            new Dictionary<Guid, Domain.Modules.Sales.Entities.PaymentMethod>();
         foreach (var payment in inv.Payments)
         {
             var method = await _paymentMethodRepo.GetByIdAsync(tid, payment.PaymentMethodId, ct);
@@ -323,7 +329,10 @@ public sealed class AuthorizeSalesInvoiceHandler
                             + "Cuentas bancarias antes de emitir esta factura."
                     );
 
-                cashByAccount.TryGetValue(bankAccount.AccountingAccountId, out var existingTransfer);
+                cashByAccount.TryGetValue(
+                    bankAccount.AccountingAccountId,
+                    out var existingTransfer
+                );
                 cashByAccount[bankAccount.AccountingAccountId] = existingTransfer + payment.Amount;
                 continue;
             }
@@ -565,10 +574,15 @@ public sealed class AuthorizeSalesInvoiceHandler
         // crédito puro NO se tocan — el XML ya resuelve el código por pago individual
         // (SalesInvoiceElectronicDocumentDataProvider, sin cambios) y la cabecera queda solo como
         // fallback/default, nunca "falseando" qué se cobró.
-        var distinctPaymentMethodIds = inv.Payments.Select(p => p.PaymentMethodId).Distinct().ToList();
-        if (distinctPaymentMethodIds.Count == 1
+        var distinctPaymentMethodIds = inv
+            .Payments.Select(p => p.PaymentMethodId)
+            .Distinct()
+            .ToList();
+        if (
+            distinctPaymentMethodIds.Count == 1
             && resolvedPaymentMethods.TryGetValue(distinctPaymentMethodIds[0], out var onlyMethod)
-            && !onlyMethod.IsCreditAllowed)
+            && !onlyMethod.IsCreditAllowed
+        )
         {
             if (!string.IsNullOrWhiteSpace(onlyMethod.SriPaymentMethodCode))
             {

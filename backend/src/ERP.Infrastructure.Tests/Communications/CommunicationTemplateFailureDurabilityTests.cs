@@ -29,7 +29,9 @@ public sealed class CommunicationTemplateFailureDurabilityTests
     private readonly CommunicationOutboxDeliveryIntegrationTests.Database _db;
     private readonly ElectronicDocumentCommunicationFlow _flow;
 
-    public CommunicationTemplateFailureDurabilityTests(CommunicationOutboxDeliveryIntegrationTests.Database db)
+    public CommunicationTemplateFailureDurabilityTests(
+        CommunicationOutboxDeliveryIntegrationTests.Database db
+    )
     {
         _db = db;
         _flow = new ElectronicDocumentCommunicationFlow(db);
@@ -54,7 +56,9 @@ public sealed class CommunicationTemplateFailureDurabilityTests
         var document = await AuthorizeInTransactionAsync(invoice);
 
         // 1. La autorización fiscal quedó confirmada.
-        (await DocumentAsync(document.Id)).CurrentState.Should().Be(ElectronicDocumentState.Authorized);
+        (await DocumentAsync(document.Id))
+            .CurrentState.Should()
+            .Be(ElectronicDocumentState.Authorized);
 
         // 2-3. Evidencia durable en la MISMA outbox: Failed por configuración, sin contenido inventado,
         // con identidad, destinatario, origen y las variables para re-renderizar tras corregir el template.
@@ -70,7 +74,9 @@ public sealed class CommunicationTemplateFailureDurabilityTests
         row.RecipientEmail.Should().Be("cliente@example.com");
         row.SourceModule.Should().Be("Sales");
         row.SourceId.Should().Be(invoice.Id);
-        row.TemplatePayloadJson.Should().Contain("001-001-000000001").And.Contain("\"Total\":\"100.00\"");
+        row.TemplatePayloadJson.Should()
+            .Contain("001-001-000000001")
+            .And.Contain("\"Total\":\"100.00\"");
         row.IdempotencyKey.Should().NotBeNullOrWhiteSpace();
 
         // No se envía SMTP.
@@ -93,10 +99,14 @@ public sealed class CommunicationTemplateFailureDurabilityTests
         var id = (await RowsAsync()).Single().Id;
 
         await using var ctx = _db.Context();
-        var act = () => ctx.Database.ExecuteSqlInterpolatedAsync($"UPDATE communication_outbox SET status = 'Pending' WHERE id = {id}");
+        var act = () =>
+            ctx.Database.ExecuteSqlInterpolatedAsync(
+                $"UPDATE communication_outbox SET status = 'Pending' WHERE id = {id}"
+            );
 
         (await act.Should().ThrowAsync<PostgresException>())
-            .Which.ConstraintName.Should().Be(CommunicationOutboxConfiguration.ContentCheckConstraint);
+            .Which.ConstraintName.Should()
+            .Be(CommunicationOutboxConfiguration.ContentCheckConstraint);
     }
 
     [Fact]
@@ -106,7 +116,9 @@ public sealed class CommunicationTemplateFailureDurabilityTests
 
         var document = await AuthorizeInTransactionAsync(invoice);
 
-        (await DocumentAsync(document.Id)).CurrentState.Should().Be(ElectronicDocumentState.Authorized);
+        (await DocumentAsync(document.Id))
+            .CurrentState.Should()
+            .Be(ElectronicDocumentState.Authorized);
         var row = (await RowsAsync()).Single();
         row.Status.Should().Be(CommunicationStatus.Pending);
         row.TemplateSource.Should().Be(CommunicationTemplateSource.Default);
@@ -124,13 +136,21 @@ public sealed class CommunicationTemplateFailureDurabilityTests
     // ── flujo real (ElectronicDocumentCommunicationFlow) ──────────────────────────────────
 
     private async Task<ElectronicDocument> AuthorizeInTransactionAsync(SalesInvoice invoice) =>
-        await _flow.AuthorizeAsync(_db.TenantA, _db.CompanyA, ElectronicDocumentType.Invoice, "Sales", invoice.Id);
+        await _flow.AuthorizeAsync(
+            _db.TenantA,
+            _db.CompanyA,
+            ElectronicDocumentType.Invoice,
+            "Sales",
+            invoice.Id
+        );
 
     private async Task<bool> RepublishAsync(ElectronicDocument document)
     {
         await using var ctx = _db.Context();
         using var _ = JobExecutionContext.Begin(_db.TenantA, _db.CompanyA);
-        var result = await _flow.Service(ctx).RequestAsync(document, ElectronicDocumentCommunicationTrigger.Reconciliation);
+        var result = await _flow
+            .Service(ctx)
+            .RequestAsync(document, ElectronicDocumentCommunicationTrigger.Reconciliation);
         return result.Outcome == ElectronicDocumentCommunicationOutcome.AlreadyQueued;
     }
 
@@ -139,18 +159,34 @@ public sealed class CommunicationTemplateFailureDurabilityTests
     private async Task AddOverrideAsync(string subject)
     {
         await using var ctx = _db.Context();
-        ctx.CommunicationTemplates.Add(CommunicationTemplate.Create(
-            _db.TenantA, _db.CompanyA, null, CommunicationPurposes.SalesInvoiceAuthorized, "Factura personalizada",
-            CommunicationChannel.Email, subject, "<p>{{CustomerName}}</p>", null, "es", Guid.Empty));
+        ctx.CommunicationTemplates.Add(
+            CommunicationTemplate.Create(
+                _db.TenantA,
+                _db.CompanyA,
+                null,
+                CommunicationPurposes.SalesInvoiceAuthorized,
+                "Factura personalizada",
+                CommunicationChannel.Email,
+                subject,
+                "<p>{{CustomerName}}</p>",
+                null,
+                "es",
+                Guid.Empty
+            )
+        );
         await ctx.SaveChangesAsync();
     }
 
-    private SalesInvoice AuthorizedInvoice() => _flow.Invoice(_db.TenantA, _db.CompanyA, "cliente@example.com");
+    private SalesInvoice AuthorizedInvoice() =>
+        _flow.Invoice(_db.TenantA, _db.CompanyA, "cliente@example.com");
 
     private async Task<ElectronicDocument> DocumentAsync(Guid id)
     {
         await using var ctx = _db.Context();
-        return await ctx.ElectronicDocuments.IgnoreQueryFilters().AsNoTracking().SingleAsync(d => d.Id == id);
+        return await ctx
+            .ElectronicDocuments.IgnoreQueryFilters()
+            .AsNoTracking()
+            .SingleAsync(d => d.Id == id);
     }
 
     private async Task<List<CommunicationOutbox>> RowsAsync()
@@ -163,7 +199,11 @@ public sealed class CommunicationTemplateFailureDurabilityTests
     {
         public int Calls { get; private set; }
 
-        public Task<EmailDeliveryReceipt> SendAsync(EmailMessage message, CommunicationEmailSettings settings, CancellationToken ct = default)
+        public Task<EmailDeliveryReceipt> SendAsync(
+            EmailMessage message,
+            CommunicationEmailSettings settings,
+            CancellationToken ct = default
+        )
         {
             Calls++;
             return Task.FromResult(EmailDeliveryReceipt.WithoutProviderId);

@@ -27,11 +27,26 @@ public sealed class GetRetentionBySourceHandlerTests
     private static RetentionDocument IssuedDocument(Guid branchId)
     {
         var doc = RetentionDocument.Create(
-            TenantId, CompanyId, branchId, RetentionSourceDocumentType.ExpenseDocument,
-            SourceDocumentId, SupplierId, EmissionPointId, UserId
+            TenantId,
+            CompanyId,
+            branchId,
+            RetentionSourceDocumentType.ExpenseDocument,
+            SourceDocumentId,
+            SupplierId,
+            EmissionPointId,
+            UserId
         );
         doc.AddLine(
-            RetentionDocumentLine.Create(doc.Id, TenantId, RetentionTaxType.Vat, "725", "Retención IVA 725", 100m, 30m, 30m)
+            RetentionDocumentLine.Create(
+                doc.Id,
+                TenantId,
+                RetentionTaxType.Vat,
+                "725",
+                "Retención IVA 725",
+                100m,
+                30m,
+                30m
+            )
         );
         doc.Issue("001-001-000000001", new DateOnly(2026, 9, 3), UserId);
         doc.ClearDomainEvents();
@@ -48,7 +63,10 @@ public sealed class GetRetentionBySourceHandlerTests
         fx.SetupSource(document);
 
         var result = await fx.Handler.Handle(
-            new GetRetentionBySourceQuery(RetentionSourceDocumentType.ExpenseDocument, SourceDocumentId),
+            new GetRetentionBySourceQuery(
+                RetentionSourceDocumentType.ExpenseDocument,
+                SourceDocumentId
+            ),
             CancellationToken.None
         );
 
@@ -68,7 +86,10 @@ public sealed class GetRetentionBySourceHandlerTests
         fx.SetupSource(document);
 
         var result = await fx.Handler.Handle(
-            new GetRetentionBySourceQuery(RetentionSourceDocumentType.ExpenseDocument, SourceDocumentId),
+            new GetRetentionBySourceQuery(
+                RetentionSourceDocumentType.ExpenseDocument,
+                SourceDocumentId
+            ),
             CancellationToken.None
         );
 
@@ -83,25 +104,36 @@ public sealed class GetRetentionBySourceHandlerTests
         // GetBySourceAsync ya filtra tenant+company vía Scoped/ForOperationalScope en Infra — a
         // nivel de handler, verificamos que se invoca exactamente con el tenant/company del
         // contexto actual (nunca del body/query).
-        fx.RetentionRepo
-            .Setup(r => r.GetBySourceAsync(
-                TenantId, CompanyId, RetentionSourceDocumentType.ExpenseDocument, SourceDocumentId,
-                It.IsAny<CancellationToken>()
-            ))
+        fx.RetentionRepo.Setup(r =>
+                r.GetBySourceAsync(
+                    TenantId,
+                    CompanyId,
+                    RetentionSourceDocumentType.ExpenseDocument,
+                    SourceDocumentId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync((RetentionDocument?)null);
 
         var result = await fx.Handler.Handle(
-            new GetRetentionBySourceQuery(RetentionSourceDocumentType.ExpenseDocument, SourceDocumentId),
+            new GetRetentionBySourceQuery(
+                RetentionSourceDocumentType.ExpenseDocument,
+                SourceDocumentId
+            ),
             CancellationToken.None
         );
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeNull();
         fx.RetentionRepo.Verify(
-            r => r.GetBySourceAsync(
-                TenantId, CompanyId, RetentionSourceDocumentType.ExpenseDocument, SourceDocumentId,
-                It.IsAny<CancellationToken>()
-            ),
+            r =>
+                r.GetBySourceAsync(
+                    TenantId,
+                    CompanyId,
+                    RetentionSourceDocumentType.ExpenseDocument,
+                    SourceDocumentId,
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Once
         );
     }
@@ -112,15 +144,22 @@ public sealed class GetRetentionBySourceHandlerTests
     public async Task Devuelve_null_si_no_existe_retencion_activa_para_el_origen()
     {
         var fx = new Fixture();
-        fx.RetentionRepo
-            .Setup(r => r.GetBySourceAsync(
-                TenantId, CompanyId, It.IsAny<RetentionSourceDocumentType>(), It.IsAny<Guid>(),
-                It.IsAny<CancellationToken>()
-            ))
+        fx.RetentionRepo.Setup(r =>
+                r.GetBySourceAsync(
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<RetentionSourceDocumentType>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync((RetentionDocument?)null);
 
         var result = await fx.Handler.Handle(
-            new GetRetentionBySourceQuery(RetentionSourceDocumentType.ExpenseDocument, Guid.NewGuid()),
+            new GetRetentionBySourceQuery(
+                RetentionSourceDocumentType.ExpenseDocument,
+                Guid.NewGuid()
+            ),
             CancellationToken.None
         );
 
@@ -143,10 +182,15 @@ public sealed class GetRetentionBySourceHandlerTests
 
         public void SetupSource(RetentionDocument document) =>
             RetentionRepo
-                .Setup(r => r.GetBySourceAsync(
-                    TenantId, CompanyId, document.SourceDocumentType, document.SourceDocumentId,
-                    It.IsAny<CancellationToken>()
-                ))
+                .Setup(r =>
+                    r.GetBySourceAsync(
+                        TenantId,
+                        CompanyId,
+                        document.SourceDocumentType,
+                        document.SourceDocumentId,
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync(document);
     }
 }

@@ -28,8 +28,29 @@ public sealed class CommunicationIdentityTests
             role
         );
 
-    private static CommunicationOutbox Email(CommunicationIdentity identity, string email, string subject, string body) =>
-        CommunicationOutbox.CreateEmail(identity, null, email, new CommunicationTemplateUsage(identity.Purpose, 1, CommunicationTemplateSource.Default), subject, body, null, CommunicationPriority.Normal, null, 3, Guid.Empty);
+    private static CommunicationOutbox Email(
+        CommunicationIdentity identity,
+        string email,
+        string subject,
+        string body
+    ) =>
+        CommunicationOutbox.CreateEmail(
+            identity,
+            null,
+            email,
+            new CommunicationTemplateUsage(
+                identity.Purpose,
+                1,
+                CommunicationTemplateSource.Default
+            ),
+            subject,
+            body,
+            null,
+            CommunicationPriority.Normal,
+            null,
+            3,
+            Guid.Empty
+        );
 
     // ── Identidad ─────────────────────────────────────────────────────────────────────────
 
@@ -40,7 +61,10 @@ public sealed class CommunicationIdentityTests
         var b = Invoice();
 
         b.Key.Should().Be(a.Key);
-        a.Key.Should().StartWith("cid:v1:").And.HaveLength(71).And.MatchRegex("^cid:v1:[0-9a-f]{64}$");
+        a.Key.Should()
+            .StartWith("cid:v1:")
+            .And.HaveLength(71)
+            .And.MatchRegex("^cid:v1:[0-9a-f]{64}$");
         a.Key.Length.Should().BeLessThanOrEqualTo(CommunicationOutbox.IdempotencyKeyMaxLen);
     }
 
@@ -61,7 +85,9 @@ public sealed class CommunicationIdentityTests
         var baseKey = Invoice().Key;
 
         Invoice(sourceId: Guid.NewGuid()).Key.Should().NotBe(baseKey, "otro SourceId");
-        Invoice(role: CommunicationRecipientRole.CompanyCopy).Key.Should().NotBe(baseKey, "otro RecipientRole");
+        Invoice(role: CommunicationRecipientRole.CompanyCopy)
+            .Key.Should()
+            .NotBe(baseKey, "otro RecipientRole");
         Invoice(companyId: Guid.NewGuid()).Key.Should().NotBe(baseKey, "otro alcance");
 
         var otherPurpose = CommunicationIdentity.For(
@@ -121,9 +147,19 @@ public sealed class CommunicationIdentityTests
     [InlineData(CommunicationScopeKind.System, false, true)]
     [InlineData(CommunicationScopeKind.Company, true, false)]
     [InlineData(CommunicationScopeKind.Company, false, true)]
-    public void Combinacion_invalida_de_alcance_falla(CommunicationScopeKind kind, bool withTenant, bool withCompany)
+    public void Combinacion_invalida_de_alcance_falla(
+        CommunicationScopeKind kind,
+        bool withTenant,
+        bool withCompany
+    )
     {
-        var act = () => CommunicationScope.From(kind, withTenant ? TenantId : null, withCompany ? CompanyId : null, null);
+        var act = () =>
+            CommunicationScope.From(
+                kind,
+                withTenant ? TenantId : null,
+                withCompany ? CompanyId : null,
+                null
+            );
 
         act.Should().Throw<ArgumentException>();
     }
@@ -131,34 +167,38 @@ public sealed class CommunicationIdentityTests
     [Fact]
     public void Proposito_con_alcance_o_canal_no_permitido_falla_antes_de_persistir()
     {
-        var invoiceAsSystem = () => CommunicationIdentity.For(
-            CommunicationScope.System,
-            CommunicationPurposes.SalesInvoiceAuthorized,
-            CommunicationChannel.Email,
-            new CommunicationSource("Sales", "SalesInvoice", InvoiceId),
-            CommunicationRecipientRole.Customer
-        );
-        var resetAsCompany = () => CommunicationIdentity.For(
-            CommunicationScope.Company(TenantId, CompanyId),
-            CommunicationPurposes.PasswordReset,
-            CommunicationChannel.Email,
-            new CommunicationSource("Authentication", "PasswordReset", Guid.NewGuid()),
-            CommunicationRecipientRole.User
-        );
-        var invoiceBySms = () => CommunicationIdentity.For(
-            CommunicationScope.Company(TenantId, CompanyId),
-            CommunicationPurposes.SalesInvoiceAuthorized,
-            CommunicationChannel.Sms,
-            new CommunicationSource("Sales", "SalesInvoice", InvoiceId),
-            CommunicationRecipientRole.Customer
-        );
-        var unknownPurpose = () => CommunicationIdentity.For(
-            CommunicationScope.Company(TenantId, CompanyId),
-            "NO_EXISTE",
-            CommunicationChannel.Email,
-            new CommunicationSource("Sales", "SalesInvoice", InvoiceId),
-            CommunicationRecipientRole.Customer
-        );
+        var invoiceAsSystem = () =>
+            CommunicationIdentity.For(
+                CommunicationScope.System,
+                CommunicationPurposes.SalesInvoiceAuthorized,
+                CommunicationChannel.Email,
+                new CommunicationSource("Sales", "SalesInvoice", InvoiceId),
+                CommunicationRecipientRole.Customer
+            );
+        var resetAsCompany = () =>
+            CommunicationIdentity.For(
+                CommunicationScope.Company(TenantId, CompanyId),
+                CommunicationPurposes.PasswordReset,
+                CommunicationChannel.Email,
+                new CommunicationSource("Authentication", "PasswordReset", Guid.NewGuid()),
+                CommunicationRecipientRole.User
+            );
+        var invoiceBySms = () =>
+            CommunicationIdentity.For(
+                CommunicationScope.Company(TenantId, CompanyId),
+                CommunicationPurposes.SalesInvoiceAuthorized,
+                CommunicationChannel.Sms,
+                new CommunicationSource("Sales", "SalesInvoice", InvoiceId),
+                CommunicationRecipientRole.Customer
+            );
+        var unknownPurpose = () =>
+            CommunicationIdentity.For(
+                CommunicationScope.Company(TenantId, CompanyId),
+                "NO_EXISTE",
+                CommunicationChannel.Email,
+                new CommunicationSource("Sales", "SalesInvoice", InvoiceId),
+                CommunicationRecipientRole.Customer
+            );
 
         invoiceAsSystem.Should().Throw<ArgumentException>();
         resetAsCompany.Should().Throw<ArgumentException>();
@@ -179,7 +219,9 @@ public sealed class CommunicationIdentityTests
         reset.IsSensitive.Should().BeTrue();
         reset.AllowsManualResend.Should().BeFalse();
 
-        CommunicationPurposes.All.Should().OnlyContain(p => p.Channels.Contains(CommunicationChannel.Email));
+        CommunicationPurposes
+            .All.Should()
+            .OnlyContain(p => p.Channels.Contains(CommunicationChannel.Email));
     }
 
     [Fact]

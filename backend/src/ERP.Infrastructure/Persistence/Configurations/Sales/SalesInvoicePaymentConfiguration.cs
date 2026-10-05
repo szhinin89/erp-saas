@@ -94,7 +94,8 @@ public sealed class SalesInvoicePaymentConfiguration : IEntityTypeConfiguration<
                 // autorizadas antes de este ticket no tienen cuenta bancaria seleccionada
                 // (BankName libre en su lugar) y nunca se reescriben. El dominio exige este campo
                 // obligatorio para toda transferencia NUEVA (PaymentTransferDetail.Create).
-                td.Property(t => t.CompanyBankAccountId).HasColumnName("company_bank_account_id");
+                td.Property(t => t.CompanyBankAccountId)
+                    .HasColumnName("company_bank_account_id");
                 td.Property(t => t.BankName)
                     .HasColumnName("bank_name")
                     .HasMaxLength(PaymentTransferDetail.BankMaxLen);

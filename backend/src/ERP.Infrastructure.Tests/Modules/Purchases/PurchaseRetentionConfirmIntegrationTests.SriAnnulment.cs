@@ -37,7 +37,9 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
     {
         var sri = new SriBoundaryDouble(_companyId);
         var result = await ConfirmWithIssuedRetentionAsync(sri);
-        (await ReadElectronicAsync(result.RetentionId))!.CurrentState.Should().Be(ElectronicDocumentState.Authorized);
+        (await ReadElectronicAsync(result.RetentionId))!
+            .CurrentState.Should()
+            .Be(ElectronicDocumentState.Authorized);
         return result;
     }
 
@@ -45,24 +47,34 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
     {
         await using var db = CreateWiredContext();
         return await CancelHandler(db)
-            .Handle(new CancelPurchaseCommand(invoiceId, AnnulmentReason, RequestSriAnnulment: true), CancellationToken.None);
+            .Handle(
+                new CancelPurchaseCommand(invoiceId, AnnulmentReason, RequestSriAnnulment: true),
+                CancellationToken.None
+            );
     }
 
-    private IRetentionAnnulmentService Annulments(ErpDbContext db, ISriDocumentStatusQuery? sriStatus = null)
+    private IRetentionAnnulmentService Annulments(
+        ErpDbContext db,
+        ISriDocumentStatusQuery? sriStatus = null
+    )
     {
         var company = new FixedCurrentCompany(_companyId);
         return RetentionElectronicTestWiring.AnnulmentService(
             db,
             company,
             sriStatus ?? _sriStatus,
-            new PurchaseRetentionOriginCancellation(CancelHandler(db), new PurchaseInvoiceRepository(db, company))
+            new PurchaseRetentionOriginCancellation(
+                CancelHandler(db),
+                new PurchaseInvoiceRepository(db, company)
+            )
         );
     }
 
     private async Task<RetentionAnnulmentRequest?> ReadAnnulmentAsync(Guid retentionId)
     {
         await using var db = CreateContext();
-        return await db.RetentionAnnulmentRequests.AsNoTracking()
+        return await db
+            .RetentionAnnulmentRequests.AsNoTracking()
             .Where(r => r.RetentionDocumentId == retentionId)
             .OrderByDescending(r => r.RequestedAtUtc)
             .FirstOrDefaultAsync();
@@ -71,8 +83,16 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
     private async Task<Result<RetentionAnnulmentRequest>> SubmitAnnulmentAsync(Guid requestId)
     {
         await using var db = CreateWiredContext();
-        return await Annulments(db).MarkSubmittedAsync(
-            _tenantId, _companyId, requestId, new DateOnly(2026, 9, 20), "TRAMITE-SRI-1", null, _userId);
+        return await Annulments(db)
+            .MarkSubmittedAsync(
+                _tenantId,
+                _companyId,
+                requestId,
+                new DateOnly(2026, 9, 20),
+                "TRAMITE-SRI-1",
+                null,
+                _userId
+            );
     }
 
     /// <summary>Verificación en ConsultaComprobante (la misma que dispara la UI y el job).</summary>
@@ -83,7 +103,8 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
     )
     {
         await using var db = CreateWiredContext();
-        return await Annulments(db, sriStatus).VerifyWithSriAsync(_tenantId, _companyId, requestId, userId ?? _userId);
+        return await Annulments(db, sriStatus)
+            .VerifyWithSriAsync(_tenantId, _companyId, requestId, userId ?? _userId);
     }
 
     private async Task<Result<RetentionAnnulmentRequest>> VerifyAnnulledAsync(Guid requestId)
@@ -92,7 +113,10 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
         return await VerifyAsync(requestId);
     }
 
-    private async Task<RetentionAnnulmentRequest> RequestAndSubmitAsync(Guid invoiceId, Guid retentionId)
+    private async Task<RetentionAnnulmentRequest> RequestAndSubmitAsync(
+        Guid invoiceId,
+        Guid retentionId
+    )
     {
         (await RequestSriAnnulmentAsync(invoiceId)).IsSuccess.Should().BeTrue();
         var request = (await ReadAnnulmentAsync(retentionId))!;
@@ -104,7 +128,9 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
     private async Task<Exception?> TryPayAsync(Guid invoiceId, decimal amount)
     {
         await using var db = CreateContext();
-        var payable = await db.AccountsPayables.Include(p => p.Installments).SingleAsync(p => p.OriginId == invoiceId);
+        var payable = await db
+            .AccountsPayables.Include(p => p.Installments)
+            .SingleAsync(p => p.OriginId == invoiceId);
         try
         {
             payable.RegisterPaymentToInstallment(payable.Installments.Single().Id, amount, _userId);
@@ -120,40 +146,62 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
     private async Task<AccountsPayable> ReadPayableAsync(Guid invoiceId)
     {
         await using var db = CreateContext();
-        return await db.AccountsPayables.AsNoTracking().Include(p => p.Installments).SingleAsync(p => p.OriginId == invoiceId);
+        return await db
+            .AccountsPayables.AsNoTracking()
+            .Include(p => p.Installments)
+            .SingleAsync(p => p.OriginId == invoiceId);
     }
 
-    private async Task AssertCancelledExactlyOnceAsync(Guid invoiceId, Guid retentionId, int stockMovementsBefore)
+    private async Task AssertCancelledExactlyOnceAsync(
+        Guid invoiceId,
+        Guid retentionId,
+        int stockMovementsBefore
+    )
     {
         var s = await ReadAsync(invoiceId);
         s.Status.Should().Be(PurchaseStatus.Cancelled);
         s.Retentions.Single().Status.Should().Be(RetentionStatus.Cancelled);
         var payable = s.Payables.Single();
-        payable.Status.Should().Be(ERP.Domain.Modules.Payables.Enums.AccountsPayableStatus.Cancelled);
+        payable
+            .Status.Should()
+            .Be(ERP.Domain.Modules.Payables.Enums.AccountsPayableStatus.Cancelled);
         payable.RetainedAmount.Should().Be(0m);
         var accounting = await RetentionAccountingAsync(retentionId);
         accounting.IssuedStatus.Should().Be(JournalEntryStatus.Reversed);
         accounting.Reversals.Should().Be(1, "el reverso contable ocurre exactamente una vez");
-        (await StockMovementCountAsync(invoiceId)).Should().Be(stockMovementsBefore * 2, "el Kardex se revierte una sola vez");
-        (await ReadElectronicAsync(retentionId))!.CurrentState.Should().Be(ElectronicDocumentState.Cancelled);
+        (await StockMovementCountAsync(invoiceId))
+            .Should()
+            .Be(stockMovementsBefore * 2, "el Kardex se revierte una sola vez");
+        (await ReadElectronicAsync(retentionId))!
+            .CurrentState.Should()
+            .Be(ElectronicDocumentState.Cancelled);
     }
 
     /// <summary>Sin cambio fiscal: compra intacta, comprobante AnnulmentPending, solicitud abierta, CxP retenida.</summary>
-    private async Task AssertNoFiscalChangeAsync(Guid invoiceId, Guid retentionId, int stockMovements)
+    private async Task AssertNoFiscalChangeAsync(
+        Guid invoiceId,
+        Guid retentionId,
+        int stockMovements
+    )
     {
         await ShouldBeUntouchedConfirmedAsync(invoiceId, retentionId, stockMovements);
-        (await ReadElectronicAsync(retentionId))!.CurrentState.Should().Be(ElectronicDocumentState.AnnulmentPending);
+        (await ReadElectronicAsync(retentionId))!
+            .CurrentState.Should()
+            .Be(ElectronicDocumentState.AnnulmentPending);
         var request = (await ReadAnnulmentAsync(retentionId))!;
         request.Status.Should().Be(RetentionAnnulmentStatus.PendingSriResolution);
         request.FinalizedAtUtc.Should().BeNull();
-        (await ReadPayableAsync(invoiceId)).AnnulmentHoldRequestId.Should().Be(request.Id, "la CxP sigue retenida");
+        (await ReadPayableAsync(invoiceId))
+            .AnnulmentHoldRequestId.Should()
+            .Be(request.Id, "la CxP sigue retenida");
         (await TryPayAsync(invoiceId, 10m)).Should().BeOfType<RetentionAnnulmentPendingException>();
     }
 
     private async Task<int> AuditCountAsync(Guid requestId, string action)
     {
         await using var db = CreateContext();
-        return await db.RetentionAnnulmentRequestAudits.AsNoTracking()
+        return await db
+            .RetentionAnnulmentRequestAudits.AsNoTracking()
             .CountAsync(a => a.EntityId == requestId && a.Action == action);
     }
 
@@ -166,8 +214,12 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
 
         var cancel = await CancelPurchaseAsync(invoiceId);
 
-        cancel.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.SourceCancellationRequiresSriAnnulment);
-        (await ReadAnnulmentAsync(retentionId)).Should().BeNull("sin confirmación explícita no se crea ninguna solicitud");
+        cancel
+            .Code.Should()
+            .Be(ApiResponseCodes.ElectronicDocuments.SourceCancellationRequiresSriAnnulment);
+        (await ReadAnnulmentAsync(retentionId))
+            .Should()
+            .BeNull("sin confirmación explícita no se crea ninguna solicitud");
     }
 
     [Fact]
@@ -182,7 +234,9 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
         result.Code.Should().Be(ApiResponseCodes.Retentions.AnnulmentRequested);
         result.Value!.Status.Should().Be("Confirmed", "la compra NO queda anulada todavía");
         await ShouldBeUntouchedConfirmedAsync(invoiceId, retentionId, stockMovements);
-        (await ReadElectronicAsync(retentionId))!.CurrentState.Should().Be(ElectronicDocumentState.AnnulmentPending);
+        (await ReadElectronicAsync(retentionId))!
+            .CurrentState.Should()
+            .Be(ElectronicDocumentState.AnnulmentPending);
         var request = (await ReadAnnulmentAsync(retentionId))!;
         request.Status.Should().Be(RetentionAnnulmentStatus.PendingSubmission);
         request.Reason.Should().Be(AnnulmentReason);
@@ -243,7 +297,9 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
         stored.LastSriRawStatus.Should().Be("AUTORIZADO");
         stored.LastSriCheckAtUtc.Should().NotBeNull();
         stored.SriCheckCount.Should().Be(1);
-        stored.CanBeAbandoned.Should().BeTrue("el SRI confirma que sigue vigente: el usuario puede desistir");
+        stored
+            .CanBeAbandoned.Should()
+            .BeTrue("el SRI confirma que sigue vigente: el usuario puede desistir");
     }
 
     [Fact]
@@ -264,7 +320,9 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
         stored.LastSriFiscalStatus.Should().Be(SriFiscalStatus.PendingAnnulment);
         stored.SriCheckCount.Should().Be(2);
         stored.CanBeAbandoned.Should().BeFalse("el SRI todavía puede anularlo");
-        (await AuditCountAsync(request.Id, "SriChecked")).Should().Be(1, "la misma respuesta repetida no se re-audita");
+        (await AuditCountAsync(request.Id, "SriChecked"))
+            .Should()
+            .Be(1, "la misma respuesta repetida no se re-audita");
     }
 
     [Fact]
@@ -298,7 +356,10 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
         stored.Status.Should().Be(RetentionAnnulmentStatus.Accepted);
         stored.FinalizedAtUtc.Should().NotBeNull();
         stored.EvidenceReference.Should().StartWith("ConsultaComprobante ANULADO");
-        stored.SriAnnulmentEvidence.Should().Contain("<estadoAutorizacion>ANULADO</estadoAutorizacion>").And.Contain(stored.AccessKey);
+        stored
+            .SriAnnulmentEvidence.Should()
+            .Contain("<estadoAutorizacion>ANULADO</estadoAutorizacion>")
+            .And.Contain(stored.AccessKey);
         stored.LastSriRawStatus.Should().Be("ANULADO");
         stored.ResolvedOn.Should().NotBeNull();
         (await ReadAsync(invoiceId)).Payables.Single().AnnulmentHoldRequestId.Should().BeNull();
@@ -332,21 +393,24 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
         var request = await RequestAndSubmitAsync(invoiceId, retentionId);
         var http = SriHttpDouble.Soap(
             $"""
-                <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body>
-                  <ns2:consultarEstadoAutorizacionComprobanteResponse xmlns:ns2="http://ec.gob.sri.ws.consultas">
-                    <EstadoAutorizacionComprobante>
-                      <claveAcceso>{request.AccessKey}</claveAcceso>
-                      <mensajes><mensaje><identificador>99</identificador><mensaje>ERROR AL CONSULTAR DATOS DEL SERVICIO WEB</mensaje>
-                        <informacionAdicional>No es posible validar la clave de acceso ya que la fecha de emisión está fuera del rango permitido.</informacionAdicional>
-                        <tipo>ERROR</tipo></mensaje></mensajes>
-                      <estadoConsulta>RECHAZADA</estadoConsulta>
-                    </EstadoAutorizacionComprobante>
-                  </ns2:consultarEstadoAutorizacionComprobanteResponse>
-                </soap:Body></soap:Envelope>
-                """
+            <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body>
+              <ns2:consultarEstadoAutorizacionComprobanteResponse xmlns:ns2="http://ec.gob.sri.ws.consultas">
+                <EstadoAutorizacionComprobante>
+                  <claveAcceso>{request.AccessKey}</claveAcceso>
+                  <mensajes><mensaje><identificador>99</identificador><mensaje>ERROR AL CONSULTAR DATOS DEL SERVICIO WEB</mensaje>
+                    <informacionAdicional>No es posible validar la clave de acceso ya que la fecha de emisión está fuera del rango permitido.</informacionAdicional>
+                    <tipo>ERROR</tipo></mensaje></mensajes>
+                  <estadoConsulta>RECHAZADA</estadoConsulta>
+                </EstadoAutorizacionComprobante>
+              </ns2:consultarEstadoAutorizacionComprobanteResponse>
+            </soap:Body></soap:Envelope>
+            """
         );
 
-        var result = await VerifyAsync(request.Id, RetentionElectronicTestWiring.SoapStatusQuery(http));
+        var result = await VerifyAsync(
+            request.Id,
+            RetentionElectronicTestWiring.SoapStatusQuery(http)
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Code.Should().Be(ApiResponseCodes.Retentions.SriVerificationFailed);
@@ -354,7 +418,9 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
         await AssertNoFiscalChangeAsync(invoiceId, retentionId, stockMovements);
         var stored = (await ReadAnnulmentAsync(retentionId))!;
         stored.LastSriQueryOutcome.Should().Be(SriStatusQueryOutcome.Rejected);
-        stored.LastSriFiscalStatus.Should().Be(SriFiscalStatus.Unknown, "RECHAZADA nunca es NO AUTORIZADO");
+        stored
+            .LastSriFiscalStatus.Should()
+            .Be(SriFiscalStatus.Unknown, "RECHAZADA nunca es NO AUTORIZADO");
         stored.LastSriRawStatus.Should().Be("RECHAZADA");
     }
 
@@ -366,13 +432,18 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
         var request = await RequestAndSubmitAsync(invoiceId, retentionId);
         var http = SriHttpDouble.Throwing(() => new TaskCanceledException("HttpClient.Timeout"));
 
-        var result = await VerifyAsync(request.Id, RetentionElectronicTestWiring.SoapStatusQuery(http));
+        var result = await VerifyAsync(
+            request.Id,
+            RetentionElectronicTestWiring.SoapStatusQuery(http)
+        );
 
         result.Code.Should().Be(ApiResponseCodes.Retentions.SriVerificationFailed);
         await AssertNoFiscalChangeAsync(invoiceId, retentionId, stockMovements);
         var stored = (await ReadAnnulmentAsync(retentionId))!;
         stored.LastSriQueryOutcome.Should().Be(SriStatusQueryOutcome.Timeout);
-        stored.LastSriFiscalStatus.Should().Be(SriFiscalStatus.Unknown, "un timeout nunca es ANULADO");
+        stored
+            .LastSriFiscalStatus.Should()
+            .Be(SriFiscalStatus.Unknown, "un timeout nunca es ANULADO");
     }
 
     [Fact]
@@ -383,11 +454,16 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
         var request = await RequestAndSubmitAsync(invoiceId, retentionId);
         var http = SriHttpDouble.Throwing(() => new HttpRequestException("no route to host"));
 
-        var result = await VerifyAsync(request.Id, RetentionElectronicTestWiring.SoapStatusQuery(http));
+        var result = await VerifyAsync(
+            request.Id,
+            RetentionElectronicTestWiring.SoapStatusQuery(http)
+        );
 
         result.Code.Should().Be(ApiResponseCodes.Retentions.SriVerificationFailed);
         await AssertNoFiscalChangeAsync(invoiceId, retentionId, stockMovements);
-        (await ReadAnnulmentAsync(retentionId))!.LastSriQueryOutcome.Should().Be(SriStatusQueryOutcome.Unavailable);
+        (await ReadAnnulmentAsync(retentionId))!
+            .LastSriQueryOutcome.Should()
+            .Be(SriStatusQueryOutcome.Unavailable);
     }
 
     [Fact]
@@ -398,25 +474,30 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
         var request = await RequestAndSubmitAsync(invoiceId, retentionId);
         var http = SriHttpDouble.Soap(
             $"""
-                <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body>
-                  <ns2:consultarEstadoAutorizacionComprobanteResponse xmlns:ns2="http://ec.gob.sri.ws.consultas">
-                    <EstadoAutorizacionComprobante>
-                      <claveAcceso>{request.AccessKey}</claveAcceso><mensajes/>
-                      <estadoAutorizacion>ANULADO</estadoAutorizacion>
-                      <tipoComprobante>COMPROBANTE DE RETENCION</tipoComprobante>
-                      <rucEmisor>1790000000001</rucEmisor>
-                      <fechaAutorizacion>2026-09-17T10:49:37-05:00</fechaAutorizacion>
-                    </EstadoAutorizacionComprobante>
-                  </ns2:consultarEstadoAutorizacionComprobanteResponse>
-                </soap:Body></soap:Envelope>
-                """
+            <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body>
+              <ns2:consultarEstadoAutorizacionComprobanteResponse xmlns:ns2="http://ec.gob.sri.ws.consultas">
+                <EstadoAutorizacionComprobante>
+                  <claveAcceso>{request.AccessKey}</claveAcceso><mensajes/>
+                  <estadoAutorizacion>ANULADO</estadoAutorizacion>
+                  <tipoComprobante>COMPROBANTE DE RETENCION</tipoComprobante>
+                  <rucEmisor>1790000000001</rucEmisor>
+                  <fechaAutorizacion>2026-09-17T10:49:37-05:00</fechaAutorizacion>
+                </EstadoAutorizacionComprobante>
+              </ns2:consultarEstadoAutorizacionComprobanteResponse>
+            </soap:Body></soap:Envelope>
+            """
         );
 
-        var result = await VerifyAsync(request.Id, RetentionElectronicTestWiring.SoapStatusQuery(http));
+        var result = await VerifyAsync(
+            request.Id,
+            RetentionElectronicTestWiring.SoapStatusQuery(http)
+        );
 
         result.Code.Should().Be(ApiResponseCodes.Retentions.AnnulmentFinalized);
         await AssertCancelledExactlyOnceAsync(invoiceId, retentionId, stockMovements);
-        (await ReadAnnulmentAsync(retentionId))!.SriAnnulmentEvidence.Should().Contain("ns2:consultarEstadoAutorizacionComprobanteResponse");
+        (await ReadAnnulmentAsync(retentionId))!
+            .SriAnnulmentEvidence.Should()
+            .Contain("ns2:consultarEstadoAutorizacionComprobanteResponse");
     }
 
     // ── Desistimiento ─────────────────────────────────────────────────────────────────────────
@@ -429,11 +510,25 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
         var request = (await ReadAnnulmentAsync(retentionId))!;
 
         await using (var db = CreateWiredContext())
-            (await Annulments(db).AbandonAsync(_tenantId, _companyId, request.Id, "Se decidió no anular", _userId))
-                .IsSuccess.Should().BeTrue();
+            (
+                await Annulments(db)
+                    .AbandonAsync(
+                        _tenantId,
+                        _companyId,
+                        request.Id,
+                        "Se decidió no anular",
+                        _userId
+                    )
+            )
+                .IsSuccess.Should()
+                .BeTrue();
 
-        (await ReadAnnulmentAsync(retentionId))!.Status.Should().Be(RetentionAnnulmentStatus.Abandoned);
-        (await ReadElectronicAsync(retentionId))!.CurrentState.Should().Be(ElectronicDocumentState.Authorized);
+        (await ReadAnnulmentAsync(retentionId))!
+            .Status.Should()
+            .Be(RetentionAnnulmentStatus.Abandoned);
+        (await ReadElectronicAsync(retentionId))!
+            .CurrentState.Should()
+            .Be(ElectronicDocumentState.Authorized);
         (await ReadAsync(invoiceId)).Status.Should().Be(PurchaseStatus.Confirmed);
         (await ReadPayableAsync(invoiceId)).AnnulmentHoldRequestId.Should().BeNull();
     }
@@ -450,23 +545,47 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
         await using (var db = CreateWiredContext())
         {
             // Regla de dominio (DomainRuleBehavior la traduce a 422 en la API).
-            var abandon = () => Annulments(db).AbandonAsync(_tenantId, _companyId, request.Id, "x", _userId);
-            await abandon.Should().ThrowAsync<ERP.Domain.Exceptions.DomainRuleViolationException>(
-                "PENDIENTE DE ANULAR: el SRI todavía puede anularlo");
+            var abandon = () =>
+                Annulments(db).AbandonAsync(_tenantId, _companyId, request.Id, "x", _userId);
+            await abandon
+                .Should()
+                .ThrowAsync<ERP.Domain.Exceptions.DomainRuleViolationException>(
+                    "PENDIENTE DE ANULAR: el SRI todavía puede anularlo"
+                );
         }
-        (await ReadAnnulmentAsync(retentionId))!.Status.Should().Be(RetentionAnnulmentStatus.PendingSriResolution);
+        (await ReadAnnulmentAsync(retentionId))!
+            .Status.Should()
+            .Be(RetentionAnnulmentStatus.PendingSriResolution);
 
         _sriStatus.FiscalStatus = SriFiscalStatus.Authorized;
         await VerifyAsync(request.Id);
         await using (var db = CreateWiredContext())
-            (await Annulments(db).AbandonAsync(_tenantId, _companyId, request.Id, "El receptor no aceptó la anulación", _userId))
-                .IsSuccess.Should().BeTrue();
+            (
+                await Annulments(db)
+                    .AbandonAsync(
+                        _tenantId,
+                        _companyId,
+                        request.Id,
+                        "El receptor no aceptó la anulación",
+                        _userId
+                    )
+            )
+                .IsSuccess.Should()
+                .BeTrue();
 
         await ShouldBeUntouchedConfirmedAsync(invoiceId, retentionId, stockMovements);
-        (await ReadAnnulmentAsync(retentionId))!.Status.Should().Be(RetentionAnnulmentStatus.Abandoned);
-        (await ReadElectronicAsync(retentionId))!.CurrentState.Should().Be(ElectronicDocumentState.Authorized);
-        (await ReadPayableAsync(invoiceId)).AnnulmentHoldRequestId.Should().BeNull("la CxP se libera");
-        (await TryPayAsync(invoiceId, 10m)).Should().BeNull("sin solicitud abierta los pagos vuelven a admitirse");
+        (await ReadAnnulmentAsync(retentionId))!
+            .Status.Should()
+            .Be(RetentionAnnulmentStatus.Abandoned);
+        (await ReadElectronicAsync(retentionId))!
+            .CurrentState.Should()
+            .Be(ElectronicDocumentState.Authorized);
+        (await ReadPayableAsync(invoiceId))
+            .AnnulmentHoldRequestId.Should()
+            .BeNull("la CxP se libera");
+        (await TryPayAsync(invoiceId, 10m))
+            .Should()
+            .BeNull("sin solicitud abierta los pagos vuelven a admitirse");
     }
 
     // ── Concurrencia (PostgreSQL real) ────────────────────────────────────────────────────────
@@ -476,7 +595,9 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
     {
         var (invoiceId, retentionId) = await ConfirmWithAuthorizedRetentionAsync();
         await using var paymentDb = CreateContext();
-        var payable = await paymentDb.AccountsPayables.Include(p => p.Installments).SingleAsync(p => p.OriginId == invoiceId);
+        var payable = await paymentDb
+            .AccountsPayables.Include(p => p.Installments)
+            .SingleAsync(p => p.OriginId == invoiceId);
 
         (await RequestSriAnnulmentAsync(invoiceId)).IsSuccess.Should().BeTrue();
         payable.RegisterPaymentToInstallment(payable.Installments.Single().Id, 10m, _userId);
@@ -498,7 +619,9 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
 
         result.IsSuccess.Should().BeFalse("la compra con pagos no puede terminar anulándose");
         (await ReadAnnulmentAsync(retentionId)).Should().BeNull();
-        (await ReadElectronicAsync(retentionId))!.CurrentState.Should().Be(ElectronicDocumentState.Authorized);
+        (await ReadElectronicAsync(retentionId))!
+            .CurrentState.Should()
+            .Be(ElectronicDocumentState.Authorized);
     }
 
     [Fact]
@@ -506,7 +629,9 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
     {
         var (invoiceId, _) = await ConfirmWithAuthorizedRetentionAsync();
         await using var creditDb = CreateContext();
-        var payable = await creditDb.AccountsPayables.Include(p => p.Installments).SingleAsync(p => p.OriginId == invoiceId);
+        var payable = await creditDb
+            .AccountsPayables.Include(p => p.Installments)
+            .SingleAsync(p => p.OriginId == invoiceId);
 
         (await RequestSriAnnulmentAsync(invoiceId)).IsSuccess.Should().BeTrue();
         payable.ApplySupplierCredit(10m, _userId);
@@ -514,7 +639,9 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
         await save.Should().ThrowAsync<DbUpdateConcurrencyException>();
 
         await using var lateDb = CreateContext();
-        var late = await lateDb.AccountsPayables.Include(p => p.Installments).SingleAsync(p => p.OriginId == invoiceId);
+        var late = await lateDb
+            .AccountsPayables.Include(p => p.Installments)
+            .SingleAsync(p => p.OriginId == invoiceId);
         var apply = () => late.ApplySupplierCredit(10m, _userId);
         apply.Should().Throw<RetentionAnnulmentPendingException>();
         (await ReadPayableAsync(invoiceId)).SupplierCreditAmount.Should().Be(0m);
@@ -580,8 +707,13 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
 
         results.Count(r => r).Should().Be(1);
         await using var db = CreateContext();
-        (await db.RetentionAnnulmentRequests.AsNoTracking().CountAsync(r => r.RetentionDocumentId == retentionId))
-            .Should().Be(1);
+        (
+            await db
+                .RetentionAnnulmentRequests.AsNoTracking()
+                .CountAsync(r => r.RetentionDocumentId == retentionId)
+        )
+            .Should()
+            .Be(1);
     }
 
     private async Task<bool> TryRequestAsync(Guid invoiceId)
@@ -608,7 +740,9 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
         await FinalizeAsync(request.Id);
 
         await AssertCancelledExactlyOnceAsync(invoiceId, retentionId, stockMovements);
-        (await CancelPurchaseAsync(invoiceId)).IsSuccess.Should().BeFalse("la compra ya fue anulada");
+        (await CancelPurchaseAsync(invoiceId))
+            .IsSuccess.Should()
+            .BeFalse("la compra ya fue anulada");
         (await RetentionAccountingAsync(retentionId)).Reversals.Should().Be(1);
     }
 
@@ -636,8 +770,17 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
         // ANULADO informado por el SRI con un origen sin flujo de anulación disponible → la finalización falla.
         await using (var db = CreateWiredContext())
         {
-            var noOrigins = RetentionElectronicTestWiring.AnnulmentService(db, new FixedCurrentCompany(_companyId), _sriStatus);
-            var verified = await noOrigins.VerifyWithSriAsync(_tenantId, _companyId, request.Id, _userId);
+            var noOrigins = RetentionElectronicTestWiring.AnnulmentService(
+                db,
+                new FixedCurrentCompany(_companyId),
+                _sriStatus
+            );
+            var verified = await noOrigins.VerifyWithSriAsync(
+                _tenantId,
+                _companyId,
+                request.Id,
+                _userId
+            );
             verified.Code.Should().Be(ApiResponseCodes.Retentions.AnnulmentFinalizationPending);
         }
         var pending = (await ReadAnnulmentAsync(retentionId))!;
@@ -658,12 +801,15 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
         var request = await RequestAndSubmitAsync(invoiceId, retentionId);
         _sriStatus.FiscalStatus = SriFiscalStatus.Annulled;
         await using (var db = CreateWiredContext())
-            await RetentionElectronicTestWiring.AnnulmentService(db, new FixedCurrentCompany(_companyId), _sriStatus)
+            await RetentionElectronicTestWiring
+                .AnnulmentService(db, new FixedCurrentCompany(_companyId), _sriStatus)
                 .VerifyWithSriAsync(_tenantId, _companyId, request.Id, _userId);
 
         await using var jobDb = CreateJobContext();
-        var pending = await new ERP.Infrastructure.Persistence.Repositories.Retentions.RetentionAnnulmentRequestRepository(jobDb)
-            .GetPendingFinalizationAsync(50);
+        var pending =
+            await new ERP.Infrastructure.Persistence.Repositories.Retentions.RetentionAnnulmentRequestRepository(
+                jobDb
+            ).GetPendingFinalizationAsync(50);
 
         pending.Should().Contain((_tenantId, _companyId, request.Id));
     }
@@ -675,20 +821,27 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
         (await RequestSriAnnulmentAsync(invoiceId)).IsSuccess.Should().BeTrue();
         var request = (await ReadAnnulmentAsync(retentionId))!;
         await using var jobDb = CreateJobContext();
-        var repository = new ERP.Infrastructure.Persistence.Repositories.Retentions.RetentionAnnulmentRequestRepository(jobDb);
+        var repository =
+            new ERP.Infrastructure.Persistence.Repositories.Retentions.RetentionAnnulmentRequestRepository(
+                jobDb
+            );
 
         (await repository.GetDueForSriVerificationAsync(DateTime.UtcNow, 50))
-            .Should().NotContain((_tenantId, _companyId, request.Id), "sin presentar no se consulta el SRI");
+            .Should()
+            .NotContain((_tenantId, _companyId, request.Id), "sin presentar no se consulta el SRI");
 
         (await SubmitAnnulmentAsync(request.Id)).IsSuccess.Should().BeTrue();
         (await repository.GetDueForSriVerificationAsync(DateTime.UtcNow, 50))
-            .Should().Contain((_tenantId, _companyId, request.Id), "presentada y nunca verificada");
+            .Should()
+            .Contain((_tenantId, _companyId, request.Id), "presentada y nunca verificada");
 
         _sriStatus.FiscalStatus = SriFiscalStatus.PendingAnnulment;
         await VerifyAsync(request.Id, userId: Guid.Empty);
         (await repository.GetDueForSriVerificationAsync(DateTime.UtcNow.AddMinutes(-30), 50))
-            .Should().NotContain((_tenantId, _companyId, request.Id), "verificada hace menos del intervalo");
+            .Should()
+            .NotContain((_tenantId, _companyId, request.Id), "verificada hace menos del intervalo");
         (await repository.GetDueForSriVerificationAsync(DateTime.UtcNow.AddMinutes(1), 50))
-            .Should().Contain((_tenantId, _companyId, request.Id));
+            .Should()
+            .Contain((_tenantId, _companyId, request.Id));
     }
 }

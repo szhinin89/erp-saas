@@ -25,7 +25,10 @@ namespace ERP.Domain.Modules.Payables.Entities;
 /// <c>AccountsPayableInstallment</c> por cada aplicación, y persistir todo en una única transacción
 /// (si algo falla, nada debe quedar parcial).
 /// </remarks>
-public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICompanyOperationalEntity
+public sealed class SupplierPayment
+    : AuditableEntity,
+        ITenantScopedEntity,
+        ICompanyOperationalEntity
 {
     public const int SystemNumberMaxLen = 30;
     public const int ReceiptNumberMaxLen = 30;
@@ -94,16 +97,19 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
     public decimal UnappliedAmount => TotalAmount - AppliedAmount;
 
     /// <summary>Número visible en pantallas/reportes: <see cref="ReceiptNumber"/> si existe, si no <see cref="SystemNumber"/>.</summary>
-    public string DisplayNumber => string.IsNullOrWhiteSpace(ReceiptNumber) ? SystemNumber : ReceiptNumber;
+    public string DisplayNumber =>
+        string.IsNullOrWhiteSpace(ReceiptNumber) ? SystemNumber : ReceiptNumber;
 
     private readonly List<SupplierPaymentMethodLine> _methodLines = new();
     public IReadOnlyList<SupplierPaymentMethodLine> MethodLines => _methodLines.AsReadOnly();
 
     private readonly List<SupplierPaymentApplicationLine> _applicationLines = new();
-    public IReadOnlyList<SupplierPaymentApplicationLine> ApplicationLines => _applicationLines.AsReadOnly();
+    public IReadOnlyList<SupplierPaymentApplicationLine> ApplicationLines =>
+        _applicationLines.AsReadOnly();
 
     private readonly List<SupplierPaymentAllocationLine> _allocationLines = new();
-    public IReadOnlyList<SupplierPaymentAllocationLine> AllocationLines => _allocationLines.AsReadOnly();
+    public IReadOnlyList<SupplierPaymentAllocationLine> AllocationLines =>
+        _allocationLines.AsReadOnly();
 
     private SupplierPayment() { }
 
@@ -150,9 +156,15 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
         if (supplierId == Guid.Empty)
             throw new ArgumentException("El proveedor es obligatorio.", nameof(supplierId));
         if (totalAmount <= 0)
-            throw new ArgumentException("El monto total del pago debe ser mayor a cero.", nameof(totalAmount));
+            throw new ArgumentException(
+                "El monto total del pago debe ser mayor a cero.",
+                nameof(totalAmount)
+            );
         if (string.IsNullOrWhiteSpace(systemNumber))
-            throw new ArgumentException("El número de sistema es obligatorio.", nameof(systemNumber));
+            throw new ArgumentException(
+                "El número de sistema es obligatorio.",
+                nameof(systemNumber)
+            );
         if (methodLines is null || methodLines.Count == 0)
             throw new ArgumentException(
                 "El pago debe tener al menos un medio de pago.",
@@ -227,7 +239,10 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
                     $"La distribución referencia un medio de pago inexistente (índice {input.MethodLineIndex}).",
                     nameof(allocations)
                 );
-            if (input.ApplicationLineIndex < 0 || input.ApplicationLineIndex >= payment._applicationLines.Count)
+            if (
+                input.ApplicationLineIndex < 0
+                || input.ApplicationLineIndex >= payment._applicationLines.Count
+            )
                 throw new ArgumentException(
                     $"La distribución referencia una aplicación inexistente (índice {input.ApplicationLineIndex}).",
                     nameof(allocations)
@@ -251,7 +266,8 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
             );
         payment.SetCreated(createdBy);
         // 02E-B — originador (CreatedBy) vs ejecutor (ConfirmedBy); por defecto el mismo usuario.
-        payment.ConfirmedByUserId = confirmedBy is { } executor && executor != Guid.Empty ? executor : createdBy;
+        payment.ConfirmedByUserId =
+            confirmedBy is { } executor && executor != Guid.Empty ? executor : createdBy;
 
         payment.RaiseDomainEvent(
             new SupplierPaymentConfirmedEvent(
@@ -261,8 +277,8 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
                 supplierId,
                 totalAmount,
                 paymentDate,
-                payment._methodLines
-                    .Select(l => new SupplierPaymentConfirmedMethodLine(
+                payment
+                    ._methodLines.Select(l => new SupplierPaymentConfirmedMethodLine(
                         l.CompanyBankAccountId,
                         l.CashRegisterId,
                         l.Amount
@@ -301,7 +317,9 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
             );
         var line =
             _methodLines.FirstOrDefault(l => l.Id == methodLineId)
-            ?? throw new DomainRuleViolationException("El medio de pago indicado no pertenece a este pago.");
+            ?? throw new DomainRuleViolationException(
+                "El medio de pago indicado no pertenece a este pago."
+            );
         line.LinkCashMovement(cashSessionId, cashMovementId);
     }
 
@@ -355,7 +373,10 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
                 "Debe indicar el motivo de la reversa bancaria: la transferencia no se ejecutó, fue rechazada por el banco o fue un error de registro."
             );
         if (bankReversalReason is { } bankReason && !Enum.IsDefined(bankReason))
-            throw new ArgumentException("El motivo de la reversa bancaria no es válido.", nameof(bankReversalReason));
+            throw new ArgumentException(
+                "El motivo de la reversa bancaria no es válido.",
+                nameof(bankReversalReason)
+            );
 
         var trimmedReason = reason.Trim();
 

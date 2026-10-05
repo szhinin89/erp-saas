@@ -53,7 +53,9 @@ public sealed class PaymentMethodSriMappingBackfillService
         _logger = logger;
     }
 
-    public async Task<PaymentMethodSriMappingBackfillResult> RunAsync(CancellationToken ct = default)
+    public async Task<PaymentMethodSriMappingBackfillResult> RunAsync(
+        CancellationToken ct = default
+    )
     {
         // Descubrimiento cross-tenant de solo lectura: únicamente TenantIds con filas pendientes.
         var tenantIds = await _db
@@ -63,9 +65,7 @@ public sealed class PaymentMethodSriMappingBackfillService
             .Distinct()
             .ToListAsync(ct);
 
-        var activePaymentMethodCodes = (
-            await _catalogRepo.GetActivePaymentMethodsAsync(ct)
-        )
+        var activePaymentMethodCodes = (await _catalogRepo.GetActivePaymentMethodsAsync(ct))
             .Select(c => c.Code)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -81,7 +81,9 @@ public sealed class PaymentMethodSriMappingBackfillService
             // Filtro global de tenant (JobTenantContext) + TenantId explícito: re-lee el estado
             // actual, así una fila mapeada entre el descubrimiento y esta lectura ya no aparece.
             var candidates = await _db
-                .PaymentMethods.Where(pm => pm.TenantId == tenantId && pm.SriPaymentMethodCode == null)
+                .PaymentMethods.Where(pm =>
+                    pm.TenantId == tenantId && pm.SriPaymentMethodCode == null
+                )
                 .ToListAsync(ct);
             candidatesFound += candidates.Count;
 

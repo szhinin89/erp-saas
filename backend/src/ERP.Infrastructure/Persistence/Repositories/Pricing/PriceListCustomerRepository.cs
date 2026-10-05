@@ -41,7 +41,10 @@ public sealed class PriceListCustomerRepository : IPriceListCustomerRepository
         CancellationToken ct = default
     ) =>
         Scoped(tenantId)
-            .FirstOrDefaultAsync(x => x.PriceListId == priceListId && x.CustomerId == customerId, ct);
+            .FirstOrDefaultAsync(
+                x => x.PriceListId == priceListId && x.CustomerId == customerId,
+                ct
+            );
 
     public Task AddAsync(PriceListCustomer assignment, CancellationToken ct = default) =>
         _context.PriceListCustomers.AddAsync(assignment, ct).AsTask();

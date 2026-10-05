@@ -5,7 +5,10 @@ using ERP.Domain.Modules.Expenses.Events;
 
 namespace ERP.Domain.Modules.Expenses.Entities;
 
-public sealed class ExpenseDocument : AuditableEntity, ITenantScopedEntity, ICompanyOperationalEntity
+public sealed class ExpenseDocument
+    : AuditableEntity,
+        ITenantScopedEntity,
+        ICompanyOperationalEntity
 {
     public const int DocumentTypeMaxLen = 5;
     public const int DocumentNumberMaxLen = 30;
@@ -14,8 +17,10 @@ public sealed class ExpenseDocument : AuditableEntity, ITenantScopedEntity, ICom
     public const int SupplierTaxIdMaxLen = 20;
     public const int PaymentTermNameMaxLen = 120;
     public const int NotesMaxLen = 500;
+
     /// <summary>Código de sustento tributario SRI (catálogo <c>global.sri_tax_support</c>, 2 dígitos: "01".."19"). Mismo campo que <see cref="ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice.TaxSupportCode"/> — misma semántica documental (Tabla 5 Ficha Técnica SRI), aplicada al documento origen de Gastos.</summary>
     public const int TaxSupportCodeMaxLen = 5;
+
     /// <summary>Mismo campo/longitud que <see cref="ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionDocument.AccessKey"/> — clave de acceso SRI de 49 dígitos.</summary>
     public const int AccessKeyMaxLen = 49;
 
@@ -116,19 +121,40 @@ public sealed class ExpenseDocument : AuditableEntity, ITenantScopedEntity, ICom
         if (supplierId == Guid.Empty)
             throw new ArgumentException("El proveedor es obligatorio.", nameof(supplierId));
         if (string.IsNullOrWhiteSpace(supplierName))
-            throw new ArgumentException("El nombre del proveedor es obligatorio.", nameof(supplierName));
+            throw new ArgumentException(
+                "El nombre del proveedor es obligatorio.",
+                nameof(supplierName)
+            );
         if (string.IsNullOrWhiteSpace(supplierTaxId))
-            throw new ArgumentException("El RUC/CI del proveedor es obligatorio.", nameof(supplierTaxId));
+            throw new ArgumentException(
+                "El RUC/CI del proveedor es obligatorio.",
+                nameof(supplierTaxId)
+            );
         if (string.IsNullOrWhiteSpace(documentType))
-            throw new ArgumentException("El tipo de documento es obligatorio.", nameof(documentType));
+            throw new ArgumentException(
+                "El tipo de documento es obligatorio.",
+                nameof(documentType)
+            );
         if (string.IsNullOrWhiteSpace(documentNumber))
-            throw new ArgumentException("El número de documento es obligatorio.", nameof(documentNumber));
+            throw new ArgumentException(
+                "El número de documento es obligatorio.",
+                nameof(documentNumber)
+            );
         if (paymentTermId == Guid.Empty)
-            throw new ArgumentException("La condición de pago es obligatoria.", nameof(paymentTermId));
+            throw new ArgumentException(
+                "La condición de pago es obligatoria.",
+                nameof(paymentTermId)
+            );
         if (paymentTermInstallments < 1)
-            throw new ArgumentException("Las cuotas deben ser al menos 1.", nameof(paymentTermInstallments));
+            throw new ArgumentException(
+                "Las cuotas deben ser al menos 1.",
+                nameof(paymentTermInstallments)
+            );
         if (paymentTermDaysBetween < 0)
-            throw new ArgumentException("Los días entre cuotas no pueden ser negativos.", nameof(paymentTermDaysBetween));
+            throw new ArgumentException(
+                "Los días entre cuotas no pueden ser negativos.",
+                nameof(paymentTermDaysBetween)
+            );
 
         var document = new ExpenseDocument
         {
@@ -168,7 +194,10 @@ public sealed class ExpenseDocument : AuditableEntity, ITenantScopedEntity, ICom
         foreach (var line in lines)
         {
             if (line.TenantId != TenantId || line.ExpenseDocumentId != Id)
-                throw new ArgumentException("La línea no pertenece al documento de gasto.", nameof(lines));
+                throw new ArgumentException(
+                    "La línea no pertenece al documento de gasto.",
+                    nameof(lines)
+                );
 
             line.SetSortOrder(order++);
             _lines.Add(line);
@@ -200,19 +229,40 @@ public sealed class ExpenseDocument : AuditableEntity, ITenantScopedEntity, ICom
         if (supplierId == Guid.Empty)
             throw new ArgumentException("El proveedor es obligatorio.", nameof(supplierId));
         if (string.IsNullOrWhiteSpace(supplierName))
-            throw new ArgumentException("El nombre del proveedor es obligatorio.", nameof(supplierName));
+            throw new ArgumentException(
+                "El nombre del proveedor es obligatorio.",
+                nameof(supplierName)
+            );
         if (string.IsNullOrWhiteSpace(supplierTaxId))
-            throw new ArgumentException("El RUC/CI del proveedor es obligatorio.", nameof(supplierTaxId));
+            throw new ArgumentException(
+                "El RUC/CI del proveedor es obligatorio.",
+                nameof(supplierTaxId)
+            );
         if (string.IsNullOrWhiteSpace(documentType))
-            throw new ArgumentException("El tipo de documento es obligatorio.", nameof(documentType));
+            throw new ArgumentException(
+                "El tipo de documento es obligatorio.",
+                nameof(documentType)
+            );
         if (string.IsNullOrWhiteSpace(documentNumber))
-            throw new ArgumentException("El número de documento es obligatorio.", nameof(documentNumber));
+            throw new ArgumentException(
+                "El número de documento es obligatorio.",
+                nameof(documentNumber)
+            );
         if (paymentTermId == Guid.Empty)
-            throw new ArgumentException("La condición de pago es obligatoria.", nameof(paymentTermId));
+            throw new ArgumentException(
+                "La condición de pago es obligatoria.",
+                nameof(paymentTermId)
+            );
         if (paymentTermInstallments < 1)
-            throw new ArgumentException("Las cuotas deben ser al menos 1.", nameof(paymentTermInstallments));
+            throw new ArgumentException(
+                "Las cuotas deben ser al menos 1.",
+                nameof(paymentTermInstallments)
+            );
         if (paymentTermDaysBetween < 0)
-            throw new ArgumentException("Los días entre cuotas no pueden ser negativos.", nameof(paymentTermDaysBetween));
+            throw new ArgumentException(
+                "Los días entre cuotas no pueden ser negativos.",
+                nameof(paymentTermDaysBetween)
+            );
 
         SupplierId = supplierId;
         SupplierName = supplierName.Trim();
@@ -249,16 +299,25 @@ public sealed class ExpenseDocument : AuditableEntity, ITenantScopedEntity, ICom
         foreach (var inst in installments)
         {
             if (inst.Number < 1)
-                throw new ArgumentException("El número de cuota debe ser >= 1.", nameof(installments));
+                throw new ArgumentException(
+                    "El número de cuota debe ser >= 1.",
+                    nameof(installments)
+                );
             if (inst.Amount <= 0)
-                throw new ArgumentException("El monto de la cuota debe ser mayor a cero.", nameof(installments));
+                throw new ArgumentException(
+                    "El monto de la cuota debe ser mayor a cero.",
+                    nameof(installments)
+                );
             if (inst.DueDate < IssueDate)
                 throw new ArgumentException(
                     "La fecha de vencimiento no puede ser anterior a la fecha de emisión.",
                     nameof(installments)
                 );
             if (!numbers.Add(inst.Number))
-                throw new ArgumentException("El número de cuota está duplicado.", nameof(installments));
+                throw new ArgumentException(
+                    "El número de cuota está duplicado.",
+                    nameof(installments)
+                );
         }
 
         var total = GrandTotal;
@@ -271,7 +330,14 @@ public sealed class ExpenseDocument : AuditableEntity, ITenantScopedEntity, ICom
         _paymentSchedules.Clear();
         foreach (var inst in installments.OrderBy(i => i.Number))
             _paymentSchedules.Add(
-                ExpensePaymentSchedule.Create(Id, TenantId, inst.Number, inst.DueDate, inst.Amount, inst.Notes)
+                ExpensePaymentSchedule.Create(
+                    Id,
+                    TenantId,
+                    inst.Number,
+                    inst.DueDate,
+                    inst.Amount,
+                    inst.Notes
+                )
             );
     }
 
@@ -285,7 +351,10 @@ public sealed class ExpenseDocument : AuditableEntity, ITenantScopedEntity, ICom
     /// cuenta (esa responsabilidad es de Application/Accounting, no de este aggregate).
     /// </summary>
     public void Confirm(
-        IReadOnlyDictionary<Guid, (Guid AccountId, string? Code, string? Name)> lineAccountSnapshots,
+        IReadOnlyDictionary<
+            Guid,
+            (Guid AccountId, string? Code, string? Name)
+        > lineAccountSnapshots,
         Guid confirmedBy
     )
     {
@@ -370,6 +439,8 @@ public sealed class ExpenseDocument : AuditableEntity, ITenantScopedEntity, ICom
     private void EnsureDraft()
     {
         if (Status != ExpenseStatus.Draft)
-            throw new DomainRuleViolationException("Solo se pueden editar gastos en estado borrador.");
+            throw new DomainRuleViolationException(
+                "Solo se pueden editar gastos en estado borrador."
+            );
     }
 }

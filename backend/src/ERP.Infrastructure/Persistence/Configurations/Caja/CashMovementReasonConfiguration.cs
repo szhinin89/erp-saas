@@ -44,12 +44,23 @@ public sealed class CashMovementReasonConfiguration : IEntityTypeConfiguration<C
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
         builder
-            .HasIndex(x => new { x.TenantId, x.CompanyId, x.Code })
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.CompanyId,
+                x.Code,
+            })
             .IsUnique()
             .HasDatabaseName("uq_cash_movement_reasons_tenant_company_code");
 
         builder
-            .HasIndex(x => new { x.TenantId, x.CompanyId, x.MovementType, x.IsActive })
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.CompanyId,
+                x.MovementType,
+                x.IsActive,
+            })
             .HasDatabaseName("ix_cash_movement_reasons_tenant_company_type_active");
     }
 }

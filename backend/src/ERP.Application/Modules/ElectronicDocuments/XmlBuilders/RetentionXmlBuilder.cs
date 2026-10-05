@@ -1,12 +1,12 @@
-using ERP.Application.Common;
-using ERP.Application.Modules.ElectronicDocuments.DTOs;
-using ERP.Domain.Modules.ElectronicDocuments.Enums;
-using ERP.Domain.Modules.ElectronicDocuments.ValueObjects;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
+using ERP.Application.Common;
+using ERP.Application.Modules.ElectronicDocuments.DTOs;
+using ERP.Domain.Modules.ElectronicDocuments.Enums;
+using ERP.Domain.Modules.ElectronicDocuments.ValueObjects;
 
 namespace ERP.Application.Modules.ElectronicDocuments.XmlBuilders;
 
@@ -101,7 +101,9 @@ public sealed class RetentionXmlBuilder : IRetentionXmlBuilder
         var errors = new List<string>();
 
         if (data.Lines.Count == 0)
-            errors.Add("Un comprobante de retención debe tener al menos una línea de impuesto retenido.");
+            errors.Add(
+                "Un comprobante de retención debe tener al menos una línea de impuesto retenido."
+            );
 
         if (string.IsNullOrWhiteSpace(data.Issuer.TaxId) || data.Issuer.TaxId.Length != 13)
             errors.Add("El RUC del emisor debe tener 13 dígitos.");
@@ -242,7 +244,10 @@ public sealed class RetentionXmlBuilder : IRetentionXmlBuilder
                 ? null
                 : new XElement("contribuyenteEspecial", data.RetentionInfo.SpecialTaxpayerNumber),
             new XElement("obligadoContabilidad", data.Issuer.IsAccountingRequired ? "SI" : "NO"),
-            new XElement("tipoIdentificacionSujetoRetenido", data.SubjectWithheld.IdentificationType),
+            new XElement(
+                "tipoIdentificacionSujetoRetenido",
+                data.SubjectWithheld.IdentificationType
+            ),
             new XElement("razonSocialSujetoRetenido", data.SubjectWithheld.LegalName),
             new XElement("identificacionSujetoRetenido", data.SubjectWithheld.IdentificationNumber),
             new XElement("periodoFiscal", data.RetentionInfo.FiscalPeriod)

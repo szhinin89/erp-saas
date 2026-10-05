@@ -1,3 +1,4 @@
+using System.Globalization;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
@@ -12,7 +13,6 @@ using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Interfaces;
 using ERP.Domain.Modules.SriCatalogs.Entities;
-using System.Globalization;
 
 namespace ERP.Application.Modules.Sales.Services;
 
@@ -283,7 +283,9 @@ public sealed class SalesInvoiceElectronicDocumentDataProvider : IElectronicDocu
     {
         var taxes = line
             .Taxes.OrderBy(t =>
-                ElectronicDocumentTaxSortOrder.TryGetValue(t.TaxCode, out var order) ? order : int.MaxValue
+                ElectronicDocumentTaxSortOrder.TryGetValue(t.TaxCode, out var order)
+                    ? order
+                    : int.MaxValue
             )
             .Select(t => new ElectronicDocumentDetailTax(
                 ElectronicDocumentTaxLabelByCode.TryGetValue(t.TaxCode, out var label)

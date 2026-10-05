@@ -1,6 +1,6 @@
-using ERP.Domain.Modules.Purchases;
 using System.Globalization;
 using System.Xml.Linq;
+using ERP.Domain.Modules.Purchases;
 
 namespace ERP.Application.Modules.Purchases.PurchaseReception.XmlParsing;
 
@@ -84,10 +84,28 @@ public static class PurchaseReceptionXmlViewExtractor
         };
     }
 
-    private static readonly PurchaseReceptionXmlViewExtraTotals EmptyTotals = new(null, null, null, null);
+    private static readonly PurchaseReceptionXmlViewExtraTotals EmptyTotals = new(
+        null,
+        null,
+        null,
+        null
+    );
 
-    private static readonly PurchaseReceptionXmlViewExtras Empty =
-        new(null, null, null, null, null, EmptyTotals, 0m, 0m, [], [], null, null, null);
+    private static readonly PurchaseReceptionXmlViewExtras Empty = new(
+        null,
+        null,
+        null,
+        null,
+        null,
+        EmptyTotals,
+        0m,
+        0m,
+        [],
+        [],
+        null,
+        null,
+        null
+    );
 
     private static PurchaseReceptionXmlViewExtras ExtractFromInvoice(XElement factura)
     {
@@ -171,7 +189,9 @@ public static class PurchaseReceptionXmlViewExtractor
             .ToList()
         ?? [];
 
-    private static IReadOnlyList<PurchaseReceptionXmlViewExtraLine> ParseLines(XElement? detalles) =>
+    private static IReadOnlyList<PurchaseReceptionXmlViewExtraLine> ParseLines(
+        XElement? detalles
+    ) =>
         detalles
             ?.Elements("detalle")
             .Select(d => new PurchaseReceptionXmlViewExtraLine(

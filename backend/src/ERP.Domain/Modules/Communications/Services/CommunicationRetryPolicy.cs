@@ -25,12 +25,22 @@ public static class CommunicationRetryPolicy
     {
         var attempts = retryCount + 1;
         var terminal =
-            category is CommunicationFailureCategory.Permanent or CommunicationFailureCategory.Configuration
+            category
+                is CommunicationFailureCategory.Permanent
+                    or CommunicationFailureCategory.Configuration
             || attempts >= maxRetries;
 
         return terminal
-            ? new CommunicationFailureOutcome(CommunicationStatus.Failed, attempts, NextAttemptAtUtc: null)
-            : new CommunicationFailureOutcome(CommunicationStatus.Pending, attempts, utcNow + Backoff(attempts));
+            ? new CommunicationFailureOutcome(
+                CommunicationStatus.Failed,
+                attempts,
+                NextAttemptAtUtc: null
+            )
+            : new CommunicationFailureOutcome(
+                CommunicationStatus.Pending,
+                attempts,
+                utcNow + Backoff(attempts)
+            );
     }
 
     /// <summary>

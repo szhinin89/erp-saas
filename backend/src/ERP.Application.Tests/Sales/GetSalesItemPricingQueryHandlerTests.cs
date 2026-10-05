@@ -65,7 +65,11 @@ public sealed class GetSalesItemPricingQueryHandlerTests
             );
     }
 
-    private static Item CreateItem(bool isForSale = true, bool isActive = true, string? vatCode = "10")
+    private static Item CreateItem(
+        bool isForSale = true,
+        bool isActive = true,
+        string? vatCode = "10"
+    )
     {
         var item = Item.Create(
             TenantId,
@@ -79,7 +83,8 @@ public sealed class GetSalesItemPricingQueryHandlerTests
             ItemStockConfig.Create(),
             UserId
         );
-        if (!isActive) item.Disable(UserId);
+        if (!isActive)
+            item.Disable(UserId);
         return item;
     }
 
@@ -101,13 +106,17 @@ public sealed class GetSalesItemPricingQueryHandlerTests
     {
         var item = CreateItem();
         var f = new Fixture();
-        f.ItemRepo
-            .Setup(r =>
-                r.GetByIdWithSpecialTaxConfigurationsAsync(item.Id, TenantId, It.IsAny<CancellationToken>())
+        f.ItemRepo.Setup(r =>
+                r.GetByIdWithSpecialTaxConfigurationsAsync(
+                    item.Id,
+                    TenantId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(item);
-        f.PricingResolver
-            .Setup(p => p.ResolveAsync(new PricingContext(item.Id, null), It.IsAny<CancellationToken>()))
+        f.PricingResolver.Setup(p =>
+                p.ResolveAsync(new PricingContext(item.Id, null), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(Result<PricingResult>.Success(SamplePricing(item.Id)));
 
         var result = await f.BuildHandler()
@@ -115,11 +124,12 @@ public sealed class GetSalesItemPricingQueryHandlerTests
 
         result.IsSuccess.Should().BeTrue(result.Error);
         f.ItemRepo.Verify(
-            r => r.GetByIdWithSpecialTaxConfigurationsAsync(
-                item.Id,
-                TenantId,
-                It.IsAny<CancellationToken>()
-            ),
+            r =>
+                r.GetByIdWithSpecialTaxConfigurationsAsync(
+                    item.Id,
+                    TenantId,
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Once
         );
         f.ItemRepo.Verify(
@@ -134,16 +144,19 @@ public sealed class GetSalesItemPricingQueryHandlerTests
         var item = CreateItem();
         var f = new Fixture();
         var pricing = SamplePricing(item.Id);
-        f.ItemRepo
-            .Setup(r =>
-                r.GetByIdWithSpecialTaxConfigurationsAsync(item.Id, TenantId, It.IsAny<CancellationToken>())
+        f.ItemRepo.Setup(r =>
+                r.GetByIdWithSpecialTaxConfigurationsAsync(
+                    item.Id,
+                    TenantId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(item);
-        f.PricingResolver
-            .Setup(p => p.ResolveAsync(new PricingContext(item.Id, null), It.IsAny<CancellationToken>()))
+        f.PricingResolver.Setup(p =>
+                p.ResolveAsync(new PricingContext(item.Id, null), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(Result<PricingResult>.Success(pricing));
-        f.TaxResolver
-            .Setup(t => t.GetVatRateWithNameAsync("10", It.IsAny<CancellationToken>()))
+        f.TaxResolver.Setup(t => t.GetVatRateWithNameAsync("10", It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TaxRateResult(15m, "IVA 15%"));
 
         var result = await f.BuildHandler()
@@ -171,13 +184,9 @@ public sealed class GetSalesItemPricingQueryHandlerTests
     public async Task Resuelve_ICE_desde_SpecialTaxConfigurations_cuando_la_empresa_es_responsable()
     {
         var item = CreateItem();
-        item.ReplaceSpecialTaxConfigurations(
-            [(SriTaxCategoryCodes.Ice, "3021")],
-            UserId
-        );
+        item.ReplaceSpecialTaxConfigurations([(SriTaxCategoryCodes.Ice, "3021")], UserId);
         var f = new Fixture();
-        f.CompanyTaxRepo
-            .Setup(r =>
+        f.CompanyTaxRepo.Setup(r =>
                 r.GetResponsibleSriTaxCategoryCodesAsync(
                     CompanyId,
                     TenantId,
@@ -185,16 +194,19 @@ public sealed class GetSalesItemPricingQueryHandlerTests
                 )
             )
             .ReturnsAsync(new[] { SriTaxCategoryCodes.Ice });
-        f.ItemRepo
-            .Setup(r =>
-                r.GetByIdWithSpecialTaxConfigurationsAsync(item.Id, TenantId, It.IsAny<CancellationToken>())
+        f.ItemRepo.Setup(r =>
+                r.GetByIdWithSpecialTaxConfigurationsAsync(
+                    item.Id,
+                    TenantId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(item);
-        f.PricingResolver
-            .Setup(p => p.ResolveAsync(new PricingContext(item.Id, null), It.IsAny<CancellationToken>()))
+        f.PricingResolver.Setup(p =>
+                p.ResolveAsync(new PricingContext(item.Id, null), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(Result<PricingResult>.Success(SamplePricing(item.Id)));
-        f.TaxResolver
-            .Setup(t => t.GetIceRateWithNameAsync("3021", It.IsAny<CancellationToken>()))
+        f.TaxResolver.Setup(t => t.GetIceRateWithNameAsync("3021", It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TaxRateResult(0.5m, "ICE 50%"));
 
         var result = await f.BuildHandler()
@@ -213,13 +225,20 @@ public sealed class GetSalesItemPricingQueryHandlerTests
         var item = CreateItem();
         var customerId = Guid.NewGuid();
         var f = new Fixture();
-        f.ItemRepo
-            .Setup(r =>
-                r.GetByIdWithSpecialTaxConfigurationsAsync(item.Id, TenantId, It.IsAny<CancellationToken>())
+        f.ItemRepo.Setup(r =>
+                r.GetByIdWithSpecialTaxConfigurationsAsync(
+                    item.Id,
+                    TenantId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(item);
-        f.PricingResolver
-            .Setup(p => p.ResolveAsync(new PricingContext(item.Id, customerId), It.IsAny<CancellationToken>()))
+        f.PricingResolver.Setup(p =>
+                p.ResolveAsync(
+                    new PricingContext(item.Id, customerId),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(Result<PricingResult>.Success(SamplePricing(item.Id)));
 
         var result = await f.BuildHandler()
@@ -227,7 +246,11 @@ public sealed class GetSalesItemPricingQueryHandlerTests
 
         result.IsSuccess.Should().BeTrue(result.Error);
         f.PricingResolver.Verify(
-            p => p.ResolveAsync(new PricingContext(item.Id, customerId), It.IsAny<CancellationToken>()),
+            p =>
+                p.ResolveAsync(
+                    new PricingContext(item.Id, customerId),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Once
         );
     }
@@ -237,9 +260,12 @@ public sealed class GetSalesItemPricingQueryHandlerTests
     {
         var f = new Fixture();
         var missingId = Guid.NewGuid();
-        f.ItemRepo
-            .Setup(r =>
-                r.GetByIdWithSpecialTaxConfigurationsAsync(missingId, TenantId, It.IsAny<CancellationToken>())
+        f.ItemRepo.Setup(r =>
+                r.GetByIdWithSpecialTaxConfigurationsAsync(
+                    missingId,
+                    TenantId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((Item?)null);
 
@@ -255,9 +281,12 @@ public sealed class GetSalesItemPricingQueryHandlerTests
     {
         var item = CreateItem(isForSale: false);
         var f = new Fixture();
-        f.ItemRepo
-            .Setup(r =>
-                r.GetByIdWithSpecialTaxConfigurationsAsync(item.Id, TenantId, It.IsAny<CancellationToken>())
+        f.ItemRepo.Setup(r =>
+                r.GetByIdWithSpecialTaxConfigurationsAsync(
+                    item.Id,
+                    TenantId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(item);
 

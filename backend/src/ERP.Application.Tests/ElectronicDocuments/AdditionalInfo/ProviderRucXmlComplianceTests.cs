@@ -1,3 +1,5 @@
+using System.Xml;
+using System.Xml.Linq;
 using ERP.Application.Common;
 using ERP.Application.Modules.ElectronicDocuments.AdditionalInfo;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
@@ -13,8 +15,6 @@ using ERP.Infrastructure.Services.ElectronicDocuments;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using System.Xml;
-using System.Xml.Linq;
 
 namespace ERP.Application.Tests.ElectronicDocuments.AdditionalInfo;
 
@@ -66,13 +66,42 @@ public sealed class ProviderRucXmlComplianceTests
         IReadOnlyList<ElectronicDocumentAdditionalField> additionalInfo
     ) =>
         new(
-            Emission: new ElectronicDocumentEmissionContext("1", "1", "01", "001", "Av. Amazonas", "001", "000000123", IssueDate),
-            Issuer: new ElectronicDocumentIssuerData("1790012345001", "ACME CIA LTDA", "ACME", "Av. Amazonas", null, true),
-            Counterparty: new ElectronicDocumentCounterpartyData("05", "1710034065", "Juan Perez", "Calle Falsa 123", "juan@example.com"),
+            Emission: new ElectronicDocumentEmissionContext(
+                "1",
+                "1",
+                "01",
+                "001",
+                "Av. Amazonas",
+                "001",
+                "000000123",
+                IssueDate
+            ),
+            Issuer: new ElectronicDocumentIssuerData(
+                "1790012345001",
+                "ACME CIA LTDA",
+                "ACME",
+                "Av. Amazonas",
+                null,
+                true
+            ),
+            Counterparty: new ElectronicDocumentCounterpartyData(
+                "05",
+                "1710034065",
+                "Juan Perez",
+                "Calle Falsa 123",
+                "juan@example.com"
+            ),
             Details:
             [
-                new ElectronicDocumentDetailLine("SKU-001", "Producto de prueba", 2m, 10m, 0m, 20m,
-                    [new ElectronicDocumentDetailTax("VAT", "2", 20m, 15m, 3m)]),
+                new ElectronicDocumentDetailLine(
+                    "SKU-001",
+                    "Producto de prueba",
+                    2m,
+                    10m,
+                    0m,
+                    20m,
+                    [new ElectronicDocumentDetailTax("VAT", "2", 20m, 15m, 3m)]
+                ),
             ],
             TaxSummary: [new ElectronicDocumentTaxSummary("VAT", "2", 20m, 3m)],
             Totals: new ElectronicDocumentTotals(20m, 0m, 3m, 23m, "USD"),
@@ -83,10 +112,23 @@ public sealed class ProviderRucXmlComplianceTests
     private static ElectronicDocumentData CreditNoteData() =>
         InvoiceData([]) with
         {
-            Emission = new ElectronicDocumentEmissionContext("1", "1", "04", "001", "Av. Amazonas", "001", "000000007", IssueDate),
+            Emission = new ElectronicDocumentEmissionContext(
+                "1",
+                "1",
+                "04",
+                "001",
+                "Av. Amazonas",
+                "001",
+                "000000007",
+                IssueDate
+            ),
             Payments = [],
             Reason = "Producto en mal estado",
-            ModifiedDocument = new ElectronicDocumentModifiedReference("01", "001-001-000000123", IssueDate.AddDays(-5)),
+            ModifiedDocument = new ElectronicDocumentModifiedReference(
+                "01",
+                "001-001-000000123",
+                IssueDate.AddDays(-5)
+            ),
         };
 
     private static async Task<Result<ElectronicDocumentXml>> BuildCommercialAsync(
@@ -99,41 +141,64 @@ public sealed class ProviderRucXmlComplianceTests
         provider
             .Setup(p => p.GetDataAsync(Reference, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<ElectronicDocumentData>.Success(data));
-        IElectronicDocumentXmlBuilder builder = type == ElectronicDocumentType.Invoice
-            ? new InvoiceXmlBuilder(new FakeTaxCategoryCodeResolver())
-            : new CreditNoteXmlBuilder(new FakeTaxCategoryCodeResolver());
+        IElectronicDocumentXmlBuilder builder =
+            type == ElectronicDocumentType.Invoice
+                ? new InvoiceXmlBuilder(new FakeTaxCategoryCodeResolver())
+                : new CreditNoteXmlBuilder(new FakeTaxCategoryCodeResolver());
 
-        return await new CommercialElectronicDocumentXmlSupplier(type, provider.Object, builder, composer)
-            .BuildXmlAsync(Reference, CancellationToken.None);
+        return await new CommercialElectronicDocumentXmlSupplier(
+            type,
+            provider.Object,
+            builder,
+            composer
+        ).BuildXmlAsync(Reference, CancellationToken.None);
     }
 
     [Fact]
     public async Task Factura_emite_RUC_Proveedor_y_Observacion_en_orden_determinista_y_pasa_el_XSD_1_1_0()
     {
-        var data = InvoiceData([new ElectronicDocumentAdditionalField("Observación", "Entregar en bodega")]);
+        var data = InvoiceData([
+            new ElectronicDocumentAdditionalField("Observación", "Entregar en bodega"),
+        ]);
 
         var result = await BuildCommercialAsync(ElectronicDocumentType.Invoice, data, Exigible());
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        AdditionalFields(result.Value!.Xml).Should().Equal(
-            (SriAdditionalInfoFieldNames.SystemProviderRuc, AdditionalInfoTestDoubles.ProviderRuc),
-            ("Observación", "Entregar en bodega")
-        );
+        AdditionalFields(result.Value!.Xml)
+            .Should()
+            .Equal(
+                (
+                    SriAdditionalInfoFieldNames.SystemProviderRuc,
+                    AdditionalInfoTestDoubles.ProviderRuc
+                ),
+                ("Observación", "Entregar en bodega")
+            );
         ValidateAgainstOfficialXsd(result.Value.Xml, ElectronicDocumentType.Invoice, "1.1.0");
 
         var ride = new InvoiceRideXmlParser().Parse(result.Value.Xml);
         ride.IsSuccess.Should().BeTrue(ride.Error);
-        ride.Value!.AdditionalInfo.Select(a => (a.Name, a.Value)).Should().Contain(
-            (SriAdditionalInfoFieldNames.SystemProviderRuc, AdditionalInfoTestDoubles.ProviderRuc)
-        );
+        ride.Value!.AdditionalInfo.Select(a => (a.Name, a.Value))
+            .Should()
+            .Contain(
+                (
+                    SriAdditionalInfoFieldNames.SystemProviderRuc,
+                    AdditionalInfoTestDoubles.ProviderRuc
+                )
+            );
     }
 
     [Fact]
     public async Task Factura_antes_de_EffectiveDate_produce_exactamente_el_XML_actual()
     {
-        var data = InvoiceData([new ElectronicDocumentAdditionalField("Observación", "Entregar en bodega")]);
+        var data = InvoiceData([
+            new ElectronicDocumentAdditionalField("Observación", "Entregar en bodega"),
+        ]);
 
-        var withRule = await BuildCommercialAsync(ElectronicDocumentType.Invoice, data, AntesDeLaFecha());
+        var withRule = await BuildCommercialAsync(
+            ElectronicDocumentType.Invoice,
+            data,
+            AntesDeLaFecha()
+        );
         var current = await BuildCommercialAsync(
             ElectronicDocumentType.Invoice,
             data,
@@ -148,25 +213,43 @@ public sealed class ProviderRucXmlComplianceTests
     [Fact]
     public async Task Nota_de_credito_emite_RUC_Proveedor_pasa_el_XSD_1_1_0_y_lo_muestra_el_RIDE()
     {
-        var result = await BuildCommercialAsync(ElectronicDocumentType.CreditNote, CreditNoteData(), Exigible());
+        var result = await BuildCommercialAsync(
+            ElectronicDocumentType.CreditNote,
+            CreditNoteData(),
+            Exigible()
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        AdditionalFields(result.Value!.Xml).Should().Equal(
-            (SriAdditionalInfoFieldNames.SystemProviderRuc, AdditionalInfoTestDoubles.ProviderRuc)
-        );
+        AdditionalFields(result.Value!.Xml)
+            .Should()
+            .Equal(
+                (
+                    SriAdditionalInfoFieldNames.SystemProviderRuc,
+                    AdditionalInfoTestDoubles.ProviderRuc
+                )
+            );
         ValidateAgainstOfficialXsd(result.Value.Xml, ElectronicDocumentType.CreditNote, "1.1.0");
 
         var ride = new CreditNoteRideXmlParser().Parse(result.Value.Xml);
         ride.IsSuccess.Should().BeTrue(ride.Error);
-        ride.Value!.AdditionalInfo.Select(a => (a.Name, a.Value)).Should().Equal(
-            (SriAdditionalInfoFieldNames.SystemProviderRuc, AdditionalInfoTestDoubles.ProviderRuc)
-        );
+        ride.Value!.AdditionalInfo.Select(a => (a.Name, a.Value))
+            .Should()
+            .Equal(
+                (
+                    SriAdditionalInfoFieldNames.SystemProviderRuc,
+                    AdditionalInfoTestDoubles.ProviderRuc
+                )
+            );
     }
 
     [Fact]
     public async Task Nota_de_credito_antes_de_EffectiveDate_produce_exactamente_el_XML_actual()
     {
-        var withRule = await BuildCommercialAsync(ElectronicDocumentType.CreditNote, CreditNoteData(), AntesDeLaFecha());
+        var withRule = await BuildCommercialAsync(
+            ElectronicDocumentType.CreditNote,
+            CreditNoteData(),
+            AntesDeLaFecha()
+        );
         var current = await BuildCommercialAsync(
             ElectronicDocumentType.CreditNote,
             CreditNoteData(),
@@ -184,10 +267,22 @@ public sealed class ProviderRucXmlComplianceTests
             AdditionalInfoTestDoubles.ProviderSettings(false, IssueDate)
         );
 
-        var result = await BuildCommercialAsync(ElectronicDocumentType.Invoice, InvoiceData([]), composer);
+        var result = await BuildCommercialAsync(
+            ElectronicDocumentType.Invoice,
+            InvoiceData([]),
+            composer
+        );
 
         result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ERP.Application.Common.ApiResponseCodes.ElectronicDocuments.SystemProviderRucNotConfigured);
+        result
+            .Code.Should()
+            .Be(
+                ERP.Application
+                    .Common
+                    .ApiResponseCodes
+                    .ElectronicDocuments
+                    .SystemProviderRucNotConfigured
+            );
     }
 
     // ── Retención (07) ───────────────────────────────────────────────────
@@ -195,22 +290,70 @@ public sealed class ProviderRucXmlComplianceTests
     private static RetentionElectronicDocumentData RetentionData() =>
         new(
             Metadata: new RetentionElectronicDocumentMetadata(
-                Guid.NewGuid(), Reference.TenantId, Reference.CompanyId, Guid.NewGuid(),
-                RetentionSourceDocumentType.ExpenseDocument, Guid.NewGuid(),
+                Guid.NewGuid(),
+                Reference.TenantId,
+                Reference.CompanyId,
+                Guid.NewGuid(),
+                RetentionSourceDocumentType.ExpenseDocument,
+                Guid.NewGuid(),
                 new DateTime(2026, 11, 3, 12, 0, 0, DateTimeKind.Utc)
             ),
-            Emission: new ElectronicDocumentEmissionContext("1", "1", "07", "001", "Av. Principal 123", "001", "000000001", IssueDate),
+            Emission: new ElectronicDocumentEmissionContext(
+                "1",
+                "1",
+                "07",
+                "001",
+                "Av. Principal 123",
+                "001",
+                "000000001",
+                IssueDate
+            ),
             NumeroCompleto: "001-001-000000001",
-            Issuer: new ElectronicDocumentIssuerData("1790012345001", "Empresa Test S.A.", "Empresa Test", "Matriz 456", null, true),
+            Issuer: new ElectronicDocumentIssuerData(
+                "1790012345001",
+                "Empresa Test S.A.",
+                "Empresa Test",
+                "Matriz 456",
+                null,
+                true
+            ),
             RetentionInfo: new RetentionElectronicDocumentInfo(null, "11/2026"),
-            SubjectWithheld: new ElectronicDocumentCounterpartyData("04", "1792146739001", "Proveedor Test", null, null),
+            SubjectWithheld: new ElectronicDocumentCounterpartyData(
+                "04",
+                "1792146739001",
+                "Proveedor Test",
+                null,
+                null
+            ),
             SourceDocument: new RetentionElectronicDocumentSourceDocument(
-                "01", "01", "001-001-000000456", "1234567890", IssueDate.AddDays(-2), 100m, 115m
+                "01",
+                "01",
+                "001-001-000000456",
+                "1234567890",
+                IssueDate.AddDays(-2),
+                100m,
+                115m
             ),
             Lines:
             [
-                new RetentionElectronicDocumentTaxLine(RetentionTaxType.Vat, "2", "1", "Ret. IVA 30%", 15m, 30m, 4.5m),
-                new RetentionElectronicDocumentTaxLine(RetentionTaxType.Income, "1", "303", "Honorarios profesionales", 100m, 10m, 10m),
+                new RetentionElectronicDocumentTaxLine(
+                    RetentionTaxType.Vat,
+                    "2",
+                    "1",
+                    "Ret. IVA 30%",
+                    15m,
+                    30m,
+                    4.5m
+                ),
+                new RetentionElectronicDocumentTaxLine(
+                    RetentionTaxType.Income,
+                    "1",
+                    "303",
+                    "Honorarios profesionales",
+                    100m,
+                    10m,
+                    10m
+                ),
             ],
             Totals: new RetentionElectronicDocumentTotals(4.5m, 10m, 14.5m),
             AdditionalInfo: []
@@ -224,7 +367,11 @@ public sealed class ProviderRucXmlComplianceTests
         provider
             .Setup(p => p.GetDataAsync(Reference, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<RetentionElectronicDocumentData>.Success(RetentionData()));
-        return new RetentionElectronicDocumentXmlService(provider.Object, new RetentionXmlBuilder(), composer);
+        return new RetentionElectronicDocumentXmlService(
+            provider.Object,
+            new RetentionXmlBuilder(),
+            composer
+        );
     }
 
     [Fact]
@@ -233,23 +380,34 @@ public sealed class ProviderRucXmlComplianceTests
         var result = await RetentionService(Exigible()).GenerateXmlAsync(Reference);
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        AdditionalFields(result.Value!.Xml).Should().Equal(
-            (SriAdditionalInfoFieldNames.SystemProviderRuc, AdditionalInfoTestDoubles.ProviderRuc)
-        );
+        AdditionalFields(result.Value!.Xml)
+            .Should()
+            .Equal(
+                (
+                    SriAdditionalInfoFieldNames.SystemProviderRuc,
+                    AdditionalInfoTestDoubles.ProviderRuc
+                )
+            );
         ValidateAgainstOfficialXsd(result.Value.Xml, ElectronicDocumentType.Retention, "1.0.0");
 
         var ride = new RetentionRideXmlParser().Parse(result.Value.Xml);
         ride.IsSuccess.Should().BeTrue(ride.Error);
-        ride.Value!.AdditionalInfo.Select(a => (a.Name, a.Value)).Should().Equal(
-            (SriAdditionalInfoFieldNames.SystemProviderRuc, AdditionalInfoTestDoubles.ProviderRuc)
-        );
+        ride.Value!.AdditionalInfo.Select(a => (a.Name, a.Value))
+            .Should()
+            .Equal(
+                (
+                    SriAdditionalInfoFieldNames.SystemProviderRuc,
+                    AdditionalInfoTestDoubles.ProviderRuc
+                )
+            );
     }
 
     [Fact]
     public async Task Retencion_antes_de_EffectiveDate_produce_exactamente_el_XML_actual()
     {
         var withRule = await RetentionService(AntesDeLaFecha()).GenerateXmlAsync(Reference);
-        var current = await RetentionService(AdditionalInfoTestDoubles.PassThroughComposer()).GenerateXmlAsync(Reference);
+        var current = await RetentionService(AdditionalInfoTestDoubles.PassThroughComposer())
+            .GenerateXmlAsync(Reference);
 
         withRule.Value!.Xml.Should().Be(current.Value!.Xml);
         withRule.Value.Xml.Should().NotContain("infoAdicional");
@@ -264,7 +422,9 @@ public sealed class ProviderRucXmlComplianceTests
         var service = RetentionService(Exigible());
 
         var preview = await service.GenerateXmlAsync(Reference);
-        var pipeline = await new RetentionElectronicDocumentXmlSupplier(service).BuildXmlAsync(Reference);
+        var pipeline = await new RetentionElectronicDocumentXmlSupplier(service).BuildXmlAsync(
+            Reference
+        );
 
         pipeline.IsSuccess.Should().BeTrue(pipeline.Error);
         pipeline.Value!.Xml.Should().Be(preview.Value!.Xml);
@@ -274,27 +434,42 @@ public sealed class ProviderRucXmlComplianceTests
     // ── Helpers ──────────────────────────────────────────────────────────
 
     private static IReadOnlyList<(string Name, string Value)> AdditionalFields(string xml) =>
-        XDocument.Parse(xml)
+        XDocument
+            .Parse(xml)
             .Root!.Element("infoAdicional")
             ?.Elements("campoAdicional")
             .Select(e => (e.Attribute("nombre")!.Value, e.Value))
             .ToList()
         ?? [];
 
-    private static void ValidateAgainstOfficialXsd(string xml, ElectronicDocumentType type, string version)
+    private static void ValidateAgainstOfficialXsd(
+        string xml,
+        ElectronicDocumentType type,
+        string version
+    )
     {
-        var schemaSet = new EmbeddedXmlSchemaProvider(NullLogger<EmbeddedXmlSchemaProvider>.Instance)
+        var schemaSet = new EmbeddedXmlSchemaProvider(
+            NullLogger<EmbeddedXmlSchemaProvider>.Instance
+        )
             .GetSchemaSetAsync(type, version)
             .GetAwaiter()
             .GetResult();
         schemaSet.Should().NotBeNull($"el XSD oficial {type} {version} debe estar embebido");
 
         var errors = new List<string>();
-        var settings = new XmlReaderSettings { ValidationType = ValidationType.Schema, Schemas = schemaSet! };
+        var settings = new XmlReaderSettings
+        {
+            ValidationType = ValidationType.Schema,
+            Schemas = schemaSet!,
+        };
         settings.ValidationEventHandler += (_, e) => errors.Add(e.Message);
         using var reader = XmlReader.Create(new StringReader(xml), settings);
         while (reader.Read()) { }
 
-        errors.Should().BeEmpty($"el XML con RUC Proveedor debe validar contra el XSD oficial {type} {version}");
+        errors
+            .Should()
+            .BeEmpty(
+                $"el XML con RUC Proveedor debe validar contra el XSD oficial {type} {version}"
+            );
     }
 }

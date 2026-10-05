@@ -39,9 +39,7 @@ public sealed class SupplierCreditConfiguration : IEntityTypeConfiguration<Suppl
             .HasColumnName("currency_code")
             .HasMaxLength(3)
             .IsRequired();
-        builder
-            .Property(x => x.SourcePurchaseReturnId)
-            .HasColumnName("source_purchase_return_id");
+        builder.Property(x => x.SourcePurchaseReturnId).HasColumnName("source_purchase_return_id");
         builder
             .Property(x => x.SourceSupplierPaymentId)
             .HasColumnName("source_supplier_payment_id");

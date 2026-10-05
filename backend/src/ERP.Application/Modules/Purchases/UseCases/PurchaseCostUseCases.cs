@@ -72,10 +72,10 @@ public sealed class DistributePurchaseCostValidator
         // ya se validó y convirtió en PurchasesController.DistributeCost (Enum.TryParse, mensaje
         // amigable si falla); acá solo queda el guard defensivo de que el enum llegue en rango.
         RuleFor(x => x.CostType).IsInEnum();
-        RuleFor(x => x.Amount).GreaterThan(0).WithMessage("El valor a distribuir debe ser mayor a cero.");
-        RuleFor(x => x.IncludedLineIds)
-            .NotEmpty()
-            .WithMessage("Debe incluir al menos una línea.");
+        RuleFor(x => x.Amount)
+            .GreaterThan(0)
+            .WithMessage("El valor a distribuir debe ser mayor a cero.");
+        RuleFor(x => x.IncludedLineIds).NotEmpty().WithMessage("Debe incluir al menos una línea.");
     }
 }
 
@@ -223,7 +223,12 @@ public sealed class RecalculatePurchaseHandler
 
             decimal iceRate = 0;
             string? iceName = null;
-            var iceCalculationType = ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Percentage;
+            var iceCalculationType = ERP.Domain
+                .Modules
+                .SriCatalogs
+                .Enums
+                .SriTaxCalculationType
+                .Percentage;
             decimal? iceExactAmount = null;
             if (!string.IsNullOrWhiteSpace(line.IceCode))
             {
@@ -237,8 +242,10 @@ public sealed class RecalculatePurchaseHandler
                     );
                 iceName = iceEntry.Name;
                 iceCalculationType = iceEntry.CalculationType;
-                if (iceEntry.CalculationType
-                    == ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific)
+                if (
+                    iceEntry.CalculationType
+                    == ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific
+                )
                 {
                     // El monto ya fue fijado al valor exacto (XML o catálogo) al crear/actualizar
                     // la línea — Recalculate lo preserva, igual que Confirm, nunca lo recalcula

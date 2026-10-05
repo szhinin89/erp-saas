@@ -1,6 +1,6 @@
+using System.Diagnostics;
 using ERP.Infrastructure.Security;
 using FluentAssertions;
-using System.Diagnostics;
 
 namespace ERP.Infrastructure.Tests.Security;
 
@@ -32,11 +32,15 @@ public sealed class BcryptPasswordHasherTests
         var realHash = _hasher.HashPassword("Correcta#2026");
 
         var wrongPassword = MedianTicks(() => _hasher.VerifyPassword("Incorrecta#1", realHash));
-        var nonexistentUser = MedianTicks(() => _hasher.SimulatePasswordVerification("Incorrecta#1"));
+        var nonexistentUser = MedianTicks(() =>
+            _hasher.SimulatePasswordVerification("Incorrecta#1")
+        );
 
         // Sin simulación el camino "usuario inexistente" era ~0 (ningún BCrypt): la relación sería ≪ 0,1.
         var ratio = (double)nonexistentUser / wrongPassword;
-        ratio.Should().BeInRange(0.4, 2.5, $"verify={wrongPassword} simulate={nonexistentUser} ticks");
+        ratio
+            .Should()
+            .BeInRange(0.4, 2.5, $"verify={wrongPassword} simulate={nonexistentUser} ticks");
     }
 
     [Theory]
@@ -67,10 +71,20 @@ public sealed class BcryptPasswordHasherTests
         var realHash = _hasher.HashPassword("Correcta#2026");
 
         BcryptPasswordHasher.WorkFactor.Should().Be(12);
-        BcryptPasswordHasher.DummyVerificationHash.Should().MatchRegex(@"^\$2a\$12\$[./A-Za-z0-9]{53}$");
-        BcryptPasswordHasher.DummyVerificationHash[..7].Should().Be(realHash[..7], "mismo algoritmo ($2a) y costo (12)");
-        BCrypt.Net.BCrypt.PasswordNeedsRehash(BcryptPasswordHasher.DummyVerificationHash, BcryptPasswordHasher.WorkFactor)
-            .Should().BeFalse();
+        BcryptPasswordHasher
+            .DummyVerificationHash.Should()
+            .MatchRegex(@"^\$2a\$12\$[./A-Za-z0-9]{53}$");
+        BcryptPasswordHasher
+            .DummyVerificationHash[..7]
+            .Should()
+            .Be(realHash[..7], "mismo algoritmo ($2a) y costo (12)");
+        BCrypt
+            .Net.BCrypt.PasswordNeedsRehash(
+                BcryptPasswordHasher.DummyVerificationHash,
+                BcryptPasswordHasher.WorkFactor
+            )
+            .Should()
+            .BeFalse();
     }
 
     [Fact]
@@ -92,8 +106,13 @@ public sealed class BcryptPasswordHasherTests
     [InlineData("Correcta#2026")]
     [InlineData("admin")]
     [InlineData("123456")]
-    public void Hash_ficticio_es_valido_para_BCrypt_pero_ninguna_contrasena_autentica(string password) =>
+    public void Hash_ficticio_es_valido_para_BCrypt_pero_ninguna_contrasena_autentica(
+        string password
+    ) =>
         // BCrypt.Verify directo: si el hash fuera inválido lanzaría (el adaptador lo convertiría en un
         // false inmediato, sin trabajo BCrypt). No lanza → verificación completa; y nunca autentica.
-        BCrypt.Net.BCrypt.Verify(password, BcryptPasswordHasher.DummyVerificationHash).Should().BeFalse();
+        BCrypt
+            .Net.BCrypt.Verify(password, BcryptPasswordHasher.DummyVerificationHash)
+            .Should()
+            .BeFalse();
 }

@@ -19,9 +19,22 @@ public sealed class OperationalPrecisionTests
 
     // ── Sales: QuantityInBaseUom ────────────────────────────────────────────
 
-    private static SalesInvoiceDetail SalesLine(decimal quantity, decimal factor, int? quantityDecimals) =>
+    private static SalesInvoiceDetail SalesLine(
+        decimal quantity,
+        decimal factor,
+        int? quantityDecimals
+    ) =>
         quantityDecimals is null
-            ? SalesInvoiceDetail.Create(Guid.NewGuid(), TenantId, "Prod", quantity, 1m, "10", "UNIT", conversionFactor: factor)
+            ? SalesInvoiceDetail.Create(
+                Guid.NewGuid(),
+                TenantId,
+                "Prod",
+                quantity,
+                1m,
+                "10",
+                "UNIT",
+                conversionFactor: factor
+            )
             : SalesInvoiceDetail.Create(
                 Guid.NewGuid(),
                 TenantId,
@@ -47,7 +60,10 @@ public sealed class OperationalPrecisionTests
     [InlineData(0, 1)]
     [InlineData(2, 1.12)]
     [InlineData(6, 1.123457)]
-    public void Sales_QuantityInBaseUom_respeta_quantityDecimals_configurado(int decimals, double expected)
+    public void Sales_QuantityInBaseUom_respeta_quantityDecimals_configurado(
+        int decimals,
+        double expected
+    )
     {
         var line = SalesLine(1.1234567m, 1m, decimals);
 
@@ -58,7 +74,10 @@ public sealed class OperationalPrecisionTests
 
     // ── Purchases: QuantityInBaseUom + LandedUnitCost ───────────────────────
 
-    private static PurchaseInvoiceDetail PurchaseLine(int? quantityDecimals = null, int? unitCostDecimals = null) =>
+    private static PurchaseInvoiceDetail PurchaseLine(
+        int? quantityDecimals = null,
+        int? unitCostDecimals = null
+    ) =>
         PurchaseInvoiceDetail.Create(
             Guid.NewGuid(),
             TenantId,
@@ -84,7 +103,10 @@ public sealed class OperationalPrecisionTests
     [Theory]
     [InlineData(2, 0.33)]
     [InlineData(10, 0.3333333333)]
-    public void Purchase_LandedUnitCost_respeta_unitCostDecimals_configurado(int decimals, double expected)
+    public void Purchase_LandedUnitCost_respeta_unitCostDecimals_configurado(
+        int decimals,
+        double expected
+    )
     {
         var line = PurchaseLine(unitCostDecimals: decimals);
 
@@ -126,7 +148,10 @@ public sealed class OperationalPrecisionTests
 
     // ── Inventory: StockAdjustmentLine ──────────────────────────────────────
 
-    private static StockAdjustmentLine AdjustmentLine(int? quantityDecimals, int? unitCostDecimals) =>
+    private static StockAdjustmentLine AdjustmentLine(
+        int? quantityDecimals,
+        int? unitCostDecimals
+    ) =>
         StockAdjustmentLine.Create(
             TenantId,
             CompanyId,

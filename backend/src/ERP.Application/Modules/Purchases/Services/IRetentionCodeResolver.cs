@@ -68,8 +68,10 @@ public sealed record RetentionCodeResolution(
     public static RetentionCodeResolution Resolved(RetentionCodeRepresentation representation) =>
         new(representation, null, null);
 
-    public static RetentionCodeResolution Failed(RetentionCodeResolutionError error, string detail) =>
-        new(null, error, detail);
+    public static RetentionCodeResolution Failed(
+        RetentionCodeResolutionError error,
+        string detail
+    ) => new(null, error, detail);
 }
 
 /// <summary>
@@ -96,7 +98,10 @@ public interface IRetentionCodeResolver
     /// SupplierRetentionDefault.SriRetentionCodeId) para documentos nuevos — null si no existe o no está
     /// habilitado; nunca lanza excepción por dato huérfano.
     /// </summary>
-    Task<RetentionCodeInfo?> GetSelectableByIdAsync(Guid sriRetentionCodeId, CancellationToken ct = default);
+    Task<RetentionCodeInfo?> GetSelectableByIdAsync(
+        Guid sriRetentionCodeId,
+        CancellationToken ct = default
+    );
 
     /// <summary>Lectura histórica por Id: devuelve el concepto aunque ya no esté habilitado (<see cref="RetentionCodeInfo.IsActive"/>).</summary>
     Task<RetentionCodeInfo?> GetByIdIncludingDisabledAsync(

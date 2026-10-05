@@ -96,17 +96,15 @@ public sealed partial class PurchaseReturnPostingRemediationService
 
             using var _ = JobExecutionContext.Begin(r.TenantId, r.CompanyId);
 
-            var alreadyPosted = await _db
-                .JournalEntries
-                .AnyAsync(
-                    j =>
-                        j.TenantId == r.TenantId
-                        && j.CompanyId == r.CompanyId
-                        && j.SourceModule == "Purchases"
-                        && j.SourceEventType == "PurchaseReturn"
-                        && j.SourceEventId == r.Id,
-                    cancellationToken
-                );
+            var alreadyPosted = await _db.JournalEntries.AnyAsync(
+                j =>
+                    j.TenantId == r.TenantId
+                    && j.CompanyId == r.CompanyId
+                    && j.SourceModule == "Purchases"
+                    && j.SourceEventType == "PurchaseReturn"
+                    && j.SourceEventId == r.Id,
+                cancellationToken
+            );
 
             if (alreadyPosted)
             {
@@ -275,5 +273,6 @@ public sealed record PurchaseReturnPostingRemediationSummary(
     public int AlreadyPostedCount => Rows.Count(r => r.AlreadyPosted);
     public int MissingCount => Rows.Count(r => !r.AlreadyPosted);
     public int PostedNowCount => Rows.Count(r => r.Applied);
-    public int FailedCount => Rows.Count(r => !r.AlreadyPosted && !r.Applied && r.Error is not null);
+    public int FailedCount =>
+        Rows.Count(r => !r.AlreadyPosted && !r.Applied && r.Error is not null);
 }

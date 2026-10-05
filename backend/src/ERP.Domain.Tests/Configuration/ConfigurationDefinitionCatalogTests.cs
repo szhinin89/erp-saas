@@ -72,7 +72,10 @@ public sealed class ConfigurationDefinitionCatalogTests
         yield return new object[] { OrgSettingKeys.Inventory.LargeAdjustmentThresholdAmount };
         yield return new object[] { OrgSettingKeys.ElectronicDocuments.AutoRetryEnabled };
         yield return new object[] { OrgSettingKeys.ElectronicDocuments.MaxRetryAttempts };
-        yield return new object[] { OrgSettingKeys.ElectronicDocuments.GenerateRideOnAuthorization };
+        yield return new object[]
+        {
+            OrgSettingKeys.ElectronicDocuments.GenerateRideOnAuthorization,
+        };
         yield return new object[] { OrgSettingKeys.ElectronicDocuments.EmailOnAuthorization };
     }
 
@@ -175,6 +178,7 @@ public sealed class ConfigurationDefinitionCatalogTests
         guidDef!.DataType.Should().Be(ConfigurationDataType.Guid);
         guidDef.PersistedDataType.Should().Be(SettingDataType.Guid);
     }
+
     [Fact]
     public void communications_email_settings_solo_Company_y_validan_valores_basicos()
     {

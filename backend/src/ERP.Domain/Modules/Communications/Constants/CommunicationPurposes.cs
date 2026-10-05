@@ -23,45 +23,50 @@ public static class CommunicationPurposes
     /// </summary>
     public const string PasswordReset = "PASSWORD_RESET";
 
-    private static readonly IReadOnlyDictionary<string, CommunicationPurposeDefinition> Definitions =
-        new[]
-        {
-            new CommunicationPurposeDefinition(
-                SalesInvoiceAuthorized,
-                CommunicationScopeKind.Company,
-                [CommunicationChannel.Email],
-                IsSensitive: false,
-                AllowsManualResend: true
-            ),
-            new CommunicationPurposeDefinition(
-                SalesCreditNoteAuthorized,
-                CommunicationScopeKind.Company,
-                [CommunicationChannel.Email],
-                IsSensitive: false,
-                AllowsManualResend: true
-            ),
-            new CommunicationPurposeDefinition(
-                RetentionAuthorized,
-                CommunicationScopeKind.Company,
-                [CommunicationChannel.Email],
-                IsSensitive: false,
-                AllowsManualResend: true
-            ),
-            new CommunicationPurposeDefinition(
-                PasswordReset,
-                CommunicationScopeKind.System,
-                [CommunicationChannel.Email],
-                IsSensitive: true,
-                AllowsManualResend: false
-            ),
-        }.ToDictionary(d => d.Code, StringComparer.Ordinal);
+    private static readonly IReadOnlyDictionary<
+        string,
+        CommunicationPurposeDefinition
+    > Definitions = new[]
+    {
+        new CommunicationPurposeDefinition(
+            SalesInvoiceAuthorized,
+            CommunicationScopeKind.Company,
+            [CommunicationChannel.Email],
+            IsSensitive: false,
+            AllowsManualResend: true
+        ),
+        new CommunicationPurposeDefinition(
+            SalesCreditNoteAuthorized,
+            CommunicationScopeKind.Company,
+            [CommunicationChannel.Email],
+            IsSensitive: false,
+            AllowsManualResend: true
+        ),
+        new CommunicationPurposeDefinition(
+            RetentionAuthorized,
+            CommunicationScopeKind.Company,
+            [CommunicationChannel.Email],
+            IsSensitive: false,
+            AllowsManualResend: true
+        ),
+        new CommunicationPurposeDefinition(
+            PasswordReset,
+            CommunicationScopeKind.System,
+            [CommunicationChannel.Email],
+            IsSensitive: true,
+            AllowsManualResend: false
+        ),
+    }.ToDictionary(d => d.Code, StringComparer.Ordinal);
 
     public static IEnumerable<CommunicationPurposeDefinition> All => Definitions.Values;
 
     public static CommunicationPurposeDefinition Get(string code) =>
         Definitions.TryGetValue(code, out var definition)
             ? definition
-            : throw new ArgumentException($"Propósito de comunicación no registrado: '{code}'.", nameof(code));
+            : throw new ArgumentException(
+                $"Propósito de comunicación no registrado: '{code}'.",
+                nameof(code)
+            );
 }
 
 /// <param name="Code">Código estable (= TemplateKey).</param>

@@ -33,7 +33,10 @@ public sealed class InterBranchAccessGuard : IInterBranchAccessGuard
     {
         var companyAccess = await _companyAccessGuard.RequireCurrentCompanyAsync(cancellationToken);
         if (!companyAccess.IsSuccess)
-            return Result<InterBranchAccessContext>.Failure(companyAccess.Error!, companyAccess.Code);
+            return Result<InterBranchAccessContext>.Failure(
+                companyAccess.Error!,
+                companyAccess.Code
+            );
 
         var company = companyAccess.Value!;
 

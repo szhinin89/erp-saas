@@ -132,7 +132,8 @@ public class SriRetentionCodeConfiguration : IEntityTypeConfiguration<SriRetenti
                 Code = "303",
                 // ZH-SRI-RETENTION-INCOME-CATALOG-SSOT-01 — nombre y tarifa operativa vigentes (Catálogo ATS,
                 // Tabla 3.10 desde 06/08/2026). La historia vive en sri_retention_code_version.
-                Name = "Honorarios profesionales y demás pagos por servicios relacionados con el título profesional",
+                Name =
+                    "Honorarios profesionales y demás pagos por servicios relacionados con el título profesional",
                 Percentage = 10.00m,
             },
             new SriRetentionCode
@@ -173,7 +174,8 @@ public class SriRetentionCodeConfiguration : IEntityTypeConfiguration<SriRetenti
                 // ZH-SRI-RETENTION-INCOME-CATALOG-SSOT-01 — nombre oficial (Catálogo ATS, Tabla 3.10 desde
                 // 06/08/2026). Tarifa CONDICIONAL ("1 /0 según resolución NAC-DGERCGC26-00000028"): el ERP no puede determinarla,
                 // así que no se habilita; Percentage queda como valor heredado sin efecto operativo.
-                Name = "Servicio de transporte privado de pasajeros o transporte público o privado de carga",
+                Name =
+                    "Servicio de transporte privado de pasajeros o transporte público o privado de carga",
                 Percentage = 1.00m,
                 IsActive = false,
             },
@@ -248,7 +250,8 @@ public class SriRetentionCodeConfiguration : IEntityTypeConfiguration<SriRetenti
                 Code = "343",
                 // ZH-SRI-RETENTION-INCOME-CATALOG-SSOT-01 — nombre y tarifa operativa vigentes (Catálogo ATS,
                 // Tabla 3.10 desde 06/08/2026). La historia vive en sri_retention_code_version.
-                Name = "Otras retenciones aplicables el 1% (incluye régimen RIMPE - Emprendedores, para este caso aplica con cualquier forma de pago inclusive los pagos que deban realizar las tarjetas de crédito/débito)",
+                Name =
+                    "Otras retenciones aplicables el 1% (incluye régimen RIMPE - Emprendedores, para este caso aplica con cualquier forma de pago inclusive los pagos que deban realizar las tarjetas de crédito/débito)",
                 Percentage = 1.00m,
             },
             new SriRetentionCode

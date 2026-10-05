@@ -1,8 +1,8 @@
+using System.Xml.Linq;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Application.Modules.ElectronicDocuments.XmlBuilders;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using FluentAssertions;
-using System.Xml.Linq;
 
 namespace ERP.Application.Tests.ElectronicDocuments;
 
@@ -14,9 +14,14 @@ public sealed class InvoiceXmlBuilderTests
         var data = ValidInvoiceData();
         data = data with
         {
-            Details = [data.Details[0] with {
-            Quantity = 1.1234567891m, UnitPrice = 12.1234567891m,
-        }]
+            Details =
+            [
+                data.Details[0] with
+                {
+                    Quantity = 1.1234567891m,
+                    UnitPrice = 12.1234567891m,
+                },
+            ],
         };
         var result = new InvoiceXmlBuilder(new FakeTaxCategoryCodeResolver()).Build(data);
         result.IsSuccess.Should().BeTrue(result.Error);
@@ -167,7 +172,10 @@ public sealed class InvoiceXmlBuilderTests
                 GrandTotal: 100m + 16.5m + 10m + 0.30m,
                 CurrencyCode: "USD"
             ),
-            Payments = [new ElectronicDocumentPayment("01", 100m + 16.5m + 10m + 0.30m, null, null)],
+            Payments =
+            [
+                new ElectronicDocumentPayment("01", 100m + 16.5m + 10m + 0.30m, null, null),
+            ],
         };
 
     [Fact]
@@ -179,18 +187,16 @@ public sealed class InvoiceXmlBuilderTests
 
         result.IsSuccess.Should().BeTrue(result.Error);
         var xdoc = XDocument.Parse(result.Value!.Xml);
-        var impuestos = xdoc
-            .Root!.Element("detalles")!
+        var impuestos = xdoc.Root!.Element("detalles")!
             .Element("detalle")!
             .Element("impuestos")!
             .Elements("impuesto")
             .ToList();
 
-        impuestos.Should().HaveCount(3, "IVA + ICE + IRBPNR deben viajar como 3 nodos independientes");
         impuestos
-            .Select(i => i.Element("codigo")!.Value)
             .Should()
-            .BeEquivalentTo(["2", "3", "5"]);
+            .HaveCount(3, "IVA + ICE + IRBPNR deben viajar como 3 nodos independientes");
+        impuestos.Select(i => i.Element("codigo")!.Value).Should().BeEquivalentTo(["2", "3", "5"]);
         var irbpnrNode = impuestos.Single(i => i.Element("codigo")!.Value == "5");
         irbpnrNode.Element("baseImponible")!.Value.Should().Be("100.00");
         irbpnrNode.Element("valor")!.Value.Should().Be("0.30");
@@ -205,14 +211,15 @@ public sealed class InvoiceXmlBuilderTests
 
         result.IsSuccess.Should().BeTrue(result.Error);
         var xdoc = XDocument.Parse(result.Value!.Xml);
-        var impuestos = xdoc
-            .Root!.Element("detalles")!
+        var impuestos = xdoc.Root!.Element("detalles")!
             .Element("detalle")!
             .Element("impuestos")!
             .Elements("impuesto")
             .ToList();
 
-        impuestos.Should().HaveCount(1, "la línea original solo tiene IVA — sin ICE ni IRBPNR falsos");
+        impuestos
+            .Should()
+            .HaveCount(1, "la línea original solo tiene IVA — sin ICE ni IRBPNR falsos");
         impuestos.Should().NotContain(i => i.Element("codigo")!.Value == "5");
         impuestos.Should().NotContain(i => i.Element("codigo")!.Value == "3");
     }

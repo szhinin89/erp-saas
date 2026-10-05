@@ -1,6 +1,8 @@
 // CA1848/CA1873: Program.cs top-level statements cannot use [LoggerMessage] source generators
 #pragma warning disable CA1848, CA1873
 
+using System.Security.Claims;
+using System.Threading.RateLimiting;
 using ERP.API.Authorization;
 using ERP.API.Extensions;
 using ERP.API.Hangfire;
@@ -24,8 +26,6 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using QuestPDF.Infrastructure;
 using Serilog;
-using System.Security.Claims;
-using System.Threading.RateLimiting;
 
 // Licencia Community: libre para proyectos con ingresos anuales < 1 M USD.
 // Cambiar a LicenseType.Professional si aplica.
@@ -169,9 +169,7 @@ builder.Services.AddRateLimiter(options =>
                     http.RequestServices.GetRequiredService<IWebHostEnvironment>(),
                     code
                 ),
-                http.RequestServices
-                    .GetRequiredService<Microsoft.Extensions.Options.IOptions<Microsoft.AspNetCore.Mvc.JsonOptions>>()
-                    .Value.JsonSerializerOptions,
+                http.RequestServices.GetRequiredService<Microsoft.Extensions.Options.IOptions<Microsoft.AspNetCore.Mvc.JsonOptions>>().Value.JsonSerializerOptions,
                 cancellationToken
             )
         );
@@ -272,12 +270,14 @@ if (redisConfigured)
     builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(_ =>
         StackExchange.Redis.ConnectionMultiplexer.Connect(redisConnection!)
     );
-    builder.Services
-        .AddOptions<Microsoft.Extensions.Caching.StackExchangeRedis.RedisCacheOptions>()
+    builder
+        .Services.AddOptions<Microsoft.Extensions.Caching.StackExchangeRedis.RedisCacheOptions>()
         .Configure<IServiceProvider>(
             (options, sp) =>
                 options.ConnectionMultiplexerFactory = () =>
-                    Task.FromResult(sp.GetRequiredService<StackExchange.Redis.IConnectionMultiplexer>())
+                    Task.FromResult(
+                        sp.GetRequiredService<StackExchange.Redis.IConnectionMultiplexer>()
+                    )
         );
 }
 else
@@ -293,10 +293,13 @@ builder.Services.AddInfrastructure(builder.Configuration);
 // pierde en cada recreate — invalidando secretos ya cifrados con él (p.ej. sri_settings.cert_password).
 // Se persiste en el mismo volumen durable que FileStorage (erp-api-files) para sobrevivir recreates.
 var dataProtectionKeysPath = Path.Combine(
-    builder.Configuration["FileStorage:BasePath"] ?? Path.Combine(builder.Environment.ContentRootPath, "files"),
+    builder.Configuration["FileStorage:BasePath"]
+        ?? Path.Combine(builder.Environment.ContentRootPath, "files"),
     "dataprotection-keys"
 );
-builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
+builder
+    .Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
 
 builder.Services.AddApplication();
 builder.Services.AddScoped<AppFeatureDiscoveryService>();
@@ -377,7 +380,10 @@ if (hangfireEnabled)
     builder.Services.AddHangfireServer();
     builder.Services.AddScoped<IProcessOutboxJob, ProcessOutboxJob>();
     builder.Services.AddScoped<IProcessCommunicationsJob, ProcessCommunicationsJob>();
-    builder.Services.AddScoped<IReconcileElectronicDocumentCommunicationsJob, ReconcileElectronicDocumentCommunicationsJob>();
+    builder.Services.AddScoped<
+        IReconcileElectronicDocumentCommunicationsJob,
+        ReconcileElectronicDocumentCommunicationsJob
+    >();
     builder.Services.AddScoped<IMasterDataReconciliationJob, MasterDataReconciliationJob>();
     builder.Services.AddScoped<IElectronicDocumentRetryJob, ElectronicDocumentRetryJob>();
     builder.Services.AddScoped<IRetentionElectronicRecoveryJob, RetentionElectronicRecoveryJob>();
@@ -436,13 +442,11 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(
         "CompanyProvisioning",
         policy =>
-            policy.RequireAuthenticatedUser()
+            policy
+                .RequireAuthenticatedUser()
                 .RequireAssertion(context =>
                 {
-                    var hasGlobalTenant = context.User.HasClaim(
-                        "tenant_id",
-                        Guid.Empty.ToString()
-                    );
+                    var hasGlobalTenant = context.User.HasClaim("tenant_id", Guid.Empty.ToString());
 
                     var hasAdminRole =
                         context.User.IsInRole(SecurityRoles.Admin)
@@ -458,13 +462,11 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(
         "PlatformAdmin",
         policy =>
-            policy.RequireAuthenticatedUser()
+            policy
+                .RequireAuthenticatedUser()
                 .RequireAssertion(context =>
                 {
-                    var hasGlobalTenant = context.User.HasClaim(
-                        "tenant_id",
-                        Guid.Empty.ToString()
-                    );
+                    var hasGlobalTenant = context.User.HasClaim("tenant_id", Guid.Empty.ToString());
 
                     var hasAdminRole =
                         context.User.IsInRole(SecurityRoles.Admin)
@@ -589,7 +591,11 @@ if (args.Contains("backfill-accounting-chart-hierarchy"))
             + $"ParentAccountId corregidos: {summary.TotalFixed}. "
             + $"Pendientes sin resolver (fuera del blueprint): {summary.TotalUnresolved}."
     );
-    foreach (var company in summary.Companies.Where(c => c.IssuesBefore > 0 || c.UnresolvedParentCount > 0))
+    foreach (
+        var company in summary.Companies.Where(c =>
+            c.IssuesBefore > 0 || c.UnresolvedParentCount > 0
+        )
+    )
     {
         Console.WriteLine(
             $"  - Company {company.CompanyId}: antes={company.IssuesBefore} después={company.IssuesAfter} "
@@ -624,7 +630,10 @@ if (args.Contains("remediate-purchase-return-postings"))
     );
     foreach (var row in summary.Rows.Where(r => !r.AlreadyPosted))
     {
-        var state = row.Applied ? "POSTED" : row.Error is not null ? "ERROR" : "PENDING (dry-run)";
+        var state =
+            row.Applied ? "POSTED"
+            : row.Error is not null ? "ERROR"
+            : "PENDING (dry-run)";
         Console.WriteLine(
             $"  - PurchaseReturn {row.PurchaseReturnId} ({row.ReturnNumber}) company={row.CompanyId} "
                 + $"AppliedToPayable={row.AppliedToPayableAmount} HistoricalCost={row.HistoricalCostTotal} [{state}]"
@@ -639,10 +648,13 @@ if (args.Contains("remediate-purchase-return-postings"))
 if (args.Contains("backfill-sales-invoice-posting-rule"))
 {
     using var scope = app.Services.CreateScope();
-    var service = scope.ServiceProvider.GetRequiredService<ERP.Infrastructure.Seeding.AccountingChartBackfillService>();
+    var service =
+        scope.ServiceProvider.GetRequiredService<ERP.Infrastructure.Seeding.AccountingChartBackfillService>();
     var apply = args.Contains("apply");
     var rows = await service.RunSalesInvoiceRuleMaintenanceAsync(apply);
-    Console.WriteLine($"[backfill-sales-invoice-posting-rule] Mode={(apply ? "APPLY" : "DRY-RUN")} Companies={rows.Count}");
+    Console.WriteLine(
+        $"[backfill-sales-invoice-posting-rule] Mode={(apply ? "APPLY" : "DRY-RUN")} Companies={rows.Count}"
+    );
     foreach (var row in rows)
         Console.WriteLine($"Tenant={row.TenantId} Company={row.CompanyId}: {row.Diagnostic}");
     return;
@@ -656,12 +668,17 @@ if (args.Contains("backfill-sales-invoice-posting-rule"))
 if (args.Contains("backfill-supplier-payment-posting-rules"))
 {
     using var scope = app.Services.CreateScope();
-    var service = scope.ServiceProvider.GetRequiredService<ERP.Infrastructure.Seeding.AccountingChartBackfillService>();
+    var service =
+        scope.ServiceProvider.GetRequiredService<ERP.Infrastructure.Seeding.AccountingChartBackfillService>();
     var apply = args.Contains("apply");
     var rows = await service.RunSupplierPaymentRuleMaintenanceAsync(apply);
-    Console.WriteLine($"[backfill-supplier-payment-posting-rules] Mode={(apply ? "APPLY" : "DRY-RUN")} Rules={rows.Count}");
+    Console.WriteLine(
+        $"[backfill-supplier-payment-posting-rules] Mode={(apply ? "APPLY" : "DRY-RUN")} Rules={rows.Count}"
+    );
     foreach (var row in rows)
-        Console.WriteLine($"Tenant={row.TenantId} Company={row.CompanyId} Payables/{row.FactType}: {row.Diagnostic}");
+        Console.WriteLine(
+            $"Tenant={row.TenantId} Company={row.CompanyId} Payables/{row.FactType}: {row.Diagnostic}"
+        );
     return;
 }
 
@@ -674,12 +691,17 @@ if (args.Contains("backfill-supplier-payment-posting-rules"))
 if (args.Contains("backfill-supplier-credit-refund-posting-rules"))
 {
     using var scope = app.Services.CreateScope();
-    var service = scope.ServiceProvider.GetRequiredService<ERP.Infrastructure.Seeding.AccountingChartBackfillService>();
+    var service =
+        scope.ServiceProvider.GetRequiredService<ERP.Infrastructure.Seeding.AccountingChartBackfillService>();
     var apply = args.Contains("apply");
     var rows = await service.RunSupplierCreditRefundRuleMaintenanceAsync(apply);
-    Console.WriteLine($"[backfill-supplier-credit-refund-posting-rules] Mode={(apply ? "APPLY" : "DRY-RUN")} Rules={rows.Count}");
+    Console.WriteLine(
+        $"[backfill-supplier-credit-refund-posting-rules] Mode={(apply ? "APPLY" : "DRY-RUN")} Rules={rows.Count}"
+    );
     foreach (var row in rows)
-        Console.WriteLine($"Tenant={row.TenantId} Company={row.CompanyId} Purchases/{row.FactType}: {row.Diagnostic}");
+        Console.WriteLine(
+            $"Tenant={row.TenantId} Company={row.CompanyId} Purchases/{row.FactType}: {row.Diagnostic}"
+        );
     return;
 }
 

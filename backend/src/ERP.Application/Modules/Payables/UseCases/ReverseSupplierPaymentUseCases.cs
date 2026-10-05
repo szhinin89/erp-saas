@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Modules.Branches;
 using ERP.Application.Modules.Caja;
@@ -11,8 +13,6 @@ using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentValidation;
 using MediatR;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace ERP.Application.Modules.Payables.UseCases;
 
@@ -51,13 +51,12 @@ public sealed record ReverseSupplierPaymentCommand(
     string Reason,
     bool CashNotDeliveredConfirmed = false,
     SupplierPaymentBankReversalReason? BankReversalReason = null
-)
-    : IRequest<Result<SupplierPaymentDto>>,
-        ICompanyScopedRequest;
+) : IRequest<Result<SupplierPaymentDto>>, ICompanyScopedRequest;
 
 // ── Validator ───────────────────────────────────────────────────────────
 
-public sealed class ReverseSupplierPaymentCommandValidator : AbstractValidator<ReverseSupplierPaymentCommand>
+public sealed class ReverseSupplierPaymentCommandValidator
+    : AbstractValidator<ReverseSupplierPaymentCommand>
 {
     public ReverseSupplierPaymentCommandValidator()
     {
@@ -200,7 +199,10 @@ public sealed class ReverseSupplierPaymentCommandHandler
                 if (!branchAccess.IsSuccess)
                 {
                     await _uow.RollbackAsync(ct);
-                    return Result<SupplierPaymentDto>.Failure(branchAccess.Error!, branchAccess.Code);
+                    return Result<SupplierPaymentDto>.Failure(
+                        branchAccess.Error!,
+                        branchAccess.Code
+                    );
                 }
             }
 
@@ -212,12 +214,14 @@ public sealed class ReverseSupplierPaymentCommandHandler
             // del pago (02A-FINAL): nunca deadlock entre reversas y pagos. La confirmación explícita
             // (CashNotDeliveredConfirmed) y la trazabilidad de la línea ya las exigió el dominio.
             var originalSessions = new Dictionary<Guid, CashSession>();
-            foreach (var cashLine in payment.MethodLines
-                .Where(l => l.CashRegisterId is not null)
-                .GroupBy(l => l.CashSessionId!.Value)
-                .Select(g => g.First())
-                .OrderBy(l => l.CashRegisterId!.Value)
-                .ThenBy(l => l.CashSessionId!.Value))
+            foreach (
+                var cashLine in payment
+                    .MethodLines.Where(l => l.CashRegisterId is not null)
+                    .GroupBy(l => l.CashSessionId!.Value)
+                    .Select(g => g.First())
+                    .OrderBy(l => l.CashRegisterId!.Value)
+                    .ThenBy(l => l.CashSessionId!.Value)
+            )
             {
                 var sessionId = cashLine.CashSessionId!.Value;
                 var session = await _cashSessions.GetByIdForUpdateAsync(tenantId, sessionId, ct);
@@ -239,7 +243,9 @@ public sealed class ReverseSupplierPaymentCommandHandler
                 if (!session.IsControlledBy(userId))
                 {
                     await _uow.RollbackAsync(ct);
-                    return Result<SupplierPaymentDto>.ValidationFailure(CashSessionOwnership.RejectionMessage(session));
+                    return Result<SupplierPaymentDto>.ValidationFailure(
+                        CashSessionOwnership.RejectionMessage(session)
+                    );
                 }
                 // 02B-CLOSE — misma regla de sucursal que el registro del pago.
                 if (session.BranchId != _b.BranchId)
@@ -338,7 +344,10 @@ public sealed class ReverseSupplierPaymentCommandHandler
     }
 
     /// <summary>Huella determinista del movimiento de sistema <c>SourcePaymentReversed</c>.</summary>
-    private static string ComputeSourcePaymentReversalHash(Guid supplierCreditId, Guid supplierPaymentId)
+    private static string ComputeSourcePaymentReversalHash(
+        Guid supplierCreditId,
+        Guid supplierPaymentId
+    )
     {
         var canonical = string.Join(
             "",

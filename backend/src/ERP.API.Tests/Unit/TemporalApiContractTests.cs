@@ -1,3 +1,4 @@
+using System.Text.Json;
 using ERP.API.Contracts;
 using ERP.API.Temporal;
 using ERP.Application.Modules.Sales.UseCases;
@@ -5,7 +6,6 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Primitives;
-using System.Text.Json;
 
 namespace ERP.API.Tests.Unit;
 
@@ -25,7 +25,11 @@ public sealed class TemporalApiContractTests
         return options;
     }
 
-    private sealed record Payload(DateOnly IssueDate, DateTime AuthorizationDate, DateTime? ConfirmedAt);
+    private sealed record Payload(
+        DateOnly IssueDate,
+        DateTime AuthorizationDate,
+        DateTime? ConfirmedAt
+    );
 
     [Fact]
     public void Serializa_DateOnly_como_fecha_y_DateTime_UTC_con_Z()
@@ -47,16 +51,20 @@ public sealed class TemporalApiContractTests
     [Fact]
     public void Round_trip_JSON_conserva_dia_de_negocio_e_instante()
     {
-        var input = "{\"issueDate\":\"2026-09-25\",\"authorizationDate\":\"2026-09-25T19:38:00Z\",\"confirmedAt\":\"2026-09-25T14:38:00-05:00\"}";
+        var input =
+            "{\"issueDate\":\"2026-09-25\",\"authorizationDate\":\"2026-09-25T19:38:00Z\",\"confirmedAt\":\"2026-09-25T14:38:00-05:00\"}";
 
         var payload = JsonSerializer.Deserialize<Payload>(input, Options)!;
 
         payload.IssueDate.Should().Be(new DateOnly(2026, 9, 25));
-        payload.AuthorizationDate.Should().Be(new DateTime(2026, 9, 25, 19, 38, 0, DateTimeKind.Utc));
+        payload
+            .AuthorizationDate.Should()
+            .Be(new DateTime(2026, 9, 25, 19, 38, 0, DateTimeKind.Utc));
         payload.AuthorizationDate.Kind.Should().Be(DateTimeKind.Utc);
         payload.ConfirmedAt.Should().Be(new DateTime(2026, 9, 25, 19, 38, 0, DateTimeKind.Utc));
 
-        JsonSerializer.Deserialize<Payload>(JsonSerializer.Serialize(payload, Options), Options)
+        JsonSerializer
+            .Deserialize<Payload>(JsonSerializer.Serialize(payload, Options), Options)
             .Should()
             .Be(payload);
     }
@@ -115,23 +123,31 @@ public sealed class TemporalApiContractTests
     [Theory]
     [InlineData("es-EC")]
     [InlineData("en-US")]
-    public void Ventas_TransferDate_y_CashDate_ISO_conservan_el_dia_sin_depender_de_la_cultura(string culture)
+    public void Ventas_TransferDate_y_CashDate_ISO_conservan_el_dia_sin_depender_de_la_cultura(
+        string culture
+    )
     {
-        WithCulture(culture, () =>
-        {
-            var transfer = JsonSerializer.Deserialize<TransferDetailInput>(
-                "{\"receiptNumber\":\"TRX-1\",\"transferDate\":\"2026-09-25\"}",
-                Options
-            )!;
-            var cheque = JsonSerializer.Deserialize<ChequeDetailInput>(
-                "{\"chequeNumber\":\"CH-1\",\"cashDate\":\"2026-09-25\"}",
-                Options
-            )!;
+        WithCulture(
+            culture,
+            () =>
+            {
+                var transfer = JsonSerializer.Deserialize<TransferDetailInput>(
+                    "{\"receiptNumber\":\"TRX-1\",\"transferDate\":\"2026-09-25\"}",
+                    Options
+                )!;
+                var cheque = JsonSerializer.Deserialize<ChequeDetailInput>(
+                    "{\"chequeNumber\":\"CH-1\",\"cashDate\":\"2026-09-25\"}",
+                    Options
+                )!;
 
-            transfer.TransferDate.Should().Be(new DateOnly(2026, 9, 25));
-            cheque.CashDate.Should().Be(new DateOnly(2026, 9, 25));
-            JsonSerializer.Serialize(transfer, Options).Should().Contain("\"transferDate\":\"2026-09-25\"");
-        });
+                transfer.TransferDate.Should().Be(new DateOnly(2026, 9, 25));
+                cheque.CashDate.Should().Be(new DateOnly(2026, 9, 25));
+                JsonSerializer
+                    .Serialize(transfer, Options)
+                    .Should()
+                    .Contain("\"transferDate\":\"2026-09-25\"");
+            }
+        );
     }
 
     [Theory]
@@ -139,18 +155,30 @@ public sealed class TemporalApiContractTests
     [InlineData("es-EC", "25/09/2026")]
     [InlineData("en-US", "09/25/2026")]
     [InlineData("en-US", "25/09/2026")]
-    public void Ventas_fechas_ambiguas_se_rechazan_en_cualquier_cultura(string culture, string value)
+    public void Ventas_fechas_ambiguas_se_rechazan_en_cualquier_cultura(
+        string culture,
+        string value
+    )
     {
-        WithCulture(culture, () =>
-        {
-            var transfer = () =>
-                JsonSerializer.Deserialize<TransferDetailInput>($"{{\"transferDate\":\"{value}\"}}", Options);
-            var cheque = () =>
-                JsonSerializer.Deserialize<ChequeDetailInput>($"{{\"cashDate\":\"{value}\"}}", Options);
+        WithCulture(
+            culture,
+            () =>
+            {
+                var transfer = () =>
+                    JsonSerializer.Deserialize<TransferDetailInput>(
+                        $"{{\"transferDate\":\"{value}\"}}",
+                        Options
+                    );
+                var cheque = () =>
+                    JsonSerializer.Deserialize<ChequeDetailInput>(
+                        $"{{\"cashDate\":\"{value}\"}}",
+                        Options
+                    );
 
-            transfer.Should().Throw<JsonException>();
-            cheque.Should().Throw<JsonException>();
-        });
+                transfer.Should().Throw<JsonException>();
+                cheque.Should().Throw<JsonException>();
+            }
+        );
     }
 
     // ── ZH-TEMPORAL-CONTRACT-02J: ApiResponse.Meta.Timestamp = instante UTC "…Z" ──
@@ -179,23 +207,29 @@ public sealed class TemporalApiContractTests
         var now = DateTime.UtcNow;
         var json = JsonSerializer.Serialize(new ApiResponseMeta("corr-1", now), Options);
 
-        System.Text.RegularExpressions.Regex
-            .IsMatch(json, @"""timestamp"":""\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z""")
+        System
+            .Text.RegularExpressions.Regex.IsMatch(
+                json,
+                @"""timestamp"":""\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z"""
+            )
             .Should()
             .BeTrue(json);
         JsonSerializer.Deserialize<ApiResponseMeta>(json, Options)!.Timestamp.Should().Be(now);
 
-        var zoneLess = () => JsonSerializer.Serialize(
-            new ApiResponseMeta("corr-1", new DateTime(2026, 9, 25, 19, 38, 27)),
-            Options
-        );
+        var zoneLess = () =>
+            JsonSerializer.Serialize(
+                new ApiResponseMeta("corr-1", new DateTime(2026, 9, 25, 19, 38, 27)),
+                Options
+            );
         zoneLess.Should().Throw<ArgumentException>("un instante nunca sale sin zona");
     }
 
     private static void WithCulture(string culture, Action action)
     {
         var previous = System.Globalization.CultureInfo.CurrentCulture;
-        System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo(culture);
+        System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo(
+            culture
+        );
         try
         {
             action();

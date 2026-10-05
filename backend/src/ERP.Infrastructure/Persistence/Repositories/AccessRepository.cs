@@ -141,9 +141,7 @@ public class AccessRepository : IAccessRepository
         CancellationToken cancellationToken = default
     )
     {
-        var q = _db
-            .CompanyUserMemberships.AsPlatformQuery()
-            .Where(m => m.CompanyId == companyId);
+        var q = _db.CompanyUserMemberships.AsPlatformQuery().Where(m => m.CompanyId == companyId);
         if (onlyActive)
             q = q.Where(m => m.IsActive);
         return await q.OrderBy(m => m.IdentityUserId).ToListAsync(cancellationToken);

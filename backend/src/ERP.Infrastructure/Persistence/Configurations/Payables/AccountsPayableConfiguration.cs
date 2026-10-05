@@ -19,7 +19,11 @@ public sealed class AccountsPayableConfiguration : IEntityTypeConfiguration<Acco
         builder.Property(x => x.CompanyId).HasColumnName("company_id").IsRequired();
         builder.Property(x => x.BranchId).HasColumnName("branch_id").IsRequired();
         builder.Property(x => x.SupplierId).HasColumnName("supplier_id").IsRequired();
-        builder.Property(x => x.OriginType).HasColumnName("origin_type").HasConversion<int>().IsRequired();
+        builder
+            .Property(x => x.OriginType)
+            .HasColumnName("origin_type")
+            .HasConversion<int>()
+            .IsRequired();
         builder.Property(x => x.OriginId).HasColumnName("origin_id").IsRequired();
         builder
             .Property(x => x.DocumentType)
@@ -69,8 +73,16 @@ public sealed class AccountsPayableConfiguration : IEntityTypeConfiguration<Acco
             .HasForeignKey(x => x.AccountsPayableId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne<Company>().WithMany().HasForeignKey(x => x.CompanyId).OnDelete(DeleteBehavior.Restrict);
-        builder.HasOne<Branch>().WithMany().HasForeignKey(x => x.BranchId).OnDelete(DeleteBehavior.Restrict);
+        builder
+            .HasOne<Company>()
+            .WithMany()
+            .HasForeignKey(x => x.CompanyId)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder
+            .HasOne<Branch>()
+            .WithMany()
+            .HasForeignKey(x => x.BranchId)
+            .OnDelete(DeleteBehavior.Restrict);
         builder
             .HasOne<BusinessPartner>()
             .WithMany()
@@ -78,12 +90,24 @@ public sealed class AccountsPayableConfiguration : IEntityTypeConfiguration<Acco
             .OnDelete(DeleteBehavior.Restrict);
 
         builder
-            .HasIndex(x => new { x.TenantId, x.CompanyId, x.OriginType, x.OriginId })
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.CompanyId,
+                x.OriginType,
+                x.OriginId,
+            })
             .IsUnique()
             .HasDatabaseName("uq_accounts_payables_tenant_company_origin");
 
         builder
-            .HasIndex(x => new { x.TenantId, x.CompanyId, x.SupplierId, x.Status })
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.CompanyId,
+                x.SupplierId,
+                x.Status,
+            })
             .HasDatabaseName("ix_accounts_payables_tenant_company_supplier_status");
     }
 }

@@ -37,7 +37,12 @@ public sealed class ExpenseDocumentConfirmedPostingTranslatorTests
             allocations
                 ?? new[]
                 {
-                    new ExpenseDocumentConfirmedLineAllocation(Guid.NewGuid(), Guid.NewGuid(), 100m, "Internet"),
+                    new ExpenseDocumentConfirmedLineAllocation(
+                        Guid.NewGuid(),
+                        Guid.NewGuid(),
+                        100m,
+                        "Internet"
+                    ),
                 }
         );
 
@@ -45,7 +50,8 @@ public sealed class ExpenseDocumentConfirmedPostingTranslatorTests
     {
         public Mock<IPostingEngine> PostingEngine { get; } = new();
 
-        public ExpenseDocumentConfirmedPostingTranslator BuildTranslator() => new(PostingEngine.Object);
+        public ExpenseDocumentConfirmedPostingTranslator BuildTranslator() =>
+            new(PostingEngine.Object);
     }
 
     [Fact]
@@ -56,14 +62,22 @@ public sealed class ExpenseDocumentConfirmedPostingTranslatorTests
         var accountId = Guid.NewGuid();
         var documentId = Guid.NewGuid();
         PostingFact? captured = null;
-        m.PostingEngine
-            .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
+        m.PostingEngine.Setup(e =>
+                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
+            )
             .Callback<PostingFact, CancellationToken>((fact, _) => captured = fact)
-            .ReturnsAsync(Result<PostingOutcomeDto>.Success(new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)));
+            .ReturnsAsync(
+                Result<PostingOutcomeDto>.Success(
+                    new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)
+                )
+            );
 
         var evt = Event(
             documentId,
-            new[] { new ExpenseDocumentConfirmedLineAllocation(lineId, accountId, 100m, "Internet") }
+            new[]
+            {
+                new ExpenseDocumentConfirmedLineAllocation(lineId, accountId, 100m, "Internet"),
+            }
         );
 
         await m.BuildTranslator().Handle(evt, CancellationToken.None);
@@ -89,10 +103,15 @@ public sealed class ExpenseDocumentConfirmedPostingTranslatorTests
     {
         var m = new Mocks();
         PostingFact? captured = null;
-        m.PostingEngine
-            .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
+        m.PostingEngine.Setup(e =>
+                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
+            )
             .Callback<PostingFact, CancellationToken>((fact, _) => captured = fact)
-            .ReturnsAsync(Result<PostingOutcomeDto>.Success(new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)));
+            .ReturnsAsync(
+                Result<PostingOutcomeDto>.Success(
+                    new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)
+                )
+            );
 
         var allocations = new[]
         {
@@ -110,9 +129,14 @@ public sealed class ExpenseDocumentConfirmedPostingTranslatorTests
     public async Task Posting_exitoso_no_lanza()
     {
         var m = new Mocks();
-        m.PostingEngine
-            .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<PostingOutcomeDto>.Success(new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)));
+        m.PostingEngine.Setup(e =>
+                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                Result<PostingOutcomeDto>.Success(
+                    new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)
+                )
+            );
 
         var act = async () => await m.BuildTranslator().Handle(Event(), CancellationToken.None);
 
@@ -123,9 +147,15 @@ public sealed class ExpenseDocumentConfirmedPostingTranslatorTests
     public async Task Posting_failure_lanza_ExpensePostingFailedException_en_vez_de_loguear_warning()
     {
         var m = new Mocks();
-        m.PostingEngine
-            .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<PostingOutcomeDto>.ValidationFailure("No existe regla de contabilizacion.", "RULE_NOT_FOUND"));
+        m.PostingEngine.Setup(e =>
+                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                Result<PostingOutcomeDto>.ValidationFailure(
+                    "No existe regla de contabilizacion.",
+                    "RULE_NOT_FOUND"
+                )
+            );
 
         var act = async () => await m.BuildTranslator().Handle(Event(), CancellationToken.None);
 

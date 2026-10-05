@@ -1,5 +1,5 @@
-using ERP.Domain.Common;
 using System.Globalization;
+using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Payables.Entities;
 
@@ -16,7 +16,10 @@ namespace ERP.Domain.Modules.Payables.Entities;
 /// <c>ISupplierPaymentSequenceRepository.CaptureNextAsync</c> — fuera del alcance de esta entidad de
 /// dominio puro.
 /// </summary>
-public sealed class SupplierPaymentSequence : BaseEntity, ITenantScopedEntity, ICompanyOperationalEntity
+public sealed class SupplierPaymentSequence
+    : BaseEntity,
+        ITenantScopedEntity,
+        ICompanyOperationalEntity
 {
     public const int PrefixMaxLen = 10;
 
@@ -30,7 +33,11 @@ public sealed class SupplierPaymentSequence : BaseEntity, ITenantScopedEntity, I
 
     private SupplierPaymentSequence() { }
 
-    public static SupplierPaymentSequence Create(Guid tenantId, Guid companyId, string? prefix = null)
+    public static SupplierPaymentSequence Create(
+        Guid tenantId,
+        Guid companyId,
+        string? prefix = null
+    )
     {
         if (companyId == Guid.Empty)
             throw new ArgumentException("La empresa es obligatoria.", nameof(companyId));

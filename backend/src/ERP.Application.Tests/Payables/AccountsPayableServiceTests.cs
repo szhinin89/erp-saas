@@ -40,7 +40,8 @@ public sealed class AccountsPayableServiceTests
 
         public Mocks()
         {
-            Repo.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+            Repo.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
             Repo.Setup(r => r.AddAsync(It.IsAny<AccountsPayable>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
         }
@@ -52,13 +53,19 @@ public sealed class AccountsPayableServiceTests
     public async Task Crear_CxP_desde_origen_valido_genera_una_cuota_por_el_total()
     {
         var m = new Mocks();
-        m.Repo
-            .Setup(r =>
-                r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.ExpenseDocument, OriginId, It.IsAny<CancellationToken>())
+        m.Repo.Setup(r =>
+                r.GetByOriginAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountsPayableOriginType.ExpenseDocument,
+                    OriginId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((AccountsPayable?)null);
 
-        var payable = await m.BuildService().CreateFromOriginAsync(ValidRequest(), UserId, CancellationToken.None);
+        var payable = await m.BuildService()
+            .CreateFromOriginAsync(ValidRequest(), UserId, CancellationToken.None);
 
         payable.TotalAmount.Should().Be(115m);
         payable.OutstandingAmount.Should().Be(115m);
@@ -66,7 +73,10 @@ public sealed class AccountsPayableServiceTests
         payable.Installments.Should().ContainSingle();
         payable.OriginType.Should().Be(AccountsPayableOriginType.ExpenseDocument);
         payable.OriginId.Should().Be(OriginId);
-        m.Repo.Verify(r => r.AddAsync(It.IsAny<AccountsPayable>(), It.IsAny<CancellationToken>()), Times.Once);
+        m.Repo.Verify(
+            r => r.AddAsync(It.IsAny<AccountsPayable>(), It.IsAny<CancellationToken>()),
+            Times.Once
+        );
         m.Repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -75,22 +85,38 @@ public sealed class AccountsPayableServiceTests
     {
         var m = new Mocks();
         var existing = AccountsPayable.CreateFromOrigin(
-            TenantId, CompanyId, BranchId, SupplierId,
-            AccountsPayableOriginType.ExpenseDocument, OriginId,
-            "01", "001-001-000000001",
-            new DateOnly(2026, 8, 27), new DateOnly(2026, 8, 27), UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            AccountsPayableOriginType.ExpenseDocument,
+            OriginId,
+            "01",
+            "001-001-000000001",
+            new DateOnly(2026, 8, 27),
+            new DateOnly(2026, 8, 27),
+            UserId
         );
         existing.AddInstallment(1, new DateOnly(2026, 9, 26), 115m);
-        m.Repo
-            .Setup(r =>
-                r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.ExpenseDocument, OriginId, It.IsAny<CancellationToken>())
+        m.Repo.Setup(r =>
+                r.GetByOriginAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountsPayableOriginType.ExpenseDocument,
+                    OriginId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(existing);
 
-        var result = await m.BuildService().CreateFromOriginAsync(ValidRequest(), UserId, CancellationToken.None);
+        var result = await m.BuildService()
+            .CreateFromOriginAsync(ValidRequest(), UserId, CancellationToken.None);
 
         result.Should().BeSameAs(existing);
-        m.Repo.Verify(r => r.AddAsync(It.IsAny<AccountsPayable>(), It.IsAny<CancellationToken>()), Times.Never);
+        m.Repo.Verify(
+            r => r.AddAsync(It.IsAny<AccountsPayable>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
         m.Repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -98,17 +124,30 @@ public sealed class AccountsPayableServiceTests
     public async Task Bloquea_total_menor_o_igual_a_cero()
     {
         var m = new Mocks();
-        m.Repo
-            .Setup(r =>
-                r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.ExpenseDocument, OriginId, It.IsAny<CancellationToken>())
+        m.Repo.Setup(r =>
+                r.GetByOriginAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountsPayableOriginType.ExpenseDocument,
+                    OriginId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((AccountsPayable?)null);
 
         var act = async () =>
-            await m.BuildService().CreateFromOriginAsync(ValidRequest(totalAmount: 0m), UserId, CancellationToken.None);
+            await m.BuildService()
+                .CreateFromOriginAsync(
+                    ValidRequest(totalAmount: 0m),
+                    UserId,
+                    CancellationToken.None
+                );
 
         await act.Should().ThrowAsync<ArgumentException>();
-        m.Repo.Verify(r => r.AddAsync(It.IsAny<AccountsPayable>(), It.IsAny<CancellationToken>()), Times.Never);
+        m.Repo.Verify(
+            r => r.AddAsync(It.IsAny<AccountsPayable>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
         m.Repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -116,14 +155,24 @@ public sealed class AccountsPayableServiceTests
     public async Task Bloquea_total_negativo()
     {
         var m = new Mocks();
-        m.Repo
-            .Setup(r =>
-                r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.ExpenseDocument, OriginId, It.IsAny<CancellationToken>())
+        m.Repo.Setup(r =>
+                r.GetByOriginAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountsPayableOriginType.ExpenseDocument,
+                    OriginId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((AccountsPayable?)null);
 
         var act = async () =>
-            await m.BuildService().CreateFromOriginAsync(ValidRequest(totalAmount: -10m), UserId, CancellationToken.None);
+            await m.BuildService()
+                .CreateFromOriginAsync(
+                    ValidRequest(totalAmount: -10m),
+                    UserId,
+                    CancellationToken.None
+                );
 
         await act.Should().ThrowAsync<ArgumentException>();
     }

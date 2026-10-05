@@ -1,3 +1,7 @@
+using System.Collections.Concurrent;
+using System.Net;
+using System.Text;
+using System.Text.Json;
 using ERP.API.Tests.Support;
 using ERP.Application.Auth.UseCases.PasswordReset;
 using ERP.Application.Common.Interfaces;
@@ -12,10 +16,6 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System.Collections.Concurrent;
-using System.Net;
-using System.Text;
-using System.Text.Json;
 
 namespace ERP.API.Tests.Integration;
 
@@ -66,7 +66,9 @@ public sealed class ForgotPasswordSecurityHttpTests
         var link = app.SentLinks.Should().ContainSingle().Subject;
         var rawToken = Uri.UnescapeDataString(link.Split("token=")[1].Split('&')[0]);
         var logs = app.AllLogText();
-        logs.Should().Contain("PasswordResetDeliveryRequested").And.Contain("PasswordResetDeliverySimulated");
+        logs.Should()
+            .Contain("PasswordResetDeliveryRequested")
+            .And.Contain("PasswordResetDeliverySimulated");
         logs.Should().NotContain(rawToken);
         logs.Should().NotContain(Uri.EscapeDataString(rawToken));
         logs.Should().NotContain(link);
@@ -86,14 +88,20 @@ public sealed class ForgotPasswordSecurityHttpTests
 
         var tokens = await _f.TokensForAsync(_f.UserResetId);
         tokens.Should().HaveCount(2);
-        tokens.OrderBy(t => t.CreatedAt).First().Used.Should().BeTrue("emitir uno nuevo invalida el anterior");
+        tokens
+            .OrderBy(t => t.CreatedAt)
+            .First()
+            .Used.Should()
+            .BeTrue("emitir uno nuevo invalida el anterior");
 
         var firstToken = TokenFrom(app.SentLinks[0]);
         var currentToken = TokenFrom(app.SentLinks[1]);
 
         (await ResetAsync(client, firstToken)).Should().Be(HttpStatusCode.BadRequest);
         (await ResetAsync(client, currentToken)).Should().Be(HttpStatusCode.OK);
-        (await ResetAsync(client, currentToken)).Should().Be(HttpStatusCode.BadRequest, "single-use");
+        (await ResetAsync(client, currentToken))
+            .Should()
+            .Be(HttpStatusCode.BadRequest, "single-use");
     }
 
     // M/N — cupo por identidad: al excederse no hay token y la respuesta no cambia,
@@ -113,7 +121,10 @@ public sealed class ForgotPasswordSecurityHttpTests
             nonexistentResponses.Add(await ForgotAsync(client, nonexistent));
         }
 
-        existingResponses.Concat(nonexistentResponses).Should().AllBeEquivalentTo(existingResponses[0]);
+        existingResponses
+            .Concat(nonexistentResponses)
+            .Should()
+            .AllBeEquivalentTo(existingResponses[0]);
         existingResponses[0].Status.Should().Be(HttpStatusCode.OK);
         (await _f.TokensForAsync(_f.UserThrottleId)).Should().HaveCount(2);
         app.AllLogText().Should().Contain("RateLimited");
@@ -126,8 +137,12 @@ public sealed class ForgotPasswordSecurityHttpTests
         using var app = _f.CreateApp(ipLimit: 2);
         using var client = app.Client;
 
-        (await ForgotAsync(client, $"x-{Guid.NewGuid():N}@test.com")).Status.Should().Be(HttpStatusCode.OK);
-        (await ForgotAsync(client, $"y-{Guid.NewGuid():N}@test.com")).Status.Should().Be(HttpStatusCode.OK);
+        (await ForgotAsync(client, $"x-{Guid.NewGuid():N}@test.com"))
+            .Status.Should()
+            .Be(HttpStatusCode.OK);
+        (await ForgotAsync(client, $"y-{Guid.NewGuid():N}@test.com"))
+            .Status.Should()
+            .Be(HttpStatusCode.OK);
 
         var limitedNonexistent = await ForgotAsync(client, $"z-{Guid.NewGuid():N}@test.com");
         var limitedExisting = await ForgotAsync(client, _f.EmailNeutral);
@@ -143,7 +158,12 @@ public sealed class ForgotPasswordSecurityHttpTests
     // ── helpers ─────────────────────────────────────────────────────────────────────────
 
     /// <summary>Parte pública comparable: status, envelope (sin meta volátil) y nombres de headers.</summary>
-    private sealed record PublicResponse(HttpStatusCode Status, string? Code, string Envelope, string HeaderNames);
+    private sealed record PublicResponse(
+        HttpStatusCode Status,
+        string? Code,
+        string Envelope,
+        string HeaderNames
+    );
 
     private static async Task<PublicResponse> ForgotAsync(HttpClient client, string email)
     {
@@ -160,12 +180,15 @@ public sealed class ForgotPasswordSecurityHttpTests
             code = root.TryGetProperty("code", out var c) ? c.GetString() : null;
             envelope = string.Join(
                 "|",
-                root.EnumerateObject().Where(p => p.Name != "meta").Select(p => $"{p.Name}={p.Value.GetRawText()}")
+                root.EnumerateObject()
+                    .Where(p => p.Name != "meta")
+                    .Select(p => $"{p.Name}={p.Value.GetRawText()}")
             );
         }
         var headerNames = string.Join(
             ",",
-            response.Headers.Concat(response.Content.Headers)
+            response
+                .Headers.Concat(response.Content.Headers)
                 .Select(h => h.Key)
                 .Where(k => !k.Equals("Date", StringComparison.OrdinalIgnoreCase))
                 .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
@@ -177,7 +200,16 @@ public sealed class ForgotPasswordSecurityHttpTests
     {
         using var response = await client.PostAsync(
             "/api/v1/auth/reset-password",
-            JsonContent(JsonSerializer.Serialize(new { token, newPassword = NewPassword, tenantId = _f.TenantId }))
+            JsonContent(
+                JsonSerializer.Serialize(
+                    new
+                    {
+                        token,
+                        newPassword = NewPassword,
+                        tenantId = _f.TenantId,
+                    }
+                )
+            )
         );
         return response.StatusCode;
     }
@@ -185,7 +217,8 @@ public sealed class ForgotPasswordSecurityHttpTests
     private static string TokenFrom(string link) =>
         Uri.UnescapeDataString(link.Split("token=")[1].Split('&')[0]);
 
-    private static StringContent JsonContent(string json) => new(json, Encoding.UTF8, "application/json");
+    private static StringContent JsonContent(string json) =>
+        new(json, Encoding.UTF8, "application/json");
 
     // ── fixture ─────────────────────────────────────────────────────────────────────────
 
@@ -207,7 +240,10 @@ public sealed class ForgotPasswordSecurityHttpTests
 
         public async Task InitializeAsync()
         {
-            Environment.SetEnvironmentVariable("JWT__SECRETKEY", IntegrationTestConstants.JwtSecretKey);
+            Environment.SetEnvironmentVariable(
+                "JWT__SECRETKEY",
+                IntegrationTestConstants.JwtSecretKey
+            );
             Environment.SetEnvironmentVariable("JWT__ISSUER", "ZHTechnologies");
             Environment.SetEnvironmentVariable("JWT__AUDIENCE", "ERPUsers");
             await _factory.InitializeAsync();
@@ -221,19 +257,38 @@ public sealed class ForgotPasswordSecurityHttpTests
             await db.SaveChangesAsync();
             TenantId = tenant.Id;
 
-            var company = Company.CreateManaged(tenant.Id, $"179{Guid.NewGuid():N}"[..13], "Empresa A", createdBy: _adminId);
-            var otherCompany = Company.CreateManaged(otherTenant.Id, $"179{Guid.NewGuid():N}"[..13], "Empresa B", createdBy: _adminId);
+            var company = Company.CreateManaged(
+                tenant.Id,
+                $"179{Guid.NewGuid():N}"[..13],
+                "Empresa A",
+                createdBy: _adminId
+            );
+            var otherCompany = Company.CreateManaged(
+                otherTenant.Id,
+                $"179{Guid.NewGuid():N}"[..13],
+                "Empresa B",
+                createdBy: _adminId
+            );
             db.Companies.AddRange(company, otherCompany);
             await db.SaveChangesAsync();
 
             var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
             async Task<Guid> SeedUserAsync(string email, params Guid[] companyIds)
             {
-                var user = IdentityUser.Create($"u-{Guid.NewGuid():N}"[..20], "Usuario", "Prueba", email, hasher.HashPassword("Correcta#2026"), _adminId);
+                var user = IdentityUser.Create(
+                    $"u-{Guid.NewGuid():N}"[..20],
+                    "Usuario",
+                    "Prueba",
+                    email,
+                    hasher.HashPassword("Correcta#2026"),
+                    _adminId
+                );
                 db.IdentityUsers.Add(user);
                 await db.SaveChangesAsync();
                 foreach (var companyId in companyIds)
-                    db.CompanyUserMemberships.Add(CompanyUserMembership.Create(companyId, user.Id, "Admin", null, _adminId));
+                    db.CompanyUserMemberships.Add(
+                        CompanyUserMembership.Create(companyId, user.Id, "Admin", null, _adminId)
+                    );
                 await db.SaveChangesAsync();
                 return user.Id;
             }
@@ -247,11 +302,16 @@ public sealed class ForgotPasswordSecurityHttpTests
 
         public async Task DisposeAsync() => await _factory.DisposeAsync();
 
-        public async Task<List<ERP.Domain.Auth.Entities.PasswordResetToken>> TokensForAsync(Guid userId)
+        public async Task<List<ERP.Domain.Auth.Entities.PasswordResetToken>> TokensForAsync(
+            Guid userId
+        )
         {
             using var scope = _factory.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
-            return await db.PasswordResetTokens.AsNoTracking().Where(t => t.UserId == userId).ToListAsync();
+            return await db
+                .PasswordResetTokens.AsNoTracking()
+                .Where(t => t.UserId == userId)
+                .ToListAsync();
         }
 
         /// <summary>
@@ -271,9 +331,10 @@ public sealed class ForgotPasswordSecurityHttpTests
                 builder.ConfigureTestServices(services =>
                 {
                     services.AddSingleton<ILogger<ForgotPasswordHandler>>(handlerLog);
-                    services.AddScoped<IPasswordResetLinkSender>(_ =>
-                        new RecordingSender(new LoggingPasswordResetLinkSender(senderLog), links)
-                    );
+                    services.AddScoped<IPasswordResetLinkSender>(_ => new RecordingSender(
+                        new LoggingPasswordResetLinkSender(senderLog),
+                        links
+                    ));
                 });
             });
             return new TestApp(app, handlerLog, senderLog, links);
@@ -299,10 +360,16 @@ public sealed class ForgotPasswordSecurityHttpTests
         }
     }
 
-    private sealed class RecordingSender(IPasswordResetLinkSender inner, ConcurrentQueue<string> links)
-        : IPasswordResetLinkSender
+    private sealed class RecordingSender(
+        IPasswordResetLinkSender inner,
+        ConcurrentQueue<string> links
+    ) : IPasswordResetLinkSender
     {
-        public Task SendPasswordResetLinkAsync(string toEmail, string resetLink, CancellationToken cancellationToken = default)
+        public Task SendPasswordResetLinkAsync(
+            string toEmail,
+            string resetLink,
+            CancellationToken cancellationToken = default
+        )
         {
             links.Enqueue(resetLink);
             return inner.SendPasswordResetLinkAsync(toEmail, resetLink, cancellationToken);

@@ -26,7 +26,10 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
     private static readonly Guid UserId = Guid.NewGuid();
     private static readonly Guid SupplierId = Guid.NewGuid();
 
-    private static PurchaseReceptionDocument SampleDocument(Guid? supplierId = null, PurchaseReceptionSourceDocType sourceDocType = PurchaseReceptionSourceDocType.Invoice) =>
+    private static PurchaseReceptionDocument SampleDocument(
+        Guid? supplierId = null,
+        PurchaseReceptionSourceDocType sourceDocType = PurchaseReceptionSourceDocType.Invoice
+    ) =>
         PurchaseReceptionDocument.Create(
             TenantId,
             CompanyId,
@@ -109,20 +112,23 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
             tenant.Object,
             user.Object,
             NullLogger<CreatePurchaseReceptionDraftHandler>.Instance,
-            new ERP.Application.Modules.Inventory.ItemMatching.Services.PurchaseReceptionAutoMatcher(itemRepo.Object)
+            new ERP.Application.Modules.Inventory.ItemMatching.Services.PurchaseReceptionAutoMatcher(
+                itemRepo.Object
+            )
         );
         SetupSupplierMock(bpRepo);
         return (handler, repo, purchaseRepo, bpRepo, detailProcessor, itemRepo);
     }
 
-    private static BusinessPartner DefaultSupplier { get; } = BusinessPartner.Create(
-        TenantId,
-        TaxIdentification.SriRuc,
-        "1791352688001",
-        2,
-        "PROVEEDOR ACME S.A.",
-        UserId
-    );
+    private static BusinessPartner DefaultSupplier { get; } =
+        BusinessPartner.Create(
+            TenantId,
+            TaxIdentification.SriRuc,
+            "1791352688001",
+            2,
+            "PROVEEDOR ACME S.A.",
+            UserId
+        );
 
     private static BusinessPartner SampleSupplier() => DefaultSupplier;
 
@@ -134,9 +140,7 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
     {
         supplier ??= SampleSupplier();
         var id = supplierId ?? SupplierId;
-        bpRepo
-            .Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(supplier);
+        bpRepo.Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(supplier);
         bpRepo
             .Setup(r =>
                 r.GetByIdentificationAsync(
@@ -169,11 +173,25 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
     {
         var document = SampleDocument(sourceDocType: PurchaseReceptionSourceDocType.CreditNote);
         var (handler, repo, _, _, processor, _) = BuildHandler();
-        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>())).ReturnsAsync(document);
-        var result = await handler.Handle(new CreatePurchaseReceptionDraftCommand(document.Id), CancellationToken.None);
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+        var result = await handler.Handle(
+            new CreatePurchaseReceptionDraftCommand(document.Id),
+            CancellationToken.None
+        );
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Solo una factura");
-        processor.Verify(p => p.ProcessAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        processor.Verify(
+            p =>
+                p.ProcessAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -182,25 +200,67 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
         // COMPRAS-METODO-ZH-01B: the code was resolved on another invoice after this XML was downloaded.
         var document = SampleDocument(SupplierId);
         var line = SampleLine(document.Id, supplierCode: "CJ-12");
-        document.AttachSriAuthorization("1234567890", DateTime.UtcNow, "<factura>irrelevante</factura>",
-            DateTime.UtcNow, [line], UserId, docTypeCode: "01", sriPaymentMethodCode: "01",
-            processing: new PurchaseReceptionProcessingOutcome(PurchaseReceptionProcessingStatus.Processed, 1, 1, null));
+        document.AttachSriAuthorization(
+            "1234567890",
+            DateTime.UtcNow,
+            "<factura>irrelevante</factura>",
+            DateTime.UtcNow,
+            [line],
+            UserId,
+            docTypeCode: "01",
+            sriPaymentMethodCode: "01",
+            processing: new PurchaseReceptionProcessingOutcome(
+                PurchaseReceptionProcessingStatus.Processed,
+                1,
+                1,
+                null
+            )
+        );
         var learnedItemId = Guid.NewGuid();
         var boxLevelId = Guid.NewGuid();
         var (handler, repo, _, _, _, itemRepo) = BuildHandler();
-        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>())).ReturnsAsync(document);
-        itemRepo.Setup(r => r.FindItemIdBySupplierCodeAsync(SupplierId, "CJ-12", TenantId, It.IsAny<CancellationToken>()))
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+        itemRepo
+            .Setup(r =>
+                r.FindItemIdBySupplierCodeAsync(
+                    SupplierId,
+                    "CJ-12",
+                    TenantId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(learnedItemId);
-        itemRepo.Setup(r => r.GetSupplierCodeMatchAsync(SupplierId, "CJ-12", TenantId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ERP.Domain.Modules.Items.Models.ItemSupplierCodeMatch(learnedItemId, boxLevelId, "02", 12m, "19"));
+        itemRepo
+            .Setup(r =>
+                r.GetSupplierCodeMatchAsync(
+                    SupplierId,
+                    "CJ-12",
+                    TenantId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new ERP.Domain.Modules.Items.Models.ItemSupplierCodeMatch(
+                    learnedItemId,
+                    boxLevelId,
+                    "02",
+                    12m,
+                    "19"
+                )
+            );
 
-        var result = await handler.Handle(new CreatePurchaseReceptionDraftCommand(document.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new CreatePurchaseReceptionDraftCommand(document.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         var dto = result.Value!.Lines.Single();
         (dto.ItemId, dto.ItemMatchStatus).Should().Be((learnedItemId, "AUTO_MATCHED"));
         (dto.PackagingLevelId, dto.UomCode, dto.ConversionFactor, dto.QuantityInBaseUom)
-            .Should().Be((boxLevelId, "02", 12m, 24m));
+            .Should()
+            .Be((boxLevelId, "02", 12m, 24m));
         repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -261,11 +321,7 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
             document.Id,
             description: "INCA-KOLA ORGL 900ML PET NR 12",
             supplierCode: "12469",
-            taxes:
-            [
-                ("2", "4", 15.00m, 12.98m, 1.95m),
-                ("5", "5001", 0.02m, 36.00m, 0.72m),
-            ]
+            taxes: [("2", "4", 15.00m, 12.98m, 1.95m), ("5", "5001", 0.02m, 36.00m, 0.72m)]
         );
         document.AttachSriAuthorization(
             "1234567890",
@@ -574,15 +630,7 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
                     It.IsAny<CancellationToken>()
                 )
             )
-            .ReturnsAsync(
-                new ItemSupplierCodeMatch(
-                    itemId,
-                    packagingLevelId,
-                    "PACA",
-                    12m,
-                    "UNIT"
-                )
-            );
+            .ReturnsAsync(new ItemSupplierCodeMatch(itemId, packagingLevelId, "PACA", 12m, "UNIT"));
 
         var result = await handler.Handle(
             new CreatePurchaseReceptionDraftCommand(document.Id),
@@ -995,8 +1043,7 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
     // Mismo fixture real de producción que PurchaseXmlDraftParserTests
     // ("Parses_the_real_ArcaContinental_XML_reported_by_the_user_with_IRBPNR_on_both_lines") —
     // factura 029-001-001293714, BEBIDAS ARCACONTINENTAL. Reutilizado tal cual, no reinventado.
-    private const string ArcaContinentalXml =
-        """
+    private const string ArcaContinentalXml = """
         <?xml version="1.0" encoding="UTF-8"?>
         <factura id="comprobante" version="2.1.0">
           <infoTributaria>
@@ -1071,8 +1118,7 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
     // Sintético (no es el XML real) — dos <detalle> con el MISMO codigoPrincipal y la MISMA
     // descripcion, para forzar un grupo de correlación con count>1 y probar que no se cruza
     // matching/impuestos entre líneas del mismo grupo.
-    private const string DuplicateSupplierCodeXml =
-        """
+    private const string DuplicateSupplierCodeXml = """
         <?xml version="1.0" encoding="UTF-8"?>
         <factura id="comprobante" version="2.1.0">
           <infoTributaria>
@@ -1116,8 +1162,7 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
     // Igual que DuplicateSupplierCodeXml, pero con un TERCER <detalle> del mismo grupo de
     // correlación (codigoPrincipal="999" + misma descripción) — fuerza fresco(3) != persistido(2),
     // el caso concreto que hace caer al merger al fallback "sin fusión" por ambigüedad.
-    private const string TripleDuplicateSupplierCodeXml =
-        """
+    private const string TripleDuplicateSupplierCodeXml = """
         <?xml version="1.0" encoding="UTF-8"?>
         <factura id="comprobante" version="2.1.0">
           <infoTributaria>
@@ -1356,7 +1401,11 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
         secondDto.Taxes.Should().ContainSingle(t => t.TaxCode == "2");
         // Los montos de las dos líneas frescas son distintos (1.50 vs 6.00) — si hubiera cruce, una
         // de las dos líneas repetiría el monto de la otra o quedaría con el snapshot vacío (0 impuestos).
-        var taxAmounts = lines.SelectMany(l => l.Taxes).Select(t => t.TaxAmount).OrderBy(v => v).ToList();
+        var taxAmounts = lines
+            .SelectMany(l => l.Taxes)
+            .Select(t => t.TaxAmount)
+            .OrderBy(v => v)
+            .ToList();
         taxAmounts.Should().Equal(1.50m, 6.00m);
     }
 
@@ -1365,10 +1414,7 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
     public async Task Handle_falls_back_to_persisted_lines_when_xml_content_cannot_be_parsed()
     {
         var document = SampleDocument(SupplierId);
-        var line = SampleLine(
-            document.Id,
-            taxes: [("2", "4", 15.00m, 20.00m, 3.00m)]
-        );
+        var line = SampleLine(document.Id, taxes: [("2", "4", 15.00m, 20.00m, 3.00m)]);
         document.AttachSriAuthorization(
             "1234567890",
             DateTime.UtcNow,
@@ -1461,7 +1507,9 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
         // PURCHASE-XML-LINE-ADDITIONAL-FIELDS-01 — el mismo caso real también debe mostrar los
         // detAdicional de la línea, sin afectar los valores fiscales verificados arriba.
         incaKolaDto.AdditionalFields.Should().HaveCount(2);
-        incaKolaDto.AdditionalFields.Should().Contain(f => f.Name == "Unidad" && f.Value == "3 /  0");
+        incaKolaDto
+            .AdditionalFields.Should()
+            .Contain(f => f.Name == "Unidad" && f.Value == "3 /  0");
         incaKolaDto.AdditionalFields.Should().Contain(f => f.Name == "valor2" && f.Value == "0.72");
     }
 
@@ -1521,7 +1569,9 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
 
         // Documental: viene del XML fresco re-parseado.
         incaKolaDto.AdditionalFields.Should().HaveCount(2);
-        incaKolaDto.AdditionalFields.Should().Contain(f => f.Name == "Unidad" && f.Value == "3 /  0");
+        incaKolaDto
+            .AdditionalFields.Should()
+            .Contain(f => f.Name == "Unidad" && f.Value == "3 /  0");
         incaKolaDto.AdditionalFields.Should().Contain(f => f.Name == "valor2" && f.Value == "0.72");
 
         // Operativo: el matching manual ya resuelto nunca se pierde por refrescar lo documental.

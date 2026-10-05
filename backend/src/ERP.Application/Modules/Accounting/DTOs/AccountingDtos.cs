@@ -263,7 +263,9 @@ public sealed record GeneralLedgerAccountDto(
     IReadOnlyList<GeneralLedgerMovementDto> Movements
 );
 
-public sealed record GetGeneralLedgerReportResponse(IReadOnlyList<GeneralLedgerAccountDto> Accounts);
+public sealed record GetGeneralLedgerReportResponse(
+    IReadOnlyList<GeneralLedgerAccountDto> Accounts
+);
 
 /// <summary>
 /// Balance de Comprobación — una fila por cuenta. Saldo inicial/final se expresan en convención

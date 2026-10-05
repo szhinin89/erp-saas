@@ -29,7 +29,10 @@ public sealed class PurchaseReturnDetailConfiguration
             .IsRequired();
         builder.Property(x => x.WarehouseId).HasColumnName("warehouse_id").IsRequired();
 
-        builder.Property(x => x.UnitCost).HasColumnName("unit_cost").HasColumnType("numeric(22,10)");
+        builder
+            .Property(x => x.UnitCost)
+            .HasColumnName("unit_cost")
+            .HasColumnType("numeric(22,10)");
         builder.Property(x => x.VatCode).HasColumnName("vat_code").HasMaxLength(20);
         builder.Property(x => x.VatRate).HasColumnName("vat_rate").HasColumnType("numeric(5,2)");
         builder

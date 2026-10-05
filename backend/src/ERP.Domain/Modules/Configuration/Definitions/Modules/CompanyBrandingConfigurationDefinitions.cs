@@ -1,6 +1,6 @@
+using System.Text.RegularExpressions;
 using ERP.Domain.Configuration.Constants;
 using ERP.Domain.Configuration.Enums;
-using System.Text.RegularExpressions;
 
 namespace ERP.Domain.Configuration.Definitions.Modules;
 
@@ -28,7 +28,8 @@ public static partial class CompanyBrandingConfigurationDefinitions
             FallbackStrategy = ConfigurationFallbackStrategy.VisualSafeDefault,
             RequiresAudit = false,
             Validator = value => HexColorRegex().IsMatch(value!),
-            DeveloperNotes = "null/blank permitido (sin color configurado). Corrupto en lectura → null + warning, nunca color inválido en PDF.",
+            DeveloperNotes =
+                "null/blank permitido (sin color configurado). Corrupto en lectura → null + warning, nunca color inválido en PDF.",
         };
 
         yield return new ConfigurationDefinition

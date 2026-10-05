@@ -38,7 +38,9 @@ public sealed class RetentionWiringDependencyInjectionTests
         // ZH-SRI-ANEXO26-PROVIDER-RUC-01 (ADR-038 D6): composer y contributor reales, igual que en
         // el registro de producción; solo la configuración global del proveedor es doble.
         services.AddLogging();
-        services.AddScoped(_ => new Mock<ERP.Domain.Configuration.Interfaces.ISystemProviderSettingsRepository>().Object);
+        services.AddScoped(_ =>
+            new Mock<ERP.Domain.Configuration.Interfaces.ISystemProviderSettingsRepository>().Object
+        );
         services.AddScoped<
             ERP.Application.Modules.ElectronicDocuments.AdditionalInfo.IElectronicDocumentAdditionalInfoContributor,
             ERP.Application.Modules.ElectronicDocuments.AdditionalInfo.SystemProviderRucAdditionalInfoContributor
@@ -60,7 +62,9 @@ public sealed class RetentionWiringDependencyInjectionTests
         services.AddScoped<IRetentionRideTemplate, RetentionRideTemplate>();
         var rendererMock = new Mock<IRideRenderer>();
         rendererMock
-            .Setup(r => r.RenderAsync(It.IsAny<IRideDocumentLayout>(), It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.RenderAsync(It.IsAny<IRideDocumentLayout>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync([1, 2, 3]);
         services.AddScoped(_ => rendererMock.Object);
         var brandingProviderMock = new Mock<IRideBrandingProvider>();
@@ -82,7 +86,10 @@ public sealed class RetentionWiringDependencyInjectionTests
         services.AddScoped<IRideXmlParserResolver, RideXmlParserResolver>();
         services.AddScoped<IRideXmlParser, InvoiceRideXmlParser>();
         services.AddScoped<IRideXmlParser, CreditNoteRideXmlParser>();
-        services.AddScoped<ERP.Application.Modules.Companies.ICompanyPrecisionPolicyRepository, ERP.Infrastructure.Persistence.Repositories.CompanyConfig.CompanyPrecisionPolicyRepository>();
+        services.AddScoped<
+            ERP.Application.Modules.Companies.ICompanyPrecisionPolicyRepository,
+            ERP.Infrastructure.Persistence.Repositories.CompanyConfig.CompanyPrecisionPolicyRepository
+        >();
         services.AddScoped<IRideTemplateResolver, RideTemplateResolver>();
         services.AddScoped<IRideTemplate, DefaultInvoiceRideTemplate>();
         services.AddScoped<IRideTemplate, CreditNoteRideTemplate>();

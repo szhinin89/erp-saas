@@ -62,7 +62,8 @@ public sealed class GetItemByIdQueryHandler
         // mirror, ya no se lee para decisiones nuevas).
         var exciseTaxCode = item
             .SpecialTaxConfigurations.FirstOrDefault(c =>
-                c.IsActive && c.SriTaxCategoryCode == ERP.Domain.Modules.Purchases.SriTaxCategoryCodes.Ice
+                c.IsActive
+                && c.SriTaxCategoryCode == ERP.Domain.Modules.Purchases.SriTaxCategoryCodes.Ice
             )
             ?.TaxCatalogCode;
         var iceCodes = !string.IsNullOrWhiteSpace(exciseTaxCode) ? new[] { exciseTaxCode } : [];
@@ -85,7 +86,14 @@ public sealed class GetItemByIdQueryHandler
         );
 
         return Result<ItemDetailDto>.Success(
-            ItemMappingService.ToDetailDto(item, uomMap, vatMap, iceMap, itemTypeNames, supplierInfo)
+            ItemMappingService.ToDetailDto(
+                item,
+                uomMap,
+                vatMap,
+                iceMap,
+                itemTypeNames,
+                supplierInfo
+            )
         );
     }
 }

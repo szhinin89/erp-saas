@@ -4,7 +4,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ERP.Infrastructure.Persistence.Configurations.MasterData;
 
-public sealed class CustomerInvoiceFormatConfiguration : IEntityTypeConfiguration<CustomerInvoiceFormat>
+public sealed class CustomerInvoiceFormatConfiguration
+    : IEntityTypeConfiguration<CustomerInvoiceFormat>
 {
     public void Configure(EntityTypeBuilder<CustomerInvoiceFormat> builder)
     {

@@ -1,7 +1,7 @@
+using System.Xml.Schema;
 using ERP.Application.Modules.ElectronicDocuments.SchemaValidation;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using FluentAssertions;
-using System.Xml.Schema;
 
 namespace ERP.Application.Tests.ElectronicDocuments;
 
@@ -24,13 +24,11 @@ public sealed class ElectronicDocumentSchemaValidatorResolverTests
     }
 
     private static ElectronicDocumentSchemaValidatorResolver BuildResolver() =>
-        new(
-            [
-                new InvoiceXmlSchemaValidator(new NullSchemaProvider()),
-                new CreditNoteXmlSchemaValidator(new NullSchemaProvider()),
-                new RetentionXmlSchemaValidator(new NullSchemaProvider()),
-            ]
-        );
+        new([
+            new InvoiceXmlSchemaValidator(new NullSchemaProvider()),
+            new CreditNoteXmlSchemaValidator(new NullSchemaProvider()),
+            new RetentionXmlSchemaValidator(new NullSchemaProvider()),
+        ]);
 
     [Fact]
     public void Resolve_returns_RetentionXmlSchemaValidator_for_Retention()

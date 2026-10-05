@@ -81,9 +81,13 @@ public sealed class GetCashSessionByIdHandler
         // TREASURY-CASH-MANUAL-MOVEMENTS-01 — un solo query para todos los CreatedBy distintos de
         // los movimientos ("usuario" en el listado de Movimientos), nunca N+1 por movimiento.
         var userIds = session.Movements.Select(m => m.CreatedBy).Distinct().ToList();
-        var userNameById = userIds.Count == 0
-            ? new Dictionary<Guid, string>()
-            : (await _accessRepo.GetUsersByIdsAsync(userIds, ct)).ToDictionary(u => u.Id, u => u.FullName);
+        var userNameById =
+            userIds.Count == 0
+                ? new Dictionary<Guid, string>()
+                : (await _accessRepo.GetUsersByIdsAsync(userIds, ct)).ToDictionary(
+                    u => u.Id,
+                    u => u.FullName
+                );
 
         return Result<CashSessionDto>.Success(
             CajaMapper.ToDto(
@@ -158,14 +162,17 @@ public sealed class GetCashSessionListHandler
             sessionIds,
             ct
         );
-        var rowsBySession = rows
-            .GroupBy(r => r.CashSessionId)
-            .ToDictionary(g => g.Key, g => (IReadOnlyList<SalesInvoiceCashSessionPaymentRow>)g.ToList());
+        var rowsBySession = rows.GroupBy(r => r.CashSessionId)
+            .ToDictionary(
+                g => g.Key,
+                g => (IReadOnlyList<SalesInvoiceCashSessionPaymentRow>)g.ToList()
+            );
 
         var methods = await _paymentMethodRepo.ListAsync(_t.TenantId, onlyActive: false, ct);
         var methodById = methods.ToDictionary(m => m.Id, m => m);
 
-        var userIds = items.Select(s => s.UserId)
+        var userIds = items
+            .Select(s => s.UserId)
             .Concat(items.Where(s => s.ClosedBy.HasValue).Select(s => s.ClosedBy!.Value))
             .Distinct()
             .ToList();
@@ -174,13 +181,15 @@ public sealed class GetCashSessionListHandler
 
         var emptyRows = Array.Empty<SalesInvoiceCashSessionPaymentRow>();
         var dtos = items
-            .Select(s => CajaMapper.ToListDto(
-                s,
-                userNameById.GetValueOrDefault(s.UserId),
-                s.ClosedBy.HasValue ? userNameById.GetValueOrDefault(s.ClosedBy.Value) : null,
-                rowsBySession.GetValueOrDefault(s.Id, emptyRows),
-                methodById
-            ))
+            .Select(s =>
+                CajaMapper.ToListDto(
+                    s,
+                    userNameById.GetValueOrDefault(s.UserId),
+                    s.ClosedBy.HasValue ? userNameById.GetValueOrDefault(s.ClosedBy.Value) : null,
+                    rowsBySession.GetValueOrDefault(s.Id, emptyRows),
+                    methodById
+                )
+            )
             .ToList();
 
         return Result<CashSessionListResponse>.Success(
@@ -230,9 +239,13 @@ public sealed class GetMyCashSessionHandler
         var register = await _crRepo.GetByIdAsync(_t.TenantId, full.CashRegisterId, ct);
 
         var userIds = full.Movements.Select(m => m.CreatedBy).Distinct().ToList();
-        var userNameById = userIds.Count == 0
-            ? new Dictionary<Guid, string>()
-            : (await _accessRepo.GetUsersByIdsAsync(userIds, ct)).ToDictionary(u => u.Id, u => u.FullName);
+        var userNameById =
+            userIds.Count == 0
+                ? new Dictionary<Guid, string>()
+                : (await _accessRepo.GetUsersByIdsAsync(userIds, ct)).ToDictionary(
+                    u => u.Id,
+                    u => u.FullName
+                );
 
         return Result<CashSessionDto?>.Success(
             CajaMapper.ToDto(
@@ -294,7 +307,9 @@ public sealed class GetCashSessionCollectionSummaryHandler
         // cualquier CashSessionId adivinado de otra sucursal filtraría sus ventas.
         var session = await _cashRepo.GetByIdAsync(_t.TenantId, q.CashSessionId, ct);
         if (session is null || session.BranchId != _b.BranchId)
-            return Result<CashSessionCollectionSummaryDto>.NotFound("Sesión de caja no encontrada.");
+            return Result<CashSessionCollectionSummaryDto>.NotFound(
+                "Sesión de caja no encontrada."
+            );
 
         var rows = await _invoiceRepo.GetCollectionSummaryByCashSessionAsync(
             _t.TenantId,
@@ -318,23 +333,19 @@ public sealed class GetCashSessionCollectionSummaryHandler
         var invoiceCount = rows.Select(r => r.InvoiceId).Distinct().Count();
         var totalInvoiced = rows.GroupBy(r => r.InvoiceId).Sum(g => g.First().GrandTotal);
 
-        var totalCollected = rows
-            .Where(r => !IsCreditAllowed(r.PaymentMethodId, methodById))
+        var totalCollected = rows.Where(r => !IsCreditAllowed(r.PaymentMethodId, methodById))
             .Sum(r => r.Amount);
-        var totalCredit = rows
-            .Where(r => IsCreditAllowed(r.PaymentMethodId, methodById))
+        var totalCredit = rows.Where(r => IsCreditAllowed(r.PaymentMethodId, methodById))
             .Sum(r => r.Amount);
 
         // "Completa" vs "Mixta": cuenta las LÍNEAS de pago de la factura (cualquier forma), no las
         // formas distintas — 2 pagos en Efectivo también es una factura "mixta" a nivel de pagos.
-        var paymentLineCountByInvoice = rows
-            .GroupBy(r => r.InvoiceId)
+        var paymentLineCountByInvoice = rows.GroupBy(r => r.InvoiceId)
             .ToDictionary(g => g.Key, g => g.Count());
 
         // Solo se resuelven banco/cuenta si hubo al menos una Transferencia — evita 2 queries
         // extra en el caso común (turno sin transferencias).
-        var transferBankAccountIds = rows
-            .Where(r => r.TransferCompanyBankAccountId is not null)
+        var transferBankAccountIds = rows.Where(r => r.TransferCompanyBankAccountId is not null)
             .Select(r => r.TransferCompanyBankAccountId!.Value)
             .Distinct()
             .ToList();
@@ -346,12 +357,15 @@ public sealed class GetCashSessionCollectionSummaryHandler
             bankAccountById = bankAccounts
                 .Where(a => transferBankAccountIds.Contains(a.Id))
                 .ToDictionary(a => a.Id, a => a);
-            var banks = await _bankRepo.ListAsync(_t.TenantId, onlyActive: false, cancellationToken: ct);
+            var banks = await _bankRepo.ListAsync(
+                _t.TenantId,
+                onlyActive: false,
+                cancellationToken: ct
+            );
             bankNameById = banks.ToDictionary(bk => bk.Id, bk => bk.Name);
         }
 
-        var byMethod = rows
-            .GroupBy(r => r.PaymentMethodId)
+        var byMethod = rows.GroupBy(r => r.PaymentMethodId)
             .Select(g =>
             {
                 methodById.TryGetValue(g.Key, out var method);
@@ -365,16 +379,20 @@ public sealed class GetCashSessionCollectionSummaryHandler
                     g.Sum(r => r.Amount),
                     ResolveDestinationLabel(method),
                     g.OrderByDescending(r => r.AuthorizedAt)
-                        .Select(r => MapDetail(
-                            r,
-                            paymentLineCountByInvoice[r.InvoiceId] > 1,
-                            bankAccountById,
-                            bankNameById
-                        ))
+                        .Select(r =>
+                            MapDetail(
+                                r,
+                                paymentLineCountByInvoice[r.InvoiceId] > 1,
+                                bankAccountById,
+                                bankNameById
+                            )
+                        )
                         .ToList()
                 );
             })
-            .OrderBy(m => PaymentMethodDisplayOrder.Rank(methodById.GetValueOrDefault(m.PaymentMethodId)))
+            .OrderBy(m =>
+                PaymentMethodDisplayOrder.Rank(methodById.GetValueOrDefault(m.PaymentMethodId))
+            )
             .ThenBy(m => m.PaymentMethodName)
             .ToList();
 
@@ -408,7 +426,8 @@ public sealed class GetCashSessionCollectionSummaryHandler
             if (bankAccountById.TryGetValue(bankAccountId, out var account))
             {
                 destinationBankName = bankNameById.GetValueOrDefault(account.BankId);
-                destinationAccountMasked = $"{account.DisplayName} ({MaskAccountNumber(account.AccountNumber)})";
+                destinationAccountMasked =
+                    $"{account.DisplayName} ({MaskAccountNumber(account.AccountNumber)})";
             }
         }
         // Legacy: transferencias autorizadas antes de SALES-TRANSFER-BANK-ACCOUNT-01, sin

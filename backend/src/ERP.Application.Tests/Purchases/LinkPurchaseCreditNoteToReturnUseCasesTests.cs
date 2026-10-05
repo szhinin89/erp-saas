@@ -62,7 +62,12 @@ public sealed class LinkPurchaseCreditNoteToReturnUseCasesTests
             "Producto defectuoso",
             new[]
             {
-                new PurchaseReturn.DraftLineInput(Guid.NewGuid(), Guid.NewGuid(), 1m, Guid.NewGuid()),
+                new PurchaseReturn.DraftLineInput(
+                    Guid.NewGuid(),
+                    Guid.NewGuid(),
+                    1m,
+                    Guid.NewGuid()
+                ),
             },
             UserId,
             Guid.NewGuid(),
@@ -92,7 +97,9 @@ public sealed class LinkPurchaseCreditNoteToReturnUseCasesTests
                 .ReturnsAsync(false);
             if (purchaseReturn is not null)
                 ReturnRepo
-                    .Setup(r => r.GetByIdAsync(TenantId, purchaseReturn.Id, It.IsAny<CancellationToken>()))
+                    .Setup(r =>
+                        r.GetByIdAsync(TenantId, purchaseReturn.Id, It.IsAny<CancellationToken>())
+                    )
                     .ReturnsAsync(purchaseReturn);
         }
 
@@ -123,7 +130,11 @@ public sealed class LinkPurchaseCreditNoteToReturnUseCasesTests
         var handler = m.BuildHandler();
 
         var result = await handler.Handle(
-            new LinkPurchaseCreditNoteToReturnCommand(creditNote.Id, purchaseReturn.Id, Guid.NewGuid()),
+            new LinkPurchaseCreditNoteToReturnCommand(
+                creditNote.Id,
+                purchaseReturn.Id,
+                Guid.NewGuid()
+            ),
             CancellationToken.None
         );
 
@@ -143,7 +154,11 @@ public sealed class LinkPurchaseCreditNoteToReturnUseCasesTests
         var handler = m.BuildHandler();
 
         var result = await handler.Handle(
-            new LinkPurchaseCreditNoteToReturnCommand(creditNote.Id, purchaseReturn.Id, Guid.NewGuid()),
+            new LinkPurchaseCreditNoteToReturnCommand(
+                creditNote.Id,
+                purchaseReturn.Id,
+                Guid.NewGuid()
+            ),
             CancellationToken.None
         );
 
@@ -162,7 +177,11 @@ public sealed class LinkPurchaseCreditNoteToReturnUseCasesTests
         var handler = m.BuildHandler();
 
         var result = await handler.Handle(
-            new LinkPurchaseCreditNoteToReturnCommand(creditNote.Id, otherReturn.Id, Guid.NewGuid()),
+            new LinkPurchaseCreditNoteToReturnCommand(
+                creditNote.Id,
+                otherReturn.Id,
+                Guid.NewGuid()
+            ),
             CancellationToken.None
         );
 
@@ -180,11 +199,19 @@ public sealed class LinkPurchaseCreditNoteToReturnUseCasesTests
         var clientRequestId = Guid.NewGuid();
 
         var first = await handler.Handle(
-            new LinkPurchaseCreditNoteToReturnCommand(creditNote.Id, purchaseReturn.Id, clientRequestId),
+            new LinkPurchaseCreditNoteToReturnCommand(
+                creditNote.Id,
+                purchaseReturn.Id,
+                clientRequestId
+            ),
             CancellationToken.None
         );
         var retry = await handler.Handle(
-            new LinkPurchaseCreditNoteToReturnCommand(creditNote.Id, purchaseReturn.Id, Guid.NewGuid()),
+            new LinkPurchaseCreditNoteToReturnCommand(
+                creditNote.Id,
+                purchaseReturn.Id,
+                Guid.NewGuid()
+            ),
             CancellationToken.None
         );
 
@@ -214,7 +241,11 @@ public sealed class LinkPurchaseCreditNoteToReturnUseCasesTests
         var handler = m.BuildHandler();
 
         var result = await handler.Handle(
-            new LinkPurchaseCreditNoteToReturnCommand(creditNote.Id, purchaseReturn.Id, Guid.NewGuid()),
+            new LinkPurchaseCreditNoteToReturnCommand(
+                creditNote.Id,
+                purchaseReturn.Id,
+                Guid.NewGuid()
+            ),
             CancellationToken.None
         );
 
@@ -229,7 +260,11 @@ public sealed class LinkPurchaseCreditNoteToReturnUseCasesTests
         var handler = m.BuildHandler();
 
         var result = await handler.Handle(
-            new LinkPurchaseCreditNoteToReturnCommand(creditNote.Id, Guid.NewGuid(), Guid.NewGuid()),
+            new LinkPurchaseCreditNoteToReturnCommand(
+                creditNote.Id,
+                Guid.NewGuid(),
+                Guid.NewGuid()
+            ),
             CancellationToken.None
         );
 

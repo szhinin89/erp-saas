@@ -36,15 +36,17 @@ public sealed class PurchaseInvoiceDistributeAdditionalCostTests
         );
 
         var details = lines
-            .Select(l => PurchaseInvoiceDetail.Create(
-                inv.Id,
-                TenantId,
-                "Producto",
-                l.qty,
-                l.price,
-                "10",
-                "UNIT"
-            ))
+            .Select(l =>
+                PurchaseInvoiceDetail.Create(
+                    inv.Id,
+                    TenantId,
+                    "Producto",
+                    l.qty,
+                    l.price,
+                    "10",
+                    "UNIT"
+                )
+            )
             .ToList();
         inv.ReplaceLines(details, UserId);
         return inv;
@@ -77,8 +79,18 @@ public sealed class PurchaseInvoiceDistributeAdditionalCostTests
         var lineA = inv.Lines[0];
         var lineB = inv.Lines[1];
 
-        inv.DistributeAdditionalCost(PurchaseCostType.Freight, 10m, new[] { lineA.Id, lineB.Id }, UserId);
-        inv.DistributeAdditionalCost(PurchaseCostType.Freight, 20m, new[] { lineA.Id, lineB.Id }, UserId);
+        inv.DistributeAdditionalCost(
+            PurchaseCostType.Freight,
+            10m,
+            new[] { lineA.Id, lineB.Id },
+            UserId
+        );
+        inv.DistributeAdditionalCost(
+            PurchaseCostType.Freight,
+            20m,
+            new[] { lineA.Id, lineB.Id },
+            UserId
+        );
 
         // Cada aplicación reparte 50/50 (bases iguales): +5 luego +10 = 15 por línea.
         lineA.FreightAllocated.Should().Be(15m);
@@ -122,7 +134,9 @@ public sealed class PurchaseInvoiceDistributeAdditionalCostTests
 
         var total = inv.Lines.Sum(l => l.FreightAllocated);
         total.Should().Be(10m);
-        inv.Lines[2].FreightAllocated.Should().Be(10m - inv.Lines[0].FreightAllocated - inv.Lines[1].FreightAllocated);
+        inv.Lines[2]
+            .FreightAllocated.Should()
+            .Be(10m - inv.Lines[0].FreightAllocated - inv.Lines[1].FreightAllocated);
     }
 
     [Fact]
@@ -141,12 +155,13 @@ public sealed class PurchaseInvoiceDistributeAdditionalCostTests
     {
         var inv = CreateDraftWithLines((1m, 100m));
 
-        var act = () => inv.DistributeAdditionalCost(
-            PurchaseCostType.Freight,
-            10m,
-            Array.Empty<Guid>(),
-            UserId
-        );
+        var act = () =>
+            inv.DistributeAdditionalCost(
+                PurchaseCostType.Freight,
+                10m,
+                Array.Empty<Guid>(),
+                UserId
+            );
 
         act.Should().Throw<ArgumentException>().WithParameterName("includedLineIds");
     }
@@ -156,12 +171,13 @@ public sealed class PurchaseInvoiceDistributeAdditionalCostTests
     {
         var inv = CreateDraftWithLines((1m, 100m));
 
-        var act = () => inv.DistributeAdditionalCost(
-            PurchaseCostType.Freight,
-            10m,
-            new[] { Guid.NewGuid() },
-            UserId
-        );
+        var act = () =>
+            inv.DistributeAdditionalCost(
+                PurchaseCostType.Freight,
+                10m,
+                new[] { Guid.NewGuid() },
+                UserId
+            );
 
         act.Should().Throw<ArgumentException>().WithParameterName("includedLineIds");
     }

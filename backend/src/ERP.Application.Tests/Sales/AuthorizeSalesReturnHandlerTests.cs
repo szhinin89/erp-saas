@@ -190,7 +190,11 @@ public sealed class AuthorizeSalesReturnHandlerTests
         if (receivable is not null)
             receivableRepo
                 .Setup(r =>
-                    r.GetByInvoiceIdForUpdateAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+                    r.GetByInvoiceIdForUpdateAsync(
+                        TenantId,
+                        It.IsAny<Guid>(),
+                        It.IsAny<CancellationToken>()
+                    )
                 )
                 .ReturnsAsync(receivable);
 
@@ -227,7 +231,9 @@ public sealed class AuthorizeSalesReturnHandlerTests
     {
         var invoiceRepo = new Mock<ISalesInvoiceRepository>();
         invoiceRepo
-            .Setup(r => r.GetByIdForUpdateAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByIdForUpdateAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(invoice);
 
         var returnRepo = new Mock<ISalesReturnRepository>();
@@ -373,20 +379,18 @@ public sealed class AuthorizeSalesReturnHandlerTests
         var (invoice, lines) = BuildAuthorizedInvoice(("Producto con IRBPNR", 10m, 5m, null, null));
         var salesReturn = BuildDraftReturn(invoice.Id, new[] { (lines[0], 4m) });
         var returnLine = salesReturn.Lines.Single();
-        returnLine.ReplaceTaxes(
-            [
-                SalesReturnDetailTax.Create(
-                    returnLine.Id,
-                    TenantId,
-                    "5",
-                    "5001",
-                    "IRBPNR",
-                    0.1m,
-                    ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific,
-                    2m
-                ),
-            ]
-        );
+        returnLine.ReplaceTaxes([
+            SalesReturnDetailTax.Create(
+                returnLine.Id,
+                TenantId,
+                "5",
+                "5001",
+                "IRBPNR",
+                0.1m,
+                ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific,
+                2m
+            ),
+        ]);
 
         var (handler, _, _) = BuildHandler(invoice, salesReturn, out var postingEngine);
         postingEngine

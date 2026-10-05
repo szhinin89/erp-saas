@@ -16,7 +16,8 @@ namespace ERP.Application.Modules.Sales.Exceptions;
 /// aplicación (<c>AuthorizeSalesInvoiceHandler</c>) debe capturar este tipo específico (nunca un
 /// <c>catch (Exception)</c> genérico) y traducirlo a <c>Result&lt;T&gt;.ValidationFailure</c>.
 /// </summary>
-public sealed class SalesInvoicePostingFailedException : ERP.Domain.Exceptions.DomainRuleViolationException
+public sealed class SalesInvoicePostingFailedException
+    : ERP.Domain.Exceptions.DomainRuleViolationException
 {
     public string? Code { get; }
 

@@ -34,45 +34,88 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
     {
         public readonly List<AccountsPayable> Store = new();
 
-        public Task<AccountsPayable?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default) =>
-            Task.FromResult(Store.FirstOrDefault(p => p.TenantId == tenantId && p.Id == id));
+        public Task<AccountsPayable?> GetByIdAsync(
+            Guid tenantId,
+            Guid id,
+            CancellationToken ct = default
+        ) => Task.FromResult(Store.FirstOrDefault(p => p.TenantId == tenantId && p.Id == id));
 
         public Task<AccountsPayable?> GetByIdForCompanyAsync(
-            Guid tenantId, Guid companyId, Guid id, CancellationToken ct = default
+            Guid tenantId,
+            Guid companyId,
+            Guid id,
+            CancellationToken ct = default
         ) =>
             Task.FromResult(
-                Store.FirstOrDefault(p => p.TenantId == tenantId && p.CompanyId == companyId && p.Id == id)
+                Store.FirstOrDefault(p =>
+                    p.TenantId == tenantId && p.CompanyId == companyId && p.Id == id
+                )
             );
 
         public Task<AccountsPayable?> GetByOriginAsync(
-            Guid tenantId, Guid companyId, AccountsPayableOriginType originType, Guid originId,
+            Guid tenantId,
+            Guid companyId,
+            AccountsPayableOriginType originType,
+            Guid originId,
             CancellationToken ct = default
         ) => throw new NotImplementedException();
 
-        public Task<IReadOnlyDictionary<Guid, (string DocumentNumber, AccountsPayableOriginType OriginType)>> GetDocumentRefsByIdsAsync(
-            Guid tenantId, Guid companyId, IReadOnlyCollection<Guid> ids, CancellationToken ct = default) =>
-            throw new NotImplementedException();
+        public Task<
+            IReadOnlyDictionary<Guid, (string DocumentNumber, AccountsPayableOriginType OriginType)>
+        > GetDocumentRefsByIdsAsync(
+            Guid tenantId,
+            Guid companyId,
+            IReadOnlyCollection<Guid> ids,
+            CancellationToken ct = default
+        ) => throw new NotImplementedException();
 
-        public Task<IReadOnlyDictionary<Guid, (Guid AccountsPayableId, string DocumentNumber, AccountsPayableOriginType OriginType, int InstallmentNumber)>> GetInstallmentRefsByIdsAsync(
-            Guid tenantId, Guid companyId, IReadOnlyCollection<Guid> installmentIds, CancellationToken ct = default) =>
-            throw new NotImplementedException();
+        public Task<
+            IReadOnlyDictionary<
+                Guid,
+                (
+                    Guid AccountsPayableId,
+                    string DocumentNumber,
+                    AccountsPayableOriginType OriginType,
+                    int InstallmentNumber
+                )
+            >
+        > GetInstallmentRefsByIdsAsync(
+            Guid tenantId,
+            Guid companyId,
+            IReadOnlyCollection<Guid> installmentIds,
+            CancellationToken ct = default
+        ) => throw new NotImplementedException();
 
         public Task<(AccountsPayableOriginType OriginType, Guid OriginId)?> GetOriginAsync(
-            Guid tenantId, Guid id, CancellationToken ct = default) =>
-            throw new NotImplementedException();
+            Guid tenantId,
+            Guid id,
+            CancellationToken ct = default
+        ) => throw new NotImplementedException();
 
         public Task<(IReadOnlyList<AccountsPayable> Items, int Total)> SearchAsync(
-            Guid tenantId, Guid companyId, AccountsPayableOriginType? originType, AccountsPayableStatus? status,
-            Guid? supplierId, DateOnly? dueDateFrom, DateOnly? dueDateTo, string? search, int page, int pageSize,
+            Guid tenantId,
+            Guid companyId,
+            AccountsPayableOriginType? originType,
+            AccountsPayableStatus? status,
+            Guid? supplierId,
+            DateOnly? dueDateFrom,
+            DateOnly? dueDateTo,
+            string? search,
+            int page,
+            int pageSize,
             CancellationToken ct = default
         )
         {
-            var items = Store.Where(p => p.TenantId == tenantId && p.CompanyId == companyId).ToList();
+            var items = Store
+                .Where(p => p.TenantId == tenantId && p.CompanyId == companyId)
+                .ToList();
             return Task.FromResult(((IReadOnlyList<AccountsPayable>)items, items.Count));
         }
 
         public Task<AccountsPayable?> GetByInstallmentIdAsync(
-            Guid tenantId, Guid installmentId, CancellationToken ct = default
+            Guid tenantId,
+            Guid installmentId,
+            CancellationToken ct = default
         ) => throw new NotImplementedException();
 
         public Task AddAsync(AccountsPayable payable, CancellationToken ct = default)
@@ -88,29 +131,59 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
     {
         public readonly List<SupplierPayment> Store = new();
 
-        public Task<SupplierPayment?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default) =>
-            Task.FromResult(Store.FirstOrDefault(p => p.TenantId == tenantId && p.Id == id));
+        public Task<SupplierPayment?> GetByIdAsync(
+            Guid tenantId,
+            Guid id,
+            CancellationToken ct = default
+        ) => Task.FromResult(Store.FirstOrDefault(p => p.TenantId == tenantId && p.Id == id));
 
-        public Task<SupplierPayment?> GetByClientRequestIdAsync(Guid tenantId, Guid clientRequestId, CancellationToken ct = default) =>
-            Task.FromResult(Store.FirstOrDefault(p => p.TenantId == tenantId && p.ClientRequestId == clientRequestId));
+        public Task<SupplierPayment?> GetByClientRequestIdAsync(
+            Guid tenantId,
+            Guid clientRequestId,
+            CancellationToken ct = default
+        ) =>
+            Task.FromResult(
+                Store.FirstOrDefault(p =>
+                    p.TenantId == tenantId && p.ClientRequestId == clientRequestId
+                )
+            );
 
         public Task<(IReadOnlyList<SupplierPayment> Items, int Total)> SearchAsync(
-            Guid tenantId, Guid companyId, Guid? supplierId, SupplierPaymentStatus? status, int page, int pageSize,
+            Guid tenantId,
+            Guid companyId,
+            Guid? supplierId,
+            SupplierPaymentStatus? status,
+            int page,
+            int pageSize,
             CancellationToken ct = default
         )
         {
-            var items = Store.Where(p => p.TenantId == tenantId && p.CompanyId == companyId).ToList();
-            return Task.FromResult(((IReadOnlyList<SupplierPayment> Items, int Total))(items, items.Count));
+            var items = Store
+                .Where(p => p.TenantId == tenantId && p.CompanyId == companyId)
+                .ToList();
+            return Task.FromResult(
+                ((IReadOnlyList<SupplierPayment> Items, int Total))(items, items.Count)
+            );
         }
 
         public Task<bool> ExistsByReceiptNumberAsync(
-            Guid tenantId, Guid companyId, Guid supplierId, string receiptNumber, CancellationToken ct = default
+            Guid tenantId,
+            Guid companyId,
+            Guid supplierId,
+            string receiptNumber,
+            CancellationToken ct = default
         ) => throw new NotImplementedException();
 
         public Task<
-            IReadOnlyDictionary<Guid, (string DisplayNumber, Guid SupplierId, string Status, DateOnly PaymentDate)>
+            IReadOnlyDictionary<
+                Guid,
+                (string DisplayNumber, Guid SupplierId, string Status, DateOnly PaymentDate)
+            >
         > GetJournalSourceSummariesByIdsAsync(
-            Guid tenantId, Guid companyId, IReadOnlyCollection<Guid> ids, CancellationToken ct = default
+            Guid tenantId,
+            Guid companyId,
+            IReadOnlyCollection<Guid> ids,
+            CancellationToken ct = default
         ) => throw new NotImplementedException();
 
         public Task AddAsync(SupplierPayment payment, CancellationToken ct = default)
@@ -126,9 +199,17 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
     {
         var issueDate = new DateOnly(2026, 8, 1);
         var payable = AccountsPayable.CreateFromOrigin(
-            TenantId, companyId, branchId, SupplierId,
-            AccountsPayableOriginType.PurchaseInvoice, Guid.NewGuid(), "01",
-            $"001-001-{Random.Shared.Next(100000000, 999999999)}", issueDate, issueDate, UserId
+            TenantId,
+            companyId,
+            branchId,
+            SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            Guid.NewGuid(),
+            "01",
+            $"001-001-{Random.Shared.Next(100000000, 999999999)}",
+            issueDate,
+            issueDate,
+            UserId
         );
         payable.AddInstallment(1, issueDate.AddDays(30), amount);
         return payable;
@@ -136,16 +217,32 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
 
     private static SupplierPayment BuildPayment(Guid companyId, Guid branchId) =>
         SupplierPayment.Create(
-            TenantId, companyId, branchId, SupplierId, new DateOnly(2026, 8, 28), 100m,
-            Random.Shared.Next(10000000, 99999999).ToString(System.Globalization.CultureInfo.InvariantCulture), null,
-            new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 100m, TransactionDate: new DateOnly(2026, 8, 28)) },
+            TenantId,
+            companyId,
+            branchId,
+            SupplierId,
+            new DateOnly(2026, 8, 28),
+            100m,
+            Random
+                .Shared.Next(10000000, 99999999)
+                .ToString(System.Globalization.CultureInfo.InvariantCulture),
+            null,
+            new[]
+            {
+                new SupplierPaymentMethodLineInput(
+                    Guid.NewGuid(),
+                    Guid.NewGuid(),
+                    null,
+                    100m,
+                    TransactionDate: new DateOnly(2026, 8, 28)
+                ),
+            },
             new[] { new SupplierPaymentApplicationLineInput(Guid.NewGuid(), 100m) },
             new[] { new SupplierPaymentAllocationInput(0, 0, 100m) },
             UserId
         );
 
-    private static Mock<IBusinessPartnerRepository> NamesMock() =>
-        new(); // GetNamesByIdsAsync no configurado: Moq devuelve Task<null> por defecto → GetValueOrDefault en el mapper cubre el caso.
+    private static Mock<IBusinessPartnerRepository> NamesMock() => new(); // GetNamesByIdsAsync no configurado: Moq devuelve Task<null> por defecto → GetValueOrDefault en el mapper cubre el caso.
 
     // ── AccountsPayable: branch-independent (regla 1) ────────────────────
 
@@ -158,7 +255,9 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
 
         var partners = NamesMock();
         partners
-            .Setup(p => p.GetNamesByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
+            .Setup(p =>
+                p.GetNamesByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new Dictionary<Guid, string> { [SupplierId] = "Proveedor" });
 
         var handler = new GetAccountsPayablesListHandler(
@@ -168,10 +267,15 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
             Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyAId)
         );
 
-        var result = await handler.Handle(new GetAccountsPayablesListQuery(), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetAccountsPayablesListQuery(),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        result.Value!.Total.Should().Be(2, "CxP es company-level: ambas sucursales de la Empresa A deben verse juntas");
+        result
+            .Value!.Total.Should()
+            .Be(2, "CxP es company-level: ambas sucursales de la Empresa A deben verse juntas");
     }
 
     [Fact]
@@ -183,7 +287,9 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
 
         var partners = NamesMock();
         partners
-            .Setup(p => p.GetNamesByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
+            .Setup(p =>
+                p.GetNamesByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new Dictionary<Guid, string> { [SupplierId] = "Proveedor" });
 
         // Notar: GetAccountsPayableByIdHandler no recibe ICurrentBranch en su constructor —
@@ -198,7 +304,10 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
             Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyAId)
         );
 
-        var result = await handler.Handle(new GetAccountsPayableByIdQuery(payable.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetAccountsPayableByIdQuery(payable.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
     }
@@ -214,7 +323,9 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
 
         var partners = NamesMock();
         partners
-            .Setup(p => p.GetNamesByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
+            .Setup(p =>
+                p.GetNamesByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new Dictionary<Guid, string> { [SupplierId] = "Proveedor" });
 
         var handler = new GetAccountsPayablesListHandler(
@@ -224,7 +335,10 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
             Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyAId)
         );
 
-        var result = await handler.Handle(new GetAccountsPayablesListQuery(), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetAccountsPayablesListQuery(),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.Total.Should().Be(1);
@@ -255,9 +369,14 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
             Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyAId) // activo en Empresa A
         );
 
-        var result = await handler.Handle(new GetAccountsPayableByIdQuery(payableCompanyB.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetAccountsPayableByIdQuery(payableCompanyB.Id),
+            CancellationToken.None
+        );
 
-        result.IsSuccess.Should().BeFalse("el Id pertenece a la Empresa B, nunca a la Empresa A activa");
+        result
+            .IsSuccess.Should()
+            .BeFalse("el Id pertenece a la Empresa B, nunca a la Empresa A activa");
     }
 
     /// <summary>
@@ -273,7 +392,9 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
 
         var partners = NamesMock();
         partners
-            .Setup(p => p.GetNamesByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
+            .Setup(p =>
+                p.GetNamesByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new Dictionary<Guid, string> { [SupplierId] = "Proveedor" });
 
         var handler = new GetAccountsPayableByIdHandler(
@@ -284,7 +405,10 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
             Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyBId) // activo en Empresa B, dueña del documento
         );
 
-        var result = await handler.Handle(new GetAccountsPayableByIdQuery(payableCompanyB.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetAccountsPayableByIdQuery(payableCompanyB.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.Id.Should().Be(payableCompanyB.Id);
@@ -308,7 +432,9 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
 
         var partners = NamesMock();
         partners
-            .Setup(p => p.GetNamesByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
+            .Setup(p =>
+                p.GetNamesByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new Dictionary<Guid, string> { [SupplierId] = "Proveedor" });
 
         var query = new GetAccountsPayablesListQuery(SupplierId: SupplierId);
@@ -322,8 +448,12 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
         var resultA = await handlerCompanyA.Handle(query, CancellationToken.None);
 
         resultA.IsSuccess.Should().BeTrue(resultA.Error);
-        resultA.Value!.Total.Should().Be(1, "operando en Empresa A solo debe verse su propia CxP del proveedor");
-        resultA.Value.Items.Should().OnlyContain(i => i.TotalAmount == 100m && i.SupplierId == SupplierId);
+        resultA
+            .Value!.Total.Should()
+            .Be(1, "operando en Empresa A solo debe verse su propia CxP del proveedor");
+        resultA
+            .Value.Items.Should()
+            .OnlyContain(i => i.TotalAmount == 100m && i.SupplierId == SupplierId);
 
         // "Cambiar de empresa" = nueva instancia de ICurrentCompany con Empresa B activa.
         var handlerCompanyB = new GetAccountsPayablesListHandler(
@@ -335,8 +465,12 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
         var resultB = await handlerCompanyB.Handle(query, CancellationToken.None);
 
         resultB.IsSuccess.Should().BeTrue(resultB.Error);
-        resultB.Value!.Total.Should().Be(1, "tras cambiar a Empresa B solo debe verse su propia CxP del proveedor");
-        resultB.Value.Items.Should().OnlyContain(i => i.TotalAmount == 250m && i.SupplierId == SupplierId);
+        resultB
+            .Value!.Total.Should()
+            .Be(1, "tras cambiar a Empresa B solo debe verse su propia CxP del proveedor");
+        resultB
+            .Value.Items.Should()
+            .OnlyContain(i => i.TotalAmount == 250m && i.SupplierId == SupplierId);
     }
 
     // ── SupplierPayment: branch-independent + company isolation ──────────
@@ -351,7 +485,9 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
 
         var partners = NamesMock();
         partners
-            .Setup(p => p.GetNamesByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
+            .Setup(p =>
+                p.GetNamesByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new Dictionary<Guid, string> { [SupplierId] = "Proveedor" });
 
         var handler = new GetSupplierPaymentsListHandler(
@@ -361,13 +497,18 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
             Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyAId)
         );
 
-        var result = await handler.Handle(new GetSupplierPaymentsListQuery(), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetSupplierPaymentsListQuery(),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        result.Value!.Total.Should().Be(
-            2,
-            "pagos de la Empresa A en ambas sucursales deben verse; el de la Empresa B nunca"
-        );
+        result
+            .Value!.Total.Should()
+            .Be(
+                2,
+                "pagos de la Empresa A en ambas sucursales deben verse; el de la Empresa B nunca"
+            );
     }
 
     [Fact]
@@ -385,7 +526,10 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId)
         );
 
-        var result = await handler.Handle(new GetSupplierPaymentByIdQuery(payment.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetSupplierPaymentByIdQuery(payment.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
     }
@@ -393,6 +537,10 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
     // 02D-F — la CxP ahora informa el saldo a favor abierto del proveedor; aquí no hay ninguno.
     private static ISupplierCreditRepository NoOpenSupplierCredits() =>
         Mock.Of<ISupplierCreditRepository>(r =>
-            r.GetOpenBalanceBySupplierAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>())
-            == Task.FromResult(new SupplierCreditOpenBalance(0m, 0, null)));
+            r.GetOpenBalanceBySupplierAsync(
+                It.IsAny<Guid>(),
+                It.IsAny<Guid>(),
+                It.IsAny<CancellationToken>()
+            ) == Task.FromResult(new SupplierCreditOpenBalance(0m, 0, null))
+        );
 }

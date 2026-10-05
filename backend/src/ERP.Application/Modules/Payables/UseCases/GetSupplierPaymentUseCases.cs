@@ -89,7 +89,11 @@ public sealed class GetSupplierPaymentByIdHandler
         // remanente no aplicado, para enlazarlo desde el detalle.
         var supplierCreditId =
             payment.UnappliedAmount > 0 && _supplierCredits is not null
-                ? await _supplierCredits.GetIdBySourceSupplierPaymentIdAsync(_t.TenantId, payment.Id, ct)
+                ? await _supplierCredits.GetIdBySourceSupplierPaymentIdAsync(
+                    _t.TenantId,
+                    payment.Id,
+                    ct
+                )
                 : null;
         return Result<SupplierPaymentDto>.Success(
             SupplierPaymentDtoMapper.ToDto(payment, displayInfo, supplierCreditId)
@@ -105,10 +109,9 @@ public sealed class GetSupplierPaymentByIdHandler
     /// normal), se omite silenciosamente — el detalle del pago nunca debe romperse por esto, el
     /// frontend cae a un fallback técnico con el Id crudo.
     /// </summary>
-    private async Task<IReadOnlyDictionary<Guid, InstallmentDisplayInfo>> ResolveInstallmentDisplayInfoAsync(
-        SupplierPayment payment,
-        CancellationToken ct
-    )
+    private async Task<
+        IReadOnlyDictionary<Guid, InstallmentDisplayInfo>
+    > ResolveInstallmentDisplayInfoAsync(SupplierPayment payment, CancellationToken ct)
     {
         var result = new Dictionary<Guid, InstallmentDisplayInfo>();
         var payablesByInstallment = new Dictionary<Guid, AccountsPayable>();
@@ -121,7 +124,11 @@ public sealed class GetSupplierPaymentByIdHandler
 
             if (!payablesByInstallment.TryGetValue(installmentId, out var payable))
             {
-                payable = await _accountsPayables.GetByInstallmentIdAsync(_t.TenantId, installmentId, ct);
+                payable = await _accountsPayables.GetByInstallmentIdAsync(
+                    _t.TenantId,
+                    installmentId,
+                    ct
+                );
                 if (payable is not null)
                     payablesByInstallment[installmentId] = payable;
             }
@@ -172,7 +179,11 @@ public sealed class GetSupplierPaymentsListHandler
         SupplierPaymentStatus? status = null;
         if (
             !string.IsNullOrWhiteSpace(q.Status)
-            && Enum.TryParse<SupplierPaymentStatus>(q.Status.Trim(), ignoreCase: true, out var parsedStatus)
+            && Enum.TryParse<SupplierPaymentStatus>(
+                q.Status.Trim(),
+                ignoreCase: true,
+                out var parsedStatus
+            )
         )
             status = parsedStatus;
 
@@ -186,7 +197,10 @@ public sealed class GetSupplierPaymentsListHandler
             ct
         );
 
-        var names = await _partners.GetNamesByIdsAsync(items.Select(x => x.SupplierId).Distinct(), ct);
+        var names = await _partners.GetNamesByIdsAsync(
+            items.Select(x => x.SupplierId).Distinct(),
+            ct
+        );
         var dtos = items
             .Select(p => new SupplierPaymentListItemDto(
                 p.Id,

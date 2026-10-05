@@ -24,7 +24,11 @@ public sealed class StockMovementValuationCostTests
     private static readonly Guid CompanyId = Guid.NewGuid();
     private static readonly Guid UserId = Guid.NewGuid();
 
-    private static StockMovement Create(decimal? unitCost, decimal? valuationUnitCost, decimal quantity = -2m) =>
+    private static StockMovement Create(
+        decimal? unitCost,
+        decimal? valuationUnitCost,
+        decimal quantity = -2m
+    ) =>
         StockMovement.Create(
             TenantId,
             BranchId,

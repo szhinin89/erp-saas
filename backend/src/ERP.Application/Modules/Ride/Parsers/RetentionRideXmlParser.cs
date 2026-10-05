@@ -1,8 +1,8 @@
+using System.Globalization;
+using System.Xml.Linq;
 using ERP.Application.Common;
 using ERP.Domain.Modules.Ride.Enums;
 using ERP.Domain.Modules.Ride.ValueObjects;
-using System.Globalization;
-using System.Xml.Linq;
 
 namespace ERP.Application.Modules.Ride.Parsers;
 
@@ -78,17 +78,24 @@ public sealed class RetentionRideXmlParser : IRetentionRideXmlParser
             );
 
             var subjectWithheld = RideParty.Create(
-                identificationType: RequireText(infoCompRetencion, "tipoIdentificacionSujetoRetenido"),
-                identificationNumber: RequireText(infoCompRetencion, "identificacionSujetoRetenido"),
+                identificationType: RequireText(
+                    infoCompRetencion,
+                    "tipoIdentificacionSujetoRetenido"
+                ),
+                identificationNumber: RequireText(
+                    infoCompRetencion,
+                    "identificacionSujetoRetenido"
+                ),
                 legalName: RequireText(infoCompRetencion, "razonSocialSujetoRetenido"),
                 address: null
             );
 
             var impuestoElements = impuestos.Elements("impuesto").ToList();
             var lines = impuestoElements.Select(ParseLine).ToList();
-            var sourceDocument = impuestoElements.Count > 0
-                ? ParseSourceDocument(impuestoElements[0])
-                : RetentionRideSourceDocument.Empty();
+            var sourceDocument =
+                impuestoElements.Count > 0
+                    ? ParseSourceDocument(impuestoElements[0])
+                    : RetentionRideSourceDocument.Empty();
 
             var additionalInfo =
                 comprobanteRetencion

@@ -37,7 +37,11 @@ public sealed class CancelPurchaseCreditNoteHandlerTests
         PurchaseReceptionDocument? ReceptionDoc
     );
 
-    private static Fixture BuildFixture(bool authorized, decimal totalAmount = 1000m, bool withReception = false)
+    private static Fixture BuildFixture(
+        bool authorized,
+        decimal totalAmount = 1000m,
+        bool withReception = false
+    )
     {
         var invoice = PurchaseInvoice.CreateDraft(
             TenantId,
@@ -71,10 +75,17 @@ public sealed class CancelPurchaseCreditNoteHandlerTests
         invoice.Confirm(UserId);
 
         var payable = AccountsPayable.CreateFromOrigin(
-            TenantId, CompanyId, BranchId, SupplierId,
-            AccountsPayableOriginType.PurchaseInvoice, invoice.Id,
-            "01", "001-001-000000001",
-            invoice.IssueDate, invoice.IssueDate, UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            invoice.Id,
+            "01",
+            "001-001-000000001",
+            invoice.IssueDate,
+            invoice.IssueDate,
+            UserId
         );
         payable.AddInstallment(1, invoice.IssueDate.AddDays(30), totalAmount);
 
@@ -82,11 +93,21 @@ public sealed class CancelPurchaseCreditNoteHandlerTests
         if (withReception)
         {
             receptionDoc = PurchaseReceptionDocument.Create(
-                TenantId, CompanyId, BranchId, PurchaseReceptionSourceDocType.CreditNote,
-                supplierRuc: "1710034065001", supplierName: "Proveedor Test", supplierId: SupplierId,
-                accessKey: $"AK-{Guid.NewGuid():N}", invoiceNumber: "001-001-000000099",
-                issueDate: DateOnly.FromDateTime(DateTime.UtcNow), authorizationDate: DateTime.UtcNow,
-                subtotal: 100m, vatAmount: 15m, totalAmount: 115m, createdBy: UserId
+                TenantId,
+                CompanyId,
+                BranchId,
+                PurchaseReceptionSourceDocType.CreditNote,
+                supplierRuc: "1710034065001",
+                supplierName: "Proveedor Test",
+                supplierId: SupplierId,
+                accessKey: $"AK-{Guid.NewGuid():N}",
+                invoiceNumber: "001-001-000000099",
+                issueDate: DateOnly.FromDateTime(DateTime.UtcNow),
+                authorizationDate: DateTime.UtcNow,
+                subtotal: 100m,
+                vatAmount: 15m,
+                totalAmount: 115m,
+                createdBy: UserId
             );
             receptionDoc.MarkVerified(UserId);
         }
@@ -137,17 +158,25 @@ public sealed class CancelPurchaseCreditNoteHandlerTests
             if (f.ReceptionDoc is not null)
             {
                 ReceptionRepo
-                    .Setup(r => r.GetByIdAsync(TenantId, f.ReceptionDoc.Id, It.IsAny<CancellationToken>()))
+                    .Setup(r =>
+                        r.GetByIdAsync(TenantId, f.ReceptionDoc.Id, It.IsAny<CancellationToken>())
+                    )
                     .ReturnsAsync(f.ReceptionDoc);
             }
 
             CreditNoteRepo
                 .Setup(r =>
-                    r.GetPurchaseInvoiceIdAsync(TenantId, f.CreditNote.Id, It.IsAny<CancellationToken>())
+                    r.GetPurchaseInvoiceIdAsync(
+                        TenantId,
+                        f.CreditNote.Id,
+                        It.IsAny<CancellationToken>()
+                    )
                 )
                 .ReturnsAsync(f.Invoice.Id);
             CreditNoteRepo
-                .Setup(r => r.GetByIdAsync(TenantId, f.CreditNote.Id, It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetByIdAsync(TenantId, f.CreditNote.Id, It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(f.CreditNote);
             InvoiceRepo
                 .Setup(r => r.GetByIdAsync(TenantId, f.Invoice.Id, It.IsAny<CancellationToken>()))
@@ -292,7 +321,9 @@ public sealed class CancelPurchaseCreditNoteHandlerTests
         paramTypeNames.Should().NotContain("IStockRepository");
         paramTypeNames.Should().NotContain(n => n.Contains("Posting", StringComparison.Ordinal));
         paramTypeNames.Should().NotContain(n => n.Contains("Accounting", StringComparison.Ordinal));
-        paramTypeNames.Should().NotContain(n => n.Contains("JournalEntry", StringComparison.Ordinal));
+        paramTypeNames
+            .Should()
+            .NotContain(n => n.Contains("JournalEntry", StringComparison.Ordinal));
     }
 
     // ── Idempotencia ─────────────────────────────────────────────────────

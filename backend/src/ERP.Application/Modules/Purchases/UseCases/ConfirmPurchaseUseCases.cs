@@ -248,7 +248,12 @@ public sealed class ConfirmPurchaseHandler
 
             decimal iceRate = 0;
             string? iceName = null;
-            var iceCalculationType = ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Percentage;
+            var iceCalculationType = ERP.Domain
+                .Modules
+                .SriCatalogs
+                .Enums
+                .SriTaxCalculationType
+                .Percentage;
             decimal? iceExactAmount = null;
             if (!string.IsNullOrWhiteSpace(line.IceCode))
             {
@@ -262,8 +267,10 @@ public sealed class ConfirmPurchaseHandler
                     );
                 iceName = iceEntry.Name;
                 iceCalculationType = iceEntry.CalculationType;
-                if (iceEntry.CalculationType
-                    == ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific)
+                if (
+                    iceEntry.CalculationType
+                    == ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific
+                )
                 {
                     // El monto ya fue fijado al valor exacto del XML al crear/actualizar el borrador
                     // — Confirm lo preserva, nunca lo recalcula desde una tarifa porcentual.
@@ -287,7 +294,10 @@ public sealed class ConfirmPurchaseHandler
         }
         var xmlError = await _xmlGuard.ValidateAsync(inv, ct);
         if (xmlError is not null)
-            return Result<PurchaseInvoiceDto>.ValidationFailure(xmlError, "PURCHASE_XML_RECONCILIATION_REQUIRED");
+            return Result<PurchaseInvoiceDto>.ValidationFailure(
+                xmlError,
+                "PURCHASE_XML_RECONCILIATION_REQUIRED"
+            );
 
         // Preserve the reviewed allocations, including lines deliberately excluded from freight.
 
@@ -421,8 +431,7 @@ public sealed class ConfirmPurchaseHandler
                         inv.InvoiceNumber,
                         inv.IssueDate,
                         inv.IssueDate,
-                        inv.PaymentSchedules
-                            .Select(s => new AccountsPayableInstallmentInput(
+                        inv.PaymentSchedules.Select(s => new AccountsPayableInstallmentInput(
                                 s.InstallmentNumber,
                                 s.DueDate,
                                 s.Amount

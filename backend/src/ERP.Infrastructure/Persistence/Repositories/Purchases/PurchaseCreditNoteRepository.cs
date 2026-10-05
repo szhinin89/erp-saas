@@ -32,14 +32,19 @@ public sealed class PurchaseCreditNoteRepository : IPurchaseCreditNoteRepository
             // lanza "Sequence contains no matching element" (InvalidOperationException), que el
             // middleware global reporta como DOMAIN_RULE_VIOLATION sin contexto útil.
             .Include(x => x.TaxSummaries)
-            .ThenInclude(s => s.Taxes)
+                .ThenInclude(s => s.Taxes)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
 
-    public Task<PurchaseCreditNote?> GetByLinkedPurchaseReturnIdAsync(Guid tenantId, Guid returnId, CancellationToken ct = default) =>
-        _db.PurchaseCreditNotes.ForOperationalScope(tenantId, _company)
+    public Task<PurchaseCreditNote?> GetByLinkedPurchaseReturnIdAsync(
+        Guid tenantId,
+        Guid returnId,
+        CancellationToken ct = default
+    ) =>
+        _db
+            .PurchaseCreditNotes.ForOperationalScope(tenantId, _company)
             .Include(x => x.Lines)
             .Include(x => x.TaxSummaries)
-            .ThenInclude(s => s.Taxes)
+                .ThenInclude(s => s.Taxes)
             .FirstOrDefaultAsync(x => x.LinkedPurchaseReturnId == returnId, ct);
 
     public Task AddAsync(PurchaseCreditNote creditNote, CancellationToken ct = default) =>
@@ -55,7 +60,7 @@ public sealed class PurchaseCreditNoteRepository : IPurchaseCreditNoteRepository
         _db
             .PurchaseCreditNotes.Include(x => x.Lines)
             .Include(x => x.TaxSummaries)
-            .ThenInclude(s => s.Taxes)
+                .ThenInclude(s => s.Taxes)
             .FirstOrDefaultAsync(
                 x => x.TenantId == tenantId && x.CreateClientRequestId == createClientRequestId,
                 ct
@@ -208,7 +213,9 @@ public sealed class PurchaseCreditNoteRepository : IPurchaseCreditNoteRepository
             x =>
                 x.TenantId == tenantId
                 && x.LinkedPurchaseReturnId == purchaseReturnId
-                && (excludePurchaseCreditNoteId == null || x.Id != excludePurchaseCreditNoteId.Value),
+                && (
+                    excludePurchaseCreditNoteId == null || x.Id != excludePurchaseCreditNoteId.Value
+                ),
             ct
         );
 
@@ -255,7 +262,9 @@ public sealed class PurchaseCreditNoteRepository : IPurchaseCreditNoteRepository
         return (items, total);
     }
 
-    public async Task<IReadOnlyDictionary<Guid, decimal>> GetCreditedTaxableBaseByPurchaseTaxSummaryIdsAsync(
+    public async Task<
+        IReadOnlyDictionary<Guid, decimal>
+    > GetCreditedTaxableBaseByPurchaseTaxSummaryIdsAsync(
         Guid tenantId,
         IReadOnlyCollection<Guid> sourcePurchaseInvoiceTaxSummaryIds,
         Guid? excludePurchaseCreditNoteId = null,
@@ -272,7 +281,10 @@ public sealed class PurchaseCreditNoteRepository : IPurchaseCreditNoteRepository
                 s.TenantId == tenantId
                 && sourcePurchaseInvoiceTaxSummaryIds.Contains(s.SourcePurchaseInvoiceTaxSummaryId)
                 && cn.Status != PurchaseCreditNoteStatus.Cancelled
-                && (excludePurchaseCreditNoteId == null || cn.Id != excludePurchaseCreditNoteId.Value)
+                && (
+                    excludePurchaseCreditNoteId == null
+                    || cn.Id != excludePurchaseCreditNoteId.Value
+                )
             group s by s.SourcePurchaseInvoiceTaxSummaryId into g
             select new { SourceId = g.Key, Credited = g.Sum(x => x.TaxableBase) };
 

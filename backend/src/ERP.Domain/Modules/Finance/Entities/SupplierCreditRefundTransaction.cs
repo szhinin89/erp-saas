@@ -203,7 +203,10 @@ public sealed class SupplierCreditRefundTransaction : ICompanyOperationalEntity
         if (cashSessionId == Guid.Empty)
             throw new ArgumentException("La sesión de caja es obligatoria.", nameof(cashSessionId));
         if (cashMovementId == Guid.Empty)
-            throw new ArgumentException("El movimiento de caja es obligatorio.", nameof(cashMovementId));
+            throw new ArgumentException(
+                "El movimiento de caja es obligatorio.",
+                nameof(cashMovementId)
+            );
 
         CashSessionId = cashSessionId;
         CashMovementId = cashMovementId;

@@ -26,16 +26,39 @@ public sealed class CalculateRetentionBranchScopeTests
     private static PurchaseInvoice Draft(Guid branchId)
     {
         var invoice = PurchaseInvoice.CreateDraft(
-            TenantId, CompanyId, branchId, Guid.NewGuid(), "Proveedor", "1790012345001", "01",
-            "001-001-000000001", new DateOnly(2026, 9, 1), UserId, Guid.NewGuid(), "Contado", 1, 0
+            TenantId,
+            CompanyId,
+            branchId,
+            Guid.NewGuid(),
+            "Proveedor",
+            "1790012345001",
+            "01",
+            "001-001-000000001",
+            new DateOnly(2026, 9, 1),
+            UserId,
+            Guid.NewGuid(),
+            "Contado",
+            1,
+            0
         );
-        var line = PurchaseInvoiceDetail.Create(invoice.Id, TenantId, "Producto", 1m, 100m, "4", "UNIT");
+        var line = PurchaseInvoiceDetail.Create(
+            invoice.Id,
+            TenantId,
+            "Producto",
+            1m,
+            100m,
+            "4",
+            "UNIT"
+        );
         line.ApplyTaxes("4", 15m, "IVA 15%", null, 0m, null);
         invoice.ReplaceLines(new[] { line }, UserId);
         return invoice;
     }
 
-    private static RetentionEligibilityResult Eligibility(bool canRetainVat, params string[] reasons) =>
+    private static RetentionEligibilityResult Eligibility(
+        bool canRetainVat,
+        params string[] reasons
+    ) =>
         new(
             CanRetainVat: canRetainVat,
             CanRetainIncome: false,
@@ -44,24 +67,38 @@ public sealed class CalculateRetentionBranchScopeTests
             MissingRetentionCode: false,
             IsSupplierRequiredToKeepAccounting: false,
             Candidates: canRetainVat
-                ? new[] { new RetentionEligibilityCandidate("IVA", "725", "Retención IVA 30%", 30m) }
+                ? new[]
+                {
+                    new RetentionEligibilityCandidate("IVA", "725", "Retención IVA 30%", 30m),
+                }
                 : Array.Empty<RetentionEligibilityCandidate>(),
             Reasons: reasons
         );
 
-    private static async Task<(Result<RetentionPreviewDto> Result, Mock<IRetentionEligibilityService> Eligibility)> Preview(
+    private static async Task<(
+        Result<RetentionPreviewDto> Result,
+        Mock<IRetentionEligibilityService> Eligibility
+    )> Preview(
         PurchaseInvoice? invoice,
         Guid invoiceId,
         RetentionEligibilityResult? eligibility = null
     )
     {
         var repo = new Mock<IPurchaseInvoiceRepository>();
-        repo.Setup(r => r.GetByIdAsync(TenantId, invoiceId, It.IsAny<CancellationToken>())).ReturnsAsync(invoice);
+        repo.Setup(r => r.GetByIdAsync(TenantId, invoiceId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(invoice);
         var service = new Mock<IRetentionEligibilityService>();
         service
-            .Setup(s => s.EvaluateAsync(
-                TenantId, CompanyId, It.IsAny<Guid>(), It.IsAny<decimal>(), It.IsAny<decimal>(), It.IsAny<CancellationToken>()
-            ))
+            .Setup(s =>
+                s.EvaluateAsync(
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<Guid>(),
+                    It.IsAny<decimal>(),
+                    It.IsAny<decimal>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(eligibility ?? Eligibility(true));
         var handler = new CalculateRetentionHandler(
             repo.Object,
@@ -70,7 +107,10 @@ public sealed class CalculateRetentionBranchScopeTests
             Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
             Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId)
         );
-        return (await handler.Handle(new CalculateRetentionQuery(invoiceId), CancellationToken.None), service);
+        return (
+            await handler.Handle(new CalculateRetentionQuery(invoiceId), CancellationToken.None),
+            service
+        );
     }
 
     [Fact]
@@ -102,14 +142,26 @@ public sealed class CalculateRetentionBranchScopeTests
         result.Value.TotalRetained.Should().Be(4.5m);
         result.Value.SkipReason.Should().BeNull();
         // Mismas bases que usa la emisión (PurchaseRetentionSource): IVA total y suma de bases imponibles.
-        eligibility.Verify(s => s.EvaluateAsync(TenantId, CompanyId, own.SupplierId, 15m, 100m, It.IsAny<CancellationToken>()), Times.Once);
+        eligibility.Verify(
+            s =>
+                s.EvaluateAsync(
+                    TenantId,
+                    CompanyId,
+                    own.SupplierId,
+                    15m,
+                    100m,
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
     }
 
     [Fact]
     public async Task Empresa_no_agente_de_retencion_no_propone_lineas_y_explica_el_motivo()
     {
         var own = Draft(BranchId);
-        const string reason = "La empresa no está configurada como agente de retención de IVA (Company.WithholdsVat=false).";
+        const string reason =
+            "La empresa no está configurada como agente de retención de IVA (Company.WithholdsVat=false).";
 
         var (result, _) = await Preview(own, own.Id, Eligibility(false, reason));
 
@@ -128,7 +180,11 @@ public sealed class CalculateRetentionBranchScopeTests
         var (result, eligibility) = await Preview(confirmed, confirmed.Id);
 
         result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
-        result.Error.Should().Be("La retención se define antes de confirmar: solo se calcula sobre compras en borrador.");
+        result
+            .Error.Should()
+            .Be(
+                "La retención se define antes de confirmar: solo se calcula sobre compras en borrador."
+            );
         eligibility.VerifyNoOtherCalls();
     }
 }

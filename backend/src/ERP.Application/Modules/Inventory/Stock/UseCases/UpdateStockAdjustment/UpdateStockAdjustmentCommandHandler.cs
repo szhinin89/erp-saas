@@ -69,7 +69,9 @@ public sealed class UpdateStockAdjustmentCommandHandler
 
         var newWarehouse = await _warehouseRepo.GetByIdAsync(tid, request.WarehouseId, ct);
         if (newWarehouse is null)
-            return Result<StockAdjustmentDto>.ValidationFailure("La bodega seleccionada no existe.");
+            return Result<StockAdjustmentDto>.ValidationFailure(
+                "La bodega seleccionada no existe."
+            );
         if (newWarehouse.BranchId != _branch.BranchId)
             return Result<StockAdjustmentDto>.ValidationFailure(
                 "La bodega seleccionada no pertenece a la sucursal activa."
@@ -77,12 +79,20 @@ public sealed class UpdateStockAdjustmentCommandHandler
 
         var reason = await _reasonRepo.GetByIdAsync(tid, request.ReasonId, ct);
         if (reason is null)
-            return Result<StockAdjustmentDto>.ValidationFailure("El motivo seleccionado no existe.");
+            return Result<StockAdjustmentDto>.ValidationFailure(
+                "El motivo seleccionado no existe."
+            );
 
         // Pasar adj.Id explícitamente: el padre ya existe (no es Added), así que sus líneas nuevas
         // deben llevar el FK real desde el inicio — ver comentario en
         // StockAdjustmentLineResolver.ResolveAsync (bug encontrado en INVENTORY-ADJUSTMENTS-04).
-        var lineResult = await _lineResolver.ResolveAsync(tid, adj.CompanyId, request.Lines, ct, adj.Id);
+        var lineResult = await _lineResolver.ResolveAsync(
+            tid,
+            adj.CompanyId,
+            request.Lines,
+            ct,
+            adj.Id
+        );
         if (!lineResult.IsSuccess)
             return Result<StockAdjustmentDto>.ValidationFailure(lineResult.Error!);
 

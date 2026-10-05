@@ -344,7 +344,11 @@ public sealed class ElectronicDocumentEntityTests
         document.MarkAnnulmentPending(requestId, Guid.NewGuid());
         document.ConfirmExternalAnnulment(
             requestId,
-            new ExternalAnnulmentEvidence(new DateOnly(2026, 10, 3), "SRI-TRAMITE-1", Guid.NewGuid()),
+            new ExternalAnnulmentEvidence(
+                new DateOnly(2026, 10, 3),
+                "SRI-TRAMITE-1",
+                Guid.NewGuid()
+            ),
             Guid.NewGuid()
         );
 
@@ -360,7 +364,11 @@ public sealed class ElectronicDocumentEntityTests
         var act = () =>
             document.ConfirmExternalAnnulment(
                 Guid.NewGuid(),
-                new ExternalAnnulmentEvidence(new DateOnly(2026, 10, 3), "SRI-TRAMITE-1", Guid.NewGuid()),
+                new ExternalAnnulmentEvidence(
+                    new DateOnly(2026, 10, 3),
+                    "SRI-TRAMITE-1",
+                    Guid.NewGuid()
+                ),
                 Guid.NewGuid()
             );
 

@@ -14,7 +14,10 @@ public sealed class AccountsPayableInstallmentConfiguration
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").IsRequired();
         builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
-        builder.Property(x => x.AccountsPayableId).HasColumnName("accounts_payable_id").IsRequired();
+        builder
+            .Property(x => x.AccountsPayableId)
+            .HasColumnName("accounts_payable_id")
+            .IsRequired();
         builder.Property(x => x.InstallmentNumber).HasColumnName("installment_number").IsRequired();
         builder.Property(x => x.DueDate).HasColumnName("due_date").IsRequired();
         builder

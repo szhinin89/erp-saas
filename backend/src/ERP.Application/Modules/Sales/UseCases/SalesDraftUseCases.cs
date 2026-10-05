@@ -163,7 +163,9 @@ public sealed class CreateSalesDraftValidator : AbstractValidator<CreateSalesDra
         RuleFor(x => x.CustomerId).NotEmpty().WithMessage("El cliente es obligatorio.");
         RuleFor(x => x.IssueDate).NotEmpty();
         RuleFor(x => x.DocTypeCode)
-            .MustAsync((code, ct) => docTypeCatalogResolver.IsActiveElectronicDocTypeAsync(code!, ct))
+            .MustAsync(
+                (code, ct) => docTypeCatalogResolver.IsActiveElectronicDocTypeAsync(code!, ct)
+            )
             .WithMessage("El tipo de comprobante no corresponde a un código SRI activo.")
             .When(x => !string.IsNullOrWhiteSpace(x.DocTypeCode));
         RuleFor(x => x.Lines).NotEmpty().WithMessage("Debe incluir al menos una línea.");
@@ -466,12 +468,13 @@ public sealed class CreateSalesDraftHandler
             }
         }
 
-        var (customerEmail, customerAddress) = await ERP.Application.MasterData.Services.BusinessPartnerContactResolver.ResolveAsync(
-            _bpContactRepo,
-            _bpLocationRepo,
-            cmd.CustomerId,
-            ct
-        );
+        var (customerEmail, customerAddress) =
+            await ERP.Application.MasterData.Services.BusinessPartnerContactResolver.ResolveAsync(
+                _bpContactRepo,
+                _bpLocationRepo,
+                cmd.CustomerId,
+                ct
+            );
         var customerSnapshot = CustomerSnapshot.Create(
             bp.Name.LegalName,
             bp.Identification.Number,
@@ -550,8 +553,9 @@ public sealed class CreateSalesDraftHandler
             {
                 if (cmd.Schedule is { Count: > 0 })
                     inv.ReplacePaymentSchedule(
-                        cmd.Schedule
-                            .Select(s => (s.InstallmentNumber, s.DueDate, s.Amount, s.Notes))
+                        cmd.Schedule.Select(s =>
+                                (s.InstallmentNumber, s.DueDate, s.Amount, s.Notes)
+                            )
                             .ToList(),
                         settlement.PendingBalance
                     );
@@ -679,7 +683,11 @@ public sealed class UpdateSalesDraftHandler
 
         if (cmd.PaymentTermId.HasValue && cmd.PaymentTermId.Value != inv.PaymentTerm.Id)
         {
-            var ptResult = await _ptResolver.ResolveForSaleAsync(cmd.CustomerId, cmd.PaymentTermId, ct);
+            var ptResult = await _ptResolver.ResolveForSaleAsync(
+                cmd.CustomerId,
+                cmd.PaymentTermId,
+                ct
+            );
             if (!ptResult.IsSuccess)
                 return Result<SalesInvoiceDto>.ValidationFailure(ptResult.Error!);
             var pt = ptResult.Value!;
@@ -719,12 +727,13 @@ public sealed class UpdateSalesDraftHandler
 
         try
         {
-            var (customerEmail, customerAddress) = await ERP.Application.MasterData.Services.BusinessPartnerContactResolver.ResolveAsync(
-                _bpContactRepo,
-                _bpLocationRepo,
-                cmd.CustomerId,
-                ct
-            );
+            var (customerEmail, customerAddress) =
+                await ERP.Application.MasterData.Services.BusinessPartnerContactResolver.ResolveAsync(
+                    _bpContactRepo,
+                    _bpLocationRepo,
+                    cmd.CustomerId,
+                    ct
+                );
             var customerSnapshot = CustomerSnapshot.Create(
                 bp.Name.LegalName,
                 bp.Identification.Number,
@@ -851,8 +860,7 @@ public sealed class UpdateSalesDraftHandler
                 // cambió el PaymentTerm/cliente en el mismo comando.
                 await _repo.RemovePaymentSchedulesByInvoiceAsync(inv.Id, ct);
                 inv.ReplacePaymentSchedule(
-                    cmd.Schedule
-                        .Select(s => (s.InstallmentNumber, s.DueDate, s.Amount, s.Notes))
+                    cmd.Schedule.Select(s => (s.InstallmentNumber, s.DueDate, s.Amount, s.Notes))
                         .ToList(),
                     settlement.PendingBalance
                 );
@@ -1382,18 +1390,16 @@ file static class SalesLineBuilder
             // aplicado, por lo que NO sirve como ancla de "precio lista" (bug corregido: antes se
             // tomaba UnitPrice, dejando ListPriceAtSale == UnitPrice incluso cuando sí hubo
             // descuento de regla).
-            decimal? listPriceAtSale =
-                pricingResultValue is not null
-                    ? Math.Round(
-                        pricingResultValue.BasePrice * conversionFactor,
-                        precision.SalesUnitPriceDecimals,
-                        MidpointRounding.AwayFromZero
-                    )
-                    : null;
-            var pricingSource =
-                pricingResultValue is not null
-                    ? (pricingResultValue.RuleApplied ?? "BaseSalePrice")
-                    : null;
+            decimal? listPriceAtSale = pricingResultValue is not null
+                ? Math.Round(
+                    pricingResultValue.BasePrice * conversionFactor,
+                    precision.SalesUnitPriceDecimals,
+                    MidpointRounding.AwayFromZero
+                )
+                : null;
+            var pricingSource = pricingResultValue is not null
+                ? (pricingResultValue.RuleApplied ?? "BaseSalePrice")
+                : null;
 
             // DiscountSource/DiscountDescription: el único mecanismo de descuento de línea hoy es
             // manual (l.DiscountPct — ver comentario más arriba, "SalesLineBuilder"); cuando no hay
@@ -1647,8 +1653,10 @@ file static class SalesPaymentHelper
         Result<SalesInvoiceDto>? Error
     )
     {
-        public static PaymentsBuildResult Ok(List<SalesInvoicePayment> items, decimal cashApplied) =>
-            new(items, cashApplied, null);
+        public static PaymentsBuildResult Ok(
+            List<SalesInvoicePayment> items,
+            decimal cashApplied
+        ) => new(items, cashApplied, null);
 
         public static PaymentsBuildResult Fail(string msg) =>
             new(null, 0m, Result<SalesInvoiceDto>.ValidationFailure(msg));
@@ -1736,22 +1744,20 @@ file static class SalesTaxHelper
                         MidpointRounding.AwayFromZero
                     );
 
-            line.ReplaceTaxes(
-                [
-                    ERP.Domain.Modules.Sales.Entities.SalesInvoiceDetailTax.Create(
-                        line.Id,
-                        line.TenantId,
-                        SriTaxCategoryCodes.Irbpnr,
-                        irbpnrCatalogCode,
-                        irbpnrEntry.Name,
-                        irbpnrEntry.Percentage ?? irbpnrEntry.UnitValue,
-                        irbpnrEntry.CalculationType,
-                        line.TaxableBase,
-                        irbpnrAmount,
-                        SalesTaxSource.Calculated
-                    ),
-                ]
-            );
+            line.ReplaceTaxes([
+                ERP.Domain.Modules.Sales.Entities.SalesInvoiceDetailTax.Create(
+                    line.Id,
+                    line.TenantId,
+                    SriTaxCategoryCodes.Irbpnr,
+                    irbpnrCatalogCode,
+                    irbpnrEntry.Name,
+                    irbpnrEntry.Percentage ?? irbpnrEntry.UnitValue,
+                    irbpnrEntry.CalculationType,
+                    line.TaxableBase,
+                    irbpnrAmount,
+                    SalesTaxSource.Calculated
+                ),
+            ]);
         }
 
         return null;

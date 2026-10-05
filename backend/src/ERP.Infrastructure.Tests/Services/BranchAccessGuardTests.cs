@@ -51,7 +51,12 @@ public sealed class BranchAccessGuardTests
             );
     }
 
-    private static Branch NewBranch(Guid tenantId, Guid companyId, string name, bool isMainBranch) =>
+    private static Branch NewBranch(
+        Guid tenantId,
+        Guid companyId,
+        string name,
+        bool isMainBranch
+    ) =>
         Branch.Create(
             tenantId,
             name,
@@ -81,8 +86,11 @@ public sealed class BranchAccessGuardTests
             companyId: companyId
         );
 
-    private static CompanyAccessContext ActiveCompanyA(Guid userId, Guid tenantId, Guid companyAId) =>
-        new(userId, tenantId, companyAId, "Admin", true, true);
+    private static CompanyAccessContext ActiveCompanyA(
+        Guid userId,
+        Guid tenantId,
+        Guid companyAId
+    ) => new(userId, tenantId, companyAId, "Admin", true, true);
 
     [Fact]
     public async Task Sucursal_que_pertenece_a_otra_empresa_nunca_se_acepta_aunque_el_tenant_sea_el_mismo()
@@ -95,7 +103,9 @@ public sealed class BranchAccessGuardTests
         var branchDeEmpresaB = NewBranch(tenantId, companyBId, "Sucursal B", isMainBranch: true);
 
         f.CompanyGuard.Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<CompanyAccessContext>.Success(ActiveCompanyA(userId, tenantId, companyAId)));
+            .ReturnsAsync(
+                Result<CompanyAccessContext>.Success(ActiveCompanyA(userId, tenantId, companyAId))
+            );
         f.BranchRepo.Setup(r =>
                 r.GetByIdForCompanyAsync(
                     tenantId,
@@ -113,8 +123,7 @@ public sealed class BranchAccessGuardTests
         result.Error.Should().Be("Sucursal no encontrada.");
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
         f.CompanyUserBranchRepo.Verify(
-            r =>
-                r.ExistsAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            r => r.ExistsAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never,
             "no debe siquiera evaluar autorización de sucursal para una empresa distinta a la activa"
         );
@@ -139,7 +148,9 @@ public sealed class BranchAccessGuardTests
         var branchId = Guid.NewGuid();
 
         f.CompanyGuard.Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<CompanyAccessContext>.Success(ActiveCompanyA(userId, tenantId, companyAId)));
+            .ReturnsAsync(
+                Result<CompanyAccessContext>.Success(ActiveCompanyA(userId, tenantId, companyAId))
+            );
         f.BranchRepo.Setup(r =>
                 r.GetByIdForCompanyAsync(
                     tenantId,
@@ -200,7 +211,9 @@ public sealed class BranchAccessGuardTests
         var membership = CompanyUserMembership.Create(companyAId, userId, "Admin", null, CreatedBy);
 
         f.CompanyGuard.Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<CompanyAccessContext>.Success(ActiveCompanyA(userId, tenantId, companyAId)));
+            .ReturnsAsync(
+                Result<CompanyAccessContext>.Success(ActiveCompanyA(userId, tenantId, companyAId))
+            );
         f.BranchRepo.Setup(r =>
                 r.GetByIdForCompanyAsync(
                     tenantId,
@@ -238,7 +251,9 @@ public sealed class BranchAccessGuardTests
         var membership = CompanyUserMembership.Create(companyAId, userId, "Admin", null, CreatedBy);
 
         f.CompanyGuard.Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<CompanyAccessContext>.Success(ActiveCompanyA(userId, tenantId, companyAId)));
+            .ReturnsAsync(
+                Result<CompanyAccessContext>.Success(ActiveCompanyA(userId, tenantId, companyAId))
+            );
         f.BranchRepo.Setup(r =>
                 r.GetByIdForCompanyAsync(
                     tenantId,
@@ -287,7 +302,9 @@ public sealed class BranchAccessGuardTests
         var membership = CompanyUserMembership.Create(companyAId, userId, "Admin", null, CreatedBy);
 
         f.CompanyGuard.Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<CompanyAccessContext>.Success(ActiveCompanyA(userId, tenantId, companyAId)));
+            .ReturnsAsync(
+                Result<CompanyAccessContext>.Success(ActiveCompanyA(userId, tenantId, companyAId))
+            );
         f.BranchRepo.Setup(r =>
                 r.GetByIdForCompanyAsync(
                     tenantId,
@@ -305,8 +322,9 @@ public sealed class BranchAccessGuardTests
                 r.ExistsAsync(membership.Id, branch.Id, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(false);
-        f.OperatorAccessPolicy
-            .Setup(o => o.IsAuthorizedOperatorAsync(It.IsAny<CancellationToken>()))
+        f.OperatorAccessPolicy.Setup(o =>
+                o.IsAuthorizedOperatorAsync(It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(true);
 
         var guard = f.BuildGuard();
@@ -329,10 +347,17 @@ public sealed class BranchAccessGuardTests
         var userId = Guid.NewGuid();
         var tenantId = Guid.NewGuid();
         var companyAId = Guid.NewGuid();
-        var branch = NewBranch(tenantId, companyAId, "Sucursal operada por admin global", isMainBranch: false);
+        var branch = NewBranch(
+            tenantId,
+            companyAId,
+            "Sucursal operada por admin global",
+            isMainBranch: false
+        );
 
         f.CompanyGuard.Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<CompanyAccessContext>.Success(ActiveCompanyA(userId, tenantId, companyAId)));
+            .ReturnsAsync(
+                Result<CompanyAccessContext>.Success(ActiveCompanyA(userId, tenantId, companyAId))
+            );
         f.BranchRepo.Setup(r =>
                 r.GetByIdForCompanyAsync(
                     tenantId,
@@ -346,8 +371,9 @@ public sealed class BranchAccessGuardTests
                 a.GetCompanyUserMembershipAsync(companyAId, userId, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync((CompanyUserMembership?)null);
-        f.OperatorAccessPolicy
-            .Setup(o => o.IsAuthorizedOperatorAsync(It.IsAny<CancellationToken>()))
+        f.OperatorAccessPolicy.Setup(o =>
+                o.IsAuthorizedOperatorAsync(It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(true);
 
         var guard = f.BuildGuard();
@@ -377,7 +403,9 @@ public sealed class BranchAccessGuardTests
         var branch = NewBranch(tenantId, companyAId, "Sucursal A", isMainBranch: false);
 
         f.CompanyGuard.Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<CompanyAccessContext>.Success(ActiveCompanyA(userId, tenantId, companyAId)));
+            .ReturnsAsync(
+                Result<CompanyAccessContext>.Success(ActiveCompanyA(userId, tenantId, companyAId))
+            );
         f.BranchRepo.Setup(r =>
                 r.GetByIdForCompanyAsync(
                     tenantId,
@@ -415,7 +443,9 @@ public sealed class BranchAccessGuardTests
         branch.Disable(CreatedBy);
 
         f.CompanyGuard.Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<CompanyAccessContext>.Success(ActiveCompanyA(userId, tenantId, companyAId)));
+            .ReturnsAsync(
+                Result<CompanyAccessContext>.Success(ActiveCompanyA(userId, tenantId, companyAId))
+            );
         f.BranchRepo.Setup(r =>
                 r.GetByIdForCompanyAsync(
                     tenantId,
@@ -425,8 +455,9 @@ public sealed class BranchAccessGuardTests
                 )
             )
             .ReturnsAsync(branch);
-        f.OperatorAccessPolicy
-            .Setup(o => o.IsAuthorizedOperatorAsync(It.IsAny<CancellationToken>()))
+        f.OperatorAccessPolicy.Setup(o =>
+                o.IsAuthorizedOperatorAsync(It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(true);
 
         var guard = f.BuildGuard();
@@ -458,7 +489,9 @@ public sealed class BranchAccessGuardTests
         var branchDeEmpresaB = NewBranch(tenantId, companyBId, "Sucursal B", isMainBranch: true);
 
         f.CompanyGuard.Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<CompanyAccessContext>.Success(ActiveCompanyA(userId, tenantId, companyAId)));
+            .ReturnsAsync(
+                Result<CompanyAccessContext>.Success(ActiveCompanyA(userId, tenantId, companyAId))
+            );
         f.BranchRepo.Setup(r =>
                 r.GetByIdForCompanyAsync(
                     tenantId,
@@ -468,8 +501,9 @@ public sealed class BranchAccessGuardTests
                 )
             )
             .ReturnsAsync((Branch?)null);
-        f.OperatorAccessPolicy
-            .Setup(o => o.IsAuthorizedOperatorAsync(It.IsAny<CancellationToken>()))
+        f.OperatorAccessPolicy.Setup(o =>
+                o.IsAuthorizedOperatorAsync(It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(true);
 
         var guard = f.BuildGuard();
@@ -491,7 +525,10 @@ public sealed class BranchAccessGuardTests
         var result = await f.BuildGuard().RequireCurrentBranchAsync();
 
         result.Code.Should().Be(ApiResponseCodes.Common.BranchScopeForbidden);
-        f.CompanyGuard.Verify(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()), Times.Never);
+        f.CompanyGuard.Verify(
+            g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -501,11 +538,25 @@ public sealed class BranchAccessGuardTests
         var userId = Guid.NewGuid();
         var tenantId = Guid.NewGuid();
         var companyAId = Guid.NewGuid();
-        var branchDeEmpresaB = NewBranch(tenantId, Guid.NewGuid(), "Sucursal B", isMainBranch: true);
+        var branchDeEmpresaB = NewBranch(
+            tenantId,
+            Guid.NewGuid(),
+            "Sucursal B",
+            isMainBranch: true
+        );
         f.CompanyGuard.Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<CompanyAccessContext>.Success(ActiveCompanyA(userId, tenantId, companyAId)));
+            .ReturnsAsync(
+                Result<CompanyAccessContext>.Success(ActiveCompanyA(userId, tenantId, companyAId))
+            );
         // El repositorio filtra por empresa A: la sucursal de B nunca aparece (igual que una inexistente).
-        f.BranchRepo.Setup(r => r.GetByIdForCompanyAsync(tenantId, companyAId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        f.BranchRepo.Setup(r =>
+                r.GetByIdForCompanyAsync(
+                    tenantId,
+                    companyAId,
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync((Branch?)null);
         f.CurrentBranch.Setup(b => b.HasBranchContext).Returns(true);
         var guard = f.BuildGuard();
@@ -529,18 +580,33 @@ public sealed class BranchAccessGuardTests
         var branch = NewBranch(tenantId, companyAId, "Sucursal A", isMainBranch: false);
         var membership = CompanyUserMembership.Create(companyAId, userId, "Admin", null, CreatedBy);
         f.CompanyGuard.Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<CompanyAccessContext>.Success(ActiveCompanyA(userId, tenantId, companyAId)));
-        f.BranchRepo.Setup(r => r.GetByIdForCompanyAsync(tenantId, companyAId, branch.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                Result<CompanyAccessContext>.Success(ActiveCompanyA(userId, tenantId, companyAId))
+            );
+        f.BranchRepo.Setup(r =>
+                r.GetByIdForCompanyAsync(
+                    tenantId,
+                    companyAId,
+                    branch.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(branch);
-        f.AccessRepo.Setup(a => a.GetCompanyUserMembershipAsync(companyAId, userId, It.IsAny<CancellationToken>()))
+        f.AccessRepo.Setup(a =>
+                a.GetCompanyUserMembershipAsync(companyAId, userId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(membership);
-        f.CompanyUserBranchRepo.Setup(r => r.ExistsAsync(membership.Id, branch.Id, It.IsAny<CancellationToken>()))
+        f.CompanyUserBranchRepo.Setup(r =>
+                r.ExistsAsync(membership.Id, branch.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(false);
         f.CurrentBranch.Setup(b => b.HasBranchContext).Returns(true);
         f.CurrentBranch.Setup(b => b.BranchId).Returns(branch.Id);
         var guard = f.BuildGuard();
 
-        (await guard.RequireBranchAsync(branch.Id)).Code.Should().Be(ApiResponseCodes.Common.Forbidden);
+        (await guard.RequireBranchAsync(branch.Id))
+            .Code.Should()
+            .Be(ApiResponseCodes.Common.Forbidden);
         var current = await guard.RequireCurrentBranchAsync();
         current.Code.Should().Be(ApiResponseCodes.Common.BranchScopeForbidden);
         current.Error.Should().Be("No tiene autorización para operar en esta sucursal.");

@@ -31,7 +31,8 @@ public sealed class PaymentTermDefaultResolver : IPaymentTermDefaultResolver
     ) =>
         ResolveAsync(
             explicitPaymentTermId,
-            async () => (await _purchaseSettings.GetByBusinessPartnerAsync(supplierId, ct))?.PaymentTermId,
+            async () =>
+                (await _purchaseSettings.GetByBusinessPartnerAsync(supplierId, ct))?.PaymentTermId,
             ct
         );
 
@@ -42,7 +43,8 @@ public sealed class PaymentTermDefaultResolver : IPaymentTermDefaultResolver
     ) =>
         ResolveAsync(
             explicitPaymentTermId,
-            async () => (await _salesSettings.GetByBusinessPartnerAsync(customerId, ct))?.PaymentTermId,
+            async () =>
+                (await _salesSettings.GetByBusinessPartnerAsync(customerId, ct))?.PaymentTermId,
             ct
         );
 

@@ -83,7 +83,13 @@ public sealed class UpdateBranchCommandHandler
                 cancellationToken
             );
             foreach (var clearedId in clearedIds)
-                await LogMainBranchChangeAsync(entity.CompanyId, clearedId, true, false, cancellationToken);
+                await LogMainBranchChangeAsync(
+                    entity.CompanyId,
+                    clearedId,
+                    true,
+                    false,
+                    cancellationToken
+                );
         }
 
         entity.Update(

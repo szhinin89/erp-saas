@@ -17,11 +17,17 @@ public sealed class ImportBatchRowConfiguration : IEntityTypeConfiguration<Impor
         builder.Property(x => x.ImportBatchId).HasColumnName("import_batch_id").IsRequired();
 
         builder.Property(x => x.RowNumber).HasColumnName("row_number").IsRequired();
-        builder.Property(x => x.RawData).HasColumnName("raw_data").HasColumnType("jsonb").IsRequired();
+        builder
+            .Property(x => x.RawData)
+            .HasColumnName("raw_data")
+            .HasColumnType("jsonb")
+            .IsRequired();
         builder.Property(x => x.ParsedData).HasColumnName("parsed_data").HasColumnType("jsonb");
         builder.Property(x => x.HasBlockingIssue).HasColumnName("has_blocking_issue").IsRequired();
         builder.Property(x => x.IsImported).HasColumnName("is_imported").IsRequired();
-        builder.Property(x => x.CreatedBusinessPartnerId).HasColumnName("created_business_partner_id");
+        builder
+            .Property(x => x.CreatedBusinessPartnerId)
+            .HasColumnName("created_business_partner_id");
 
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");

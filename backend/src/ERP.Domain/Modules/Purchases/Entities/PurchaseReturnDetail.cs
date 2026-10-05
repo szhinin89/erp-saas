@@ -58,7 +58,8 @@ public sealed class PurchaseReturnDetail : IMustHaveTenant
     private const string IceSriTaxCode = ERP.Domain.Modules.Purchases.SriTaxCategoryCodes.Ice;
 
     /// <summary>IRBPNR nunca se trata como ICE — código, catálogo y resolución siempre separados.</summary>
-    public decimal IrbpnrAmount => _taxes.Where(t => t.TaxCode == IrbpnrSriTaxCode).Sum(t => t.TaxAmount);
+    public decimal IrbpnrAmount =>
+        _taxes.Where(t => t.TaxCode == IrbpnrSriTaxCode).Sum(t => t.TaxAmount);
 
     // ── ICE — TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Fase 3) ────────
     // Legacy compatibility mirror: solo lectura, derivados de _taxes — mismo patrón que

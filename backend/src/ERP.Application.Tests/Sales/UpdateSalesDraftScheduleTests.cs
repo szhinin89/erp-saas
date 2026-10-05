@@ -46,17 +46,22 @@ public sealed class UpdateSalesDraftScheduleTests
         public Mock<IPricingResolver> Pricing { get; } = new();
         public Mock<IPriceListSelectionResolver> PriceListSelection { get; } = new();
         public Mock<ICompanySpecialTaxResponsibilityRepository> CompanyTaxRepo { get; } = new();
-        public Mock<ERP.Domain.Modules.Inventory.Interfaces.IWarehouseRepository> WarehouseRepo { get; } = new();
-        public Mock<ERP.Application.Common.Interfaces.IAverageCostService> CostService { get; } = new();
+        public Mock<ERP.Domain.Modules.Inventory.Interfaces.IWarehouseRepository> WarehouseRepo { get; } =
+            new();
+        public Mock<ERP.Application.Common.Interfaces.IAverageCostService> CostService { get; } =
+            new();
         public Mock<ICurrentTenant> Tenant { get; } = new();
         public Mock<ICurrentCompany> Company { get; } = new();
         public Mock<ICurrentBranch> Branch { get; } = new();
         public Mock<ICurrentUser> User { get; } = new();
         public Mock<IOperationalPreferencesResolver> Preferences { get; } = new();
-        public Mock<ERP.Application.Modules.Sales.Services.ISalesCreditRequirementPolicy> CreditPolicy { get; } = new();
-        public Mock<ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository> BankAccountRepo { get; } = new();
+        public Mock<ERP.Application.Modules.Sales.Services.ISalesCreditRequirementPolicy> CreditPolicy { get; } =
+            new();
+        public Mock<ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository> BankAccountRepo { get; } =
+            new();
 
-        public PaymentTerm DefaultPt { get; } = PaymentTerm.Create(TenantId, "CONT", "Contado", 1, 0, UserId);
+        public PaymentTerm DefaultPt { get; } =
+            PaymentTerm.Create(TenantId, "CONT", "Contado", 1, 0, UserId);
 
         public Fixture()
         {
@@ -64,10 +69,17 @@ public sealed class UpdateSalesDraftScheduleTests
             // vacío) para los tests de esta suite que no le importa el pricing contextual — evita
             // depender del comportamiento de Moq para mocks sin configurar en un método nuevo.
             Pricing
-                .Setup(p => p.ResolveManyAsync(It.IsAny<PricingBatchContext>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(Result<IReadOnlyDictionary<Guid, PricingResult>>.Success(
-                    new Dictionary<Guid, PricingResult>()
-                ));
+                .Setup(p =>
+                    p.ResolveManyAsync(
+                        It.IsAny<PricingBatchContext>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(
+                    Result<IReadOnlyDictionary<Guid, PricingResult>>.Success(
+                        new Dictionary<Guid, PricingResult>()
+                    )
+                );
             // SALES-PRICING-TRACEABILITY-SNAPSHOT-07B: default "cliente sin lista propia".
             PriceListSelection
                 .Setup(p => p.ResolveAsync(It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
@@ -92,34 +104,85 @@ public sealed class UpdateSalesDraftScheduleTests
                 .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(DefaultPreferences());
 
-            var bp = BusinessPartner.Create(TenantId, "05", "1710034065", 1, "Cliente Test", UserId);
-            BpRepo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync(bp);
+            var bp = BusinessPartner.Create(
+                TenantId,
+                "05",
+                "1710034065",
+                1,
+                "Cliente Test",
+                UserId
+            );
+            BpRepo
+                .Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(bp);
             BpContactRepo
-                .Setup(r => r.GetByBusinessPartnerAsync(It.IsAny<Guid>(), It.IsAny<bool?>(), It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetByBusinessPartnerAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<bool?>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync(Array.Empty<BusinessPartnerContact>());
             BpLocationRepo
-                .Setup(r => r.GetByBusinessPartnerAsync(It.IsAny<Guid>(), It.IsAny<bool?>(), It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetByBusinessPartnerAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<bool?>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync(Array.Empty<BusinessPartnerLocation>());
 
             PtResolver
-                .Setup(r => r.ResolveForSaleAsync(It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.ResolveForSaleAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid?>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync(Result<PaymentTerm>.Success(DefaultPt));
 
             Tax.Setup(t => t.GetVatRateWithNameAsync("10", It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new TaxRateResult(15m, "IVA 15%"));
 
             CompanyTaxRepo
-                .Setup(r => r.GetResponsibleSriTaxCategoryCodesAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetResponsibleSriTaxCategoryCodesAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync(Array.Empty<string>());
         }
 
         private static OperationalPreferences DefaultPreferences() =>
             new(
-                SalesPos: new SalesPosPreferences(true, false, true, 0m, null, false, false, null, null),
+                SalesPos: new SalesPosPreferences(
+                    true,
+                    false,
+                    true,
+                    0m,
+                    null,
+                    false,
+                    false,
+                    null,
+                    null
+                ),
                 Cash: new CashPreferences(true, true, 0m, true, true, true),
                 Purchases: new PurchasesPreferences(null, true, true, true, false),
                 Inventory: new InventoryPreferences(false, true, false, 0m),
-                Printing: new PrintingPreferences("AskBeforePrint", 1, "80mm", false, true, true, false),
+                Printing: new PrintingPreferences(
+                    "AskBeforePrint",
+                    1,
+                    "80mm",
+                    false,
+                    true,
+                    true,
+                    false
+                ),
                 ElectronicDocuments: new ElectronicDocumentsPreferences(true, 3, true, true),
                 Notifications: new NotificationsPreferences(true, false, "es")
             );
@@ -153,21 +216,43 @@ public sealed class UpdateSalesDraftScheduleTests
         /// <summary>Factura Draft existente con una línea de 100 (VAT 15% => GrandTotal 115).</summary>
         public SalesInvoice ExistingInvoice(bool manualSchedule = false, decimal unitPrice = 100m)
         {
-            var pt = PaymentTermSnapshot.Create(DefaultPt.Id, DefaultPt.Name, DefaultPt.Installments, DefaultPt.DaysBetweenInstallments);
+            var pt = PaymentTermSnapshot.Create(
+                DefaultPt.Id,
+                DefaultPt.Name,
+                DefaultPt.Installments,
+                DefaultPt.DaysBetweenInstallments
+            );
             var inv = SalesInvoice.CreateDraft(
-                TenantId, CompanyId, BranchId, CustomerId,
+                TenantId,
+                CompanyId,
+                BranchId,
+                CustomerId,
                 CustomerSnapshot.Create("Cliente Test", "1710034065", "05"),
-                "DRAFT-TEST", new DateOnly(2026, 1, 1), UserId, pt,
+                "DRAFT-TEST",
+                new DateOnly(2026, 1, 1),
+                UserId,
+                pt,
                 cashSessionId: Guid.NewGuid(),
                 emissionType: EmissionType.Physical
             );
-            var line = SalesInvoiceDetail.Create(inv.Id, TenantId, "Producto Test", 1, unitPrice, "10", "UNIT");
+            var line = SalesInvoiceDetail.Create(
+                inv.Id,
+                TenantId,
+                "Producto Test",
+                1,
+                unitPrice,
+                "10",
+                "UNIT"
+            );
             line.ApplyTaxes("10", 15m, "IVA 15%", null, 0m, null);
             inv.ReplaceLines(new[] { line }, UserId);
 
             if (manualSchedule)
                 inv.ReplacePaymentSchedule(
-                    new List<(int, DateOnly, decimal, string?)> { (1, inv.IssueDate, inv.GrandTotal, null) }
+                    new List<(int, DateOnly, decimal, string?)>
+                    {
+                        (1, inv.IssueDate, inv.GrandTotal, null),
+                    }
                 );
             else
                 inv.GeneratePaymentSchedule();
@@ -187,7 +272,10 @@ public sealed class UpdateSalesDraftScheduleTests
                 inv.Id,
                 CustomerId,
                 inv.IssueDate,
-                new List<SalesLineInput> { new(null, "Producto Test", 1, newUnitPrice ?? 100m, "10") },
+                new List<SalesLineInput>
+                {
+                    new(null, "Producto Test", 1, newUnitPrice ?? 100m, "10"),
+                },
                 DueDate: dueDate,
                 PaymentTermId: paymentTermId,
                 Payments: payments,
@@ -202,11 +290,29 @@ public sealed class UpdateSalesDraftScheduleTests
 
         public void SetupPaymentMethods()
         {
-            var cash = PaymentMethod.Create(TenantId, "EFECTIVO", "Efectivo", false, false, 1, UserId);
-            var credit = PaymentMethod.Create(TenantId, "CREDITO", "Crédito", false, true, 2, UserId);
-            PmRepo.Setup(r => r.GetByIdAsync(TenantId, CashMethodId, It.IsAny<CancellationToken>()))
+            var cash = PaymentMethod.Create(
+                TenantId,
+                "EFECTIVO",
+                "Efectivo",
+                false,
+                false,
+                1,
+                UserId
+            );
+            var credit = PaymentMethod.Create(
+                TenantId,
+                "CREDITO",
+                "Crédito",
+                false,
+                true,
+                2,
+                UserId
+            );
+            PmRepo
+                .Setup(r => r.GetByIdAsync(TenantId, CashMethodId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(cash);
-            PmRepo.Setup(r => r.GetByIdAsync(TenantId, CreditMethodId, It.IsAny<CancellationToken>()))
+            PmRepo
+                .Setup(r => r.GetByIdAsync(TenantId, CreditMethodId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(credit);
         }
 
@@ -214,20 +320,44 @@ public sealed class UpdateSalesDraftScheduleTests
         /// efectivo que cubre el GrandTotal) — línea de 100 (VAT 15% => GrandTotal 115).</summary>
         public SalesInvoice ExistingInvoicePaidInFull(decimal unitPrice = 100m)
         {
-            var pt = PaymentTermSnapshot.Create(DefaultPt.Id, DefaultPt.Name, DefaultPt.Installments, DefaultPt.DaysBetweenInstallments);
+            var pt = PaymentTermSnapshot.Create(
+                DefaultPt.Id,
+                DefaultPt.Name,
+                DefaultPt.Installments,
+                DefaultPt.DaysBetweenInstallments
+            );
             var inv = SalesInvoice.CreateDraft(
-                TenantId, CompanyId, BranchId, CustomerId,
+                TenantId,
+                CompanyId,
+                BranchId,
+                CustomerId,
                 CustomerSnapshot.Create("Cliente Test", "1710034065", "05"),
-                "DRAFT-TEST", new DateOnly(2026, 1, 1), UserId, pt,
+                "DRAFT-TEST",
+                new DateOnly(2026, 1, 1),
+                UserId,
+                pt,
                 cashSessionId: Guid.NewGuid(),
                 emissionType: EmissionType.Physical
             );
-            var line = SalesInvoiceDetail.Create(inv.Id, TenantId, "Producto Test", 1, unitPrice, "10", "UNIT");
+            var line = SalesInvoiceDetail.Create(
+                inv.Id,
+                TenantId,
+                "Producto Test",
+                1,
+                unitPrice,
+                "10",
+                "UNIT"
+            );
             line.ApplyTaxes("10", 15m, "IVA 15%", null, 0m, null);
             inv.ReplaceLines(new[] { line }, UserId);
 
             var payment = SalesInvoicePayment.Create(
-                inv.Id, TenantId, CashMethodId, "EFECTIVO", "Efectivo", inv.GrandTotal
+                inv.Id,
+                TenantId,
+                CashMethodId,
+                "EFECTIVO",
+                "Efectivo",
+                inv.GrandTotal
             );
             inv.ReplacePayments(new[] { payment }, UserId);
             // Saldo cubierto en su totalidad: sin cronograma, igual que CreateSalesDraftHandler.
@@ -240,7 +370,8 @@ public sealed class UpdateSalesDraftScheduleTests
     {
         var f = new Fixture();
         var inv = f.ExistingInvoice(manualSchedule: false, unitPrice: 100m); // GrandTotal 115
-        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())).ReturnsAsync(inv);
+        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
 
         var cmd = Fixture.BaseCommand(inv, newUnitPrice: 200m); // GrandTotal 230
         var result = await f.BuildHandler().Handle(cmd, CancellationToken.None);
@@ -255,7 +386,8 @@ public sealed class UpdateSalesDraftScheduleTests
     {
         var f = new Fixture();
         var inv = f.ExistingInvoice(manualSchedule: true, unitPrice: 100m);
-        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())).ReturnsAsync(inv);
+        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
         var originalSchedule = inv.PaymentSchedules.ToList();
 
         var cmd = Fixture.BaseCommand(inv, newUnitPrice: 200m);
@@ -272,7 +404,8 @@ public sealed class UpdateSalesDraftScheduleTests
     {
         var f = new Fixture();
         var inv = f.ExistingInvoice(manualSchedule: true, unitPrice: 100m);
-        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())).ReturnsAsync(inv);
+        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
 
         var cmd = Fixture.BaseCommand(
             inv,
@@ -298,10 +431,12 @@ public sealed class UpdateSalesDraftScheduleTests
         var inv = f.ExistingInvoice(manualSchedule: true, unitPrice: 100m); // manual=true inicialmente
 
         var newPt = PaymentTerm.Create(TenantId, "30D", "30 días", 2, 15, UserId);
-        f.PtResolver
-            .Setup(r => r.ResolveForSaleAsync(CustomerId, newPt.Id, It.IsAny<CancellationToken>()))
+        f.PtResolver.Setup(r =>
+                r.ResolveForSaleAsync(CustomerId, newPt.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(Result<PaymentTerm>.Success(newPt));
-        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())).ReturnsAsync(inv);
+        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
 
         var cmd = Fixture.BaseCommand(inv, paymentTermId: newPt.Id);
         var result = await f.BuildHandler().Handle(cmd, CancellationToken.None);
@@ -317,12 +452,14 @@ public sealed class UpdateSalesDraftScheduleTests
     {
         var f = new Fixture();
         var inv = f.ExistingInvoice(manualSchedule: true, unitPrice: 100m);
-        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())).ReturnsAsync(inv);
+        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
 
         var newCustomerId = Guid.NewGuid();
         var newPt = PaymentTerm.Create(TenantId, "45D", "45 días", 3, 15, UserId);
-        f.PtResolver
-            .Setup(r => r.ResolveForSaleAsync(newCustomerId, null, It.IsAny<CancellationToken>()))
+        f.PtResolver.Setup(r =>
+                r.ResolveForSaleAsync(newCustomerId, null, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(Result<PaymentTerm>.Success(newPt));
 
         var cmd = new UpdateSalesDraftCommand(
@@ -348,14 +485,18 @@ public sealed class UpdateSalesDraftScheduleTests
         var inv = f.ExistingInvoice(manualSchedule: true, unitPrice: 100m);
         var originalPtId = inv.PaymentTerm.Id;
         var originalSchedule = inv.PaymentSchedules.ToList();
-        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())).ReturnsAsync(inv);
+        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
 
         var newCustomerId = Guid.NewGuid();
-        f.PtResolver
-            .Setup(r => r.ResolveForSaleAsync(newCustomerId, null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<PaymentTerm>.ValidationFailure(
-                "Debe seleccionar una condición de pago; no hay una configurada para esta empresa."
-            ));
+        f.PtResolver.Setup(r =>
+                r.ResolveForSaleAsync(newCustomerId, null, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                Result<PaymentTerm>.ValidationFailure(
+                    "Debe seleccionar una condición de pago; no hay una configurada para esta empresa."
+                )
+            );
 
         var cmd = new UpdateSalesDraftCommand(
             inv.Id,
@@ -376,18 +517,38 @@ public sealed class UpdateSalesDraftScheduleTests
     {
         // Simula un borrador persistido antes de Fase 4: sin filas de cronograma.
         var f = new Fixture();
-        var pt = PaymentTermSnapshot.Create(f.DefaultPt.Id, f.DefaultPt.Name, f.DefaultPt.Installments, f.DefaultPt.DaysBetweenInstallments);
+        var pt = PaymentTermSnapshot.Create(
+            f.DefaultPt.Id,
+            f.DefaultPt.Name,
+            f.DefaultPt.Installments,
+            f.DefaultPt.DaysBetweenInstallments
+        );
         var inv = SalesInvoice.CreateDraft(
-            TenantId, CompanyId, BranchId, CustomerId,
+            TenantId,
+            CompanyId,
+            BranchId,
+            CustomerId,
             CustomerSnapshot.Create("Cliente Test", "1710034065", "05"),
-            "DRAFT-TEST", new DateOnly(2026, 1, 1), UserId, pt,
+            "DRAFT-TEST",
+            new DateOnly(2026, 1, 1),
+            UserId,
+            pt,
             cashSessionId: Guid.NewGuid(),
             emissionType: EmissionType.Physical
         );
-        var line = SalesInvoiceDetail.Create(inv.Id, TenantId, "Producto Test", 1, 100m, "10", "UNIT");
+        var line = SalesInvoiceDetail.Create(
+            inv.Id,
+            TenantId,
+            "Producto Test",
+            1,
+            100m,
+            "10",
+            "UNIT"
+        );
         inv.ReplaceLines(new[] { line }, UserId);
         // Deliberadamente SIN GeneratePaymentSchedule() — simula el estado legacy.
-        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())).ReturnsAsync(inv);
+        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
 
         var cmd = Fixture.BaseCommand(inv);
         var result = await f.BuildHandler().Handle(cmd, CancellationToken.None);
@@ -409,7 +570,8 @@ public sealed class UpdateSalesDraftScheduleTests
         var f = new Fixture();
         f.SetupPaymentMethods();
         var inv = f.ExistingInvoicePaidInFull();
-        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())).ReturnsAsync(inv);
+        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
 
         // Mismo precio (GrandTotal 115) y mismo pago en efectivo por 115 — sigue contado completo.
         var cmd = Fixture.BaseCommand(
@@ -428,13 +590,15 @@ public sealed class UpdateSalesDraftScheduleTests
         var f = new Fixture();
         f.SetupPaymentMethods();
         var inv = f.ExistingInvoicePaidInFull();
-        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())).ReturnsAsync(inv);
+        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
 
         // Sin default de empresa configurado (comportamiento por defecto del mock): un abono que
         // ya no cubre el total, sin dueDate/schedule/paymentTermId, debe exigir la misma regla que
         // CreateSalesDraftHandler.
-        f.CreditPolicy
-            .Setup(p => p.ResolveCompanyOrManualAsync(null, false, It.IsAny<CancellationToken>()))
+        f.CreditPolicy.Setup(p =>
+                p.ResolveCompanyOrManualAsync(null, false, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(
                 Result<PaymentTerm?>.ValidationFailure(
                     "Debe definir una fecha de vencimiento, cuotas o una condición de pago para el saldo pendiente."
@@ -448,9 +612,11 @@ public sealed class UpdateSalesDraftScheduleTests
         var result = await f.BuildHandler().Handle(cmd, CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Be(
-            "Debe definir una fecha de vencimiento, cuotas o una condición de pago para el saldo pendiente."
-        );
+        result
+            .Error.Should()
+            .Be(
+                "Debe definir una fecha de vencimiento, cuotas o una condición de pago para el saldo pendiente."
+            );
         f.Repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -460,7 +626,8 @@ public sealed class UpdateSalesDraftScheduleTests
         var f = new Fixture();
         f.SetupPaymentMethods();
         var inv = f.ExistingInvoicePaidInFull();
-        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())).ReturnsAsync(inv);
+        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
 
         var cmd = Fixture.BaseCommand(
             inv,
@@ -475,7 +642,12 @@ public sealed class UpdateSalesDraftScheduleTests
         inv.PaymentSchedules[0].DueDate.Should().Be(inv.IssueDate.AddDays(30));
         // No debió consultarse la política de crédito: dueDate manual ya satisface (paridad Create).
         f.CreditPolicy.Verify(
-            p => p.ResolveCompanyOrManualAsync(It.IsAny<DateOnly?>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
+            p =>
+                p.ResolveCompanyOrManualAsync(
+                    It.IsAny<DateOnly?>(),
+                    It.IsAny<bool>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }
@@ -488,14 +660,28 @@ public sealed class UpdateSalesDraftScheduleTests
         var inv = f.ExistingInvoicePaidInFull();
         // Estado inicial: saldo pendiente 55 con dueDate manual (simulando una edición anterior).
         inv.ReplacePayments(
-            new[] { SalesInvoicePayment.Create(inv.Id, TenantId, f.CashMethodId, "EFECTIVO", "Efectivo", 60m) },
+            new[]
+            {
+                SalesInvoicePayment.Create(
+                    inv.Id,
+                    TenantId,
+                    f.CashMethodId,
+                    "EFECTIVO",
+                    "Efectivo",
+                    60m
+                ),
+            },
             UserId
         );
         inv.ReplacePaymentSchedule(
-            new List<(int, DateOnly, decimal, string?)> { (1, inv.IssueDate.AddDays(30), 55m, null) },
+            new List<(int, DateOnly, decimal, string?)>
+            {
+                (1, inv.IssueDate.AddDays(30), 55m, null),
+            },
             55m
         );
-        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())).ReturnsAsync(inv);
+        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
 
         var cmd = Fixture.BaseCommand(
             inv,
@@ -506,7 +692,10 @@ public sealed class UpdateSalesDraftScheduleTests
         result.IsSuccess.Should().BeTrue(result.Error);
         inv.PaymentSchedules.Should().BeEmpty();
         inv.IsPaymentScheduleManual.Should().BeFalse();
-        f.Repo.Verify(r => r.RemovePaymentSchedulesByInvoiceAsync(inv.Id, It.IsAny<CancellationToken>()), Times.Once);
+        f.Repo.Verify(
+            r => r.RemovePaymentSchedulesByInvoiceAsync(inv.Id, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -517,11 +706,13 @@ public sealed class UpdateSalesDraftScheduleTests
         var f = new Fixture();
         f.SetupPaymentMethods();
         var inv = f.ExistingInvoicePaidInFull();
-        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())).ReturnsAsync(inv);
+        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
 
         var newPt = PaymentTerm.Create(TenantId, "30D", "30 días", 2, 15, UserId);
-        f.PtResolver
-            .Setup(r => r.ResolveForSaleAsync(CustomerId, newPt.Id, It.IsAny<CancellationToken>()))
+        f.PtResolver.Setup(r =>
+                r.ResolveForSaleAsync(CustomerId, newPt.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(Result<PaymentTerm>.Success(newPt));
 
         var cmd = Fixture.BaseCommand(
@@ -549,11 +740,13 @@ public sealed class UpdateSalesDraftScheduleTests
         var f = new Fixture();
         f.SetupPaymentMethods();
         var inv = f.ExistingInvoicePaidInFull();
-        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())).ReturnsAsync(inv);
+        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
 
         var companyPt = PaymentTerm.Create(TenantId, "30D", "Crédito 30 días", 1, 30, UserId);
-        f.CreditPolicy
-            .Setup(p => p.ResolveCompanyOrManualAsync(null, false, It.IsAny<CancellationToken>()))
+        f.CreditPolicy.Setup(p =>
+                p.ResolveCompanyOrManualAsync(null, false, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(Result<PaymentTerm?>.Success(companyPt));
 
         var cmd = Fixture.BaseCommand(
@@ -574,12 +767,16 @@ public sealed class UpdateSalesDraftScheduleTests
     {
         var f = new Fixture();
         var inv = f.ExistingInvoice();
-        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())).ReturnsAsync(inv);
+        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
 
         var inactivePtId = Guid.NewGuid();
-        f.PtResolver
-            .Setup(r => r.ResolveForSaleAsync(CustomerId, inactivePtId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<PaymentTerm>.ValidationFailure("La condición de pago se encuentra inactiva."));
+        f.PtResolver.Setup(r =>
+                r.ResolveForSaleAsync(CustomerId, inactivePtId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                Result<PaymentTerm>.ValidationFailure("La condición de pago se encuentra inactiva.")
+            );
 
         var cmd = Fixture.BaseCommand(inv, paymentTermId: inactivePtId);
         var result = await f.BuildHandler().Handle(cmd, CancellationToken.None);
@@ -595,10 +792,12 @@ public sealed class UpdateSalesDraftScheduleTests
         var f = new Fixture();
         f.SetupPaymentMethods();
         var inv = f.ExistingInvoicePaidInFull(); // GrandTotal 115
-        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())).ReturnsAsync(inv);
+        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
 
-        f.CreditPolicy
-            .Setup(p => p.ResolveCompanyOrManualAsync(null, false, It.IsAny<CancellationToken>()))
+        f.CreditPolicy.Setup(p =>
+                p.ResolveCompanyOrManualAsync(null, false, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(Result<PaymentTerm?>.Success(f.DefaultPt));
 
         var cmd = Fixture.BaseCommand(
@@ -638,21 +837,32 @@ public sealed class UpdateSalesDraftScheduleTests
     {
         var f = new Fixture();
         var inv = f.ExistingInvoice();
-        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())).ReturnsAsync(inv);
+        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
 
         var newCustomerId = Guid.NewGuid();
-        var newCustomerBp = BusinessPartner.Create(TenantId, "05", "1710034065", 1, "Cliente Nuevo", UserId);
-        f.BpRepo.Setup(r => r.GetByIdAsync(newCustomerId, It.IsAny<CancellationToken>())).ReturnsAsync(newCustomerBp);
+        var newCustomerBp = BusinessPartner.Create(
+            TenantId,
+            "05",
+            "1710034065",
+            1,
+            "Cliente Nuevo",
+            UserId
+        );
+        f.BpRepo.Setup(r => r.GetByIdAsync(newCustomerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(newCustomerBp);
 
         var item = ContextualItem();
-        f.ItemRepo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>())).ReturnsAsync(item);
+        f.ItemRepo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item);
 
         var oldCustomerListId = Guid.NewGuid();
         var newCustomerListId = Guid.NewGuid();
-        f.Pricing
-            .Setup(p =>
+        f.Pricing.Setup(p =>
                 p.ResolveManyAsync(
-                    It.Is<PricingBatchContext>(c => c.ItemIds.Contains(item.Id) && c.CustomerId == CustomerId),
+                    It.Is<PricingBatchContext>(c =>
+                        c.ItemIds.Contains(item.Id) && c.CustomerId == CustomerId
+                    ),
                     It.IsAny<CancellationToken>()
                 )
             )
@@ -661,16 +871,23 @@ public sealed class UpdateSalesDraftScheduleTests
                     new Dictionary<Guid, PricingResult>
                     {
                         [item.Id] = new PricingResult(
-                            item.Id, oldCustomerListId, "MAYORISTA", "Lista Mayorista", "USD",
-                            BasePrice: 100m, RuleApplied: null, UnitPrice: 90m
+                            item.Id,
+                            oldCustomerListId,
+                            "MAYORISTA",
+                            "Lista Mayorista",
+                            "USD",
+                            BasePrice: 100m,
+                            RuleApplied: null,
+                            UnitPrice: 90m
                         ),
                     }
                 )
             );
-        f.Pricing
-            .Setup(p =>
+        f.Pricing.Setup(p =>
                 p.ResolveManyAsync(
-                    It.Is<PricingBatchContext>(c => c.ItemIds.Contains(item.Id) && c.CustomerId == newCustomerId),
+                    It.Is<PricingBatchContext>(c =>
+                        c.ItemIds.Contains(item.Id) && c.CustomerId == newCustomerId
+                    ),
                     It.IsAny<CancellationToken>()
                 )
             )
@@ -679,8 +896,14 @@ public sealed class UpdateSalesDraftScheduleTests
                     new Dictionary<Guid, PricingResult>
                     {
                         [item.Id] = new PricingResult(
-                            item.Id, newCustomerListId, "DEFAULT", "Lista General", "USD",
-                            BasePrice: 80m, RuleApplied: null, UnitPrice: 80m
+                            item.Id,
+                            newCustomerListId,
+                            "DEFAULT",
+                            "Lista General",
+                            "USD",
+                            BasePrice: 80m,
+                            RuleApplied: null,
+                            UnitPrice: 80m
                         ),
                     }
                 )
@@ -701,17 +924,19 @@ public sealed class UpdateSalesDraftScheduleTests
         line.PriceListName.Should().Be("Lista General");
         line.UnitPrice.Should().Be(80m); // UnitPrice del comando, no sobrescrito
         f.Pricing.Verify(
-            p => p.ResolveManyAsync(
-                It.Is<PricingBatchContext>(c => c.CustomerId == newCustomerId),
-                It.IsAny<CancellationToken>()
-            ),
+            p =>
+                p.ResolveManyAsync(
+                    It.Is<PricingBatchContext>(c => c.CustomerId == newCustomerId),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Once
         );
         f.Pricing.Verify(
-            p => p.ResolveManyAsync(
-                It.Is<PricingBatchContext>(c => c.CustomerId == CustomerId),
-                It.IsAny<CancellationToken>()
-            ),
+            p =>
+                p.ResolveManyAsync(
+                    It.Is<PricingBatchContext>(c => c.CustomerId == CustomerId),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }
@@ -724,28 +949,39 @@ public sealed class UpdateSalesDraftScheduleTests
         // SALES-PRICING-TRACEABILITY-VERSION-07B1: la factura existente nunca pasó por
         // SetPreferredPriceListSnapshot (fixture previa a 07B) — arranca en null.
         inv.PricingTraceabilityVersion.Should().BeNull();
-        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())).ReturnsAsync(inv);
+        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
 
         // Estado inicial: sin lista propia asignada.
-        f.PriceListSelection
-            .Setup(p => p.ResolveAsync(CustomerId, It.IsAny<CancellationToken>()))
+        f.PriceListSelection.Setup(p => p.ResolveAsync(CustomerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<PriceListSelectionResult>());
 
         var newListId = Guid.NewGuid();
-        f.PriceListSelection
-            .Setup(p => p.ResolveAsync(NewCustomerIdForSnapshotTest, It.IsAny<CancellationToken>()))
+        f.PriceListSelection.Setup(p =>
+                p.ResolveAsync(NewCustomerIdForSnapshotTest, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(
                 new[]
                 {
-                    new PriceListSelectionResult(newListId, "MAYORISTA001", PriceListSelectionSource.Customer),
+                    new PriceListSelectionResult(
+                        newListId,
+                        "MAYORISTA001",
+                        PriceListSelectionSource.Customer
+                    ),
                 }
             );
 
         var newCustomerBp = BusinessPartner.Create(
-            TenantId, "05", "1710034065", 1, "Cliente Con Lista", UserId
+            TenantId,
+            "05",
+            "1710034065",
+            1,
+            "Cliente Con Lista",
+            UserId
         );
-        f.BpRepo
-            .Setup(r => r.GetByIdAsync(NewCustomerIdForSnapshotTest, It.IsAny<CancellationToken>()))
+        f.BpRepo.Setup(r =>
+                r.GetByIdAsync(NewCustomerIdForSnapshotTest, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(newCustomerBp);
 
         var cmd = Fixture.BaseCommand(inv) with { CustomerId = NewCustomerIdForSnapshotTest };
@@ -767,7 +1003,8 @@ public sealed class UpdateSalesDraftScheduleTests
         // AuthorizeSalesInvoiceHandler no participa en absoluto de SalesLineBuilder — el snapshot
         // se congela únicamente en Create/Update. Confirmación estructural: el tipo no depende
         // de IPricingResolver.
-        var authorizeHandlerType = typeof(ERP.Application.Modules.Sales.UseCases.AuthorizeSalesInvoiceHandler);
+        var authorizeHandlerType =
+            typeof(ERP.Application.Modules.Sales.UseCases.AuthorizeSalesInvoiceHandler);
         var ctorParams = authorizeHandlerType.GetConstructors().Single().GetParameters();
         ctorParams.Should().NotContain(p => p.ParameterType == typeof(IPricingResolver));
     }

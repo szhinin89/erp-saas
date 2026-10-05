@@ -35,43 +35,63 @@ public sealed class SendTestEmailHandlerTests
     public async Task SendTestEmail_usa_la_configuracion_resuelta_de_la_empresa_actual()
     {
         var f = new Fixture();
-        f.SettingsResolver.Setup(s => s.ResolveEmailAsync(It.IsAny<CancellationToken>())).ReturnsAsync(ReadySettings);
+        f.SettingsResolver.Setup(s => s.ResolveEmailAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(ReadySettings);
 
-        var result = await f.BuildHandler().Handle(new SendTestEmailCommand("destino@cliente.com"), CancellationToken.None);
+        var result = await f.BuildHandler()
+            .Handle(new SendTestEmailCommand("destino@cliente.com"), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         f.EmailSender.Verify(
-            e => e.SendAsync(
-                It.Is<EmailMessage>(m => m.ToEmail == "destino@cliente.com"),
-                ReadySettings,
-                It.IsAny<CancellationToken>()),
-            Times.Once);
+            e =>
+                e.SendAsync(
+                    It.Is<EmailMessage>(m => m.ToEmail == "destino@cliente.com"),
+                    ReadySettings,
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
     }
 
     [Fact]
     public async Task SendTestEmail_con_configuracion_incompleta_no_intenta_enviar()
     {
         var f = new Fixture();
-        f.SettingsResolver
-            .Setup(s => s.ResolveEmailAsync(It.IsAny<CancellationToken>()))
+        f.SettingsResolver.Setup(s => s.ResolveEmailAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(ReadySettings with { Enabled = false });
 
-        var result = await f.BuildHandler().Handle(new SendTestEmailCommand("destino@cliente.com"), CancellationToken.None);
+        var result = await f.BuildHandler()
+            .Handle(new SendTestEmailCommand("destino@cliente.com"), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
-        f.EmailSender.Verify(e => e.SendAsync(It.IsAny<EmailMessage>(), It.IsAny<CommunicationEmailSettings>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.EmailSender.Verify(
+            e =>
+                e.SendAsync(
+                    It.IsAny<EmailMessage>(),
+                    It.IsAny<CommunicationEmailSettings>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
     }
 
     [Fact]
     public async Task SendTestEmail_con_timeout_SMTP_devuelve_fallo_de_validacion_no_500()
     {
         var f = new Fixture();
-        f.SettingsResolver.Setup(s => s.ResolveEmailAsync(It.IsAny<CancellationToken>())).ReturnsAsync(ReadySettings);
-        f.EmailSender
-            .Setup(e => e.SendAsync(It.IsAny<EmailMessage>(), It.IsAny<CommunicationEmailSettings>(), It.IsAny<CancellationToken>()))
+        f.SettingsResolver.Setup(s => s.ResolveEmailAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(ReadySettings);
+        f.EmailSender.Setup(e =>
+                e.SendAsync(
+                    It.IsAny<EmailMessage>(),
+                    It.IsAny<CommunicationEmailSettings>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ThrowsAsync(new TimeoutException());
 
-        var result = await f.BuildHandler().Handle(new SendTestEmailCommand("destino@cliente.com"), CancellationToken.None);
+        var result = await f.BuildHandler()
+            .Handle(new SendTestEmailCommand("destino@cliente.com"), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("tiempo de espera");

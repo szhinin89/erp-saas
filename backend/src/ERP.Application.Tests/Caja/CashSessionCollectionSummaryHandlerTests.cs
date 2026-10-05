@@ -50,7 +50,16 @@ public sealed class CashSessionCollectionSummaryHandlerTests
     public sealed class Methods
     {
         public PaymentMethod Efectivo { get; } =
-            PaymentMethod.Create(TenantId, "EFECTIVO", "Efectivo", false, false, 1, UserId, affectsPhysicalCash: true);
+            PaymentMethod.Create(
+                TenantId,
+                "EFECTIVO",
+                "Efectivo",
+                false,
+                false,
+                1,
+                UserId,
+                affectsPhysicalCash: true
+            );
         public PaymentMethod Transferencia { get; } =
             PaymentMethod.Create(
                 TenantId,
@@ -87,7 +96,8 @@ public sealed class CashSessionCollectionSummaryHandlerTests
         public PaymentMethod Credito { get; } =
             PaymentMethod.Create(TenantId, "CREDITO", "Crédito", false, true, 5, UserId);
 
-        public IReadOnlyList<PaymentMethod> All => [Efectivo, Transferencia, Tarjeta, Cheque, Credito];
+        public IReadOnlyList<PaymentMethod> All =>
+            [Efectivo, Transferencia, Tarjeta, Cheque, Credito];
     }
 
     private sealed class Fixture
@@ -166,8 +176,7 @@ public sealed class CashSessionCollectionSummaryHandlerTests
     {
         var session = OpenSession(OtherBranchId);
         var f = new Fixture(activeBranchId: BranchId);
-        f.CashRepo
-            .Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+        f.CashRepo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(session);
 
         var result = await f.BuildHandler()
@@ -175,8 +184,13 @@ public sealed class CashSessionCollectionSummaryHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         f.InvoiceRepo.Verify(
-            r => r.GetCollectionSummaryByCashSessionAsync(
-                It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            r =>
+                r.GetCollectionSummaryByCashSessionAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }
@@ -186,11 +200,16 @@ public sealed class CashSessionCollectionSummaryHandlerTests
     {
         var session = OpenSession(BranchId);
         var f = new Fixture(activeBranchId: BranchId);
-        f.CashRepo
-            .Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+        f.CashRepo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(session);
-        f.InvoiceRepo
-            .Setup(r => r.GetCollectionSummaryByCashSessionAsync(TenantId, BranchId, session.Id, It.IsAny<CancellationToken>()))
+        f.InvoiceRepo.Setup(r =>
+                r.GetCollectionSummaryByCashSessionAsync(
+                    TenantId,
+                    BranchId,
+                    session.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(Array.Empty<SalesInvoiceCashSessionPaymentRow>());
 
         var result = await f.BuildHandler()
@@ -224,11 +243,16 @@ public sealed class CashSessionCollectionSummaryHandlerTests
         var invoiceId = Guid.NewGuid();
         var f = new Fixture(activeBranchId: BranchId);
         var method = select(f.Methods);
-        f.CashRepo
-            .Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+        f.CashRepo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(session);
-        f.InvoiceRepo
-            .Setup(r => r.GetCollectionSummaryByCashSessionAsync(TenantId, BranchId, session.Id, It.IsAny<CancellationToken>()))
+        f.InvoiceRepo.Setup(r =>
+                r.GetCollectionSummaryByCashSessionAsync(
+                    TenantId,
+                    BranchId,
+                    session.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(new[] { Row(invoiceId, "001-001-000000001", 50m, method, 50m) });
 
         var result = await f.BuildHandler()
@@ -244,7 +268,8 @@ public sealed class CashSessionCollectionSummaryHandlerTests
         row.InvoiceCount.Should().Be(1);
         row.OperationCount.Should().Be(1);
         row.IsCreditAllowed.Should().BeFalse();
-        row.Details.Should().ContainSingle(d => d.InvoiceTotal == 50m && d.Amount == 50m && !d.IsMixedPayment);
+        row.Details.Should()
+            .ContainSingle(d => d.InvoiceTotal == 50m && d.Amount == 50m && !d.IsMixedPayment);
     }
 
     [Fact]
@@ -253,12 +278,19 @@ public sealed class CashSessionCollectionSummaryHandlerTests
         var session = OpenSession(BranchId);
         var invoiceId = Guid.NewGuid();
         var f = new Fixture(activeBranchId: BranchId);
-        f.CashRepo
-            .Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+        f.CashRepo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(session);
-        f.InvoiceRepo
-            .Setup(r => r.GetCollectionSummaryByCashSessionAsync(TenantId, BranchId, session.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { Row(invoiceId, "001-001-000000002", 30m, f.Methods.Credito, 30m) });
+        f.InvoiceRepo.Setup(r =>
+                r.GetCollectionSummaryByCashSessionAsync(
+                    TenantId,
+                    BranchId,
+                    session.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new[] { Row(invoiceId, "001-001-000000002", 30m, f.Methods.Credito, 30m) }
+            );
 
         var result = await f.BuildHandler()
             .Handle(new GetCashSessionCollectionSummaryQuery(session.Id), CancellationToken.None);
@@ -266,7 +298,9 @@ public sealed class CashSessionCollectionSummaryHandlerTests
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.TotalCollected.Should().Be(0m);
         result.Value.TotalCredit.Should().Be(30m);
-        var row = result.Value.ByPaymentMethod.Single(m => m.PaymentMethodId == f.Methods.Credito.Id);
+        var row = result.Value.ByPaymentMethod.Single(m =>
+            m.PaymentMethodId == f.Methods.Credito.Id
+        );
         row.IsCreditAllowed.Should().BeTrue();
         row.Destination.Should().Be("Cuentas por Cobrar");
     }
@@ -279,12 +313,19 @@ public sealed class CashSessionCollectionSummaryHandlerTests
         var session = OpenSession(BranchId);
         var invoiceId = Guid.NewGuid();
         var f = new Fixture(activeBranchId: BranchId);
-        f.CashRepo
-            .Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+        f.CashRepo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(session);
-        f.InvoiceRepo
-            .Setup(r => r.GetCollectionSummaryByCashSessionAsync(TenantId, BranchId, session.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { Row(invoiceId, "001-001-000000009", 12m, f.Methods.Efectivo, 12m) });
+        f.InvoiceRepo.Setup(r =>
+                r.GetCollectionSummaryByCashSessionAsync(
+                    TenantId,
+                    BranchId,
+                    session.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new[] { Row(invoiceId, "001-001-000000009", 12m, f.Methods.Efectivo, 12m) }
+            );
 
         var result = await f.BuildHandler()
             .Handle(new GetCashSessionCollectionSummaryQuery(session.Id), CancellationToken.None);
@@ -305,31 +346,38 @@ public sealed class CashSessionCollectionSummaryHandlerTests
         var invoiceId = Guid.NewGuid();
         var orphanMethodId = Guid.NewGuid();
         var f = new Fixture(activeBranchId: BranchId);
-        f.CashRepo
-            .Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+        f.CashRepo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(session);
-        f.InvoiceRepo
-            .Setup(r => r.GetCollectionSummaryByCashSessionAsync(TenantId, BranchId, session.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[]
-            {
-                new SalesInvoiceCashSessionPaymentRow(
+        f.InvoiceRepo.Setup(r =>
+                r.GetCollectionSummaryByCashSessionAsync(
+                    TenantId,
+                    BranchId,
                     session.Id,
-                    invoiceId,
-                    "999-999-orphan",
-                    new DateTime(2026, 9, 13, 18, 14, 0, DateTimeKind.Utc),
-                    "Cliente Test",
-                    2.00m,
-                    orphanMethodId,
-                    "01",
-                    "Efectivo",
-                    2.00m,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null
-                ),
-            });
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new[]
+                {
+                    new SalesInvoiceCashSessionPaymentRow(
+                        session.Id,
+                        invoiceId,
+                        "999-999-orphan",
+                        new DateTime(2026, 9, 13, 18, 14, 0, DateTimeKind.Utc),
+                        "Cliente Test",
+                        2.00m,
+                        orphanMethodId,
+                        "01",
+                        "Efectivo",
+                        2.00m,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                    ),
+                }
+            );
 
         var result = await f.BuildHandler()
             .Handle(new GetCashSessionCollectionSummaryQuery(session.Id), CancellationToken.None);
@@ -352,34 +400,54 @@ public sealed class CashSessionCollectionSummaryHandlerTests
         var session = OpenSession(BranchId);
         var invoiceId = Guid.NewGuid();
         var f = new Fixture(activeBranchId: BranchId);
-        f.CashRepo
-            .Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+        f.CashRepo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(session);
-        f.InvoiceRepo
-            .Setup(r => r.GetCollectionSummaryByCashSessionAsync(TenantId, BranchId, session.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[]
-            {
-                Row(invoiceId, "001-001-000000003", 2.59m, f.Methods.Efectivo, 1.59m),
-                Row(invoiceId, "001-001-000000003", 2.59m, f.Methods.Transferencia, 1.00m),
-            });
+        f.InvoiceRepo.Setup(r =>
+                r.GetCollectionSummaryByCashSessionAsync(
+                    TenantId,
+                    BranchId,
+                    session.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new[]
+                {
+                    Row(invoiceId, "001-001-000000003", 2.59m, f.Methods.Efectivo, 1.59m),
+                    Row(invoiceId, "001-001-000000003", 2.59m, f.Methods.Transferencia, 1.00m),
+                }
+            );
 
         var result = await f.BuildHandler()
             .Handle(new GetCashSessionCollectionSummaryQuery(session.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        result.Value!.InvoiceCount.Should().Be(1, "la factura mixta cuenta una sola vez en el total de facturas");
-        result.Value.TotalInvoiced.Should().Be(2.59m, "el total facturado no debe duplicarse por tener 2 formas de pago");
+        result
+            .Value!.InvoiceCount.Should()
+            .Be(1, "la factura mixta cuenta una sola vez en el total de facturas");
+        result
+            .Value.TotalInvoiced.Should()
+            .Be(2.59m, "el total facturado no debe duplicarse por tener 2 formas de pago");
         result.Value.TotalCollected.Should().Be(2.59m);
 
-        var efectivo = result.Value.ByPaymentMethod.Single(m => m.PaymentMethodId == f.Methods.Efectivo.Id);
+        var efectivo = result.Value.ByPaymentMethod.Single(m =>
+            m.PaymentMethodId == f.Methods.Efectivo.Id
+        );
         efectivo.Amount.Should().Be(1.59m);
         efectivo.InvoiceCount.Should().Be(1);
         var efectivoDetail = efectivo.Details.Single();
-        efectivoDetail.InvoiceTotal.Should().Be(2.59m, "el total factura debe verse completo aunque el monto de esta forma sea parcial");
+        efectivoDetail
+            .InvoiceTotal.Should()
+            .Be(
+                2.59m,
+                "el total factura debe verse completo aunque el monto de esta forma sea parcial"
+            );
         efectivoDetail.Amount.Should().Be(1.59m);
         efectivoDetail.IsMixedPayment.Should().BeTrue();
 
-        var transferencia = result.Value.ByPaymentMethod.Single(m => m.PaymentMethodId == f.Methods.Transferencia.Id);
+        var transferencia = result.Value.ByPaymentMethod.Single(m =>
+            m.PaymentMethodId == f.Methods.Transferencia.Id
+        );
         transferencia.Amount.Should().Be(1.00m);
         transferencia.InvoiceCount.Should().Be(1);
         transferencia.Details.Single().IsMixedPayment.Should().BeTrue();
@@ -395,16 +463,23 @@ public sealed class CashSessionCollectionSummaryHandlerTests
         var session = OpenSession(BranchId);
         var invoiceId = Guid.NewGuid();
         var f = new Fixture(activeBranchId: BranchId);
-        f.CashRepo
-            .Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+        f.CashRepo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(session);
-        f.InvoiceRepo
-            .Setup(r => r.GetCollectionSummaryByCashSessionAsync(TenantId, BranchId, session.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[]
-            {
-                Row(invoiceId, "001-001-000000004", 10m, f.Methods.Efectivo, 6m),
-                Row(invoiceId, "001-001-000000004", 10m, f.Methods.Efectivo, 4m),
-            });
+        f.InvoiceRepo.Setup(r =>
+                r.GetCollectionSummaryByCashSessionAsync(
+                    TenantId,
+                    BranchId,
+                    session.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new[]
+                {
+                    Row(invoiceId, "001-001-000000004", 10m, f.Methods.Efectivo, 6m),
+                    Row(invoiceId, "001-001-000000004", 10m, f.Methods.Efectivo, 4m),
+                }
+            );
 
         var result = await f.BuildHandler()
             .Handle(new GetCashSessionCollectionSummaryQuery(session.Id), CancellationToken.None);
@@ -412,12 +487,21 @@ public sealed class CashSessionCollectionSummaryHandlerTests
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.InvoiceCount.Should().Be(1);
         result.Value.TotalInvoiced.Should().Be(10m);
-        var efectivo = result.Value.ByPaymentMethod.Single(m => m.PaymentMethodId == f.Methods.Efectivo.Id);
+        var efectivo = result.Value.ByPaymentMethod.Single(m =>
+            m.PaymentMethodId == f.Methods.Efectivo.Id
+        );
         efectivo.InvoiceCount.Should().Be(1);
-        efectivo.OperationCount.Should().Be(2, "2 líneas de pago separadas son 2 operaciones aunque sea 1 sola factura");
+        efectivo
+            .OperationCount.Should()
+            .Be(2, "2 líneas de pago separadas son 2 operaciones aunque sea 1 sola factura");
         efectivo.Amount.Should().Be(10m);
         efectivo.Details.Should().HaveCount(2);
-        efectivo.Details.Should().OnlyContain(d => d.IsMixedPayment, "2 pagos en la misma factura ya es una factura mixta a nivel de pagos");
+        efectivo
+            .Details.Should()
+            .OnlyContain(
+                d => d.IsMixedPayment,
+                "2 pagos en la misma factura ya es una factura mixta a nivel de pagos"
+            );
     }
 
     [Fact]
@@ -428,11 +512,16 @@ public sealed class CashSessionCollectionSummaryHandlerTests
         // contrato: si el repo no devuelve la fila, el handler no la suma.
         var session = OpenSession(BranchId);
         var f = new Fixture(activeBranchId: BranchId);
-        f.CashRepo
-            .Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+        f.CashRepo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(session);
-        f.InvoiceRepo
-            .Setup(r => r.GetCollectionSummaryByCashSessionAsync(TenantId, BranchId, session.Id, It.IsAny<CancellationToken>()))
+        f.InvoiceRepo.Setup(r =>
+                r.GetCollectionSummaryByCashSessionAsync(
+                    TenantId,
+                    BranchId,
+                    session.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(Array.Empty<SalesInvoiceCashSessionPaymentRow>());
 
         var result = await f.BuildHandler()
@@ -448,18 +537,29 @@ public sealed class CashSessionCollectionSummaryHandlerTests
     {
         var session = OpenSession(BranchId);
         var f = new Fixture(activeBranchId: BranchId);
-        f.CashRepo
-            .Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+        f.CashRepo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(session);
-        f.InvoiceRepo
-            .Setup(r => r.GetCollectionSummaryByCashSessionAsync(TenantId, BranchId, session.Id, It.IsAny<CancellationToken>()))
+        f.InvoiceRepo.Setup(r =>
+                r.GetCollectionSummaryByCashSessionAsync(
+                    TenantId,
+                    BranchId,
+                    session.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(Array.Empty<SalesInvoiceCashSessionPaymentRow>());
 
         await f.BuildHandler()
             .Handle(new GetCashSessionCollectionSummaryQuery(session.Id), CancellationToken.None);
 
         f.InvoiceRepo.Verify(
-            r => r.GetCollectionSummaryByCashSessionAsync(TenantId, BranchId, session.Id, It.IsAny<CancellationToken>()),
+            r =>
+                r.GetCollectionSummaryByCashSessionAsync(
+                    TenantId,
+                    BranchId,
+                    session.Id,
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Once
         );
     }
@@ -471,17 +571,24 @@ public sealed class CashSessionCollectionSummaryHandlerTests
         var inv1 = Guid.NewGuid();
         var inv2 = Guid.NewGuid();
         var f = new Fixture(activeBranchId: BranchId);
-        f.CashRepo
-            .Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+        f.CashRepo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(session);
-        f.InvoiceRepo
-            .Setup(r => r.GetCollectionSummaryByCashSessionAsync(TenantId, BranchId, session.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[]
-            {
-                Row(inv1, "001-001-000000005", 2.59m, f.Methods.Efectivo, 1.59m),
-                Row(inv1, "001-001-000000005", 2.59m, f.Methods.Transferencia, 1.00m),
-                Row(inv2, "001-001-000000006", 20m, f.Methods.Credito, 20m),
-            });
+        f.InvoiceRepo.Setup(r =>
+                r.GetCollectionSummaryByCashSessionAsync(
+                    TenantId,
+                    BranchId,
+                    session.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new[]
+                {
+                    Row(inv1, "001-001-000000005", 2.59m, f.Methods.Efectivo, 1.59m),
+                    Row(inv1, "001-001-000000005", 2.59m, f.Methods.Transferencia, 1.00m),
+                    Row(inv2, "001-001-000000006", 20m, f.Methods.Credito, 20m),
+                }
+            );
 
         var result = await f.BuildHandler()
             .Handle(new GetCashSessionCollectionSummaryQuery(session.Id), CancellationToken.None);
@@ -491,7 +598,10 @@ public sealed class CashSessionCollectionSummaryHandlerTests
         result.Value.TotalInvoiced.Should().Be(22.59m);
         result.Value.TotalCollected.Should().Be(2.59m);
         result.Value.TotalCredit.Should().Be(20m);
-        result.Value.ByPaymentMethod.Sum(m => m.Amount).Should().Be(result.Value.TotalCollected + result.Value.TotalCredit);
+        result
+            .Value.ByPaymentMethod.Sum(m => m.Amount)
+            .Should()
+            .Be(result.Value.TotalCollected + result.Value.TotalCredit);
     }
 
     // ── "orden fecha DESC" ───────────────────────────────────────────────
@@ -501,20 +611,48 @@ public sealed class CashSessionCollectionSummaryHandlerTests
     {
         var session = OpenSession(BranchId);
         var f = new Fixture(activeBranchId: BranchId);
-        f.CashRepo
-            .Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+        f.CashRepo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(session);
         var older = new DateTime(2026, 9, 18, 8, 0, 0, DateTimeKind.Utc);
         var newer = new DateTime(2026, 9, 18, 15, 30, 0, DateTimeKind.Utc);
         var middle = new DateTime(2026, 9, 18, 10, 0, 0, DateTimeKind.Utc);
-        f.InvoiceRepo
-            .Setup(r => r.GetCollectionSummaryByCashSessionAsync(TenantId, BranchId, session.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[]
-            {
-                Row(Guid.NewGuid(), "001-001-000000001", 1m, f.Methods.Efectivo, 1m, authorizedAt: older),
-                Row(Guid.NewGuid(), "001-001-000000002", 1m, f.Methods.Efectivo, 1m, authorizedAt: newer),
-                Row(Guid.NewGuid(), "001-001-000000003", 1m, f.Methods.Efectivo, 1m, authorizedAt: middle),
-            });
+        f.InvoiceRepo.Setup(r =>
+                r.GetCollectionSummaryByCashSessionAsync(
+                    TenantId,
+                    BranchId,
+                    session.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new[]
+                {
+                    Row(
+                        Guid.NewGuid(),
+                        "001-001-000000001",
+                        1m,
+                        f.Methods.Efectivo,
+                        1m,
+                        authorizedAt: older
+                    ),
+                    Row(
+                        Guid.NewGuid(),
+                        "001-001-000000002",
+                        1m,
+                        f.Methods.Efectivo,
+                        1m,
+                        authorizedAt: newer
+                    ),
+                    Row(
+                        Guid.NewGuid(),
+                        "001-001-000000003",
+                        1m,
+                        f.Methods.Efectivo,
+                        1m,
+                        authorizedAt: middle
+                    ),
+                }
+            );
 
         var result = await f.BuildHandler()
             .Handle(new GetCashSessionCollectionSummaryQuery(session.Id), CancellationToken.None);
@@ -532,31 +670,35 @@ public sealed class CashSessionCollectionSummaryHandlerTests
     {
         var session = OpenSession(BranchId);
         var f = new Fixture(activeBranchId: BranchId);
-        f.CashRepo
-            .Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+        f.CashRepo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(session);
         // Se insertan en orden inverso a propósito — el resultado debe reordenarlos igual.
-        f.InvoiceRepo
-            .Setup(r => r.GetCollectionSummaryByCashSessionAsync(TenantId, BranchId, session.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[]
-            {
-                Row(Guid.NewGuid(), "001-001-000000001", 1m, f.Methods.Credito, 1m),
-                Row(Guid.NewGuid(), "001-001-000000002", 1m, f.Methods.Cheque, 1m),
-                Row(Guid.NewGuid(), "001-001-000000003", 1m, f.Methods.Tarjeta, 1m),
-                Row(Guid.NewGuid(), "001-001-000000004", 1m, f.Methods.Transferencia, 1m),
-                Row(Guid.NewGuid(), "001-001-000000005", 1m, f.Methods.Efectivo, 1m),
-            });
+        f.InvoiceRepo.Setup(r =>
+                r.GetCollectionSummaryByCashSessionAsync(
+                    TenantId,
+                    BranchId,
+                    session.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new[]
+                {
+                    Row(Guid.NewGuid(), "001-001-000000001", 1m, f.Methods.Credito, 1m),
+                    Row(Guid.NewGuid(), "001-001-000000002", 1m, f.Methods.Cheque, 1m),
+                    Row(Guid.NewGuid(), "001-001-000000003", 1m, f.Methods.Tarjeta, 1m),
+                    Row(Guid.NewGuid(), "001-001-000000004", 1m, f.Methods.Transferencia, 1m),
+                    Row(Guid.NewGuid(), "001-001-000000005", 1m, f.Methods.Efectivo, 1m),
+                }
+            );
 
         var result = await f.BuildHandler()
             .Handle(new GetCashSessionCollectionSummaryQuery(session.Id), CancellationToken.None);
 
-        result.Value!.ByPaymentMethod.Select(m => m.PaymentMethodName).Should().Equal(
-            "Efectivo",
-            "Transferencia Bancaria",
-            "Tarjeta de Crédito",
-            "Cheque",
-            "Crédito"
-        );
+        result
+            .Value!.ByPaymentMethod.Select(m => m.PaymentMethodName)
+            .Should()
+            .Equal("Efectivo", "Transferencia Bancaria", "Tarjeta de Crédito", "Cheque", "Crédito");
     }
 
     // ── "transferencia con cuenta/comprobante" ──────────────────────────
@@ -567,8 +709,7 @@ public sealed class CashSessionCollectionSummaryHandlerTests
         var session = OpenSession(BranchId);
         var invoiceId = Guid.NewGuid();
         var f = new Fixture(activeBranchId: BranchId);
-        f.CashRepo
-            .Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+        f.CashRepo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(session);
 
         var bank = Bank.Create(TenantId, "PICHINCHA", "Banco Pichincha", null, UserId);
@@ -582,28 +723,34 @@ public sealed class CashSessionCollectionSummaryHandlerTests
             Guid.NewGuid(),
             UserId
         );
-        f.BankAccountRepo
-            .Setup(r => r.GetListAsync(TenantId, null, It.IsAny<CancellationToken>()))
+        f.BankAccountRepo.Setup(r => r.GetListAsync(TenantId, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new[] { bankAccount });
-        f.BankRepo
-            .Setup(r => r.ListAsync(TenantId, false, null, It.IsAny<CancellationToken>()))
+        f.BankRepo.Setup(r => r.ListAsync(TenantId, false, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new[] { bank });
 
-        f.InvoiceRepo
-            .Setup(r => r.GetCollectionSummaryByCashSessionAsync(TenantId, BranchId, session.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[]
-            {
-                Row(
-                    invoiceId,
-                    "001-001-000000007",
-                    5.00m,
-                    f.Methods.Transferencia,
-                    5.00m,
-                    transferCompanyBankAccountId: bankAccount.Id,
-                    transferReceiptNumber: "TRX-000123",
-                    transferDate: new DateOnly(2026, 9, 18)
-                ),
-            });
+        f.InvoiceRepo.Setup(r =>
+                r.GetCollectionSummaryByCashSessionAsync(
+                    TenantId,
+                    BranchId,
+                    session.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new[]
+                {
+                    Row(
+                        invoiceId,
+                        "001-001-000000007",
+                        5.00m,
+                        f.Methods.Transferencia,
+                        5.00m,
+                        transferCompanyBankAccountId: bankAccount.Id,
+                        transferReceiptNumber: "TRX-000123",
+                        transferDate: new DateOnly(2026, 9, 18)
+                    ),
+                }
+            );
 
         var result = await f.BuildHandler()
             .Handle(new GetCashSessionCollectionSummaryQuery(session.Id), CancellationToken.None);
@@ -613,7 +760,12 @@ public sealed class CashSessionCollectionSummaryHandlerTests
         detail.DestinationAccountMasked.Should().Be("Cuenta corriente Pichincha (****3456)");
         detail.TransferReceiptNumber.Should().Be("TRX-000123");
         detail.TransferDate.Should().Be(new DateOnly(2026, 9, 18));
-        detail.Reference.Should().Be("TRX-000123", "para Transferencia el comprobante real reemplaza la referencia genérica");
+        detail
+            .Reference.Should()
+            .Be(
+                "TRX-000123",
+                "para Transferencia el comprobante real reemplaza la referencia genérica"
+            );
     }
 
     [Fact]
@@ -622,30 +774,39 @@ public sealed class CashSessionCollectionSummaryHandlerTests
         var session = OpenSession(BranchId);
         var invoiceId = Guid.NewGuid();
         var f = new Fixture(activeBranchId: BranchId);
-        f.CashRepo
-            .Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+        f.CashRepo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(session);
-        f.InvoiceRepo
-            .Setup(r => r.GetCollectionSummaryByCashSessionAsync(TenantId, BranchId, session.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[]
-            {
-                Row(
-                    invoiceId,
-                    "001-001-000000008",
-                    3.00m,
-                    f.Methods.Transferencia,
-                    3.00m,
-                    transferLegacyBankName: "Banco Guayaquil (texto libre histórico)",
-                    transferReceiptNumber: "OLD-001"
-                ),
-            });
+        f.InvoiceRepo.Setup(r =>
+                r.GetCollectionSummaryByCashSessionAsync(
+                    TenantId,
+                    BranchId,
+                    session.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new[]
+                {
+                    Row(
+                        invoiceId,
+                        "001-001-000000008",
+                        3.00m,
+                        f.Methods.Transferencia,
+                        3.00m,
+                        transferLegacyBankName: "Banco Guayaquil (texto libre histórico)",
+                        transferReceiptNumber: "OLD-001"
+                    ),
+                }
+            );
 
         var result = await f.BuildHandler()
             .Handle(new GetCashSessionCollectionSummaryQuery(session.Id), CancellationToken.None);
 
         var detail = result.Value!.ByPaymentMethod.Single().Details.Single();
         detail.DestinationBankName.Should().Be("Banco Guayaquil (texto libre histórico)");
-        detail.DestinationAccountMasked.Should().BeNull("sin CompanyBankAccountId no hay número de cuenta real que enmascarar");
+        detail
+            .DestinationAccountMasked.Should()
+            .BeNull("sin CompanyBankAccountId no hay número de cuenta real que enmascarar");
     }
 
     // ── "cero impacto sobre saldo físico" ───────────────────────────────
@@ -655,15 +816,22 @@ public sealed class CashSessionCollectionSummaryHandlerTests
     {
         var session = OpenSession(BranchId);
         var f = new Fixture(activeBranchId: BranchId);
-        f.CashRepo
-            .Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+        f.CashRepo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(session);
-        f.InvoiceRepo
-            .Setup(r => r.GetCollectionSummaryByCashSessionAsync(TenantId, BranchId, session.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[]
-            {
-                Row(Guid.NewGuid(), "001-001-000000001", 30m, f.Methods.Transferencia, 30m),
-            });
+        f.InvoiceRepo.Setup(r =>
+                r.GetCollectionSummaryByCashSessionAsync(
+                    TenantId,
+                    BranchId,
+                    session.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new[]
+                {
+                    Row(Guid.NewGuid(), "001-001-000000001", 30m, f.Methods.Transferencia, 30m),
+                }
+            );
         var balanceBefore = session.CurrentBalance;
         var movementsBefore = session.Movements.Count;
 

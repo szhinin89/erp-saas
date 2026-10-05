@@ -1,7 +1,7 @@
-using ERP.Application.Modules.ElectronicDocuments.DTOs;
-using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using System.Xml;
 using System.Xml.Schema;
+using ERP.Application.Modules.ElectronicDocuments.DTOs;
+using ERP.Domain.Modules.ElectronicDocuments.Enums;
 
 namespace ERP.Application.Modules.ElectronicDocuments.SchemaValidation;
 
@@ -42,7 +42,11 @@ public sealed class RetentionXmlSchemaValidator : IElectronicDocumentSchemaValid
         CancellationToken ct = default
     )
     {
-        var schemaSet = await _schemaProvider.GetSchemaSetAsync(DocumentType, SchemaVersionValue, ct);
+        var schemaSet = await _schemaProvider.GetSchemaSetAsync(
+            DocumentType,
+            SchemaVersionValue,
+            ct
+        );
         if (schemaSet is null)
         {
             return new ElectronicDocumentSchemaValidationResult(

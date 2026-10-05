@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Audit;
+using ERP.Domain.Audit;
 using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Pricing.Events;

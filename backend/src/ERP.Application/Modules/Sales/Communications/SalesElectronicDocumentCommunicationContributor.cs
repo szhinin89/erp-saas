@@ -1,3 +1,4 @@
+using System.Globalization;
 using ERP.Application.Common;
 using ERP.Application.Modules.Communications.ElectronicDocuments;
 using ERP.Application.Modules.Communications.Templates;
@@ -7,7 +8,6 @@ using ERP.Domain.Modules.Communications.ValueObjects;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Interfaces;
-using System.Globalization;
 
 namespace ERP.Application.Modules.Sales.Communications;
 
@@ -21,23 +21,35 @@ namespace ERP.Application.Modules.Sales.Communications;
 /// </list>
 /// Solo datos: ni asunto, ni HTML, ni adjuntos, ni outbox.
 /// </summary>
-public sealed class SalesElectronicDocumentCommunicationContributor : IElectronicDocumentCommunicationContributor
+public sealed class SalesElectronicDocumentCommunicationContributor
+    : IElectronicDocumentCommunicationContributor
 {
     public const string SalesSourceModule = "Sales";
     public const string SalesInvoiceSourceType = "SalesInvoice";
     public const string SalesReturnSourceType = "SalesReturn";
 
-    private static readonly IReadOnlyDictionary<ElectronicDocumentType, ElectronicDocumentCommunicationTarget> Routes =
-        new Dictionary<ElectronicDocumentType, ElectronicDocumentCommunicationTarget>
-        {
-            [ElectronicDocumentType.Invoice] = new(CommunicationPurposes.SalesInvoiceAuthorized, SalesInvoiceSourceType),
-            [ElectronicDocumentType.CreditNote] = new(CommunicationPurposes.SalesCreditNoteAuthorized, SalesReturnSourceType),
-        };
+    private static readonly IReadOnlyDictionary<
+        ElectronicDocumentType,
+        ElectronicDocumentCommunicationTarget
+    > Routes = new Dictionary<ElectronicDocumentType, ElectronicDocumentCommunicationTarget>
+    {
+        [ElectronicDocumentType.Invoice] = new(
+            CommunicationPurposes.SalesInvoiceAuthorized,
+            SalesInvoiceSourceType
+        ),
+        [ElectronicDocumentType.CreditNote] = new(
+            CommunicationPurposes.SalesCreditNoteAuthorized,
+            SalesReturnSourceType
+        ),
+    };
 
     private readonly ISalesInvoiceRepository _invoices;
     private readonly ISalesReturnRepository _returns;
 
-    public SalesElectronicDocumentCommunicationContributor(ISalesInvoiceRepository invoices, ISalesReturnRepository returns)
+    public SalesElectronicDocumentCommunicationContributor(
+        ISalesInvoiceRepository invoices,
+        ISalesReturnRepository returns
+    )
     {
         _invoices = invoices;
         _returns = returns;
@@ -45,7 +57,10 @@ public sealed class SalesElectronicDocumentCommunicationContributor : IElectroni
 
     public string SourceModule => SalesSourceModule;
 
-    public IReadOnlyDictionary<ElectronicDocumentType, ElectronicDocumentCommunicationTarget> Targets => Routes;
+    public IReadOnlyDictionary<
+        ElectronicDocumentType,
+        ElectronicDocumentCommunicationTarget
+    > Targets => Routes;
 
     public Task<Result<ElectronicDocumentCommunicationContribution>> ContributeAsync(
         ElectronicDocumentCommunicationContext context,
@@ -87,20 +102,33 @@ public sealed class SalesElectronicDocumentCommunicationContributor : IElectroni
         );
     }
 
-    private async Task<Result<ElectronicDocumentCommunicationContribution>> ContributeCreditNoteAsync(
+    private async Task<
+        Result<ElectronicDocumentCommunicationContribution>
+    > ContributeCreditNoteAsync(
         ElectronicDocumentCommunicationContext context,
         CancellationToken ct
     )
     {
         var document = context.Document;
-        var salesReturn = await _returns.GetByIdAsync(document.TenantId, document.SourceEntityId, ct);
+        var salesReturn = await _returns.GetByIdAsync(
+            document.TenantId,
+            document.SourceEntityId,
+            ct
+        );
         if (salesReturn is null || salesReturn.CompanyId != document.CompanyId)
             return NotFound();
-        if (salesReturn.Status != SalesReturnStatus.Authorized || string.IsNullOrWhiteSpace(salesReturn.CreditNoteDocumentNumber))
+        if (
+            salesReturn.Status != SalesReturnStatus.Authorized
+            || string.IsNullOrWhiteSpace(salesReturn.CreditNoteDocumentNumber)
+        )
             return NotEligible();
 
         // Destinatario = cliente de la factura modificada (mismo snapshot que el XML de la NC).
-        var invoice = await _invoices.GetByIdAsync(document.TenantId, salesReturn.SalesInvoiceId, ct);
+        var invoice = await _invoices.GetByIdAsync(
+            document.TenantId,
+            salesReturn.SalesInvoiceId,
+            ct
+        );
         if (invoice is null || invoice.CompanyId != document.CompanyId)
             return NotFound();
 
@@ -125,7 +153,8 @@ public sealed class SalesElectronicDocumentCommunicationContributor : IElectroni
         );
     }
 
-    private static string Money(decimal value) => value.ToString("0.00", CultureInfo.InvariantCulture);
+    private static string Money(decimal value) =>
+        value.ToString("0.00", CultureInfo.InvariantCulture);
 
     private static Result<ElectronicDocumentCommunicationContribution> NotFound() =>
         Result<ElectronicDocumentCommunicationContribution>.Failure(

@@ -1,5 +1,5 @@
-using ERP.Application.Common.Interfaces;
 using System.Collections.Concurrent;
+using ERP.Application.Common.Interfaces;
 
 namespace ERP.Infrastructure.Caching;
 

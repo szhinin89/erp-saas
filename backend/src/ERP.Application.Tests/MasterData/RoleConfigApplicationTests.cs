@@ -32,10 +32,14 @@ public sealed class RoleConfigApplicationTests
     private static string DomainMessage(Action create) =>
         FluentActions.Invoking(create).Should().Throw<ArgumentException>().Which.Message;
 
-    private static SupplierRoleConfigDto Supplier(string? taxSupport = null, string? paymentMethod = null, string? refundType = null) =>
-        new(taxSupport, paymentMethod, refundType, false, false);
+    private static SupplierRoleConfigDto Supplier(
+        string? taxSupport = null,
+        string? paymentMethod = null,
+        string? refundType = null
+    ) => new(taxSupport, paymentMethod, refundType, false, false);
 
-    private static CarrierRoleConfigDto Carrier(string? auth = null, decimal? capacity = null) => new(auth, capacity);
+    private static CarrierRoleConfigDto Carrier(string? auth = null, decimal? capacity = null) =>
+        new(auth, capacity);
 
     private static CustomerRoleConfigDto Customer(
         string? category = null,
@@ -45,35 +49,84 @@ public sealed class RoleConfigApplicationTests
         string? loyaltyTier = null,
         string? invoiceFormat = null,
         string? classification = null
-    ) => new(category, segment, salesZone, creditRating, loyaltyTier, invoiceFormat, classification);
+    ) =>
+        new(category, segment, salesZone, creditRating, loyaltyTier, invoiceFormat, classification);
 
     // ── RoleConfigFactory ────────────────────────────────────────────────────
 
     public static TheoryData<string> InvalidConfigs =>
         new()
         {
-            "supplier.taxSupport", "supplier.paymentMethod", "supplier.refundType",
-            "carrier.auth", "carrier.capacityZero", "carrier.capacityNegative",
-            "customer.category", "customer.segment", "customer.salesZone", "customer.creditRating",
-            "customer.loyaltyTier", "customer.invoiceFormat", "customer.classification",
+            "supplier.taxSupport",
+            "supplier.paymentMethod",
+            "supplier.refundType",
+            "carrier.auth",
+            "carrier.capacityZero",
+            "carrier.capacityNegative",
+            "customer.category",
+            "customer.segment",
+            "customer.salesZone",
+            "customer.creditRating",
+            "customer.loyaltyTier",
+            "customer.invoiceFormat",
+            "customer.classification",
         };
 
     private static (string? FactoryError, string DomainError) Case(string name) =>
         name switch
         {
-            "supplier.taxSupport" => (RoleConfigFactory.Build(Supplier(taxSupport: Long(6))).Error, DomainMessage(() => SupplierRoleConfig.Create(Long(6)))),
-            "supplier.paymentMethod" => (RoleConfigFactory.Build(Supplier(paymentMethod: Long(6))).Error, DomainMessage(() => SupplierRoleConfig.Create(defaultPaymentMethodCode: Long(6)))),
-            "supplier.refundType" => (RoleConfigFactory.Build(Supplier(refundType: Long(6))).Error, DomainMessage(() => SupplierRoleConfig.Create(refundProviderTypeCode: Long(6)))),
-            "carrier.auth" => (RoleConfigFactory.Build(Carrier(auth: Long(51))).Error, DomainMessage(() => CarrierRoleConfig.Create(Long(51)))),
-            "carrier.capacityZero" => (RoleConfigFactory.Build(Carrier(capacity: 0m)).Error, DomainMessage(() => CarrierRoleConfig.Create(vehicleCapacityTons: 0m))),
-            "carrier.capacityNegative" => (RoleConfigFactory.Build(Carrier(capacity: -1m)).Error, DomainMessage(() => CarrierRoleConfig.Create(vehicleCapacityTons: -1m))),
-            "customer.category" => (RoleConfigFactory.Build(Customer(category: Long(51))).Error, DomainMessage(() => CustomerRoleConfig.Create(customerCategory: Long(51)))),
-            "customer.segment" => (RoleConfigFactory.Build(Customer(segment: Long(51))).Error, DomainMessage(() => CustomerRoleConfig.Create(customerSegment: Long(51)))),
-            "customer.salesZone" => (RoleConfigFactory.Build(Customer(salesZone: Long(101))).Error, DomainMessage(() => CustomerRoleConfig.Create(salesZone: Long(101)))),
-            "customer.creditRating" => (RoleConfigFactory.Build(Customer(creditRating: Long(11))).Error, DomainMessage(() => CustomerRoleConfig.Create(creditRating: Long(11)))),
-            "customer.loyaltyTier" => (RoleConfigFactory.Build(Customer(loyaltyTier: Long(21))).Error, DomainMessage(() => CustomerRoleConfig.Create(loyaltyTier: Long(21)))),
-            "customer.invoiceFormat" => (RoleConfigFactory.Build(Customer(invoiceFormat: Long(21))).Error, DomainMessage(() => CustomerRoleConfig.Create(preferredInvoiceFormat: Long(21)))),
-            "customer.classification" => (RoleConfigFactory.Build(Customer(classification: Long(51))).Error, DomainMessage(() => CustomerRoleConfig.Create(customerClassification: Long(51)))),
+            "supplier.taxSupport" => (
+                RoleConfigFactory.Build(Supplier(taxSupport: Long(6))).Error,
+                DomainMessage(() => SupplierRoleConfig.Create(Long(6)))
+            ),
+            "supplier.paymentMethod" => (
+                RoleConfigFactory.Build(Supplier(paymentMethod: Long(6))).Error,
+                DomainMessage(() => SupplierRoleConfig.Create(defaultPaymentMethodCode: Long(6)))
+            ),
+            "supplier.refundType" => (
+                RoleConfigFactory.Build(Supplier(refundType: Long(6))).Error,
+                DomainMessage(() => SupplierRoleConfig.Create(refundProviderTypeCode: Long(6)))
+            ),
+            "carrier.auth" => (
+                RoleConfigFactory.Build(Carrier(auth: Long(51))).Error,
+                DomainMessage(() => CarrierRoleConfig.Create(Long(51)))
+            ),
+            "carrier.capacityZero" => (
+                RoleConfigFactory.Build(Carrier(capacity: 0m)).Error,
+                DomainMessage(() => CarrierRoleConfig.Create(vehicleCapacityTons: 0m))
+            ),
+            "carrier.capacityNegative" => (
+                RoleConfigFactory.Build(Carrier(capacity: -1m)).Error,
+                DomainMessage(() => CarrierRoleConfig.Create(vehicleCapacityTons: -1m))
+            ),
+            "customer.category" => (
+                RoleConfigFactory.Build(Customer(category: Long(51))).Error,
+                DomainMessage(() => CustomerRoleConfig.Create(customerCategory: Long(51)))
+            ),
+            "customer.segment" => (
+                RoleConfigFactory.Build(Customer(segment: Long(51))).Error,
+                DomainMessage(() => CustomerRoleConfig.Create(customerSegment: Long(51)))
+            ),
+            "customer.salesZone" => (
+                RoleConfigFactory.Build(Customer(salesZone: Long(101))).Error,
+                DomainMessage(() => CustomerRoleConfig.Create(salesZone: Long(101)))
+            ),
+            "customer.creditRating" => (
+                RoleConfigFactory.Build(Customer(creditRating: Long(11))).Error,
+                DomainMessage(() => CustomerRoleConfig.Create(creditRating: Long(11)))
+            ),
+            "customer.loyaltyTier" => (
+                RoleConfigFactory.Build(Customer(loyaltyTier: Long(21))).Error,
+                DomainMessage(() => CustomerRoleConfig.Create(loyaltyTier: Long(21)))
+            ),
+            "customer.invoiceFormat" => (
+                RoleConfigFactory.Build(Customer(invoiceFormat: Long(21))).Error,
+                DomainMessage(() => CustomerRoleConfig.Create(preferredInvoiceFormat: Long(21)))
+            ),
+            "customer.classification" => (
+                RoleConfigFactory.Build(Customer(classification: Long(51))).Error,
+                DomainMessage(() => CustomerRoleConfig.Create(customerClassification: Long(51)))
+            ),
             _ => throw new ArgumentOutOfRangeException(nameof(name)),
         };
 
@@ -89,7 +142,9 @@ public sealed class RoleConfigApplicationTests
     [Fact]
     public void Config_valida_se_construye_normalizada_por_Domain()
     {
-        var supplier = RoleConfigFactory.Build(new SupplierRoleConfigDto("  01  ", "", null, true, true));
+        var supplier = RoleConfigFactory.Build(
+            new SupplierRoleConfigDto("  01  ", "", null, true, true)
+        );
         var carrier = RoleConfigFactory.Build(Carrier("  AUT-1 ", 3m));
         var customer = RoleConfigFactory.Build(Customer(salesZone: "  Norte "));
 
@@ -113,7 +168,9 @@ public sealed class RoleConfigApplicationTests
 
     [Theory]
     [MemberData(nameof(InvalidConfigs))]
-    public async Task Update_con_invariante_violado_responde_BAD_REQUEST_sin_resolver_el_rol(string name)
+    public async Task Update_con_invariante_violado_responde_BAD_REQUEST_sin_resolver_el_rol(
+        string name
+    )
     {
         var roleRepo = new Mock<IBusinessPartnerRoleRepository>();
         var roleId = Guid.NewGuid();
@@ -121,18 +178,35 @@ public sealed class RoleConfigApplicationTests
 
         Result<BusinessPartnerRoleDto> result = name.Split('.')[0] switch
         {
-            "supplier" => await new UpdateSupplierRoleConfigHandler(roleRepo.Object, Ctx().Object)
-                .Handle(new UpdateSupplierRoleConfigCommand(BpId, roleId, SupplierDtoFor(name)), default),
-            "carrier" => await new UpdateCarrierRoleConfigHandler(roleRepo.Object, Ctx().Object)
-                .Handle(new UpdateCarrierRoleConfigCommand(BpId, roleId, CarrierDtoFor(name)), default),
-            _ => await new UpdateCustomerRoleConfigHandler(roleRepo.Object, Ctx().Object)
-                .Handle(new UpdateCustomerRoleConfigCommand(BpId, roleId, CustomerDtoFor(name)), default),
+            "supplier" => await new UpdateSupplierRoleConfigHandler(
+                roleRepo.Object,
+                Ctx().Object
+            ).Handle(
+                new UpdateSupplierRoleConfigCommand(BpId, roleId, SupplierDtoFor(name)),
+                default
+            ),
+            "carrier" => await new UpdateCarrierRoleConfigHandler(
+                roleRepo.Object,
+                Ctx().Object
+            ).Handle(
+                new UpdateCarrierRoleConfigCommand(BpId, roleId, CarrierDtoFor(name)),
+                default
+            ),
+            _ => await new UpdateCustomerRoleConfigHandler(roleRepo.Object, Ctx().Object).Handle(
+                new UpdateCustomerRoleConfigCommand(BpId, roleId, CustomerDtoFor(name)),
+                default
+            ),
         };
 
         result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.Common.BadRequest, "contrato histórico: 400, no 422");
+        result
+            .Code.Should()
+            .Be(ApiResponseCodes.Common.BadRequest, "contrato histórico: 400, no 422");
         result.Error.Should().Be(expected);
-        roleRepo.Verify(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        roleRepo.Verify(
+            r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
         roleRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -167,12 +241,22 @@ public sealed class RoleConfigApplicationTests
     [Fact]
     public async Task Update_con_config_valida_aplica_la_config_normalizada_al_rol()
     {
-        var role = BusinessPartnerRole.Create(TenantId, BpId, RoleType.Carrier, UserId, carrierConfig: CarrierRoleConfig.Create());
+        var role = BusinessPartnerRole.Create(
+            TenantId,
+            BpId,
+            RoleType.Carrier,
+            UserId,
+            carrierConfig: CarrierRoleConfig.Create()
+        );
         var roleRepo = new Mock<IBusinessPartnerRoleRepository>();
-        roleRepo.Setup(r => r.GetByIdAsync(role.Id, It.IsAny<CancellationToken>())).ReturnsAsync(role);
+        roleRepo
+            .Setup(r => r.GetByIdAsync(role.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(role);
 
-        var result = await new UpdateCarrierRoleConfigHandler(roleRepo.Object, Ctx().Object)
-            .Handle(new UpdateCarrierRoleConfigCommand(BpId, role.Id, Carrier("  AUT-9 ", 7m)), default);
+        var result = await new UpdateCarrierRoleConfigHandler(roleRepo.Object, Ctx().Object).Handle(
+            new UpdateCarrierRoleConfigCommand(BpId, role.Id, Carrier("  AUT-9 ", 7m)),
+            default
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         role.CarrierConfig!.TransportAuthorizationNumber.Should().Be("AUT-9");
@@ -194,14 +278,26 @@ public sealed class RoleConfigApplicationTests
         );
 
         var result = await handler.Handle(
-            new AssignBusinessPartnerRoleCommand(BpId, RoleType.Carrier, CarrierConfig: Carrier(capacity: 0m)),
+            new AssignBusinessPartnerRoleCommand(
+                BpId,
+                RoleType.Carrier,
+                CarrierConfig: Carrier(capacity: 0m)
+            ),
             default
         );
 
         result.Code.Should().Be(ApiResponseCodes.Common.BadRequest);
-        result.Error.Should().Be(DomainMessage(() => CarrierRoleConfig.Create(vehicleCapacityTons: 0m)));
-        bpRepo.Verify(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
-        roleRepo.Verify(r => r.AddAsync(It.IsAny<BusinessPartnerRole>(), It.IsAny<CancellationToken>()), Times.Never);
+        result
+            .Error.Should()
+            .Be(DomainMessage(() => CarrierRoleConfig.Create(vehicleCapacityTons: 0m)));
+        bpRepo.Verify(
+            r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        roleRepo.Verify(
+            r => r.AddAsync(It.IsAny<BusinessPartnerRole>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -212,21 +308,35 @@ public sealed class RoleConfigApplicationTests
         bpRepo.Setup(r => r.GetByIdAsync(bp.Id, It.IsAny<CancellationToken>())).ReturnsAsync(bp);
         var roleRepo = new Mock<IBusinessPartnerRoleRepository>();
         BusinessPartnerRole? added = null;
-        roleRepo.Setup(r => r.AddAsync(It.IsAny<BusinessPartnerRole>(), It.IsAny<CancellationToken>()))
+        roleRepo
+            .Setup(r => r.AddAsync(It.IsAny<BusinessPartnerRole>(), It.IsAny<CancellationToken>()))
             .Callback<BusinessPartnerRole, CancellationToken>((r, _) => added = r);
 
         var usage = new Mock<IIdentificationUsageValidator>();
-        usage.Setup(u => u.IsAllowedAsync(It.IsAny<string>(), It.IsAny<ERP.Domain.Modules.SriCatalogs.Enums.IdentificationUsageType>(), It.IsAny<CancellationToken>()))
+        usage
+            .Setup(u =>
+                u.IsAllowedAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ERP.Domain.Modules.SriCatalogs.Enums.IdentificationUsageType>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(true);
 
         var result = await new AssignBusinessPartnerRoleHandler(
-                bpRepo.Object,
-                roleRepo.Object,
-                usage.Object,
-                Ctx().Object,
-                Mock.Of<IDatabaseExceptionTranslator>()
-            )
-            .Handle(new AssignBusinessPartnerRoleCommand(bp.Id, RoleType.Carrier, CarrierConfig: Carrier(" AUT ", 2m)), default);
+            bpRepo.Object,
+            roleRepo.Object,
+            usage.Object,
+            Ctx().Object,
+            Mock.Of<IDatabaseExceptionTranslator>()
+        ).Handle(
+            new AssignBusinessPartnerRoleCommand(
+                bp.Id,
+                RoleType.Carrier,
+                CarrierConfig: Carrier(" AUT ", 2m)
+            ),
+            default
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         added!.CarrierConfig!.TransportAuthorizationNumber.Should().Be("AUT");
@@ -238,12 +348,25 @@ public sealed class RoleConfigApplicationTests
     public async Task Validator_supplier_consulta_el_catalogo_con_el_valor_normalizado_y_conserva_la_clave()
     {
         var catalog = new Mock<ISriCatalogLookupRepository>();
-        catalog.Setup(r => r.TaxSupportCodeExistsActiveAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        catalog
+            .Setup(r =>
+                r.TaxSupportCodeExistsActiveAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(false);
         var validator = new UpdateSupplierRoleConfigValidator(catalog.Object);
 
-        var result = await validator.ValidateAsync(new UpdateSupplierRoleConfigCommand(BpId, Guid.NewGuid(), Supplier(taxSupport: "  99  ")));
+        var result = await validator.ValidateAsync(
+            new UpdateSupplierRoleConfigCommand(
+                BpId,
+                Guid.NewGuid(),
+                Supplier(taxSupport: "  99  ")
+            )
+        );
 
-        catalog.Verify(r => r.TaxSupportCodeExistsActiveAsync("99", It.IsAny<CancellationToken>()), Times.Once);
+        catalog.Verify(
+            r => r.TaxSupportCodeExistsActiveAsync("99", It.IsAny<CancellationToken>()),
+            Times.Once
+        );
         result.Errors.Should().ContainSingle(e => e.PropertyName == "Config.DefaultTaxSupportCode");
     }
 
@@ -253,7 +376,9 @@ public sealed class RoleConfigApplicationTests
         var catalog = new Mock<ISriCatalogLookupRepository>();
         var validator = new UpdateSupplierRoleConfigValidator(catalog.Object);
 
-        var result = await validator.ValidateAsync(new UpdateSupplierRoleConfigCommand(BpId, Guid.NewGuid(), Supplier(taxSupport: "   ")));
+        var result = await validator.ValidateAsync(
+            new UpdateSupplierRoleConfigCommand(BpId, Guid.NewGuid(), Supplier(taxSupport: "   "))
+        );
 
         result.IsValid.Should().BeTrue();
         catalog.VerifyNoOtherCalls();
@@ -264,10 +389,12 @@ public sealed class RoleConfigApplicationTests
     {
         var catalog = new Mock<ISriCatalogLookupRepository>();
 
-        var supplier = await new UpdateSupplierRoleConfigValidator(catalog.Object)
-            .ValidateAsync(new UpdateSupplierRoleConfigCommand(BpId, Guid.NewGuid(), Supplier(taxSupport: Long(6))));
-        var carrier = await new UpdateCarrierRoleConfigValidator()
-            .ValidateAsync(new UpdateCarrierRoleConfigCommand(BpId, Guid.NewGuid(), Carrier(capacity: 0m)));
+        var supplier = await new UpdateSupplierRoleConfigValidator(catalog.Object).ValidateAsync(
+            new UpdateSupplierRoleConfigCommand(BpId, Guid.NewGuid(), Supplier(taxSupport: Long(6)))
+        );
+        var carrier = await new UpdateCarrierRoleConfigValidator().ValidateAsync(
+            new UpdateCarrierRoleConfigCommand(BpId, Guid.NewGuid(), Carrier(capacity: 0m))
+        );
 
         supplier.IsValid.Should().BeTrue();
         carrier.IsValid.Should().BeTrue();

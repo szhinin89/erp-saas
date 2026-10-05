@@ -31,11 +31,20 @@ public sealed class ExpenseLine : IMustHaveTenant
     public string? Notes { get; private set; }
     public short SortOrder { get; private set; }
 
-    public decimal LineSubtotal => Math.Round(Quantity * UnitAmount, FiscalPrecision.TaxAmount, MidpointRounding.AwayFromZero);
+    public decimal LineSubtotal =>
+        Math.Round(Quantity * UnitAmount, FiscalPrecision.TaxAmount, MidpointRounding.AwayFromZero);
     public decimal TaxableBase =>
-        Math.Round(LineSubtotal - DiscountAmount, FiscalPrecision.TaxAmount, MidpointRounding.AwayFromZero);
+        Math.Round(
+            LineSubtotal - DiscountAmount,
+            FiscalPrecision.TaxAmount,
+            MidpointRounding.AwayFromZero
+        );
     public decimal TaxInclusiveTotal =>
-        Math.Round(TaxableBase + VatAmount, FiscalPrecision.TaxAmount, MidpointRounding.AwayFromZero);
+        Math.Round(
+            TaxableBase + VatAmount,
+            FiscalPrecision.TaxAmount,
+            MidpointRounding.AwayFromZero
+        );
 
     private ExpenseLine() { }
 
@@ -58,18 +67,27 @@ public sealed class ExpenseLine : IMustHaveTenant
     )
     {
         if (expenseDocumentId == Guid.Empty)
-            throw new ArgumentException("El documento de gasto es obligatorio.", nameof(expenseDocumentId));
+            throw new ArgumentException(
+                "El documento de gasto es obligatorio.",
+                nameof(expenseDocumentId)
+            );
         if (tenantId == Guid.Empty)
             throw new ArgumentException("El tenant es obligatorio.", nameof(tenantId));
         if (expenseSubcategoryId == Guid.Empty)
-            throw new ArgumentException("La subcategoría de gasto es obligatoria.", nameof(expenseSubcategoryId));
+            throw new ArgumentException(
+                "La subcategoría de gasto es obligatoria.",
+                nameof(expenseSubcategoryId)
+            );
         if (snapshotAccountingAccountId == Guid.Empty)
             throw new ArgumentException(
                 "La cuenta contable snapshot es obligatoria.",
                 nameof(snapshotAccountingAccountId)
             );
         if (string.IsNullOrWhiteSpace(description))
-            throw new ArgumentException("La descripción de la línea es obligatoria.", nameof(description));
+            throw new ArgumentException(
+                "La descripción de la línea es obligatoria.",
+                nameof(description)
+            );
         if (description.Trim().Length > DescriptionMaxLen)
             throw new ArgumentException(
                 $"La descripción no puede superar {DescriptionMaxLen} caracteres.",
@@ -78,11 +96,20 @@ public sealed class ExpenseLine : IMustHaveTenant
         if (quantity <= 0)
             throw new ArgumentException("La cantidad debe ser mayor a cero.", nameof(quantity));
         if (unitAmount < 0)
-            throw new ArgumentException("El valor unitario no puede ser negativo.", nameof(unitAmount));
+            throw new ArgumentException(
+                "El valor unitario no puede ser negativo.",
+                nameof(unitAmount)
+            );
         if (discountPct is < 0 or > 100)
-            throw new ArgumentException("El descuento debe estar entre 0 y 100.", nameof(discountPct));
+            throw new ArgumentException(
+                "El descuento debe estar entre 0 y 100.",
+                nameof(discountPct)
+            );
         if (discountAmount is < 0)
-            throw new ArgumentException("El descuento no puede ser negativo.", nameof(discountAmount));
+            throw new ArgumentException(
+                "El descuento no puede ser negativo.",
+                nameof(discountAmount)
+            );
         if (string.IsNullOrWhiteSpace(vatCode))
             throw new ArgumentException("El código IVA es obligatorio.", nameof(vatCode));
         if (vatRate < 0)
@@ -167,7 +194,9 @@ public sealed class ExpenseLine : IMustHaveTenant
         }
 
         if (TaxableBase < 0)
-            throw new DomainRuleViolationException("La base imponible de la línea no puede ser negativa.");
+            throw new DomainRuleViolationException(
+                "La base imponible de la línea no puede ser negativa."
+            );
 
         VatAmount =
             VatRate > 0
@@ -179,8 +208,11 @@ public sealed class ExpenseLine : IMustHaveTenant
                 : 0m;
 
         if (LineSubtotal < 0 || DiscountAmount < 0 || VatAmount < 0 || TaxInclusiveTotal < 0)
-            throw new DomainRuleViolationException("Los totales de la línea de gasto no pueden ser negativos.");
+            throw new DomainRuleViolationException(
+                "Los totales de la línea de gasto no pueden ser negativos."
+            );
     }
 
-    private static string? Normalize(string? value) => value?.Trim() is { Length: > 0 } text ? text : null;
+    private static string? Normalize(string? value) =>
+        value?.Trim() is { Length: > 0 } text ? text : null;
 }

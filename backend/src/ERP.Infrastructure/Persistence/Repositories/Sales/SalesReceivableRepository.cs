@@ -66,7 +66,10 @@ public sealed class SalesReceivableRepository : ISalesReceivableRepository
         CancellationToken ct = default
     )
     {
-        var id = await Scoped(tenantId).Where(x => x.InvoiceId == invoiceId).Select(x => (Guid?)x.Id).FirstOrDefaultAsync(ct);
+        var id = await Scoped(tenantId)
+            .Where(x => x.InvoiceId == invoiceId)
+            .Select(x => (Guid?)x.Id)
+            .FirstOrDefaultAsync(ct);
         if (id is null)
             return null;
         var locked = await GetByIdsForUpdateAsync(tenantId, [id.Value], ct);

@@ -31,10 +31,27 @@ public sealed class RetentionCancellerTests
     private static RetentionDocument IssuedRetention(decimal retained = 4.50m)
     {
         var doc = RetentionDocument.Create(
-            TenantId, CompanyId, BranchId, RetentionSourceDocumentType.ExpenseDocument,
-            ExpenseDocumentId, SupplierId, Guid.NewGuid(), UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            RetentionSourceDocumentType.ExpenseDocument,
+            ExpenseDocumentId,
+            SupplierId,
+            Guid.NewGuid(),
+            UserId
         );
-        doc.AddLine(RetentionDocumentLine.Create(doc.Id, TenantId, RetentionTaxType.Vat, "725", "Retención IVA 725", 100m, 30m, retained));
+        doc.AddLine(
+            RetentionDocumentLine.Create(
+                doc.Id,
+                TenantId,
+                RetentionTaxType.Vat,
+                "725",
+                "Retención IVA 725",
+                100m,
+                30m,
+                retained
+            )
+        );
         doc.Issue("001-001-000000001", new DateOnly(2026, 8, 27), UserId);
         doc.ClearDomainEvents();
         return doc;
@@ -43,10 +60,17 @@ public sealed class RetentionCancellerTests
     private static AccountsPayable Payable(decimal grandTotal)
     {
         var payable = AccountsPayable.CreateFromOrigin(
-            TenantId, CompanyId, BranchId, SupplierId,
-            AccountsPayableOriginType.ExpenseDocument, ExpenseDocumentId,
-            "01", "001-001-000000123",
-            new DateOnly(2026, 8, 27), new DateOnly(2026, 8, 27), UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            AccountsPayableOriginType.ExpenseDocument,
+            ExpenseDocumentId,
+            "01",
+            "001-001-000000123",
+            new DateOnly(2026, 8, 27),
+            new DateOnly(2026, 8, 27),
+            UserId
         );
         payable.AddInstallment(1, new DateOnly(2026, 8, 27), grandTotal);
         return payable;
@@ -75,23 +99,36 @@ public sealed class RetentionCancellerTests
                     )
                 )
                 .ReturnsAsync(
-                    Result<ElectronicDocumentSourceCancellationOutcome>.ValidationFailure("bloqueado", code)
+                    Result<ElectronicDocumentSourceCancellationOutcome>.ValidationFailure(
+                        "bloqueado",
+                        code
+                    )
                 );
 
         public void SetupNoPayable() =>
             PayableRepo
-                .Setup(r => r.GetByOriginAsync(
-                    TenantId, CompanyId, AccountsPayableOriginType.ExpenseDocument,
-                    ExpenseDocumentId, It.IsAny<CancellationToken>()
-                ))
+                .Setup(r =>
+                    r.GetByOriginAsync(
+                        TenantId,
+                        CompanyId,
+                        AccountsPayableOriginType.ExpenseDocument,
+                        ExpenseDocumentId,
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync((AccountsPayable?)null);
 
         public void SetupPayable(AccountsPayable payable) =>
             PayableRepo
-                .Setup(r => r.GetByOriginAsync(
-                    TenantId, CompanyId, AccountsPayableOriginType.ExpenseDocument,
-                    ExpenseDocumentId, It.IsAny<CancellationToken>()
-                ))
+                .Setup(r =>
+                    r.GetByOriginAsync(
+                        TenantId,
+                        CompanyId,
+                        AccountsPayableOriginType.ExpenseDocument,
+                        ExpenseDocumentId,
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync(payable);
     }
 
@@ -102,7 +139,12 @@ public sealed class RetentionCancellerTests
         fx.SetupNoPayable();
         var retention = IssuedRetention();
 
-        var result = await fx.Canceller.CancelAsync(retention, "Motivo", UserId, CancellationToken.None);
+        var result = await fx.Canceller.CancelAsync(
+            retention,
+            "Motivo",
+            UserId,
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         retention.Status.Should().Be(RetentionStatus.Cancelled);
@@ -111,7 +153,9 @@ public sealed class RetentionCancellerTests
     [Theory]
     [InlineData(ApiResponseCodes.ElectronicDocuments.SourceCancellationInProcess)]
     [InlineData(ApiResponseCodes.ElectronicDocuments.SourceCancellationRequiresSriAnnulment)]
-    public async Task Comprobante_electronico_en_proceso_o_autorizado_bloquea_sin_cancelar_ni_reversar(string code)
+    public async Task Comprobante_electronico_en_proceso_o_autorizado_bloquea_sin_cancelar_ni_reversar(
+        string code
+    )
     {
         // ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A (ADR-036 D-5/D-6): la decisión es de
         // IElectronicDocumentSourceCancellation; el canceller no muta nada si la bloquea.
@@ -122,7 +166,12 @@ public sealed class RetentionCancellerTests
         fx.SetupElectronicBlocked(code);
         var retention = IssuedRetention(4.50m);
 
-        var result = await fx.Canceller.CancelAsync(retention, "Motivo", UserId, CancellationToken.None);
+        var result = await fx.Canceller.CancelAsync(
+            retention,
+            "Motivo",
+            UserId,
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(code);
@@ -139,7 +188,12 @@ public sealed class RetentionCancellerTests
         fx.SetupPayable(payable);
         var retention = IssuedRetention(4.50m);
 
-        var result = await fx.Canceller.CancelAsync(retention, "Motivo", UserId, CancellationToken.None);
+        var result = await fx.Canceller.CancelAsync(
+            retention,
+            "Motivo",
+            UserId,
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         retention.Status.Should().Be(RetentionStatus.Cancelled);
@@ -157,11 +211,18 @@ public sealed class RetentionCancellerTests
         fx.SetupPayable(payable);
         var retention = IssuedRetention(4.50m);
 
-        var result = await fx.Canceller.CancelAsync(retention, "Motivo", UserId, CancellationToken.None);
+        var result = await fx.Canceller.CancelAsync(
+            retention,
+            "Motivo",
+            UserId,
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("pagos aplicados");
-        retention.Status.Should().Be(RetentionStatus.Issued, "no debe mutarse si la reversa de CxP es insegura");
+        retention
+            .Status.Should()
+            .Be(RetentionStatus.Issued, "no debe mutarse si la reversa de CxP es insegura");
         payable.RetainedAmount.Should().Be(4.50m, "no debe reversarse ni parcial ni totalmente");
     }
 
@@ -171,11 +232,22 @@ public sealed class RetentionCancellerTests
         var fx = new Fixture();
         fx.SetupNoPayable();
         var draft = RetentionDocument.Create(
-            TenantId, CompanyId, BranchId, RetentionSourceDocumentType.ExpenseDocument,
-            ExpenseDocumentId, SupplierId, Guid.NewGuid(), UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            RetentionSourceDocumentType.ExpenseDocument,
+            ExpenseDocumentId,
+            SupplierId,
+            Guid.NewGuid(),
+            UserId
         );
 
-        var result = await fx.Canceller.CancelAsync(draft, "Motivo", UserId, CancellationToken.None);
+        var result = await fx.Canceller.CancelAsync(
+            draft,
+            "Motivo",
+            UserId,
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("emitidas");
@@ -198,13 +270,33 @@ public sealed class RetentionCancellerTests
 
     // ── PURCHASES-RETENTIONS-CANCEL-05D: origen PurchaseInvoice ───────────────────────────────
 
-    private static RetentionDocument IssuedRetentionForPurchase(Guid purchaseInvoiceId, decimal retained = 30m)
+    private static RetentionDocument IssuedRetentionForPurchase(
+        Guid purchaseInvoiceId,
+        decimal retained = 30m
+    )
     {
         var doc = RetentionDocument.Create(
-            TenantId, CompanyId, BranchId, RetentionSourceDocumentType.PurchaseInvoice,
-            purchaseInvoiceId, SupplierId, Guid.NewGuid(), UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            RetentionSourceDocumentType.PurchaseInvoice,
+            purchaseInvoiceId,
+            SupplierId,
+            Guid.NewGuid(),
+            UserId
         );
-        doc.AddLine(RetentionDocumentLine.Create(doc.Id, TenantId, RetentionTaxType.Vat, "725", "Retención IVA 725", 100m, 30m, retained));
+        doc.AddLine(
+            RetentionDocumentLine.Create(
+                doc.Id,
+                TenantId,
+                RetentionTaxType.Vat,
+                "725",
+                "Retención IVA 725",
+                100m,
+                30m,
+                retained
+            )
+        );
         doc.Issue("001-001-000000005", new DateOnly(2026, 9, 3), UserId);
         doc.ClearDomainEvents();
         return doc;
@@ -213,10 +305,17 @@ public sealed class RetentionCancellerTests
     private static AccountsPayable PayableForPurchase(Guid purchaseInvoiceId, decimal grandTotal)
     {
         var payable = AccountsPayable.CreateFromOrigin(
-            TenantId, CompanyId, BranchId, SupplierId,
-            AccountsPayableOriginType.PurchaseInvoice, purchaseInvoiceId,
-            "01", "001-001-000000123",
-            new DateOnly(2026, 8, 27), new DateOnly(2026, 9, 26), UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            purchaseInvoiceId,
+            "01",
+            "001-001-000000123",
+            new DateOnly(2026, 8, 27),
+            new DateOnly(2026, 9, 26),
+            UserId
         );
         payable.AddInstallment(1, new DateOnly(2026, 9, 26), grandTotal);
         return payable;
@@ -230,15 +329,28 @@ public sealed class RetentionCancellerTests
         var payable = PayableForPurchase(purchaseInvoiceId, 115m);
         payable.ApplyRetention(30m, UserId);
         payableRepo
-            .Setup(r => r.GetByOriginAsync(
-                TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice,
-                purchaseInvoiceId, It.IsAny<CancellationToken>()
-            ))
+            .Setup(r =>
+                r.GetByOriginAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountsPayableOriginType.PurchaseInvoice,
+                    purchaseInvoiceId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(payable);
-        var canceller = new RetentionCanceller(payableRepo.Object, ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.NoElectronicDocument());
+        var canceller = new RetentionCanceller(
+            payableRepo.Object,
+            ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.NoElectronicDocument()
+        );
         var retention = IssuedRetentionForPurchase(purchaseInvoiceId);
 
-        var result = await canceller.CancelAsync(retention, "Motivo", UserId, CancellationToken.None);
+        var result = await canceller.CancelAsync(
+            retention,
+            "Motivo",
+            UserId,
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(because: result.Error);
         retention.Status.Should().Be(RetentionStatus.Cancelled);
@@ -255,15 +367,28 @@ public sealed class RetentionCancellerTests
         payable.ApplyRetention(30m, UserId);
         payable.RegisterPayment(20m, UserId);
         payableRepo
-            .Setup(r => r.GetByOriginAsync(
-                TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice,
-                purchaseInvoiceId, It.IsAny<CancellationToken>()
-            ))
+            .Setup(r =>
+                r.GetByOriginAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountsPayableOriginType.PurchaseInvoice,
+                    purchaseInvoiceId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(payable);
-        var canceller = new RetentionCanceller(payableRepo.Object, ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.NoElectronicDocument());
+        var canceller = new RetentionCanceller(
+            payableRepo.Object,
+            ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.NoElectronicDocument()
+        );
         var retention = IssuedRetentionForPurchase(purchaseInvoiceId);
 
-        var result = await canceller.CancelAsync(retention, "Motivo", UserId, CancellationToken.None);
+        var result = await canceller.CancelAsync(
+            retention,
+            "Motivo",
+            UserId,
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("pagos aplicados");
@@ -284,18 +409,33 @@ public sealed class RetentionCancellerTests
         var purchaseInvoiceId = Guid.NewGuid();
         var payableRepo = new Mock<IAccountsPayableRepository>();
         payableRepo
-            .Setup(r => r.GetByOriginAsync(
-                TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice,
-                purchaseInvoiceId, It.IsAny<CancellationToken>()
-            ))
+            .Setup(r =>
+                r.GetByOriginAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountsPayableOriginType.PurchaseInvoice,
+                    purchaseInvoiceId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync((AccountsPayable?)null);
-        var canceller = new RetentionCanceller(payableRepo.Object, ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.NoElectronicDocument());
+        var canceller = new RetentionCanceller(
+            payableRepo.Object,
+            ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.NoElectronicDocument()
+        );
         var retention = IssuedRetentionForPurchase(purchaseInvoiceId);
 
-        var result = await canceller.CancelAsync(retention, "Motivo", UserId, CancellationToken.None);
+        var result = await canceller.CancelAsync(
+            retention,
+            "Motivo",
+            UserId,
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("cuenta por pagar");
-        retention.Status.Should().Be(RetentionStatus.Issued, "no debe anular dejando el pasivo sin reversar");
+        retention
+            .Status.Should()
+            .Be(RetentionStatus.Issued, "no debe anular dejando el pasivo sin reversar");
     }
 }

@@ -25,7 +25,9 @@ public sealed class UpdateStockAdjustmentValidator : AbstractValidator<UpdateSto
         RuleFor(x => x.WarehouseId).NotEmpty();
         RuleFor(x => x.WarehouseName).NotEmpty();
         RuleFor(x => x.MovementType)
-            .Must(m => m == StockAdjustment.MovementTypeIngreso || m == StockAdjustment.MovementTypeEgreso)
+            .Must(m =>
+                m == StockAdjustment.MovementTypeIngreso || m == StockAdjustment.MovementTypeEgreso
+            )
             .WithMessage(
                 $"MovementType debe ser '{StockAdjustment.MovementTypeIngreso}' o '{StockAdjustment.MovementTypeEgreso}'."
             );
@@ -37,7 +39,9 @@ public sealed class UpdateStockAdjustmentValidator : AbstractValidator<UpdateSto
                 line.RuleFor(l => l.ItemId).NotEmpty();
                 line.RuleFor(l => l.ItemName).NotEmpty();
                 line.RuleFor(l => l.Quantity).GreaterThan(0);
-                line.RuleFor(l => l.UnitCostBase).GreaterThanOrEqualTo(0).When(l => l.UnitCostBase.HasValue);
+                line.RuleFor(l => l.UnitCostBase)
+                    .GreaterThanOrEqualTo(0)
+                    .When(l => l.UnitCostBase.HasValue);
             });
     }
 }

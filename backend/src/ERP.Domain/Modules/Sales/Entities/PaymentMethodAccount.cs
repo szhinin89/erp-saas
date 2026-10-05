@@ -23,7 +23,10 @@ namespace ERP.Domain.Modules.Sales.Entities;
 /// Company: la autorización de venta debe fallar con error claro (fail-closed), nunca caer en un
 /// default oculto como "Caja general" — ver <c>AuthorizeSalesInvoiceHandler</c>.
 /// </summary>
-public sealed class PaymentMethodAccount : AuditableEntity, ITenantScopedEntity, ICompanyOperationalEntity
+public sealed class PaymentMethodAccount
+    : AuditableEntity,
+        ITenantScopedEntity,
+        ICompanyOperationalEntity
 {
     public Guid CompanyId { get; private set; }
     public Guid PaymentMethodId { get; private set; }
@@ -40,7 +43,10 @@ public sealed class PaymentMethodAccount : AuditableEntity, ITenantScopedEntity,
     )
     {
         if (paymentMethodId == Guid.Empty)
-            throw new ArgumentException("El método de pago es obligatorio.", nameof(paymentMethodId));
+            throw new ArgumentException(
+                "El método de pago es obligatorio.",
+                nameof(paymentMethodId)
+            );
         if (accountingAccountId == Guid.Empty)
             throw new ArgumentException(
                 "La cuenta contable es obligatoria.",

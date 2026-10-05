@@ -1,8 +1,8 @@
+using System.Text.Json;
 using ERP.Application.Common;
 using ERP.Application.Modules.InitialLoad.DTOs;
 using ERP.Domain.Modules.InitialLoad.Interfaces;
 using MediatR;
-using System.Text.Json;
 
 namespace ERP.Application.Modules.InitialLoad.UseCases.PreviewImportBatch;
 
@@ -53,8 +53,7 @@ public sealed class PreviewImportBatchHandler
         );
         var issuesByRow = issues.ToLookup(i => i.ImportBatchRowId);
 
-        var items = rows
-            .Select(r => new ImportBatchRowPreviewDto(
+        var items = rows.Select(r => new ImportBatchRowPreviewDto(
                 r.Id,
                 r.RowNumber,
                 r.HasBlockingIssue,

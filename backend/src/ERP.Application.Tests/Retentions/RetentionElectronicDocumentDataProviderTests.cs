@@ -63,7 +63,13 @@ public sealed class RetentionElectronicDocumentDataProviderTests
                     )
                 )
                 .ReturnsAsync(
-                    (RetentionTaxType taxType, string code, DateOnly _, decimal rate, CancellationToken _) =>
+                    (
+                        RetentionTaxType taxType,
+                        string code,
+                        DateOnly _,
+                        decimal rate,
+                        CancellationToken _
+                    ) =>
                         RetentionCodeResolution.Resolved(
                             new RetentionCodeRepresentation(
                                 Guid.NewGuid(),
@@ -130,10 +136,14 @@ public sealed class RetentionElectronicDocumentDataProviderTests
                 .SetValue(emissionPoint, establishment);
 
             EmissionPointRepo
-                .Setup(r => r.GetByIdAsync(EmissionPointId, TenantId, It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetByIdAsync(EmissionPointId, TenantId, It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(emissionPoint);
             EstablishmentRepo
-                .Setup(r => r.GetMainByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetMainByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(establishment);
 
             var company = Company.CreateManaged(
@@ -144,7 +154,9 @@ public sealed class RetentionElectronicDocumentDataProviderTests
             );
             company.SpecialTaxpayerNo = "5368";
             CompanyRepo
-                .Setup(r => r.GetByIdForTenantAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetByIdForTenantAsync(CompanyId, TenantId, It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(company);
 
             SriSettingsRepo
@@ -267,8 +279,14 @@ public sealed class RetentionElectronicDocumentDataProviderTests
         );
         retention.AddLine(
             RetentionDocumentLine.Create(
-                retention.Id, TenantId, RetentionTaxType.Vat, "725", "Retención IVA 30% bienes",
-                100m, 30m, 30m
+                retention.Id,
+                TenantId,
+                RetentionTaxType.Vat,
+                "725",
+                "Retención IVA 30% bienes",
+                100m,
+                30m,
+                30m
             )
         );
         retention.Issue("001-001-000000005", new DateOnly(2026, 9, 3), UserId);
@@ -288,7 +306,9 @@ public sealed class RetentionElectronicDocumentDataProviderTests
             .GetDataAsync(new ElectronicDocumentSourceReference(TenantId, CompanyId, retention.Id));
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        result.Value!.Metadata.SourceDocumentType.Should().Be(RetentionSourceDocumentType.PurchaseInvoice);
+        result
+            .Value!.Metadata.SourceDocumentType.Should()
+            .Be(RetentionSourceDocumentType.PurchaseInvoice);
         result.Value.Metadata.SourceDocumentId.Should().Be(retention.SourceDocumentId);
         result.Value.NumeroCompleto.Should().Be("001-001-000000005");
         result.Value.Emission.DocTypeCode.Should().Be("07");
@@ -347,12 +367,35 @@ public sealed class RetentionElectronicDocumentDataProviderTests
     public async Task GetDataAsync_permite_TaxSupportCode_null_en_el_documento_sustento_sin_bloquear()
     {
         var retention = RetentionDocument.Create(
-            TenantId, CompanyId, BranchId, RetentionSourceDocumentType.ExpenseDocument,
-            ExpenseDocumentId, SupplierId, EmissionPointId, UserId,
-            new RetentionDocument.SourceDocumentSnapshot("01", "001-001-000000789", new DateOnly(2026, 8, 20), null, null, 100m, 115m)
+            TenantId,
+            CompanyId,
+            BranchId,
+            RetentionSourceDocumentType.ExpenseDocument,
+            ExpenseDocumentId,
+            SupplierId,
+            EmissionPointId,
+            UserId,
+            new RetentionDocument.SourceDocumentSnapshot(
+                "01",
+                "001-001-000000789",
+                new DateOnly(2026, 8, 20),
+                null,
+                null,
+                100m,
+                115m
+            )
         );
         retention.AddLine(
-            RetentionDocumentLine.Create(retention.Id, TenantId, RetentionTaxType.Vat, "725", "Retención IVA 70%", 100m, 70m, 70m)
+            RetentionDocumentLine.Create(
+                retention.Id,
+                TenantId,
+                RetentionTaxType.Vat,
+                "725",
+                "Retención IVA 70%",
+                100m,
+                70m,
+                70m
+            )
         );
         retention.Issue("001-001-000000851", new DateOnly(2026, 9, 4), UserId);
 
@@ -362,7 +405,12 @@ public sealed class RetentionElectronicDocumentDataProviderTests
         var result = await m.BuildProvider()
             .GetDataAsync(new ElectronicDocumentSourceReference(TenantId, CompanyId, retention.Id));
 
-        result.IsSuccess.Should().BeTrue(result.Error, "un codSustento ausente es un gap de datos conocido, nunca un motivo de rechazo");
+        result
+            .IsSuccess.Should()
+            .BeTrue(
+                result.Error,
+                "un codSustento ausente es un gap de datos conocido, nunca un motivo de rechazo"
+            );
         result.Value!.SourceDocument.TaxSupportCode.Should().BeNull();
     }
 
@@ -381,15 +429,26 @@ public sealed class RetentionElectronicDocumentDataProviderTests
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.Lines.Should().HaveCount(2);
 
-        var vatLine = result.Value.Lines.Should().ContainSingle(l => l.TaxType == RetentionTaxType.Vat).Subject;
+        var vatLine = result
+            .Value.Lines.Should()
+            .ContainSingle(l => l.TaxType == RetentionTaxType.Vat)
+            .Subject;
         vatLine.SriTaxTypeCode.Should().Be("2");
-        vatLine.RetentionCode.Should().Be("x725", "el codigoRetencion es la representación resuelta, no la clave de negocio de la línea");
+        vatLine
+            .RetentionCode.Should()
+            .Be(
+                "x725",
+                "el codigoRetencion es la representación resuelta, no la clave de negocio de la línea"
+            );
         vatLine.RetentionCodeDescription.Should().Be("Retención IVA 70% bienes");
         vatLine.BaseAmount.Should().Be(100m);
         vatLine.RetentionRate.Should().Be(70m);
         vatLine.RetainedAmount.Should().Be(70m);
 
-        var incomeLine = result.Value.Lines.Should().ContainSingle(l => l.TaxType == RetentionTaxType.Income).Subject;
+        var incomeLine = result
+            .Value.Lines.Should()
+            .ContainSingle(l => l.TaxType == RetentionTaxType.Income)
+            .Subject;
         incomeLine.SriTaxTypeCode.Should().Be("1");
         incomeLine.RetentionCode.Should().Be("x303");
         incomeLine.RetentionCodeDescription.Should().Be("Honorarios profesionales");
@@ -404,8 +463,12 @@ public sealed class RetentionElectronicDocumentDataProviderTests
     public async Task GetDataAsync_los_totales_coinciden_con_la_suma_real_de_las_lineas()
     {
         var retention = BuildIssuedRetention(
-            vatBase: 100m, vatRate: 70m, vatRetained: 70m,
-            incomeBase: 200m, incomeRate: 1m, incomeRetained: 2m
+            vatBase: 100m,
+            vatRate: 70m,
+            vatRetained: 70m,
+            incomeBase: 200m,
+            incomeRate: 1m,
+            incomeRetained: 2m
         );
         var m = new Mocks();
         m.SeedHappyPath(retention);
@@ -421,12 +484,20 @@ public sealed class RetentionElectronicDocumentDataProviderTests
         totals.TotalRetainedIncome.Should().Be(retention.TotalRetainedIncome);
         totals.TotalRetained.Should().Be(retention.TotalRetained);
         // Verificación cruzada directa contra las líneas del modelo ya construido.
-        totals.TotalRetainedVat.Should().Be(
-            result.Value.Lines.Where(l => l.TaxType == RetentionTaxType.Vat).Sum(l => l.RetainedAmount)
-        );
-        totals.TotalRetainedIncome.Should().Be(
-            result.Value.Lines.Where(l => l.TaxType == RetentionTaxType.Income).Sum(l => l.RetainedAmount)
-        );
+        totals
+            .TotalRetainedVat.Should()
+            .Be(
+                result
+                    .Value.Lines.Where(l => l.TaxType == RetentionTaxType.Vat)
+                    .Sum(l => l.RetainedAmount)
+            );
+        totals
+            .TotalRetainedIncome.Should()
+            .Be(
+                result
+                    .Value.Lines.Where(l => l.TaxType == RetentionTaxType.Income)
+                    .Sum(l => l.RetainedAmount)
+            );
         totals.TotalRetained.Should().Be(totals.TotalRetainedVat + totals.TotalRetainedIncome);
         totals.TotalRetained.Should().Be(72m);
     }
@@ -451,9 +522,12 @@ public sealed class RetentionElectronicDocumentDataProviderTests
         // catálogo global — resuelve el codigoRetencion oficial (ADR-037).
         ctorParams.Should().HaveCount(8);
         ctorParams.Select(p => p.ParameterType).Should().Contain(typeof(IRetentionCodeResolver));
-        ctorParams.Select(p => p.ParameterType.Name)
+        ctorParams
+            .Select(p => p.ParameterType.Name)
             .Should()
-            .NotContain(name => name.Contains("ExpenseDocument", StringComparison.OrdinalIgnoreCase));
+            .NotContain(name =>
+                name.Contains("ExpenseDocument", StringComparison.OrdinalIgnoreCase)
+            );
     }
 
     [Fact]
@@ -491,7 +565,9 @@ public sealed class RetentionElectronicDocumentDataProviderTests
         var m = new Mocks();
 
         var result = await m.BuildProvider()
-            .GetDataAsync(new ElectronicDocumentSourceReference(TenantId, CompanyId, Guid.NewGuid()));
+            .GetDataAsync(
+                new ElectronicDocumentSourceReference(TenantId, CompanyId, Guid.NewGuid())
+            );
 
         result.IsSuccess.Should().BeFalse();
     }
@@ -500,17 +576,33 @@ public sealed class RetentionElectronicDocumentDataProviderTests
     public async Task GetDataAsync_falla_si_la_retencion_todavia_esta_en_Draft()
     {
         var retention = RetentionDocument.Create(
-            TenantId, CompanyId, BranchId, RetentionSourceDocumentType.ExpenseDocument,
-            ExpenseDocumentId, SupplierId, EmissionPointId, UserId
+            TenantId,
+            CompanyId,
+            BranchId,
+            RetentionSourceDocumentType.ExpenseDocument,
+            ExpenseDocumentId,
+            SupplierId,
+            EmissionPointId,
+            UserId
         );
         retention.AddLine(
-            RetentionDocumentLine.Create(retention.Id, TenantId, RetentionTaxType.Vat, "725", "Retención IVA 70%", 100m, 70m, 70m)
+            RetentionDocumentLine.Create(
+                retention.Id,
+                TenantId,
+                RetentionTaxType.Vat,
+                "725",
+                "Retención IVA 70%",
+                100m,
+                70m,
+                70m
+            )
         );
         // Deliberadamente NO se llama Issue() — sigue en Draft, sin RetentionNumber/IssueDate.
 
         var m = new Mocks();
-        m.RetentionRepo
-            .Setup(r => r.GetByIdAsync(TenantId, retention.Id, It.IsAny<CancellationToken>()))
+        m.RetentionRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, retention.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(retention);
 
         var result = await m.BuildProvider()
@@ -526,8 +618,9 @@ public sealed class RetentionElectronicDocumentDataProviderTests
         var retention = BuildIssuedRetention();
         var m = new Mocks();
         m.SeedHappyPath(retention);
-        m.EmissionPointRepo
-            .Setup(r => r.GetByIdAsync(EmissionPointId, TenantId, It.IsAny<CancellationToken>()))
+        m.EmissionPointRepo.Setup(r =>
+                r.GetByIdAsync(EmissionPointId, TenantId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((EmissionPoint?)null);
 
         var result = await m.BuildProvider()
@@ -543,8 +636,7 @@ public sealed class RetentionElectronicDocumentDataProviderTests
         var retention = BuildIssuedRetention();
         var m = new Mocks();
         m.SeedHappyPath(retention);
-        m.BusinessPartnerRepo
-            .Setup(r => r.GetByIdAsync(SupplierId, It.IsAny<CancellationToken>()))
+        m.BusinessPartnerRepo.Setup(r => r.GetByIdAsync(SupplierId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((BusinessPartner?)null);
 
         var result = await m.BuildProvider()
@@ -560,9 +652,11 @@ public sealed class RetentionElectronicDocumentDataProviderTests
         var retention = BuildIssuedRetention();
         var m = new Mocks();
         m.SeedHappyPath(retention);
-        m.DocTypeResolver
-            .Setup(r =>
-                r.IsActiveElectronicDocTypeAsync(SriDocumentTypeCodes.Withholding, It.IsAny<CancellationToken>())
+        m.DocTypeResolver.Setup(r =>
+                r.IsActiveElectronicDocTypeAsync(
+                    SriDocumentTypeCodes.Withholding,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(false);
 
@@ -623,11 +717,25 @@ public sealed class RetentionElectronicDocumentDataProviderTests
 
         result.IsSuccess.Should().BeTrue(result.Error);
         m.RetentionCodeResolver.Verify(
-            r => r.ResolveForDateAsync(RetentionTaxType.Vat, "725", new DateOnly(2026, 9, 4), 70m, It.IsAny<CancellationToken>()),
+            r =>
+                r.ResolveForDateAsync(
+                    RetentionTaxType.Vat,
+                    "725",
+                    new DateOnly(2026, 9, 4),
+                    70m,
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Once
         );
         m.RetentionCodeResolver.Verify(
-            r => r.ResolveForDateAsync(RetentionTaxType.Income, "303", new DateOnly(2026, 9, 4), 1m, It.IsAny<CancellationToken>()),
+            r =>
+                r.ResolveForDateAsync(
+                    RetentionTaxType.Income,
+                    "303",
+                    new DateOnly(2026, 9, 4),
+                    1m,
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Once
         );
     }
@@ -645,15 +753,24 @@ public sealed class RetentionElectronicDocumentDataProviderTests
         var retention = BuildIssuedRetention();
         var m = new Mocks();
         m.SeedHappyPath(retention);
-        m.RetentionCodeResolver
-            .Setup(r => r.ResolveForDateAsync(RetentionTaxType.Vat, "725", It.IsAny<DateOnly>(), It.IsAny<decimal>(), It.IsAny<CancellationToken>()))
+        m.RetentionCodeResolver.Setup(r =>
+                r.ResolveForDateAsync(
+                    RetentionTaxType.Vat,
+                    "725",
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<decimal>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(RetentionCodeResolution.Failed(error, "detalle de prueba"));
 
         var result = await m.BuildProvider()
             .GetDataAsync(new ElectronicDocumentSourceReference(TenantId, CompanyId, retention.Id));
 
         result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.FiscalCatalogConfigurationError);
+        result
+            .Code.Should()
+            .Be(ApiResponseCodes.ElectronicDocuments.FiscalCatalogConfigurationError);
         result.Error.Should().Contain("detalle de prueba");
         result.Value.Should().BeNull();
     }

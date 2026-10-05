@@ -58,26 +58,94 @@ public sealed class CashSessionCollectionSummaryRepositoryTests : IAsyncLifetime
 
         _createdBy = Guid.NewGuid();
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _createdBy);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _createdBy);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: _createdBy
+        );
         var branch = Branch.Create(
-            tenant.Id, "Matriz", "Av. Principal 123", "001",
-            null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null,
-            true, _createdBy, companyId: company.Id
+            tenant.Id,
+            "Matriz",
+            "Av. Principal 123",
+            "001",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            true,
+            _createdBy,
+            companyId: company.Id
         );
         var otherBranch = Branch.Create(
-            tenant.Id, "Sucursal Sur", "Av. Sur 456", "002",
-            null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null,
-            false, _createdBy, companyId: company.Id
+            tenant.Id,
+            "Sucursal Sur",
+            "Av. Sur 456",
+            "002",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            false,
+            _createdBy,
+            companyId: company.Id
         );
-        var customer = BusinessPartner.Create(tenant.Id, "05", "1710034065", 1, "Cliente Test", _createdBy);
+        var customer = BusinessPartner.Create(
+            tenant.Id,
+            "05",
+            "1710034065",
+            1,
+            "Cliente Test",
+            _createdBy
+        );
         var establishment = Establishment.Create(
-            tenant.Id, branchId: branch.Id, company.Id, code: "001", name: "Matriz Test",
-            address: "Av. Principal 123", phone: null, isMain: true, createdBy: _createdBy
+            tenant.Id,
+            branchId: branch.Id,
+            company.Id,
+            code: "001",
+            name: "Matriz Test",
+            address: "Av. Principal 123",
+            phone: null,
+            isMain: true,
+            createdBy: _createdBy
         );
         var cashRegister = CashRegister.Create(
-            tenant.Id, company.Id, branch.Id, "CAJA-01", "Caja Principal", _createdBy
+            tenant.Id,
+            company.Id,
+            branch.Id,
+            "CAJA-01",
+            "Caja Principal",
+            _createdBy
         );
 
         db.Tenants.Add(tenant);
@@ -89,15 +157,30 @@ public sealed class CashSessionCollectionSummaryRepositoryTests : IAsyncLifetime
         await db.SaveChangesAsync();
 
         var emissionPoint = EmissionPoint.Create(
-            tenant.Id, company.Id, establishment.Id, code: "001", name: "PE-001",
-            emissionType: EmissionType.Electronic, isDefault: true, createdBy: _createdBy
+            tenant.Id,
+            company.Id,
+            establishment.Id,
+            code: "001",
+            name: "PE-001",
+            emissionType: EmissionType.Electronic,
+            isDefault: true,
+            createdBy: _createdBy
         );
         db.EmissionPoints.Add(emissionPoint);
         await db.SaveChangesAsync();
 
         var cashSession = CashSession.Open(
-            tenant.Id, company.Id, branch.Id, _createdBy, cashRegister.Id,
-            "CAJA-01", "Caja Principal", emissionPoint.Id, "001", 0m, _createdBy
+            tenant.Id,
+            company.Id,
+            branch.Id,
+            _createdBy,
+            cashRegister.Id,
+            "CAJA-01",
+            "Caja Principal",
+            emissionPoint.Id,
+            "001",
+            0m,
+            _createdBy
         );
         db.CashSessions.Add(cashSession);
         await db.SaveChangesAsync();
@@ -134,7 +217,12 @@ public sealed class CashSessionCollectionSummaryRepositoryTests : IAsyncLifetime
     )
     {
         var customer = CustomerSnapshot.Create("Cliente Test", "1710034065", "05");
-        var paymentTerm = PaymentTermSnapshot.Create(Guid.NewGuid(), "Contado", installments: 1, daysBetween: 0);
+        var paymentTerm = PaymentTermSnapshot.Create(
+            Guid.NewGuid(),
+            "Contado",
+            installments: 1,
+            daysBetween: 0
+        );
 
         var inv = SalesInvoice.CreateDraft(
             _tenantId,
@@ -151,7 +239,13 @@ public sealed class CashSessionCollectionSummaryRepositoryTests : IAsyncLifetime
         );
 
         var line = SalesInvoiceDetail.Create(
-            inv.Id, _tenantId, "Producto Test", quantity: 1, unitPrice: unitPrice, vatCode: "0", uomCode: "UNIT"
+            inv.Id,
+            _tenantId,
+            "Producto Test",
+            quantity: 1,
+            unitPrice: unitPrice,
+            vatCode: "0",
+            uomCode: "UNIT"
         );
         line.ApplyTaxes("0", 0m, "IVA 0%", null, 0m, null);
         inv.ReplaceLines(new[] { line }, _createdBy);
@@ -166,23 +260,44 @@ public sealed class CashSessionCollectionSummaryRepositoryTests : IAsyncLifetime
         // Factura 1: Efectivo, autorizada.
         var cashInvoice = BuildDraft("001-001-000000001", 10m);
         var cashPayment = SalesInvoicePayment.Create(
-            cashInvoice.Id, _tenantId, Guid.NewGuid(), "EFECTIVO", "Efectivo", cashInvoice.Lines.Single().TaxInclusiveTotal
+            cashInvoice.Id,
+            _tenantId,
+            Guid.NewGuid(),
+            "EFECTIVO",
+            "Efectivo",
+            cashInvoice.Lines.Single().TaxInclusiveTotal
         );
         cashInvoice.ReplacePayments(new[] { cashPayment }, _createdBy);
-        cashInvoice.Authorize(_createdBy, cashApplied: cashInvoice.Lines.Single().TaxInclusiveTotal);
+        cashInvoice.Authorize(
+            _createdBy,
+            cashApplied: cashInvoice.Lines.Single().TaxInclusiveTotal
+        );
 
         // Factura 2: Transferencia con TransferDetail completo (banco real vía CompanyBankAccountId
         // simulado — el repo no necesita que la cuenta exista, solo lee el owned type del pago).
         var accountingAccount = Account.Create(
-            _tenantId, _companyId, AccountCode.Create("1.1.02.001"), "Banco Pichincha Cta. Cte.",
-            null, AccountType.Asset, AccountNature.Debit, allowsPosting: true, _createdBy
+            _tenantId,
+            _companyId,
+            AccountCode.Create("1.1.02.001"),
+            "Banco Pichincha Cta. Cte.",
+            null,
+            AccountType.Asset,
+            AccountNature.Debit,
+            allowsPosting: true,
+            _createdBy
         );
         db.Accounts.Add(accountingAccount);
         await db.SaveChangesAsync();
         var bank = Bank.Create(_tenantId, "PICHINCHA", "Banco Pichincha", null, _createdBy);
         var bankAccount = CompanyBankAccount.Create(
-            _tenantId, _companyId, bank.Id, BankAccountType.Checking, "2200123456",
-            "Cuenta corriente Pichincha", accountingAccount.Id, _createdBy
+            _tenantId,
+            _companyId,
+            bank.Id,
+            BankAccountType.Checking,
+            "2200123456",
+            "Cuenta corriente Pichincha",
+            accountingAccount.Id,
+            _createdBy
         );
         db.Banks.Add(bank);
         db.CompanyBankAccounts.Add(bankAccount);
@@ -190,35 +305,66 @@ public sealed class CashSessionCollectionSummaryRepositoryTests : IAsyncLifetime
 
         var transferInvoice = BuildDraft("001-001-000000002", 20m);
         var transferPayment = SalesInvoicePayment.Create(
-            transferInvoice.Id, _tenantId, Guid.NewGuid(), "TRANSFERENCIA", "Transferencia Bancaria",
+            transferInvoice.Id,
+            _tenantId,
+            Guid.NewGuid(),
+            "TRANSFERENCIA",
+            "Transferencia Bancaria",
             transferInvoice.Lines.Single().TaxInclusiveTotal
         );
         transferPayment.SetTransferDetail(
-            PaymentTransferDetail.Create(transferPayment.Id, bankAccount.Id, "TRX-000123", new DateOnly(2026, 9, 18))
+            PaymentTransferDetail.Create(
+                transferPayment.Id,
+                bankAccount.Id,
+                "TRX-000123",
+                new DateOnly(2026, 9, 18)
+            )
         );
         transferInvoice.ReplacePayments(new[] { transferPayment }, _createdBy);
-        transferInvoice.Authorize(_createdBy, cashApplied: transferInvoice.Lines.Single().TaxInclusiveTotal);
+        transferInvoice.Authorize(
+            _createdBy,
+            cashApplied: transferInvoice.Lines.Single().TaxInclusiveTotal
+        );
 
         // Factura 3: Draft (sin autorizar) — el repo debe excluirla.
         var draftInvoice = BuildDraft("DRAFT-001", 5m);
 
         // Factura 4: autorizada, pero de OTRA sucursal — el repo debe excluirla (fail-closed por branch).
-        var otherBranchInvoice = BuildDraft("002-001-000000001", 8m, branchIdOverride: _otherBranchId);
+        var otherBranchInvoice = BuildDraft(
+            "002-001-000000001",
+            8m,
+            branchIdOverride: _otherBranchId
+        );
         var otherBranchPayment = SalesInvoicePayment.Create(
-            otherBranchInvoice.Id, _tenantId, Guid.NewGuid(), "EFECTIVO", "Efectivo",
+            otherBranchInvoice.Id,
+            _tenantId,
+            Guid.NewGuid(),
+            "EFECTIVO",
+            "Efectivo",
             otherBranchInvoice.Lines.Single().TaxInclusiveTotal
         );
         otherBranchInvoice.ReplacePayments(new[] { otherBranchPayment }, _createdBy);
-        otherBranchInvoice.Authorize(_createdBy, cashApplied: otherBranchInvoice.Lines.Single().TaxInclusiveTotal);
+        otherBranchInvoice.Authorize(
+            _createdBy,
+            cashApplied: otherBranchInvoice.Lines.Single().TaxInclusiveTotal
+        );
 
         db.SalesInvoices.AddRange(cashInvoice, transferInvoice, draftInvoice, otherBranchInvoice);
         await db.SaveChangesAsync();
 
         var repo = new SalesInvoiceRepository(db, new FixedCurrentCompany(_companyId));
-        var rows = await repo.GetCollectionSummaryByCashSessionAsync(_tenantId, _branchId, _cashSessionId);
+        var rows = await repo.GetCollectionSummaryByCashSessionAsync(
+            _tenantId,
+            _branchId,
+            _cashSessionId
+        );
 
-        rows.Should().HaveCount(2, "solo las 2 facturas autorizadas de ESTA sucursal deben aparecer");
-        rows.Should().OnlyContain(r => r.InvoiceNumber != "DRAFT-001" && r.InvoiceNumber != "002-001-000000001");
+        rows.Should()
+            .HaveCount(2, "solo las 2 facturas autorizadas de ESTA sucursal deben aparecer");
+        rows.Should()
+            .OnlyContain(r =>
+                r.InvoiceNumber != "DRAFT-001" && r.InvoiceNumber != "002-001-000000001"
+            );
 
         var cashRow = rows.Single(r => r.InvoiceNumber == "001-001-000000001");
         cashRow.PaymentMethodCode.Should().Be("EFECTIVO");
@@ -245,10 +391,20 @@ public sealed class CashSessionCollectionSummaryRepositoryTests : IAsyncLifetime
 
         var inv = BuildDraft("001-001-000000003", 30m);
         var cashPayment = SalesInvoicePayment.Create(
-            inv.Id, _tenantId, Guid.NewGuid(), "EFECTIVO", "Efectivo", 10m
+            inv.Id,
+            _tenantId,
+            Guid.NewGuid(),
+            "EFECTIVO",
+            "Efectivo",
+            10m
         );
         var transferPayment = SalesInvoicePayment.Create(
-            inv.Id, _tenantId, Guid.NewGuid(), "TRANSFERENCIA", "Transferencia Bancaria", 20m
+            inv.Id,
+            _tenantId,
+            Guid.NewGuid(),
+            "TRANSFERENCIA",
+            "Transferencia Bancaria",
+            20m
         );
         inv.ReplacePayments(new[] { cashPayment, transferPayment }, _createdBy);
         inv.Authorize(_createdBy, cashApplied: 30m);
@@ -257,7 +413,11 @@ public sealed class CashSessionCollectionSummaryRepositoryTests : IAsyncLifetime
         await db.SaveChangesAsync();
 
         var repo = new SalesInvoiceRepository(db, new FixedCurrentCompany(_companyId));
-        var rows = await repo.GetCollectionSummaryByCashSessionAsync(_tenantId, _branchId, _cashSessionId);
+        var rows = await repo.GetCollectionSummaryByCashSessionAsync(
+            _tenantId,
+            _branchId,
+            _cashSessionId
+        );
 
         rows.Should().HaveCount(2);
         rows.Should().OnlyContain(r => r.InvoiceId == inv.Id && r.GrandTotal == 30m);
@@ -275,25 +435,53 @@ public sealed class CashSessionCollectionSummaryRepositoryTests : IAsyncLifetime
         await using var db = CreateContext();
 
         var secondCashRegister = CashRegister.Create(
-            _tenantId, _companyId, _branchId, "CAJA-02", "Caja Secundaria", _createdBy
+            _tenantId,
+            _companyId,
+            _branchId,
+            "CAJA-02",
+            "Caja Secundaria",
+            _createdBy
         );
         db.CashRegisters.Add(secondCashRegister);
         await db.SaveChangesAsync();
         var secondCashier = Guid.NewGuid();
         var secondSession = CashSession.Open(
-            _tenantId, _companyId, _branchId, secondCashier, secondCashRegister.Id,
-            "CAJA-02", "Caja Secundaria", _emissionPointId, "001", 0m, _createdBy
+            _tenantId,
+            _companyId,
+            _branchId,
+            secondCashier,
+            secondCashRegister.Id,
+            "CAJA-02",
+            "Caja Secundaria",
+            _emissionPointId,
+            "001",
+            0m,
+            _createdBy
         );
         db.CashSessions.Add(secondSession);
         await db.SaveChangesAsync();
 
         var invA = BuildDraft("001-001-000000010", 12m);
-        var payA = SalesInvoicePayment.Create(invA.Id, _tenantId, Guid.NewGuid(), "EFECTIVO", "Efectivo", 12m);
+        var payA = SalesInvoicePayment.Create(
+            invA.Id,
+            _tenantId,
+            Guid.NewGuid(),
+            "EFECTIVO",
+            "Efectivo",
+            12m
+        );
         invA.ReplacePayments(new[] { payA }, _createdBy);
         invA.Authorize(_createdBy, cashApplied: 12m);
 
         var invB = BuildDraft("001-001-000000011", 25m, cashSessionIdOverride: secondSession.Id);
-        var payB = SalesInvoicePayment.Create(invB.Id, _tenantId, Guid.NewGuid(), "EFECTIVO", "Efectivo", 25m);
+        var payB = SalesInvoicePayment.Create(
+            invB.Id,
+            _tenantId,
+            Guid.NewGuid(),
+            "EFECTIVO",
+            "Efectivo",
+            25m
+        );
         invB.ReplacePayments(new[] { payB }, _createdBy);
         invB.Authorize(_createdBy, cashApplied: 25m);
 
@@ -302,12 +490,18 @@ public sealed class CashSessionCollectionSummaryRepositoryTests : IAsyncLifetime
 
         var repo = new SalesInvoiceRepository(db, new FixedCurrentCompany(_companyId));
         var rows = await repo.GetCollectionSummaryByCashSessionsAsync(
-            _tenantId, _branchId, new[] { _cashSessionId, secondSession.Id }
+            _tenantId,
+            _branchId,
+            new[] { _cashSessionId, secondSession.Id }
         );
 
         rows.Should().HaveCount(2);
-        rows.Single(r => r.CashSessionId == _cashSessionId).InvoiceNumber.Should().Be("001-001-000000010");
-        rows.Single(r => r.CashSessionId == secondSession.Id).InvoiceNumber.Should().Be("001-001-000000011");
+        rows.Single(r => r.CashSessionId == _cashSessionId)
+            .InvoiceNumber.Should()
+            .Be("001-001-000000010");
+        rows.Single(r => r.CashSessionId == secondSession.Id)
+            .InvoiceNumber.Should()
+            .Be("001-001-000000011");
     }
 
     private sealed class FixedCurrentTenant(Guid tenantId) : ICurrentTenant

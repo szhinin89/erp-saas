@@ -36,13 +36,19 @@ public sealed class RidePdfCommunicationAttachmentProvider : ICommunicationAttac
         CancellationToken ct = default
     )
     {
-        if (string.IsNullOrWhiteSpace(reference.SourceModule) || reference.SourceId is not { } sourceId)
+        if (
+            string.IsNullOrWhiteSpace(reference.SourceModule)
+            || reference.SourceId is not { } sourceId
+        )
             return CommunicationAttachmentResolution.Skipped("RideSourceUnknown");
 
         ERP.Application.Common.Result<RideGenerationResultDto> result;
         try
         {
-            result = await _sender.Send(new GetOrGenerateRideQuery(reference.SourceModule, sourceId), ct);
+            result = await _sender.Send(
+                new GetOrGenerateRideQuery(reference.SourceModule, sourceId),
+                ct
+            );
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -55,9 +61,14 @@ public sealed class RidePdfCommunicationAttachmentProvider : ICommunicationAttac
 
         var ride = result.Value!;
         if (ride.Outcome == RideOutcome.PendingSource)
-            throw new CommunicationAttachmentException("El RIDE aún no puede generarse: XML autorizado pendiente.");
+            throw new CommunicationAttachmentException(
+                "El RIDE aún no puede generarse: XML autorizado pendiente."
+            );
 
-        if (ride.Outcome is not (RideOutcome.Generated or RideOutcome.Cached) || string.IsNullOrWhiteSpace(ride.StoragePath))
+        if (
+            ride.Outcome is not (RideOutcome.Generated or RideOutcome.Cached)
+            || string.IsNullOrWhiteSpace(ride.StoragePath)
+        )
             return CommunicationAttachmentResolution.Skipped($"Ride{ride.Outcome}");
 
         await using var stream = await _fileStorage.GetAsync(ride.StoragePath, ct);

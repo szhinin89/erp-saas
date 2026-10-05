@@ -32,9 +32,7 @@ public sealed class PurchaseCreditNoteConfiguration : IEntityTypeConfiguration<P
             .Property(x => x.PurchaseInvoiceId)
             .HasColumnName("purchase_invoice_id")
             .IsRequired();
-        builder
-            .Property(x => x.ReceptionDocumentId)
-            .HasColumnName("reception_document_id");
+        builder.Property(x => x.ReceptionDocumentId).HasColumnName("reception_document_id");
 
         // FLOW-READY-02C-R1.1 — obligatorio, inmutable tras CreateDraft().
         builder
@@ -44,9 +42,7 @@ public sealed class PurchaseCreditNoteConfiguration : IEntityTypeConfiguration<P
             .IsRequired();
 
         // FLOW-READY-02C-R1.1 — set-once vía LinkPurchaseReturn(), solo para ApplicationType.Return.
-        builder
-            .Property(x => x.LinkedPurchaseReturnId)
-            .HasColumnName("linked_purchase_return_id");
+        builder.Property(x => x.LinkedPurchaseReturnId).HasColumnName("linked_purchase_return_id");
 
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<int>().IsRequired();
 

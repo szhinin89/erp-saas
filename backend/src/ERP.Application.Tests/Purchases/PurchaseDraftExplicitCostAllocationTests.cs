@@ -32,9 +32,12 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
     [InlineData("2026-09-03T16:50:00-05:00")]
     [InlineData("2026-09-03T21:50:00Z")]
     [InlineData(null)]
-    public async Task CreateDraft_normalizes_reception_date_before_save_and_allows_manual_purchase(string? date)
+    public async Task CreateDraft_normalizes_reception_date_before_save_and_allows_manual_purchase(
+        string? date
+    )
     {
-        var authorizationDate = date is null ? (DateTime?)null
+        var authorizationDate = date is null
+            ? (DateTime?)null
             : System.Text.Json.JsonSerializer.Deserialize<DateTime>($"\"{date}\"");
         var repo = new Mock<IPurchaseInvoiceRepository>();
         PurchaseInvoice? saved = null;
@@ -49,15 +52,25 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
                     saved!.AuthorizationDate!.Value.Kind.Should().Be(DateTimeKind.Utc);
             })
             .Returns(Task.CompletedTask);
-        var command = new CreatePurchaseDraftCommand(SupplierId, "01", "001-001-000000001",
-            new DateOnly(2026, 9, 3), [new PurchaseLineInput(null, "Producto", 1m, 100m, "10")],
-            AuthorizationDate: authorizationDate);
+        var command = new CreatePurchaseDraftCommand(
+            SupplierId,
+            "01",
+            "001-001-000000001",
+            new DateOnly(2026, 9, 3),
+            [new PurchaseLineInput(null, "Producto", 1m, 100m, "10")],
+            AuthorizationDate: authorizationDate
+        );
 
         var result = await BuildCreateHandler(repo).Handle(command, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        saved!.AuthorizationDate.Should().Be(authorizationDate is null ? null
-            : new DateTime(2026, 9, 3, 21, 50, 0, DateTimeKind.Utc));
+        saved!
+            .AuthorizationDate.Should()
+            .Be(
+                authorizationDate is null
+                    ? null
+                    : new DateTime(2026, 9, 3, 21, 50, 0, DateTimeKind.Utc)
+            );
         repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -92,7 +105,11 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
         );
         roleRepo
             .Setup(r =>
-                r.GetByTypeAsync(SupplierId, Domain.MasterData.Enums.RoleType.Supplier, It.IsAny<CancellationToken>())
+                r.GetByTypeAsync(
+                    SupplierId,
+                    Domain.MasterData.Enums.RoleType.Supplier,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(role);
         return roleRepo;
@@ -102,8 +119,18 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
     {
         var resolver = new Mock<IPaymentTermDefaultResolver>();
         resolver
-            .Setup(r => r.ResolveForPurchaseAsync(SupplierId, It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<PaymentTerm>.Success(PaymentTerm.Create(TenantId, "CONTADO", "Contado", 1, 0, UserId)));
+            .Setup(r =>
+                r.ResolveForPurchaseAsync(
+                    SupplierId,
+                    It.IsAny<Guid?>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                Result<PaymentTerm>.Success(
+                    PaymentTerm.Create(TenantId, "CONTADO", "Contado", 1, 0, UserId)
+                )
+            );
         return resolver;
     }
 
@@ -251,7 +278,15 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
             1,
             0
         );
-        var line = PurchaseInvoiceDetail.Create(inv.Id, TenantId, "Producto viejo", 1m, 50m, "10", "UNIT");
+        var line = PurchaseInvoiceDetail.Create(
+            inv.Id,
+            TenantId,
+            "Producto viejo",
+            1m,
+            50m,
+            "10",
+            "UNIT"
+        );
         inv.ReplaceLines([line], UserId);
         return inv;
     }
@@ -261,8 +296,10 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
     {
         var inv = CreateExistingDraft();
         var repo = new Mock<IPurchaseInvoiceRepository>();
-        repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())).ReturnsAsync(inv);
-        repo.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
+        repo.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
         var handler = BuildUpdateHandler(repo);
 
         var cmd = new UpdatePurchaseDraftCommand(
@@ -287,11 +324,18 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
 
     // ── ERP-PRECISION-OPERATIONAL-05B1: purchaseUnitPriceDecimals gobierna el precio operativo ──
 
-    private static ERP.Application.Modules.Companies.ICompanyPrecisionPolicyProvider PurchasePolicy(int decimals)
+    private static ERP.Application.Modules.Companies.ICompanyPrecisionPolicyProvider PurchasePolicy(
+        int decimals
+    )
     {
         var mock = new Mock<ERP.Application.Modules.Companies.ICompanyPrecisionPolicyProvider>();
         mock.Setup(p => p.GetEffectiveAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(PrecisionPolicyTestDouble.DefaultDto() with { PurchaseUnitPriceDecimals = decimals });
+            .ReturnsAsync(
+                PrecisionPolicyTestDouble.DefaultDto() with
+                {
+                    PurchaseUnitPriceDecimals = decimals,
+                }
+            );
         return mock.Object;
     }
 
@@ -314,7 +358,8 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
             [line]
         );
 
-        var result = await BuildCreateHandler(repo, PurchasePolicy(decimals), receptionRepo).Handle(cmd, CancellationToken.None);
+        var result = await BuildCreateHandler(repo, PurchasePolicy(decimals), receptionRepo)
+            .Handle(cmd, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         return saved!;
@@ -324,9 +369,15 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
     [InlineData(4, 1.2346)]
     [InlineData(2, 1.23)]
     [InlineData(10, 1.23456789)]
-    public async Task Linea_manual_normaliza_el_precio_unitario_a_purchaseUnitPriceDecimals(int decimals, double expected)
+    public async Task Linea_manual_normaliza_el_precio_unitario_a_purchaseUnitPriceDecimals(
+        int decimals,
+        double expected
+    )
     {
-        var saved = await CreateWithLineAsync(decimals, new PurchaseLineInput(null, "Manual", 1m, 1.23456789m, "10"));
+        var saved = await CreateWithLineAsync(
+            decimals,
+            new PurchaseLineInput(null, "Manual", 1m, 1.23456789m, "10")
+        );
 
         saved.Lines.Single().UnitPrice.Should().Be((decimal)expected);
     }
@@ -339,38 +390,46 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
         decimal discount = 0m
     )
     {
-        var document = ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionDocument.Create(
-            TenantId,
-            CompanyId,
-            BranchId,
-            ERP.Domain.Modules.Purchases.PurchaseReception.Enums.PurchaseReceptionSourceDocType.Invoice,
-            "1791352688001",
-            "Proveedor S.A.",
-            Guid.NewGuid(),
-            new string('1', 49),
-            "001-001-000000001",
-            new DateOnly(2026, 7, 1),
-            null,
-            10m,
-            1.5m,
-            11.5m,
-            UserId
-        );
-        var line = ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionLine.Create(
-            document.Id,
-            TenantId,
-            "Línea XML",
-            quantity,
-            xmlUnitPrice,
-            vatCode: "10",
-            taxCode: "2",
-            vatPercentage: 15m,
-            taxValue: 0.15m,
-            discountPct: discountPct,
-            discount: discount,
-            lineSubtotal: quantity * xmlUnitPrice - discount,
-            totalLine: quantity * xmlUnitPrice - discount
-        );
+        var document =
+            ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionDocument.Create(
+                TenantId,
+                CompanyId,
+                BranchId,
+                ERP.Domain
+                    .Modules
+                    .Purchases
+                    .PurchaseReception
+                    .Enums
+                    .PurchaseReceptionSourceDocType
+                    .Invoice,
+                "1791352688001",
+                "Proveedor S.A.",
+                Guid.NewGuid(),
+                new string('1', 49),
+                "001-001-000000001",
+                new DateOnly(2026, 7, 1),
+                null,
+                10m,
+                1.5m,
+                11.5m,
+                UserId
+            );
+        var line =
+            ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionLine.Create(
+                document.Id,
+                TenantId,
+                "Línea XML",
+                quantity,
+                xmlUnitPrice,
+                vatCode: "10",
+                taxCode: "2",
+                vatPercentage: 15m,
+                taxValue: 0.15m,
+                discountPct: discountPct,
+                discount: discount,
+                lineSubtotal: quantity * xmlUnitPrice - discount,
+                totalLine: quantity * xmlUnitPrice - discount
+            );
         document.AttachSriAuthorization(
             "AUTH-1",
             DateTime.UtcNow,
@@ -381,14 +440,21 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
             docTypeCode: "01",
             sriPaymentMethodCode: "20",
             processing: new ERP.Domain.Modules.Purchases.PurchaseReception.Models.PurchaseReceptionProcessingOutcome(
-                ERP.Domain.Modules.Purchases.PurchaseReception.Enums.PurchaseReceptionProcessingStatus.Processed,
+                ERP.Domain
+                    .Modules
+                    .Purchases
+                    .PurchaseReception
+                    .Enums
+                    .PurchaseReceptionProcessingStatus
+                    .Processed,
                 1,
                 1,
                 null
             )
         );
         var repo = new Mock<IPurchaseReceptionDocumentRepository>();
-        repo.Setup(r => r.GetByLineIdAsync(TenantId, line.Id, It.IsAny<CancellationToken>())).ReturnsAsync(document);
+        repo.Setup(r => r.GetByLineIdAsync(TenantId, line.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
         return (repo.Object, line.Id);
     }
 
@@ -399,7 +465,14 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
 
         var saved = await CreateWithLineAsync(
             2,
-            new PurchaseLineInput(null, "XML", 1m, 1.234567m, "10", PurchaseReceptionLineId: lineId),
+            new PurchaseLineInput(
+                null,
+                "XML",
+                1m,
+                1.234567m,
+                "10",
+                PurchaseReceptionLineId: lineId
+            ),
             repo
         );
 
@@ -413,7 +486,14 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
 
         var saved = await CreateWithLineAsync(
             4,
-            new PurchaseLineInput(null, "XML editada", 1m, 2.3456789m, "10", PurchaseReceptionLineId: lineId),
+            new PurchaseLineInput(
+                null,
+                "XML editada",
+                1m,
+                2.3456789m,
+                "10",
+                PurchaseReceptionLineId: lineId
+            ),
             repo
         );
 
@@ -428,7 +508,14 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
         // Editado a 1.2346 (= redondeo efectivo del original a 4): queda exactamente en 1.2346.
         var saved = await CreateWithLineAsync(
             4,
-            new PurchaseLineInput(null, "XML editada", 1m, 1.2346m, "10", PurchaseReceptionLineId: lineId),
+            new PurchaseLineInput(
+                null,
+                "XML editada",
+                1m,
+                1.2346m,
+                "10",
+                PurchaseReceptionLineId: lineId
+            ),
             repo
         );
 
@@ -440,7 +527,14 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
     {
         var saved = await CreateWithLineAsync(
             2,
-            new PurchaseLineInput(null, "XML", 1m, 1.234567m, "10", PurchaseReceptionLineId: Guid.NewGuid())
+            new PurchaseLineInput(
+                null,
+                "XML",
+                1m,
+                1.234567m,
+                "10",
+                PurchaseReceptionLineId: Guid.NewGuid()
+            )
         );
 
         saved.Lines.Single().UnitPrice.Should().Be(1.23m);
@@ -476,7 +570,8 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
         );
 
         var repo = new Mock<IPurchaseInvoiceRepository>();
-        repo.Setup(r => r.GetByIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>())).ReturnsAsync(invoice);
+        repo.Setup(r => r.GetByIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(invoice);
 
         var handler = new UpdatePurchaseDraftHandler(
             repo.Object,
@@ -511,7 +606,10 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
     [Fact]
     public async Task Update_linea_manual_editada_normaliza_a_purchaseUnitPriceDecimals()
     {
-        var invoice = await UpdateWithLineAsync(4, new PurchaseLineInput(null, "Manual", 1m, 2.345678m, "10"));
+        var invoice = await UpdateWithLineAsync(
+            4,
+            new PurchaseLineInput(null, "Manual", 1m, 2.345678m, "10")
+        );
 
         invoice.Lines.Single().UnitPrice.Should().Be(2.3457m);
     }
@@ -523,7 +621,14 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
 
         var invoice = await UpdateWithLineAsync(
             4,
-            new PurchaseLineInput(null, "XML editada", 1m, 2.3456789m, "10", PurchaseReceptionLineId: lineId),
+            new PurchaseLineInput(
+                null,
+                "XML editada",
+                1m,
+                2.3456789m,
+                "10",
+                PurchaseReceptionLineId: lineId
+            ),
             repo
         );
 
@@ -538,11 +643,24 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
     [Fact]
     public async Task Create_linea_XML_sin_editar_conserva_descuento_exacto_y_calcula_IVA_sobre_la_base_XML()
     {
-        var (repo, lineId) = ReceptionWithLine(100m, quantity: 1000m, discountPct: 1.23m, discount: 1234.56m);
+        var (repo, lineId) = ReceptionWithLine(
+            100m,
+            quantity: 1000m,
+            discountPct: 1.23m,
+            discount: 1234.56m
+        );
 
         var saved = await CreateWithLineAsync(
             4,
-            new PurchaseLineInput(null, "XML", 1000m, 100m, "10", DiscountPct: 1.23m, PurchaseReceptionLineId: lineId),
+            new PurchaseLineInput(
+                null,
+                "XML",
+                1000m,
+                100m,
+                "10",
+                DiscountPct: 1.23m,
+                PurchaseReceptionLineId: lineId
+            ),
             repo
         );
 
@@ -556,11 +674,24 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
     [Fact]
     public async Task Update_linea_XML_sin_editar_conserva_descuento_exacto_y_calcula_IVA_sobre_la_base_XML()
     {
-        var (repo, lineId) = ReceptionWithLine(100m, quantity: 1000m, discountPct: 1.23m, discount: 1234.56m);
+        var (repo, lineId) = ReceptionWithLine(
+            100m,
+            quantity: 1000m,
+            discountPct: 1.23m,
+            discount: 1234.56m
+        );
 
         var invoice = await UpdateWithLineAsync(
             4,
-            new PurchaseLineInput(null, "XML", 1000m, 100m, "10", DiscountPct: 1.23m, PurchaseReceptionLineId: lineId),
+            new PurchaseLineInput(
+                null,
+                "XML",
+                1000m,
+                100m,
+                "10",
+                DiscountPct: 1.23m,
+                PurchaseReceptionLineId: lineId
+            ),
             repo
         );
 
@@ -574,11 +705,24 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
     [Fact]
     public async Task Linea_XML_con_cantidad_editada_recalcula_el_descuento_desde_el_porcentaje()
     {
-        var (repo, lineId) = ReceptionWithLine(100m, quantity: 1000m, discountPct: 1.23m, discount: 1234.56m);
+        var (repo, lineId) = ReceptionWithLine(
+            100m,
+            quantity: 1000m,
+            discountPct: 1.23m,
+            discount: 1234.56m
+        );
 
         var saved = await CreateWithLineAsync(
             4,
-            new PurchaseLineInput(null, "XML editada", 500m, 100m, "10", DiscountPct: 1.23m, PurchaseReceptionLineId: lineId),
+            new PurchaseLineInput(
+                null,
+                "XML editada",
+                500m,
+                100m,
+                "10",
+                DiscountPct: 1.23m,
+                PurchaseReceptionLineId: lineId
+            ),
             repo
         );
 
@@ -610,7 +754,10 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
     [Fact]
     public async Task Linea_manual_sin_descuento_calcula_IVA_sobre_el_subtotal()
     {
-        var saved = await CreateWithLineAsync(4, new PurchaseLineInput(null, "Manual", 2m, 50m, "10"));
+        var saved = await CreateWithLineAsync(
+            4,
+            new PurchaseLineInput(null, "Manual", 2m, 50m, "10")
+        );
 
         var line = saved.Lines.Single();
         line.DiscountAmount.Should().Be(0m);

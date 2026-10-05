@@ -53,9 +53,7 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
             // fixture ejercitan el fallback al header invoice.SriPaymentMethodCode (comportamiento
             // preexistente antes de SALES-PAYMENT-METHOD-SRI-MAPPING-SSOT-01).
             PaymentMethodRepo
-                .Setup(r =>
-                    r.ListAsync(TenantId, It.IsAny<bool>(), It.IsAny<CancellationToken>())
-                )
+                .Setup(r => r.ListAsync(TenantId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Array.Empty<PaymentMethod>());
         }
 
@@ -98,15 +96,26 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
                 .SetValue(emissionPoint, establishment);
 
             EmissionPointRepo
-                .Setup(r => r.GetByIdAsync(EmissionPointId, TenantId, It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetByIdAsync(EmissionPointId, TenantId, It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(emissionPoint);
             EstablishmentRepo
-                .Setup(r => r.GetMainByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetMainByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(establishment);
             CompanyRepo
-                .Setup(r => r.GetByIdForTenantAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetByIdForTenantAsync(CompanyId, TenantId, It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(
-                    Company.CreateManaged(TenantId, "1790012345001", "Empresa Test S.A.", createdBy: UserId)
+                    Company.CreateManaged(
+                        TenantId,
+                        "1790012345001",
+                        "Empresa Test S.A.",
+                        createdBy: UserId
+                    )
                 );
             SriSettingsRepo
                 .Setup(r => r.GetByCompanyIdAsync(CompanyId, It.IsAny<CancellationToken>()))
@@ -324,25 +333,31 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
         return line;
     }
 
-    private static void AddIrbpnr(SalesInvoiceDetail line, string code, decimal? rate, decimal amount) =>
-        line.ReplaceTaxes(
-            [
-                SalesInvoiceDetailTax.Create(
-                    line.Id,
-                    TenantId,
-                    "5",
-                    code,
-                    "IRBPNR",
-                    rate,
-                    SriTaxCalculationType.Specific,
-                    line.TaxableBase,
-                    amount,
-                    SalesTaxSource.Calculated
-                ),
-            ]
-        );
+    private static void AddIrbpnr(
+        SalesInvoiceDetail line,
+        string code,
+        decimal? rate,
+        decimal amount
+    ) =>
+        line.ReplaceTaxes([
+            SalesInvoiceDetailTax.Create(
+                line.Id,
+                TenantId,
+                "5",
+                code,
+                "IRBPNR",
+                rate,
+                SriTaxCalculationType.Specific,
+                line.TaxableBase,
+                amount,
+                SalesTaxSource.Calculated
+            ),
+        ]);
 
-    private static SalesInvoice CreateAuthorizedInvoice(string invoiceNumber, SalesInvoiceDetail line)
+    private static SalesInvoice CreateAuthorizedInvoice(
+        string invoiceNumber,
+        SalesInvoiceDetail line
+    )
     {
         var customer = CustomerSnapshot.Create("Cliente Test", "1710034065", "05");
         var paymentTerm = PaymentTermSnapshot.Create(PaymentTermId, "Contado", 1, 0);
@@ -380,11 +395,18 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
     {
         var line = CreateAuthorizedLine(
             SalesInvoice.CreateDraft(
-                TenantId, CompanyId, BranchId, CustomerId,
+                TenantId,
+                CompanyId,
+                BranchId,
+                CustomerId,
                 CustomerSnapshot.Create("Cliente Test", "1710034065", "05"),
-                "001-001-000000060", new DateOnly(2026, 7, 20), UserId,
+                "001-001-000000060",
+                new DateOnly(2026, 7, 20),
+                UserId,
                 PaymentTermSnapshot.Create(PaymentTermId, "Contado", 1, 0),
-                cashSessionId: CashSessionId, sriPaymentMethodCode: "01", emissionPointId: EmissionPointId,
+                cashSessionId: CashSessionId,
+                sriPaymentMethodCode: "01",
+                emissionPointId: EmissionPointId,
                 emissionType: EmissionType.Electronic
             ),
             quantity: 5m,
@@ -412,11 +434,18 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
     public async Task Factura_con_IVA_mas_ICE_Percentage_produce_VAT_e_ICE()
     {
         var draft = SalesInvoice.CreateDraft(
-            TenantId, CompanyId, BranchId, CustomerId,
+            TenantId,
+            CompanyId,
+            BranchId,
+            CustomerId,
             CustomerSnapshot.Create("Cliente Test", "1710034065", "05"),
-            "001-001-000000061", new DateOnly(2026, 7, 20), UserId,
+            "001-001-000000061",
+            new DateOnly(2026, 7, 20),
+            UserId,
             PaymentTermSnapshot.Create(PaymentTermId, "Contado", 1, 0),
-            cashSessionId: CashSessionId, sriPaymentMethodCode: "01", emissionPointId: EmissionPointId,
+            cashSessionId: CashSessionId,
+            sriPaymentMethodCode: "01",
+            emissionPointId: EmissionPointId,
             emissionType: EmissionType.Electronic
         );
         var line = CreateAuthorizedLine(
@@ -448,11 +477,18 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
     public async Task Factura_con_IVA_mas_ICE_Specific_conserva_el_monto_exacto()
     {
         var draft = SalesInvoice.CreateDraft(
-            TenantId, CompanyId, BranchId, CustomerId,
+            TenantId,
+            CompanyId,
+            BranchId,
+            CustomerId,
             CustomerSnapshot.Create("Cliente Test", "1710034065", "05"),
-            "001-001-000000062", new DateOnly(2026, 7, 20), UserId,
+            "001-001-000000062",
+            new DateOnly(2026, 7, 20),
+            UserId,
             PaymentTermSnapshot.Create(PaymentTermId, "Contado", 1, 0),
-            cashSessionId: CashSessionId, sriPaymentMethodCode: "01", emissionPointId: EmissionPointId,
+            cashSessionId: CashSessionId,
+            sriPaymentMethodCode: "01",
+            emissionPointId: EmissionPointId,
             emissionType: EmissionType.Electronic
         );
         var line = CreateAuthorizedLine(
@@ -475,18 +511,26 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
         var detail = result.Value!.Details.Should().ContainSingle().Subject;
         var ice = detail.Taxes.Should().ContainSingle(t => t.TaxCode == "ICE").Subject;
         ice.TaxPercentageCode.Should().Be("3053");
-        ice.TaxAmount.Should().Be(5m, "un ICE específico nunca se recalcula desde una tarifa porcentual");
+        ice.TaxAmount.Should()
+            .Be(5m, "un ICE específico nunca se recalcula desde una tarifa porcentual");
     }
 
     [Fact]
     public async Task Factura_con_IVA_mas_IRBPNR_produce_VAT_e_IRBPNR()
     {
         var draft = SalesInvoice.CreateDraft(
-            TenantId, CompanyId, BranchId, CustomerId,
+            TenantId,
+            CompanyId,
+            BranchId,
+            CustomerId,
             CustomerSnapshot.Create("Cliente Test", "1710034065", "05"),
-            "001-001-000000063", new DateOnly(2026, 7, 20), UserId,
+            "001-001-000000063",
+            new DateOnly(2026, 7, 20),
+            UserId,
             PaymentTermSnapshot.Create(PaymentTermId, "Contado", 1, 0),
-            cashSessionId: CashSessionId, sriPaymentMethodCode: "01", emissionPointId: EmissionPointId,
+            cashSessionId: CashSessionId,
+            sriPaymentMethodCode: "01",
+            emissionPointId: EmissionPointId,
             emissionType: EmissionType.Electronic
         );
         var line = CreateAuthorizedLine(draft, quantity: 24m, unitPrice: 0.5837m);
@@ -511,11 +555,18 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
     public async Task Factura_con_IVA_ICE_e_IRBPNR_produce_los_3_impuestos()
     {
         var draft = SalesInvoice.CreateDraft(
-            TenantId, CompanyId, BranchId, CustomerId,
+            TenantId,
+            CompanyId,
+            BranchId,
+            CustomerId,
             CustomerSnapshot.Create("Cliente Test", "1710034065", "05"),
-            "001-001-000000064", new DateOnly(2026, 7, 20), UserId,
+            "001-001-000000064",
+            new DateOnly(2026, 7, 20),
+            UserId,
             PaymentTermSnapshot.Create(PaymentTermId, "Contado", 1, 0),
-            cashSessionId: CashSessionId, sriPaymentMethodCode: "01", emissionPointId: EmissionPointId,
+            cashSessionId: CashSessionId,
+            sriPaymentMethodCode: "01",
+            emissionPointId: EmissionPointId,
             emissionType: EmissionType.Electronic
         );
         var line = CreateAuthorizedLine(
@@ -537,7 +588,10 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
         result.IsSuccess.Should().BeTrue(result.Error);
         var detail = result.Value!.Details.Should().ContainSingle().Subject;
         detail.Taxes.Should().HaveCount(3);
-        detail.Taxes.Select(t => t.TaxCode).Should().BeEquivalentTo(new[] { "VAT", "ICE", "IRBPNR" });
+        detail
+            .Taxes.Select(t => t.TaxCode)
+            .Should()
+            .BeEquivalentTo(new[] { "VAT", "ICE", "IRBPNR" });
         // Orden VAT → ICE → IRBPNR, mismo orden en que se sincronizan/fijan en el dominio.
         detail.Taxes.Select(t => t.TaxCode).Should().ContainInOrder("VAT", "ICE", "IRBPNR");
     }
@@ -581,7 +635,16 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
         invoice.ReplaceLines(new[] { line }, UserId);
 
         var salesPayments = payments
-            .Select(p => SalesInvoicePayment.Create(invoice.Id, TenantId, p.PaymentMethodId, p.Code, p.Name, p.Amount))
+            .Select(p =>
+                SalesInvoicePayment.Create(
+                    invoice.Id,
+                    TenantId,
+                    p.PaymentMethodId,
+                    p.Code,
+                    p.Name,
+                    p.Amount
+                )
+            )
             .ToList();
         invoice.ReplacePayments(salesPayments, UserId);
         invoice.Authorize(UserId);
@@ -592,7 +655,13 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
     public async Task GetDataAsync_efectivo_deriva_SRI_01_desde_mapeo_de_PaymentMethod()
     {
         var cash = PaymentMethod.Create(
-            TenantId, "EFECTIVO", "Efectivo", false, false, 1, UserId,
+            TenantId,
+            "EFECTIVO",
+            "Efectivo",
+            false,
+            false,
+            1,
+            UserId,
             sriPaymentMethodCode: "01"
         );
         var invoice = BuildAuthorizedInvoiceWithPayments(
@@ -602,8 +671,9 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
         );
         var m = new Mocks();
         m.SeedHappyPath(invoice);
-        m.PaymentMethodRepo
-            .Setup(r => r.ListAsync(TenantId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+        m.PaymentMethodRepo.Setup(r =>
+                r.ListAsync(TenantId, It.IsAny<bool>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { cash });
 
         var result = await m.BuildProvider()
@@ -617,7 +687,13 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
     public async Task GetDataAsync_tarjeta_credito_deriva_SRI_19()
     {
         var card = PaymentMethod.Create(
-            TenantId, "TARJETA", "Tarjeta de Crédito", true, false, 2, UserId,
+            TenantId,
+            "TARJETA",
+            "Tarjeta de Crédito",
+            true,
+            false,
+            2,
+            UserId,
             sriPaymentMethodCode: "19"
         );
         var invoice = BuildAuthorizedInvoiceWithPayments(
@@ -627,8 +703,9 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
         );
         var m = new Mocks();
         m.SeedHappyPath(invoice);
-        m.PaymentMethodRepo
-            .Setup(r => r.ListAsync(TenantId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+        m.PaymentMethodRepo.Setup(r =>
+                r.ListAsync(TenantId, It.IsAny<bool>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { card });
 
         var result = await m.BuildProvider()
@@ -642,11 +719,23 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
     public async Task GetDataAsync_pagos_mixtos_generan_formaPago_separada_por_linea()
     {
         var cash = PaymentMethod.Create(
-            TenantId, "EFECTIVO", "Efectivo", false, false, 1, UserId,
+            TenantId,
+            "EFECTIVO",
+            "Efectivo",
+            false,
+            false,
+            1,
+            UserId,
             sriPaymentMethodCode: "01"
         );
         var transfer = PaymentMethod.Create(
-            TenantId, "TRANSFERENCIA", "Transferencia", true, false, 3, UserId,
+            TenantId,
+            "TRANSFERENCIA",
+            "Transferencia",
+            true,
+            false,
+            3,
+            UserId,
             sriPaymentMethodCode: "20"
         );
         var invoice = BuildAuthorizedInvoiceWithPayments(
@@ -657,8 +746,9 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
         );
         var m = new Mocks();
         m.SeedHappyPath(invoice);
-        m.PaymentMethodRepo
-            .Setup(r => r.ListAsync(TenantId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+        m.PaymentMethodRepo.Setup(r =>
+                r.ListAsync(TenantId, It.IsAny<bool>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { cash, transfer });
 
         var result = await m.BuildProvider()
@@ -682,8 +772,9 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
         );
         var m = new Mocks();
         m.SeedHappyPath(invoice);
-        m.PaymentMethodRepo
-            .Setup(r => r.ListAsync(TenantId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+        m.PaymentMethodRepo.Setup(r =>
+                r.ListAsync(TenantId, It.IsAny<bool>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { credito });
 
         var result = await m.BuildProvider()
@@ -713,8 +804,9 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
 
         var m = new Mocks();
         m.SeedHappyPath(invoice);
-        m.PaymentMethodRepo
-            .Setup(r => r.ListAsync(TenantId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+        m.PaymentMethodRepo.Setup(r =>
+                r.ListAsync(TenantId, It.IsAny<bool>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { otro });
 
         var result = await m.BuildProvider()
@@ -728,7 +820,13 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
     public async Task GetDataAsync_no_cruza_tenant_al_resolver_PaymentMethod()
     {
         var otherTenantCash = PaymentMethod.Create(
-            Guid.NewGuid(), "EFECTIVO", "Efectivo", false, false, 1, UserId,
+            Guid.NewGuid(),
+            "EFECTIVO",
+            "Efectivo",
+            false,
+            false,
+            1,
+            UserId,
             sriPaymentMethodCode: "99"
         );
         var invoice = BuildAuthorizedInvoiceWithPayments(
@@ -755,11 +853,18 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
     public async Task Linea_sin_IRBPNR_no_genera_nodo_IRBPNR_falso()
     {
         var draft = SalesInvoice.CreateDraft(
-            TenantId, CompanyId, BranchId, CustomerId,
+            TenantId,
+            CompanyId,
+            BranchId,
+            CustomerId,
             CustomerSnapshot.Create("Cliente Test", "1710034065", "05"),
-            "001-001-000000065", new DateOnly(2026, 7, 20), UserId,
+            "001-001-000000065",
+            new DateOnly(2026, 7, 20),
+            UserId,
             PaymentTermSnapshot.Create(PaymentTermId, "Contado", 1, 0),
-            cashSessionId: CashSessionId, sriPaymentMethodCode: "01", emissionPointId: EmissionPointId,
+            cashSessionId: CashSessionId,
+            sriPaymentMethodCode: "01",
+            emissionPointId: EmissionPointId,
             emissionType: EmissionType.Electronic
         );
         var line = CreateAuthorizedLine(

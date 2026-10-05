@@ -44,7 +44,10 @@ internal sealed class AlwaysTodayCompanyClock : ICompanyClock
         CancellationToken ct = default
     ) =>
         Task.FromResult(
-            CompanyTimeZone.DayUtcRange(day, CompanyTimeZone.Resolve(CompanyTimeZone.DefaultTimezoneId))
+            CompanyTimeZone.DayUtcRange(
+                day,
+                CompanyTimeZone.Resolve(CompanyTimeZone.DefaultTimezoneId)
+            )
         );
 
     public Task<DateTime> CompanyLocalToUtcAsync(
@@ -54,6 +57,9 @@ internal sealed class AlwaysTodayCompanyClock : ICompanyClock
         CancellationToken ct = default
     ) =>
         Task.FromResult(
-            CompanyTimeZone.ToUtc(companyLocal, CompanyTimeZone.Resolve(CompanyTimeZone.DefaultTimezoneId))
+            CompanyTimeZone.ToUtc(
+                companyLocal,
+                CompanyTimeZone.Resolve(CompanyTimeZone.DefaultTimezoneId)
+            )
         );
 }

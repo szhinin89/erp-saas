@@ -29,13 +29,22 @@ public sealed class ExpensePaymentSchedule : IMustHaveTenant
     )
     {
         if (expenseDocumentId == Guid.Empty)
-            throw new ArgumentException("El documento de gasto es obligatorio.", nameof(expenseDocumentId));
+            throw new ArgumentException(
+                "El documento de gasto es obligatorio.",
+                nameof(expenseDocumentId)
+            );
         if (tenantId == Guid.Empty)
             throw new ArgumentException("El tenant es obligatorio.", nameof(tenantId));
         if (installmentNumber < 1)
-            throw new ArgumentException("El número de cuota debe ser >= 1.", nameof(installmentNumber));
+            throw new ArgumentException(
+                "El número de cuota debe ser >= 1.",
+                nameof(installmentNumber)
+            );
         if (amount <= 0)
-            throw new ArgumentException("El monto de la cuota debe ser mayor a cero.", nameof(amount));
+            throw new ArgumentException(
+                "El monto de la cuota debe ser mayor a cero.",
+                nameof(amount)
+            );
 
         return new ExpensePaymentSchedule
         {

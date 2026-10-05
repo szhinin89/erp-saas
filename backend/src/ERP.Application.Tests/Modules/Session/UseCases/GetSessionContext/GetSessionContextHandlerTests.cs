@@ -105,12 +105,7 @@ public sealed class GetSessionContextHandlerTests
             companyId: companyId
         );
 
-    private static (
-        Fixture f,
-        Guid userId,
-        Tenant tenant,
-        Company companyA
-    ) BuildBaseContext()
+    private static (Fixture f, Guid userId, Tenant tenant, Company companyA) BuildBaseContext()
     {
         var f = new Fixture();
         var userId = Guid.NewGuid();
@@ -256,7 +251,9 @@ public sealed class GetSessionContextHandlerTests
                     It.IsAny<CancellationToken>()
                 )
             )
-            .ReturnsAsync(Result<ERP.Application.Access.DTOs.CompanyUserPreferencesDto?>.Success(null));
+            .ReturnsAsync(
+                Result<ERP.Application.Access.DTOs.CompanyUserPreferencesDto?>.Success(null)
+            );
         f.BranchRepo.Setup(r =>
                 r.GetByCompanyAsync(
                     tenant.Id,
@@ -323,7 +320,9 @@ public sealed class GetSessionContextHandlerTests
                     It.IsAny<CancellationToken>()
                 )
             )
-            .ReturnsAsync(Result<ERP.Application.Access.DTOs.CompanyUserPreferencesDto?>.Success(null));
+            .ReturnsAsync(
+                Result<ERP.Application.Access.DTOs.CompanyUserPreferencesDto?>.Success(null)
+            );
         f.BranchRepo.Setup(r =>
                 r.GetByCompanyAsync(
                     tenant.Id,
@@ -371,8 +370,9 @@ public sealed class GetSessionContextHandlerTests
                 a.GetCompanyUserMembershipAsync(companyA.Id, userId, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync((CompanyUserMembership?)null);
-        f.OperatorAccessPolicy
-            .Setup(o => o.IsAuthorizedOperatorAsync(It.IsAny<CancellationToken>()))
+        f.OperatorAccessPolicy.Setup(o =>
+                o.IsAuthorizedOperatorAsync(It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(true);
 
         var handler = f.BuildHandler();
@@ -418,8 +418,9 @@ public sealed class GetSessionContextHandlerTests
                 )
             )
             .ReturnsAsync(branch);
-        f.OperatorAccessPolicy
-            .Setup(o => o.IsAuthorizedOperatorAsync(It.IsAny<CancellationToken>()))
+        f.OperatorAccessPolicy.Setup(o =>
+                o.IsAuthorizedOperatorAsync(It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(true);
 
         var handler = f.BuildHandler();

@@ -61,8 +61,9 @@ public sealed class AccountUseCasesTests
         var grandchild = NewAccount("1.1.01", "Caja", child.Id);
 
         var m = new Mocks();
-        m.Accounts
-            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new List<Account> { root, child, grandchild });
 
         var handler = new GetAccountsHandler(m.Accounts.Object, m.Tenant.Object, m.Company.Object);
@@ -82,11 +83,13 @@ public sealed class AccountUseCasesTests
     public async Task CreateAccount_rechaza_padre_inexistente()
     {
         var m = new Mocks();
-        m.Accounts
-            .Setup(r => r.FindByCodeAsync(TenantId, CompanyId, "1.1", It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.FindByCodeAsync(TenantId, CompanyId, "1.1", It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((Account?)null);
-        m.Accounts
-            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new List<Account>());
 
         var handler = new CreateAccountHandler(
@@ -97,12 +100,22 @@ public sealed class AccountUseCasesTests
             Mock.Of<ERP.Application.Common.Persistence.IDatabaseExceptionTranslator>()
         );
         var result = await handler.Handle(
-            new CreateAccountCommand("1.1", "x", Guid.NewGuid(), AccountType.Asset, AccountNature.Debit, true),
+            new CreateAccountCommand(
+                "1.1",
+                "x",
+                Guid.NewGuid(),
+                AccountType.Asset,
+                AccountNature.Debit,
+                true
+            ),
             CancellationToken.None
         );
 
         result.IsSuccess.Should().BeFalse();
-        m.Accounts.Verify(r => r.AddAsync(It.IsAny<Account>(), It.IsAny<CancellationToken>()), Times.Never);
+        m.Accounts.Verify(
+            r => r.AddAsync(It.IsAny<Account>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     /// <summary>
@@ -115,11 +128,13 @@ public sealed class AccountUseCasesTests
     {
         var unrelated = NewAccount("2", "Pasivo");
         var m = new Mocks();
-        m.Accounts
-            .Setup(r => r.FindByCodeAsync(TenantId, CompanyId, "1.1", It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.FindByCodeAsync(TenantId, CompanyId, "1.1", It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((Account?)null);
-        m.Accounts
-            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new List<Account> { unrelated });
 
         var handler = new CreateAccountHandler(
@@ -130,23 +145,35 @@ public sealed class AccountUseCasesTests
             Mock.Of<ERP.Application.Common.Persistence.IDatabaseExceptionTranslator>()
         );
         var result = await handler.Handle(
-            new CreateAccountCommand("1.1", "x", unrelated.Id, AccountType.Asset, AccountNature.Debit, true),
+            new CreateAccountCommand(
+                "1.1",
+                "x",
+                unrelated.Id,
+                AccountType.Asset,
+                AccountNature.Debit,
+                true
+            ),
             CancellationToken.None
         );
 
         result.IsSuccess.Should().BeFalse();
-        m.Accounts.Verify(r => r.AddAsync(It.IsAny<Account>(), It.IsAny<CancellationToken>()), Times.Never);
+        m.Accounts.Verify(
+            r => r.AddAsync(It.IsAny<Account>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
     public async Task CreateAccount_rechaza_codigo_raiz_con_padre_indicado()
     {
         var m = new Mocks();
-        m.Accounts
-            .Setup(r => r.FindByCodeAsync(TenantId, CompanyId, "9", It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.FindByCodeAsync(TenantId, CompanyId, "9", It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((Account?)null);
-        m.Accounts
-            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new List<Account>());
 
         var handler = new CreateAccountHandler(
@@ -157,7 +184,14 @@ public sealed class AccountUseCasesTests
             Mock.Of<ERP.Application.Common.Persistence.IDatabaseExceptionTranslator>()
         );
         var result = await handler.Handle(
-            new CreateAccountCommand("9", "x", Guid.NewGuid(), AccountType.Asset, AccountNature.Debit, false),
+            new CreateAccountCommand(
+                "9",
+                "x",
+                Guid.NewGuid(),
+                AccountType.Asset,
+                AccountNature.Debit,
+                false
+            ),
             CancellationToken.None
         );
 
@@ -171,14 +205,21 @@ public sealed class AccountUseCasesTests
         var account = NewAccount("1.1", "Activo Corriente");
 
         var m = new Mocks();
-        m.Accounts
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, account.Id, It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, account.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(account);
-        m.Accounts
-            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new List<Account> { unrelated, account });
 
-        var handler = new UpdateAccountHandler(m.Accounts.Object, m.Tenant.Object, m.Company.Object, m.User.Object);
+        var handler = new UpdateAccountHandler(
+            m.Accounts.Object,
+            m.Tenant.Object,
+            m.Company.Object,
+            m.User.Object
+        );
         var result = await handler.Handle(
             new UpdateAccountCommand(account.Id, "Activo Corriente", unrelated.Id, false),
             CancellationToken.None
@@ -195,14 +236,21 @@ public sealed class AccountUseCasesTests
         var account = NewAccount("1.1", "Activo Corriente", parent.Id);
 
         var m = new Mocks();
-        m.Accounts
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, account.Id, It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, account.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(account);
-        m.Accounts
-            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new List<Account> { parent, account });
 
-        var handler = new UpdateAccountHandler(m.Accounts.Object, m.Tenant.Object, m.Company.Object, m.User.Object);
+        var handler = new UpdateAccountHandler(
+            m.Accounts.Object,
+            m.Tenant.Object,
+            m.Company.Object,
+            m.User.Object
+        );
         // Intenta dejar la cuenta "1.1" sin padre — inválido, su código exige padre "1".
         var result = await handler.Handle(
             new UpdateAccountCommand(account.Id, "Activo Corriente", null, false),
@@ -219,14 +267,21 @@ public sealed class AccountUseCasesTests
         var child = NewAccount("1.1", "Activo Corriente", root.Id);
 
         var m = new Mocks();
-        m.Accounts
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, root.Id, It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, root.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(root);
-        m.Accounts
-            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new List<Account> { root, child });
 
-        var handler = new UpdateAccountHandler(m.Accounts.Object, m.Tenant.Object, m.Company.Object, m.User.Object);
+        var handler = new UpdateAccountHandler(
+            m.Accounts.Object,
+            m.Tenant.Object,
+            m.Company.Object,
+            m.User.Object
+        );
         // Intenta poner a "root" como hijo de su propio hijo "child" — ciclo.
         var result = await handler.Handle(
             new UpdateAccountCommand(root.Id, "Activo", child.Id, true),
@@ -242,14 +297,21 @@ public sealed class AccountUseCasesTests
     {
         var account = NewAccount("1", "Activo");
         var m = new Mocks();
-        m.Accounts
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, account.Id, It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, account.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(account);
-        m.Accounts
-            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new List<Account> { account });
 
-        var handler = new UpdateAccountHandler(m.Accounts.Object, m.Tenant.Object, m.Company.Object, m.User.Object);
+        var handler = new UpdateAccountHandler(
+            m.Accounts.Object,
+            m.Tenant.Object,
+            m.Company.Object,
+            m.User.Object
+        );
         var result = await handler.Handle(
             new UpdateAccountCommand(account.Id, "Activo", account.Id, true),
             CancellationToken.None
@@ -265,14 +327,21 @@ public sealed class AccountUseCasesTests
         var account = NewAccount("1.1", "Viejo nombre");
 
         var m = new Mocks();
-        m.Accounts
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, account.Id, It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, account.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(account);
-        m.Accounts
-            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new List<Account> { parent, account });
 
-        var handler = new UpdateAccountHandler(m.Accounts.Object, m.Tenant.Object, m.Company.Object, m.User.Object);
+        var handler = new UpdateAccountHandler(
+            m.Accounts.Object,
+            m.Tenant.Object,
+            m.Company.Object,
+            m.User.Object
+        );
         var result = await handler.Handle(
             new UpdateAccountCommand(account.Id, "Nuevo nombre", parent.Id, false),
             CancellationToken.None
@@ -289,14 +358,25 @@ public sealed class AccountUseCasesTests
     public async Task DisableAccount_bloqueado_si_regla_activa_la_referencia()
     {
         var account = NewAccount("4.1.01", "Ventas");
-        var rule = PostingRule.Create(TenantId, CompanyId, "Sales", "InvoiceIssued", null, account.Id, null, CreatedBy);
+        var rule = PostingRule.Create(
+            TenantId,
+            CompanyId,
+            "Sales",
+            "InvoiceIssued",
+            null,
+            account.Id,
+            null,
+            CreatedBy
+        );
 
         var m = new Mocks();
-        m.Accounts
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, account.Id, It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, account.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(account);
-        m.PostingRules
-            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+        m.PostingRules.Setup(r =>
+                r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new List<PostingRule> { rule });
 
         var handler = new DisableAccountHandler(
@@ -306,7 +386,10 @@ public sealed class AccountUseCasesTests
             m.Company.Object,
             m.User.Object
         );
-        var result = await handler.Handle(new DisableAccountCommand(account.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new DisableAccountCommand(account.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.Conflict);
@@ -319,11 +402,13 @@ public sealed class AccountUseCasesTests
     {
         var account = NewAccount("4.1.01", "Ventas");
         var m = new Mocks();
-        m.Accounts
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, account.Id, It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, account.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(account);
-        m.Accounts
-            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new List<Account> { account });
 
         var handler = new DisableAccountHandler(
@@ -333,7 +418,10 @@ public sealed class AccountUseCasesTests
             m.Company.Object,
             m.User.Object
         );
-        var result = await handler.Handle(new DisableAccountCommand(account.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new DisableAccountCommand(account.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         account.IsActive.Should().BeFalse();
@@ -344,15 +432,24 @@ public sealed class AccountUseCasesTests
     {
         var account = NewAccount("1.1.01", "Caja");
         var m = new Mocks();
-        m.Accounts
-            .Setup(r => r.FindByCodeAsync(TenantId, CompanyId, "1.1.01", It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.FindByCodeAsync(TenantId, CompanyId, "1.1.01", It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(account);
-        m.Accounts
-            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+        m.Accounts.Setup(r =>
+                r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new List<Account> { account });
 
-        var handler = new GetAccountByCodeHandler(m.Accounts.Object, m.Tenant.Object, m.Company.Object);
-        var result = await handler.Handle(new GetAccountByCodeQuery("1.1.01"), CancellationToken.None);
+        var handler = new GetAccountByCodeHandler(
+            m.Accounts.Object,
+            m.Tenant.Object,
+            m.Company.Object
+        );
+        var result = await handler.Handle(
+            new GetAccountByCodeQuery("1.1.01"),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Id.Should().Be(account.Id);

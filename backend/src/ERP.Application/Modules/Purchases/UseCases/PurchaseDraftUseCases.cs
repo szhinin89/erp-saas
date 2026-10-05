@@ -123,8 +123,9 @@ file static class PurchaseLinePackagingResolver
             line.PurchaseReceptionLineId.Value,
             ct
         );
-        var receptionLine = document
-            ?.Lines.FirstOrDefault(l => l.Id == line.PurchaseReceptionLineId.Value);
+        var receptionLine = document?.Lines.FirstOrDefault(l =>
+            l.Id == line.PurchaseReceptionLineId.Value
+        );
         if (string.IsNullOrWhiteSpace(receptionLine?.SupplierCode))
             return new(fallback, null);
 
@@ -158,7 +159,9 @@ file static class PurchaseLinePackagingResolver
     private static PurchaseLinePackagingSnapshot ToSnapshot(Item item, ItemPackagingLevel packaging)
     {
         if (packaging.BaseQuantity <= 0)
-            throw new ERP.Domain.Exceptions.DomainRuleViolationException("La cantidad base del empaque debe ser mayor a cero.");
+            throw new ERP.Domain.Exceptions.DomainRuleViolationException(
+                "La cantidad base del empaque debe ser mayor a cero."
+            );
 
         return new PurchaseLinePackagingSnapshot(
             packaging.Id,
@@ -213,15 +216,9 @@ public static class WarehouseBranchGuard
     {
         var wh = await whRepo.GetByIdAsync(tenantId, warehouseId, ct);
         if (wh is null)
-            return new(
-                null,
-                Result<PurchaseInvoiceDto>.ValidationFailure(NotFoundMessage)
-            );
+            return new(null, Result<PurchaseInvoiceDto>.ValidationFailure(NotFoundMessage));
         if (wh.BranchId != invoiceBranchId)
-            return new(
-                wh,
-                Result<PurchaseInvoiceDto>.ValidationFailure(CrossBranchMessage)
-            );
+            return new(wh, Result<PurchaseInvoiceDto>.ValidationFailure(CrossBranchMessage));
         return new(wh, null);
     }
 }
@@ -236,6 +233,7 @@ file static class PurchaseAccessKeyDuplicateGuard
     public const string ConstraintName = "uq_purchase_invoices_tenant_access_key";
     public const string DuplicateAccessKeyMessage =
         "Ya existe una compra registrada con esta clave de acceso SRI.";
+
     // RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — antes sin mapear: una colisión real contra
     // este constraint (dos compras activas con el mismo supplier+número) rethrow-eaba como
     // excepción no controlada. Mismo criterio que el resto de constraints de este guard.
@@ -268,11 +266,11 @@ file static class PurchaseAccessKeyDuplicateGuard
     public static string? MapUniqueViolation(string? constraintName) =>
         constraintName == "uq_purchase_expense_access_key"
             ? "La factura ya fue registrada como gasto."
-            : string.Equals(constraintName, ConstraintName, StringComparison.Ordinal)
+        : string.Equals(constraintName, ConstraintName, StringComparison.Ordinal)
             ? DuplicateAccessKeyMessage
-            : string.Equals(constraintName, SupplierNumberConstraintName, StringComparison.Ordinal)
+        : string.Equals(constraintName, SupplierNumberConstraintName, StringComparison.Ordinal)
             ? DuplicateSupplierNumberMessage
-            : null;
+        : null;
 
     /// <summary>
     /// EXPENSES-FROM-RECEPTION-01 — mitad "Compra rechaza si ya fue usada como Gasto" del chequeo
@@ -289,7 +287,11 @@ file static class PurchaseAccessKeyDuplicateGuard
         if (string.IsNullOrWhiteSpace(accessKey))
             return null;
 
-        var usedByExpense = await expenseRepo.ExistsByAccessKeyAsync(tenantId, accessKey.Trim(), ct);
+        var usedByExpense = await expenseRepo.ExistsByAccessKeyAsync(
+            tenantId,
+            accessKey.Trim(),
+            ct
+        );
         return usedByExpense
             ? Result<T>.Conflict("Ya existe un gasto registrado con esta clave de acceso SRI.")
             : null;
@@ -566,31 +568,79 @@ public sealed class CreatePurchaseDraftHandler
         PurchaseReceptionDocument? linkedReception = null;
 
         // Reception line references also identify the source when the client omits AccessKey.
-        foreach (var lineId in cmd.Lines.Where(l => l.PurchaseReceptionLineId.HasValue)
-            .Select(l => l.PurchaseReceptionLineId!.Value).Distinct())
+        foreach (
+            var lineId in cmd
+                .Lines.Where(l => l.PurchaseReceptionLineId.HasValue)
+                .Select(l => l.PurchaseReceptionLineId!.Value)
+                .Distinct()
+        )
         {
             var source = await _receptionRepo.GetByLineIdAsync(_t.TenantId, lineId, ct);
-            if (source is null) continue;
-            if (source.SourceDocType != ERP.Domain.Modules.Purchases.PurchaseReception.Enums.PurchaseReceptionSourceDocType.Invoice)
-                return Result<PurchaseInvoiceDto>.ValidationFailure("Solo una factura puede generar una compra.");
-            if (!string.IsNullOrWhiteSpace(cmd.AccessKey) && cmd.AccessKey.Trim() != source.AccessKey)
-                return Result<PurchaseInvoiceDto>.ValidationFailure("Las lineas no corresponden a la factura recibida.");
+            if (source is null)
+                continue;
+            if (
+                source.SourceDocType
+                != ERP.Domain
+                    .Modules
+                    .Purchases
+                    .PurchaseReception
+                    .Enums
+                    .PurchaseReceptionSourceDocType
+                    .Invoice
+            )
+                return Result<PurchaseInvoiceDto>.ValidationFailure(
+                    "Solo una factura puede generar una compra."
+                );
+            if (
+                !string.IsNullOrWhiteSpace(cmd.AccessKey)
+                && cmd.AccessKey.Trim() != source.AccessKey
+            )
+                return Result<PurchaseInvoiceDto>.ValidationFailure(
+                    "Las lineas no corresponden a la factura recibida."
+                );
             if (await _expenseRepo.ExistsByReceptionDocumentIdAsync(_t.TenantId, source.Id, ct))
-                return Result<PurchaseInvoiceDto>.Conflict("La recepcion ya fue utilizada como gasto.");
+                return Result<PurchaseInvoiceDto>.Conflict(
+                    "La recepcion ya fue utilizada como gasto."
+                );
             cmd = cmd with { AccessKey = source.AccessKey };
             linkedReception = source;
         }
         if (cmd.DocTypeCode == "04")
-            return Result<PurchaseInvoiceDto>.ValidationFailure("Solo una factura puede generar una compra. Procese la nota de crédito desde su flujo propio.");
+            return Result<PurchaseInvoiceDto>.ValidationFailure(
+                "Solo una factura puede generar una compra. Procese la nota de crédito desde su flujo propio."
+            );
         if (!string.IsNullOrWhiteSpace(cmd.AccessKey))
         {
-            var reception = await _receptionRepo.GetByAccessKeyAsync(_t.TenantId, cmd.AccessKey.Trim(), ct);
+            var reception = await _receptionRepo.GetByAccessKeyAsync(
+                _t.TenantId,
+                cmd.AccessKey.Trim(),
+                ct
+            );
             if (reception is not null)
             {
-                if (reception.SourceDocType != ERP.Domain.Modules.Purchases.PurchaseReception.Enums.PurchaseReceptionSourceDocType.Invoice)
-                    return Result<PurchaseInvoiceDto>.ValidationFailure("Solo una factura puede generar una compra.");
-                if (await _expenseRepo.ExistsByReceptionDocumentIdAsync(_t.TenantId, reception.Id, ct))
-                    return Result<PurchaseInvoiceDto>.Conflict("La recepción ya fue utilizada como gasto.");
+                if (
+                    reception.SourceDocType
+                    != ERP.Domain
+                        .Modules
+                        .Purchases
+                        .PurchaseReception
+                        .Enums
+                        .PurchaseReceptionSourceDocType
+                        .Invoice
+                )
+                    return Result<PurchaseInvoiceDto>.ValidationFailure(
+                        "Solo una factura puede generar una compra."
+                    );
+                if (
+                    await _expenseRepo.ExistsByReceptionDocumentIdAsync(
+                        _t.TenantId,
+                        reception.Id,
+                        ct
+                    )
+                )
+                    return Result<PurchaseInvoiceDto>.Conflict(
+                        "La recepción ya fue utilizada como gasto."
+                    );
                 linkedReception = reception;
             }
         }
@@ -607,12 +657,13 @@ public sealed class CreatePurchaseDraftHandler
         if (duplicateResult is not null)
             return duplicateResult;
 
-        var expenseConflict = await PurchaseAccessKeyDuplicateGuard.ToConflictIfUsedByExpenseAsync<PurchaseInvoiceDto>(
-            _expenseRepo,
-            tid,
-            cmd.AccessKey,
-            ct
-        );
+        var expenseConflict =
+            await PurchaseAccessKeyDuplicateGuard.ToConflictIfUsedByExpenseAsync<PurchaseInvoiceDto>(
+                _expenseRepo,
+                tid,
+                cmd.AccessKey,
+                ct
+            );
         if (expenseConflict is not null)
             return expenseConflict;
 
@@ -634,7 +685,11 @@ public sealed class CreatePurchaseDraftHandler
                 "El proveedor no tiene configuración SRI."
             );
 
-        var ptResult = await _ptResolver.ResolveForPurchaseAsync(cmd.SupplierId, cmd.PaymentTermId, ct);
+        var ptResult = await _ptResolver.ResolveForPurchaseAsync(
+            cmd.SupplierId,
+            cmd.PaymentTermId,
+            ct
+        );
         if (!ptResult.IsSuccess)
             return Result<PurchaseInvoiceDto>.ValidationFailure(ptResult.Error!);
         var pt = ptResult.Value!;
@@ -785,7 +840,8 @@ public sealed class CreatePurchaseDraftHandler
                     };
                     if (packaging.ConversionFactor <= 0m)
                         return new(
-                            null!, Result<PurchaseInvoiceDto>.ValidationFailure(
+                            null!,
+                            Result<PurchaseInvoiceDto>.ValidationFailure(
                                 $"Línea '{l.Description}': el factor de conversión de la presentación no es representable con {precision.ConversionFactorDecimals} decimales."
                             )
                         );
@@ -876,7 +932,7 @@ public sealed class CreatePurchaseDraftHandler
                 packagingLevelId: packaging.PackagingLevelId,
                 quantityDecimals: precision.QuantityDecimals,
                 unitCostDecimals: precision.UnitCostDecimals,
-                    exactDiscountAmount: normalizedLine.ExactDiscountAmount
+                exactDiscountAmount: normalizedLine.ExactDiscountAmount
             );
             if (l.FreightAllocated.HasValue)
                 line.SetFreightAllocated(l.FreightAllocated.Value);
@@ -913,7 +969,12 @@ public sealed class CreatePurchaseDraftHandler
                 ct
             );
             if (receptionTaxes.Count > 0)
-                return await ReceptionTaxHelper.ApplyReceptionTaxesAsync(line, receptionTaxes, _tax, ct);
+                return await ReceptionTaxHelper.ApplyReceptionTaxesAsync(
+                    line,
+                    receptionTaxes,
+                    _tax,
+                    ct
+                );
         }
         return await TaxHelper.ResolveTaxesAsync(line, _tax, ct);
     }
@@ -1428,7 +1489,16 @@ file static class ReceptionTaxHelper
             );
 
         line.ReplaceTaxes(built);
-        line.ApplyTaxes(vatCode, vatRate, vatName, iceCode, iceRate, iceName, iceCalcType, iceExactAmount);
+        line.ApplyTaxes(
+            vatCode,
+            vatRate,
+            vatName,
+            iceCode,
+            iceRate,
+            iceName,
+            iceCalcType,
+            iceExactAmount
+        );
         return null;
     }
 }
@@ -1446,7 +1516,11 @@ public sealed class GetPurchaseByIdHandler
     private readonly ICurrentTenant _t;
     private readonly ICurrentBranch _b;
 
-    public GetPurchaseByIdHandler(IPurchaseInvoiceRepository repo, ICurrentTenant t, ICurrentBranch b)
+    public GetPurchaseByIdHandler(
+        IPurchaseInvoiceRepository repo,
+        ICurrentTenant t,
+        ICurrentBranch b
+    )
     {
         _repo = repo;
         _t = t;

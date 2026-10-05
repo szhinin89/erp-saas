@@ -198,7 +198,10 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
         );
 
         var services = new ServiceCollection();
-        services.AddScoped<ERP.Application.Common.Services.ICompanyClock, ERP.Infrastructure.Persistence.Services.CompanyClock>();
+        services.AddScoped<
+            ERP.Application.Common.Services.ICompanyClock,
+            ERP.Infrastructure.Persistence.Services.CompanyClock
+        >();
         services.AddLogging();
         services.AddSingleton(db);
         services.AddSingleton<ICurrentTenant>(new FixedCurrentTenant(tenantId));
@@ -377,22 +380,20 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
     {
         var inv = BuildConfirmableInvoice(issueDate, invoiceNumber);
         var line = inv.Lines[0];
-        line.ReplaceTaxes(
-            [
-                PurchaseInvoiceDetailTax.Create(
-                    line.Id,
-                    _tenantId,
-                    "5",
-                    "5001",
-                    "IRBPNR",
-                    0.02m,
-                    ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific,
-                    line.TaxableBase,
-                    irbpnrAmount,
-                    ERP.Domain.Modules.Purchases.Enums.PurchaseTaxSource.Xml
-                ),
-            ]
-        );
+        line.ReplaceTaxes([
+            PurchaseInvoiceDetailTax.Create(
+                line.Id,
+                _tenantId,
+                "5",
+                "5001",
+                "IRBPNR",
+                0.02m,
+                ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific,
+                line.TaxableBase,
+                irbpnrAmount,
+                ERP.Domain.Modules.Purchases.Enums.PurchaseTaxSource.Xml
+            ),
+        ]);
         return inv;
     }
 
@@ -486,7 +487,9 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
         entry.Lines.Should().HaveCount(3);
         var totalDebit = entry.Lines.Sum(l => l.Debit);
         var totalCredit = entry.Lines.Sum(l => l.Credit);
-        totalDebit.Should().Be(totalCredit, "el asiento debe balancear con la línea IRBPNR incluida");
+        totalDebit
+            .Should()
+            .Be(totalCredit, "el asiento debe balancear con la línea IRBPNR incluida");
         totalCredit.Should().Be(inv.GrandTotal);
     }
 
@@ -601,22 +604,20 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
         // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3) — ReplaceTaxes (Compras) reemplaza TODA la
         // colección: debe llamarse ANTES de ApplyTaxes, que re-sincroniza IVA/ICE sin tocar otras
         // filas (mismo orden ya corregido en Fase 5D-1/producción, ReceptionTaxHelper).
-        line.ReplaceTaxes(
-            [
-                PurchaseInvoiceDetailTax.Create(
-                    line.Id,
-                    _tenantId,
-                    "5",
-                    "5001",
-                    "IRBPNR",
-                    0.10m,
-                    ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific,
-                    line.TaxableBase,
-                    0.30m,
-                    ERP.Domain.Modules.Purchases.Enums.PurchaseTaxSource.Xml
-                ),
-            ]
-        );
+        line.ReplaceTaxes([
+            PurchaseInvoiceDetailTax.Create(
+                line.Id,
+                _tenantId,
+                "5",
+                "5001",
+                "IRBPNR",
+                0.10m,
+                ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific,
+                line.TaxableBase,
+                0.30m,
+                ERP.Domain.Modules.Purchases.Enums.PurchaseTaxSource.Xml
+            ),
+        ]);
         // IVA 15% + ICE 10% (Percentage) — Fase 3 completada: IceCode/IceRate/IceAmount ahora
         // computados desde _taxes, nunca un escalar paralelo.
         line.ApplyTaxes("10", 15m, "IVA", "3072", 10m, "ICE bebidas");
@@ -659,7 +660,8 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
         entry.Lines.Should().HaveCount(5, "Subtotal + TaxVat + TaxIce + TaxIrbpnr + GrandTotal");
         var totalDebit = entry.Lines.Sum(l => l.Debit);
         var totalCredit = entry.Lines.Sum(l => l.Credit);
-        totalDebit.Should()
+        totalDebit
+            .Should()
             .Be(
                 totalCredit,
                 "el asiento debe balancear con IVA+ICE+IRBPNR incluidos tras completar Fase 3"
@@ -670,7 +672,9 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task Confirmation_cost_stock_payable_and_accounting_commit_or_rollback_together(bool postingConfigured)
+    public async Task Confirmation_cost_stock_payable_and_accounting_commit_or_rollback_together(
+        bool postingConfigured
+    )
     {
         var date = new DateOnly(2026, 9, 27);
         var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
@@ -678,57 +682,146 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
         if (postingConfigured)
             await SeedRuleAndPeriodAsync(db, date);
         var invoice = BuildConfirmableInvoice(date, "001-001-000000099");
-        invoice.ReplaceLines([
-            PurchaseInvoiceDetail.Create(invoice.Id, _tenantId, "Linea 1", 2m, 50m, "10", "UNIT"),
-            PurchaseInvoiceDetail.Create(invoice.Id, _tenantId, "Linea 2", 1m, 100m, "10", "UNIT")
-        ], _createdBy);
+        invoice.ReplaceLines(
+            [
+                PurchaseInvoiceDetail.Create(
+                    invoice.Id,
+                    _tenantId,
+                    "Linea 1",
+                    2m,
+                    50m,
+                    "10",
+                    "UNIT"
+                ),
+                PurchaseInvoiceDetail.Create(
+                    invoice.Id,
+                    _tenantId,
+                    "Linea 2",
+                    1m,
+                    100m,
+                    "10",
+                    "UNIT"
+                ),
+            ],
+            _createdBy
+        );
         invoice.ApplyGlobalDiscount(10m, _createdBy);
-        invoice.DistributeAdditionalCost(ERP.Domain.Modules.Purchases.Enums.PurchaseCostType.Freight,
-            12m, [invoice.Lines[0].Id], _createdBy);
-        invoice.DistributeAdditionalCost(ERP.Domain.Modules.Purchases.Enums.PurchaseCostType.OtherCost,
-            3m, [invoice.Lines[1].Id], _createdBy);
+        invoice.DistributeAdditionalCost(
+            ERP.Domain.Modules.Purchases.Enums.PurchaseCostType.Freight,
+            12m,
+            [invoice.Lines[0].Id],
+            _createdBy
+        );
+        invoice.DistributeAdditionalCost(
+            ERP.Domain.Modules.Purchases.Enums.PurchaseCostType.OtherCost,
+            3m,
+            [invoice.Lines[1].Id],
+            _createdBy
+        );
         db.PurchaseInvoices.Add(invoice);
         await db.SaveChangesAsync();
         var productId = Guid.NewGuid();
         var precision = new Mock<ICompanyPrecisionPolicyProvider>();
-        precision.Setup(p => p.GetEffectiveAsync(It.IsAny<CancellationToken>())).ReturnsAsync(
-            new EffectivePrecisionPolicyDto("Custom", 2, 4, 4, 2, 6, 6, 6, 0.01m, false, null, null,
-                2, 2, 2, 2, 4, 2, 4));
-        var stock = new StockRepository(db, new FixedCurrentCompany(_companyId),
-            new PostgresDatabaseExceptionTranslator(), precision.Object);
+        precision
+            .Setup(p => p.GetEffectiveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new EffectivePrecisionPolicyDto(
+                    "Custom",
+                    2,
+                    4,
+                    4,
+                    2,
+                    6,
+                    6,
+                    6,
+                    0.01m,
+                    false,
+                    null,
+                    null,
+                    2,
+                    2,
+                    2,
+                    2,
+                    4,
+                    2,
+                    4
+                )
+            );
+        var stock = new StockRepository(
+            db,
+            new FixedCurrentCompany(_companyId),
+            new PostgresDatabaseExceptionTranslator(),
+            precision.Object
+        );
         invoice.Confirm(_createdBy);
         foreach (var line in invoice.Lines)
-            await stock.AppendMovementAsync(_tenantId, _companyId, productId, _warehouseId,
-                StockMovementType.PurchaseEntry, line.QuantityInBaseUom, line.BaseUomCode,
-                date, invoice.InvoiceNumber, invoice.Id, "PurchaseInvoice", _createdBy,
-                unitCost: line.LandedUnitCost, sourceDocLineId: line.Id);
+            await stock.AppendMovementAsync(
+                _tenantId,
+                _companyId,
+                productId,
+                _warehouseId,
+                StockMovementType.PurchaseEntry,
+                line.QuantityInBaseUom,
+                line.BaseUomCode,
+                date,
+                invoice.InvoiceNumber,
+                invoice.Id,
+                "PurchaseInvoice",
+                _createdBy,
+                unitCost: line.LandedUnitCost,
+                sourceDocLineId: line.Id
+            );
         var payables = new AccountsPayableService(new AccountsPayableRepository(db));
-        await payables.StageFromOriginAsync(new CreateAccountsPayableFromOriginRequest(
-            _tenantId, _companyId, _branchId, _supplierId, AccountsPayableOriginType.PurchaseInvoice,
-            invoice.Id, "01", invoice.InvoiceNumber, date, date,
-            [new AccountsPayableInstallmentInput(1, date, invoice.GrandTotal)]), _createdBy);
+        await payables.StageFromOriginAsync(
+            new CreateAccountsPayableFromOriginRequest(
+                _tenantId,
+                _companyId,
+                _branchId,
+                _supplierId,
+                AccountsPayableOriginType.PurchaseInvoice,
+                invoice.Id,
+                "01",
+                invoice.InvoiceNumber,
+                date,
+                date,
+                [new AccountsPayableInstallmentInput(1, date, invoice.GrandTotal)]
+            ),
+            _createdBy
+        );
 
         if (postingConfigured)
             await stock.SaveChangesWithSequenceRetryAsync();
         else
         {
             var save = async () => await stock.SaveChangesWithSequenceRetryAsync();
-            await save.Should().ThrowAsync<ERP.Application.Modules.Purchases.Exceptions.PurchasePostingFailedException>();
+            await save.Should()
+                .ThrowAsync<ERP.Application.Modules.Purchases.Exceptions.PurchasePostingFailedException>();
         }
         await using var verifyDb = CreateContext();
         var persisted = await verifyDb.PurchaseInvoices.SingleAsync(x => x.Id == invoice.Id);
-        var movements = await verifyDb.Set<StockMovement>().Where(m => m.SourceDocId == invoice.Id)
-            .OrderBy(m => m.SequenceNumber).ToListAsync();
-        var payable = await verifyDb.Set<AccountsPayable>().Include(p => p.Installments)
+        var movements = await verifyDb
+            .Set<StockMovement>()
+            .Where(m => m.SourceDocId == invoice.Id)
+            .OrderBy(m => m.SequenceNumber)
+            .ToListAsync();
+        var payable = await verifyDb
+            .Set<AccountsPayable>()
+            .Include(p => p.Installments)
             .SingleOrDefaultAsync(p => p.OriginId == invoice.Id);
-        var entry = await verifyDb.JournalEntries.Include(e => e.Lines)
+        var entry = await verifyDb
+            .JournalEntries.Include(e => e.Lines)
             .SingleOrDefaultAsync(e => e.SourceEventId == invoice.Id);
         if (postingConfigured)
         {
-            persisted.Status.Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Confirmed);
+            persisted
+                .Status.Should()
+                .Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Confirmed);
             movements.Select(m => m.RunningStockValue).Should().Equal(102m, 195m);
             movements.Select(m => m.SequenceNumber).Should().Equal(1L, 2L);
-            movements.Select(m => m.SourceDocLineId).Should().Equal(invoice.Lines.Select(l => (Guid?)l.Id));
+            movements
+                .Select(m => m.SourceDocLineId)
+                .Should()
+                .Equal(invoice.Lines.Select(l => (Guid?)l.Id));
             payable!.TotalAmount.Should().Be(195m);
             entry!.Status.Should().Be(JournalEntryStatus.Posted);
             entry.Lines.Sum(l => l.Debit).Should().Be(195m);
@@ -738,7 +831,9 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
         {
             persisted.Status.Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Draft);
             movements.Should().BeEmpty();
-            (await verifyDb.Set<CurrentStock>().AnyAsync(s => s.ProductId == productId)).Should().BeFalse();
+            (await verifyDb.Set<CurrentStock>().AnyAsync(s => s.ProductId == productId))
+                .Should()
+                .BeFalse();
             payable.Should().BeNull();
             entry.Should().BeNull();
         }
@@ -747,49 +842,125 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
     // ── COMPRAS-METODO-ZH-01A2: Kardex sequence retry keeps domain events exactly once ─────────
 
     private StockRepository NewStockRepository(ErpDbContext db) =>
-        new(db, new FixedCurrentCompany(_companyId), new PostgresDatabaseExceptionTranslator(),
-            ERP.Infrastructure.Tests.TestData.StandardPrecisionPolicyProvider.Instance);
+        new(
+            db,
+            new FixedCurrentCompany(_companyId),
+            new PostgresDatabaseExceptionTranslator(),
+            ERP.Infrastructure.Tests.TestData.StandardPrecisionPolicyProvider.Instance
+        );
 
-    private async Task AppendCommittedMovementAsync(Guid productId, DateOnly date, decimal quantity, string reference)
+    private async Task AppendCommittedMovementAsync(
+        Guid productId,
+        DateOnly date,
+        decimal quantity,
+        string reference
+    )
     {
         await using var other = CreateContext();
         var repo = NewStockRepository(other);
-        await repo.AppendMovementAsync(_tenantId, _companyId, productId, _warehouseId,
-            StockMovementType.PositiveAdjust, quantity, "UNIT", date, reference, null, null, _createdBy,
-            unitCost: 5m);
+        await repo.AppendMovementAsync(
+            _tenantId,
+            _companyId,
+            productId,
+            _warehouseId,
+            StockMovementType.PositiveAdjust,
+            quantity,
+            "UNIT",
+            date,
+            reference,
+            null,
+            null,
+            _createdBy,
+            unitCost: 5m
+        );
         await repo.SaveChangesWithSequenceRetryAsync();
     }
 
     private PurchaseInvoice StageConfirmation(DateOnly date, string number)
     {
         var invoice = BuildConfirmableInvoice(date, number);
-        invoice.ReplaceLines([
-            PurchaseInvoiceDetail.Create(invoice.Id, _tenantId, "Linea 1", 2m, 50m, "10", "UNIT"),
-            PurchaseInvoiceDetail.Create(invoice.Id, _tenantId, "Linea 2", 1m, 100m, "10", "UNIT")
-        ], _createdBy);
+        invoice.ReplaceLines(
+            [
+                PurchaseInvoiceDetail.Create(
+                    invoice.Id,
+                    _tenantId,
+                    "Linea 1",
+                    2m,
+                    50m,
+                    "10",
+                    "UNIT"
+                ),
+                PurchaseInvoiceDetail.Create(
+                    invoice.Id,
+                    _tenantId,
+                    "Linea 2",
+                    1m,
+                    100m,
+                    "10",
+                    "UNIT"
+                ),
+            ],
+            _createdBy
+        );
         invoice.ApplyGlobalDiscount(10m, _createdBy);
-        invoice.DistributeAdditionalCost(ERP.Domain.Modules.Purchases.Enums.PurchaseCostType.Freight,
-            12m, [invoice.Lines[0].Id], _createdBy);
-        invoice.DistributeAdditionalCost(ERP.Domain.Modules.Purchases.Enums.PurchaseCostType.OtherCost,
-            3m, [invoice.Lines[1].Id], _createdBy);
+        invoice.DistributeAdditionalCost(
+            ERP.Domain.Modules.Purchases.Enums.PurchaseCostType.Freight,
+            12m,
+            [invoice.Lines[0].Id],
+            _createdBy
+        );
+        invoice.DistributeAdditionalCost(
+            ERP.Domain.Modules.Purchases.Enums.PurchaseCostType.OtherCost,
+            3m,
+            [invoice.Lines[1].Id],
+            _createdBy
+        );
         return invoice;
     }
 
     // Same effects ConfirmPurchaseHandler tracks before its single SaveChangesWithSequenceRetryAsync.
     private async Task TrackConfirmationEffectsAsync(
-        StockRepository stock, ErpDbContext db, PurchaseInvoice invoice, DateOnly date, Guid productId)
+        StockRepository stock,
+        ErpDbContext db,
+        PurchaseInvoice invoice,
+        DateOnly date,
+        Guid productId
+    )
     {
         invoice.Confirm(_createdBy);
         foreach (var line in invoice.Lines)
-            await stock.AppendMovementAsync(_tenantId, _companyId, productId, _warehouseId,
-                StockMovementType.PurchaseEntry, line.QuantityInBaseUom, line.BaseUomCode,
-                date, invoice.InvoiceNumber, invoice.Id, "PurchaseInvoice", _createdBy,
-                unitCost: line.LandedUnitCost, sourceDocLineId: line.Id);
+            await stock.AppendMovementAsync(
+                _tenantId,
+                _companyId,
+                productId,
+                _warehouseId,
+                StockMovementType.PurchaseEntry,
+                line.QuantityInBaseUom,
+                line.BaseUomCode,
+                date,
+                invoice.InvoiceNumber,
+                invoice.Id,
+                "PurchaseInvoice",
+                _createdBy,
+                unitCost: line.LandedUnitCost,
+                sourceDocLineId: line.Id
+            );
         await new AccountsPayableService(new AccountsPayableRepository(db)).StageFromOriginAsync(
             new CreateAccountsPayableFromOriginRequest(
-                _tenantId, _companyId, _branchId, _supplierId, AccountsPayableOriginType.PurchaseInvoice,
-                invoice.Id, "01", invoice.InvoiceNumber, date, date,
-                [new AccountsPayableInstallmentInput(1, date, invoice.GrandTotal)]), _createdBy);
+                _tenantId,
+                _companyId,
+                _branchId,
+                _supplierId,
+                AccountsPayableOriginType.PurchaseInvoice,
+                invoice.Id,
+                "01",
+                invoice.InvoiceNumber,
+                date,
+                date,
+                [new AccountsPayableInstallmentInput(1, date, invoice.GrandTotal)]
+            ),
+            _createdBy
+        );
     }
 
     [Fact]
@@ -812,26 +983,43 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
         await stock.SaveChangesWithSequenceRetryAsync();
 
         await using var verify = CreateContext();
-        (await verify.PurchaseInvoices.SingleAsync(x => x.Id == invoice.Id)).Status
-            .Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Confirmed);
-        var movements = await verify.Set<StockMovement>().Where(m => m.ProductId == productId)
-            .OrderBy(m => m.SequenceNumber).ToListAsync();
+        (await verify.PurchaseInvoices.SingleAsync(x => x.Id == invoice.Id))
+            .Status.Should()
+            .Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Confirmed);
+        var movements = await verify
+            .Set<StockMovement>()
+            .Where(m => m.ProductId == productId)
+            .OrderBy(m => m.SequenceNumber)
+            .ToListAsync();
         movements.Select(m => m.SequenceNumber).Should().Equal(1L, 2L, 3L, 4L);
         var ours = movements.Where(m => m.SourceDocId == invoice.Id).ToList();
         ours.Select(m => m.SourceDocLineId).Should().Equal(invoice.Lines.Select(l => (Guid?)l.Id));
         ours.Select(m => m.RunningStockValue).Should().Equal(157m, 250m);
-        (await verify.Set<CurrentStock>().SingleAsync(s => s.ProductId == productId)).Quantity.Should().Be(14m);
-        var payables = await verify.Set<AccountsPayable>().Include(p => p.Installments)
-            .Where(p => p.OriginId == invoice.Id).ToListAsync();
+        (await verify.Set<CurrentStock>().SingleAsync(s => s.ProductId == productId))
+            .Quantity.Should()
+            .Be(14m);
+        var payables = await verify
+            .Set<AccountsPayable>()
+            .Include(p => p.Installments)
+            .Where(p => p.OriginId == invoice.Id)
+            .ToListAsync();
         payables.Should().ContainSingle().Which.TotalAmount.Should().Be(195m);
-        var entries = await verify.JournalEntries.Include(e => e.Lines)
-            .Where(e => e.SourceEventId == invoice.Id).ToListAsync();
+        var entries = await verify
+            .JournalEntries.Include(e => e.Lines)
+            .Where(e => e.SourceEventId == invoice.Id)
+            .ToListAsync();
         entries.Should().ContainSingle();
         entries[0].Status.Should().Be(JournalEntryStatus.Posted);
         entries[0].Lines.Sum(l => l.Debit).Should().Be(195m);
         entries[0].Lines.Sum(l => l.Credit).Should().Be(195m);
-        (await verify.OutboxMessages.CountAsync(m => m.EventName.Contains("PurchaseInvoiceConfirmed")
-            && m.Payload.Contains(invoice.Id.ToString()))).Should().Be(1);
+        (
+            await verify.OutboxMessages.CountAsync(m =>
+                m.EventName.Contains("PurchaseInvoiceConfirmed")
+                && m.Payload.Contains(invoice.Id.ToString())
+            )
+        )
+            .Should()
+            .Be(1);
     }
 
     [Fact]
@@ -842,10 +1030,16 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
         var publisher = new ConflictAfterPublishPublisher();
         // Production tracking interceptor, so the first write succeeds and the failure is post-publish.
         await using var db = new ErpDbContext(
-            new DbContextOptionsBuilder<ErpDbContext>().UseNpgsql(_postgres.GetConnectionString())
-                .AddInterceptors(new ERP.Infrastructure.Persistence.Interceptors.NewChildEntityTrackingInterceptor())
+            new DbContextOptionsBuilder<ErpDbContext>()
+                .UseNpgsql(_postgres.GetConnectionString())
+                .AddInterceptors(
+                    new ERP.Infrastructure.Persistence.Interceptors.NewChildEntityTrackingInterceptor()
+                )
                 .Options,
-            new FixedCurrentTenant(_tenantId), publisher, new FixedCurrentCompany(_companyId));
+            new FixedCurrentTenant(_tenantId),
+            publisher,
+            new FixedCurrentCompany(_companyId)
+        );
         var invoice = StageConfirmation(date, "001-001-000000202");
         db.PurchaseInvoices.Add(invoice);
         await db.SaveChangesAsync();
@@ -855,14 +1049,27 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
         var save = async () => await stock.SaveChangesWithSequenceRetryAsync();
 
         await save.Should().ThrowAsync<DbUpdateConcurrencyException>();
-        publisher.ConfirmedPublications.Should().Be(1, "a half-applied unit of work must not be retried");
+        publisher
+            .ConfirmedPublications.Should()
+            .Be(1, "a half-applied unit of work must not be retried");
         await using var verify = CreateContext();
-        (await verify.PurchaseInvoices.SingleAsync(x => x.Id == invoice.Id)).Status
-            .Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Draft);
-        (await verify.Set<StockMovement>().AnyAsync(m => m.ProductId == productId)).Should().BeFalse();
-        (await verify.Set<AccountsPayable>().AnyAsync(p => p.OriginId == invoice.Id)).Should().BeFalse();
-        (await verify.OutboxMessages.AnyAsync(m => m.EventName.Contains("PurchaseInvoiceConfirmed")
-            && m.Payload.Contains(invoice.Id.ToString()))).Should().BeFalse();
+        (await verify.PurchaseInvoices.SingleAsync(x => x.Id == invoice.Id))
+            .Status.Should()
+            .Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Draft);
+        (await verify.Set<StockMovement>().AnyAsync(m => m.ProductId == productId))
+            .Should()
+            .BeFalse();
+        (await verify.Set<AccountsPayable>().AnyAsync(p => p.OriginId == invoice.Id))
+            .Should()
+            .BeFalse();
+        (
+            await verify.OutboxMessages.AnyAsync(m =>
+                m.EventName.Contains("PurchaseInvoiceConfirmed")
+                && m.Payload.Contains(invoice.Id.ToString())
+            )
+        )
+            .Should()
+            .BeFalse();
     }
 
     /// <summary>Simulates a retryable conflict raised after the confirmation event was published.</summary>
@@ -873,7 +1080,10 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
         public Task Publish(object notification, CancellationToken cancellationToken = default) =>
             notification is INotification n ? Publish(n, cancellationToken) : Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
             where TNotification : INotification
         {
             if (notification is not PurchaseInvoiceConfirmedEvent)

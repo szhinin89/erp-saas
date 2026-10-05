@@ -34,7 +34,16 @@ public static class DefaultPaymentMethodSeedData
     )[] Entries =
     [
         ("EFECTIVO", "Efectivo", false, false, 1, PaymentMethodDetailType.None, "01", true),
-        ("TARJETA", "Tarjeta de Crédito", true, false, 2, PaymentMethodDetailType.Card, "19", false),
+        (
+            "TARJETA",
+            "Tarjeta de Crédito",
+            true,
+            false,
+            2,
+            PaymentMethodDetailType.Card,
+            "19",
+            false
+        ),
         (
             "TRANSFERENCIA",
             "Transferencia Bancaria",
@@ -51,6 +60,7 @@ public static class DefaultPaymentMethodSeedData
 
     /// <summary>Código SRI inicial sugerido para un Code de PaymentMethod conocido, o null si no hay entrada/mapeo.</summary>
     public static string? SriCodeFor(string code) =>
-        Array.Find(Entries, e => string.Equals(e.Code, code, StringComparison.OrdinalIgnoreCase))
+        Array
+            .Find(Entries, e => string.Equals(e.Code, code, StringComparison.OrdinalIgnoreCase))
             .SriPaymentMethodCode;
 }

@@ -39,7 +39,8 @@ public sealed class IssueRetentionLineValidator : AbstractValidator<IssueRetenti
                 $"El porcentaje de retención admite como máximo {FiscalPrecision.Percentage} decimales."
             );
         RuleFor(x => x.RetainedAmount).GreaterThan(0);
-        RuleFor(x => x).Must(l => l.RetainedAmount <= l.BaseAmount)
+        RuleFor(x => x)
+            .Must(l => l.RetainedAmount <= l.BaseAmount)
             .WithMessage("El monto retenido no puede ser mayor a la base imponible.");
     }
 }

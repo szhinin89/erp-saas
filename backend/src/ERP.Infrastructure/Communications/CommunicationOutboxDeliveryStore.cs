@@ -131,26 +131,33 @@ public sealed class CommunicationOutboxDeliveryStore
     ) =>
         FinalizeAsync(
             claim,
-            outbox => outbox.ExecuteUpdateAsync(
-                s => s
-                    .SetProperty(x => x.Status, CommunicationStatus.Sent)
-                    .SetProperty(x => x.SentAtUtc, utcNow)
-                    .SetProperty(x => x.FailedAtUtc, (DateTime?)null)
-                    .SetProperty(x => x.NextAttemptAtUtc, (DateTime?)null)
-                    .SetProperty(x => x.LastError, (string?)null)
-                    .SetProperty(x => x.FailureCategory, (CommunicationFailureCategory?)null)
-                    .SetProperty(x => x.ClaimToken, (Guid?)null)
-                    .SetProperty(x => x.LeaseUntilUtc, (DateTime?)null)
-                    .SetProperty(x => x.ProcessingStartedAtUtc, (DateTime?)null)
-                    .SetProperty(x => x.UpdatedAt, utcNow)
-                    .SetProperty(x => x.UpdatedBy, SystemActorId),
-                ct
-            ),
+            outbox =>
+                outbox.ExecuteUpdateAsync(
+                    s =>
+                        s.SetProperty(x => x.Status, CommunicationStatus.Sent)
+                            .SetProperty(x => x.SentAtUtc, utcNow)
+                            .SetProperty(x => x.FailedAtUtc, (DateTime?)null)
+                            .SetProperty(x => x.NextAttemptAtUtc, (DateTime?)null)
+                            .SetProperty(x => x.LastError, (string?)null)
+                            .SetProperty(
+                                x => x.FailureCategory,
+                                (CommunicationFailureCategory?)null
+                            )
+                            .SetProperty(x => x.ClaimToken, (Guid?)null)
+                            .SetProperty(x => x.LeaseUntilUtc, (DateTime?)null)
+                            .SetProperty(x => x.ProcessingStartedAtUtc, (DateTime?)null)
+                            .SetProperty(x => x.UpdatedAt, utcNow)
+                            .SetProperty(x => x.UpdatedBy, SystemActorId),
+                    ct
+                ),
             owned: new AttemptCompletion(
                 CommunicationAttemptResult.Sent,
                 FailureCategory: null,
                 ProviderCode: null,
-                Truncate(receipt.ProviderMessageId, CommunicationDeliveryAttempt.ProviderMessageIdMaxLen),
+                Truncate(
+                    receipt.ProviderMessageId,
+                    CommunicationDeliveryAttempt.ProviderMessageIdMaxLen
+                ),
                 ErrorSafeText: null
             ),
             lostDetail: "Transporte aceptado (Sent) después de perder el claim; no modificó la comunicación.",
@@ -171,21 +178,22 @@ public sealed class CommunicationOutboxDeliveryStore
         var outboxError = Truncate(errorSafeText, CommunicationOutbox.LastErrorMaxLen);
         return FinalizeAsync(
             claim,
-            outbox => outbox.ExecuteUpdateAsync(
-                s => s
-                    .SetProperty(x => x.Status, outcome.Status)
-                    .SetProperty(x => x.RetryCount, outcome.RetryCount)
-                    .SetProperty(x => x.NextAttemptAtUtc, outcome.NextAttemptAtUtc)
-                    .SetProperty(x => x.FailedAtUtc, utcNow)
-                    .SetProperty(x => x.LastError, outboxError)
-                    .SetProperty(x => x.FailureCategory, category)
-                    .SetProperty(x => x.ClaimToken, (Guid?)null)
-                    .SetProperty(x => x.LeaseUntilUtc, (DateTime?)null)
-                    .SetProperty(x => x.ProcessingStartedAtUtc, (DateTime?)null)
-                    .SetProperty(x => x.UpdatedAt, utcNow)
-                    .SetProperty(x => x.UpdatedBy, SystemActorId),
-                ct
-            ),
+            outbox =>
+                outbox.ExecuteUpdateAsync(
+                    s =>
+                        s.SetProperty(x => x.Status, outcome.Status)
+                            .SetProperty(x => x.RetryCount, outcome.RetryCount)
+                            .SetProperty(x => x.NextAttemptAtUtc, outcome.NextAttemptAtUtc)
+                            .SetProperty(x => x.FailedAtUtc, utcNow)
+                            .SetProperty(x => x.LastError, outboxError)
+                            .SetProperty(x => x.FailureCategory, category)
+                            .SetProperty(x => x.ClaimToken, (Guid?)null)
+                            .SetProperty(x => x.LeaseUntilUtc, (DateTime?)null)
+                            .SetProperty(x => x.ProcessingStartedAtUtc, (DateTime?)null)
+                            .SetProperty(x => x.UpdatedAt, utcNow)
+                            .SetProperty(x => x.UpdatedBy, SystemActorId),
+                    ct
+                ),
             owned: new AttemptCompletion(
                 CommunicationAttemptResult.Failed,
                 category,
@@ -203,8 +211,10 @@ public sealed class CommunicationOutboxDeliveryStore
     }
 
     /// <summary>Contenido de la comunicación reclamada (para enviarla), solo si el claim sigue siendo propio.</summary>
-    public Task<CommunicationOutbox?> LoadOwnedAsync(ClaimedCommunication claim, CancellationToken ct = default) =>
-        OwnedClaim(claim).AsNoTracking().Include(x => x.Attachments).FirstOrDefaultAsync(ct);
+    public Task<CommunicationOutbox?> LoadOwnedAsync(
+        ClaimedCommunication claim,
+        CancellationToken ct = default
+    ) => OwnedClaim(claim).AsNoTracking().Include(x => x.Attachments).FirstOrDefaultAsync(ct);
 
     /// <summary>
     /// Actualiza la comunicación con fencing y cierra su intento en la misma transacción corta: el
@@ -226,18 +236,24 @@ public sealed class CommunicationOutboxDeliveryStore
             var stillOwned = await updateOutbox(OwnedClaim(claim)) == 1;
             var completion = stillOwned
                 ? owned
-                : new AttemptCompletion(CommunicationAttemptResult.ClaimLost, null, null, null, lostDetail);
+                : new AttemptCompletion(
+                    CommunicationAttemptResult.ClaimLost,
+                    null,
+                    null,
+                    null,
+                    lostDetail
+                );
 
             await Attempts(claim)
                 .Where(a => a.ClaimToken == claim.ClaimToken)
                 .ExecuteUpdateAsync(
-                    s => s
-                        .SetProperty(a => a.Result, completion.Result)
-                        .SetProperty(a => a.CompletedAtUtc, utcNow)
-                        .SetProperty(a => a.FailureCategory, completion.FailureCategory)
-                        .SetProperty(a => a.ProviderCode, completion.ProviderCode)
-                        .SetProperty(a => a.ProviderMessageId, completion.ProviderMessageId)
-                        .SetProperty(a => a.ErrorSafeText, completion.ErrorSafeText),
+                    s =>
+                        s.SetProperty(a => a.Result, completion.Result)
+                            .SetProperty(a => a.CompletedAtUtc, utcNow)
+                            .SetProperty(a => a.FailureCategory, completion.FailureCategory)
+                            .SetProperty(a => a.ProviderCode, completion.ProviderCode)
+                            .SetProperty(a => a.ProviderMessageId, completion.ProviderMessageId)
+                            .SetProperty(a => a.ErrorSafeText, completion.ErrorSafeText),
                     ct
                 );
 
@@ -247,9 +263,12 @@ public sealed class CommunicationOutboxDeliveryStore
     }
 
     private IQueryable<CommunicationOutbox> OwnedClaim(ClaimedCommunication claim) =>
-        Outbox(claim).Where(x =>
-            x.Id == claim.Id && x.Status == CommunicationStatus.Processing && x.ClaimToken == claim.ClaimToken
-        );
+        Outbox(claim)
+            .Where(x =>
+                x.Id == claim.Id
+                && x.Status == CommunicationStatus.Processing
+                && x.ClaimToken == claim.ClaimToken
+            );
 
     // Company: filtros globales activos (el caller abrió JobExecutionContext de la fila).
     // System: no hay contexto de tenant que lo vuelva visible; vía explícita de plataforma, acotada
@@ -296,5 +315,10 @@ public sealed class ClaimedCommunication
     public int AttemptNumber { get; init; }
 
     public CommunicationScope GetScope() =>
-        CommunicationScope.From(Enum.Parse<CommunicationScopeKind>(ScopeKind), TenantId, CompanyId, branchId: null);
+        CommunicationScope.From(
+            Enum.Parse<CommunicationScopeKind>(ScopeKind),
+            TenantId,
+            CompanyId,
+            branchId: null
+        );
 }

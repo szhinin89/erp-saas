@@ -27,7 +27,9 @@ public sealed class DomainRuleBehaviorTests
     [Fact]
     public async Task Regla_de_negocio_se_traduce_a_DOMAIN_RULE_VIOLATION_con_el_mensaje_publico()
     {
-        var result = await Run(() => throw new DomainRuleViolationException("La factura ya está anulada."));
+        var result = await Run(() =>
+            throw new DomainRuleViolationException("La factura ya está anulada.")
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.DomainRuleViolation);
@@ -37,8 +39,12 @@ public sealed class DomainRuleBehaviorTests
     [Fact]
     public async Task Subclases_semanticas_usan_el_mismo_mecanismo()
     {
-        var seeded = await Run(() => throw new SystemSeededRecordException("La bodega principal", "deshabilitarse"));
-        var posting = await Run(() => throw new PurchasePostingFailedException("Período cerrado.", "PERIOD_NOT_OPEN"));
+        var seeded = await Run(() =>
+            throw new SystemSeededRecordException("La bodega principal", "deshabilitarse")
+        );
+        var posting = await Run(() =>
+            throw new PurchasePostingFailedException("Período cerrado.", "PERIOD_NOT_OPEN")
+        );
 
         seeded.Code.Should().Be(ApiResponseCodes.Common.DomainRuleViolation);
         posting.Code.Should().Be(ApiResponseCodes.Common.DomainRuleViolation);
@@ -48,7 +54,8 @@ public sealed class DomainRuleBehaviorTests
     [Fact]
     public async Task InvalidOperationException_es_tecnica_y_atraviesa_el_behavior_sin_traducirse()
     {
-        var act = () => Run(() => throw new InvalidOperationException("Sequence contains no elements"));
+        var act = () =>
+            Run(() => throw new InvalidOperationException("Sequence contains no elements"));
 
         await act.Should().ThrowAsync<InvalidOperationException>();
     }
@@ -66,15 +73,26 @@ public sealed class DomainRuleBehaviorTests
     {
         var result = Result<int>.FromDomainRule(new DomainRuleViolationException("Regla."));
 
-        (result.IsSuccess, result.Code, result.Error).Should().Be((false, ApiResponseCodes.Common.DomainRuleViolation, "Regla."));
+        (result.IsSuccess, result.Code, result.Error)
+            .Should()
+            .Be((false, ApiResponseCodes.Common.DomainRuleViolation, "Regla."));
     }
 
     [Fact]
     public void DomainRuleViolationException_no_es_InvalidOperationException()
     {
-        typeof(InvalidOperationException).IsAssignableFrom(typeof(DomainRuleViolationException)).Should().BeFalse();
-        typeof(DomainRuleViolationException).IsAssignableFrom(typeof(SystemSeededRecordException)).Should().BeTrue();
-        typeof(DomainRuleViolationException).IsAssignableFrom(typeof(DocumentFlowPolicyViolationException)).Should().BeTrue();
+        typeof(InvalidOperationException)
+            .IsAssignableFrom(typeof(DomainRuleViolationException))
+            .Should()
+            .BeFalse();
+        typeof(DomainRuleViolationException)
+            .IsAssignableFrom(typeof(SystemSeededRecordException))
+            .Should()
+            .BeTrue();
+        typeof(DomainRuleViolationException)
+            .IsAssignableFrom(typeof(DocumentFlowPolicyViolationException))
+            .Should()
+            .BeTrue();
     }
 
     // ── Registro en el contenedor ──
@@ -88,10 +106,16 @@ public sealed class DomainRuleBehaviorTests
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(DomainRuleBehavior<,>));
         using var provider = services.BuildServiceProvider();
 
-        provider.GetServices<IPipelineBehavior<ResultRequest, Result<string>>>()
-            .Should().ContainSingle().Which.Should().BeOfType<DomainRuleBehavior<ResultRequest, Result<string>>>();
-        provider.GetServices<IPipelineBehavior<UnitRequest, Unit>>()
-            .Should().BeEmpty("el constraint IDomainRuleResult excluye respuestas que no son Result<T>");
+        provider
+            .GetServices<IPipelineBehavior<ResultRequest, Result<string>>>()
+            .Should()
+            .ContainSingle()
+            .Which.Should()
+            .BeOfType<DomainRuleBehavior<ResultRequest, Result<string>>>();
+        provider
+            .GetServices<IPipelineBehavior<UnitRequest, Unit>>()
+            .Should()
+            .BeEmpty("el constraint IDomainRuleResult excluye respuestas que no son Result<T>");
     }
 
     [Fact]
@@ -106,6 +130,9 @@ public sealed class DomainRuleBehaviorTests
             .ToList();
 
         order.Should().Contain(typeof(DomainRuleBehavior<,>));
-        order.IndexOf(typeof(DomainRuleBehavior<,>)).Should().BeLessThan(order.IndexOf(typeof(CachingBehavior<,>)));
+        order
+            .IndexOf(typeof(DomainRuleBehavior<,>))
+            .Should()
+            .BeLessThan(order.IndexOf(typeof(CachingBehavior<,>)));
     }
 }

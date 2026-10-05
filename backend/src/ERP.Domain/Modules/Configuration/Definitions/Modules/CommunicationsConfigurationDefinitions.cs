@@ -1,6 +1,6 @@
+using System.Globalization;
 using ERP.Domain.Configuration.Constants;
 using ERP.Domain.Configuration.Enums;
-using System.Globalization;
 
 namespace ERP.Domain.Configuration.Definitions.Modules;
 
@@ -34,15 +34,31 @@ public static class CommunicationsConfigurationDefinitions
     {
         yield return Bool(OrgSettingKeys.Communications.EmailEnabled, "false");
         yield return String(OrgSettingKeys.Communications.SmtpHost, HostMaxLen);
-        yield return Int(OrgSettingKeys.Communications.SmtpPort, value => IsIntInRange(value, 1, 65535));
+        yield return Int(
+            OrgSettingKeys.Communications.SmtpPort,
+            value => IsIntInRange(value, 1, 65535)
+        );
         yield return String(OrgSettingKeys.Communications.SmtpUsername, UsernameMaxLen);
         yield return SensitiveString(OrgSettingKeys.Communications.SmtpPassword, PasswordMaxLen);
         yield return String(OrgSettingKeys.Communications.SenderEmail, EmailMaxLen, LooksLikeEmail);
         yield return String(OrgSettingKeys.Communications.SenderName, SenderNameMaxLen);
         yield return Bool(OrgSettingKeys.Communications.UseSsl, "true");
-        yield return String(OrgSettingKeys.Communications.ReplyToEmail, EmailMaxLen, LooksLikeEmail);
-        yield return Int(OrgSettingKeys.Communications.MaxRetries, value => IsIntInRange(value, 0, 20), "3");
-        yield return String(OrgSettingKeys.Communications.DefaultLanguage, LanguageMaxLen, value => value!.Length is >= 2 and <= LanguageMaxLen, "es");
+        yield return String(
+            OrgSettingKeys.Communications.ReplyToEmail,
+            EmailMaxLen,
+            LooksLikeEmail
+        );
+        yield return Int(
+            OrgSettingKeys.Communications.MaxRetries,
+            value => IsIntInRange(value, 0, 20),
+            "3"
+        );
+        yield return String(
+            OrgSettingKeys.Communications.DefaultLanguage,
+            LanguageMaxLen,
+            value => value!.Length is >= 2 and <= LanguageMaxLen,
+            "es"
+        );
         yield return Bool(OrgSettingKeys.Communications.SalesInvoiceAuthorizedEnabled, "true") with
         {
             RequiresAudit = true,
@@ -73,7 +89,10 @@ public static class CommunicationsConfigurationDefinitions
         };
 
     private static ConfigurationDefinition SensitiveString(string key, int maxLength) =>
-        String(key, maxLength) with { IsSensitive = true };
+        String(key, maxLength) with
+        {
+            IsSensitive = true,
+        };
 
     private static ConfigurationDefinition Bool(string key, string defaultValue) =>
         new()
@@ -113,5 +132,7 @@ public static class CommunicationsConfigurationDefinitions
         && parsed <= max;
 
     private static bool LooksLikeEmail(string? value) =>
-        value is not null && value.Length <= EmailMaxLen && value.Contains('@', StringComparison.Ordinal);
+        value is not null
+        && value.Length <= EmailMaxLen
+        && value.Contains('@', StringComparison.Ordinal);
 }

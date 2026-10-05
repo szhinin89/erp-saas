@@ -26,9 +26,13 @@ public static class ExpensesModule
         SortOrder = 10,
         Id = "e5000000-0000-4000-9000-000000000002",
         ParentId = "ca6fa276-a8bc-4dc7-b207-7c37d57341ad",
-        RelatedActionPermissionsCsv = ExpensePermissions.DocumentsCreate + ","
-            + ExpensePermissions.DocumentsUpdate + "," + ExpensePermissions.DocumentsConfirm
-            + "," + ExpensePermissions.DocumentsCancel
+        RelatedActionPermissionsCsv = ExpensePermissions.DocumentsCreate
+            + ","
+            + ExpensePermissions.DocumentsUpdate
+            + ","
+            + ExpensePermissions.DocumentsConfirm
+            + ","
+            + ExpensePermissions.DocumentsCancel
     )]
     public const string ExpenseDocuments = "/expenses/documents";
 
@@ -39,8 +43,12 @@ public static class ExpensesModule
         SortOrder = 20,
         Id = "e5000000-0000-4000-9000-000000000001",
         ParentId = "ca6fa276-a8bc-4dc7-b207-7c37d57341ad",
-        RelatedActionPermissionsCsv = ExpensePermissions.CatalogCreate + ","
-            + ExpensePermissions.CatalogUpdate + "," + ExpensePermissions.CatalogActivate + ","
+        RelatedActionPermissionsCsv = ExpensePermissions.CatalogCreate
+            + ","
+            + ExpensePermissions.CatalogUpdate
+            + ","
+            + ExpensePermissions.CatalogActivate
+            + ","
             + ExpensePermissions.CatalogDeactivate
     )]
     public const string ExpenseCatalog = "/expenses/categories";

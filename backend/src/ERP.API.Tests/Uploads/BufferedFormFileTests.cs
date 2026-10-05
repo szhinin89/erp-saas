@@ -30,6 +30,7 @@ public sealed class BufferedFormFileTests
         }
 
         public void CopyTo(Stream target) => throw new NotSupportedException();
+
         public Stream OpenReadStream() => throw new NotSupportedException();
     }
 
@@ -48,7 +49,8 @@ public sealed class BufferedFormFileTests
         upload.Content.Content.CanRead.Should().BeTrue();
         upload.Content.Content.Position.Should().Be(0);
         (upload.Content.FileName, upload.Content.ContentType, upload.Content.SizeBytes)
-            .Should().Be(("a.bin", "application/x-test", 4L));
+            .Should()
+            .Be(("a.bin", "application/x-test", 4L));
 
         await upload.DisposeAsync();
 
@@ -60,8 +62,10 @@ public sealed class BufferedFormFileTests
     {
         var file = new FailingFormFile();
 
-        await FluentActions.Invoking(() => BufferedFormFile.CreateAsync(file, default))
-            .Should().ThrowAsync<IOException>();
+        await FluentActions
+            .Invoking(() => BufferedFormFile.CreateAsync(file, default))
+            .Should()
+            .ThrowAsync<IOException>();
 
         file.Target.Should().NotBeNull();
         file.Target!.CanRead.Should().BeFalse();
@@ -70,7 +74,9 @@ public sealed class BufferedFormFileTests
     [Fact]
     public async Task Archivo_null_es_un_error_de_programacion_los_endpoints_validan_antes()
     {
-        await FluentActions.Invoking(() => BufferedFormFile.CreateAsync(null!, default))
-            .Should().ThrowAsync<ArgumentNullException>();
+        await FluentActions
+            .Invoking(() => BufferedFormFile.CreateAsync(null!, default))
+            .Should()
+            .ThrowAsync<ArgumentNullException>();
     }
 }

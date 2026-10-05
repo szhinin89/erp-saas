@@ -1,3 +1,4 @@
+using System.Xml.Linq;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.ElectronicDocuments.SchemaValidation;
@@ -26,7 +27,6 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using System.Xml.Linq;
 using Testcontainers.PostgreSql;
 
 namespace ERP.Infrastructure.Tests.Persistence.SriCatalogs;
@@ -52,7 +52,9 @@ public sealed class SriRetentionCatalogDatabaseFixture : IAsyncLifetime
 
     public ErpDbContext CreateContext() =>
         new(
-            new DbContextOptionsBuilder<ErpDbContext>().UseNpgsql(_postgres.GetConnectionString()).Options,
+            new DbContextOptionsBuilder<ErpDbContext>()
+                .UseNpgsql(_postgres.GetConnectionString())
+                .Options,
             new NoTenant(),
             new NoOpPublisher(),
             new NoCompany()
@@ -73,9 +75,13 @@ public sealed class SriRetentionCatalogDatabaseFixture : IAsyncLifetime
 
     private sealed class NoOpPublisher : IPublisher
     {
-        public Task Publish(object notification, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
             where TNotification : INotification => Task.CompletedTask;
     }
 }
@@ -86,7 +92,8 @@ public sealed class SriRetentionCatalogDatabaseFixture : IAsyncLifetime
 /// provider real → resolver real → <see cref="RetentionXmlBuilder"/> real → XSD oficial 1.0.0. Ningún XML
 /// se arma con valores manuales.
 /// </summary>
-public sealed class SriRetentionCatalogResolutionIntegrationTests : IClassFixture<SriRetentionCatalogDatabaseFixture>
+public sealed class SriRetentionCatalogResolutionIntegrationTests
+    : IClassFixture<SriRetentionCatalogDatabaseFixture>
 {
     private static readonly DateOnly IssueDate = new(2026, 10, 2);
     private static readonly Guid Concept725 = Guid.Parse("10000000-0000-0000-0000-000000000003");
@@ -96,7 +103,9 @@ public sealed class SriRetentionCatalogResolutionIntegrationTests : IClassFixtur
 
     private readonly SriRetentionCatalogDatabaseFixture _fixture;
 
-    public SriRetentionCatalogResolutionIntegrationTests(SriRetentionCatalogDatabaseFixture fixture) => _fixture = fixture;
+    public SriRetentionCatalogResolutionIntegrationTests(
+        SriRetentionCatalogDatabaseFixture fixture
+    ) => _fixture = fixture;
 
     // ── Instalación = migraciones: el estado real en BD respeta la habilitación ──────────────────────
 
@@ -104,16 +113,27 @@ public sealed class SriRetentionCatalogResolutionIntegrationTests : IClassFixtur
     public async Task La_migracion_deja_no_habilitados_la_retencion_en_cero_y_no_procede()
     {
         await using var db = _fixture.CreateContext();
-        var flags = await db.SriRetentionCodes.AsNoTracking()
+        var flags = await db
+            .SriRetentionCodes.AsNoTracking()
             .Where(c => c.TaxType == "IVA")
             .ToDictionaryAsync(c => c.Code, c => c.IsActive);
 
         flags["IVA-0"].Should().BeFalse();
         flags["IVA-NP"].Should().BeFalse();
         flags["IVA-50"].Should().BeTrue();
-        flags["728"].Should().BeFalse("728 no tiene representación oficial: no se habilita para operaciones nuevas");
-        var officialConceptIds = db.SriRetentionCodes.Where(c => c.TaxType != "TEST").Select(c => c.Id);
-        (await db.SriRetentionCodeVersions.CountAsync(v => officialConceptIds.Contains(v.RetentionCodeId))).Should().Be(32, "22 del slice IVA + 10 versiones de Renta del Catálogo ATS 06/08/2026");
+        flags["728"]
+            .Should()
+            .BeFalse("728 no tiene representación oficial: no se habilita para operaciones nuevas");
+        var officialConceptIds = db
+            .SriRetentionCodes.Where(c => c.TaxType != "TEST")
+            .Select(c => c.Id);
+        (
+            await db.SriRetentionCodeVersions.CountAsync(v =>
+                officialConceptIds.Contains(v.RetentionCodeId)
+            )
+        )
+            .Should()
+            .Be(32, "22 del slice IVA + 10 versiones de Renta del Catálogo ATS 06/08/2026");
         (await db.SriNormativeSources.CountAsync()).Should().Be(3);
     }
 
@@ -123,7 +143,11 @@ public sealed class SriRetentionCatalogResolutionIntegrationTests : IClassFixtur
     public async Task ResolveForDate_ignora_la_habilitacion_operativa()
     {
         await using var db = _fixture.CreateContext();
-        var resolution = await new RetentionCodeResolver(db).ResolveForDateAsync(ConceptIva0, IssueDate, 0m);
+        var resolution = await new RetentionCodeResolver(db).ResolveForDateAsync(
+            ConceptIva0,
+            IssueDate,
+            0m
+        );
 
         resolution.IsResolved.Should().BeTrue(resolution.Detail);
         resolution.Representation!.XmlCode.Should().Be("7");
@@ -180,19 +204,39 @@ public sealed class SriRetentionCatalogResolutionIntegrationTests : IClassFixtur
         await using var db = _fixture.CreateContext();
         var resolver = new RetentionCodeResolver(db);
 
-        var before = await resolver.ResolveForDateAsync(RetentionTaxType.Income, "304", LastLegacyDay, 2m);
+        var before = await resolver.ResolveForDateAsync(
+            RetentionTaxType.Income,
+            "304",
+            LastLegacyDay,
+            2m
+        );
         before.IsResolved.Should().BeTrue(before.Detail);
-        before.Representation!.Percentage.Should().BeNull("la versión heredada no exige tasa (histórico preservado)");
-        before.Representation.NormativeSourceId.Should().Be(SriNormativeSourceConfiguration.AtsIncomeRetentionCatalogId);
+        before
+            .Representation!.Percentage.Should()
+            .BeNull("la versión heredada no exige tasa (histórico preservado)");
+        before
+            .Representation.NormativeSourceId.Should()
+            .Be(SriNormativeSourceConfiguration.AtsIncomeRetentionCatalogId);
 
-        (await resolver.ResolveForDateAsync(RetentionTaxType.Income, "304", AtsBlockStart, 2m)).Error
-            .Should().Be(RetentionCodeResolutionError.RateMismatch, "desde 06/08/2026 la tasa oficial de 304 es 10 %");
+        (await resolver.ResolveForDateAsync(RetentionTaxType.Income, "304", AtsBlockStart, 2m))
+            .Error.Should()
+            .Be(
+                RetentionCodeResolutionError.RateMismatch,
+                "desde 06/08/2026 la tasa oficial de 304 es 10 %"
+            );
 
-        var after = await resolver.ResolveForDateAsync(RetentionTaxType.Income, "304", AtsBlockStart, 10m);
+        var after = await resolver.ResolveForDateAsync(
+            RetentionTaxType.Income,
+            "304",
+            AtsBlockStart,
+            10m
+        );
         after.IsResolved.Should().BeTrue(after.Detail);
         after.Representation!.XmlCode.Should().Be("304");
         after.Representation.Percentage.Should().Be(10m);
-        after.Representation.NormativeSourceId.Should().Be(SriNormativeSourceConfiguration.AtsIncomeTable310From20260806Id);
+        after
+            .Representation.NormativeSourceId.Should()
+            .Be(SriNormativeSourceConfiguration.AtsIncomeTable310From20260806Id);
         after.Representation.NormativeDocument.Should().Be("CATALOGO_ATS");
     }
 
@@ -204,10 +248,12 @@ public sealed class SriRetentionCatalogResolutionIntegrationTests : IClassFixtur
         await using var db = _fixture.CreateContext();
         var resolver = new RetentionCodeResolver(db);
 
-        (await resolver.ResolveForDateAsync(RetentionTaxType.Income, code, AtsBlockStart, anyRate)).Error
-            .Should().Be(RetentionCodeResolutionError.ConditionalRateUndetermined);
-        (await resolver.ResolveForDateAsync(RetentionTaxType.Income, code, LastLegacyDay, anyRate)).IsResolved
-            .Should().BeTrue("los documentos anteriores conservan su resolución histórica");
+        (await resolver.ResolveForDateAsync(RetentionTaxType.Income, code, AtsBlockStart, anyRate))
+            .Error.Should()
+            .Be(RetentionCodeResolutionError.ConditionalRateUndetermined);
+        (await resolver.ResolveForDateAsync(RetentionTaxType.Income, code, LastLegacyDay, anyRate))
+            .IsResolved.Should()
+            .BeTrue("los documentos anteriores conservan su resolución histórica");
         (await resolver.GetSelectableByCodeAsync(code, "RENTA")).Should().BeNull();
     }
 
@@ -218,8 +264,12 @@ public sealed class SriRetentionCatalogResolutionIntegrationTests : IClassFixtur
         var resolver = new RetentionCodeResolver(db);
 
         (await resolver.GetSelectableByIdAsync(Concept341)).Should().BeNull();
-        (await resolver.ResolveForDateAsync(Concept341, AtsBlockStart, 2m)).Error.Should().Be(RetentionCodeResolutionError.NoValidVersion);
-        (await resolver.ResolveForDateAsync(Concept341, LastLegacyDay, 2m)).IsResolved.Should().BeTrue();
+        (await resolver.ResolveForDateAsync(Concept341, AtsBlockStart, 2m))
+            .Error.Should()
+            .Be(RetentionCodeResolutionError.NoValidVersion);
+        (await resolver.ResolveForDateAsync(Concept341, LastLegacyDay, 2m))
+            .IsResolved.Should()
+            .BeTrue();
 
         var historical = await resolver.GetByIdIncludingDisabledAsync(Concept341);
         historical!.Code.Should().Be("341");
@@ -244,7 +294,11 @@ public sealed class SriRetentionCatalogResolutionIntegrationTests : IClassFixtur
     public async Task Sin_version_vigente_falla_cerrado()
     {
         await using var db = _fixture.CreateContext();
-        var resolution = await new RetentionCodeResolver(db).ResolveForDateAsync(ConceptIsd, IssueDate, 5m);
+        var resolution = await new RetentionCodeResolver(db).ResolveForDateAsync(
+            ConceptIsd,
+            IssueDate,
+            5m
+        );
 
         resolution.IsResolved.Should().BeFalse();
         resolution.Error.Should().Be(RetentionCodeResolutionError.NoValidVersion);
@@ -260,8 +314,12 @@ public sealed class SriRetentionCatalogResolutionIntegrationTests : IClassFixtur
         await using var db = _fixture.CreateContext();
         var resolver = new RetentionCodeResolver(db);
 
-        (await resolver.ResolveForDateAsync(conceptId, new DateOnly(2025, 6, 1), 1m)).Representation!.XmlCode.Should().Be("99");
-        (await resolver.ResolveForDateAsync(conceptId, IssueDate, 1m)).Error.Should().Be(RetentionCodeResolutionError.NoValidVersion);
+        (await resolver.ResolveForDateAsync(conceptId, new DateOnly(2025, 6, 1), 1m))
+            .Representation!.XmlCode.Should()
+            .Be("99");
+        (await resolver.ResolveForDateAsync(conceptId, IssueDate, 1m))
+            .Error.Should()
+            .Be(RetentionCodeResolutionError.NoValidVersion);
     }
 
     [Fact]
@@ -273,7 +331,11 @@ public sealed class SriRetentionCatalogResolutionIntegrationTests : IClassFixtur
             (new DateOnly(2024, 1, 1), null, "97")
         );
         await using var db = _fixture.CreateContext();
-        var resolution = await new RetentionCodeResolver(db).ResolveForDateAsync(conceptId, IssueDate, 1m);
+        var resolution = await new RetentionCodeResolver(db).ResolveForDateAsync(
+            conceptId,
+            IssueDate,
+            1m
+        );
 
         resolution.IsResolved.Should().BeFalse();
         resolution.Error.Should().Be(RetentionCodeResolutionError.AmbiguousVersions);
@@ -283,7 +345,12 @@ public sealed class SriRetentionCatalogResolutionIntegrationTests : IClassFixtur
     public async Task Tasa_distinta_a_la_oficial_falla_cerrado()
     {
         await using var db = _fixture.CreateContext();
-        var resolution = await new RetentionCodeResolver(db).ResolveForDateAsync(RetentionTaxType.Vat, "725", IssueDate, 70m);
+        var resolution = await new RetentionCodeResolver(db).ResolveForDateAsync(
+            RetentionTaxType.Vat,
+            "725",
+            IssueDate,
+            70m
+        );
 
         resolution.IsResolved.Should().BeFalse();
         resolution.Error.Should().Be(RetentionCodeResolutionError.RateMismatch);
@@ -293,7 +360,12 @@ public sealed class SriRetentionCatalogResolutionIntegrationTests : IClassFixtur
     public async Task Concepto_728_no_es_emitible()
     {
         await using var db = _fixture.CreateContext();
-        var resolution = await new RetentionCodeResolver(db).ResolveForDateAsync(RetentionTaxType.Vat, "728", IssueDate, 15m);
+        var resolution = await new RetentionCodeResolver(db).ResolveForDateAsync(
+            RetentionTaxType.Vat,
+            "728",
+            IssueDate,
+            15m
+        );
 
         resolution.IsResolved.Should().BeFalse();
         resolution.Error.Should().Be(RetentionCodeResolutionError.MissingXmlCode);
@@ -303,7 +375,12 @@ public sealed class SriRetentionCatalogResolutionIntegrationTests : IClassFixtur
     public async Task Codigo_inexistente_falla_cerrado()
     {
         await using var db = _fixture.CreateContext();
-        var resolution = await new RetentionCodeResolver(db).ResolveForDateAsync(RetentionTaxType.Vat, "999", IssueDate, 30m);
+        var resolution = await new RetentionCodeResolver(db).ResolveForDateAsync(
+            RetentionTaxType.Vat,
+            "999",
+            IssueDate,
+            30m
+        );
 
         resolution.Error.Should().Be(RetentionCodeResolutionError.ConceptNotFound);
     }
@@ -312,11 +389,19 @@ public sealed class SriRetentionCatalogResolutionIntegrationTests : IClassFixtur
     public async Task La_representacion_resuelta_es_trazable_a_la_Ficha_234_Tabla_20()
     {
         await using var db = _fixture.CreateContext();
-        var representation = (await new RetentionCodeResolver(db).ResolveForDateAsync(RetentionTaxType.Vat, "725", IssueDate, 30m))
-            .Representation!;
+        var representation = (
+            await new RetentionCodeResolver(db).ResolveForDateAsync(
+                RetentionTaxType.Vat,
+                "725",
+                IssueDate,
+                30m
+            )
+        ).Representation!;
 
         representation.RetentionCodeId.Should().Be(Concept725);
-        representation.NormativeSourceId.Should().Be(SriNormativeSourceConfiguration.FichaV234Table20Id);
+        representation
+            .NormativeSourceId.Should()
+            .Be(SriNormativeSourceConfiguration.FichaV234Table20Id);
         representation.NormativeDocument.Should().Be("FICHA_TECNICA_OFFLINE");
         representation.NormativeVersion.Should().Be("2.34");
         representation.NormativeSection.Should().Contain("Tabla 20");
@@ -325,12 +410,21 @@ public sealed class SriRetentionCatalogResolutionIntegrationTests : IClassFixtur
     [Theory]
     [InlineData("IVA-0", 0, "7")]
     [InlineData("IVA-NP", 0, "8")]
-    public async Task Retencion_en_cero_y_no_procede_resuelven_su_codigo_oficial(string code, int rate, string xmlCode)
+    public async Task Retencion_en_cero_y_no_procede_resuelven_su_codigo_oficial(
+        string code,
+        int rate,
+        string xmlCode
+    )
     {
         // Solo a nivel de resolver: RetentionDocumentLine exige tasa > 0, así que estas representaciones
         // aún no pueden llegar a un XML (ver pendientes del ticket).
         await using var db = _fixture.CreateContext();
-        var resolution = await new RetentionCodeResolver(db).ResolveForDateAsync(RetentionTaxType.Vat, code, IssueDate, rate);
+        var resolution = await new RetentionCodeResolver(db).ResolveForDateAsync(
+            RetentionTaxType.Vat,
+            code,
+            IssueDate,
+            rate
+        );
 
         resolution.Representation!.XmlCode.Should().Be(xmlCode);
     }
@@ -354,10 +448,16 @@ public sealed class SriRetentionCatalogResolutionIntegrationTests : IClassFixtur
 
         schemaErrors.Should().BeEmpty("el XML debe validar contra ComprobanteRetencion_V1.0.0.xsd");
         var impuestos = XDocument.Parse(xml).Descendants("impuesto").ToList();
-        impuestos.Single(i => i.Element("codigo")!.Value == SriRetentionTaxTypeCodes.Vat)
-            .Element("codigoRetencion")!.Value.Should().Be(expectedXmlCode);
-        impuestos.Single(i => i.Element("codigo")!.Value == SriRetentionTaxTypeCodes.Income)
-            .Element("codigoRetencion")!.Value.Should().Be("303", "Renta conserva el comportamiento previo");
+        impuestos
+            .Single(i => i.Element("codigo")!.Value == SriRetentionTaxTypeCodes.Vat)
+            .Element("codigoRetencion")!
+            .Value.Should()
+            .Be(expectedXmlCode);
+        impuestos
+            .Single(i => i.Element("codigo")!.Value == SriRetentionTaxTypeCodes.Income)
+            .Element("codigoRetencion")!
+            .Value.Should()
+            .Be("303", "Renta conserva el comportamiento previo");
         xml.Should().NotContain($"<codigoRetencion>{businessCode}</codigoRetencion>");
     }
 
@@ -369,13 +469,18 @@ public sealed class SriRetentionCatalogResolutionIntegrationTests : IClassFixtur
         var result = await provider.GetDataAsync(reference);
 
         result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.FiscalCatalogConfigurationError);
+        result
+            .Code.Should()
+            .Be(ApiResponseCodes.ElectronicDocuments.FiscalCatalogConfigurationError);
         result.Error.Should().Contain("728");
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────────────────────────────
 
-    private async Task<(string Xml, IReadOnlyList<string> SchemaErrors)> GenerateRetentionXmlAsync(string vatCode, decimal vatRate)
+    private async Task<(string Xml, IReadOnlyList<string> SchemaErrors)> GenerateRetentionXmlAsync(
+        string vatCode,
+        decimal vatRate
+    )
     {
         var provider = BuildProvider(out var reference, vatCode, vatRate);
         var data = await provider.GetDataAsync(reference);
@@ -404,64 +509,150 @@ public sealed class SriRetentionCatalogResolutionIntegrationTests : IClassFixtur
         var emissionPointId = Guid.NewGuid();
 
         var retention = RetentionDocument.Create(
-            tenantId, companyId, Guid.NewGuid(), RetentionSourceDocumentType.PurchaseInvoice, Guid.NewGuid(),
-            supplierId, emissionPointId, userId,
+            tenantId,
+            companyId,
+            Guid.NewGuid(),
+            RetentionSourceDocumentType.PurchaseInvoice,
+            Guid.NewGuid(),
+            supplierId,
+            emissionPointId,
+            userId,
             new RetentionDocument.SourceDocumentSnapshot(
-                SriTypeCode: "01", DocumentNumber: "001-001-000000123", IssueDate: new DateOnly(2026, 9, 28),
-                AuthorizationNumber: null, TaxSupportCode: "01", Subtotal: 1000m, Total: 1150m
+                SriTypeCode: "01",
+                DocumentNumber: "001-001-000000123",
+                IssueDate: new DateOnly(2026, 9, 28),
+                AuthorizationNumber: null,
+                TaxSupportCode: "01",
+                Subtotal: 1000m,
+                Total: 1150m
             )
         );
-        retention.AddLine(RetentionDocumentLine.Create(
-            retention.Id, tenantId, RetentionTaxType.Vat, vatCode, $"Retención IVA {vatRate}%",
-            150m, vatRate, decimal.Round(150m * vatRate / 100m, 2)
-        ));
-        retention.AddLine(RetentionDocumentLine.Create(
-            retention.Id, tenantId, RetentionTaxType.Income, "303", "Honorarios profesionales", 1000m, 10m, 100m
-        ));
+        retention.AddLine(
+            RetentionDocumentLine.Create(
+                retention.Id,
+                tenantId,
+                RetentionTaxType.Vat,
+                vatCode,
+                $"Retención IVA {vatRate}%",
+                150m,
+                vatRate,
+                decimal.Round(150m * vatRate / 100m, 2)
+            )
+        );
+        retention.AddLine(
+            RetentionDocumentLine.Create(
+                retention.Id,
+                tenantId,
+                RetentionTaxType.Income,
+                "303",
+                "Honorarios profesionales",
+                1000m,
+                10m,
+                100m
+            )
+        );
         retention.Issue("001-001-000000001", IssueDate, userId);
 
         var establishment = Establishment.Create(
-            tenantId, branchId: Guid.NewGuid(), companyId, code: "001", name: "Matriz",
-            address: "Av. Principal 123", phone: null, isMain: true, createdBy: userId
+            tenantId,
+            branchId: Guid.NewGuid(),
+            companyId,
+            code: "001",
+            name: "Matriz",
+            address: "Av. Principal 123",
+            phone: null,
+            isMain: true,
+            createdBy: userId
         );
         var emissionPoint = EmissionPoint.Create(
-            tenantId, companyId, establishment.Id, code: "001", name: "PE-001",
-            emissionType: EmissionType.Electronic, isDefault: true, createdBy: userId
+            tenantId,
+            companyId,
+            establishment.Id,
+            code: "001",
+            name: "PE-001",
+            emissionType: EmissionType.Electronic,
+            isDefault: true,
+            createdBy: userId
         );
-        typeof(EmissionPoint).GetProperty(nameof(EmissionPoint.Establishment))!.SetValue(emissionPoint, establishment);
-        var company = Company.CreateManaged(tenantId, "1790012345001", "Empresa Retenedora S.A.", createdBy: userId);
-        var supplier = BusinessPartner.Create(tenantId, "04", "1791352688001", 2, "Proveedor Demo S.A.", userId);
+        typeof(EmissionPoint)
+            .GetProperty(nameof(EmissionPoint.Establishment))!
+            .SetValue(emissionPoint, establishment);
+        var company = Company.CreateManaged(
+            tenantId,
+            "1790012345001",
+            "Empresa Retenedora S.A.",
+            createdBy: userId
+        );
+        var supplier = BusinessPartner.Create(
+            tenantId,
+            "04",
+            "1791352688001",
+            2,
+            "Proveedor Demo S.A.",
+            userId
+        );
 
         var retentionRepo = new Mock<IRetentionDocumentRepository>();
-        retentionRepo.Setup(r => r.GetByIdAsync(tenantId, retention.Id, It.IsAny<CancellationToken>())).ReturnsAsync(retention);
+        retentionRepo
+            .Setup(r => r.GetByIdAsync(tenantId, retention.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(retention);
         var emissionPointRepo = new Mock<IEmissionPointRepository>();
-        emissionPointRepo.Setup(r => r.GetByIdAsync(emissionPointId, tenantId, It.IsAny<CancellationToken>())).ReturnsAsync(emissionPoint);
+        emissionPointRepo
+            .Setup(r => r.GetByIdAsync(emissionPointId, tenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(emissionPoint);
         var establishmentRepo = new Mock<IEstablishmentRepository>();
-        establishmentRepo.Setup(r => r.GetMainByCompanyAsync(tenantId, companyId, It.IsAny<CancellationToken>())).ReturnsAsync(establishment);
+        establishmentRepo
+            .Setup(r => r.GetMainByCompanyAsync(tenantId, companyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(establishment);
         var companyRepo = new Mock<ICompanyRepository>();
-        companyRepo.Setup(r => r.GetByIdForTenantAsync(companyId, tenantId, It.IsAny<CancellationToken>())).ReturnsAsync(company);
+        companyRepo
+            .Setup(r => r.GetByIdForTenantAsync(companyId, tenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(company);
         var sriSettingsRepo = new Mock<ISriSettingsRepository>();
-        sriSettingsRepo.Setup(r => r.GetByCompanyIdAsync(companyId, It.IsAny<CancellationToken>())).ReturnsAsync(
-            SriSettings.Create(tenantId, companyId, environment: 1, emissionType: 1,
-                wsdlUrl: "https://celcer.sri.gob.ec/comprobantes-electronicos-ws/RecepcionComprobantesOffline?wsdl",
-                createdBy: userId)
-        );
+        sriSettingsRepo
+            .Setup(r => r.GetByCompanyIdAsync(companyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                SriSettings.Create(
+                    tenantId,
+                    companyId,
+                    environment: 1,
+                    emissionType: 1,
+                    wsdlUrl: "https://celcer.sri.gob.ec/comprobantes-electronicos-ws/RecepcionComprobantesOffline?wsdl",
+                    createdBy: userId
+                )
+            );
         var partnerRepo = new Mock<IBusinessPartnerRepository>();
-        partnerRepo.Setup(r => r.GetByIdAsync(supplierId, It.IsAny<CancellationToken>())).ReturnsAsync(supplier);
+        partnerRepo
+            .Setup(r => r.GetByIdAsync(supplierId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(supplier);
         var docTypes = new Mock<ISriDocTypeCatalogResolver>();
-        docTypes.Setup(r => r.IsActiveElectronicDocTypeAsync(SriDocumentTypeCodes.Withholding, It.IsAny<CancellationToken>()))
+        docTypes
+            .Setup(r =>
+                r.IsActiveElectronicDocTypeAsync(
+                    SriDocumentTypeCodes.Withholding,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(true);
 
         reference = new ElectronicDocumentSourceReference(tenantId, companyId, retention.Id);
         return new RetentionElectronicDocumentDataProvider(
-            retentionRepo.Object, emissionPointRepo.Object, establishmentRepo.Object, companyRepo.Object,
-            sriSettingsRepo.Object, partnerRepo.Object, docTypes.Object,
+            retentionRepo.Object,
+            emissionPointRepo.Object,
+            establishmentRepo.Object,
+            companyRepo.Object,
+            sriSettingsRepo.Object,
+            partnerRepo.Object,
+            docTypes.Object,
             new RetentionCodeResolver(_fixture.CreateContext())
         );
     }
 
     /// <summary>Concepto de prueba aislado (código único por test) con las versiones dadas, en la base del fixture.</summary>
-    private async Task<Guid> SeedTestConceptAsync(string code, params (DateOnly? From, DateOnly? Until, string Xml)[] versions)
+    private async Task<Guid> SeedTestConceptAsync(
+        string code,
+        params (DateOnly? From, DateOnly? Until, string Xml)[] versions
+    )
     {
         await using var db = _fixture.CreateContext();
         var concept = new SriRetentionCode
@@ -474,16 +665,18 @@ public sealed class SriRetentionCatalogResolutionIntegrationTests : IClassFixtur
         };
         db.SriRetentionCodes.Add(concept);
         foreach (var (from, until, xml) in versions)
-            db.SriRetentionCodeVersions.Add(new SriRetentionCodeVersion
-            {
-                Id = Guid.NewGuid(),
-                RetentionCodeId = concept.Id,
-                ValidFrom = from,
-                ValidUntil = until,
-                Percentage = 1m,
-                XmlCode = xml,
-                NormativeSourceId = SriNormativeSourceConfiguration.FichaV234Table20Id,
-            });
+            db.SriRetentionCodeVersions.Add(
+                new SriRetentionCodeVersion
+                {
+                    Id = Guid.NewGuid(),
+                    RetentionCodeId = concept.Id,
+                    ValidFrom = from,
+                    ValidUntil = until,
+                    Percentage = 1m,
+                    XmlCode = xml,
+                    NormativeSourceId = SriNormativeSourceConfiguration.FichaV234Table20Id,
+                }
+            );
         await db.SaveChangesAsync();
         return concept.Id;
     }

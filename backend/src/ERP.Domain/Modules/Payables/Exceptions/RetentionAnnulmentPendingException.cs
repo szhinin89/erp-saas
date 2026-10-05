@@ -7,7 +7,9 @@ namespace ERP.Domain.Modules.Payables.Exceptions;
 /// de anulación de su retención ante el SRI: no admite pagos, créditos ni ajustes que harían imposible
 /// completar la anulación del documento origen cuando el SRI la confirme.
 /// </summary>
-public sealed class RetentionAnnulmentPendingException : DomainRuleViolationException, IApiCodedDomainRule
+public sealed class RetentionAnnulmentPendingException
+    : DomainRuleViolationException,
+        IApiCodedDomainRule
 {
     public const string ErrorCode = "RETENTION_ANNULMENT_PENDING";
 

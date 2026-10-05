@@ -47,7 +47,10 @@ public sealed class RetentionDocumentCancelledPostingTranslatorTests
             cancelReason
         );
 
-    private static JournalEntry PostedEntry(Guid sourceEventId, string sourceEventType = "DocumentIssued")
+    private static JournalEntry PostedEntry(
+        Guid sourceEventId,
+        string sourceEventType = "DocumentIssued"
+    )
     {
         var entry = JournalEntry.Create(
             TenantId,
@@ -82,21 +85,33 @@ public sealed class RetentionDocumentCancelledPostingTranslatorTests
         var m = new Mocks();
         var retentionId = Guid.NewGuid();
         var original = PostedEntry(retentionId);
-        m.JournalEntryRepo
-            .Setup(r => r.GetBySourceAsync(TenantId, CompanyId, "Retentions", retentionId, It.IsAny<CancellationToken>()))
+        m.JournalEntryRepo.Setup(r =>
+                r.GetBySourceAsync(
+                    TenantId,
+                    CompanyId,
+                    "Retentions",
+                    retentionId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(new List<JournalEntry> { original });
 
         ReverseJournalEntryCommand? sent = null;
-        m.Mediator
-            .Setup(x => x.Send(It.IsAny<ReverseJournalEntryCommand>(), It.IsAny<CancellationToken>()))
-            .Callback<IRequest<Result<JournalEntryDto>>, CancellationToken>((cmd, _) => sent = (ReverseJournalEntryCommand)cmd)
+        m.Mediator.Setup(x =>
+                x.Send(It.IsAny<ReverseJournalEntryCommand>(), It.IsAny<CancellationToken>())
+            )
+            .Callback<IRequest<Result<JournalEntryDto>>, CancellationToken>(
+                (cmd, _) => sent = (ReverseJournalEntryCommand)cmd
+            )
             .ReturnsAsync(Result<JournalEntryDto>.Success(DummyDto(original.Id)));
 
         await m.BuildTranslator().Handle(Event(retentionId), CancellationToken.None);
 
         sent.Should().NotBeNull();
         sent!.JournalEntryId.Should().Be(original.Id);
-        sent.Reason.Should().Contain("001-001-000000001").And.Contain("Cancelado junto con el gasto origen");
+        sent.Reason.Should()
+            .Contain("001-001-000000001")
+            .And.Contain("Cancelado junto con el gasto origen");
     }
 
     /// <summary>
@@ -112,19 +127,36 @@ public sealed class RetentionDocumentCancelledPostingTranslatorTests
         var m = new Mocks();
         var retentionId = Guid.NewGuid();
         var original = PostedEntry(retentionId);
-        m.JournalEntryRepo
-            .Setup(r => r.GetBySourceAsync(TenantId, CompanyId, "Retentions", retentionId, It.IsAny<CancellationToken>()))
+        m.JournalEntryRepo.Setup(r =>
+                r.GetBySourceAsync(
+                    TenantId,
+                    CompanyId,
+                    "Retentions",
+                    retentionId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(new List<JournalEntry> { original });
 
         ReverseJournalEntryCommand? sent = null;
-        m.Mediator
-            .Setup(x => x.Send(It.IsAny<ReverseJournalEntryCommand>(), It.IsAny<CancellationToken>()))
-            .Callback<IRequest<Result<JournalEntryDto>>, CancellationToken>((cmd, _) => sent = (ReverseJournalEntryCommand)cmd)
+        m.Mediator.Setup(x =>
+                x.Send(It.IsAny<ReverseJournalEntryCommand>(), It.IsAny<CancellationToken>())
+            )
+            .Callback<IRequest<Result<JournalEntryDto>>, CancellationToken>(
+                (cmd, _) => sent = (ReverseJournalEntryCommand)cmd
+            )
             .ReturnsAsync(Result<JournalEntryDto>.Success(DummyDto(original.Id)));
 
         var purchaseEvent = new RetentionDocumentCancelledEvent(
-            TenantId, retentionId, CompanyId, RetentionSourceDocumentType.PurchaseInvoice,
-            Guid.NewGuid(), SubjectId, "001-001-000000005", 30m, "Anulación de prueba"
+            TenantId,
+            retentionId,
+            CompanyId,
+            RetentionSourceDocumentType.PurchaseInvoice,
+            Guid.NewGuid(),
+            SubjectId,
+            "001-001-000000005",
+            30m,
+            "Anulación de prueba"
         );
 
         await m.BuildTranslator().Handle(purchaseEvent, CancellationToken.None);
@@ -137,8 +169,15 @@ public sealed class RetentionDocumentCancelledPostingTranslatorTests
     public async Task No_encontrar_el_asiento_original_lanza_en_vez_de_loguear()
     {
         var m = new Mocks();
-        m.JournalEntryRepo
-            .Setup(r => r.GetBySourceAsync(TenantId, CompanyId, "Retentions", It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        m.JournalEntryRepo.Setup(r =>
+                r.GetBySourceAsync(
+                    TenantId,
+                    CompanyId,
+                    "Retentions",
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(new List<JournalEntry>());
 
         var act = async () => await m.BuildTranslator().Handle(Event(), CancellationToken.None);
@@ -153,11 +192,19 @@ public sealed class RetentionDocumentCancelledPostingTranslatorTests
         var m = new Mocks();
         var retentionId = Guid.NewGuid();
         var notTheIssuance = PostedEntry(retentionId, sourceEventType: "SomethingElse");
-        m.JournalEntryRepo
-            .Setup(r => r.GetBySourceAsync(TenantId, CompanyId, "Retentions", retentionId, It.IsAny<CancellationToken>()))
+        m.JournalEntryRepo.Setup(r =>
+                r.GetBySourceAsync(
+                    TenantId,
+                    CompanyId,
+                    "Retentions",
+                    retentionId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(new List<JournalEntry> { notTheIssuance });
 
-        var act = async () => await m.BuildTranslator().Handle(Event(retentionId), CancellationToken.None);
+        var act = async () =>
+            await m.BuildTranslator().Handle(Event(retentionId), CancellationToken.None);
 
         var thrown = await act.Should().ThrowAsync<RetentionPostingFailedException>();
         thrown.Which.Code.Should().Be("JOURNAL_ENTRY_NOT_FOUND");
@@ -169,14 +216,28 @@ public sealed class RetentionDocumentCancelledPostingTranslatorTests
         var m = new Mocks();
         var retentionId = Guid.NewGuid();
         var original = PostedEntry(retentionId);
-        m.JournalEntryRepo
-            .Setup(r => r.GetBySourceAsync(TenantId, CompanyId, "Retentions", retentionId, It.IsAny<CancellationToken>()))
+        m.JournalEntryRepo.Setup(r =>
+                r.GetBySourceAsync(
+                    TenantId,
+                    CompanyId,
+                    "Retentions",
+                    retentionId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(new List<JournalEntry> { original });
-        m.Mediator
-            .Setup(x => x.Send(It.IsAny<ReverseJournalEntryCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<JournalEntryDto>.ValidationFailure("El período contable está cerrado.", "PERIOD_CLOSED"));
+        m.Mediator.Setup(x =>
+                x.Send(It.IsAny<ReverseJournalEntryCommand>(), It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                Result<JournalEntryDto>.ValidationFailure(
+                    "El período contable está cerrado.",
+                    "PERIOD_CLOSED"
+                )
+            );
 
-        var act = async () => await m.BuildTranslator().Handle(Event(retentionId), CancellationToken.None);
+        var act = async () =>
+            await m.BuildTranslator().Handle(Event(retentionId), CancellationToken.None);
 
         var thrown = await act.Should().ThrowAsync<RetentionPostingFailedException>();
         thrown.Which.Code.Should().Be("PERIOD_CLOSED");

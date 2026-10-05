@@ -9,7 +9,11 @@ namespace ERP.Domain.MasterData.Entities;
 /// para empresas existentes. Reemplaza el HashSet fijo CustomerRoleConfig.ValidLoyaltyTiers.
 /// Solo lectura desde el frontend en este bloque — CRUD administrativo queda fuera de alcance.
 /// </summary>
-public sealed class LoyaltyTier : MasterEntity, ITenantScopedEntity, ICompanyOperationalEntity, IClassificationCatalogEntity
+public sealed class LoyaltyTier
+    : MasterEntity,
+        ITenantScopedEntity,
+        ICompanyOperationalEntity,
+        IClassificationCatalogEntity
 {
     public const int CodeMaxLength = 20;
     public const int NameMaxLength = 120;

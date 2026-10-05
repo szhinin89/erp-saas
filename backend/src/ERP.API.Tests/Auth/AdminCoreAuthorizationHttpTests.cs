@@ -1,7 +1,7 @@
-using ERP.API.Tests.Support;
-using FluentAssertions;
 using System.Net;
 using System.Net.Http.Headers;
+using ERP.API.Tests.Support;
+using FluentAssertions;
 
 namespace ERP.API.Tests.Auth;
 
@@ -38,12 +38,14 @@ public sealed class AdminCoreAuthorizationHttpFixture : IAsyncLifetime
 }
 
 [Trait("Category", "PostgreSql")]
-public sealed class AdminCoreAuthorizationHttpTests : IClassFixture<AdminCoreAuthorizationHttpFixture>
+public sealed class AdminCoreAuthorizationHttpTests
+    : IClassFixture<AdminCoreAuthorizationHttpFixture>
 {
     private const string Endpoint = "/api/v1/admin-core/companies";
     private readonly AdminCoreAuthorizationHttpFixture _f;
 
-    public AdminCoreAuthorizationHttpTests(AdminCoreAuthorizationHttpFixture fixture) => _f = fixture;
+    public AdminCoreAuthorizationHttpTests(AdminCoreAuthorizationHttpFixture fixture) =>
+        _f = fixture;
 
     [Fact]
     public async Task AdminGlobalCore_puede_listar()

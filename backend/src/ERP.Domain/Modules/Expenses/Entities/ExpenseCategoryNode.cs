@@ -4,7 +4,10 @@ using ERP.Domain.Modules.Expenses.Enums;
 
 namespace ERP.Domain.Modules.Expenses.Entities;
 
-public sealed class ExpenseCategoryNode : AuditableEntity, ITenantScopedEntity, ICompanyOperationalEntity
+public sealed class ExpenseCategoryNode
+    : AuditableEntity,
+        ITenantScopedEntity,
+        ICompanyOperationalEntity
 {
     public const int CodeMaxLen = 30;
     public const int NameMaxLen = 150;
@@ -131,11 +134,17 @@ public sealed class ExpenseCategoryNode : AuditableEntity, ITenantScopedEntity, 
         if (string.IsNullOrWhiteSpace(code))
             throw new ArgumentException("El código es obligatorio.", nameof(code));
         if (code.Trim().Length > CodeMaxLen)
-            throw new ArgumentException($"El código no puede superar {CodeMaxLen} caracteres.", nameof(code));
+            throw new ArgumentException(
+                $"El código no puede superar {CodeMaxLen} caracteres.",
+                nameof(code)
+            );
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("El nombre es obligatorio.", nameof(name));
         if (name.Trim().Length > NameMaxLen)
-            throw new ArgumentException($"El nombre no puede superar {NameMaxLen} caracteres.", nameof(name));
+            throw new ArgumentException(
+                $"El nombre no puede superar {NameMaxLen} caracteres.",
+                nameof(name)
+            );
 
         ValidateHierarchy(level, parentId, accountingAccountId);
 
@@ -163,11 +172,17 @@ public sealed class ExpenseCategoryNode : AuditableEntity, ITenantScopedEntity, 
         if (string.IsNullOrWhiteSpace(code))
             throw new ArgumentException("El código es obligatorio.", nameof(code));
         if (code.Trim().Length > CodeMaxLen)
-            throw new ArgumentException($"El código no puede superar {CodeMaxLen} caracteres.", nameof(code));
+            throw new ArgumentException(
+                $"El código no puede superar {CodeMaxLen} caracteres.",
+                nameof(code)
+            );
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("El nombre es obligatorio.", nameof(name));
         if (name.Trim().Length > NameMaxLen)
-            throw new ArgumentException($"El nombre no puede superar {NameMaxLen} caracteres.", nameof(name));
+            throw new ArgumentException(
+                $"El nombre no puede superar {NameMaxLen} caracteres.",
+                nameof(name)
+            );
 
         Code = code.Trim().ToUpperInvariant();
         Name = name.Trim();
@@ -175,11 +190,7 @@ public sealed class ExpenseCategoryNode : AuditableEntity, ITenantScopedEntity, 
         SetUpdated(updatedBy);
     }
 
-    public void UpdateSubcategoryTaxRules(
-        bool isDeductible,
-        bool requiresInvoice,
-        Guid updatedBy
-    )
+    public void UpdateSubcategoryTaxRules(bool isDeductible, bool requiresInvoice, Guid updatedBy)
     {
         if (Level != ExpenseCategoryNodeLevel.Subcategory)
             throw new DomainRuleViolationException(
@@ -194,9 +205,14 @@ public sealed class ExpenseCategoryNode : AuditableEntity, ITenantScopedEntity, 
     public void ChangeSubcategoryAccount(Guid accountingAccountId, Guid updatedBy)
     {
         if (Level != ExpenseCategoryNodeLevel.Subcategory)
-            throw new DomainRuleViolationException("Solo una subcategoría puede tener cuenta contable.");
+            throw new DomainRuleViolationException(
+                "Solo una subcategoría puede tener cuenta contable."
+            );
         if (accountingAccountId == Guid.Empty)
-            throw new ArgumentException("La cuenta contable es obligatoria.", nameof(accountingAccountId));
+            throw new ArgumentException(
+                "La cuenta contable es obligatoria.",
+                nameof(accountingAccountId)
+            );
 
         AccountingAccountId = accountingAccountId;
         SetUpdated(updatedBy);
@@ -220,7 +236,10 @@ public sealed class ExpenseCategoryNode : AuditableEntity, ITenantScopedEntity, 
         if (level == ExpenseCategoryNodeLevel.Type)
         {
             if (parentId.HasValue)
-                throw new ArgumentException("El tipo de gasto no puede tener padre.", nameof(parentId));
+                throw new ArgumentException(
+                    "El tipo de gasto no puede tener padre.",
+                    nameof(parentId)
+                );
             if (accountingAccountId.HasValue)
                 throw new ArgumentException(
                     "El tipo de gasto no puede tener cuenta contable.",
@@ -232,7 +251,10 @@ public sealed class ExpenseCategoryNode : AuditableEntity, ITenantScopedEntity, 
         if (level == ExpenseCategoryNodeLevel.Category)
         {
             if (!parentId.HasValue || parentId.Value == Guid.Empty)
-                throw new ArgumentException("La categoría de gasto requiere un tipo padre.", nameof(parentId));
+                throw new ArgumentException(
+                    "La categoría de gasto requiere un tipo padre.",
+                    nameof(parentId)
+                );
             if (accountingAccountId.HasValue)
                 throw new ArgumentException(
                     "La categoría de gasto no puede tener cuenta contable.",
@@ -242,7 +264,10 @@ public sealed class ExpenseCategoryNode : AuditableEntity, ITenantScopedEntity, 
         }
 
         if (!parentId.HasValue || parentId.Value == Guid.Empty)
-            throw new ArgumentException("La subcategoría de gasto requiere una categoría padre.", nameof(parentId));
+            throw new ArgumentException(
+                "La subcategoría de gasto requiere una categoría padre.",
+                nameof(parentId)
+            );
         if (!accountingAccountId.HasValue || accountingAccountId.Value == Guid.Empty)
             throw new ArgumentException(
                 "La subcategoría de gasto requiere cuenta contable.",

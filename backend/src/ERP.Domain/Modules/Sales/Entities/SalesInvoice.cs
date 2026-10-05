@@ -380,8 +380,7 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
         for (var i = 1; i <= PaymentTerm.Installments; i++)
         {
             var dueDate = IssueDate.AddDays(PaymentTerm.DaysBetween * i);
-            var amount =
-                i == PaymentTerm.Installments ? total - accumulated : installmentAmount;
+            var amount = i == PaymentTerm.Installments ? total - accumulated : installmentAmount;
 
             _paymentSchedules.Add(SalesPaymentSchedule.Create(Id, TenantId, i, dueDate, amount));
             accumulated += amount;
@@ -484,12 +483,16 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
     /// real, nunca <see cref="AuthorizedGrandTotal"/>. Null solo por compatibilidad de tests/otros
     /// callers que no lo necesiten; el handler de producción siempre lo pasa.
     /// </summary>
+    /// <param name="updatedBy"></param>
+    /// <param name="cashApplied"></param>
     /// <param name="settlementTolerance">
     /// COMPANY-PRECISION-POLICY-SSOT-01: tolerancia de cuadre pago-vs-total resuelta por
     /// Application desde CompanyPrecisionPolicy.SettlementToleranceAmount de la empresa del
     /// documento (el dominio no lee infraestructura). Si no se provee (compatibilidad con
     /// llamadores existentes/tests), cae al default histórico <see cref="SalesSettlementPolicy.Tolerance"/>.
     /// </param>
+    /// <param name="cashByAccount"></param>
+    /// <param name="physicalCashApplied"></param>
     public void Authorize(
         Guid updatedBy,
         decimal? cashApplied = null,

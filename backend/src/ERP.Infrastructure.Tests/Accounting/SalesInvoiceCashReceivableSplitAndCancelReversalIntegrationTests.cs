@@ -34,7 +34,8 @@ namespace ERP.Infrastructure.Tests.Accounting;
 /// anular la venta reversa los asientos "InvoiceIssued"/"CostOfGoodsSold" ya generados.
 /// </summary>
 [Trait("Category", "PostgreSql")]
-public sealed class SalesInvoiceCashReceivableSplitAndCancelReversalIntegrationTests : IAsyncLifetime
+public sealed class SalesInvoiceCashReceivableSplitAndCancelReversalIntegrationTests
+    : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
         .WithImage("postgres:16-alpine")
@@ -93,7 +94,14 @@ public sealed class SalesInvoiceCashReceivableSplitAndCancelReversalIntegrationT
             _createdBy,
             companyId: company.Id
         );
-        var customer = BusinessPartner.Create(tenant.Id, "05", "1710034065", 1, "Cliente Test", _createdBy);
+        var customer = BusinessPartner.Create(
+            tenant.Id,
+            "05",
+            "1710034065",
+            1,
+            "Cliente Test",
+            _createdBy
+        );
         var establishment = Establishment.Create(
             tenant.Id,
             branchId: branch.Id,
@@ -106,7 +114,12 @@ public sealed class SalesInvoiceCashReceivableSplitAndCancelReversalIntegrationT
             createdBy: _createdBy
         );
         var cashRegister = CashRegister.Create(
-            tenant.Id, company.Id, branch.Id, "CAJA-01", "Caja Principal", _createdBy
+            tenant.Id,
+            company.Id,
+            branch.Id,
+            "CAJA-01",
+            "Caja Principal",
+            _createdBy
         );
 
         db.Tenants.Add(tenant);
@@ -118,14 +131,30 @@ public sealed class SalesInvoiceCashReceivableSplitAndCancelReversalIntegrationT
         await db.SaveChangesAsync();
 
         var emissionPoint = EmissionPoint.Create(
-            tenant.Id, company.Id, establishment.Id, "001", "PE-001", EmissionType.Electronic, true, _createdBy
+            tenant.Id,
+            company.Id,
+            establishment.Id,
+            "001",
+            "PE-001",
+            EmissionType.Electronic,
+            true,
+            _createdBy
         );
         db.EmissionPoints.Add(emissionPoint);
         await db.SaveChangesAsync();
 
         var cashSession = CashSession.Open(
-            tenant.Id, company.Id, branch.Id, _createdBy, cashRegister.Id, "CAJA-01", "Caja Principal",
-            emissionPoint.Id, "001", 0m, _createdBy
+            tenant.Id,
+            company.Id,
+            branch.Id,
+            _createdBy,
+            cashRegister.Id,
+            "CAJA-01",
+            "Caja Principal",
+            emissionPoint.Id,
+            "001",
+            0m,
+            _createdBy
         );
         db.CashSessions.Add(cashSession);
         await db.SaveChangesAsync();
@@ -142,12 +171,19 @@ public sealed class SalesInvoiceCashReceivableSplitAndCancelReversalIntegrationT
         var bootstrap = new ERP.Infrastructure.Seeding.Steps.AccountingBootstrapStep(
             db,
             new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
-            Microsoft.Extensions.Logging.Abstractions.NullLogger<
-                ERP.Infrastructure.Seeding.Steps.AccountingBootstrapStep
-            >.Instance
+            Microsoft
+                .Extensions
+                .Logging
+                .Abstractions
+                .NullLogger<ERP.Infrastructure.Seeding.Steps.AccountingBootstrapStep>
+                .Instance
         );
         await bootstrap.ExecuteAsync(
-            new ERP.Application.Common.Interfaces.CompanyBootstrapContext(_tenantId, _companyId, _createdBy)
+            new ERP.Application.Common.Interfaces.CompanyBootstrapContext(
+                _tenantId,
+                _companyId,
+                _createdBy
+            )
         );
     }
 
@@ -184,7 +220,10 @@ public sealed class SalesInvoiceCashReceivableSplitAndCancelReversalIntegrationT
         );
 
         var services = new ServiceCollection();
-        services.AddScoped<ERP.Application.Common.Services.ICompanyClock, ERP.Infrastructure.Persistence.Services.CompanyClock>();
+        services.AddScoped<
+            ERP.Application.Common.Services.ICompanyClock,
+            ERP.Infrastructure.Persistence.Services.CompanyClock
+        >();
         services.AddLogging();
         services.AddSingleton<ERP.Application.Modules.Companies.ICompanyPrecisionPolicyProvider>(
             ERP.Infrastructure.Tests.TestData.StandardPrecisionPolicyProvider.Instance
@@ -214,7 +253,9 @@ public sealed class SalesInvoiceCashReceivableSplitAndCancelReversalIntegrationT
             ERP.Infrastructure.Persistence.Repositories.Inventory.StockRepository
         >();
         services.AddMediatR(cfg =>
-            cfg.RegisterServicesFromAssembly(typeof(SalesInvoiceAuthorizedPostingTranslator).Assembly)
+            cfg.RegisterServicesFromAssembly(
+                typeof(SalesInvoiceAuthorizedPostingTranslator).Assembly
+            )
         );
 
         var provider = services.BuildServiceProvider();
@@ -255,14 +296,28 @@ public sealed class SalesInvoiceCashReceivableSplitAndCancelReversalIntegrationT
         var paymentTerm = PaymentTermSnapshot.Create(Guid.NewGuid(), "Contado", 1, 0);
 
         var inv = SalesInvoice.CreateDraft(
-            _tenantId, _companyId, _branchId, _customerId, customer,
-            invoiceNumber: invoiceNumber, issueDate: issueDate, createdBy: _createdBy,
-            paymentTerm: paymentTerm, cashSessionId: _cashSessionId, emissionPointId: null,
+            _tenantId,
+            _companyId,
+            _branchId,
+            _customerId,
+            customer,
+            invoiceNumber: invoiceNumber,
+            issueDate: issueDate,
+            createdBy: _createdBy,
+            paymentTerm: paymentTerm,
+            cashSessionId: _cashSessionId,
+            emissionPointId: null,
             emissionType: EmissionType.Physical
         );
 
         var line = SalesInvoiceDetail.Create(
-            inv.Id, _tenantId, "Producto Test", quantity: 1, unitPrice: unitPrice, vatCode: "0", uomCode: "UNIT"
+            inv.Id,
+            _tenantId,
+            "Producto Test",
+            quantity: 1,
+            unitPrice: unitPrice,
+            vatCode: "0",
+            uomCode: "UNIT"
         );
         line.ApplyTaxes("0", 0m, "IVA 0%", null, 0m, null);
         inv.ReplaceLines(new[] { line }, _createdBy);
@@ -270,12 +325,26 @@ public sealed class SalesInvoiceCashReceivableSplitAndCancelReversalIntegrationT
         var payments = new List<SalesInvoicePayment>();
         if (cashPortion > 0)
             payments.Add(
-                SalesInvoicePayment.Create(inv.Id, _tenantId, Guid.NewGuid(), "01", "Efectivo", cashPortion)
+                SalesInvoicePayment.Create(
+                    inv.Id,
+                    _tenantId,
+                    Guid.NewGuid(),
+                    "01",
+                    "Efectivo",
+                    cashPortion
+                )
             );
         var creditPortion = unitPrice - cashPortion;
         if (creditPortion > 0)
             payments.Add(
-                SalesInvoicePayment.Create(inv.Id, _tenantId, Guid.NewGuid(), "20", "Crédito", creditPortion)
+                SalesInvoicePayment.Create(
+                    inv.Id,
+                    _tenantId,
+                    Guid.NewGuid(),
+                    "20",
+                    "Crédito",
+                    creditPortion
+                )
             );
         inv.ReplacePayments(payments, _createdBy);
 
@@ -299,15 +368,26 @@ public sealed class SalesInvoiceCashReceivableSplitAndCancelReversalIntegrationT
         {
             await SeedPeriodAsync(postingDb, issueDate);
             var invoice = BuildAuthorizableInvoice(
-                issueDate, "001-001-000000107", 0.30m, cashPortion: 0.30m
+                issueDate,
+                "001-001-000000107",
+                0.30m,
+                cashPortion: 0.30m
             );
             var line = invoice.Lines.Single();
             line.ApplyDiscount(1.15m);
             line.ApplyTaxes("10", 15m, "IVA 15%", null, 0m, null);
             invoice.ReplacePayments(
-                new[] { SalesInvoicePayment.Create(
-                    invoice.Id, _tenantId, Guid.NewGuid(), "01", "Efectivo", 0.35m
-                ) },
+                new[]
+                {
+                    SalesInvoicePayment.Create(
+                        invoice.Id,
+                        _tenantId,
+                        Guid.NewGuid(),
+                        "01",
+                        "Efectivo",
+                        0.35m
+                    ),
+                },
                 _createdBy
             );
 
@@ -329,32 +409,39 @@ public sealed class SalesInvoiceCashReceivableSplitAndCancelReversalIntegrationT
         var (cancellationDb, _) = BuildWiredContext();
         await using (cancellationDb)
         {
-            var original = await cancellationDb.JournalEntries.Include(x => x.Lines)
-                .SingleAsync(x => x.SourceEventId == invoiceId && x.SourceEventType == "InvoiceIssued");
+            var original = await cancellationDb
+                .JournalEntries.Include(x => x.Lines)
+                .SingleAsync(x =>
+                    x.SourceEventId == invoiceId && x.SourceEventType == "InvoiceIssued"
+                );
             originalEntryId = original.Id;
             original.Status.Should().Be(JournalEntryStatus.Posted);
             original.Lines.Should().HaveCount(3);
             original.Lines.Should().OnlyContain(l => l.Debit > 0m || l.Credit > 0m);
             original.Lines.Sum(l => l.Debit).Should().Be(0.35m);
             original.Lines.Sum(l => l.Credit).Should().Be(0.35m);
-            var accounts = await cancellationDb.Accounts
-                .Where(a => a.CompanyId == _companyId).ToListAsync();
+            var accounts = await cancellationDb
+                .Accounts.Where(a => a.CompanyId == _companyId)
+                .ToListAsync();
             var discountAccount = accounts.Single(a => a.Code.Value == "4.1.02.001");
             original.Lines.Should().NotContain(l => l.AccountId == discountAccount.Id);
 
-            var invoice = await cancellationDb.SalesInvoices
-                .Include(x => x.Lines).Include(x => x.Payments)
+            var invoice = await cancellationDb
+                .SalesInvoices.Include(x => x.Lines)
+                .Include(x => x.Payments)
                 .SingleAsync(x => x.Id == invoiceId);
             invoice.Cancel("Regresión descuento subcentavo", _createdBy);
             await cancellationDb.SaveChangesAsync();
         }
 
         await using var verifyDb = CreateContext();
-        var persistedOriginal = await verifyDb.JournalEntries.Include(x => x.Lines)
+        var persistedOriginal = await verifyDb
+            .JournalEntries.Include(x => x.Lines)
             .SingleAsync(x => x.Id == originalEntryId);
         persistedOriginal.Status.Should().Be(JournalEntryStatus.Reversed);
         persistedOriginal.ReverseJournalEntryId.Should().NotBeNull();
-        var reversal = await verifyDb.JournalEntries.Include(x => x.Lines)
+        var reversal = await verifyDb
+            .JournalEntries.Include(x => x.Lines)
             .SingleAsync(x => x.Id == persistedOriginal.ReverseJournalEntryId);
         reversal.Status.Should().Be(JournalEntryStatus.Posted);
         reversal.OriginalJournalEntryId.Should().Be(originalEntryId);
@@ -362,13 +449,22 @@ public sealed class SalesInvoiceCashReceivableSplitAndCancelReversalIntegrationT
         reversal.Lines.Should().OnlyContain(l => l.Debit > 0m || l.Credit > 0m);
         reversal.Lines.Sum(l => l.Debit).Should().Be(0.35m);
         reversal.Lines.Sum(l => l.Credit).Should().Be(0.35m);
-        reversal.Lines.Select(l => new { l.AccountId, l.Debit, l.Credit }).Should()
-            .BeEquivalentTo(persistedOriginal.Lines.Select(l => new
+        reversal
+            .Lines.Select(l => new
             {
                 l.AccountId,
-                Debit = l.Credit,
-                Credit = l.Debit
-            }));
+                l.Debit,
+                l.Credit,
+            })
+            .Should()
+            .BeEquivalentTo(
+                persistedOriginal.Lines.Select(l => new
+                {
+                    l.AccountId,
+                    Debit = l.Credit,
+                    Credit = l.Debit,
+                })
+            );
     }
 
     [Fact]
@@ -391,8 +487,8 @@ public sealed class SalesInvoiceCashReceivableSplitAndCancelReversalIntegrationT
             .FirstAsync(x => x.SourceEventId == inv.Id && x.SourceEventType == "InvoiceIssued");
         entry.Status.Should().Be(JournalEntryStatus.Posted);
 
-        var accountCodesById = await verifyDb.Accounts
-            .Where(a => a.CompanyId == _companyId)
+        var accountCodesById = await verifyDb
+            .Accounts.Where(a => a.CompanyId == _companyId)
             .ToDictionaryAsync(a => a.Id, a => a.Code.Value);
         var debitLines = entry.Lines.Where(l => l.Debit > 0).ToList();
         debitLines.Should().HaveCount(1, "venta 100% contado: solo Caja, ninguna CxC ficticia");
@@ -421,8 +517,8 @@ public sealed class SalesInvoiceCashReceivableSplitAndCancelReversalIntegrationT
             .JournalEntries.Include(x => x.Lines)
             .FirstAsync(x => x.SourceEventId == inv.Id && x.SourceEventType == "InvoiceIssued");
 
-        var accountCodesById = await verifyDb.Accounts
-            .Where(a => a.CompanyId == _companyId)
+        var accountCodesById = await verifyDb
+            .Accounts.Where(a => a.CompanyId == _companyId)
             .ToDictionaryAsync(a => a.Id, a => a.Code.Value);
         var debitLines = entry.Lines.Where(l => l.Debit > 0).ToList();
         debitLines.Should().HaveCount(1, "venta 100% crédito: solo CxC, sin línea de Caja");
@@ -432,8 +528,8 @@ public sealed class SalesInvoiceCashReceivableSplitAndCancelReversalIntegrationT
         // Lote 1 — sin movimiento de caja para la porción a crédito (CashSession.Open ya crea su
         // propio movimiento "Opening" al iniciar la sesión, en InitializeAsync — no relacionado
         // con esta venta; se excluye explícitamente para no producir un falso negativo).
-        var cashMovements = await verifyDb.CashMovements
-            .Where(m =>
+        var cashMovements = await verifyDb
+            .CashMovements.Where(m =>
                 m.CashSessionId == _cashSessionId
                 && m.MovementType != ERP.Domain.Modules.Caja.Enums.CashMovementType.Opening
             )
@@ -460,16 +556,22 @@ public sealed class SalesInvoiceCashReceivableSplitAndCancelReversalIntegrationT
             .JournalEntries.Include(x => x.Lines)
             .FirstAsync(x => x.SourceEventId == inv.Id && x.SourceEventType == "InvoiceIssued");
 
-        var accountCodesById = await verifyDb.Accounts
-            .Where(a => a.CompanyId == _companyId)
+        var accountCodesById = await verifyDb
+            .Accounts.Where(a => a.CompanyId == _companyId)
             .ToDictionaryAsync(a => a.Id, a => a.Code.Value);
         var debitLines = entry.Lines.Where(l => l.Debit > 0).ToList();
         debitLines.Should().HaveCount(2, "venta parcial: Caja + CxC");
-        debitLines.Should().Contain(l => accountCodesById[l.AccountId] == "1.1.01.001" && l.Debit == 40m);
-        debitLines.Should().Contain(l => accountCodesById[l.AccountId] == "1.1.03.001" && l.Debit == 60m);
+        debitLines
+            .Should()
+            .Contain(l => accountCodesById[l.AccountId] == "1.1.01.001" && l.Debit == 40m);
+        debitLines
+            .Should()
+            .Contain(l => accountCodesById[l.AccountId] == "1.1.03.001" && l.Debit == 60m);
         entry.Lines.Sum(l => l.Debit).Should().Be(entry.Lines.Sum(l => l.Credit)).And.Be(100m);
 
-        var receivable = await verifyDb.SalesReceivables.SingleOrDefaultAsync(r => r.InvoiceId == inv.Id);
+        var receivable = await verifyDb.SalesReceivables.SingleOrDefaultAsync(r =>
+            r.InvoiceId == inv.Id
+        );
         // Este test opera a nivel de dominio (Authorize() directo) — SalesReceivable la crea
         // AuthorizeSalesInvoiceHandler (Application), no SalesInvoice.Authorize() (Domain). Se
         // confirma en su lugar el saldo pendiente correcto queda reflejado en el asiento (arriba).
@@ -518,8 +620,10 @@ public sealed class SalesInvoiceCashReceivableSplitAndCancelReversalIntegrationT
         // publicó CostOfGoodsSold, así que no hay nada que reversar para ese FactType (documentado
         // explícitamente en SalesInvoiceCancelledPostingTranslator). Se confirma que la ausencia no
         // genera error ni entrada espuria.
-        var cogsEntries = await verifyDb.JournalEntries
-            .Where(x => x.SourceEventId == inv.Id && x.SourceEventType == "CostOfGoodsSold")
+        var cogsEntries = await verifyDb
+            .JournalEntries.Where(x =>
+                x.SourceEventId == inv.Id && x.SourceEventType == "CostOfGoodsSold"
+            )
             .ToListAsync();
         cogsEntries.Should().BeEmpty();
     }
@@ -572,16 +676,22 @@ public sealed class SalesInvoiceCashReceivableSplitAndCancelReversalIntegrationT
         act.Should().Throw<DomainRuleViolationException>();
 
         await using var verifyDb = CreateContext();
-        var entries = await verifyDb.JournalEntries
-            .Where(x => x.SourceEventId == inv.Id && x.SourceEventType == "InvoiceIssued")
+        var entries = await verifyDb
+            .JournalEntries.Where(x =>
+                x.SourceEventId == inv.Id && x.SourceEventType == "InvoiceIssued"
+            )
             .ToListAsync();
         entries.Should().HaveCount(1, "un único asiento original, sin reverso duplicado");
         entries[0].Status.Should().Be(JournalEntryStatus.Reversed);
 
-        var reversals = await verifyDb.JournalEntries
-            .Where(x => x.SourceEventType == "Reversal" && x.SourceEventId == entries[0].Id)
+        var reversals = await verifyDb
+            .JournalEntries.Where(x =>
+                x.SourceEventType == "Reversal" && x.SourceEventId == entries[0].Id
+            )
             .ToListAsync();
-        reversals.Should().HaveCount(1, "un único asiento de reverso, nunca dos por la misma factura");
+        reversals
+            .Should()
+            .HaveCount(1, "un único asiento de reverso, nunca dos por la misma factura");
     }
 
     private sealed class DeferredPublisher : IPublisher
@@ -591,7 +701,10 @@ public sealed class SalesInvoiceCashReceivableSplitAndCancelReversalIntegrationT
         public Task Publish(object notification, CancellationToken cancellationToken = default) =>
             Inner!.Publish(notification, cancellationToken);
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
             where TNotification : INotification => Inner!.Publish(notification, cancellationToken);
     }
 
@@ -623,7 +736,10 @@ public sealed class SalesInvoiceCashReceivableSplitAndCancelReversalIntegrationT
         public Task Publish(object notification, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
             where TNotification : INotification => Task.CompletedTask;
     }
 }

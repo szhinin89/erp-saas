@@ -38,7 +38,11 @@ public sealed class GetCompanyBpPurchaseSettingsHandlerTests
     {
         var paymentTermId = Guid.NewGuid();
         var settings = CompanyBpPurchaseSettings.Create(
-            TenantId, CompanyId, SupplierId, paymentTermId, UserId
+            TenantId,
+            CompanyId,
+            SupplierId,
+            paymentTermId,
+            UserId
         );
         var repo = new Mock<ICompanyBpPurchaseSettingsRepository>();
         repo.Setup(r => r.GetByBusinessPartnerAsync(SupplierId, It.IsAny<CancellationToken>()))

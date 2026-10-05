@@ -27,8 +27,11 @@ internal sealed class FakeRideTemplate(RideDocumentType documentType) : IRideTem
 {
     public RideDocumentType DocumentType => documentType;
 
-    public IRideDocumentLayout Compose(RideModel model, RideBranding branding, RideLinePrecision precision) =>
-        new FakeRideDocumentLayout();
+    public IRideDocumentLayout Compose(
+        RideModel model,
+        RideBranding branding,
+        RideLinePrecision precision
+    ) => new FakeRideDocumentLayout();
 }
 
 /// <summary>Construye un <see cref="RideModel"/> mínimo válido — misma forma usada en RideModelTests (Fase 2).</summary>

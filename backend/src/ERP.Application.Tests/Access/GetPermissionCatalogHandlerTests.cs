@@ -23,17 +23,32 @@ public sealed class GetPermissionCatalogHandlerTests
 
         groups.Should().NotBeEmpty();
         groups.Select(g => g.SortOrder).Should().BeInAscendingOrder();
-        groups.Select(g => g.Code).Should().Contain(new[]
-        {
-            "customers", "suppliers", "products", "inventory", "sales", "accounting", "settings", "admin",
-        });
+        groups
+            .Select(g => g.Code)
+            .Should()
+            .Contain(
+                new[]
+                {
+                    "customers",
+                    "suppliers",
+                    "products",
+                    "inventory",
+                    "sales",
+                    "accounting",
+                    "settings",
+                    "admin",
+                }
+            );
     }
 
     [Fact]
     public async Task Catalog_is_1to1_complete_with_every_navitem_that_has_a_real_permission()
     {
         var result = await _handler.Handle(new GetPermissionCatalogQuery(), CancellationToken.None);
-        var catalogItemIds = result.Value!.Groups.SelectMany(g => g.Categories.SelectMany(c => c.Items)).Select(i => i.Id).ToHashSet();
+        var catalogItemIds = result
+            .Value!.Groups.SelectMany(g => g.Categories.SelectMany(c => c.Items))
+            .Select(i => i.Id)
+            .ToHashSet();
 
         var expectedIds = KernelRegistry
             .Navigation.Where(n => n.PermissionKey is not null)
@@ -67,10 +82,16 @@ public sealed class GetPermissionCatalogHandlerTests
             .Value!.Groups.SelectMany(g => g.Categories.SelectMany(c => c.Items))
             .Single(i => i.Route == "/supplier-payments");
 
-        item.Actions.Select(a => a.Code).Should().BeEquivalentTo(new[]
-        {
-            "supplier-payments.view", "supplier-payments.create", "supplier-payments.reverse",
-        });
+        item.Actions.Select(a => a.Code)
+            .Should()
+            .BeEquivalentTo(
+                new[]
+                {
+                    "supplier-payments.view",
+                    "supplier-payments.create",
+                    "supplier-payments.reverse",
+                }
+            );
     }
 
     [Fact]
@@ -103,7 +124,10 @@ public sealed class GetPermissionCatalogHandlerTests
     [Fact]
     public async Task Catalog_only_contains_permission_keys_that_exist_in_the_kernel_registry()
     {
-        var allPermissions = new HashSet<string>(KernelRegistry.Permissions, StringComparer.Ordinal);
+        var allPermissions = new HashSet<string>(
+            KernelRegistry.Permissions,
+            StringComparer.Ordinal
+        );
         var result = await _handler.Handle(new GetPermissionCatalogQuery(), CancellationToken.None);
 
         var allCodes = result

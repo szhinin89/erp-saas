@@ -32,8 +32,10 @@ public sealed class GetSupplierPaymentPolicyUseCasesTests
                 )
             );
 
-        var result = await new GetSupplierPaymentPolicyHandler(resolver.Object)
-            .Handle(new GetSupplierPaymentPolicyQuery(), CancellationToken.None);
+        var result = await new GetSupplierPaymentPolicyHandler(resolver.Object).Handle(
+            new GetSupplierPaymentPolicyQuery(),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.AllowWithoutPayable.Should().Be(allow);

@@ -173,7 +173,8 @@ public sealed class CompanyAccessGuard : ICompanyAccessGuard
         // La empresa operativa es CONTEXTO, no un recurso pedido: su rechazo (ajena, inexistente,
         // no operativa, sin membership) es COMPANY_SCOPE_FORBIDDEN, igual que en
         // CompanyScopeBehavior. Se decide por código; el mensaje se conserva tal cual.
-        return access.IsSuccess
+        return
+            access.IsSuccess
             || access.Code
                 is not (ApiResponseCodes.Common.NotFound or ApiResponseCodes.Common.Forbidden)
             ? access

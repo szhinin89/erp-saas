@@ -1,10 +1,10 @@
+using System.Security.Cryptography;
+using System.Text;
 using ERP.Application.Access.DTOs;
 using ERP.Application.Common;
 using ERP.Domain.Kernel;
 using ERP.Domain.Kernel.Navigation;
 using MediatR;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace ERP.Application.Access.UseCases.Permissions;
 
@@ -28,32 +28,37 @@ namespace ERP.Application.Access.UseCases.Permissions;
 public sealed class GetPermissionCatalogHandler
     : IRequestHandler<GetPermissionCatalogQuery, Result<PermissionCatalogDto>>
 {
-    private static readonly IReadOnlyDictionary<string, (string Label, string Description)> ActionVerbs =
-        new Dictionary<string, (string, string)>(StringComparer.Ordinal)
-        {
-            ["create"] = ("Crear", "Permite crear nuevos registros."),
-            ["update"] = ("Actualizar", "Permite editar registros existentes."),
-            ["edit"] = ("Actualizar", "Permite editar registros existentes."),
-            ["delete"] = ("Eliminar", "Permite eliminar registros."),
-            ["disable"] = ("Deshabilitar", "Permite deshabilitar registros."),
-            ["deactivate"] = ("Desactivar", "Permite desactivar registros."),
-            ["activate"] = ("Activar", "Permite activar registros."),
-            ["confirm"] = ("Confirmar", "Permite confirmar la operación."),
-            ["cancel"] = ("Cancelar", "Permite cancelar la operación."),
-            ["reverse"] = ("Reversar", "Permite reversar la operación."),
-            ["manage"] = ("Administrar", "Permite administrar por completo esta pantalla."),
-            ["configure"] = ("Configurar", "Permite configurar esta pantalla."),
-            ["configure-company"] = ("Configurar empresa", "Permite configurar datos de empresa asociados."),
-            ["close"] = ("Cerrar", "Permite cerrar la operación."),
-            ["open"] = ("Abrir", "Permite abrir la operación."),
-            ["record"] = ("Registrar", "Permite registrar movimientos."),
-            ["retry"] = ("Reintentar", "Permite reintentar la operación."),
-            ["detail"] = ("Ver detalle", "Permite ver el detalle de un registro."),
-            ["assign_temporary_password"] = (
-                "Asignar contraseña temporal",
-                "Permite asignar una contraseña temporal."
-            ),
-        };
+    private static readonly IReadOnlyDictionary<
+        string,
+        (string Label, string Description)
+    > ActionVerbs = new Dictionary<string, (string, string)>(StringComparer.Ordinal)
+    {
+        ["create"] = ("Crear", "Permite crear nuevos registros."),
+        ["update"] = ("Actualizar", "Permite editar registros existentes."),
+        ["edit"] = ("Actualizar", "Permite editar registros existentes."),
+        ["delete"] = ("Eliminar", "Permite eliminar registros."),
+        ["disable"] = ("Deshabilitar", "Permite deshabilitar registros."),
+        ["deactivate"] = ("Desactivar", "Permite desactivar registros."),
+        ["activate"] = ("Activar", "Permite activar registros."),
+        ["confirm"] = ("Confirmar", "Permite confirmar la operación."),
+        ["cancel"] = ("Cancelar", "Permite cancelar la operación."),
+        ["reverse"] = ("Reversar", "Permite reversar la operación."),
+        ["manage"] = ("Administrar", "Permite administrar por completo esta pantalla."),
+        ["configure"] = ("Configurar", "Permite configurar esta pantalla."),
+        ["configure-company"] = (
+            "Configurar empresa",
+            "Permite configurar datos de empresa asociados."
+        ),
+        ["close"] = ("Cerrar", "Permite cerrar la operación."),
+        ["open"] = ("Abrir", "Permite abrir la operación."),
+        ["record"] = ("Registrar", "Permite registrar movimientos."),
+        ["retry"] = ("Reintentar", "Permite reintentar la operación."),
+        ["detail"] = ("Ver detalle", "Permite ver el detalle de un registro."),
+        ["assign_temporary_password"] = (
+            "Asignar contraseña temporal",
+            "Permite asignar una contraseña temporal."
+        ),
+    };
 
     public Task<Result<PermissionCatalogDto>> HandleAsync(
         CancellationToken cancellationToken = default
@@ -77,7 +82,9 @@ public sealed class GetPermissionCatalogHandler
             .OrderBy(g => g.SortOrder)
             .ToList();
 
-        return Task.FromResult(Result<PermissionCatalogDto>.Success(new PermissionCatalogDto(groups)));
+        return Task.FromResult(
+            Result<PermissionCatalogDto>.Success(new PermissionCatalogDto(groups))
+        );
     }
 
     private static IReadOnlyList<PermissionCatalogCategoryDto> BuildCategories(
@@ -103,7 +110,12 @@ public sealed class GetPermissionCatalogHandler
 
             if (items.Count > 0)
                 categories.Add(
-                    new PermissionCatalogCategoryDto(container.Id, container.LabelKey, container.SortOrder, items)
+                    new PermissionCatalogCategoryDto(
+                        container.Id,
+                        container.LabelKey,
+                        container.SortOrder,
+                        items
+                    )
                 );
         }
 

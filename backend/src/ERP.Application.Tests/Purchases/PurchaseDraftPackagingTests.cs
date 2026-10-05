@@ -45,14 +45,18 @@ public sealed class PurchaseDraftPackagingTests
         var bpRepo = new Mock<IBusinessPartnerRepository>();
         bpRepo
             .Setup(r => r.GetByIdAsync(SupplierId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(BusinessPartner.Create(TenantId, "04", "1791352688001", 2, "Proveedor", UserId));
+            .ReturnsAsync(
+                BusinessPartner.Create(TenantId, "04", "1791352688001", 2, "Proveedor", UserId)
+            );
 
         var itemRepo = new Mock<IItemRepository>();
         itemRepo
             .Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(item);
         itemRepo
-            .Setup(r => r.GetSupplierCodeAsync(item.Id, SupplierId, TenantId, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetSupplierCodeAsync(item.Id, SupplierId, TenantId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync("PROV-PACA-12");
 
         var tax = new Mock<PurchaseTaxResolver>();
@@ -185,7 +189,10 @@ public sealed class PurchaseDraftPackagingTests
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
         result.Error.Should().Be($"El proveedor '{supplierName}' se encuentra inactivo.");
-        repo.Verify(r => r.AddAsync(It.IsAny<PurchaseInvoice>(), It.IsAny<CancellationToken>()), Times.Never);
+        repo.Verify(
+            r => r.AddAsync(It.IsAny<PurchaseInvoice>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
         repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 

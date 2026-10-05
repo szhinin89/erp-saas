@@ -70,13 +70,15 @@ public sealed class CompanyBrandingHandlersTests
         var writtenKeys = new List<string>();
         orgRepo
             .Setup(r => r.UpsertAsync(It.IsAny<OrgSetting>(), It.IsAny<CancellationToken>()))
-            .Callback<OrgSetting, CancellationToken>((s, _) =>
-            {
-                s.Scope.Should().Be(OrgScope.Company);
-                s.ScopeId.Should().Be(CompanyId);
-                s.TenantId.Should().Be(TenantId);
-                writtenKeys.Add(s.Key);
-            })
+            .Callback<OrgSetting, CancellationToken>(
+                (s, _) =>
+                {
+                    s.Scope.Should().Be(OrgScope.Company);
+                    s.ScopeId.Should().Be(CompanyId);
+                    s.TenantId.Should().Be(TenantId);
+                    writtenKeys.Add(s.Key);
+                }
+            )
             .Returns(Task.CompletedTask);
 
         var handler = new UpdateCompanyBrandingHandler(

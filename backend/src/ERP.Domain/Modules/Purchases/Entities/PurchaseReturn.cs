@@ -340,7 +340,11 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
                 );
 
             var fraction = line.Quantity / original.OriginalQuantity;
-            var returnedSubtotal = ProrateAmount(original.LineSubtotal - original.DiscountAmount, line.Quantity, original.OriginalQuantity);
+            var returnedSubtotal = ProrateAmount(
+                original.LineSubtotal - original.DiscountAmount,
+                line.Quantity,
+                original.OriginalQuantity
+            );
             var returnedVat = Round2(fraction * original.VatAmount);
             var returnedDiscount = Round2(fraction * original.DiscountAmount);
             var historicalCost = Round2(original.LandedUnitCost * line.Quantity);
@@ -566,10 +570,14 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
     // ── Guards ─────────────────────────────────────────────────────────
     public void RegisterLinkedCreditNote(PurchaseCreditNote creditNote, Guid userId)
     {
-        if (Status != PurchaseReturnStatus.Authorized
+        if (
+            Status != PurchaseReturnStatus.Authorized
             || creditNote.Status != PurchaseCreditNoteStatus.Authorized
-            || creditNote.LinkedPurchaseReturnId != Id)
-            throw new DomainRuleViolationException("La NC no corresponde a esta devolución autorizada.");
+            || creditNote.LinkedPurchaseReturnId != Id
+        )
+            throw new DomainRuleViolationException(
+                "La NC no corresponde a esta devolución autorizada."
+            );
         // The fiscal reference is PurchaseCreditNote.LinkedPurchaseReturnId. The legacy
         // SupplierCreditNoteDocumentId belongs to the separate supplier-document workflow.
         FiscalStatus = PurchaseReturnFiscalStatus.SupplierCreditNoteRegistered;
@@ -584,8 +592,11 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
             );
     }
 
-    public static decimal ProrateAmount(decimal amount, decimal quantity, decimal originalQuantity) =>
-        Round2(quantity / originalQuantity * amount);
+    public static decimal ProrateAmount(
+        decimal amount,
+        decimal quantity,
+        decimal originalQuantity
+    ) => Round2(quantity / originalQuantity * amount);
 
     private static decimal Round2(decimal value) =>
         Math.Round(value, FiscalPrecision.TaxAmount, MidpointRounding.AwayFromZero);

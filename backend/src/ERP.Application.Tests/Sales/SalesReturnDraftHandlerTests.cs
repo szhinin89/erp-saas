@@ -135,8 +135,7 @@ public sealed class SalesReturnDraftHandlerTests
     private static ICurrentCompany Company() =>
         Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId);
 
-    private static ICurrentBranch Branch() =>
-        Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId);
+    private static ICurrentBranch Branch() => Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId);
 
     private static ICurrentUser User() => Mock.Of<ICurrentUser>(u => u.UserId == UserId);
 

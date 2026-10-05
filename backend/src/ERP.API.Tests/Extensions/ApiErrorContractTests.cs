@@ -1,3 +1,5 @@
+using System.Reflection;
+using System.Text.Json;
 using ERP.API.Extensions;
 using ERP.API.Middleware;
 using ERP.Application.Common;
@@ -12,8 +14,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging.Abstractions;
-using System.Reflection;
-using System.Text.Json;
 
 namespace ERP.API.Tests.Extensions;
 
@@ -151,7 +151,9 @@ public sealed class ApiErrorContractTests
         if (ApiErrorStatus.ExposesDetail(code))
             json.GetProperty("Data").GetProperty("errors")[0].GetString().Should().Be("detalle");
         else
-            json.GetProperty("Data").ValueKind.Should().Be(JsonValueKind.Null, "500/503 no exponen detalle");
+            json.GetProperty("Data")
+                .ValueKind.Should()
+                .Be(JsonValueKind.Null, "500/503 no exponen detalle");
     }
 
     /// <summary>Misma condición lógica por excepción o por Result → mismo status y mismo code.</summary>
@@ -160,9 +162,15 @@ public sealed class ApiErrorContractTests
         {
             { new ValidationException("x"), ApiResponseCodes.Common.ValidationError },
             { new DbUpdateConcurrencyException("x"), ApiResponseCodes.Common.ConcurrencyConflict },
-            { new UnspecifiedDateTimeKindException("Entity", "At", DateTimeKind.Local), ApiResponseCodes.Common.InvalidDateTimeKind },
             {
-                new DbUpdateException("x", new Npgsql.NpgsqlException("x", new System.Net.Sockets.SocketException(10061))),
+                new UnspecifiedDateTimeKindException("Entity", "At", DateTimeKind.Local),
+                ApiResponseCodes.Common.InvalidDateTimeKind
+            },
+            {
+                new DbUpdateException(
+                    "x",
+                    new Npgsql.NpgsqlException("x", new System.Net.Sockets.SocketException(10061))
+                ),
                 ApiResponseCodes.Common.DatabaseUnavailable
             },
             { new ArgumentException("x"), ApiResponseCodes.Common.BadRequest },
@@ -175,7 +183,10 @@ public sealed class ApiErrorContractTests
             { new SriCommunicationException("x"), ApiResponseCodes.Common.SriCommunicationError },
             { CompanyScopeException.AccessDenied(), ApiResponseCodes.Common.CompanyScopeForbidden },
             { BranchScopeException.AccessDenied(), ApiResponseCodes.Common.BranchScopeForbidden },
-            { new CompanyRucAlreadyExistsException("x"), ApiResponseCodes.Common.CompanyRucAlreadyExists },
+            {
+                new CompanyRucAlreadyExistsException("x"),
+                ApiResponseCodes.Common.CompanyRucAlreadyExists
+            },
             { new UnauthorizedAccessException("x"), ApiResponseCodes.Common.Unauthorized },
             { new NotSupportedException("x"), ApiResponseCodes.Common.InternalError },
         };
@@ -184,7 +195,21 @@ public sealed class ApiErrorContractTests
     internal static Exception DomainRuleException()
     {
         var warehouse = ERP.Domain.Modules.Inventory.Entities.Warehouse.Create(
-            Guid.NewGuid(), Guid.NewGuid(), "Bodega", "B1", null, null, null, null, null, null, null, null, null, Guid.NewGuid(), Guid.NewGuid()
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "Bodega",
+            "B1",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            Guid.NewGuid(),
+            Guid.NewGuid()
         );
         warehouse.Disable(Guid.NewGuid());
         try
@@ -200,7 +225,10 @@ public sealed class ApiErrorContractTests
 
     [Theory]
     [MemberData(nameof(ExceptionCodes))]
-    public async Task Excepcion_y_Result_producen_el_mismo_status_y_code(Exception exception, string code)
+    public async Task Excepcion_y_Result_producen_el_mismo_status_y_code(
+        Exception exception,
+        string code
+    )
     {
         var context = new DefaultHttpContext();
         context.Response.Body = new MemoryStream();
@@ -218,7 +246,8 @@ public sealed class ApiErrorContractTests
         doc.RootElement.GetProperty("code").GetString().Should().Be(code);
         context.Response.StatusCode.Should().Be(Matrix[code]);
 
-        var viaResult = (ObjectResult)Controller().ToOkOrBadRequest(Result<string>.Failure("x", code));
+        var viaResult = (ObjectResult)
+            Controller().ToOkOrBadRequest(Result<string>.Failure("x", code));
         viaResult.StatusCode.Should().Be(context.Response.StatusCode);
     }
 
@@ -233,7 +262,11 @@ public sealed class ApiErrorContractTests
     [InlineData(ApiResponseCodes.Common.DatabaseUnavailable, 503, "Production")]
     [InlineData(ApiResponseCodes.Common.DatabaseUnavailable, 503, "Development")]
     [InlineData(ApiResponseCodes.Common.InvalidDateTimeKind, 500, "Development")]
-    public void Result_500_503_no_filtra_el_detalle_tecnico(string code, int status, string environment)
+    public void Result_500_503_no_filtra_el_detalle_tecnico(
+        string code,
+        int status,
+        string environment
+    )
     {
         var result = Controller(environment).ApiFailure(Result<string>.Failure(Secret, code));
 
@@ -248,12 +281,18 @@ public sealed class ApiErrorContractTests
     public void Solo_InternalError_e_Infrastructure_ocultan_el_detalle()
     {
         foreach (var (code, _) in Matrix)
-            ApiErrorStatus.ExposesDetail(code).Should().Be(
-                code is not (ApiResponseCodes.Common.InternalError
-                    or ApiResponseCodes.Common.InvalidDateTimeKind
-                    or ApiResponseCodes.Common.DatabaseUnavailable),
-                code
-            );
+            ApiErrorStatus
+                .ExposesDetail(code)
+                .Should()
+                .Be(
+                    code
+                        is not (
+                            ApiResponseCodes.Common.InternalError
+                            or ApiResponseCodes.Common.InvalidDateTimeKind
+                            or ApiResponseCodes.Common.DatabaseUnavailable
+                        ),
+                    code
+                );
     }
 
     public static TheoryData<Exception, int, string> TechnicalExceptions =>
@@ -262,15 +301,36 @@ public sealed class ApiErrorContractTests
             { new Exception(Secret), 500, "Production" },
             { new Exception(Secret), 500, "Development" },
             { new TimeoutException(Secret), 500, "Development" },
-            { new DbUpdateException("An error occurred while saving the entity changes.", new Npgsql.NpgsqlException(Secret, new TimeoutException(Secret))), 503, "Production" },
-            { new DbUpdateException(Secret, new Npgsql.NpgsqlException(Secret, new System.Net.Sockets.SocketException(10061))), 503, "Development" },
+            {
+                new DbUpdateException(
+                    "An error occurred while saving the entity changes.",
+                    new Npgsql.NpgsqlException(Secret, new TimeoutException(Secret))
+                ),
+                503,
+                "Production"
+            },
+            {
+                new DbUpdateException(
+                    Secret,
+                    new Npgsql.NpgsqlException(
+                        Secret,
+                        new System.Net.Sockets.SocketException(10061)
+                    )
+                ),
+                503,
+                "Development"
+            },
             { new DbUpdateException(Secret), 500, "Development" },
             { new InvalidOperationException(Secret), 500, "Development" },
         };
 
     [Theory]
     [MemberData(nameof(TechnicalExceptions))]
-    public async Task Excepcion_500_503_no_filtra_detalle_ni_stack_trace(Exception exception, int status, string environment)
+    public async Task Excepcion_500_503_no_filtra_detalle_ni_stack_trace(
+        Exception exception,
+        int status,
+        string environment
+    )
     {
         var context = new DefaultHttpContext();
         context.Response.Body = new MemoryStream();
@@ -286,8 +346,12 @@ public sealed class ApiErrorContractTests
         context.Response.StatusCode.Should().Be(status);
         context.Response.Body.Position = 0;
         var body = await new StreamReader(context.Response.Body).ReadToEndAsync();
-        body.Should().NotContain("Password").And.NotContain("SELECT").And.NotContain("db.internal")
-            .And.NotContain(" at ").And.NotContain("Exception");
+        body.Should()
+            .NotContain("Password")
+            .And.NotContain("SELECT")
+            .And.NotContain("db.internal")
+            .And.NotContain(" at ")
+            .And.NotContain("Exception");
         using var doc = JsonDocument.Parse(body);
         doc.RootElement.TryGetProperty("data", out var data).Should().BeTrue();
         data.ValueKind.Should().Be(JsonValueKind.Null);
@@ -296,7 +360,9 @@ public sealed class ApiErrorContractTests
     private static TestController Controller(string environment = "Production")
     {
         var services = new ServiceCollection();
-        services.AddSingleton<IWebHostEnvironment>(new StubWebHostEnvironment { EnvironmentName = environment });
+        services.AddSingleton<IWebHostEnvironment>(
+            new StubWebHostEnvironment { EnvironmentName = environment }
+        );
         return new TestController
         {
             ControllerContext = new ControllerContext
@@ -318,7 +384,9 @@ public sealed class ApiErrorContractTests
 
         result.Code.Should().Be(ApiResponseCodes.Retentions.AnnulmentPending);
         ((ObjectResult)Controller().ToOkOrBadRequest(result)).StatusCode.Should().Be(422);
-        Result<string>.FromDomainRule(new ERP.Domain.Exceptions.DomainRuleViolationException("x")).Code
-            .Should().Be(ApiResponseCodes.Common.DomainRuleViolation, "las demás reglas no cambian");
+        Result<string>
+            .FromDomainRule(new ERP.Domain.Exceptions.DomainRuleViolationException("x"))
+            .Code.Should()
+            .Be(ApiResponseCodes.Common.DomainRuleViolation, "las demás reglas no cambian");
     }
 }

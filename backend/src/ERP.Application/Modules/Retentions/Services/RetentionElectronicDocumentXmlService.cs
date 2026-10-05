@@ -76,7 +76,8 @@ public sealed class RetentionElectronicDocumentXmlService : IRetentionElectronic
         );
         if (!additionalInfo.IsSuccess)
             return Result<ElectronicDocumentXml>.ValidationFailure(
-                additionalInfo.Error ?? "No se pudo componer la información adicional de la retención.",
+                additionalInfo.Error
+                    ?? "No se pudo componer la información adicional de la retención.",
                 additionalInfo.Code
             );
 

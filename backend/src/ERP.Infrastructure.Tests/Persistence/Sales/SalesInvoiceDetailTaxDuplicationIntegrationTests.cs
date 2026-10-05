@@ -193,7 +193,10 @@ public sealed class SalesInvoiceDetailTaxDuplicationIntegrationTests : IAsyncLif
     /// <summary>Crea y persiste un Draft con una línea con IVA &gt; 0% (15%, tasa real — no el 0%
     /// que ocultaba el bug en dev) ya con impuestos aplicados una vez, igual que
     /// <c>SalesLineBuilder</c> lo hace al crear el borrador.</summary>
-    private async Task<Guid> SeedDraftWithVatLineAsync(string invoiceNumber, decimal unitPrice = 100m)
+    private async Task<Guid> SeedDraftWithVatLineAsync(
+        string invoiceNumber,
+        decimal unitPrice = 100m
+    )
     {
         await using var db = CreateContext();
 
@@ -254,8 +257,8 @@ public sealed class SalesInvoiceDetailTaxDuplicationIntegrationTests : IAsyncLif
     private async Task<int> CountVatRowsForLineAsync(Guid lineId)
     {
         await using var db = CreateContext();
-        return await db.Database
-            .SqlQuery<int>(
+        return await db
+            .Database.SqlQuery<int>(
                 $"SELECT COUNT(*)::int AS \"Value\" FROM sales_invoice_detail_taxes WHERE sales_invoice_detail_id = {lineId} AND tax_code = '2'"
             )
             .SingleAsync();
@@ -276,7 +279,9 @@ public sealed class SalesInvoiceDetailTaxDuplicationIntegrationTests : IAsyncLif
         var lineId = reloaded!.Lines.Single().Id;
 
         // Precondición: tras el primer guardado, ya hay exactamente 1 fila de IVA.
-        (await CountVatRowsForLineAsync(lineId)).Should().Be(1);
+        (await CountVatRowsForLineAsync(lineId))
+            .Should()
+            .Be(1);
 
         // Segunda invocación de ApplyTaxes sobre la línea recargada — mismo patrón que
         // AuthorizeSalesInvoiceHandler.
@@ -288,7 +293,9 @@ public sealed class SalesInvoiceDetailTaxDuplicationIntegrationTests : IAsyncLif
 
         // Verificación a nivel de BD — SQL de verificación post-fix del ticket: máximo 1 fila por
         // grupo (sales_invoice_detail_id, tax_code).
-        (await CountVatRowsForLineAsync(lineId)).Should().Be(1);
+        (await CountVatRowsForLineAsync(lineId))
+            .Should()
+            .Be(1);
 
         // Recargar en un contexto completamente nuevo confirma la cardinalidad persistida.
         await using var db2 = CreateContext();

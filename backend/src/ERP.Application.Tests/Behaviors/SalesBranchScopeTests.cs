@@ -110,10 +110,7 @@ public sealed class SalesBranchScopeTests
 
         result.Should().Be(expected);
         nextCalled.Should().BeTrue();
-        f.Guard.Verify(
-            g => g.RequireCurrentBranchAsync(It.IsAny<CancellationToken>()),
-            Times.Once
-        );
+        f.Guard.Verify(g => g.RequireCurrentBranchAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     // MediatR pipeline behaviors son genéricos por tipo concreto de request — se resuelve

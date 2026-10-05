@@ -1,3 +1,6 @@
+using System.Net;
+using System.Net.Http.Headers;
+using System.Text.Json;
 using ERP.API.Tests.Support;
 using ERP.Application.Access.Authorization;
 using ERP.Domain.Access.Entities;
@@ -8,9 +11,6 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
-using System.Net;
-using System.Net.Http.Headers;
-using System.Text.Json;
 
 namespace ERP.API.Tests.Integration;
 
@@ -51,23 +51,45 @@ public sealed class ResultStatusMappingHttpTests : IAsyncLifetime
             await db.SaveChangesAsync();
             _tenantId = tenant.Id;
 
-            var company = Company.CreateManaged(tenant.Id, $"179{tenant.Id:N}"[..13], "Empresa Test", createdBy: _adminId);
-            var foreign = Company.CreateManaged(foreignTenant.Id, $"179{foreignTenant.Id:N}"[..13], "Empresa Ajena", createdBy: _adminId);
+            var company = Company.CreateManaged(
+                tenant.Id,
+                $"179{tenant.Id:N}"[..13],
+                "Empresa Test",
+                createdBy: _adminId
+            );
+            var foreign = Company.CreateManaged(
+                foreignTenant.Id,
+                $"179{foreignTenant.Id:N}"[..13],
+                "Empresa Ajena",
+                createdBy: _adminId
+            );
             db.Companies.AddRange(company, foreign);
             await db.SaveChangesAsync();
             _companyId = company.Id;
             _foreignCompanyId = foreign.Id;
 
-            var user = IdentityUser.Create("sadmi", "Admin", "Test", $"admin-{Guid.NewGuid():N}@test.com", "TEST_PASSWORD_HASH", _adminId);
+            var user = IdentityUser.Create(
+                "sadmi",
+                "Admin",
+                "Test",
+                $"admin-{Guid.NewGuid():N}@test.com",
+                "TEST_PASSWORD_HASH",
+                _adminId
+            );
             db.IdentityUsers.Add(user);
             await db.SaveChangesAsync();
-            db.CompanyUserMemberships.Add(CompanyUserMembership.Create(_companyId, user.Id, "Admin", null, _adminId));
+            db.CompanyUserMemberships.Add(
+                CompanyUserMembership.Create(_companyId, user.Id, "Admin", null, _adminId)
+            );
             await db.SaveChangesAsync();
             _userId = user.Id;
         }
 
-        _app = _factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
-            services.AddScoped<IRuntimePermissionAuthorizer, AllowAllPermissionAuthorizer>()));
+        _app = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureTestServices(services =>
+                services.AddScoped<IRuntimePermissionAuthorizer, AllowAllPermissionAuthorizer>()
+            )
+        );
         _client = _app.CreateClient();
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             "Bearer",
@@ -91,10 +113,13 @@ public sealed class ResultStatusMappingHttpTests : IAsyncLifetime
         if (string.IsNullOrWhiteSpace(text) || !text.TrimStart().StartsWith('{'))
             return (response.StatusCode, null, []);
         var json = JsonDocument.Parse(text).RootElement;
-        var errors = json.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Object
-            && data.TryGetProperty("errors", out var e) && e.ValueKind == JsonValueKind.Array
-            ? e.EnumerateArray().Select(x => x.GetString()!).ToArray()
-            : [];
+        var errors =
+            json.TryGetProperty("data", out var data)
+            && data.ValueKind == JsonValueKind.Object
+            && data.TryGetProperty("errors", out var e)
+            && e.ValueKind == JsonValueKind.Array
+                ? e.EnumerateArray().Select(x => x.GetString()!).ToArray()
+                : [];
         return (response.StatusCode, json.GetProperty("code").GetString(), errors);
     }
 
@@ -112,7 +137,10 @@ public sealed class ResultStatusMappingHttpTests : IAsyncLifetime
         var response = await _client.GetAsync("/api/v1/items/resolve/%20");
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        (await response.Content.ReadAsStringAsync()).Should().Contain("\"errors\"").And.Contain("code");
+        (await response.Content.ReadAsStringAsync())
+            .Should()
+            .Contain("\"errors\"")
+            .And.Contain("code");
     }
 
     [Theory]
@@ -134,7 +162,10 @@ public sealed class ResultStatusMappingHttpTests : IAsyncLifetime
     // ── No cambian ───────────────────────────────────────────────────────────
 
     [Theory]
-    [InlineData("/api/v1/companies/profile/logo/content", "La empresa no tiene un logo configurado.")]
+    [InlineData(
+        "/api/v1/companies/profile/logo/content",
+        "La empresa no tiene un logo configurado."
+    )]
     [InlineData("/api/v1/companies/profile/logo-alt/content", null)]
     public async Task Logo_inexistente_sigue_404_NOT_FOUND(string url, string? message)
     {
@@ -153,8 +184,11 @@ public sealed class ResultStatusMappingHttpTests : IAsyncLifetime
         var response = await _client.GetAsync("/api/v1/items/resolve/NO-EXISTE-123");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement
-            .GetProperty("data").ValueKind.Should().Be(JsonValueKind.Null);
+        JsonDocument
+            .Parse(await response.Content.ReadAsStringAsync())
+            .RootElement.GetProperty("data")
+            .ValueKind.Should()
+            .Be(JsonValueKind.Null);
     }
 
     [Theory]
@@ -177,6 +211,8 @@ public sealed class ResultStatusMappingHttpTests : IAsyncLifetime
 
         foreign.Status.Should().Be(HttpStatusCode.NotFound);
         foreign.Code.Should().Be("NOT_FOUND");
-        foreign.Should().BeEquivalentTo(missing, "una empresa ajena es indistinguible de una inexistente");
+        foreign
+            .Should()
+            .BeEquivalentTo(missing, "una empresa ajena es indistinguible de una inexistente");
     }
 }

@@ -66,12 +66,14 @@ public sealed record UpdateDocumentFlowPolicyCommand(
 
 // ── Validators ──────────────────────────────────────────────────────────
 
-public sealed class GetDocumentFlowPolicyByIdValidator : AbstractValidator<GetDocumentFlowPolicyByIdQuery>
+public sealed class GetDocumentFlowPolicyByIdValidator
+    : AbstractValidator<GetDocumentFlowPolicyByIdQuery>
 {
     public GetDocumentFlowPolicyByIdValidator() => RuleFor(x => x.Id).NotEmpty();
 }
 
-public sealed class UpdateDocumentFlowPolicyValidator : AbstractValidator<UpdateDocumentFlowPolicyCommand>
+public sealed class UpdateDocumentFlowPolicyValidator
+    : AbstractValidator<UpdateDocumentFlowPolicyCommand>
 {
     public UpdateDocumentFlowPolicyValidator() => RuleFor(x => x.Id).NotEmpty();
 }
@@ -188,7 +190,9 @@ public sealed class UpdateDocumentFlowPolicyHandler
     {
         var row = await _repo.GetByIdAsync(_tenant.TenantId, _company.CompanyId, cmd.Id, ct);
         if (row is null)
-            return Result<DocumentFlowPolicyDto>.NotFound("Política de flujo documental no encontrada.");
+            return Result<DocumentFlowPolicyDto>.NotFound(
+                "Política de flujo documental no encontrada."
+            );
 
         var entity = row.Value.Policy;
         entity.Update(

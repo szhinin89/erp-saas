@@ -117,9 +117,7 @@ public sealed record BusinessPartnerRoleDto(
                 ? SupplierRoleConfigDto.From(role.SupplierConfig)
                 : null,
             role.CarrierConfig is not null ? CarrierRoleConfigDto.From(role.CarrierConfig) : null,
-            role.CustomerConfig is not null
-                ? CustomerRoleConfigDto.From(role.CustomerConfig)
-                : null
+            role.CustomerConfig is not null ? CustomerRoleConfigDto.From(role.CustomerConfig) : null
         );
 }
 

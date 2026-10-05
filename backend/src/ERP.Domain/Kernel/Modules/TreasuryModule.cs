@@ -35,7 +35,10 @@ public static class TreasuryModule
         SortOrder = 10,
         Id = "f5000000-0000-4000-9000-000000000001",
         ParentId = "f5000000-0000-4000-9000-000000000010",
-        RelatedActionPermissionsCsv = CajaPermissions.Open + "," + CajaPermissions.Close + ","
+        RelatedActionPermissionsCsv = CajaPermissions.Open
+            + ","
+            + CajaPermissions.Close
+            + ","
             + CajaPermissions.Record
     )]
     public const string CajaSessions = "/treasury/cash";
@@ -125,8 +128,10 @@ public static class TreasuryModule
         SortOrder = 20,
         Id = "f5000000-0000-4000-9000-000000000042",
         ParentId = "f5000000-0000-4000-9000-000000000040",
-        RelatedActionPermissionsCsv = TreasuryPermissions.BankAccountsCreate + ","
-            + TreasuryPermissions.BankAccountsUpdate + ","
+        RelatedActionPermissionsCsv = TreasuryPermissions.BankAccountsCreate
+            + ","
+            + TreasuryPermissions.BankAccountsUpdate
+            + ","
             + TreasuryPermissions.BankAccountsManage
     )]
     public const string BankAccounts = "/treasury/banks/accounts";

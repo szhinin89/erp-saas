@@ -62,7 +62,15 @@ public sealed class PricingResolverCompanyClockTests
                         It.IsAny<CancellationToken>()
                     )
                 )
-                .ReturnsAsync(PriceListItem.Create(TenantId, CompanyId, Guid.NewGuid(), Guid.NewGuid(), UserId));
+                .ReturnsAsync(
+                    PriceListItem.Create(
+                        TenantId,
+                        CompanyId,
+                        Guid.NewGuid(),
+                        Guid.NewGuid(),
+                        UserId
+                    )
+                );
         }
 
         public PricingResolver Build() =>
@@ -116,18 +124,15 @@ public sealed class PricingResolverCompanyClockTests
         // reloj UTC del servidor ya marque 18/09.
         var companyToday = new DateOnly(2026, 9, 17);
         var f = new Fixture();
-        f.CompanyClock
-            .Setup(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
+        f.CompanyClock.Setup(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(companyToday);
 
         var item = CreateItem();
         var priceList = CreatePriceList(new DateOnly(2026, 9, 9), new DateOnly(2026, 9, 17));
 
-        f.Items
-            .Setup(r => r.GetByIdLightAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+        f.Items.Setup(r => r.GetByIdLightAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(item);
-        f.PriceLists
-            .Setup(r => r.GetAllAsync(TenantId, true, null, It.IsAny<CancellationToken>()))
+        f.PriceLists.Setup(r => r.GetAllAsync(TenantId, true, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new[] { priceList });
 
         var result = await f.Build().ResolveAsync(item.Id, null, CancellationToken.None);
@@ -146,18 +151,17 @@ public sealed class PricingResolverCompanyClockTests
         // ignora y el precio cae al PVP/BaseSalePrice del ítem tal cual.
         var companyToday = new DateOnly(2026, 9, 18);
         var f = new Fixture();
-        f.CompanyClock
-            .Setup(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
+        f.CompanyClock.Setup(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(companyToday);
 
         var item = CreateItem();
         var priceList = CreatePriceList(new DateOnly(2026, 9, 9), new DateOnly(2026, 9, 17));
 
-        f.Items
-            .Setup(r => r.GetByIdLightAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+        f.Items.Setup(r => r.GetByIdLightAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(item);
-        f.PriceLists
-            .Setup(r => r.GetByIdAsync(TenantId, priceList.Id, It.IsAny<CancellationToken>()))
+        f.PriceLists.Setup(r =>
+                r.GetByIdAsync(TenantId, priceList.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(priceList);
 
         var result = await f.Build().ResolveAsync(item.Id, priceList.Id, CancellationToken.None);
@@ -174,18 +178,17 @@ public sealed class PricingResolverCompanyClockTests
     {
         var companyToday = new DateOnly(2026, 9, 17);
         var f = new Fixture();
-        f.CompanyClock
-            .Setup(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
+        f.CompanyClock.Setup(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(companyToday);
 
         var item = CreateItem();
         var priceList = CreatePriceList(new DateOnly(2026, 9, 9), new DateOnly(2026, 9, 17));
 
-        f.Items
-            .Setup(r => r.GetByIdLightAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+        f.Items.Setup(r => r.GetByIdLightAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(item);
-        f.PriceLists
-            .Setup(r => r.GetByIdAsync(TenantId, priceList.Id, It.IsAny<CancellationToken>()))
+        f.PriceLists.Setup(r =>
+                r.GetByIdAsync(TenantId, priceList.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(priceList);
 
         var result = await f.Build().ResolveAsync(item.Id, priceList.Id, CancellationToken.None);

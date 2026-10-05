@@ -29,12 +29,15 @@ public sealed record ConfirmExpenseDocumentCommand(Guid Id, RetentionIntent? Ret
     : IRequest<Result<ExpenseDocumentDetailDto>>,
         IBranchScopedRequest;
 
-public sealed class ConfirmExpenseDocumentValidator : AbstractValidator<ConfirmExpenseDocumentCommand>
+public sealed class ConfirmExpenseDocumentValidator
+    : AbstractValidator<ConfirmExpenseDocumentCommand>
 {
     public ConfirmExpenseDocumentValidator()
     {
         RuleFor(x => x.Id).NotEmpty();
-        RuleFor(x => x.Retention!).SetValidator(new RetentionIntentValidator()).When(x => x.Retention is not null);
+        RuleFor(x => x.Retention!)
+            .SetValidator(new RetentionIntentValidator())
+            .When(x => x.Retention is not null);
     }
 }
 
@@ -293,7 +296,10 @@ public sealed class ConfirmExpenseDocumentHandler
         // comitea por su cuenta — para que la CxP quede en el MISMO SaveChangesAsync que el posting
         // y la confirmación del documento: si la generación de CxP falla, todo el rollback ocurre
         // junto (nunca queda un gasto confirmado con asiento contable pero sin CxP obligatoria).
-        if (policy.PayableGenerationMode == PayableGenerationMode.OnConfirmation && !retentionAppliedToPayable)
+        if (
+            policy.PayableGenerationMode == PayableGenerationMode.OnConfirmation
+            && !retentionAppliedToPayable
+        )
         {
             try
             {
@@ -406,12 +412,15 @@ public sealed record CreateConfirmedExpenseCommand(
 /// antes de esta fase). Por eso <see cref="RetentionIntent"/> se extiende simétricamente a ambos
 /// commands, reutilizando el mismo <see cref="IRetentionIssuer"/>.
 /// </summary>
-public sealed class CreateConfirmedExpenseValidator : AbstractValidator<CreateConfirmedExpenseCommand>
+public sealed class CreateConfirmedExpenseValidator
+    : AbstractValidator<CreateConfirmedExpenseCommand>
 {
     public CreateConfirmedExpenseValidator()
     {
         Include(new ExpenseDraftHeaderRules<CreateConfirmedExpenseCommand>());
-        RuleFor(x => x.Retention!).SetValidator(new RetentionIntentValidator()).When(x => x.Retention is not null);
+        RuleFor(x => x.Retention!)
+            .SetValidator(new RetentionIntentValidator())
+            .When(x => x.Retention is not null);
     }
 }
 
@@ -485,7 +494,11 @@ public sealed class CreateConfirmedExpenseHandler
                 DocTypeCodes.ExpenseDocument,
                 ct
             );
-            policy = await _workflowPolicy.GetRequiredAsync(_company.CompanyId, DocTypeCodes.ExpenseDocument, ct);
+            policy = await _workflowPolicy.GetRequiredAsync(
+                _company.CompanyId,
+                DocTypeCodes.ExpenseDocument,
+                ct
+            );
         }
         catch (DocumentFlowPolicyViolationException ex)
         {
@@ -581,11 +594,12 @@ public sealed class CreateConfirmedExpenseHandler
             // fresco que Confirm() espera.
             var snapshots = document.Lines.ToDictionary(
                 l => l.Id,
-                l => (
-                    l.SnapshotAccountingAccountId,
-                    (string?)l.SnapshotAccountingAccountCode,
-                    (string?)l.SnapshotAccountingAccountName
-                )
+                l =>
+                    (
+                        l.SnapshotAccountingAccountId,
+                        (string?)l.SnapshotAccountingAccountCode,
+                        (string?)l.SnapshotAccountingAccountName
+                    )
             );
             document.Confirm(snapshots, _user.UserId);
 
@@ -675,7 +689,10 @@ public sealed class CreateConfirmedExpenseHandler
         // StageFromOriginAsync (nunca CreateFromOriginAsync) para que la CxP quede en el mismo
         // SaveChangesAsync que el posting y la creación del documento: si falla, todo el rollback
         // ocurre junto (nunca queda un gasto confirmado sin CxP obligatoria).
-        if (policy.PayableGenerationMode == PayableGenerationMode.OnConfirmation && !retentionAppliedToPayable)
+        if (
+            policy.PayableGenerationMode == PayableGenerationMode.OnConfirmation
+            && !retentionAppliedToPayable
+        )
         {
             try
             {
@@ -822,7 +839,9 @@ file static class ExpenseConfirmRules
         if (!account.IsActive)
             return new LineAccountResolution(
                 null,
-                Validation($"La cuenta contable de la subcategoria '{category.Name}' esta inactiva.")
+                Validation(
+                    $"La cuenta contable de la subcategoria '{category.Name}' esta inactiva."
+                )
             );
         if (!account.AllowsPosting)
             return new LineAccountResolution(
@@ -834,7 +853,9 @@ file static class ExpenseConfirmRules
         if (account.AccountType != AccountType.Expense)
             return new LineAccountResolution(
                 null,
-                Validation($"La cuenta contable de la subcategoria '{category.Name}' debe ser de tipo gasto.")
+                Validation(
+                    $"La cuenta contable de la subcategoria '{category.Name}' debe ser de tipo gasto."
+                )
             );
 
         return new LineAccountResolution(account, null);

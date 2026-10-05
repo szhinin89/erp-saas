@@ -78,9 +78,8 @@ public sealed class GetPurchaseReturnByIdHandler
         var tenantId = _t.TenantId;
 
         var itemIds = dto.Lines.Select(l => l.ItemId).Distinct().ToList();
-        var items = itemIds.Count == 0
-            ? []
-            : await _itemRepo.GetByIdsLightAsync(itemIds, tenantId, ct);
+        var items =
+            itemIds.Count == 0 ? [] : await _itemRepo.GetByIdsLightAsync(itemIds, tenantId, ct);
         var itemsById = items.ToDictionary(
             i => i.Id,
             (Item i) => (Sku: i.Code.SKU, Name: i.Code.ShortName)
@@ -129,7 +128,10 @@ public sealed class GetPurchaseReturnByIdHandler
             new[] { dto.PurchaseInvoiceId },
             ct
         );
-        var invoiceNumber = invoiceSummaries.TryGetValue(dto.PurchaseInvoiceId, out var invoiceSummary)
+        var invoiceNumber = invoiceSummaries.TryGetValue(
+            dto.PurchaseInvoiceId,
+            out var invoiceSummary
+        )
             ? invoiceSummary.InvoiceNumber
             : null;
 
@@ -144,7 +146,11 @@ public sealed class GetPurchaseReturnByIdHandler
 
         // ZH-SUPPLIER-BALANCES-CROSS-LINKS-02D-F — saldo a favor generado (FK de origen, empresa
         // operativa); null si la devolución no generó saldo.
-        var supplierCreditId = await _supplierCreditRepo.GetIdBySourcePurchaseReturnIdAsync(tenantId, dto.Id, ct);
+        var supplierCreditId = await _supplierCreditRepo.GetIdBySourcePurchaseReturnIdAsync(
+            tenantId,
+            dto.Id,
+            ct
+        );
 
         return dto with
         {

@@ -195,7 +195,13 @@ public sealed class BusinessPartnerRolesController : ControllerBase
     private static SupplierRoleConfigDto? ToDto(SupplierConfigRequest? r) =>
         r is null
             ? null
-            : new(r.DefaultTaxSupportCode, r.DefaultPaymentMethodCode, r.RefundProviderTypeCode, r.IsRetentionExempt, r.IsRequiredToKeepAccounting);
+            : new(
+                r.DefaultTaxSupportCode,
+                r.DefaultPaymentMethodCode,
+                r.RefundProviderTypeCode,
+                r.IsRetentionExempt,
+                r.IsRequiredToKeepAccounting
+            );
 
     private static CarrierRoleConfigDto? ToDto(CarrierConfigRequest? r) =>
         r is null ? null : new(r.TransportAuthorizationNumber, r.VehicleCapacityTons);
@@ -203,5 +209,13 @@ public sealed class BusinessPartnerRolesController : ControllerBase
     private static CustomerRoleConfigDto? ToDto(CustomerConfigRequest? r) =>
         r is null
             ? null
-            : new(r.CustomerCategory, r.CustomerSegment, r.SalesZone, r.CreditRating, r.LoyaltyTier, r.PreferredInvoiceFormat, r.CustomerClassification);
+            : new(
+                r.CustomerCategory,
+                r.CustomerSegment,
+                r.SalesZone,
+                r.CreditRating,
+                r.LoyaltyTier,
+                r.PreferredInvoiceFormat,
+                r.CustomerClassification
+            );
 }

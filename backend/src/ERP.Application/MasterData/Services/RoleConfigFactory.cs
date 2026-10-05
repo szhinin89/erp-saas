@@ -34,7 +34,9 @@ public static class RoleConfigFactory
         );
 
     public static RoleConfigBuild<CarrierRoleConfig> Build(CarrierRoleConfigDto input) =>
-        Try(() => CarrierRoleConfig.Create(input.TransportAuthorizationNumber, input.VehicleCapacityTons));
+        Try(() =>
+            CarrierRoleConfig.Create(input.TransportAuthorizationNumber, input.VehicleCapacityTons)
+        );
 
     public static RoleConfigBuild<CustomerRoleConfig> Build(CustomerRoleConfigDto input) =>
         Try(() =>

@@ -38,11 +38,9 @@ public sealed record CreateCashMovementReasonCommand(
 /// crear, igual que Code (ver <see cref="CashMovementReason.Update"/>). Solo Name/SortOrder son
 /// editables; IsActive se gestiona exclusivamente vía <see cref="ToggleCashMovementReasonCommand"/>.
 /// </summary>
-public sealed record UpdateCashMovementReasonCommand(
-    Guid Id,
-    string Name,
-    int SortOrder
-) : IRequest<Result<CashMovementReasonDto>>, ICompanyScopedRequest;
+public sealed record UpdateCashMovementReasonCommand(Guid Id, string Name, int SortOrder)
+    : IRequest<Result<CashMovementReasonDto>>,
+        ICompanyScopedRequest;
 
 public sealed record ToggleCashMovementReasonCommand(Guid Id)
     : IRequest<Result<CashMovementReasonDto>>,
@@ -54,7 +52,10 @@ file static class MovementTypeValidation
 {
     public static bool IsManualType(string value) =>
         Enum.TryParse<CashMovementType>(value, true, out var t)
-        && t is CashMovementType.ManualIncome or CashMovementType.ManualExpense or CashMovementType.Withdrawal;
+        && t
+            is CashMovementType.ManualIncome
+                or CashMovementType.ManualExpense
+                or CashMovementType.Withdrawal;
 }
 
 public sealed class CreateCashMovementReasonValidator

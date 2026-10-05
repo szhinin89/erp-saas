@@ -1,3 +1,4 @@
+using System.Reflection;
 using ERP.API.Contracts.MasterData;
 using ERP.API.Controllers;
 using ERP.API.Tests.Support;
@@ -11,7 +12,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
-using System.Reflection;
 
 namespace ERP.API.Tests.MasterData;
 
@@ -32,9 +32,11 @@ public sealed class BusinessPartnerNestedRoutesControllerTests
         public string EnvironmentName { get; set; } = "Development";
         public string ApplicationName { get; set; } = "ERP.API.Tests";
         public string WebRootPath { get; set; } = "";
-        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; } = null!;
+        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; } =
+            null!;
         public string ContentRootPath { get; set; } = "";
-        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } = null!;
+        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } =
+            null!;
     }
 
     private static T WithContext<T>(T controller)
@@ -44,7 +46,10 @@ public sealed class BusinessPartnerNestedRoutesControllerTests
         services.AddSingleton<IWebHostEnvironment>(new StubWebHostEnvironment());
         controller.ControllerContext = new ControllerContext
         {
-            HttpContext = new DefaultHttpContext { RequestServices = services.BuildServiceProvider() },
+            HttpContext = new DefaultHttpContext
+            {
+                RequestServices = services.BuildServiceProvider(),
+            },
         };
         return controller;
     }
@@ -91,21 +96,48 @@ public sealed class BusinessPartnerNestedRoutesControllerTests
         {
             "contacts:get" => contacts.GetContact(BpId, ChildId),
             "contacts:update" => contacts.UpdateContact(
-                BpId, ChildId, new UpdateContactRequest { FirstName = "Ana", Role = ContactRole.Purchasing }),
+                BpId,
+                ChildId,
+                new UpdateContactRequest { FirstName = "Ana", Role = ContactRole.Purchasing }
+            ),
             "contacts:set-primary" => contacts.SetPrimary(BpId, ChildId),
             "contacts:activate" => contacts.Activate(BpId, ChildId),
             "contacts:deactivate" => contacts.Deactivate(BpId, ChildId),
             "locations:get" => locations.GetLocation(BpId, ChildId),
             "locations:update" => locations.UpdateLocation(
-                BpId, ChildId, new UpdateLocationRequest { Name = "Bodega", Type = LocationType.Warehouse, AddressLine = "Calle 1" }),
+                BpId,
+                ChildId,
+                new UpdateLocationRequest
+                {
+                    Name = "Bodega",
+                    Type = LocationType.Warehouse,
+                    AddressLine = "Calle 1",
+                }
+            ),
             "locations:set-primary" => locations.SetPrimary(BpId, ChildId),
             "locations:activate" => locations.Activate(BpId, ChildId),
             "locations:deactivate" => locations.Deactivate(BpId, ChildId),
             "roles:revoke" => roles.RevokeRole(BpId, ChildId),
-            "roles:supplier-config" => roles.UpdateSupplierConfig(BpId, ChildId, new SupplierConfigRequest()),
-            "roles:carrier-config" => roles.UpdateCarrierConfig(BpId, ChildId, new CarrierConfigRequest()),
-            "roles:customer-config" => roles.UpdateCustomerConfig(BpId, ChildId, new CustomerConfigRequest()),
-            "roles:notes" => roles.UpdateNotes(BpId, ChildId, new UpdateRoleNotesRequest { Notes = "x" }),
+            "roles:supplier-config" => roles.UpdateSupplierConfig(
+                BpId,
+                ChildId,
+                new SupplierConfigRequest()
+            ),
+            "roles:carrier-config" => roles.UpdateCarrierConfig(
+                BpId,
+                ChildId,
+                new CarrierConfigRequest()
+            ),
+            "roles:customer-config" => roles.UpdateCustomerConfig(
+                BpId,
+                ChildId,
+                new CustomerConfigRequest()
+            ),
+            "roles:notes" => roles.UpdateNotes(
+                BpId,
+                ChildId,
+                new UpdateRoleNotesRequest { Notes = "x" }
+            ),
             _ => throw new ArgumentOutOfRangeException(nameof(action)),
         };
     }
@@ -128,7 +160,10 @@ public sealed class BusinessPartnerNestedRoutesControllerTests
 
         sent.Should().NotBeNull();
         var type = sent!.GetType();
-        type.GetProperty("BusinessPartnerId")!.GetValue(sent).Should().Be(BpId, $"{action} debe propagar el bpId de la ruta");
+        type.GetProperty("BusinessPartnerId")!
+            .GetValue(sent)
+            .Should()
+            .Be(BpId, $"{action} debe propagar el bpId de la ruta");
         type.GetProperty(childProperty)!.GetValue(sent).Should().Be(ChildId);
         response.Should().BeOfType<NotFoundObjectResult>();
     }
@@ -150,23 +185,47 @@ public sealed class BusinessPartnerNestedRoutesControllerTests
         var roles = WithContext(new BusinessPartnerRolesController(mediator));
 
         await roles.UpdateCarrierConfig(
-            BpId, ChildId, new CarrierConfigRequest { TransportAuthorizationNumber = "  AUT  ", VehicleCapacityTons = 0m });
+            BpId,
+            ChildId,
+            new CarrierConfigRequest
+            {
+                TransportAuthorizationNumber = "  AUT  ",
+                VehicleCapacityTons = 0m,
+            }
+        );
         await roles.UpdateSupplierConfig(
-            BpId, ChildId, new SupplierConfigRequest { DefaultTaxSupportCode = " 0123456 ", IsRetentionExempt = true });
+            BpId,
+            ChildId,
+            new SupplierConfigRequest
+            {
+                DefaultTaxSupportCode = " 0123456 ",
+                IsRetentionExempt = true,
+            }
+        );
         await roles.UpdateCustomerConfig(
-            BpId, ChildId, new CustomerConfigRequest { SalesZone = "  Norte  ", CustomerClassification = "" });
+            BpId,
+            ChildId,
+            new CustomerConfigRequest { SalesZone = "  Norte  ", CustomerClassification = "" }
+        );
         await roles.AssignRole(
             BpId,
             new AssignRoleRequest
             {
                 RoleType = RoleType.Carrier,
                 CarrierConfig = new CarrierConfigRequest { VehicleCapacityTons = -1m },
-            });
+            }
+        );
 
         sent.Should().HaveCount(4, "ningún caso se corta en el controller");
-        ((UpdateCarrierRoleConfigCommand)sent[0]).Config.Should().Be(new CarrierRoleConfigDto("  AUT  ", 0m));
-        ((UpdateSupplierRoleConfigCommand)sent[1]).Config.Should().Be(new SupplierRoleConfigDto(" 0123456 ", null, null, true, false));
-        ((UpdateCustomerRoleConfigCommand)sent[2]).Config.Should().Be(new CustomerRoleConfigDto(null, null, "  Norte  ", null, null, null, ""));
+        ((UpdateCarrierRoleConfigCommand)sent[0])
+            .Config.Should()
+            .Be(new CarrierRoleConfigDto("  AUT  ", 0m));
+        ((UpdateSupplierRoleConfigCommand)sent[1])
+            .Config.Should()
+            .Be(new SupplierRoleConfigDto(" 0123456 ", null, null, true, false));
+        ((UpdateCustomerRoleConfigCommand)sent[2])
+            .Config.Should()
+            .Be(new CustomerRoleConfigDto(null, null, "  Norte  ", null, null, null, ""));
         var assign = (AssignBusinessPartnerRoleCommand)sent[3];
         assign.CarrierConfig.Should().Be(new CarrierRoleConfigDto(null, -1m));
         assign.SupplierConfig.Should().BeNull();

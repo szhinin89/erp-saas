@@ -29,7 +29,10 @@ public sealed class CompanyPrecisionPolicyController : ControllerBase
     /// <summary>Definiciones (keys/rangos/defaults) y perfiles predefinidos — metadata estática.</summary>
     [HttpGet("metadata")]
     public async Task<IActionResult> GetMetadata(CancellationToken ct) =>
-        this.ToOkOrBadRequest(await _mediator.Send(new GetPrecisionPolicyMetadataQuery(), ct), "OK");
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new GetPrecisionPolicyMetadataQuery(), ct),
+            "OK"
+        );
 
     [HttpPut]
     public async Task<IActionResult> Update(

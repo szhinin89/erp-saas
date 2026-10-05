@@ -27,10 +27,7 @@ public interface ISupplierRetentionDefaultRepository
         CancellationToken cancellationToken = default
     );
 
-    Task AddAsync(
-        SupplierRetentionDefault entry,
-        CancellationToken cancellationToken = default
-    );
+    Task AddAsync(SupplierRetentionDefault entry, CancellationToken cancellationToken = default);
 
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

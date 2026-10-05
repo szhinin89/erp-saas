@@ -284,7 +284,10 @@ public sealed class MasterDataRepositoryCompanyScopeTests : IAsyncLifetime
     public async Task Warehouse_GetByIdForCompanyAsync_no_devuelve_bodega_de_otra_empresa()
     {
         await using var db = CreateContext(_companyAId);
-        var repo = new WarehouseRepository(db, new FixedCurrentCompany(_companyAId, hasCompanyContext: true));
+        var repo = new WarehouseRepository(
+            db,
+            new FixedCurrentCompany(_companyAId, hasCompanyContext: true)
+        );
 
         var result = await repo.GetByIdForCompanyAsync(_tenantId, _companyAId, _warehouseBId);
 
@@ -295,7 +298,10 @@ public sealed class MasterDataRepositoryCompanyScopeTests : IAsyncLifetime
     public async Task Warehouse_GetByIdForCompanyAsync_devuelve_la_propia_bodega()
     {
         await using var db = CreateContext(_companyAId);
-        var repo = new WarehouseRepository(db, new FixedCurrentCompany(_companyAId, hasCompanyContext: true));
+        var repo = new WarehouseRepository(
+            db,
+            new FixedCurrentCompany(_companyAId, hasCompanyContext: true)
+        );
 
         var result = await repo.GetByIdForCompanyAsync(_tenantId, _companyAId, _warehouseAId);
 
@@ -309,7 +315,8 @@ public sealed class MasterDataRepositoryCompanyScopeTests : IAsyncLifetime
         public string? Slug => null;
     }
 
-    private sealed class FixedCurrentCompany(Guid companyId, bool hasCompanyContext) : ICurrentCompany
+    private sealed class FixedCurrentCompany(Guid companyId, bool hasCompanyContext)
+        : ICurrentCompany
     {
         public Guid CompanyId => companyId;
         public bool IsAuthenticated => hasCompanyContext;

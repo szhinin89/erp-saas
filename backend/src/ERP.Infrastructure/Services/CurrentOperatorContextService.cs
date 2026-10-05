@@ -13,15 +13,15 @@ public sealed class CurrentOperatorContextService : ICurrentOperatorContext
     }
 
     public bool IsOperatorMode =>
-        _httpContextAccessor
-            .HttpContext?.User.FindFirst("operator_mode")
-            ?.Value == "true";
+        _httpContextAccessor.HttpContext?.User.FindFirst("operator_mode")?.Value == "true";
 
     public Guid? GlobalAdminUserId
     {
         get
         {
-            var raw = _httpContextAccessor.HttpContext?.User.FindFirst("global_admin_user_id")?.Value;
+            var raw = _httpContextAccessor
+                .HttpContext?.User.FindFirst("global_admin_user_id")
+                ?.Value;
             return Guid.TryParse(raw, out var id) ? id : null;
         }
     }

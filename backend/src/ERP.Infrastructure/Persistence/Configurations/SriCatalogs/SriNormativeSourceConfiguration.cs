@@ -11,10 +11,14 @@ namespace ERP.Infrastructure.Persistence.Configurations.SriCatalogs;
 public class SriNormativeSourceConfiguration : IEntityTypeConfiguration<SriNormativeSource>
 {
     /// <summary>Ficha Técnica Comprobantes Electrónicos Esquema Offline v2.34 — Tabla 20 (retención del IVA).</summary>
-    public static readonly Guid FichaV234Table20Id = Guid.Parse("40000000-0000-0000-0000-000000000001");
+    public static readonly Guid FichaV234Table20Id = Guid.Parse(
+        "40000000-0000-0000-0000-000000000001"
+    );
 
     /// <summary>Catálogo ATS de retención en la fuente de Renta, al que remite la Ficha v2.34 §9.15 (no verificado).</summary>
-    public static readonly Guid AtsIncomeRetentionCatalogId = Guid.Parse("40000000-0000-0000-0000-000000000002");
+    public static readonly Guid AtsIncomeRetentionCatalogId = Guid.Parse(
+        "40000000-0000-0000-0000-000000000002"
+    );
 
     public const string IntroducedInMigration = "SriRetentionCatalogVersioning";
 
@@ -22,7 +26,9 @@ public class SriNormativeSourceConfiguration : IEntityTypeConfiguration<SriNorma
     /// ZH-SRI-RETENTION-INCOME-CATALOG-SSOT-01 — Catálogo ATS oficial (Catalogo_ATS.xls), hoja TABLAS RETENCIONES,
     /// Tabla 3.10, bloque "DESDE 06/AGOSTO/2026": fuente verificada de los códigos y tarifas de Renta.
     /// </summary>
-    public static readonly Guid AtsIncomeTable310From20260806Id = Guid.Parse("40000000-0000-0000-0000-000000000003");
+    public static readonly Guid AtsIncomeTable310From20260806Id = Guid.Parse(
+        "40000000-0000-0000-0000-000000000003"
+    );
 
     public const string IncomeAtsIntroducedInMigration = "SriRetentionIncomeCatalogAts20260806";
 
@@ -36,8 +42,14 @@ public class SriNormativeSourceConfiguration : IEntityTypeConfiguration<SriNorma
             .HasColumnName("document")
             .HasMaxLength(SriNormativeSource.DocumentMaxLen)
             .IsRequired();
-        builder.Property(x => x.Version).HasColumnName("version").HasMaxLength(SriNormativeSource.VersionMaxLen);
-        builder.Property(x => x.Section).HasColumnName("section").HasMaxLength(SriNormativeSource.SectionMaxLen);
+        builder
+            .Property(x => x.Version)
+            .HasColumnName("version")
+            .HasMaxLength(SriNormativeSource.VersionMaxLen);
+        builder
+            .Property(x => x.Section)
+            .HasColumnName("section")
+            .HasMaxLength(SriNormativeSource.SectionMaxLen);
         builder.Property(x => x.PublishedOn).HasColumnName("published_on");
         builder
             .Property(x => x.ReferenceUrl)
@@ -52,7 +64,10 @@ public class SriNormativeSourceConfiguration : IEntityTypeConfiguration<SriNorma
             .HasColumnName("introduced_in_migration")
             .HasMaxLength(SriNormativeSource.MigrationMaxLen)
             .IsRequired();
-        builder.Property(x => x.Notes).HasColumnName("notes").HasMaxLength(SriNormativeSource.NotesMaxLen);
+        builder
+            .Property(x => x.Notes)
+            .HasColumnName("notes")
+            .HasMaxLength(SriNormativeSource.NotesMaxLen);
 
         builder.HasData(
             new SriNormativeSource
@@ -60,7 +75,8 @@ public class SriNormativeSourceConfiguration : IEntityTypeConfiguration<SriNorma
                 Id = FichaV234Table20Id,
                 Document = "FICHA_TECNICA_OFFLINE",
                 Version = "2.34",
-                Section = "§9.15 Tabla 20 — Retención del IVA (incluye retención en cero y no procede)",
+                Section =
+                    "§9.15 Tabla 20 — Retención del IVA (incluye retención en cero y no procede)",
                 PublishedOn = new DateOnly(2026, 7, 27),
                 ReferenceUrl =
                     "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar/f8d9bb36-5632-4f96-b463-b9265b55338c/FICHA%20TE%cc%81CNICA%20COMPROBANTES%20ELECTRO%cc%81NICOS%20ESQUEMA%20OFFLINE%20Versio%cc%81n%202.34.pdf",
@@ -76,7 +92,8 @@ public class SriNormativeSourceConfiguration : IEntityTypeConfiguration<SriNorma
                 Id = AtsIncomeRetentionCatalogId,
                 Document = "CATALOGO_ATS",
                 Version = null,
-                Section = "Retención en la fuente de Impuesto a la Renta (referido por Ficha v2.34 §9.15)",
+                Section =
+                    "Retención en la fuente de Impuesto a la Renta (referido por Ficha v2.34 §9.15)",
                 PublishedOn = null,
                 ReferenceUrl = "http://www.sri.gob.ec/web/guest/formularios-e-instructivos1",
                 DocumentSha256 = null,

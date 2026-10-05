@@ -49,7 +49,9 @@ public sealed class SupplierCreditRefundPostingTranslatorTests
             "hash"
         );
 
-    private static (Mock<IPostingEngine> Engine, List<PostingFact> Facts) Engine(bool succeed = true)
+    private static (Mock<IPostingEngine> Engine, List<PostingFact> Facts) Engine(
+        bool succeed = true
+    )
     {
         var facts = new List<PostingFact>();
         var engine = new Mock<IPostingEngine>();
@@ -58,16 +60,30 @@ public sealed class SupplierCreditRefundPostingTranslatorTests
             .Callback<PostingFact, CancellationToken>((f, _) => facts.Add(f))
             .ReturnsAsync(
                 succeed
-                    ? Result<PostingOutcomeDto>.Success(new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created))
-                    : Result<PostingOutcomeDto>.Failure("No existe regla contable.", "RULE_NOT_FOUND")
+                    ? Result<PostingOutcomeDto>.Success(
+                        new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)
+                    )
+                    : Result<PostingOutcomeDto>.Failure(
+                        "No existe regla contable.",
+                        "RULE_NOT_FOUND"
+                    )
             );
         return (engine, facts);
     }
 
-    private static Mock<ISupplierCreditRefundTransactionRepository> Repo(Guid movementId, SupplierCreditRefundTransaction? tx)
+    private static Mock<ISupplierCreditRefundTransactionRepository> Repo(
+        Guid movementId,
+        SupplierCreditRefundTransaction? tx
+    )
     {
         var repo = new Mock<ISupplierCreditRefundTransactionRepository>();
-        repo.Setup(r => r.GetBySupplierCreditMovementIdAsync(TenantId, movementId, It.IsAny<CancellationToken>()))
+        repo.Setup(r =>
+                r.GetBySupplierCreditMovementIdAsync(
+                    TenantId,
+                    movementId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(tx);
         return repo;
     }
@@ -77,14 +93,25 @@ public sealed class SupplierCreditRefundPostingTranslatorTests
     {
         var movementId = Guid.NewGuid();
         var (engine, facts) = Engine();
-        var evt = new SupplierCreditRefundedEvent(Guid.NewGuid(), movementId, TenantId, CompanyId, 35m, 65m, UserId);
+        var evt = new SupplierCreditRefundedEvent(
+            Guid.NewGuid(),
+            movementId,
+            TenantId,
+            CompanyId,
+            35m,
+            65m,
+            UserId
+        );
 
-        await new SupplierCreditRefundedPostingTranslator(engine.Object, Repo(movementId, Received(movementId, 35m)).Object)
-            .Handle(evt, CancellationToken.None);
+        await new SupplierCreditRefundedPostingTranslator(
+            engine.Object,
+            Repo(movementId, Received(movementId, 35m)).Object
+        ).Handle(evt, CancellationToken.None);
 
         var fact = facts.Should().ContainSingle().Subject;
         fact.SourceModule.Should().Be("Purchases");
-        fact.FactType.Should().Be("SupplierCreditRefunded", "un único FactType, nunca uno por caja/banco");
+        fact.FactType.Should()
+            .Be("SupplierCreditRefunded", "un único FactType, nunca uno por caja/banco");
         fact.SourceEventId.Should().Be(movementId);
         fact.EntryDate.Should().Be(EffectiveDate);
         fact.GrandTotal.Should().Be(35m, "la regla acredita Anticipos por GrandTotal");
@@ -100,20 +127,39 @@ public sealed class SupplierCreditRefundPostingTranslatorTests
         var reversalMovementId = Guid.NewGuid();
         var original = Received(Guid.NewGuid(), 35m);
         var reversal = SupplierCreditRefundTransaction.CreateReversal(
-            original, reversalMovementId, "Rechazado por el banco", EffectiveDate.AddDays(2), UserId, Guid.NewGuid(), "hash-r");
+            original,
+            reversalMovementId,
+            "Rechazado por el banco",
+            EffectiveDate.AddDays(2),
+            UserId,
+            Guid.NewGuid(),
+            "hash-r"
+        );
         var (engine, facts) = Engine();
         var evt = new SupplierCreditRefundReversedEvent(
-            Guid.NewGuid(), reversalMovementId, Guid.NewGuid(), TenantId, CompanyId, 35m, 100m, UserId);
+            Guid.NewGuid(),
+            reversalMovementId,
+            Guid.NewGuid(),
+            TenantId,
+            CompanyId,
+            35m,
+            100m,
+            UserId
+        );
 
-        await new SupplierCreditRefundReversedPostingTranslator(engine.Object, Repo(reversalMovementId, reversal).Object)
-            .Handle(evt, CancellationToken.None);
+        await new SupplierCreditRefundReversedPostingTranslator(
+            engine.Object,
+            Repo(reversalMovementId, reversal).Object
+        ).Handle(evt, CancellationToken.None);
 
         var fact = facts.Should().ContainSingle().Subject;
         fact.FactType.Should().Be("SupplierCreditRefundReversed");
         fact.GrandTotal.Should().Be(35m);
         fact.EntryDate.Should().Be(EffectiveDate.AddDays(2));
         var allocation = fact.Allocations.Should().ContainSingle().Subject;
-        allocation.AccountingAccountId.Should().Be(DestinationAccountId, "nunca se resuelve la cuenta vigente del destino");
+        allocation
+            .AccountingAccountId.Should()
+            .Be(DestinationAccountId, "nunca se resuelve la cuenta vigente del destino");
         allocation.Nature.Should().Be(AccountNature.Credit);
     }
 
@@ -122,13 +168,25 @@ public sealed class SupplierCreditRefundPostingTranslatorTests
     {
         var movementId = Guid.NewGuid();
         var (engine, _) = Engine(succeed: false);
-        var evt = new SupplierCreditRefundedEvent(Guid.NewGuid(), movementId, TenantId, CompanyId, 10m, 90m, UserId);
+        var evt = new SupplierCreditRefundedEvent(
+            Guid.NewGuid(),
+            movementId,
+            TenantId,
+            CompanyId,
+            10m,
+            90m,
+            UserId
+        );
 
-        var act = () => new SupplierCreditRefundedPostingTranslator(engine.Object, Repo(movementId, Received(movementId, 10m)).Object)
-            .Handle(evt, CancellationToken.None);
+        var act = () =>
+            new SupplierCreditRefundedPostingTranslator(
+                engine.Object,
+                Repo(movementId, Received(movementId, 10m)).Object
+            ).Handle(evt, CancellationToken.None);
 
         (await act.Should().ThrowAsync<SupplierCreditRefundPostingFailedException>())
-            .Which.Code.Should().Be("RULE_NOT_FOUND");
+            .Which.Code.Should()
+            .Be("RULE_NOT_FOUND");
     }
 
     [Fact]
@@ -137,10 +195,21 @@ public sealed class SupplierCreditRefundPostingTranslatorTests
         var movementId = Guid.NewGuid();
         var (engine, facts) = Engine();
         var evt = new SupplierCreditRefundReversedEvent(
-            Guid.NewGuid(), movementId, Guid.NewGuid(), TenantId, CompanyId, 10m, 100m, UserId);
+            Guid.NewGuid(),
+            movementId,
+            Guid.NewGuid(),
+            TenantId,
+            CompanyId,
+            10m,
+            100m,
+            UserId
+        );
 
-        var act = () => new SupplierCreditRefundReversedPostingTranslator(engine.Object, Repo(movementId, null).Object)
-            .Handle(evt, CancellationToken.None);
+        var act = () =>
+            new SupplierCreditRefundReversedPostingTranslator(
+                engine.Object,
+                Repo(movementId, null).Object
+            ).Handle(evt, CancellationToken.None);
 
         await act.Should().ThrowAsync<SupplierCreditRefundPostingFailedException>();
         facts.Should().BeEmpty();

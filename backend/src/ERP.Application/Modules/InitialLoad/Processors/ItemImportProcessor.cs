@@ -1,3 +1,4 @@
+using System.Text.Json;
 using ERP.Application.Common;
 using ERP.Application.Items.UseCases.Brands;
 using ERP.Application.Items.UseCases.CategoryNodes;
@@ -9,7 +10,6 @@ using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.InitialLoad.Enums;
 using ERP.Domain.Modules.Items.Interfaces;
 using MediatR;
-using System.Text.Json;
 
 namespace ERP.Application.Modules.InitialLoad.Processors;
 
@@ -146,8 +146,8 @@ public sealed class ItemImportProcessor : IImportProcessor
             ItemImportColumns.CategoryName,
             autoCreateCatalogValues,
             async n =>
-                (await _categoryRepo.GetAllAsync(_ctx.TenantId, includeInactive: false, ct)).Any(c =>
-                    string.Equals(c.Name, n, StringComparison.OrdinalIgnoreCase)
+                (await _categoryRepo.GetAllAsync(_ctx.TenantId, includeInactive: false, ct)).Any(
+                    c => string.Equals(c.Name, n, StringComparison.OrdinalIgnoreCase)
                 ),
             issues
         );
@@ -211,14 +211,20 @@ public sealed class ItemImportProcessor : IImportProcessor
 
         var categoryNodeId = await ResolveOrCreateCategoryAsync(parsed.CategoryName, ct);
         if (categoryNodeId is null)
-            return RowConfirmResult.Failed($"No se pudo resolver/crear la categoría '{parsed.CategoryName}'.");
+            return RowConfirmResult.Failed(
+                $"No se pudo resolver/crear la categoría '{parsed.CategoryName}'."
+            );
 
         var brandId = await ResolveOrCreateBrandAsync(parsed.BrandName, ct);
         if (brandId is null)
-            return RowConfirmResult.Failed($"No se pudo resolver/crear la marca '{parsed.BrandName}'.");
+            return RowConfirmResult.Failed(
+                $"No se pudo resolver/crear la marca '{parsed.BrandName}'."
+            );
 
-        var barcodes = parsed.BarcodeCodes
-            .Select((code, idx) => new CreateItemBarcodeDto(code, "Internal", idx == 0))
+        var barcodes = parsed
+            .BarcodeCodes.Select(
+                (code, idx) => new CreateItemBarcodeDto(code, "Internal", idx == 0)
+            )
             .ToList();
 
         var supplierCodes =
@@ -267,7 +273,11 @@ public sealed class ItemImportProcessor : IImportProcessor
             return Guid.Empty;
         }
 
-        var itemTypeDef = await _itemTypeRepo.GetByCodeAsync(_ctx.TenantId, itemTypeCode.Trim(), ct);
+        var itemTypeDef = await _itemTypeRepo.GetByCodeAsync(
+            _ctx.TenantId,
+            itemTypeCode.Trim(),
+            ct
+        );
         if (itemTypeDef is null || !itemTypeDef.IsActive)
         {
             issues.Add(
@@ -284,11 +294,19 @@ public sealed class ItemImportProcessor : IImportProcessor
         return itemTypeDef.Id;
     }
 
-    private async Task ValidateUomAsync(string? uomCode, List<RowIssue> issues, CancellationToken ct)
+    private async Task ValidateUomAsync(
+        string? uomCode,
+        List<RowIssue> issues,
+        CancellationToken ct
+    )
     {
         if (string.IsNullOrWhiteSpace(uomCode))
         {
-            AddMissing(issues, ItemImportColumns.UomCode, "La unidad de medida base es obligatoria.");
+            AddMissing(
+                issues,
+                ItemImportColumns.UomCode,
+                "La unidad de medida base es obligatoria."
+            );
             return;
         }
 
@@ -381,11 +399,11 @@ public sealed class ItemImportProcessor : IImportProcessor
     )
     {
         var raw = new[]
-            {
-                Get(rawRow, ItemImportColumns.Barcode1),
-                Get(rawRow, ItemImportColumns.Barcode2),
-                Get(rawRow, ItemImportColumns.Barcode3),
-            }
+        {
+            Get(rawRow, ItemImportColumns.Barcode1),
+            Get(rawRow, ItemImportColumns.Barcode2),
+            Get(rawRow, ItemImportColumns.Barcode3),
+        }
             .Where(c => !string.IsNullOrWhiteSpace(c))
             .Select(c => c!.Trim())
             .ToList();
@@ -516,7 +534,10 @@ public sealed class ItemImportProcessor : IImportProcessor
 
     // ── Confirm helpers (única capa que escribe catálogo) ───────────────────
 
-    private async Task<Guid?> ResolveOrCreateCategoryAsync(string categoryName, CancellationToken ct)
+    private async Task<Guid?> ResolveOrCreateCategoryAsync(
+        string categoryName,
+        CancellationToken ct
+    )
     {
         var categories = await _categoryRepo.GetAllAsync(_ctx.TenantId, includeInactive: false, ct);
         var existing = categories.FirstOrDefault(c =>

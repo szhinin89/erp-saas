@@ -14,7 +14,10 @@ public sealed class SupplierPaymentAllocationLineConfiguration
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").IsRequired();
         builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
-        builder.Property(x => x.SupplierPaymentId).HasColumnName("supplier_payment_id").IsRequired();
+        builder
+            .Property(x => x.SupplierPaymentId)
+            .HasColumnName("supplier_payment_id")
+            .IsRequired();
         builder
             .Property(x => x.SupplierPaymentMethodLineId)
             .HasColumnName("supplier_payment_method_line_id")

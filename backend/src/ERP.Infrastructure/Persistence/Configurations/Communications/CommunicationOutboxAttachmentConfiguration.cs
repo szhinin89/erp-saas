@@ -7,7 +7,8 @@ namespace ERP.Infrastructure.Persistence.Configurations.Communications;
 public sealed class CommunicationOutboxAttachmentConfiguration
     : IEntityTypeConfiguration<CommunicationOutboxAttachment>
 {
-    public const string ContentSourceCheckConstraint = "ck_communication_outbox_attachments_content_source";
+    public const string ContentSourceCheckConstraint =
+        "ck_communication_outbox_attachments_content_source";
 
     public void Configure(EntityTypeBuilder<CommunicationOutboxAttachment> builder)
     {
@@ -15,21 +16,41 @@ public sealed class CommunicationOutboxAttachmentConfiguration
         // oficial, bytes o referencia a su módulo dueño (resuelta al enviar).
         builder.ToTable(
             "communication_outbox_attachments",
-            t => t.HasCheckConstraint(
-                ContentSourceCheckConstraint,
-                "file_storage_path IS NOT NULL OR binary_content IS NOT NULL OR reference_id IS NOT NULL"
-            )
+            t =>
+                t.HasCheckConstraint(
+                    ContentSourceCheckConstraint,
+                    "file_storage_path IS NOT NULL OR binary_content IS NOT NULL OR reference_id IS NOT NULL"
+                )
         );
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").IsRequired();
         builder.Property(x => x.TenantId).HasColumnName("tenant_id");
         builder.Property(x => x.CompanyId).HasColumnName("company_id");
-        builder.Property(x => x.CommunicationOutboxId).HasColumnName("communication_outbox_id").IsRequired();
-        builder.Property(x => x.AttachmentType).HasColumnName("attachment_type").HasConversion<string>().HasMaxLength(30).IsRequired();
-        builder.Property(x => x.FileName).HasColumnName("file_name").HasMaxLength(CommunicationOutboxAttachment.FileNameMaxLen).IsRequired();
-        builder.Property(x => x.ContentType).HasColumnName("content_type").HasMaxLength(CommunicationOutboxAttachment.ContentTypeMaxLen).IsRequired();
-        builder.Property(x => x.FileStoragePath).HasColumnName("file_storage_path").HasMaxLength(CommunicationOutboxAttachment.FileStoragePathMaxLen);
+        builder
+            .Property(x => x.CommunicationOutboxId)
+            .HasColumnName("communication_outbox_id")
+            .IsRequired();
+        builder
+            .Property(x => x.AttachmentType)
+            .HasColumnName("attachment_type")
+            .HasConversion<string>()
+            .HasMaxLength(30)
+            .IsRequired();
+        builder
+            .Property(x => x.FileName)
+            .HasColumnName("file_name")
+            .HasMaxLength(CommunicationOutboxAttachment.FileNameMaxLen)
+            .IsRequired();
+        builder
+            .Property(x => x.ContentType)
+            .HasColumnName("content_type")
+            .HasMaxLength(CommunicationOutboxAttachment.ContentTypeMaxLen)
+            .IsRequired();
+        builder
+            .Property(x => x.FileStoragePath)
+            .HasColumnName("file_storage_path")
+            .HasMaxLength(CommunicationOutboxAttachment.FileStoragePathMaxLen);
         builder.Property(x => x.BinaryContent).HasColumnName("binary_content");
         builder.Property(x => x.ReferenceId).HasColumnName("reference_id");
         builder.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
@@ -37,7 +58,8 @@ public sealed class CommunicationOutboxAttachmentConfiguration
         builder.Property(x => x.CreatedBy).HasColumnName("created_by").IsRequired();
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(x => x.CommunicationOutboxId)
+        builder
+            .HasIndex(x => x.CommunicationOutboxId)
             .HasDatabaseName("ix_communication_outbox_attachments_outbox");
     }
 }

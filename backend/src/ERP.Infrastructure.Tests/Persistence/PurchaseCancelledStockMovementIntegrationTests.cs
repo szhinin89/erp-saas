@@ -51,7 +51,12 @@ public sealed class PurchaseCancelledStockMovementIntegrationTests : IAsyncLifet
         await db.Database.MigrateAsync();
 
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _userId);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _userId);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: _userId
+        );
         var branch = Branch.Create(
             tenantId: tenant.Id,
             name: "Matriz",
@@ -85,7 +90,15 @@ public sealed class PurchaseCancelledStockMovementIntegrationTests : IAsyncLifet
             branch.Id,
             "Bodega Principal",
             "BOD-01",
-            null, null, null, null, null, null, null, null, null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
             _userId,
             company.Id,
             isMain: true
@@ -126,7 +139,12 @@ public sealed class PurchaseCancelledStockMovementIntegrationTests : IAsyncLifet
         // ── 1. "Confirmar compra" — entrada por compra (comportamiento no tocado por este ticket) ──
         await using (var db1 = CreateContext())
         {
-            var repo = new StockRepository(db1, new FixedCurrentCompany(_companyId), new PostgresDatabaseExceptionTranslator(), StandardPrecisionPolicyProvider.Instance);
+            var repo = new StockRepository(
+                db1,
+                new FixedCurrentCompany(_companyId),
+                new PostgresDatabaseExceptionTranslator(),
+                StandardPrecisionPolicyProvider.Instance
+            );
             await repo.AppendMovementAsync(
                 _tenantId,
                 _companyId,
@@ -147,14 +165,18 @@ public sealed class PurchaseCancelledStockMovementIntegrationTests : IAsyncLifet
 
         await using (var verifyAfterEntry = CreateContext())
         {
-            var stock = await verifyAfterEntry.Set<CurrentStock>()
+            var stock = await verifyAfterEntry
+                .Set<CurrentStock>()
                 .SingleAsync(s => s.ProductId == _productId && s.WarehouseId == _warehouseId);
             stock.Quantity.Should().Be(10m);
             stock.AverageCost.Should().Be(20m);
             stock.TotalStockValue.Should().Be(200m);
 
-            var entryMovement = await verifyAfterEntry.Set<StockMovement>()
-                .SingleAsync(m => m.SourceDocId == invoiceId && m.MovementType == StockMovementType.PurchaseEntry);
+            var entryMovement = await verifyAfterEntry
+                .Set<StockMovement>()
+                .SingleAsync(m =>
+                    m.SourceDocId == invoiceId && m.MovementType == StockMovementType.PurchaseEntry
+                );
             entryMovement.MovementType.ToString().Should().Be("PurchaseEntry");
             entryMovement.Quantity.Should().Be(10m);
         }
@@ -162,7 +184,12 @@ public sealed class PurchaseCancelledStockMovementIntegrationTests : IAsyncLifet
         // ── 2. "Anular compra" — StockMovementType.PurchaseCancelled propio, nunca PurchaseReturn ──
         await using (var db2 = CreateContext())
         {
-            var repo = new StockRepository(db2, new FixedCurrentCompany(_companyId), new PostgresDatabaseExceptionTranslator(), StandardPrecisionPolicyProvider.Instance);
+            var repo = new StockRepository(
+                db2,
+                new FixedCurrentCompany(_companyId),
+                new PostgresDatabaseExceptionTranslator(),
+                StandardPrecisionPolicyProvider.Instance
+            );
             await repo.AppendMovementAsync(
                 _tenantId,
                 _companyId,
@@ -184,32 +211,46 @@ public sealed class PurchaseCancelledStockMovementIntegrationTests : IAsyncLifet
         await using var verifyDb = CreateContext();
 
         // Stock final igual que antes de la compra — la anulación revierte por completo.
-        var finalStock = await verifyDb.Set<CurrentStock>()
+        var finalStock = await verifyDb
+            .Set<CurrentStock>()
             .SingleAsync(s => s.ProductId == _productId && s.WarehouseId == _warehouseId);
-        finalStock.Quantity.Should().Be(0m, because: "la anulación revierte exactamente la cantidad que la compra había ingresado");
-        finalStock.TotalStockValue.Should().Be(0m, because: "el valor de inventario también vuelve a cero");
+        finalStock
+            .Quantity.Should()
+            .Be(
+                0m,
+                because: "la anulación revierte exactamente la cantidad que la compra había ingresado"
+            );
+        finalStock
+            .TotalStockValue.Should()
+            .Be(0m, because: "el valor de inventario también vuelve a cero");
 
         // El movimiento de anulación tiene su propio identificador — nunca PurchaseReturn.
-        var cancelMovement = await verifyDb.Set<StockMovement>()
-            .SingleAsync(m => m.SourceDocId == invoiceId && m.MovementType == StockMovementType.PurchaseCancelled);
+        var cancelMovement = await verifyDb
+            .Set<StockMovement>()
+            .SingleAsync(m =>
+                m.SourceDocId == invoiceId && m.MovementType == StockMovementType.PurchaseCancelled
+            );
         cancelMovement.MovementType.ToString().Should().Be("PurchaseCancelled");
         cancelMovement.MovementType.Should().NotBe(StockMovementType.PurchaseReturn);
         cancelMovement.Quantity.Should().Be(-10m);
-        cancelMovement.SourceDocType.Should().Be(
-            "PurchaseInvoice",
-            because: "SourceDocType es únicamente el documento origen (FACCOM), nunca el motivo del movimiento"
-        );
+        cancelMovement
+            .SourceDocType.Should()
+            .Be(
+                "PurchaseInvoice",
+                because: "SourceDocType es únicamente el documento origen (FACCOM), nunca el motivo del movimiento"
+            );
 
         // Kardex completo: exactamente 2 movimientos para esta factura, cada uno con su propio tipo.
-        var allMovements = await verifyDb.Set<StockMovement>()
+        var allMovements = await verifyDb
+            .Set<StockMovement>()
             .Where(m => m.SourceDocId == invoiceId)
             .OrderBy(m => m.SequenceNumber)
             .ToListAsync();
         allMovements.Should().HaveCount(2);
-        allMovements.Select(m => m.MovementType).Should().Equal(
-            StockMovementType.PurchaseEntry,
-            StockMovementType.PurchaseCancelled
-        );
+        allMovements
+            .Select(m => m.MovementType)
+            .Should()
+            .Equal(StockMovementType.PurchaseEntry, StockMovementType.PurchaseCancelled);
     }
 
     private sealed class FixedCurrentTenant(Guid tenantId) : ICurrentTenant

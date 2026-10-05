@@ -50,7 +50,11 @@ internal static class SupplierCreditPayableTarget
         switch (origin.Value.OriginType)
         {
             case AccountsPayableOriginType.PurchaseInvoice:
-                await purchaseReturns.AcquireFinancialLockAsync(tenantId, origin.Value.OriginId, ct);
+                await purchaseReturns.AcquireFinancialLockAsync(
+                    tenantId,
+                    origin.Value.OriginId,
+                    ct
+                );
                 return null;
             case AccountsPayableOriginType.ExpenseDocument:
                 return null;
@@ -67,9 +71,10 @@ internal static class SupplierCreditPayableTarget
     {
         if (payable.CompanyId != credit.CompanyId)
             return NotFoundMessage;
-        return payable.OriginType
-            is AccountsPayableOriginType.PurchaseInvoice
-                or AccountsPayableOriginType.ExpenseDocument
+        return
+            payable.OriginType
+                is AccountsPayableOriginType.PurchaseInvoice
+                    or AccountsPayableOriginType.ExpenseDocument
             ? null
             : UnsupportedOriginMessage(payable.OriginType);
     }

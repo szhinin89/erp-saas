@@ -71,13 +71,17 @@ public sealed class CashRegisterAccountingAccountBackfillService
             companiesProcessed++;
 
             var cajaGeneral = await _db
-                .Accounts
-                .Where(a =>
+                .Accounts.Where(a =>
                     a.TenantId == group.Key.TenantId
                     && a.CompanyId == group.Key.CompanyId
                     && a.Code == AccountCode.Create(CajaGeneralAccountCode)
                 )
-                .Select(a => new { a.Id, a.IsActive, a.AllowsPosting })
+                .Select(a => new
+                {
+                    a.Id,
+                    a.IsActive,
+                    a.AllowsPosting,
+                })
                 .FirstOrDefaultAsync(ct);
             if (cajaGeneral is null || !cajaGeneral.IsActive || !cajaGeneral.AllowsPosting)
             {
@@ -93,8 +97,7 @@ public sealed class CashRegisterAccountingAccountBackfillService
             }
 
             var cashRegisters = await _db
-                .CashRegisters
-                .Where(cr =>
+                .CashRegisters.Where(cr =>
                     cr.TenantId == group.Key.TenantId
                     && cr.CompanyId == group.Key.CompanyId
                     && cr.AccountingAccountId == null

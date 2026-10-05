@@ -46,9 +46,12 @@ public static class SuppliersModule
         SortOrder = 5,
         Id = "a1000000-0000-4000-9000-000000000102",
         ParentId = "6093d90b-221b-41e0-8d6d-25391ec5d4e6",
-        RelatedActionPermissionsCsv = MasterDataPermissions.BusinessPartnersCreate + ","
-            + MasterDataPermissions.BusinessPartnersUpdate + ","
-            + MasterDataPermissions.BusinessPartnersDisable + ","
+        RelatedActionPermissionsCsv = MasterDataPermissions.BusinessPartnersCreate
+            + ","
+            + MasterDataPermissions.BusinessPartnersUpdate
+            + ","
+            + MasterDataPermissions.BusinessPartnersDisable
+            + ","
             + MasterDataPermissions.BusinessPartnersConfigureCompany
     )]
     public const string Suppliers = "/suppliers";
@@ -63,7 +66,10 @@ public static class SuppliersModule
         LabelKey = "app.nav.item.suppliers.payablesGroup",
         SortOrder = 10,
         Id = "40aa3390-e353-4cd4-92fb-3b4f01bee262",
-        PermissionsAnyCsv = PayablesPermissions.View + "," + SupplierPaymentsPermissions.View + ","
+        PermissionsAnyCsv = PayablesPermissions.View
+            + ","
+            + SupplierPaymentsPermissions.View
+            + ","
             + FinancePermissions.View
     )]
     public const string PayablesGroup = "/payables/group";
@@ -87,7 +93,8 @@ public static class SuppliersModule
         SortOrder = 20,
         Id = "c9000000-0000-4000-9000-000000000002",
         ParentId = "40aa3390-e353-4cd4-92fb-3b4f01bee262",
-        RelatedActionPermissionsCsv = SupplierPaymentsPermissions.Create + ","
+        RelatedActionPermissionsCsv = SupplierPaymentsPermissions.Create
+            + ","
             + SupplierPaymentsPermissions.Reverse
     )]
     public const string SupplierPayments = "/supplier-payments";

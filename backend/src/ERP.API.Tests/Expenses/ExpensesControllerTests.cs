@@ -62,7 +62,10 @@ public sealed class ExpensesControllerTests
     [InlineData(nameof(ExpensesController.UpdateDraft), ExpensePermissions.DocumentsUpdate)]
     [InlineData(nameof(ExpensesController.Confirm), ExpensePermissions.DocumentsConfirm)]
     [InlineData(nameof(ExpensesController.Cancel), ExpensePermissions.DocumentsCancel)]
-    [InlineData(nameof(ExpensesController.GetRetentionEligibility), ExpensePermissions.DocumentsView)]
+    [InlineData(
+        nameof(ExpensesController.GetRetentionEligibility),
+        ExpensePermissions.DocumentsView
+    )]
     [InlineData(nameof(ExpensesController.GetRetention), ExpensePermissions.DocumentsView)]
     public void Cada_endpoint_expone_su_permiso_propio(string methodName, string permission)
     {
@@ -108,8 +111,7 @@ public sealed class ExpensesControllerTests
         var response = await controller.CreateDraft(request, CancellationToken.None);
 
         response.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(201);
-        sent
-            .Should()
+        sent.Should()
             .BeEquivalentTo(
                 new CreateExpenseDraftCommand(
                     request.SupplierId,
@@ -143,8 +145,7 @@ public sealed class ExpensesControllerTests
         var response = await controller.UpdateDraft(id, request, CancellationToken.None);
 
         response.Should().BeOfType<OkObjectResult>();
-        sent
-            .Should()
+        sent.Should()
             .BeEquivalentTo(
                 new UpdateExpenseDraftCommand(
                     id,
@@ -203,7 +204,11 @@ public sealed class ExpensesControllerTests
             )
         );
 
-        var response = await controller.Confirm(Guid.NewGuid(), request: null, CancellationToken.None);
+        var response = await controller.Confirm(
+            Guid.NewGuid(),
+            request: null,
+            CancellationToken.None
+        );
 
         response.Should().BeOfType<UnprocessableEntityObjectResult>();
     }
@@ -221,7 +226,11 @@ public sealed class ExpensesControllerTests
             )
         );
 
-        var response = await controller.Confirm(Guid.NewGuid(), request: null, CancellationToken.None);
+        var response = await controller.Confirm(
+            Guid.NewGuid(),
+            request: null,
+            CancellationToken.None
+        );
 
         response.Should().NotBeOfType<OkObjectResult>();
         response.Should().BeOfType<BadRequestObjectResult>();
@@ -234,7 +243,11 @@ public sealed class ExpensesControllerTests
             Result<ExpenseDocumentDetailDto>.NotFound("Gasto no encontrado.")
         );
 
-        var response = await controller.Confirm(Guid.NewGuid(), request: null, CancellationToken.None);
+        var response = await controller.Confirm(
+            Guid.NewGuid(),
+            request: null,
+            CancellationToken.None
+        );
 
         response.Should().BeOfType<NotFoundObjectResult>();
     }
@@ -256,8 +269,7 @@ public sealed class ExpensesControllerTests
         var response = await controller.GetRetentionEligibility(id, CancellationToken.None);
 
         response.Should().BeOfType<OkObjectResult>();
-        sent
-            .Should()
+        sent.Should()
             .BeEquivalentTo(
                 new GetRetentionEligibilityQuery(RetentionSourceDocumentType.ExpenseDocument, id)
             );
@@ -273,7 +285,10 @@ public sealed class ExpensesControllerTests
             Result<RetentionEligibilityDto>.NotFound("Documento de gasto no encontrado.")
         );
 
-        var response = await controller.GetRetentionEligibility(Guid.NewGuid(), CancellationToken.None);
+        var response = await controller.GetRetentionEligibility(
+            Guid.NewGuid(),
+            CancellationToken.None
+        );
 
         response.Should().BeOfType<NotFoundObjectResult>();
     }
@@ -287,7 +302,10 @@ public sealed class ExpensesControllerTests
         {
             sent = req;
             return Result<ExpenseDocumentDetailDto>.Success(
-                SampleDetail(id) with { Status = ExpenseStatus.Confirmed }
+                SampleDetail(id) with
+                {
+                    Status = ExpenseStatus.Confirmed,
+                }
             );
         });
 
@@ -307,7 +325,10 @@ public sealed class ExpensesControllerTests
         {
             sent = req;
             return Result<ExpenseDocumentDetailDto>.Success(
-                SampleDetail(id) with { Status = ExpenseStatus.Confirmed }
+                SampleDetail(id) with
+                {
+                    Status = ExpenseStatus.Confirmed,
+                }
             );
         });
         var request = new ConfirmExpenseDocumentRequest(
@@ -332,8 +353,7 @@ public sealed class ExpensesControllerTests
         var response = await controller.Confirm(id, request, CancellationToken.None);
 
         response.Should().BeOfType<OkObjectResult>();
-        sent
-            .Should()
+        sent.Should()
             .BeEquivalentTo(
                 new ConfirmExpenseDocumentCommand(
                     id,
@@ -367,7 +387,10 @@ public sealed class ExpensesControllerTests
             .GetProperties()
             .Select(p => p.Name)
             .ToArray();
-        var intentProps = typeof(RetentionIntentRequest).GetProperties().Select(p => p.Name).ToArray();
+        var intentProps = typeof(RetentionIntentRequest)
+            .GetProperties()
+            .Select(p => p.Name)
+            .ToArray();
         var lineProps = typeof(RetentionIntentLineRequest)
             .GetProperties()
             .Select(p => p.Name)
@@ -406,8 +429,7 @@ public sealed class ExpensesControllerTests
         var response = await controller.CreateConfirmed(request, CancellationToken.None);
 
         response.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(201);
-        sent
-            .Should()
+        sent.Should()
             .BeEquivalentTo(
                 new CreateConfirmedExpenseCommand(
                     request.SupplierId,
@@ -480,8 +502,7 @@ public sealed class ExpensesControllerTests
 
         await controller.GetRetention(id, CancellationToken.None);
 
-        sent
-            .Should()
+        sent.Should()
             .BeEquivalentTo(
                 new GetRetentionBySourceQuery(RetentionSourceDocumentType.ExpenseDocument, id)
             );
@@ -499,7 +520,10 @@ public sealed class ExpensesControllerTests
         {
             sent = req;
             return Result<ExpenseDocumentDetailDto>.Success(
-                SampleDetail(id) with { Status = ExpenseStatus.Cancelled }
+                SampleDetail(id) with
+                {
+                    Status = ExpenseStatus.Cancelled,
+                }
             );
         });
 
@@ -510,11 +534,8 @@ public sealed class ExpensesControllerTests
         );
 
         response.Should().BeOfType<OkObjectResult>();
-        sent
-            .Should()
-            .BeEquivalentTo(
-                new CancelExpenseDocumentCommand(id, "Anulado por error de captura")
-            );
+        sent.Should()
+            .BeEquivalentTo(new CancelExpenseDocumentCommand(id, "Anulado por error de captura"));
     }
 
     [Fact]
@@ -552,7 +573,12 @@ public sealed class ExpensesControllerTests
             Candidates: new[]
             {
                 new RetentionEligibilityCandidateDto("IVA", "1", "Retención IVA", 30m),
-                new RetentionEligibilityCandidateDto("RENTA", "303", "Honorarios profesionales", 10m),
+                new RetentionEligibilityCandidateDto(
+                    "RENTA",
+                    "303",
+                    "Honorarios profesionales",
+                    10m
+                ),
             },
             Reasons: Array.Empty<string>()
         );

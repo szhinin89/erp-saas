@@ -55,38 +55,95 @@ public sealed class ProviderRucPipelineFailClosedTests
             Settings = settings;
 
             Repository
-                .Setup(r => r.GetBySourceAsync(TenantId, "Sales", SourceEntityId, It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetBySourceAsync(
+                        TenantId,
+                        "Sales",
+                        SourceEntityId,
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync(() => Document);
             Repository
-                .Setup(r => r.AddAsync(It.IsAny<ElectronicDocument>(), It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.AddAsync(It.IsAny<ElectronicDocument>(), It.IsAny<CancellationToken>())
+                )
                 .Callback<ElectronicDocument, CancellationToken>((d, _) => Document = d)
                 .Returns(Task.CompletedTask);
             Repository
-                .Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(() => Document);
-            Repository.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+            Repository
+                .Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
 
             Validator.Setup(v => v.DocumentType).Returns(ElectronicDocumentType.Invoice);
             Validator
-                .Setup(v => v.ValidateAsync(It.IsAny<ElectronicDocumentXml>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new ElectronicDocumentSchemaValidationResult(true, [], [], "1.1.0", ElectronicDocumentType.Invoice));
+                .Setup(v =>
+                    v.ValidateAsync(
+                        It.IsAny<ElectronicDocumentXml>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(
+                    new ElectronicDocumentSchemaValidationResult(
+                        true,
+                        [],
+                        [],
+                        "1.1.0",
+                        ElectronicDocumentType.Invoice
+                    )
+                );
 
             Signing
-                .Setup(s => s.SignAsync(TenantId, CompanyId, It.IsAny<ElectronicDocumentXml>(), It.IsAny<CancellationToken>()))
-                .Callback<Guid, Guid, ElectronicDocumentXml, CancellationToken>((_, _, xml, _) => SignedInputXml = xml.Xml)
-                .ReturnsAsync((Guid _, Guid _, ElectronicDocumentXml xml, CancellationToken _) =>
-                    Result<SignedElectronicDocumentXml>.Success(
-                        new SignedElectronicDocumentXml(xml.Xml, "UTF-8", xml.Version, xml.DocumentType, xml.AccessKey, DateTime.UtcNow)
-                    ));
+                .Setup(s =>
+                    s.SignAsync(
+                        TenantId,
+                        CompanyId,
+                        It.IsAny<ElectronicDocumentXml>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .Callback<Guid, Guid, ElectronicDocumentXml, CancellationToken>(
+                    (_, _, xml, _) => SignedInputXml = xml.Xml
+                )
+                .ReturnsAsync(
+                    (Guid _, Guid _, ElectronicDocumentXml xml, CancellationToken _) =>
+                        Result<SignedElectronicDocumentXml>.Success(
+                            new SignedElectronicDocumentXml(
+                                xml.Xml,
+                                "UTF-8",
+                                xml.Version,
+                                xml.DocumentType,
+                                xml.AccessKey,
+                                DateTime.UtcNow
+                            )
+                        )
+                );
 
             Storage
-                .Setup(s => s.StoreAsync(TenantId, ElectronicDocumentType.Invoice, It.IsAny<Guid>(),
-                    It.IsAny<ElectronicDocumentXml>(), It.IsAny<SignedElectronicDocumentXml>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(Result<ElectronicDocumentStoredXmlPaths>.Success(
-                    new ElectronicDocumentStoredXmlPaths("draft/path.xml", "signed/path.xml")));
+                .Setup(s =>
+                    s.StoreAsync(
+                        TenantId,
+                        ElectronicDocumentType.Invoice,
+                        It.IsAny<Guid>(),
+                        It.IsAny<ElectronicDocumentXml>(),
+                        It.IsAny<SignedElectronicDocumentXml>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(
+                    Result<ElectronicDocumentStoredXmlPaths>.Success(
+                        new ElectronicDocumentStoredXmlPaths("draft/path.xml", "signed/path.xml")
+                    )
+                );
 
             Reception
-                .Setup(r => r.SendAsync(CompanyId, It.IsAny<byte[]>(), It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.SendAsync(CompanyId, It.IsAny<byte[]>(), It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(Result<SriReceptionResult>.Failure("SRI no disponible en el test."));
         }
 
@@ -94,7 +151,12 @@ public sealed class ProviderRucPipelineFailClosedTests
         {
             var provider = new Mock<IElectronicDocumentDataProvider>();
             provider
-                .Setup(p => p.GetDataAsync(It.IsAny<ElectronicDocumentSourceReference>(), It.IsAny<CancellationToken>()))
+                .Setup(p =>
+                    p.GetDataAsync(
+                        It.IsAny<ElectronicDocumentSourceReference>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync(Result<ElectronicDocumentData>.Success(InvoiceData()));
 
             var supplier = new CommercialElectronicDocumentXmlSupplier(
@@ -104,14 +166,19 @@ public sealed class ProviderRucPipelineFailClosedTests
                 AdditionalInfoTestDoubles.ComposerWithProviderRuc(Settings)
             );
             var supplierResolver = new Mock<IElectronicDocumentXmlSupplierResolver>();
-            supplierResolver.Setup(r => r.Resolve(ElectronicDocumentType.Invoice)).Returns(supplier);
+            supplierResolver
+                .Setup(r => r.Resolve(ElectronicDocumentType.Invoice))
+                .Returns(supplier);
 
             var validatorResolver = new Mock<IElectronicDocumentSchemaValidatorResolver>();
-            validatorResolver.Setup(r => r.Resolve(ElectronicDocumentType.Invoice)).Returns(Validator.Object);
+            validatorResolver
+                .Setup(r => r.Resolve(ElectronicDocumentType.Invoice))
+                .Returns(Validator.Object);
 
             var dbEx = new Mock<IDatabaseExceptionTranslator>();
             DatabaseUniqueViolationInfo? none = null;
-            dbEx.Setup(d => d.TryGetUniqueViolation(It.IsAny<Exception>(), out none)).Returns(false);
+            dbEx.Setup(d => d.TryGetUniqueViolation(It.IsAny<Exception>(), out none))
+                .Returns(false);
 
             return new ElectronicDocumentIssuer(
                 Repository.Object,
@@ -132,13 +199,42 @@ public sealed class ProviderRucPipelineFailClosedTests
 
     private static ElectronicDocumentData InvoiceData() =>
         new(
-            Emission: new ElectronicDocumentEmissionContext("1", "1", "01", "001", "Av. Amazonas", "001", "000000123", IssueDate),
-            Issuer: new ElectronicDocumentIssuerData("1790012345001", "ACME CIA LTDA", null, "Av. Amazonas", null, true),
-            Counterparty: new ElectronicDocumentCounterpartyData("05", "1710034065", "Juan Perez", null, null),
+            Emission: new ElectronicDocumentEmissionContext(
+                "1",
+                "1",
+                "01",
+                "001",
+                "Av. Amazonas",
+                "001",
+                "000000123",
+                IssueDate
+            ),
+            Issuer: new ElectronicDocumentIssuerData(
+                "1790012345001",
+                "ACME CIA LTDA",
+                null,
+                "Av. Amazonas",
+                null,
+                true
+            ),
+            Counterparty: new ElectronicDocumentCounterpartyData(
+                "05",
+                "1710034065",
+                "Juan Perez",
+                null,
+                null
+            ),
             Details:
             [
-                new ElectronicDocumentDetailLine("SKU-001", "Producto", 1m, 10m, 0m, 10m,
-                    [new ElectronicDocumentDetailTax("VAT", "2", 10m, 15m, 1.5m)]),
+                new ElectronicDocumentDetailLine(
+                    "SKU-001",
+                    "Producto",
+                    1m,
+                    10m,
+                    0m,
+                    10m,
+                    [new ElectronicDocumentDetailTax("VAT", "2", 10m, 15m, 1.5m)]
+                ),
             ],
             TaxSummary: [new ElectronicDocumentTaxSummary("VAT", "2", 10m, 1.5m)],
             Totals: new ElectronicDocumentTotals(10m, 0m, 1.5m, 11.5m, "USD"),
@@ -149,11 +245,21 @@ public sealed class ProviderRucPipelineFailClosedTests
     private static RegisterElectronicDocumentRequest Request() =>
         new(TenantId, CompanyId, ElectronicDocumentType.Invoice, "Sales", SourceEntityId, UserId);
 
-    public static TheoryData<string, bool, DateOnly?, string?> ConfiguracionesExigiblesIncompletas() =>
+    public static TheoryData<
+        string,
+        bool,
+        DateOnly?,
+        string?
+    > ConfiguracionesExigiblesIncompletas() =>
         new()
         {
             { "habilitado sin fecha (B)", true, null, AdditionalInfoTestDoubles.ProviderRuc },
-            { "exigible y deshabilitado (E)", false, IssueDate, AdditionalInfoTestDoubles.ProviderRuc },
+            {
+                "exigible y deshabilitado (E)",
+                false,
+                IssueDate,
+                AdditionalInfoTestDoubles.ProviderRuc
+            },
             { "exigible con RUC inválido (F)", true, IssueDate, "123" },
         };
 
@@ -174,15 +280,42 @@ public sealed class ProviderRucPipelineFailClosedTests
         var result = await f.BuildIssuer().RegisterAsync(Request());
 
         result.IsSuccess.Should().BeFalse(escenario);
-        result.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.SystemProviderRucNotConfigured);
+        result
+            .Code.Should()
+            .Be(ApiResponseCodes.ElectronicDocuments.SystemProviderRucNotConfigured);
         f.Document!.CurrentState.Should().Be(ElectronicDocumentState.Failed);
         f.Document.LastError.Should().NotBeNullOrWhiteSpace();
         f.Document.AccessKey.Should().BeNull("no se generó ni firmó XML");
-        f.Validator.Verify(v => v.ValidateAsync(It.IsAny<ElectronicDocumentXml>(), It.IsAny<CancellationToken>()), Times.Never);
-        f.Signing.Verify(s => s.SignAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<ElectronicDocumentXml>(), It.IsAny<CancellationToken>()), Times.Never);
-        f.Storage.Verify(s => s.StoreAsync(It.IsAny<Guid>(), It.IsAny<ElectronicDocumentType>(), It.IsAny<Guid>(),
-            It.IsAny<ElectronicDocumentXml>(), It.IsAny<SignedElectronicDocumentXml>(), It.IsAny<CancellationToken>()), Times.Never);
-        f.Reception.Verify(r => r.SendAsync(It.IsAny<Guid>(), It.IsAny<byte[]>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.Validator.Verify(
+            v => v.ValidateAsync(It.IsAny<ElectronicDocumentXml>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        f.Signing.Verify(
+            s =>
+                s.SignAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<ElectronicDocumentXml>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
+        f.Storage.Verify(
+            s =>
+                s.StoreAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<ElectronicDocumentType>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<ElectronicDocumentXml>(),
+                    It.IsAny<SignedElectronicDocumentXml>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
+        f.Reception.Verify(
+            r => r.SendAsync(It.IsAny<Guid>(), It.IsAny<byte[]>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -196,14 +329,23 @@ public sealed class ProviderRucPipelineFailClosedTests
         f.Document!.CurrentState.Should().Be(ElectronicDocumentState.Failed);
 
         var current = (await settings.Object.GetAsync())!;
-        current.Configure(AdditionalInfoTestDoubles.ProviderRuc, "ZH Technologies S.A.", "J62021002", IssueDate, enabled: true, UserId);
+        current.Configure(
+            AdditionalInfoTestDoubles.ProviderRuc,
+            "ZH Technologies S.A.",
+            "J62021002",
+            IssueDate,
+            enabled: true,
+            UserId
+        );
 
         var retry = await issuer.RetryAsync(TenantId, f.Document.Id, UserId);
 
         retry.IsSuccess.Should().BeTrue(retry.Error);
-        f.Document.CurrentState.Should().Be(ElectronicDocumentState.Signed, "la recepción del test no responde: queda firmado");
-        f.SignedInputXml.Should().Contain(
-            $"<campoAdicional nombre=\"{SriAdditionalInfoFieldNames.SystemProviderRuc}\">{AdditionalInfoTestDoubles.ProviderRuc}</campoAdicional>"
-        );
+        f.Document.CurrentState.Should()
+            .Be(ElectronicDocumentState.Signed, "la recepción del test no responde: queda firmado");
+        f.SignedInputXml.Should()
+            .Contain(
+                $"<campoAdicional nombre=\"{SriAdditionalInfoFieldNames.SystemProviderRuc}\">{AdditionalInfoTestDoubles.ProviderRuc}</campoAdicional>"
+            );
     }
 }

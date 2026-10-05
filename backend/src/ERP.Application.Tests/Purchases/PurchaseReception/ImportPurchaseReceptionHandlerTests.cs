@@ -23,7 +23,15 @@ public sealed class ImportPurchaseReceptionHandlerTests
     /// ZH-TEMPORAL-CONTRACT-02: FECHA_AUTORIZACION del TXT = 01/07/2026 21:06:55 hora Ecuador
     /// (UTC-5) → instante real 02/07/2026 02:06:55Z. Nunca 21:06:55Z.
     /// </summary>
-    private static readonly DateTime SampleAuthorizationUtc = new(2026, 7, 2, 2, 6, 55, DateTimeKind.Utc);
+    private static readonly DateTime SampleAuthorizationUtc = new(
+        2026,
+        7,
+        2,
+        2,
+        6,
+        55,
+        DateTimeKind.Utc
+    );
 
     private static PurchaseReceptionRecord SampleRecord(
         string accessKey = "0107202601179135268800120150270001617400016174011"
@@ -243,7 +251,10 @@ public sealed class ImportPurchaseReceptionHandlerTests
         // AccessKey) de una NC/XML cuya recepción ya está vinculada a un PurchaseCreditNote debe
         // marcar CreditNoteExists=true con el Id existente, para que la UI ofrezca "Ver NC" en vez
         // de reabrir el formulario de creación.
-        var record = SampleRecord() with { SourceDocType = PurchaseReceptionSourceDocType.CreditNote };
+        var record = SampleRecord() with
+        {
+            SourceDocType = PurchaseReceptionSourceDocType.CreditNote,
+        };
         var existing = PurchaseReceptionDocument.Create(
             TenantId,
             CompanyId,

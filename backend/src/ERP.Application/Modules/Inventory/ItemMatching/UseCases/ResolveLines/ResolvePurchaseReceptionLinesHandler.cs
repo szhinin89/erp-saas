@@ -36,7 +36,11 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
     ICurrentBranch branch,
     ICurrentUser user,
     IDatabaseExceptionTranslator databaseExceptions
-) : IRequestHandler<ResolvePurchaseReceptionLinesCommand, Result<ResolvePurchaseReceptionLinesResultDto>>
+)
+    : IRequestHandler<
+        ResolvePurchaseReceptionLinesCommand,
+        Result<ResolvePurchaseReceptionLinesResultDto>
+    >
 {
     private const string BasePresentationName = "Unidad";
 
@@ -51,19 +55,38 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
             );
 
         var document = await documents.GetByLineIdAsync(
-            tenant.TenantId, cmd.Lines[0].PurchaseReceptionLineId, cancellationToken);
-        if (document is null || document.CompanyId != company.CompanyId || document.BranchId != branch.BranchId)
+            tenant.TenantId,
+            cmd.Lines[0].PurchaseReceptionLineId,
+            cancellationToken
+        );
+        if (
+            document is null
+            || document.CompanyId != company.CompanyId
+            || document.BranchId != branch.BranchId
+        )
             return Result<ResolvePurchaseReceptionLinesResultDto>.NotFound(
                 "El documento de recepción no existe."
             );
-        if (document.Status is not (PurchaseReceptionDocumentStatus.Verified or PurchaseReceptionDocumentStatus.Processed))
+        if (
+            document.Status
+            is not (
+                PurchaseReceptionDocumentStatus.Verified
+                or PurchaseReceptionDocumentStatus.Processed
+            )
+        )
             return Result<ResolvePurchaseReceptionLinesResultDto>.ValidationFailure(
                 "Solo se pueden resolver líneas de un documento con XML autorizado."
             );
 
-        if (cmd.NewItems.Count > 0
+        if (
+            cmd.NewItems.Count > 0
             && !await authorizer.IsAuthorizedAsync(
-                InventoryPermissions.ItemsCreate, user.UserId, user.Role ?? string.Empty, cancellationToken))
+                InventoryPermissions.ItemsCreate,
+                user.UserId,
+                user.Role ?? string.Empty,
+                cancellationToken
+            )
+        )
             return Result<ResolvePurchaseReceptionLinesResultDto>.Forbidden(
                 "No tiene permiso para crear productos."
             );
@@ -88,14 +111,24 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
         catch (ValidationException ex)
         {
             unitOfWork.ClearChangeTracker();
-            return Rejected([new ResolveReceptionRowError(outcome.CurrentLineId, outcome.CurrentItemKey,
-                string.Join(" ", ex.Errors.Select(e => e.ErrorMessage).Distinct()))]);
+            return Rejected([
+                new ResolveReceptionRowError(
+                    outcome.CurrentLineId,
+                    outcome.CurrentItemKey,
+                    string.Join(" ", ex.Errors.Select(e => e.ErrorMessage).Distinct())
+                ),
+            ]);
         }
         catch (Exception ex) when (databaseExceptions.TryGetUniqueViolation(ex, out _))
         {
             unitOfWork.ClearChangeTracker();
-            return Rejected([new ResolveReceptionRowError(outcome.CurrentLineId, outcome.CurrentItemKey,
-                "Otro proceso registró el producto o código de proveedor. Actualice la factura y revise esta fila.")]);
+            return Rejected([
+                new ResolveReceptionRowError(
+                    outcome.CurrentLineId,
+                    outcome.CurrentItemKey,
+                    "Otro proceso registró el producto o código de proveedor. Actualice la factura y revise esta fila."
+                ),
+            ]);
         }
 
         return Result<ResolvePurchaseReceptionLinesResultDto>.Success(
@@ -127,15 +160,24 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
     )
     {
         var errors = new List<ResolveReceptionRowError>();
-        var newItemsByKey = new Dictionary<string, ResolveReceptionNewItemInput>(StringComparer.Ordinal);
+        var newItemsByKey = new Dictionary<string, ResolveReceptionNewItemInput>(
+            StringComparer.Ordinal
+        );
         foreach (var newItem in cmd.NewItems)
         {
-            if (string.IsNullOrWhiteSpace(newItem.Key) || !newItemsByKey.TryAdd(newItem.Key, newItem))
-                errors.Add(new(null, newItem.Key, "Cada producto nuevo debe tener una referencia única."));
+            if (
+                string.IsNullOrWhiteSpace(newItem.Key)
+                || !newItemsByKey.TryAdd(newItem.Key, newItem)
+            )
+                errors.Add(
+                    new(null, newItem.Key, "Cada producto nuevo debe tener una referencia única.")
+                );
         }
 
         var seenLines = new HashSet<Guid>();
-        var targetsByCode = new Dictionary<string, (string Target, Guid LineId)>(StringComparer.Ordinal);
+        var targetsByCode = new Dictionary<string, (string Target, Guid LineId)>(
+            StringComparer.Ordinal
+        );
         foreach (var input in cmd.Lines)
         {
             var lineError = await ValidateLineAsync(document, input, newItemsByKey, seenLines, ct);
@@ -153,9 +195,17 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
                 ? $"item:{existing}:{input.PackagingLevelId}"
                 : $"new:{input.NewItemKey}:{input.PresentationFactor}";
             var normalizedCode = line.SupplierCode.Trim().ToUpperInvariant();
-            if (targetsByCode.TryGetValue(normalizedCode, out var previous) && previous.Target != target)
-                errors.Add(new(input.PurchaseReceptionLineId, input.NewItemKey,
-                    $"El código de proveedor '{line.SupplierCode}' aparece en varias líneas con productos o presentaciones distintas."));
+            if (
+                targetsByCode.TryGetValue(normalizedCode, out var previous)
+                && previous.Target != target
+            )
+                errors.Add(
+                    new(
+                        input.PurchaseReceptionLineId,
+                        input.NewItemKey,
+                        $"El código de proveedor '{line.SupplierCode}' aparece en varias líneas con productos o presentaciones distintas."
+                    )
+                );
             else
                 targetsByCode[normalizedCode] = (target, input.PurchaseReceptionLineId);
         }
@@ -165,7 +215,9 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
         foreach (var newItem in newItemsByKey.Values)
         {
             var itemLines = cmd.Lines.Where(l => l.NewItemKey == newItem.Key).ToList();
-            foreach (var message in await ValidateNewItemAsync(newItem, itemLines, skus, barcodes, ct))
+            foreach (
+                var message in await ValidateNewItemAsync(newItem, itemLines, skus, barcodes, ct)
+            )
                 errors.Add(new(null, newItem.Key, message));
         }
         return errors;
@@ -189,9 +241,15 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
         if (input.ItemId.HasValue == !string.IsNullOrWhiteSpace(input.NewItemKey))
             return "Indique un producto existente o un producto nuevo (solo uno).";
 
-        var registered = document.SupplierId is { } supplierId && !string.IsNullOrWhiteSpace(line.SupplierCode)
-            ? await items.GetSupplierCodeMatchAsync(supplierId, line.SupplierCode, document.TenantId, ct)
-            : null;
+        var registered =
+            document.SupplierId is { } supplierId && !string.IsNullOrWhiteSpace(line.SupplierCode)
+                ? await items.GetSupplierCodeMatchAsync(
+                    supplierId,
+                    line.SupplierCode,
+                    document.TenantId,
+                    ct
+                )
+                : null;
 
         if (input.ItemId is { } itemId)
         {
@@ -200,10 +258,21 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
                 return "El producto seleccionado no existe o está deshabilitado.";
             if (registered is not null && registered.ItemId != itemId)
                 return "El código de proveedor ya está asociado a otro ítem.";
-            if (input.PackagingLevelId is { } packagingLevelId
-                && !await items.PackagingLevelBelongsToItemAsync(itemId, packagingLevelId, document.TenantId, ct))
+            if (
+                input.PackagingLevelId is { } packagingLevelId
+                && !await items.PackagingLevelBelongsToItemAsync(
+                    itemId,
+                    packagingLevelId,
+                    document.TenantId,
+                    ct
+                )
+            )
                 return "La presentación seleccionada no pertenece al ítem.";
-            if (item.StockConfig.TracksStock && input.PackagingLevelId is null && registered?.PackagingLevelId is null)
+            if (
+                item.StockConfig.TracksStock
+                && input.PackagingLevelId is null
+                && registered?.PackagingLevelId is null
+            )
                 return "Seleccione la presentación que entrega el proveedor para este producto inventariable.";
             return null;
         }
@@ -214,8 +283,13 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
             return "El código de proveedor ya está vinculado a un producto existente. Use \"Vincular\" en lugar de crear.";
         if (input.PresentationFactor <= 0)
             return "La cantidad por presentación debe ser mayor a cero.";
-        if (input.PresentationFactor != 1m
-            && (string.IsNullOrWhiteSpace(input.PresentationName) || string.IsNullOrWhiteSpace(input.PresentationUomCode)))
+        if (
+            input.PresentationFactor != 1m
+            && (
+                string.IsNullOrWhiteSpace(input.PresentationName)
+                || string.IsNullOrWhiteSpace(input.PresentationUomCode)
+            )
+        )
             return "Indique nombre y unidad de la presentación (p. ej. Caja x12).";
         return null;
     }
@@ -244,7 +318,10 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
         var sku = newItem.Sku.Trim();
         if (sku.Length > 0 && !skus.Add(sku))
             messages.Add($"El SKU '{sku}' está repetido en el lote.");
-        else if (sku.Length > 0 && await items.ExistsBySkuAsync(sku, tenant.TenantId, cancellationToken: ct))
+        else if (
+            sku.Length > 0
+            && await items.ExistsBySkuAsync(sku, tenant.TenantId, cancellationToken: ct)
+        )
             messages.Add($"Ya existe un ítem con SKU '{sku}'.");
 
         var barcode = newItem.Barcode.Trim();
@@ -258,7 +335,9 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
             .GroupBy(l => l.PresentationFactor)
             .FirstOrDefault(g => g.Select(l => (Name(l), Uom(l))).Distinct().Count() > 1);
         if (conflictingFactor is not null)
-            messages.Add($"La presentación de {conflictingFactor.Key} unidades tiene nombres o unidades distintas entre líneas.");
+            messages.Add(
+                $"La presentación de {conflictingFactor.Key} unidades tiene nombres o unidades distintas entre líneas."
+            );
         return messages.Distinct().ToList();
     }
 
@@ -271,19 +350,33 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
         CancellationToken ct
     )
     {
-        var levelsByNewItem = new Dictionary<string, (Guid ItemId, IReadOnlyDictionary<decimal, Guid> Levels)>();
+        var levelsByNewItem =
+            new Dictionary<string, (Guid ItemId, IReadOnlyDictionary<decimal, Guid> Levels)>();
         foreach (var newItem in cmd.NewItems)
         {
             outcome.CurrentItemKey = newItem.Key;
             var created = await mediator.Send(ToCreateItemCommand(newItem), ct);
             if (!created.IsSuccess || created.Value is null)
-                throw new RowFailureException(new(null, newItem.Key, created.Error ?? "No se pudo crear el producto."));
+                throw new RowFailureException(
+                    new(null, newItem.Key, created.Error ?? "No se pudo crear el producto.")
+                );
 
             var itemLines = cmd.Lines.Where(l => l.NewItemKey == newItem.Key).ToList();
             var packaging = await mediator.Send(
-                new ReplaceItemPackagingLevelsCommand(created.Value.Id, BuildPresentations(newItem, itemLines)), ct);
+                new ReplaceItemPackagingLevelsCommand(
+                    created.Value.Id,
+                    BuildPresentations(newItem, itemLines)
+                ),
+                ct
+            );
             if (!packaging.IsSuccess || packaging.Value is null)
-                throw new RowFailureException(new(null, newItem.Key, packaging.Error ?? "No se pudieron crear las presentaciones."));
+                throw new RowFailureException(
+                    new(
+                        null,
+                        newItem.Key,
+                        packaging.Error ?? "No se pudieron crear las presentaciones."
+                    )
+                );
 
             levelsByNewItem[newItem.Key] = (
                 created.Value.Id,
@@ -301,26 +394,71 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
             var line = document.Lines.Single(l => l.Id == input.PurchaseReceptionLineId);
             var (itemId, packagingLevelId) = input.ItemId is { } existingItemId
                 ? (existingItemId, input.PackagingLevelId)
-                : (levelsByNewItem[input.NewItemKey!].ItemId, (Guid?)levelsByNewItem[input.NewItemKey!].Levels[input.PresentationFactor]);
+                : (
+                    levelsByNewItem[input.NewItemKey!].ItemId,
+                    (Guid?)levelsByNewItem[input.NewItemKey!].Levels[input.PresentationFactor]
+                );
 
-            var learns = document.SupplierId is { } supplierId
+            var learns =
+                document.SupplierId is { } supplierId
                 && !string.IsNullOrWhiteSpace(line.SupplierCode)
-                && (learnedCodes.Contains(line.SupplierCode)
-                    || !await items.SupplierCodeExistsAsync(supplierId, line.SupplierCode.Trim().ToUpperInvariant(), document.TenantId, ct));
+                && (
+                    learnedCodes.Contains(line.SupplierCode)
+                    || !await items.SupplierCodeExistsAsync(
+                        supplierId,
+                        line.SupplierCode.Trim().ToUpperInvariant(),
+                        document.TenantId,
+                        ct
+                    )
+                );
             // Recheck after product creation: another batch may have learned this code meanwhile.
-            var registered = document.SupplierId is { } supplier && !string.IsNullOrWhiteSpace(line.SupplierCode)
-                && await items.SupplierCodeExistsAsync(supplier, line.SupplierCode.Trim().ToUpperInvariant(), document.TenantId, ct)
-                ? await items.GetSupplierCodeMatchAsync(supplier, line.SupplierCode, document.TenantId, ct)
-                : null;
-            if (registered is not null && (registered.ItemId != itemId
-                || (packagingLevelId.HasValue && registered.PackagingLevelId != packagingLevelId)))
-                throw new RowFailureException(new(line.Id, input.NewItemKey,
-                    "El código de proveedor ya está asociado a otro producto o presentación. Actualice la factura."));
-            await confirmation.ConfirmAsync(document, line, itemId, user.UserId, matchedAt, packagingLevelId, ct);
+            var registered =
+                document.SupplierId is { } supplier
+                && !string.IsNullOrWhiteSpace(line.SupplierCode)
+                && await items.SupplierCodeExistsAsync(
+                    supplier,
+                    line.SupplierCode.Trim().ToUpperInvariant(),
+                    document.TenantId,
+                    ct
+                )
+                    ? await items.GetSupplierCodeMatchAsync(
+                        supplier,
+                        line.SupplierCode,
+                        document.TenantId,
+                        ct
+                    )
+                    : null;
+            if (
+                registered is not null
+                && (
+                    registered.ItemId != itemId
+                    || (
+                        packagingLevelId.HasValue && registered.PackagingLevelId != packagingLevelId
+                    )
+                )
+            )
+                throw new RowFailureException(
+                    new(
+                        line.Id,
+                        input.NewItemKey,
+                        "El código de proveedor ya está asociado a otro producto o presentación. Actualice la factura."
+                    )
+                );
+            await confirmation.ConfirmAsync(
+                document,
+                line,
+                itemId,
+                user.UserId,
+                matchedAt,
+                packagingLevelId,
+                ct
+            );
             if (learns)
                 learnedCodes.Add(line.SupplierCode!);
 
-            outcome.Lines.Add(await ToResolvedLineAsync(document, line, itemId, packagingLevelId, learns, ct));
+            outcome.Lines.Add(
+                await ToResolvedLineAsync(document, line, itemId, packagingLevelId, learns, ct)
+            );
         }
 
         outcome.EquivalencesLearned = learnedCodes.Count;
@@ -328,8 +466,12 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
         // Other pending lines of this document sharing a code just learned resolve automatically.
         var pendingIds = document.Lines.Where(l => l.ItemId is null).Select(l => l.Id).ToHashSet();
         outcome.LinesAutoMatched = await autoMatcher.RefreshAsync(document, ct);
-        foreach (var line in document.Lines.Where(l => pendingIds.Contains(l.Id) && l.ItemId is not null))
-            outcome.Lines.Add(await ToResolvedLineAsync(document, line, line.ItemId!.Value, null, false, ct));
+        foreach (
+            var line in document.Lines.Where(l => pendingIds.Contains(l.Id) && l.ItemId is not null)
+        )
+            outcome.Lines.Add(
+                await ToResolvedLineAsync(document, line, line.ItemId!.Value, null, false, ct)
+            );
     }
 
     private async Task<ResolvedReceptionLineDto> ToResolvedLineAsync(
@@ -341,12 +483,26 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
         CancellationToken ct
     )
     {
-        var item = await items.GetByIdAsync(itemId, document.TenantId, ct)
-            ?? throw new RowFailureException(new(line.Id, null, "El producto vinculado no existe."));
-        var effectiveLevelId = packagingLevelId
-            ?? (document.SupplierId is { } supplierId && !string.IsNullOrWhiteSpace(line.SupplierCode)
-                ? (await items.GetSupplierCodeMatchAsync(supplierId, line.SupplierCode, document.TenantId, ct))?.PackagingLevelId
-                : null);
+        var item =
+            await items.GetByIdAsync(itemId, document.TenantId, ct)
+            ?? throw new RowFailureException(
+                new(line.Id, null, "El producto vinculado no existe.")
+            );
+        var effectiveLevelId =
+            packagingLevelId
+            ?? (
+                document.SupplierId is { } supplierId
+                && !string.IsNullOrWhiteSpace(line.SupplierCode)
+                    ? (
+                        await items.GetSupplierCodeMatchAsync(
+                            supplierId,
+                            line.SupplierCode,
+                            document.TenantId,
+                            ct
+                        )
+                    )?.PackagingLevelId
+                    : null
+            );
         var level = item.PackagingLevels.FirstOrDefault(p => p.Id == effectiveLevelId);
         return new ResolvedReceptionLineDto(
             line.Id,
@@ -376,23 +532,44 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
         var baseLine = itemLines.FirstOrDefault(l => l.PresentationFactor == 1m);
         var levels = new List<PackagingLevelInput>
         {
-            new(null,
-                string.IsNullOrWhiteSpace(baseLine?.PresentationName) ? BasePresentationName : baseLine.PresentationName.Trim(),
-                1, 1m, newItem.DefaultUomCode.Trim(),
-                IsBaseUnit: true, IsPurchaseDefault: purchaseFactor == 1m, IsSaleDefault: true),
+            new(
+                null,
+                string.IsNullOrWhiteSpace(baseLine?.PresentationName)
+                    ? BasePresentationName
+                    : baseLine.PresentationName.Trim(),
+                1,
+                1m,
+                newItem.DefaultUomCode.Trim(),
+                IsBaseUnit: true,
+                IsPurchaseDefault: purchaseFactor == 1m,
+                IsSaleDefault: true
+            ),
         };
         var level = 2;
-        foreach (var group in itemLines.Where(l => l.PresentationFactor != 1m)
-                     .GroupBy(l => l.PresentationFactor).OrderBy(g => g.Key))
+        foreach (
+            var group in itemLines
+                .Where(l => l.PresentationFactor != 1m)
+                .GroupBy(l => l.PresentationFactor)
+                .OrderBy(g => g.Key)
+        )
         {
             var first = group.First();
-            levels.Add(new(null, Name(first), level++, group.Key, Uom(first),
-                IsPurchaseDefault: group.Key == purchaseFactor));
+            levels.Add(
+                new(
+                    null,
+                    Name(first),
+                    level++,
+                    group.Key,
+                    Uom(first),
+                    IsPurchaseDefault: group.Key == purchaseFactor
+                )
+            );
         }
         return levels;
     }
 
-    private static string Name(ResolveReceptionLineInput line) => line.PresentationName?.Trim() ?? string.Empty;
+    private static string Name(ResolveReceptionLineInput line) =>
+        line.PresentationName?.Trim() ?? string.Empty;
 
     private static string Uom(ResolveReceptionLineInput line) =>
         line.PresentationUomCode?.Trim().ToUpperInvariant() ?? string.Empty;

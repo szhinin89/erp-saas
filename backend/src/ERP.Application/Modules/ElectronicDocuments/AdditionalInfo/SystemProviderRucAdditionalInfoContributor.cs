@@ -81,12 +81,17 @@ public sealed class SystemProviderRucAdditionalInfoContributor
                 $"El RUC del proveedor tecnológico es obligatorio desde {effectiveDate.Value:yyyy-MM-dd} y no hay un RUC válido de {SystemProviderSettings.RucLength} dígitos configurado. No se generó el comprobante electrónico."
             );
 
-        return Result<IReadOnlyList<ElectronicDocumentAdditionalField>>.Success(
-            [new ElectronicDocumentAdditionalField(SriAdditionalInfoFieldNames.SystemProviderRuc, settings.Ruc!)]
-        );
+        return Result<IReadOnlyList<ElectronicDocumentAdditionalField>>.Success([
+            new ElectronicDocumentAdditionalField(
+                SriAdditionalInfoFieldNames.SystemProviderRuc,
+                settings.Ruc!
+            ),
+        ]);
     }
 
-    private static Result<IReadOnlyList<ElectronicDocumentAdditionalField>> NotConfigured(string error) =>
+    private static Result<IReadOnlyList<ElectronicDocumentAdditionalField>> NotConfigured(
+        string error
+    ) =>
         Result<IReadOnlyList<ElectronicDocumentAdditionalField>>.ValidationFailure(
             error,
             ApiResponseCodes.ElectronicDocuments.SystemProviderRucNotConfigured

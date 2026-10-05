@@ -1,3 +1,6 @@
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using ERP.API.Tests.Support;
 using ERP.Application.Access.Authorization;
 using ERP.Application.Common;
@@ -10,9 +13,6 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
-using System.Net;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
 
 namespace ERP.API.Tests.Integration;
 
@@ -53,26 +53,44 @@ public sealed class StockEndpointsHttpContractTests : IAsyncLifetime
             db.Tenants.Add(tenant);
             await db.SaveChangesAsync();
             _tenantId = tenant.Id;
-            var company = Company.CreateManaged(tenant.Id, $"179{tenant.Id:N}"[..13], "Empresa Test", createdBy: _adminId);
+            var company = Company.CreateManaged(
+                tenant.Id,
+                $"179{tenant.Id:N}"[..13],
+                "Empresa Test",
+                createdBy: _adminId
+            );
             db.Companies.Add(company);
             await db.SaveChangesAsync();
             _companyId = company.Id;
-            var user = IdentityUser.Create("sadmi", "Admin", "Test", $"admin-{Guid.NewGuid():N}@test.com", "TEST_PASSWORD_HASH", _adminId);
+            var user = IdentityUser.Create(
+                "sadmi",
+                "Admin",
+                "Test",
+                $"admin-{Guid.NewGuid():N}@test.com",
+                "TEST_PASSWORD_HASH",
+                _adminId
+            );
             db.IdentityUsers.Add(user);
             await db.SaveChangesAsync();
-            db.CompanyUserMemberships.Add(CompanyUserMembership.Create(_companyId, user.Id, "Admin", null, _adminId));
+            db.CompanyUserMemberships.Add(
+                CompanyUserMembership.Create(_companyId, user.Id, "Admin", null, _adminId)
+            );
             await db.SaveChangesAsync();
         }
 
-        _app = _factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
-        {
-            services.AddSingleton<IMediator>(new StubMediator(request =>
+        _app = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureTestServices(services =>
             {
-                _sent.Add(request);
-                return _reply(request);
-            }));
-            services.AddScoped<IRuntimePermissionAuthorizer, AllowAllPermissionAuthorizer>();
-        }));
+                services.AddSingleton<IMediator>(
+                    new StubMediator(request =>
+                    {
+                        _sent.Add(request);
+                        return _reply(request);
+                    })
+                );
+                services.AddScoped<IRuntimePermissionAuthorizer, AllowAllPermissionAuthorizer>();
+            })
+        );
         _client = _app.CreateClient();
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             "Bearer",
@@ -92,7 +110,9 @@ public sealed class StockEndpointsHttpContractTests : IAsyncLifetime
     // ── Respuestas del mediator stub, tipadas según el request ───────────────
 
     private static Type ResultType(object request) =>
-        request.GetType().GetInterfaces()
+        request
+            .GetType()
+            .GetInterfaces()
             .Single(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IRequest<>))
             .GetGenericArguments()[0];
 
@@ -102,7 +122,9 @@ public sealed class StockEndpointsHttpContractTests : IAsyncLifetime
     private static object FailureFor(object request, string factory) =>
         factory == nameof(Result<object>.NotFound)
             ? ResultType(request).GetMethod(factory)!.Invoke(null, ["No encontrado."])!
-            : ResultType(request).GetMethod(factory)!.Invoke(null, ["Inválido.", ApiResponseCodes.Common.ValidationError])!;
+            : ResultType(request)
+                .GetMethod(factory)!
+                .Invoke(null, ["Inválido.", ApiResponseCodes.Common.ValidationError])!;
 
     // ── Catálogo de los 13 endpoints ─────────────────────────────────────────
 
@@ -124,19 +146,97 @@ public sealed class StockEndpointsHttpContractTests : IAsyncLifetime
         new()
         {
             // método, ruta, request esperado, status éxito, marcador de scope
-            { "GET", $"/api/v1/inventory/stock?itemId={Item}&warehouseId={Warehouse}", "GetStockQuery", 200, "Branch" },
-            { "GET", $"/api/v1/inventory/stock/report?warehouseId={Warehouse}&search=x", "GetCurrentStockReportQuery", 200, "Branch" },
-            { "GET", $"/api/v1/inventory/stock/movements?itemId={Item}&warehouseId={Warehouse}&from=2026-01-01&to=2026-01-31", "GetStockMovementsQuery", 200, "Branch" },
-            { "GET", $"/api/v1/inventory/stock/aggregated/{Item}", "GetAggregatedStockQuery", 200, "Company" },
-            { "GET", $"/api/v1/inventory/stock/items/{Item}/warehouse-availability", "GetItemWarehouseAvailabilityQuery", 200, "Branch" },
-            { "GET", $"/api/v1/inventory/stock/adjustments?warehouseId={Warehouse}&status=Draft&pageNumber=2&pageSize=5", "ListStockAdjustmentsQuery", 200, "Branch" },
-            { "GET", $"/api/v1/inventory/stock/adjustments/{Doc}", "GetStockAdjustmentByIdQuery", 200, "Branch" },
-            { "POST", "/api/v1/inventory/stock/adjustments", "CreateStockAdjustmentCommand", 201, "Branch" },
-            { "PUT", $"/api/v1/inventory/stock/adjustments/{Doc}", "UpdateStockAdjustmentCommand", 200, "Branch" },
-            { "POST", $"/api/v1/inventory/stock/adjustments/{Doc}/execute", "ExecuteStockAdjustmentCommand", 200, "Branch" },
-            { "POST", $"/api/v1/inventory/stock/adjustments/{Doc}/cancel", "CancelStockAdjustmentCommand", 200, "Branch" },
-            { "POST", "/api/v1/inventory/stock/transfers", "CreateStockTransferCommand", 201, "InterBranch" },
-            { "POST", $"/api/v1/inventory/stock/transfers/{Doc}/confirm", "ConfirmStockTransferCommand", 200, "InterBranch" },
+            {
+                "GET",
+                $"/api/v1/inventory/stock?itemId={Item}&warehouseId={Warehouse}",
+                "GetStockQuery",
+                200,
+                "Branch"
+            },
+            {
+                "GET",
+                $"/api/v1/inventory/stock/report?warehouseId={Warehouse}&search=x",
+                "GetCurrentStockReportQuery",
+                200,
+                "Branch"
+            },
+            {
+                "GET",
+                $"/api/v1/inventory/stock/movements?itemId={Item}&warehouseId={Warehouse}&from=2026-01-01&to=2026-01-31",
+                "GetStockMovementsQuery",
+                200,
+                "Branch"
+            },
+            {
+                "GET",
+                $"/api/v1/inventory/stock/aggregated/{Item}",
+                "GetAggregatedStockQuery",
+                200,
+                "Company"
+            },
+            {
+                "GET",
+                $"/api/v1/inventory/stock/items/{Item}/warehouse-availability",
+                "GetItemWarehouseAvailabilityQuery",
+                200,
+                "Branch"
+            },
+            {
+                "GET",
+                $"/api/v1/inventory/stock/adjustments?warehouseId={Warehouse}&status=Draft&pageNumber=2&pageSize=5",
+                "ListStockAdjustmentsQuery",
+                200,
+                "Branch"
+            },
+            {
+                "GET",
+                $"/api/v1/inventory/stock/adjustments/{Doc}",
+                "GetStockAdjustmentByIdQuery",
+                200,
+                "Branch"
+            },
+            {
+                "POST",
+                "/api/v1/inventory/stock/adjustments",
+                "CreateStockAdjustmentCommand",
+                201,
+                "Branch"
+            },
+            {
+                "PUT",
+                $"/api/v1/inventory/stock/adjustments/{Doc}",
+                "UpdateStockAdjustmentCommand",
+                200,
+                "Branch"
+            },
+            {
+                "POST",
+                $"/api/v1/inventory/stock/adjustments/{Doc}/execute",
+                "ExecuteStockAdjustmentCommand",
+                200,
+                "Branch"
+            },
+            {
+                "POST",
+                $"/api/v1/inventory/stock/adjustments/{Doc}/cancel",
+                "CancelStockAdjustmentCommand",
+                200,
+                "Branch"
+            },
+            {
+                "POST",
+                "/api/v1/inventory/stock/transfers",
+                "CreateStockTransferCommand",
+                201,
+                "InterBranch"
+            },
+            {
+                "POST",
+                $"/api/v1/inventory/stock/transfers/{Doc}/confirm",
+                "ConfirmStockTransferCommand",
+                200,
+                "InterBranch"
+            },
         };
 
     private Task<HttpResponseMessage> Send(string method, string url)
@@ -154,14 +254,25 @@ public sealed class StockEndpointsHttpContractTests : IAsyncLifetime
                 notes = "n",
                 lines = Array.Empty<object>(),
             },
-            _ when url.EndsWith("/cancel", StringComparison.Ordinal) => new { reason = "Error de digitación" },
+            _ when url.EndsWith("/cancel", StringComparison.Ordinal) => new
+            {
+                reason = "Error de digitación",
+            },
             "/api/v1/inventory/stock/transfers" => new
             {
                 sourceWarehouseId = Warehouse,
                 targetWarehouseId = Guid.NewGuid(),
                 reason = "r",
                 notes = "n",
-                lines = new[] { new { productId = Item, quantity = 2.5m, description = "Item" } },
+                lines = new[]
+                {
+                    new
+                    {
+                        productId = Item,
+                        quantity = 2.5m,
+                        description = "Item",
+                    },
+                },
             },
             _ => method == "POST" ? new { } : null,
         };
@@ -174,7 +285,12 @@ public sealed class StockEndpointsHttpContractTests : IAsyncLifetime
     [Theory]
     [MemberData(nameof(Endpoints))]
     public async Task Endpoint_envia_el_request_esperado_con_su_scope_y_responde_el_status_de_exito(
-        string method, string url, string request, int status, string scope)
+        string method,
+        string url,
+        string request,
+        int status,
+        string scope
+    )
     {
         _sent.Clear();
 
@@ -189,7 +305,11 @@ public sealed class StockEndpointsHttpContractTests : IAsyncLifetime
             "InterBranch" => typeof(IInterBranchOperationRequest),
             _ => typeof(ICompanyScopedRequest),
         };
-        sent.Should().BeAssignableTo(marker, "el aislamiento Company/Branch lo aplican los behaviors según este marcador");
+        sent.Should()
+            .BeAssignableTo(
+                marker,
+                "el aislamiento Company/Branch lo aplican los behaviors según este marcador"
+            );
     }
 
     [Fact]
@@ -197,28 +317,78 @@ public sealed class StockEndpointsHttpContractTests : IAsyncLifetime
     {
         _sent.Clear();
 
-        await Send("GET", $"/api/v1/inventory/stock/movements?itemId={Item}&warehouseId={Warehouse}&from=2026-01-01&to=2026-01-31");
-        await Send("GET", $"/api/v1/inventory/stock/adjustments?warehouseId={Warehouse}&status=Draft&pageNumber=2&pageSize=5");
+        await Send(
+            "GET",
+            $"/api/v1/inventory/stock/movements?itemId={Item}&warehouseId={Warehouse}&from=2026-01-01&to=2026-01-31"
+        );
+        await Send(
+            "GET",
+            $"/api/v1/inventory/stock/adjustments?warehouseId={Warehouse}&status=Draft&pageNumber=2&pageSize=5"
+        );
         await Send("POST", $"/api/v1/inventory/stock/adjustments/{Doc}/cancel");
         await Send("POST", "/api/v1/inventory/stock/transfers");
         await Send("POST", $"/api/v1/inventory/stock/transfers/{Doc}/confirm");
 
-        var json = _sent.Select(r => System.Text.Json.JsonSerializer.Serialize(r, r.GetType())).ToList();
-        json[0].Should().Be($"{{\"ItemId\":\"{Item}\",\"WarehouseId\":\"{Warehouse}\",\"From\":\"2026-01-01\",\"To\":\"2026-01-31\"}}");
-        json[1].Should().Contain($"\"WarehouseId\":\"{Warehouse}\"").And.Contain("\"Status\":\"Draft\"")
-            .And.Contain("\"PageNumber\":2").And.Contain("\"PageSize\":5");
+        var json = _sent
+            .Select(r => System.Text.Json.JsonSerializer.Serialize(r, r.GetType()))
+            .ToList();
+        json[0]
+            .Should()
+            .Be(
+                $"{{\"ItemId\":\"{Item}\",\"WarehouseId\":\"{Warehouse}\",\"From\":\"2026-01-01\",\"To\":\"2026-01-31\"}}"
+            );
+        json[1]
+            .Should()
+            .Contain($"\"WarehouseId\":\"{Warehouse}\"")
+            .And.Contain("\"Status\":\"Draft\"")
+            .And.Contain("\"PageNumber\":2")
+            .And.Contain("\"PageSize\":5");
         json[2].Should().Be($"{{\"Id\":\"{Doc}\",\"Reason\":\"Error de digitaci\\u00F3n\"}}");
-        json[3].Should().Contain($"\"SourceWarehouseId\":\"{Warehouse}\"").And.Contain($"\"ProductId\":\"{Item}\"").And.Contain("\"Quantity\":2.5");
+        json[3]
+            .Should()
+            .Contain($"\"SourceWarehouseId\":\"{Warehouse}\"")
+            .And.Contain($"\"ProductId\":\"{Item}\"")
+            .And.Contain("\"Quantity\":2.5");
         json[4].Should().Be($"{{\"Id\":\"{Doc}\"}}");
     }
 
     [Theory]
-    [InlineData("POST", "/api/v1/inventory/stock/adjustments", "ValidationFailure", HttpStatusCode.UnprocessableEntity)]
-    [InlineData("POST", "/api/v1/inventory/stock/transfers", "ValidationFailure", HttpStatusCode.UnprocessableEntity)]
-    [InlineData("POST", "/api/v1/inventory/stock/transfers/33333333-3333-3333-3333-333333333333/confirm", "ValidationFailure", HttpStatusCode.UnprocessableEntity)]
-    [InlineData("POST", "/api/v1/inventory/stock/adjustments/33333333-3333-3333-3333-333333333333/execute", "ValidationFailure", HttpStatusCode.UnprocessableEntity)]
-    [InlineData("GET", "/api/v1/inventory/stock/adjustments/33333333-3333-3333-3333-333333333333", "NotFound", HttpStatusCode.NotFound)]
-    public async Task Fallo_de_Application_conserva_su_status(string method, string url, string failure, HttpStatusCode expected)
+    [InlineData(
+        "POST",
+        "/api/v1/inventory/stock/adjustments",
+        "ValidationFailure",
+        HttpStatusCode.UnprocessableEntity
+    )]
+    [InlineData(
+        "POST",
+        "/api/v1/inventory/stock/transfers",
+        "ValidationFailure",
+        HttpStatusCode.UnprocessableEntity
+    )]
+    [InlineData(
+        "POST",
+        "/api/v1/inventory/stock/transfers/33333333-3333-3333-3333-333333333333/confirm",
+        "ValidationFailure",
+        HttpStatusCode.UnprocessableEntity
+    )]
+    [InlineData(
+        "POST",
+        "/api/v1/inventory/stock/adjustments/33333333-3333-3333-3333-333333333333/execute",
+        "ValidationFailure",
+        HttpStatusCode.UnprocessableEntity
+    )]
+    [InlineData(
+        "GET",
+        "/api/v1/inventory/stock/adjustments/33333333-3333-3333-3333-333333333333",
+        "NotFound",
+        HttpStatusCode.NotFound
+    )]
+    public async Task Fallo_de_Application_conserva_su_status(
+        string method,
+        string url,
+        string failure,
+        HttpStatusCode expected
+    )
     {
         _reply = request => FailureFor(request, failure);
 
@@ -231,18 +401,23 @@ public sealed class StockEndpointsHttpContractTests : IAsyncLifetime
     public async Task Update_con_id_de_ruta_distinto_al_del_cuerpo_responde_400_sin_llamar_a_Application()
     {
         _sent.Clear();
-        var message = new HttpRequestMessage(HttpMethod.Put, $"/api/v1/inventory/stock/adjustments/{Guid.NewGuid()}")
+        var message = new HttpRequestMessage(
+            HttpMethod.Put,
+            $"/api/v1/inventory/stock/adjustments/{Guid.NewGuid()}"
+        )
         {
-            Content = JsonContent.Create(new
-            {
-                id = Doc,
-                warehouseId = Warehouse,
-                warehouseName = "Bodega",
-                movementType = "PositiveAdjust",
-                reasonId = Guid.NewGuid(),
-                notes = "n",
-                lines = Array.Empty<object>(),
-            }),
+            Content = JsonContent.Create(
+                new
+                {
+                    id = Doc,
+                    warehouseId = Warehouse,
+                    warehouseName = "Bodega",
+                    movementType = "PositiveAdjust",
+                    reasonId = Guid.NewGuid(),
+                    notes = "n",
+                    lines = Array.Empty<object>(),
+                }
+            ),
         };
 
         var response = await _client.SendAsync(message);
@@ -258,7 +433,9 @@ public sealed class StockEndpointsHttpContractTests : IAsyncLifetime
         foreach (var row in Endpoints)
         {
             var (method, url) = ((string)row[0], (string)row[1]);
-            var response = await anonymous.SendAsync(new HttpRequestMessage(new HttpMethod(method), url));
+            var response = await anonymous.SendAsync(
+                new HttpRequestMessage(new HttpMethod(method), url)
+            );
             response.StatusCode.Should().Be(HttpStatusCode.Unauthorized, $"{method} {url}");
         }
     }

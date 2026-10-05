@@ -39,7 +39,12 @@ public sealed class JournalEntrySourceResolverTests
             .ReturnsAsync(
                 new Dictionary<Guid, (string, string, string, DateOnly)>
                 {
-                    [invoiceId] = ("001-001-000000123", "Cliente ACME", "Authorized", new DateOnly(2026, 8, 1)),
+                    [invoiceId] = (
+                        "001-001-000000123",
+                        "Cliente ACME",
+                        "Authorized",
+                        new DateOnly(2026, 8, 1)
+                    ),
                 }
             );
 
@@ -47,7 +52,10 @@ public sealed class JournalEntrySourceResolverTests
         var result = await resolver.ResolveAsync(
             TenantId,
             CompanyId,
-            new[] { new JournalEntrySourceRequest(journalEntryId, "Sales", "InvoiceIssued", invoiceId) },
+            new[]
+            {
+                new JournalEntrySourceRequest(journalEntryId, "Sales", "InvoiceIssued", invoiceId),
+            },
             CancellationToken.None
         );
 
@@ -78,19 +86,32 @@ public sealed class JournalEntrySourceResolverTests
             .ReturnsAsync(
                 new Dictionary<Guid, (string, string, string, DateOnly)>
                 {
-                    [invoiceId] = ("FAC-000456", "Proveedor XYZ", "Confirmed", new DateOnly(2026, 8, 2)),
+                    [invoiceId] = (
+                        "FAC-000456",
+                        "Proveedor XYZ",
+                        "Confirmed",
+                        new DateOnly(2026, 8, 2)
+                    ),
                 }
             );
 
         var resolver = new PurchaseJournalSourceResolver(
-                purchaseRepo.Object,
-                Mock.Of<IPurchaseCreditNoteRepository>(),
-                Mock.Of<IBusinessPartnerRepository>()
-            );
+            purchaseRepo.Object,
+            Mock.Of<IPurchaseCreditNoteRepository>(),
+            Mock.Of<IBusinessPartnerRepository>()
+        );
         var result = await resolver.ResolveAsync(
             TenantId,
             CompanyId,
-            new[] { new JournalEntrySourceRequest(journalEntryId, "Purchases", "InvoiceReceived", invoiceId) },
+            new[]
+            {
+                new JournalEntrySourceRequest(
+                    journalEntryId,
+                    "Purchases",
+                    "InvoiceReceived",
+                    invoiceId
+                ),
+            },
             CancellationToken.None
         );
 
@@ -123,12 +144,19 @@ public sealed class JournalEntrySourceResolverTests
             .ReturnsAsync(
                 new Dictionary<Guid, (Guid, string, string, DateOnly)>
                 {
-                    [creditNoteId] = (supplierId, "NC-001-001-000000005", "Authorized", new DateOnly(2026, 8, 5)),
+                    [creditNoteId] = (
+                        supplierId,
+                        "NC-001-001-000000005",
+                        "Authorized",
+                        new DateOnly(2026, 8, 5)
+                    ),
                 }
             );
         var partnerRepo = new Mock<IBusinessPartnerRepository>();
         partnerRepo
-            .Setup(r => r.GetNamesByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetNamesByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new Dictionary<Guid, string> { [supplierId] = "Proveedor ACME" });
 
         var resolver = new PurchaseJournalSourceResolver(
@@ -141,7 +169,12 @@ public sealed class JournalEntrySourceResolverTests
             CompanyId,
             new[]
             {
-                new JournalEntrySourceRequest(journalEntryId, "Purchases", "PurchaseCreditNoteAuthorized", creditNoteId),
+                new JournalEntrySourceRequest(
+                    journalEntryId,
+                    "Purchases",
+                    "PurchaseCreditNoteAuthorized",
+                    creditNoteId
+                ),
             },
             CancellationToken.None
         );
@@ -174,12 +207,19 @@ public sealed class JournalEntrySourceResolverTests
             .ReturnsAsync(
                 new Dictionary<Guid, (Guid, string, string, DateOnly)>
                 {
-                    [creditNoteId] = (supplierId, "NC-001-001-000000005", "Cancelled", new DateOnly(2026, 8, 5)),
+                    [creditNoteId] = (
+                        supplierId,
+                        "NC-001-001-000000005",
+                        "Cancelled",
+                        new DateOnly(2026, 8, 5)
+                    ),
                 }
             );
         var partnerRepo = new Mock<IBusinessPartnerRepository>();
         partnerRepo
-            .Setup(r => r.GetNamesByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetNamesByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new Dictionary<Guid, string> { [supplierId] = "Proveedor ACME" });
 
         var resolver = new PurchaseJournalSourceResolver(
@@ -192,12 +232,19 @@ public sealed class JournalEntrySourceResolverTests
             CompanyId,
             new[]
             {
-                new JournalEntrySourceRequest(journalEntryId, "Purchases", "PurchaseCreditNoteCancelled", creditNoteId),
+                new JournalEntrySourceRequest(
+                    journalEntryId,
+                    "Purchases",
+                    "PurchaseCreditNoteCancelled",
+                    creditNoteId
+                ),
             },
             CancellationToken.None
         );
 
-        result[journalEntryId].SourceDocumentType.Should().Be("Nota de crédito de compra (cancelación)");
+        result[journalEntryId]
+            .SourceDocumentType.Should()
+            .Be("Nota de crédito de compra (cancelación)");
     }
 
     [Fact]
@@ -226,7 +273,12 @@ public sealed class JournalEntrySourceResolverTests
             CompanyId,
             new[]
             {
-                new JournalEntrySourceRequest(journalEntryId, "Purchases", "PurchaseCreditNoteAuthorized", creditNoteId),
+                new JournalEntrySourceRequest(
+                    journalEntryId,
+                    "Purchases",
+                    "PurchaseCreditNoteAuthorized",
+                    creditNoteId
+                ),
             },
             CancellationToken.None
         );
@@ -254,7 +306,10 @@ public sealed class JournalEntrySourceResolverTests
         var result = await resolver.ResolveAsync(
             TenantId,
             CompanyId,
-            new[] { new JournalEntrySourceRequest(journalEntryId, "Sales", "InvoiceIssued", invoiceId) },
+            new[]
+            {
+                new JournalEntrySourceRequest(journalEntryId, "Sales", "InvoiceIssued", invoiceId),
+            },
             CancellationToken.None
         );
 
@@ -273,7 +328,12 @@ public sealed class JournalEntrySourceResolverTests
             CompanyId,
             new[]
             {
-                new JournalEntrySourceRequest(journalEntryId, "Sales", "SalesReturn", Guid.NewGuid()),
+                new JournalEntrySourceRequest(
+                    journalEntryId,
+                    "Sales",
+                    "SalesReturn",
+                    Guid.NewGuid()
+                ),
             },
             CancellationToken.None
         );
@@ -310,7 +370,12 @@ public sealed class JournalEntrySourceResolverTests
             .ReturnsAsync(
                 new Dictionary<Guid, (string, string, string, DateOnly)>
                 {
-                    [salesInvoiceId] = ("001-001-1", "Cliente", "Authorized", new DateOnly(2026, 8, 1)),
+                    [salesInvoiceId] = (
+                        "001-001-1",
+                        "Cliente",
+                        "Authorized",
+                        new DateOnly(2026, 8, 1)
+                    ),
                 }
             );
 
@@ -326,7 +391,12 @@ public sealed class JournalEntrySourceResolverTests
             .ReturnsAsync(
                 new Dictionary<Guid, (string, string, string, DateOnly)>
                 {
-                    [purchaseInvoiceId] = ("FAC-1", "Proveedor", "Confirmed", new DateOnly(2026, 8, 2)),
+                    [purchaseInvoiceId] = (
+                        "FAC-1",
+                        "Proveedor",
+                        "Confirmed",
+                        new DateOnly(2026, 8, 2)
+                    ),
                 }
             );
 
@@ -335,10 +405,10 @@ public sealed class JournalEntrySourceResolverTests
             {
                 new SalesJournalSourceResolver(salesRepo.Object),
                 new PurchaseJournalSourceResolver(
-                purchaseRepo.Object,
-                Mock.Of<IPurchaseCreditNoteRepository>(),
-                Mock.Of<IBusinessPartnerRepository>()
-            ),
+                    purchaseRepo.Object,
+                    Mock.Of<IPurchaseCreditNoteRepository>(),
+                    Mock.Of<IBusinessPartnerRepository>()
+                ),
             }
         );
 
@@ -347,9 +417,24 @@ public sealed class JournalEntrySourceResolverTests
             CompanyId,
             new[]
             {
-                new JournalEntrySourceRequest(salesEntryId, "Sales", "InvoiceIssued", salesInvoiceId),
-                new JournalEntrySourceRequest(purchaseEntryId, "Purchases", "InvoiceReceived", purchaseInvoiceId),
-                new JournalEntrySourceRequest(Guid.NewGuid(), "Finance", "CollectionApplied", Guid.NewGuid()),
+                new JournalEntrySourceRequest(
+                    salesEntryId,
+                    "Sales",
+                    "InvoiceIssued",
+                    salesInvoiceId
+                ),
+                new JournalEntrySourceRequest(
+                    purchaseEntryId,
+                    "Purchases",
+                    "InvoiceReceived",
+                    purchaseInvoiceId
+                ),
+                new JournalEntrySourceRequest(
+                    Guid.NewGuid(),
+                    "Finance",
+                    "CollectionApplied",
+                    Guid.NewGuid()
+                ),
             },
             CancellationToken.None
         );
@@ -378,7 +463,12 @@ public sealed class JournalEntrySourceResolverTests
             .ReturnsAsync(
                 new Dictionary<Guid, (string, string, string, DateOnly)>
                 {
-                    [invoiceId] = ("001-001-1", "Cliente de otro tenant", "Authorized", new DateOnly(2026, 8, 1)),
+                    [invoiceId] = (
+                        "001-001-1",
+                        "Cliente de otro tenant",
+                        "Authorized",
+                        new DateOnly(2026, 8, 1)
+                    ),
                 }
             );
         salesRepo
@@ -395,7 +485,10 @@ public sealed class JournalEntrySourceResolverTests
         var result = await resolver.ResolveAsync(
             TenantId,
             CompanyId,
-            new[] { new JournalEntrySourceRequest(journalEntryId, "Sales", "InvoiceIssued", invoiceId) },
+            new[]
+            {
+                new JournalEntrySourceRequest(journalEntryId, "Sales", "InvoiceIssued", invoiceId),
+            },
             CancellationToken.None
         );
 
@@ -441,7 +534,12 @@ public sealed class ExpensesJournalSourceResolverTests
             .ReturnsAsync(
                 new Dictionary<Guid, (string, string, string, DateOnly)>
                 {
-                    [expenseId] = ("001-500-000007861", "Proveedor XYZ", "Confirmed", new DateOnly(2026, 8, 1)),
+                    [expenseId] = (
+                        "001-500-000007861",
+                        "Proveedor XYZ",
+                        "Confirmed",
+                        new DateOnly(2026, 8, 1)
+                    ),
                 }
             );
 
@@ -449,7 +547,15 @@ public sealed class ExpensesJournalSourceResolverTests
         var result = await resolver.ResolveAsync(
             TenantId,
             CompanyId,
-            new[] { new JournalEntrySourceRequest(journalEntryId, "Expenses", "DocumentConfirmed", expenseId) },
+            new[]
+            {
+                new JournalEntrySourceRequest(
+                    journalEntryId,
+                    "Expenses",
+                    "DocumentConfirmed",
+                    expenseId
+                ),
+            },
             CancellationToken.None
         );
 
@@ -467,7 +573,10 @@ public sealed class ExpensesJournalSourceResolverTests
     [InlineData("Draft", "Borrador")]
     [InlineData("Confirmed", "Confirmado")]
     [InlineData("Cancelled", "Anulado")]
-    public async Task Traduce_cada_estado_de_ExpenseStatus_a_espanol(string rawStatus, string expected)
+    public async Task Traduce_cada_estado_de_ExpenseStatus_a_espanol(
+        string rawStatus,
+        string expected
+    )
     {
         var journalEntryId = Guid.NewGuid();
         var expenseId = Guid.NewGuid();
@@ -482,7 +591,12 @@ public sealed class ExpensesJournalSourceResolverTests
             .ReturnsAsync(
                 new Dictionary<Guid, (string, string, string, DateOnly)>
                 {
-                    [expenseId] = ("001-500-000007861", "Proveedor XYZ", rawStatus, new DateOnly(2026, 8, 1)),
+                    [expenseId] = (
+                        "001-500-000007861",
+                        "Proveedor XYZ",
+                        rawStatus,
+                        new DateOnly(2026, 8, 1)
+                    ),
                 }
             );
 
@@ -490,7 +604,15 @@ public sealed class ExpensesJournalSourceResolverTests
         var result = await resolver.ResolveAsync(
             TenantId,
             CompanyId,
-            new[] { new JournalEntrySourceRequest(journalEntryId, "Expenses", "DocumentConfirmed", expenseId) },
+            new[]
+            {
+                new JournalEntrySourceRequest(
+                    journalEntryId,
+                    "Expenses",
+                    "DocumentConfirmed",
+                    expenseId
+                ),
+            },
             CancellationToken.None
         );
 
@@ -516,7 +638,15 @@ public sealed class ExpensesJournalSourceResolverTests
         var result = await resolver.ResolveAsync(
             TenantId,
             CompanyId,
-            new[] { new JournalEntrySourceRequest(journalEntryId, "Expenses", "DocumentConfirmed", expenseId) },
+            new[]
+            {
+                new JournalEntrySourceRequest(
+                    journalEntryId,
+                    "Expenses",
+                    "DocumentConfirmed",
+                    expenseId
+                ),
+            },
             CancellationToken.None
         );
 
@@ -534,18 +664,24 @@ public sealed class ExpensesJournalSourceResolverTests
             CompanyId,
             new[]
             {
-                new JournalEntrySourceRequest(Guid.NewGuid(), "Expenses", "SomeOtherFact", Guid.NewGuid()),
+                new JournalEntrySourceRequest(
+                    Guid.NewGuid(),
+                    "Expenses",
+                    "SomeOtherFact",
+                    Guid.NewGuid()
+                ),
             },
             CancellationToken.None
         );
 
         result.Should().BeEmpty();
         repo.Verify(
-            r => r.GetJournalSourceSummariesByIdsAsync(
-                It.IsAny<Guid>(),
-                It.IsAny<IReadOnlyCollection<Guid>>(),
-                It.IsAny<CancellationToken>()
-            ),
+            r =>
+                r.GetJournalSourceSummariesByIdsAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }
@@ -566,7 +702,12 @@ public sealed class ExpensesJournalSourceResolverTests
             .ReturnsAsync(
                 new Dictionary<Guid, (string, string, string, DateOnly)>
                 {
-                    [expenseId] = ("001-500-000007861", "Proveedor de otro tenant", "Confirmed", new DateOnly(2026, 8, 1)),
+                    [expenseId] = (
+                        "001-500-000007861",
+                        "Proveedor de otro tenant",
+                        "Confirmed",
+                        new DateOnly(2026, 8, 1)
+                    ),
                 }
             );
         repo.Setup(r =>
@@ -582,7 +723,15 @@ public sealed class ExpensesJournalSourceResolverTests
         var result = await resolver.ResolveAsync(
             TenantId,
             CompanyId,
-            new[] { new JournalEntrySourceRequest(journalEntryId, "Expenses", "DocumentConfirmed", expenseId) },
+            new[]
+            {
+                new JournalEntrySourceRequest(
+                    journalEntryId,
+                    "Expenses",
+                    "DocumentConfirmed",
+                    expenseId
+                ),
+            },
             CancellationToken.None
         );
 
@@ -606,7 +755,9 @@ public sealed class PayablesJournalSourceResolverTests
     private static Mock<IBusinessPartnerRepository> PartnerRepo(string? name = "Proveedor ACME")
     {
         var repo = new Mock<IBusinessPartnerRepository>();
-        repo.Setup(r => r.GetNamesByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
+        repo.Setup(r =>
+                r.GetNamesByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(
                 name is null
                     ? new Dictionary<Guid, string>()
@@ -640,7 +791,15 @@ public sealed class PayablesJournalSourceResolverTests
         var result = await resolver.ResolveAsync(
             TenantId,
             CompanyId,
-            new[] { new JournalEntrySourceRequest(journalEntryId, "Payables", "SupplierPaymentConfirmed", paymentId) },
+            new[]
+            {
+                new JournalEntrySourceRequest(
+                    journalEntryId,
+                    "Payables",
+                    "SupplierPaymentConfirmed",
+                    paymentId
+                ),
+            },
             CancellationToken.None
         );
 
@@ -678,7 +837,15 @@ public sealed class PayablesJournalSourceResolverTests
         var result = await resolver.ResolveAsync(
             TenantId,
             CompanyId,
-            new[] { new JournalEntrySourceRequest(journalEntryId, "Payables", "SupplierPaymentReversed", paymentId) },
+            new[]
+            {
+                new JournalEntrySourceRequest(
+                    journalEntryId,
+                    "Payables",
+                    "SupplierPaymentReversed",
+                    paymentId
+                ),
+            },
             CancellationToken.None
         );
 
@@ -707,7 +874,15 @@ public sealed class PayablesJournalSourceResolverTests
         var result = await resolver.ResolveAsync(
             TenantId,
             CompanyId,
-            new[] { new JournalEntrySourceRequest(journalEntryId, "Payables", "SupplierPaymentConfirmed", paymentId) },
+            new[]
+            {
+                new JournalEntrySourceRequest(
+                    journalEntryId,
+                    "Payables",
+                    "SupplierPaymentConfirmed",
+                    paymentId
+                ),
+            },
             CancellationToken.None
         );
 
@@ -750,7 +925,15 @@ public sealed class PayablesJournalSourceResolverTests
         var result = await resolver.ResolveAsync(
             TenantId,
             CompanyId,
-            new[] { new JournalEntrySourceRequest(journalEntryId, "Payables", "SupplierPaymentConfirmed", paymentId) },
+            new[]
+            {
+                new JournalEntrySourceRequest(
+                    journalEntryId,
+                    "Payables",
+                    "SupplierPaymentConfirmed",
+                    paymentId
+                ),
+            },
             CancellationToken.None
         );
 
@@ -776,7 +959,9 @@ public sealed class FinanceJournalSourceResolverTests
     private static Mock<IBusinessPartnerRepository> PartnerRepo(string? name = "Cliente ACME")
     {
         var repo = new Mock<IBusinessPartnerRepository>();
-        repo.Setup(r => r.GetNamesByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
+        repo.Setup(r =>
+                r.GetNamesByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(
                 name is null
                     ? new Dictionary<Guid, string>()
@@ -803,7 +988,13 @@ public sealed class FinanceJournalSourceResolverTests
             .ReturnsAsync(
                 new Dictionary<Guid, (Guid, decimal, DateOnly, string?, string)>
                 {
-                    [paymentId] = (PartnerId, 300m, new DateOnly(2026, 8, 10), "TRANS-000123", "Applied"),
+                    [paymentId] = (
+                        PartnerId,
+                        300m,
+                        new DateOnly(2026, 8, 10),
+                        "TRANS-000123",
+                        "Applied"
+                    ),
                 }
             );
 
@@ -811,7 +1002,15 @@ public sealed class FinanceJournalSourceResolverTests
         var result = await resolver.ResolveAsync(
             TenantId,
             CompanyId,
-            new[] { new JournalEntrySourceRequest(journalEntryId, "Finance", "CollectionApplied", paymentId) },
+            new[]
+            {
+                new JournalEntrySourceRequest(
+                    journalEntryId,
+                    "Finance",
+                    "CollectionApplied",
+                    paymentId
+                ),
+            },
             CancellationToken.None
         );
 
@@ -822,7 +1021,8 @@ public sealed class FinanceJournalSourceResolverTests
         info.SourcePartyName.Should().Be("Cliente ACME");
         info.SourceStatus.Should().Be("Applied");
         info.SourceDocumentDate.Should().Be(new DateOnly(2026, 8, 10));
-        info.SourceRoute.Should().BeNull("no existe hoy una vista de detalle de Payment con deep link seguro");
+        info.SourceRoute.Should()
+            .BeNull("no existe hoy una vista de detalle de Payment con deep link seguro");
     }
 
     [Fact]
@@ -843,17 +1043,31 @@ public sealed class FinanceJournalSourceResolverTests
             .ReturnsAsync(
                 new Dictionary<Guid, (Guid, decimal, DateOnly, string?, string)>
                 {
-                    [paymentId] = (PartnerId, 300m, new DateOnly(2026, 8, 10), "CHEQUE-045", "Applied"),
+                    [paymentId] = (
+                        PartnerId,
+                        300m,
+                        new DateOnly(2026, 8, 10),
+                        "CHEQUE-045",
+                        "Applied"
+                    ),
                 }
             );
 
-        var resolver = new FinanceJournalSourceResolver(paymentRepo.Object, PartnerRepo("Proveedor XYZ").Object);
+        var resolver = new FinanceJournalSourceResolver(
+            paymentRepo.Object,
+            PartnerRepo("Proveedor XYZ").Object
+        );
         var result = await resolver.ResolveAsync(
             TenantId,
             CompanyId,
             new[]
             {
-                new JournalEntrySourceRequest(journalEntryId, "Finance", "SupplierPaymentApplied", paymentId),
+                new JournalEntrySourceRequest(
+                    journalEntryId,
+                    "Finance",
+                    "SupplierPaymentApplied",
+                    paymentId
+                ),
             },
             CancellationToken.None
         );
@@ -890,7 +1104,15 @@ public sealed class FinanceJournalSourceResolverTests
         var result = await resolver.ResolveAsync(
             TenantId,
             CompanyId,
-            new[] { new JournalEntrySourceRequest(journalEntryId, "Finance", "CollectionApplied", paymentId) },
+            new[]
+            {
+                new JournalEntrySourceRequest(
+                    journalEntryId,
+                    "Finance",
+                    "CollectionApplied",
+                    paymentId
+                ),
+            },
             CancellationToken.None
         );
 
@@ -914,11 +1136,22 @@ public sealed class FinanceJournalSourceResolverTests
             )
             .ReturnsAsync(new Dictionary<Guid, (Guid, decimal, DateOnly, string?, string)>());
 
-        var resolver = new FinanceJournalSourceResolver(paymentRepo.Object, PartnerRepo(null).Object);
+        var resolver = new FinanceJournalSourceResolver(
+            paymentRepo.Object,
+            PartnerRepo(null).Object
+        );
         var result = await resolver.ResolveAsync(
             TenantId,
             CompanyId,
-            new[] { new JournalEntrySourceRequest(journalEntryId, "Finance", "CollectionApplied", paymentId) },
+            new[]
+            {
+                new JournalEntrySourceRequest(
+                    journalEntryId,
+                    "Finance",
+                    "CollectionApplied",
+                    paymentId
+                ),
+            },
             CancellationToken.None
         );
 
@@ -963,7 +1196,15 @@ public sealed class FinanceJournalSourceResolverTests
         var result = await resolver.ResolveAsync(
             TenantId,
             CompanyId,
-            new[] { new JournalEntrySourceRequest(journalEntryId, "Finance", "CollectionApplied", paymentId) },
+            new[]
+            {
+                new JournalEntrySourceRequest(
+                    journalEntryId,
+                    "Finance",
+                    "CollectionApplied",
+                    paymentId
+                ),
+            },
             CancellationToken.None
         );
 

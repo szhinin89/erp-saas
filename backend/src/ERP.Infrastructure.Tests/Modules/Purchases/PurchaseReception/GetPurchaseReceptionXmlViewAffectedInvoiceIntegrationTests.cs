@@ -38,7 +38,13 @@ public sealed class GetPurchaseReceptionXmlViewAffectedInvoiceIntegrationTests :
 
     private readonly Guid _userId = Guid.NewGuid();
 
-    private sealed record TenantContext(Guid TenantId, Guid CompanyId, Guid BranchId, Guid SupplierId, Guid PaymentTermId);
+    private sealed record TenantContext(
+        Guid TenantId,
+        Guid CompanyId,
+        Guid BranchId,
+        Guid SupplierId,
+        Guid PaymentTermId
+    );
 
     public async Task InitializeAsync()
     {
@@ -181,7 +187,9 @@ public sealed class GetPurchaseReceptionXmlViewAffectedInvoiceIntegrationTests :
         }
         await using (var dbCancel = CreateContext(ctx.TenantId, ctx.CompanyId))
         {
-            var first = await dbCancel.PurchaseInvoices.SingleAsync(x => x.Id == cancelledInvoiceId);
+            var first = await dbCancel.PurchaseInvoices.SingleAsync(x =>
+                x.Id == cancelledInvoiceId
+            );
             first.Cancel("Anulada por error", _userId);
             await dbCancel.SaveChangesAsync();
         }
@@ -224,7 +232,10 @@ public sealed class GetPurchaseReceptionXmlViewAffectedInvoiceIntegrationTests :
 
         var handlerDb = CreateContext(ctx.TenantId, ctx.CompanyId);
         var handler = new GetPurchaseReceptionXmlViewHandler(
-            new PurchaseReceptionDocumentRepository(handlerDb, new FixedCurrentCompany(() => ctx.CompanyId)),
+            new PurchaseReceptionDocumentRepository(
+                handlerDb,
+                new FixedCurrentCompany(() => ctx.CompanyId)
+            ),
             new PurchaseInvoiceRepository(handlerDb, new FixedCurrentCompany(() => ctx.CompanyId)),
             new FixedCurrentTenant(() => ctx.TenantId)
         );
@@ -237,16 +248,20 @@ public sealed class GetPurchaseReceptionXmlViewAffectedInvoiceIntegrationTests :
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.AffectedPurchaseExists.Should().BeTrue();
-        result.Value.AffectedPurchaseId.Should().Be(
-            confirmedInvoiceId,
-            because: "la NC debe apuntar a la compra Confirmed activa, nunca a la Cancelled histórica"
-        );
+        result
+            .Value.AffectedPurchaseId.Should()
+            .Be(
+                confirmedInvoiceId,
+                because: "la NC debe apuntar a la compra Confirmed activa, nunca a la Cancelled histórica"
+            );
         result.Value.AffectedPurchaseId.Should().NotBe(cancelledInvoiceId);
         result.Value.ModifiedDocumentNumber.Should().Be(affectedInvoiceNumber);
-        result.Value.DocumentNumber.Should().Be(
-            creditNoteOwnNumber,
-            because: "DocumentNumber sigue siendo el número PROPIO de la NC — no se confunde con el afectado"
-        );
+        result
+            .Value.DocumentNumber.Should()
+            .Be(
+                creditNoteOwnNumber,
+                because: "DocumentNumber sigue siendo el número PROPIO de la NC — no se confunde con el afectado"
+            );
     }
 
     [Fact]
@@ -298,7 +313,10 @@ public sealed class GetPurchaseReceptionXmlViewAffectedInvoiceIntegrationTests :
 
         var handlerDb = CreateContext(ctx.TenantId, ctx.CompanyId);
         var handler = new GetPurchaseReceptionXmlViewHandler(
-            new PurchaseReceptionDocumentRepository(handlerDb, new FixedCurrentCompany(() => ctx.CompanyId)),
+            new PurchaseReceptionDocumentRepository(
+                handlerDb,
+                new FixedCurrentCompany(() => ctx.CompanyId)
+            ),
             new PurchaseInvoiceRepository(handlerDb, new FixedCurrentCompany(() => ctx.CompanyId)),
             new FixedCurrentTenant(() => ctx.TenantId)
         );

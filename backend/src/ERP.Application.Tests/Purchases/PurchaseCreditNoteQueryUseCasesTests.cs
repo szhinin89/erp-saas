@@ -154,7 +154,10 @@ public sealed class PurchaseCreditNoteQueryUseCasesTests
             "Descripción",
             Guid.NewGuid(),
             "UNIT",
-            ERP.Domain.Modules.Items.ValueObjects.ItemTaxConfig.Create(saleVatCode: "0", purchaseVatCode: "0"),
+            ERP.Domain.Modules.Items.ValueObjects.ItemTaxConfig.Create(
+                saleVatCode: "0",
+                purchaseVatCode: "0"
+            ),
             ERP.Domain.Modules.Items.ValueObjects.ItemSaleConfig.Create(isForSale: true),
             ERP.Domain.Modules.Items.ValueObjects.ItemStockConfig.Create(tracksStock: true),
             Guid.NewGuid()
@@ -205,7 +208,15 @@ public sealed class PurchaseCreditNoteQueryUseCasesTests
             reason: "Devolución de producto",
             lines: new[]
             {
-                new PurchaseCreditNote.DraftLineInput("Producto 1", 20m, "0", 0m, 0m, invoiceLine.Id, 1m),
+                new PurchaseCreditNote.DraftLineInput(
+                    "Producto 1",
+                    20m,
+                    "0",
+                    0m,
+                    0m,
+                    invoiceLine.Id,
+                    1m
+                ),
             },
             taxSummaryLines: Array.Empty<PurchaseCreditNote.TaxSummaryDraftLineInput>(),
             Guid.NewGuid(),
@@ -250,9 +261,22 @@ public sealed class PurchaseCreditNoteQueryUseCasesTests
             .ReturnsAsync(new[] { item });
         var warehouseRepo = new Mock<IWarehouseRepository>();
         var warehouse = ERP.Domain.Modules.Inventory.Entities.Warehouse.Create(
-            TenantId, BranchId, "Bodega Principal", "BOD-01",
-            null, null, null, null, null, null, null, null, null,
-            Guid.NewGuid(), CompanyId, isMain: true
+            TenantId,
+            BranchId,
+            "Bodega Principal",
+            "BOD-01",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            Guid.NewGuid(),
+            CompanyId,
+            isMain: true
         );
         warehouseRepo
             .Setup(r => r.GetByIdAsync(TenantId, warehouseId, It.IsAny<CancellationToken>()))
@@ -306,7 +330,10 @@ public sealed class PurchaseCreditNoteQueryUseCasesTests
 
         var handler = new GetPurchaseCreditNoteListHandler(repo.Object, FixedTenant(TenantId));
 
-        var result = await handler.Handle(new GetPurchaseCreditNoteListQuery(), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetPurchaseCreditNoteListQuery(),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Total.Should().Be(1);

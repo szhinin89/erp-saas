@@ -137,13 +137,16 @@ public sealed partial class AccountingChartBackfillService
                         && r.CompanyId == company.Id
                         && r.SourceModule == "Purchases"
                         && r.FactType == "PurchaseCreditNoteAuthorized"
-                    select new { Code = a.Code.Value, l.Nature, l.AmountKind }
+                    select new
+                    {
+                        Code = a.Code.Value,
+                        l.Nature,
+                        l.AmountKind,
+                    }
                 ).ToListAsync(cancellationToken);
                 hasLegacyCreditNoteAuthorizedForm =
                     AccountingBootstrapStep.MatchesLegacyPurchaseCreditNoteAuthorizedForm(
-                        creditNoteRuleLines
-                            .Select(l => (l.Code, l.Nature, l.AmountKind))
-                            .ToArray()
+                        creditNoteRuleLines.Select(l => (l.Code, l.Nature, l.AmountKind)).ToArray()
                     );
             }
 
@@ -180,7 +183,12 @@ public sealed partial class AccountingChartBackfillService
         foreach (var company in activeCompanies)
         {
             using var _ = JobExecutionContext.Begin(company.TenantId, company.Id);
-            await BackfillHierarchyAsync(company.TenantId, company.Id, systemActorId, cancellationToken);
+            await BackfillHierarchyAsync(
+                company.TenantId,
+                company.Id,
+                systemActorId,
+                cancellationToken
+            );
         }
     }
 
@@ -213,7 +221,9 @@ public sealed partial class AccountingChartBackfillService
 
         foreach (var account in accounts)
         {
-            var expectedParentCode = AccountHierarchyRules.GetExpectedParentCode(account.Code.Value);
+            var expectedParentCode = AccountHierarchyRules.GetExpectedParentCode(
+                account.Code.Value
+            );
 
             if (expectedParentCode is null)
             {
@@ -306,7 +316,11 @@ public sealed partial class AccountingChartBackfillService
         {
             using var _ = JobExecutionContext.Begin(company.TenantId, company.Id);
 
-            var before = await DiagnoseHierarchyAsync(company.TenantId, company.Id, cancellationToken);
+            var before = await DiagnoseHierarchyAsync(
+                company.TenantId,
+                company.Id,
+                cancellationToken
+            );
             LogDiagnosticBefore(company.Id, before.Issues.Count);
 
             if (before.Issues.Count == 0)
@@ -317,7 +331,9 @@ public sealed partial class AccountingChartBackfillService
                 continue;
             }
 
-            await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+            await using var transaction = await _db.Database.BeginTransactionAsync(
+                cancellationToken
+            );
             try
             {
                 var result = await BackfillHierarchyAsync(
@@ -328,7 +344,11 @@ public sealed partial class AccountingChartBackfillService
                 );
                 await transaction.CommitAsync(cancellationToken);
 
-                var after = await DiagnoseHierarchyAsync(company.TenantId, company.Id, cancellationToken);
+                var after = await DiagnoseHierarchyAsync(
+                    company.TenantId,
+                    company.Id,
+                    cancellationToken
+                );
                 LogDiagnosticAfter(company.Id, after.Issues.Count);
 
                 perCompanyResults.Add(
@@ -374,7 +394,11 @@ public sealed partial class AccountingChartBackfillService
         Message = "Account code {Code} implies parent code {ExpectedParentCode}, but no such account exists "
             + "in company {CompanyId} — left untouched (not part of the approved blueprint)."
     )]
-    private partial void LogUnresolvedParent(string code, string expectedParentCode, Guid companyId);
+    private partial void LogUnresolvedParent(
+        string code,
+        string expectedParentCode,
+        Guid companyId
+    );
 
     [LoggerMessage(
         Level = LogLevel.Warning,

@@ -59,7 +59,10 @@ internal sealed class ErpDbContextFactory : IDesignTimeDbContextFactory<ErpDbCon
         while (dir is not null)
         {
             var candidate = Path.Combine(dir.FullName, "ERP.API");
-            if (Directory.Exists(candidate) && File.Exists(Path.Combine(candidate, "ERP.API.csproj")))
+            if (
+                Directory.Exists(candidate)
+                && File.Exists(Path.Combine(candidate, "ERP.API.csproj"))
+            )
                 return candidate;
 
             if (

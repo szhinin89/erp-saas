@@ -106,7 +106,9 @@ public sealed class BusinessPartnerLocation : AuditableEntity, ITenantScopedEnti
     )
     {
         if (!IsActive)
-            throw new DomainRuleViolationException("No se puede actualizar una ubicación inactiva.");
+            throw new DomainRuleViolationException(
+                "No se puede actualizar una ubicación inactiva."
+            );
 
         Name = NormalizeName(name);
         Type = type;

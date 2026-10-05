@@ -114,7 +114,9 @@ public sealed class AccountingPeriodTests
 
         var act = () => period.Close(CreatedBy, Ready);
 
-        act.Should().Throw<DomainRuleViolationException>().WithMessage("*no admite contabilización*");
+        act.Should()
+            .Throw<DomainRuleViolationException>()
+            .WithMessage("*no admite contabilización*");
     }
 
     [Fact]

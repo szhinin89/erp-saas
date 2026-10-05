@@ -4,7 +4,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ERP.Infrastructure.Persistence.Configurations.MasterData;
 
-public sealed class CustomerCreditRatingConfiguration : IEntityTypeConfiguration<CustomerCreditRating>
+public sealed class CustomerCreditRatingConfiguration
+    : IEntityTypeConfiguration<CustomerCreditRating>
 {
     public void Configure(EntityTypeBuilder<CustomerCreditRating> builder)
     {

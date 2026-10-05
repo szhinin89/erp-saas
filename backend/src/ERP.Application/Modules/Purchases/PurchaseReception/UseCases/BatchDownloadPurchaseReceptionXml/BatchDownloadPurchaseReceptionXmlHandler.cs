@@ -77,9 +77,7 @@ public sealed class BatchDownloadPurchaseReceptionXmlHandler
             Processed: items.Count,
             Downloaded: items.Count(i => i.Status == "Downloaded"),
             Skipped: items.Count(i => i.Status == "SkippedAlreadyHasXml"),
-            Failed: items.Count(i =>
-                i.Status is "SriError" or "ValidationError" or "Error"
-            ),
+            Failed: items.Count(i => i.Status is "SriError" or "ValidationError" or "Error"),
             Items: items
         );
 
@@ -93,11 +91,16 @@ public sealed class BatchDownloadPurchaseReceptionXmlHandler
     {
         using var scope = _scopeFactory.CreateScope();
         var tenant = scope.ServiceProvider.GetRequiredService<ICurrentTenant>();
-        var documentRepo = scope.ServiceProvider.GetRequiredService<IPurchaseReceptionDocumentRepository>();
+        var documentRepo =
+            scope.ServiceProvider.GetRequiredService<IPurchaseReceptionDocumentRepository>();
 
         try
         {
-            var document = await documentRepo.GetByIdAsync(tenant.TenantId, documentId, cancellationToken);
+            var document = await documentRepo.GetByIdAsync(
+                tenant.TenantId,
+                documentId,
+                cancellationToken
+            );
             if (document is null)
             {
                 return new BatchDownloadPurchaseReceptionXmlItemResult(
@@ -109,7 +112,12 @@ public sealed class BatchDownloadPurchaseReceptionXmlHandler
 
             if (document.XmlContent is not null)
             {
-                var skippedSnapshot = await BuildSnapshotAsync(scope, tenant.TenantId, document, cancellationToken);
+                var skippedSnapshot = await BuildSnapshotAsync(
+                    scope,
+                    tenant.TenantId,
+                    document,
+                    cancellationToken
+                );
                 return skippedSnapshot with
                 {
                     Status = "SkippedAlreadyHasXml",
@@ -128,7 +136,12 @@ public sealed class BatchDownloadPurchaseReceptionXmlHandler
                 // Misma instancia de PurchaseReceptionDocument que mutó el handler individual (mismo
                 // scope => mismo DbContext => mismo change tracker): document ya refleja el estado
                 // Verified/XmlContent recién persistido, sin necesidad de recargarlo.
-                var downloadedSnapshot = await BuildSnapshotAsync(scope, tenant.TenantId, document, cancellationToken);
+                var downloadedSnapshot = await BuildSnapshotAsync(
+                    scope,
+                    tenant.TenantId,
+                    document,
+                    cancellationToken
+                );
                 return downloadedSnapshot with
                 {
                     Status = "Downloaded",
@@ -144,7 +157,12 @@ public sealed class BatchDownloadPurchaseReceptionXmlHandler
                 _ => "Error",
             };
 
-            var failedSnapshot = await BuildSnapshotAsync(scope, tenant.TenantId, document, cancellationToken);
+            var failedSnapshot = await BuildSnapshotAsync(
+                scope,
+                tenant.TenantId,
+                document,
+                cancellationToken
+            );
             return failedSnapshot with
             {
                 Status = status,
@@ -198,18 +216,20 @@ public sealed class BatchDownloadPurchaseReceptionXmlHandler
         Guid? cancelledCreditNoteId = null;
         if (document.SourceDocType == PurchaseReceptionSourceDocType.CreditNote)
         {
-            var creditNoteRepo = scope.ServiceProvider.GetRequiredService<IPurchaseCreditNoteRepository>();
+            var creditNoteRepo =
+                scope.ServiceProvider.GetRequiredService<IPurchaseCreditNoteRepository>();
             creditNoteId = await creditNoteRepo.GetIdByReceptionDocumentIdAsync(
                 tenantId,
                 document.Id,
                 cancellationToken
             );
             if (creditNoteId is null)
-                cancelledCreditNoteId = await creditNoteRepo.GetLatestCancelledIdByReceptionDocumentIdAsync(
-                    tenantId,
-                    document.Id,
-                    cancellationToken
-                );
+                cancelledCreditNoteId =
+                    await creditNoteRepo.GetLatestCancelledIdByReceptionDocumentIdAsync(
+                        tenantId,
+                        document.Id,
+                        cancellationToken
+                    );
         }
 
         return new BatchDownloadPurchaseReceptionXmlItemResult(
@@ -217,7 +237,9 @@ public sealed class BatchDownloadPurchaseReceptionXmlHandler
             Status: string.Empty,
             Message: string.Empty,
             DocumentStatus: PurchaseReceptionMapper.ToDocumentStatusCode(document.Status),
-            ProcessingStatus: PurchaseReceptionMapper.ToProcessingStatusCode(document.ProcessingStatus),
+            ProcessingStatus: PurchaseReceptionMapper.ToProcessingStatusCode(
+                document.ProcessingStatus
+            ),
             HasXml: document.XmlContent is not null,
             PurchaseExists: existingPurchase is not null,
             PurchaseId: existingPurchase?.Id,

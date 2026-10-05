@@ -68,10 +68,24 @@ public sealed class WarehouseEnableDisableBranchScopeTests
         }
 
         public EnableWarehouseCommandHandler BuildEnableHandler() =>
-            new(Repo.Object, Activity.Object, Tenant.Object, Company.Object, Branch.Object, User.Object);
+            new(
+                Repo.Object,
+                Activity.Object,
+                Tenant.Object,
+                Company.Object,
+                Branch.Object,
+                User.Object
+            );
 
         public DisableWarehouseCommandHandler BuildDisableHandler() =>
-            new(Repo.Object, Activity.Object, Tenant.Object, Company.Object, Branch.Object, User.Object);
+            new(
+                Repo.Object,
+                Activity.Object,
+                Tenant.Object,
+                Company.Object,
+                Branch.Object,
+                User.Object
+            );
     }
 
     [Fact]
@@ -79,7 +93,14 @@ public sealed class WarehouseEnableDisableBranchScopeTests
     {
         var warehouseOfBranchB = CreateWarehouse(BranchBId, active: false);
         var f = new Fixture(activeBranchId: BranchAId);
-        f.Repo.Setup(r => r.GetByIdForCompanyAsync(TenantId, CompanyId, warehouseOfBranchB.Id, It.IsAny<CancellationToken>()))
+        f.Repo.Setup(r =>
+                r.GetByIdForCompanyAsync(
+                    TenantId,
+                    CompanyId,
+                    warehouseOfBranchB.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(warehouseOfBranchB);
 
         var result = await f.BuildEnableHandler()
@@ -87,7 +108,9 @@ public sealed class WarehouseEnableDisableBranchScopeTests
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
-        warehouseOfBranchB.IsActive.Should().BeFalse("el rechazo debe ocurrir antes de mutar la entidad");
+        warehouseOfBranchB
+            .IsActive.Should()
+            .BeFalse("el rechazo debe ocurrir antes de mutar la entidad");
         f.Repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -96,7 +119,14 @@ public sealed class WarehouseEnableDisableBranchScopeTests
     {
         var warehouseOfBranchB = CreateWarehouse(BranchBId, active: true);
         var f = new Fixture(activeBranchId: BranchAId);
-        f.Repo.Setup(r => r.GetByIdForCompanyAsync(TenantId, CompanyId, warehouseOfBranchB.Id, It.IsAny<CancellationToken>()))
+        f.Repo.Setup(r =>
+                r.GetByIdForCompanyAsync(
+                    TenantId,
+                    CompanyId,
+                    warehouseOfBranchB.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(warehouseOfBranchB);
 
         var result = await f.BuildDisableHandler()
@@ -104,7 +134,9 @@ public sealed class WarehouseEnableDisableBranchScopeTests
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
-        warehouseOfBranchB.IsActive.Should().BeTrue("el rechazo debe ocurrir antes de mutar la entidad");
+        warehouseOfBranchB
+            .IsActive.Should()
+            .BeTrue("el rechazo debe ocurrir antes de mutar la entidad");
         f.Repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -113,7 +145,14 @@ public sealed class WarehouseEnableDisableBranchScopeTests
     {
         var warehouseOfBranchA = CreateWarehouse(BranchAId, active: false);
         var f = new Fixture(activeBranchId: BranchAId);
-        f.Repo.Setup(r => r.GetByIdForCompanyAsync(TenantId, CompanyId, warehouseOfBranchA.Id, It.IsAny<CancellationToken>()))
+        f.Repo.Setup(r =>
+                r.GetByIdForCompanyAsync(
+                    TenantId,
+                    CompanyId,
+                    warehouseOfBranchA.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(warehouseOfBranchA);
 
         var result = await f.BuildEnableHandler()
@@ -129,7 +168,14 @@ public sealed class WarehouseEnableDisableBranchScopeTests
     {
         var warehouseOfBranchA = CreateWarehouse(BranchAId, active: true);
         var f = new Fixture(activeBranchId: BranchAId);
-        f.Repo.Setup(r => r.GetByIdForCompanyAsync(TenantId, CompanyId, warehouseOfBranchA.Id, It.IsAny<CancellationToken>()))
+        f.Repo.Setup(r =>
+                r.GetByIdForCompanyAsync(
+                    TenantId,
+                    CompanyId,
+                    warehouseOfBranchA.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(warehouseOfBranchA);
 
         var result = await f.BuildDisableHandler()

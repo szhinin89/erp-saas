@@ -16,7 +16,13 @@ public sealed class IssueRetentionLineValidatorTests
     private readonly IssueRetentionLineValidator _validator = new();
 
     private static IssueRetentionLineInput Line(decimal rate) =>
-        new(RetentionTaxType.Income, "303", BaseAmount: 100m, RetentionRate: rate, RetainedAmount: 10m);
+        new(
+            RetentionTaxType.Income,
+            "303",
+            BaseAmount: 100m,
+            RetentionRate: rate,
+            RetainedAmount: 10m
+        );
 
     [Theory]
     [InlineData("12.34")]
@@ -26,8 +32,10 @@ public sealed class IssueRetentionLineValidatorTests
     [InlineData("1.75")]
     public void RetentionRate_dentro_de_la_escala_fiscal_es_valido(string rate)
     {
-        _validator.Validate(Line(decimal.Parse(rate, System.Globalization.CultureInfo.InvariantCulture)))
-            .IsValid.Should().BeTrue();
+        _validator
+            .Validate(Line(decimal.Parse(rate, System.Globalization.CultureInfo.InvariantCulture)))
+            .IsValid.Should()
+            .BeTrue();
     }
 
     [Theory]
@@ -41,10 +49,12 @@ public sealed class IssueRetentionLineValidatorTests
         );
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e =>
-            e.PropertyName == nameof(IssueRetentionLineInput.RetentionRate)
-            && e.ErrorMessage.Contains(FiscalPrecision.Percentage.ToString())
-        );
+        result
+            .Errors.Should()
+            .Contain(e =>
+                e.PropertyName == nameof(IssueRetentionLineInput.RetentionRate)
+                && e.ErrorMessage.Contains(FiscalPrecision.Percentage.ToString())
+            );
     }
 
     [Fact]
@@ -60,6 +70,7 @@ public sealed class IssueRetentionLineValidatorTests
         new RetentionIntentValidator().Validate(intent).IsValid.Should().BeFalse();
         new RetentionIntentValidator()
             .Validate(intent with { Lines = [Line(12.34m)] })
-            .IsValid.Should().BeTrue();
+            .IsValid.Should()
+            .BeTrue();
     }
 }

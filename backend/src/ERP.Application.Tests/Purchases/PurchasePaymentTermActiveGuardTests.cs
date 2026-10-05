@@ -59,7 +59,12 @@ public sealed class PurchasePaymentTermActiveGuardTests
             User.Setup(u => u.UserId).Returns(UserId);
 
             var supplier = BusinessPartner.Create(
-                TenantId, "04", "1791352688001", 2, "Proveedor Demo", UserId
+                TenantId,
+                "04",
+                "1791352688001",
+                2,
+                "Proveedor Demo",
+                UserId
             );
             BpRepo
                 .Setup(r => r.GetByIdAsync(SupplierId, It.IsAny<CancellationToken>()))
@@ -70,17 +75,32 @@ public sealed class PurchasePaymentTermActiveGuardTests
             // El proveedor necesita config SRI (BusinessPartnerRole.SupplierConfig) para pasar el
             // guard previo al de PaymentTerm — no relacionado con la resolución del default.
             var role = BusinessPartnerRole.Create(
-                TenantId, SupplierId, ERP.Domain.MasterData.Enums.RoleType.Supplier, UserId,
+                TenantId,
+                SupplierId,
+                ERP.Domain.MasterData.Enums.RoleType.Supplier,
+                UserId,
                 ERP.Domain.MasterData.ValueObjects.SupplierRoleConfig.Create()
             );
             RoleRepo
-                .Setup(r => r.GetByTypeAsync(SupplierId, ERP.Domain.MasterData.Enums.RoleType.Supplier, It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetByTypeAsync(
+                        SupplierId,
+                        ERP.Domain.MasterData.Enums.RoleType.Supplier,
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync(role);
 
             // Default por defecto del fixture: el resolver siempre devuelve la condición activa
             // (explícita o implícita) salvo que un test la sobreescriba.
             PtResolver
-                .Setup(r => r.ResolveForPurchaseAsync(SupplierId, It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.ResolveForPurchaseAsync(
+                        SupplierId,
+                        It.IsAny<Guid?>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync(Result<PaymentTerm>.Success(DefaultPaymentTerm));
 
             Tax.Setup(t => t.GetVatRateWithNameAsync("0", It.IsAny<CancellationToken>()))
@@ -120,26 +140,60 @@ public sealed class PurchasePaymentTermActiveGuardTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task Expense_reception_blocks_purchase_even_when_access_key_is_omitted(bool omitKey)
+    public async Task Expense_reception_blocks_purchase_even_when_access_key_is_omitted(
+        bool omitKey
+    )
     {
         var fx = new Fixture();
         var key = new string('1', 49);
         var lineId = Guid.NewGuid();
-        var source = ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionDocument.Create(
-            TenantId, CompanyId, BranchId,
-            ERP.Domain.Modules.Purchases.PurchaseReception.Enums.PurchaseReceptionSourceDocType.Invoice,
-            "1791352688001", "Proveedor", SupplierId, key, "001-001-000000001",
-            DateOnly.FromDateTime(DateTime.UtcNow), null, 100, 0, 100, UserId);
-        fx.ReceptionRepo.Setup(r => r.GetByLineIdAsync(TenantId, lineId, It.IsAny<CancellationToken>())).ReturnsAsync(source);
-        fx.ExpenseRepo.Setup(r => r.ExistsByReceptionDocumentIdAsync(TenantId, source.Id, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        var source =
+            ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionDocument.Create(
+                TenantId,
+                CompanyId,
+                BranchId,
+                ERP.Domain
+                    .Modules
+                    .Purchases
+                    .PurchaseReception
+                    .Enums
+                    .PurchaseReceptionSourceDocType
+                    .Invoice,
+                "1791352688001",
+                "Proveedor",
+                SupplierId,
+                key,
+                "001-001-000000001",
+                DateOnly.FromDateTime(DateTime.UtcNow),
+                null,
+                100,
+                0,
+                100,
+                UserId
+            );
+        fx.ReceptionRepo.Setup(r =>
+                r.GetByLineIdAsync(TenantId, lineId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(source);
+        fx.ExpenseRepo.Setup(r =>
+                r.ExistsByReceptionDocumentIdAsync(
+                    TenantId,
+                    source.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(true);
         var cmd = Fixture.ValidCommand() with
         {
             AccessKey = omitKey ? null : key,
-            Lines = [new(null, "Servicio", 1m, 100m, "0", PurchaseReceptionLineId: lineId)]
+            Lines = [new(null, "Servicio", 1m, 100m, "0", PurchaseReceptionLineId: lineId)],
         };
         var result = await fx.BuildCreateHandler().Handle(cmd, default);
         result.Code.Should().Be(ApiResponseCodes.Common.Conflict);
-        fx.Repo.Verify(r => r.AddAsync(It.IsAny<PurchaseInvoice>(), It.IsAny<CancellationToken>()), Times.Never);
+        fx.Repo.Verify(
+            r => r.AddAsync(It.IsAny<PurchaseInvoice>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -147,16 +201,25 @@ public sealed class PurchasePaymentTermActiveGuardTests
     {
         var fx = new Fixture();
         var key = new string('1', 49);
-        fx.ExpenseRepo.Setup(r => r.ExistsByAccessKeyAsync(TenantId, key, It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        var result = await fx.BuildCreateHandler().Handle(Fixture.ValidCommand() with { AccessKey = key }, default);
+        fx.ExpenseRepo.Setup(r =>
+                r.ExistsByAccessKeyAsync(TenantId, key, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(true);
+        var result = await fx.BuildCreateHandler()
+            .Handle(Fixture.ValidCommand() with { AccessKey = key }, default);
         result.Code.Should().Be(ApiResponseCodes.Common.Conflict);
-        fx.Repo.Verify(r => r.AddAsync(It.IsAny<PurchaseInvoice>(), It.IsAny<CancellationToken>()), Times.Never);
+        fx.Repo.Verify(
+            r => r.AddAsync(It.IsAny<PurchaseInvoice>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
     public async Task Credit_note_cannot_be_created_as_purchase()
     {
-        var result = await new Fixture().BuildCreateHandler().Handle(Fixture.ValidCommand() with { DocTypeCode = "04" }, default);
+        var result = await new Fixture()
+            .BuildCreateHandler()
+            .Handle(Fixture.ValidCommand() with { DocTypeCode = "04" }, default);
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Solo una factura");
     }
@@ -166,9 +229,12 @@ public sealed class PurchasePaymentTermActiveGuardTests
     {
         var f = new Fixture();
         var inactivePtId = Guid.NewGuid();
-        f.PtResolver
-            .Setup(r => r.ResolveForPurchaseAsync(SupplierId, inactivePtId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<PaymentTerm>.ValidationFailure("La condición de pago se encuentra inactiva."));
+        f.PtResolver.Setup(r =>
+                r.ResolveForPurchaseAsync(SupplierId, inactivePtId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                Result<PaymentTerm>.ValidationFailure("La condición de pago se encuentra inactiva.")
+            );
 
         var handler = f.BuildCreateHandler();
         var result = await handler.Handle(
@@ -178,25 +244,34 @@ public sealed class PurchasePaymentTermActiveGuardTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("inactiva");
-        f.Repo.Verify(r => r.AddAsync(It.IsAny<PurchaseInvoice>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.Repo.Verify(
+            r => r.AddAsync(It.IsAny<PurchaseInvoice>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
     public async Task Rechaza_cuando_el_resolver_no_encuentra_default_valido()
     {
         var f = new Fixture();
-        f.PtResolver
-            .Setup(r => r.ResolveForPurchaseAsync(SupplierId, null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<PaymentTerm>.ValidationFailure(
-                "Debe seleccionar una condición de pago; este proveedor no tiene una configurada para esta empresa."
-            ));
+        f.PtResolver.Setup(r =>
+                r.ResolveForPurchaseAsync(SupplierId, null, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                Result<PaymentTerm>.ValidationFailure(
+                    "Debe seleccionar una condición de pago; este proveedor no tiene una configurada para esta empresa."
+                )
+            );
 
         var handler = f.BuildCreateHandler();
         var result = await handler.Handle(Fixture.ValidCommand(), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Debe seleccionar");
-        f.Repo.Verify(r => r.AddAsync(It.IsAny<PurchaseInvoice>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.Repo.Verify(
+            r => r.AddAsync(It.IsAny<PurchaseInvoice>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -208,6 +283,9 @@ public sealed class PurchasePaymentTermActiveGuardTests
         var result = await handler.Handle(Fixture.ValidCommand(), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        f.Repo.Verify(r => r.AddAsync(It.IsAny<PurchaseInvoice>(), It.IsAny<CancellationToken>()), Times.Once);
+        f.Repo.Verify(
+            r => r.AddAsync(It.IsAny<PurchaseInvoice>(), It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 }

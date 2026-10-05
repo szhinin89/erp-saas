@@ -79,6 +79,11 @@ public sealed class OrgSettingsAccessGuardrailTests
             .ToList();
 
         foreach (var allowed in Allowlist)
-            actualDependents.Should().Contain(allowed, $"{allowed} ya no depende de IOrgSettingsRepository — quitarlo del allowlist");
+            actualDependents
+                .Should()
+                .Contain(
+                    allowed,
+                    $"{allowed} ya no depende de IOrgSettingsRepository — quitarlo del allowlist"
+                );
     }
 }

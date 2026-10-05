@@ -1,8 +1,8 @@
+using System.Reflection;
 using ERP.Domain.Kernel;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Reflection;
 
 namespace ERP.Architecture.Tests;
 

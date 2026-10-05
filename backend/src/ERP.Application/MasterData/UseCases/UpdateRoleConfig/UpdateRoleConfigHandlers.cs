@@ -25,7 +25,10 @@ public sealed class UpdateSupplierRoleConfigHandler
         // Primero la config (antes que el rol): un invariante violado responde igual exista o no el rol.
         var config = RoleConfigFactory.Build(cmd.Config);
         if (!config.IsValid)
-            return Result<BusinessPartnerRoleDto>.ValidationFailure(config.Error!, RoleConfigFactory.InvalidConfigCode);
+            return Result<BusinessPartnerRoleDto>.ValidationFailure(
+                config.Error!,
+                RoleConfigFactory.InvalidConfigCode
+            );
 
         var role = await _roleRepo.GetByIdAsync(cmd.RoleId, cancellationToken);
         if (role is null || role.BusinessPartnerId != cmd.BusinessPartnerId)
@@ -64,7 +67,10 @@ public sealed class UpdateCarrierRoleConfigHandler
         // Primero la config (antes que el rol): un invariante violado responde igual exista o no el rol.
         var config = RoleConfigFactory.Build(cmd.Config);
         if (!config.IsValid)
-            return Result<BusinessPartnerRoleDto>.ValidationFailure(config.Error!, RoleConfigFactory.InvalidConfigCode);
+            return Result<BusinessPartnerRoleDto>.ValidationFailure(
+                config.Error!,
+                RoleConfigFactory.InvalidConfigCode
+            );
 
         var role = await _roleRepo.GetByIdAsync(cmd.RoleId, cancellationToken);
         if (role is null || role.BusinessPartnerId != cmd.BusinessPartnerId)
@@ -103,7 +109,10 @@ public sealed class UpdateCustomerRoleConfigHandler
         // Primero la config (antes que el rol): un invariante violado responde igual exista o no el rol.
         var config = RoleConfigFactory.Build(cmd.Config);
         if (!config.IsValid)
-            return Result<BusinessPartnerRoleDto>.ValidationFailure(config.Error!, RoleConfigFactory.InvalidConfigCode);
+            return Result<BusinessPartnerRoleDto>.ValidationFailure(
+                config.Error!,
+                RoleConfigFactory.InvalidConfigCode
+            );
 
         var role = await _roleRepo.GetByIdAsync(cmd.RoleId, cancellationToken);
         if (role is null || role.BusinessPartnerId != cmd.BusinessPartnerId)

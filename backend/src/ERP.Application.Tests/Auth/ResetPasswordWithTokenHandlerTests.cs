@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using ERP.Application.Auth.UseCases.PasswordReset;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Entities;
@@ -6,8 +8,6 @@ using ERP.Domain.Auth.Entities;
 using ERP.Domain.Tenants.Interfaces;
 using FluentAssertions;
 using Moq;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace ERP.Application.Tests.Auth;
 
@@ -50,29 +50,50 @@ public sealed class ResetPasswordWithTokenHandlerTests
         Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(raw)));
 
     private static PasswordResetToken Token(Guid userId, Guid tenantId, DateTime expiresAtUtc) =>
-        PasswordResetToken.Create(HashOf(RawToken), userId, PasswordResetToken.KindIdentity, tenantId, expiresAtUtc);
+        PasswordResetToken.Create(
+            HashOf(RawToken),
+            userId,
+            PasswordResetToken.KindIdentity,
+            tenantId,
+            expiresAtUtc
+        );
 
     // H
     [Fact]
     public async Task Token_valido_aplica_la_contrasena_revoca_sesiones_y_marca_usado()
     {
         var f = new Fixture();
-        var user = IdentityUser.Create("ana.perez", "Ana", "Perez", "ana@test.com", "old-hash", Actor);
+        var user = IdentityUser.Create(
+            "ana.perez",
+            "Ana",
+            "Perez",
+            "ana@test.com",
+            "old-hash",
+            Actor
+        );
         var tenantId = Guid.NewGuid();
         var stored = Token(user.Id, tenantId, DateTime.UtcNow.AddMinutes(30));
         f.GivenStored(stored);
-        f.Access.Setup(r => r.GetUserByIdAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+        f.Access.Setup(r => r.GetUserByIdAsync(user.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
         f.Hasher.Setup(h => h.HashPassword(NewPassword)).Returns("new-hash");
 
-        var result = await f.Build().Handle(
-            new ResetPasswordWithTokenCommand(RawToken, NewPassword, tenantId),
-            CancellationToken.None
-        );
+        var result = await f.Build()
+            .Handle(
+                new ResetPasswordWithTokenCommand(RawToken, NewPassword, tenantId),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue();
         stored.Used.Should().BeTrue();
         f.RefreshTokens.Verify(
-            r => r.RevokeAllForUserAsync(user.Id, tenantId, It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            r =>
+                r.RevokeAllForUserAsync(
+                    user.Id,
+                    tenantId,
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Once
         );
     }
@@ -87,10 +108,11 @@ public sealed class ResetPasswordWithTokenHandlerTests
         stored.MarkUsed();
         f.GivenStored(stored);
 
-        var result = await f.Build().Handle(
-            new ResetPasswordWithTokenCommand(RawToken, NewPassword, tenantId),
-            CancellationToken.None
-        );
+        var result = await f.Build()
+            .Handle(
+                new ResetPasswordWithTokenCommand(RawToken, NewPassword, tenantId),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be(ResetPasswordWithTokenHandler.InvalidTokenMessage);
@@ -105,10 +127,11 @@ public sealed class ResetPasswordWithTokenHandlerTests
         var tenantId = Guid.NewGuid();
         f.GivenStored(Token(Guid.NewGuid(), tenantId, DateTime.UtcNow.AddSeconds(-1)));
 
-        var result = await f.Build().Handle(
-            new ResetPasswordWithTokenCommand(RawToken, NewPassword, tenantId),
-            CancellationToken.None
-        );
+        var result = await f.Build()
+            .Handle(
+                new ResetPasswordWithTokenCommand(RawToken, NewPassword, tenantId),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be(ResetPasswordWithTokenHandler.InvalidTokenMessage);

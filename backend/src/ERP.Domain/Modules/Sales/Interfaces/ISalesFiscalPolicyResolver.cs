@@ -35,5 +35,7 @@ public sealed record SalesFiscalPolicyResult(
 /// </summary>
 public interface ISalesFiscalPolicyResolver
 {
-    Task<SalesFiscalPolicyResult> GetEffectivePolicyAsync(CancellationToken cancellationToken = default);
+    Task<SalesFiscalPolicyResult> GetEffectivePolicyAsync(
+        CancellationToken cancellationToken = default
+    );
 }

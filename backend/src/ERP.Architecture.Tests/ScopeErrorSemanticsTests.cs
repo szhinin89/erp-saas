@@ -1,5 +1,5 @@
-using FluentAssertions;
 using System.Text.RegularExpressions;
+using FluentAssertions;
 
 namespace ERP.Architecture.Tests;
 
@@ -32,17 +32,27 @@ public sealed class ScopeErrorSemanticsTests
         var root = BackendSrcRoot();
         var files = Directory
             .EnumerateFiles(Path.Combine(root, "ERP.Application", "Behaviors"), "*ScopeBehavior.cs")
-            .Concat(Directory.EnumerateFiles(Path.Combine(root, "ERP.Infrastructure", "Services"), "*AccessGuard.cs"))
+            .Concat(
+                Directory.EnumerateFiles(
+                    Path.Combine(root, "ERP.Infrastructure", "Services"),
+                    "*AccessGuard.cs"
+                )
+            )
             .ToList();
 
         files.Should().NotBeEmpty();
         var violations = files
             .SelectMany(f => File.ReadAllLines(f).Select((line, i) => (f, line, i)))
-            .Where(x => !x.line.TrimStart().StartsWith("//", StringComparison.Ordinal) && TextComparison.IsMatch(x.line))
+            .Where(x =>
+                !x.line.TrimStart().StartsWith("//", StringComparison.Ordinal)
+                && TextComparison.IsMatch(x.line)
+            )
             .Select(x => $"{Path.GetRelativePath(root, x.f)}:{x.i + 1}: {x.line.Trim()}")
             .ToList();
 
-        violations.Should().BeEmpty("la decisión de scope usa Code/estado explícito, nunca el texto del error");
+        violations
+            .Should()
+            .BeEmpty("la decisión de scope usa Code/estado explícito, nunca el texto del error");
     }
 
     [Fact]
@@ -53,13 +63,26 @@ public sealed class ScopeErrorSemanticsTests
 
         foreach (var dir in new[] { "ERP.Application", "ERP.Infrastructure", "ERP.API" })
         {
-            foreach (var file in Directory.EnumerateFiles(Path.Combine(root, dir), "*.cs", SearchOption.AllDirectories))
+            foreach (
+                var file in Directory.EnumerateFiles(
+                    Path.Combine(root, dir),
+                    "*.cs",
+                    SearchOption.AllDirectories
+                )
+            )
             {
-                if (file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}") || file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}"))
+                if (
+                    file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}")
+                    || file.Contains(
+                        $"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}"
+                    )
+                )
                     continue;
 
                 var text = File.ReadAllText(file);
-                foreach (var name in GuardCall.Matches(text).Select(m => m.Groups[1].Value).Distinct())
+                foreach (
+                    var name in GuardCall.Matches(text).Select(m => m.Groups[1].Value).Distinct()
+                )
                 {
                     var rewrap = new Regex(
                         $@"\.(Failure|Forbidden|NotFound|ValidationFailure|Conflict)\(\s*{name}\.Error\s*(!|\?\?[^,)]*)?\s*\)"
@@ -73,7 +96,11 @@ public sealed class ScopeErrorSemanticsTests
             }
         }
 
-        violations.Should().BeEmpty("el Code del guard debe llegar al mapper HTTP: usar Failure(x.Error!, x.Code)");
+        violations
+            .Should()
+            .BeEmpty(
+                "el Code del guard debe llegar al mapper HTTP: usar Failure(x.Error!, x.Code)"
+            );
     }
 
     private static string BackendSrcRoot()

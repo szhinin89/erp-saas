@@ -84,7 +84,10 @@ public interface ISupplierPaymentRegistrar
         CancellationToken ct
     );
 
-    /// <param name="clientRequest">
+    /// <param name="intent"></param>
+
+    /// <param name="context"></param>
+    /// <param name="ct"></param>    /// <param name="clientRequest">
     /// ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01 — intención del cliente del pago directo: se vincula al
     /// pago antes del INSERT, así el índice único (TenantId, ClientRequestId) protege la misma
     /// transacción que aplica CxP, mueve caja, crea el anticipo y postea. Null en la ejecución de una
@@ -160,7 +163,9 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
         var branchId = context.BranchId;
         var executorId = context.ExecutorUserId;
 
-        var receiptNumber = string.IsNullOrWhiteSpace(cmd.ReceiptNumber) ? null : cmd.ReceiptNumber.Trim();
+        var receiptNumber = string.IsNullOrWhiteSpace(cmd.ReceiptNumber)
+            ? null
+            : cmd.ReceiptNumber.Trim();
 
         var (intentError, allowWithoutPayable) = await CheckIntentAsync(cmd, ct);
         if (intentError is not null)
@@ -197,16 +202,21 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
         // ── 02A: medio ↔ destino, PaymentMethod como SSOT (fail-closed) ──
         foreach (var line in cmd.MethodLines)
         {
-            var lineError = ValidateMethodLineAgainstCatalog(line, methodsById[line.PaymentMethodId]);
+            var lineError = ValidateMethodLineAgainstCatalog(
+                line,
+                methodsById[line.PaymentMethodId]
+            );
             if (lineError is not null)
                 return Result<PreparedPayment>.ValidationFailure(lineError);
         }
 
         // ── Cuenta bancaria/caja debe existir, pertenecer a la empresa, estar activa y tener cuenta contable ──
-        foreach (var bankAccountId in cmd.MethodLines
-            .Where(l => l.CompanyBankAccountId is not null)
-            .Select(l => l.CompanyBankAccountId!.Value)
-            .Distinct())
+        foreach (
+            var bankAccountId in cmd
+                .MethodLines.Where(l => l.CompanyBankAccountId is not null)
+                .Select(l => l.CompanyBankAccountId!.Value)
+                .Distinct()
+        )
         {
             var bankAccount = await _bankAccounts.GetByIdAsync(tenantId, bankAccountId, ct);
             if (bankAccount is null || bankAccount.CompanyId != companyId)
@@ -218,10 +228,12 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
                     $"La cuenta bancaria {bankAccountId} no está activa."
                 );
         }
-        foreach (var cashRegisterId in cmd.MethodLines
-            .Where(l => l.CashRegisterId is not null)
-            .Select(l => l.CashRegisterId!.Value)
-            .Distinct())
+        foreach (
+            var cashRegisterId in cmd
+                .MethodLines.Where(l => l.CashRegisterId is not null)
+                .Select(l => l.CashRegisterId!.Value)
+                .Distinct()
+        )
         {
             var cashRegister = await _cashRegisters.GetByIdAsync(tenantId, cashRegisterId, ct);
             if (cashRegister is null || cashRegister.CompanyId != companyId)
@@ -244,13 +256,19 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
         // serializados (el segundo ve el saldo ya consumido y recibe la validación normal) y
         // dos pagos con varias cajas nunca se bloquean en cruz ──
         var openSessionsByRegister = new Dictionary<Guid, CashSession>();
-        foreach (var cashRegisterId in cmd.MethodLines
-            .Where(l => l.CashRegisterId is not null)
-            .Select(l => l.CashRegisterId!.Value)
-            .Distinct()
-            .OrderBy(id => id))
+        foreach (
+            var cashRegisterId in cmd
+                .MethodLines.Where(l => l.CashRegisterId is not null)
+                .Select(l => l.CashRegisterId!.Value)
+                .Distinct()
+                .OrderBy(id => id)
+        )
         {
-            var session = await _cashSessions.GetOpenByCashRegisterForUpdateAsync(tenantId, cashRegisterId, ct);
+            var session = await _cashSessions.GetOpenByCashRegisterForUpdateAsync(
+                tenantId,
+                cashRegisterId,
+                ct
+            );
             if (session is null || session.CompanyId != companyId)
                 return Result<PreparedPayment>.ValidationFailure(
                     $"No existe una sesión de caja abierta para la caja {cashRegisterId}. Abra la caja antes de pagar en efectivo."
@@ -273,9 +291,11 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
         // ── 02A-CLOSE: sin sobregiro de caja (fail-closed, sin override). El consumo se ACUMULA
         // por sesión: varias líneas de efectivo del mismo pago contra la misma caja nunca pueden
         // superar juntas el efectivo esperado (CashSession.CurrentBalance, SSOT del arqueo) ──
-        foreach (var cashGroup in cmd.MethodLines
-            .Where(l => l.CashRegisterId is not null)
-            .GroupBy(l => l.CashRegisterId!.Value))
+        foreach (
+            var cashGroup in cmd
+                .MethodLines.Where(l => l.CashRegisterId is not null)
+                .GroupBy(l => l.CashRegisterId!.Value)
+        )
         {
             var requested = cashGroup.Sum(l => l.Amount);
             var available = openSessionsByRegister[cashGroup.Key].CurrentBalance;
@@ -292,11 +312,13 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
             var installmentId = appLine.AccountsPayableInstallmentId;
             if (!payablesByInstallment.ContainsKey(installmentId))
             {
-                var payable = await _accountsPayables.GetByInstallmentIdAsync(tenantId, installmentId, ct);
+                var payable = await _accountsPayables.GetByInstallmentIdAsync(
+                    tenantId,
+                    installmentId,
+                    ct
+                );
                 if (payable is null)
-                    return Result<PreparedPayment>.NotFound(
-                        $"La cuota {installmentId} no existe."
-                    );
+                    return Result<PreparedPayment>.NotFound($"La cuota {installmentId} no existe.");
                 if (payable.SupplierId != cmd.SupplierId)
                     return Result<PreparedPayment>.ValidationFailure(
                         "No se pueden mezclar cuotas de distintos proveedores en un mismo pago."
@@ -327,7 +349,12 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
         }
 
         return Result<PreparedPayment>.Success(
-            new PreparedPayment(receiptNumber, allowWithoutPayable, openSessionsByRegister, payablesByInstallment)
+            new PreparedPayment(
+                receiptNumber,
+                allowWithoutPayable,
+                openSessionsByRegister,
+                payablesByInstallment
+            )
         );
     }
 
@@ -354,7 +381,8 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
         var branchId = context.BranchId;
         var originatorId = context.OriginatorUserId;
         var executorId = context.ExecutorUserId;
-        var (receiptNumber, allowWithoutPayable, openSessionsByRegister, payablesByInstallment) = prepared.Value!;
+        var (receiptNumber, allowWithoutPayable, openSessionsByRegister, payablesByInstallment) =
+            prepared.Value!;
 
         // ── system_number ──
         var systemNumber = await _sequences.CaptureNextAsync(tenantId, companyId, ct);
@@ -372,8 +400,7 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
                 cmd.TotalAmount,
                 systemNumber,
                 receiptNumber,
-                cmd.MethodLines
-                    .Select(l => new SupplierPaymentMethodLineInput(
+                cmd.MethodLines.Select(l => new SupplierPaymentMethodLineInput(
                         l.PaymentMethodId,
                         l.CompanyBankAccountId,
                         l.CashRegisterId,
@@ -385,14 +412,12 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
                         l.TransactionDate
                     ))
                     .ToList(),
-                cmd.ApplicationLines
-                    .Select(l => new SupplierPaymentApplicationLineInput(
+                cmd.ApplicationLines.Select(l => new SupplierPaymentApplicationLineInput(
                         l.AccountsPayableInstallmentId,
                         l.AmountApplied
                     ))
                     .ToList(),
-                cmd.Allocations
-                    .Select(a => new SupplierPaymentAllocationInput(
+                cmd.Allocations.Select(a => new SupplierPaymentAllocationInput(
                         a.MethodLineIndex,
                         a.ApplicationLineIndex,
                         a.Amount
@@ -421,11 +446,12 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
         {
             try
             {
-                payablesByInstallment[appLine.AccountsPayableInstallmentId].RegisterPaymentToInstallment(
-                    appLine.AccountsPayableInstallmentId,
-                    appLine.AmountApplied,
-                    executorId
-                );
+                payablesByInstallment[appLine.AccountsPayableInstallmentId]
+                    .RegisterPaymentToInstallment(
+                        appLine.AccountsPayableInstallmentId,
+                        appLine.AmountApplied,
+                        executorId
+                    );
             }
             catch (DomainRuleViolationException ex)
             {
@@ -504,11 +530,15 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
             return Result<SupplierPaymentRegistration>.ValidationFailure(ex.Message, ex.Code);
         }
 
-        return Result<SupplierPaymentRegistration>.Success(new SupplierPaymentRegistration(payment, advance?.Id));
+        return Result<SupplierPaymentRegistration>.Success(
+            new SupplierPaymentRegistration(payment, advance?.Id)
+        );
     }
 
-    public async Task<string?> PrevalidateAsync(RegisterSupplierPaymentCommand intent, CancellationToken ct) =>
-        (await CheckIntentAsync(intent, ct)).Error;
+    public async Task<string?> PrevalidateAsync(
+        RegisterSupplierPaymentCommand intent,
+        CancellationToken ct
+    ) => (await CheckIntentAsync(intent, ct)).Error;
 
     private async Task<(string? Error, bool AllowWithoutPayable)> CheckIntentAsync(
         RegisterSupplierPaymentCommand cmd,

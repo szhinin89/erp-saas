@@ -1,6 +1,6 @@
+using System.Linq.Expressions;
 using ERP.Domain.Common;
 using Microsoft.EntityFrameworkCore;
-using System.Linq.Expressions;
 
 namespace ERP.Infrastructure.Persistence;
 
@@ -31,7 +31,11 @@ internal static class EnterpriseQueryFilterConfigurator
 
             if (typeof(IOptionalCompanyScopeEntity).IsAssignableFrom(clrType))
             {
-                ApplyFilter(modelBuilder, clrType, BuildOptionalCompanyScopeFilter(clrType, dbContext));
+                ApplyFilter(
+                    modelBuilder,
+                    clrType,
+                    BuildOptionalCompanyScopeFilter(clrType, dbContext)
+                );
                 continue;
             }
 
@@ -131,22 +135,34 @@ internal static class EnterpriseQueryFilterConfigurator
     /// de instancia (TenantId/CompanyId NULL) nunca coincide con un contexto (NULL = valor → falso en
     /// SQL): solo es visible por el patrón explícito de plataforma (AsPlatformQuery).
     /// </summary>
-    private static LambdaExpression BuildOptionalCompanyScopeFilter(Type clrType, ErpDbContext dbContext)
+    private static LambdaExpression BuildOptionalCompanyScopeFilter(
+        Type clrType,
+        ErpDbContext dbContext
+    )
     {
         var parameter = Expression.Parameter(clrType, "e");
         var dbConstant = Expression.Constant(dbContext);
 
         var currentTenant = Expression.Property(dbConstant, nameof(ErpDbContext.FilterTenantId));
         var hasTenantCtx = Expression.NotEqual(currentTenant, Expression.Constant(Guid.Empty));
-        var tenantProp = Expression.Property(parameter, nameof(IOptionalCompanyScopeEntity.TenantId));
+        var tenantProp = Expression.Property(
+            parameter,
+            nameof(IOptionalCompanyScopeEntity.TenantId)
+        );
         var tenantMatch = Expression.AndAlso(
             hasTenantCtx,
             Expression.Equal(tenantProp, Expression.Convert(currentTenant, typeof(Guid?)))
         );
 
-        var hasCompanyCtx = Expression.Property(dbConstant, nameof(ErpDbContext.FilterHasCompanyContext));
+        var hasCompanyCtx = Expression.Property(
+            dbConstant,
+            nameof(ErpDbContext.FilterHasCompanyContext)
+        );
         var currentCompany = Expression.Property(dbConstant, nameof(ErpDbContext.FilterCompanyId));
-        var companyProp = Expression.Property(parameter, nameof(IOptionalCompanyScopeEntity.CompanyId));
+        var companyProp = Expression.Property(
+            parameter,
+            nameof(IOptionalCompanyScopeEntity.CompanyId)
+        );
         var companyMatch = Expression.AndAlso(
             hasCompanyCtx,
             Expression.Equal(companyProp, Expression.Convert(currentCompany, typeof(Guid?)))

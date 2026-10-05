@@ -63,8 +63,12 @@ public interface IRetentionIssuer
 /// origen concreto — mismo principio rector que <c>RetentionDocument.SourceDocumentType</c>+<c>SourceDocumentId</c>
 /// (genérico, replicando <c>AccountsPayable.OriginType</c>/<c>OriginId</c>).
 /// </summary>
+/// <param name="SourceDocumentType"></param>
+/// <param name="SourceDocumentId"></param>
+/// <param name="SubjectBusinessPartnerId"></param>
 /// <param name="VatRetainableBase">Base retenible de IVA del documento origen (p. ej. <c>ExpenseDocument.TotalVat</c>/<c>PurchaseInvoice.TotalVat</c>) — resuelta por el llamador, nunca por el núcleo de emisión.</param>
 /// <param name="IncomeRetainableBase">Base retenible de Renta del documento origen (suma de <c>TaxableBase</c> de sus líneas) — resuelta por el llamador.</param>
+/// <param name="Snapshot"></param>
 public sealed record RetentionSourceDocumentData(
     RetentionSourceDocumentType SourceDocumentType,
     Guid SourceDocumentId,
@@ -195,9 +199,13 @@ public sealed class RetentionIssuer : IRetentionIssuer
         var wantsIncome = request.Lines.Any(l => l.TaxType == RetentionTaxType.Income);
 
         if (wantsVat && !eligibility.CanRetainVat)
-            return Result<RetentionDocument>.ValidationFailure(string.Join(" ", eligibility.Reasons));
+            return Result<RetentionDocument>.ValidationFailure(
+                string.Join(" ", eligibility.Reasons)
+            );
         if (wantsIncome && !eligibility.CanRetainIncome)
-            return Result<RetentionDocument>.ValidationFailure(string.Join(" ", eligibility.Reasons));
+            return Result<RetentionDocument>.ValidationFailure(
+                string.Join(" ", eligibility.Reasons)
+            );
 
         // RETENTIONS-DOCUMENT-SEQUENCE-02E — resolver el punto de emisión y su establecimiento
         // ANTES de construir el agregado: valida que
@@ -249,7 +257,8 @@ public sealed class RetentionIssuer : IRetentionIssuer
                         // captura este dato todavía — no hay selector de catálogo real en UI). Si
                         // no llega, se usa el propio código como descripción de respaldo — límite
                         // temporal documentado, a mejorar cuando exista ese selector.
-                        line.RetentionCodeDescription is { Length: > 0 }
+                        line.RetentionCodeDescription
+                            is { Length: > 0 }
                             ? line.RetentionCodeDescription
                             : line.RetentionCode,
                         line.BaseAmount,

@@ -86,7 +86,11 @@ public sealed class InventoryAdjustmentReason : MasterEntity, ITenantScopedEntit
 
     private static void EnsureValidMovementType(string allowedMovementType)
     {
-        if (allowedMovementType != Ingreso && allowedMovementType != Egreso && allowedMovementType != Ambos)
+        if (
+            allowedMovementType != Ingreso
+            && allowedMovementType != Egreso
+            && allowedMovementType != Ambos
+        )
             throw new ArgumentException(
                 $"AllowedMovementType debe ser '{Ingreso}', '{Egreso}' o '{Ambos}'.",
                 nameof(allowedMovementType)

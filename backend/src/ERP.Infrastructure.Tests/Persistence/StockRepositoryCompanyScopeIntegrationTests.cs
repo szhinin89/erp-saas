@@ -51,8 +51,18 @@ public sealed class StockRepositoryCompanyScopeIntegrationTests : IAsyncLifetime
         await db.Database.MigrateAsync();
 
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _userId);
-        var companyA = Company.CreateManaged(tenant.Id, "1790012345001", "Empresa A", createdBy: _userId);
-        var companyB = Company.CreateManaged(tenant.Id, "1790012345002", "Empresa B", createdBy: _userId);
+        var companyA = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Empresa A",
+            createdBy: _userId
+        );
+        var companyB = Company.CreateManaged(
+            tenant.Id,
+            "1790012345002",
+            "Empresa B",
+            createdBy: _userId
+        );
 
         var branchA = Branch.Create(
             tenantId: tenant.Id,
@@ -205,9 +215,12 @@ public sealed class StockRepositoryCompanyScopeIntegrationTests : IAsyncLifetime
 
     // ── ERP-PRECISION-OPERATIONAL-05B: costo promedio corrido según averageCostDecimals ──────────
 
-    private sealed class FixedPrecisionProvider(int averageCostDecimals) : ICompanyPrecisionPolicyProvider
+    private sealed class FixedPrecisionProvider(int averageCostDecimals)
+        : ICompanyPrecisionPolicyProvider
     {
-        public Task<EffectivePrecisionPolicyDto> GetEffectiveAsync(CancellationToken ct = default) =>
+        public Task<EffectivePrecisionPolicyDto> GetEffectiveAsync(
+            CancellationToken ct = default
+        ) =>
             Task.FromResult(
                 new EffectivePrecisionPolicyDto(
                     ProfileType: "Custom",
@@ -226,9 +239,24 @@ public sealed class StockRepositoryCompanyScopeIntegrationTests : IAsyncLifetime
                     TaxDecimals: 2,
                     AccountingDecimals: 2,
                     FiscalPercentageDecimals: ERP.Domain.Common.FiscalPrecision.Percentage,
-                    WarehouseCapacityDecimals: ERP.Domain.Modules.Inventory.Entities.WarehousePrecision.Capacity,
-                    CreditInstallmentPercentageDecimals: ERP.Domain.Modules.Finance.Entities.CreditTermsPrecision.InstallmentPercentage,
-                    PackagingWeightDecimals: ERP.Domain.Modules.Items.Entities.ItemPrecision.PackagingWeight
+                    WarehouseCapacityDecimals: ERP.Domain
+                        .Modules
+                        .Inventory
+                        .Entities
+                        .WarehousePrecision
+                        .Capacity,
+                    CreditInstallmentPercentageDecimals: ERP.Domain
+                        .Modules
+                        .Finance
+                        .Entities
+                        .CreditTermsPrecision
+                        .InstallmentPercentage,
+                    PackagingWeightDecimals: ERP.Domain
+                        .Modules
+                        .Items
+                        .Entities
+                        .ItemPrecision
+                        .PackagingWeight
                 )
             );
     }
@@ -242,18 +270,39 @@ public sealed class StockRepositoryCompanyScopeIntegrationTests : IAsyncLifetime
         var secondLineId = Guid.NewGuid();
         await using (var db = CreateContext(_companyBId))
         {
-            var repo = new StockRepository(db, new FixedCurrentCompany(_companyBId),
-                new PostgresDatabaseExceptionTranslator(), new FixedPrecisionProvider(6));
-            foreach (var (qty, cost, lineId) in new[] { (3m, 10m, firstLineId), (2m, 20m, secondLineId) })
-                await repo.AppendMovementAsync(_tenantId, _companyBId, productId, _warehouseBId,
-                    StockMovementType.PurchaseEntry, qty, "UNIT", new DateOnly(2026, 9, 27),
-                    "COMPRAS-METODO-ZH-01A", documentId, "PurchaseInvoice", _userId,
-                    unitCost: cost, sourceDocLineId: lineId);
+            var repo = new StockRepository(
+                db,
+                new FixedCurrentCompany(_companyBId),
+                new PostgresDatabaseExceptionTranslator(),
+                new FixedPrecisionProvider(6)
+            );
+            foreach (
+                var (qty, cost, lineId) in new[] { (3m, 10m, firstLineId), (2m, 20m, secondLineId) }
+            )
+                await repo.AppendMovementAsync(
+                    _tenantId,
+                    _companyBId,
+                    productId,
+                    _warehouseBId,
+                    StockMovementType.PurchaseEntry,
+                    qty,
+                    "UNIT",
+                    new DateOnly(2026, 9, 27),
+                    "COMPRAS-METODO-ZH-01A",
+                    documentId,
+                    "PurchaseInvoice",
+                    _userId,
+                    unitCost: cost,
+                    sourceDocLineId: lineId
+                );
             await repo.SaveChangesWithSequenceRetryAsync();
         }
         await using var readDb = CreateContext(_companyBId);
-        var movements = await readDb.Set<StockMovement>().Where(m => m.ProductId == productId)
-            .OrderBy(m => m.SequenceNumber).ToListAsync();
+        var movements = await readDb
+            .Set<StockMovement>()
+            .Where(m => m.ProductId == productId)
+            .OrderBy(m => m.SequenceNumber)
+            .ToListAsync();
         movements.Select(m => m.SequenceNumber).Should().Equal(1L, 2L);
         movements.Select(m => m.RunningStockValue).Should().Equal(30m, 70m);
         movements.Select(m => m.RunningAverageCost).Should().Equal(10m, 14m);
@@ -264,7 +313,9 @@ public sealed class StockRepositoryCompanyScopeIntegrationTests : IAsyncLifetime
         stock.AverageCost.Should().Be(14m);
     }
 
-    private async Task<decimal> AppendTwoMovementsAndReadRunningAverageAsync(ICompanyPrecisionPolicyProvider precision)
+    private async Task<decimal> AppendTwoMovementsAndReadRunningAverageAsync(
+        ICompanyPrecisionPolicyProvider precision
+    )
     {
         var productId = Guid.NewGuid();
         await using (var db = CreateContext(_companyBId))
@@ -310,7 +361,9 @@ public sealed class StockRepositoryCompanyScopeIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Costo_promedio_corrido_se_redondea_a_averageCostDecimals_de_la_politica_y_round_trip_10_decimales()
     {
-        var average = await AppendTwoMovementsAndReadRunningAverageAsync(new FixedPrecisionProvider(10));
+        var average = await AppendTwoMovementsAndReadRunningAverageAsync(
+            new FixedPrecisionProvider(10)
+        );
 
         average.Should().Be(0.4285714286m);
     }
@@ -318,7 +371,9 @@ public sealed class StockRepositoryCompanyScopeIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Costo_promedio_corrido_respeta_una_politica_de_6_decimales()
     {
-        var average = await AppendTwoMovementsAndReadRunningAverageAsync(new FixedPrecisionProvider(6));
+        var average = await AppendTwoMovementsAndReadRunningAverageAsync(
+            new FixedPrecisionProvider(6)
+        );
 
         average.Should().Be(0.428571m);
     }
@@ -382,7 +437,13 @@ public sealed class StockRepositoryCompanyScopeIntegrationTests : IAsyncLifetime
             StandardPrecisionPolicyProvider.Instance
         );
 
-        var movements = await repo.GetMovementsAsync(_tenantId, _productId, _warehouseAId, null, null);
+        var movements = await repo.GetMovementsAsync(
+            _tenantId,
+            _productId,
+            _warehouseAId,
+            null,
+            null
+        );
 
         movements.Should().BeEmpty();
     }
@@ -398,7 +459,13 @@ public sealed class StockRepositoryCompanyScopeIntegrationTests : IAsyncLifetime
             StandardPrecisionPolicyProvider.Instance
         );
 
-        var movements = await repo.GetMovementsByProductAsync(_tenantId, _productId, null, null, null);
+        var movements = await repo.GetMovementsByProductAsync(
+            _tenantId,
+            _productId,
+            null,
+            null,
+            null
+        );
 
         movements.Should().BeEmpty();
     }

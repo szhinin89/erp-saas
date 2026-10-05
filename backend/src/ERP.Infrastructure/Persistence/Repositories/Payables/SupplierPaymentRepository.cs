@@ -11,9 +11,13 @@ public sealed class SupplierPaymentRepository : ISupplierPaymentRepository
 
     public SupplierPaymentRepository(ErpDbContext db) => _db = db;
 
-    public Task<SupplierPayment?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default) =>
-        _db.SupplierPayments
-            .Include(x => x.MethodLines)
+    public Task<SupplierPayment?> GetByIdAsync(
+        Guid tenantId,
+        Guid id,
+        CancellationToken ct = default
+    ) =>
+        _db
+            .SupplierPayments.Include(x => x.MethodLines)
             .Include(x => x.ApplicationLines)
             .Include(x => x.AllocationLines)
             .Where(x => x.TenantId == tenantId)
@@ -24,8 +28,8 @@ public sealed class SupplierPaymentRepository : ISupplierPaymentRepository
         Guid clientRequestId,
         CancellationToken ct = default
     ) =>
-        _db.SupplierPayments
-            .Include(x => x.MethodLines)
+        _db
+            .SupplierPayments.Include(x => x.MethodLines)
             .Include(x => x.ApplicationLines)
             .Include(x => x.AllocationLines)
             .Where(x => x.TenantId == tenantId)
@@ -92,8 +96,8 @@ public sealed class SupplierPaymentRepository : ISupplierPaymentRepository
         if (ids.Count == 0)
             return new Dictionary<Guid, (string, Guid, string, DateOnly)>();
 
-        var rows = await _db.SupplierPayments
-            .AsNoTracking()
+        var rows = await _db
+            .SupplierPayments.AsNoTracking()
             .Where(x => x.TenantId == tenantId && x.CompanyId == companyId && ids.Contains(x.Id))
             .Select(x => new
             {
@@ -108,12 +112,13 @@ public sealed class SupplierPaymentRepository : ISupplierPaymentRepository
 
         return rows.ToDictionary(
             x => x.Id,
-            x => (
-                string.IsNullOrWhiteSpace(x.ReceiptNumber) ? x.SystemNumber : x.ReceiptNumber!,
-                x.SupplierId,
-                x.Status.ToString(),
-                x.PaymentDate
-            )
+            x =>
+                (
+                    string.IsNullOrWhiteSpace(x.ReceiptNumber) ? x.SystemNumber : x.ReceiptNumber!,
+                    x.SupplierId,
+                    x.Status.ToString(),
+                    x.PaymentDate
+                )
         );
     }
 

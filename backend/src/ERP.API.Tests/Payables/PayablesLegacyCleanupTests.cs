@@ -1,5 +1,5 @@
-using FluentAssertions;
 using System.Reflection;
+using FluentAssertions;
 
 namespace ERP.API.Tests.Payables;
 
@@ -16,7 +16,10 @@ public sealed class PayablesLegacyCleanupTests
     public void No_existe_el_controller_legacy_PurchasePayablesController()
     {
         var apiAssembly = typeof(ERP.API.Controllers.PayablesController).Assembly;
-        var offending = apiAssembly.GetTypes().Where(t => t.Name == "PurchasePayablesController").ToList();
+        var offending = apiAssembly
+            .GetTypes()
+            .Where(t => t.Name == "PurchasePayablesController")
+            .ToList();
 
         offending.Should().BeEmpty();
     }
@@ -27,11 +30,17 @@ public sealed class PayablesLegacyCleanupTests
         var apiAssembly = typeof(ERP.API.Controllers.PayablesController).Assembly;
         var controllersEndingInPayablesController = apiAssembly
             .GetTypes()
-            .Where(t => t.IsClass && t.Name.EndsWith("PayablesController", StringComparison.Ordinal))
+            .Where(t =>
+                t.IsClass && t.Name.EndsWith("PayablesController", StringComparison.Ordinal)
+            )
             .Select(t => t.Name)
             .ToList();
 
-        controllersEndingInPayablesController.Should().ContainSingle().Which.Should().Be("PayablesController");
+        controllersEndingInPayablesController
+            .Should()
+            .ContainSingle()
+            .Which.Should()
+            .Be("PayablesController");
     }
 
     /// <summary>
@@ -83,6 +92,8 @@ public sealed class PayablesLegacyCleanupTests
             .Where(m => !m.IsSpecialName)
             .Select(m => m.Name)
             .ToList();
-        publicMethods.Should().BeEquivalentTo(new[] { "Register", "GetById", "GetList", "Reverse", "GetPolicy" });
+        publicMethods
+            .Should()
+            .BeEquivalentTo(new[] { "Register", "GetById", "GetList", "Reverse", "GetPolicy" });
     }
 }

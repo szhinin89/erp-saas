@@ -91,8 +91,13 @@ public sealed class PurchaseReceptionLine : IMustHaveTenant
         string? supplierAuxCode = null,
         Guid? itemId = null,
         ItemMatchStatus matchStatus = ItemMatchStatus.Pending,
-        IEnumerable<(string TaxCode, string TaxRateCode, decimal Tarifa, decimal TaxableBase, decimal TaxAmount)>? taxes =
-            null,
+        IEnumerable<(
+            string TaxCode,
+            string TaxRateCode,
+            decimal Tarifa,
+            decimal TaxableBase,
+            decimal TaxAmount
+        )>? taxes = null,
         IEnumerable<(string Name, string Value, int Position)>? additionalFields = null
     )
     {

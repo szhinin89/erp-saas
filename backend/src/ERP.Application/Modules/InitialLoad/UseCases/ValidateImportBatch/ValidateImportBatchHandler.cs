@@ -67,14 +67,18 @@ public sealed partial class ValidateImportBatchHandler
 
         var file = batch.Files.OrderByDescending(f => f.UploadedAt).FirstOrDefault();
         if (file is null)
-            return Result<ImportBatchDto>.ValidationFailure("El lote no tiene ningún archivo adjunto.");
+            return Result<ImportBatchDto>.ValidationFailure(
+                "El lote no tiene ningún archivo adjunto."
+            );
 
         batch.BeginValidating(_ctx.UserId);
         await _batchRepo.SaveChangesAsync(cancellationToken);
 
         await using var stream = await _fileStorage.GetAsync(file.StoredPath, cancellationToken);
         if (stream is null)
-            return Result<ImportBatchDto>.ValidationFailure("El archivo del lote ya no está disponible.");
+            return Result<ImportBatchDto>.ValidationFailure(
+                "El archivo del lote ya no está disponible."
+            );
 
         ImportReadResult readResult;
         try
@@ -166,12 +170,21 @@ public sealed partial class ValidateImportBatchHandler
         await _rowRepo.SaveChangesAsync(cancellationToken);
         await _issueRepo.SaveChangesAsync(cancellationToken);
 
-        batch.CompleteValidation(rows.Count, validCount, issueRowCount, warningRowCount, _ctx.UserId);
+        batch.CompleteValidation(
+            rows.Count,
+            validCount,
+            issueRowCount,
+            warningRowCount,
+            _ctx.UserId
+        );
         await _batchRepo.SaveChangesAsync(cancellationToken);
 
         return Result<ImportBatchDto>.Success(ImportBatchDto.From(batch));
     }
 
-    [LoggerMessage(Level = LogLevel.Error, Message = "No se pudo leer el archivo del lote {BatchId}")]
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "No se pudo leer el archivo del lote {BatchId}"
+    )]
     private partial void LogReadFailed(Exception ex, Guid batchId);
 }

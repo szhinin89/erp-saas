@@ -39,9 +39,7 @@ public sealed class ImportBatchIssueConfiguration : IEntityTypeConfiguration<Imp
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder
-            .HasIndex(x => x.ImportBatchRowId)
-            .HasDatabaseName("ix_import_batch_issues_row");
+        builder.HasIndex(x => x.ImportBatchRowId).HasDatabaseName("ix_import_batch_issues_row");
 
         builder
             .HasIndex(x => new { x.ImportBatchId, x.Severity })

@@ -62,7 +62,8 @@ public sealed class PurchaseCostAndMarginBranchScopeTests
         var repo = new Mock<IPurchaseInvoiceRepository>();
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
-        repo.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        repo.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
         return repo;
     }
 
@@ -126,7 +127,10 @@ public sealed class PurchaseCostAndMarginBranchScopeTests
             PrecisionPolicyTestDouble.Mock()
         );
 
-        var result = await handler.Handle(new AllocateFreightCommand(inv.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new AllocateFreightCommand(inv.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
@@ -145,7 +149,10 @@ public sealed class PurchaseCostAndMarginBranchScopeTests
             PrecisionPolicyTestDouble.Mock()
         );
 
-        var result = await handler.Handle(new AllocateFreightCommand(inv.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new AllocateFreightCommand(inv.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
     }
@@ -166,7 +173,10 @@ public sealed class PurchaseCostAndMarginBranchScopeTests
             PrecisionPolicyTestDouble.Mock()
         );
 
-        var result = await handler.Handle(new RecalculatePurchaseCommand(inv.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new RecalculatePurchaseCommand(inv.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
@@ -187,7 +197,10 @@ public sealed class PurchaseCostAndMarginBranchScopeTests
             Mock.Of<ICurrentUser>(u => u.UserId == UserId)
         );
 
-        var result = await handler.Handle(new LoadPvpSnapshotsCommand(inv.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new LoadPvpSnapshotsCommand(inv.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
@@ -200,11 +213,14 @@ public sealed class PurchaseCostAndMarginBranchScopeTests
         var repo = BuildRepo(inv);
         var pricing = new Mock<IPricingResolver>();
         pricing
-            .Setup(p => p.ResolveAsync(It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
+            .Setup(p =>
+                p.ResolveAsync(It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(
-                ERP.Application.Common.Result<
-                    ERP.Application.Modules.Pricing.DTOs.PricingResult
-                >.Failure(ApiResponseCodes.Common.NotFound, "sin precio")
+                ERP.Application.Common.Result<ERP.Application.Modules.Pricing.DTOs.PricingResult>.Failure(
+                    ApiResponseCodes.Common.NotFound,
+                    "sin precio"
+                )
             );
         var handler = new LoadPvpSnapshotsHandler(
             repo.Object,
@@ -214,7 +230,10 @@ public sealed class PurchaseCostAndMarginBranchScopeTests
             Mock.Of<ICurrentUser>(u => u.UserId == UserId)
         );
 
-        var result = await handler.Handle(new LoadPvpSnapshotsCommand(inv.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new LoadPvpSnapshotsCommand(inv.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
     }

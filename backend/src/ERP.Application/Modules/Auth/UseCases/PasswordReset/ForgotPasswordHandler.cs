@@ -21,7 +21,8 @@ namespace ERP.Application.Auth.UseCases.PasswordReset;
 /// fallos técnicos reales (BD, caché) salen por el contrato de errores habitual.
 /// Auth sigue siendo dueño del token (<see cref="PasswordResetTokenIssuer"/>).
 /// </summary>
-public sealed partial class ForgotPasswordHandler : IRequestHandler<ForgotPasswordCommand, Result<bool>>
+public sealed partial class ForgotPasswordHandler
+    : IRequestHandler<ForgotPasswordCommand, Result<bool>>
 {
     private readonly IAccessRepository _accessRepository;
     private readonly ITenantRepository _tenantRepository;
@@ -176,7 +177,10 @@ public sealed partial class ForgotPasswordHandler : IRequestHandler<ForgotPasswo
         Level = LogLevel.Information,
         Message = "Solicitud de recuperación de contraseña suprimida: {Reason} (usuario {UserId})."
     )]
-    private partial void LogPasswordResetRequestSuppressed(PasswordResetSuppressionReason reason, Guid? userId);
+    private partial void LogPasswordResetRequestSuppressed(
+        PasswordResetSuppressionReason reason,
+        Guid? userId
+    );
 
     [LoggerMessage(
         EventId = 4103,

@@ -45,8 +45,13 @@ public static class SalesModule
         SortOrder = 10,
         Id = "d1000000-0000-4000-9000-000000000001",
         ParentId = "e4000000-0000-4000-9000-000000000010",
-        RelatedActionPermissionsCsv = SalesPermissions.Create + "," + SalesPermissions.Update
-            + "," + RidePermissions.View + "," + RidePermissions.Regenerate
+        RelatedActionPermissionsCsv = SalesPermissions.Create
+            + ","
+            + SalesPermissions.Update
+            + ","
+            + RidePermissions.View
+            + ","
+            + RidePermissions.Regenerate
     )]
     public const string Invoices = "/sales";
 

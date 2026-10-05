@@ -92,8 +92,11 @@ public static class AccountingModule
         SortOrder = 20,
         Id = "ac000000-0000-4000-9000-000000000002",
         ParentId = "72e69e8c-e34d-4ee4-b3ff-3568acc7d899",
-        RelatedActionPermissionsCsv = AccountingPermissions.Create + ","
-            + AccountingPermissions.Update + "," + AccountingPermissions.Delete
+        RelatedActionPermissionsCsv = AccountingPermissions.Create
+            + ","
+            + AccountingPermissions.Update
+            + ","
+            + AccountingPermissions.Delete
     )]
     public const string ChartOfAccounts = "/accounting/chart-of-accounts";
 
@@ -134,7 +137,8 @@ public static class AccountingModule
         LabelKey = "app.nav.item.accounting.configurationGroup",
         SortOrder = 35,
         Id = "ac000000-0000-4000-9000-000000000006",
-        PermissionsAnyCsv = AccountingPermissions.DestinationsSalesCollectionsView + ","
+        PermissionsAnyCsv = AccountingPermissions.DestinationsSalesCollectionsView
+            + ","
             + AccountingPermissions.View
     )]
     public const string ConfigurationGroup = "/accounting/configuration/group";
@@ -193,5 +197,6 @@ public static class AccountingModule
         ParentId = "ac000000-0000-4000-9000-000000000005",
         RelatedActionPermissionsCsv = AccountingPermissions.DestinationsSalesCollectionsUpdate
     )]
-    public const string SalesCollectionDestinations = "/accounting/configuration/sales-collection-destinations";
+    public const string SalesCollectionDestinations =
+        "/accounting/configuration/sales-collection-destinations";
 }

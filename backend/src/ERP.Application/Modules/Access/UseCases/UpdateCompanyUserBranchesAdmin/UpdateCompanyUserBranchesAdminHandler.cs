@@ -152,8 +152,7 @@ public sealed class UpdateCompanyUserBranchesAdminHandler
                 search: null,
                 cancellationToken: cancellationToken
             )
-        )
-            .ToList();
+        ).ToList();
 
         var options = companyBranches
             .Select(b => new CompanyUserBranchOptionDto(

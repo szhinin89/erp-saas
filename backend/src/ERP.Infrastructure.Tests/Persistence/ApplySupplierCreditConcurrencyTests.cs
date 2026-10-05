@@ -703,9 +703,7 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
         result.IsSuccess.Should().BeTrue(result.Error);
 
         await using var verify = CreateContext();
-        var movementId = result
-            .Value!.Movements.Single(m => m.AccountsPayableId == payableId)
-            .Id;
+        var movementId = result.Value!.Movements.Single(m => m.AccountsPayableId == payableId).Id;
         var entry = await verify
             .JournalEntries.Include(e => e.Lines)
             .FirstOrDefaultAsync(x => x.SourceEventId == movementId);
@@ -793,7 +791,10 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
 
         var services = new ServiceCollection();
         services.AddSingleton<TimeProvider>(AccountingDateBoundary.Clock);
-        services.AddScoped<ERP.Application.Common.Services.ICompanyClock, ERP.Infrastructure.Persistence.Services.CompanyClock>();
+        services.AddScoped<
+            ERP.Application.Common.Services.ICompanyClock,
+            ERP.Infrastructure.Persistence.Services.CompanyClock
+        >();
         services.AddLogging();
         services.AddSingleton(db);
         services.AddSingleton<ICurrentTenant>(new FixedCurrentTenant(() => _tenantId));
@@ -1016,7 +1017,9 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
     {
         // ZH-BACKEND-SECURITY-ERROR-FINAL-HARDENING-01: clasificación técnica real (único punto).
         public string? ClassifyFailureCode(Exception exception) =>
-            new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator().ClassifyFailureCode(exception);
+            new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator().ClassifyFailureCode(
+                exception
+            );
 
         public bool TryGetUniqueViolation(Exception exception, out DatabaseUniqueViolationInfo info)
         {

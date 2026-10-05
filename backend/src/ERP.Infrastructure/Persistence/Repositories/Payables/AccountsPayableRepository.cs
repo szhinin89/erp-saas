@@ -11,9 +11,13 @@ public sealed class AccountsPayableRepository : IAccountsPayableRepository
 
     public AccountsPayableRepository(ErpDbContext db) => _db = db;
 
-    public Task<AccountsPayable?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default) =>
-        _db.AccountsPayables
-            .Include(x => x.Installments.OrderBy(i => i.InstallmentNumber))
+    public Task<AccountsPayable?> GetByIdAsync(
+        Guid tenantId,
+        Guid id,
+        CancellationToken ct = default
+    ) =>
+        _db
+            .AccountsPayables.Include(x => x.Installments.OrderBy(i => i.InstallmentNumber))
             .Where(x => x.TenantId == tenantId)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
 
@@ -23,8 +27,8 @@ public sealed class AccountsPayableRepository : IAccountsPayableRepository
         Guid id,
         CancellationToken ct = default
     ) =>
-        _db.AccountsPayables
-            .Include(x => x.Installments.OrderBy(i => i.InstallmentNumber))
+        _db
+            .AccountsPayables.Include(x => x.Installments.OrderBy(i => i.InstallmentNumber))
             .Where(x => x.TenantId == tenantId && x.CompanyId == companyId)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
 
@@ -35,8 +39,8 @@ public sealed class AccountsPayableRepository : IAccountsPayableRepository
         Guid originId,
         CancellationToken ct = default
     ) =>
-        _db.AccountsPayables
-            .Include(x => x.Installments.OrderBy(i => i.InstallmentNumber))
+        _db
+            .AccountsPayables.Include(x => x.Installments.OrderBy(i => i.InstallmentNumber))
             .FirstOrDefaultAsync(
                 x =>
                     x.TenantId == tenantId
@@ -51,12 +55,14 @@ public sealed class AccountsPayableRepository : IAccountsPayableRepository
         Guid installmentId,
         CancellationToken ct = default
     ) =>
-        _db.AccountsPayables
-            .Include(x => x.Installments.OrderBy(i => i.InstallmentNumber))
+        _db
+            .AccountsPayables.Include(x => x.Installments.OrderBy(i => i.InstallmentNumber))
             .Where(x => x.TenantId == tenantId && x.Installments.Any(i => i.Id == installmentId))
             .FirstOrDefaultAsync(ct);
 
-    public async Task<IReadOnlyDictionary<Guid, (string DocumentNumber, AccountsPayableOriginType OriginType)>> GetDocumentRefsByIdsAsync(
+    public async Task<
+        IReadOnlyDictionary<Guid, (string DocumentNumber, AccountsPayableOriginType OriginType)>
+    > GetDocumentRefsByIdsAsync(
         Guid tenantId,
         Guid companyId,
         IReadOnlyCollection<Guid> ids,
@@ -65,15 +71,30 @@ public sealed class AccountsPayableRepository : IAccountsPayableRepository
     {
         if (ids.Count == 0)
             return new Dictionary<Guid, (string, AccountsPayableOriginType)>();
-        var rows = await _db.AccountsPayables
-            .AsNoTracking()
+        var rows = await _db
+            .AccountsPayables.AsNoTracking()
             .Where(x => x.TenantId == tenantId && x.CompanyId == companyId && ids.Contains(x.Id))
-            .Select(x => new { x.Id, x.DocumentNumber, x.OriginType })
+            .Select(x => new
+            {
+                x.Id,
+                x.DocumentNumber,
+                x.OriginType,
+            })
             .ToListAsync(ct);
         return rows.ToDictionary(x => x.Id, x => (x.DocumentNumber, x.OriginType));
     }
 
-    public async Task<IReadOnlyDictionary<Guid, (Guid AccountsPayableId, string DocumentNumber, AccountsPayableOriginType OriginType, int InstallmentNumber)>> GetInstallmentRefsByIdsAsync(
+    public async Task<
+        IReadOnlyDictionary<
+            Guid,
+            (
+                Guid AccountsPayableId,
+                string DocumentNumber,
+                AccountsPayableOriginType OriginType,
+                int InstallmentNumber
+            )
+        >
+    > GetInstallmentRefsByIdsAsync(
         Guid tenantId,
         Guid companyId,
         IReadOnlyCollection<Guid> installmentIds,
@@ -85,13 +106,24 @@ public sealed class AccountsPayableRepository : IAccountsPayableRepository
         var rows = await (
             from i in _db.AccountsPayableInstallments.AsNoTracking()
             join p in _db.AccountsPayables.AsNoTracking() on i.AccountsPayableId equals p.Id
-            where i.TenantId == tenantId
+            where
+                i.TenantId == tenantId
                 && p.TenantId == tenantId
                 && p.CompanyId == companyId
                 && installmentIds.Contains(i.Id)
-            select new { i.Id, PayableId = p.Id, p.DocumentNumber, p.OriginType, i.InstallmentNumber }
+            select new
+            {
+                i.Id,
+                PayableId = p.Id,
+                p.DocumentNumber,
+                p.OriginType,
+                i.InstallmentNumber,
+            }
         ).ToListAsync(ct);
-        return rows.ToDictionary(x => x.Id, x => (x.PayableId, x.DocumentNumber, x.OriginType, x.InstallmentNumber));
+        return rows.ToDictionary(
+            x => x.Id,
+            x => (x.PayableId, x.DocumentNumber, x.OriginType, x.InstallmentNumber)
+        );
     }
 
     public async Task<(AccountsPayableOriginType OriginType, Guid OriginId)?> GetOriginAsync(
@@ -100,8 +132,8 @@ public sealed class AccountsPayableRepository : IAccountsPayableRepository
         CancellationToken ct = default
     )
     {
-        var origin = await _db.AccountsPayables
-            .AsNoTracking()
+        var origin = await _db
+            .AccountsPayables.AsNoTracking()
             .Where(x => x.TenantId == tenantId && x.Id == id)
             .Select(x => new { x.OriginType, x.OriginId })
             .FirstOrDefaultAsync(ct);
@@ -138,17 +170,21 @@ public sealed class AccountsPayableRepository : IAccountsPayableRepository
         if (!string.IsNullOrWhiteSpace(search))
         {
             var pattern = $"%{search.Trim()}%";
-            var matchingSupplierIds = _db.BusinessPartners
-                .Where(bp =>
+            var matchingSupplierIds = _db
+                .BusinessPartners.Where(bp =>
                     bp.TenantId == tenantId
                     && (
                         EF.Functions.ILike(bp.Name.LegalName, pattern)
-                        || (bp.Name.TradeName != null && EF.Functions.ILike(bp.Name.TradeName, pattern))
+                        || (
+                            bp.Name.TradeName != null
+                            && EF.Functions.ILike(bp.Name.TradeName, pattern)
+                        )
                     )
                 )
                 .Select(bp => bp.Id);
             q = q.Where(x =>
-                EF.Functions.ILike(x.DocumentNumber, pattern) || matchingSupplierIds.Contains(x.SupplierId)
+                EF.Functions.ILike(x.DocumentNumber, pattern)
+                || matchingSupplierIds.Contains(x.SupplierId)
             );
         }
 

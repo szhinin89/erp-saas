@@ -9,10 +9,7 @@ public interface ICompanyBpSalesSettingsRepository
         CancellationToken cancellationToken = default
     );
 
-    Task AddAsync(
-        CompanyBpSalesSettings settings,
-        CancellationToken cancellationToken = default
-    );
+    Task AddAsync(CompanyBpSalesSettings settings, CancellationToken cancellationToken = default);
 
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

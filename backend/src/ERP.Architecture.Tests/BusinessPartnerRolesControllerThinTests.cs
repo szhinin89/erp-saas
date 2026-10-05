@@ -13,7 +13,12 @@ public sealed class BusinessPartnerRolesControllerThinTests
     [Fact]
     public void BusinessPartnerRolesController_no_construye_value_objects_de_Domain()
     {
-        var file = Path.Combine(ResolveBackendSrcRoot(), "ERP.API", "Controllers", "BusinessPartnerRolesController.cs");
+        var file = Path.Combine(
+            ResolveBackendSrcRoot(),
+            "ERP.API",
+            "Controllers",
+            "BusinessPartnerRolesController.cs"
+        );
         File.Exists(file).Should().BeTrue();
         var text = File.ReadAllText(file);
 
@@ -29,7 +34,9 @@ public sealed class BusinessPartnerRolesControllerThinTests
         forbidden
             .Where(marker => text.Contains(marker, StringComparison.Ordinal))
             .Should()
-            .BeEmpty("la config de rol se construye y valida en Application (RoleConfigFactory), no en el controller");
+            .BeEmpty(
+                "la config de rol se construye y valida en Application (RoleConfigFactory), no en el controller"
+            );
     }
 
     private static string ResolveBackendSrcRoot()

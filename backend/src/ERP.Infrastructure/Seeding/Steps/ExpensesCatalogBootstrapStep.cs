@@ -63,65 +63,596 @@ public sealed partial class ExpensesCatalogBootstrapStep : ICompanyBootstrapStep
         // coinciden exactamente por nombre con esas cuentas (antes estaban desplazados: existían,
         // eran postables y de tipo Expense, por lo que nunca generaban warning, pero el asiento
         // contable quedaba contra la cuenta equivocada).
-        new("Gastos administrativos", "Servicios basicos", "Energia electrica", "6.1.01.003", true, true, true, "Servicio basico deducible con comprobante autorizado"),
-        new("Gastos administrativos", "Servicios basicos", "Agua potable", "6.1.01.003", true, true, true, "Servicio basico deducible con comprobante autorizado"),
-        new("Gastos administrativos", "Servicios basicos", "Internet fijo", "6.1.01.003", true, true, true, "Servicio de conectividad para oficina o local"),
-        new("Gastos administrativos", "Servicios basicos", "Telefonia fija", "6.1.01.003", true, true, true, "Servicio de comunicacion administrativa"),
-        new("Gastos administrativos", "Servicios basicos", "Telefonia movil corporativa", "6.1.01.003", true, true, true, "Lineas moviles de uso empresarial"),
-        new("Gastos administrativos", "Servicios basicos", "Servicios de seguridad y alarmas", "6.1.01.003", true, true, true, "Servicio recurrente de seguridad"),
-        new("Gastos administrativos", "Arriendos", "Arriendo de oficina", "6.1.01.004", true, true, true, "Arriendo administrativo"),
-        new("Gastos administrativos", "Arriendos", "Arriendo de local comercial", "6.1.01.004", true, true, true, "Arriendo de punto de venta"),
-        new("Gastos administrativos", "Arriendos", "Arriendo de bodega", "6.1.01.004", true, true, true, "Bodega para operacion o inventario"),
-        new("Gastos administrativos", "Arriendos", "Expensas y alicuotas", "6.1.01.004", true, true, true, "Cuotas de mantenimiento del inmueble"),
-        new("Gastos administrativos", "Suministros de oficina", "Papeleria y utiles", "6.1.01.002", true, true, true, "Insumos administrativos de oficina"),
-        new("Gastos administrativos", "Suministros de oficina", "Toner, tintas e insumos de impresion", "6.1.01.002", true, true, true, "Insumos para impresoras"),
-        new("Gastos administrativos", "Suministros de oficina", "Material de limpieza", "6.1.01.002", true, true, true, "Suministros de limpieza del local u oficina"),
-        new("Gastos administrativos", "Suministros de oficina", "Cafeteria y agua para personal", "6.1.01.002", true, true, true, "Consumo interno razonable"),
-        new("Gastos administrativos", "Tecnologia y sistemas", "Licencias de software", "6.1.01.007", true, true, true, "Suscripciones o licencias administrativas"),
-        new("Gastos administrativos", "Tecnologia y sistemas", "Hosting y dominio", "6.1.01.007", true, true, true, "Servicios web de la empresa"),
-        new("Gastos administrativos", "Tecnologia y sistemas", "Soporte tecnico externo", "6.1.01.007", true, true, true, "Servicios profesionales de soporte"),
-        new("Gastos administrativos", "Tecnologia y sistemas", "Servicios en la nube", "6.1.01.007", true, true, true, "Cloud, almacenamiento y herramientas SaaS"),
-        new("Gastos administrativos", "Honorarios profesionales", "Servicios contables", "6.1.01.005", true, true, true, "Honorarios de contabilidad"),
-        new("Gastos administrativos", "Honorarios profesionales", "Servicios legales", "6.1.01.005", true, true, true, "Asesoria legal externa"),
-        new("Gastos administrativos", "Honorarios profesionales", "Consultoria administrativa", "6.1.01.005", true, true, true, "Consultoria de gestion"),
-        new("Gastos administrativos", "Honorarios profesionales", "Servicios notariales", "6.1.01.005", true, true, true, "Tramites notariales relacionados al negocio"),
-        new("Gastos administrativos", "Mantenimiento y reparaciones", "Mantenimiento de oficina", "6.1.01.006", true, true, true, "Mantenimiento menor de instalaciones"),
-        new("Gastos administrativos", "Mantenimiento y reparaciones", "Mantenimiento de equipos de computacion", "6.1.01.006", true, true, true, "Mantenimiento preventivo o correctivo"),
-        new("Gastos administrativos", "Mantenimiento y reparaciones", "Reparaciones menores", "6.1.01.006", true, true, true, "Reparaciones operativas que no se capitalizan"),
-        new("Gastos administrativos", "Movilizacion y transporte", "Taxis y movilizacion local", "6.1.01.008", true, true, true, "Movilizacion administrativa sustentada"),
-        new("Gastos administrativos", "Movilizacion y transporte", "Combustible administrativo", "6.1.01.008", true, true, true, "Combustible para gestiones administrativas"),
-        new("Gastos administrativos", "Movilizacion y transporte", "Parqueaderos y peajes", "6.1.01.008", true, true, true, "Movilizacion relacionada con operaciones"),
-        new("Gastos de venta", "Publicidad y marketing", "Publicidad digital", "6.2.01.001", true, true, true, "Campanas en redes, buscadores o medios digitales"),
-        new("Gastos de venta", "Publicidad y marketing", "Material POP", "6.2.01.001", true, true, true, "Material promocional para puntos de venta"),
-        new("Gastos de venta", "Publicidad y marketing", "Diseno grafico y contenido", "6.2.01.001", true, true, true, "Produccion de piezas comerciales"),
-        new("Gastos de venta", "Publicidad y marketing", "Eventos comerciales", "6.2.01.001", true, true, true, "Activaciones, ferias o eventos de venta"),
-        new("Gastos de venta", "Comisiones de venta", "Comisiones a vendedores", "6.2.01.002", true, true, true, "Comision comercial sustentada"),
-        new("Gastos de venta", "Comisiones de venta", "Comisiones a marketplaces", "6.2.01.002", true, true, true, "Comisiones cobradas por plataformas"),
-        new("Gastos de venta", "Comisiones de venta", "Comisiones a terceros comerciales", "6.2.01.002", true, true, true, "Referidos, agentes o intermediarios"),
-        new("Gastos de venta", "Empaques y suministros de venta", "Fundas y empaques", "6.2.01.003", true, true, true, "Empaques entregados al cliente"),
-        new("Gastos de venta", "Empaques y suministros de venta", "Etiquetas y adhesivos", "6.2.01.003", true, true, true, "Material de identificacion comercial"),
-        new("Gastos de venta", "Empaques y suministros de venta", "Cajas y material de embalaje", "6.2.01.003", true, true, true, "Embalaje para venta o despacho"),
-        new("Gastos de venta", "Transporte y entregas", "Envios a clientes", "6.2.01.004", true, true, true, "Courier o transporte de entregas"),
-        new("Gastos de venta", "Transporte y entregas", "Fletes de distribucion", "6.2.01.004", true, true, true, "Traslado de mercaderia vendida"),
-        new("Gastos de venta", "Transporte y entregas", "Mensajeria comercial", "6.2.01.004", true, true, true, "Mensajeria relacionada a ventas"),
-        new("Gastos financieros", "Costos bancarios", "Comisiones bancarias", "6.3.01.001", true, true, true, "Cargos bancarios sustentados en estado o comprobante"),
-        new("Gastos financieros", "Costos bancarios", "Mantenimiento de cuenta bancaria", "6.3.01.001", true, true, true, "Costo de mantenimiento de cuenta"),
-        new("Gastos financieros", "Costos bancarios", "Transferencias bancarias", "6.3.01.001", true, true, true, "Costos por transacciones bancarias"),
-        new("Gastos financieros", "Tarjetas y pasarelas de pago", "Comisiones de tarjetas de credito/debito", "6.3.01.002", true, true, true, "Comision por procesamiento de tarjetas"),
-        new("Gastos financieros", "Tarjetas y pasarelas de pago", "Comisiones de pasarela de pago", "6.3.01.002", true, true, true, "Cargos de plataformas de cobro"),
-        new("Gastos financieros", "Intereses financieros", "Intereses por prestamos", "6.3.01.003", true, true, true, "Intereses de obligaciones financieras"),
-        new("Gastos financieros", "Intereses financieros", "Intereses por mora", "6.3.01.003", false, true, true, "Revisar deducibilidad segun normativa aplicable"),
-        new("Impuestos y no deducibles", "Impuestos no recuperables", "Patentes y tasas municipales", "6.4.01.001", true, true, true, "Tasas o patentes relacionadas con la actividad"),
-        new("Impuestos y no deducibles", "Impuestos no recuperables", "Impuestos asumidos no recuperables", "6.4.01.001", false, true, true, "Impuesto asumido que no genera credito tributario"),
-        new("Impuestos y no deducibles", "Impuestos no recuperables", "IVA no recuperable", "6.4.01.001", false, true, true, "IVA que no puede tomarse como credito"),
-        new("Impuestos y no deducibles", "Gastos no deducibles", "Multas e intereses tributarios", "6.4.01.002", false, true, true, "No deducible por defecto"),
-        new("Impuestos y no deducibles", "Gastos no deducibles", "Gastos sin comprobante autorizado", "6.4.01.002", false, false, true, "Usar solo cuando no exista soporte tributario valido"),
-        new("Impuestos y no deducibles", "Gastos no deducibles", "Donaciones no deducibles", "6.4.01.002", false, true, true, "Clasificar como no deducible salvo configuracion especifica"),
-        new("Descuadres y perdidas operativas", "Descuadres de caja", "Faltante de caja", "6.5.01.001", false, false, true, "Diferencia negativa al cierre de caja"),
-        new("Descuadres y perdidas operativas", "Descuadres de caja", "Ajuste menor de caja", "6.5.01.001", false, false, true, "Ajuste operativo por diferencia menor"),
-        new("Descuadres y perdidas operativas", "Mermas retail", "Merma por dano o caducidad", "6.5.01.002", false, true, true, "Perdida de mercaderia no recuperable"),
-        new("Descuadres y perdidas operativas", "Mermas retail", "Merma por robo o perdida", "6.5.01.002", false, true, true, "Perdida operativa sustentada con acta o soporte"),
-        new("Descuadres y perdidas operativas", "Mermas retail", "Merma por ajuste fisico", "6.5.01.002", false, true, true, "Diferencia detectada en conteo fisico"),
+        new(
+            "Gastos administrativos",
+            "Servicios basicos",
+            "Energia electrica",
+            "6.1.01.003",
+            true,
+            true,
+            true,
+            "Servicio basico deducible con comprobante autorizado"
+        ),
+        new(
+            "Gastos administrativos",
+            "Servicios basicos",
+            "Agua potable",
+            "6.1.01.003",
+            true,
+            true,
+            true,
+            "Servicio basico deducible con comprobante autorizado"
+        ),
+        new(
+            "Gastos administrativos",
+            "Servicios basicos",
+            "Internet fijo",
+            "6.1.01.003",
+            true,
+            true,
+            true,
+            "Servicio de conectividad para oficina o local"
+        ),
+        new(
+            "Gastos administrativos",
+            "Servicios basicos",
+            "Telefonia fija",
+            "6.1.01.003",
+            true,
+            true,
+            true,
+            "Servicio de comunicacion administrativa"
+        ),
+        new(
+            "Gastos administrativos",
+            "Servicios basicos",
+            "Telefonia movil corporativa",
+            "6.1.01.003",
+            true,
+            true,
+            true,
+            "Lineas moviles de uso empresarial"
+        ),
+        new(
+            "Gastos administrativos",
+            "Servicios basicos",
+            "Servicios de seguridad y alarmas",
+            "6.1.01.003",
+            true,
+            true,
+            true,
+            "Servicio recurrente de seguridad"
+        ),
+        new(
+            "Gastos administrativos",
+            "Arriendos",
+            "Arriendo de oficina",
+            "6.1.01.004",
+            true,
+            true,
+            true,
+            "Arriendo administrativo"
+        ),
+        new(
+            "Gastos administrativos",
+            "Arriendos",
+            "Arriendo de local comercial",
+            "6.1.01.004",
+            true,
+            true,
+            true,
+            "Arriendo de punto de venta"
+        ),
+        new(
+            "Gastos administrativos",
+            "Arriendos",
+            "Arriendo de bodega",
+            "6.1.01.004",
+            true,
+            true,
+            true,
+            "Bodega para operacion o inventario"
+        ),
+        new(
+            "Gastos administrativos",
+            "Arriendos",
+            "Expensas y alicuotas",
+            "6.1.01.004",
+            true,
+            true,
+            true,
+            "Cuotas de mantenimiento del inmueble"
+        ),
+        new(
+            "Gastos administrativos",
+            "Suministros de oficina",
+            "Papeleria y utiles",
+            "6.1.01.002",
+            true,
+            true,
+            true,
+            "Insumos administrativos de oficina"
+        ),
+        new(
+            "Gastos administrativos",
+            "Suministros de oficina",
+            "Toner, tintas e insumos de impresion",
+            "6.1.01.002",
+            true,
+            true,
+            true,
+            "Insumos para impresoras"
+        ),
+        new(
+            "Gastos administrativos",
+            "Suministros de oficina",
+            "Material de limpieza",
+            "6.1.01.002",
+            true,
+            true,
+            true,
+            "Suministros de limpieza del local u oficina"
+        ),
+        new(
+            "Gastos administrativos",
+            "Suministros de oficina",
+            "Cafeteria y agua para personal",
+            "6.1.01.002",
+            true,
+            true,
+            true,
+            "Consumo interno razonable"
+        ),
+        new(
+            "Gastos administrativos",
+            "Tecnologia y sistemas",
+            "Licencias de software",
+            "6.1.01.007",
+            true,
+            true,
+            true,
+            "Suscripciones o licencias administrativas"
+        ),
+        new(
+            "Gastos administrativos",
+            "Tecnologia y sistemas",
+            "Hosting y dominio",
+            "6.1.01.007",
+            true,
+            true,
+            true,
+            "Servicios web de la empresa"
+        ),
+        new(
+            "Gastos administrativos",
+            "Tecnologia y sistemas",
+            "Soporte tecnico externo",
+            "6.1.01.007",
+            true,
+            true,
+            true,
+            "Servicios profesionales de soporte"
+        ),
+        new(
+            "Gastos administrativos",
+            "Tecnologia y sistemas",
+            "Servicios en la nube",
+            "6.1.01.007",
+            true,
+            true,
+            true,
+            "Cloud, almacenamiento y herramientas SaaS"
+        ),
+        new(
+            "Gastos administrativos",
+            "Honorarios profesionales",
+            "Servicios contables",
+            "6.1.01.005",
+            true,
+            true,
+            true,
+            "Honorarios de contabilidad"
+        ),
+        new(
+            "Gastos administrativos",
+            "Honorarios profesionales",
+            "Servicios legales",
+            "6.1.01.005",
+            true,
+            true,
+            true,
+            "Asesoria legal externa"
+        ),
+        new(
+            "Gastos administrativos",
+            "Honorarios profesionales",
+            "Consultoria administrativa",
+            "6.1.01.005",
+            true,
+            true,
+            true,
+            "Consultoria de gestion"
+        ),
+        new(
+            "Gastos administrativos",
+            "Honorarios profesionales",
+            "Servicios notariales",
+            "6.1.01.005",
+            true,
+            true,
+            true,
+            "Tramites notariales relacionados al negocio"
+        ),
+        new(
+            "Gastos administrativos",
+            "Mantenimiento y reparaciones",
+            "Mantenimiento de oficina",
+            "6.1.01.006",
+            true,
+            true,
+            true,
+            "Mantenimiento menor de instalaciones"
+        ),
+        new(
+            "Gastos administrativos",
+            "Mantenimiento y reparaciones",
+            "Mantenimiento de equipos de computacion",
+            "6.1.01.006",
+            true,
+            true,
+            true,
+            "Mantenimiento preventivo o correctivo"
+        ),
+        new(
+            "Gastos administrativos",
+            "Mantenimiento y reparaciones",
+            "Reparaciones menores",
+            "6.1.01.006",
+            true,
+            true,
+            true,
+            "Reparaciones operativas que no se capitalizan"
+        ),
+        new(
+            "Gastos administrativos",
+            "Movilizacion y transporte",
+            "Taxis y movilizacion local",
+            "6.1.01.008",
+            true,
+            true,
+            true,
+            "Movilizacion administrativa sustentada"
+        ),
+        new(
+            "Gastos administrativos",
+            "Movilizacion y transporte",
+            "Combustible administrativo",
+            "6.1.01.008",
+            true,
+            true,
+            true,
+            "Combustible para gestiones administrativas"
+        ),
+        new(
+            "Gastos administrativos",
+            "Movilizacion y transporte",
+            "Parqueaderos y peajes",
+            "6.1.01.008",
+            true,
+            true,
+            true,
+            "Movilizacion relacionada con operaciones"
+        ),
+        new(
+            "Gastos de venta",
+            "Publicidad y marketing",
+            "Publicidad digital",
+            "6.2.01.001",
+            true,
+            true,
+            true,
+            "Campanas en redes, buscadores o medios digitales"
+        ),
+        new(
+            "Gastos de venta",
+            "Publicidad y marketing",
+            "Material POP",
+            "6.2.01.001",
+            true,
+            true,
+            true,
+            "Material promocional para puntos de venta"
+        ),
+        new(
+            "Gastos de venta",
+            "Publicidad y marketing",
+            "Diseno grafico y contenido",
+            "6.2.01.001",
+            true,
+            true,
+            true,
+            "Produccion de piezas comerciales"
+        ),
+        new(
+            "Gastos de venta",
+            "Publicidad y marketing",
+            "Eventos comerciales",
+            "6.2.01.001",
+            true,
+            true,
+            true,
+            "Activaciones, ferias o eventos de venta"
+        ),
+        new(
+            "Gastos de venta",
+            "Comisiones de venta",
+            "Comisiones a vendedores",
+            "6.2.01.002",
+            true,
+            true,
+            true,
+            "Comision comercial sustentada"
+        ),
+        new(
+            "Gastos de venta",
+            "Comisiones de venta",
+            "Comisiones a marketplaces",
+            "6.2.01.002",
+            true,
+            true,
+            true,
+            "Comisiones cobradas por plataformas"
+        ),
+        new(
+            "Gastos de venta",
+            "Comisiones de venta",
+            "Comisiones a terceros comerciales",
+            "6.2.01.002",
+            true,
+            true,
+            true,
+            "Referidos, agentes o intermediarios"
+        ),
+        new(
+            "Gastos de venta",
+            "Empaques y suministros de venta",
+            "Fundas y empaques",
+            "6.2.01.003",
+            true,
+            true,
+            true,
+            "Empaques entregados al cliente"
+        ),
+        new(
+            "Gastos de venta",
+            "Empaques y suministros de venta",
+            "Etiquetas y adhesivos",
+            "6.2.01.003",
+            true,
+            true,
+            true,
+            "Material de identificacion comercial"
+        ),
+        new(
+            "Gastos de venta",
+            "Empaques y suministros de venta",
+            "Cajas y material de embalaje",
+            "6.2.01.003",
+            true,
+            true,
+            true,
+            "Embalaje para venta o despacho"
+        ),
+        new(
+            "Gastos de venta",
+            "Transporte y entregas",
+            "Envios a clientes",
+            "6.2.01.004",
+            true,
+            true,
+            true,
+            "Courier o transporte de entregas"
+        ),
+        new(
+            "Gastos de venta",
+            "Transporte y entregas",
+            "Fletes de distribucion",
+            "6.2.01.004",
+            true,
+            true,
+            true,
+            "Traslado de mercaderia vendida"
+        ),
+        new(
+            "Gastos de venta",
+            "Transporte y entregas",
+            "Mensajeria comercial",
+            "6.2.01.004",
+            true,
+            true,
+            true,
+            "Mensajeria relacionada a ventas"
+        ),
+        new(
+            "Gastos financieros",
+            "Costos bancarios",
+            "Comisiones bancarias",
+            "6.3.01.001",
+            true,
+            true,
+            true,
+            "Cargos bancarios sustentados en estado o comprobante"
+        ),
+        new(
+            "Gastos financieros",
+            "Costos bancarios",
+            "Mantenimiento de cuenta bancaria",
+            "6.3.01.001",
+            true,
+            true,
+            true,
+            "Costo de mantenimiento de cuenta"
+        ),
+        new(
+            "Gastos financieros",
+            "Costos bancarios",
+            "Transferencias bancarias",
+            "6.3.01.001",
+            true,
+            true,
+            true,
+            "Costos por transacciones bancarias"
+        ),
+        new(
+            "Gastos financieros",
+            "Tarjetas y pasarelas de pago",
+            "Comisiones de tarjetas de credito/debito",
+            "6.3.01.002",
+            true,
+            true,
+            true,
+            "Comision por procesamiento de tarjetas"
+        ),
+        new(
+            "Gastos financieros",
+            "Tarjetas y pasarelas de pago",
+            "Comisiones de pasarela de pago",
+            "6.3.01.002",
+            true,
+            true,
+            true,
+            "Cargos de plataformas de cobro"
+        ),
+        new(
+            "Gastos financieros",
+            "Intereses financieros",
+            "Intereses por prestamos",
+            "6.3.01.003",
+            true,
+            true,
+            true,
+            "Intereses de obligaciones financieras"
+        ),
+        new(
+            "Gastos financieros",
+            "Intereses financieros",
+            "Intereses por mora",
+            "6.3.01.003",
+            false,
+            true,
+            true,
+            "Revisar deducibilidad segun normativa aplicable"
+        ),
+        new(
+            "Impuestos y no deducibles",
+            "Impuestos no recuperables",
+            "Patentes y tasas municipales",
+            "6.4.01.001",
+            true,
+            true,
+            true,
+            "Tasas o patentes relacionadas con la actividad"
+        ),
+        new(
+            "Impuestos y no deducibles",
+            "Impuestos no recuperables",
+            "Impuestos asumidos no recuperables",
+            "6.4.01.001",
+            false,
+            true,
+            true,
+            "Impuesto asumido que no genera credito tributario"
+        ),
+        new(
+            "Impuestos y no deducibles",
+            "Impuestos no recuperables",
+            "IVA no recuperable",
+            "6.4.01.001",
+            false,
+            true,
+            true,
+            "IVA que no puede tomarse como credito"
+        ),
+        new(
+            "Impuestos y no deducibles",
+            "Gastos no deducibles",
+            "Multas e intereses tributarios",
+            "6.4.01.002",
+            false,
+            true,
+            true,
+            "No deducible por defecto"
+        ),
+        new(
+            "Impuestos y no deducibles",
+            "Gastos no deducibles",
+            "Gastos sin comprobante autorizado",
+            "6.4.01.002",
+            false,
+            false,
+            true,
+            "Usar solo cuando no exista soporte tributario valido"
+        ),
+        new(
+            "Impuestos y no deducibles",
+            "Gastos no deducibles",
+            "Donaciones no deducibles",
+            "6.4.01.002",
+            false,
+            true,
+            true,
+            "Clasificar como no deducible salvo configuracion especifica"
+        ),
+        new(
+            "Descuadres y perdidas operativas",
+            "Descuadres de caja",
+            "Faltante de caja",
+            "6.5.01.001",
+            false,
+            false,
+            true,
+            "Diferencia negativa al cierre de caja"
+        ),
+        new(
+            "Descuadres y perdidas operativas",
+            "Descuadres de caja",
+            "Ajuste menor de caja",
+            "6.5.01.001",
+            false,
+            false,
+            true,
+            "Ajuste operativo por diferencia menor"
+        ),
+        new(
+            "Descuadres y perdidas operativas",
+            "Mermas retail",
+            "Merma por dano o caducidad",
+            "6.5.01.002",
+            false,
+            true,
+            true,
+            "Perdida de mercaderia no recuperable"
+        ),
+        new(
+            "Descuadres y perdidas operativas",
+            "Mermas retail",
+            "Merma por robo o perdida",
+            "6.5.01.002",
+            false,
+            true,
+            true,
+            "Perdida operativa sustentada con acta o soporte"
+        ),
+        new(
+            "Descuadres y perdidas operativas",
+            "Mermas retail",
+            "Merma por ajuste fisico",
+            "6.5.01.002",
+            false,
+            true,
+            true,
+            "Diferencia detectada en conteo fisico"
+        ),
     ];
 
     static ExpensesCatalogBootstrapStep()
@@ -132,11 +663,13 @@ public sealed partial class ExpensesCatalogBootstrapStep : ICompanyBootstrapStep
             );
 
         var duplicateSubcategories = Template
-            .GroupBy(i => (
-                Type: NormalizeName(i.TypeName),
-                Category: NormalizeName(i.CategoryName),
-                Subcategory: NormalizeName(i.SubcategoryName)
-            ))
+            .GroupBy(i =>
+                (
+                    Type: NormalizeName(i.TypeName),
+                    Category: NormalizeName(i.CategoryName),
+                    Subcategory: NormalizeName(i.SubcategoryName)
+                )
+            )
             .Where(g => g.Count() > 1)
             .Select(g => $"{g.Key.Type}/{g.Key.Category}/{g.Key.Subcategory}")
             .ToList();
@@ -334,7 +867,10 @@ public sealed partial class ExpensesCatalogBootstrapStep : ICompanyBootstrapStep
             {
                 if (n.ParentId is null || !nodeById.TryGetValue(n.ParentId.Value, out var category))
                     return false;
-                if (category.ParentId is null || !nodeById.TryGetValue(category.ParentId.Value, out var type))
+                if (
+                    category.ParentId is null
+                    || !nodeById.TryGetValue(category.ParentId.Value, out var type)
+                )
                     return false;
 
                 return NormalizeName(type.Name) == NormalizeName(item.TypeName)
@@ -378,7 +914,11 @@ public sealed partial class ExpensesCatalogBootstrapStep : ICompanyBootstrapStep
             return false;
         }
 
-        if (!account.IsActive || !account.AllowsPosting || account.AccountType != AccountType.Expense)
+        if (
+            !account.IsActive
+            || !account.AllowsPosting
+            || account.AccountType != AccountType.Expense
+        )
         {
             LogExpenseCatalogSubcategorySkippedInvalidAccount(
                 item.SubcategoryName,
@@ -401,7 +941,10 @@ public sealed partial class ExpensesCatalogBootstrapStep : ICompanyBootstrapStep
         Guid actorId,
         ExpenseCatalogItem item,
         string code,
-        Dictionary<(Guid? ParentId, ExpenseCategoryNodeLevel Level, string Name), ExpenseCategoryNode> nodesByKey,
+        Dictionary<
+            (Guid? ParentId, ExpenseCategoryNodeLevel Level, string Name),
+            ExpenseCategoryNode
+        > nodesByKey,
         ref int createdCount
     )
     {
@@ -429,7 +972,10 @@ public sealed partial class ExpensesCatalogBootstrapStep : ICompanyBootstrapStep
         ExpenseCatalogItem item,
         ExpenseCategoryNode parentType,
         string code,
-        Dictionary<(Guid? ParentId, ExpenseCategoryNodeLevel Level, string Name), ExpenseCategoryNode> nodesByKey,
+        Dictionary<
+            (Guid? ParentId, ExpenseCategoryNodeLevel Level, string Name),
+            ExpenseCategoryNode
+        > nodesByKey,
         ref int createdCount
     )
     {
@@ -451,11 +997,13 @@ public sealed partial class ExpensesCatalogBootstrapStep : ICompanyBootstrapStep
         return node;
     }
 
-    private static Dictionary<(Guid? ParentId, ExpenseCategoryNodeLevel Level, string Name), ExpenseCategoryNode> BuildNodeLookup(
-        IEnumerable<ExpenseCategoryNode> nodes
-    )
+    private static Dictionary<
+        (Guid? ParentId, ExpenseCategoryNodeLevel Level, string Name),
+        ExpenseCategoryNode
+    > BuildNodeLookup(IEnumerable<ExpenseCategoryNode> nodes)
     {
-        var lookup = new Dictionary<(Guid?, ExpenseCategoryNodeLevel, string), ExpenseCategoryNode>();
+        var lookup =
+            new Dictionary<(Guid?, ExpenseCategoryNodeLevel, string), ExpenseCategoryNode>();
         foreach (var node in nodes)
         {
             var key = NodeKey(node.ParentId, node.Level, node.Name);

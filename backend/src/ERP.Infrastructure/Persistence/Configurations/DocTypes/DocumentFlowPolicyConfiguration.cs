@@ -14,7 +14,11 @@ public sealed class DocumentFlowPolicyConfiguration : IEntityTypeConfiguration<D
         builder.Property(e => e.Id).HasColumnName("id").IsRequired();
         builder.Property(e => e.TenantId).HasColumnName("tenant_id").IsRequired();
         builder.Property(e => e.CompanyId).HasColumnName("company_id").IsRequired();
-        builder.Property(e => e.DocumentTypeCode).HasColumnName("document_type_code").HasMaxLength(10).IsRequired();
+        builder
+            .Property(e => e.DocumentTypeCode)
+            .HasColumnName("document_type_code")
+            .HasMaxLength(10)
+            .IsRequired();
         builder.Property(e => e.IsActive).HasColumnName("is_active").IsRequired();
 
         ConfigureModeColumn(builder.Property(e => e.CreationMode), "creation_mode");
@@ -22,8 +26,14 @@ public sealed class DocumentFlowPolicyConfiguration : IEntityTypeConfiguration<D
         ConfigureModeColumn(builder.Property(e => e.AuthorizationMode), "authorization_mode");
         ConfigureModeColumn(builder.Property(e => e.PendingDocumentMode), "pending_document_mode");
         ConfigureModeColumn(builder.Property(e => e.CancellationMode), "cancellation_mode");
-        ConfigureModeColumn(builder.Property(e => e.PayableGenerationMode), "payable_generation_mode");
-        ConfigureModeColumn(builder.Property(e => e.AccountingPostingMode), "accounting_posting_mode");
+        ConfigureModeColumn(
+            builder.Property(e => e.PayableGenerationMode),
+            "payable_generation_mode"
+        );
+        ConfigureModeColumn(
+            builder.Property(e => e.AccountingPostingMode),
+            "accounting_posting_mode"
+        );
         ConfigureModeColumn(builder.Property(e => e.InventoryImpactMode), "inventory_impact_mode");
         ConfigureModeColumn(builder.Property(e => e.NotificationMode), "notification_mode");
 
@@ -31,7 +41,10 @@ public sealed class DocumentFlowPolicyConfiguration : IEntityTypeConfiguration<D
             .Property(e => e.RequiresCancellationReason)
             .HasColumnName("requires_cancellation_reason")
             .IsRequired();
-        builder.Property(e => e.RequiresAttachment).HasColumnName("requires_attachment").IsRequired();
+        builder
+            .Property(e => e.RequiresAttachment)
+            .HasColumnName("requires_attachment")
+            .IsRequired();
         builder.Property(e => e.RequiresSupplier).HasColumnName("requires_supplier").IsRequired();
         builder.Property(e => e.RequiresDueDate).HasColumnName("requires_due_date").IsRequired();
 
@@ -61,12 +74,18 @@ public sealed class DocumentFlowPolicyConfiguration : IEntityTypeConfiguration<D
     // 64, no 32: CancellationMode.AllowedAfterConfirmationWithReversal por sí solo tiene 36
     // caracteres en minúsculas — el primer intento con 32 rompió el backfill real
     // (Npgsql 22001 "value too long") en cuanto GASDOC intentó sembrarse con este valor.
-    private static void ConfigureModeColumn<TEnum>(PropertyBuilder<TEnum> property, string columnName)
+    private static void ConfigureModeColumn<TEnum>(
+        PropertyBuilder<TEnum> property,
+        string columnName
+    )
         where TEnum : struct, Enum
     {
         property
             .HasColumnName(columnName)
-            .HasConversion(v => v.ToString().ToLowerInvariant(), v => Enum.Parse<TEnum>(v, ignoreCase: true))
+            .HasConversion(
+                v => v.ToString().ToLowerInvariant(),
+                v => Enum.Parse<TEnum>(v, ignoreCase: true)
+            )
             .HasMaxLength(64)
             .IsRequired();
     }

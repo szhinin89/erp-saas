@@ -28,7 +28,10 @@ public sealed class CashFundingRequestsController : ControllerBase
 
     [HttpPost]
     [Authorize(Policy = $"perm:{SupplierPaymentsPermissions.Create}")]
-    public async Task<IActionResult> Create([FromBody] CreateCashFundingRequestRequest body, CancellationToken ct)
+    public async Task<IActionResult> Create(
+        [FromBody] CreateCashFundingRequestRequest body,
+        CancellationToken ct
+    )
     {
         var payment = new RegisterSupplierPaymentCommand(
             body.SupplierId,
@@ -40,7 +43,10 @@ public sealed class CashFundingRequestsController : ControllerBase
             body.Allocations ?? [],
             body.ConfirmUnappliedAmount
         );
-        var result = await _mediator.Send(new CreateCashFundingRequestCommand(payment, body.ClientRequestId), ct);
+        var result = await _mediator.Send(
+            new CreateCashFundingRequestCommand(payment, body.ClientRequestId),
+            ct
+        );
         return this.ToCreatedOrBadRequest(await WithDetailAsync(result, ct));
     }
 
@@ -57,7 +63,13 @@ public sealed class CashFundingRequestsController : ControllerBase
     ) =>
         this.ToOkOrBadRequest(
             await _mediator.Send(
-                new GetCashFundingRequestListQuery(status, cashRegisterId, requestedByUserId, page, pageSize),
+                new GetCashFundingRequestListQuery(
+                    status,
+                    cashRegisterId,
+                    requestedByUserId,
+                    page,
+                    pageSize
+                ),
                 ct
             )
         );
@@ -70,7 +82,10 @@ public sealed class CashFundingRequestsController : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 25,
         CancellationToken ct = default
-    ) => this.ToOkOrBadRequest(await _mediator.Send(new GetMyCashFundingRequestsQuery(status, page, pageSize), ct));
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new GetMyCashFundingRequestsQuery(status, page, pageSize), ct)
+        );
 
     /// <summary>
     /// Solicitante O <c>caja.funding-requests.view</c>: la regla OR se resuelve en Application con el
@@ -83,20 +98,39 @@ public sealed class CashFundingRequestsController : ControllerBase
     [HttpPost("{id:guid}/fulfill")]
     [Authorize(Policy = $"perm:{CajaPermissions.FundingRequestsFulfill}")]
     public async Task<IActionResult> Fulfill(Guid id, CancellationToken ct) =>
-        this.ToOkOrBadRequest(await WithDetailAsync(await _mediator.Send(new FulfillCashFundingRequestCommand(id), ct), ct));
+        this.ToOkOrBadRequest(
+            await WithDetailAsync(
+                await _mediator.Send(new FulfillCashFundingRequestCommand(id), ct),
+                ct
+            )
+        );
 
     [HttpPost("{id:guid}/reject")]
     [Authorize(Policy = $"perm:{CajaPermissions.FundingRequestsFulfill}")]
-    public async Task<IActionResult> Reject(Guid id, [FromBody] CashFundingRequestReasonRequest body, CancellationToken ct) =>
+    public async Task<IActionResult> Reject(
+        Guid id,
+        [FromBody] CashFundingRequestReasonRequest body,
+        CancellationToken ct
+    ) =>
         this.ToOkOrBadRequest(
-            await WithDetailAsync(await _mediator.Send(new RejectCashFundingRequestCommand(id, body.Reason), ct), ct)
+            await WithDetailAsync(
+                await _mediator.Send(new RejectCashFundingRequestCommand(id, body.Reason), ct),
+                ct
+            )
         );
 
     [HttpPost("{id:guid}/cancel")]
     [Authorize(Policy = $"perm:{SupplierPaymentsPermissions.Create}")]
-    public async Task<IActionResult> Cancel(Guid id, [FromBody] CashFundingRequestReasonRequest body, CancellationToken ct) =>
+    public async Task<IActionResult> Cancel(
+        Guid id,
+        [FromBody] CashFundingRequestReasonRequest body,
+        CancellationToken ct
+    ) =>
         this.ToOkOrBadRequest(
-            await WithDetailAsync(await _mediator.Send(new CancelCashFundingRequestCommand(id, body.Reason), ct), ct)
+            await WithDetailAsync(
+                await _mediator.Send(new CancelCashFundingRequestCommand(id, body.Reason), ct),
+                ct
+            )
         );
 
     /// <summary>
@@ -112,7 +146,9 @@ public sealed class CashFundingRequestsController : ControllerBase
         if (!result.IsSuccess || result.Value is null)
             return result;
         var detail = await _mediator.Send(new GetCashFundingRequestByIdQuery(result.Value.Id), ct);
-        return detail.IsSuccess ? Result<CashFundingRequestDto>.Success(detail.Value!, result.Code) : result;
+        return detail.IsSuccess
+            ? Result<CashFundingRequestDto>.Success(detail.Value!, result.Code)
+            : result;
     }
 }
 

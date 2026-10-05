@@ -89,13 +89,19 @@ public sealed class GetCashRegistersByCurrentBranchHandler
         // ZH-CASH-FUNDING-REQUEST-UI-FINAL-02E-EF — sesión abierta de cada caja (1 consulta) y
         // nombre de su operador (1 consulta): nunca N+1.
         var registerIds = registers.Select(r => r.Id).ToList();
-        var openByRegister = (await _sessions.GetOpenByCashRegisterIdsAsync(_t.TenantId, registerIds, ct))
+        var openByRegister = (
+            await _sessions.GetOpenByCashRegisterIdsAsync(_t.TenantId, registerIds, ct)
+        )
             .GroupBy(s => s.CashRegisterId)
             .ToDictionary(g => g.Key, g => g.First());
         var operatorIds = openByRegister.Values.Select(s => s.UserId).Distinct().ToList();
-        var operatorNames = operatorIds.Count == 0
-            ? new Dictionary<Guid, string>()
-            : (await _access.GetUsersByIdsAsync(operatorIds, ct)).ToDictionary(u => u.Id, u => u.FullName);
+        var operatorNames =
+            operatorIds.Count == 0
+                ? new Dictionary<Guid, string>()
+                : (await _access.GetUsersByIdsAsync(operatorIds, ct)).ToDictionary(
+                    u => u.Id,
+                    u => u.FullName
+                );
 
         return Result<IReadOnlyList<CashRegisterDto>>.Success(
             registers

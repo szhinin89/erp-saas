@@ -73,11 +73,40 @@ public sealed class UpsertSriConfigurationCommandHandler
 
             // CONFIG-FOUNDATION-P2-01: primera configuración — se audita igual que un cambio
             // (null → valor), nunca la contraseña en claro (ValueType.Masked).
-            await LogFieldAsync(config, "Environment", null, command.Environment.ToString(), ConfigurationChangeValueType.Int, cancellationToken);
-            await LogFieldAsync(config, "EmissionType", null, command.EmissionType.ToString(), ConfigurationChangeValueType.Int, cancellationToken);
-            await LogFieldAsync(config, "WsdlUrl", null, command.WsdlUrl, ConfigurationChangeValueType.String, cancellationToken);
+            await LogFieldAsync(
+                config,
+                "Environment",
+                null,
+                command.Environment.ToString(),
+                ConfigurationChangeValueType.Int,
+                cancellationToken
+            );
+            await LogFieldAsync(
+                config,
+                "EmissionType",
+                null,
+                command.EmissionType.ToString(),
+                ConfigurationChangeValueType.Int,
+                cancellationToken
+            );
+            await LogFieldAsync(
+                config,
+                "WsdlUrl",
+                null,
+                command.WsdlUrl,
+                ConfigurationChangeValueType.String,
+                cancellationToken
+            );
             if (hasNewPassword)
-                await LogFieldAsync(config, "CertPassword", null, "***", ConfigurationChangeValueType.Masked, cancellationToken, isSensitive: true);
+                await LogFieldAsync(
+                    config,
+                    "CertPassword",
+                    null,
+                    "***",
+                    ConfigurationChangeValueType.Masked,
+                    cancellationToken,
+                    isSensitive: true
+                );
 
             await _repo.SaveChangesAsync(cancellationToken);
             return Result<SriConfigurationDto>.Success(ToDto(config));
@@ -104,13 +133,42 @@ public sealed class UpsertSriConfigurationCommandHandler
         // CONFIG-FOUNDATION-P2-01: cada campo se compara y audita por separado — nunca se
         // guarda la contraseña real, solo un marcador Masked indicando que cambió.
         if (oldEnvironment != command.Environment)
-            await LogFieldAsync(existing, "Environment", oldEnvironment.ToString(), command.Environment.ToString(), ConfigurationChangeValueType.Int, cancellationToken);
+            await LogFieldAsync(
+                existing,
+                "Environment",
+                oldEnvironment.ToString(),
+                command.Environment.ToString(),
+                ConfigurationChangeValueType.Int,
+                cancellationToken
+            );
         if (oldEmissionType != command.EmissionType)
-            await LogFieldAsync(existing, "EmissionType", oldEmissionType.ToString(), command.EmissionType.ToString(), ConfigurationChangeValueType.Int, cancellationToken);
+            await LogFieldAsync(
+                existing,
+                "EmissionType",
+                oldEmissionType.ToString(),
+                command.EmissionType.ToString(),
+                ConfigurationChangeValueType.Int,
+                cancellationToken
+            );
         if (!string.Equals(oldWsdlUrl, existing.WsdlUrl, StringComparison.Ordinal))
-            await LogFieldAsync(existing, "WsdlUrl", oldWsdlUrl, existing.WsdlUrl, ConfigurationChangeValueType.String, cancellationToken);
+            await LogFieldAsync(
+                existing,
+                "WsdlUrl",
+                oldWsdlUrl,
+                existing.WsdlUrl,
+                ConfigurationChangeValueType.String,
+                cancellationToken
+            );
         if (hasNewPassword)
-            await LogFieldAsync(existing, "CertPassword", "***", "***", ConfigurationChangeValueType.Masked, cancellationToken, isSensitive: true);
+            await LogFieldAsync(
+                existing,
+                "CertPassword",
+                "***",
+                "***",
+                ConfigurationChangeValueType.Masked,
+                cancellationToken,
+                isSensitive: true
+            );
 
         await _repo.UpdateAsync(existing, cancellationToken);
         await _repo.SaveChangesAsync(cancellationToken);

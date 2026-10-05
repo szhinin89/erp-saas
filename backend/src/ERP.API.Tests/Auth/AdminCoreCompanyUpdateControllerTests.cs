@@ -16,13 +16,19 @@ namespace ERP.API.Tests.Auth;
 
 public sealed class AdminCoreCompanyUpdateControllerTests
 {
-    private static AdminCoreController Build(Func<object, object> handler) => new(new StubMediator(handler))
-    {
-        ControllerContext = new ControllerContext
+    private static AdminCoreController Build(Func<object, object> handler) =>
+        new(new StubMediator(handler))
         {
-            HttpContext = new DefaultHttpContext { RequestServices = new ServiceCollection().AddSingleton<IWebHostEnvironment>(new StubWebHostEnvironment()).BuildServiceProvider() }
-        }
-    };
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    RequestServices = new ServiceCollection()
+                        .AddSingleton<IWebHostEnvironment>(new StubWebHostEnvironment())
+                        .BuildServiceProvider(),
+                },
+            },
+        };
 
     private sealed class StubWebHostEnvironment : IWebHostEnvironment
     {
@@ -39,18 +45,28 @@ public sealed class AdminCoreCompanyUpdateControllerTests
     [Fact]
     public void Update_requires_platform_admin_policy()
     {
-        typeof(AdminCoreController).GetCustomAttributes(typeof(AuthorizeAttribute), true)
-            .Cast<AuthorizeAttribute>().Single().Policy.Should().Be("PlatformAdmin");
-        typeof(AdminCoreController).GetMethod(nameof(AdminCoreController.UpdateCompany))!
-            .GetCustomAttributes(typeof(AllowAnonymousAttribute), true).Should().BeEmpty();
+        typeof(AdminCoreController)
+            .GetCustomAttributes(typeof(AuthorizeAttribute), true)
+            .Cast<AuthorizeAttribute>()
+            .Single()
+            .Policy.Should()
+            .Be("PlatformAdmin");
+        typeof(AdminCoreController)
+            .GetMethod(nameof(AdminCoreController.UpdateCompany))!
+            .GetCustomAttributes(typeof(AllowAnonymousAttribute), true)
+            .Should()
+            .BeEmpty();
     }
 
     [Fact]
     public async Task Route_mismatch_is_rejected_before_dispatch()
     {
         var controller = Build(_ => throw new InvalidOperationException("Must not dispatch"));
-        var result = await controller.UpdateCompany(Guid.NewGuid(),
-            new(Guid.NewGuid(), "Empresa", null, true, null), CancellationToken.None);
+        var result = await controller.UpdateCompany(
+            Guid.NewGuid(),
+            new(Guid.NewGuid(), "Empresa", null, true, null),
+            CancellationToken.None
+        );
         result.Should().BeOfType<BadRequestObjectResult>();
     }
 
@@ -61,10 +77,20 @@ public sealed class AdminCoreCompanyUpdateControllerTests
     [InlineData(true, 409)]
     public async Task Invalid_and_duplicate_RUC_return_client_errors(bool duplicate, int status)
     {
-        var controller = Build(_ => Result<CompanyDetailDto>.Failure("RUC rechazado",
-            duplicate ? CompanyRucAlreadyExistsException.ErrorCode : ApiResponseCodes.Common.ValidationError));
+        var controller = Build(_ =>
+            Result<CompanyDetailDto>.Failure(
+                "RUC rechazado",
+                duplicate
+                    ? CompanyRucAlreadyExistsException.ErrorCode
+                    : ApiResponseCodes.Common.ValidationError
+            )
+        );
         var id = Guid.NewGuid();
-        var result = await controller.UpdateCompany(id, new(id, "Empresa", null, true, "123"), CancellationToken.None);
+        var result = await controller.UpdateCompany(
+            id,
+            new(id, "Empresa", null, true, "123"),
+            CancellationToken.None
+        );
         ((ObjectResult)result).StatusCode.Should().Be(status);
     }
 
@@ -72,7 +98,13 @@ public sealed class AdminCoreCompanyUpdateControllerTests
     public async Task Successful_update_returns_existing_company()
     {
         var entity = Company.CreateManaged(Guid.NewGuid(), "1790016919001", "Actualizada");
-        var command = new UpdateCompanyForAdminCoreCommand(entity.Id, entity.LegalName, null, true, entity.TaxIdentificationNumber);
+        var command = new UpdateCompanyForAdminCoreCommand(
+            entity.Id,
+            entity.LegalName,
+            null,
+            true,
+            entity.TaxIdentificationNumber
+        );
         var controller = Build(request =>
         {
             request.Should().Be(command);

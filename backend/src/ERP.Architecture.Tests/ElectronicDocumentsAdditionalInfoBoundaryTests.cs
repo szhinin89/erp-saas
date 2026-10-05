@@ -40,7 +40,8 @@ public sealed class ElectronicDocumentsAdditionalInfoBoundaryTests
         type.Name.Contains('<') || (type.DeclaringType is not null && type.Name.Contains("d__"));
 
     private static IEnumerable<Type> Implementing(Type contract) =>
-        ApplicationTypes().Where(t => t is { IsClass: true, IsAbstract: false } && contract.IsAssignableFrom(t));
+        ApplicationTypes()
+            .Where(t => t is { IsClass: true, IsAbstract: false } && contract.IsAssignableFrom(t));
 
     private static IReadOnlyList<string> Failing(PredicateList predicates) =>
         predicates.GetTypes().Select(t => t.FullName!).Where(n => !n.Contains('<')).ToList();
@@ -55,23 +56,31 @@ public sealed class ElectronicDocumentsAdditionalInfoBoundaryTests
             .Select(t => t.FullName!)
             .ToHashSet();
 
-        fiscalTypes.Should().Contain(
-            [
-                "ERP.Application.Modules.Sales.Services.SalesInvoiceElectronicDocumentDataProvider",
-                "ERP.Application.Modules.Sales.Services.SalesReturnCreditNoteDataProvider",
-                "ERP.Application.Modules.Retentions.Services.RetentionElectronicDocumentDataProvider",
-                "ERP.Application.Modules.ElectronicDocuments.XmlBuilders.InvoiceXmlBuilder",
-                "ERP.Application.Modules.ElectronicDocuments.XmlBuilders.CreditNoteXmlBuilder",
-                "ERP.Application.Modules.ElectronicDocuments.XmlBuilders.RetentionXmlBuilder",
-            ],
-            "el test debe cubrir todos los providers y builders reales"
-        );
+        fiscalTypes
+            .Should()
+            .Contain(
+                [
+                    "ERP.Application.Modules.Sales.Services.SalesInvoiceElectronicDocumentDataProvider",
+                    "ERP.Application.Modules.Sales.Services.SalesReturnCreditNoteDataProvider",
+                    "ERP.Application.Modules.Retentions.Services.RetentionElectronicDocumentDataProvider",
+                    "ERP.Application.Modules.ElectronicDocuments.XmlBuilders.InvoiceXmlBuilder",
+                    "ERP.Application.Modules.ElectronicDocuments.XmlBuilders.CreditNoteXmlBuilder",
+                    "ERP.Application.Modules.ElectronicDocuments.XmlBuilders.RetentionXmlBuilder",
+                ],
+                "el test debe cubrir todos los providers y builders reales"
+            );
 
         var offenders = Failing(
-            Types.InAssembly(ApplicationAssembly).That().HaveDependencyOn(SystemProviderSettingsRepository)
-        ).Where(fiscalTypes.Contains);
+                Types
+                    .InAssembly(ApplicationAssembly)
+                    .That()
+                    .HaveDependencyOn(SystemProviderSettingsRepository)
+            )
+            .Where(fiscalTypes.Contains);
 
-        offenders.Should().BeEmpty("ADR-038 D7: el RUC Proveedor lo aporta solo el contributor de infoAdicional");
+        offenders
+            .Should()
+            .BeEmpty("ADR-038 D7: el RUC Proveedor lo aporta solo el contributor de infoAdicional");
     }
 
     [Fact]
@@ -86,7 +95,10 @@ public sealed class ElectronicDocumentsAdditionalInfoBoundaryTests
         ];
 
         var consumers = Failing(
-            Types.InAssembly(ApplicationAssembly).That().HaveDependencyOn(SystemProviderSettingsRepository)
+            Types
+                .InAssembly(ApplicationAssembly)
+                .That()
+                .HaveDependencyOn(SystemProviderSettingsRepository)
         );
 
         consumers.Except(allowed).Should().BeEmpty();
@@ -156,24 +168,36 @@ public sealed class ElectronicDocumentsAdditionalInfoBoundaryTests
             )
             .Distinct();
 
-        dependents.Except(allowed).Should().BeEmpty(
-            "ADR-038 D6: un modelo fiscal llega a un builder solo a través de un orquestador que compone infoAdicional"
-        );
+        dependents
+            .Except(allowed)
+            .Should()
+            .BeEmpty(
+                "ADR-038 D6: un modelo fiscal llega a un builder solo a través de un orquestador que compone infoAdicional"
+            );
     }
 
     [Fact]
     public void Los_contributors_de_infoAdicional_viven_en_ElectronicDocuments()
     {
-        var contributors = Implementing(typeof(IElectronicDocumentAdditionalInfoContributor)).ToList();
+        var contributors = Implementing(typeof(IElectronicDocumentAdditionalInfoContributor))
+            .ToList();
 
         contributors.Should().Contain(typeof(SystemProviderRucAdditionalInfoContributor));
         contributors
-            .Where(t => !t.Namespace!.StartsWith("ERP.Application.Modules.ElectronicDocuments", StringComparison.Ordinal))
+            .Where(t =>
+                !t.Namespace!.StartsWith(
+                    "ERP.Application.Modules.ElectronicDocuments",
+                    StringComparison.Ordinal
+                )
+            )
             .Select(t => t.FullName)
             .Should()
             .BeEmpty();
         Implementing(typeof(IElectronicDocumentAdditionalInfoComposer))
             .Should()
-            .Equal([typeof(ElectronicDocumentAdditionalInfoComposer)], "ADR-038 D6: un solo composer");
+            .Equal(
+                [typeof(ElectronicDocumentAdditionalInfoComposer)],
+                "ADR-038 D6: un solo composer"
+            );
     }
 }

@@ -381,7 +381,9 @@ public sealed class OrgSettingsRepositoryConfigurationGuardrailTests : IAsyncLif
         );
         await repo2.SaveChangesAsync();
 
-        (await ChangeLogsForAsync(OrgSettingKeys.Sales.ConsumerFinalMaxAmount)).Should().ContainSingle();
+        (await ChangeLogsForAsync(OrgSettingKeys.Sales.ConsumerFinalMaxAmount))
+            .Should()
+            .ContainSingle();
     }
 
     [Fact]
@@ -419,9 +421,9 @@ public sealed class OrgSettingsRepositoryConfigurationGuardrailTests : IAsyncLif
         logs.Should().Contain(l => l.OldValue == "100.00" && l.NewValue == "250.00");
     }
 
-    private async Task<List<ERP.Domain.Configuration.Entities.ConfigurationChangeLog>> ChangeLogsForAsync(
-        string key
-    )
+    private async Task<
+        List<ERP.Domain.Configuration.Entities.ConfigurationChangeLog>
+    > ChangeLogsForAsync(string key)
     {
         await using var db = CreateContext();
         return await db

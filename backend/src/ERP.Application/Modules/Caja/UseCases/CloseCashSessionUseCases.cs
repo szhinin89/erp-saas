@@ -102,7 +102,10 @@ public sealed class CloseCashSessionHandler
     /// <summary>Motivo de sistema estable de las solicitudes de efectivo canceladas al cerrar la caja.</summary>
     public const string ClosedCashRegisterReason = "Caja cerrada";
 
-    private async Task<Result<CashSession>> CloseInTransactionAsync(CloseCashSessionCommand cmd, CancellationToken ct)
+    private async Task<Result<CashSession>> CloseInTransactionAsync(
+        CloseCashSessionCommand cmd,
+        CancellationToken ct
+    )
     {
         var session = await _repo.GetByIdForUpdateAsync(_t.TenantId, cmd.Id, ct);
         if (session is null || session.BranchId != _b.BranchId)
@@ -111,7 +114,9 @@ public sealed class CloseCashSessionHandler
         // 02B — `caja.close` decide QUÉ puede hacer el usuario; solo quien abrió la sesión la
         // cierra (CashSession.UserId). Fail-closed, sin bypass por rol ni por `caja.manage`.
         if (!session.IsControlledBy(_u.UserId))
-            return Result<CashSession>.ValidationFailure(CashSessionOwnership.RejectionMessage(session));
+            return Result<CashSession>.ValidationFailure(
+                CashSessionOwnership.RejectionMessage(session)
+            );
 
         var closingCounts = cmd
             .ClosingCounts.Where(c => c.Quantity > 0)
@@ -128,7 +133,13 @@ public sealed class CloseCashSessionHandler
 
         // Solicitudes de efectivo pendientes de esta sesión: se cancelan en la misma transacción
         // (nunca se tocan las terminales). Tras el cierre ninguna podría atenderse.
-        foreach (var pending in await _fundingRequests.ListPendingBySessionForUpdateAsync(_t.TenantId, session.Id, ct))
+        foreach (
+            var pending in await _fundingRequests.ListPendingBySessionForUpdateAsync(
+                _t.TenantId,
+                session.Id,
+                ct
+            )
+        )
             pending.Cancel(_u.UserId, ClosedCashRegisterReason);
 
         try

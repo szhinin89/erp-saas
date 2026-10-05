@@ -48,9 +48,19 @@ public sealed class GetDailySalesReportQueryHandlerTests
             new(Repo.Object, Tenant.Object, Company.Object, CompanyClock.Object);
     }
 
-    private static SalesInvoice CreateInvoice(decimal grandTotalSeed, bool authorize, bool cancel = false)
+    private static SalesInvoice CreateInvoice(
+        decimal grandTotalSeed,
+        bool authorize,
+        bool cancel = false
+    )
     {
-        var customer = CustomerSnapshot.Create("Cliente Test", "1710034065", "05", null, "Av. Test");
+        var customer = CustomerSnapshot.Create(
+            "Cliente Test",
+            "1710034065",
+            "05",
+            null,
+            "Av. Test"
+        );
         var paymentTerm = PaymentTermSnapshot.Create(PaymentTermId, "Contado", 1, 0);
         var cashSession = CashSession.Open(
             TenantId,
@@ -139,7 +149,9 @@ public sealed class GetDailySalesReportQueryHandlerTests
             .Handle(new GetDailySalesReportQuery(), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        result.Value!.Items.Should().HaveCount(3, "todas las facturas del rango siguen visibles para auditoría");
+        result
+            .Value!.Items.Should()
+            .HaveCount(3, "todas las facturas del rango siguen visibles para auditoría");
         result.Value.Totals.Count.Should().Be(1);
         result.Value.Totals.GrandTotal.Should().Be(authorized.GrandTotal);
     }

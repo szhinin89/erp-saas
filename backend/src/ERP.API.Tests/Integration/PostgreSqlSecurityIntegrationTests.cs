@@ -62,11 +62,25 @@ public sealed class PostgreSqlSecurityIntegrationTests : IAsyncLifetime
 
         var userId = Guid.NewGuid();
 
-        var bp1 = BusinessPartner.Create(Guid.NewGuid(), "04", "1790016919001", 2, "Empresa A", userId);
+        var bp1 = BusinessPartner.Create(
+            Guid.NewGuid(),
+            "04",
+            "1790016919001",
+            2,
+            "Empresa A",
+            userId
+        );
         db.BusinessPartners.Add(bp1);
         await db.SaveChangesAsync();
 
-        var bp2 = BusinessPartner.Create(Guid.NewGuid(), "04", "1790016919001", 2, "Empresa B", userId);
+        var bp2 = BusinessPartner.Create(
+            Guid.NewGuid(),
+            "04",
+            "1790016919001",
+            2,
+            "Empresa B",
+            userId
+        );
         db.BusinessPartners.Add(bp2);
 
         var act = async () => await db.SaveChangesAsync();

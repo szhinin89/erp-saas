@@ -1,9 +1,9 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using ERP.Domain.Access.Entities;
 using ERP.Infrastructure.Services;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 
 namespace ERP.Infrastructure.Tests.Services;
 

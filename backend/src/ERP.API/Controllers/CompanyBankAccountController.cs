@@ -36,12 +36,18 @@ public sealed class CompanyBankAccountController : ControllerBase
     [HttpGet]
     [Authorize(Policy = $"perm:{TreasuryPermissions.BankAccountsView}")]
     public async Task<IActionResult> GetList([FromQuery] bool? isActive, CancellationToken ct) =>
-        this.ToOkOrBadRequest(await _mediator.Send(new GetCompanyBankAccountListQuery(isActive), ct), "OK");
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new GetCompanyBankAccountListQuery(isActive), ct),
+            "OK"
+        );
 
     [HttpGet("{id:guid}")]
     [Authorize(Policy = $"perm:{TreasuryPermissions.BankAccountsView}")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct) =>
-        this.ToOkOrBadRequest(await _mediator.Send(new GetCompanyBankAccountByIdQuery(id), ct), "OK");
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new GetCompanyBankAccountByIdQuery(id), ct),
+            "OK"
+        );
 
     [HttpPost]
     [Authorize(Policy = $"perm:{TreasuryPermissions.BankAccountsCreate}")]

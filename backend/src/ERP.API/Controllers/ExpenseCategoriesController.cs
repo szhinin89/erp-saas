@@ -41,9 +41,7 @@ public sealed class ExpenseCategoriesController : ControllerBase
     [HttpGet("{id:guid}")]
     [Authorize(Policy = $"perm:{ExpensePermissions.CatalogView}")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct) =>
-        this.ToOkOrBadRequest(
-            await _mediator.Send(new GetExpenseCategoryNodeByIdQuery(id), ct)
-        );
+        this.ToOkOrBadRequest(await _mediator.Send(new GetExpenseCategoryNodeByIdQuery(id), ct));
 
     [HttpPost]
     [Authorize(Policy = $"perm:{ExpensePermissions.CatalogCreate}")]
@@ -76,9 +74,7 @@ public sealed class ExpenseCategoriesController : ControllerBase
     [HttpPatch("{id:guid}/activate")]
     [Authorize(Policy = $"perm:{ExpensePermissions.CatalogActivate}")]
     public async Task<IActionResult> Activate(Guid id, CancellationToken ct) =>
-        this.ToOkOrBadRequest(
-            await _mediator.Send(new ActivateExpenseCategoryNodeCommand(id), ct)
-        );
+        this.ToOkOrBadRequest(await _mediator.Send(new ActivateExpenseCategoryNodeCommand(id), ct));
 
     [HttpPost("{id:guid}/deactivate")]
     [HttpPatch("{id:guid}/deactivate")]

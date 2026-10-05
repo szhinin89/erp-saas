@@ -97,7 +97,12 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
 
         var tenant = Tenant.Create("RETCONF", $"retconf-{Guid.NewGuid():N}"[..16], _userId);
         // WithholdsVat/WithholdsRenta = true por defecto: empresa agente de retención.
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Retenedora S.A.", createdBy: _userId);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Retenedora S.A.",
+            createdBy: _userId
+        );
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
         await db.SaveChangesAsync();
@@ -115,20 +120,46 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
         _paymentTermId = paymentTerm.Id;
 
         var warehouse = Warehouse.Create(
-            _tenantId, _branchId, "Bodega Principal", "BOD-01",
-            null, null, null, null, null, null, null, null, null, _userId, _companyId, isMain: true
+            _tenantId,
+            _branchId,
+            "Bodega Principal",
+            "BOD-01",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            _userId,
+            _companyId,
+            isMain: true
         );
         db.Warehouses.Add(warehouse);
 
-        var supplier = BusinessPartner.Create(_tenantId, TaxIdentification.SriRuc, "1791352688001", 2, "Proveedor Retenido", _userId);
+        var supplier = BusinessPartner.Create(
+            _tenantId,
+            TaxIdentification.SriRuc,
+            "1791352688001",
+            2,
+            "Proveedor Retenido",
+            _userId
+        );
         db.BusinessPartners.Add(supplier);
         await db.SaveChangesAsync();
         _warehouseId = warehouse.Id;
         _supplierId = supplier.Id;
 
         db.BusinessPartnerRoles.Add(
-            BusinessPartnerRole.Create(_tenantId, supplier.Id, RoleType.Supplier, _userId,
-                supplierConfig: SupplierRoleConfig.Create(isRetentionExempt: false))
+            BusinessPartnerRole.Create(
+                _tenantId,
+                supplier.Id,
+                RoleType.Supplier,
+                _userId,
+                supplierConfig: SupplierRoleConfig.Create(isRetentionExempt: false)
+            )
         );
         var vatRetentionCode = new SriRetentionCode
         {
@@ -143,13 +174,39 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
         db.SriRetentionCodes.Add(vatRetentionCode);
         await db.SaveChangesAsync();
         db.SupplierRetentionDefaults.Add(
-            SupplierRetentionDefault.Create(_tenantId, _companyId, supplier.Id, vatRetentionCode.Id, 0, _userId)
+            SupplierRetentionDefault.Create(
+                _tenantId,
+                _companyId,
+                supplier.Id,
+                vatRetentionCode.Id,
+                0,
+                _userId
+            )
         );
 
-        var establishment = Establishment.Create(_tenantId, null, _companyId, "001", "Matriz", "Av. 1", null, isMain: true, _userId);
+        var establishment = Establishment.Create(
+            _tenantId,
+            null,
+            _companyId,
+            "001",
+            "Matriz",
+            "Av. 1",
+            null,
+            isMain: true,
+            _userId
+        );
         db.Establishments.Add(establishment);
         await db.SaveChangesAsync();
-        var emissionPoint = EmissionPoint.Create(_tenantId, _companyId, establishment.Id, "001", "Punto 1", EmissionType.Electronic, isDefault: true, _userId);
+        var emissionPoint = EmissionPoint.Create(
+            _tenantId,
+            _companyId,
+            establishment.Id,
+            "001",
+            "Punto 1",
+            EmissionType.Electronic,
+            isDefault: true,
+            _userId
+        );
         db.EmissionPoints.Add(emissionPoint);
 
         var itemType = ItemTypeDefinition.Create(_tenantId, "MERCH", "Mercadería", 1, _userId);
@@ -174,23 +231,50 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
 
         // Plan de cuentas, período anual y MinimalPostingRules oficiales (incluye
         // Purchases/InvoiceReceived y Retentions/DocumentIssued).
-        await new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance)
-            .ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _userId));
+        await new AccountingBootstrapStep(
+            db,
+            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+            NullLogger<AccountingBootstrapStep>.Instance
+        ).ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _userId));
     }
 
     public async Task DisposeAsync() => await _postgres.DisposeAsync();
 
     private Branch NewBranch(string name, string code, bool isMain) =>
         Branch.Create(
-            _tenantId, name, "Av. Principal 123", code,
-            null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null,
-            isMain, _userId, companyId: _companyId
+            _tenantId,
+            name,
+            "Av. Principal 123",
+            code,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            isMain,
+            _userId,
+            companyId: _companyId
         );
 
     private ErpDbContext CreateContext(IPublisher? publisher = null) =>
         new(
-            new DbContextOptionsBuilder<ErpDbContext>().UseNpgsql(_postgres.GetConnectionString()).Options,
+            new DbContextOptionsBuilder<ErpDbContext>()
+                .UseNpgsql(_postgres.GetConnectionString())
+                .Options,
             new FixedCurrentTenant(_tenantId),
             publisher ?? new NoOpPublisher(),
             new FixedCurrentCompany(_companyId)
@@ -203,7 +287,9 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
         var db = new ErpDbContext(
             new DbContextOptionsBuilder<ErpDbContext>()
                 .UseNpgsql(_postgres.GetConnectionString() + ";Include Error Detail=true")
-                .AddInterceptors(new ERP.Infrastructure.Persistence.Interceptors.NewChildEntityTrackingInterceptor())
+                .AddInterceptors(
+                    new ERP.Infrastructure.Persistence.Interceptors.NewChildEntityTrackingInterceptor()
+                )
                 .Options,
             new FixedCurrentTenant(_tenantId),
             deferred,
@@ -225,14 +311,27 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
         services.AddScoped<IPostingEngine, PostingEngine>();
         services.AddScoped(typeof(IAuditWriter<>), typeof(EfAuditWriter<>));
         services.AddScoped<IAuditService, AuditService>();
-        services.AddScoped<IAuditContext>(_ => new FixedAuditContext(() => _tenantId, () => _companyId, _userId));
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(PurchaseInvoiceConfirmedPostingTranslator).Assembly));
+        services.AddScoped<IAuditContext>(_ => new FixedAuditContext(
+            () => _tenantId,
+            () => _companyId,
+            _userId
+        ));
+        services.AddMediatR(cfg =>
+            cfg.RegisterServicesFromAssembly(
+                typeof(PurchaseInvoiceConfirmedPostingTranslator).Assembly
+            )
+        );
         deferred.Inner = services.BuildServiceProvider().GetRequiredService<IPublisher>();
         return db;
     }
 
     private RetentionEligibilityService Eligibility(ErpDbContext db) =>
-        new(new CompanyRepository(db), new BusinessPartnerRoleRepository(db), new SupplierRetentionDefaultRepository(db), new RetentionCodeResolver(db));
+        new(
+            new CompanyRepository(db),
+            new BusinessPartnerRoleRepository(db),
+            new SupplierRetentionDefaultRepository(db),
+            new RetentionCodeResolver(db)
+        );
 
     private ConfirmPurchaseHandler ConfirmHandler(
         ErpDbContext db,
@@ -245,19 +344,35 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
         tax.Setup(t => t.GetVatRateWithNameAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TaxRateResult(15m, "IVA 15%"));
         var pricing = new Mock<IPricingResolver>();
-        pricing.Setup(p => p.ResolveAsync(It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
+        pricing
+            .Setup(p =>
+                p.ResolveAsync(It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(Result<PricingResult>.NotFound("Sin precio"));
         var preferences = new Mock<IOperationalPreferencesResolver>();
-        preferences.Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>())).ReturnsAsync(Preferences());
+        preferences
+            .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Preferences());
         var xmlGuard = new Mock<IPurchaseXmlConfirmationGuard>();
-        xmlGuard.Setup(g => g.ValidateAsync(It.IsAny<PurchaseInvoice>(), It.IsAny<CancellationToken>())).ReturnsAsync((string?)null);
+        xmlGuard
+            .Setup(g => g.ValidateAsync(It.IsAny<PurchaseInvoice>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string?)null);
         var postingEngine = new PostingEngine(
-            new JournalEntryRepository(db), new PostingRuleRepository(db), new AccountingPeriodRepository(db),
-            new JournalEntrySequenceRepository(db), new AccountRepository(db), NullLogger<PostingEngine>.Instance
+            new JournalEntryRepository(db),
+            new PostingRuleRepository(db),
+            new AccountingPeriodRepository(db),
+            new JournalEntrySequenceRepository(db),
+            new AccountRepository(db),
+            NullLogger<PostingEngine>.Instance
         );
         return new ConfirmPurchaseHandler(
             new PurchaseInvoiceRepository(db, company),
-            new StockRepository(db, company, new PostgresDatabaseExceptionTranslator(), StandardPrecisionPolicyProvider.Instance),
+            new StockRepository(
+                db,
+                company,
+                new PostgresDatabaseExceptionTranslator(),
+                StandardPrecisionPolicyProvider.Instance
+            ),
             new ItemRepository(db),
             new WarehouseRepository(db, company),
             new PaymentTermRepository(db),
@@ -299,7 +414,12 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
         return new CancelPurchaseHandler(
             new PurchaseInvoiceRepository(db, company),
             new AccountsPayableRepository(db),
-            new StockRepository(db, company, new PostgresDatabaseExceptionTranslator(), StandardPrecisionPolicyProvider.Instance),
+            new StockRepository(
+                db,
+                company,
+                new PostgresDatabaseExceptionTranslator(),
+                StandardPrecisionPolicyProvider.Instance
+            ),
             new PurchaseReturnRepository(db, company),
             new RetentionDocumentRepository(db, company),
             new RetentionCanceller(
@@ -319,11 +439,29 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
 
     private static OperationalPreferences Preferences() =>
         new(
-            SalesPos: new SalesPosPreferences(true, false, true, 0m, null, false, false, null, null),
+            SalesPos: new SalesPosPreferences(
+                true,
+                false,
+                true,
+                0m,
+                null,
+                false,
+                false,
+                null,
+                null
+            ),
             Cash: new CashPreferences(true, true, 0m, true, true, true),
             Purchases: new PurchasesPreferences(null, true, true, true, false),
             Inventory: new InventoryPreferences(false, true, false, 0m),
-            Printing: new PrintingPreferences("AskBeforePrint", 1, "80mm", false, true, true, false),
+            Printing: new PrintingPreferences(
+                "AskBeforePrint",
+                1,
+                "80mm",
+                false,
+                true,
+                true,
+                false
+            ),
             ElectronicDocuments: new ElectronicDocumentsPreferences(true, 3, true, true),
             Notifications: new NotificationsPreferences(true, false, "es")
         );
@@ -334,11 +472,32 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
         await using var db = CreateContext();
         var number = $"001-001-{++_invoiceSeq:000000000}";
         var invoice = PurchaseInvoice.CreateDraft(
-            _tenantId, _companyId, branchId ?? _branchId, _supplierId, "Proveedor Retenido", "1791352688001",
-            "01", number, IssueDate, _userId, _paymentTermId, "Contado", 1, 0
+            _tenantId,
+            _companyId,
+            branchId ?? _branchId,
+            _supplierId,
+            "Proveedor Retenido",
+            "1791352688001",
+            "01",
+            number,
+            IssueDate,
+            _userId,
+            _paymentTermId,
+            "Contado",
+            1,
+            0
         );
-        var line = PurchaseInvoiceDetail.Create(invoice.Id, _tenantId, "Producto Retención", 1m, 100m, "4", "UNIT",
-            itemId: _itemId, warehouseId: _warehouseId);
+        var line = PurchaseInvoiceDetail.Create(
+            invoice.Id,
+            _tenantId,
+            "Producto Retención",
+            1m,
+            100m,
+            "4",
+            "UNIT",
+            itemId: _itemId,
+            warehouseId: _warehouseId
+        );
         line.ApplyTaxes("4", 15m, "IVA 15%", null, 0m, null);
         invoice.ReplaceLines(new[] { line }, _userId);
         db.PurchaseInvoices.Add(invoice);
@@ -351,13 +510,28 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
             true,
             emissionPointId ?? _emissionPointId,
             IssueDate,
-            new[] { new IssueRetentionLineInput(RetentionTaxType.Vat, RetentionVatCode, 15m, 30m, retained, "Ret. IVA 30%") }
+            new[]
+            {
+                new IssueRetentionLineInput(
+                    RetentionTaxType.Vat,
+                    RetentionVatCode,
+                    15m,
+                    30m,
+                    retained,
+                    "Ret. IVA 30%"
+                ),
+            }
         );
 
-    private async Task<Result<PurchaseInvoiceDto>> ConfirmAsync(Guid invoiceId, RetentionIntent? intent, Guid? branchId = null)
+    private async Task<Result<PurchaseInvoiceDto>> ConfirmAsync(
+        Guid invoiceId,
+        RetentionIntent? intent,
+        Guid? branchId = null
+    )
     {
         await using var db = CreateWiredContext();
-        return await ConfirmHandler(db, branchId).Handle(new ConfirmPurchaseCommand(invoiceId, null, intent), CancellationToken.None);
+        return await ConfirmHandler(db, branchId)
+            .Handle(new ConfirmPurchaseCommand(invoiceId, null, intent), CancellationToken.None);
     }
 
     private sealed record Snapshot(
@@ -373,18 +547,45 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
     {
         await using var db = CreateContext();
         var invoice = await db.PurchaseInvoices.AsNoTracking().SingleAsync(i => i.Id == invoiceId);
-        var payables = await db.Set<AccountsPayable>().AsNoTracking().Include(p => p.Installments)
-            .Where(p => p.OriginId == invoiceId).ToListAsync();
-        var retentions = await db.Set<RetentionDocument>().AsNoTracking().Include(r => r.Lines)
-            .Where(r => r.SourceDocumentType == RetentionSourceDocumentType.PurchaseInvoice && r.SourceDocumentId == invoiceId)
+        var payables = await db.Set<AccountsPayable>()
+            .AsNoTracking()
+            .Include(p => p.Installments)
+            .Where(p => p.OriginId == invoiceId)
+            .ToListAsync();
+        var retentions = await db.Set<RetentionDocument>()
+            .AsNoTracking()
+            .Include(r => r.Lines)
+            .Where(r =>
+                r.SourceDocumentType == RetentionSourceDocumentType.PurchaseInvoice
+                && r.SourceDocumentId == invoiceId
+            )
             .ToListAsync();
         var retentionIds = retentions.Select(r => r.Id).ToList();
-        var purchaseEntries = await db.JournalEntries.AsNoTracking()
-            .CountAsync(e => e.SourceModule == "Purchases" && e.SourceEventType == "InvoiceReceived" && e.SourceEventId == invoiceId);
-        var retentionEntries = await db.JournalEntries.AsNoTracking()
-            .CountAsync(e => e.SourceModule == "Retentions" && e.SourceEventType == "DocumentIssued" && retentionIds.Contains(e.SourceEventId));
-        var movements = await db.Set<StockMovement>().AsNoTracking().CountAsync(m => m.SourceDocId == invoiceId);
-        return new Snapshot(invoice.Status, payables, retentions, purchaseEntries, retentionEntries, movements);
+        var purchaseEntries = await db
+            .JournalEntries.AsNoTracking()
+            .CountAsync(e =>
+                e.SourceModule == "Purchases"
+                && e.SourceEventType == "InvoiceReceived"
+                && e.SourceEventId == invoiceId
+            );
+        var retentionEntries = await db
+            .JournalEntries.AsNoTracking()
+            .CountAsync(e =>
+                e.SourceModule == "Retentions"
+                && e.SourceEventType == "DocumentIssued"
+                && retentionIds.Contains(e.SourceEventId)
+            );
+        var movements = await db.Set<StockMovement>()
+            .AsNoTracking()
+            .CountAsync(m => m.SourceDocId == invoiceId);
+        return new Snapshot(
+            invoice.Status,
+            payables,
+            retentions,
+            purchaseEntries,
+            retentionEntries,
+            movements
+        );
     }
 
     private static void ShouldBeUntouchedDraft(Snapshot s)
@@ -426,10 +627,13 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
         var invoiceId = await SeedDraftPurchaseAsync();
         await using (var db = CreateContext())
         {
-            var preview = await PreviewHandler(db).Handle(new CalculateRetentionQuery(invoiceId), CancellationToken.None);
+            var preview = await PreviewHandler(db)
+                .Handle(new CalculateRetentionQuery(invoiceId), CancellationToken.None);
             preview.IsSuccess.Should().BeTrue(preview.Error);
             var line = preview.Value!.Lines.Should().ContainSingle().Which;
-            (line.RetentionCode, line.TaxableBase, line.RetentionPct, line.AmountRetained).Should().Be((RetentionVatCode, 15m, 30m, 4.5m));
+            (line.RetentionCode, line.TaxableBase, line.RetentionPct, line.AmountRetained)
+                .Should()
+                .Be((RetentionVatCode, 15m, 30m, 4.5m));
         }
 
         var result = await ConfirmAsync(invoiceId, VatIntent());
@@ -445,13 +649,17 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
         var payable = s.Payables.Should().ContainSingle().Which;
         payable.TotalAmount.Should().Be(115m);
         payable.RetainedAmount.Should().Be(4.5m);
-        (payable.TotalAmount - payable.RetainedAmount).Should().Be(110.5m, "CxP original − retención = saldo exigible");
+        (payable.TotalAmount - payable.RetainedAmount)
+            .Should()
+            .Be(110.5m, "CxP original − retención = saldo exigible");
         s.PurchaseEntries.Should().Be(1);
         s.RetentionEntries.Should().Be(1);
         s.StockMovements.Should().Be(1);
 
         await using var verify = CreateContext();
-        var retentionEntry = await verify.JournalEntries.AsNoTracking().Include(e => e.Lines)
+        var retentionEntry = await verify
+            .JournalEntries.AsNoTracking()
+            .Include(e => e.Lines)
             .SingleAsync(e => e.SourceModule == "Retentions" && e.SourceEventId == retention.Id);
         retentionEntry.Lines.Sum(l => l.Debit).Should().Be(4.5m);
         retentionEntry.Lines.Sum(l => l.Credit).Should().Be(4.5m);
@@ -474,7 +682,8 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
         string? skipReason;
         await using (var db = CreateContext())
         {
-            var preview = await PreviewHandler(db).Handle(new CalculateRetentionQuery(invoiceId), CancellationToken.None);
+            var preview = await PreviewHandler(db)
+                .Handle(new CalculateRetentionQuery(invoiceId), CancellationToken.None);
             preview.IsSuccess.Should().BeTrue(preview.Error);
             preview.Value!.Lines.Should().BeEmpty();
             skipReason = preview.Value.SkipReason;
@@ -485,7 +694,12 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
-        result.Error.Should().Contain("agente de retención de IVA", "la emisión rechaza con la misma regla que mostró la vista previa");
+        result
+            .Error.Should()
+            .Contain(
+                "agente de retención de IVA",
+                "la emisión rechaza con la misma regla que mostró la vista previa"
+            );
         ShouldBeUntouchedDraft(await ReadAsync(invoiceId));
     }
 
@@ -495,8 +709,12 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
     public async Task Intencion_con_impuesto_no_elegible_se_rechaza_y_la_compra_sigue_en_borrador()
     {
         var invoiceId = await SeedDraftPurchaseAsync();
-        var incomeIntent = new RetentionIntent(true, _emissionPointId, IssueDate,
-            new[] { new IssueRetentionLineInput(RetentionTaxType.Income, "303", 100m, 10m, 10m) });
+        var incomeIntent = new RetentionIntent(
+            true,
+            _emissionPointId,
+            IssueDate,
+            new[] { new IssueRetentionLineInput(RetentionTaxType.Income, "303", 100m, 10m, 10m) }
+        );
 
         var result = await ConfirmAsync(invoiceId, incomeIntent);
 
@@ -521,10 +739,21 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
     public async Task Retencion_mayor_al_saldo_de_la_CxP_se_rechaza_y_la_compra_sigue_en_borrador()
     {
         var invoiceId = await SeedDraftPurchaseAsync();
-        var oversized = new RetentionIntent(true, _emissionPointId, IssueDate, new[]
-        {
-            new IssueRetentionLineInput(RetentionTaxType.Vat, RetentionVatCode, 200m, 100m, 200m),
-        });
+        var oversized = new RetentionIntent(
+            true,
+            _emissionPointId,
+            IssueDate,
+            new[]
+            {
+                new IssueRetentionLineInput(
+                    RetentionTaxType.Vat,
+                    RetentionVatCode,
+                    200m,
+                    100m,
+                    200m
+                ),
+            }
+        );
 
         var result = await ConfirmAsync(invoiceId, oversized);
 
@@ -540,7 +769,10 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
         await using (var db = CreateContext())
         {
             var rule = await db.PostingRules.SingleAsync(r =>
-                r.CompanyId == _companyId && r.SourceModule == "Retentions" && r.FactType == "DocumentIssued");
+                r.CompanyId == _companyId
+                && r.SourceModule == "Retentions"
+                && r.FactType == "DocumentIssued"
+            );
             rule.Disable(_userId);
             await db.SaveChangesAsync();
         }
@@ -555,7 +787,10 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
 
     // ── 6/7. Concurrencia, reintento y 1:1 ────────────────────────────────
 
-    private async Task<(bool Success, string? Error)> TryConfirmAsync(Guid invoiceId, RetentionIntent? intent)
+    private async Task<(bool Success, string? Error)> TryConfirmAsync(
+        Guid invoiceId,
+        RetentionIntent? intent
+    )
     {
         try
         {
@@ -575,12 +810,21 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
     {
         var invoiceId = await SeedDraftPurchaseAsync();
 
-        var results = await Task.WhenAll(TryConfirmAsync(invoiceId, VatIntent()), TryConfirmAsync(invoiceId, VatIntent()));
+        var results = await Task.WhenAll(
+            TryConfirmAsync(invoiceId, VatIntent()),
+            TryConfirmAsync(invoiceId, VatIntent())
+        );
 
-        results.Count(r => r.Success).Should().Be(1, string.Join(" | ", results.Select(r => r.Error)));
+        results
+            .Count(r => r.Success)
+            .Should()
+            .Be(1, string.Join(" | ", results.Select(r => r.Error)));
         var s = await ReadAsync(invoiceId);
         s.Status.Should().Be(PurchaseStatus.Confirmed);
-        s.Payables.Should().ContainSingle().Which.RetainedAmount.Should().Be(4.5m, "la retención se aplica una sola vez");
+        s.Payables.Should()
+            .ContainSingle()
+            .Which.RetainedAmount.Should()
+            .Be(4.5m, "la retención se aplica una sola vez");
         s.Retentions.Should().ContainSingle().Which.Status.Should().Be(RetentionStatus.Issued);
         s.PurchaseEntries.Should().Be(1);
         s.RetentionEntries.Should().Be(1);
@@ -608,15 +852,26 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
     {
         var invoiceId = await SeedDraftPurchaseAsync();
 
-        var results = await Task.WhenAll(TryConfirmAsync(invoiceId, VatIntent()), TryConfirmAsync(invoiceId, null));
+        var results = await Task.WhenAll(
+            TryConfirmAsync(invoiceId, VatIntent()),
+            TryConfirmAsync(invoiceId, null)
+        );
 
-        results.Count(r => r.Success).Should().Be(1, string.Join(" | ", results.Select(r => r.Error)));
+        results
+            .Count(r => r.Success)
+            .Should()
+            .Be(1, string.Join(" | ", results.Select(r => r.Error)));
         var s = await ReadAsync(invoiceId);
         s.Status.Should().Be(PurchaseStatus.Confirmed);
         var payable = s.Payables.Should().ContainSingle().Which;
         var active = s.Retentions.Where(r => r.Status != RetentionStatus.Cancelled).ToList();
         active.Should().HaveCountLessThanOrEqualTo(1);
-        payable.RetainedAmount.Should().Be(active.Sum(r => r.TotalRetained), "la CxP refleja exactamente la transición ganadora");
+        payable
+            .RetainedAmount.Should()
+            .Be(
+                active.Sum(r => r.TotalRetained),
+                "la CxP refleja exactamente la transición ganadora"
+            );
         s.RetentionEntries.Should().Be(active.Count);
         s.PurchaseEntries.Should().Be(1);
     }
@@ -631,7 +886,11 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
 
         Result<PurchaseInvoiceDto> cancel;
         await using (var db = CreateWiredContext())
-            cancel = await CancelHandler(db).Handle(new CancelPurchaseCommand(invoiceId, "Error de digitación"), CancellationToken.None);
+            cancel = await CancelHandler(db)
+                .Handle(
+                    new CancelPurchaseCommand(invoiceId, "Error de digitación"),
+                    CancellationToken.None
+                );
 
         cancel.IsSuccess.Should().BeTrue(cancel.Error);
         var s = await ReadAsync(invoiceId);
@@ -643,11 +902,20 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
         payable.RetainedAmount.Should().Be(0m, "RetentionCanceller revierte ApplyRetention");
 
         await using var verify = CreateContext();
-        var retentionEntry = await verify.JournalEntries.AsNoTracking()
-            .SingleAsync(e => e.SourceModule == "Retentions" && e.SourceEventType == "DocumentIssued" && e.SourceEventId == retention.Id);
-        retentionEntry.Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.JournalEntryStatus.Reversed);
+        var retentionEntry = await verify
+            .JournalEntries.AsNoTracking()
+            .SingleAsync(e =>
+                e.SourceModule == "Retentions"
+                && e.SourceEventType == "DocumentIssued"
+                && e.SourceEventId == retention.Id
+            );
+        retentionEntry
+            .Status.Should()
+            .Be(ERP.Domain.Modules.Accounting.Enums.JournalEntryStatus.Reversed);
         retentionEntry.ReverseJournalEntryId.Should().NotBeNull();
-        var reverse = await verify.JournalEntries.AsNoTracking().Include(e => e.Lines)
+        var reverse = await verify
+            .JournalEntries.AsNoTracking()
+            .Include(e => e.Lines)
             .SingleAsync(e => e.Id == retentionEntry.ReverseJournalEntryId);
         reverse.Lines.Sum(l => l.Debit).Should().Be(4.5m);
         reverse.Lines.Sum(l => l.Credit).Should().Be(4.5m);
@@ -655,11 +923,17 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
 
     // ── ZH-RETENTION-CANCELLATION-LIFECYCLE-01: la retención solo se anula con su origen ──
 
-    private async Task<Result<PurchaseInvoiceDto>> CancelPurchaseAsync(Guid invoiceId, Guid? branchId = null)
+    private async Task<Result<PurchaseInvoiceDto>> CancelPurchaseAsync(
+        Guid invoiceId,
+        Guid? branchId = null
+    )
     {
         await using var db = CreateWiredContext();
         var handler = CancelHandler(db, branchId);
-        return await handler.Handle(new CancelPurchaseCommand(invoiceId, "Error de digitación"), CancellationToken.None);
+        return await handler.Handle(
+            new CancelPurchaseCommand(invoiceId, "Error de digitación"),
+            CancellationToken.None
+        );
     }
 
     private async Task<(bool Success, string? Error)> TryCancelPurchaseAsync(Guid invoiceId)
@@ -676,12 +950,21 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
     }
 
     /// <summary>Reversos contables del asiento de emisión de la retención (debe ser exactamente uno tras anular).</summary>
-    private async Task<(ERP.Domain.Modules.Accounting.Enums.JournalEntryStatus IssuedStatus, int Reversals)> RetentionAccountingAsync(Guid retentionId)
+    private async Task<(
+        ERP.Domain.Modules.Accounting.Enums.JournalEntryStatus IssuedStatus,
+        int Reversals
+    )> RetentionAccountingAsync(Guid retentionId)
     {
         await using var db = CreateContext();
-        var issued = await db.JournalEntries.AsNoTracking()
-            .SingleAsync(e => e.SourceModule == "Retentions" && e.SourceEventType == "DocumentIssued" && e.SourceEventId == retentionId);
-        var reversals = await db.JournalEntries.AsNoTracking()
+        var issued = await db
+            .JournalEntries.AsNoTracking()
+            .SingleAsync(e =>
+                e.SourceModule == "Retentions"
+                && e.SourceEventType == "DocumentIssued"
+                && e.SourceEventId == retentionId
+            );
+        var reversals = await db
+            .JournalEntries.AsNoTracking()
             .CountAsync(e => e.SourceEventType == "Reversal" && e.SourceEventId == issued.Id);
         return (issued.Status, reversals);
     }
@@ -715,7 +998,10 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
                 new FixedCurrentTenant(_tenantId),
                 company,
                 new FixedCurrentUser(_userId)
-            ).Handle(new RegisterRetentionElectronicDocumentCommand(retentionId), CancellationToken.None);
+            ).Handle(
+                new RegisterRetentionElectronicDocumentCommand(retentionId),
+                CancellationToken.None
+            );
         }
         sri.SignCalls.Should().Be(0);
         sri.SendCalls.Should().Be(0);
@@ -727,7 +1013,9 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
         s.Retentions.Should().ContainSingle().Which.Status.Should().Be(RetentionStatus.Cancelled);
         s.Payables.Single().RetainedAmount.Should().Be(0m);
         var accounting = await RetentionAccountingAsync(retentionId);
-        accounting.IssuedStatus.Should().Be(ERP.Domain.Modules.Accounting.Enums.JournalEntryStatus.Reversed);
+        accounting
+            .IssuedStatus.Should()
+            .Be(ERP.Domain.Modules.Accounting.Enums.JournalEntryStatus.Reversed);
         accounting.Reversals.Should().Be(1);
     }
 
@@ -737,9 +1025,15 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
         var invoiceId = await SeedDraftPurchaseAsync();
         (await ConfirmAsync(invoiceId, VatIntent())).IsSuccess.Should().BeTrue();
 
-        var results = await Task.WhenAll(TryCancelPurchaseAsync(invoiceId), TryCancelPurchaseAsync(invoiceId));
+        var results = await Task.WhenAll(
+            TryCancelPurchaseAsync(invoiceId),
+            TryCancelPurchaseAsync(invoiceId)
+        );
 
-        results.Count(r => r.Success).Should().Be(1, string.Join(" | ", results.Select(r => r.Error)));
+        results
+            .Count(r => r.Success)
+            .Should()
+            .Be(1, string.Join(" | ", results.Select(r => r.Error)));
         var s = await ReadAsync(invoiceId);
         s.Status.Should().Be(PurchaseStatus.Cancelled);
         var retention = s.Retentions.Should().ContainSingle().Which;
@@ -799,28 +1093,37 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
         await using (var db = CreateContext())
         {
             var edoc = ERP.Domain.Modules.ElectronicDocuments.Entities.ElectronicDocument.Create(
-                _tenantId, _companyId, ERP.Domain.Modules.ElectronicDocuments.Enums.ElectronicDocumentType.Retention,
-                "Retentions", retentionId, _userId);
+                _tenantId,
+                _companyId,
+                ERP.Domain.Modules.ElectronicDocuments.Enums.ElectronicDocumentType.Retention,
+                "Retentions",
+                retentionId,
+                _userId
+            );
             db.ElectronicDocuments.Add(edoc);
             await db.SaveChangesAsync();
             edocId = edoc.Id;
             // Estado SRI simulado: el pipeline real (firma + SOAP) queda fuera de esta prueba.
             await db.Database.ExecuteSqlInterpolatedAsync(
-                $"UPDATE electronic_documents SET current_state = {(int)ERP.Domain.Modules.ElectronicDocuments.Enums.ElectronicDocumentState.Authorized} WHERE id = {edocId}");
+                $"UPDATE electronic_documents SET current_state = {(int)ERP.Domain.Modules.ElectronicDocuments.Enums.ElectronicDocumentState.Authorized} WHERE id = {edocId}"
+            );
         }
 
         var cancel = await CancelPurchaseAsync(invoiceId);
 
         cancel.IsSuccess.Should().BeFalse();
-        cancel.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.SourceCancellationRequiresSriAnnulment);
+        cancel
+            .Code.Should()
+            .Be(ApiResponseCodes.ElectronicDocuments.SourceCancellationRequiresSriAnnulment);
         var s = await ReadAsync(invoiceId);
         s.Status.Should().Be(PurchaseStatus.Confirmed);
         s.Retentions.Single().Status.Should().Be(RetentionStatus.Issued);
         s.Payables.Single().RetainedAmount.Should().Be(4.5m);
         (await RetentionAccountingAsync(retentionId)).Reversals.Should().Be(0);
         await using var verify = CreateContext();
-        (await verify.ElectronicDocuments.AsNoTracking().SingleAsync(e => e.Id == edocId)).CurrentState
-            .Should().Be(ERP.Domain.Modules.ElectronicDocuments.Enums.ElectronicDocumentState.Authorized);
+        (await verify.ElectronicDocuments.AsNoTracking().SingleAsync(e => e.Id == edocId))
+            .CurrentState.Should()
+            .Be(ERP.Domain.Modules.ElectronicDocuments.Enums.ElectronicDocumentState.Authorized);
     }
 
     // ── 9. Fail-closed por sucursal ───────────────────────────────────────
@@ -846,15 +1149,22 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
         public Task Publish(object notification, CancellationToken cancellationToken = default) =>
             Inner!.Publish(notification, cancellationToken);
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
             where TNotification : INotification => Inner!.Publish(notification, cancellationToken);
     }
 
     private sealed class NoOpPublisher : IPublisher
     {
-        public Task Publish(object notification, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
             where TNotification : INotification => Task.CompletedTask;
     }
 

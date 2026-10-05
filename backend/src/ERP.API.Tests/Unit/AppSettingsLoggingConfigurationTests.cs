@@ -1,5 +1,5 @@
-using FluentAssertions;
 using System.Text.Json;
+using FluentAssertions;
 
 namespace ERP.API.Tests.Unit;
 

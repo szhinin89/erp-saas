@@ -27,24 +27,36 @@ public static class CanonicalRequestFingerprint
         Converters = { new CanonicalDecimalConverter() },
     };
 
-    public static string Serialize<T>(T canonical) => JsonSerializer.Serialize(canonical, CanonicalOptions);
+    public static string Serialize<T>(T canonical) =>
+        JsonSerializer.Serialize(canonical, CanonicalOptions);
 
-    public static T? Deserialize<T>(string json) => JsonSerializer.Deserialize<T>(json, CanonicalOptions);
+    public static T? Deserialize<T>(string json) =>
+        JsonSerializer.Deserialize<T>(json, CanonicalOptions);
 
     /// <summary>SHA-256 (hex en mayúsculas, 64 caracteres) de la representación canónica.</summary>
     public static string Compute<T>(T canonical) =>
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(Serialize(canonical))));
 
     /// <summary>Texto libre opcional normalizado: sin espacios de borde; vacío = ausente.</summary>
-    public static string? NormalizeText(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    public static string? NormalizeText(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     /// <summary>Decimales canónicos: mismo valor ⇒ mismo texto (80, 80.0 y 80.00 → "80").</summary>
     private sealed class CanonicalDecimalConverter : JsonConverter<decimal>
     {
-        public override decimal Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
-            reader.GetDecimal();
+        public override decimal Read(
+            ref Utf8JsonReader reader,
+            Type typeToConvert,
+            JsonSerializerOptions options
+        ) => reader.GetDecimal();
 
-        public override void Write(Utf8JsonWriter writer, decimal value, JsonSerializerOptions options) =>
-            writer.WriteRawValue(value.ToString("0.############################", CultureInfo.InvariantCulture));
+        public override void Write(
+            Utf8JsonWriter writer,
+            decimal value,
+            JsonSerializerOptions options
+        ) =>
+            writer.WriteRawValue(
+                value.ToString("0.############################", CultureInfo.InvariantCulture)
+            );
     }
 }

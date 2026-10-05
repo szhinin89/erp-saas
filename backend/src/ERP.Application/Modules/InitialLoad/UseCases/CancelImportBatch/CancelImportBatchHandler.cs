@@ -4,7 +4,8 @@ using MediatR;
 
 namespace ERP.Application.Modules.InitialLoad.UseCases.CancelImportBatch;
 
-public sealed class CancelImportBatchHandler : IRequestHandler<CancelImportBatchCommand, Result<bool>>
+public sealed class CancelImportBatchHandler
+    : IRequestHandler<CancelImportBatchCommand, Result<bool>>
 {
     private readonly IImportBatchRepository _batchRepo;
     private readonly IOperationalContext _ctx;

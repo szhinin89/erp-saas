@@ -99,12 +99,14 @@ public sealed class CompanyInvoiceOrgSettingsCompanyScopeTests
 
         var writtenScopeIds = new List<Guid>();
         repo.Setup(r => r.UpsertAsync(It.IsAny<OrgSetting>(), It.IsAny<CancellationToken>()))
-            .Callback<OrgSetting, CancellationToken>((s, _) =>
-            {
-                s.TenantId.Should().Be(TenantId);
-                s.CompanyId.Should().Be(ActiveCompanyId);
-                writtenScopeIds.Add(s.ScopeId);
-            })
+            .Callback<OrgSetting, CancellationToken>(
+                (s, _) =>
+                {
+                    s.TenantId.Should().Be(TenantId);
+                    s.CompanyId.Should().Be(ActiveCompanyId);
+                    writtenScopeIds.Add(s.ScopeId);
+                }
+            )
             .Returns(Task.CompletedTask);
 
         var handler = new UpsertCompanyInvoiceOrgSettingsCommandHandler(

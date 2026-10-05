@@ -16,9 +16,21 @@ public sealed record CommunicationTemplateUsage
         if (string.IsNullOrWhiteSpace(key) || key.Trim().Length > KeyMaxLen)
             throw new ArgumentException("TemplateKey inválida.", nameof(key));
         if (version < 1)
-            throw new ArgumentOutOfRangeException(nameof(version), "La versión del template empieza en 1.");
-        if (source is not (CommunicationTemplateSource.Default or CommunicationTemplateSource.CompanyOverride))
-            throw new ArgumentException("Una comunicación nueva se renderiza con un default o un override de empresa.", nameof(source));
+            throw new ArgumentOutOfRangeException(
+                nameof(version),
+                "La versión del template empieza en 1."
+            );
+        if (
+            source
+            is not (
+                CommunicationTemplateSource.Default
+                or CommunicationTemplateSource.CompanyOverride
+            )
+        )
+            throw new ArgumentException(
+                "Una comunicación nueva se renderiza con un default o un override de empresa.",
+                nameof(source)
+            );
 
         Key = key.Trim();
         Version = version;

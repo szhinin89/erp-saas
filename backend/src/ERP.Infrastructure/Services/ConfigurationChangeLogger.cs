@@ -16,7 +16,10 @@ public sealed class ConfigurationChangeLogger : IConfigurationChangeLogger
 
     public ConfigurationChangeLogger(ErpDbContext db) => _db = db;
 
-    public Task LogAsync(ConfigurationChangeLogEntry entry, CancellationToken cancellationToken = default)
+    public Task LogAsync(
+        ConfigurationChangeLogEntry entry,
+        CancellationToken cancellationToken = default
+    )
     {
         var log = ConfigurationChangeLog.Create(
             entry.TenantId,

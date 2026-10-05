@@ -20,12 +20,17 @@ public sealed class CompanyContextHandlersCodePropagationTests
     public async Task GetCurrentCompany_propaga_el_codigo_del_guard(string code)
     {
         var guard = new Mock<ICompanyAccessGuard>();
-        guard.Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<CompanyAccessContext>.Failure("No hay empresa operativa seleccionada.", code));
+        guard
+            .Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                Result<CompanyAccessContext>.Failure("No hay empresa operativa seleccionada.", code)
+            );
         var companies = new Mock<ICompanyRepository>(MockBehavior.Strict);
 
-        var result = await new GetCurrentCompanyHandler(guard.Object, companies.Object)
-            .Handle(new GetCurrentCompanyQuery(), CancellationToken.None);
+        var result = await new GetCurrentCompanyHandler(guard.Object, companies.Object).Handle(
+            new GetCurrentCompanyQuery(),
+            CancellationToken.None
+        );
 
         (result.Code, result.Error).Should().Be((code, "No hay empresa operativa seleccionada."));
     }

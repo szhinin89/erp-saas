@@ -45,7 +45,12 @@ public sealed class GetPurchaseItemContextQueryHandlerTests
             Company.Setup(c => c.CompanyId).Returns(CompanyId);
             StockRepo
                 .Setup(r =>
-                    r.GetStockAsync(TenantId, WarehouseId, It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+                    r.GetStockAsync(
+                        TenantId,
+                        WarehouseId,
+                        It.IsAny<Guid>(),
+                        It.IsAny<CancellationToken>()
+                    )
                 )
                 .ReturnsAsync((ERP.Domain.Modules.Inventory.Entities.CurrentStock?)null);
             StockRepo
@@ -60,7 +65,11 @@ public sealed class GetPurchaseItemContextQueryHandlerTests
                 .ReturnsAsync((decimal?)null);
             PricingResolver
                 .Setup(r =>
-                    r.ResolveAsync(It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>())
+                    r.ResolveAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid?>(),
+                        It.IsAny<CancellationToken>()
+                    )
                 )
                 .ReturnsAsync(Result<PricingResult>.NotFound("sin precio configurado"));
         }
@@ -93,10 +102,7 @@ public sealed class GetPurchaseItemContextQueryHandlerTests
         );
 
         if (iceCatalogCode is not null)
-            item.ReplaceSpecialTaxConfigurations(
-                [("3", iceCatalogCode)],
-                UserId
-            );
+            item.ReplaceSpecialTaxConfigurations([("3", iceCatalogCode)], UserId);
 
         return item;
     }
@@ -106,11 +112,9 @@ public sealed class GetPurchaseItemContextQueryHandlerTests
     {
         var f = new Fixture();
         var item = CreateItem(iceCatalogCode: "3041");
-        f.ItemRepo
-            .Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+        f.ItemRepo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(item);
-        f.TaxResolver
-            .Setup(r => r.GetIceRateAsync("3041", It.IsAny<CancellationToken>()))
+        f.TaxResolver.Setup(r => r.GetIceRateAsync("3041", It.IsAny<CancellationToken>()))
             .ReturnsAsync(10m);
 
         var result = await f.BuildHandler()
@@ -131,8 +135,7 @@ public sealed class GetPurchaseItemContextQueryHandlerTests
     {
         var f = new Fixture();
         var item = CreateItem(iceCatalogCode: null);
-        f.ItemRepo
-            .Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+        f.ItemRepo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(item);
 
         var result = await f.BuildHandler()

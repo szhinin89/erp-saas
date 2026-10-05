@@ -120,7 +120,10 @@ public sealed class CreateCashRegisterBranchOwnershipTests
             .Handle(BuildCommand(branchOfCompanyB.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
-        f.Repo.Verify(r => r.AddAsync(It.IsAny<CashRegister>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.Repo.Verify(
+            r => r.AddAsync(It.IsAny<CashRegister>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
         f.Repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -141,15 +144,17 @@ public sealed class CreateCashRegisterBranchOwnershipTests
 
         CashRegister? captured = null;
         f.Repo.Setup(r => r.AddAsync(It.IsAny<CashRegister>(), It.IsAny<CancellationToken>()))
-            .Callback<CashRegister, CancellationToken>((r, _) =>
-            {
-                // EF hidrata la navegación Branch al recargar; en el test la fijamos por
-                // reflexión (setter privado) para poder ejercer CajaMapper.ToDto sin un DbContext real.
-                typeof(CashRegister)
-                    .GetProperty(nameof(CashRegister.Branch))!
-                    .SetValue(r, ownBranch);
-                captured = r;
-            })
+            .Callback<CashRegister, CancellationToken>(
+                (r, _) =>
+                {
+                    // EF hidrata la navegación Branch al recargar; en el test la fijamos por
+                    // reflexión (setter privado) para poder ejercer CajaMapper.ToDto sin un DbContext real.
+                    typeof(CashRegister)
+                        .GetProperty(nameof(CashRegister.Branch))!
+                        .SetValue(r, ownBranch);
+                    captured = r;
+                }
+            )
             .Returns(Task.CompletedTask);
         f.Repo.Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(() => captured);
@@ -158,6 +163,9 @@ public sealed class CreateCashRegisterBranchOwnershipTests
             .Handle(BuildCommand(ownBranch.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        f.Repo.Verify(r => r.AddAsync(It.IsAny<CashRegister>(), It.IsAny<CancellationToken>()), Times.Once);
+        f.Repo.Verify(
+            r => r.AddAsync(It.IsAny<CashRegister>(), It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 }

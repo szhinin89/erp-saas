@@ -43,31 +43,63 @@ public sealed class SalesReturnDraftSpecialTaxTests
         var customer = CustomerSnapshot.Create("Cliente Test", "1710034065", "05");
         var paymentTerm = PaymentTermSnapshot.Create(PaymentTermId, "Contado", 1, 0);
         var inv = SalesInvoice.CreateDraft(
-            TenantId, CompanyId, BranchId, CustomerId, customer,
-            invoiceNumber: "001-001-000000010", issueDate: new DateOnly(2026, 7, 25),
-            createdBy: UserId, paymentTerm: paymentTerm, cashSessionId: CashSessionId,
+            TenantId,
+            CompanyId,
+            BranchId,
+            CustomerId,
+            customer,
+            invoiceNumber: "001-001-000000010",
+            issueDate: new DateOnly(2026, 7, 25),
+            createdBy: UserId,
+            paymentTerm: paymentTerm,
+            cashSessionId: CashSessionId,
             emissionType: EmissionType.Electronic
         );
 
         var line = SalesInvoiceDetail.Create(
-            inv.Id, TenantId, "Producto con impuestos especiales", quantity, unitPrice,
-            vatCode: "2", uomCode: "UNIT", iceCode: iceCode
+            inv.Id,
+            TenantId,
+            "Producto con impuestos especiales",
+            quantity,
+            unitPrice,
+            vatCode: "2",
+            uomCode: "UNIT",
+            iceCode: iceCode
         );
         if (!string.IsNullOrWhiteSpace(irbpnrCode))
-            line.ReplaceTaxes(
-                [
-                    SalesInvoiceDetailTax.Create(
-                        line.Id, TenantId, "5", irbpnrCode, "IRBPNR", irbpnrRate,
-                        SriTaxCalculationType.Specific, line.TaxableBase, irbpnrAmount,
-                        SalesTaxSource.Calculated
-                    ),
-                ]
-            );
-        line.ApplyTaxes("2", 15m, "IVA 15%", iceCode, iceRate, "ICE", iceCalculationType, iceExactAmount);
+            line.ReplaceTaxes([
+                SalesInvoiceDetailTax.Create(
+                    line.Id,
+                    TenantId,
+                    "5",
+                    irbpnrCode,
+                    "IRBPNR",
+                    irbpnrRate,
+                    SriTaxCalculationType.Specific,
+                    line.TaxableBase,
+                    irbpnrAmount,
+                    SalesTaxSource.Calculated
+                ),
+            ]);
+        line.ApplyTaxes(
+            "2",
+            15m,
+            "IVA 15%",
+            iceCode,
+            iceRate,
+            "ICE",
+            iceCalculationType,
+            iceExactAmount
+        );
         inv.ReplaceLines(new[] { line }, UserId);
 
         var payment = SalesInvoicePayment.Create(
-            inv.Id, TenantId, Guid.NewGuid(), "01", "Efectivo", line.TaxInclusiveTotal
+            inv.Id,
+            TenantId,
+            Guid.NewGuid(),
+            "01",
+            "Efectivo",
+            line.TaxInclusiveTotal
         );
         inv.ReplacePayments(new[] { payment }, UserId);
         inv.Authorize(UserId);
@@ -102,8 +134,7 @@ public sealed class SalesReturnDraftSpecialTaxTests
     private static ICurrentCompany Company() =>
         Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId);
 
-    private static ICurrentBranch Branch() =>
-        Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId);
+    private static ICurrentBranch Branch() => Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId);
 
     private static ICurrentUser User() => Mock.Of<ICurrentUser>(u => u.UserId == UserId);
 
@@ -122,7 +153,12 @@ public sealed class SalesReturnDraftSpecialTaxTests
             .Returns(Task.CompletedTask);
 
         var handler = new CreateSalesReturnDraftHandler(
-            returnRepo.Object, invoiceRepo.Object, Tenant(), Company(), Branch(), User(),
+            returnRepo.Object,
+            invoiceRepo.Object,
+            Tenant(),
+            Company(),
+            Branch(),
+            User(),
             PrecisionPolicyTestDouble.Mock()
         );
         var result = await handler.Handle(
@@ -143,9 +179,13 @@ public sealed class SalesReturnDraftSpecialTaxTests
     public async Task Devolucion_total_con_ICE_e_IRBPNR_prorratea_al_100_por_ciento()
     {
         var (invoice, line) = BuildAuthorizedInvoiceWithLine(
-            quantity: 10m, unitPrice: 100m,
-            iceCode: "3010", iceRate: 10m,
-            irbpnrCode: "5001", irbpnrRate: 0.02m, irbpnrAmount: 1.00m
+            quantity: 10m,
+            unitPrice: 100m,
+            iceCode: "3010",
+            iceRate: 10m,
+            irbpnrCode: "5001",
+            irbpnrRate: 0.02m,
+            irbpnrAmount: 1.00m
         );
 
         var salesReturn = await CreateReturnAsync(invoice, line, returnQuantity: 10m);
@@ -161,9 +201,13 @@ public sealed class SalesReturnDraftSpecialTaxTests
     {
         // Factura: 10 unidades. IRBPNR total=1.00 (0.10/unidad). Se devuelven 3 → fracción 0.3.
         var (invoice, line) = BuildAuthorizedInvoiceWithLine(
-            quantity: 10m, unitPrice: 100m,
-            iceCode: "3010", iceRate: 10m,
-            irbpnrCode: "5001", irbpnrRate: 0.02m, irbpnrAmount: 1.00m
+            quantity: 10m,
+            unitPrice: 100m,
+            iceCode: "3010",
+            iceRate: 10m,
+            irbpnrCode: "5001",
+            irbpnrRate: 0.02m,
+            irbpnrAmount: 1.00m
         );
 
         var salesReturn = await CreateReturnAsync(invoice, line, returnQuantity: 3m);
@@ -177,8 +221,11 @@ public sealed class SalesReturnDraftSpecialTaxTests
     public async Task Devolucion_con_ICE_Specific_prorratea_el_monto_exacto_por_cantidad()
     {
         var (invoice, line) = BuildAuthorizedInvoiceWithLine(
-            quantity: 10m, unitPrice: 100m,
-            iceCode: "3053", iceCalculationType: SriTaxCalculationType.Specific, iceExactAmount: 5.00m
+            quantity: 10m,
+            unitPrice: 100m,
+            iceCode: "3053",
+            iceCalculationType: SriTaxCalculationType.Specific,
+            iceExactAmount: 5.00m
         );
 
         var salesReturn = await CreateReturnAsync(invoice, line, returnQuantity: 3m);
@@ -204,9 +251,13 @@ public sealed class SalesReturnDraftSpecialTaxTests
     public async Task Totales_revertidos_coinciden_con_el_snapshot_original_para_devolucion_total()
     {
         var (invoice, line) = BuildAuthorizedInvoiceWithLine(
-            quantity: 1m, unitPrice: 100m,
-            iceCode: "3010", iceRate: 10m,
-            irbpnrCode: "5001", irbpnrRate: 0.02m, irbpnrAmount: 0.02m
+            quantity: 1m,
+            unitPrice: 100m,
+            iceCode: "3010",
+            iceRate: 10m,
+            irbpnrCode: "5001",
+            irbpnrRate: 0.02m,
+            irbpnrAmount: 0.02m
         );
 
         var salesReturn = await CreateReturnAsync(invoice, line, returnQuantity: 1m);

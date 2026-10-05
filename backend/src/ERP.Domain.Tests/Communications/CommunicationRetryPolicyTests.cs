@@ -12,7 +12,9 @@ public sealed class CommunicationRetryPolicyTests
     [Theory]
     [InlineData(CommunicationFailureCategory.Transient)]
     [InlineData(CommunicationFailureCategory.Unknown)]
-    public void Transient_y_Unknown_reprograman_con_backoff_hasta_agotar_MaxRetries(CommunicationFailureCategory category)
+    public void Transient_y_Unknown_reprograman_con_backoff_hasta_agotar_MaxRetries(
+        CommunicationFailureCategory category
+    )
     {
         var first = CommunicationRetryPolicy.OnFailure(0, 3, category, Now);
         first.Status.Should().Be(CommunicationStatus.Pending);
@@ -32,7 +34,9 @@ public sealed class CommunicationRetryPolicyTests
     [Theory]
     [InlineData(CommunicationFailureCategory.Permanent)]
     [InlineData(CommunicationFailureCategory.Configuration)]
-    public void Permanent_y_Configuration_son_terminales_al_primer_fallo(CommunicationFailureCategory category)
+    public void Permanent_y_Configuration_son_terminales_al_primer_fallo(
+        CommunicationFailureCategory category
+    )
     {
         var outcome = CommunicationRetryPolicy.OnFailure(0, 20, category, Now);
 
@@ -44,8 +48,10 @@ public sealed class CommunicationRetryPolicyTests
     [Fact]
     public void MaxRetries_cero_falla_al_primer_intento()
     {
-        CommunicationRetryPolicy.OnFailure(0, 0, CommunicationFailureCategory.Transient, Now)
-            .Status.Should().Be(CommunicationStatus.Failed);
+        CommunicationRetryPolicy
+            .OnFailure(0, 0, CommunicationFailureCategory.Transient, Now)
+            .Status.Should()
+            .Be(CommunicationStatus.Failed);
     }
 
     [Theory]
@@ -58,9 +64,15 @@ public sealed class CommunicationRetryPolicyTests
     [InlineData(6, 60)]
     [InlineData(20, 60)]
     [InlineData(int.MaxValue, 60)]
-    public void Backoff_exponencial_con_tope_de_60_minutos_sin_overflow(int failedAttempts, int expectedMinutes)
+    public void Backoff_exponencial_con_tope_de_60_minutos_sin_overflow(
+        int failedAttempts,
+        int expectedMinutes
+    )
     {
-        CommunicationRetryPolicy.Backoff(failedAttempts).Should().Be(TimeSpan.FromMinutes(expectedMinutes));
+        CommunicationRetryPolicy
+            .Backoff(failedAttempts)
+            .Should()
+            .Be(TimeSpan.FromMinutes(expectedMinutes));
     }
 
     [Fact]

@@ -88,7 +88,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             cashRegister.SetAccountingAccount(CashAccountingAccountId, UserId);
         if (!cashRegisterActive)
             cashRegister.Disable(UserId);
-        var cashRegisterRepo = new Mock<ERP.Domain.Modules.Caja.Interfaces.ICashRegisterRepository>();
+        var cashRegisterRepo =
+            new Mock<ERP.Domain.Modules.Caja.Interfaces.ICashRegisterRepository>();
         cashRegisterRepo
             .Setup(r => r.GetByIdAsync(TenantId, CashRegisterId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(cashRegister);
@@ -218,7 +219,15 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             Cash: new CashPreferences(true, true, 0m, true, true, true),
             Purchases: new PurchasesPreferences(null, true, true, true, false),
             Inventory: new InventoryPreferences(false, true, false, 0m),
-            Printing: new PrintingPreferences("AskBeforePrint", 1, "80mm", false, true, true, false),
+            Printing: new PrintingPreferences(
+                "AskBeforePrint",
+                1,
+                "80mm",
+                false,
+                true,
+                true,
+                false
+            ),
             ElectronicDocuments: new ElectronicDocumentsPreferences(true, 3, true, true),
             Notifications: new NotificationsPreferences(true, false, "es")
         );
@@ -354,7 +363,9 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         var paymentMethodRepo = paymentMethodRepoOverride ?? new Mock<IPaymentMethodRepository>();
         if (paymentMethodRepoOverride is null)
             paymentMethodRepo
-                .Setup(r => r.GetByIdAsync(TenantId, PaymentMethodId, It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetByIdAsync(TenantId, PaymentMethodId, It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(paymentMethod);
 
         // SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01 — default: la Company activa NO tiene ningún
@@ -373,10 +384,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
                     r.GetMapAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>())
                 )
                 .ReturnsAsync(
-                    new Dictionary<
-                        Guid,
-                        ERP.Domain.Modules.Sales.Entities.PaymentMethodAccount
-                    >()
+                    new Dictionary<Guid, ERP.Domain.Modules.Sales.Entities.PaymentMethodAccount>()
                 );
 
         var receivableRepo = new Mock<ISalesReceivableRepository>();
@@ -485,7 +493,14 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
 
         var stockRepo = new Mock<IStockRepository>();
         stockRepo
-            .Setup(s => s.GetStockAsync(TenantId, It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(s =>
+                s.GetStockAsync(
+                    TenantId,
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync((ERP.Domain.Modules.Inventory.Entities.CurrentStock?)null); // sin stock (Quantity efectiva 0)
         stockRepo
             .Setup(s => s.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()))
@@ -493,7 +508,9 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
 
         var edocRepo = new Mock<IElectronicDocumentRepository>();
         edocRepo
-            .Setup(e => e.GetBySourceAsync(TenantId, "Sales", inv.Id, It.IsAny<CancellationToken>()))
+            .Setup(e =>
+                e.GetBySourceAsync(TenantId, "Sales", inv.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((ElectronicDocument?)null);
 
         var companyClock = new Mock<ICompanyClock>();
@@ -603,7 +620,10 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         return (handler, stockRepo);
     }
 
-    private static SalesInvoice CreateDraftInvoiceWithStockTrackedLine(Guid itemId, Guid warehouseId)
+    private static SalesInvoice CreateDraftInvoiceWithStockTrackedLine(
+        Guid itemId,
+        Guid warehouseId
+    )
     {
         var customer = CustomerSnapshot.Create("Cliente Test", "1710034065", "05");
         var paymentTerm = PaymentTermSnapshot.Create(PaymentTermId, "Contado", 1, 0);
@@ -736,7 +756,14 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
 
         var stockRepo = new Mock<IStockRepository>();
         stockRepo
-            .Setup(s => s.GetStockAsync(TenantId, It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(s =>
+                s.GetStockAsync(
+                    TenantId,
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(stock);
         stockRepo
             .Setup(s => s.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()))
@@ -744,7 +771,9 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
 
         var edocRepo = new Mock<IElectronicDocumentRepository>();
         edocRepo
-            .Setup(e => e.GetBySourceAsync(TenantId, "Sales", inv.Id, It.IsAny<CancellationToken>()))
+            .Setup(e =>
+                e.GetBySourceAsync(TenantId, "Sales", inv.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((ElectronicDocument?)null);
 
         var companyClock = new Mock<ICompanyClock>();
@@ -943,13 +972,26 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("stock insuficiente");
         stockRepo.Verify(
-            s => s.AppendMovementAsync(
-                It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(),
-                It.IsAny<ERP.Domain.Modules.Inventory.Enums.StockMovementType>(), It.IsAny<decimal>(),
-                It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<string>(), It.IsAny<Guid?>(),
-                It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<decimal?>(), It.IsAny<Guid?>(),
-                It.IsAny<Guid?>(), It.IsAny<CancellationToken>(), It.IsAny<Guid?>()
-            ),
+            s =>
+                s.AppendMovementAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<ERP.Domain.Modules.Inventory.Enums.StockMovementType>(),
+                    It.IsAny<decimal>(),
+                    It.IsAny<string>(),
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<decimal?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<Guid?>()
+                ),
             Times.Never
         );
     }
@@ -976,13 +1018,26 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
 
         result.IsSuccess.Should().BeTrue(result.Error);
         stockRepo.Verify(
-            s => s.AppendMovementAsync(
-                It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(),
-                ERP.Domain.Modules.Inventory.Enums.StockMovementType.SaleExit, -12m,
-                "UNIT", It.IsAny<DateOnly>(), It.IsAny<string>(), It.IsAny<Guid?>(),
-                It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<decimal?>(), It.IsAny<Guid?>(),
-                It.IsAny<Guid?>(), It.IsAny<CancellationToken>(), It.IsAny<Guid?>()
-            ),
+            s =>
+                s.AppendMovementAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    ERP.Domain.Modules.Inventory.Enums.StockMovementType.SaleExit,
+                    -12m,
+                    "UNIT",
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<decimal?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<Guid?>()
+                ),
             Times.Once
         );
     }
@@ -993,7 +1048,10 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         var itemId = Guid.NewGuid();
         var warehouseId = Guid.NewGuid();
         var inv = CreateDraftInvoiceWithStockTrackedLine(itemId, warehouseId);
-        var (handler, stockRepo) = BuildHandlerWithInsufficientStock(inv, allowSellWithoutStock: false);
+        var (handler, stockRepo) = BuildHandlerWithInsufficientStock(
+            inv,
+            allowSellWithoutStock: false
+        );
 
         var result = await handler.Handle(
             new AuthorizeSalesInvoiceCommand(inv.Id),
@@ -1003,13 +1061,26 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("stock insuficiente");
         stockRepo.Verify(
-            s => s.AppendMovementAsync(
-                It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(),
-                It.IsAny<ERP.Domain.Modules.Inventory.Enums.StockMovementType>(), It.IsAny<decimal>(),
-                It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<string>(), It.IsAny<Guid?>(),
-                It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<decimal?>(), It.IsAny<Guid?>(),
-                It.IsAny<Guid?>(), It.IsAny<CancellationToken>(), It.IsAny<Guid?>()
-            ),
+            s =>
+                s.AppendMovementAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<ERP.Domain.Modules.Inventory.Enums.StockMovementType>(),
+                    It.IsAny<decimal>(),
+                    It.IsAny<string>(),
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<decimal?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<Guid?>()
+                ),
             Times.Never
         );
     }
@@ -1020,7 +1091,10 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         var itemId = Guid.NewGuid();
         var warehouseId = Guid.NewGuid();
         var inv = CreateDraftInvoiceWithStockTrackedLine(itemId, warehouseId);
-        var (handler, stockRepo) = BuildHandlerWithInsufficientStock(inv, allowSellWithoutStock: true);
+        var (handler, stockRepo) = BuildHandlerWithInsufficientStock(
+            inv,
+            allowSellWithoutStock: true
+        );
 
         var result = await handler.Handle(
             new AuthorizeSalesInvoiceCommand(inv.Id),
@@ -1029,13 +1103,26 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
 
         result.IsSuccess.Should().BeTrue(result.Error);
         stockRepo.Verify(
-            s => s.AppendMovementAsync(
-                TenantId, CompanyId, itemId, warehouseId,
-                ERP.Domain.Modules.Inventory.Enums.StockMovementType.SaleExit, -5m,
-                It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<string>(), It.IsAny<Guid?>(),
-                It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<decimal?>(), It.IsAny<Guid?>(),
-                It.IsAny<Guid?>(), It.IsAny<CancellationToken>(), It.IsAny<Guid?>()
-            ),
+            s =>
+                s.AppendMovementAsync(
+                    TenantId,
+                    CompanyId,
+                    itemId,
+                    warehouseId,
+                    ERP.Domain.Modules.Inventory.Enums.StockMovementType.SaleExit,
+                    -5m,
+                    It.IsAny<string>(),
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<decimal?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<Guid?>()
+                ),
             Times.Once
         );
     }
@@ -1044,7 +1131,10 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     public async Task Rejects_future_issue_date()
     {
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today.AddDays(4), emissionType: EmissionType.Physical); // reproduce factura 001-500-000000012
+        var inv = CreateDraftInvoice(
+            issueDate: today.AddDays(4),
+            emissionType: EmissionType.Physical
+        ); // reproduce factura 001-500-000000012
         var (handler, _, _) = BuildHandler(inv, today);
 
         var result = await handler.Handle(
@@ -1065,7 +1155,10 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     public async Task Rejects_issue_date_older_than_90_days()
     {
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today.AddDays(-91), emissionType: EmissionType.Physical);
+        var inv = CreateDraftInvoice(
+            issueDate: today.AddDays(-91),
+            emissionType: EmissionType.Physical
+        );
         var (handler, _, _) = BuildHandler(inv, today);
 
         var result = await handler.Handle(
@@ -1086,22 +1179,20 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         var today = new DateOnly(2026, 7, 13);
         var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical);
         var line = inv.Lines.Single();
-        line.ReplaceTaxes(
-            [
-                SalesInvoiceDetailTax.Create(
-                    line.Id,
-                    TenantId,
-                    "5",
-                    "5001",
-                    "IRBPNR",
-                    0.1m,
-                    ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific,
-                    line.TaxableBase,
-                    2m,
-                    SalesTaxSource.Calculated
-                ),
-            ]
-        );
+        line.ReplaceTaxes([
+            SalesInvoiceDetailTax.Create(
+                line.Id,
+                TenantId,
+                "5",
+                "5001",
+                "IRBPNR",
+                0.1m,
+                ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific,
+                line.TaxableBase,
+                2m,
+                SalesTaxSource.Calculated
+            ),
+        ]);
 
         var (handler, _, _) = BuildHandler(inv, today, out var postingEngine);
         postingEngine
@@ -1131,7 +1222,10 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     public async Task Accepts_issue_date_exactly_90_days_old_boundary()
     {
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today.AddDays(-90), emissionType: EmissionType.Physical);
+        var inv = CreateDraftInvoice(
+            issueDate: today.AddDays(-90),
+            emissionType: EmissionType.Physical
+        );
         var (handler, _, _) = BuildHandler(inv, today);
 
         var result = await handler.Handle(
@@ -1303,7 +1397,11 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     public async Task ConsumerFinal_contado_dentro_del_maximo_es_permitido()
     {
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical, unitPrice: 40m); // total ≈ 46 < máximo 50
+        var inv = CreateDraftInvoice(
+            issueDate: today,
+            emissionType: EmissionType.Physical,
+            unitPrice: 40m
+        ); // total ≈ 46 < máximo 50
         var policy = new SalesFiscalPolicyResult(
             true,
             50.00m,
@@ -1325,7 +1423,11 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     public async Task ConsumerFinal_contado_supera_el_maximo_es_bloqueado()
     {
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical, unitPrice: 100m); // total ≈ 115 > máximo 50
+        var inv = CreateDraftInvoice(
+            issueDate: today,
+            emissionType: EmissionType.Physical,
+            unitPrice: 100m
+        ); // total ≈ 115 > máximo 50
         var policy = new SalesFiscalPolicyResult(
             true,
             50.00m,
@@ -1352,7 +1454,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         var today = new DateOnly(2026, 7, 13);
         // Monto bajo (dentro del máximo) para aislar que el bloqueo es por crédito, no por monto.
         var inv = CreateDraftInvoice(
-            issueDate: today, emissionType: EmissionType.Physical,
+            issueDate: today,
+            emissionType: EmissionType.Physical,
             unitPrice: 10m,
             installments: 3,
             daysBetween: 30
@@ -1387,7 +1490,11 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     {
         var today = new DateOnly(2026, 7, 13);
         // installments=1, daysBetween=0 (default) → PaymentTerm es Contado, como en la factura real.
-        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical, unitPrice: 10m);
+        var inv = CreateDraftInvoice(
+            issueDate: today,
+            emissionType: EmissionType.Physical,
+            unitPrice: 10m
+        );
         var policy = new SalesFiscalPolicyResult(
             true,
             50.00m,
@@ -1420,7 +1527,11 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     public async Task ConsumerFinal_contado_con_metodo_pago_contado_dentro_del_maximo_es_permitido()
     {
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical, unitPrice: 10m); // total ≈ 11.5 < 50
+        var inv = CreateDraftInvoice(
+            issueDate: today,
+            emissionType: EmissionType.Physical,
+            unitPrice: 10m
+        ); // total ≈ 11.5 < 50
         var policy = new SalesFiscalPolicyResult(
             true,
             50.00m,
@@ -1449,7 +1560,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     {
         var today = new DateOnly(2026, 7, 13);
         var inv = CreateDraftInvoice(
-            issueDate: today, emissionType: EmissionType.Physical,
+            issueDate: today,
+            emissionType: EmissionType.Physical,
             unitPrice: 1000m, // supera el máximo de Consumidor Final — no debe importar aquí
             installments: 3,
             daysBetween: 30
@@ -1481,7 +1593,11 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     public async Task ClienteIdentificado_total_mayor_al_maximo_es_permitido()
     {
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical, unitPrice: 1000m); // muy por encima de 50
+        var inv = CreateDraftInvoice(
+            issueDate: today,
+            emissionType: EmissionType.Physical,
+            unitPrice: 1000m
+        ); // muy por encima de 50
         var policy = new SalesFiscalPolicyResult(
             true,
             50.00m,
@@ -1503,7 +1619,11 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     public async Task ConsumerFinalMaxAmount_cero_bloquea_toda_venta_a_consumidor_final()
     {
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical, unitPrice: 0.01m); // el total mínimo posible
+        var inv = CreateDraftInvoice(
+            issueDate: today,
+            emissionType: EmissionType.Physical,
+            unitPrice: 0.01m
+        ); // el total mínimo posible
         var policy = new SalesFiscalPolicyResult(
             true,
             0.00m,
@@ -1528,7 +1648,11 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     public async Task ClienteIdentificado_contado_con_efectivo_es_permitido_y_no_genera_CxC()
     {
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical, unitPrice: 10m); // Contado, default efectivo
+        var inv = CreateDraftInvoice(
+            issueDate: today,
+            emissionType: EmissionType.Physical,
+            unitPrice: 10m
+        ); // Contado, default efectivo
         var (handler, _, receivableRepo) = BuildHandler(
             inv,
             today,
@@ -1555,7 +1679,11 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     {
         var today = new DateOnly(2026, 7, 13);
         // installments=1, daysBetween=0 (default) → PaymentTerm Contado.
-        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical, unitPrice: 10m);
+        var inv = CreateDraftInvoice(
+            issueDate: today,
+            emissionType: EmissionType.Physical,
+            unitPrice: 10m
+        );
         var (handler, _, _) = BuildHandler(
             inv,
             today,
@@ -1579,7 +1707,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     {
         var today = new DateOnly(2026, 7, 13);
         var inv = CreateDraftInvoice(
-            issueDate: today, emissionType: EmissionType.Physical,
+            issueDate: today,
+            emissionType: EmissionType.Physical,
             unitPrice: 10m,
             installments: 1,
             daysBetween: 30
@@ -1610,7 +1739,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     {
         var today = new DateOnly(2026, 7, 13);
         var inv = CreateDraftInvoice(
-            issueDate: today, emissionType: EmissionType.Physical,
+            issueDate: today,
+            emissionType: EmissionType.Physical,
             unitPrice: 10m,
             installments: 1,
             daysBetween: 30
@@ -1644,7 +1774,11 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         // (prioridad), no el genérico de consistencia — ambos contienen "crédito", por eso se
         // verifica el texto completo, no solo una palabra.
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical, unitPrice: 10m);
+        var inv = CreateDraftInvoice(
+            issueDate: today,
+            emissionType: EmissionType.Physical,
+            unitPrice: 10m
+        );
         var policy = new SalesFiscalPolicyResult(
             true,
             50.00m,
@@ -1665,7 +1799,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         );
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should()
+        result
+            .Error.Should()
             .Be(
                 "Consumidor Final no puede registrar ventas a crédito. Seleccione un cliente identificado o cambie la condición de pago a contado."
             );
@@ -1723,7 +1858,11 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     public async Task Contado_GeneraCronogramaPeroNoGeneraCxC()
     {
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical, unitPrice: 10m); // Contado (installments=1, days=0)
+        var inv = CreateDraftInvoice(
+            issueDate: today,
+            emissionType: EmissionType.Physical,
+            unitPrice: 10m
+        ); // Contado (installments=1, days=0)
         inv.GeneratePaymentSchedule();
         var (handler, _, receivableRepo) = BuildHandler(inv, today, CreateIdentifiedCustomerBp());
 
@@ -1746,7 +1885,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     {
         var today = new DateOnly(2026, 7, 13);
         var inv = CreateDraftInvoice(
-            issueDate: today, emissionType: EmissionType.Physical,
+            issueDate: today,
+            emissionType: EmissionType.Physical,
             unitPrice: 10m,
             installments: 1,
             daysBetween: 30
@@ -1786,7 +1926,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     {
         var today = new DateOnly(2026, 7, 13);
         var inv = CreateDraftInvoice(
-            issueDate: today, emissionType: EmissionType.Physical,
+            issueDate: today,
+            emissionType: EmissionType.Physical,
             unitPrice: 100m, // GrandTotal = 100 (CreateDraftInvoice no aplica IVA a nivel de dominio)
             installments: 3,
             daysBetween: 30
@@ -1839,7 +1980,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         // generando CxC vía el fallback defensivo (SalesReceivable.GenerateInstallments).
         var today = new DateOnly(2026, 7, 13);
         var inv = CreateDraftInvoice(
-            issueDate: today, emissionType: EmissionType.Physical,
+            issueDate: today,
+            emissionType: EmissionType.Physical,
             unitPrice: 10m,
             installments: 1,
             daysBetween: 30
@@ -1873,7 +2015,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         var today = new DateOnly(2026, 7, 13);
         // installments=1, daysBetween=30 → PaymentTerm de crédito (isCreditByTerm = true).
         var inv = CreateDraftInvoice(
-            issueDate: today, emissionType: EmissionType.Physical,
+            issueDate: today,
+            emissionType: EmissionType.Physical,
             unitPrice: 100m,
             installments: 1,
             daysBetween: 30
@@ -1939,7 +2082,12 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
 
         result.IsSuccess.Should().BeTrue(result.Error);
         captured.Should().NotBeNull();
-        captured!.OriginalAmount.Should().Be(creditAmount, "la CxC debe ser por el saldo pendiente, nunca por el total del documento cuando hubo abono parcial en efectivo");
+        captured!
+            .OriginalAmount.Should()
+            .Be(
+                creditAmount,
+                "la CxC debe ser por el saldo pendiente, nunca por el total del documento cuando hubo abono parcial en efectivo"
+            );
         captured.OriginalAmount.Should().NotBe(total);
     }
 
@@ -1997,11 +2145,22 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     public async Task EfectivoUnico_SincronizaCabeceraConCodigoSriRealDelMetodo()
     {
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoiceWithHeaderSriCode(today, headerSriPaymentMethodCode: "20", unitPrice: 100m);
+        var inv = CreateDraftInvoiceWithHeaderSriCode(
+            today,
+            headerSriPaymentMethodCode: "20",
+            unitPrice: 100m
+        );
         var total = ExpectedGrandTotal(100m);
 
         var cashMethodId = Guid.NewGuid();
-        var payment = SalesInvoicePayment.Create(inv.Id, TenantId, cashMethodId, "01", "Efectivo", total);
+        var payment = SalesInvoicePayment.Create(
+            inv.Id,
+            TenantId,
+            cashMethodId,
+            "01",
+            "Efectivo",
+            total
+        );
         inv.ReplacePayments(new[] { payment }, UserId);
 
         var paymentMethodRepo = new Mock<IPaymentMethodRepository>();
@@ -2027,21 +2186,39 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             paymentMethodRepoOverride: paymentMethodRepo
         );
 
-        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        inv.SriPaymentMethodCode.Should().Be("01", "el único pago real fue EFECTIVO — la cabecera debe reflejar su código SRI real, nunca el valor previo desalineado.");
+        inv.SriPaymentMethodCode.Should()
+            .Be(
+                "01",
+                "el único pago real fue EFECTIVO — la cabecera debe reflejar su código SRI real, nunca el valor previo desalineado."
+            );
     }
 
     [Fact]
     public async Task TransferenciaUnica_SincronizaCabeceraConCodigoSriRealDelMetodo()
     {
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoiceWithHeaderSriCode(today, headerSriPaymentMethodCode: "01", unitPrice: 100m);
+        var inv = CreateDraftInvoiceWithHeaderSriCode(
+            today,
+            headerSriPaymentMethodCode: "01",
+            unitPrice: 100m
+        );
         var total = ExpectedGrandTotal(100m);
 
         var transferMethodId = Guid.NewGuid();
-        var payment = SalesInvoicePayment.Create(inv.Id, TenantId, transferMethodId, "16", "Transferencia", total);
+        var payment = SalesInvoicePayment.Create(
+            inv.Id,
+            TenantId,
+            transferMethodId,
+            "16",
+            "Transferencia",
+            total
+        );
         inv.ReplacePayments(new[] { payment }, UserId);
 
         var paymentMethodRepo = new Mock<IPaymentMethodRepository>();
@@ -2067,7 +2244,10 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             paymentMethodRepoOverride: paymentMethodRepo
         );
 
-        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         inv.SriPaymentMethodCode.Should().Be("16");
@@ -2077,13 +2257,24 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     public async Task MixtoEfectivoTarjeta_NoFuerzaCabeceraAUnValorUnico()
     {
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoiceWithHeaderSriCode(today, headerSriPaymentMethodCode: "05", unitPrice: 100m);
+        var inv = CreateDraftInvoiceWithHeaderSriCode(
+            today,
+            headerSriPaymentMethodCode: "05",
+            unitPrice: 100m
+        );
         var total = ExpectedGrandTotal(100m);
         var half = Math.Round(total / 2, 2, MidpointRounding.AwayFromZero);
 
         var cashMethodId = Guid.NewGuid();
         var cardMethodId = Guid.NewGuid();
-        var cashPayment = SalesInvoicePayment.Create(inv.Id, TenantId, cashMethodId, "01", "Efectivo", half);
+        var cashPayment = SalesInvoicePayment.Create(
+            inv.Id,
+            TenantId,
+            cashMethodId,
+            "01",
+            "Efectivo",
+            half
+        );
         var cardPayment = SalesInvoicePayment.Create(
             inv.Id,
             TenantId,
@@ -2098,12 +2289,30 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         paymentMethodRepo
             .Setup(r => r.GetByIdAsync(TenantId, cashMethodId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(
-                PaymentMethod.Create(TenantId, "EFECTIVO", "Efectivo", false, false, 1, UserId, sriPaymentMethodCode: "01")
+                PaymentMethod.Create(
+                    TenantId,
+                    "EFECTIVO",
+                    "Efectivo",
+                    false,
+                    false,
+                    1,
+                    UserId,
+                    sriPaymentMethodCode: "01"
+                )
             );
         paymentMethodRepo
             .Setup(r => r.GetByIdAsync(TenantId, cardMethodId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(
-                PaymentMethod.Create(TenantId, "TARJETA", "Tarjeta", true, false, 2, UserId, sriPaymentMethodCode: "19")
+                PaymentMethod.Create(
+                    TenantId,
+                    "TARJETA",
+                    "Tarjeta",
+                    true,
+                    false,
+                    2,
+                    UserId,
+                    sriPaymentMethodCode: "19"
+                )
             );
 
         var (handler, _, _) = BuildHandler(
@@ -2113,10 +2322,17 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             paymentMethodRepoOverride: paymentMethodRepo
         );
 
-        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        inv.SriPaymentMethodCode.Should().Be("05", "pago mixto (2 métodos reales distintos) nunca debe forzar la cabecera a un único código — el XML ya resuelve el código por pago individual.");
+        inv.SriPaymentMethodCode.Should()
+            .Be(
+                "05",
+                "pago mixto (2 métodos reales distintos) nunca debe forzar la cabecera a un único código — el XML ya resuelve el código por pago individual."
+            );
     }
 
     [Fact]
@@ -2136,14 +2352,30 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         var total = ExpectedGrandTotal(100m);
 
         var creditMethodId = Guid.NewGuid();
-        var payment = SalesInvoicePayment.Create(inv.Id, TenantId, creditMethodId, "20", "Crédito", total);
+        var payment = SalesInvoicePayment.Create(
+            inv.Id,
+            TenantId,
+            creditMethodId,
+            "20",
+            "Crédito",
+            total
+        );
         inv.ReplacePayments(new[] { payment }, UserId);
 
         var paymentMethodRepo = new Mock<IPaymentMethodRepository>();
         paymentMethodRepo
             .Setup(r => r.GetByIdAsync(TenantId, creditMethodId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(
-                PaymentMethod.Create(TenantId, "CREDITO", "Crédito", false, true, 3, UserId, sriPaymentMethodCode: "20")
+                PaymentMethod.Create(
+                    TenantId,
+                    "CREDITO",
+                    "Crédito",
+                    false,
+                    true,
+                    3,
+                    UserId,
+                    sriPaymentMethodCode: "20"
+                )
             );
 
         var (handler, _, _) = BuildHandler(
@@ -2154,7 +2386,10 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             paymentMethodIsCreditAllowed: true
         );
 
-        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         // La sincronización de cabecera NUNCA se dispara para crédito puro — nunca debe reflejar
@@ -2166,11 +2401,22 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     public async Task SinMappingSriDelMetodoUnico_ConservaElFallbackDeCabecera()
     {
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoiceWithHeaderSriCode(today, headerSriPaymentMethodCode: "01", unitPrice: 100m);
+        var inv = CreateDraftInvoiceWithHeaderSriCode(
+            today,
+            headerSriPaymentMethodCode: "01",
+            unitPrice: 100m
+        );
         var total = ExpectedGrandTotal(100m);
 
         var unmappedMethodId = Guid.NewGuid();
-        var payment = SalesInvoicePayment.Create(inv.Id, TenantId, unmappedMethodId, "99", "Otro", total);
+        var payment = SalesInvoicePayment.Create(
+            inv.Id,
+            TenantId,
+            unmappedMethodId,
+            "99",
+            "Otro",
+            total
+        );
         inv.ReplacePayments(new[] { payment }, UserId);
 
         var paymentMethodRepo = new Mock<IPaymentMethodRepository>();
@@ -2188,10 +2434,17 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             paymentMethodRepoOverride: paymentMethodRepo
         );
 
-        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        inv.SriPaymentMethodCode.Should().Be("01", "sin mapping SRI configurado para el único método usado, la cabecera conserva su fallback previo en vez de sincronizar un valor incorrecto o vaciarlo.");
+        inv.SriPaymentMethodCode.Should()
+            .Be(
+                "01",
+                "sin mapping SRI configurado para el único método usado, la cabecera conserva su fallback previo en vez de sincronizar un valor incorrecto o vaciarlo."
+            );
     }
 
     // ── SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01 ──────────────────────────────────────────
@@ -2204,7 +2457,11 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         // para la Company activa, la autorización debe rechazarse ANTES de capturar secuencial/
         // tocar inventario — nunca contabilizar silenciosamente contra Efectivo/Caja general.
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoiceWithHeaderSriCode(today, headerSriPaymentMethodCode: "01", unitPrice: 100m);
+        var inv = CreateDraftInvoiceWithHeaderSriCode(
+            today,
+            headerSriPaymentMethodCode: "01",
+            unitPrice: 100m
+        );
         var total = ExpectedGrandTotal(100m);
 
         var cardMethodId = Guid.NewGuid();
@@ -2241,19 +2498,18 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         // configurada bloquea, nunca cae en Caja general en silencio.
         var paymentMethodAccountRepo = new Mock<IPaymentMethodAccountRepository>();
         paymentMethodAccountRepo
-            .Setup(r =>
-                r.GetMapAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
-            )
+            .Setup(r => r.GetMapAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(
                 new Dictionary<Guid, ERP.Domain.Modules.Sales.Entities.PaymentMethodAccount>
                 {
-                    [Guid.NewGuid()] = ERP.Domain.Modules.Sales.Entities.PaymentMethodAccount.Create(
-                        TenantId,
-                        CompanyId,
-                        Guid.NewGuid(),
-                        Guid.NewGuid(),
-                        UserId
-                    ),
+                    [Guid.NewGuid()] =
+                        ERP.Domain.Modules.Sales.Entities.PaymentMethodAccount.Create(
+                            TenantId,
+                            CompanyId,
+                            Guid.NewGuid(),
+                            Guid.NewGuid(),
+                            UserId
+                        ),
                 }
             );
 
@@ -2288,7 +2544,11 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         // autorización (a diferencia de cualquier otro método) — el traductor de posting enruta
         // ese monto a la línea fija histórica de la PostingRule.
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical, unitPrice: 100m);
+        var inv = CreateDraftInvoice(
+            issueDate: today,
+            emissionType: EmissionType.Physical,
+            unitPrice: 100m
+        );
 
         // Mapa vacío deliberado: ningún método tiene cuenta configurada — Company "sin migrar",
         // el gate fail-closed permanece apagado.
@@ -2320,7 +2580,11 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         // Regresión: Efectivo con PaymentMethodAccount configurado (Caja general) debe seguir
         // autorizando exactamente igual que antes de este ticket.
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical, unitPrice: 100m);
+        var inv = CreateDraftInvoice(
+            issueDate: today,
+            emissionType: EmissionType.Physical,
+            unitPrice: 100m
+        );
         var cajaGeneralAccountId = Guid.NewGuid();
 
         var paymentMethodAccountRepo = new Mock<IPaymentMethodAccountRepository>();
@@ -2372,7 +2636,13 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         );
 
     private static ERP.Domain.MasterData.Entities.Bank ActiveBank() =>
-        ERP.Domain.MasterData.Entities.Bank.Create(TenantId, "PICHINCHA", "Banco Pichincha", null, UserId);
+        ERP.Domain.MasterData.Entities.Bank.Create(
+            TenantId,
+            "PICHINCHA",
+            "Banco Pichincha",
+            null,
+            UserId
+        );
 
     private static ERP.Domain.Modules.Accounting.Entities.Account ActiveAccount(
         bool allowsPosting = true,
@@ -2423,7 +2693,11 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         decimal unitPrice = 100m
     )
     {
-        var inv = CreateDraftInvoiceWithHeaderSriCode(issueDate, headerSriPaymentMethodCode: "16", unitPrice);
+        var inv = CreateDraftInvoiceWithHeaderSriCode(
+            issueDate,
+            headerSriPaymentMethodCode: "16",
+            unitPrice
+        );
         var transferMethodId = Guid.NewGuid();
         var total = ExpectedGrandTotal(unitPrice);
         var payment = SalesInvoicePayment.Create(
@@ -2451,7 +2725,10 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     public async Task Transferencia_sin_cuenta_bancaria_seleccionada_bloquea_la_autorizacion()
     {
         var today = new DateOnly(2026, 7, 13);
-        var (inv, transferMethodId) = CreateDraftInvoiceWithTransferPayment(today, companyBankAccountId: null);
+        var (inv, transferMethodId) = CreateDraftInvoiceWithTransferPayment(
+            today,
+            companyBankAccountId: null
+        );
 
         var paymentMethodRepo = new Mock<IPaymentMethodRepository>();
         paymentMethodRepo
@@ -2465,7 +2742,10 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             paymentMethodRepoOverride: paymentMethodRepo
         );
 
-        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("cuenta bancaria de destino");
@@ -2499,7 +2779,10 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             bankAccountRepoOverride: bankAccountRepo
         );
 
-        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("no existe o no pertenece a esta empresa");
@@ -2533,7 +2816,10 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             bankAccountRepoOverride: bankAccountRepo
         );
 
-        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("inactiva");
@@ -2561,7 +2847,9 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
 
         var accountRepo = new Mock<IAccountRepository>();
         accountRepo
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, account.Id, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, account.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(account);
 
         var (handler, _, _) = BuildHandler(
@@ -2573,7 +2861,10 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             accountRepoOverride: accountRepo
         );
 
-        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("no es postable o está inactiva");
@@ -2589,7 +2880,11 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         var bank = ActiveBank();
         var account = ActiveAccount();
         var bankAccount = ActiveBankAccount(bank.Id, account.Id);
-        var (inv, transferMethodId) = CreateDraftInvoiceWithTransferPayment(today, bankAccount.Id, unitPrice: 100m);
+        var (inv, transferMethodId) = CreateDraftInvoiceWithTransferPayment(
+            today,
+            bankAccount.Id,
+            unitPrice: 100m
+        );
         var total = ExpectedGrandTotal(100m);
 
         var paymentMethodRepo = new Mock<IPaymentMethodRepository>();
@@ -2604,7 +2899,9 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
 
         var accountRepo = new Mock<IAccountRepository>();
         accountRepo
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, account.Id, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, account.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(account);
 
         // Mapa PaymentMethodAccount vacío a propósito: si el código incorrectamente cayera en esa
@@ -2627,13 +2924,16 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             accountRepoOverride: accountRepo
         );
 
-        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Authorized);
 
-        var authorizedEvent = inv.DomainEvents
-            .OfType<Domain.Modules.Sales.Events.SalesInvoiceAuthorizedEvent>()
+        var authorizedEvent = inv
+            .DomainEvents.OfType<Domain.Modules.Sales.Events.SalesInvoiceAuthorizedEvent>()
             .Single();
         authorizedEvent.CashByAccount.Should().ContainSingle();
         authorizedEvent.CashByAccount.Should().ContainKey(account.Id);
@@ -2651,7 +2951,11 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         var bank = ActiveBank();
         var account = ActiveAccount();
         var bankAccount = ActiveBankAccount(bank.Id, account.Id);
-        var (inv, transferMethodId) = CreateDraftInvoiceWithTransferPayment(today, bankAccount.Id, unitPrice: 100m);
+        var (inv, transferMethodId) = CreateDraftInvoiceWithTransferPayment(
+            today,
+            bankAccount.Id,
+            unitPrice: 100m
+        );
         var total = ExpectedGrandTotal(100m);
 
         var paymentMethodRepo = new Mock<IPaymentMethodRepository>();
@@ -2666,7 +2970,9 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
 
         var accountRepo = new Mock<IAccountRepository>();
         accountRepo
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, account.Id, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, account.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(account);
 
         var (handler, _, _) = BuildHandler(
@@ -2678,26 +2984,44 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             accountRepoOverride: accountRepo
         );
 
-        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
 
-        var authorizedEvent = inv.DomainEvents
-            .OfType<Domain.Modules.Sales.Events.SalesInvoiceAuthorizedEvent>()
+        var authorizedEvent = inv
+            .DomainEvents.OfType<Domain.Modules.Sales.Events.SalesInvoiceAuthorizedEvent>()
             .Single();
-        authorizedEvent.CashApplied.Should().Be(total, "Transferencia es dinero real recibido para settlement/CxC/contabilidad.");
-        authorizedEvent.PhysicalCashApplied.Should().Be(0m, "Transferencia nunca mueve el cajón físico de la caja.");
+        authorizedEvent
+            .CashApplied.Should()
+            .Be(total, "Transferencia es dinero real recibido para settlement/CxC/contabilidad.");
+        authorizedEvent
+            .PhysicalCashApplied.Should()
+            .Be(0m, "Transferencia nunca mueve el cajón físico de la caja.");
     }
 
     [Fact]
     public async Task Efectivo_100_por_ciento_CashApplied_y_PhysicalCashApplied_iguales_al_total()
     {
         var today = new DateOnly(2026, 7, 13);
-        var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical, unitPrice: 100m);
+        var inv = CreateDraftInvoice(
+            issueDate: today,
+            emissionType: EmissionType.Physical,
+            unitPrice: 100m
+        );
         var total = ExpectedGrandTotal(100m);
 
         var cashMethodId = Guid.NewGuid();
-        var payment = SalesInvoicePayment.Create(inv.Id, TenantId, cashMethodId, "01", "Efectivo", total);
+        var payment = SalesInvoicePayment.Create(
+            inv.Id,
+            TenantId,
+            cashMethodId,
+            "01",
+            "Efectivo",
+            total
+        );
         inv.ReplacePayments(new[] { payment }, UserId);
 
         var paymentMethodRepo = new Mock<IPaymentMethodRepository>();
@@ -2723,12 +3047,15 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             paymentMethodRepoOverride: paymentMethodRepo
         );
 
-        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
 
-        var authorizedEvent = inv.DomainEvents
-            .OfType<Domain.Modules.Sales.Events.SalesInvoiceAuthorizedEvent>()
+        var authorizedEvent = inv
+            .DomainEvents.OfType<Domain.Modules.Sales.Events.SalesInvoiceAuthorizedEvent>()
             .Single();
         authorizedEvent.CashApplied.Should().Be(total);
         authorizedEvent.PhysicalCashApplied.Should().Be(total);
@@ -2751,26 +3078,56 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     {
         var epRepo = new Mock<IEmissionPointRepository>();
         epRepo
-            .Setup(r => r.GetByIdForCompanyAsync(TenantId, CompanyId, ep.Id, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByIdForCompanyAsync(TenantId, CompanyId, ep.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(ep);
 
         var est = ERP.Domain.Modules.Company.Entities.Establishment.Create(
-            TenantId, BranchId, CompanyId, "001", "Matriz", "Dirección", null, true, UserId
+            TenantId,
+            BranchId,
+            CompanyId,
+            "001",
+            "Matriz",
+            "Dirección",
+            null,
+            true,
+            UserId
         );
         var estRepo = new Mock<IEstablishmentRepository>();
         estRepo
-            .Setup(r => r.GetByIdForCompanyAsync(TenantId, CompanyId, ep.EstablishmentId, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByIdForCompanyAsync(
+                    TenantId,
+                    CompanyId,
+                    ep.EstablishmentId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(est);
 
         var seqRepo = new Mock<IDocumentSequenceRepository>();
         seqRepo
-            .Setup(r => r.CaptureNextAsync(TenantId, CompanyId, ep.Id, It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.CaptureNextAsync(
+                    TenantId,
+                    CompanyId,
+                    ep.Id,
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync("000000001");
 
         var resolvedTypes = new List<EmissionType>();
         var strategy = new Mock<ISalesInvoiceEmissionStrategy>();
         strategy
-            .Setup(s => s.ExecuteAsync(It.IsAny<SalesInvoiceEmissionContext>(), It.IsAny<CancellationToken>()))
+            .Setup(s =>
+                s.ExecuteAsync(
+                    It.IsAny<SalesInvoiceEmissionContext>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync((string?)null);
         var resolver = new Mock<ISalesInvoiceEmissionStrategyResolver>();
         resolver
@@ -2795,18 +3152,19 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         EmissionType type
     ) =>
         ERP.Domain.Modules.Company.Entities.EmissionPoint.Create(
-            TenantId, CompanyId, Guid.NewGuid(), "001", "Punto 1", type, true, UserId
+            TenantId,
+            CompanyId,
+            Guid.NewGuid(),
+            "001",
+            "Punto 1",
+            type,
+            true,
+            UserId
         );
 
     [Theory]
-    [InlineData(
-        EmissionType.Electronic,
-        EmissionType.Physical
-    )]
-    [InlineData(
-        EmissionType.Physical,
-        EmissionType.Electronic
-    )]
+    [InlineData(EmissionType.Electronic, EmissionType.Physical)]
+    [InlineData(EmissionType.Physical, EmissionType.Electronic)]
     public async Task Cambio_posterior_del_EmissionPoint_no_altera_el_tipo_de_emision_del_borrador(
         EmissionType snapshotType,
         EmissionType liveTypeAfterChange
@@ -2824,11 +3182,18 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
 
         var (handler, resolvedTypes) = BuildHandlerWithEmissionPoint(inv, today, ep);
 
-        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        resolvedTypes.Should().Equal(new[] { snapshotType },
-            "la estrategia de emisión se resuelve desde el snapshot de la factura, nunca desde el EP vivo");
+        resolvedTypes
+            .Should()
+            .Equal(
+                new[] { snapshotType },
+                "la estrategia de emisión se resuelve desde el snapshot de la factura, nunca desde el EP vivo"
+            );
         inv.EmissionType.Should().Be(snapshotType);
         inv.EmissionPointId.Should().Be(ep.Id);
         result.Value!.EmissionType.Should().Be(snapshotType.ToString());
@@ -2847,7 +3212,10 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
 
         var (handler, resolvedTypes) = BuildHandlerWithEmissionPoint(inv, today, ep);
 
-        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         resolvedTypes.Should().Equal(type);

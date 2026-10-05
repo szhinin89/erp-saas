@@ -161,7 +161,8 @@ public sealed class CompanyScopeBehaviorTests
             );
 
         (await act.Should().ThrowAsync<CompanyScopeException>())
-            .Which.Code.Should().Be("company_context_required");
+            .Which.Code.Should()
+            .Be("company_context_required");
         f.Guard.Verify(
             g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()),
             Times.Never
@@ -185,14 +186,16 @@ public sealed class CompanyScopeBehaviorTests
             );
 
         var act = async () =>
-            await f.BuildBehavior().Handle(
-                new FakeCompanyScopedRequest(),
-                NextReturning(Result<string>.Success("no-debe-llegar")),
-                CancellationToken.None
-            );
+            await f.BuildBehavior()
+                .Handle(
+                    new FakeCompanyScopedRequest(),
+                    NextReturning(Result<string>.Success("no-debe-llegar")),
+                    CancellationToken.None
+                );
 
         (await act.Should().ThrowAsync<CompanyScopeException>())
-            .Which.Code.Should().Be("company_access_denied");
+            .Which.Code.Should()
+            .Be("company_access_denied");
     }
 
     [Theory]
@@ -204,18 +207,23 @@ public sealed class CompanyScopeBehaviorTests
         var f = new Fixture();
         f.Guard.Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(
-                Result<CompanyAccessContext>.Failure(message, ApiResponseCodes.Common.CompanyScopeForbidden)
+                Result<CompanyAccessContext>.Failure(
+                    message,
+                    ApiResponseCodes.Common.CompanyScopeForbidden
+                )
             );
 
         var act = async () =>
-            await f.BuildBehavior().Handle(
-                new FakeCompanyScopedRequest(),
-                NextReturning(Result<string>.Success("no-debe-llegar")),
-                CancellationToken.None
-            );
+            await f.BuildBehavior()
+                .Handle(
+                    new FakeCompanyScopedRequest(),
+                    NextReturning(Result<string>.Success("no-debe-llegar")),
+                    CancellationToken.None
+                );
 
         (await act.Should().ThrowAsync<CompanyScopeException>())
-            .Which.Code.Should().Be("company_access_denied");
+            .Which.Code.Should()
+            .Be("company_access_denied");
     }
 
     [Fact]
@@ -223,14 +231,17 @@ public sealed class CompanyScopeBehaviorTests
     {
         var f = new Fixture();
         f.Guard.Setup(g => g.RequireActiveTenantAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<Guid>.Failure("No autenticado.", ApiResponseCodes.Common.Unauthorized));
+            .ReturnsAsync(
+                Result<Guid>.Failure("No autenticado.", ApiResponseCodes.Common.Unauthorized)
+            );
 
         var act = async () =>
-            await f.BuildBehavior().Handle(
-                new FakeCompanyScopedRequest(),
-                NextReturning(Result<string>.Success("no-debe-llegar")),
-                CancellationToken.None
-            );
+            await f.BuildBehavior()
+                .Handle(
+                    new FakeCompanyScopedRequest(),
+                    NextReturning(Result<string>.Success("no-debe-llegar")),
+                    CancellationToken.None
+                );
 
         await act.Should().ThrowAsync<UnauthorizedAccessException>();
     }

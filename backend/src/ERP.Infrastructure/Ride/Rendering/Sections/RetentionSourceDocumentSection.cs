@@ -24,11 +24,7 @@ public static class RetentionSourceDocumentSection
             .Column(column =>
             {
                 column.Spacing(2);
-                column
-                    .Item()
-                    .Text("Documento Sustento")
-                    .Bold()
-                    .FontSize(9);
+                column.Item().Text("Documento Sustento").Bold().FontSize(9);
                 column
                     .Item()
                     .Row(row =>

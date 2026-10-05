@@ -18,6 +18,7 @@ public sealed class StockTransfer : AuditableEntity, ITenantScopedEntity, ICompa
     public Guid OperationBranchId { get; private set; }
     public Guid SourceWarehouseId { get; private set; }
     public Guid TargetWarehouseId { get; private set; }
+
     /// <summary>Fecha de negocio (PostgreSQL <c>date</c>) — ZH-TEMPORAL-CONTRACT-02: nunca un instante.</summary>
     public DateOnly TransferDate { get; private set; }
     public string Status { get; private set; } = "Draft";

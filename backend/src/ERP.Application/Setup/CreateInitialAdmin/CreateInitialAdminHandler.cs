@@ -132,11 +132,7 @@ public sealed class CreateInitialAdminHandler
 
                 await _access.AddUserAsync(user, ct);
                 await _access.AddCompanyUserMembershipAsync(membership, ct);
-                var globalRole = GlobalUserRole.Create(
-                    user.Id,
-                    SecurityRoles.Admin,
-                    bootstrapId
-                );
+                var globalRole = GlobalUserRole.Create(user.Id, SecurityRoles.Admin, bootstrapId);
 
                 await _access.AddGlobalUserRoleAsync(globalRole, ct);
                 // ERP-CORE-CLOSEOUT-06: sin esto, el admin inicial queda con CompanyUserMembership

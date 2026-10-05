@@ -37,9 +37,11 @@ public sealed class AuthRefreshCookieContractTests
         public string EnvironmentName { get; set; } = "Development";
         public string ApplicationName { get; set; } = "ERP.API.Tests";
         public string WebRootPath { get; set; } = "";
-        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; } = null!;
+        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; } =
+            null!;
         public string ContentRootPath { get; set; } = "";
-        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } = null!;
+        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } =
+            null!;
     }
 
     private static T WithContext<T>(T controller, bool https, string? requestCookie = null)
@@ -68,7 +70,17 @@ public sealed class AuthRefreshCookieContractTests
     // ── Endpoints que reciben AuthResponseDto ────────────────────────────────
 
     public static TheoryData<string> AuthResponseEndpoints =>
-        new() { "login", "global-login", "complete-password-reset", "refresh", "reauthenticate", "switch-company", "global/operate-company", "global/return" };
+        new()
+        {
+            "login",
+            "global-login",
+            "complete-password-reset",
+            "refresh",
+            "reauthenticate",
+            "switch-company",
+            "global/operate-company",
+            "global/return",
+        };
 
     /// <summary>Invoca el endpoint con un mediator que responde <paramref name="result"/>.</summary>
     private static async Task<(IActionResult Response, ControllerBase Controller)> Invoke(
@@ -93,7 +105,13 @@ public sealed class AuthRefreshCookieContractTests
             case "complete-password-reset":
                 {
                     var c = WithContext(new AuthController(mediator), https);
-                    return (await c.CompletePasswordReset(new CompletePasswordResetCommand("tok", "N3wPass!"), default), c);
+                    return (
+                        await c.CompletePasswordReset(
+                            new CompletePasswordResetCommand("tok", "N3wPass!"),
+                            default
+                        ),
+                        c
+                    );
                 }
             case "refresh":
                 {
@@ -102,18 +120,28 @@ public sealed class AuthRefreshCookieContractTests
                 }
             case "reauthenticate":
                 {
-                    var c = WithContext(new AuthController(mediator), https, requestCookie: "raw-token");
+                    var c = WithContext(
+                        new AuthController(mediator),
+                        https,
+                        requestCookie: "raw-token"
+                    );
                     return (await c.Reauthenticate(new ReauthenticateRequest("pw"), default), c);
                 }
             case "switch-company":
                 {
                     var c = WithContext(new AuthController(mediator), https);
-                    return (await c.SwitchCompany(new SwitchCompanyRequest(Guid.NewGuid()), default), c);
+                    return (
+                        await c.SwitchCompany(new SwitchCompanyRequest(Guid.NewGuid()), default),
+                        c
+                    );
                 }
             case "global/operate-company":
                 {
                     var c = WithContext(new GlobalAuthController(mediator), https);
-                    return (await c.OperateCompany(new OperateCompanyRequest(Guid.NewGuid()), default), c);
+                    return (
+                        await c.OperateCompany(new OperateCompanyRequest(Guid.NewGuid()), default),
+                        c
+                    );
                 }
             case "global/return":
                 {
@@ -127,14 +155,23 @@ public sealed class AuthRefreshCookieContractTests
 
     [Theory]
     [MemberData(nameof(AuthResponseEndpoints))]
-    public async Task Exito_con_refresh_token_emite_una_cookie_con_la_politica_vigente(string endpoint)
+    public async Task Exito_con_refresh_token_emite_una_cookie_con_la_politica_vigente(
+        string endpoint
+    )
     {
         foreach (var https in new[] { true, false })
         {
-            var (response, controller) = await Invoke(endpoint, Result<AuthResponseDto>.Success(Response("new-refresh", Expiry)), https);
+            var (response, controller) = await Invoke(
+                endpoint,
+                Result<AuthResponseDto>.Success(Response("new-refresh", Expiry)),
+                https
+            );
 
             response.Should().BeOfType<OkObjectResult>();
-            var cookie = SetCookies(controller).Should().ContainSingle($"{endpoint} emite exactamente una cookie").Subject;
+            var cookie = SetCookies(controller)
+                .Should()
+                .ContainSingle($"{endpoint} emite exactamente una cookie")
+                .Subject;
             cookie.Name.Value.Should().Be(CookieName);
             cookie.Value.Value.Should().Be("new-refresh");
             cookie.HttpOnly.Should().BeTrue();
@@ -151,9 +188,20 @@ public sealed class AuthRefreshCookieContractTests
     [MemberData(nameof(AuthResponseEndpoints))]
     public async Task Exito_sin_refresh_token_o_sin_expiracion_no_emite_cookie(string endpoint)
     {
-        foreach (var value in new[] { Response(null, Expiry), Response("token-sin-expiracion", null), null })
+        foreach (
+            var value in new[]
+            {
+                Response(null, Expiry),
+                Response("token-sin-expiracion", null),
+                null,
+            }
+        )
         {
-            var (response, controller) = await Invoke(endpoint, Result<AuthResponseDto>.Success(value!), https: true);
+            var (response, controller) = await Invoke(
+                endpoint,
+                Result<AuthResponseDto>.Success(value!),
+                https: true
+            );
 
             response.Should().BeOfType<OkObjectResult>();
             controller.HttpContext.Response.Headers.SetCookie.Should().BeEmpty(endpoint);
@@ -171,7 +219,11 @@ public sealed class AuthRefreshCookieContractTests
     [InlineData("global/return", typeof(BadRequestObjectResult))]
     public async Task Fallo_no_emite_cookie_y_conserva_el_status(string endpoint, Type expected)
     {
-        var (response, controller) = await Invoke(endpoint, Result<AuthResponseDto>.Failure("No autorizado."), https: true);
+        var (response, controller) = await Invoke(
+            endpoint,
+            Result<AuthResponseDto>.Failure("No autorizado."),
+            https: true
+        );
 
         response.Should().BeOfType(expected);
         controller.HttpContext.Response.Headers.SetCookie.Should().BeEmpty(endpoint);
@@ -182,11 +234,18 @@ public sealed class AuthRefreshCookieContractTests
     {
         var (response, controller) = await Invoke(
             "refresh",
-            Result<AuthResponseDto>.Failure("Demasiados intentos.", ApiResponseCodes.Common.RateLimited),
+            Result<AuthResponseDto>.Failure(
+                "Demasiados intentos.",
+                ApiResponseCodes.Common.RateLimited
+            ),
             https: true
         );
 
-        response.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(StatusCodes.Status429TooManyRequests);
+        response
+            .Should()
+            .BeOfType<ObjectResult>()
+            .Which.StatusCode.Should()
+            .Be(StatusCodes.Status429TooManyRequests);
         controller.HttpContext.Response.Headers.SetCookie.Should().BeEmpty();
     }
 
@@ -202,8 +261,12 @@ public sealed class AuthRefreshCookieContractTests
         var refresh = WithContext(new AuthController(mediator), https: true);
         var reauth = WithContext(new AuthController(mediator), https: true);
 
-        (await refresh.Refresh(new RefreshRequest(), default)).Should().BeOfType<UnauthorizedObjectResult>();
-        (await reauth.Reauthenticate(new ReauthenticateRequest("pw"), default)).Should().BeOfType<UnauthorizedObjectResult>();
+        (await refresh.Refresh(new RefreshRequest(), default))
+            .Should()
+            .BeOfType<UnauthorizedObjectResult>();
+        (await reauth.Reauthenticate(new ReauthenticateRequest("pw"), default))
+            .Should()
+            .BeOfType<UnauthorizedObjectResult>();
 
         called.Should().BeFalse();
         refresh.HttpContext.Response.Headers.SetCookie.Should().BeEmpty();
@@ -215,18 +278,37 @@ public sealed class AuthRefreshCookieContractTests
     [Fact]
     public async Task Endpoints_sin_sesion_nunca_tocan_la_cookie()
     {
-        var mediator = new StubMediator(request => request switch
-        {
-            ForgotPasswordCommand => Result<bool>.Success(true),
-            ResetPasswordWithTokenCommand => Result<bool>.Success(true),
-            _ => Result<IReadOnlyList<AccessibleCompanyDto>>.Success(Array.Empty<AccessibleCompanyDto>()),
-        });
-        var forgot = WithContext(new AuthController(mediator), https: true, requestCookie: "existing");
-        var reset = WithContext(new AuthController(mediator), https: true, requestCookie: "existing");
-        var myCompanies = WithContext(new AuthController(mediator), https: true, requestCookie: "existing");
+        var mediator = new StubMediator(request =>
+            request switch
+            {
+                ForgotPasswordCommand => Result<bool>.Success(true),
+                ResetPasswordWithTokenCommand => Result<bool>.Success(true),
+                _ => Result<IReadOnlyList<AccessibleCompanyDto>>.Success(
+                    Array.Empty<AccessibleCompanyDto>()
+                ),
+            }
+        );
+        var forgot = WithContext(
+            new AuthController(mediator),
+            https: true,
+            requestCookie: "existing"
+        );
+        var reset = WithContext(
+            new AuthController(mediator),
+            https: true,
+            requestCookie: "existing"
+        );
+        var myCompanies = WithContext(
+            new AuthController(mediator),
+            https: true,
+            requestCookie: "existing"
+        );
 
         await forgot.ForgotPassword(new ForgotPasswordCommand("ana@test.com"), default);
-        await reset.ResetPasswordWithToken(new ResetPasswordWithTokenCommand("tok", "N3wPass!", null), default);
+        await reset.ResetPasswordWithToken(
+            new ResetPasswordWithTokenCommand("tok", "N3wPass!", null),
+            default
+        );
         await myCompanies.ListMyCompanies(default);
 
         forgot.HttpContext.Response.Headers.SetCookie.Should().BeEmpty();
@@ -241,10 +323,19 @@ public sealed class AuthRefreshCookieContractTests
     [InlineData(true, false)]
     [InlineData(false, true)]
     [InlineData(false, false)]
-    public async Task Logout_borra_la_cookie_en_path_vigente_y_legacy_aunque_el_comando_falle(bool https, bool commandSucceeds)
+    public async Task Logout_borra_la_cookie_en_path_vigente_y_legacy_aunque_el_comando_falle(
+        bool https,
+        bool commandSucceeds
+    )
     {
-        var mediator = new StubMediator(_ => commandSucceeds ? Result<string>.Success("ok") : Result<string>.Failure("inválido"));
-        var controller = WithContext(new AuthController(mediator), https, requestCookie: "raw-token");
+        var mediator = new StubMediator(_ =>
+            commandSucceeds ? Result<string>.Success("ok") : Result<string>.Failure("inválido")
+        );
+        var controller = WithContext(
+            new AuthController(mediator),
+            https,
+            requestCookie: "raw-token"
+        );
 
         await controller.Logout(new LogoutRequest(null), default);
 

@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.Http.Headers;
 using ERP.API.Tests.Support;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Branches.Entities;
@@ -7,8 +9,6 @@ using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Services;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using System.Net;
-using System.Net.Http.Headers;
 
 namespace ERP.API.Tests.Integration;
 
@@ -120,7 +120,13 @@ public sealed class SessionContextCompanyBranchIsolationHttpFixture : IAsyncLife
 
         // Membresía y branch únicamente en Empresa A. Empresa B existe en el mismo tenant
         // pero el usuario nunca fue asignado a ella — ni membership ni CompanyUserBranch.
-        var membershipA = CompanyUserMembership.Create(companyA.Id, user.Id, "Admin", null, _adminId);
+        var membershipA = CompanyUserMembership.Create(
+            companyA.Id,
+            user.Id,
+            "Admin",
+            null,
+            _adminId
+        );
         db.CompanyUserMemberships.Add(membershipA);
         await db.SaveChangesAsync();
 
@@ -291,8 +297,25 @@ public sealed class MultiCompanyStaleBranchHttpFixture : IAsyncLifetime
             "Matriz A",
             "Av. Principal 123",
             "SUC-A",
-            null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
             isMainBranch: true,
             _adminId,
             companyId: companyA.Id
@@ -302,8 +325,25 @@ public sealed class MultiCompanyStaleBranchHttpFixture : IAsyncLifetime
             "Matriz B",
             "Av. Secundaria 456",
             "SUC-B",
-            null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
             isMainBranch: true,
             _adminId,
             companyId: companyB.Id
@@ -326,8 +366,20 @@ public sealed class MultiCompanyStaleBranchHttpFixture : IAsyncLifetime
         UserId = user.Id;
 
         // Usuario autorizado en AMBAS empresas, cada una con su propia sucursal asignada.
-        var membershipA = CompanyUserMembership.Create(companyA.Id, user.Id, "Admin", null, _adminId);
-        var membershipB = CompanyUserMembership.Create(companyB.Id, user.Id, "Admin", null, _adminId);
+        var membershipA = CompanyUserMembership.Create(
+            companyA.Id,
+            user.Id,
+            "Admin",
+            null,
+            _adminId
+        );
+        var membershipB = CompanyUserMembership.Create(
+            companyB.Id,
+            user.Id,
+            "Admin",
+            null,
+            _adminId
+        );
         db.CompanyUserMemberships.AddRange(membershipA, membershipB);
         await db.SaveChangesAsync();
 

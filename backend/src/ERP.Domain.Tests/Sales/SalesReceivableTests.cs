@@ -46,7 +46,9 @@ public sealed class SalesReceivableTests
 
         var act = () => receivable.RegisterCollection(60m, UserId);
 
-        act.Should().Throw<DomainRuleViolationException>().WithMessage("*excede el saldo pendiente*");
+        act.Should()
+            .Throw<DomainRuleViolationException>()
+            .WithMessage("*excede el saldo pendiente*");
         receivable.PaidAmount.Should().Be(60m);
     }
 
@@ -159,7 +161,9 @@ public sealed class SalesReceivableTests
 
         var act = () => receivable.ApplyReturnCredit(61m, UserId);
 
-        act.Should().Throw<DomainRuleViolationException>().WithMessage("*excede el saldo pendiente*");
+        act.Should()
+            .Throw<DomainRuleViolationException>()
+            .WithMessage("*excede el saldo pendiente*");
         receivable.OriginalAmount.Should().Be(100m);
         receivable.PaidAmount.Should().Be(40m);
     }
@@ -280,7 +284,10 @@ public sealed class SalesReceivableTests
         receivable.CreateInstallmentsFromSchedule(schedule);
 
         receivable.Installments.Should().HaveCount(2);
-        receivable.Installments.Select(i => i.InstallmentNumber).Should().BeEquivalentTo(new[] { 1, 2 });
+        receivable
+            .Installments.Select(i => i.InstallmentNumber)
+            .Should()
+            .BeEquivalentTo(new[] { 1, 2 });
         var first = receivable.Installments.Single(i => i.InstallmentNumber == 1);
         first.DueDate.Should().Be(new DateOnly(2026, 2, 1));
         first.Amount.Should().Be(75m);
@@ -293,7 +300,11 @@ public sealed class SalesReceivableTests
     public void CreateInstallmentsFromSchedule_reemplaza_cualquier_cuota_previa()
     {
         var receivable = Create(100m);
-        receivable.GenerateInstallments(new DateOnly(2026, 1, 1), creditTermDays: 30, installmentCount: 1);
+        receivable.GenerateInstallments(
+            new DateOnly(2026, 1, 1),
+            creditTermDays: 30,
+            installmentCount: 1
+        );
 
         var schedule = new List<SalesPaymentSchedule>
         {

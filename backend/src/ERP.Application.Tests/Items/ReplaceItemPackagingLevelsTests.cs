@@ -24,14 +24,7 @@ public sealed class ReplaceItemPackagingLevelsTests
         decimal baseQuantity,
         string uomCode,
         bool isBaseUnit
-    ) => new(
-        id,
-        name,
-        level,
-        baseQuantity,
-        uomCode,
-        IsBaseUnit: isBaseUnit
-    );
+    ) => new(id, name, level, baseQuantity, uomCode, IsBaseUnit: isBaseUnit);
 
     private static Item CreateItem()
     {
@@ -146,9 +139,7 @@ public sealed class ReplaceItemPackagingLevelsTests
 
         var result = Validator.Validate(cmd);
 
-        result
-            .Errors.Should()
-            .Contain(e => e.ErrorMessage.Contains("cantidad base 1"));
+        result.Errors.Should().Contain(e => e.ErrorMessage.Contains("cantidad base 1"));
     }
 
     [Fact]

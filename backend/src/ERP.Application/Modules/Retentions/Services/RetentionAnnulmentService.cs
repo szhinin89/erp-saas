@@ -175,7 +175,12 @@ public sealed partial class RetentionAnnulmentService : IRetentionAnnulmentServi
 
         // Consulta SOAP fuera de cualquier transacción/lock (puede tardar: reintentos HTTP del cliente).
         var sri = await QuerySriAsync(companyId, request.AccessKey, ct);
-        LogVerified(request.Id, sri.Outcome, sri.FiscalStatus, sri.RawAuthorizationStatus ?? sri.RawQueryStatus);
+        LogVerified(
+            request.Id,
+            sri.Outcome,
+            sri.FiscalStatus,
+            sri.RawAuthorizationStatus ?? sri.RawQueryStatus
+        );
         var checkedAtUtc = DateTime.UtcNow;
         var verifiedOn = await _clock.TodayAsync(companyId, tenantId, ct);
 
@@ -224,7 +229,10 @@ public sealed partial class RetentionAnnulmentService : IRetentionAnnulmentServi
                 if (!electronic.IsSuccess)
                 {
                     await _unitOfWork.RollbackAsync(ct);
-                    return Result<RetentionAnnulmentRequest>.ValidationFailure(electronic.Error!, electronic.Code);
+                    return Result<RetentionAnnulmentRequest>.ValidationFailure(
+                        electronic.Error!,
+                        electronic.Code
+                    );
                 }
             }
 
@@ -249,20 +257,31 @@ public sealed partial class RetentionAnnulmentService : IRetentionAnnulmentServi
     /// SriSettings de la empresa → ConsultaComprobante del mismo ambiente. Normaliza el contrato: sin
     /// éxito no hay estado fiscal, y un éxito sin estado reconocido no es éxito.
     /// </summary>
-    private async Task<SriDocumentStatusResult> QuerySriAsync(Guid companyId, string accessKey, CancellationToken ct)
+    private async Task<SriDocumentStatusResult> QuerySriAsync(
+        Guid companyId,
+        string accessKey,
+        CancellationToken ct
+    )
     {
         var settings = await _sriSettings.GetByCompanyIdAsync(companyId, ct);
         if (settings is null || string.IsNullOrWhiteSpace(settings.WsdlUrl))
             return new SriDocumentStatusResult
             {
                 Outcome = SriStatusQueryOutcome.Unavailable,
-                ErrorMessage = "La empresa no tiene configuración SRI (WsdlUrl) para consultar el comprobante.",
+                ErrorMessage =
+                    "La empresa no tiene configuración SRI (WsdlUrl) para consultar el comprobante.",
             };
 
         var result = await _statusQuery.QueryAsync(accessKey, settings.WsdlUrl, ct);
-        if (result.Outcome != SriStatusQueryOutcome.Success && result.FiscalStatus != SriFiscalStatus.Unknown)
+        if (
+            result.Outcome != SriStatusQueryOutcome.Success
+            && result.FiscalStatus != SriFiscalStatus.Unknown
+        )
             return result with { FiscalStatus = SriFiscalStatus.Unknown };
-        if (result.Outcome == SriStatusQueryOutcome.Success && result.FiscalStatus == SriFiscalStatus.Unknown)
+        if (
+            result.Outcome == SriStatusQueryOutcome.Success
+            && result.FiscalStatus == SriFiscalStatus.Unknown
+        )
             return result with { Outcome = SriStatusQueryOutcome.Unknown };
         return result;
     }
@@ -286,7 +305,10 @@ public sealed partial class RetentionAnnulmentService : IRetentionAnnulmentServi
         if (request.RequiresFinalization)
             return await FinalizeAsync(request.TenantId, request.CompanyId, request.Id, userId, ct);
         if (request.Status == RetentionAnnulmentStatus.Accepted)
-            return Result<RetentionAnnulmentRequest>.Success(request, ApiResponseCodes.Retentions.AnnulmentFinalized);
+            return Result<RetentionAnnulmentRequest>.Success(
+                request,
+                ApiResponseCodes.Retentions.AnnulmentFinalized
+            );
         return Result<RetentionAnnulmentRequest>.ValidationFailure(
             request.Status == RetentionAnnulmentStatus.PendingSubmission
                 ? "Primero registre que presentó la solicitud de anulación en SRI en Línea."
@@ -335,7 +357,10 @@ public sealed partial class RetentionAnnulmentService : IRetentionAnnulmentServi
             if (!electronic.IsSuccess)
             {
                 await _unitOfWork.RollbackAsync(ct);
-                return Result<RetentionAnnulmentRequest>.ValidationFailure(electronic.Error!, electronic.Code);
+                return Result<RetentionAnnulmentRequest>.ValidationFailure(
+                    electronic.Error!,
+                    electronic.Code
+                );
             }
             await ReleasePayableHoldAsync(request, userId, ct);
 
@@ -362,7 +387,10 @@ public sealed partial class RetentionAnnulmentService : IRetentionAnnulmentServi
         if (request is null)
             return NotFound();
         if (request.FinalizedAtUtc is not null)
-            return Result<RetentionAnnulmentRequest>.Success(request, ApiResponseCodes.Retentions.AnnulmentFinalized);
+            return Result<RetentionAnnulmentRequest>.Success(
+                request,
+                ApiResponseCodes.Retentions.AnnulmentFinalized
+            );
         if (request.Status != RetentionAnnulmentStatus.Accepted)
             return Result<RetentionAnnulmentRequest>.ValidationFailure(
                 "Solo una anulación confirmada por el SRI (ANULADO) finaliza la anulación del documento origen."
@@ -391,13 +419,23 @@ public sealed partial class RetentionAnnulmentService : IRetentionAnnulmentServi
         }
 
         if (!outcome.IsSuccess)
-            return await RecordFailureAsync(tenantId, companyId, requestId, userId, outcome.Error ?? "Error desconocido.", ct);
+            return await RecordFailureAsync(
+                tenantId,
+                companyId,
+                requestId,
+                userId,
+                outcome.Error ?? "Error desconocido.",
+                ct
+            );
 
         request = await _requests.GetByIdAsync(tenantId, companyId, requestId, ct);
         request!.MarkFinalized(userId);
         await _unitOfWork.SaveChangesAsync(ct);
         LogFinalized(request.Id, outcome.Value);
-        return Result<RetentionAnnulmentRequest>.Success(request, ApiResponseCodes.Retentions.AnnulmentFinalized);
+        return Result<RetentionAnnulmentRequest>.Success(
+            request,
+            ApiResponseCodes.Retentions.AnnulmentFinalized
+        );
     }
 
     /// <summary>
@@ -438,11 +476,21 @@ public sealed partial class RetentionAnnulmentService : IRetentionAnnulmentServi
         var request = await _requests.GetByIdAsync(tenantId, companyId, requestId, ct);
         if (request is null)
             return null;
-        await _retentions.GetCurrentStatusAsync(tenantId, companyId, request.RetentionDocumentId, forUpdate: true, ct);
+        await _retentions.GetCurrentStatusAsync(
+            tenantId,
+            companyId,
+            request.RetentionDocumentId,
+            forUpdate: true,
+            ct
+        );
         return await _requests.GetByIdAsync(tenantId, companyId, requestId, ct);
     }
 
-    private async Task ReleasePayableHoldAsync(RetentionAnnulmentRequest request, Guid userId, CancellationToken ct)
+    private async Task ReleasePayableHoldAsync(
+        RetentionAnnulmentRequest request,
+        Guid userId,
+        CancellationToken ct
+    )
     {
         if (
             !RetentionCanceller.TryResolveAccountsPayableOriginType(
@@ -464,16 +512,33 @@ public sealed partial class RetentionAnnulmentService : IRetentionAnnulmentServi
     private static Result<RetentionAnnulmentRequest> NotFound() =>
         Result<RetentionAnnulmentRequest>.NotFound("La solicitud de anulación no existe.");
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "[Retentions] Anulación SRI {RequestId}: ConsultaComprobante {Outcome} / {FiscalStatus} ({Raw})")]
-    private partial void LogVerified(Guid requestId, SriStatusQueryOutcome outcome, SriFiscalStatus fiscalStatus, string? raw);
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "[Retentions] Anulación SRI {RequestId}: ConsultaComprobante {Outcome} / {FiscalStatus} ({Raw})"
+    )]
+    private partial void LogVerified(
+        Guid requestId,
+        SriStatusQueryOutcome outcome,
+        SriFiscalStatus fiscalStatus,
+        string? raw
+    );
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "[Retentions] Anulación SRI {RequestId}: documento origen finalizado ({Outcome})")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "[Retentions] Anulación SRI {RequestId}: documento origen finalizado ({Outcome})"
+    )]
     private partial void LogFinalized(Guid requestId, RetentionOriginCancellationOutcome outcome);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "[Retentions] Anulación SRI {RequestId}: la finalización del origen falló y se reintentará: {Error}")]
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "[Retentions] Anulación SRI {RequestId}: la finalización del origen falló y se reintentará: {Error}"
+    )]
     private partial void LogFinalizationFailed(Guid requestId, string error);
 
-    [LoggerMessage(Level = LogLevel.Error, Message = "[Retentions] Anulación SRI {RequestId}: excepción finalizando el origen")]
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "[Retentions] Anulación SRI {RequestId}: excepción finalizando el origen"
+    )]
     private partial void LogFinalizationThrew(Guid requestId, Exception ex);
 }
 
@@ -552,7 +617,10 @@ public sealed partial class RetentionAnnulmentRequester : IRetentionAnnulmentReq
             ct
         );
         if (!electronic.IsSuccess)
-            return Result<RetentionAnnulmentRequest>.ValidationFailure(electronic.Error!, electronic.Code);
+            return Result<RetentionAnnulmentRequest>.ValidationFailure(
+                electronic.Error!,
+                electronic.Code
+            );
 
         if (
             RetentionCanceller.TryResolveAccountsPayableOriginType(
@@ -591,6 +659,9 @@ public sealed partial class RetentionAnnulmentRequester : IRetentionAnnulmentReq
         return Result<RetentionAnnulmentRequest>.Success(request);
     }
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "[Retentions] Anulación SRI solicitada {RequestId} para la retención {RetentionId}")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "[Retentions] Anulación SRI solicitada {RequestId} para la retención {RetentionId}"
+    )]
     private partial void LogRequested(Guid requestId, Guid retentionId);
 }

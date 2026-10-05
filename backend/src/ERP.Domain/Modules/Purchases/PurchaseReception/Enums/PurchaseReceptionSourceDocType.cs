@@ -59,9 +59,7 @@ public static class PurchaseReceptionSourceDocTypeMapper
                 stripped.Append(c);
         }
 
-        var words = stripped
-            .ToString()
-            .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+        var words = stripped.ToString().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
         return words.Length == 0 ? null : string.Join(' ', words);
     }
 }

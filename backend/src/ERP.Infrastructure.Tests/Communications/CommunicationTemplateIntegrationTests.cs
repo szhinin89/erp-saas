@@ -30,7 +30,9 @@ public sealed class CommunicationTemplateIntegrationTests
     private const string OverrideSubject = "Su factura {{InvoiceNumber}} de {{IssuerName}}";
     private readonly CommunicationOutboxDeliveryIntegrationTests.Database _db;
 
-    public CommunicationTemplateIntegrationTests(CommunicationOutboxDeliveryIntegrationTests.Database db) => _db = db;
+    public CommunicationTemplateIntegrationTests(
+        CommunicationOutboxDeliveryIntegrationTests.Database db
+    ) => _db = db;
 
     public async Task InitializeAsync()
     {
@@ -65,8 +67,17 @@ public sealed class CommunicationTemplateIntegrationTests
         // El override de A no es visible desde el contexto de B (ni pidiéndolo con los ids de A).
         await using var ctx = _db.Context();
         using (JobExecutionContext.Begin(_db.TenantB, _db.CompanyB))
-            (await new CommunicationTemplateRepository(ctx).GetActiveAsync(_db.TenantA, _db.CompanyA, CommunicationChannel.Email, CommunicationPurposes.SalesInvoiceAuthorized, "es"))
-                .Should().BeNull();
+            (
+                await new CommunicationTemplateRepository(ctx).GetActiveAsync(
+                    _db.TenantA,
+                    _db.CompanyA,
+                    CommunicationChannel.Email,
+                    CommunicationPurposes.SalesInvoiceAuthorized,
+                    "es"
+                )
+            )
+                .Should()
+                .BeNull();
     }
 
     [Fact]
@@ -82,13 +93,21 @@ public sealed class CommunicationTemplateIntegrationTests
     [Fact]
     public async Task Override_invalido_no_envia_contenido_corrupto_y_queda_registrado_como_Failed()
     {
-        await AddOverrideAsync(_db.TenantA, _db.CompanyA, subject: "Factura {{InvoiceNumber}} {{NoDeclarada}}");
+        await AddOverrideAsync(
+            _db.TenantA,
+            _db.CompanyA,
+            subject: "Factura {{InvoiceNumber}} {{NoDeclarada}}"
+        );
 
         var result = await EnqueueAsync(_db.TenantA, _db.CompanyA);
 
         result.FailureCode.Should().Be(ApiResponseCodes.Communications.TemplateInvalid);
         var row = await RowAsync(result.Id);
-        row.Status.Should().Be(CommunicationStatus.Failed, "nunca se envía un template inválido ni se reemplaza en silencio por el default");
+        row.Status.Should()
+            .Be(
+                CommunicationStatus.Failed,
+                "nunca se envía un template inválido ni se reemplaza en silencio por el default"
+            );
         row.FailureCategory.Should().Be(CommunicationFailureCategory.Configuration);
         row.Subject.Should().BeNull();
         row.TemplateSource.Should().BeNull();
@@ -102,8 +121,9 @@ public sealed class CommunicationTemplateIntegrationTests
 
         using (JobExecutionContext.Begin(_db.TenantA, _db.CompanyA))
         {
-            var result = await new CommunicationTemplateResolver(new CommunicationTemplateRepository(ctx))
-                .ResolveAsync(CommunicationScope.System, CommunicationPurposes.SalesInvoiceAuthorized);
+            var result = await new CommunicationTemplateResolver(
+                new CommunicationTemplateRepository(ctx)
+            ).ResolveAsync(CommunicationScope.System, CommunicationPurposes.SalesInvoiceAuthorized);
 
             result.Value!.Source.Should().Be(CommunicationTemplateSource.Default);
         }
@@ -118,13 +138,23 @@ public sealed class CommunicationTemplateIntegrationTests
 
         await using (var ctx = _db.Context())
         {
-            var template = await ctx.CommunicationTemplates.IgnoreQueryFilters().SingleAsync(t => t.Id == overrideId);
-            template.UpdateContent("Factura", "CAMBIADO {{InvoiceNumber}}", "<p>CAMBIADO</p>", null, Guid.Empty);
+            var template = await ctx
+                .CommunicationTemplates.IgnoreQueryFilters()
+                .SingleAsync(t => t.Id == overrideId);
+            template.UpdateContent(
+                "Factura",
+                "CAMBIADO {{InvoiceNumber}}",
+                "<p>CAMBIADO</p>",
+                null,
+                Guid.Empty
+            );
             await ctx.SaveChangesAsync();
         }
 
         var again = await EnqueueAsync(_db.TenantA, _db.CompanyA);
-        again.WasAlreadyQueued.Should().BeTrue("la versión del template no forma parte de la identidad");
+        again
+            .WasAlreadyQueued.Should()
+            .BeTrue("la versión del template no forma parte de la identidad");
         again.Id.Should().Be(queued.Id);
 
         string? sentSubject = null;
@@ -133,7 +163,13 @@ public sealed class CommunicationTemplateIntegrationTests
         {
             await new CommunicationOutboxProcessor(
                 new CommunicationOutboxDeliveryStore(ctx),
-                new CapturingSender((m, _) => { sentSubject = m.Subject; sentHtml = m.BodyHtml; }),
+                new CapturingSender(
+                    (m, _) =>
+                    {
+                        sentSubject = m.Subject;
+                        sentHtml = m.BodyHtml;
+                    }
+                ),
                 NoAttachments.Resolver,
                 new InstanceResolver(),
                 TimeProvider.System,
@@ -141,7 +177,9 @@ public sealed class CommunicationTemplateIntegrationTests
             ).ProcessPendingAsync();
         }
 
-        sentSubject.Should().Be(original.Subject, "se envía lo renderizado al encolar, no se re-renderiza");
+        sentSubject
+            .Should()
+            .Be(original.Subject, "se envía lo renderizado al encolar, no se re-renderiza");
         sentHtml.Should().Be(original.BodyHtml);
         var after = await RowAsync(queued.Id);
         after.Status.Should().Be(CommunicationStatus.Sent);
@@ -150,12 +188,26 @@ public sealed class CommunicationTemplateIntegrationTests
 
     // ── helpers ───────────────────────────────────────────────────────────────────────────
 
-    private async Task<Guid> AddOverrideAsync(Guid tenantId, Guid companyId, bool active = true, string subject = OverrideSubject)
+    private async Task<Guid> AddOverrideAsync(
+        Guid tenantId,
+        Guid companyId,
+        bool active = true,
+        string subject = OverrideSubject
+    )
     {
         await using var ctx = _db.Context();
         var template = CommunicationTemplate.Create(
-            tenantId, companyId, null, CommunicationPurposes.SalesInvoiceAuthorized, "Factura personalizada",
-            CommunicationChannel.Email, subject, "<p>Hola {{CustomerName}}</p>", "Hola {{CustomerName}}", "es", Guid.Empty
+            tenantId,
+            companyId,
+            null,
+            CommunicationPurposes.SalesInvoiceAuthorized,
+            "Factura personalizada",
+            CommunicationChannel.Email,
+            subject,
+            "<p>Hola {{CustomerName}}</p>",
+            "Hola {{CustomerName}}",
+            "es",
+            Guid.Empty
         );
         if (!active)
             template.Deactivate(Guid.Empty);
@@ -194,12 +246,20 @@ public sealed class CommunicationTemplateIntegrationTests
     private async Task<CommunicationOutbox> RowAsync(Guid id)
     {
         await using var ctx = _db.Context();
-        return await ctx.CommunicationOutbox.IgnoreQueryFilters().AsNoTracking().SingleAsync(x => x.Id == id);
+        return await ctx
+            .CommunicationOutbox.IgnoreQueryFilters()
+            .AsNoTracking()
+            .SingleAsync(x => x.Id == id);
     }
 
-    private sealed class CapturingSender(Action<EmailMessage, CommunicationEmailSettings> capture) : IEmailSender
+    private sealed class CapturingSender(Action<EmailMessage, CommunicationEmailSettings> capture)
+        : IEmailSender
     {
-        public Task<EmailDeliveryReceipt> SendAsync(EmailMessage message, CommunicationEmailSettings settings, CancellationToken ct = default)
+        public Task<EmailDeliveryReceipt> SendAsync(
+            EmailMessage message,
+            CommunicationEmailSettings settings,
+            CancellationToken ct = default
+        )
         {
             capture(message, settings);
             return Task.FromResult(EmailDeliveryReceipt.WithoutProviderId);
@@ -208,10 +268,26 @@ public sealed class CommunicationTemplateIntegrationTests
 
     private sealed class InstanceResolver : ICommunicationSettingsResolver
     {
-        private static readonly CommunicationEmailSettings Settings = new(true, "smtp.test", 587, null, null, "s@test.com", null, true, null, 3, "es");
+        private static readonly CommunicationEmailSettings Settings = new(
+            true,
+            "smtp.test",
+            587,
+            null,
+            null,
+            "s@test.com",
+            null,
+            true,
+            null,
+            3,
+            "es"
+        );
 
-        public Task<CommunicationEmailSettings> ResolveEmailAsync(CancellationToken ct = default) => Task.FromResult(Settings);
+        public Task<CommunicationEmailSettings> ResolveEmailAsync(CancellationToken ct = default) =>
+            Task.FromResult(Settings);
 
-        public Task<CommunicationEmailSettings> ResolveEmailAsync(CommunicationScope scope, CancellationToken ct = default) => Task.FromResult(Settings);
+        public Task<CommunicationEmailSettings> ResolveEmailAsync(
+            CommunicationScope scope,
+            CancellationToken ct = default
+        ) => Task.FromResult(Settings);
     }
 }

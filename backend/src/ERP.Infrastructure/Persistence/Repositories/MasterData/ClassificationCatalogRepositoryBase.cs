@@ -17,7 +17,10 @@ namespace ERP.Infrastructure.Persistence.Repositories.MasterData;
 /// Fail-closed: sin TenantId/CompanyId válidos, el filtro explícito no matchea ninguna fila.
 /// </summary>
 public abstract class ClassificationCatalogRepositoryBase<TEntity>
-    where TEntity : MasterEntity, ITenantScopedEntity, ICompanyOperationalEntity, IClassificationCatalogEntity
+    where TEntity : MasterEntity,
+        ITenantScopedEntity,
+        ICompanyOperationalEntity,
+        IClassificationCatalogEntity
 {
     protected readonly ErpDbContext Db;
 

@@ -52,7 +52,7 @@ public sealed class SalesInvoiceRepository : ISalesInvoiceRepository
     ) =>
         Scoped(tenantId)
             .Include(x => x.Lines.OrderBy(l => l.SortOrder))
-            .ThenInclude(l => l.Taxes)
+                .ThenInclude(l => l.Taxes)
             .Include(x => x.Payments)
             .Include(x => x.PaymentSchedules.OrderBy(s => s.InstallmentNumber))
             .FirstOrDefaultAsync(x => x.Id == id, ct);
@@ -194,16 +194,17 @@ public sealed class SalesInvoiceRepository : ISalesInvoiceRepository
 
         return rows.ToDictionary(
             x => x.Id,
-            x => (
-                x.InvoiceNumber,
-                x.CustomerName,
-                x.CustomerTaxId,
-                x.CustomerIdentificationType,
-                x.BranchId,
-                x.CreatedBy,
-                x.IssueDate,
-                x.CreatedAt
-            )
+            x =>
+                (
+                    x.InvoiceNumber,
+                    x.CustomerName,
+                    x.CustomerTaxId,
+                    x.CustomerIdentificationType,
+                    x.BranchId,
+                    x.CreatedBy,
+                    x.IssueDate,
+                    x.CreatedAt
+                )
         );
     }
 
@@ -237,23 +238,24 @@ public sealed class SalesInvoiceRepository : ISalesInvoiceRepository
             )
             .SelectMany(
                 x => x.Payments,
-                (x, p) => new SalesInvoiceCashSessionPaymentRow(
-                    x.CashSessionId,
-                    x.Id,
-                    x.InvoiceNumber,
-                    x.UpdatedAt ?? x.CreatedAt,
-                    x.Customer.Name,
-                    x.AuthorizedGrandTotal!.Value,
-                    p.PaymentMethodId,
-                    p.PaymentMethodCode,
-                    p.PaymentMethodName,
-                    p.Amount,
-                    p.Reference,
-                    p.TransferDetail == null ? null : p.TransferDetail.CompanyBankAccountId,
-                    p.TransferDetail == null ? null : p.TransferDetail.BankName,
-                    p.TransferDetail == null ? null : p.TransferDetail.ReceiptNumber,
-                    p.TransferDetail == null ? null : p.TransferDetail.TransferDate
-                )
+                (x, p) =>
+                    new SalesInvoiceCashSessionPaymentRow(
+                        x.CashSessionId,
+                        x.Id,
+                        x.InvoiceNumber,
+                        x.UpdatedAt ?? x.CreatedAt,
+                        x.Customer.Name,
+                        x.AuthorizedGrandTotal!.Value,
+                        p.PaymentMethodId,
+                        p.PaymentMethodCode,
+                        p.PaymentMethodName,
+                        p.Amount,
+                        p.Reference,
+                        p.TransferDetail == null ? null : p.TransferDetail.CompanyBankAccountId,
+                        p.TransferDetail == null ? null : p.TransferDetail.BankName,
+                        p.TransferDetail == null ? null : p.TransferDetail.ReceiptNumber,
+                        p.TransferDetail == null ? null : p.TransferDetail.TransferDate
+                    )
             )
             .AsNoTracking()
             .ToListAsync(ct);
@@ -278,23 +280,24 @@ public sealed class SalesInvoiceRepository : ISalesInvoiceRepository
             )
             .SelectMany(
                 x => x.Payments,
-                (x, p) => new SalesInvoiceCashSessionPaymentRow(
-                    x.CashSessionId,
-                    x.Id,
-                    x.InvoiceNumber,
-                    x.UpdatedAt ?? x.CreatedAt,
-                    x.Customer.Name,
-                    x.AuthorizedGrandTotal!.Value,
-                    p.PaymentMethodId,
-                    p.PaymentMethodCode,
-                    p.PaymentMethodName,
-                    p.Amount,
-                    p.Reference,
-                    p.TransferDetail == null ? null : p.TransferDetail.CompanyBankAccountId,
-                    p.TransferDetail == null ? null : p.TransferDetail.BankName,
-                    p.TransferDetail == null ? null : p.TransferDetail.ReceiptNumber,
-                    p.TransferDetail == null ? null : p.TransferDetail.TransferDate
-                )
+                (x, p) =>
+                    new SalesInvoiceCashSessionPaymentRow(
+                        x.CashSessionId,
+                        x.Id,
+                        x.InvoiceNumber,
+                        x.UpdatedAt ?? x.CreatedAt,
+                        x.Customer.Name,
+                        x.AuthorizedGrandTotal!.Value,
+                        p.PaymentMethodId,
+                        p.PaymentMethodCode,
+                        p.PaymentMethodName,
+                        p.Amount,
+                        p.Reference,
+                        p.TransferDetail == null ? null : p.TransferDetail.CompanyBankAccountId,
+                        p.TransferDetail == null ? null : p.TransferDetail.BankName,
+                        p.TransferDetail == null ? null : p.TransferDetail.ReceiptNumber,
+                        p.TransferDetail == null ? null : p.TransferDetail.TransferDate
+                    )
             )
             .AsNoTracking()
             .ToListAsync(ct);

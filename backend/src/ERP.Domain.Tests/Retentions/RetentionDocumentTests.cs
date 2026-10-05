@@ -563,13 +563,26 @@ public sealed class RetentionDocumentTests
     public void Create_con_snapshot_de_subtotal_negativo_falla()
     {
         var snapshot = new RetentionDocument.SourceDocumentSnapshot(
-            "01", "001-001-000000123", new DateOnly(2026, 8, 27), null, null, -1m, 112m
+            "01",
+            "001-001-000000123",
+            new DateOnly(2026, 8, 27),
+            null,
+            null,
+            -1m,
+            112m
         );
 
         var act = () =>
             RetentionDocument.Create(
-                TenantId, CompanyId, BranchId, RetentionSourceDocumentType.ExpenseDocument,
-                SourceDocumentId, SubjectBusinessPartnerId, EmissionPointId, UserId, snapshot
+                TenantId,
+                CompanyId,
+                BranchId,
+                RetentionSourceDocumentType.ExpenseDocument,
+                SourceDocumentId,
+                SubjectBusinessPartnerId,
+                EmissionPointId,
+                UserId,
+                snapshot
             );
 
         act.Should().Throw<ArgumentException>().WithMessage("*subtotal*");
@@ -584,10 +597,19 @@ public sealed class RetentionDocumentTests
 
         var act = () =>
             RetentionDocumentLine.Create(
-                document.Id, TenantId, RetentionTaxType.Vat, "721", "   ", 100m, 70m, 10m
+                document.Id,
+                TenantId,
+                RetentionTaxType.Vat,
+                "721",
+                "   ",
+                100m,
+                70m,
+                10m
             );
 
-        act.Should().Throw<ArgumentException>().WithMessage("*descripción del código de retención*");
+        act.Should()
+            .Throw<ArgumentException>()
+            .WithMessage("*descripción del código de retención*");
     }
 
     // 29. RetentionDocumentLine.Create con RetentionCodeDescription válida la guarda como snapshot,

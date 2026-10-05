@@ -94,8 +94,9 @@ public sealed record PurchaseDraftMergedLine(
             TaxValue: line.TaxValue,
             TotalLine: line.TotalLine,
             Taxes: line.Taxes.Select(PurchaseDraftMergedLineTax.FromPersisted).ToList(),
-            AdditionalFields: line
-                .AdditionalFields.Select(PurchaseDraftMergedLineAdditionalField.FromPersisted)
+            AdditionalFields: line.AdditionalFields.Select(
+                    PurchaseDraftMergedLineAdditionalField.FromPersisted
+                )
                 .ToList()
         );
 

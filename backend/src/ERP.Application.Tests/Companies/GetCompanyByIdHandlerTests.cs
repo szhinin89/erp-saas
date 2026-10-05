@@ -34,7 +34,9 @@ public sealed class GetCompanyByIdHandlerTests
             .Setup(g =>
                 g.RequireMembershipAsync(otherCompanyId, false, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync(Result<CompanyAccessContext>.Forbidden("No tiene acceso a esta empresa."));
+            .ReturnsAsync(
+                Result<CompanyAccessContext>.Forbidden("No tiene acceso a esta empresa.")
+            );
 
         var handler = BuildHandler();
         var result = await handler.Handle(
@@ -121,19 +123,28 @@ public sealed class GetCompanyByIdHandlerTests
     // ── ZH-SCOPE-ERROR-SEMANTICS-01: política de no-enumeración decidida por Code ──
 
     [Theory]
-    [InlineData("Empresa no encontrada o no pertenece al tenant activo.", ApiResponseCodes.Common.NotFound)]
+    [InlineData(
+        "Empresa no encontrada o no pertenece al tenant activo.",
+        ApiResponseCodes.Common.NotFound
+    )]
     [InlineData("No tiene acceso a esta empresa.", ApiResponseCodes.Common.Forbidden)]
     [InlineData("Tenant no válido o inactivo.", ApiResponseCodes.Common.CompanyScopeForbidden)]
-    public async Task Ajena_inexistente_o_sin_membership_son_el_mismo_NOT_FOUND(string guardMessage, string guardCode)
+    public async Task Ajena_inexistente_o_sin_membership_son_el_mismo_NOT_FOUND(
+        string guardMessage,
+        string guardCode
+    )
     {
         var companyId = Guid.NewGuid();
         _accessGuard
             .Setup(g => g.RequireMembershipAsync(companyId, false, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<CompanyAccessContext>.Failure(guardMessage, guardCode));
 
-        var result = await BuildHandler().Handle(new GetCompanyByIdQuery(companyId), CancellationToken.None);
+        var result = await BuildHandler()
+            .Handle(new GetCompanyByIdQuery(companyId), CancellationToken.None);
 
-        (result.Code, result.Error).Should().Be((ApiResponseCodes.Common.NotFound, "Empresa no encontrada."));
+        (result.Code, result.Error)
+            .Should()
+            .Be((ApiResponseCodes.Common.NotFound, "Empresa no encontrada."));
     }
 
     [Fact]
@@ -142,9 +153,15 @@ public sealed class GetCompanyByIdHandlerTests
         var companyId = Guid.NewGuid();
         _accessGuard
             .Setup(g => g.RequireMembershipAsync(companyId, false, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<CompanyAccessContext>.Failure("No autenticado.", ApiResponseCodes.Common.Unauthorized));
+            .ReturnsAsync(
+                Result<CompanyAccessContext>.Failure(
+                    "No autenticado.",
+                    ApiResponseCodes.Common.Unauthorized
+                )
+            );
 
-        var result = await BuildHandler().Handle(new GetCompanyByIdQuery(companyId), CancellationToken.None);
+        var result = await BuildHandler()
+            .Handle(new GetCompanyByIdQuery(companyId), CancellationToken.None);
 
         result.Code.Should().Be(ApiResponseCodes.Common.Unauthorized);
     }

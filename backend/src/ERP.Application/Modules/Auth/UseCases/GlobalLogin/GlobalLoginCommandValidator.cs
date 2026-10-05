@@ -6,12 +6,8 @@ public sealed class GlobalLoginCommandValidator : AbstractValidator<GlobalLoginC
 {
     public GlobalLoginCommandValidator()
     {
-        RuleFor(x => x.Username)
-            .NotEmpty()
-            .MaximumLength(50);
+        RuleFor(x => x.Username).NotEmpty().MaximumLength(50);
 
-        RuleFor(x => x.Password)
-            .NotEmpty()
-            .MaximumLength(200);
+        RuleFor(x => x.Password).NotEmpty().MaximumLength(200);
     }
 }

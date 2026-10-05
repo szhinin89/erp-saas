@@ -48,11 +48,18 @@ public sealed class GetSalesInvoiceByIdHandlerTests
                         It.IsAny<CancellationToken>()
                     )
                 )
-                .ReturnsAsync((ERP.Domain.Modules.ElectronicDocuments.Entities.ElectronicDocument?)null);
+                .ReturnsAsync(
+                    (ERP.Domain.Modules.ElectronicDocuments.Entities.ElectronicDocument?)null
+                );
         }
 
         public GetSalesInvoiceByIdHandler BuildHandler() =>
-            new(SalesInvoices.Object, ElectronicDocuments.Object, CurrentTenant.Object, CurrentBranch.Object);
+            new(
+                SalesInvoices.Object,
+                ElectronicDocuments.Object,
+                CurrentTenant.Object,
+                CurrentBranch.Object
+            );
     }
 
     private static SalesInvoice CreateInvoice(Guid branchId)
@@ -102,7 +109,9 @@ public sealed class GetSalesInvoiceByIdHandlerTests
     {
         var invoice = CreateInvoice(BranchId);
         var f = new Fixture();
-        f.SalesInvoices.Setup(r => r.GetByIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
+        f.SalesInvoices.Setup(r =>
+                r.GetByIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(invoice);
 
         var result = await f.BuildHandler()
@@ -118,7 +127,9 @@ public sealed class GetSalesInvoiceByIdHandlerTests
         var otherBranchId = Guid.NewGuid();
         var invoice = CreateInvoice(otherBranchId);
         var f = new Fixture(branchContextId: BranchId);
-        f.SalesInvoices.Setup(r => r.GetByIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
+        f.SalesInvoices.Setup(r =>
+                r.GetByIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(invoice);
 
         var result = await f.BuildHandler()
@@ -133,7 +144,9 @@ public sealed class GetSalesInvoiceByIdHandlerTests
     {
         var f = new Fixture();
         var missingId = Guid.NewGuid();
-        f.SalesInvoices.Setup(r => r.GetByIdAsync(TenantId, missingId, It.IsAny<CancellationToken>()))
+        f.SalesInvoices.Setup(r =>
+                r.GetByIdAsync(TenantId, missingId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((SalesInvoice?)null);
 
         var result = await f.BuildHandler()

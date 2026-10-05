@@ -1,3 +1,4 @@
+using System.Globalization;
 using ERP.Application.Common;
 using ERP.Domain.Configuration.Constants;
 using ERP.Domain.Configuration.Enums;
@@ -5,7 +6,6 @@ using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Sales.Interfaces;
 using ERP.Domain.Modules.Sales.Policies;
-using System.Globalization;
 
 namespace ERP.Infrastructure.Services;
 
@@ -43,7 +43,11 @@ public sealed class SalesFiscalPolicyResolver : ISalesFiscalPolicyResolver
         var tenantId = _currentTenant.TenantId;
         var companyId = _currentCompany.CompanyId;
 
-        var company = await _companies.GetByIdForTenantAsync(companyId, tenantId, cancellationToken);
+        var company = await _companies.GetByIdForTenantAsync(
+            companyId,
+            tenantId,
+            cancellationToken
+        );
         var taxRegimeCode = company?.TaxRegimeCode;
 
         // Se usa el valor raw (string) — no el genérico decimal — porque "0" configurado
@@ -58,7 +62,12 @@ public sealed class SalesFiscalPolicyResolver : ISalesFiscalPolicyResolver
 
         if (
             !string.IsNullOrWhiteSpace(raw)
-            && decimal.TryParse(raw, NumberStyles.Number, CultureInfo.InvariantCulture, out var manual)
+            && decimal.TryParse(
+                raw,
+                NumberStyles.Number,
+                CultureInfo.InvariantCulture,
+                out var manual
+            )
         )
         {
             return new SalesFiscalPolicyResult(

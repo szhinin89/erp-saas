@@ -1,3 +1,4 @@
+using System.Xml;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.PurchaseReception.Mapping;
 using ERP.Application.Modules.Purchases.PurchaseReception.Services;
@@ -9,7 +10,6 @@ using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using System.Xml;
 
 namespace ERP.Application.Modules.Purchases.PurchaseReception.UseCases.DownloadPurchaseReceptionXml;
 
@@ -81,8 +81,16 @@ public sealed class DownloadPurchaseReceptionXmlHandler
             );
         }
 
-        if (document.SourceDocType is not (PurchaseReceptionSourceDocType.Invoice or PurchaseReceptionSourceDocType.CreditNote))
-            return Result<DownloadPurchaseReceptionXmlResultDto>.ValidationFailure("Tipo de comprobante no soportado para consulta XML.");
+        if (
+            document.SourceDocType
+            is not (
+                PurchaseReceptionSourceDocType.Invoice
+                or PurchaseReceptionSourceDocType.CreditNote
+            )
+        )
+            return Result<DownloadPurchaseReceptionXmlResultDto>.ValidationFailure(
+                "Tipo de comprobante no soportado para consulta XML."
+            );
 
         // 3. Validar que tenga AccessKey (garantizado por el dominio al crear, se valida igual por defensa).
         if (string.IsNullOrWhiteSpace(document.AccessKey))
@@ -125,23 +133,43 @@ public sealed class DownloadPurchaseReceptionXmlHandler
         {
             try
             {
-                var creditNote = PurchaseCreditNoteXmlParser.Parse(queryResult.XmlContent, document.Id, _tenant.TenantId);
-                if (creditNote.AccessKey != document.AccessKey || creditNote.SupplierRuc != document.SupplierRuc
-                    || creditNote.DocumentNumber != document.InvoiceNumber)
+                var creditNote = PurchaseCreditNoteXmlParser.Parse(
+                    queryResult.XmlContent,
+                    document.Id,
+                    _tenant.TenantId
+                );
+                if (
+                    creditNote.AccessKey != document.AccessKey
+                    || creditNote.SupplierRuc != document.SupplierRuc
+                    || creditNote.DocumentNumber != document.InvoiceNumber
+                )
                     return Result<DownloadPurchaseReceptionXmlResultDto>.ValidationFailure(
-                        "El XML de la nota de crédito no coincide con el documento recibido.");
+                        "El XML de la nota de crédito no coincide con el documento recibido."
+                    );
                 processed = creditNote.Detail;
             }
-            catch (Exception ex) when (ex is FormatException or ArgumentException or XmlException or OverflowException)
+            catch (Exception ex)
+                when (ex
+                        is FormatException
+                            or ArgumentException
+                            or XmlException
+                            or OverflowException
+                )
             {
                 return Result<DownloadPurchaseReceptionXmlResultDto>.ValidationFailure(
-                    $"No se pudo interpretar el XML de la nota de crédito: {ex.Message}");
+                    $"No se pudo interpretar el XML de la nota de crédito: {ex.Message}"
+                );
             }
         }
         else
         {
             processed = await _detailProcessor.ProcessAsync(
-                document.Id, _tenant.TenantId, document.SupplierId, queryResult.XmlContent, cancellationToken);
+                document.Id,
+                _tenant.TenantId,
+                document.SupplierId,
+                queryResult.XmlContent,
+                cancellationToken
+            );
         }
 
         // 6-7. Guardar XML + líneas + actualizar estado (Imported -> Verified) + resultado de

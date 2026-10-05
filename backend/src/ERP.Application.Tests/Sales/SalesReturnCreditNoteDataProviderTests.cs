@@ -501,30 +501,62 @@ public sealed class SalesReturnCreditNoteDataProviderTests
         var customer = CustomerSnapshot.Create("Cliente Test", "1710034065", "05");
         var paymentTerm = PaymentTermSnapshot.Create(PaymentTermId, "Contado", 1, 0);
         var inv = SalesInvoice.CreateDraft(
-            TenantId, CompanyId, BranchId, CustomerId, customer,
-            invoiceNumber: "001-001-000000047", issueDate: new DateOnly(2026, 7, 20),
-            createdBy: UserId, paymentTerm: paymentTerm, cashSessionId: CashSessionId,
+            TenantId,
+            CompanyId,
+            BranchId,
+            CustomerId,
+            customer,
+            invoiceNumber: "001-001-000000047",
+            issueDate: new DateOnly(2026, 7, 20),
+            createdBy: UserId,
+            paymentTerm: paymentTerm,
+            cashSessionId: CashSessionId,
             emissionPointId: EmissionPointId,
             emissionType: EmissionType.Electronic
         );
         var line = SalesInvoiceDetail.Create(
-            inv.Id, TenantId, "Producto con impuestos especiales", quantity, unitPrice,
-            vatCode: "2", uomCode: "UNIT", iceCode: iceCode
+            inv.Id,
+            TenantId,
+            "Producto con impuestos especiales",
+            quantity,
+            unitPrice,
+            vatCode: "2",
+            uomCode: "UNIT",
+            iceCode: iceCode
         );
         if (!string.IsNullOrWhiteSpace(irbpnrCode))
-            line.ReplaceTaxes(
-                [
-                    SalesInvoiceDetailTax.Create(
-                        line.Id, TenantId, "5", irbpnrCode, "IRBPNR", irbpnrRate,
-                        SriTaxCalculationType.Specific, line.TaxableBase, irbpnrAmount,
-                        SalesTaxSource.Calculated
-                    ),
-                ]
-            );
-        line.ApplyTaxes("2", 15m, "IVA 15%", iceCode, iceRate, "ICE", iceCalculationType, iceExactAmount);
+            line.ReplaceTaxes([
+                SalesInvoiceDetailTax.Create(
+                    line.Id,
+                    TenantId,
+                    "5",
+                    irbpnrCode,
+                    "IRBPNR",
+                    irbpnrRate,
+                    SriTaxCalculationType.Specific,
+                    line.TaxableBase,
+                    irbpnrAmount,
+                    SalesTaxSource.Calculated
+                ),
+            ]);
+        line.ApplyTaxes(
+            "2",
+            15m,
+            "IVA 15%",
+            iceCode,
+            iceRate,
+            "ICE",
+            iceCalculationType,
+            iceExactAmount
+        );
         inv.ReplaceLines(new[] { line }, UserId);
         var payment = SalesInvoicePayment.Create(
-            inv.Id, TenantId, Guid.NewGuid(), "01", "Efectivo", line.TaxInclusiveTotal
+            inv.Id,
+            TenantId,
+            Guid.NewGuid(),
+            "01",
+            "Efectivo",
+            line.TaxInclusiveTotal
         );
         inv.ReplacePayments(new[] { payment }, UserId);
         inv.Authorize(UserId);
@@ -548,35 +580,57 @@ public sealed class SalesReturnCreditNoteDataProviderTests
             );
 
         var salesReturn = SalesReturn.CreateDraft(
-            TenantId, CompanyId, invoice.Id, CustomerId, "DEV-000010", "Producto en mal estado", UserId
+            TenantId,
+            CompanyId,
+            invoice.Id,
+            CustomerId,
+            "DEV-000010",
+            "Producto en mal estado",
+            UserId
         );
         var line = SalesReturnDetail.Create(
-            salesReturn.Id, TenantId, originalLine.Id, originalLine.Description, returnQuantity,
-            originalLine.UnitPrice, 0m, originalLine.VatCode, originalLine.VatRate, originalLine.UomCode,
-            iceCode: originalLine.IceCode, iceRate: originalLine.IceRate,
-            iceCalculationType: originalLine.IceCalculationType, iceExactAmount: iceExactAmount
+            salesReturn.Id,
+            TenantId,
+            originalLine.Id,
+            originalLine.Description,
+            returnQuantity,
+            originalLine.UnitPrice,
+            0m,
+            originalLine.VatCode,
+            originalLine.VatRate,
+            originalLine.UomCode,
+            iceCode: originalLine.IceCode,
+            iceRate: originalLine.IceRate,
+            iceCalculationType: originalLine.IceCalculationType,
+            iceExactAmount: iceExactAmount
         );
         if (!string.IsNullOrWhiteSpace(originalLine.IrbpnrCode))
         {
             var irbpnrTax = originalLine.Taxes.First(t => t.TaxCode == "5");
-            line.ReplaceTaxes(
-                [
-                    SalesReturnDetailTax.Create(
-                        line.Id, TenantId, "5", irbpnrTax.TaxRateCode, irbpnrTax.TaxName, irbpnrTax.Rate,
-                        irbpnrTax.CalculationType,
-                        Math.Round(
-                            fraction * originalLine.IrbpnrAmount,
-                            ERP.Domain.Common.FiscalPrecision.TaxAmount,
-                            MidpointRounding.AwayFromZero
-                        )
-                    ),
-                ]
-            );
+            line.ReplaceTaxes([
+                SalesReturnDetailTax.Create(
+                    line.Id,
+                    TenantId,
+                    "5",
+                    irbpnrTax.TaxRateCode,
+                    irbpnrTax.TaxName,
+                    irbpnrTax.Rate,
+                    irbpnrTax.CalculationType,
+                    Math.Round(
+                        fraction * originalLine.IrbpnrAmount,
+                        ERP.Domain.Common.FiscalPrecision.TaxAmount,
+                        MidpointRounding.AwayFromZero
+                    )
+                ),
+            ]);
         }
         salesReturn.AddLine(line, UserId);
         salesReturn.AddRefundAllocation(
             SalesReturnRefundAllocation.Create(
-                salesReturn.Id, TenantId, SalesReturnRefundMethod.Cash, salesReturn.GrandTotal
+                salesReturn.Id,
+                TenantId,
+                SalesReturnRefundMethod.Cash,
+                salesReturn.GrandTotal
             ),
             UserId
         );
@@ -589,43 +643,68 @@ public sealed class SalesReturnCreditNoteDataProviderTests
     public async Task GetDataAsync_NC_con_IVA_ICE_e_IRBPNR_propaga_los_tres_impuestos()
     {
         var (invoice, line) = BuildAuthorizedInvoiceWithTaxes(
-            quantity: 10m, unitPrice: 100m,
-            iceCode: "3010", iceRate: 10m,
-            irbpnrCode: "5001", irbpnrRate: 0.02m, irbpnrAmount: 1.00m
+            quantity: 10m,
+            unitPrice: 100m,
+            iceCode: "3010",
+            iceRate: 10m,
+            irbpnrCode: "5001",
+            irbpnrRate: 0.02m,
+            irbpnrAmount: 1.00m
         );
-        var salesReturn = BuildAuthorizedReturnWithFraction(invoice, line, 10m, "001-001-000000010");
+        var salesReturn = BuildAuthorizedReturnWithFraction(
+            invoice,
+            line,
+            10m,
+            "001-001-000000010"
+        );
         var m = new Mocks();
         m.SeedHappyPath(invoice);
-        m.ReturnRepo.Setup(r => r.GetByIdAsync(TenantId, salesReturn.Id, It.IsAny<CancellationToken>()))
+        m.ReturnRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, salesReturn.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(salesReturn);
 
         var result = await m.BuildProvider()
-            .GetDataAsync(new ElectronicDocumentSourceReference(TenantId, CompanyId, salesReturn.Id));
+            .GetDataAsync(
+                new ElectronicDocumentSourceReference(TenantId, CompanyId, salesReturn.Id)
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         var detail = result.Value!.Details.Should().ContainSingle().Subject;
         detail.Taxes.Should().HaveCount(3);
-        detail.Taxes.Select(t => t.TaxCode).Should().BeEquivalentTo(new[] { "VAT", "ICE", "IRBPNR" });
+        detail
+            .Taxes.Select(t => t.TaxCode)
+            .Should()
+            .BeEquivalentTo(new[] { "VAT", "ICE", "IRBPNR" });
         var irbpnr = detail.Taxes.Should().ContainSingle(t => t.TaxCode == "IRBPNR").Subject;
         irbpnr.TaxAmount.Should().Be(1.00m);
-        result.Value.Totals!.TotalTax.Should().Be(salesReturn.TotalVat + salesReturn.TotalIce + salesReturn.TotalIrbpnr);
+        result
+            .Value.Totals!.TotalTax.Should()
+            .Be(salesReturn.TotalVat + salesReturn.TotalIce + salesReturn.TotalIrbpnr);
     }
 
     [Fact]
     public async Task GetDataAsync_NC_parcial_prorratea_IRBPNR_por_la_fraccion_de_cantidad()
     {
         var (invoice, line) = BuildAuthorizedInvoiceWithTaxes(
-            quantity: 10m, unitPrice: 100m,
-            irbpnrCode: "5001", irbpnrRate: 0.02m, irbpnrAmount: 1.00m
+            quantity: 10m,
+            unitPrice: 100m,
+            irbpnrCode: "5001",
+            irbpnrRate: 0.02m,
+            irbpnrAmount: 1.00m
         );
         var salesReturn = BuildAuthorizedReturnWithFraction(invoice, line, 3m, "001-001-000000011");
         var m = new Mocks();
         m.SeedHappyPath(invoice);
-        m.ReturnRepo.Setup(r => r.GetByIdAsync(TenantId, salesReturn.Id, It.IsAny<CancellationToken>()))
+        m.ReturnRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, salesReturn.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(salesReturn);
 
         var result = await m.BuildProvider()
-            .GetDataAsync(new ElectronicDocumentSourceReference(TenantId, CompanyId, salesReturn.Id));
+            .GetDataAsync(
+                new ElectronicDocumentSourceReference(TenantId, CompanyId, salesReturn.Id)
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         var detail = result.Value!.Details.Should().ContainSingle().Subject;
@@ -637,17 +716,24 @@ public sealed class SalesReturnCreditNoteDataProviderTests
     public async Task GetDataAsync_NC_con_ICE_Specific_conserva_el_monto_prorrateado()
     {
         var (invoice, line) = BuildAuthorizedInvoiceWithTaxes(
-            quantity: 10m, unitPrice: 100m,
-            iceCode: "3053", iceCalculationType: SriTaxCalculationType.Specific, iceExactAmount: 5.00m
+            quantity: 10m,
+            unitPrice: 100m,
+            iceCode: "3053",
+            iceCalculationType: SriTaxCalculationType.Specific,
+            iceExactAmount: 5.00m
         );
         var salesReturn = BuildAuthorizedReturnWithFraction(invoice, line, 4m, "001-001-000000012");
         var m = new Mocks();
         m.SeedHappyPath(invoice);
-        m.ReturnRepo.Setup(r => r.GetByIdAsync(TenantId, salesReturn.Id, It.IsAny<CancellationToken>()))
+        m.ReturnRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, salesReturn.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(salesReturn);
 
         var result = await m.BuildProvider()
-            .GetDataAsync(new ElectronicDocumentSourceReference(TenantId, CompanyId, salesReturn.Id));
+            .GetDataAsync(
+                new ElectronicDocumentSourceReference(TenantId, CompanyId, salesReturn.Id)
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         var detail = result.Value!.Details.Should().ContainSingle().Subject;
@@ -662,11 +748,15 @@ public sealed class SalesReturnCreditNoteDataProviderTests
         var salesReturn = BuildAuthorizedReturnWithFraction(invoice, line, 5m, "001-001-000000013");
         var m = new Mocks();
         m.SeedHappyPath(invoice);
-        m.ReturnRepo.Setup(r => r.GetByIdAsync(TenantId, salesReturn.Id, It.IsAny<CancellationToken>()))
+        m.ReturnRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, salesReturn.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(salesReturn);
 
         var result = await m.BuildProvider()
-            .GetDataAsync(new ElectronicDocumentSourceReference(TenantId, CompanyId, salesReturn.Id));
+            .GetDataAsync(
+                new ElectronicDocumentSourceReference(TenantId, CompanyId, salesReturn.Id)
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         var detail = result.Value!.Details.Should().ContainSingle().Subject;
@@ -677,18 +767,26 @@ public sealed class SalesReturnCreditNoteDataProviderTests
     public async Task GetDataAsync_Totales_de_NC_coinciden_con_el_GrandTotal_del_snapshot()
     {
         var (invoice, line) = BuildAuthorizedInvoiceWithTaxes(
-            quantity: 1m, unitPrice: 100m,
-            iceCode: "3010", iceRate: 10m,
-            irbpnrCode: "5001", irbpnrRate: 0.02m, irbpnrAmount: 0.02m
+            quantity: 1m,
+            unitPrice: 100m,
+            iceCode: "3010",
+            iceRate: 10m,
+            irbpnrCode: "5001",
+            irbpnrRate: 0.02m,
+            irbpnrAmount: 0.02m
         );
         var salesReturn = BuildAuthorizedReturnWithFraction(invoice, line, 1m, "001-001-000000014");
         var m = new Mocks();
         m.SeedHappyPath(invoice);
-        m.ReturnRepo.Setup(r => r.GetByIdAsync(TenantId, salesReturn.Id, It.IsAny<CancellationToken>()))
+        m.ReturnRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, salesReturn.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(salesReturn);
 
         var result = await m.BuildProvider()
-            .GetDataAsync(new ElectronicDocumentSourceReference(TenantId, CompanyId, salesReturn.Id));
+            .GetDataAsync(
+                new ElectronicDocumentSourceReference(TenantId, CompanyId, salesReturn.Id)
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.Totals!.GrandTotal.Should().Be(salesReturn.GrandTotal);

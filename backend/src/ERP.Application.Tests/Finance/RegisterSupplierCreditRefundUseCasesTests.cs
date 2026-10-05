@@ -91,7 +91,14 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
 
     private static CashRegister BuildCashRegister()
     {
-        var register = CashRegister.Create(TenantId, CompanyId, BranchId, "CASH-01", "Caja Matriz", UserId);
+        var register = CashRegister.Create(
+            TenantId,
+            CompanyId,
+            BranchId,
+            "CASH-01",
+            "Caja Matriz",
+            UserId
+        );
         register.SetAccountingAccount(AccountId, UserId);
         return register;
     }
@@ -116,7 +123,16 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
     }
 
     private static PaymentMethod BuildCashPaymentMethod() =>
-        PaymentMethod.Create(TenantId, "CASH", "Efectivo", false, false, 2, UserId, affectsPhysicalCash: true);
+        PaymentMethod.Create(
+            TenantId,
+            "CASH",
+            "Efectivo",
+            false,
+            false,
+            2,
+            UserId,
+            affectsPhysicalCash: true
+        );
 
     private static CashSession BuildOpenCashSession() =>
         CashSession.Open(
@@ -315,7 +331,12 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
             )
             .ReturnsAsync(BuildCashRegister());
         m.AccountRepo.Setup(r =>
-                r.GetByIdForShareAsync(TenantId, CompanyId, AccountId, It.IsAny<CancellationToken>())
+                r.GetByIdForShareAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(BuildAccount());
         m.PaymentMethodRepo.Setup(r =>
@@ -323,16 +344,23 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
             )
             .ReturnsAsync(BuildPaymentMethod());
         m.CashSessionRepo.Setup(r =>
-                r.GetOpenByCashRegisterForUpdateAsync(TenantId, CashRegisterId, It.IsAny<CancellationToken>())
+                r.GetOpenByCashRegisterForUpdateAsync(
+                    TenantId,
+                    CashRegisterId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(session);
         var balanceBefore = session.CurrentBalance;
 
-        var result = await m.BuildHandler().Handle(CashCommand(credit.Id, 40m), CancellationToken.None);
+        var result = await m.BuildHandler()
+            .Handle(CashCommand(credit.Id, 40m), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         var movement = session.Movements.Single(x => x.Id == result.Value!.CashMovementId);
-        movement.MovementType.Should().Be(ERP.Domain.Modules.Caja.Enums.CashMovementType.ManualIncome);
+        movement
+            .MovementType.Should()
+            .Be(ERP.Domain.Modules.Caja.Enums.CashMovementType.ManualIncome);
         session.CurrentBalance.Should().Be(balanceBefore + 40m);
     }
 
@@ -508,7 +536,10 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
             .ReturnsAsync(BuildPaymentMethod());
         var handler = m.BuildHandler();
 
-        var result = await handler.HandleWithDomainRules(BankCommand(credit.Id, 50m), CancellationToken.None);
+        var result = await handler.HandleWithDomainRules(
+            BankCommand(credit.Id, 50m),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         credit.AvailableAmount.Should().Be(30m);
@@ -604,7 +635,12 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
             )
             .ReturnsAsync(BuildBankAccount());
         m.AccountRepo.Setup(r =>
-                r.GetByIdForShareAsync(TenantId, CompanyId, AccountId, It.IsAny<CancellationToken>())
+                r.GetByIdForShareAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(BuildAccount());
         var command = BankCommand(credit.Id, 40m) with { PaymentMethodCode = "CASH" };
@@ -615,7 +651,11 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
         result.Error.Should().Contain("mueve efectivo físico");
         credit.AvailableAmount.Should().Be(100m);
         m.TxRepo.Verify(
-            r => r.AddAsync(It.IsAny<SupplierCreditRefundTransaction>(), It.IsAny<CancellationToken>()),
+            r =>
+                r.AddAsync(
+                    It.IsAny<SupplierCreditRefundTransaction>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }
@@ -631,7 +671,12 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
             )
             .ReturnsAsync(BuildCashRegister());
         m.AccountRepo.Setup(r =>
-                r.GetByIdForShareAsync(TenantId, CompanyId, AccountId, It.IsAny<CancellationToken>())
+                r.GetByIdForShareAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(BuildAccount());
         m.PaymentMethodRepo.Setup(r =>
@@ -639,7 +684,11 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
             )
             .ReturnsAsync(BuildPaymentMethod());
         m.CashSessionRepo.Setup(r =>
-                r.GetOpenByCashRegisterForUpdateAsync(TenantId, CashRegisterId, It.IsAny<CancellationToken>())
+                r.GetOpenByCashRegisterForUpdateAsync(
+                    TenantId,
+                    CashRegisterId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(session);
         var command = CashCommand(credit.Id, 40m) with { PaymentMethodCode = "TRANSFER" };
@@ -658,13 +707,19 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
         var credit = BuildCredit(100m, currency: "EUR");
         var m = new Mocks(credit);
 
-        var result = await m.BuildHandler().Handle(BankCommand(credit.Id, 40m), CancellationToken.None);
+        var result = await m.BuildHandler()
+            .Handle(BankCommand(credit.Id, 40m), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("moneda");
         credit.AvailableAmount.Should().Be(100m);
         m.BankAccountRepo.Verify(
-            r => r.GetByIdForShareAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            r =>
+                r.GetByIdForShareAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }
@@ -700,7 +755,12 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
             )
             .ReturnsAsync(BuildCashRegister());
         m.AccountRepo.Setup(r =>
-                r.GetByIdForShareAsync(TenantId, CompanyId, AccountId, It.IsAny<CancellationToken>())
+                r.GetByIdForShareAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(BuildAccount());
         m.PaymentMethodRepo.Setup(r =>
@@ -708,7 +768,11 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
             )
             .ReturnsAsync(BuildPaymentMethod());
         m.CashSessionRepo.Setup(r =>
-                r.GetOpenByCashRegisterForUpdateAsync(TenantId, CashRegisterId, It.IsAny<CancellationToken>())
+                r.GetOpenByCashRegisterForUpdateAsync(
+                    TenantId,
+                    CashRegisterId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(session);
         var command = new RegisterSupplierCreditRefundCommand(
@@ -726,8 +790,12 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
 
         result.IsSuccess.Should().BeTrue(result.Error);
         var movement = session.Movements.Single(x => x.Id == result.Value!.CashMovementId);
-        movement.ReferenceType.Should().Be(ERP.Domain.Modules.Caja.Enums.CashReferenceType.SupplierCreditRefund);
-        movement.ReferenceId.Should().Be(result.Value!.Id, "el movimiento apunta a la transacción de reembolso");
+        movement
+            .ReferenceType.Should()
+            .Be(ERP.Domain.Modules.Caja.Enums.CashReferenceType.SupplierCreditRefund);
+        movement
+            .ReferenceId.Should()
+            .Be(result.Value!.Id, "el movimiento apunta a la transacción de reembolso");
         movement.ReferenceNumber.Should().Be("REC-0042");
         result.Value.CashSessionId.Should().Be(session.Id);
     }
@@ -742,15 +810,29 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
         var credit = BuildCredit(100m);
         var m = new Mocks(credit);
         var foreignSession = CashSession.Open(
-            TenantId, CompanyId, BranchId, Guid.NewGuid(), CashRegisterId,
-            "CAJA-01", "Caja Matriz", Guid.NewGuid(), "001-001", 0m, Guid.NewGuid()
+            TenantId,
+            CompanyId,
+            BranchId,
+            Guid.NewGuid(),
+            CashRegisterId,
+            "CAJA-01",
+            "Caja Matriz",
+            Guid.NewGuid(),
+            "001-001",
+            0m,
+            Guid.NewGuid()
         );
         m.CashRegisterRepo.Setup(r =>
                 r.GetByIdForShareAsync(TenantId, CashRegisterId, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(BuildCashRegister());
         m.AccountRepo.Setup(r =>
-                r.GetByIdForShareAsync(TenantId, CompanyId, AccountId, It.IsAny<CancellationToken>())
+                r.GetByIdForShareAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(BuildAccount());
         m.PaymentMethodRepo.Setup(r =>
@@ -758,16 +840,23 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
             )
             .ReturnsAsync(BuildPaymentMethod());
         m.CashSessionRepo.Setup(r =>
-                r.GetOpenByCashRegisterForUpdateAsync(TenantId, CashRegisterId, It.IsAny<CancellationToken>())
+                r.GetOpenByCashRegisterForUpdateAsync(
+                    TenantId,
+                    CashRegisterId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(foreignSession);
 
-        var result = await m.BuildHandler().Handle(CashCommand(credit.Id, 40m), CancellationToken.None);
+        var result = await m.BuildHandler()
+            .Handle(CashCommand(credit.Id, 40m), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("La caja seleccionada está siendo operada por otro usuario.");
         foreignSession.Movements.Should().ContainSingle();
-        credit.AvailableAmount.Should().Be(100m, "el crédito no se consume si el reembolso se rechaza");
+        credit
+            .AvailableAmount.Should()
+            .Be(100m, "el crédito no se consume si el reembolso se rechaza");
     }
 }
 

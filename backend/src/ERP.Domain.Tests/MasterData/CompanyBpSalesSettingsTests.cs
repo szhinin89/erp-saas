@@ -16,7 +16,11 @@ public sealed class CompanyBpSalesSettingsTests
     public void Create_con_datos_validos_asigna_propiedades()
     {
         var entity = CompanyBpSalesSettings.Create(
-            TenantId, CompanyId, CustomerId, PaymentTermId, ActorId
+            TenantId,
+            CompanyId,
+            CustomerId,
+            PaymentTermId,
+            ActorId
         );
 
         entity.TenantId.Should().Be(TenantId);
@@ -30,7 +34,11 @@ public sealed class CompanyBpSalesSettingsTests
     public void Create_sin_PaymentTermId_es_valido_significa_sin_default_configurado()
     {
         var entity = CompanyBpSalesSettings.Create(
-            TenantId, CompanyId, CustomerId, paymentTermId: null, ActorId
+            TenantId,
+            CompanyId,
+            CustomerId,
+            paymentTermId: null,
+            ActorId
         );
 
         entity.PaymentTermId.Should().BeNull();
@@ -46,9 +54,8 @@ public sealed class CompanyBpSalesSettingsTests
         var companyId = emptyCompany ? Guid.Empty : CompanyId;
         var supplierId = emptyCustomer ? Guid.Empty : CustomerId;
 
-        var act = () => CompanyBpSalesSettings.Create(
-            tenantId, companyId, supplierId, PaymentTermId, ActorId
-        );
+        var act = () =>
+            CompanyBpSalesSettings.Create(tenantId, companyId, supplierId, PaymentTermId, ActorId);
 
         act.Should().Throw<ArgumentException>();
     }
@@ -57,7 +64,11 @@ public sealed class CompanyBpSalesSettingsTests
     public void SetPaymentTerm_actualiza_el_default_y_UpdatedBy()
     {
         var entity = CompanyBpSalesSettings.Create(
-            TenantId, CompanyId, CustomerId, PaymentTermId, ActorId
+            TenantId,
+            CompanyId,
+            CustomerId,
+            PaymentTermId,
+            ActorId
         );
         var newPaymentTermId = Guid.NewGuid();
         var updatedBy = Guid.NewGuid();
@@ -72,7 +83,11 @@ public sealed class CompanyBpSalesSettingsTests
     public void SetPaymentTerm_con_null_limpia_el_default()
     {
         var entity = CompanyBpSalesSettings.Create(
-            TenantId, CompanyId, CustomerId, PaymentTermId, ActorId
+            TenantId,
+            CompanyId,
+            CustomerId,
+            PaymentTermId,
+            ActorId
         );
 
         entity.SetPaymentTerm(null, ActorId);

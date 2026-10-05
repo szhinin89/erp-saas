@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using ERP.Application.Auth.UseCases.RefreshToken;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Entities;
@@ -9,7 +10,6 @@ using ERP.Domain.Tenants.Entities;
 using ERP.Domain.Tenants.Interfaces;
 using FluentAssertions;
 using Moq;
-using System.Security.Claims;
 
 namespace ERP.Application.Tests.Auth;
 
@@ -56,14 +56,22 @@ public sealed class RefreshTokenHandlerTests
             "Empresa A S.A.",
             createdBy: CreatedBy
         );
-        var user = IdentityUser.Create("sadmin", "Super", "Admin", "sadmin@test.com", "hash", CreatedBy);
+        var user = IdentityUser.Create(
+            "sadmin",
+            "Super",
+            "Admin",
+            "sadmin@test.com",
+            "hash",
+            CreatedBy
+        );
 
         f.AccessRepo.Setup(a => a.GetUserByIdAsync(user.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
         f.TenantRepo.Setup(t => t.GetByIdAsync(tenant.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(tenant);
-        f.CompanyRepo
-            .Setup(c => c.GetByIdForTenantAsync(company.Id, tenant.Id, It.IsAny<CancellationToken>()))
+        f.CompanyRepo.Setup(c =>
+                c.GetByIdForTenantAsync(company.Id, tenant.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(company);
 
         return (f, tenant, company, user);
@@ -107,16 +115,19 @@ public sealed class RefreshTokenHandlerTests
         var (f, tenant, company, user) = BuildBaseContext();
         var globalRole = GlobalUserRole.Create(user.Id, SecurityRoles.Admin, CreatedBy);
 
-        f.RefreshTokenService
-            .Setup(s => s.ValidateAndRotateAsync("raw-token", It.IsAny<CancellationToken>()))
+        f.RefreshTokenService.Setup(s =>
+                s.ValidateAndRotateAsync("raw-token", It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(OperatorSession(user.Id, tenant.Id, company.Id));
-        f.AccessRepo
-            .Setup(a =>
-                a.GetActiveGlobalUserRoleAsync(user.Id, SecurityRoles.Admin, It.IsAny<CancellationToken>())
+        f.AccessRepo.Setup(a =>
+                a.GetActiveGlobalUserRoleAsync(
+                    user.Id,
+                    SecurityRoles.Admin,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(globalRole);
-        f.TokenService
-            .Setup(s =>
+        f.TokenService.Setup(s =>
                 s.GenerateSessionToken(
                     user,
                     tenant.Id,
@@ -159,18 +170,23 @@ public sealed class RefreshTokenHandlerTests
     public async Task Refresh_de_sesion_normal_no_agrega_operator_mode()
     {
         var (f, tenant, company, user) = BuildBaseContext();
-        var membership = CompanyUserMembership.Create(company.Id, user.Id, "Admin", null, CreatedBy);
+        var membership = CompanyUserMembership.Create(
+            company.Id,
+            user.Id,
+            "Admin",
+            null,
+            CreatedBy
+        );
 
-        f.RefreshTokenService
-            .Setup(s => s.ValidateAndRotateAsync("raw-token", It.IsAny<CancellationToken>()))
+        f.RefreshTokenService.Setup(s =>
+                s.ValidateAndRotateAsync("raw-token", It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(NormalSession(user.Id, tenant.Id, company.Id));
-        f.AccessRepo
-            .Setup(a =>
+        f.AccessRepo.Setup(a =>
                 a.GetCompanyUserMembershipAsync(company.Id, user.Id, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(membership);
-        f.TokenService
-            .Setup(s => s.GenerateSessionToken(user, tenant.Id, membership.Role))
+        f.TokenService.Setup(s => s.GenerateSessionToken(user, tenant.Id, membership.Role))
             .Returns("normal-jwt-renewed");
 
         var handler = f.BuildHandler();
@@ -206,23 +222,31 @@ public sealed class RefreshTokenHandlerTests
     public async Task Refresh_de_sesion_de_operador_con_GlobalUserRole_revocado_degrada_a_membership_normal()
     {
         var (f, tenant, company, user) = BuildBaseContext();
-        var membership = CompanyUserMembership.Create(company.Id, user.Id, "Admin", null, CreatedBy);
+        var membership = CompanyUserMembership.Create(
+            company.Id,
+            user.Id,
+            "Admin",
+            null,
+            CreatedBy
+        );
 
-        f.RefreshTokenService
-            .Setup(s => s.ValidateAndRotateAsync("raw-token", It.IsAny<CancellationToken>()))
+        f.RefreshTokenService.Setup(s =>
+                s.ValidateAndRotateAsync("raw-token", It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(OperatorSession(user.Id, tenant.Id, company.Id));
-        f.AccessRepo
-            .Setup(a =>
-                a.GetActiveGlobalUserRoleAsync(user.Id, SecurityRoles.Admin, It.IsAny<CancellationToken>())
+        f.AccessRepo.Setup(a =>
+                a.GetActiveGlobalUserRoleAsync(
+                    user.Id,
+                    SecurityRoles.Admin,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((GlobalUserRole?)null);
-        f.AccessRepo
-            .Setup(a =>
+        f.AccessRepo.Setup(a =>
                 a.GetCompanyUserMembershipAsync(company.Id, user.Id, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(membership);
-        f.TokenService
-            .Setup(s => s.GenerateSessionToken(user, tenant.Id, membership.Role))
+        f.TokenService.Setup(s => s.GenerateSessionToken(user, tenant.Id, membership.Role))
             .Returns("degraded-jwt");
 
         var handler = f.BuildHandler();
@@ -246,16 +270,19 @@ public sealed class RefreshTokenHandlerTests
     {
         var (f, tenant, company, user) = BuildBaseContext();
 
-        f.RefreshTokenService
-            .Setup(s => s.ValidateAndRotateAsync("raw-token", It.IsAny<CancellationToken>()))
+        f.RefreshTokenService.Setup(s =>
+                s.ValidateAndRotateAsync("raw-token", It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(OperatorSession(user.Id, tenant.Id, company.Id));
-        f.AccessRepo
-            .Setup(a =>
-                a.GetActiveGlobalUserRoleAsync(user.Id, SecurityRoles.Admin, It.IsAny<CancellationToken>())
+        f.AccessRepo.Setup(a =>
+                a.GetActiveGlobalUserRoleAsync(
+                    user.Id,
+                    SecurityRoles.Admin,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((GlobalUserRole?)null);
-        f.AccessRepo
-            .Setup(a =>
+        f.AccessRepo.Setup(a =>
                 a.GetCompanyUserMembershipAsync(company.Id, user.Id, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync((CompanyUserMembership?)null);

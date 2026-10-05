@@ -15,7 +15,10 @@ namespace ERP.Domain.Modules.Purchases.Entities;
 /// <see cref="CompleteLinkedReturn"/> y <see cref="CancelLinkedReturn"/> sincronizan el estado fiscal
 /// sin publicar otro evento financiero.
 /// </summary>
-public sealed class PurchaseCreditNote : AuditableEntity, ITenantScopedEntity, ICompanyOperationalEntity
+public sealed class PurchaseCreditNote
+    : AuditableEntity,
+        ITenantScopedEntity,
+        ICompanyOperationalEntity
 {
     public const int CreditNoteNumberMaxLen = 17;
     public const int AccessKeyMaxLen = 49;
@@ -564,10 +567,14 @@ public sealed class PurchaseCreditNote : AuditableEntity, ITenantScopedEntity, I
     // Fiscal state follows the return; these methods never publish financial events.
     public void CancelLinkedReturn(PurchaseReturn purchaseReturn, Guid userId)
     {
-        if (ApplicationType != PurchaseCreditNoteApplicationType.Return
+        if (
+            ApplicationType != PurchaseCreditNoteApplicationType.Return
             || LinkedPurchaseReturnId != purchaseReturn.Id
-            || purchaseReturn.Status != PurchaseReturnStatus.Cancelled)
-            throw new DomainRuleViolationException("La devolución cancelada no corresponde a esta NC.");
+            || purchaseReturn.Status != PurchaseReturnStatus.Cancelled
+        )
+            throw new DomainRuleViolationException(
+                "La devolución cancelada no corresponde a esta NC."
+            );
         Status = PurchaseCreditNoteStatus.Cancelled;
         CancelledAtUtc = purchaseReturn.CancelledAtUtc;
         CancelledByUserId = userId;
@@ -578,11 +585,15 @@ public sealed class PurchaseCreditNote : AuditableEntity, ITenantScopedEntity, I
     public void CompleteLinkedReturn(PurchaseReturn purchaseReturn, Guid userId)
     {
         EnsureDraft();
-        if (ApplicationType != PurchaseCreditNoteApplicationType.Return
+        if (
+            ApplicationType != PurchaseCreditNoteApplicationType.Return
             || LinkedPurchaseReturnId != purchaseReturn.Id
             || purchaseReturn.Status != PurchaseReturnStatus.Authorized
-            || purchaseReturn.AuthorizedGrandTotal != TotalAmount)
-            throw new DomainRuleViolationException("La devolución autorizada no coincide con la nota de crédito.");
+            || purchaseReturn.AuthorizedGrandTotal != TotalAmount
+        )
+            throw new DomainRuleViolationException(
+                "La devolución autorizada no coincide con la nota de crédito."
+            );
         Status = PurchaseCreditNoteStatus.Authorized;
         AppliedToPayableAmount = purchaseReturn.AppliedToPayableAmount;
         AuthorizedAtUtc = purchaseReturn.AuthorizedAtUtc;

@@ -22,8 +22,7 @@ public sealed class GetPurchaseReceptionXmlViewHandlerTests
     private static readonly Guid BranchId = Guid.NewGuid();
     private static readonly Guid UserId = Guid.NewGuid();
 
-    private const string SampleFacturaXml =
-        """
+    private const string SampleFacturaXml = """
         <factura id="comprobante" version="1.1.0">
           <infoTributaria>
             <ruc>1791352688001</ruc>
@@ -59,8 +58,7 @@ public sealed class GetPurchaseReceptionXmlViewHandlerTests
         </factura>
         """;
 
-    private const string ArcadorFacturaXml =
-        """
+    private const string ArcadorFacturaXml = """
         <factura id="comprobante" version="1.1.0">
           <infoTributaria>
             <ruc>1791415132001</ruc>
@@ -238,7 +236,11 @@ public sealed class GetPurchaseReceptionXmlViewHandlerTests
         var tenant = new Mock<ICurrentTenant>();
         tenant.Setup(t => t.TenantId).Returns(TenantId);
 
-        var handler = new GetPurchaseReceptionXmlViewHandler(repo.Object, purchaseRepo.Object, tenant.Object);
+        var handler = new GetPurchaseReceptionXmlViewHandler(
+            repo.Object,
+            purchaseRepo.Object,
+            tenant.Object
+        );
         return (handler, repo, purchaseRepo);
     }
 
@@ -357,12 +359,60 @@ public sealed class GetPurchaseReceptionXmlViewHandlerTests
         var document = ArcadorDocument();
         var lines = new[]
         {
-            ArcadorLine(document.Id, "0580", "SPRITE HARMONY 1350 PET(12)", 10.72m, 1.61m, 0m, 0.24m),
-            ArcadorLine(document.Id, "3172", "FANTA HARMONY NRJ 1350 PET(12)", 18.58m, 3.22m, 2.86m, 0.48m),
-            ArcadorLine(document.Id, "12469", "INCA-KOLA ORGL 900ML PET NR 12", 12.98m, 1.95m, 0m, 0.72m),
-            ArcadorLine(document.Id, "7796", "SPRITE HARMONY 500ML PET 12", 4.48m, 0.67m, 0m, 0.24m),
-            ArcadorLine(document.Id, "11604", "FIORA HARMONY FRESA 500 PT(12)", 3.95m, 0.67m, 0.53m, 0.24m),
-            ArcadorLine(document.Id, "11608", "FANTA HARMONY NRJ 500 PET(12)", 7.90m, 1.34m, 1.06m, 0.48m),
+            ArcadorLine(
+                document.Id,
+                "0580",
+                "SPRITE HARMONY 1350 PET(12)",
+                10.72m,
+                1.61m,
+                0m,
+                0.24m
+            ),
+            ArcadorLine(
+                document.Id,
+                "3172",
+                "FANTA HARMONY NRJ 1350 PET(12)",
+                18.58m,
+                3.22m,
+                2.86m,
+                0.48m
+            ),
+            ArcadorLine(
+                document.Id,
+                "12469",
+                "INCA-KOLA ORGL 900ML PET NR 12",
+                12.98m,
+                1.95m,
+                0m,
+                0.72m
+            ),
+            ArcadorLine(
+                document.Id,
+                "7796",
+                "SPRITE HARMONY 500ML PET 12",
+                4.48m,
+                0.67m,
+                0m,
+                0.24m
+            ),
+            ArcadorLine(
+                document.Id,
+                "11604",
+                "FIORA HARMONY FRESA 500 PT(12)",
+                3.95m,
+                0.67m,
+                0.53m,
+                0.24m
+            ),
+            ArcadorLine(
+                document.Id,
+                "11608",
+                "FANTA HARMONY NRJ 500 PET(12)",
+                7.90m,
+                1.34m,
+                1.06m,
+                0.48m
+            ),
             ArcadorLine(document.Id, "10111", "COCA-COLA 350ML LATA(6)", 6.08m, 0.91m, 0m, 0m),
             ArcadorLine(document.Id, "0577", "SPRITE HARMONY 300 PET(12)", 2.59m, 0.39m, 0m, 0.24m),
             ArcadorLine(document.Id, "0126", "COCA-COLA E 1250 GRB(12)", 7.11m, 1.37m, 2.00m, 0m),

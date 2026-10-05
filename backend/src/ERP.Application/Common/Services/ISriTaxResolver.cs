@@ -32,8 +32,14 @@ public interface ISriTaxResolver
     // ── FLOW-READY-02F.1 — modelo de impuestos múltiples por línea de compra ────────────────
     // Miembros aditivos: no reemplazan los anteriores (Sales sigue usando GetVatRateWithNameAsync/
     // GetIceRateWithNameAsync sin ningún cambio de comportamiento).
-    Task<SriTaxCatalogEntry?> GetVatCatalogEntryAsync(string vatCode, CancellationToken ct = default);
-    Task<SriTaxCatalogEntry?> GetIceCatalogEntryAsync(string iceCode, CancellationToken ct = default);
+    Task<SriTaxCatalogEntry?> GetVatCatalogEntryAsync(
+        string vatCode,
+        CancellationToken ct = default
+    );
+    Task<SriTaxCatalogEntry?> GetIceCatalogEntryAsync(
+        string iceCode,
+        CancellationToken ct = default
+    );
     Task<SriTaxCatalogEntry?> GetIrbpnrCatalogEntryAsync(
         string irbpnrCode,
         CancellationToken ct = default

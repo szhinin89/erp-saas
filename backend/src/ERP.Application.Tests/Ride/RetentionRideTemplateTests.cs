@@ -26,7 +26,13 @@ public sealed class RetentionRideTemplateTests
             authorizationNumber: accessKey.Value,
             authorizationDate: authorizationDate
         );
-        var issuer = RideParty.Create(null, "1790012345001", "Empresa Test S.A.", "Empresa Test", "Matriz 456");
+        var issuer = RideParty.Create(
+            null,
+            "1790012345001",
+            "Empresa Test S.A.",
+            "Empresa Test",
+            "Matriz 456"
+        );
         var subjectWithheld = RideParty.Create("05", "1710034065", "Proveedor Test");
         var sourceDocument = RetentionRideSourceDocument.Create(
             "01",
@@ -100,7 +106,10 @@ public sealed class RetentionRideTemplateTests
         // Documenta la decisión de fork: RetentionRideXmlParser NO implementa IRideXmlParser, así
         // que el resolver genérico nunca lo encuentra — es responsabilidad exclusiva de
         // IRetentionRideXmlParser, resuelto aparte. Esto no es un gap accidental.
-        var resolver = new RideXmlParserResolver([new InvoiceRideXmlParser(), new CreditNoteRideXmlParser()]);
+        var resolver = new RideXmlParserResolver([
+            new InvoiceRideXmlParser(),
+            new CreditNoteRideXmlParser(),
+        ]);
 
         var parser = resolver.Resolve(RideDocumentType.Retention);
 
@@ -110,7 +119,10 @@ public sealed class RetentionRideTemplateTests
     [Fact]
     public void RideXmlParserResolver_still_resolves_invoice_and_creditnote_regression()
     {
-        var resolver = new RideXmlParserResolver([new InvoiceRideXmlParser(), new CreditNoteRideXmlParser()]);
+        var resolver = new RideXmlParserResolver([
+            new InvoiceRideXmlParser(),
+            new CreditNoteRideXmlParser(),
+        ]);
 
         resolver.Resolve(RideDocumentType.Invoice).Should().BeOfType<InvoiceRideXmlParser>();
         resolver.Resolve(RideDocumentType.CreditNote).Should().BeOfType<CreditNoteRideXmlParser>();

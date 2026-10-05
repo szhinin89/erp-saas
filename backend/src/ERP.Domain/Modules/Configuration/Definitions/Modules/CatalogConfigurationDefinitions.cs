@@ -19,7 +19,8 @@ public static class CatalogConfigurationDefinitions
             FallbackStrategy = ConfigurationFallbackStrategy.SystemDefault,
             RequiresAudit = false,
             Validator = value => int.TryParse(value, out var v) && v > 0,
-            DeveloperNotes = "Default hardcodeado 3 en CreateCategoryNodeCommandHandler si ausente/inválido.",
+            DeveloperNotes =
+                "Default hardcodeado 3 en CreateCategoryNodeCommandHandler si ausente/inválido.",
         };
     }
 }

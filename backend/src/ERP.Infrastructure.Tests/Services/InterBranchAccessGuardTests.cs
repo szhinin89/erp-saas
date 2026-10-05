@@ -31,7 +31,8 @@ public sealed class InterBranchAccessGuardTests
 
         public Fixture()
         {
-            CompanyGuard.Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
+            CompanyGuard
+                .Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(
                     Result<CompanyAccessContext>.Success(
                         new CompanyAccessContext(UserId, TenantId, CompanyA, "Admin", true, true)
@@ -39,18 +40,38 @@ public sealed class InterBranchAccessGuardTests
                 );
             CurrentBranch.Setup(b => b.HasBranchContext).Returns(true);
             CurrentBranch.Setup(b => b.BranchId).Returns(OperatingBranch);
-            BranchGuard.Setup(g => g.RequireCurrentBranchAsync(It.IsAny<CancellationToken>()))
+            BranchGuard
+                .Setup(g => g.RequireCurrentBranchAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Allowed(OperatingBranch));
-            BranchGuard.Setup(g => g.RequireBranchAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            BranchGuard
+                .Setup(g => g.RequireBranchAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync((Guid id, CancellationToken _) => Allowed(id));
         }
 
         public Warehouse Add(Guid companyId, bool active = true)
         {
-            var w = Warehouse.Create(TenantId, Guid.NewGuid(), "Bodega", "B1", null, null, null, null, null, null, null, null, null, UserId, companyId);
+            var w = Warehouse.Create(
+                TenantId,
+                Guid.NewGuid(),
+                "Bodega",
+                "B1",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                UserId,
+                companyId
+            );
             if (!active)
                 w.Disable(UserId);
-            Warehouses.Setup(r => r.GetByIdAsync(TenantId, w.Id, It.IsAny<CancellationToken>())).ReturnsAsync(w);
+            Warehouses
+                .Setup(r => r.GetByIdAsync(TenantId, w.Id, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(w);
             return w;
         }
 
@@ -59,7 +80,9 @@ public sealed class InterBranchAccessGuardTests
     }
 
     private static Result<BranchAccessContext> Allowed(Guid branchId) =>
-        Result<BranchAccessContext>.Success(new BranchAccessContext(UserId, TenantId, CompanyA, branchId, "S", false));
+        Result<BranchAccessContext>.Success(
+            new BranchAccessContext(UserId, TenantId, CompanyA, branchId, "S", false)
+        );
 
     [Fact]
     public async Task Bodega_de_otra_empresa_activa_o_deshabilitada_es_identica_a_inexistente()
@@ -97,7 +120,10 @@ public sealed class InterBranchAccessGuardTests
         var f = new Fixture();
         f.BranchGuard.Setup(g => g.RequireCurrentBranchAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(
-                Result<BranchAccessContext>.Failure("Sucursal no encontrada.", ApiResponseCodes.Common.BranchScopeForbidden)
+                Result<BranchAccessContext>.Failure(
+                    "Sucursal no encontrada.",
+                    ApiResponseCodes.Common.BranchScopeForbidden
+                )
             );
 
         var result = await f.Build().RequireInterBranchAccessAsync(Guid.NewGuid(), Guid.NewGuid());
@@ -115,13 +141,21 @@ public sealed class InterBranchAccessGuardTests
         var f = new Fixture();
         var source = f.Add(CompanyA);
         var target = f.Add(CompanyA);
-        f.BranchGuard.Setup(g => g.RequireBranchAsync(source.BranchId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<BranchAccessContext>.Forbidden("No tiene autorización para operar en esta sucursal."));
+        f.BranchGuard.Setup(g =>
+                g.RequireBranchAsync(source.BranchId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                Result<BranchAccessContext>.Forbidden(
+                    "No tiene autorización para operar en esta sucursal."
+                )
+            );
 
         var result = await f.Build().RequireInterBranchAccessAsync(source.Id, target.Id);
 
         result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
-        result.Error.Should().Be("Sucursal de origen: No tiene autorización para operar en esta sucursal.");
+        result
+            .Error.Should()
+            .Be("Sucursal de origen: No tiene autorización para operar en esta sucursal.");
     }
 
     [Fact]
@@ -130,7 +164,10 @@ public sealed class InterBranchAccessGuardTests
         var f = new Fixture();
         f.CompanyGuard.Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(
-                Result<CompanyAccessContext>.Failure("No tiene acceso a esta empresa.", ApiResponseCodes.Common.CompanyScopeForbidden)
+                Result<CompanyAccessContext>.Failure(
+                    "No tiene acceso a esta empresa.",
+                    ApiResponseCodes.Common.CompanyScopeForbidden
+                )
             );
 
         var result = await f.Build().RequireInterBranchAccessAsync(Guid.NewGuid(), Guid.NewGuid());

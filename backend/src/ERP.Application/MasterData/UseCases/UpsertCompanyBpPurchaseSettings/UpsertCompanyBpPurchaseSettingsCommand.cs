@@ -11,5 +11,7 @@ namespace ERP.Application.MasterData.UseCases.UpsertCompanyBpPurchaseSettings;
 /// PaymentTermId es opcional: null limpia el default ("sin default configurado" — Compras/Gastos
 /// exigirán selección explícita, ver IPaymentTermDefaultResolver, Fase 3b).
 /// </summary>
-public sealed record UpsertCompanyBpPurchaseSettingsCommand(Guid BusinessPartnerId, Guid? PaymentTermId)
-    : IRequest<Result<CompanyBpPurchaseSettingsDto>>, ICompanyScopedRequest;
+public sealed record UpsertCompanyBpPurchaseSettingsCommand(
+    Guid BusinessPartnerId,
+    Guid? PaymentTermId
+) : IRequest<Result<CompanyBpPurchaseSettingsDto>>, ICompanyScopedRequest;

@@ -9,7 +9,8 @@ namespace ERP.Infrastructure.Persistence.Configurations.Sales;
 /// <summary>
 /// Mapeo EF de <see cref="PaymentMethodAccount"/> — SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01.
 /// </summary>
-public sealed class PaymentMethodAccountConfiguration : IEntityTypeConfiguration<PaymentMethodAccount>
+public sealed class PaymentMethodAccountConfiguration
+    : IEntityTypeConfiguration<PaymentMethodAccount>
 {
     public void Configure(EntityTypeBuilder<PaymentMethodAccount> builder)
     {

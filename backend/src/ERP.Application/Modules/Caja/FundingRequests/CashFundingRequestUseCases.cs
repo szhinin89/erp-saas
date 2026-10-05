@@ -1,3 +1,4 @@
+using System.Text.Json;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Branches;
@@ -8,7 +9,6 @@ using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Caja.Interfaces;
 using FluentValidation;
 using MediatR;
-using System.Text.Json;
 
 namespace ERP.Application.Modules.Caja.FundingRequests;
 
@@ -37,9 +37,10 @@ public sealed record CreateCashFundingRequestRequest(
 /// <see cref="Payment"/> es exactamente el mismo pago que se registraría directo. Sin ningún efecto
 /// financiero: se guarda como snapshot V1 y se ejecuta solo al <see cref="FulfillCashFundingRequestCommand"/>.
 /// </summary>
-public sealed record CreateCashFundingRequestCommand(RegisterSupplierPaymentCommand Payment, Guid ClientRequestId)
-    : IRequest<Result<CashFundingRequestDto>>,
-        IBranchScopedRequest;
+public sealed record CreateCashFundingRequestCommand(
+    RegisterSupplierPaymentCommand Payment,
+    Guid ClientRequestId
+) : IRequest<Result<CashFundingRequestDto>>, IBranchScopedRequest;
 
 /// <summary>El cajero que controla la sesión entrega el efectivo: ejecuta el pago en una sola transacción.</summary>
 public sealed record FulfillCashFundingRequestCommand(Guid Id)
@@ -58,21 +59,28 @@ public sealed record CancelCashFundingRequestCommand(Guid Id, string Reason)
 
 // ── Validators ───────────────────────────────────────────────────────────
 
-public sealed class CreateCashFundingRequestValidator : AbstractValidator<CreateCashFundingRequestCommand>
+public sealed class CreateCashFundingRequestValidator
+    : AbstractValidator<CreateCashFundingRequestCommand>
 {
     public CreateCashFundingRequestValidator()
     {
-        RuleFor(x => x.ClientRequestId).NotEmpty().WithMessage("El identificador de idempotencia es obligatorio.");
-        RuleFor(x => x.Payment).NotNull().SetValidator(new RegisterSupplierPaymentCommandValidator());
+        RuleFor(x => x.ClientRequestId)
+            .NotEmpty()
+            .WithMessage("El identificador de idempotencia es obligatorio.");
+        RuleFor(x => x.Payment)
+            .NotNull()
+            .SetValidator(new RegisterSupplierPaymentCommandValidator());
     }
 }
 
-public sealed class FulfillCashFundingRequestValidator : AbstractValidator<FulfillCashFundingRequestCommand>
+public sealed class FulfillCashFundingRequestValidator
+    : AbstractValidator<FulfillCashFundingRequestCommand>
 {
     public FulfillCashFundingRequestValidator() => RuleFor(x => x.Id).NotEmpty();
 }
 
-public sealed class RejectCashFundingRequestValidator : AbstractValidator<RejectCashFundingRequestCommand>
+public sealed class RejectCashFundingRequestValidator
+    : AbstractValidator<RejectCashFundingRequestCommand>
 {
     public RejectCashFundingRequestValidator()
     {
@@ -84,7 +92,8 @@ public sealed class RejectCashFundingRequestValidator : AbstractValidator<Reject
     }
 }
 
-public sealed class CancelCashFundingRequestValidator : AbstractValidator<CancelCashFundingRequestCommand>
+public sealed class CancelCashFundingRequestValidator
+    : AbstractValidator<CancelCashFundingRequestCommand>
 {
     public CancelCashFundingRequestValidator()
     {
@@ -108,12 +117,14 @@ internal static class CashFundingRequestMessages
     public const string NoOpenSession = "La caja seleccionada no tiene una sesión abierta.";
     public const string SessionNotOpen = "La caja de la solicitud ya no está abierta.";
     public const string OtherBranch = "La caja seleccionada no pertenece a la sucursal activa.";
-    public const string AlreadyResolved = "La solicitud de efectivo ya fue resuelta y no puede volver a usarse.";
+    public const string AlreadyResolved =
+        "La solicitud de efectivo ya fue resuelta y no puede volver a usarse.";
     public const string IntegrityFailure =
         "La intención de pago de la solicitud no es íntegra (versión o huella inválida): no se ejecuta.";
     public const string ClientRequestConflict =
         "Ya existe una solicitud con este identificador pero con datos distintos.";
-    public const string OnlyRequesterCancels = "Solo quien solicitó el efectivo puede cancelar la solicitud.";
+    public const string OnlyRequesterCancels =
+        "Solo quien solicitó el efectivo puede cancelar la solicitud.";
 }
 
 // ── Create ───────────────────────────────────────────────────────────────
@@ -163,7 +174,10 @@ public sealed class CreateCashFundingRequestHandler
         _u = u;
     }
 
-    public async Task<Result<CashFundingRequestDto>> Handle(CreateCashFundingRequestCommand cmd, CancellationToken ct)
+    public async Task<Result<CashFundingRequestDto>> Handle(
+        CreateCashFundingRequestCommand cmd,
+        CancellationToken ct
+    )
     {
         var tenantId = _t.TenantId;
         var companyId = _c.CompanyId;
@@ -181,7 +195,9 @@ public sealed class CreateCashFundingRequestHandler
         var cashLines = cmd.Payment.MethodLines.Count(l => l.CashRegisterId is not null);
         var cashRegisterId = CashFundingPaymentSnapshot.SingleCashRegisterId(snapshot);
         if (cashLines != 1 || cashRegisterId is null)
-            return Result<CashFundingRequestDto>.ValidationFailure(CashFundingRequestMessages.ExactlyOneCashLine);
+            return Result<CashFundingRequestDto>.ValidationFailure(
+                CashFundingRequestMessages.ExactlyOneCashLine
+            );
 
         // Reglas sin locks ni efectos (mismo rechazo temprano que el pago directo).
         var intentError = await _registrar.PrevalidateAsync(cmd.Payment, ct);
@@ -192,23 +208,51 @@ public sealed class CreateCashFundingRequestHandler
         try
         {
             // Orden único de locks: CashSession primero (serializa Create contra Close/Fulfill).
-            var session = await _sessions.GetOpenByCashRegisterForUpdateAsync(tenantId, cashRegisterId.Value, ct);
+            var session = await _sessions.GetOpenByCashRegisterForUpdateAsync(
+                tenantId,
+                cashRegisterId.Value,
+                ct
+            );
             if (session is null || session.CompanyId != companyId)
-                return await FailAsync(Result<CashFundingRequestDto>.ValidationFailure(CashFundingRequestMessages.NoOpenSession), ct);
+                return await FailAsync(
+                    Result<CashFundingRequestDto>.ValidationFailure(
+                        CashFundingRequestMessages.NoOpenSession
+                    ),
+                    ct
+                );
             if (session.IsControlledBy(userId))
-                return await FailAsync(Result<CashFundingRequestDto>.ValidationFailure(CashFundingRequestMessages.OwnCashRegister), ct);
+                return await FailAsync(
+                    Result<CashFundingRequestDto>.ValidationFailure(
+                        CashFundingRequestMessages.OwnCashRegister
+                    ),
+                    ct
+                );
             if (session.BranchId != _b.BranchId)
-                return await FailAsync(Result<CashFundingRequestDto>.ValidationFailure(CashFundingRequestMessages.OtherBranch), ct);
+                return await FailAsync(
+                    Result<CashFundingRequestDto>.ValidationFailure(
+                        CashFundingRequestMessages.OtherBranch
+                    ),
+                    ct
+                );
             var branchAccess = await _branchAccess.RequireBranchAsync(session.BranchId, ct);
             if (!branchAccess.IsSuccess)
-                return await FailAsync(Result<CashFundingRequestDto>.Failure(branchAccess.Error!, branchAccess.Code), ct);
+                return await FailAsync(
+                    Result<CashFundingRequestDto>.Failure(branchAccess.Error!, branchAccess.Code),
+                    ct
+                );
 
             // Validación completa del pago, ejecutado por quien controla hoy la sesión (el cajero
             // que atenderá): medios, destinos, referencia, CxP, proveedor, comprobante, sucursal y
             // efectivo disponible (chequeo temprano, sin reserva). Ningún efecto.
             var validation = await _registrar.ValidateAsync(
                 cmd.Payment,
-                new SupplierPaymentRegistrationContext(tenantId, companyId, session.BranchId, userId, session.UserId),
+                new SupplierPaymentRegistrationContext(
+                    tenantId,
+                    companyId,
+                    session.BranchId,
+                    userId,
+                    session.UserId
+                ),
                 ct
             );
             if (!validation.IsSuccess)
@@ -242,14 +286,23 @@ public sealed class CreateCashFundingRequestHandler
             {
                 // Carrera con un reintento concurrente del mismo ClientRequestId.
                 await _uow.RollbackAsync(ct);
-                var raced = await _requests.GetByClientRequestIdAsync(tenantId, cmd.ClientRequestId, ct);
+                var raced = await _requests.GetByClientRequestIdAsync(
+                    tenantId,
+                    cmd.ClientRequestId,
+                    ct
+                );
                 return raced is null
-                    ? Result<CashFundingRequestDto>.Conflict(CashFundingRequestMessages.ClientRequestConflict)
+                    ? Result<CashFundingRequestDto>.Conflict(
+                        CashFundingRequestMessages.ClientRequestConflict
+                    )
                     : SameIntent(raced, hash);
             }
 
             await _uow.CommitAsync(ct);
-            return Result<CashFundingRequestDto>.Success(CashFundingRequestDto.From(request), ApiResponseCodes.Common.Created);
+            return Result<CashFundingRequestDto>.Success(
+                CashFundingRequestDto.From(request),
+                ApiResponseCodes.Common.Created
+            );
         }
         catch
         {
@@ -258,12 +311,20 @@ public sealed class CreateCashFundingRequestHandler
         }
     }
 
-    private static Result<CashFundingRequestDto> SameIntent(CashFundingRequest existing, string hash) =>
+    private static Result<CashFundingRequestDto> SameIntent(
+        CashFundingRequest existing,
+        string hash
+    ) =>
         string.Equals(existing.PayloadHash, hash, StringComparison.Ordinal)
             ? Result<CashFundingRequestDto>.Success(CashFundingRequestDto.From(existing))
-            : Result<CashFundingRequestDto>.Conflict(CashFundingRequestMessages.ClientRequestConflict);
+            : Result<CashFundingRequestDto>.Conflict(
+                CashFundingRequestMessages.ClientRequestConflict
+            );
 
-    private async Task<Result<CashFundingRequestDto>> FailAsync(Result<CashFundingRequestDto> failure, CancellationToken ct)
+    private async Task<Result<CashFundingRequestDto>> FailAsync(
+        Result<CashFundingRequestDto> failure,
+        CancellationToken ct
+    )
     {
         await _uow.RollbackAsync(ct);
         return failure;
@@ -316,7 +377,10 @@ public sealed class FulfillCashFundingRequestHandler
         _u = u;
     }
 
-    public async Task<Result<CashFundingRequestDto>> Handle(FulfillCashFundingRequestCommand cmd, CancellationToken ct)
+    public async Task<Result<CashFundingRequestDto>> Handle(
+        FulfillCashFundingRequestCommand cmd,
+        CancellationToken ct
+    )
     {
         var tenantId = _t.TenantId;
         var companyId = _c.CompanyId;
@@ -329,35 +393,64 @@ public sealed class FulfillCashFundingRequestHandler
         if (current.Status == CashFundingRequestStatus.Fulfilled)
             return Result<CashFundingRequestDto>.Success(CashFundingRequestDto.From(current));
         if (!current.IsPending)
-            return Result<CashFundingRequestDto>.ValidationFailure(CashFundingRequestMessages.AlreadyResolved);
+            return Result<CashFundingRequestDto>.ValidationFailure(
+                CashFundingRequestMessages.AlreadyResolved
+            );
 
         await _uow.BeginTransactionAsync(ct);
         try
         {
             var sessionCheck = await CashFundingRequestLocks.LockControlledSessionAsync(
-                _sessions, _branchAccess, tenantId, companyId, _b.BranchId, userId, current, ct);
+                _sessions,
+                _branchAccess,
+                tenantId,
+                companyId,
+                _b.BranchId,
+                userId,
+                current,
+                ct
+            );
             if (sessionCheck is not null)
                 return await FailAsync(sessionCheck, ct);
 
             var request = await _requests.GetByIdForUpdateAsync(tenantId, cmd.Id, ct);
             if (request is null)
-                return await FailAsync(Result<CashFundingRequestDto>.NotFound(CashFundingRequestMessages.NotFound), ct);
+                return await FailAsync(
+                    Result<CashFundingRequestDto>.NotFound(CashFundingRequestMessages.NotFound),
+                    ct
+                );
             if (request.Status == CashFundingRequestStatus.Fulfilled)
             {
                 await _uow.RollbackAsync(ct);
                 return Result<CashFundingRequestDto>.Success(CashFundingRequestDto.From(request));
             }
             if (!request.IsPending)
-                return await FailAsync(Result<CashFundingRequestDto>.ValidationFailure(CashFundingRequestMessages.AlreadyResolved), ct);
+                return await FailAsync(
+                    Result<CashFundingRequestDto>.ValidationFailure(
+                        CashFundingRequestMessages.AlreadyResolved
+                    ),
+                    ct
+                );
 
             // ── Integridad de la intención (fail-closed): versión conocida + huella idéntica ──
             var snapshot = ReadSnapshot(request);
             if (snapshot is null)
-                return await FailAsync(Result<CashFundingRequestDto>.ValidationFailure(CashFundingRequestMessages.IntegrityFailure), ct);
+                return await FailAsync(
+                    Result<CashFundingRequestDto>.ValidationFailure(
+                        CashFundingRequestMessages.IntegrityFailure
+                    ),
+                    ct
+                );
 
             var registration = await _registrar.RegisterAsync(
                 CashFundingPaymentSnapshot.ToIntent(snapshot),
-                new SupplierPaymentRegistrationContext(tenantId, companyId, request.BranchId, request.RequestedByUserId, userId),
+                new SupplierPaymentRegistrationContext(
+                    tenantId,
+                    companyId,
+                    request.BranchId,
+                    request.RequestedByUserId,
+                    userId
+                ),
                 ct
             );
             if (!registration.IsSuccess)
@@ -385,21 +478,34 @@ public sealed class FulfillCashFundingRequestHandler
             return null;
         try
         {
-            var snapshot = CashFundingPaymentSnapshot.Deserialize(request.PaymentPayload, request.PayloadVersion);
+            var snapshot = CashFundingPaymentSnapshot.Deserialize(
+                request.PaymentPayload,
+                request.PayloadVersion
+            );
             var consistent =
-                string.Equals(CashFundingPaymentSnapshot.ComputeHash(snapshot), request.PayloadHash, StringComparison.Ordinal)
+                string.Equals(
+                    CashFundingPaymentSnapshot.ComputeHash(snapshot),
+                    request.PayloadHash,
+                    StringComparison.Ordinal
+                )
                 && snapshot.SupplierId == request.SupplierId
-                && CashFundingPaymentSnapshot.SingleCashRegisterId(snapshot) == request.CashRegisterId
-                && CashFundingPaymentSnapshot.CashAmountFor(snapshot, request.CashRegisterId) == request.CashAmount;
+                && CashFundingPaymentSnapshot.SingleCashRegisterId(snapshot)
+                    == request.CashRegisterId
+                && CashFundingPaymentSnapshot.CashAmountFor(snapshot, request.CashRegisterId)
+                    == request.CashAmount;
             return consistent ? snapshot : null;
         }
-        catch (Exception ex) when (ex is JsonException or InvalidOperationException or NotSupportedException)
+        catch (Exception ex)
+            when (ex is JsonException or InvalidOperationException or NotSupportedException)
         {
             return null;
         }
     }
 
-    private async Task<Result<CashFundingRequestDto>> FailAsync(Result<CashFundingRequestDto> failure, CancellationToken ct)
+    private async Task<Result<CashFundingRequestDto>> FailAsync(
+        Result<CashFundingRequestDto> failure,
+        CancellationToken ct
+    )
     {
         await _uow.RollbackAsync(ct);
         return failure;
@@ -442,7 +548,10 @@ public sealed class RejectCashFundingRequestHandler
         _u = u;
     }
 
-    public async Task<Result<CashFundingRequestDto>> Handle(RejectCashFundingRequestCommand cmd, CancellationToken ct)
+    public async Task<Result<CashFundingRequestDto>> Handle(
+        RejectCashFundingRequestCommand cmd,
+        CancellationToken ct
+    )
     {
         var tenantId = _t.TenantId;
         var userId = _u.UserId;
@@ -450,13 +559,23 @@ public sealed class RejectCashFundingRequestHandler
         if (current is null)
             return Result<CashFundingRequestDto>.NotFound(CashFundingRequestMessages.NotFound);
         if (!current.IsPending)
-            return Result<CashFundingRequestDto>.ValidationFailure(CashFundingRequestMessages.AlreadyResolved);
+            return Result<CashFundingRequestDto>.ValidationFailure(
+                CashFundingRequestMessages.AlreadyResolved
+            );
 
         await _uow.BeginTransactionAsync(ct);
         try
         {
             var sessionCheck = await CashFundingRequestLocks.LockControlledSessionAsync(
-                _sessions, _branchAccess, tenantId, _c.CompanyId, _b.BranchId, userId, current, ct);
+                _sessions,
+                _branchAccess,
+                tenantId,
+                _c.CompanyId,
+                _b.BranchId,
+                userId,
+                current,
+                ct
+            );
             if (sessionCheck is not null)
             {
                 await _uow.RollbackAsync(ct);
@@ -467,7 +586,9 @@ public sealed class RejectCashFundingRequestHandler
             if (request is null || !request.IsPending)
             {
                 await _uow.RollbackAsync(ct);
-                return Result<CashFundingRequestDto>.ValidationFailure(CashFundingRequestMessages.AlreadyResolved);
+                return Result<CashFundingRequestDto>.ValidationFailure(
+                    CashFundingRequestMessages.AlreadyResolved
+                );
             }
 
             request.Reject(userId, cmd.Reason);
@@ -519,7 +640,10 @@ public sealed class CancelCashFundingRequestHandler
         _u = u;
     }
 
-    public async Task<Result<CashFundingRequestDto>> Handle(CancelCashFundingRequestCommand cmd, CancellationToken ct)
+    public async Task<Result<CashFundingRequestDto>> Handle(
+        CancelCashFundingRequestCommand cmd,
+        CancellationToken ct
+    )
     {
         var tenantId = _t.TenantId;
         var userId = _u.UserId;
@@ -527,9 +651,13 @@ public sealed class CancelCashFundingRequestHandler
         if (current is null)
             return Result<CashFundingRequestDto>.NotFound(CashFundingRequestMessages.NotFound);
         if (current.RequestedByUserId != userId)
-            return Result<CashFundingRequestDto>.Forbidden(CashFundingRequestMessages.OnlyRequesterCancels);
+            return Result<CashFundingRequestDto>.Forbidden(
+                CashFundingRequestMessages.OnlyRequesterCancels
+            );
         if (!current.IsPending)
-            return Result<CashFundingRequestDto>.ValidationFailure(CashFundingRequestMessages.AlreadyResolved);
+            return Result<CashFundingRequestDto>.ValidationFailure(
+                CashFundingRequestMessages.AlreadyResolved
+            );
 
         await _uow.BeginTransactionAsync(ct);
         try
@@ -539,7 +667,9 @@ public sealed class CancelCashFundingRequestHandler
             if (request is null || !request.IsPending)
             {
                 await _uow.RollbackAsync(ct);
-                return Result<CashFundingRequestDto>.ValidationFailure(CashFundingRequestMessages.AlreadyResolved);
+                return Result<CashFundingRequestDto>.ValidationFailure(
+                    CashFundingRequestMessages.AlreadyResolved
+                );
             }
 
             request.Cancel(userId, cmd.Reason);
@@ -589,14 +719,20 @@ internal static class CashFundingRequestLocks
         )
             return Result<CashFundingRequestDto>.NotFound(CashFundingRequestMessages.NotFound);
         if (!session.IsOpen)
-            return Result<CashFundingRequestDto>.ValidationFailure(CashFundingRequestMessages.SessionNotOpen);
+            return Result<CashFundingRequestDto>.ValidationFailure(
+                CashFundingRequestMessages.SessionNotOpen
+            );
         if (session.BranchId != activeBranchId)
-            return Result<CashFundingRequestDto>.ValidationFailure(CashFundingRequestMessages.OtherBranch);
+            return Result<CashFundingRequestDto>.ValidationFailure(
+                CashFundingRequestMessages.OtherBranch
+            );
         var access = await branchAccess.RequireBranchAsync(session.BranchId, ct);
         if (!access.IsSuccess)
             return Result<CashFundingRequestDto>.Failure(access.Error!, access.Code);
         if (!session.IsControlledBy(userId))
-            return Result<CashFundingRequestDto>.ValidationFailure(CashSessionOwnership.RejectionMessage(session));
+            return Result<CashFundingRequestDto>.ValidationFailure(
+                CashSessionOwnership.RejectionMessage(session)
+            );
         return null;
     }
 }

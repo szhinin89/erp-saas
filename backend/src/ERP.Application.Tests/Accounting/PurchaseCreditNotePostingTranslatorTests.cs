@@ -132,7 +132,12 @@ public sealed class PurchaseCreditNotePostingTranslatorTests
     }
 
     /// <summary>TAX-LINE-SSOT-ICE-IRBPNR-01 Fase 5E — misma regla con una línea IRBPNR adicional, mismo criterio aditivo que <see cref="RuleWithIce"/>.</summary>
-    private static PostingRule RuleWithIrbpnr(Guid payableId, Guid expenseId, Guid vatId, Guid irbpnrId)
+    private static PostingRule RuleWithIrbpnr(
+        Guid payableId,
+        Guid expenseId,
+        Guid vatId,
+        Guid irbpnrId
+    )
     {
         var rule = Rule(payableId, expenseId, vatId);
         rule.AddLine(irbpnrId, AccountNature.Credit, PostingAmountKind.TaxIrbpnr);
@@ -216,23 +221,41 @@ public sealed class PurchaseCreditNotePostingTranslatorTests
         m.RegisterAccount(expense);
         m.RegisterAccount(vat);
         var rule = Rule(payable.Id, expense.Id, vat.Id);
-        m.PostingRules
-            .Setup(r =>
-                r.FindByKeyAsync(TenantId, CompanyId, "Purchases", "PurchaseCreditNoteAuthorized", It.IsAny<CancellationToken>())
+        m.PostingRules.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Purchases",
+                    "PurchaseCreditNoteAuthorized",
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(rule);
 
         var creditNoteId = Guid.NewGuid();
-        m.JournalEntries
-            .Setup(r =>
-                r.FindByKeyAsync(TenantId, CompanyId, "Purchases", "PurchaseCreditNoteAuthorized", creditNoteId, It.IsAny<CancellationToken>())
+        m.JournalEntries.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Purchases",
+                    "PurchaseCreditNoteAuthorized",
+                    creditNoteId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((JournalEntry?)null);
 
         var engine = m.BuildEngine();
-        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(engine, StubCompanyClock(), NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance);
+        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(
+            engine,
+            StubCompanyClock(),
+            NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance
+        );
 
-        await translator.Handle(AuthorizedEvent(creditNoteId, 100m, 15m, 115m), CancellationToken.None);
+        await translator.Handle(
+            AuthorizedEvent(creditNoteId, 100m, 15m, 115m),
+            CancellationToken.None
+        );
 
         m.Captured.Should().NotBeNull();
         var entry = m.Captured!;
@@ -241,9 +264,15 @@ public sealed class PurchaseCreditNotePostingTranslatorTests
         entry.SourceEventId.Should().Be(creditNoteId);
         entry.Lines.Should().HaveCount(3);
         entry.Lines.Sum(l => l.Debit).Should().Be(entry.Lines.Sum(l => l.Credit));
-        entry.Lines.Should().Contain(l => l.AccountId == payable.Id && l.Debit == 115m && l.Credit == 0m);
-        entry.Lines.Should().Contain(l => l.AccountId == expense.Id && l.Credit == 100m && l.Debit == 0m);
-        entry.Lines.Should().Contain(l => l.AccountId == vat.Id && l.Credit == 15m && l.Debit == 0m);
+        entry
+            .Lines.Should()
+            .Contain(l => l.AccountId == payable.Id && l.Debit == 115m && l.Credit == 0m);
+        entry
+            .Lines.Should()
+            .Contain(l => l.AccountId == expense.Id && l.Credit == 100m && l.Debit == 0m);
+        entry
+            .Lines.Should()
+            .Contain(l => l.AccountId == vat.Id && l.Credit == 15m && l.Debit == 0m);
     }
 
     [Fact]
@@ -259,35 +288,67 @@ public sealed class PurchaseCreditNotePostingTranslatorTests
         m.RegisterAccount(vat);
         m.RegisterAccount(ice);
         var rule = RuleWithIce(payable.Id, expense.Id, vat.Id, ice.Id);
-        m.PostingRules
-            .Setup(r =>
-                r.FindByKeyAsync(TenantId, CompanyId, "Purchases", "PurchaseCreditNoteAuthorized", It.IsAny<CancellationToken>())
+        m.PostingRules.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Purchases",
+                    "PurchaseCreditNoteAuthorized",
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(rule);
 
         var creditNoteId = Guid.NewGuid();
-        m.JournalEntries
-            .Setup(r =>
-                r.FindByKeyAsync(TenantId, CompanyId, "Purchases", "PurchaseCreditNoteAuthorized", creditNoteId, It.IsAny<CancellationToken>())
+        m.JournalEntries.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Purchases",
+                    "PurchaseCreditNoteAuthorized",
+                    creditNoteId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((JournalEntry?)null);
 
         var engine = m.BuildEngine();
-        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(engine, StubCompanyClock(), NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance);
+        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(
+            engine,
+            StubCompanyClock(),
+            NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance
+        );
 
         // Subtotal 100 + VAT (100+10)*15%=16.5 + ICE 10 = 126.5 — mismo cálculo que
         // PurchaseCreditNoteTests.Authorize_con_ICE_propaga_IceAmount... — montos ya resueltos por
         // la entidad, nunca recalculados aquí.
-        await translator.Handle(AuthorizedEvent(creditNoteId, subtotal: 100m, vat: 16.5m, appliedToPayable: 126.5m, iceAmount: 10m), CancellationToken.None);
+        await translator.Handle(
+            AuthorizedEvent(
+                creditNoteId,
+                subtotal: 100m,
+                vat: 16.5m,
+                appliedToPayable: 126.5m,
+                iceAmount: 10m
+            ),
+            CancellationToken.None
+        );
 
         m.Captured.Should().NotBeNull();
         var entry = m.Captured!;
         entry.Lines.Should().HaveCount(4);
         entry.Lines.Sum(l => l.Debit).Should().Be(entry.Lines.Sum(l => l.Credit));
-        entry.Lines.Should().Contain(l => l.AccountId == payable.Id && l.Debit == 126.5m && l.Credit == 0m);
-        entry.Lines.Should().Contain(l => l.AccountId == expense.Id && l.Credit == 100m && l.Debit == 0m);
-        entry.Lines.Should().Contain(l => l.AccountId == vat.Id && l.Credit == 16.5m && l.Debit == 0m);
-        entry.Lines.Should().Contain(l => l.AccountId == ice.Id && l.Credit == 10m && l.Debit == 0m);
+        entry
+            .Lines.Should()
+            .Contain(l => l.AccountId == payable.Id && l.Debit == 126.5m && l.Credit == 0m);
+        entry
+            .Lines.Should()
+            .Contain(l => l.AccountId == expense.Id && l.Credit == 100m && l.Debit == 0m);
+        entry
+            .Lines.Should()
+            .Contain(l => l.AccountId == vat.Id && l.Credit == 16.5m && l.Debit == 0m);
+        entry
+            .Lines.Should()
+            .Contain(l => l.AccountId == ice.Id && l.Credit == 10m && l.Debit == 0m);
     }
 
     [Fact]
@@ -303,24 +364,45 @@ public sealed class PurchaseCreditNotePostingTranslatorTests
         m.RegisterAccount(vat);
         m.RegisterAccount(irbpnr);
         var rule = RuleWithIrbpnr(payable.Id, expense.Id, vat.Id, irbpnr.Id);
-        m.PostingRules
-            .Setup(r =>
-                r.FindByKeyAsync(TenantId, CompanyId, "Purchases", "PurchaseCreditNoteAuthorized", It.IsAny<CancellationToken>())
+        m.PostingRules.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Purchases",
+                    "PurchaseCreditNoteAuthorized",
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(rule);
 
         var creditNoteId = Guid.NewGuid();
-        m.JournalEntries
-            .Setup(r =>
-                r.FindByKeyAsync(TenantId, CompanyId, "Purchases", "PurchaseCreditNoteAuthorized", creditNoteId, It.IsAny<CancellationToken>())
+        m.JournalEntries.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Purchases",
+                    "PurchaseCreditNoteAuthorized",
+                    creditNoteId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((JournalEntry?)null);
 
         var engine = m.BuildEngine();
-        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(engine, StubCompanyClock(), NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance);
+        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(
+            engine,
+            StubCompanyClock(),
+            NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance
+        );
 
         await translator.Handle(
-            AuthorizedEvent(creditNoteId, subtotal: 100m, vat: 15m, appliedToPayable: 121m, irbpnrAmount: 6m),
+            AuthorizedEvent(
+                creditNoteId,
+                subtotal: 100m,
+                vat: 15m,
+                appliedToPayable: 121m,
+                irbpnrAmount: 6m
+            ),
             CancellationToken.None
         );
 
@@ -328,8 +410,12 @@ public sealed class PurchaseCreditNotePostingTranslatorTests
         var entry = m.Captured!;
         entry.Lines.Should().HaveCount(4);
         entry.Lines.Sum(l => l.Debit).Should().Be(entry.Lines.Sum(l => l.Credit));
-        entry.Lines.Should().Contain(l => l.AccountId == payable.Id && l.Debit == 121m && l.Credit == 0m);
-        entry.Lines.Should().Contain(l => l.AccountId == irbpnr.Id && l.Credit == 6m && l.Debit == 0m);
+        entry
+            .Lines.Should()
+            .Contain(l => l.AccountId == payable.Id && l.Debit == 121m && l.Credit == 0m);
+        entry
+            .Lines.Should()
+            .Contain(l => l.AccountId == irbpnr.Id && l.Credit == 6m && l.Debit == 0m);
     }
 
     [Fact]
@@ -345,23 +431,41 @@ public sealed class PurchaseCreditNotePostingTranslatorTests
         m.RegisterAccount(vat);
         m.RegisterAccount(irbpnr);
         var rule = RuleWithIrbpnr(payable.Id, expense.Id, vat.Id, irbpnr.Id);
-        m.PostingRules
-            .Setup(r =>
-                r.FindByKeyAsync(TenantId, CompanyId, "Purchases", "PurchaseCreditNoteAuthorized", It.IsAny<CancellationToken>())
+        m.PostingRules.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Purchases",
+                    "PurchaseCreditNoteAuthorized",
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(rule);
 
         var creditNoteId = Guid.NewGuid();
-        m.JournalEntries
-            .Setup(r =>
-                r.FindByKeyAsync(TenantId, CompanyId, "Purchases", "PurchaseCreditNoteAuthorized", creditNoteId, It.IsAny<CancellationToken>())
+        m.JournalEntries.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Purchases",
+                    "PurchaseCreditNoteAuthorized",
+                    creditNoteId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((JournalEntry?)null);
 
         var engine = m.BuildEngine();
-        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(engine, StubCompanyClock(), NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance);
+        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(
+            engine,
+            StubCompanyClock(),
+            NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance
+        );
 
-        await translator.Handle(AuthorizedEvent(creditNoteId, 100m, 15m, 115m), CancellationToken.None);
+        await translator.Handle(
+            AuthorizedEvent(creditNoteId, 100m, 15m, 115m),
+            CancellationToken.None
+        );
 
         m.Captured.Should().NotBeNull();
         var entry = m.Captured!;
@@ -385,23 +489,41 @@ public sealed class PurchaseCreditNotePostingTranslatorTests
         m.RegisterAccount(vat);
         m.RegisterAccount(ice);
         var rule = RuleWithIce(payable.Id, expense.Id, vat.Id, ice.Id);
-        m.PostingRules
-            .Setup(r =>
-                r.FindByKeyAsync(TenantId, CompanyId, "Purchases", "PurchaseCreditNoteAuthorized", It.IsAny<CancellationToken>())
+        m.PostingRules.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Purchases",
+                    "PurchaseCreditNoteAuthorized",
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(rule);
 
         var creditNoteId = Guid.NewGuid();
-        m.JournalEntries
-            .Setup(r =>
-                r.FindByKeyAsync(TenantId, CompanyId, "Purchases", "PurchaseCreditNoteAuthorized", creditNoteId, It.IsAny<CancellationToken>())
+        m.JournalEntries.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Purchases",
+                    "PurchaseCreditNoteAuthorized",
+                    creditNoteId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((JournalEntry?)null);
 
         var engine = m.BuildEngine();
-        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(engine, StubCompanyClock(), NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance);
+        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(
+            engine,
+            StubCompanyClock(),
+            NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance
+        );
 
-        await translator.Handle(AuthorizedEvent(creditNoteId, 100m, 15m, 115m, iceAmount: 0m), CancellationToken.None);
+        await translator.Handle(
+            AuthorizedEvent(creditNoteId, 100m, 15m, 115m, iceAmount: 0m),
+            CancellationToken.None
+        );
 
         m.Captured.Should().NotBeNull();
         var entry = m.Captured!;
@@ -424,26 +546,53 @@ public sealed class PurchaseCreditNotePostingTranslatorTests
         m.RegisterAccount(vat);
         m.RegisterAccount(ice);
         var rule = RuleWithIce(payable.Id, expense.Id, vat.Id, ice.Id);
-        m.PostingRules
-            .Setup(r =>
-                r.FindByKeyAsync(TenantId, CompanyId, "Purchases", "PurchaseCreditNoteAuthorized", It.IsAny<CancellationToken>())
+        m.PostingRules.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Purchases",
+                    "PurchaseCreditNoteAuthorized",
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(rule);
 
         var creditNoteId = Guid.NewGuid();
-        m.JournalEntries
-            .Setup(r =>
-                r.FindByKeyAsync(TenantId, CompanyId, "Purchases", "PurchaseCreditNoteAuthorized", creditNoteId, It.IsAny<CancellationToken>())
+        m.JournalEntries.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Purchases",
+                    "PurchaseCreditNoteAuthorized",
+                    creditNoteId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((JournalEntry?)null);
 
         var engine = m.BuildEngine();
-        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(engine, StubCompanyClock(), NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance);
+        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(
+            engine,
+            StubCompanyClock(),
+            NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance
+        );
 
-        await translator.Handle(AuthorizedEvent(creditNoteId, subtotal: 100m, vat: 16.5m, appliedToPayable: 126.5m, iceAmount: 10m), CancellationToken.None);
+        await translator.Handle(
+            AuthorizedEvent(
+                creditNoteId,
+                subtotal: 100m,
+                vat: 16.5m,
+                appliedToPayable: 126.5m,
+                iceAmount: 10m
+            ),
+            CancellationToken.None
+        );
 
         m.Captured.Should().BeNull();
-        m.JournalEntries.Verify(r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()), Times.Never);
+        m.JournalEntries.Verify(
+            r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -457,30 +606,57 @@ public sealed class PurchaseCreditNotePostingTranslatorTests
         m.RegisterAccount(expense);
         m.RegisterAccount(vat);
         var rule = Rule(payable.Id, expense.Id, vat.Id);
-        m.PostingRules
-            .Setup(r =>
-                r.FindByKeyAsync(TenantId, CompanyId, "Purchases", "PurchaseCreditNoteAuthorized", It.IsAny<CancellationToken>())
+        m.PostingRules.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Purchases",
+                    "PurchaseCreditNoteAuthorized",
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(rule);
 
         var creditNoteId = Guid.NewGuid();
         var existing = JournalEntry.Create(
-            TenantId, CompanyId, new DateOnly(2026, 8, 10), Guid.NewGuid(), 2026,
-            "Purchases", "PurchaseCreditNoteAuthorized", creditNoteId, "NC ya contabilizada", CreatedBy
+            TenantId,
+            CompanyId,
+            new DateOnly(2026, 8, 10),
+            Guid.NewGuid(),
+            2026,
+            "Purchases",
+            "PurchaseCreditNoteAuthorized",
+            creditNoteId,
+            "NC ya contabilizada",
+            CreatedBy
         );
-        m.JournalEntries
-            .Setup(r =>
-                r.FindByKeyAsync(TenantId, CompanyId, "Purchases", "PurchaseCreditNoteAuthorized", creditNoteId, It.IsAny<CancellationToken>())
+        m.JournalEntries.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Purchases",
+                    "PurchaseCreditNoteAuthorized",
+                    creditNoteId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(existing);
 
         var engine = m.BuildEngine();
-        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(engine, StubCompanyClock(), NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance);
+        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(
+            engine,
+            StubCompanyClock(),
+            NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance
+        );
 
         await translator.Handle(AuthorizedEvent(creditNoteId), CancellationToken.None);
 
-        m.Captured.Should().BeNull("un hecho ya contabilizado nunca debe generar un segundo asiento");
-        m.JournalEntries.Verify(r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()), Times.Never);
+        m.Captured.Should()
+            .BeNull("un hecho ya contabilizado nunca debe generar un segundo asiento");
+        m.JournalEntries.Verify(
+            r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -495,26 +671,44 @@ public sealed class PurchaseCreditNotePostingTranslatorTests
         m.RegisterAccount(expense);
         m.RegisterAccount(vat);
         var rule = Rule(payable.Id, expense.Id, vat.Id);
-        m.PostingRules
-            .Setup(r =>
-                r.FindByKeyAsync(TenantId, CompanyId, "Purchases", "PurchaseCreditNoteAuthorized", It.IsAny<CancellationToken>())
+        m.PostingRules.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Purchases",
+                    "PurchaseCreditNoteAuthorized",
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(rule);
 
         var creditNoteId = Guid.NewGuid();
-        m.JournalEntries
-            .Setup(r =>
-                r.FindByKeyAsync(TenantId, CompanyId, "Purchases", "PurchaseCreditNoteAuthorized", creditNoteId, It.IsAny<CancellationToken>())
+        m.JournalEntries.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Purchases",
+                    "PurchaseCreditNoteAuthorized",
+                    creditNoteId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((JournalEntry?)null);
 
         var engine = m.BuildEngine();
-        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(engine, StubCompanyClock(), NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance);
+        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(
+            engine,
+            StubCompanyClock(),
+            NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance
+        );
 
         await translator.Handle(AuthorizedEvent(creditNoteId), CancellationToken.None);
 
         m.Captured.Should().BeNull();
-        m.JournalEntries.Verify(r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()), Times.Never);
+        m.JournalEntries.Verify(
+            r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     // ── PurchaseCreditNoteCancelledPostingTranslator ───────────────────────
@@ -522,8 +716,16 @@ public sealed class PurchaseCreditNotePostingTranslatorTests
     private static JournalEntry PostedCreditNoteEntry(Guid creditNoteId, int entryNumber = 1)
     {
         var entry = JournalEntry.Create(
-            TenantId, CompanyId, new DateOnly(2026, 8, 10), Guid.NewGuid(), 2026,
-            "Purchases", "PurchaseCreditNoteAuthorized", creditNoteId, "Asiento de NC", CreatedBy
+            TenantId,
+            CompanyId,
+            new DateOnly(2026, 8, 10),
+            Guid.NewGuid(),
+            2026,
+            "Purchases",
+            "PurchaseCreditNoteAuthorized",
+            creditNoteId,
+            "Asiento de NC",
+            CreatedBy
         );
         entry.AddLine(Guid.NewGuid(), null, 115m, 0m);
         entry.AddLine(Guid.NewGuid(), null, 0m, 115m);
@@ -535,7 +737,8 @@ public sealed class PurchaseCreditNotePostingTranslatorTests
     {
         public Mock<IJournalEntryRepository> JournalEntries { get; } = new();
         public Mock<IMediator> Mediator { get; } = new();
-        public Mock<Microsoft.Extensions.Logging.ILogger<PurchaseCreditNoteCancelledPostingTranslator>> Logger { get; } = new();
+        public Mock<Microsoft.Extensions.Logging.ILogger<PurchaseCreditNoteCancelledPostingTranslator>> Logger { get; } =
+            new();
 
         public PurchaseCreditNoteCancelledPostingTranslator BuildTranslator() =>
             new(JournalEntries.Object, Mediator.Object, Logger.Object);
@@ -560,24 +763,43 @@ public sealed class PurchaseCreditNotePostingTranslatorTests
         var creditNoteId = Guid.NewGuid();
         var original = PostedCreditNoteEntry(creditNoteId);
         var m = new TranslatorMocks();
-        m.JournalEntries
-            .Setup(r =>
-                r.GetBySourceAsync(TenantId, CompanyId, "Purchases", creditNoteId, It.IsAny<CancellationToken>())
+        m.JournalEntries.Setup(r =>
+                r.GetBySourceAsync(
+                    TenantId,
+                    CompanyId,
+                    "Purchases",
+                    creditNoteId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(new List<JournalEntry> { original });
 
         ReverseJournalEntryCommand? sent = null;
-        m.Mediator
-            .Setup(x => x.Send(It.IsAny<ReverseJournalEntryCommand>(), It.IsAny<CancellationToken>()))
-            .Callback<IRequest<Result<ERP.Application.Modules.Accounting.DTOs.JournalEntryDto>>, CancellationToken>(
-                (cmd, _) => sent = (ReverseJournalEntryCommand)cmd
+        m.Mediator.Setup(x =>
+                x.Send(It.IsAny<ReverseJournalEntryCommand>(), It.IsAny<CancellationToken>())
             )
+            .Callback<
+                IRequest<Result<ERP.Application.Modules.Accounting.DTOs.JournalEntryDto>>,
+                CancellationToken
+            >((cmd, _) => sent = (ReverseJournalEntryCommand)cmd)
             .ReturnsAsync(
                 Result<ERP.Application.Modules.Accounting.DTOs.JournalEntryDto>.Success(
                     new ERP.Application.Modules.Accounting.DTOs.JournalEntryDto(
-                        Guid.NewGuid(), original.EntryDate, original.AccountingPeriodId, original.FiscalYear,
-                        "Accounting", "Reversal", original.Id, "Reverso", "Posted", 2, DateTime.UtcNow,
-                        original.Id, null, null, null
+                        Guid.NewGuid(),
+                        original.EntryDate,
+                        original.AccountingPeriodId,
+                        original.FiscalYear,
+                        "Accounting",
+                        "Reversal",
+                        original.Id,
+                        "Reverso",
+                        "Posted",
+                        2,
+                        DateTime.UtcNow,
+                        original.Id,
+                        null,
+                        null,
+                        null
                     )
                 )
             );
@@ -598,14 +820,24 @@ public sealed class PurchaseCreditNotePostingTranslatorTests
         var m = new TranslatorMocks();
 
         var translator = m.BuildTranslator();
-        await translator.Handle(CancelledEvent(creditNoteId, appliedToPayable: null), CancellationToken.None);
+        await translator.Handle(
+            CancelledEvent(creditNoteId, appliedToPayable: null),
+            CancellationToken.None
+        );
 
         m.Mediator.Verify(
             x => x.Send(It.IsAny<ReverseJournalEntryCommand>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
         m.JournalEntries.Verify(
-            r => r.GetBySourceAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            r =>
+                r.GetBySourceAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never,
             "sin AppliedToPayableAmount no hay nada que buscar/reversar"
         );
@@ -616,14 +848,20 @@ public sealed class PurchaseCreditNotePostingTranslatorTests
     {
         var creditNoteId = Guid.NewGuid();
         var m = new TranslatorMocks();
-        m.JournalEntries
-            .Setup(r =>
-                r.GetBySourceAsync(TenantId, CompanyId, "Purchases", creditNoteId, It.IsAny<CancellationToken>())
+        m.JournalEntries.Setup(r =>
+                r.GetBySourceAsync(
+                    TenantId,
+                    CompanyId,
+                    "Purchases",
+                    creditNoteId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(new List<JournalEntry>());
 
         var translator = m.BuildTranslator();
-        var act = async () => await translator.Handle(CancelledEvent(creditNoteId, 115m), CancellationToken.None);
+        var act = async () =>
+            await translator.Handle(CancelledEvent(creditNoteId, 115m), CancellationToken.None);
 
         await act.Should().NotThrowAsync();
         m.Mediator.Verify(
@@ -639,13 +877,19 @@ public sealed class PurchaseCreditNotePostingTranslatorTests
         var creditNoteId = Guid.NewGuid();
         var original = PostedCreditNoteEntry(creditNoteId);
         var m = new TranslatorMocks();
-        m.JournalEntries
-            .Setup(r =>
-                r.GetBySourceAsync(TenantId, CompanyId, "Purchases", creditNoteId, It.IsAny<CancellationToken>())
+        m.JournalEntries.Setup(r =>
+                r.GetBySourceAsync(
+                    TenantId,
+                    CompanyId,
+                    "Purchases",
+                    creditNoteId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(new List<JournalEntry> { original });
-        m.Mediator
-            .Setup(x => x.Send(It.IsAny<ReverseJournalEntryCommand>(), It.IsAny<CancellationToken>()))
+        m.Mediator.Setup(x =>
+                x.Send(It.IsAny<ReverseJournalEntryCommand>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(
                 Result<ERP.Application.Modules.Accounting.DTOs.JournalEntryDto>.ValidationFailure(
                     "El período contable está cerrado.",
@@ -654,7 +898,8 @@ public sealed class PurchaseCreditNotePostingTranslatorTests
             );
 
         var translator = m.BuildTranslator();
-        var act = async () => await translator.Handle(CancelledEvent(creditNoteId, 115m), CancellationToken.None);
+        var act = async () =>
+            await translator.Handle(CancelledEvent(creditNoteId, 115m), CancellationToken.None);
 
         await act.Should().NotThrowAsync();
         m.VerifyWarningLogged(Times.Once());

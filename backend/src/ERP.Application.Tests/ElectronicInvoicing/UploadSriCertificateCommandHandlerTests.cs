@@ -37,7 +37,11 @@ public sealed class UploadSriCertificateCommandHandlerTests
             User.Setup(u => u.UserId).Returns(UserId);
             FileStorage
                 .Setup(f =>
-                    f.SaveAsync(It.IsAny<string>(), It.IsAny<Stream>(), It.IsAny<CancellationToken>())
+                    f.SaveAsync(
+                        It.IsAny<string>(),
+                        It.IsAny<Stream>(),
+                        It.IsAny<CancellationToken>()
+                    )
                 )
                 .ReturnsAsync("certificates/company/certificate.p12");
         }
@@ -58,17 +62,30 @@ public sealed class UploadSriCertificateCommandHandlerTests
     {
         // Estructura mínima ASN.1 DER SEQUENCE (0x30) que el handler acepta como PKCS#12 válido
         // a nivel estructural — no es un certificado real, no se descifra en este test.
-        var bytes = new byte[] { 0x30, 0x82, 0x01, 0x00 }.Concat(new byte[100]).ToArray();
-        return new MediaUploadContent(new MemoryStream(bytes), fileName, "application/x-pkcs12", bytes.Length);
+        var bytes = new byte[] { 0x30, 0x82, 0x01, 0x00 }
+            .Concat(new byte[100])
+            .ToArray();
+        return new MediaUploadContent(
+            new MemoryStream(bytes),
+            fileName,
+            "application/x-pkcs12",
+            bytes.Length
+        );
     }
 
     [Fact]
     public async Task Subir_certificado_genera_log_con_fingerprint_sin_el_binario_ni_password()
     {
         var f = new Fixture();
-        var settings = SriSettings.Create(TenantId, CompanyId, 1, 1, "https://wsdl.example/test", UserId);
-        f.Repo
-            .Setup(r => r.GetByCompanyIdAsync(CompanyId, It.IsAny<CancellationToken>()))
+        var settings = SriSettings.Create(
+            TenantId,
+            CompanyId,
+            1,
+            1,
+            "https://wsdl.example/test",
+            UserId
+        );
+        f.Repo.Setup(r => r.GetByCompanyIdAsync(CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(settings);
 
         var result = await f.BuildHandler()
@@ -97,8 +114,7 @@ public sealed class UploadSriCertificateCommandHandlerTests
     public async Task Sin_configuracion_previa_no_permite_subir_certificado_ni_genera_log()
     {
         var f = new Fixture();
-        f.Repo
-            .Setup(r => r.GetByCompanyIdAsync(CompanyId, It.IsAny<CancellationToken>()))
+        f.Repo.Setup(r => r.GetByCompanyIdAsync(CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((SriSettings?)null);
 
         var result = await f.BuildHandler()

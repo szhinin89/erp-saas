@@ -113,10 +113,9 @@ public sealed class BusinessPartnerRepository : IBusinessPartnerRepository
             .ToDictionaryAsync(x => x.Id, x => x.Name.LegalName, cancellationToken);
     }
 
-    public async Task<IReadOnlyDictionary<Guid, BusinessPartnerDisplayInfo>> GetDisplayInfoByIdsAsync(
-        IEnumerable<Guid> ids,
-        CancellationToken cancellationToken = default
-    )
+    public async Task<
+        IReadOnlyDictionary<Guid, BusinessPartnerDisplayInfo>
+    > GetDisplayInfoByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default)
     {
         var idList = ids.Distinct().ToList();
         if (idList.Count == 0)

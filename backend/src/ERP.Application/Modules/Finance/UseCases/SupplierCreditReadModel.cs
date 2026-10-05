@@ -102,7 +102,10 @@ internal sealed record SupplierCreditSourceRef(Guid DocumentId, string? Number, 
 internal sealed record SupplierCreditReadContext(
     string? SupplierName,
     SupplierCreditSourceRef? Source,
-    IReadOnlyDictionary<Guid, (string DocumentNumber, AccountsPayableOriginType OriginType)> Payables,
+    IReadOnlyDictionary<
+        Guid,
+        (string DocumentNumber, AccountsPayableOriginType OriginType)
+    > Payables,
     IReadOnlyDictionary<Guid, SupplierCreditRefundTransaction> RefundTransactionsByMovement,
     IReadOnlyDictionary<Guid, string> UserNames,
     IReadOnlyDictionary<string, string> PaymentMethodNames
@@ -129,7 +132,9 @@ internal static class SupplierCreditReadModel
     /// zona horaria de la empresa (solo si hay devoluciones — su fecha es el instante de
     /// autorización convertido a fecha de la empresa, ADR-034; el pago ya tiene fecha de negocio).
     /// </summary>
-    public static async Task<IReadOnlyDictionary<Guid, SupplierCreditSourceRef>> ResolveSourcesAsync(
+    public static async Task<
+        IReadOnlyDictionary<Guid, SupplierCreditSourceRef>
+    > ResolveSourcesAsync(
         ISupplierCreditRepository credits,
         ICompanyRepository companies,
         Guid tenantId,
@@ -149,7 +154,11 @@ internal static class SupplierCreditReadModel
                 x.Value.DocumentId,
                 x.Value.Number,
                 x.Value.BusinessDate
-                    ?? (x.Value.AuthorizedAtUtc is { } at ? CompanyTimeZone.LocalDate(at, tz!) : null)
+                    ?? (
+                        x.Value.AuthorizedAtUtc is { } at
+                            ? CompanyTimeZone.LocalDate(at, tz!)
+                            : null
+                    )
             )
         );
     }

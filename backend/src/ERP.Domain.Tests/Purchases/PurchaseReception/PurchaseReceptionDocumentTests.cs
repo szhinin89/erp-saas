@@ -20,25 +20,63 @@ public sealed class PurchaseReceptionDocumentTests
         // ZH-TEMPORAL-CONTRACT-SINGLE-SOURCE-02: la entidad solo acepta instantes UTC. La hora sin
         // zona del TXT SRI (hora Ecuador) se convierte en Application vía ICompanyClock, nunca aquí.
         var wallClock = new DateTime(2026, 9, 3, 21, 50, 0, DateTimeKind.Unspecified);
-        var zoneLess = () => PurchaseReceptionDocument.Create(
-            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), PurchaseReceptionSourceDocType.Invoice,
-            "1791352688001", "Supplier", null,
-            "0107202601179135268800120150270001617400016174011", "015-027-000161740",
-            new DateOnly(2026, 9, 3), wallClock, 100m, 15m, 115m, UserId);
+        var zoneLess = () =>
+            PurchaseReceptionDocument.Create(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                PurchaseReceptionSourceDocType.Invoice,
+                "1791352688001",
+                "Supplier",
+                null,
+                "0107202601179135268800120150270001617400016174011",
+                "015-027-000161740",
+                new DateOnly(2026, 9, 3),
+                wallClock,
+                100m,
+                15m,
+                115m,
+                UserId
+            );
         zoneLess.Should().Throw<ArgumentException>();
 
         var date = new DateTime(2026, 9, 4, 2, 50, 0, DateTimeKind.Utc);
         var document = PurchaseReceptionDocument.Create(
-            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), PurchaseReceptionSourceDocType.Invoice,
-            "1791352688001", "Supplier", null,
-            "0107202601179135268800120150270001617400016174011", "015-027-000161740",
-            new DateOnly(2026, 9, 3), date, 100m, 15m, 115m, UserId);
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            PurchaseReceptionSourceDocType.Invoice,
+            "1791352688001",
+            "Supplier",
+            null,
+            "0107202601179135268800120150270001617400016174011",
+            "015-027-000161740",
+            new DateOnly(2026, 9, 3),
+            date,
+            100m,
+            15m,
+            115m,
+            UserId
+        );
         document.AuthorizationDate!.Value.Kind.Should().Be(DateTimeKind.Utc);
         document.AuthorizationDate.Value.Should().Be(date);
 
-        document.AttachSriAuthorization("AUTH-1", date, "<factura/>", date, [], UserId,
-            "01", "20", new PurchaseReceptionProcessingOutcome(
-                PurchaseReceptionProcessingStatus.Failed, 0, 0, "No detail lines"));
+        document.AttachSriAuthorization(
+            "AUTH-1",
+            date,
+            "<factura/>",
+            date,
+            [],
+            UserId,
+            "01",
+            "20",
+            new PurchaseReceptionProcessingOutcome(
+                PurchaseReceptionProcessingStatus.Failed,
+                0,
+                0,
+                "No detail lines"
+            )
+        );
 
         document.AuthorizationDate.Value.Kind.Should().Be(DateTimeKind.Utc);
         document.XmlDownloadedAt!.Value.Kind.Should().Be(DateTimeKind.Utc);

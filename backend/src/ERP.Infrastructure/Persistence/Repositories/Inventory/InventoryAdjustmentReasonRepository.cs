@@ -10,10 +10,8 @@ public sealed class InventoryAdjustmentReasonRepository : IInventoryAdjustmentRe
 
     public InventoryAdjustmentReasonRepository(ErpDbContext db) => _db = db;
 
-    public async Task AddAsync(
-        InventoryAdjustmentReason reason,
-        CancellationToken ct = default
-    ) => await _db.Set<InventoryAdjustmentReason>().AddAsync(reason, ct);
+    public async Task AddAsync(InventoryAdjustmentReason reason, CancellationToken ct = default) =>
+        await _db.Set<InventoryAdjustmentReason>().AddAsync(reason, ct);
 
     public Task<InventoryAdjustmentReason?> GetByIdAsync(
         Guid tenantId,

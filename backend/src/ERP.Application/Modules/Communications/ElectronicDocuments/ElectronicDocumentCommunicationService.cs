@@ -40,7 +40,8 @@ public interface IElectronicDocumentCommunicationService
     );
 }
 
-public sealed partial class ElectronicDocumentCommunicationService : IElectronicDocumentCommunicationService
+public sealed partial class ElectronicDocumentCommunicationService
+    : IElectronicDocumentCommunicationService
 {
     private const string DefaultIssuerName = "Empresa emisora";
 
@@ -74,7 +75,10 @@ public sealed partial class ElectronicDocumentCommunicationService : IElectronic
         ArgumentNullException.ThrowIfNull(document);
         LogRequested(document.Id, document.DocumentType, document.SourceModule, trigger);
 
-        if (document.CurrentState != ElectronicDocumentState.Authorized || document.AuthorizationNumber is null)
+        if (
+            document.CurrentState != ElectronicDocumentState.Authorized
+            || document.AuthorizationNumber is null
+        )
             return Skip(document, trigger, ApiResponseCodes.Communications.SourceNotEligible);
 
         var contributor = _contributors.Resolve(document.SourceModule, document.DocumentType);
@@ -83,38 +87,61 @@ public sealed partial class ElectronicDocumentCommunicationService : IElectronic
 
         // Preferencia de la empresa DUEÑA del documento (tenant/empresa explícitos, no el contexto
         // ambiente: esto corre desde un evento de dominio o un job).
-        var preferences = await _preferences.ResolveAsync(document.TenantId, document.CompanyId, ct);
+        var preferences = await _preferences.ResolveAsync(
+            document.TenantId,
+            document.CompanyId,
+            ct
+        );
         if (!preferences.ElectronicDocuments.EmailOnAuthorization)
             return Skip(document, trigger, "EMAIL_ON_AUTHORIZATION_DISABLED");
 
         var contributed = await contributor.ContributeAsync(
-            new ElectronicDocumentCommunicationContext(document, await ResolveIssuerNameAsync(document, ct)),
+            new ElectronicDocumentCommunicationContext(
+                document,
+                await ResolveIssuerNameAsync(document, ct)
+            ),
             ct
         );
         if (!contributed.IsSuccess)
-            return Skip(document, trigger, contributed.Code ?? ApiResponseCodes.Communications.SourceNotFound);
+            return Skip(
+                document,
+                trigger,
+                contributed.Code ?? ApiResponseCodes.Communications.SourceNotFound
+            );
 
         var contribution = contributed.Value!;
         // La ruta declarada es la que usa la reconciliación para correlacionar con la outbox: el aporte
         // debe coincidir exactamente (propósito y SourceType), o un faltante nunca dejaría de serlo.
         var target = contributor.Targets[document.DocumentType];
-        if (!string.Equals(contribution.Purpose, target.Purpose, StringComparison.Ordinal)
-            || !string.Equals(contribution.Source.Type, target.SourceType, StringComparison.Ordinal))
+        if (
+            !string.Equals(contribution.Purpose, target.Purpose, StringComparison.Ordinal)
+            || !string.Equals(contribution.Source.Type, target.SourceType, StringComparison.Ordinal)
+        )
             throw new InvalidOperationException(
                 $"El contributor {contributor.SourceModule} devolvió un propósito u origen distinto al de su ruta {document.DocumentType}."
             );
 
         // Ruta oficial: el origen de la comunicación es el mismo par (módulo, id) que el comprobante. Así
         // el RIDE se resuelve con ese par y la reconciliación puede correlacionar sin otra tabla.
-        if (!string.Equals(contribution.Source.Module, document.SourceModule, StringComparison.Ordinal)
-            || contribution.Source.Id != document.SourceEntityId)
+        if (
+            !string.Equals(
+                contribution.Source.Module,
+                document.SourceModule,
+                StringComparison.Ordinal
+            )
+            || contribution.Source.Id != document.SourceEntityId
+        )
             throw new InvalidOperationException(
                 $"El origen aportado por {contributor.SourceModule} no corresponde al documento de origen del comprobante."
             );
 
         var queued = await _queue.EnqueueAsync(
             new CommunicationRequest(
-                Scope: CommunicationScope.Company(document.TenantId, document.CompanyId, contribution.BranchId),
+                Scope: CommunicationScope.Company(
+                    document.TenantId,
+                    document.CompanyId,
+                    contribution.BranchId
+                ),
                 Purpose: contribution.Purpose,
                 Source: contribution.Source,
                 RecipientRole: contribution.RecipientRole,
@@ -131,7 +158,15 @@ public sealed partial class ElectronicDocumentCommunicationService : IElectronic
         var outcome = queued.WasAlreadyQueued
             ? ElectronicDocumentCommunicationOutcome.AlreadyQueued
             : ElectronicDocumentCommunicationOutcome.Queued;
-        LogQueued(document.Id, document.DocumentType, contribution.Purpose, queued.Id, outcome, queued.FailureCode, trigger);
+        LogQueued(
+            document.Id,
+            document.DocumentType,
+            contribution.Purpose,
+            queued.Id,
+            outcome,
+            queued.FailureCode,
+            trigger
+        );
         return new ElectronicDocumentCommunicationResult(outcome, queued.Id, queued.FailureCode);
     }
 
@@ -139,7 +174,10 @@ public sealed partial class ElectronicDocumentCommunicationService : IElectronic
     /// Adjuntos por referencia al comprobante (<c>ElectronicDocument.Id</c>): XML autorizado (si ya está
     /// almacenado) y RIDE. Ningún byte se copia ni se genera aquí.
     /// </summary>
-    private static List<QueueCommunicationAttachmentDto> Attachments(ElectronicDocument document, string documentNumber)
+    private static List<QueueCommunicationAttachmentDto> Attachments(
+        ElectronicDocument document,
+        string documentNumber
+    )
     {
         var token = SafeFileToken(documentNumber);
         var attachments = new List<QueueCommunicationAttachmentDto>(2);
@@ -163,13 +201,18 @@ public sealed partial class ElectronicDocumentCommunicationService : IElectronic
         return attachments;
     }
 
-    private async Task<string> ResolveIssuerNameAsync(ElectronicDocument document, CancellationToken ct)
+    private async Task<string> ResolveIssuerNameAsync(
+        ElectronicDocument document,
+        CancellationToken ct
+    )
     {
         var company = await _companies.GetByIdAsync(document.CompanyId, ct);
         if (company is null || company.TenantId != document.TenantId)
             return DefaultIssuerName;
         return new[] { company.TradeName, company.LegalName }
-            .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value))?.Trim() ?? DefaultIssuerName;
+                .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value))
+                ?.Trim()
+            ?? DefaultIssuerName;
     }
 
     private ElectronicDocumentCommunicationResult Skip(
@@ -179,22 +222,59 @@ public sealed partial class ElectronicDocumentCommunicationService : IElectronic
     )
     {
         LogSkipped(document.Id, document.DocumentType, document.SourceModule, reason, trigger);
-        return new ElectronicDocumentCommunicationResult(ElectronicDocumentCommunicationOutcome.Skipped, FailureCode: reason);
+        return new ElectronicDocumentCommunicationResult(
+            ElectronicDocumentCommunicationOutcome.Skipped,
+            FailureCode: reason
+        );
     }
 
     private static string SafeFileToken(string value) =>
-        string.Join("-", value.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
+        string.Join(
+            "-",
+            value.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries)
+        );
 
     // Sin PII: ids, tipos y códigos; nunca correo, nombre del destinatario ni contenido.
-    [LoggerMessage(EventId = 4230, EventName = "ElectronicDocumentCommunicationRequested", Level = LogLevel.Debug,
-        Message = "Communications: requested for ElectronicDocument {ElectronicDocumentId} type={DocumentType} module={SourceModule} trigger={Trigger}")]
-    private partial void LogRequested(Guid electronicDocumentId, ElectronicDocumentType documentType, string sourceModule, ElectronicDocumentCommunicationTrigger trigger);
+    [LoggerMessage(
+        EventId = 4230,
+        EventName = "ElectronicDocumentCommunicationRequested",
+        Level = LogLevel.Debug,
+        Message = "Communications: requested for ElectronicDocument {ElectronicDocumentId} type={DocumentType} module={SourceModule} trigger={Trigger}"
+    )]
+    private partial void LogRequested(
+        Guid electronicDocumentId,
+        ElectronicDocumentType documentType,
+        string sourceModule,
+        ElectronicDocumentCommunicationTrigger trigger
+    );
 
-    [LoggerMessage(EventId = 4231, EventName = "ElectronicDocumentCommunicationSkipped", Level = LogLevel.Information,
-        Message = "Communications: skipped for ElectronicDocument {ElectronicDocumentId} type={DocumentType} module={SourceModule} reason={Reason} trigger={Trigger}")]
-    private partial void LogSkipped(Guid electronicDocumentId, ElectronicDocumentType documentType, string sourceModule, string reason, ElectronicDocumentCommunicationTrigger trigger);
+    [LoggerMessage(
+        EventId = 4231,
+        EventName = "ElectronicDocumentCommunicationSkipped",
+        Level = LogLevel.Information,
+        Message = "Communications: skipped for ElectronicDocument {ElectronicDocumentId} type={DocumentType} module={SourceModule} reason={Reason} trigger={Trigger}"
+    )]
+    private partial void LogSkipped(
+        Guid electronicDocumentId,
+        ElectronicDocumentType documentType,
+        string sourceModule,
+        string reason,
+        ElectronicDocumentCommunicationTrigger trigger
+    );
 
-    [LoggerMessage(EventId = 4232, EventName = "ElectronicDocumentCommunicationQueued", Level = LogLevel.Information,
-        Message = "Communications: ElectronicDocument {ElectronicDocumentId} type={DocumentType} purpose={Purpose} -> {CommunicationId} outcome={Outcome} failure={FailureCode} trigger={Trigger}")]
-    private partial void LogQueued(Guid electronicDocumentId, ElectronicDocumentType documentType, string purpose, Guid communicationId, ElectronicDocumentCommunicationOutcome outcome, string? failureCode, ElectronicDocumentCommunicationTrigger trigger);
+    [LoggerMessage(
+        EventId = 4232,
+        EventName = "ElectronicDocumentCommunicationQueued",
+        Level = LogLevel.Information,
+        Message = "Communications: ElectronicDocument {ElectronicDocumentId} type={DocumentType} purpose={Purpose} -> {CommunicationId} outcome={Outcome} failure={FailureCode} trigger={Trigger}"
+    )]
+    private partial void LogQueued(
+        Guid electronicDocumentId,
+        ElectronicDocumentType documentType,
+        string purpose,
+        Guid communicationId,
+        ElectronicDocumentCommunicationOutcome outcome,
+        string? failureCode,
+        ElectronicDocumentCommunicationTrigger trigger
+    );
 }

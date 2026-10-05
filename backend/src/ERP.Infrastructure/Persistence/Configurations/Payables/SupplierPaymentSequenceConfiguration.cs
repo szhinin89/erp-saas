@@ -9,7 +9,8 @@ namespace ERP.Infrastructure.Persistence.Configurations.Payables;
 /// <c>PurchaseReturnSequenceConfiguration</c>: ámbito <c>(TenantId, CompanyId)</c> sin
 /// <c>EmissionPointId</c>/<c>DocTypeCode</c>.
 /// </summary>
-public sealed class SupplierPaymentSequenceConfiguration : IEntityTypeConfiguration<SupplierPaymentSequence>
+public sealed class SupplierPaymentSequenceConfiguration
+    : IEntityTypeConfiguration<SupplierPaymentSequence>
 {
     public void Configure(EntityTypeBuilder<SupplierPaymentSequence> builder)
     {

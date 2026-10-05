@@ -60,7 +60,14 @@ public sealed class SalesInvoiceSubtotalGrandTotalRoundingTests
             uomCode: "UNIT",
             discountPct: discountPct
         );
-        line.ApplyTaxes(vatCode, vatRate, vatRate == 0 ? "IVA 0%" : $"IVA {vatRate}%", null, 0m, null);
+        line.ApplyTaxes(
+            vatCode,
+            vatRate,
+            vatRate == 0 ? "IVA 0%" : $"IVA {vatRate}%",
+            null,
+            0m,
+            null
+        );
         return line;
     }
 
@@ -91,7 +98,17 @@ public sealed class SalesInvoiceSubtotalGrandTotalRoundingTests
         var line = CreateLine(inv.Id, quantity: 1, unitPrice: 1.995m);
         inv.ReplaceLines(new[] { line }, UserId);
         inv.ReplacePayments(
-            new[] { SalesInvoicePayment.Create(inv.Id, TenantId, Guid.NewGuid(), "01", "Efectivo", inv.GrandTotal) },
+            new[]
+            {
+                SalesInvoicePayment.Create(
+                    inv.Id,
+                    TenantId,
+                    Guid.NewGuid(),
+                    "01",
+                    "Efectivo",
+                    inv.GrandTotal
+                ),
+            },
             UserId
         );
 
@@ -113,7 +130,17 @@ public sealed class SalesInvoiceSubtotalGrandTotalRoundingTests
         var line2 = CreateLine(inv.Id, quantity: 1, unitPrice: 1.995m);
         inv.ReplaceLines(new[] { line1, line2 }, UserId);
         inv.ReplacePayments(
-            new[] { SalesInvoicePayment.Create(inv.Id, TenantId, Guid.NewGuid(), "01", "Efectivo", inv.GrandTotal) },
+            new[]
+            {
+                SalesInvoicePayment.Create(
+                    inv.Id,
+                    TenantId,
+                    Guid.NewGuid(),
+                    "01",
+                    "Efectivo",
+                    inv.GrandTotal
+                ),
+            },
             UserId
         );
 
@@ -134,7 +161,17 @@ public sealed class SalesInvoiceSubtotalGrandTotalRoundingTests
         var line = CreateLine(inv.Id, quantity: 3, unitPrice: 1.995m, vatCode: "0", vatRate: 0m);
         inv.ReplaceLines(new[] { line }, UserId);
         inv.ReplacePayments(
-            new[] { SalesInvoicePayment.Create(inv.Id, TenantId, Guid.NewGuid(), "01", "Efectivo", inv.GrandTotal) },
+            new[]
+            {
+                SalesInvoicePayment.Create(
+                    inv.Id,
+                    TenantId,
+                    Guid.NewGuid(),
+                    "01",
+                    "Efectivo",
+                    inv.GrandTotal
+                ),
+            },
             UserId
         );
 
@@ -151,7 +188,17 @@ public sealed class SalesInvoiceSubtotalGrandTotalRoundingTests
         var line = CreateLine(inv.Id, quantity: 2, unitPrice: 1.995m, vatCode: "4", vatRate: 15m);
         inv.ReplaceLines(new[] { line }, UserId);
         inv.ReplacePayments(
-            new[] { SalesInvoicePayment.Create(inv.Id, TenantId, Guid.NewGuid(), "01", "Efectivo", inv.GrandTotal) },
+            new[]
+            {
+                SalesInvoicePayment.Create(
+                    inv.Id,
+                    TenantId,
+                    Guid.NewGuid(),
+                    "01",
+                    "Efectivo",
+                    inv.GrandTotal
+                ),
+            },
             UserId
         );
 
@@ -175,7 +222,17 @@ public sealed class SalesInvoiceSubtotalGrandTotalRoundingTests
         );
         inv.ReplaceLines(new[] { line }, UserId);
         inv.ReplacePayments(
-            new[] { SalesInvoicePayment.Create(inv.Id, TenantId, Guid.NewGuid(), "01", "Efectivo", inv.GrandTotal) },
+            new[]
+            {
+                SalesInvoicePayment.Create(
+                    inv.Id,
+                    TenantId,
+                    Guid.NewGuid(),
+                    "01",
+                    "Efectivo",
+                    inv.GrandTotal
+                ),
+            },
             UserId
         );
 
@@ -212,7 +269,17 @@ public sealed class SalesInvoiceSubtotalGrandTotalRoundingTests
         );
         inv.ReplaceLines(new[] { line }, UserId);
         inv.ReplacePayments(
-            new[] { SalesInvoicePayment.Create(inv.Id, TenantId, Guid.NewGuid(), "01", "Efectivo", inv.GrandTotal) },
+            new[]
+            {
+                SalesInvoicePayment.Create(
+                    inv.Id,
+                    TenantId,
+                    Guid.NewGuid(),
+                    "01",
+                    "Efectivo",
+                    inv.GrandTotal
+                ),
+            },
             UserId
         );
 
@@ -235,7 +302,17 @@ public sealed class SalesInvoiceSubtotalGrandTotalRoundingTests
         var line2 = CreateLine(inv.Id, quantity: 1, unitPrice: 1.995m);
         inv.ReplaceLines(new[] { line1, line2 }, UserId);
         inv.ReplacePayments(
-            new[] { SalesInvoicePayment.Create(inv.Id, TenantId, Guid.NewGuid(), "01", "Efectivo", 3.99m) },
+            new[]
+            {
+                SalesInvoicePayment.Create(
+                    inv.Id,
+                    TenantId,
+                    Guid.NewGuid(),
+                    "01",
+                    "Efectivo",
+                    3.99m
+                ),
+            },
             UserId
         );
 
@@ -243,8 +320,8 @@ public sealed class SalesInvoiceSubtotalGrandTotalRoundingTests
         // propia de Authorize, ADR distinto de JournalEntry.EnsureBalanced — no se toca aquí).
         inv.Authorize(UserId, cashApplied: 3.99m);
 
-        var evt = inv.DomainEvents
-            .OfType<ERP.Domain.Modules.Sales.Events.SalesInvoiceAuthorizedEvent>()
+        var evt = inv
+            .DomainEvents.OfType<ERP.Domain.Modules.Sales.Events.SalesInvoiceAuthorizedEvent>()
             .Single();
         evt.CashApplied.Should().Be(3.99m);
         evt.GrandTotal.Should().Be(4.00m);

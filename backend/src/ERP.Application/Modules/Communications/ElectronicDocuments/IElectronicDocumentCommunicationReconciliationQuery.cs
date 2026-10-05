@@ -20,9 +20,12 @@ public sealed record ElectronicDocumentCommunicationCandidate(
 /// </summary>
 public interface IElectronicDocumentCommunicationReconciliationQuery
 {
+    /// <param name="routes"></param>
     /// <param name="lastChangeBeforeUtc">Antigüedad mínima: no compite con el evento en curso.</param>
     /// <param name="after">Keyset: devuelve candidatos estrictamente posteriores a este (null = desde el más antiguo).</param>
     /// <param name="excludedCompanyIds">Empresas sin comunicación por política (preferencia desactivada): no consumen el lote.</param>
+    /// <param name="limit"></param>
+    /// <param name="ct"></param>
     Task<IReadOnlyList<ElectronicDocumentCommunicationCandidate>> GetMissingAsync(
         IReadOnlyCollection<ElectronicDocumentCommunicationRoute> routes,
         DateTime lastChangeBeforeUtc,

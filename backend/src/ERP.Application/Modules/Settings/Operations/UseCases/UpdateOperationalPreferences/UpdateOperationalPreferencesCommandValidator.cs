@@ -10,7 +10,12 @@ namespace ERP.Application.Modules.Settings.Operations.UseCases.UpdateOperational
 public sealed class UpdateOperationalPreferencesCommandValidator
     : AbstractValidator<UpdateOperationalPreferencesCommand>
 {
-    private static readonly string[] ReceiptModes = ["AskBeforePrint", "AlwaysPrint", "NeverAutoPrint"];
+    private static readonly string[] ReceiptModes =
+    [
+        "AskBeforePrint",
+        "AlwaysPrint",
+        "NeverAutoPrint",
+    ];
     private static readonly string[] PaperWidths = ["80mm", "58mm"];
     private static readonly string[] Languages = ["es", "en"];
 

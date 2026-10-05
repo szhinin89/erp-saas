@@ -206,9 +206,16 @@ public sealed class RidePipelineInvoiceIntegrationTests
             storageService.Object,
             repository.Object,
             currentUser.Object,
-                Mock.Of<ICompanyPrecisionPolicyRepository>(p =>
-                    p.FindAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()) ==
-                    Task.FromResult<CompanyPrecisionPolicy?>(CompanyPrecisionPolicy.CreateStandardCommercial(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid())))
+            Mock.Of<ICompanyPrecisionPolicyRepository>(p =>
+                p.FindAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+                == Task.FromResult<CompanyPrecisionPolicy?>(
+                    CompanyPrecisionPolicy.CreateStandardCommercial(
+                        Guid.NewGuid(),
+                        Guid.NewGuid(),
+                        Guid.NewGuid()
+                    )
+                )
+            )
         );
 
         var result = await pipeline.ExecuteAsync(

@@ -1,10 +1,10 @@
+using System.Data.Common;
+using System.Net.Sockets;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Npgsql;
-using System.Data.Common;
-using System.Net.Sockets;
 
 namespace ERP.Infrastructure.Persistence;
 
@@ -46,11 +46,12 @@ public sealed class PostgresDatabaseExceptionTranslator : IDatabaseExceptionTran
 
         // Sin respuesta del servidor: conexión rechazada/caída, timeout, pool agotado, reintentos agotados.
         return chain.Any(e =>
-            e is NpgsqlException { IsTransient: true }
-                or RetryLimitExceededException
-                or TimeoutException
-                or SocketException
-                or IOException
+            e
+                is NpgsqlException { IsTransient: true }
+                    or RetryLimitExceededException
+                    or TimeoutException
+                    or SocketException
+                    or IOException
         )
             ? ApiResponseCodes.Common.DatabaseUnavailable
             : ApiResponseCodes.Common.InternalError;
@@ -61,15 +62,17 @@ public sealed class PostgresDatabaseExceptionTranslator : IDatabaseExceptionTran
         {
             PostgresErrorCodes.UniqueViolation => ApiResponseCodes.Common.UniqueViolation,
             // Clase 23 (integrity constraint violation): FK, CHECK, NOT NULL, exclusión.
-            _ when sqlState.StartsWith("23", StringComparison.Ordinal) =>
-                ApiResponseCodes.Common.Conflict,
+            _ when sqlState.StartsWith("23", StringComparison.Ordinal) => ApiResponseCodes
+                .Common
+                .Conflict,
             PostgresErrorCodes.SerializationFailure or PostgresErrorCodes.DeadlockDetected =>
                 ApiResponseCodes.Common.ConcurrencyConflict,
             // Clase 08 (conexión), 53 (recursos insuficientes), apagado/arranque del servidor y
             // statement timeout.
             _ when sqlState.StartsWith("08", StringComparison.Ordinal)
-                || sqlState.StartsWith("53", StringComparison.Ordinal) =>
-                ApiResponseCodes.Common.DatabaseUnavailable,
+                    || sqlState.StartsWith("53", StringComparison.Ordinal) => ApiResponseCodes
+                .Common
+                .DatabaseUnavailable,
             PostgresErrorCodes.AdminShutdown
             or PostgresErrorCodes.CrashShutdown
             or PostgresErrorCodes.CannotConnectNow

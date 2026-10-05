@@ -33,6 +33,7 @@ public sealed class StockAdjustment
     public Guid ReasonId { get; private set; }
     public string MovementType { get; private set; } = null!;
     public string? Notes { get; private set; }
+
     /// <summary>Fecha de negocio (PostgreSQL <c>date</c>) — ZH-TEMPORAL-CONTRACT-02: nunca un instante.</summary>
     public DateOnly AdjustmentDate { get; private set; }
     public string Status { get; private set; } = "Draft";

@@ -26,10 +26,14 @@ public sealed class RetentionRideRenderingSectionsTests
             .GeneratePdf();
 
     private static byte[] CreateBarcodeBytes() =>
-        RideBarcodeGeneratorTestFactory.Create().Generate(RetentionRideRenderingFixtures.Full().Header.AccessKey);
+        RideBarcodeGeneratorTestFactory
+            .Create()
+            .Generate(RetentionRideRenderingFixtures.Full().Header.AccessKey);
 
     private static byte[] CreateQrBytes() =>
-        RideQrCodeGeneratorTestFactory.Create().Generate(RetentionRideRenderingFixtures.Full().Header.AccessKey);
+        RideQrCodeGeneratorTestFactory
+            .Create()
+            .Generate(RetentionRideRenderingFixtures.Full().Header.AccessKey);
 
     [Fact]
     public void RetentionHeaderSection_renders_full_layout_without_throwing()

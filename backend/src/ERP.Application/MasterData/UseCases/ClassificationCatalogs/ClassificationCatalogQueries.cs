@@ -42,7 +42,10 @@ public sealed record GetActiveCustomerClassificationsQuery
 // ══════════════════════════════════════════════════════════════════════════
 
 public abstract class GetActiveClassificationCatalogQueryHandlerBase<TEntity>
-    where TEntity : MasterEntity, ITenantScopedEntity, ICompanyOperationalEntity, IClassificationCatalogEntity
+    where TEntity : MasterEntity,
+        ITenantScopedEntity,
+        ICompanyOperationalEntity,
+        IClassificationCatalogEntity
 {
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
@@ -75,7 +78,10 @@ public abstract class GetActiveClassificationCatalogQueryHandlerBase<TEntity>
 
 public sealed class GetActiveCustomerCategoriesQueryHandler
     : GetActiveClassificationCatalogQueryHandlerBase<CustomerCategory>,
-        IRequestHandler<GetActiveCustomerCategoriesQuery, Result<IReadOnlyList<ClassificationCatalogItemDto>>>
+        IRequestHandler<
+            GetActiveCustomerCategoriesQuery,
+            Result<IReadOnlyList<ClassificationCatalogItemDto>>
+        >
 {
     private readonly ICustomerCategoryRepository _repo;
 
@@ -94,7 +100,10 @@ public sealed class GetActiveCustomerCategoriesQueryHandler
 
 public sealed class GetActiveCustomerSegmentsQueryHandler
     : GetActiveClassificationCatalogQueryHandlerBase<CustomerSegment>,
-        IRequestHandler<GetActiveCustomerSegmentsQuery, Result<IReadOnlyList<ClassificationCatalogItemDto>>>
+        IRequestHandler<
+            GetActiveCustomerSegmentsQuery,
+            Result<IReadOnlyList<ClassificationCatalogItemDto>>
+        >
 {
     private readonly ICustomerSegmentRepository _repo;
 
@@ -113,7 +122,10 @@ public sealed class GetActiveCustomerSegmentsQueryHandler
 
 public sealed class GetActiveCustomerCreditRatingsQueryHandler
     : GetActiveClassificationCatalogQueryHandlerBase<CustomerCreditRating>,
-        IRequestHandler<GetActiveCustomerCreditRatingsQuery, Result<IReadOnlyList<ClassificationCatalogItemDto>>>
+        IRequestHandler<
+            GetActiveCustomerCreditRatingsQuery,
+            Result<IReadOnlyList<ClassificationCatalogItemDto>>
+        >
 {
     private readonly ICustomerCreditRatingRepository _repo;
 
@@ -132,7 +144,10 @@ public sealed class GetActiveCustomerCreditRatingsQueryHandler
 
 public sealed class GetActiveLoyaltyTiersQueryHandler
     : GetActiveClassificationCatalogQueryHandlerBase<LoyaltyTier>,
-        IRequestHandler<GetActiveLoyaltyTiersQuery, Result<IReadOnlyList<ClassificationCatalogItemDto>>>
+        IRequestHandler<
+            GetActiveLoyaltyTiersQuery,
+            Result<IReadOnlyList<ClassificationCatalogItemDto>>
+        >
 {
     private readonly ILoyaltyTierRepository _repo;
 
@@ -151,7 +166,10 @@ public sealed class GetActiveLoyaltyTiersQueryHandler
 
 public sealed class GetActiveCustomerInvoiceFormatsQueryHandler
     : GetActiveClassificationCatalogQueryHandlerBase<CustomerInvoiceFormat>,
-        IRequestHandler<GetActiveCustomerInvoiceFormatsQuery, Result<IReadOnlyList<ClassificationCatalogItemDto>>>
+        IRequestHandler<
+            GetActiveCustomerInvoiceFormatsQuery,
+            Result<IReadOnlyList<ClassificationCatalogItemDto>>
+        >
 {
     private readonly ICustomerInvoiceFormatRepository _repo;
 
@@ -170,7 +188,10 @@ public sealed class GetActiveCustomerInvoiceFormatsQueryHandler
 
 public sealed class GetActiveCustomerClassificationsQueryHandler
     : GetActiveClassificationCatalogQueryHandlerBase<CustomerClassification>,
-        IRequestHandler<GetActiveCustomerClassificationsQuery, Result<IReadOnlyList<ClassificationCatalogItemDto>>>
+        IRequestHandler<
+            GetActiveCustomerClassificationsQuery,
+            Result<IReadOnlyList<ClassificationCatalogItemDto>>
+        >
 {
     private readonly ICustomerClassificationRepository _repo;
 

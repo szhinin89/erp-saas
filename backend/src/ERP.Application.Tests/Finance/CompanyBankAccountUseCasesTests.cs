@@ -90,11 +90,17 @@ public sealed class CompanyBankAccountUseCasesTests
         var repo = new Mock<ICompanyBankAccountRepository>();
         var banks = new Mock<IBankRepository>();
         var accounts = new Mock<IAccountRepository>();
-        banks.Setup(b => b.GetByIdAsync(TenantId, BankId, It.IsAny<CancellationToken>()))
+        banks
+            .Setup(b => b.GetByIdAsync(TenantId, BankId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(ActiveBank());
         accounts
             .Setup(a =>
-                a.GetByIdAsync(TenantId, CompanyId, AccountingAccountId, It.IsAny<CancellationToken>())
+                a.GetByIdAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountingAccountId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(ActiveAccount());
         repo.Setup(r =>
@@ -144,7 +150,8 @@ public sealed class CompanyBankAccountUseCasesTests
         var repo = new Mock<ICompanyBankAccountRepository>();
         var banks = new Mock<IBankRepository>();
         var accounts = new Mock<IAccountRepository>();
-        banks.Setup(b => b.GetByIdAsync(TenantId, BankId, It.IsAny<CancellationToken>()))
+        banks
+            .Setup(b => b.GetByIdAsync(TenantId, BankId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Bank?)null);
 
         var handler = new CreateCompanyBankAccountHandler(
@@ -178,7 +185,8 @@ public sealed class CompanyBankAccountUseCasesTests
         var repo = new Mock<ICompanyBankAccountRepository>();
         var banks = new Mock<IBankRepository>();
         var accounts = new Mock<IAccountRepository>();
-        banks.Setup(b => b.GetByIdAsync(TenantId, BankId, It.IsAny<CancellationToken>()))
+        banks
+            .Setup(b => b.GetByIdAsync(TenantId, BankId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(ActiveBank(isActive: false));
 
         var handler = new CreateCompanyBankAccountHandler(
@@ -208,11 +216,17 @@ public sealed class CompanyBankAccountUseCasesTests
         var repo = new Mock<ICompanyBankAccountRepository>();
         var banks = new Mock<IBankRepository>();
         var accounts = new Mock<IAccountRepository>();
-        banks.Setup(b => b.GetByIdAsync(TenantId, BankId, It.IsAny<CancellationToken>()))
+        banks
+            .Setup(b => b.GetByIdAsync(TenantId, BankId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(ActiveBank());
         accounts
             .Setup(a =>
-                a.GetByIdAsync(TenantId, CompanyId, AccountingAccountId, It.IsAny<CancellationToken>())
+                a.GetByIdAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountingAccountId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(ActiveAccount(allowsPosting: false));
 
@@ -243,11 +257,17 @@ public sealed class CompanyBankAccountUseCasesTests
         var repo = new Mock<ICompanyBankAccountRepository>();
         var banks = new Mock<IBankRepository>();
         var accounts = new Mock<IAccountRepository>();
-        banks.Setup(b => b.GetByIdAsync(TenantId, BankId, It.IsAny<CancellationToken>()))
+        banks
+            .Setup(b => b.GetByIdAsync(TenantId, BankId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(ActiveBank());
         accounts
             .Setup(a =>
-                a.GetByIdAsync(TenantId, CompanyId, AccountingAccountId, It.IsAny<CancellationToken>())
+                a.GetByIdAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountingAccountId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(ActiveAccount());
         repo.Setup(r =>
@@ -301,7 +321,12 @@ public sealed class CompanyBankAccountUseCasesTests
         var newAccountingAccountId = Guid.NewGuid();
         accounts
             .Setup(a =>
-                a.GetByIdAsync(TenantId, CompanyId, newAccountingAccountId, It.IsAny<CancellationToken>())
+                a.GetByIdAsync(
+                    TenantId,
+                    CompanyId,
+                    newAccountingAccountId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(ActiveAccount());
 
@@ -312,7 +337,11 @@ public sealed class CompanyBankAccountUseCasesTests
             Company().Object,
             User().Object
         );
-        var cmd = new UpdateCompanyBankAccountCommand(entity.Id, "Nuevo alias", newAccountingAccountId);
+        var cmd = new UpdateCompanyBankAccountCommand(
+            entity.Id,
+            "Nuevo alias",
+            newAccountingAccountId
+        );
 
         var result = await handler.Handle(cmd, CancellationToken.None);
 
@@ -355,7 +384,11 @@ public sealed class CompanyBankAccountUseCasesTests
         repo.Setup(r => r.GetByIdAsync(TenantId, entity.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(entity);
 
-        var handler = new SetCompanyBankAccountActiveHandler(repo.Object, Tenant().Object, User().Object);
+        var handler = new SetCompanyBankAccountActiveHandler(
+            repo.Object,
+            Tenant().Object,
+            User().Object
+        );
         var cmd = new SetCompanyBankAccountActiveCommand(entity.Id, false);
 
         var result = await handler.Handle(cmd, CancellationToken.None);
@@ -374,7 +407,11 @@ public sealed class CompanyBankAccountUseCasesTests
         repo.Setup(r => r.GetByIdAsync(TenantId, entity.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(entity);
 
-        var handler = new SetCompanyBankAccountActiveHandler(repo.Object, Tenant().Object, User().Object);
+        var handler = new SetCompanyBankAccountActiveHandler(
+            repo.Object,
+            Tenant().Object,
+            User().Object
+        );
         var cmd = new SetCompanyBankAccountActiveCommand(entity.Id, true);
 
         var result = await handler.Handle(cmd, CancellationToken.None);
@@ -429,7 +466,10 @@ public sealed class CompanyBankAccountUseCasesTests
             .ReturnsAsync(new List<CompanyBankAccount> { entity });
 
         var handler = new GetCompanyBankAccountListHandler(repo.Object, Tenant().Object);
-        var result = await handler.Handle(new GetCompanyBankAccountListQuery(null), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetCompanyBankAccountListQuery(null),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().ContainSingle(x => x.Id == entity.Id);

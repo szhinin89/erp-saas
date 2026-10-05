@@ -21,7 +21,10 @@ namespace ERP.Domain.Modules.Pricing.Entities;
 /// en memoria. Un mismo cliente puede sí tener relaciones activas distintas en Companies
 /// distintas del mismo tenant (BusinessPartner es tenant-scoped, PriceList es company-scoped).
 /// </summary>
-public sealed class PriceListCustomer : AuditableEntity, ITenantScopedEntity, ICompanyOperationalEntity
+public sealed class PriceListCustomer
+    : AuditableEntity,
+        ITenantScopedEntity,
+        ICompanyOperationalEntity
 {
     public Guid CompanyId { get; private set; }
     public Guid PriceListId { get; private set; }

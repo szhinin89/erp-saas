@@ -1,6 +1,6 @@
-using ERP.Application.Modules.Communications.Services;
 using System.Net;
 using System.Net.Mail;
+using ERP.Application.Modules.Communications.Services;
 
 namespace ERP.Infrastructure.Communications;
 
@@ -13,7 +13,9 @@ public sealed class SmtpEmailSender : IEmailSender
     )
     {
         if (!settings.CanSend)
-            throw new InvalidOperationException("La configuración SMTP de Communications está incompleta o inactiva.");
+            throw new InvalidOperationException(
+                "La configuración SMTP de Communications está incompleta o inactiva."
+            );
 
         using var mail = BuildMailMessage(message, settings);
 
@@ -27,7 +29,10 @@ public sealed class SmtpEmailSender : IEmailSender
         };
 
         if (!string.IsNullOrWhiteSpace(settings.SmtpUsername))
-            client.Credentials = new NetworkCredential(settings.SmtpUsername, settings.SmtpPassword);
+            client.Credentials = new NetworkCredential(
+                settings.SmtpUsername,
+                settings.SmtpPassword
+            );
 
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeout.CancelAfter(settings.SmtpTimeout);
@@ -43,7 +48,8 @@ public sealed class SmtpEmailSender : IEmailSender
         catch (Exception ex)
             when (ex is OperationCanceledException or SmtpException
                 && timeout.IsCancellationRequested
-                && !ct.IsCancellationRequested)
+                && !ct.IsCancellationRequested
+            )
         {
             throw new TimeoutException(
                 $"El servidor SMTP no completó el envío en {settings.SmtpTimeout.TotalSeconds:0} s.",
@@ -58,7 +64,10 @@ public sealed class SmtpEmailSender : IEmailSender
     /// (no del remitente ni de ninguna configuración SMTP), así que es idéntico en todos los reintentos,
     /// sin destinatario, tenant ni secretos. No se asume que el servidor SMTP deduplique.
     /// </summary>
-    public static MailMessage BuildMailMessage(EmailMessage message, CommunicationEmailSettings settings)
+    public static MailMessage BuildMailMessage(
+        EmailMessage message,
+        CommunicationEmailSettings settings
+    )
     {
         var mail = new MailMessage
         {
@@ -92,8 +101,15 @@ public sealed class SmtpEmailSender : IEmailSender
     private static Attachment CreateAttachment(EmailAttachment attachment)
     {
         if (attachment.Content is not { Length: > 0 })
-            throw new ArgumentException("El adjunto de la comunicación no tiene contenido resuelto.", nameof(attachment));
+            throw new ArgumentException(
+                "El adjunto de la comunicación no tiene contenido resuelto.",
+                nameof(attachment)
+            );
 
-        return new Attachment(new MemoryStream(attachment.Content, writable: false), attachment.FileName, attachment.ContentType);
+        return new Attachment(
+            new MemoryStream(attachment.Content, writable: false),
+            attachment.FileName,
+            attachment.ContentType
+        );
     }
 }

@@ -35,7 +35,9 @@ public sealed class UpdateCompanyHandlerTests
             .Setup(g =>
                 g.RequireMembershipAsync(otherCompanyId, false, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync(Result<CompanyAccessContext>.Forbidden("No tiene acceso a esta empresa."));
+            .ReturnsAsync(
+                Result<CompanyAccessContext>.Forbidden("No tiene acceso a esta empresa.")
+            );
 
         var handler = BuildHandler();
         var result = await handler.Handle(

@@ -68,7 +68,8 @@ public sealed class GetItemFullReportQueryHandler
         // mirror, ya no se lee para decisiones nuevas).
         var exciseTaxCode = item
             .SpecialTaxConfigurations.FirstOrDefault(c =>
-                c.IsActive && c.SriTaxCategoryCode == ERP.Domain.Modules.Purchases.SriTaxCategoryCodes.Ice
+                c.IsActive
+                && c.SriTaxCategoryCode == ERP.Domain.Modules.Purchases.SriTaxCategoryCodes.Ice
             )
             ?.TaxCatalogCode;
         var iceCodes = !string.IsNullOrWhiteSpace(exciseTaxCode) ? new[] { exciseTaxCode } : [];

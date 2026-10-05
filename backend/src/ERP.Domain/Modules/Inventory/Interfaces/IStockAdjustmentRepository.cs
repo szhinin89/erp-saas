@@ -11,6 +11,7 @@ public interface IStockAdjustmentRepository
         CancellationToken cancellationToken = default
     );
     Task<int> GetNextSequentialAsync(Guid tenantId, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// ZH-AUTH-INVENTORY-BRANCH-READ-SCOPE-06 — <paramref name="branchWarehouseIds"/> restringe el
     /// listado a las bodegas de la sucursal activa cuando el caller no filtró por una bodega

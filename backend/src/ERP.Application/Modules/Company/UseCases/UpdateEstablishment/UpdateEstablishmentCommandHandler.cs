@@ -68,14 +68,26 @@ public sealed class UpdateEstablishmentCommandHandler
                 cancellationToken
             );
             foreach (var clearedId in clearedIds)
-                await LogMainChangeAsync(entity.CompanyId, clearedId, true, false, cancellationToken);
+                await LogMainChangeAsync(
+                    entity.CompanyId,
+                    clearedId,
+                    true,
+                    false,
+                    cancellationToken
+                );
         }
 
         entity.Update(command.Name, command.Address, command.Phone, _user.UserId);
         entity.SetMain(command.IsMain, _user.UserId);
 
         if (wasMain != command.IsMain)
-            await LogMainChangeAsync(entity.CompanyId, entity.Id, wasMain, command.IsMain, cancellationToken);
+            await LogMainChangeAsync(
+                entity.CompanyId,
+                entity.Id,
+                wasMain,
+                command.IsMain,
+                cancellationToken
+            );
 
         await _repo.SaveChangesAsync(cancellationToken);
 

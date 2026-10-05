@@ -17,7 +17,8 @@ public static class InvoiceConfigurationDefinitions
             DefaultScope = OrgScope.Company,
             FallbackStrategy = ConfigurationFallbackStrategy.SystemDefault,
             RequiresAudit = true,
-            DeveloperNotes = "Fallback: SriSettings.FallbackDocTypeCode. Consumido por GetSalesInvoiceDefaultsQueryHandler.",
+            DeveloperNotes =
+                "Fallback: SriSettings.FallbackDocTypeCode. Consumido por GetSalesInvoiceDefaultsQueryHandler.",
         };
 
         yield return new ConfigurationDefinition
@@ -59,7 +60,8 @@ public static class InvoiceConfigurationDefinitions
             RequiresAudit = true,
             RequiresSnapshot = false,
             Validator = value => Guid.TryParse(value, out _),
-            DeveloperNotes = "Validado además en lectura contra Warehouse.BranchId/IsActive por GetSalesInvoiceDefaultsQueryHandler (fail-closed si corrupto/cruzado).",
+            DeveloperNotes =
+                "Validado además en lectura contra Warehouse.BranchId/IsActive por GetSalesInvoiceDefaultsQueryHandler (fail-closed si corrupto/cruzado).",
         };
     }
 }

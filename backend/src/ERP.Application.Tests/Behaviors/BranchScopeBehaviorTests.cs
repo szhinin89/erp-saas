@@ -71,10 +71,7 @@ public sealed class BranchScopeBehaviorTests
 
         result.Should().Be(expected);
         nextCalled.Should().BeTrue();
-        f.Guard.Verify(
-            g => g.RequireCurrentBranchAsync(It.IsAny<CancellationToken>()),
-            Times.Once
-        );
+        f.Guard.Verify(g => g.RequireCurrentBranchAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -164,7 +161,14 @@ public sealed class BranchScopeBehaviorTests
     [InlineData(ApiResponseCodes.Common.Unauthorized, typeof(UnauthorizedAccessException))]
     public async Task El_Code_del_guard_elige_la_excepcion(string code, Type expected)
     {
-        foreach (var message in new[] { "Sucursal no encontrada.", "No tiene acceso a esta empresa.", "x" })
+        foreach (
+            var message in new[]
+            {
+                "Sucursal no encontrada.",
+                "No tiene acceso a esta empresa.",
+                "x",
+            }
+        )
         {
             var f = new Fixture();
             f.Branch.Setup(b => b.HasBranchContext).Returns(true);
@@ -172,11 +176,12 @@ public sealed class BranchScopeBehaviorTests
                 .ReturnsAsync(Result<BranchAccessContext>.Failure(message, code));
 
             var act = async () =>
-                await f.BuildBehavior<FakeBranchScopedRequest>().Handle(
-                    new FakeBranchScopedRequest(),
-                    NextReturning(Result<string>.Success("no-debe-llegar")),
-                    CancellationToken.None
-                );
+                await f.BuildBehavior<FakeBranchScopedRequest>()
+                    .Handle(
+                        new FakeBranchScopedRequest(),
+                        NextReturning(Result<string>.Success("no-debe-llegar")),
+                        CancellationToken.None
+                    );
 
             (await act.Should().ThrowAsync<Exception>()).Which.Should().BeOfType(expected, message);
         }

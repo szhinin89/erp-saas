@@ -173,7 +173,9 @@ public sealed class AuthorizeSalesReturnCreditNoteWiringTests
         )
         {
             InvoiceRepo
-                .Setup(r => r.GetByIdForUpdateAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetByIdForUpdateAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(invoice);
             ReturnRepo
                 .Setup(r => r.GetByIdAsync(TenantId, salesReturn.Id, It.IsAny<CancellationToken>()))
@@ -283,7 +285,9 @@ public sealed class AuthorizeSalesReturnCreditNoteWiringTests
             UserId
         );
         receivableRepo
-            .Setup(r => r.GetByInvoiceIdForUpdateAsync(TenantId, invoiceId, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByInvoiceIdForUpdateAsync(TenantId, invoiceId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(
                 Domain.Modules.Sales.Entities.SalesReceivable.Create(
                     TenantId,
@@ -498,7 +502,9 @@ public sealed class AuthorizeSalesReturnCreditNoteWiringTests
 
         var receivableRepo = new Mock<ISalesReceivableRepository>();
         receivableRepo
-            .Setup(r => r.GetByInvoiceIdForUpdateAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByInvoiceIdForUpdateAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(
                 Domain.Modules.Sales.Entities.SalesReceivable.Create(
                     TenantId,

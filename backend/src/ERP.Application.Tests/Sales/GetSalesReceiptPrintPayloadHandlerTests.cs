@@ -52,9 +52,11 @@ public sealed class GetSalesReceiptPrintPayloadHandlerTests
             CurrentBranch.Setup(b => b.HasBranchContext).Returns(true);
             CurrentBranch.Setup(b => b.IsAuthenticated).Returns(true);
 
-            Companies.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<CancellationToken>()))
+            Companies
+                .Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(CreateCompany());
-            Branches.Setup(r =>
+            Branches
+                .Setup(r =>
                     r.GetByIdForCompanyAsync(
                         TenantId,
                         CompanyId,
@@ -63,12 +65,21 @@ public sealed class GetSalesReceiptPrintPayloadHandlerTests
                     )
                 )
                 .ReturnsAsync(CreateBranch());
-            CashSessions.Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            CashSessions
+                .Setup(r =>
+                    r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(CreateCashSession());
-            EmissionPoints.Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), TenantId, It.IsAny<CancellationToken>()))
+            EmissionPoints
+                .Setup(r =>
+                    r.GetByIdAsync(It.IsAny<Guid>(), TenantId, It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync((EmissionPoint?)null);
-            Branding.Setup(r => r.GetAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new CompanyBrandingSettings(null, null, null, null, "Gracias por su compra"));
+            Branding
+                .Setup(r => r.GetAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(
+                    new CompanyBrandingSettings(null, null, null, null, "Gracias por su compra")
+                );
         }
 
         public GetSalesReceiptPrintPayloadQueryHandler BuildHandler() =>
@@ -86,8 +97,14 @@ public sealed class GetSalesReceiptPrintPayloadHandlerTests
 
         public void VerifyReadOnlyRepositories()
         {
-            SalesInvoices.Verify(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()), Times.Never);
-            SalesInvoices.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+            SalesInvoices.Verify(
+                r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()),
+                Times.Never
+            );
+            SalesInvoices.Verify(
+                r => r.SaveChangesAsync(It.IsAny<CancellationToken>()),
+                Times.Never
+            );
             SalesInvoices.Verify(
                 r =>
                     r.RemoveLinesByInvoiceAsync(
@@ -97,11 +114,27 @@ public sealed class GetSalesReceiptPrintPayloadHandlerTests
                     ),
                 Times.Never
             );
-            SalesInvoices.Verify(r => r.RemovePaymentsByInvoiceAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
-            ElectronicDocuments.Verify(r => r.AddAsync(It.IsAny<ElectronicDocument>(), It.IsAny<CancellationToken>()), Times.Never);
-            ElectronicDocuments.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
-            CashSessions.Verify(r => r.AddAsync(It.IsAny<CashSession>(), It.IsAny<CancellationToken>()), Times.Never);
-            CashSessions.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+            SalesInvoices.Verify(
+                r =>
+                    r.RemovePaymentsByInvoiceAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+                Times.Never
+            );
+            ElectronicDocuments.Verify(
+                r => r.AddAsync(It.IsAny<ElectronicDocument>(), It.IsAny<CancellationToken>()),
+                Times.Never
+            );
+            ElectronicDocuments.Verify(
+                r => r.SaveChangesAsync(It.IsAny<CancellationToken>()),
+                Times.Never
+            );
+            CashSessions.Verify(
+                r => r.AddAsync(It.IsAny<CashSession>(), It.IsAny<CancellationToken>()),
+                Times.Never
+            );
+            CashSessions.Verify(
+                r => r.SaveChangesAsync(It.IsAny<CancellationToken>()),
+                Times.Never
+            );
         }
     }
 
@@ -110,7 +143,9 @@ public sealed class GetSalesReceiptPrintPayloadHandlerTests
     {
         var invoice = CreateAuthorizedInvoice(EmissionType.Physical);
         var f = new Fixture();
-        f.SalesInvoices.Setup(r => r.GetByIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
+        f.SalesInvoices.Setup(r =>
+                r.GetByIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(invoice);
 
         var result = await f.BuildHandler()
@@ -158,7 +193,9 @@ public sealed class GetSalesReceiptPrintPayloadHandlerTests
         payload.Payments[0].Method.Should().Be("Efectivo");
         payload.Payments[0].Amount.Should().Be(20.70m);
         payload.Payments[0].Reference.Should().Be("REC-001");
-        payload.CashReceived.Should().BeNull("el pago no registró efectivo entregado (TenderedAmount)");
+        payload
+            .CashReceived.Should()
+            .BeNull("el pago no registró efectivo entregado (TenderedAmount)");
         payload.CashChange.Should().BeNull("sin efectivo entregado no hay vuelto que mostrar");
         payload.FooterMessage.Should().Be("Gracias por su compra");
         f.VerifyReadOnlyRepositories();
@@ -176,8 +213,16 @@ public sealed class GetSalesReceiptPrintPayloadHandlerTests
     {
         var invoice = CreateDraftInvoice(EmissionType.Physical);
         var line = SalesInvoiceDetail.Create(
-            invoice.Id, TenantId, "Producto Test", quantity: 2m, unitPrice: 10m, vatCode: "2",
-            uomCode: "UNIT", snapshotSku: "SKU-001", snapshotItemName: "Producto Test", discountPct: 10m
+            invoice.Id,
+            TenantId,
+            "Producto Test",
+            quantity: 2m,
+            unitPrice: 10m,
+            vatCode: "2",
+            uomCode: "UNIT",
+            snapshotSku: "SKU-001",
+            snapshotItemName: "Producto Test",
+            discountPct: 10m
         );
         line.ApplyTaxes("2", 15m, "IVA 15%", null, 0m, null);
         invoice.ReplaceLines(new[] { line }, UserId);
@@ -188,19 +233,36 @@ public sealed class GetSalesReceiptPrintPayloadHandlerTests
 
     private static SalesInvoicePayment Cash(Guid invoiceId, decimal applied, decimal? tendered)
     {
-        var p = SalesInvoicePayment.Create(invoiceId, TenantId, PaymentMethodId, "EFECTIVO", "Efectivo", applied);
+        var p = SalesInvoicePayment.Create(
+            invoiceId,
+            TenantId,
+            PaymentMethodId,
+            "EFECTIVO",
+            "Efectivo",
+            applied
+        );
         if (tendered is { } t)
             p.SetTenderedAmount(t);
         return p;
     }
 
     private static SalesInvoicePayment Card(Guid invoiceId, decimal applied) =>
-        SalesInvoicePayment.Create(invoiceId, TenantId, CardMethodId, "TARJETA", "Tarjeta", applied, "AUT-1");
+        SalesInvoicePayment.Create(
+            invoiceId,
+            TenantId,
+            CardMethodId,
+            "TARJETA",
+            "Tarjeta",
+            applied,
+            "AUT-1"
+        );
 
     private static async Task<SalesReceiptPrintPayloadDto> PrintAsync(SalesInvoice invoice)
     {
         var f = new Fixture();
-        f.SalesInvoices.Setup(r => r.GetByIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
+        f.SalesInvoices.Setup(r =>
+                r.GetByIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(invoice);
         var result = await f.BuildHandler()
             .Handle(new GetSalesReceiptPrintPayloadQuery(invoice.Id), CancellationToken.None);
@@ -235,7 +297,9 @@ public sealed class GetSalesReceiptPrintPayloadHandlerTests
     [Fact]
     public async Task Multipago_solo_la_porcion_efectivo_aporta_recibido_y_vuelto()
     {
-        var invoice = CreateAuthorizedInvoiceWithPayments(id => [Card(id, 10m), Cash(id, 10.70m, 15m)]);
+        var invoice = CreateAuthorizedInvoiceWithPayments(id =>
+            [Card(id, 10m), Cash(id, 10.70m, 15m)]
+        );
 
         var payload = await PrintAsync(invoice);
 
@@ -258,7 +322,9 @@ public sealed class GetSalesReceiptPrintPayloadHandlerTests
     [Fact]
     public async Task Reimpresion_posterior_obtiene_los_mismos_valores_desde_persistencia()
     {
-        var invoice = CreateAuthorizedInvoiceWithPayments(id => [Card(id, 10m), Cash(id, 10.70m, 20m)]);
+        var invoice = CreateAuthorizedInvoiceWithPayments(id =>
+            [Card(id, 10m), Cash(id, 10.70m, 20m)]
+        );
 
         // Dos consultas independientes (handler/fixture nuevos): ningún estado del POS interviene.
         var first = await PrintAsync(invoice);
@@ -303,7 +369,9 @@ public sealed class GetSalesReceiptPrintPayloadHandlerTests
         invoice.Authorize(UserId);
 
         var f = new Fixture();
-        f.SalesInvoices.Setup(r => r.GetByIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
+        f.SalesInvoices.Setup(r =>
+                r.GetByIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(invoice);
 
         var result = await f.BuildHandler()
@@ -322,9 +390,13 @@ public sealed class GetSalesReceiptPrintPayloadHandlerTests
         var invoice = CreateAuthorizedInvoice(EmissionType.Electronic);
         var electronicDocument = CreateAuthorizedElectronicDocument(invoice.Id);
         var f = new Fixture();
-        f.SalesInvoices.Setup(r => r.GetByIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
+        f.SalesInvoices.Setup(r =>
+                r.GetByIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(invoice);
-        f.ElectronicDocuments.Setup(r => r.GetBySourceAsync(TenantId, "Sales", invoice.Id, It.IsAny<CancellationToken>()))
+        f.ElectronicDocuments.Setup(r =>
+                r.GetBySourceAsync(TenantId, "Sales", invoice.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(electronicDocument);
 
         var result = await f.BuildHandler()
@@ -335,7 +407,9 @@ public sealed class GetSalesReceiptPrintPayloadHandlerTests
         result.Value.ElectronicStatus.Should().Be(ElectronicDocumentState.Authorized.ToString());
         result.Value.AccessKey.Should().Be(TestAccessKey);
         result.Value.AuthorizationNumber.Should().Be(TestAccessKey);
-        result.Value.AuthorizationDate.Should().Be(new DateTime(2026, 8, 20, 14, 30, 0, DateTimeKind.Utc));
+        result
+            .Value.AuthorizationDate.Should()
+            .Be(new DateTime(2026, 8, 20, 14, 30, 0, DateTimeKind.Utc));
     }
 
     [Fact]
@@ -343,7 +417,9 @@ public sealed class GetSalesReceiptPrintPayloadHandlerTests
     {
         var f = new Fixture();
         var invoiceId = Guid.NewGuid();
-        f.SalesInvoices.Setup(r => r.GetByIdAsync(TenantId, invoiceId, It.IsAny<CancellationToken>()))
+        f.SalesInvoices.Setup(r =>
+                r.GetByIdAsync(TenantId, invoiceId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((SalesInvoice?)null);
 
         var result = await f.BuildHandler()
@@ -359,7 +435,9 @@ public sealed class GetSalesReceiptPrintPayloadHandlerTests
     {
         var invoice = CreateAuthorizedInvoice(EmissionType.Physical);
         var f = new Fixture(branchContextId: Guid.NewGuid());
-        f.SalesInvoices.Setup(r => r.GetByIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
+        f.SalesInvoices.Setup(r =>
+                r.GetByIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(invoice);
 
         var result = await f.BuildHandler()
@@ -367,7 +445,10 @@ public sealed class GetSalesReceiptPrintPayloadHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
-        f.Companies.Verify(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.Companies.Verify(
+            r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -375,7 +456,9 @@ public sealed class GetSalesReceiptPrintPayloadHandlerTests
     {
         var invoice = CreateDraftInvoice(EmissionType.Physical);
         var f = new Fixture();
-        f.SalesInvoices.Setup(r => r.GetByIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
+        f.SalesInvoices.Setup(r =>
+                r.GetByIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(invoice);
 
         var result = await f.BuildHandler()
@@ -461,11 +544,7 @@ public sealed class GetSalesReceiptPrintPayloadHandlerTests
         );
         document.SetEnvironment("1");
         document.MarkXmlGenerated("electronic/sales/draft.xml", "1.1.0", "1.1.0", UserId);
-        document.MarkSigned(
-            "electronic/sales/signed.xml",
-            AccessKey.Create(TestAccessKey),
-            UserId
-        );
+        document.MarkSigned("electronic/sales/signed.xml", AccessKey.Create(TestAccessKey), UserId);
         document.MarkSent(UserId);
         document.MarkAuthorized(
             AuthorizationNumber.Create(TestAccessKey),

@@ -70,10 +70,11 @@ public sealed class ListMyCompaniesHandler
             cancellationToken
         );
         var membershipIds = memberships.Select(m => m.Id).Distinct().ToList();
-        var assignedBranchCounts = await _companyUserBranchRepository.CountActiveByMembershipIdsAsync(
-            membershipIds,
-            cancellationToken
-        );
+        var assignedBranchCounts =
+            await _companyUserBranchRepository.CountActiveByMembershipIdsAsync(
+                membershipIds,
+                cancellationToken
+            );
 
         var items = companies
             .Where(c => c.TenantId == tenantId)

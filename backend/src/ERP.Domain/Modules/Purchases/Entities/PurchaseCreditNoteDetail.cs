@@ -54,8 +54,13 @@ public sealed class PurchaseCreditNoteDetail : IMustHaveTenant
                 "La descripción de la línea es obligatoria.",
                 nameof(description)
             );
-        if (purchaseInvoiceDetailId is not null && (purchaseInvoiceDetailId == Guid.Empty || quantity is null or <= 0))
-            throw new ArgumentException("La línea de factura y cantidad a devolver son obligatorias.");
+        if (
+            purchaseInvoiceDetailId is not null
+            && (purchaseInvoiceDetailId == Guid.Empty || quantity is null or <= 0)
+        )
+            throw new ArgumentException(
+                "La línea de factura y cantidad a devolver son obligatorias."
+            );
         if (iceAmount < 0 || irbpnrAmount < 0)
             throw new ArgumentException("Los impuestos no pueden ser negativos.");
         if (subtotal < 0 || (subtotal == 0 && purchaseInvoiceDetailId is null))

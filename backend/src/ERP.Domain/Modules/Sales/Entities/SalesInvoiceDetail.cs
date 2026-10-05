@@ -137,7 +137,7 @@ public sealed class SalesInvoiceDetail : IMustHaveTenant
     /// </summary>
     public SriTaxCalculationType IceCalculationType =>
         _taxes.FirstOrDefault(t => t.TaxCode == IceSriTaxCode)?.CalculationType
-            ?? SriTaxCalculationType.Percentage;
+        ?? SriTaxCalculationType.Percentage;
 
     // ── Impuestos por línea (ADR-032 §3.3) — fuente de verdad; IVA/ICE/IRBPNR ──────────────────
     private readonly List<SalesInvoiceDetailTax> _taxes = new();
@@ -153,7 +153,8 @@ public sealed class SalesInvoiceDetail : IMustHaveTenant
     public decimal? IrbpnrRate => _taxes.FirstOrDefault(t => t.TaxCode == IrbpnrSriTaxCode)?.Rate;
     public string? SnapshotIrbpnrName =>
         _taxes.FirstOrDefault(t => t.TaxCode == IrbpnrSriTaxCode)?.TaxName;
-    public decimal IrbpnrAmount => _taxes.Where(t => t.TaxCode == IrbpnrSriTaxCode).Sum(t => t.TaxAmount);
+    public decimal IrbpnrAmount =>
+        _taxes.Where(t => t.TaxCode == IrbpnrSriTaxCode).Sum(t => t.TaxAmount);
 
     // ── Meta ────────────────────────────────────────────────────────────
     public string? Notes { get; private set; }
@@ -432,7 +433,9 @@ public sealed class SalesInvoiceDetail : IMustHaveTenant
         DiscountDescription = string.IsNullOrWhiteSpace(discountDescription)
             ? null
             : discountDescription.Trim();
-        SelectionSource = string.IsNullOrWhiteSpace(selectionSource) ? null : selectionSource.Trim();
+        SelectionSource = string.IsNullOrWhiteSpace(selectionSource)
+            ? null
+            : selectionSource.Trim();
     }
 
     // ── Sort ────────────────────────────────────────────────────────────

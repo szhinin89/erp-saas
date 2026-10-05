@@ -63,7 +63,10 @@ public sealed class RegisterRetentionElectronicDocumentHandler
         CancellationToken cancellationToken
     )
     {
-        var retention = await _sourceAccess.FindViewableAsync(request.RetentionId, cancellationToken);
+        var retention = await _sourceAccess.FindViewableAsync(
+            request.RetentionId,
+            cancellationToken
+        );
         if (retention is null)
             return Result<ElectronicDocumentDto>.NotFound("La retención no existe.");
         if (!await _sourceAccess.CanOperateAsync(retention.SourceDocumentType, cancellationToken))

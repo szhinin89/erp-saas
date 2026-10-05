@@ -193,7 +193,10 @@ public sealed class JournalEntryRepository : IJournalEntryRepository
         );
     }
 
-    public async Task<(IReadOnlyList<JournalEntry> Items, int TotalCount)> GetPostedEntriesPageAsync(
+    public async Task<(
+        IReadOnlyList<JournalEntry> Items,
+        int TotalCount
+    )> GetPostedEntriesPageAsync(
         Guid tenantId,
         Guid companyId,
         DateOnly fromDate,
@@ -227,7 +230,8 @@ public sealed class JournalEntryRepository : IJournalEntryRepository
             var trimmed = search.Trim();
             if (int.TryParse(trimmed, out var entryNumber))
                 scoped = scoped.Where(x =>
-                    x.EntryNumber == entryNumber || EF.Functions.ILike(x.Description, $"%{trimmed}%")
+                    x.EntryNumber == entryNumber
+                    || EF.Functions.ILike(x.Description, $"%{trimmed}%")
                 );
             else
                 scoped = scoped.Where(x => EF.Functions.ILike(x.Description, $"%{trimmed}%"));
@@ -264,7 +268,9 @@ public sealed class JournalEntryRepository : IJournalEntryRepository
             .JournalEntries.Where(x =>
                 x.TenantId == tenantId
                 && x.CompanyId == companyId
-                && (x.Status == JournalEntryStatus.Posted || x.Status == JournalEntryStatus.Reversed)
+                && (
+                    x.Status == JournalEntryStatus.Posted || x.Status == JournalEntryStatus.Reversed
+                )
             )
             .SelectMany(x => x.Lines, (entry, line) => new { entry.EntryDate, line });
 
@@ -301,7 +307,9 @@ public sealed class JournalEntryRepository : IJournalEntryRepository
             .JournalEntries.Where(x =>
                 x.TenantId == tenantId
                 && x.CompanyId == companyId
-                && (x.Status == JournalEntryStatus.Posted || x.Status == JournalEntryStatus.Reversed)
+                && (
+                    x.Status == JournalEntryStatus.Posted || x.Status == JournalEntryStatus.Reversed
+                )
                 && x.EntryDate >= fromDate
                 && x.EntryDate <= toDate
             )

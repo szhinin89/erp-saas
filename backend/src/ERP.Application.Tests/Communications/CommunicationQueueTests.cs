@@ -34,13 +34,39 @@ public sealed class CommunicationQueueTests
         public Fixture(int configuredMaxRetries = 7, bool alreadyQueued = false)
         {
             Settings
-                .Setup(s => s.ResolveEmailAsync(It.IsAny<CommunicationScope>(), It.IsAny<CancellationToken>()))
-                .Callback<CommunicationScope, CancellationToken>((scope, _) => ResolvedScopes.Add(scope))
-                .ReturnsAsync(new CommunicationEmailSettings(true, "smtp", 587, null, null, "s@e.com", null, true, null, configuredMaxRetries, "es"));
+                .Setup(s =>
+                    s.ResolveEmailAsync(
+                        It.IsAny<CommunicationScope>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .Callback<CommunicationScope, CancellationToken>(
+                    (scope, _) => ResolvedScopes.Add(scope)
+                )
+                .ReturnsAsync(
+                    new CommunicationEmailSettings(
+                        true,
+                        "smtp",
+                        587,
+                        null,
+                        null,
+                        "s@e.com",
+                        null,
+                        true,
+                        null,
+                        configuredMaxRetries,
+                        "es"
+                    )
+                );
             Outbox
-                .Setup(o => o.EnqueueAsync(It.IsAny<CommunicationOutbox>(), It.IsAny<CancellationToken>()))
+                .Setup(o =>
+                    o.EnqueueAsync(It.IsAny<CommunicationOutbox>(), It.IsAny<CancellationToken>())
+                )
                 .Callback<CommunicationOutbox, CancellationToken>((c, _) => Enqueued.Add(c))
-                .ReturnsAsync((CommunicationOutbox c, CancellationToken _) => new CommunicationEnqueueResult(c.Id, Created: !alreadyQueued));
+                .ReturnsAsync(
+                    (CommunicationOutbox c, CancellationToken _) =>
+                        new CommunicationEnqueueResult(c.Id, Created: !alreadyQueued)
+                );
             CurrentCompany.Setup(c => c.HasCompanyContext).Returns(false);
         }
 
@@ -49,11 +75,22 @@ public sealed class CommunicationQueueTests
         public CommunicationQueue Build()
         {
             Templates
-                .Setup(t => t.ResolveAsync(It.IsAny<CommunicationScope>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((CommunicationScope _, string key, CancellationToken _) =>
-                    key == CommunicationPurposes.PasswordReset
-                        ? Result<CommunicationTemplateDefinition>.Success(StructuralPasswordResetTemplate.Definition)
-                        : Result<CommunicationTemplateDefinition>.Success(CommunicationDefaultTemplates.SalesInvoiceAuthorizedV1)
+                .Setup(t =>
+                    t.ResolveAsync(
+                        It.IsAny<CommunicationScope>(),
+                        It.IsAny<string>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(
+                    (CommunicationScope _, string key, CancellationToken _) =>
+                        key == CommunicationPurposes.PasswordReset
+                            ? Result<CommunicationTemplateDefinition>.Success(
+                                StructuralPasswordResetTemplate.Definition
+                            )
+                            : Result<CommunicationTemplateDefinition>.Success(
+                                CommunicationDefaultTemplates.SalesInvoiceAuthorizedV1
+                            )
                 );
             return new(
                 Outbox.Object,
@@ -66,10 +103,18 @@ public sealed class CommunicationQueueTests
         }
     }
 
-    private static readonly SalesInvoiceAuthorizedTemplateModel InvoiceModel =
-        new("Cliente", "001-001-000000001", "2108202601179214672100110010010000000011234567811", "100.00", "ZH Demo");
+    private static readonly SalesInvoiceAuthorizedTemplateModel InvoiceModel = new(
+        "Cliente",
+        "001-001-000000001",
+        "2108202601179214672100110010010000000011234567811",
+        "100.00",
+        "ZH Demo"
+    );
 
-    private static CommunicationRequest Request(CommunicationScope? scope = null, int? maxRetries = null) =>
+    private static CommunicationRequest Request(
+        CommunicationScope? scope = null,
+        int? maxRetries = null
+    ) =>
         new(
             scope ?? CommunicationScope.Company(TenantId, CompanyId),
             CommunicationPurposes.SalesInvoiceAuthorized,
@@ -104,9 +149,19 @@ public sealed class CommunicationQueueTests
     {
         var f = new Fixture();
         var queue = f.Build();
-        f.Templates
-            .Setup(t => t.ResolveAsync(It.IsAny<CommunicationScope>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<CommunicationTemplateDefinition>.Failure("override inválido", ApiResponseCodes.Communications.TemplateInvalid));
+        f.Templates.Setup(t =>
+                t.ResolveAsync(
+                    It.IsAny<CommunicationScope>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                Result<CommunicationTemplateDefinition>.Failure(
+                    "override inválido",
+                    ApiResponseCodes.Communications.TemplateInvalid
+                )
+            );
 
         var result = await queue.EnqueueAsync(Request());
 
@@ -127,9 +182,19 @@ public sealed class CommunicationQueueTests
     {
         var f = new Fixture();
         var queue = f.Build();
-        f.Templates
-            .Setup(t => t.ResolveAsync(It.IsAny<CommunicationScope>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<CommunicationTemplateDefinition>.Failure("sin template", ApiResponseCodes.Communications.TemplateNotFound));
+        f.Templates.Setup(t =>
+                t.ResolveAsync(
+                    It.IsAny<CommunicationScope>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                Result<CommunicationTemplateDefinition>.Failure(
+                    "sin template",
+                    ApiResponseCodes.Communications.TemplateNotFound
+                )
+            );
         var request = new CommunicationRequest(
             CommunicationScope.System,
             CommunicationPurposes.PasswordReset,
@@ -142,21 +207,31 @@ public sealed class CommunicationQueueTests
 
         await queue.EnqueueAsync(request);
 
-        f.Enqueued.Single().TemplatePayloadJson.Should().BeNull("las variables de un propósito sensible nunca se guardan en claro");
+        f.Enqueued.Single()
+            .TemplatePayloadJson.Should()
+            .BeNull("las variables de un propósito sensible nunca se guardan en claro");
     }
 
     [Fact]
     public async Task Modelo_de_otro_template_que_el_proposito_se_rechaza()
     {
         var f = new Fixture();
-        var request = Request() with { Template = new StructuralPasswordResetTemplate.Model("Ana") };
+        var request = Request() with
+        {
+            Template = new StructuralPasswordResetTemplate.Model("Ana"),
+        };
 
         var result = await f.Build().EnqueueAsync(request);
 
         result.FailureCode.Should().Be(ApiResponseCodes.Communications.TemplateRenderFailed);
         var failed = f.Enqueued.Single();
         failed.Status.Should().Be(CommunicationStatus.Failed);
-        failed.FailureCategory.Should().Be(CommunicationFailureCategory.Permanent, "un modelo que no cumple el contrato no se corrige reintentando");
+        failed
+            .FailureCategory.Should()
+            .Be(
+                CommunicationFailureCategory.Permanent,
+                "un modelo que no cumple el contrato no se corrige reintentando"
+            );
     }
 
     [Fact]
@@ -166,11 +241,21 @@ public sealed class CommunicationQueueTests
         var request = Request();
         await f.Build().EnqueueAsync(request);
 
-        var v2 = CommunicationDefaultTemplates.SalesInvoiceAuthorizedV1 with { Version = 2, SubjectTemplate = "Nuevo {{InvoiceNumber}}" };
+        var v2 = CommunicationDefaultTemplates.SalesInvoiceAuthorizedV1 with
+        {
+            Version = 2,
+            SubjectTemplate = "Nuevo {{InvoiceNumber}}",
+        };
         var second = new Fixture();
         var queue = second.Build();
-        second.Templates
-            .Setup(t => t.ResolveAsync(It.IsAny<CommunicationScope>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        second
+            .Templates.Setup(t =>
+                t.ResolveAsync(
+                    It.IsAny<CommunicationScope>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(Result<CommunicationTemplateDefinition>.Success(v2));
         await queue.EnqueueAsync(request);
 
@@ -189,9 +274,19 @@ public sealed class CommunicationQueueTests
         var created = f.Enqueued.Should().ContainSingle().Subject;
         created.TenantId.Should().Be(TenantId);
         created.CompanyId.Should().Be(CompanyId);
-        created.IdempotencyKey.Should().Be(
-            CommunicationIdentity.For(request.Scope, request.Purpose, request.Channel, request.Source, request.RecipientRole).Key
-        );
+        created
+            .IdempotencyKey.Should()
+            .Be(
+                CommunicationIdentity
+                    .For(
+                        request.Scope,
+                        request.Purpose,
+                        request.Channel,
+                        request.Source,
+                        request.RecipientRole
+                    )
+                    .Key
+            );
         f.ResolvedScopes.Should().Equal(request.Scope);
     }
 
@@ -213,7 +308,10 @@ public sealed class CommunicationQueueTests
         await f.Build().EnqueueAsync(Request(maxRetries: 2));
 
         f.Enqueued.Single().MaxRetries.Should().Be(2);
-        f.Settings.Verify(s => s.ResolveEmailAsync(It.IsAny<CommunicationScope>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.Settings.Verify(
+            s => s.ResolveEmailAsync(It.IsAny<CommunicationScope>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -272,7 +370,9 @@ public sealed class CommunicationQueueTests
     [InlineData("   ")]
     [InlineData("no-es-un-correo")]
     [InlineData("Cliente <cliente@test.com>")]
-    public async Task Destinatario_sin_correo_valido_queda_Failed_Permanent_sin_contenido_y_sin_render(string? email)
+    public async Task Destinatario_sin_correo_valido_queda_Failed_Permanent_sin_contenido_y_sin_render(
+        string? email
+    )
     {
         var f = new Fixture();
         var queue = f.Build();
@@ -285,9 +385,22 @@ public sealed class CommunicationQueueTests
         failed.FailureCategory.Should().Be(CommunicationFailureCategory.Permanent);
         failed.RecipientEmail.Should().BeNull();
         failed.Subject.Should().BeNull();
-        failed.TemplatePayloadJson.Should().Contain("\"InvoiceNumber\":\"001-001-000000001\"", "se puede reconstruir tras corregir el contacto");
+        failed
+            .TemplatePayloadJson.Should()
+            .Contain(
+                "\"InvoiceNumber\":\"001-001-000000001\"",
+                "se puede reconstruir tras corregir el contacto"
+            );
         failed.LastError.Should().StartWith(ApiResponseCodes.Communications.RecipientMissing);
-        f.Templates.Verify(t => t.ResolveAsync(It.IsAny<CommunicationScope>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.Templates.Verify(
+            t =>
+                t.ResolveAsync(
+                    It.IsAny<CommunicationScope>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -297,14 +410,36 @@ public sealed class CommunicationQueueTests
         var request = Request() with
         {
             RecipientEmail = null,
-            Attachments = [new ERP.Application.Modules.Communications.DTOs.QueueCommunicationAttachmentDto(CommunicationAttachmentType.RidePdf, "x-RIDE.pdf", "application/pdf", ReferenceId: Guid.NewGuid())],
+            Attachments =
+            [
+                new ERP.Application.Modules.Communications.DTOs.QueueCommunicationAttachmentDto(
+                    CommunicationAttachmentType.RidePdf,
+                    "x-RIDE.pdf",
+                    "application/pdf",
+                    ReferenceId: Guid.NewGuid()
+                ),
+            ],
         };
 
         await f.Build().EnqueueAsync(request);
 
         var failed = f.Enqueued.Single();
-        failed.IdempotencyKey.Should().Be(CommunicationIdentity.For(request.Scope, request.Purpose, request.Channel, request.Source, request.RecipientRole).Key);
-        failed.Attachments.Should().ContainSingle(a => a.ReferenceId == request.Attachments!.Single().ReferenceId);
+        failed
+            .IdempotencyKey.Should()
+            .Be(
+                CommunicationIdentity
+                    .For(
+                        request.Scope,
+                        request.Purpose,
+                        request.Channel,
+                        request.Source,
+                        request.RecipientRole
+                    )
+                    .Key
+            );
+        failed
+            .Attachments.Should()
+            .ContainSingle(a => a.ReferenceId == request.Attachments!.Single().ReferenceId);
     }
 
     [Fact]

@@ -1,3 +1,4 @@
+using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Common.Persistence;
@@ -8,7 +9,6 @@ using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.ElectronicDocuments.Interfaces;
 using ERP.Domain.Modules.ElectronicDocuments.ValueObjects;
 using Microsoft.Extensions.Logging;
-using System.Text;
 
 namespace ERP.Application.Modules.ElectronicDocuments.Services;
 
@@ -82,7 +82,11 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
                 ct
             );
             if (!lifecycle.AllowsProcessing)
-                return SourceNotProcessable(request.SourceModule, request.SourceEntityId, lifecycle);
+                return SourceNotProcessable(
+                    request.SourceModule,
+                    request.SourceEntityId,
+                    lifecycle
+                );
         }
 
         var existing = await _repository.GetBySourceAsync(
@@ -168,7 +172,11 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
                 ct
             );
             if (!lifecycle.AllowsProcessing)
-                return SourceNotProcessable(document.SourceModule, document.SourceEntityId, lifecycle);
+                return SourceNotProcessable(
+                    document.SourceModule,
+                    document.SourceEntityId,
+                    lifecycle
+                );
         }
 
         var supplier = _xmlSupplierResolver.Resolve(request.DocumentType);
@@ -619,7 +627,11 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
                 ct
             );
             if (!recheck.AllowsProcessing)
-                return SourceNotProcessable(document.SourceModule, document.SourceEntityId, recheck);
+                return SourceNotProcessable(
+                    document.SourceModule,
+                    document.SourceEntityId,
+                    recheck
+                );
 
             LogQueryOnlyRetry(document.Id, document.CurrentState);
             lastFailureReason = await AuthorizeAsync(
@@ -680,7 +692,11 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
             if (!lifecycle.AllowsProcessing)
             {
                 await _unitOfWork.RollbackAsync(ct);
-                return SourceNotProcessable(document.SourceModule, document.SourceEntityId, lifecycle);
+                return SourceNotProcessable(
+                    document.SourceModule,
+                    document.SourceEntityId,
+                    lifecycle
+                );
             }
 
             if (
@@ -1119,7 +1135,10 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
         Level = LogLevel.Information,
         Message = "[ElectronicDocuments] Reintento de {ElectronicDocumentId} en {State}: solo consulta de autorización, sin reenvío (ADR-036)"
     )]
-    private partial void LogQueryOnlyRetry(Guid electronicDocumentId, ElectronicDocumentState state);
+    private partial void LogQueryOnlyRetry(
+        Guid electronicDocumentId,
+        ElectronicDocumentState state
+    );
 
     [LoggerMessage(
         Level = LogLevel.Error,

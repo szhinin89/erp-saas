@@ -69,7 +69,10 @@ public sealed class GetRetentionBySourceHandler
         _branch = branch;
     }
 
-    public async Task<Result<RetentionDocumentDto?>> Handle(GetRetentionBySourceQuery q, CancellationToken ct)
+    public async Task<Result<RetentionDocumentDto?>> Handle(
+        GetRetentionBySourceQuery q,
+        CancellationToken ct
+    )
     {
         var retention = await _repo.GetBySourceAsync(
             _tenant.TenantId,

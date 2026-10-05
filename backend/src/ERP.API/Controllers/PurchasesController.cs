@@ -176,7 +176,10 @@ public sealed class PurchasesController : ControllerBase
         CancellationToken ct
     ) =>
         this.ToOkOrBadRequest(
-            await _mediator.Send(new CancelPurchaseCommand(id, request.Reason, request.RequestSriAnnulment), ct)
+            await _mediator.Send(
+                new CancelPurchaseCommand(id, request.Reason, request.RequestSriAnnulment),
+                ct
+            )
         );
 
     /// <summary>Contexto completo de un ítem para el detalle de compra (1 request SSOT).</summary>

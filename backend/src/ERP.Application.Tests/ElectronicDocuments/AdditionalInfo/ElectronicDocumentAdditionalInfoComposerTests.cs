@@ -44,7 +44,11 @@ public sealed class ElectronicDocumentAdditionalInfoComposerTests
         }
     }
 
-    private static StubContributor Fields(string id, int order, params (string Name, string Value)[] fields) =>
+    private static StubContributor Fields(
+        string id,
+        int order,
+        params (string Name, string Value)[] fields
+    ) =>
         new(
             id,
             order,
@@ -66,13 +70,16 @@ public sealed class ElectronicDocumentAdditionalInfoComposerTests
     {
         var composer = Composer(Fields("n1", 100, ("RUC Proveedor", "1792146739001")));
 
-        var result = await composer.ComposeAsync(Context, Source(("Observación", "Entrega en bodega")));
+        var result = await composer.ComposeAsync(
+            Context,
+            Source(("Observación", "Entrega en bodega"))
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        result.Value!.Select(f => (f.Name, f.Value)).Should().Equal(
-            ("RUC Proveedor", "1792146739001"),
-            ("Observación", "Entrega en bodega")
-        );
+        result
+            .Value!.Select(f => (f.Name, f.Value))
+            .Should()
+            .Equal(("RUC Proveedor", "1792146739001"), ("Observación", "Entrega en bodega"));
     }
 
     [Fact]
@@ -109,7 +116,10 @@ public sealed class ElectronicDocumentAdditionalInfoComposerTests
     {
         var composer = Composer(Fields("n1", 100, ("RUC Proveedor", "1792146739001")));
 
-        var result = await composer.ComposeAsync(Context, Source(("  RUC PROVEEDOR ", "9999999999001")));
+        var result = await composer.ComposeAsync(
+            Context,
+            Source(("  RUC PROVEEDOR ", "9999999999001"))
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.AdditionalInfoInvalid);
@@ -154,7 +164,8 @@ public sealed class ElectronicDocumentAdditionalInfoComposerTests
     public async Task Rechaza_nombre_o_valor_de_301_caracteres_sin_truncar()
     {
         var longName = await Composer().ComposeAsync(Context, Source((new string('N', 301), "v")));
-        var longValue = await Composer().ComposeAsync(Context, Source(("Observación", new string('v', 301))));
+        var longValue = await Composer()
+            .ComposeAsync(Context, Source(("Observación", new string('v', 301))));
 
         longName.IsSuccess.Should().BeFalse();
         longName.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.AdditionalInfoInvalid);
@@ -201,10 +212,13 @@ public sealed class ElectronicDocumentAdditionalInfoComposerTests
         );
         var later = Fields("despues", 200, ("Otro", "x"));
 
-        var result = await Composer(failing, later).ComposeAsync(Context, Source(("Observación", "x")));
+        var result = await Composer(failing, later)
+            .ComposeAsync(Context, Source(("Observación", "x")));
 
         result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.SystemProviderRucNotConfigured);
+        result
+            .Code.Should()
+            .Be(ApiResponseCodes.ElectronicDocuments.SystemProviderRucNotConfigured);
         result.Error.Should().Be("Configuración incompleta.");
         later.Calls.Should().Be(0);
     }
@@ -230,9 +244,9 @@ public sealed class ElectronicDocumentAdditionalInfoComposerTests
         var notApplicable = new StubContributor(
             "otro-tipo",
             100,
-            Result<IReadOnlyList<ElectronicDocumentAdditionalField>>.Success(
-                [new ElectronicDocumentAdditionalField("Solo guía", "x")]
-            ),
+            Result<IReadOnlyList<ElectronicDocumentAdditionalField>>.Success([
+                new ElectronicDocumentAdditionalField("Solo guía", "x"),
+            ]),
             applies: false
         );
         var source = Source(("Observación", "x"));
@@ -241,6 +255,8 @@ public sealed class ElectronicDocumentAdditionalInfoComposerTests
 
         result.IsSuccess.Should().BeTrue(result.Error);
         notApplicable.Calls.Should().Be(0);
-        result.Value.Should().BeSameAs(source, "sin campos normativos el modelo queda idéntico al del provider");
+        result
+            .Value.Should()
+            .BeSameAs(source, "sin campos normativos el modelo queda idéntico al del provider");
     }
 }

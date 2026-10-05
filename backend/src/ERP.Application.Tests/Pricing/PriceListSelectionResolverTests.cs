@@ -39,12 +39,20 @@ public sealed class PriceListSelectionResolverTests
                 .Setup(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(CompanyToday);
             CustomerLists
-                .Setup(r => r.GetByCustomerAsync(TenantId, CustomerId, It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetByCustomerAsync(TenantId, CustomerId, It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(Array.Empty<PriceListCustomer>());
         }
 
         public PriceListSelectionResolver Build() =>
-            new(CustomerLists.Object, PriceLists.Object, Tenant.Object, Company.Object, CompanyClock.Object);
+            new(
+                CustomerLists.Object,
+                PriceLists.Object,
+                Tenant.Object,
+                Company.Object,
+                CompanyClock.Object
+            );
     }
 
     private static PriceList CreateList(
@@ -54,9 +62,15 @@ public sealed class PriceListSelectionResolverTests
         DateOnly? validUntil = null
     ) =>
         PriceList.Create(
-            TenantId, CompanyId, code, $"Lista {code}", "USD",
-            isDefault: isDefault, createdBy: UserId,
-            validFrom: validFrom, validUntil: validUntil
+            TenantId,
+            CompanyId,
+            code,
+            $"Lista {code}",
+            "USD",
+            isDefault: isDefault,
+            createdBy: UserId,
+            validFrom: validFrom,
+            validUntil: validUntil
         );
 
     [Fact]
@@ -65,14 +79,23 @@ public sealed class PriceListSelectionResolverTests
         var f = new Fixture();
         var customerList = CreateList("VIP", isDefault: false);
         var defaultList = CreateList("GEN", isDefault: true);
-        var assignment = PriceListCustomer.Create(TenantId, CompanyId, customerList.Id, CustomerId, UserId);
-        f.CustomerLists
-            .Setup(r => r.GetByCustomerAsync(TenantId, CustomerId, It.IsAny<CancellationToken>()))
+        var assignment = PriceListCustomer.Create(
+            TenantId,
+            CompanyId,
+            customerList.Id,
+            CustomerId,
+            UserId
+        );
+        f.CustomerLists.Setup(r =>
+                r.GetByCustomerAsync(TenantId, CustomerId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { assignment });
-        f.PriceLists
-            .Setup(r => r.GetByIdAsync(TenantId, customerList.Id, It.IsAny<CancellationToken>()))
+        f.PriceLists.Setup(r =>
+                r.GetByIdAsync(TenantId, customerList.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(customerList);
-        f.PriceLists.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>())).ReturnsAsync(defaultList);
+        f.PriceLists.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(defaultList);
 
         var result = await f.Build().ResolveAsync(CustomerId, CancellationToken.None);
 
@@ -88,7 +111,8 @@ public sealed class PriceListSelectionResolverTests
     {
         var f = new Fixture();
         var defaultList = CreateList("GEN", isDefault: true);
-        f.PriceLists.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>())).ReturnsAsync(defaultList);
+        f.PriceLists.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(defaultList);
 
         var result = await f.Build().ResolveAsync(CustomerId, CancellationToken.None);
 
@@ -103,15 +127,24 @@ public sealed class PriceListSelectionResolverTests
         var f = new Fixture();
         var customerList = CreateList("VIP", isDefault: false);
         customerList.Disable(UserId);
-        var assignment = PriceListCustomer.Create(TenantId, CompanyId, customerList.Id, CustomerId, UserId);
-        f.CustomerLists
-            .Setup(r => r.GetByCustomerAsync(TenantId, CustomerId, It.IsAny<CancellationToken>()))
+        var assignment = PriceListCustomer.Create(
+            TenantId,
+            CompanyId,
+            customerList.Id,
+            CustomerId,
+            UserId
+        );
+        f.CustomerLists.Setup(r =>
+                r.GetByCustomerAsync(TenantId, CustomerId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { assignment });
-        f.PriceLists
-            .Setup(r => r.GetByIdAsync(TenantId, customerList.Id, It.IsAny<CancellationToken>()))
+        f.PriceLists.Setup(r =>
+                r.GetByIdAsync(TenantId, customerList.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(customerList);
         var defaultList = CreateList("GEN", isDefault: true);
-        f.PriceLists.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>())).ReturnsAsync(defaultList);
+        f.PriceLists.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(defaultList);
 
         var result = await f.Build().ResolveAsync(CustomerId, CancellationToken.None);
 
@@ -125,13 +158,21 @@ public sealed class PriceListSelectionResolverTests
     {
         var f = new Fixture();
         var customerList = CreateList("VIP", isDefault: false);
-        var assignment = PriceListCustomer.Create(TenantId, CompanyId, customerList.Id, CustomerId, UserId);
+        var assignment = PriceListCustomer.Create(
+            TenantId,
+            CompanyId,
+            customerList.Id,
+            CustomerId,
+            UserId
+        );
         assignment.Disable(UserId);
-        f.CustomerLists
-            .Setup(r => r.GetByCustomerAsync(TenantId, CustomerId, It.IsAny<CancellationToken>()))
+        f.CustomerLists.Setup(r =>
+                r.GetByCustomerAsync(TenantId, CustomerId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { assignment });
         var defaultList = CreateList("GEN", isDefault: true);
-        f.PriceLists.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>())).ReturnsAsync(defaultList);
+        f.PriceLists.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(defaultList);
 
         var result = await f.Build().ResolveAsync(CustomerId, CancellationToken.None);
 
@@ -143,17 +184,30 @@ public sealed class PriceListSelectionResolverTests
     public async Task Lista_del_cliente_vencida_devuelve_solo_el_candidato_default()
     {
         var f = new Fixture();
-        var customerList = CreateList("VIP", isDefault: false,
-            validFrom: new DateOnly(2026, 1, 1), validUntil: new DateOnly(2026, 9, 19));
-        var assignment = PriceListCustomer.Create(TenantId, CompanyId, customerList.Id, CustomerId, UserId);
-        f.CustomerLists
-            .Setup(r => r.GetByCustomerAsync(TenantId, CustomerId, It.IsAny<CancellationToken>()))
+        var customerList = CreateList(
+            "VIP",
+            isDefault: false,
+            validFrom: new DateOnly(2026, 1, 1),
+            validUntil: new DateOnly(2026, 9, 19)
+        );
+        var assignment = PriceListCustomer.Create(
+            TenantId,
+            CompanyId,
+            customerList.Id,
+            CustomerId,
+            UserId
+        );
+        f.CustomerLists.Setup(r =>
+                r.GetByCustomerAsync(TenantId, CustomerId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { assignment });
-        f.PriceLists
-            .Setup(r => r.GetByIdAsync(TenantId, customerList.Id, It.IsAny<CancellationToken>()))
+        f.PriceLists.Setup(r =>
+                r.GetByIdAsync(TenantId, customerList.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(customerList);
         var defaultList = CreateList("GEN", isDefault: true);
-        f.PriceLists.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>())).ReturnsAsync(defaultList);
+        f.PriceLists.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(defaultList);
 
         var result = await f.Build().ResolveAsync(CustomerId, CancellationToken.None);
 
@@ -165,17 +219,30 @@ public sealed class PriceListSelectionResolverTests
     public async Task Lista_del_cliente_futura_devuelve_solo_el_candidato_default()
     {
         var f = new Fixture();
-        var customerList = CreateList("VIP", isDefault: false,
-            validFrom: new DateOnly(2026, 10, 1), validUntil: new DateOnly(2026, 12, 31));
-        var assignment = PriceListCustomer.Create(TenantId, CompanyId, customerList.Id, CustomerId, UserId);
-        f.CustomerLists
-            .Setup(r => r.GetByCustomerAsync(TenantId, CustomerId, It.IsAny<CancellationToken>()))
+        var customerList = CreateList(
+            "VIP",
+            isDefault: false,
+            validFrom: new DateOnly(2026, 10, 1),
+            validUntil: new DateOnly(2026, 12, 31)
+        );
+        var assignment = PriceListCustomer.Create(
+            TenantId,
+            CompanyId,
+            customerList.Id,
+            CustomerId,
+            UserId
+        );
+        f.CustomerLists.Setup(r =>
+                r.GetByCustomerAsync(TenantId, CustomerId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { assignment });
-        f.PriceLists
-            .Setup(r => r.GetByIdAsync(TenantId, customerList.Id, It.IsAny<CancellationToken>()))
+        f.PriceLists.Setup(r =>
+                r.GetByIdAsync(TenantId, customerList.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(customerList);
         var defaultList = CreateList("GEN", isDefault: true);
-        f.PriceLists.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>())).ReturnsAsync(defaultList);
+        f.PriceLists.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(defaultList);
 
         var result = await f.Build().ResolveAsync(CustomerId, CancellationToken.None);
 
@@ -188,14 +255,23 @@ public sealed class PriceListSelectionResolverTests
     {
         var f = new Fixture();
         var sharedList = CreateList("GEN", isDefault: true);
-        var assignment = PriceListCustomer.Create(TenantId, CompanyId, sharedList.Id, CustomerId, UserId);
-        f.CustomerLists
-            .Setup(r => r.GetByCustomerAsync(TenantId, CustomerId, It.IsAny<CancellationToken>()))
+        var assignment = PriceListCustomer.Create(
+            TenantId,
+            CompanyId,
+            sharedList.Id,
+            CustomerId,
+            UserId
+        );
+        f.CustomerLists.Setup(r =>
+                r.GetByCustomerAsync(TenantId, CustomerId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { assignment });
-        f.PriceLists
-            .Setup(r => r.GetByIdAsync(TenantId, sharedList.Id, It.IsAny<CancellationToken>()))
+        f.PriceLists.Setup(r =>
+                r.GetByIdAsync(TenantId, sharedList.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(sharedList);
-        f.PriceLists.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>())).ReturnsAsync(sharedList);
+        f.PriceLists.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(sharedList);
 
         var result = await f.Build().ResolveAsync(CustomerId, CancellationToken.None);
 
@@ -210,7 +286,8 @@ public sealed class PriceListSelectionResolverTests
     public async Task Sin_lista_de_cliente_y_sin_default_valida_devuelve_coleccion_vacia()
     {
         var f = new Fixture();
-        f.PriceLists.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>())).ReturnsAsync((PriceList?)null);
+        f.PriceLists.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((PriceList?)null);
 
         var result = await f.Build().ResolveAsync(CustomerId, CancellationToken.None);
 
@@ -223,14 +300,23 @@ public sealed class PriceListSelectionResolverTests
         var f = new Fixture();
         var customerList = CreateList("VIP", isDefault: false);
         customerList.Disable(UserId);
-        var assignment = PriceListCustomer.Create(TenantId, CompanyId, customerList.Id, CustomerId, UserId);
-        f.CustomerLists
-            .Setup(r => r.GetByCustomerAsync(TenantId, CustomerId, It.IsAny<CancellationToken>()))
+        var assignment = PriceListCustomer.Create(
+            TenantId,
+            CompanyId,
+            customerList.Id,
+            CustomerId,
+            UserId
+        );
+        f.CustomerLists.Setup(r =>
+                r.GetByCustomerAsync(TenantId, CustomerId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { assignment });
-        f.PriceLists
-            .Setup(r => r.GetByIdAsync(TenantId, customerList.Id, It.IsAny<CancellationToken>()))
+        f.PriceLists.Setup(r =>
+                r.GetByIdAsync(TenantId, customerList.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(customerList);
-        f.PriceLists.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>())).ReturnsAsync((PriceList?)null);
+        f.PriceLists.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((PriceList?)null);
 
         var result = await f.Build().ResolveAsync(CustomerId, CancellationToken.None);
 
@@ -242,7 +328,8 @@ public sealed class PriceListSelectionResolverTests
     {
         var f = new Fixture();
         var defaultList = CreateList("GEN", isDefault: true);
-        f.PriceLists.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>())).ReturnsAsync(defaultList);
+        f.PriceLists.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(defaultList);
 
         await f.Build().ResolveAsync(CustomerId, CancellationToken.None);
 
@@ -257,7 +344,8 @@ public sealed class PriceListSelectionResolverTests
     {
         var f = new Fixture();
         var defaultList = CreateList("GEN", isDefault: true);
-        f.PriceLists.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>())).ReturnsAsync(defaultList);
+        f.PriceLists.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(defaultList);
 
         await f.Build().ResolveAsync(CustomerId, CancellationToken.None);
 
@@ -279,7 +367,8 @@ public sealed class PriceListSelectionResolverTests
         // PriceListCustomer, ni siquiera con un Guid.Empty sentinel.
         var f = new Fixture();
         var defaultList = CreateList("GEN", isDefault: true);
-        f.PriceLists.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>())).ReturnsAsync(defaultList);
+        f.PriceLists.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(defaultList);
 
         var result = await f.Build().ResolveAsync(null, CancellationToken.None);
 
@@ -287,7 +376,12 @@ public sealed class PriceListSelectionResolverTests
         result[0].PriceListId.Should().Be(defaultList.Id);
         result[0].Source.Should().Be(PriceListSelectionSource.CompanyDefault);
         f.CustomerLists.Verify(
-            r => r.GetByCustomerAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            r =>
+                r.GetByCustomerAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }
@@ -296,13 +390,19 @@ public sealed class PriceListSelectionResolverTests
     public async Task CustomerId_null_y_sin_default_valida_devuelve_coleccion_vacia()
     {
         var f = new Fixture();
-        f.PriceLists.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>())).ReturnsAsync((PriceList?)null);
+        f.PriceLists.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((PriceList?)null);
 
         var result = await f.Build().ResolveAsync(null, CancellationToken.None);
 
         result.Should().BeEmpty();
         f.CustomerLists.Verify(
-            r => r.GetByCustomerAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            r =>
+                r.GetByCustomerAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }
@@ -316,10 +416,12 @@ public sealed class PriceListSelectionResolverTests
         // Cliente_sin_relacion_devuelve_solo_el_candidato_default, pero con Guid.Empty explícito).
         var f = new Fixture();
         var defaultList = CreateList("GEN", isDefault: true);
-        f.CustomerLists
-            .Setup(r => r.GetByCustomerAsync(TenantId, Guid.Empty, It.IsAny<CancellationToken>()))
+        f.CustomerLists.Setup(r =>
+                r.GetByCustomerAsync(TenantId, Guid.Empty, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(Array.Empty<PriceListCustomer>());
-        f.PriceLists.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>())).ReturnsAsync(defaultList);
+        f.PriceLists.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(defaultList);
 
         var result = await f.Build().ResolveAsync(Guid.Empty, CancellationToken.None);
 

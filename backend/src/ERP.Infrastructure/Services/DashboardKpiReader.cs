@@ -160,8 +160,7 @@ public sealed class DashboardKpiReader : IDashboardKpiReader
             select new
             {
                 ap.Id,
-                Outstanding =
-                    inst.Amount
+                Outstanding = inst.Amount
                     - inst.PaidAmount
                     - inst.RetainedAmount
                     - inst.ReturnCreditAmount

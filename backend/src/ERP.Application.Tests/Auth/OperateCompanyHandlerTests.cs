@@ -103,8 +103,7 @@ public sealed class OperateCompanyHandlerTests
         f.CurrentTenant.Setup(c => c.TenantId).Returns(Guid.Empty);
         f.AccessRepo.Setup(r => r.GetUserByIdAsync(user.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
-        f.AccessRepo
-            .Setup(r =>
+        f.AccessRepo.Setup(r =>
                 r.GetActiveGlobalUserRoleAsync(
                     user.Id,
                     SecurityRoles.Admin,
@@ -112,8 +111,9 @@ public sealed class OperateCompanyHandlerTests
                 )
             )
             .ReturnsAsync(globalRole);
-        f.CompanyRepo
-            .Setup(r => r.GetTrackedByIdForIntegrationAsync(company.Id, It.IsAny<CancellationToken>()))
+        f.CompanyRepo.Setup(r =>
+                r.GetTrackedByIdForIntegrationAsync(company.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(company);
         f.TenantRepo.Setup(r => r.GetByIdAsync(tenant.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(tenant);
@@ -126,13 +126,17 @@ public sealed class OperateCompanyHandlerTests
     {
         var (f, tenant, company, user) = BuildValidCaller();
         var branch = NewMainBranch(tenant.Id, company.Id);
-        f.BranchRepo
-            .Setup(r =>
-                r.GetByCompanyAsync(tenant.Id, company.Id, true, null, It.IsAny<CancellationToken>())
+        f.BranchRepo.Setup(r =>
+                r.GetByCompanyAsync(
+                    tenant.Id,
+                    company.Id,
+                    true,
+                    null,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(new[] { branch });
-        f.TokenService
-            .Setup(s =>
+        f.TokenService.Setup(s =>
                 s.GenerateSessionToken(
                     user,
                     tenant.Id,
@@ -141,8 +145,7 @@ public sealed class OperateCompanyHandlerTests
                 )
             )
             .Returns("operative-jwt");
-        f.RefreshTokenService
-            .Setup(s =>
+        f.RefreshTokenService.Setup(s =>
                 s.CreateAsync(
                     user.Id,
                     tenant.Id,
@@ -200,11 +203,12 @@ public sealed class OperateCompanyHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         f.AccessRepo.Verify(
-            r => r.GetActiveGlobalUserRoleAsync(
-                It.IsAny<Guid>(),
-                It.IsAny<string>(),
-                It.IsAny<CancellationToken>()
-            ),
+            r =>
+                r.GetActiveGlobalUserRoleAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }
@@ -213,8 +217,7 @@ public sealed class OperateCompanyHandlerTests
     public async Task OperateCompany_sin_rol_global_activo_falla()
     {
         var (f, _, company, user) = BuildValidCaller();
-        f.AccessRepo
-            .Setup(r =>
+        f.AccessRepo.Setup(r =>
                 r.GetActiveGlobalUserRoleAsync(
                     user.Id,
                     SecurityRoles.Admin,
@@ -237,7 +240,12 @@ public sealed class OperateCompanyHandlerTests
     public async Task OperateCompany_empresa_inactiva_falla()
     {
         var (f, _, company, _) = BuildValidCaller();
-        company.UpdateAdminIdentity(company.LegalName, company.TradeName, isActive: false, CreatedBy);
+        company.UpdateAdminIdentity(
+            company.LegalName,
+            company.TradeName,
+            isActive: false,
+            CreatedBy
+        );
 
         var handler = f.BuildHandler();
         var result = await handler.Handle(
@@ -267,9 +275,14 @@ public sealed class OperateCompanyHandlerTests
     public async Task OperateCompany_sin_sucursal_principal_resoluble_falla()
     {
         var (f, tenant, company, _) = BuildValidCaller();
-        f.BranchRepo
-            .Setup(r =>
-                r.GetByCompanyAsync(tenant.Id, company.Id, true, null, It.IsAny<CancellationToken>())
+        f.BranchRepo.Setup(r =>
+                r.GetByCompanyAsync(
+                    tenant.Id,
+                    company.Id,
+                    true,
+                    null,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(Array.Empty<Branch>());
 

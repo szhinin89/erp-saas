@@ -69,7 +69,10 @@ public sealed class SriCatalogLookupRepository : ISriCatalogLookupRepository
     public Task<SriRetentionCode?> GetRetentionCodeByIdAsync(
         Guid id,
         CancellationToken cancellationToken = default
-    ) => _db.SriRetentionCodes.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+    ) =>
+        _db
+            .SriRetentionCodes.AsNoTracking()
+            .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
 
     public async Task<IReadOnlyList<SriTaxSupport>> GetActiveTaxSupportCodesAsync(
         CancellationToken cancellationToken = default
@@ -83,7 +86,10 @@ public sealed class SriCatalogLookupRepository : ISriCatalogLookupRepository
     public Task<bool> TaxSupportCodeExistsActiveAsync(
         string code,
         CancellationToken cancellationToken = default
-    ) => _db.SriTaxSupports.AsNoTracking().AnyAsync(t => t.Code == code && t.IsActive, cancellationToken);
+    ) =>
+        _db
+            .SriTaxSupports.AsNoTracking()
+            .AnyAsync(t => t.Code == code && t.IsActive, cancellationToken);
 
     public async Task<IReadOnlyList<SriDocType>> GetActiveDocTypesAsync(
         CancellationToken cancellationToken = default
@@ -107,7 +113,8 @@ public sealed class SriCatalogLookupRepository : ISriCatalogLookupRepository
         string code,
         CancellationToken cancellationToken = default
     ) =>
-        _db.SriPaymentMethods.AsNoTracking()
+        _db
+            .SriPaymentMethods.AsNoTracking()
             .AnyAsync(p => p.Code == code && p.IsActive, cancellationToken);
 
     public async Task<IReadOnlyList<SriSupplierType>> GetActiveSupplierTypesAsync(
@@ -123,7 +130,8 @@ public sealed class SriCatalogLookupRepository : ISriCatalogLookupRepository
         string code,
         CancellationToken cancellationToken = default
     ) =>
-        _db.SriSupplierTypes.AsNoTracking()
+        _db
+            .SriSupplierTypes.AsNoTracking()
             .AnyAsync(r => r.Code == code && r.IsActive, cancellationToken);
 
     public async Task<IReadOnlyList<SriTaxRegime>> GetActiveTaxRegimesAsync(

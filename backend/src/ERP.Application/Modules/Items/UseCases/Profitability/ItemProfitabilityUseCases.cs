@@ -244,11 +244,7 @@ public sealed class SimulateItemPricingHandler
                 q.NewPvp,
                 simAmt,
                 simPct,
-                Math.Round(
-                    simAmt - curAmt,
-                    precision.MoneyDecimals,
-                    MidpointRounding.AwayFromZero
-                ),
+                Math.Round(simAmt - curAmt, precision.MoneyDecimals, MidpointRounding.AwayFromZero),
                 simStatus
             )
         );

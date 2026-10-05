@@ -10,7 +10,10 @@ namespace ERP.Domain.Modules.Finance.Entities;
 /// estricto: CRUD básico + activar/desactivar — sin posting, sin caja, sin conciliación, sin
 /// movimientos bancarios (eso pertenece a un módulo bancario completo futuro).
 /// </summary>
-public sealed class CompanyBankAccount : AuditableEntity, ITenantScopedEntity, ICompanyOperationalEntity
+public sealed class CompanyBankAccount
+    : AuditableEntity,
+        ITenantScopedEntity,
+        ICompanyOperationalEntity
 {
     public const int AccountNumberMaxLen = 50;
     public const int DisplayNameMaxLen = 200;
@@ -63,14 +66,20 @@ public sealed class CompanyBankAccount : AuditableEntity, ITenantScopedEntity, I
     public void Update(string displayName, Guid accountingAccountId, Guid updatedBy)
     {
         if (string.IsNullOrWhiteSpace(displayName))
-            throw new ArgumentException("El alias/nombre visible es obligatorio.", nameof(displayName));
+            throw new ArgumentException(
+                "El alias/nombre visible es obligatorio.",
+                nameof(displayName)
+            );
         if (displayName.Trim().Length > DisplayNameMaxLen)
             throw new ArgumentException(
                 $"El alias/nombre visible no puede superar {DisplayNameMaxLen} caracteres.",
                 nameof(displayName)
             );
         if (accountingAccountId == Guid.Empty)
-            throw new ArgumentException("La cuenta contable es obligatoria.", nameof(accountingAccountId));
+            throw new ArgumentException(
+                "La cuenta contable es obligatoria.",
+                nameof(accountingAccountId)
+            );
 
         DisplayName = displayName.Trim();
         AccountingAccountId = accountingAccountId;
@@ -99,7 +108,10 @@ public sealed class CompanyBankAccount : AuditableEntity, ITenantScopedEntity, I
         if (bankId == Guid.Empty)
             throw new ArgumentException("El banco es obligatorio.", nameof(bankId));
         if (string.IsNullOrWhiteSpace(accountNumber))
-            throw new ArgumentException("El número de cuenta es obligatorio.", nameof(accountNumber));
+            throw new ArgumentException(
+                "El número de cuenta es obligatorio.",
+                nameof(accountNumber)
+            );
         var normalizedAccountNumber = accountNumber.Trim();
         if (normalizedAccountNumber.Length > AccountNumberMaxLen)
             throw new ArgumentException(
@@ -107,7 +119,10 @@ public sealed class CompanyBankAccount : AuditableEntity, ITenantScopedEntity, I
                 nameof(accountNumber)
             );
         if (string.IsNullOrWhiteSpace(displayName))
-            throw new ArgumentException("El alias/nombre visible es obligatorio.", nameof(displayName));
+            throw new ArgumentException(
+                "El alias/nombre visible es obligatorio.",
+                nameof(displayName)
+            );
         var normalizedDisplayName = displayName.Trim();
         if (normalizedDisplayName.Length > DisplayNameMaxLen)
             throw new ArgumentException(
@@ -115,7 +130,10 @@ public sealed class CompanyBankAccount : AuditableEntity, ITenantScopedEntity, I
                 nameof(displayName)
             );
         if (accountingAccountId == Guid.Empty)
-            throw new ArgumentException("La cuenta contable es obligatoria.", nameof(accountingAccountId));
+            throw new ArgumentException(
+                "La cuenta contable es obligatoria.",
+                nameof(accountingAccountId)
+            );
 
         return (normalizedAccountNumber, normalizedDisplayName);
     }

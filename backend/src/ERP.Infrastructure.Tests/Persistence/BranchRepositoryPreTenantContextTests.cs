@@ -79,7 +79,12 @@ public sealed class BranchRepositoryPreTenantContextTests : IAsyncLifetime
 
     public async Task DisposeAsync() => await _postgres.DisposeAsync();
 
-    private static Branch NewMainBranch(Guid tenantId, Guid companyId, string name, Guid createdBy) =>
+    private static Branch NewMainBranch(
+        Guid tenantId,
+        Guid companyId,
+        string name,
+        Guid createdBy
+    ) =>
         Branch.Create(
             tenantId,
             name,
@@ -199,7 +204,9 @@ public sealed class BranchRepositoryPreTenantContextTests : IAsyncLifetime
         var repo = new BranchRepository(db);
 
         var branches = await repo.GetAsync(_tenantId, activeFilter: true, search: null);
-        var mainBranchOfCompanyB = branches.Where(b => b.CompanyId == _companyBId && b.IsMainBranch);
+        var mainBranchOfCompanyB = branches.Where(b =>
+            b.CompanyId == _companyBId && b.IsMainBranch
+        );
 
         mainBranchOfCompanyB.Should().ContainSingle(b => b.Id == _branchBId);
     }
@@ -240,7 +247,8 @@ public sealed class BranchRepositoryPreTenantContextTests : IAsyncLifetime
         public string? Slug => null;
     }
 
-    private sealed class FixedCurrentCompany(Guid companyId, bool hasCompanyContext) : ICurrentCompany
+    private sealed class FixedCurrentCompany(Guid companyId, bool hasCompanyContext)
+        : ICurrentCompany
     {
         public Guid CompanyId => companyId;
         public bool IsAuthenticated => hasCompanyContext;

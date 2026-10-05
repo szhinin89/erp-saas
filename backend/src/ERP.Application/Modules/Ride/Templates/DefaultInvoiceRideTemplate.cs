@@ -12,6 +12,9 @@ public sealed class DefaultInvoiceRideTemplate : IRideTemplate
 {
     public RideDocumentType DocumentType => RideDocumentType.Invoice;
 
-    public IRideDocumentLayout Compose(RideModel model, RideBranding branding, RideLinePrecision precision) =>
-        new InvoiceRideDocumentLayout(model, branding, precision);
+    public IRideDocumentLayout Compose(
+        RideModel model,
+        RideBranding branding,
+        RideLinePrecision precision
+    ) => new InvoiceRideDocumentLayout(model, branding, precision);
 }

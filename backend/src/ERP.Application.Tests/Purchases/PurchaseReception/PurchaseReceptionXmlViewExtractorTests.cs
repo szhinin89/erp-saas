@@ -10,8 +10,7 @@ namespace ERP.Application.Tests.Purchases.PurchaseReception;
 /// </summary>
 public sealed class PurchaseReceptionXmlViewExtractorTests
 {
-    private const string CreditNoteXml =
-        """
+    private const string CreditNoteXml = """
         <notaCredito id="comprobante" version="1.1.0">
           <infoTributaria>
             <ruc>1791352688001</ruc>

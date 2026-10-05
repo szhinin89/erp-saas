@@ -34,7 +34,10 @@ public sealed class SalesInvoiceCogsPostingPipelineTests
 
     // GrandTotal (precio de venta, 500) es deliberadamente distinto del costo Kardex (180) — si
     // el translator alguna vez recalculara desde el precio de venta, este test lo detectaría.
-    private static SalesInvoiceAuthorizedEvent InvoiceEvent(Guid invoiceId, decimal grandTotal = 500m) =>
+    private static SalesInvoiceAuthorizedEvent InvoiceEvent(
+        Guid invoiceId,
+        decimal grandTotal = 500m
+    ) =>
         new(
             invoiceId,
             "001-001-000000001",
@@ -50,7 +53,10 @@ public sealed class SalesInvoiceCogsPostingPipelineTests
             0m
         );
 
-    private static SalesReturnAuthorizedEvent ReturnEvent(Guid returnId, decimal grandTotal = 250m) =>
+    private static SalesReturnAuthorizedEvent ReturnEvent(
+        Guid returnId,
+        decimal grandTotal = 250m
+    ) =>
         new(
             returnId,
             Guid.NewGuid(),
@@ -142,7 +148,16 @@ public sealed class SalesInvoiceCogsPostingPipelineTests
 
     private static PostingRule Rule(string factType, Guid debitAccountId, Guid creditAccountId)
     {
-        var rule = PostingRule.Create(TenantId, CompanyId, "Sales", factType, null, null, null, CreatedBy);
+        var rule = PostingRule.Create(
+            TenantId,
+            CompanyId,
+            "Sales",
+            factType,
+            null,
+            null,
+            null,
+            CreatedBy
+        );
         rule.AddLine(debitAccountId, AccountNature.Debit, PostingAmountKind.HistoricalCost);
         rule.AddLine(creditAccountId, AccountNature.Credit, PostingAmountKind.HistoricalCost);
         return rule;
@@ -224,21 +239,46 @@ public sealed class SalesInvoiceCogsPostingPipelineTests
         m.RegisterAccount(cogs);
         m.RegisterAccount(inventory);
         var rule = Rule("CostOfGoodsSold", cogs.Id, inventory.Id);
-        m.PostingRules
-            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Sales", "CostOfGoodsSold", It.IsAny<CancellationToken>()))
+        m.PostingRules.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Sales",
+                    "CostOfGoodsSold",
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(rule);
 
         var invoiceId = Guid.NewGuid();
-        m.JournalEntries
-            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Sales", "CostOfGoodsSold", invoiceId, It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Sales",
+                    "CostOfGoodsSold",
+                    invoiceId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync((JournalEntry?)null);
         // Costo Kardex = 180 — muy distinto del precio de venta (500/GrandTotal) del evento.
-        m.Stock
-            .Setup(r => r.GetMovementsByDocumentAsync(TenantId, invoiceId, "SalesInvoice", It.IsAny<CancellationToken>()))
+        m.Stock.Setup(r =>
+                r.GetMovementsByDocumentAsync(
+                    TenantId,
+                    invoiceId,
+                    "SalesInvoice",
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(new List<StockMovement> { SaleExitMovement(invoiceId, 180m) });
 
         var engine = m.BuildEngine();
-        var translator = new SalesInvoiceCogsPostingTranslator(m.Stock.Object, engine, NullLogger<SalesInvoiceCogsPostingTranslator>.Instance);
+        var translator = new SalesInvoiceCogsPostingTranslator(
+            m.Stock.Object,
+            engine,
+            NullLogger<SalesInvoiceCogsPostingTranslator>.Instance
+        );
 
         await translator.Handle(InvoiceEvent(invoiceId, grandTotal: 500m), CancellationToken.None);
 
@@ -249,8 +289,12 @@ public sealed class SalesInvoiceCogsPostingPipelineTests
         entry.SourceEventId.Should().Be(invoiceId);
         entry.Lines.Should().HaveCount(2);
         entry.Lines.Sum(l => l.Debit).Should().Be(entry.Lines.Sum(l => l.Credit));
-        entry.Lines.Should().Contain(l => l.AccountId == cogs.Id && l.Debit == 180m && l.Credit == 0m);
-        entry.Lines.Should().Contain(l => l.AccountId == inventory.Id && l.Credit == 180m && l.Debit == 0m);
+        entry
+            .Lines.Should()
+            .Contain(l => l.AccountId == cogs.Id && l.Debit == 180m && l.Credit == 0m);
+        entry
+            .Lines.Should()
+            .Contain(l => l.AccountId == inventory.Id && l.Credit == 180m && l.Debit == 0m);
         // El costo usado (180) nunca coincide con GrandTotal (500) — confirma que no se recalculó
         // desde el precio de venta.
         entry.Lines.Sum(l => l.Debit).Should().NotBe(500m);
@@ -261,19 +305,39 @@ public sealed class SalesInvoiceCogsPostingPipelineTests
     {
         var m = new Mocks();
         var invoiceId = Guid.NewGuid();
-        m.Stock
-            .Setup(r => r.GetMovementsByDocumentAsync(TenantId, invoiceId, "SalesInvoice", It.IsAny<CancellationToken>()))
+        m.Stock.Setup(r =>
+                r.GetMovementsByDocumentAsync(
+                    TenantId,
+                    invoiceId,
+                    "SalesInvoice",
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(new List<StockMovement>()); // venta solo de servicios, sin inventario
 
         var engine = m.BuildEngine();
-        var translator = new SalesInvoiceCogsPostingTranslator(m.Stock.Object, engine, NullLogger<SalesInvoiceCogsPostingTranslator>.Instance);
+        var translator = new SalesInvoiceCogsPostingTranslator(
+            m.Stock.Object,
+            engine,
+            NullLogger<SalesInvoiceCogsPostingTranslator>.Instance
+        );
 
         await translator.Handle(InvoiceEvent(invoiceId), CancellationToken.None);
 
         m.Captured.Should().BeNull();
-        m.JournalEntries.Verify(r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()), Times.Never);
+        m.JournalEntries.Verify(
+            r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
         m.PostingRules.Verify(
-            r => r.FindByKeyAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            r =>
+                r.FindByKeyAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never,
             "sin costo que contabilizar, ni siquiera debe resolverse la PostingRule"
         );
@@ -288,29 +352,66 @@ public sealed class SalesInvoiceCogsPostingPipelineTests
         m.RegisterAccount(cogs);
         m.RegisterAccount(inventory);
         var rule = Rule("CostOfGoodsSold", cogs.Id, inventory.Id);
-        m.PostingRules
-            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Sales", "CostOfGoodsSold", It.IsAny<CancellationToken>()))
+        m.PostingRules.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Sales",
+                    "CostOfGoodsSold",
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(rule);
 
         var invoiceId = Guid.NewGuid();
         var existing = JournalEntry.Create(
-            TenantId, CompanyId, new DateOnly(2026, 8, 15), Guid.NewGuid(), 2026,
-            "Sales", "CostOfGoodsSold", invoiceId, "Costo ya contabilizado", CreatedBy
+            TenantId,
+            CompanyId,
+            new DateOnly(2026, 8, 15),
+            Guid.NewGuid(),
+            2026,
+            "Sales",
+            "CostOfGoodsSold",
+            invoiceId,
+            "Costo ya contabilizado",
+            CreatedBy
         );
-        m.JournalEntries
-            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Sales", "CostOfGoodsSold", invoiceId, It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Sales",
+                    "CostOfGoodsSold",
+                    invoiceId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(existing);
-        m.Stock
-            .Setup(r => r.GetMovementsByDocumentAsync(TenantId, invoiceId, "SalesInvoice", It.IsAny<CancellationToken>()))
+        m.Stock.Setup(r =>
+                r.GetMovementsByDocumentAsync(
+                    TenantId,
+                    invoiceId,
+                    "SalesInvoice",
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(new List<StockMovement> { SaleExitMovement(invoiceId, 180m) });
 
         var engine = m.BuildEngine();
-        var translator = new SalesInvoiceCogsPostingTranslator(m.Stock.Object, engine, NullLogger<SalesInvoiceCogsPostingTranslator>.Instance);
+        var translator = new SalesInvoiceCogsPostingTranslator(
+            m.Stock.Object,
+            engine,
+            NullLogger<SalesInvoiceCogsPostingTranslator>.Instance
+        );
 
         await translator.Handle(InvoiceEvent(invoiceId), CancellationToken.None);
 
-        m.Captured.Should().BeNull("el hecho ya contabilizado nunca debe generar un segundo asiento");
-        m.JournalEntries.Verify(r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()), Times.Never);
+        m.Captured.Should()
+            .BeNull("el hecho ya contabilizado nunca debe generar un segundo asiento");
+        m.JournalEntries.Verify(
+            r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -323,25 +424,53 @@ public sealed class SalesInvoiceCogsPostingPipelineTests
         m.RegisterAccount(cogs);
         m.RegisterAccount(inventory);
         var rule = Rule("CostOfGoodsSold", cogs.Id, inventory.Id);
-        m.PostingRules
-            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Sales", "CostOfGoodsSold", It.IsAny<CancellationToken>()))
+        m.PostingRules.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Sales",
+                    "CostOfGoodsSold",
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(rule);
 
         var invoiceId = Guid.NewGuid();
-        m.JournalEntries
-            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Sales", "CostOfGoodsSold", invoiceId, It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Sales",
+                    "CostOfGoodsSold",
+                    invoiceId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync((JournalEntry?)null);
-        m.Stock
-            .Setup(r => r.GetMovementsByDocumentAsync(TenantId, invoiceId, "SalesInvoice", It.IsAny<CancellationToken>()))
+        m.Stock.Setup(r =>
+                r.GetMovementsByDocumentAsync(
+                    TenantId,
+                    invoiceId,
+                    "SalesInvoice",
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(new List<StockMovement> { SaleExitMovement(invoiceId, 180m) });
 
         var engine = m.BuildEngine();
-        var translator = new SalesInvoiceCogsPostingTranslator(m.Stock.Object, engine, NullLogger<SalesInvoiceCogsPostingTranslator>.Instance);
+        var translator = new SalesInvoiceCogsPostingTranslator(
+            m.Stock.Object,
+            engine,
+            NullLogger<SalesInvoiceCogsPostingTranslator>.Instance
+        );
 
         await translator.Handle(InvoiceEvent(invoiceId), CancellationToken.None);
 
         m.Captured.Should().BeNull();
-        m.JournalEntries.Verify(r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()), Times.Never);
+        m.JournalEntries.Verify(
+            r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -349,32 +478,67 @@ public sealed class SalesInvoiceCogsPostingPipelineTests
     {
         var m = new Mocks();
         var cogs = Account.Create(
-            TenantId, CompanyId, AccountCode.Create("5.1.02"), "Costo de Ventas (resumen)",
-            null, AccountType.Expense, AccountNature.Debit, allowsPosting: false, CreatedBy
+            TenantId,
+            CompanyId,
+            AccountCode.Create("5.1.02"),
+            "Costo de Ventas (resumen)",
+            null,
+            AccountType.Expense,
+            AccountNature.Debit,
+            allowsPosting: false,
+            CreatedBy
         );
         var inventory = PostableAccount("1.1.03", "Inventario");
         m.RegisterAccount(cogs);
         m.RegisterAccount(inventory);
         var rule = Rule("CostOfGoodsSold", cogs.Id, inventory.Id);
-        m.PostingRules
-            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Sales", "CostOfGoodsSold", It.IsAny<CancellationToken>()))
+        m.PostingRules.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Sales",
+                    "CostOfGoodsSold",
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(rule);
 
         var invoiceId = Guid.NewGuid();
-        m.JournalEntries
-            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Sales", "CostOfGoodsSold", invoiceId, It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Sales",
+                    "CostOfGoodsSold",
+                    invoiceId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync((JournalEntry?)null);
-        m.Stock
-            .Setup(r => r.GetMovementsByDocumentAsync(TenantId, invoiceId, "SalesInvoice", It.IsAny<CancellationToken>()))
+        m.Stock.Setup(r =>
+                r.GetMovementsByDocumentAsync(
+                    TenantId,
+                    invoiceId,
+                    "SalesInvoice",
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(new List<StockMovement> { SaleExitMovement(invoiceId, 180m) });
 
         var engine = m.BuildEngine();
-        var translator = new SalesInvoiceCogsPostingTranslator(m.Stock.Object, engine, NullLogger<SalesInvoiceCogsPostingTranslator>.Instance);
+        var translator = new SalesInvoiceCogsPostingTranslator(
+            m.Stock.Object,
+            engine,
+            NullLogger<SalesInvoiceCogsPostingTranslator>.Instance
+        );
 
         await translator.Handle(InvoiceEvent(invoiceId), CancellationToken.None);
 
         m.Captured.Should().BeNull();
-        m.JournalEntries.Verify(r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()), Times.Never);
+        m.JournalEntries.Verify(
+            r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -387,22 +551,45 @@ public sealed class SalesInvoiceCogsPostingPipelineTests
         m.RegisterAccount(cogs);
         // Reverso: Debe Inventario / Haber Costo — nature invertida respecto a la regla original.
         var rule = Rule("CostOfGoodsSoldReversed", inventory.Id, cogs.Id);
-        m.PostingRules
-            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Sales", "CostOfGoodsSoldReversed", It.IsAny<CancellationToken>()))
+        m.PostingRules.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Sales",
+                    "CostOfGoodsSoldReversed",
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(rule);
 
         var returnId = Guid.NewGuid();
-        m.JournalEntries
-            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Sales", "CostOfGoodsSoldReversed", returnId, It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Sales",
+                    "CostOfGoodsSoldReversed",
+                    returnId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync((JournalEntry?)null);
-        m.Stock
-            .Setup(r => r.GetMovementsByDocumentAsync(TenantId, returnId, "SalesReturn", It.IsAny<CancellationToken>()))
+        m.Stock.Setup(r =>
+                r.GetMovementsByDocumentAsync(
+                    TenantId,
+                    returnId,
+                    "SalesReturn",
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(new List<StockMovement> { SaleReturnMovement(returnId, 90m) });
 
         var engine = m.BuildEngine();
         var companyClock = new Mock<ICompanyClock>();
         companyClock
-            .Setup(c => c.TodayAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(c =>
+                c.TodayAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new DateOnly(2026, 9, 17));
         var translator = new SalesReturnCogsReversalPostingTranslator(
             m.Stock.Object,
@@ -419,7 +606,11 @@ public sealed class SalesInvoiceCogsPostingPipelineTests
         entry.SourceEventType.Should().Be("CostOfGoodsSoldReversed");
         entry.SourceEventId.Should().Be(returnId);
         entry.Lines.Sum(l => l.Debit).Should().Be(entry.Lines.Sum(l => l.Credit));
-        entry.Lines.Should().Contain(l => l.AccountId == inventory.Id && l.Debit == 90m && l.Credit == 0m);
-        entry.Lines.Should().Contain(l => l.AccountId == cogs.Id && l.Credit == 90m && l.Debit == 0m);
+        entry
+            .Lines.Should()
+            .Contain(l => l.AccountId == inventory.Id && l.Debit == 90m && l.Credit == 0m);
+        entry
+            .Lines.Should()
+            .Contain(l => l.AccountId == cogs.Id && l.Credit == 90m && l.Debit == 0m);
     }
 }

@@ -40,7 +40,10 @@ public sealed class CashMovementReasonsController : ControllerBase
         CancellationToken ct = default
     ) =>
         this.ToOkOrBadRequest(
-            await _mediator.Send(new GetCashMovementReasonsQuery(movementType, includeInactive), ct),
+            await _mediator.Send(
+                new GetCashMovementReasonsQuery(movementType, includeInactive),
+                ct
+            ),
             "OK",
             () => Array.Empty<CashMovementReasonDto>()
         );

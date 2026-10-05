@@ -152,8 +152,7 @@ internal static class AccountsPayableDtoMapper
             p.CreditNoteAmount,
             p.OutstandingAmount,
             p.Status.ToString().ToLowerInvariant(),
-            p.Installments
-                .OrderBy(i => i.InstallmentNumber)
+            p.Installments.OrderBy(i => i.InstallmentNumber)
                 .Select(i => new AccountsPayableInstallmentDetailDto(
                     i.Id,
                     i.InstallmentNumber,
@@ -208,13 +207,25 @@ public sealed class GetAccountsPayableByIdHandler
             return Result<AccountsPayableDetailDto>.NotFound("Cuenta por pagar no encontrada.");
 
         var names = await _partners.GetNamesByIdsAsync([p.SupplierId], ct);
-        var balance = await _supplierCredits.GetOpenBalanceBySupplierAsync(_t.TenantId, p.SupplierId, ct);
+        var balance = await _supplierCredits.GetOpenBalanceBySupplierAsync(
+            _t.TenantId,
+            p.SupplierId,
+            ct
+        );
         return Result<AccountsPayableDetailDto>.Success(
-            AccountsPayableDtoMapper.ToDetail(p, names.GetValueOrDefault(p.SupplierId, string.Empty)) with
+            AccountsPayableDtoMapper.ToDetail(
+                p,
+                names.GetValueOrDefault(p.SupplierId, string.Empty)
+            ) with
             {
-                SupplierAvailableCredit = balance.OpenCount == 0
-                    ? null
-                    : new SupplierAvailableCreditDto(balance.AvailableAmount, balance.OpenCount, balance.SingleOpenCreditId),
+                SupplierAvailableCredit =
+                    balance.OpenCount == 0
+                        ? null
+                        : new SupplierAvailableCreditDto(
+                            balance.AvailableAmount,
+                            balance.OpenCount,
+                            balance.SingleOpenCreditId
+                        ),
             }
         );
     }
@@ -249,14 +260,22 @@ public sealed class GetAccountsPayablesListHandler
         AccountsPayableOriginType? originType = null;
         if (
             !string.IsNullOrWhiteSpace(q.OriginType)
-            && Enum.TryParse<AccountsPayableOriginType>(q.OriginType.Trim(), ignoreCase: true, out var parsedOrigin)
+            && Enum.TryParse<AccountsPayableOriginType>(
+                q.OriginType.Trim(),
+                ignoreCase: true,
+                out var parsedOrigin
+            )
         )
             originType = parsedOrigin;
 
         AccountsPayableStatus? status = null;
         if (
             !string.IsNullOrWhiteSpace(q.Status)
-            && Enum.TryParse<AccountsPayableStatus>(q.Status.Trim(), ignoreCase: true, out var parsedStatus)
+            && Enum.TryParse<AccountsPayableStatus>(
+                q.Status.Trim(),
+                ignoreCase: true,
+                out var parsedStatus
+            )
         )
             status = parsedStatus;
 
@@ -279,7 +298,12 @@ public sealed class GetAccountsPayablesListHandler
             ct
         );
         var dtos = items
-            .Select(p => AccountsPayableDtoMapper.ToListItem(p, names.GetValueOrDefault(p.SupplierId, string.Empty)))
+            .Select(p =>
+                AccountsPayableDtoMapper.ToListItem(
+                    p,
+                    names.GetValueOrDefault(p.SupplierId, string.Empty)
+                )
+            )
             .ToList();
 
         return Result<AccountsPayablesListResponse>.Success(

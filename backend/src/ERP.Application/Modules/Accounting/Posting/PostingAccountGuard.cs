@@ -85,7 +85,12 @@ internal sealed class PostingAccountGuard
         return Result<PostingRule>.Success(rule);
     }
 
-    private void LogRejection(PostingFact fact, PostingRule rule, Guid accountId, Account? account) =>
+    private void LogRejection(
+        PostingFact fact,
+        PostingRule rule,
+        Guid accountId,
+        Account? account
+    ) =>
         _logger.LogWarning(
             "Posting rejected: account {AccountId} not postable (found={Found}, active={IsActive}, "
                 + "allowsPosting={AllowsPosting}). SourceModule={SourceModule} "

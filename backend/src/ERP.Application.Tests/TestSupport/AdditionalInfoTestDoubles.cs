@@ -45,7 +45,14 @@ public static class AdditionalInfoTestDoubles
             settings = SystemProviderSettings.CreateNew();
             // Configure exige fecha para habilitar; los estados "habilitado sin fecha" o "RUC
             // inválido" (filas heredadas previas al invariante) se construyen por reflexión.
-            settings.Configure(ruc, "ZH Technologies S.A.", "J62021002", effectiveDate, enabled: false, Guid.NewGuid());
+            settings.Configure(
+                ruc,
+                "ZH Technologies S.A.",
+                "J62021002",
+                effectiveDate,
+                enabled: false,
+                Guid.NewGuid()
+            );
             if (enabled)
                 SetPrivate(settings, nameof(SystemProviderSettings.Enabled), true);
         }
@@ -58,6 +65,9 @@ public static class AdditionalInfoTestDoubles
     public static void ForceRuc(SystemProviderSettings settings, string? ruc) =>
         SetPrivate(settings, nameof(SystemProviderSettings.Ruc), ruc);
 
-    private static void SetPrivate(SystemProviderSettings settings, string property, object? value) =>
-        typeof(SystemProviderSettings).GetProperty(property)!.SetValue(settings, value);
+    private static void SetPrivate(
+        SystemProviderSettings settings,
+        string property,
+        object? value
+    ) => typeof(SystemProviderSettings).GetProperty(property)!.SetValue(settings, value);
 }

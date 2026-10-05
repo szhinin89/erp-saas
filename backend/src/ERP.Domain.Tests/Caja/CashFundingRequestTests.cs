@@ -41,8 +41,14 @@ public sealed class CashFundingRequestTests
         request.IsPending.Should().BeTrue();
         request.RequestedByUserId.Should().Be(Requester);
         request.RequestedAtUtc.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
-        (request.ResolvedByUserId, request.ResolvedAtUtc, request.ResolutionReason, request.SupplierPaymentId)
-            .Should().Be(((Guid?)null, (DateTime?)null, (string?)null, (Guid?)null));
+        (
+            request.ResolvedByUserId,
+            request.ResolvedAtUtc,
+            request.ResolutionReason,
+            request.SupplierPaymentId
+        )
+            .Should()
+            .Be(((Guid?)null, (DateTime?)null, (string?)null, (Guid?)null));
     }
 
     [Theory]
@@ -65,32 +71,109 @@ public sealed class CashFundingRequestTests
     [Fact]
     public void Caja_y_sesion_objetivo_son_obligatorias()
     {
-        var act = () => CashFundingRequest.Create(
-            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.Empty, Guid.NewGuid(), Guid.NewGuid(),
-            100m, 50m, Requester, "{}", 1, "H", Guid.NewGuid());
+        var act = () =>
+            CashFundingRequest.Create(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Guid.Empty,
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                100m,
+                50m,
+                Requester,
+                "{}",
+                1,
+                "H",
+                Guid.NewGuid()
+            );
         act.Should().Throw<ArgumentException>().WithParameterName("cashRegisterId");
 
-        var act2 = () => CashFundingRequest.Create(
-            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.Empty, Guid.NewGuid(),
-            100m, 50m, Requester, "{}", 1, "H", Guid.NewGuid());
+        var act2 = () =>
+            CashFundingRequest.Create(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Guid.Empty,
+                Guid.NewGuid(),
+                100m,
+                50m,
+                Requester,
+                "{}",
+                1,
+                "H",
+                Guid.NewGuid()
+            );
         act2.Should().Throw<ArgumentException>().WithParameterName("cashSessionId");
     }
 
     [Fact]
     public void Payload_version_y_hash_son_obligatorios()
     {
-        FluentActions.Invoking(() => CashFundingRequest.Create(
-                Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
-                100m, 50m, Requester, " ", 1, "H", Guid.NewGuid()))
-            .Should().Throw<ArgumentException>().WithParameterName("paymentPayload");
-        FluentActions.Invoking(() => CashFundingRequest.Create(
-                Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
-                100m, 50m, Requester, "{}", 0, "H", Guid.NewGuid()))
-            .Should().Throw<ArgumentException>().WithParameterName("payloadVersion");
-        FluentActions.Invoking(() => CashFundingRequest.Create(
-                Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
-                100m, 50m, Requester, "{}", 1, "", Guid.NewGuid()))
-            .Should().Throw<ArgumentException>().WithParameterName("payloadHash");
+        FluentActions
+            .Invoking(() =>
+                CashFundingRequest.Create(
+                    Guid.NewGuid(),
+                    Guid.NewGuid(),
+                    Guid.NewGuid(),
+                    Guid.NewGuid(),
+                    Guid.NewGuid(),
+                    Guid.NewGuid(),
+                    100m,
+                    50m,
+                    Requester,
+                    " ",
+                    1,
+                    "H",
+                    Guid.NewGuid()
+                )
+            )
+            .Should()
+            .Throw<ArgumentException>()
+            .WithParameterName("paymentPayload");
+        FluentActions
+            .Invoking(() =>
+                CashFundingRequest.Create(
+                    Guid.NewGuid(),
+                    Guid.NewGuid(),
+                    Guid.NewGuid(),
+                    Guid.NewGuid(),
+                    Guid.NewGuid(),
+                    Guid.NewGuid(),
+                    100m,
+                    50m,
+                    Requester,
+                    "{}",
+                    0,
+                    "H",
+                    Guid.NewGuid()
+                )
+            )
+            .Should()
+            .Throw<ArgumentException>()
+            .WithParameterName("payloadVersion");
+        FluentActions
+            .Invoking(() =>
+                CashFundingRequest.Create(
+                    Guid.NewGuid(),
+                    Guid.NewGuid(),
+                    Guid.NewGuid(),
+                    Guid.NewGuid(),
+                    Guid.NewGuid(),
+                    Guid.NewGuid(),
+                    100m,
+                    50m,
+                    Requester,
+                    "{}",
+                    1,
+                    "",
+                    Guid.NewGuid()
+                )
+            )
+            .Should()
+            .Throw<ArgumentException>()
+            .WithParameterName("payloadHash");
     }
 
     [Fact]
@@ -107,54 +190,93 @@ public sealed class CashFundingRequestTests
         request.SupplierPaymentId.Should().Be(paymentId);
         request.ResolutionReason.Should().BeNull();
 
-        FluentActions.Invoking(() => request.Fulfill(Cashier, Guid.NewGuid()))
-            .Should().Throw<DomainRuleViolationException>("una solicitud atendida no puede reutilizarse");
-        FluentActions.Invoking(() => request.Reject(Cashier, "x")).Should().Throw<DomainRuleViolationException>();
-        FluentActions.Invoking(() => request.Cancel(Requester, "x")).Should().Throw<DomainRuleViolationException>();
+        FluentActions
+            .Invoking(() => request.Fulfill(Cashier, Guid.NewGuid()))
+            .Should()
+            .Throw<DomainRuleViolationException>("una solicitud atendida no puede reutilizarse");
+        FluentActions
+            .Invoking(() => request.Reject(Cashier, "x"))
+            .Should()
+            .Throw<DomainRuleViolationException>();
+        FluentActions
+            .Invoking(() => request.Cancel(Requester, "x"))
+            .Should()
+            .Throw<DomainRuleViolationException>();
         request.SupplierPaymentId.Should().Be(paymentId, "el pago original nunca se reemplaza");
     }
 
     [Fact]
     public void Fulfill_exige_cajero_y_pago()
     {
-        FluentActions.Invoking(() => Pending().Fulfill(Guid.Empty, Guid.NewGuid())).Should().Throw<ArgumentException>();
-        FluentActions.Invoking(() => Pending().Fulfill(Cashier, Guid.Empty)).Should().Throw<ArgumentException>();
+        FluentActions
+            .Invoking(() => Pending().Fulfill(Guid.Empty, Guid.NewGuid()))
+            .Should()
+            .Throw<ArgumentException>();
+        FluentActions
+            .Invoking(() => Pending().Fulfill(Cashier, Guid.Empty))
+            .Should()
+            .Throw<ArgumentException>();
     }
 
     [Fact]
     public void Reject_exige_motivo_no_tiene_pago_y_es_terminal()
     {
-        FluentActions.Invoking(() => Pending().Reject(Cashier, "  ")).Should().Throw<ArgumentException>();
+        FluentActions
+            .Invoking(() => Pending().Reject(Cashier, "  "))
+            .Should()
+            .Throw<ArgumentException>();
 
         var request = Pending();
         request.Reject(Cashier, "  Sin efectivo suficiente  ");
 
         request.Status.Should().Be(CashFundingRequestStatus.Rejected);
         (request.ResolvedByUserId, request.ResolutionReason, request.SupplierPaymentId)
-            .Should().Be(((Guid?)Cashier, "Sin efectivo suficiente", (Guid?)null));
-        FluentActions.Invoking(() => request.Fulfill(Cashier, Guid.NewGuid())).Should().Throw<DomainRuleViolationException>();
-        FluentActions.Invoking(() => request.Cancel(Requester, "x")).Should().Throw<DomainRuleViolationException>();
+            .Should()
+            .Be(((Guid?)Cashier, "Sin efectivo suficiente", (Guid?)null));
+        FluentActions
+            .Invoking(() => request.Fulfill(Cashier, Guid.NewGuid()))
+            .Should()
+            .Throw<DomainRuleViolationException>();
+        FluentActions
+            .Invoking(() => request.Cancel(Requester, "x"))
+            .Should()
+            .Throw<DomainRuleViolationException>();
     }
 
     [Fact]
     public void Cancel_exige_motivo_no_tiene_pago_y_es_terminal()
     {
-        FluentActions.Invoking(() => Pending().Cancel(Requester, "")).Should().Throw<ArgumentException>();
+        FluentActions
+            .Invoking(() => Pending().Cancel(Requester, ""))
+            .Should()
+            .Throw<ArgumentException>();
 
         var request = Pending();
         request.Cancel(Requester, "Ya no se necesita");
 
         request.Status.Should().Be(CashFundingRequestStatus.Cancelled);
         (request.ResolvedByUserId, request.ResolutionReason, request.SupplierPaymentId)
-            .Should().Be(((Guid?)Requester, "Ya no se necesita", (Guid?)null));
-        FluentActions.Invoking(() => request.Fulfill(Cashier, Guid.NewGuid())).Should().Throw<DomainRuleViolationException>();
-        FluentActions.Invoking(() => request.Reject(Cashier, "x")).Should().Throw<DomainRuleViolationException>();
+            .Should()
+            .Be(((Guid?)Requester, "Ya no se necesita", (Guid?)null));
+        FluentActions
+            .Invoking(() => request.Fulfill(Cashier, Guid.NewGuid()))
+            .Should()
+            .Throw<DomainRuleViolationException>();
+        FluentActions
+            .Invoking(() => request.Reject(Cashier, "x"))
+            .Should()
+            .Throw<DomainRuleViolationException>();
     }
 
     [Fact]
     public void Motivo_mayor_al_maximo_se_rechaza()
     {
-        FluentActions.Invoking(() => Pending().Reject(Cashier, new string('x', CashFundingRequest.ResolutionReasonMaxLen + 1)))
-            .Should().Throw<ArgumentException>();
+        FluentActions
+            .Invoking(() =>
+                Pending()
+                    .Reject(Cashier, new string('x', CashFundingRequest.ResolutionReasonMaxLen + 1))
+            )
+            .Should()
+            .Throw<ArgumentException>();
     }
 }

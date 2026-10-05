@@ -109,7 +109,12 @@ public sealed class SupplierImportProcessorTests
         var result = await processor.ValidateRowAsync(1, row, false, CancellationToken.None);
 
         result.HasBlockingIssue.Should().BeTrue();
-        result.Issues.Should().Contain(i => i.Code == "MISSING_REQUIRED_FIELD" && i.FieldName == SupplierImportColumns.PaymentTermCode);
+        result
+            .Issues.Should()
+            .Contain(i =>
+                i.Code == "MISSING_REQUIRED_FIELD"
+                && i.FieldName == SupplierImportColumns.PaymentTermCode
+            );
     }
 
     [Fact]
@@ -151,9 +156,11 @@ public sealed class SupplierImportProcessorTests
         var result = await processor.ValidateRowAsync(1, row, false, CancellationToken.None);
 
         result.HasBlockingIssue.Should().BeFalse();
-        result.Issues.Should().ContainSingle(i =>
-            i.Code == "MISSING_CONTACT_INFO" && i.Severity == ImportSeverity.Warning
-        );
+        result
+            .Issues.Should()
+            .ContainSingle(i =>
+                i.Code == "MISSING_CONTACT_INFO" && i.Severity == ImportSeverity.Warning
+            );
     }
 
     // ── ConfirmRowAsync — ADR-033: el destino de la condición de pago es
@@ -180,7 +187,9 @@ public sealed class SupplierImportProcessorTests
         var processor = BuildProcessor();
 
         _mediator
-            .Setup(m => m.Send(It.IsAny<CreateBusinessPartnerCommand>(), It.IsAny<CancellationToken>()))
+            .Setup(m =>
+                m.Send(It.IsAny<CreateBusinessPartnerCommand>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(
                 Result<BusinessPartnerSummaryDto>.Success(
                     new BusinessPartnerSummaryDto(
@@ -197,7 +206,9 @@ public sealed class SupplierImportProcessorTests
                 )
             );
         _mediator
-            .Setup(m => m.Send(It.IsAny<AssignBusinessPartnerRoleCommand>(), It.IsAny<CancellationToken>()))
+            .Setup(m =>
+                m.Send(It.IsAny<AssignBusinessPartnerRoleCommand>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(
                 Result<BusinessPartnerRoleDto>.Success(
                     new BusinessPartnerRoleDto(
@@ -217,18 +228,29 @@ public sealed class SupplierImportProcessorTests
         UpsertCompanyBpPurchaseSettingsCommand? capturedCommand = null;
         _mediator
             .Setup(m =>
-                m.Send(It.IsAny<UpsertCompanyBpPurchaseSettingsCommand>(), It.IsAny<CancellationToken>())
+                m.Send(
+                    It.IsAny<UpsertCompanyBpPurchaseSettingsCommand>(),
+                    It.IsAny<CancellationToken>()
+                )
             )
             .Callback<object, CancellationToken>(
                 (cmd, _) => capturedCommand = (UpsertCompanyBpPurchaseSettingsCommand)cmd
             )
             .ReturnsAsync(
                 Result<CompanyBpPurchaseSettingsDto>.Success(
-                    new CompanyBpPurchaseSettingsDto(Guid.NewGuid(), businessPartnerId, PaymentTermId, true)
+                    new CompanyBpPurchaseSettingsDto(
+                        Guid.NewGuid(),
+                        businessPartnerId,
+                        PaymentTermId,
+                        true
+                    )
                 )
             );
 
-        var result = await processor.ConfirmRowAsync(ValidParsedRowJson(PaymentTermId), CancellationToken.None);
+        var result = await processor.ConfirmRowAsync(
+            ValidParsedRowJson(PaymentTermId),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         capturedCommand.Should().NotBeNull();
@@ -243,7 +265,9 @@ public sealed class SupplierImportProcessorTests
         var processor = BuildProcessor();
 
         _mediator
-            .Setup(m => m.Send(It.IsAny<CreateBusinessPartnerCommand>(), It.IsAny<CancellationToken>()))
+            .Setup(m =>
+                m.Send(It.IsAny<CreateBusinessPartnerCommand>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(
                 Result<BusinessPartnerSummaryDto>.Success(
                     new BusinessPartnerSummaryDto(
@@ -260,7 +284,9 @@ public sealed class SupplierImportProcessorTests
                 )
             );
         _mediator
-            .Setup(m => m.Send(It.IsAny<AssignBusinessPartnerRoleCommand>(), It.IsAny<CancellationToken>()))
+            .Setup(m =>
+                m.Send(It.IsAny<AssignBusinessPartnerRoleCommand>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(
                 Result<BusinessPartnerRoleDto>.Success(
                     new BusinessPartnerRoleDto(
@@ -279,7 +305,10 @@ public sealed class SupplierImportProcessorTests
             );
         _mediator
             .Setup(m =>
-                m.Send(It.IsAny<UpsertCompanyBpPurchaseSettingsCommand>(), It.IsAny<CancellationToken>())
+                m.Send(
+                    It.IsAny<UpsertCompanyBpPurchaseSettingsCommand>(),
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(
                 Result<CompanyBpPurchaseSettingsDto>.ValidationFailure(
@@ -287,7 +316,10 @@ public sealed class SupplierImportProcessorTests
                 )
             );
 
-        var result = await processor.ConfirmRowAsync(ValidParsedRowJson(PaymentTermId), CancellationToken.None);
+        var result = await processor.ConfirmRowAsync(
+            ValidParsedRowJson(PaymentTermId),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("condición de pago");

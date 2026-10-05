@@ -51,7 +51,11 @@ public sealed class ExpensesPostingRuleSeedIntegrationTests : IAsyncLifetime
         await db.Database.MigrateAsync();
 
         _createdBy = Guid.NewGuid();
-        var tenant = Tenant.Create("EXPSEED Tenant", $"expseed-{Guid.NewGuid():N}"[..16], _createdBy);
+        var tenant = Tenant.Create(
+            "EXPSEED Tenant",
+            $"expseed-{Guid.NewGuid():N}"[..16],
+            _createdBy
+        );
         var company = Company.CreateManaged(
             tenant.Id,
             "1790012345001",
@@ -69,8 +73,14 @@ public sealed class ExpensesPostingRuleSeedIntegrationTests : IAsyncLifetime
         // Company nueva: Plan de Cuentas retail + AccountingPeriod + MinimalPostingRules (incluye
         // "Expenses"/"DocumentConfirmed" desde ERP-POSTING-RULES-EXPENSES-RETENTIONS-SEED-01). Sin
         // ningún fixture local de PostingRule.
-        var bootstrapStep = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
-        await bootstrapStep.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _createdBy));
+        var bootstrapStep = new AccountingBootstrapStep(
+            db,
+            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+            NullLogger<AccountingBootstrapStep>.Instance
+        );
+        await bootstrapStep.ExecuteAsync(
+            new CompanyBootstrapContext(_tenantId, _companyId, _createdBy)
+        );
     }
 
     public async Task DisposeAsync() => await _postgres.DisposeAsync();
@@ -95,10 +105,18 @@ public sealed class ExpensesPostingRuleSeedIntegrationTests : IAsyncLifetime
             .UseNpgsql(_postgres.GetConnectionString() + ";Include Error Detail=true")
             .EnableSensitiveDataLogging()
             .Options;
-        var db = new ErpDbContext(options, new FixedCurrentTenant(_tenantId), deferred, new FixedCurrentCompany(_companyId));
+        var db = new ErpDbContext(
+            options,
+            new FixedCurrentTenant(_tenantId),
+            deferred,
+            new FixedCurrentCompany(_companyId)
+        );
 
         var services = new ServiceCollection();
-        services.AddScoped<ERP.Application.Common.Services.ICompanyClock, ERP.Infrastructure.Persistence.Services.CompanyClock>();
+        services.AddScoped<
+            ERP.Application.Common.Services.ICompanyClock,
+            ERP.Infrastructure.Persistence.Services.CompanyClock
+        >();
         services.AddLogging();
         services.AddSingleton(db);
         services.AddSingleton<ICurrentTenant>(new FixedCurrentTenant(_tenantId));
@@ -110,7 +128,9 @@ public sealed class ExpensesPostingRuleSeedIntegrationTests : IAsyncLifetime
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<IPostingEngine, PostingEngine>();
         services.AddMediatR(cfg =>
-            cfg.RegisterServicesFromAssembly(typeof(ExpenseDocumentConfirmedPostingTranslator).Assembly)
+            cfg.RegisterServicesFromAssembly(
+                typeof(ExpenseDocumentConfirmedPostingTranslator).Assembly
+            )
         );
 
         var provider = services.BuildServiceProvider();
@@ -124,9 +144,9 @@ public sealed class ExpensesPostingRuleSeedIntegrationTests : IAsyncLifetime
     {
         var (db, publisher) = BuildWiredContext();
 
-        var vatAccountId = (
-            await db.Accounts.Where(a => a.CompanyId == _companyId).ToListAsync()
-        ).Single(a => a.Code.Value == "6.1.01.001").Id;
+        var vatAccountId = (await db.Accounts.Where(a => a.CompanyId == _companyId).ToListAsync())
+            .Single(a => a.Code.Value == "6.1.01.001")
+            .Id;
         var expenseDocumentId = Guid.NewGuid();
         var evt = new ExpenseDocumentConfirmedEvent(
             _tenantId,
@@ -139,7 +159,12 @@ public sealed class ExpensesPostingRuleSeedIntegrationTests : IAsyncLifetime
             grandTotal: 115m,
             lineAllocations:
             [
-                new ExpenseDocumentConfirmedLineAllocation(Guid.NewGuid(), vatAccountId, 100m, "EXPSEED linea"),
+                new ExpenseDocumentConfirmedLineAllocation(
+                    Guid.NewGuid(),
+                    vatAccountId,
+                    100m,
+                    "EXPSEED linea"
+                ),
             ]
         );
 
@@ -150,22 +175,41 @@ public sealed class ExpensesPostingRuleSeedIntegrationTests : IAsyncLifetime
         await db.SaveChangesAsync();
 
         await using var verifyDb = CreateContext();
-        var entry = await verifyDb.JournalEntries.Include(x => x.Lines)
+        var entry = await verifyDb
+            .JournalEntries.Include(x => x.Lines)
             .SingleAsync(x => x.SourceModule == "Expenses" && x.SourceEventId == expenseDocumentId);
 
-        entry.Lines.Sum(l => l.Debit).Should().Be(entry.Lines.Sum(l => l.Credit), "el asiento debe quedar balanceado (Σdebe == Σhaber)");
+        entry
+            .Lines.Sum(l => l.Debit)
+            .Should()
+            .Be(
+                entry.Lines.Sum(l => l.Credit),
+                "el asiento debe quedar balanceado (Σdebe == Σhaber)"
+            );
         entry.Lines.Sum(l => l.Debit).Should().Be(115m);
 
-        var accountsById = await verifyDb.Accounts
-            .Where(a => a.CompanyId == _companyId)
+        var accountsById = await verifyDb
+            .Accounts.Where(a => a.CompanyId == _companyId)
             .ToDictionaryAsync(a => a.Id, a => a.Code.Value);
 
         // Debe = allocation dinámica (línea de gasto) + IVA crédito tributario de la regla sembrada.
-        var vatLine = entry.Lines.Single(l => l.Debit > 0 && accountsById[l.AccountId] == "1.1.05.001");
-        vatLine.Debit.Should().Be(15m, "Debe = IVA crédito tributario, cuenta del plan sembrado, no un fixture local");
+        var vatLine = entry.Lines.Single(l =>
+            l.Debit > 0 && accountsById[l.AccountId] == "1.1.05.001"
+        );
+        vatLine
+            .Debit.Should()
+            .Be(
+                15m,
+                "Debe = IVA crédito tributario, cuenta del plan sembrado, no un fixture local"
+            );
 
         var payableLine = entry.Lines.Single(l => l.Credit > 0);
-        accountsById[payableLine.AccountId].Should().Be("2.1.01.001", "Haber = CxP proveedores, cuenta del plan sembrado, no un fixture local");
+        accountsById[payableLine.AccountId]
+            .Should()
+            .Be(
+                "2.1.01.001",
+                "Haber = CxP proveedores, cuenta del plan sembrado, no un fixture local"
+            );
         payableLine.Credit.Should().Be(115m);
     }
 
@@ -182,16 +226,18 @@ public sealed class ExpensesPostingRuleSeedIntegrationTests : IAsyncLifetime
         await using (var setupDb = CreateContext())
         {
             var rule = await setupDb.PostingRules.SingleAsync(r =>
-                r.CompanyId == _companyId && r.SourceModule == "Expenses" && r.FactType == "DocumentConfirmed"
+                r.CompanyId == _companyId
+                && r.SourceModule == "Expenses"
+                && r.FactType == "DocumentConfirmed"
             );
             setupDb.PostingRules.Remove(rule);
             await setupDb.SaveChangesAsync();
         }
 
         var (db, publisher) = BuildWiredContext();
-        var vatAccountId = (
-            await db.Accounts.Where(a => a.CompanyId == _companyId).ToListAsync()
-        ).Single(a => a.Code.Value == "6.1.01.001").Id;
+        var vatAccountId = (await db.Accounts.Where(a => a.CompanyId == _companyId).ToListAsync())
+            .Single(a => a.Code.Value == "6.1.01.001")
+            .Id;
 
         var evt = new ExpenseDocumentConfirmedEvent(
             _tenantId,
@@ -204,7 +250,12 @@ public sealed class ExpensesPostingRuleSeedIntegrationTests : IAsyncLifetime
             grandTotal: 115m,
             lineAllocations:
             [
-                new ExpenseDocumentConfirmedLineAllocation(Guid.NewGuid(), vatAccountId, 100m, "EXPSEED linea"),
+                new ExpenseDocumentConfirmedLineAllocation(
+                    Guid.NewGuid(),
+                    vatAccountId,
+                    100m,
+                    "EXPSEED linea"
+                ),
             ]
         );
 
@@ -220,7 +271,10 @@ public sealed class ExpensesPostingRuleSeedIntegrationTests : IAsyncLifetime
         public Task Publish(object notification, CancellationToken cancellationToken = default) =>
             Inner!.Publish(notification, cancellationToken);
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
             where TNotification : INotification => Inner!.Publish(notification, cancellationToken);
     }
 
@@ -239,9 +293,13 @@ public sealed class ExpensesPostingRuleSeedIntegrationTests : IAsyncLifetime
 
     private sealed class NoOpPublisher : IPublisher
     {
-        public Task Publish(object notification, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
             where TNotification : INotification => Task.CompletedTask;
     }
 }

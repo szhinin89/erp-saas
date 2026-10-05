@@ -1,3 +1,4 @@
+using System.Text.Json;
 using ERP.API.Middleware;
 using ERP.Domain.Exceptions;
 using FluentAssertions;
@@ -8,7 +9,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging.Abstractions;
-using System.Text.Json;
 
 namespace ERP.API.Tests;
 

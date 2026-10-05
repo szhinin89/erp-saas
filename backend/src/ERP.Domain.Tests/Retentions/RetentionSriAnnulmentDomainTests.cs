@@ -28,13 +28,24 @@ public sealed class RetentionSriAnnulmentDomainTests
     private static ElectronicDocument AuthorizedDocument()
     {
         var document = ElectronicDocument.Create(
-            TenantId, CompanyId, ElectronicDocumentType.Retention, "Retentions", Guid.NewGuid(), UserId);
+            TenantId,
+            CompanyId,
+            ElectronicDocumentType.Retention,
+            "Retentions",
+            Guid.NewGuid(),
+            UserId
+        );
         document.MarkXmlGenerated("draft.xml", "2.0.0", "2.0.0", UserId);
         document.MarkSigned("signed.xml", AccessKey.Create(new string('5', 49)), UserId);
         document.MarkDispatching(UserId);
         document.MarkSent(UserId);
         document.MarkReceived(UserId);
-        document.MarkAuthorized(AuthorizationNumber.Create(new string('5', 49)), DateTime.UtcNow, null, UserId);
+        document.MarkAuthorized(
+            AuthorizationNumber.Create(new string('5', 49)),
+            DateTime.UtcNow,
+            null,
+            UserId
+        );
         return document;
     }
 
@@ -44,16 +55,41 @@ public sealed class RetentionSriAnnulmentDomainTests
     private static RetentionDocument IssuedRetention(DateOnly? issueDate = null)
     {
         var retention = RetentionDocument.Create(
-            TenantId, CompanyId, Guid.NewGuid(), RetentionSourceDocumentType.PurchaseInvoice,
-            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), UserId);
-        retention.AddLine(RetentionDocumentLine.Create(retention.Id, TenantId, RetentionTaxType.Vat, "725", "IVA 30%", 15m, 30m, 4.5m));
+            TenantId,
+            CompanyId,
+            Guid.NewGuid(),
+            RetentionSourceDocumentType.PurchaseInvoice,
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            UserId
+        );
+        retention.AddLine(
+            RetentionDocumentLine.Create(
+                retention.Id,
+                TenantId,
+                RetentionTaxType.Vat,
+                "725",
+                "IVA 30%",
+                15m,
+                30m,
+                4.5m
+            )
+        );
         retention.Issue("001-001-000000007", issueDate ?? IssueDate, UserId);
         return retention;
     }
 
     private static RetentionAnnulmentRequest NewRequest(DateOnly? issueDate = null) =>
         RetentionAnnulmentRequest.Create(
-            IssuedRetention(issueDate), Guid.NewGuid(), new string('5', 49), "1791352688001", "Proveedor", "Error de digitación", UserId);
+            IssuedRetention(issueDate),
+            Guid.NewGuid(),
+            new string('5', 49),
+            "1791352688001",
+            "Proveedor",
+            "Error de digitación",
+            UserId
+        );
 
     private static RetentionAnnulmentRequest SubmittedRequest()
     {
@@ -62,11 +98,24 @@ public sealed class RetentionSriAnnulmentDomainTests
         return request;
     }
 
-    private static void SriSays(RetentionAnnulmentRequest request, SriFiscalStatus status, string raw) =>
+    private static void SriSays(
+        RetentionAnnulmentRequest request,
+        SriFiscalStatus status,
+        string raw
+    ) =>
         request.RecordSriCheck(DateTime.UtcNow, SriStatusQueryOutcome.Success, status, raw, UserId);
 
-    private static void SriQueryFails(RetentionAnnulmentRequest request, SriStatusQueryOutcome outcome) =>
-        request.RecordSriCheck(DateTime.UtcNow, outcome, SriFiscalStatus.Unknown, "RECHAZADA", UserId);
+    private static void SriQueryFails(
+        RetentionAnnulmentRequest request,
+        SriStatusQueryOutcome outcome
+    ) =>
+        request.RecordSriCheck(
+            DateTime.UtcNow,
+            outcome,
+            SriFiscalStatus.Unknown,
+            "RECHAZADA",
+            UserId
+        );
 
     // ── Comprobante electrónico ────────────────────────────────────────────────────────────
 
@@ -92,9 +141,15 @@ public sealed class RetentionSriAnnulmentDomainTests
         document.CurrentState.Should().Be(ElectronicDocumentState.AnnulmentPending);
         document.AnnulmentRequestId.Should().Be(requestId);
         document.AuthorizationNumber.Should().NotBeNull("la evidencia electrónica no se modifica");
-        ((Action)(() => document.MarkRetryAttempted(UserId))).Should().Throw<DomainRuleViolationException>();
-        ((Action)(() => document.MarkDeadLetter("x", UserId))).Should().Throw<DomainRuleViolationException>();
-        ((Action)(() => document.MarkDiscarded("x", UserId))).Should().Throw<DomainRuleViolationException>();
+        ((Action)(() => document.MarkRetryAttempted(UserId)))
+            .Should()
+            .Throw<DomainRuleViolationException>();
+        ((Action)(() => document.MarkDeadLetter("x", UserId)))
+            .Should()
+            .Throw<DomainRuleViolationException>();
+        ((Action)(() => document.MarkDiscarded("x", UserId)))
+            .Should()
+            .Throw<DomainRuleViolationException>();
     }
 
     [Fact]
@@ -118,7 +173,8 @@ public sealed class RetentionSriAnnulmentDomainTests
         var requestId = Guid.NewGuid();
         document.MarkAnnulmentPending(requestId, UserId);
 
-        var wrongRequest = () => document.ConfirmExternalAnnulment(Guid.NewGuid(), Evidence(), UserId);
+        var wrongRequest = () =>
+            document.ConfirmExternalAnnulment(Guid.NewGuid(), Evidence(), UserId);
         wrongRequest.Should().Throw<DomainRuleViolationException>();
 
         document.ConfirmExternalAnnulment(requestId, Evidence(), UserId);
@@ -129,11 +185,17 @@ public sealed class RetentionSriAnnulmentDomainTests
     [Fact]
     public void Evidencia_sin_referencia_o_sin_fecha_es_invalida()
     {
-        ((Action)(() => new ExternalAnnulmentEvidence(new DateOnly(2026, 10, 3), " ", UserId))).Should().Throw<ArgumentException>();
-        ((Action)(() => new ExternalAnnulmentEvidence(default, "REF", UserId))).Should().Throw<ArgumentException>();
+        ((Action)(() => new ExternalAnnulmentEvidence(new DateOnly(2026, 10, 3), " ", UserId)))
+            .Should()
+            .Throw<ArgumentException>();
+        ((Action)(() => new ExternalAnnulmentEvidence(default, "REF", UserId)))
+            .Should()
+            .Throw<ArgumentException>();
         // 01B: la evidencia la obtiene el ERP del SRI; Guid.Empty = verificación automática (job).
-        new ExternalAnnulmentEvidence(new DateOnly(2026, 10, 3), "REF", Guid.Empty).Describe()
-            .Should().Contain("ConsultaComprobante");
+        new ExternalAnnulmentEvidence(new DateOnly(2026, 10, 3), "REF", Guid.Empty)
+            .Describe()
+            .Should()
+            .Contain("ConsultaComprobante");
     }
 
     [Fact]
@@ -155,9 +217,19 @@ public sealed class RetentionSriAnnulmentDomainTests
     [InlineData(2026, 9, 17, 2026, 10, 7)]
     [InlineData(2026, 1, 31, 2026, 2, 7)]
     [InlineData(2026, 12, 15, 2027, 1, 7)]
-    public void Plazo_ordinario_es_el_dia_7_del_mes_siguiente_a_la_emision(int y, int m, int d, int ey, int em, int ed)
+    public void Plazo_ordinario_es_el_dia_7_del_mes_siguiente_a_la_emision(
+        int y,
+        int m,
+        int d,
+        int ey,
+        int em,
+        int ed
+    )
     {
-        RetentionAnnulmentDeadline.Ordinary(new DateOnly(y, m, d)).Should().Be(new DateOnly(ey, em, ed));
+        RetentionAnnulmentDeadline
+            .Ordinary(new DateOnly(y, m, d))
+            .Should()
+            .Be(new DateOnly(ey, em, ed));
         NewRequest(new DateOnly(y, m, d)).OrdinaryDeadline.Should().Be(new DateOnly(ey, em, ed));
     }
 
@@ -167,7 +239,16 @@ public sealed class RetentionSriAnnulmentDomainTests
         var retention = IssuedRetention();
         retention.Cancel("x", UserId);
 
-        var act = () => RetentionAnnulmentRequest.Create(retention, Guid.NewGuid(), new string('5', 49), "1", "P", "m", UserId);
+        var act = () =>
+            RetentionAnnulmentRequest.Create(
+                retention,
+                Guid.NewGuid(),
+                new string('5', 49),
+                "1",
+                "P",
+                "m",
+                UserId
+            );
 
         act.Should().Throw<DomainRuleViolationException>();
     }
@@ -183,8 +264,15 @@ public sealed class RetentionSriAnnulmentDomainTests
         request.Status.Should().Be(RetentionAnnulmentStatus.PendingSriResolution);
 
         SriSays(request, SriFiscalStatus.Annulled, "ANULADO");
-        request.AcceptSriAnnulment(new DateOnly(2026, 9, 22), "ConsultaComprobante ANULADO", "<soap/>", UserId)
-            .Should().BeTrue();
+        request
+            .AcceptSriAnnulment(
+                new DateOnly(2026, 9, 22),
+                "ConsultaComprobante ANULADO",
+                "<soap/>",
+                UserId
+            )
+            .Should()
+            .BeTrue();
         request.Status.Should().Be(RetentionAnnulmentStatus.Accepted);
         request.SriAnnulmentEvidence.Should().Be("<soap/>");
         request.LastSriRawStatus.Should().Be("ANULADO");
@@ -203,7 +291,10 @@ public sealed class RetentionSriAnnulmentDomainTests
         SriSays(request, SriFiscalStatus.Annulled, "ANULADO");
         request.AcceptSriAnnulment(new DateOnly(2026, 9, 22), "REF", null, UserId);
 
-        request.AcceptSriAnnulment(new DateOnly(2026, 9, 23), "OTRA", null, UserId).Should().BeFalse();
+        request
+            .AcceptSriAnnulment(new DateOnly(2026, 9, 23), "OTRA", null, UserId)
+            .Should()
+            .BeFalse();
 
         request.EvidenceReference.Should().Be("REF");
         request.ResolvedOn.Should().Be(new DateOnly(2026, 9, 22));
@@ -231,18 +322,37 @@ public sealed class RetentionSriAnnulmentDomainTests
     [InlineData(SriStatusQueryOutcome.Timeout)]
     [InlineData(SriStatusQueryOutcome.Unavailable)]
     [InlineData(SriStatusQueryOutcome.Unknown)]
-    public void Consulta_fallida_no_es_estado_fiscal_ni_permite_aceptar(SriStatusQueryOutcome outcome)
+    public void Consulta_fallida_no_es_estado_fiscal_ni_permite_aceptar(
+        SriStatusQueryOutcome outcome
+    )
     {
         var request = SubmittedRequest();
         SriSays(request, SriFiscalStatus.Annulled, "ANULADO");
         SriQueryFails(request, outcome);
 
         request.LastSriQueryOutcome.Should().Be(outcome);
-        request.LastSriFiscalStatus.Should().Be(SriFiscalStatus.Unknown, "una consulta fallida no informa estado fiscal");
+        request
+            .LastSriFiscalStatus.Should()
+            .Be(SriFiscalStatus.Unknown, "una consulta fallida no informa estado fiscal");
         ((Action)(() => request.AcceptSriAnnulment(new DateOnly(2026, 9, 22), "REF", null, UserId)))
-            .Should().Throw<DomainRuleViolationException>("solo la ÚLTIMA consulta, exitosa y ANULADO, acepta");
-        ((Action)(() => request.RecordSriCheck(DateTime.UtcNow, outcome, SriFiscalStatus.Annulled, "x", UserId)))
-            .Should().Throw<ArgumentException>("una consulta fallida nunca trae estado fiscal");
+            .Should()
+            .Throw<DomainRuleViolationException>(
+                "solo la ÚLTIMA consulta, exitosa y ANULADO, acepta"
+            );
+        (
+            (Action)(
+                () =>
+                    request.RecordSriCheck(
+                        DateTime.UtcNow,
+                        outcome,
+                        SriFiscalStatus.Annulled,
+                        "x",
+                        UserId
+                    )
+            )
+        )
+            .Should()
+            .Throw<ArgumentException>("una consulta fallida nunca trae estado fiscal");
         request.Status.Should().Be(RetentionAnnulmentStatus.PendingSriResolution);
     }
 
@@ -251,7 +361,8 @@ public sealed class RetentionSriAnnulmentDomainTests
     {
         var request = NewRequest();
         ((Action)(() => SriSays(request, SriFiscalStatus.Authorized, "AUTORIZADO")))
-            .Should().Throw<DomainRuleViolationException>("todavía no se presentó al SRI");
+            .Should()
+            .Throw<DomainRuleViolationException>("todavía no se presentó al SRI");
 
         request.MarkSubmitted(new DateOnly(2026, 9, 20), null, null, UserId);
         request.ClearDomainEvents();
@@ -271,11 +382,17 @@ public sealed class RetentionSriAnnulmentDomainTests
         pending.Status.Should().Be(RetentionAnnulmentStatus.Abandoned);
 
         var submitted = SubmittedRequest();
-        submitted.CanBeAbandoned.Should().BeFalse("sin consulta exitosa el SRI todavía podría anularlo");
-        ((Action)(() => submitted.Abandon("x", UserId))).Should().Throw<DomainRuleViolationException>();
+        submitted
+            .CanBeAbandoned.Should()
+            .BeFalse("sin consulta exitosa el SRI todavía podría anularlo");
+        ((Action)(() => submitted.Abandon("x", UserId)))
+            .Should()
+            .Throw<DomainRuleViolationException>();
 
         SriSays(submitted, SriFiscalStatus.PendingAnnulment, "PENDIENTE DE ANULAR");
-        ((Action)(() => submitted.Abandon("x", UserId))).Should().Throw<DomainRuleViolationException>();
+        ((Action)(() => submitted.Abandon("x", UserId)))
+            .Should()
+            .Throw<DomainRuleViolationException>();
 
         SriSays(submitted, SriFiscalStatus.Authorized, "AUTORIZADO");
         submitted.CanBeAbandoned.Should().BeTrue();
@@ -288,8 +405,18 @@ public sealed class RetentionSriAnnulmentDomainTests
     private static AccountsPayable Payable()
     {
         var payable = AccountsPayable.CreateFromOrigin(
-            TenantId, CompanyId, Guid.NewGuid(), Guid.NewGuid(), AccountsPayableOriginType.PurchaseInvoice,
-            Guid.NewGuid(), "01", "001-001-000000001", IssueDate, IssueDate, UserId);
+            TenantId,
+            CompanyId,
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            AccountsPayableOriginType.PurchaseInvoice,
+            Guid.NewGuid(),
+            "01",
+            "001-001-000000001",
+            IssueDate,
+            IssueDate,
+            UserId
+        );
         payable.AddInstallment(1, new DateOnly(2026, 10, 17), 115m);
         payable.ApplyRetention(4.5m, UserId);
         return payable;
@@ -312,8 +439,11 @@ public sealed class RetentionSriAnnulmentDomainTests
         };
 
         foreach (var operation in operations)
-            operation.Should().Throw<RetentionAnnulmentPendingException>()
-                .Which.ApiCode.Should().Be("RETENTION_ANNULMENT_PENDING");
+            operation
+                .Should()
+                .Throw<RetentionAnnulmentPendingException>()
+                .Which.ApiCode.Should()
+                .Be("RETENTION_ANNULMENT_PENDING");
         payable.PaidAmount.Should().Be(0m);
         payable.OutstandingAmount.Should().Be(110.5m);
     }
@@ -336,13 +466,17 @@ public sealed class RetentionSriAnnulmentDomainTests
     {
         var paid = Payable();
         paid.RegisterPayment(10m, UserId);
-        ((Action)(() => paid.PlaceAnnulmentHold(Guid.NewGuid(), UserId))).Should().Throw<DomainRuleViolationException>();
+        ((Action)(() => paid.PlaceAnnulmentHold(Guid.NewGuid(), UserId)))
+            .Should()
+            .Throw<DomainRuleViolationException>();
 
         var held = Payable();
         var requestId = Guid.NewGuid();
         held.PlaceAnnulmentHold(requestId, UserId);
         held.PlaceAnnulmentHold(requestId, UserId);
-        ((Action)(() => held.PlaceAnnulmentHold(Guid.NewGuid(), UserId))).Should().Throw<RetentionAnnulmentPendingException>();
+        ((Action)(() => held.PlaceAnnulmentHold(Guid.NewGuid(), UserId)))
+            .Should()
+            .Throw<RetentionAnnulmentPendingException>();
     }
 
     [Fact]

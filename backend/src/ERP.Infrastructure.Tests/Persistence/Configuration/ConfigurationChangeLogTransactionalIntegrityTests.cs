@@ -89,7 +89,9 @@ public sealed class ConfigurationChangeLogTransactionalIntegrityTests : IAsyncLi
         resolver = new Mock<ISalesFiscalPolicyResolver>();
         resolver
             .Setup(r => r.GetEffectivePolicyAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new SalesFiscalPolicyResult(true, 0m, ConsumerFinalMaxAmountSource.Manual, null));
+            .ReturnsAsync(
+                new SalesFiscalPolicyResult(true, 0m, ConsumerFinalMaxAmountSource.Manual, null)
+            );
 
         return new UpdateConsumerFinalMaxAmountCommandHandler(
             repo,
@@ -115,7 +117,10 @@ public sealed class ConfigurationChangeLogTransactionalIntegrityTests : IAsyncLi
         await using (var db = CreateContext(realAuthenticatedUserId))
         {
             var handler = BuildHandler(db, realAuthenticatedUserId, out _);
-            var result = await handler.Handle(new UpdateConsumerFinalMaxAmountCommand(250.00m), default);
+            var result = await handler.Handle(
+                new UpdateConsumerFinalMaxAmountCommand(250.00m),
+                default
+            );
             result.IsSuccess.Should().BeTrue();
         }
 

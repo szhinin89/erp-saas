@@ -11,7 +11,8 @@ namespace ERP.Infrastructure.Persistence.Configurations.SriCatalogs;
 /// builders o providers. Reglas de evolución: solo altas y cierre de <c>ValidUntil</c>; jamás se modifica el
 /// porcentaje, el código o la fuente de una versión existente (protegido por <c>SriCatalogComplianceTests</c>).
 /// </summary>
-public class SriRetentionCodeVersionConfiguration : IEntityTypeConfiguration<SriRetentionCodeVersion>
+public class SriRetentionCodeVersionConfiguration
+    : IEntityTypeConfiguration<SriRetentionCodeVersion>
 {
     public void Configure(EntityTypeBuilder<SriRetentionCodeVersion> builder)
     {
@@ -43,7 +44,10 @@ public class SriRetentionCodeVersionConfiguration : IEntityTypeConfiguration<Sri
             .Property(x => x.AtsCode)
             .HasColumnName("ats_code")
             .HasMaxLength(SriRetentionCodeVersion.AtsCodeMaxLen);
-        builder.Property(x => x.NormativeSourceId).HasColumnName("normative_source_id").IsRequired();
+        builder
+            .Property(x => x.NormativeSourceId)
+            .HasColumnName("normative_source_id")
+            .IsRequired();
 
         builder
             .HasOne<SriRetentionCode>()
@@ -69,8 +73,10 @@ public class SriRetentionCodeVersionConfiguration : IEntityTypeConfiguration<Sri
     }
 
     private static readonly Guid Table20 = SriNormativeSourceConfiguration.FichaV234Table20Id;
-    private static readonly Guid AtsIncome = SriNormativeSourceConfiguration.AtsIncomeRetentionCatalogId;
-    private static readonly Guid AtsIncome20260806 = SriNormativeSourceConfiguration.AtsIncomeTable310From20260806Id;
+    private static readonly Guid AtsIncome =
+        SriNormativeSourceConfiguration.AtsIncomeRetentionCatalogId;
+    private static readonly Guid AtsIncome20260806 =
+        SriNormativeSourceConfiguration.AtsIncomeTable310From20260806Id;
 
     /// <summary>Último día de las versiones de Renta heredadas (no verificadas); el bloque ATS verificado rige desde el 06/08/2026.</summary>
     public static readonly DateOnly LegacyIncomeValidUntil = new(2026, 8, 5);
@@ -78,51 +84,216 @@ public class SriRetentionCodeVersionConfiguration : IEntityTypeConfiguration<Sri
     public static readonly DateOnly AtsIncome20260806ValidFrom = new(2026, 8, 6);
 
     private static SriRetentionCodeVersion[] Seed() =>
-    [
-        // ── IVA — Ficha Técnica v2.34, Tabla 20 (confirmado contra el PDF oficial, página 33) ──────────
-        Iva("41000000-0000-0000-0000-000000000001", "10000000-0000-0000-0000-000000000001", 10.00m, "9"), // 721
-        Iva("41000000-0000-0000-0000-000000000002", "10000000-0000-0000-0000-000000000002", 20.00m, "10"), // 723
-        Iva("41000000-0000-0000-0000-000000000003", "10000000-0000-0000-0000-000000000003", 30.00m, "1"), // 725
-        Iva("41000000-0000-0000-0000-000000000004", "10000000-0000-0000-0000-000000000004", 70.00m, "2"), // 726
-        Iva("41000000-0000-0000-0000-000000000005", "10000000-0000-0000-0000-000000000005", 100.00m, "3"), // 727
-        // 728 (15 %): la Tabla 20 no define una retención de IVA del 15 % → sin XmlCode: no emitible
-        // (fail-closed) hasta que exista fuente oficial. El concepto se conserva (snapshots/defaults).
-        Iva("41000000-0000-0000-0000-000000000006", "10000000-0000-0000-0000-000000000006", 15.00m, null),
-        Iva("41000000-0000-0000-0000-000000000007", "10000000-0000-0000-0000-000000000007", 50.00m, "11"), // IVA-50
-        Iva("41000000-0000-0000-0000-000000000008", "10000000-0000-0000-0000-000000000008", 0.00m, "7"), // IVA-0
-        Iva("41000000-0000-0000-0000-000000000009", "10000000-0000-0000-0000-000000000009", 0.00m, "8"), // IVA-NP
-        // ── RENTA — catálogo ATS (referido por la Ficha; NO verificado): mismo código que el concepto,
-        // sin porcentaje exigible. Conserva exactamente el comportamiento previo del XML. ─────────────
-        Income("42000000-0000-0000-0000-000000000001", "20000000-0000-0000-0000-000000000001", "303", LegacyIncomeValidUntil),
-        Income("42000000-0000-0000-0000-000000000002", "20000000-0000-0000-0000-000000000002", "304", LegacyIncomeValidUntil),
-        Income("42000000-0000-0000-0000-000000000003", "20000000-0000-0000-0000-000000000003", "307", LegacyIncomeValidUntil),
-        Income("42000000-0000-0000-0000-000000000004", "20000000-0000-0000-0000-000000000004", "309", LegacyIncomeValidUntil),
-        Income("42000000-0000-0000-0000-000000000005", "20000000-0000-0000-0000-000000000005", "310", LegacyIncomeValidUntil),
-        Income("42000000-0000-0000-0000-000000000006", "20000000-0000-0000-0000-000000000006", "312", LegacyIncomeValidUntil),
-        Income("42000000-0000-0000-0000-000000000007", "20000000-0000-0000-0000-000000000007", "320", LegacyIncomeValidUntil),
-        Income("42000000-0000-0000-0000-000000000008", "20000000-0000-0000-0000-000000000008", "325", LegacyIncomeValidUntil),
-        Income("42000000-0000-0000-0000-000000000009", "20000000-0000-0000-0000-000000000009", "327", LegacyIncomeValidUntil),
-        Income("42000000-0000-0000-0000-000000000010", "20000000-0000-0000-0000-000000000010", "341", LegacyIncomeValidUntil),
-        Income("42000000-0000-0000-0000-000000000011", "20000000-0000-0000-0000-000000000011", "342", LegacyIncomeValidUntil),
-        Income("42000000-0000-0000-0000-000000000012", "20000000-0000-0000-0000-000000000012", "343", LegacyIncomeValidUntil),
-        Income("42000000-0000-0000-0000-000000000013", "20000000-0000-0000-0000-000000000013", "344", LegacyIncomeValidUntil),
-        // ── RENTA — Catálogo ATS oficial, Tabla 3.10 desde 06/08/2026 (verificado contra el XLS). ─────────
-        // 341/342/344 no existen en el bloque vigente: sin versión nueva (no resolubles desde esa fecha).
-        IncomeFixed("43000000-0000-0000-0000-000000000001", "20000000-0000-0000-0000-000000000001", "303", 10.00m),
-        IncomeFixed("43000000-0000-0000-0000-000000000002", "20000000-0000-0000-0000-000000000002", "304", 10.00m),
-        IncomeFixed("43000000-0000-0000-0000-000000000003", "20000000-0000-0000-0000-000000000003", "307", 3.00m),
-        IncomeFixed("43000000-0000-0000-0000-000000000004", "20000000-0000-0000-0000-000000000004", "309", 3.00m),
-        IncomeConditional("43000000-0000-0000-0000-000000000005", "20000000-0000-0000-0000-000000000005", "310", "1 /0 según resolución NAC-DGERCGC26-00000028"),
-        IncomeFixed("43000000-0000-0000-0000-000000000006", "20000000-0000-0000-0000-000000000006", "312", 2.00m),
-        IncomeFixed("43000000-0000-0000-0000-000000000007", "20000000-0000-0000-0000-000000000007", "320", 10.00m),
-        IncomeFixed("43000000-0000-0000-0000-000000000008", "20000000-0000-0000-0000-000000000008", "325", 25.00m),
-        IncomeConditional("43000000-0000-0000-0000-000000000009", "20000000-0000-0000-0000-000000000009", "327", "12 o 14"),
-        IncomeFixed("43000000-0000-0000-0000-000000000012", "20000000-0000-0000-0000-000000000012", "343", 1.00m),
-        // ISD (4580): sin versión — el comprobante de retención del ERP no emite ISD (RetentionTaxType
-        // solo IVA/Renta); cualquier intento de resolverlo falla cerrado por "sin versión vigente".
-    ];
+        [
+            // ── IVA — Ficha Técnica v2.34, Tabla 20 (confirmado contra el PDF oficial, página 33) ──────────
+            Iva(
+                "41000000-0000-0000-0000-000000000001",
+                "10000000-0000-0000-0000-000000000001",
+                10.00m,
+                "9"
+            ), // 721
+            Iva(
+                "41000000-0000-0000-0000-000000000002",
+                "10000000-0000-0000-0000-000000000002",
+                20.00m,
+                "10"
+            ), // 723
+            Iva(
+                "41000000-0000-0000-0000-000000000003",
+                "10000000-0000-0000-0000-000000000003",
+                30.00m,
+                "1"
+            ), // 725
+            Iva(
+                "41000000-0000-0000-0000-000000000004",
+                "10000000-0000-0000-0000-000000000004",
+                70.00m,
+                "2"
+            ), // 726
+            Iva(
+                "41000000-0000-0000-0000-000000000005",
+                "10000000-0000-0000-0000-000000000005",
+                100.00m,
+                "3"
+            ), // 727
+            // 728 (15 %): la Tabla 20 no define una retención de IVA del 15 % → sin XmlCode: no emitible
+            // (fail-closed) hasta que exista fuente oficial. El concepto se conserva (snapshots/defaults).
+            Iva(
+                "41000000-0000-0000-0000-000000000006",
+                "10000000-0000-0000-0000-000000000006",
+                15.00m,
+                null
+            ),
+            Iva(
+                "41000000-0000-0000-0000-000000000007",
+                "10000000-0000-0000-0000-000000000007",
+                50.00m,
+                "11"
+            ), // IVA-50
+            Iva(
+                "41000000-0000-0000-0000-000000000008",
+                "10000000-0000-0000-0000-000000000008",
+                0.00m,
+                "7"
+            ), // IVA-0
+            Iva(
+                "41000000-0000-0000-0000-000000000009",
+                "10000000-0000-0000-0000-000000000009",
+                0.00m,
+                "8"
+            ), // IVA-NP
+            // ── RENTA — catálogo ATS (referido por la Ficha; NO verificado): mismo código que el concepto,
+            // sin porcentaje exigible. Conserva exactamente el comportamiento previo del XML. ─────────────
+            Income(
+                "42000000-0000-0000-0000-000000000001",
+                "20000000-0000-0000-0000-000000000001",
+                "303",
+                LegacyIncomeValidUntil
+            ),
+            Income(
+                "42000000-0000-0000-0000-000000000002",
+                "20000000-0000-0000-0000-000000000002",
+                "304",
+                LegacyIncomeValidUntil
+            ),
+            Income(
+                "42000000-0000-0000-0000-000000000003",
+                "20000000-0000-0000-0000-000000000003",
+                "307",
+                LegacyIncomeValidUntil
+            ),
+            Income(
+                "42000000-0000-0000-0000-000000000004",
+                "20000000-0000-0000-0000-000000000004",
+                "309",
+                LegacyIncomeValidUntil
+            ),
+            Income(
+                "42000000-0000-0000-0000-000000000005",
+                "20000000-0000-0000-0000-000000000005",
+                "310",
+                LegacyIncomeValidUntil
+            ),
+            Income(
+                "42000000-0000-0000-0000-000000000006",
+                "20000000-0000-0000-0000-000000000006",
+                "312",
+                LegacyIncomeValidUntil
+            ),
+            Income(
+                "42000000-0000-0000-0000-000000000007",
+                "20000000-0000-0000-0000-000000000007",
+                "320",
+                LegacyIncomeValidUntil
+            ),
+            Income(
+                "42000000-0000-0000-0000-000000000008",
+                "20000000-0000-0000-0000-000000000008",
+                "325",
+                LegacyIncomeValidUntil
+            ),
+            Income(
+                "42000000-0000-0000-0000-000000000009",
+                "20000000-0000-0000-0000-000000000009",
+                "327",
+                LegacyIncomeValidUntil
+            ),
+            Income(
+                "42000000-0000-0000-0000-000000000010",
+                "20000000-0000-0000-0000-000000000010",
+                "341",
+                LegacyIncomeValidUntil
+            ),
+            Income(
+                "42000000-0000-0000-0000-000000000011",
+                "20000000-0000-0000-0000-000000000011",
+                "342",
+                LegacyIncomeValidUntil
+            ),
+            Income(
+                "42000000-0000-0000-0000-000000000012",
+                "20000000-0000-0000-0000-000000000012",
+                "343",
+                LegacyIncomeValidUntil
+            ),
+            Income(
+                "42000000-0000-0000-0000-000000000013",
+                "20000000-0000-0000-0000-000000000013",
+                "344",
+                LegacyIncomeValidUntil
+            ),
+            // ── RENTA — Catálogo ATS oficial, Tabla 3.10 desde 06/08/2026 (verificado contra el XLS). ─────────
+            // 341/342/344 no existen en el bloque vigente: sin versión nueva (no resolubles desde esa fecha).
+            IncomeFixed(
+                "43000000-0000-0000-0000-000000000001",
+                "20000000-0000-0000-0000-000000000001",
+                "303",
+                10.00m
+            ),
+            IncomeFixed(
+                "43000000-0000-0000-0000-000000000002",
+                "20000000-0000-0000-0000-000000000002",
+                "304",
+                10.00m
+            ),
+            IncomeFixed(
+                "43000000-0000-0000-0000-000000000003",
+                "20000000-0000-0000-0000-000000000003",
+                "307",
+                3.00m
+            ),
+            IncomeFixed(
+                "43000000-0000-0000-0000-000000000004",
+                "20000000-0000-0000-0000-000000000004",
+                "309",
+                3.00m
+            ),
+            IncomeConditional(
+                "43000000-0000-0000-0000-000000000005",
+                "20000000-0000-0000-0000-000000000005",
+                "310",
+                "1 /0 según resolución NAC-DGERCGC26-00000028"
+            ),
+            IncomeFixed(
+                "43000000-0000-0000-0000-000000000006",
+                "20000000-0000-0000-0000-000000000006",
+                "312",
+                2.00m
+            ),
+            IncomeFixed(
+                "43000000-0000-0000-0000-000000000007",
+                "20000000-0000-0000-0000-000000000007",
+                "320",
+                10.00m
+            ),
+            IncomeFixed(
+                "43000000-0000-0000-0000-000000000008",
+                "20000000-0000-0000-0000-000000000008",
+                "325",
+                25.00m
+            ),
+            IncomeConditional(
+                "43000000-0000-0000-0000-000000000009",
+                "20000000-0000-0000-0000-000000000009",
+                "327",
+                "12 o 14"
+            ),
+            IncomeFixed(
+                "43000000-0000-0000-0000-000000000012",
+                "20000000-0000-0000-0000-000000000012",
+                "343",
+                1.00m
+            ),
+            // ISD (4580): sin versión — el comprobante de retención del ERP no emite ISD (RetentionTaxType
+            // solo IVA/Renta); cualquier intento de resolverlo falla cerrado por "sin versión vigente".
+        ];
 
-    private static SriRetentionCodeVersion Iva(string id, string conceptId, decimal percentage, string? xmlCode) =>
+    private static SriRetentionCodeVersion Iva(
+        string id,
+        string conceptId,
+        decimal percentage,
+        string? xmlCode
+    ) =>
         new()
         {
             Id = Guid.Parse(id),
@@ -135,7 +306,12 @@ public class SriRetentionCodeVersionConfiguration : IEntityTypeConfiguration<Sri
             NormativeSourceId = Table20,
         };
 
-    private static SriRetentionCodeVersion Income(string id, string conceptId, string xmlCode, DateOnly? validUntil) =>
+    private static SriRetentionCodeVersion Income(
+        string id,
+        string conceptId,
+        string xmlCode,
+        DateOnly? validUntil
+    ) =>
         new()
         {
             Id = Guid.Parse(id),
@@ -148,7 +324,12 @@ public class SriRetentionCodeVersionConfiguration : IEntityTypeConfiguration<Sri
             NormativeSourceId = AtsIncome,
         };
 
-    private static SriRetentionCodeVersion IncomeFixed(string id, string conceptId, string xmlCode, decimal percentage) =>
+    private static SriRetentionCodeVersion IncomeFixed(
+        string id,
+        string conceptId,
+        string xmlCode,
+        decimal percentage
+    ) =>
         new()
         {
             Id = Guid.Parse(id),
@@ -163,7 +344,12 @@ public class SriRetentionCodeVersionConfiguration : IEntityTypeConfiguration<Sri
         };
 
     /// <summary>Tarifa no única en la fuente: sin porcentaje, con el texto literal de la regla (fail-closed al resolver).</summary>
-    private static SriRetentionCodeVersion IncomeConditional(string id, string conceptId, string xmlCode, string rateRuleText) =>
+    private static SriRetentionCodeVersion IncomeConditional(
+        string id,
+        string conceptId,
+        string xmlCode,
+        string rateRuleText
+    ) =>
         new()
         {
             Id = Guid.Parse(id),

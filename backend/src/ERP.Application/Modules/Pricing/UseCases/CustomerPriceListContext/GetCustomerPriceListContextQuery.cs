@@ -44,7 +44,9 @@ public sealed class GetCustomerPriceListContextQueryHandler
     )
     {
         var candidates = await _selection.ResolveAsync(request.CustomerId, ct);
-        var customer = candidates.FirstOrDefault(c => c.Source == PriceListSelectionSource.Customer);
+        var customer = candidates.FirstOrDefault(c =>
+            c.Source == PriceListSelectionSource.Customer
+        );
         var companyDefault = candidates.FirstOrDefault(c =>
             c.Source == PriceListSelectionSource.CompanyDefault
         );

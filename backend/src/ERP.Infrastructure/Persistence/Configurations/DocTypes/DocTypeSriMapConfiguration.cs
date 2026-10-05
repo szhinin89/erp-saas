@@ -32,8 +32,16 @@ public class DocTypeSriMapConfiguration : IEntityTypeConfiguration<DocTypeSriMap
         builder.HasData(
             new DocTypeSriMap { DocTypeCode = DocTypeCodes.SalesInvoice, SriDocTypeCode = "01" },
             new DocTypeSriMap { DocTypeCode = DocTypeCodes.SalesCreditNote, SriDocTypeCode = "04" },
-            new DocTypeSriMap { DocTypeCode = DocTypeCodes.PurchaseCreditNote, SriDocTypeCode = "04" },
-            new DocTypeSriMap { DocTypeCode = DocTypeCodes.ExpenseWithholding, SriDocTypeCode = "07" }
+            new DocTypeSriMap
+            {
+                DocTypeCode = DocTypeCodes.PurchaseCreditNote,
+                SriDocTypeCode = "04",
+            },
+            new DocTypeSriMap
+            {
+                DocTypeCode = DocTypeCodes.ExpenseWithholding,
+                SriDocTypeCode = "07",
+            }
         );
     }
 }

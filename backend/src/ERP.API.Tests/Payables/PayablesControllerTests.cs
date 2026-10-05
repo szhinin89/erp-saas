@@ -26,7 +26,10 @@ public sealed class PayablesControllerTests
         services.AddSingleton<IWebHostEnvironment>(new StubWebHostEnvironment());
         controller.ControllerContext = new ControllerContext
         {
-            HttpContext = new DefaultHttpContext { RequestServices = services.BuildServiceProvider() },
+            HttpContext = new DefaultHttpContext
+            {
+                RequestServices = services.BuildServiceProvider(),
+            },
         };
         return controller;
     }
@@ -36,9 +39,11 @@ public sealed class PayablesControllerTests
         public string EnvironmentName { get; set; } = "Development";
         public string ApplicationName { get; set; } = "ERP.API.Tests";
         public string WebRootPath { get; set; } = "";
-        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; } = null!;
+        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; } =
+            null!;
         public string ContentRootPath { get; set; } = "";
-        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } = null!;
+        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } =
+            null!;
     }
 
     private static AccountsPayableListItemDto SampleListItem(Guid id) =>
@@ -149,7 +154,12 @@ public sealed class PayablesControllerTests
         {
             sentRequest = req;
             return Result<AccountsPayablesListResponse>.Success(
-                new AccountsPayablesListResponse(Array.Empty<AccountsPayableListItemDto>(), 0, 1, 25)
+                new AccountsPayablesListResponse(
+                    Array.Empty<AccountsPayableListItemDto>(),
+                    0,
+                    1,
+                    25
+                )
             );
         });
 
@@ -166,7 +176,12 @@ public sealed class PayablesControllerTests
         {
             sentRequest = req;
             return Result<AccountsPayablesListResponse>.Success(
-                new AccountsPayablesListResponse(Array.Empty<AccountsPayableListItemDto>(), 0, 2, 10)
+                new AccountsPayablesListResponse(
+                    Array.Empty<AccountsPayableListItemDto>(),
+                    0,
+                    2,
+                    10
+                )
             );
         });
 
@@ -212,7 +227,13 @@ public sealed class PayablesControllerTests
             sentRequest = req;
             return Result<AccountsPayablesListResponse>.Success(
                 new AccountsPayablesListResponse(
-                    new[] { SampleListItem(Guid.NewGuid()) with { OriginType = "ExpenseDocument" } },
+                    new[]
+                    {
+                        SampleListItem(Guid.NewGuid()) with
+                        {
+                            OriginType = "ExpenseDocument",
+                        },
+                    },
                     1,
                     1,
                     25
@@ -220,7 +241,10 @@ public sealed class PayablesControllerTests
             );
         });
 
-        var response = await controller.GetList(originType: "ExpenseDocument", ct: CancellationToken.None);
+        var response = await controller.GetList(
+            originType: "ExpenseDocument",
+            ct: CancellationToken.None
+        );
 
         response.Should().BeOfType<OkObjectResult>();
         sentRequest.Should().Be(new GetAccountsPayablesListQuery(OriginType: "ExpenseDocument"));

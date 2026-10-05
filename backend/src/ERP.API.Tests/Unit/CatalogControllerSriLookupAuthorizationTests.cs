@@ -1,8 +1,8 @@
+using System.Reflection;
 using ERP.API.Controllers;
 using ERP.Domain.Kernel.Permissions;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authorization;
-using System.Reflection;
 
 namespace ERP.API.Tests.Unit;
 
@@ -30,8 +30,8 @@ public sealed class CatalogControllerSriLookupAuthorizationTests
 
         var authorize = method!.GetCustomAttribute<AuthorizeAttribute>();
         authorize.Should().NotBeNull($"{methodName} debe seguir requiriendo sesión autenticada");
-        authorize!.Policy
-            .Should()
+        authorize!
+            .Policy.Should()
             .NotBe(
                 $"perm:{CatalogPermissions.Manage}",
                 $"{methodName} es un catálogo de lectura, no debe exigir CatalogPermissions.Manage"
@@ -50,8 +50,8 @@ public sealed class CatalogControllerSriLookupAuthorizationTests
 
         var authorize = method!.GetCustomAttribute<AuthorizeAttribute>();
         authorize.Should().NotBeNull();
-        authorize!.Policy.Should().BeNull(
-            $"{methodName} ya usa [Authorize] simple — referencia del patrón a seguir"
-        );
+        authorize!
+            .Policy.Should()
+            .BeNull($"{methodName} ya usa [Authorize] simple — referencia del patrón a seguir");
     }
 }

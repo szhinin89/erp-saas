@@ -209,7 +209,9 @@ public sealed class UpdateContactRequest
 // ── CompanyBpSalesSettings ──────────────────────────────────────────────────
 
 /// <summary>Default de pago del cliente en la empresa activa.</summary>
-[System.Text.Json.Serialization.JsonUnmappedMemberHandling(System.Text.Json.Serialization.JsonUnmappedMemberHandling.Disallow)]
+[System.Text.Json.Serialization.JsonUnmappedMemberHandling(
+    System.Text.Json.Serialization.JsonUnmappedMemberHandling.Disallow
+)]
 public sealed class UpsertSalesSettingsRequest
 {
     [System.Text.Json.Serialization.JsonRequired]

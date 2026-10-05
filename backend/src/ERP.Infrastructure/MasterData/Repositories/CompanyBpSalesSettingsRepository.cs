@@ -12,13 +12,13 @@ public sealed class CompanyBpSalesSettingsRepository : ICompanyBpSalesSettingsRe
     public CompanyBpSalesSettingsRepository(ErpDbContext db) => _db = db;
 
     public Task<CompanyBpSalesSettings?> GetByBusinessPartnerAsync(
-Guid businessPartnerId,
-CancellationToken cancellationToken = default
-) =>
-_db.CompanyBpSalesSettings.FirstOrDefaultAsync(
-s => s.BusinessPartnerId == businessPartnerId,
-cancellationToken
-);
+        Guid businessPartnerId,
+        CancellationToken cancellationToken = default
+    ) =>
+        _db.CompanyBpSalesSettings.FirstOrDefaultAsync(
+            s => s.BusinessPartnerId == businessPartnerId,
+            cancellationToken
+        );
 
     public async Task AddAsync(
         CompanyBpSalesSettings settings,

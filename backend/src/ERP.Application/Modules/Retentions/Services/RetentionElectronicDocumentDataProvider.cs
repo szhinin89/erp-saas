@@ -1,3 +1,4 @@
+using System.Globalization;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
@@ -11,7 +12,6 @@ using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Domain.Modules.Retentions.Interfaces;
 using ERP.Domain.Modules.SriCatalogs.Constants;
 using ERP.Domain.Modules.SriCatalogs.Entities;
-using System.Globalization;
 
 namespace ERP.Application.Modules.Retentions.Services;
 
@@ -44,7 +44,8 @@ public interface IRetentionElectronicDocumentDataProvider
     );
 }
 
-public sealed class RetentionElectronicDocumentDataProvider : IRetentionElectronicDocumentDataProvider
+public sealed class RetentionElectronicDocumentDataProvider
+    : IRetentionElectronicDocumentDataProvider
 {
     private readonly IRetentionDocumentRepository _retentionRepository;
     private readonly IEmissionPointRepository _emissionPointRepository;
@@ -95,7 +96,11 @@ public sealed class RetentionElectronicDocumentDataProvider : IRetentionElectron
         // (ver RetentionDocument.Issue) — nunca se genera este modelo para un Draft/Cancelled.
         if (retention.Status != RetentionStatus.Issued)
             errors.Add("La retención debe estar emitida para generar el documento electrónico.");
-        if (retention.RetentionNumber is null || retention.IssueDate is null || retention.FiscalPeriod is null)
+        if (
+            retention.RetentionNumber is null
+            || retention.IssueDate is null
+            || retention.FiscalPeriod is null
+        )
             errors.Add(
                 "La retención no tiene número, fecha de emisión o período fiscal asignados."
             );
@@ -153,7 +158,9 @@ public sealed class RetentionElectronicDocumentDataProvider : IRetentionElectron
             );
 
         if (errors.Count > 0)
-            return Result<RetentionElectronicDocumentData>.ValidationFailure(string.Join(" ", errors));
+            return Result<RetentionElectronicDocumentData>.ValidationFailure(
+                string.Join(" ", errors)
+            );
 
         // ZH-SRI-RETENTION-CATALOG-SSOT-01 (ADR-037 D5/D6/D7) — el codigoRetencion del XML es la
         // representación oficial vigente a la fecha de emisión, resuelta desde el catálogo global
@@ -172,14 +179,18 @@ public sealed class RetentionElectronicDocumentDataProvider : IRetentionElectron
             );
             if (!resolution.IsResolved)
             {
-                catalogErrors.Add(resolution.Detail ?? $"Código de retención '{line.RetentionCode}' sin representación SRI.");
+                catalogErrors.Add(
+                    resolution.Detail
+                        ?? $"Código de retención '{line.RetentionCode}' sin representación SRI."
+                );
                 continue;
             }
             taxLines.Add(BuildTaxLine(line, resolution.Representation!.XmlCode));
         }
         if (catalogErrors.Count > 0)
             return Result<RetentionElectronicDocumentData>.ValidationFailure(
-                "Configuración fiscal del catálogo de retenciones SRI inválida: " + string.Join(" ", catalogErrors),
+                "Configuración fiscal del catálogo de retenciones SRI inválida: "
+                    + string.Join(" ", catalogErrors),
                 ApiResponseCodes.ElectronicDocuments.FiscalCatalogConfigurationError
             );
 
@@ -290,5 +301,6 @@ public sealed class RetentionElectronicDocumentDataProvider : IRetentionElectron
     /// vuelve a solicitar a <c>IDocumentSequenceRepository</c> (eso emitiría un número nuevo).
     /// Mismo helper que <c>SalesInvoiceElectronicDocumentDataProvider.ExtractSequential</c>.
     /// </summary>
-    private static string ExtractSequential(string retentionNumber) => retentionNumber.Split('-')[^1];
+    private static string ExtractSequential(string retentionNumber) =>
+        retentionNumber.Split('-')[^1];
 }

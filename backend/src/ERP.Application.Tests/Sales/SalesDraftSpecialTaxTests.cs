@@ -52,35 +52,61 @@ public sealed class SalesDraftSpecialTaxTests
         public Mock<IPricingResolver> Pricing { get; } = new();
         public Mock<IPriceListSelectionResolver> PriceListSelection { get; } = new();
         public Mock<ICompanySpecialTaxResponsibilityRepository> CompanyTaxRepo { get; } = new();
-        public Mock<ERP.Domain.Modules.Inventory.Interfaces.IWarehouseRepository> WarehouseRepo { get; } = new();
-        public Mock<ERP.Application.Common.Interfaces.IAverageCostService> CostService { get; } = new();
+        public Mock<ERP.Domain.Modules.Inventory.Interfaces.IWarehouseRepository> WarehouseRepo { get; } =
+            new();
+        public Mock<ERP.Application.Common.Interfaces.IAverageCostService> CostService { get; } =
+            new();
         public Mock<ICurrentTenant> Tenant { get; } = new();
         public Mock<ICurrentCompany> Company { get; } = new();
         public Mock<ICurrentBranch> Branch { get; } = new();
         public Mock<ICurrentUser> User { get; } = new();
         public Mock<ICurrentCashSession> CashSession { get; } = new();
         public Mock<IOperationalPreferencesResolver> Preferences { get; } = new();
-        public Mock<ERP.Application.Modules.Sales.Services.ISalesCreditRequirementPolicy> CreditPolicy { get; } = new();
-        public Mock<ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository> BankAccountRepo { get; } = new();
+        public Mock<ERP.Application.Modules.Sales.Services.ISalesCreditRequirementPolicy> CreditPolicy { get; } =
+            new();
+        public Mock<ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository> BankAccountRepo { get; } =
+            new();
 
         public Fixture()
         {
             // POS-EMISSION-TYPE-SNAPSHOT-01: la creación del borrador es fail-closed si el punto
             // de emisión de la caja no se resuelve — default "punto electrónico activo".
             EpRepo
-                .Setup(r => r.GetByIdForCompanyAsync(
-                    It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(ERP.Domain.Modules.Company.Entities.EmissionPoint.Create(
-                    TenantId, CompanyId, Guid.NewGuid(), "001", "Punto 1",
-                    ERP.Domain.Modules.Company.Enums.EmissionType.Electronic, true, Guid.NewGuid()));
+                .Setup(r =>
+                    r.GetByIdForCompanyAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(
+                    ERP.Domain.Modules.Company.Entities.EmissionPoint.Create(
+                        TenantId,
+                        CompanyId,
+                        Guid.NewGuid(),
+                        "001",
+                        "Punto 1",
+                        ERP.Domain.Modules.Company.Enums.EmissionType.Electronic,
+                        true,
+                        Guid.NewGuid()
+                    )
+                );
             // SALES-CONTEXTUAL-PRICING-DRAFT-06B: default "sin pricing resuelto" (diccionario
             // vacío) para los tests de esta suite que no le importa el pricing contextual — evita
             // depender del comportamiento de Moq para mocks sin configurar en un método nuevo.
             Pricing
-                .Setup(p => p.ResolveManyAsync(It.IsAny<PricingBatchContext>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(Result<IReadOnlyDictionary<Guid, PricingResult>>.Success(
-                    new Dictionary<Guid, PricingResult>()
-                ));
+                .Setup(p =>
+                    p.ResolveManyAsync(
+                        It.IsAny<PricingBatchContext>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(
+                    Result<IReadOnlyDictionary<Guid, PricingResult>>.Success(
+                        new Dictionary<Guid, PricingResult>()
+                    )
+                );
             // SALES-PRICING-TRACEABILITY-SNAPSHOT-07B: default "cliente sin lista propia".
             PriceListSelection
                 .Setup(p => p.ResolveAsync(It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
@@ -88,7 +114,9 @@ public sealed class SalesDraftSpecialTaxTests
             CreditPolicy
                 .Setup(p => p.GetCashFallbackAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(
-                    Result<PaymentTerm>.Success(PaymentTerm.Create(TenantId, "CONTADO", "Contado", 1, 0, UserId))
+                    Result<PaymentTerm>.Success(
+                        PaymentTerm.Create(TenantId, "CONTADO", "Contado", 1, 0, UserId)
+                    )
                 );
             CreditPolicy
                 .Setup(p =>
@@ -112,45 +140,99 @@ public sealed class SalesDraftSpecialTaxTests
             var emissionPointId = Guid.NewGuid();
             CashSession.Setup(c => c.EmissionPointId).Returns(emissionPointId);
             EpRepo
-                .Setup(r => r.GetByIdAsync(emissionPointId, TenantId, It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetByIdAsync(emissionPointId, TenantId, It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync((ERP.Domain.Modules.Company.Entities.EmissionPoint?)null);
 
             Preferences
                 .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(
                     new OperationalPreferences(
-                        SalesPos: new SalesPosPreferences(true, false, true, 0m, null, false, false, null, null),
+                        SalesPos: new SalesPosPreferences(
+                            true,
+                            false,
+                            true,
+                            0m,
+                            null,
+                            false,
+                            false,
+                            null,
+                            null
+                        ),
                         Cash: new CashPreferences(true, true, 0m, true, true, true),
                         Purchases: new PurchasesPreferences(null, true, true, true, false),
                         Inventory: new InventoryPreferences(false, true, false, 0m),
-                        Printing: new PrintingPreferences("AskBeforePrint", 1, "80mm", false, true, true, false),
-                        ElectronicDocuments: new ElectronicDocumentsPreferences(true, 3, true, true),
+                        Printing: new PrintingPreferences(
+                            "AskBeforePrint",
+                            1,
+                            "80mm",
+                            false,
+                            true,
+                            true,
+                            false
+                        ),
+                        ElectronicDocuments: new ElectronicDocumentsPreferences(
+                            true,
+                            3,
+                            true,
+                            true
+                        ),
                         Notifications: new NotificationsPreferences(true, false, "es")
                     )
                 );
 
-            var bp = BusinessPartner.Create(TenantId, "05", "1710034065", 1, "Cliente Test", UserId);
+            var bp = BusinessPartner.Create(
+                TenantId,
+                "05",
+                "1710034065",
+                1,
+                "Cliente Test",
+                UserId
+            );
             BpRepo
                 .Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(bp);
 
             BpContactRepo
-                .Setup(r => r.GetByBusinessPartnerAsync(It.IsAny<Guid>(), It.IsAny<bool?>(), It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetByBusinessPartnerAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<bool?>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync(Array.Empty<BusinessPartnerContact>());
             BpLocationRepo
-                .Setup(r => r.GetByBusinessPartnerAsync(It.IsAny<Guid>(), It.IsAny<bool?>(), It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetByBusinessPartnerAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<bool?>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync(Array.Empty<BusinessPartnerLocation>());
 
             var role = BusinessPartnerRole.Create(TenantId, bp.Id, RoleType.Customer, UserId);
             RoleRepo
                 .Setup(r =>
-                    r.GetByTypeAsync(It.IsAny<Guid>(), RoleType.Customer, It.IsAny<CancellationToken>())
+                    r.GetByTypeAsync(
+                        It.IsAny<Guid>(),
+                        RoleType.Customer,
+                        It.IsAny<CancellationToken>()
+                    )
                 )
                 .ReturnsAsync(role);
 
             var pt = PaymentTerm.Create(TenantId, "CONT", "Contado", 1, 0, UserId);
             PtResolver
-                .Setup(r => r.ResolveForSaleAsync(It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.ResolveForSaleAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid?>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync(Result<PaymentTerm>.Success(pt));
 
             Tax.Setup(t => t.GetVatRateWithNameAsync("10", It.IsAny<CancellationToken>()))
@@ -158,7 +240,11 @@ public sealed class SalesDraftSpecialTaxTests
 
             Pricing
                 .Setup(p =>
-                    p.ResolveAsync(It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>())
+                    p.ResolveAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid?>(),
+                        It.IsAny<CancellationToken>()
+                    )
                 )
                 .ReturnsAsync(Result<PricingResult>.Failure("Sin precio configurado."));
 
@@ -247,13 +333,11 @@ public sealed class SalesDraftSpecialTaxTests
         decimal unitPrice = 100m
     )
     {
-        f.ItemRepo
-            .Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+        f.ItemRepo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(item);
 
         SalesInvoice? captured = null;
-        f.Repo
-            .Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
             .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
             .Returns(Task.CompletedTask);
 
@@ -330,9 +414,16 @@ public sealed class SalesDraftSpecialTaxTests
         var f = new Fixture();
         f.SetCompanyResponsibleFor("3");
         var item = CreateItem(iceCatalogCode: "3041", irbpnrCatalogCode: null);
-        f.Tax
-            .Setup(t => t.GetIceCatalogEntryAsync("3041", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new SriTaxCatalogEntry("3041", "ICE 10%", 10m, null, SriTaxCalculationType.Percentage));
+        f.Tax.Setup(t => t.GetIceCatalogEntryAsync("3041", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new SriTaxCatalogEntry(
+                    "3041",
+                    "ICE 10%",
+                    10m,
+                    null,
+                    SriTaxCalculationType.Percentage
+                )
+            );
 
         var (isSuccess, invoice, error) = await RunAsync(f, item, quantity: 1m, unitPrice: 100m);
 
@@ -352,10 +443,15 @@ public sealed class SalesDraftSpecialTaxTests
         var f = new Fixture();
         f.SetCompanyResponsibleFor("3");
         var item = CreateItem(iceCatalogCode: "3053", irbpnrCatalogCode: null);
-        f.Tax
-            .Setup(t => t.GetIceCatalogEntryAsync("3053", It.IsAny<CancellationToken>()))
+        f.Tax.Setup(t => t.GetIceCatalogEntryAsync("3053", It.IsAny<CancellationToken>()))
             .ReturnsAsync(
-                new SriTaxCatalogEntry("3053", "ICE Específico", null, 0.5m, SriTaxCalculationType.Specific)
+                new SriTaxCatalogEntry(
+                    "3053",
+                    "ICE Específico",
+                    null,
+                    0.5m,
+                    SriTaxCalculationType.Specific
+                )
             );
 
         var (isSuccess, invoice, error) = await RunAsync(f, item, quantity: 10m, unitPrice: 100m);
@@ -376,11 +472,23 @@ public sealed class SalesDraftSpecialTaxTests
         var f = new Fixture();
         f.SetCompanyResponsibleFor("5");
         var item = CreateItem(iceCatalogCode: null, irbpnrCatalogCode: "5001");
-        f.Tax
-            .Setup(t => t.GetIrbpnrCatalogEntryAsync("5001", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new SriTaxCatalogEntry("5001", "IRBPNR", null, 0.02m, SriTaxCalculationType.Specific));
+        f.Tax.Setup(t => t.GetIrbpnrCatalogEntryAsync("5001", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new SriTaxCatalogEntry(
+                    "5001",
+                    "IRBPNR",
+                    null,
+                    0.02m,
+                    SriTaxCalculationType.Specific
+                )
+            );
 
-        var (isSuccess, invoice, error) = await RunAsync(f, item, quantity: 24m, unitPrice: 0.5837m);
+        var (isSuccess, invoice, error) = await RunAsync(
+            f,
+            item,
+            quantity: 24m,
+            unitPrice: 0.5837m
+        );
 
         isSuccess.Should().BeTrue(error);
         var line = invoice!.Lines.Single();
@@ -397,9 +505,16 @@ public sealed class SalesDraftSpecialTaxTests
         var f = new Fixture();
         f.SetCompanyResponsibleFor("3"); // NO incluye "5" (IRBPNR)
         var item = CreateItem(iceCatalogCode: "3041", irbpnrCatalogCode: "5001");
-        f.Tax
-            .Setup(t => t.GetIceCatalogEntryAsync("3041", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new SriTaxCatalogEntry("3041", "ICE 10%", 10m, null, SriTaxCalculationType.Percentage));
+        f.Tax.Setup(t => t.GetIceCatalogEntryAsync("3041", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new SriTaxCatalogEntry(
+                    "3041",
+                    "ICE 10%",
+                    10m,
+                    null,
+                    SriTaxCalculationType.Percentage
+                )
+            );
 
         var (isSuccess, invoice, error) = await RunAsync(f, item);
 
@@ -423,12 +538,26 @@ public sealed class SalesDraftSpecialTaxTests
         var f = new Fixture();
         f.SetCompanyResponsibleFor("3", "5");
         var item = CreateItem(iceCatalogCode: "3041", irbpnrCatalogCode: "5001");
-        f.Tax
-            .Setup(t => t.GetIceCatalogEntryAsync("3041", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new SriTaxCatalogEntry("3041", "ICE 10%", 10m, null, SriTaxCalculationType.Percentage));
-        f.Tax
-            .Setup(t => t.GetIrbpnrCatalogEntryAsync("5001", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new SriTaxCatalogEntry("5001", "IRBPNR", null, 0.02m, SriTaxCalculationType.Specific));
+        f.Tax.Setup(t => t.GetIceCatalogEntryAsync("3041", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new SriTaxCatalogEntry(
+                    "3041",
+                    "ICE 10%",
+                    10m,
+                    null,
+                    SriTaxCalculationType.Percentage
+                )
+            );
+        f.Tax.Setup(t => t.GetIrbpnrCatalogEntryAsync("5001", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new SriTaxCatalogEntry(
+                    "5001",
+                    "IRBPNR",
+                    null,
+                    0.02m,
+                    SriTaxCalculationType.Specific
+                )
+            );
 
         var (isSuccess, invoice, error) = await RunAsync(f, item, quantity: 1m, unitPrice: 100m);
 
@@ -453,7 +582,9 @@ public sealed class SalesDraftSpecialTaxTests
         ctor.GetParameters()
             .Should()
             .NotContain(
-                p => p.ParameterType.Namespace != null && p.ParameterType.Namespace.Contains("Purchases"),
+                p =>
+                    p.ParameterType.Namespace != null
+                    && p.ParameterType.Namespace.Contains("Purchases"),
                 "la venta calcula sus impuestos desde ItemSpecialTaxConfiguration/CompanySpecialTaxResponsibility, "
                     + "nunca leyendo PurchaseInvoiceDetailTax ni ningún repositorio de Compras"
             );

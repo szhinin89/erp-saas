@@ -173,6 +173,7 @@ public sealed class SalesReturn : AuditableEntity, ITenantScopedEntity, ICompany
     }
 
     // ── Authorize (final — immutable after this) ─────────────────────────
+    /// <param name="updatedBy"></param>
     /// <param name="settlementTolerance">
     /// COMPANY-PRECISION-POLICY-SSOT-01: tolerancia de cuadre reembolso-vs-total resuelta por
     /// Application desde CompanyPrecisionPolicy.SettlementToleranceAmount de la empresa del

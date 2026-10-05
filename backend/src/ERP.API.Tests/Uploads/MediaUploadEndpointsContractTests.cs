@@ -1,3 +1,4 @@
+using System.Text;
 using ERP.API.Controllers;
 using ERP.API.Controllers.InitialLoad;
 using ERP.API.Controllers.Purchases;
@@ -9,7 +10,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
-using System.Text;
 
 namespace ERP.API.Tests.Uploads;
 
@@ -27,9 +27,11 @@ public sealed class MediaUploadEndpointsContractTests
         public string EnvironmentName { get; set; } = "Development";
         public string ApplicationName { get; set; } = "ERP.API.Tests";
         public string WebRootPath { get; set; } = "";
-        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; } = null!;
+        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; } =
+            null!;
         public string ContentRootPath { get; set; } = "";
-        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } = null!;
+        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } =
+            null!;
     }
 
     private static T WithContext<T>(T controller)
@@ -39,7 +41,10 @@ public sealed class MediaUploadEndpointsContractTests
         services.AddSingleton<IWebHostEnvironment>(new StubWebHostEnvironment());
         controller.ControllerContext = new ControllerContext
         {
-            HttpContext = new DefaultHttpContext { RequestServices = services.BuildServiceProvider() },
+            HttpContext = new DefaultHttpContext
+            {
+                RequestServices = services.BuildServiceProvider(),
+            },
         };
         return controller;
     }
@@ -52,10 +57,23 @@ public sealed class MediaUploadEndpointsContractTests
         };
 
     /// <summary>Lo que vio Application dentro del Send (el stream ya no es legible después).</summary>
-    private sealed record Seen(string FileName, string ContentType, long SizeBytes, long Position, bool CanRead, byte[] Bytes, Stream Stream);
+    private sealed record Seen(
+        string FileName,
+        string ContentType,
+        long SizeBytes,
+        long Position,
+        bool CanRead,
+        byte[] Bytes,
+        Stream Stream
+    );
 
     private static MediaUploadContent UploadOf(object command) =>
-        command.GetType().GetProperties().Select(p => p.GetValue(command)).OfType<MediaUploadContent>().Single();
+        command
+            .GetType()
+            .GetProperties()
+            .Select(p => p.GetValue(command))
+            .OfType<MediaUploadContent>()
+            .Single();
 
     private static Seen Capture(object command)
     {
@@ -64,22 +82,46 @@ public sealed class MediaUploadEndpointsContractTests
         var canRead = upload.Content.CanRead;
         using var copy = new MemoryStream();
         upload.Content.CopyTo(copy);
-        return new Seen(upload.FileName, upload.ContentType, upload.SizeBytes, position, canRead, copy.ToArray(), upload.Content);
+        return new Seen(
+            upload.FileName,
+            upload.ContentType,
+            upload.SizeBytes,
+            position,
+            canRead,
+            copy.ToArray(),
+            upload.Content
+        );
     }
 
     public static TheoryData<string> Endpoints =>
-        new() { "companies/logo", "companies/logo-alt", "sri/certificate", "initial-load/upload", "purchase-reception/import" };
+        new()
+        {
+            "companies/logo",
+            "companies/logo-alt",
+            "sri/certificate",
+            "initial-load/upload",
+            "purchase-reception/import",
+        };
 
-    private static Task<IActionResult> Invoke(string endpoint, IFormFile? file, Func<object, object> mediatorHandler)
+    private static Task<IActionResult> Invoke(
+        string endpoint,
+        IFormFile? file,
+        Func<object, object> mediatorHandler
+    )
     {
         var mediator = new StubMediator(mediatorHandler);
         return endpoint switch
         {
-            "companies/logo" => WithContext(new CompanyProfileController(mediator)).UploadLogo(file),
-            "companies/logo-alt" => WithContext(new CompanyProfileController(mediator)).UploadLogoAlt(file),
-            "sri/certificate" => WithContext(new ElectronicInvoicingController(mediator)).UploadCertificate(file),
-            "initial-load/upload" => WithContext(new InitialLoadController(mediator)).Upload(Guid.NewGuid(), file, default),
-            "purchase-reception/import" => WithContext(new PurchaseReceptionController(mediator)).Import(file, default),
+            "companies/logo" => WithContext(new CompanyProfileController(mediator))
+                .UploadLogo(file),
+            "companies/logo-alt" => WithContext(new CompanyProfileController(mediator))
+                .UploadLogoAlt(file),
+            "sri/certificate" => WithContext(new ElectronicInvoicingController(mediator))
+                .UploadCertificate(file),
+            "initial-load/upload" => WithContext(new InitialLoadController(mediator))
+                .Upload(Guid.NewGuid(), file, default),
+            "purchase-reception/import" => WithContext(new PurchaseReceptionController(mediator))
+                .Import(file, default),
             _ => throw new ArgumentOutOfRangeException(nameof(endpoint)),
         };
     }
@@ -89,27 +131,42 @@ public sealed class MediaUploadEndpointsContractTests
 
     private static object Result(object command, bool success)
     {
-        var responseType = command.GetType().GetInterfaces()
-            .Single(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(MediatR.IRequest<>))
+        var responseType = command
+            .GetType()
+            .GetInterfaces()
+            .Single(i =>
+                i.IsGenericType && i.GetGenericTypeDefinition() == typeof(MediatR.IRequest<>)
+            )
             .GetGenericArguments()[0];
         var valueType = responseType.GetGenericArguments()[0];
         return success
             ? responseType.GetMethod("Success")!.Invoke(null, [null, null])!
-            : responseType.GetMethod("ValidationFailure")!.Invoke(null, ["Formato de archivo no permitido.", ApiResponseCodes.Common.ValidationError])!;
+            : responseType
+                .GetMethod("ValidationFailure")!
+                .Invoke(
+                    null,
+                    ["Formato de archivo no permitido.", ApiResponseCodes.Common.ValidationError]
+                )!;
     }
 
     [Theory]
     [MemberData(nameof(Endpoints))]
-    public async Task Archivo_valido_llega_a_Application_con_nombre_tipo_tamano_y_bytes_y_el_stream_se_libera_al_final(string endpoint)
+    public async Task Archivo_valido_llega_a_Application_con_nombre_tipo_tamano_y_bytes_y_el_stream_se_libera_al_final(
+        string endpoint
+    )
     {
         var bytes = Encoding.UTF8.GetBytes($"contenido de prueba {endpoint} ✓");
         Seen? seen = null;
 
-        var response = await Invoke(endpoint, File(bytes, "archivo prueba.bin", "application/x-test"), command =>
-        {
-            seen = Capture(command);
-            return Ok(command);
-        });
+        var response = await Invoke(
+            endpoint,
+            File(bytes, "archivo prueba.bin", "application/x-test"),
+            command =>
+            {
+                seen = Capture(command);
+                return Ok(command);
+            }
+        );
 
         response.Should().BeOfType<OkObjectResult>();
         seen.Should().NotBeNull();
@@ -128,42 +185,65 @@ public sealed class MediaUploadEndpointsContractTests
     [InlineData("sri/certificate", "Debe adjuntar el archivo del certificado.")]
     [InlineData("initial-load/upload", "Debe adjuntar un archivo.")]
     [InlineData("purchase-reception/import", "Debe adjuntar un archivo.")]
-    public async Task Archivo_ausente_o_vacio_responde_400_con_el_mensaje_del_endpoint_sin_llamar_al_mediator(string endpoint, string message)
+    public async Task Archivo_ausente_o_vacio_responde_400_con_el_mensaje_del_endpoint_sin_llamar_al_mediator(
+        string endpoint,
+        string message
+    )
     {
         foreach (var file in new[] { null, File([], "vacio.bin", "application/x-test") })
         {
             var called = false;
 
-            var response = await Invoke(endpoint, file, command =>
-            {
-                called = true;
-                return Ok(command);
-            });
+            var response = await Invoke(
+                endpoint,
+                file,
+                command =>
+                {
+                    called = true;
+                    return Ok(command);
+                }
+            );
 
             called.Should().BeFalse();
             var bad = response.Should().BeOfType<BadRequestObjectResult>().Subject;
             var body = System.Text.Json.JsonSerializer.SerializeToElement(bad.Value);
             body.GetProperty("Code").GetString().Should().Be(ApiResponseCodes.Common.BadRequest);
-            body.GetProperty("Data").GetProperty("errors").EnumerateArray().Select(e => e.GetString()).Should().Equal(message);
+            body.GetProperty("Data")
+                .GetProperty("errors")
+                .EnumerateArray()
+                .Select(e => e.GetString())
+                .Should()
+                .Equal(message);
         }
     }
 
     [Theory]
     [MemberData(nameof(Endpoints))]
-    public async Task Error_del_handler_se_responde_igual_y_el_stream_igual_se_libera(string endpoint)
+    public async Task Error_del_handler_se_responde_igual_y_el_stream_igual_se_libera(
+        string endpoint
+    )
     {
         Stream? stream = null;
 
-        var response = await Invoke(endpoint, File([1, 2, 3], "x.bin", "application/x-test"), command =>
-        {
-            stream = UploadOf(command).Content;
-            return Result(command, success: false);
-        });
+        var response = await Invoke(
+            endpoint,
+            File([1, 2, 3], "x.bin", "application/x-test"),
+            command =>
+            {
+                stream = UploadOf(command).Content;
+                return Result(command, success: false);
+            }
+        );
 
         var failure = response.Should().BeOfType<UnprocessableEntityObjectResult>().Subject;
-        System.Text.Json.JsonSerializer.SerializeToElement(failure.Value)
-            .GetProperty("Data").GetProperty("errors").EnumerateArray().Select(e => e.GetString())
-            .Should().Equal("Formato de archivo no permitido.");
+        System
+            .Text.Json.JsonSerializer.SerializeToElement(failure.Value)
+            .GetProperty("Data")
+            .GetProperty("errors")
+            .EnumerateArray()
+            .Select(e => e.GetString())
+            .Should()
+            .Equal("Formato de archivo no permitido.");
         stream!.CanRead.Should().BeFalse();
     }
 }

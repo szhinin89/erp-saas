@@ -66,12 +66,21 @@ internal sealed record CollectionIntentV1(
                 CanonicalRequestFingerprint.NormalizeText(cmd.Reference),
                 cmd.CompanyBankAccountId,
                 cmd.CashRegisterId,
-                cmd.Lines.Select(l => new CollectionIntentLineV1(l.DocumentId, l.InstallmentId, l.AppliedAmount)).ToList()
+                cmd.Lines.Select(l => new CollectionIntentLineV1(
+                        l.DocumentId,
+                        l.InstallmentId,
+                        l.AppliedAmount
+                    ))
+                    .ToList()
             )
         );
 }
 
-internal sealed record CollectionIntentLineV1(Guid DocumentId, Guid? InstallmentId, decimal AppliedAmount);
+internal sealed record CollectionIntentLineV1(
+    Guid DocumentId,
+    Guid? InstallmentId,
+    decimal AppliedAmount
+);
 
 /// <summary>Fase 5.5.5.3 — reversa un cobro ya aplicado y decrementa el saldo de cada CxC afectada.</summary>
 public sealed record ReverseCollectionCommand(Guid PaymentId, string Reason)
@@ -95,7 +104,9 @@ public sealed class RegisterCollectionCommandValidator
 {
     public RegisterCollectionCommandValidator()
     {
-        RuleFor(x => x.ClientRequestId).NotEmpty().WithMessage("El identificador de idempotencia es obligatorio.");
+        RuleFor(x => x.ClientRequestId)
+            .NotEmpty()
+            .WithMessage("El identificador de idempotencia es obligatorio.");
         RuleFor(x => x.CustomerId).NotEmpty();
         RuleFor(x => x.Amount).GreaterThan(0);
         RuleFor(x => x.Lines)
@@ -219,7 +230,6 @@ public sealed class RegisterCollectionCommandHandler
         CancellationToken ct
     )
     {
-
         // Una cuenta bancaria o caja explícitamente elegida debe existir, pertenecer a esta
         // empresa, estar activa y tener cuenta contable configurada (a diferencia del caso "sin
         // especificar", que nunca bloquea el cobro — ver PostingRule fallback en el traductor).
@@ -234,7 +244,11 @@ public sealed class RegisterCollectionCommandHandler
         if (cmd.CashRegisterId is { } cashRegisterId)
         {
             var cashRegister = await _cashRegisters.GetByIdAsync(tenantId, cashRegisterId, ct);
-            if (cashRegister is null || cashRegister.CompanyId != companyId || !cashRegister.IsActive)
+            if (
+                cashRegister is null
+                || cashRegister.CompanyId != companyId
+                || !cashRegister.IsActive
+            )
                 return Result<PaymentDto>.ValidationFailure(
                     "La caja indicada no existe, no pertenece a esta empresa o está inactiva."
                 );
@@ -296,8 +310,7 @@ public sealed class RegisterCollectionCommandHandler
 
         foreach (var line in cmd.Lines)
         {
-            receivablesByDocId[line.DocumentId]
-                .RegisterCollection(line.AppliedAmount, _u.UserId);
+            receivablesByDocId[line.DocumentId].RegisterCollection(line.AppliedAmount, _u.UserId);
         }
 
         await _payments.AddAsync(payment, ct);

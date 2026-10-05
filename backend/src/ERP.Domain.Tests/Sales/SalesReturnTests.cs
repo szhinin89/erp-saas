@@ -223,14 +223,18 @@ public sealed class SalesReturnTests
         // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-4)
         var salesReturn = CreateDraft();
         var line = CreateLine(quantity: 2m, unitPrice: 10m); // Subtotal=20, VAT=3
-        line.ReplaceTaxes(
-            [
-                SalesReturnDetailTax.Create(
-                    line.Id, TenantId, "5", "5001", "IRBPNR", 0.02m,
-                    ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific, 0.24m
-                ),
-            ]
-        );
+        line.ReplaceTaxes([
+            SalesReturnDetailTax.Create(
+                line.Id,
+                TenantId,
+                "5",
+                "5001",
+                "IRBPNR",
+                0.02m,
+                ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific,
+                0.24m
+            ),
+        ]);
         salesReturn.AddLine(line, UserId);
         salesReturn.AddRefundAllocation(CreateAllocation(salesReturn, 23.24m), UserId);
 

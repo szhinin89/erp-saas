@@ -104,7 +104,11 @@ public sealed class ReauthenticateHandler
                 "Membresía no activa para la empresa. Inicia sesión nuevamente."
             );
 
-        var accessToken = _accessTokenService.GenerateSessionToken(user, v.TenantId, membership.Role);
+        var accessToken = _accessTokenService.GenerateSessionToken(
+            user,
+            v.TenantId,
+            membership.Role
+        );
 
         await _refreshTokenService.RevokeAsync(
             command.RawRefreshToken,

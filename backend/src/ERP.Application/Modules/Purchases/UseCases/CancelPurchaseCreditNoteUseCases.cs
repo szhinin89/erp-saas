@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Purchases.DTOs;
@@ -8,8 +10,6 @@ using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 using FluentValidation;
 using MediatR;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace ERP.Application.Modules.Purchases.UseCases;
 
@@ -151,10 +151,15 @@ public sealed class CancelPurchaseCreditNoteHandler
                     );
             }
 
-            if (creditNote.ApplicationType == PurchaseCreditNoteApplicationType.Return && creditNote.LinkedPurchaseReturnId is not null)
+            if (
+                creditNote.ApplicationType == PurchaseCreditNoteApplicationType.Return
+                && creditNote.LinkedPurchaseReturnId is not null
+            )
             {
                 await _uow.RollbackAsync(ct);
-                return Result<PurchaseCreditNoteDto>.ValidationFailure("Cancele la devolución vinculada para revertir la NC y sus movimientos.");
+                return Result<PurchaseCreditNoteDto>.ValidationFailure(
+                    "Cancele la devolución vinculada para revertir la NC y sus movimientos."
+                );
             }
 
             var wasAuthorized = creditNote.Status == PurchaseCreditNoteStatus.Authorized;
@@ -199,12 +204,20 @@ public sealed class CancelPurchaseCreditNoteHandler
                 // camino Return.
                 if (creditNote.ReceptionDocumentId is { } receptionDocumentId)
                 {
-                    var receptionDoc = await _receptionRepo.GetByIdAsync(tid, receptionDocumentId, ct);
+                    var receptionDoc = await _receptionRepo.GetByIdAsync(
+                        tid,
+                        receptionDocumentId,
+                        ct
+                    );
                     receptionDoc?.UnmarkProcessed(uid);
                 }
             }
 
-            var cancelHash = ComputeCancelPayloadHash(creditNote.Id, cmd.ClientRequestId, cmd.Reason);
+            var cancelHash = ComputeCancelPayloadHash(
+                creditNote.Id,
+                cmd.ClientRequestId,
+                cmd.Reason
+            );
             creditNote.Cancel(cmd.Reason, uid, cmd.ClientRequestId, cancelHash);
 
             try

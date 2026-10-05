@@ -145,7 +145,9 @@ public sealed class GetSriVatRatesQueryHandler
         // contra el día calendario ecuatoriano — nunca DateOnly.FromDateTime(DateTime.UtcNow), que
         // se adelanta un día entre las 19:00 y 23:59 hora Ecuador. ZH-TEMPORAL-CONTRACT-02: misma
         // aritmética única que CompanyClock (CompanyTimeZone), sin reloj paralelo.
-        var today = CompanyTimeZone.Today(CompanyTimeZone.Resolve(CompanyTimeZone.DefaultTimezoneId));
+        var today = CompanyTimeZone.Today(
+            CompanyTimeZone.Resolve(CompanyTimeZone.DefaultTimezoneId)
+        );
         var items = await _repo.GetActiveVatRatesAsync(today, cancellationToken);
         return Result<IReadOnlyList<SriVatRateDto>>.Success(
             items.Select(r => new SriVatRateDto(r.Code, r.Name, r.Percentage)).ToList()

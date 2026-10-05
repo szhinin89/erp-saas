@@ -43,6 +43,7 @@ public sealed class CommunicationOutbox : SystemAggregateRoot, IOptionalCompanyS
     public string? RecipientName { get; private set; }
     public string? RecipientEmail { get; private set; }
     public string? RecipientPhone { get; private set; }
+
     /// <summary>Null solo en una comunicación que falló al renderizar (nunca se envía; CHECK en BD).</summary>
     public string? Subject { get; private set; }
     public string? BodyHtml { get; private set; }
@@ -95,9 +96,11 @@ public sealed class CommunicationOutbox : SystemAggregateRoot, IOptionalCompanyS
     public Guid CreatedBy { get; private set; }
     public Guid? UpdatedBy { get; private set; }
 
-    public IReadOnlyCollection<CommunicationOutboxAttachment> Attachments => _attachments.AsReadOnly();
+    public IReadOnlyCollection<CommunicationOutboxAttachment> Attachments =>
+        _attachments.AsReadOnly();
 
-    public CommunicationScope Scope => CommunicationScope.From(ScopeKind, TenantId, CompanyId, BranchId);
+    public CommunicationScope Scope =>
+        CommunicationScope.From(ScopeKind, TenantId, CompanyId, BranchId);
 
     private CommunicationOutbox() { }
 
@@ -124,16 +127,34 @@ public sealed class CommunicationOutbox : SystemAggregateRoot, IOptionalCompanyS
         ArgumentNullException.ThrowIfNull(identity);
         ArgumentNullException.ThrowIfNull(template);
         if (!string.Equals(template.Key, identity.Purpose, StringComparison.Ordinal))
-            throw new ArgumentException("La TemplateKey debe ser la del propósito de la comunicación.", nameof(template));
+            throw new ArgumentException(
+                "La TemplateKey debe ser la del propósito de la comunicación.",
+                nameof(template)
+            );
         if (identity.Channel != CommunicationChannel.Email)
-            throw new ArgumentException("CreateEmail requiere una identidad del canal Email.", nameof(identity));
+            throw new ArgumentException(
+                "CreateEmail requiere una identidad del canal Email.",
+                nameof(identity)
+            );
         if (string.IsNullOrWhiteSpace(recipientEmail))
-            throw new ArgumentException("El correo destinatario es obligatorio.", nameof(recipientEmail));
+            throw new ArgumentException(
+                "El correo destinatario es obligatorio.",
+                nameof(recipientEmail)
+            );
         if (!recipientEmail.Contains('@', StringComparison.Ordinal))
-            throw new ArgumentException("El correo destinatario no es válido.", nameof(recipientEmail));
+            throw new ArgumentException(
+                "El correo destinatario no es válido.",
+                nameof(recipientEmail)
+            );
         if (string.IsNullOrWhiteSpace(bodyHtml) && string.IsNullOrWhiteSpace(bodyText))
-            throw new ArgumentException("La comunicación debe tener cuerpo HTML o texto.", nameof(bodyText));
-        if ((identity.ResendSequence > 0) != (resendOfCommunicationId is { } original && original != Guid.Empty))
+            throw new ArgumentException(
+                "La comunicación debe tener cuerpo HTML o texto.",
+                nameof(bodyText)
+            );
+        if (
+            (identity.ResendSequence > 0)
+            != (resendOfCommunicationId is { } original && original != Guid.Empty)
+        )
             throw new ArgumentException(
                 "Un reenvío manual requiere la comunicación original y una identidad de reenvío (y viceversa).",
                 nameof(resendOfCommunicationId)
@@ -154,7 +175,11 @@ public sealed class CommunicationOutbox : SystemAggregateRoot, IOptionalCompanyS
             SourceId = identity.Source.Id,
             RecipientRole = identity.RecipientRole,
             RecipientName = Optional(recipientName, RecipientNameMaxLen, nameof(recipientName)),
-            RecipientEmail = Required(recipientEmail.ToLowerInvariant(), RecipientEmailMaxLen, nameof(recipientEmail)),
+            RecipientEmail = Required(
+                recipientEmail.ToLowerInvariant(),
+                RecipientEmailMaxLen,
+                nameof(recipientEmail)
+            ),
             TemplateKey = template.Key,
             TemplateVersion = template.Version,
             TemplateSource = template.Source,
@@ -198,13 +223,34 @@ public sealed class CommunicationOutbox : SystemAggregateRoot, IOptionalCompanyS
     {
         ArgumentNullException.ThrowIfNull(identity);
         if (identity.Channel != CommunicationChannel.Email)
-            throw new ArgumentException("CreateEmailFailedBeforeDelivery requiere una identidad del canal Email.", nameof(identity));
-        if (category is not (CommunicationFailureCategory.Configuration or CommunicationFailureCategory.Permanent))
-            throw new ArgumentException("Un fallo previo a la entrega es de configuración o permanente.", nameof(category));
+            throw new ArgumentException(
+                "CreateEmailFailedBeforeDelivery requiere una identidad del canal Email.",
+                nameof(identity)
+            );
+        if (
+            category
+            is not (
+                CommunicationFailureCategory.Configuration
+                or CommunicationFailureCategory.Permanent
+            )
+        )
+            throw new ArgumentException(
+                "Un fallo previo a la entrega es de configuración o permanente.",
+                nameof(category)
+            );
         if (identity.ResendSequence > 0)
-            throw new ArgumentException("Un reenvío manual se renderiza al reenviarse; no nace fallido.", nameof(identity));
-        if (templatePayloadJson is not null && CommunicationPurposes.Get(identity.Purpose).IsSensitive)
-            throw new ArgumentException("Las variables de un propósito sensible nunca se persisten en claro.", nameof(templatePayloadJson));
+            throw new ArgumentException(
+                "Un reenvío manual se renderiza al reenviarse; no nace fallido.",
+                nameof(identity)
+            );
+        if (
+            templatePayloadJson is not null
+            && CommunicationPurposes.Get(identity.Purpose).IsSensitive
+        )
+            throw new ArgumentException(
+                "Las variables de un propósito sensible nunca se persisten en claro.",
+                nameof(templatePayloadJson)
+            );
 
         var scope = identity.Scope;
         var now = DateTime.UtcNow;
@@ -222,12 +268,19 @@ public sealed class CommunicationOutbox : SystemAggregateRoot, IOptionalCompanyS
             SourceId = identity.Source.Id,
             RecipientRole = identity.RecipientRole,
             RecipientName = Optional(recipientName, RecipientNameMaxLen, nameof(recipientName)),
-            RecipientEmail = Optional(recipientEmail?.ToLowerInvariant(), RecipientEmailMaxLen, nameof(recipientEmail)),
+            RecipientEmail = Optional(
+                recipientEmail?.ToLowerInvariant(),
+                RecipientEmailMaxLen,
+                nameof(recipientEmail)
+            ),
             TemplateKey = identity.Purpose,
             TemplatePayloadJson = templatePayloadJson,
             Status = CommunicationStatus.Failed,
             FailureCategory = category,
-            LastError = Truncate(Required(errorSafeText, int.MaxValue, nameof(errorSafeText)), LastErrorMaxLen),
+            LastError = Truncate(
+                Required(errorSafeText, int.MaxValue, nameof(errorSafeText)),
+                LastErrorMaxLen
+            ),
             FailedAtUtc = now,
             Priority = priority,
             ScheduledAtUtc = now,
@@ -238,7 +291,8 @@ public sealed class CommunicationOutbox : SystemAggregateRoot, IOptionalCompanyS
         };
     }
 
-    private static string Truncate(string value, int maxLength) => value.Length <= maxLength ? value : value[..maxLength];
+    private static string Truncate(string value, int maxLength) =>
+        value.Length <= maxLength ? value : value[..maxLength];
 
     /// <summary>
     /// Adjunta contenido por ruta de almacenamiento oficial, bytes, o <paramref name="referenceId"/>
@@ -255,7 +309,16 @@ public sealed class CommunicationOutbox : SystemAggregateRoot, IOptionalCompanyS
     ) =>
         _attachments.Add(
             CommunicationOutboxAttachment.Create(
-                TenantId, CompanyId, Id, attachmentType, fileName, contentType, fileStoragePath, binaryContent, referenceId, createdBy
+                TenantId,
+                CompanyId,
+                Id,
+                attachmentType,
+                fileName,
+                contentType,
+                fileStoragePath,
+                binaryContent,
+                referenceId,
+                createdBy
             )
         );
 
@@ -288,7 +351,10 @@ public sealed class CommunicationOutbox : SystemAggregateRoot, IOptionalCompanyS
     {
         var normalized = value.Trim();
         if (normalized.Length > maxLength)
-            throw new ArgumentException($"El valor no puede superar {maxLength} caracteres.", paramName);
+            throw new ArgumentException(
+                $"El valor no puede superar {maxLength} caracteres.",
+                paramName
+            );
         return normalized;
     }
 }

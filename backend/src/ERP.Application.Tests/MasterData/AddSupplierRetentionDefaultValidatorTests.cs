@@ -36,7 +36,9 @@ public sealed class AddSupplierRetentionDefaultValidatorTests
         var codeId = Guid.NewGuid();
         _resolver
             .Setup(r => r.GetSelectableByIdAsync(codeId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new RetentionCodeInfo("RENTA", "303", "Honorarios profesionales", 10m, codeId));
+            .ReturnsAsync(
+                new RetentionCodeInfo("RENTA", "303", "Honorarios profesionales", 10m, codeId)
+            );
 
         var cmd = new AddSupplierRetentionDefaultCommand(Guid.NewGuid(), codeId);
 
@@ -69,12 +71,24 @@ public sealed class AddSupplierRetentionDefaultValidatorTests
             .ReturnsAsync((RetentionCodeInfo?)null);
         _resolver
             .Setup(r => r.GetByIdIncludingDisabledAsync(Concept728, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new RetentionCodeInfo("IVA", "728", "Ret. IVA 15% – Constructoras", 15m, Concept728, IsActive: false));
+            .ReturnsAsync(
+                new RetentionCodeInfo(
+                    "IVA",
+                    "728",
+                    "Ret. IVA 15% – Constructoras",
+                    15m,
+                    Concept728,
+                    IsActive: false
+                )
+            );
 
         var result = await CreateValidator()
             .ValidateAsync(new AddSupplierRetentionDefaultCommand(Guid.NewGuid(), Concept728));
 
         result.Errors.Should().Contain(e => e.PropertyName.Contains("SriRetentionCodeId"));
-        _resolver.Verify(r => r.GetSelectableByIdAsync(Concept728, It.IsAny<CancellationToken>()), Times.Once);
+        _resolver.Verify(
+            r => r.GetSelectableByIdAsync(Concept728, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 }

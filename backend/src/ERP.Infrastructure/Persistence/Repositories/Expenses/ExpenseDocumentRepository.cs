@@ -20,7 +20,11 @@ public sealed class ExpenseDocumentRepository : IExpenseDocumentRepository
     private IQueryable<ExpenseDocument> Scoped(Guid tenantId) =>
         _db.ExpenseDocuments.ForOperationalScope(tenantId, _company);
 
-    public async Task<(IReadOnlyList<ExpenseDocument> Items, IReadOnlyDictionary<Guid, int> LineCounts, int Total)> GetPagedAsync(
+    public async Task<(
+        IReadOnlyList<ExpenseDocument> Items,
+        IReadOnlyDictionary<Guid, int> LineCounts,
+        int Total
+    )> GetPagedAsync(
         Guid tenantId,
         Guid branchId,
         string? search = null,
@@ -42,8 +46,10 @@ public sealed class ExpenseDocumentRepository : IExpenseDocumentRepository
             );
         }
 
-        if (!string.IsNullOrWhiteSpace(status)
-            && Enum.TryParse<ExpenseStatus>(status.Trim(), ignoreCase: true, out var parsedStatus))
+        if (
+            !string.IsNullOrWhiteSpace(status)
+            && Enum.TryParse<ExpenseStatus>(status.Trim(), ignoreCase: true, out var parsedStatus)
+        )
             query = query.Where(x => x.Status == parsedStatus);
 
         var total = await query.CountAsync(ct);
@@ -57,13 +63,14 @@ public sealed class ExpenseDocumentRepository : IExpenseDocumentRepository
             .ToListAsync(ct);
 
         var ids = items.Select(x => x.Id).ToArray();
-        var lineCounts = ids.Length == 0
-            ? new Dictionary<Guid, int>()
-            : await _db.ExpenseLines
-                .Where(x => ids.Contains(x.ExpenseDocumentId))
-                .GroupBy(x => x.ExpenseDocumentId)
-                .Select(x => new { DocumentId = x.Key, Count = x.Count() })
-                .ToDictionaryAsync(x => x.DocumentId, x => x.Count, ct);
+        var lineCounts =
+            ids.Length == 0
+                ? new Dictionary<Guid, int>()
+                : await _db
+                    .ExpenseLines.Where(x => ids.Contains(x.ExpenseDocumentId))
+                    .GroupBy(x => x.ExpenseDocumentId)
+                    .Select(x => new { DocumentId = x.Key, Count = x.Count() })
+                    .ToDictionaryAsync(x => x.DocumentId, x => x.Count, ct);
 
         return (items, lineCounts, total);
     }
@@ -116,10 +123,16 @@ public sealed class ExpenseDocumentRepository : IExpenseDocumentRepository
             .Select(x => (Guid?)x.Id)
             .FirstOrDefaultAsync(ct);
 
-    public Task<bool> ExistsByReceptionDocumentIdAsync(Guid tenantId, Guid receptionDocumentId, CancellationToken ct = default) =>
+    public Task<bool> ExistsByReceptionDocumentIdAsync(
+        Guid tenantId,
+        Guid receptionDocumentId,
+        CancellationToken ct = default
+    ) =>
         Scoped(tenantId)
             .AnyAsync(
-                x => x.ReceptionDocumentId == receptionDocumentId && x.Status != ExpenseStatus.Cancelled,
+                x =>
+                    x.ReceptionDocumentId == receptionDocumentId
+                    && x.Status != ExpenseStatus.Cancelled,
                 ct
             );
 

@@ -1,8 +1,8 @@
-using ERP.Domain.Kernel.Permissions;
-using FluentAssertions;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ERP.Domain.Kernel.Permissions;
+using FluentAssertions;
 
 namespace ERP.API.Tests.Integration;
 
@@ -14,7 +14,8 @@ namespace ERP.API.Tests.Integration;
 /// SupplierCredit, saldos), no solo por HTTP.
 /// </summary>
 [Trait("Category", "PostgreSql")]
-public sealed class FinancialCommandIdempotencyTests : IClassFixture<FinancialCommandIdempotencyFixture>
+public sealed class FinancialCommandIdempotencyTests
+    : IClassFixture<FinancialCommandIdempotencyFixture>
 {
     private const string SupplierPaymentsUrl = "/api/v1/supplier-payments";
     private const string CollectionsUrl = "/api/v1/finance/collections";
@@ -33,49 +34,105 @@ public sealed class FinancialCommandIdempotencyTests : IClassFixture<FinancialCo
         var http = await client.PostAsJsonAsync(url, body);
         var json = JsonDocument.Parse(await http.Content.ReadAsStringAsync()).RootElement;
         var code = json.TryGetProperty("code", out var c) ? c.GetString() ?? "" : "";
-        Guid? id = json.TryGetProperty("data", out var d) && d.ValueKind == JsonValueKind.Object && d.TryGetProperty("id", out var i)
-            ? i.GetGuid()
-            : null;
+        Guid? id =
+            json.TryGetProperty("data", out var d)
+            && d.ValueKind == JsonValueKind.Object
+            && d.TryGetProperty("id", out var i)
+                ? i.GetGuid()
+                : null;
         return new Response(http.StatusCode, code, id);
     }
 
-    private static Task<Response[]> PostConcurrentlyAsync(HttpClient client, string url, object body) =>
-        Task.WhenAll(Enumerable.Range(0, ConcurrentRequests).Select(_ => PostAsync(client, url, body)));
+    private static Task<Response[]> PostConcurrentlyAsync(
+        HttpClient client,
+        string url,
+        object body
+    ) =>
+        Task.WhenAll(
+            Enumerable.Range(0, ConcurrentRequests).Select(_ => PostAsync(client, url, body))
+        );
 
-    private object SupplierPayment(FinancialCommandIdempotencyFixture.Operator op, Guid installmentId, decimal amount, Guid clientRequestId, string? receipt = null) => new
-    {
-        supplierId = _f.SupplierId,
-        paymentDate = _f.Today,
-        totalAmount = amount,
-        receiptNumber = receipt,
-        methodLines = new[] { new { paymentMethodId = _f.CashMethodId, cashRegisterId = op.CashRegisterId, amount } },
-        applicationLines = new[] { new { accountsPayableInstallmentId = installmentId, amountApplied = amount } },
-        allocations = new[] { new { methodLineIndex = 0, applicationLineIndex = 0, amount } },
-        clientRequestId,
-    };
+    private object SupplierPayment(
+        FinancialCommandIdempotencyFixture.Operator op,
+        Guid installmentId,
+        decimal amount,
+        Guid clientRequestId,
+        string? receipt = null
+    ) =>
+        new
+        {
+            supplierId = _f.SupplierId,
+            paymentDate = _f.Today,
+            totalAmount = amount,
+            receiptNumber = receipt,
+            methodLines = new[]
+            {
+                new
+                {
+                    paymentMethodId = _f.CashMethodId,
+                    cashRegisterId = op.CashRegisterId,
+                    amount,
+                },
+            },
+            applicationLines = new[]
+            {
+                new { accountsPayableInstallmentId = installmentId, amountApplied = amount },
+            },
+            allocations = new[]
+            {
+                new
+                {
+                    methodLineIndex = 0,
+                    applicationLineIndex = 0,
+                    amount,
+                },
+            },
+            clientRequestId,
+        };
 
-    private object Collection(Guid receivableId, decimal amount, Guid clientRequestId, Guid? cashRegisterId = null) => new
-    {
-        customerId = _f.CustomerId,
-        amount,
-        paymentDate = _f.Today,
-        paymentMethodId = _f.CashMethodId,
-        reference = (string?)null,
-        lines = new[] { new { documentId = receivableId, installmentId = (Guid?)null, appliedAmount = amount } },
-        cashRegisterId,
-        clientRequestId,
-    };
+    private object Collection(
+        Guid receivableId,
+        decimal amount,
+        Guid clientRequestId,
+        Guid? cashRegisterId = null
+    ) =>
+        new
+        {
+            customerId = _f.CustomerId,
+            amount,
+            paymentDate = _f.Today,
+            paymentMethodId = _f.CashMethodId,
+            reference = (string?)null,
+            lines = new[]
+            {
+                new
+                {
+                    documentId = receivableId,
+                    installmentId = (Guid?)null,
+                    appliedAmount = amount,
+                },
+            },
+            cashRegisterId,
+            clientRequestId,
+        };
 
-    private object Movement(decimal amount, Guid clientRequestId, Guid? reasonId = null, string description = "Ingreso de prueba") => new
-    {
-        movementType = "ManualIncome",
-        reasonId = reasonId ?? _f.ManualIncomeReasonId,
-        amount,
-        description,
-        clientRequestId,
-    };
+    private object Movement(
+        decimal amount,
+        Guid clientRequestId,
+        Guid? reasonId = null,
+        string description = "Ingreso de prueba"
+    ) =>
+        new
+        {
+            movementType = "ManualIncome",
+            reasonId = reasonId ?? _f.ManualIncomeReasonId,
+            amount,
+            description,
+            clientRequestId,
+        };
 
-    private static string MovementsUrl(FinancialCommandIdempotencyFixture.Operator op) => $"/api/v1/cash-sessions/{op.CashSessionId}/movements";
+    private static string MovementsUrl(FinancialCommandIdempotencyFixture.Operator op) =>
+        $"/api/v1/cash-sessions/{op.CashSessionId}/movements";
 
     // ══ Pago a proveedor ═════════════════════════════════════════════════
 
@@ -134,7 +191,11 @@ public sealed class FinancialCommandIdempotencyTests : IClassFixture<FinancialCo
         var inst = await _f.CreatePayableInstallmentAsync(100m);
         var client = _f.CreateClient(op.UserId);
 
-        var responses = await PostConcurrentlyAsync(client, SupplierPaymentsUrl, SupplierPayment(op, inst, 100m, Guid.NewGuid()));
+        var responses = await PostConcurrentlyAsync(
+            client,
+            SupplierPaymentsUrl,
+            SupplierPayment(op, inst, 100m, Guid.NewGuid())
+        );
 
         responses.Should().OnlyContain(r => r.Status == HttpStatusCode.Created);
         responses.Select(r => r.Id).Distinct().Should().ContainSingle();
@@ -150,10 +211,16 @@ public sealed class FinancialCommandIdempotencyTests : IClassFixture<FinancialCo
         var inst = await _f.CreatePayableInstallmentAsync(300m);
         var client = _f.CreateClient(op.UserId);
         var key = Guid.NewGuid();
-        (await PostAsync(client, SupplierPaymentsUrl, SupplierPayment(op, inst, 100m, key))).Status.Should().Be(HttpStatusCode.Created);
+        (await PostAsync(client, SupplierPaymentsUrl, SupplierPayment(op, inst, 100m, key)))
+            .Status.Should()
+            .Be(HttpStatusCode.Created);
         var before = await _f.CountEffectsAsync(inst, sessionId: op.CashSessionId);
 
-        var conflict = await PostAsync(client, SupplierPaymentsUrl, SupplierPayment(op, inst, 150m, key));
+        var conflict = await PostAsync(
+            client,
+            SupplierPaymentsUrl,
+            SupplierPayment(op, inst, 150m, key)
+        );
 
         conflict.Status.Should().Be(HttpStatusCode.Conflict);
         conflict.Code.Should().Be("CONFLICT");
@@ -167,8 +234,16 @@ public sealed class FinancialCommandIdempotencyTests : IClassFixture<FinancialCo
         var inst = await _f.CreatePayableInstallmentAsync(300m);
         var client = _f.CreateClient(op.UserId);
 
-        var a = await PostAsync(client, SupplierPaymentsUrl, SupplierPayment(op, inst, 100m, Guid.NewGuid()));
-        var b = await PostAsync(client, SupplierPaymentsUrl, SupplierPayment(op, inst, 100m, Guid.NewGuid()));
+        var a = await PostAsync(
+            client,
+            SupplierPaymentsUrl,
+            SupplierPayment(op, inst, 100m, Guid.NewGuid())
+        );
+        var b = await PostAsync(
+            client,
+            SupplierPaymentsUrl,
+            SupplierPayment(op, inst, 100m, Guid.NewGuid())
+        );
 
         a.Status.Should().Be(HttpStatusCode.Created);
         b.Status.Should().Be(HttpStatusCode.Created);
@@ -193,7 +268,9 @@ public sealed class FinancialCommandIdempotencyTests : IClassFixture<FinancialCo
         var afterReject = await _f.CountEffectsAsync(inst, sessionId: op.CashSessionId);
         afterReject.Should().Be(before, "un rechazo no deja ningún efecto ni consume la intención");
 
-        (await PostAsync(client, MovementsUrl(op), Movement(100m, Guid.NewGuid()))).Status.Should().Be(HttpStatusCode.Created);
+        (await PostAsync(client, MovementsUrl(op), Movement(100m, Guid.NewGuid())))
+            .Status.Should()
+            .Be(HttpStatusCode.Created);
         var retried = await PostAsync(client, SupplierPaymentsUrl, body);
         var replay = await PostAsync(client, SupplierPaymentsUrl, body);
 
@@ -211,7 +288,13 @@ public sealed class FinancialCommandIdempotencyTests : IClassFixture<FinancialCo
         var op = await _f.CreateOperatorAsync();
         var inst = await _f.CreatePayableInstallmentAsync(300m);
         var client = _f.CreateClient(op.UserId);
-        var body = SupplierPayment(op, inst, 100m, Guid.NewGuid(), receipt: $"REC-{Guid.NewGuid():N}"[..20]);
+        var body = SupplierPayment(
+            op,
+            inst,
+            100m,
+            Guid.NewGuid(),
+            receipt: $"REC-{Guid.NewGuid():N}"[..20]
+        );
 
         var responses = await PostConcurrentlyAsync(client, SupplierPaymentsUrl, body);
 
@@ -227,7 +310,11 @@ public sealed class FinancialCommandIdempotencyTests : IClassFixture<FinancialCo
         var inst = await _f.CreatePayableInstallmentAsync(300m);
         var client = _f.CreateClient(op.UserId);
 
-        var response = await PostAsync(client, SupplierPaymentsUrl, SupplierPayment(op, inst, 100m, Guid.Empty));
+        var response = await PostAsync(
+            client,
+            SupplierPaymentsUrl,
+            SupplierPayment(op, inst, 100m, Guid.Empty)
+        );
 
         response.Status.Should().Be(HttpStatusCode.UnprocessableEntity);
         response.Code.Should().Be("VALIDATION_ERROR");
@@ -285,7 +372,11 @@ public sealed class FinancialCommandIdempotencyTests : IClassFixture<FinancialCo
         var receivable = await _f.CreateReceivableAsync(100m);
         var client = _f.CreateClient(op.UserId);
 
-        var responses = await PostConcurrentlyAsync(client, CollectionsUrl, Collection(receivable, 100m, Guid.NewGuid()));
+        var responses = await PostConcurrentlyAsync(
+            client,
+            CollectionsUrl,
+            Collection(receivable, 100m, Guid.NewGuid())
+        );
 
         responses.Should().OnlyContain(r => r.Status == HttpStatusCode.Created);
         responses.Select(r => r.Id).Distinct().Should().ContainSingle();
@@ -301,7 +392,9 @@ public sealed class FinancialCommandIdempotencyTests : IClassFixture<FinancialCo
         var receivable = await _f.CreateReceivableAsync(300m);
         var client = _f.CreateClient(op.UserId);
         var key = Guid.NewGuid();
-        (await PostAsync(client, CollectionsUrl, Collection(receivable, 100m, key))).Status.Should().Be(HttpStatusCode.Created);
+        (await PostAsync(client, CollectionsUrl, Collection(receivable, 100m, key)))
+            .Status.Should()
+            .Be(HttpStatusCode.Created);
         var before = await _f.CountEffectsAsync(receivableId: receivable);
 
         var conflict = await PostAsync(client, CollectionsUrl, Collection(receivable, 120m, key));
@@ -318,8 +411,16 @@ public sealed class FinancialCommandIdempotencyTests : IClassFixture<FinancialCo
         var receivable = await _f.CreateReceivableAsync(300m);
         var client = _f.CreateClient(op.UserId);
 
-        var a = await PostAsync(client, CollectionsUrl, Collection(receivable, 100m, Guid.NewGuid()));
-        var b = await PostAsync(client, CollectionsUrl, Collection(receivable, 100m, Guid.NewGuid()));
+        var a = await PostAsync(
+            client,
+            CollectionsUrl,
+            Collection(receivable, 100m, Guid.NewGuid())
+        );
+        var b = await PostAsync(
+            client,
+            CollectionsUrl,
+            Collection(receivable, 100m, Guid.NewGuid())
+        );
 
         a.Status.Should().Be(HttpStatusCode.Created);
         b.Status.Should().Be(HttpStatusCode.Created);
@@ -339,7 +440,9 @@ public sealed class FinancialCommandIdempotencyTests : IClassFixture<FinancialCo
         var body = Collection(receivable, 100m, Guid.NewGuid(), cashRegisterId: register);
         var before = await _f.CountEffectsAsync(receivableId: receivable);
 
-        (await PostAsync(client, CollectionsUrl, body)).Status.Should().NotBe(HttpStatusCode.Created);
+        (await PostAsync(client, CollectionsUrl, body))
+            .Status.Should()
+            .NotBe(HttpStatusCode.Created);
         (await _f.CountEffectsAsync(receivableId: receivable)).Should().Be(before);
 
         await _f.SetCashRegisterAccountAsync(register);
@@ -360,7 +463,11 @@ public sealed class FinancialCommandIdempotencyTests : IClassFixture<FinancialCo
         var receivable = await _f.CreateReceivableAsync(300m);
         var client = _f.CreateClient(op.UserId);
 
-        var response = await PostAsync(client, CollectionsUrl, Collection(receivable, 100m, Guid.Empty));
+        var response = await PostAsync(
+            client,
+            CollectionsUrl,
+            Collection(receivable, 100m, Guid.Empty)
+        );
 
         response.Status.Should().Be(HttpStatusCode.UnprocessableEntity);
         response.Code.Should().Be("VALIDATION_ERROR");
@@ -386,7 +493,9 @@ public sealed class FinancialCommandIdempotencyTests : IClassFixture<FinancialCo
         var after = await _f.CountEffectsAsync(sessionId: op.CashSessionId);
         (after.CashMovements - before.CashMovements).Should().Be(1);
         after.CashMovementsAmount.Should().Be(25m);
-        (after.JournalEntries - before.JournalEntries).Should().Be(0, "un movimiento manual nunca postea");
+        (after.JournalEntries - before.JournalEntries)
+            .Should()
+            .Be(0, "un movimiento manual nunca postea");
         (after.OutboxMessages - before.OutboxMessages).Should().Be(0);
     }
 
@@ -413,7 +522,9 @@ public sealed class FinancialCommandIdempotencyTests : IClassFixture<FinancialCo
         var client = _f.CreateClient(op.UserId);
 
         var responses = await Task.WhenAll(
-            Enumerable.Range(0, ConcurrentRequests).Select(_ => PostAsync(client, MovementsUrl(op), Movement(10m, Guid.NewGuid())))
+            Enumerable
+                .Range(0, ConcurrentRequests)
+                .Select(_ => PostAsync(client, MovementsUrl(op), Movement(10m, Guid.NewGuid())))
         );
 
         responses.Should().OnlyContain(r => r.Status == HttpStatusCode.Created);
@@ -428,7 +539,9 @@ public sealed class FinancialCommandIdempotencyTests : IClassFixture<FinancialCo
         var op = await _f.CreateOperatorAsync();
         var client = _f.CreateClient(op.UserId);
         var key = Guid.NewGuid();
-        (await PostAsync(client, MovementsUrl(op), Movement(25m, key))).Status.Should().Be(HttpStatusCode.Created);
+        (await PostAsync(client, MovementsUrl(op), Movement(25m, key)))
+            .Status.Should()
+            .Be(HttpStatusCode.Created);
         var before = await _f.CountEffectsAsync(sessionId: op.CashSessionId);
 
         var conflict = await PostAsync(client, MovementsUrl(op), Movement(30m, key));
@@ -446,7 +559,9 @@ public sealed class FinancialCommandIdempotencyTests : IClassFixture<FinancialCo
         var reason = await _f.CreateManualIncomeReasonAsync(active: false);
         var body = Movement(25m, Guid.NewGuid(), reasonId: reason);
 
-        (await PostAsync(client, MovementsUrl(op), body)).Status.Should().NotBe(HttpStatusCode.Created);
+        (await PostAsync(client, MovementsUrl(op), body))
+            .Status.Should()
+            .NotBe(HttpStatusCode.Created);
         (await _f.CountEffectsAsync(sessionId: op.CashSessionId)).CashMovements.Should().Be(0);
 
         await _f.EnableReasonAsync(reason);

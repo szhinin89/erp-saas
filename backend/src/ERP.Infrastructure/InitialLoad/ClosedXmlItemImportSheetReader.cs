@@ -32,7 +32,9 @@ public sealed class ClosedXmlItemImportSheetReader : IItemImportSheetReader
         {
             var sheet = workbook.Worksheets.FirstOrDefault(w => !IsInstructionsSheet(w.Name));
             if (sheet is null)
-                throw new DomainRuleViolationException("El archivo no contiene ninguna hoja de datos.");
+                throw new DomainRuleViolationException(
+                    "El archivo no contiene ninguna hoja de datos."
+                );
 
             var headerRow = sheet.Row(1);
             var columnIndexes = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -55,10 +57,9 @@ public sealed class ClosedXmlItemImportSheetReader : IItemImportSheetReader
                 var values = new Dictionary<string, string?>();
                 foreach (var column in ItemImportColumns.All)
                 {
-                    var value =
-                        columnIndexes.TryGetValue(column, out var colIndex)
-                            ? row.Cell(colIndex).GetString().Trim()
-                            : null;
+                    var value = columnIndexes.TryGetValue(column, out var colIndex)
+                        ? row.Cell(colIndex).GetString().Trim()
+                        : null;
                     values[column] = string.IsNullOrEmpty(value) ? null : value;
                 }
                 rows.Add(values);
@@ -111,8 +112,8 @@ public sealed class ClosedXmlItemImportSheetReader : IItemImportSheetReader
         instructions.Cell(6, 1).Value =
             "IVA: código del catálogo SRI de tarifas de IVA — opcional, déjelo vacío si no aplica.";
         instructions.Cell(7, 1).Value =
-            "Categoría / Marca: escriba el NOMBRE (no el código). Si no existe, la fila se bloquea salvo que active " +
-            "\"Crear categorías/marcas nuevas si no existen\" al subir el archivo — en ese caso se crean automáticamente al confirmar.";
+            "Categoría / Marca: escriba el NOMBRE (no el código). Si no existe, la fila se bloquea salvo que active "
+            + "\"Crear categorías/marcas nuevas si no existen\" al subir el archivo — en ese caso se crean automáticamente al confirmar.";
         instructions.Cell(8, 1).Value =
             "Código Barra 1/2/3: hasta 3 códigos de barras por producto. Al menos uno es obligatorio.";
         instructions.Cell(9, 1).Value =
@@ -120,9 +121,9 @@ public sealed class ClosedXmlItemImportSheetReader : IItemImportSheetReader
         instructions.Cell(10, 1).Value =
             "Disponible POS: SI/NO — se ignora y queda en NO si no hay PVP válido.";
         instructions.Cell(11, 1).Value =
-            "Proveedor / Código Proveedor: opcionales. Proveedor debe coincidir con un único proveedor activo existente " +
-            "(por nombre o identificación) para vincular el Código Proveedor — si no hay coincidencia única, el producto se " +
-            "importa igual sin ese vínculo.";
+            "Proveedor / Código Proveedor: opcionales. Proveedor debe coincidir con un único proveedor activo existente "
+            + "(por nombre o identificación) para vincular el Código Proveedor — si no hay coincidencia única, el producto se "
+            + "importa igual sin ese vínculo.";
         instructions.Cell(12, 1).Value =
             "Costo: se lee pero no se importa en esta versión — no afecta Kardex ni costeo.";
         instructions.Cell(13, 1).Value = "No modifique los encabezados de la fila 1.";

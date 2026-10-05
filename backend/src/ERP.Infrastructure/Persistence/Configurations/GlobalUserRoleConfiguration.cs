@@ -15,11 +15,7 @@ public sealed class GlobalUserRoleConfiguration : IEntityTypeConfiguration<Globa
 
         builder.Property(x => x.UserId).HasColumnName("user_id").IsRequired();
 
-        builder
-            .Property(x => x.Role)
-            .HasColumnName("role")
-            .HasMaxLength(50)
-            .IsRequired();
+        builder.Property(x => x.Role).HasColumnName("role").HasMaxLength(50).IsRequired();
 
         builder
             .Property(x => x.IsActive)

@@ -1,10 +1,10 @@
+using System.Reflection;
 using ERP.Application.Common;
 using ERP.Application.Modules.Companies.DTOs;
 using ERP.Application.Modules.Companies.UseCases.GetCompanyOperationalReadiness;
 using ERP.Domain.Modules.Company.Interfaces;
 using FluentAssertions;
 using Moq;
-using System.Reflection;
 
 namespace ERP.Application.Tests.Companies;
 
@@ -63,11 +63,11 @@ public sealed class GetCompanyOperationalReadinessQueryHandlerTests
             }
         );
 
-        f.Resolver
-            .Setup(r => r.GetAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+        f.Resolver.Setup(r => r.GetAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(domainResult);
 
-        var result = await f.BuildHandler().Handle(new GetCompanyOperationalReadinessQuery(), default);
+        var result = await f.BuildHandler()
+            .Handle(new GetCompanyOperationalReadinessQuery(), default);
 
         result.IsSuccess.Should().BeTrue();
         var dto = result.Value!;
@@ -92,8 +92,7 @@ public sealed class GetCompanyOperationalReadinessQueryHandlerTests
     public async Task Handle_resuelve_tenant_y_company_del_contexto_autenticado_nunca_del_request()
     {
         var f = new Fixture();
-        f.Resolver
-            .Setup(r => r.GetAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+        f.Resolver.Setup(r => r.GetAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(
                 new CompanyOperationalReadinessResult(
                     ReadinessStatus.Ready,
@@ -136,7 +135,12 @@ public sealed class GetCompanyOperationalReadinessQueryHandlerTests
                 if (propType.Namespace.StartsWith("System", StringComparison.Ordinal))
                     continue;
 
-                propType.Namespace.Should().NotContain(".Entities", $"la propiedad {type.Name}.{prop.Name} no debe exponer una entidad de dominio");
+                propType
+                    .Namespace.Should()
+                    .NotContain(
+                        ".Entities",
+                        $"la propiedad {type.Name}.{prop.Name} no debe exponer una entidad de dominio"
+                    );
                 propType.Namespace.Should().NotStartWith("ERP.Domain.Branches");
 
                 if (propType.Namespace.StartsWith(allowedNamespacePrefix, StringComparison.Ordinal))

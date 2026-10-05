@@ -27,7 +27,10 @@ public sealed class CashFundingRequestsControllerTests
         services.AddSingleton<IWebHostEnvironment>(new StubWebHostEnvironment());
         controller.ControllerContext = new ControllerContext
         {
-            HttpContext = new DefaultHttpContext { RequestServices = services.BuildServiceProvider() },
+            HttpContext = new DefaultHttpContext
+            {
+                RequestServices = services.BuildServiceProvider(),
+            },
         };
         return controller;
     }
@@ -37,22 +40,56 @@ public sealed class CashFundingRequestsControllerTests
         public string EnvironmentName { get; set; } = "Development";
         public string ApplicationName { get; set; } = "ERP.API.Tests";
         public string WebRootPath { get; set; } = "";
-        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; } = null!;
+        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; } =
+            null!;
         public string ContentRootPath { get; set; } = "";
-        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } = null!;
+        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } =
+            null!;
     }
 
     private static CashFundingRequestDto Detail(Guid id, string supplierName = "") =>
-        new(id, "Pending", Guid.NewGuid(), "", Guid.NewGuid(), "", Guid.NewGuid(), Guid.NewGuid(), supplierName, 50m, 50m,
-            Guid.NewGuid(), "", DateTime.UtcNow, null, null, null, null, null, null, null, [], [], false, false, false);
+        new(
+            id,
+            "Pending",
+            Guid.NewGuid(),
+            "",
+            Guid.NewGuid(),
+            "",
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            supplierName,
+            50m,
+            50m,
+            Guid.NewGuid(),
+            "",
+            DateTime.UtcNow,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            [],
+            [],
+            false,
+            false,
+            false
+        );
 
     [Theory]
     [InlineData(nameof(CashFundingRequestsController.Create), SupplierPaymentsPermissions.Create)]
     [InlineData(nameof(CashFundingRequestsController.GetMine), SupplierPaymentsPermissions.Create)]
     [InlineData(nameof(CashFundingRequestsController.Cancel), SupplierPaymentsPermissions.Create)]
     [InlineData(nameof(CashFundingRequestsController.GetList), CajaPermissions.FundingRequestsView)]
-    [InlineData(nameof(CashFundingRequestsController.Fulfill), CajaPermissions.FundingRequestsFulfill)]
-    [InlineData(nameof(CashFundingRequestsController.Reject), CajaPermissions.FundingRequestsFulfill)]
+    [InlineData(
+        nameof(CashFundingRequestsController.Fulfill),
+        CajaPermissions.FundingRequestsFulfill
+    )]
+    [InlineData(
+        nameof(CashFundingRequestsController.Reject),
+        CajaPermissions.FundingRequestsFulfill
+    )]
     public void Cada_endpoint_declara_su_permiso(string methodName, string expectedPermission)
     {
         var attr = typeof(CashFundingRequestsController)
@@ -92,7 +129,10 @@ public sealed class CashFundingRequestsControllerTests
             {
                 case CreateCashFundingRequestCommand c:
                     sent = c;
-                    return Result<CashFundingRequestDto>.Success(Detail(id), ApiResponseCodes.Common.Created);
+                    return Result<CashFundingRequestDto>.Success(
+                        Detail(id),
+                        ApiResponseCodes.Common.Created
+                    );
                 case GetCashFundingRequestByIdQuery q when q.Id == id:
                     reread = true;
                     return Result<CashFundingRequestDto>.Success(Detail(id, "Proveedor"));
@@ -100,15 +140,29 @@ public sealed class CashFundingRequestsControllerTests
                     throw new InvalidOperationException(req.GetType().Name);
             }
         });
-        var body = new CreateCashFundingRequestRequest(Guid.NewGuid(), new DateOnly(2026, 9, 17), 50m, "R-1",
-            [new SupplierPaymentMethodLineRequest(Guid.NewGuid(), null, Guid.NewGuid(), 50m)], null, null, clientRequestId);
+        var body = new CreateCashFundingRequestRequest(
+            Guid.NewGuid(),
+            new DateOnly(2026, 9, 17),
+            50m,
+            "R-1",
+            [new SupplierPaymentMethodLineRequest(Guid.NewGuid(), null, Guid.NewGuid(), 50m)],
+            null,
+            null,
+            clientRequestId
+        );
 
         var response = await controller.Create(body, CancellationToken.None);
 
-        response.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(StatusCodes.Status201Created);
+        response
+            .Should()
+            .BeOfType<ObjectResult>()
+            .Which.StatusCode.Should()
+            .Be(StatusCodes.Status201Created);
         reread.Should().BeTrue();
         sent!.ClientRequestId.Should().Be(clientRequestId);
-        (sent.Payment.SupplierId, sent.Payment.TotalAmount, sent.Payment.ReceiptNumber).Should().Be((body.SupplierId, 50m, "R-1"));
+        (sent.Payment.SupplierId, sent.Payment.TotalAmount, sent.Payment.ReceiptNumber)
+            .Should()
+            .Be((body.SupplierId, 50m, "R-1"));
         sent.Payment.ApplicationLines.Should().BeEmpty();
     }
 
@@ -116,12 +170,18 @@ public sealed class CashFundingRequestsControllerTests
     public async Task Comando_sin_acceso_al_detalle_conserva_la_respuesta_del_comando()
     {
         var id = Guid.NewGuid();
-        var controller = BuildController(req => req switch
-        {
-            FulfillCashFundingRequestCommand => Result<CashFundingRequestDto>.Success(Detail(id)),
-            GetCashFundingRequestByIdQuery => Result<CashFundingRequestDto>.NotFound("Solicitud de efectivo no encontrada."),
-            _ => throw new InvalidOperationException(req.GetType().Name),
-        });
+        var controller = BuildController(req =>
+            req switch
+            {
+                FulfillCashFundingRequestCommand => Result<CashFundingRequestDto>.Success(
+                    Detail(id)
+                ),
+                GetCashFundingRequestByIdQuery => Result<CashFundingRequestDto>.NotFound(
+                    "Solicitud de efectivo no encontrada."
+                ),
+                _ => throw new InvalidOperationException(req.GetType().Name),
+            }
+        );
 
         (await controller.Fulfill(id, CancellationToken.None)).Should().BeOfType<OkObjectResult>();
     }
@@ -129,34 +189,61 @@ public sealed class CashFundingRequestsControllerTests
     [Fact]
     public async Task Rechazo_de_dominio_se_mapea_a_422_sin_releer()
     {
-        var controller = BuildController(req => req switch
-        {
-            RejectCashFundingRequestCommand => Result<CashFundingRequestDto>.ValidationFailure("La caja de la solicitud ya no está abierta."),
-            _ => throw new InvalidOperationException(req.GetType().Name),
-        });
+        var controller = BuildController(req =>
+            req switch
+            {
+                RejectCashFundingRequestCommand => Result<CashFundingRequestDto>.ValidationFailure(
+                    "La caja de la solicitud ya no está abierta."
+                ),
+                _ => throw new InvalidOperationException(req.GetType().Name),
+            }
+        );
 
-        (await controller.Reject(Guid.NewGuid(), new CashFundingRequestReasonRequest("x"), CancellationToken.None))
-            .Should().BeOfType<UnprocessableEntityObjectResult>();
+        (
+            await controller.Reject(
+                Guid.NewGuid(),
+                new CashFundingRequestReasonRequest("x"),
+                CancellationToken.None
+            )
+        )
+            .Should()
+            .BeOfType<UnprocessableEntityObjectResult>();
     }
 
     [Fact]
     public async Task Cancel_ajena_se_mapea_a_403()
     {
-        var controller = BuildController(req => req switch
-        {
-            CancelCashFundingRequestCommand => Result<CashFundingRequestDto>.Forbidden("Solo quien solicitó el efectivo puede cancelar la solicitud."),
-            _ => throw new InvalidOperationException(req.GetType().Name),
-        });
+        var controller = BuildController(req =>
+            req switch
+            {
+                CancelCashFundingRequestCommand => Result<CashFundingRequestDto>.Forbidden(
+                    "Solo quien solicitó el efectivo puede cancelar la solicitud."
+                ),
+                _ => throw new InvalidOperationException(req.GetType().Name),
+            }
+        );
 
-        var response = await controller.Cancel(Guid.NewGuid(), new CashFundingRequestReasonRequest("x"), CancellationToken.None);
-        response.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        var response = await controller.Cancel(
+            Guid.NewGuid(),
+            new CashFundingRequestReasonRequest("x"),
+            CancellationToken.None
+        );
+        response
+            .Should()
+            .BeOfType<ObjectResult>()
+            .Which.StatusCode.Should()
+            .Be(StatusCodes.Status403Forbidden);
     }
 
     [Fact]
     public async Task Detalle_inaccesible_es_404()
     {
-        var controller = BuildController(_ => Result<CashFundingRequestDto>.NotFound("Solicitud de efectivo no encontrada."));
-        (await controller.GetById(Guid.NewGuid(), CancellationToken.None)).Should().BeOfType<NotFoundObjectResult>();
+        var controller = BuildController(_ =>
+            Result<CashFundingRequestDto>.NotFound("Solicitud de efectivo no encontrada.")
+        );
+        (await controller.GetById(Guid.NewGuid(), CancellationToken.None))
+            .Should()
+            .BeOfType<NotFoundObjectResult>();
     }
 
     [Fact]
@@ -171,11 +258,19 @@ public sealed class CashFundingRequestsControllerTests
         var register = Guid.NewGuid();
         var requester = Guid.NewGuid();
 
-        (await controller.GetList("Pending", register, requester, 2, 10, CancellationToken.None)).Should().BeOfType<OkObjectResult>();
+        (await controller.GetList("Pending", register, requester, 2, 10, CancellationToken.None))
+            .Should()
+            .BeOfType<OkObjectResult>();
         sent.Should().Be(new GetCashFundingRequestListQuery("Pending", register, requester, 2, 10));
 
-        (await controller.GetMine("Rejected", 3, 5, CancellationToken.None)).Should().BeOfType<OkObjectResult>();
+        (await controller.GetMine("Rejected", 3, 5, CancellationToken.None))
+            .Should()
+            .BeOfType<OkObjectResult>();
         sent.Should().Be(new GetMyCashFundingRequestsQuery("Rejected", 3, 5));
-        typeof(GetMyCashFundingRequestsQuery).GetProperties().Select(p => p.Name).Should().NotContain("RequestedByUserId");
+        typeof(GetMyCashFundingRequestsQuery)
+            .GetProperties()
+            .Select(p => p.Name)
+            .Should()
+            .NotContain("RequestedByUserId");
     }
 }

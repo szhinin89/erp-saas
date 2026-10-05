@@ -747,14 +747,16 @@ public sealed class PurchaseInvoice
         // facturas sin IRBPNR esa dimensión es constante (null/0) en todas las líneas, así que el
         // agrupamiento por (VatCode, VatRate, IceCode, IceRate) queda idéntico al comportamiento
         // anterior — no se colapsan ni se dividen grupos existentes.
-        var groups = _lines.GroupBy(l => (
-            l.VatCode,
-            l.VatRate,
-            l.IceCode,
-            l.IceRate,
-            l.IrbpnrCode,
-            IrbpnrRate: l.IrbpnrRate ?? 0m
-        ));
+        var groups = _lines.GroupBy(l =>
+            (
+                l.VatCode,
+                l.VatRate,
+                l.IceCode,
+                l.IceRate,
+                l.IrbpnrCode,
+                IrbpnrRate: l.IrbpnrRate ?? 0m
+            )
+        );
         foreach (var group in groups)
         {
             var (vatCode, vatRate, iceCode, iceRate, irbpnrCode, irbpnrRate) = group.Key;

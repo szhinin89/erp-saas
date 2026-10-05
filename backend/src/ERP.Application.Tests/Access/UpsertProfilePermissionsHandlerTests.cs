@@ -75,14 +75,15 @@ public sealed class UpsertProfilePermissionsHandlerTests
             .ReturnsAsync(Array.Empty<CompanyUserMembership>());
     }
 
-    private void SetAssignerRole(string? role) =>
-        _currentUser.SetupGet(x => x.Role).Returns(role);
+    private void SetAssignerRole(string? role) => _currentUser.SetupGet(x => x.Role).Returns(role);
 
     private void SetAssignerEffectivePermissions(params string[] keys)
     {
         _companyContext
             .Setup(x => x.ResolveOperationalForCurrentUserAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new OperationalCompanyContext(CompanyId, UserId, AssignerProfileId, true));
+            .ReturnsAsync(
+                new OperationalCompanyContext(CompanyId, UserId, AssignerProfileId, true)
+            );
         _effectivePermissionKeys
             .Setup(x =>
                 x.GetAllowedKeysAsync(
@@ -117,7 +118,12 @@ public sealed class UpsertProfilePermissionsHandlerTests
         result.Error.Should().Contain("totally.made.up.permission");
 
         _repo.Verify(
-            x => x.GetProfileByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            x =>
+                x.GetProfileByIdAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
         _repo.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -163,7 +169,11 @@ public sealed class UpsertProfilePermissionsHandlerTests
         result.Value!.Saved.Should().ContainSingle().Which.Should().Be("access.profiles.view");
         result.Value.Rejected.Should().BeEmpty();
         _repo.Verify(
-            x => x.AddProfilePermissionAsync(It.IsAny<AccessProfilePermission>(), It.IsAny<CancellationToken>()),
+            x =>
+                x.AddProfilePermissionAsync(
+                    It.IsAny<AccessProfilePermission>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Once
         );
         _repo.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);

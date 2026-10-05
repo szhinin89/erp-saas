@@ -78,7 +78,9 @@ public sealed class PaymentMethodSriMappingBackfillServiceTests
         var result = await service.RunAsync();
 
         result.RowsUpdated.Should().Be(1);
-        var reloaded = await db.PaymentMethods.IgnoreQueryFilters().SingleAsync(pm => pm.Id == cash.Id);
+        var reloaded = await db
+            .PaymentMethods.IgnoreQueryFilters()
+            .SingleAsync(pm => pm.Id == cash.Id);
         reloaded.SriPaymentMethodCode.Should().Be("01");
     }
 
@@ -88,11 +90,24 @@ public sealed class PaymentMethodSriMappingBackfillServiceTests
         var dbName = Guid.NewGuid().ToString();
         await using var db = NewDbContext(dbName);
         var transfer = PaymentMethod.Create(
-            TenantA, "TRANSFERENCIA", "Transferencia Bancaria", true, false, 3, ActorId,
+            TenantA,
+            "TRANSFERENCIA",
+            "Transferencia Bancaria",
+            true,
+            false,
+            3,
+            ActorId,
             PaymentMethodDetailType.Transfer
         );
         var cheque = PaymentMethod.Create(
-            TenantA, "CHEQUE", "Cheque", true, false, 4, ActorId, PaymentMethodDetailType.Check
+            TenantA,
+            "CHEQUE",
+            "Cheque",
+            true,
+            false,
+            4,
+            ActorId,
+            PaymentMethodDetailType.Check
         );
         db.PaymentMethods.AddRange(transfer, cheque);
         await db.SaveChangesAsync();
@@ -102,9 +117,11 @@ public sealed class PaymentMethodSriMappingBackfillServiceTests
 
         result.RowsUpdated.Should().Be(2);
         (await db.PaymentMethods.IgnoreQueryFilters().SingleAsync(pm => pm.Id == transfer.Id))
-            .SriPaymentMethodCode.Should().Be("20");
+            .SriPaymentMethodCode.Should()
+            .Be("20");
         (await db.PaymentMethods.IgnoreQueryFilters().SingleAsync(pm => pm.Id == cheque.Id))
-            .SriPaymentMethodCode.Should().Be("20");
+            .SriPaymentMethodCode.Should()
+            .Be("20");
     }
 
     [Fact]
@@ -113,7 +130,13 @@ public sealed class PaymentMethodSriMappingBackfillServiceTests
         var dbName = Guid.NewGuid().ToString();
         await using var db = NewDbContext(dbName);
         var card = PaymentMethod.Create(
-            TenantA, "TARJETA", "Tarjeta de Crédito", true, false, 2, ActorId,
+            TenantA,
+            "TARJETA",
+            "Tarjeta de Crédito",
+            true,
+            false,
+            2,
+            ActorId,
             PaymentMethodDetailType.Card
         );
         db.PaymentMethods.Add(card);
@@ -123,7 +146,8 @@ public sealed class PaymentMethodSriMappingBackfillServiceTests
         await service.RunAsync();
 
         (await db.PaymentMethods.IgnoreQueryFilters().SingleAsync(pm => pm.Id == card.Id))
-            .SriPaymentMethodCode.Should().Be("19");
+            .SriPaymentMethodCode.Should()
+            .Be("19");
     }
 
     [Fact]
@@ -134,16 +158,27 @@ public sealed class PaymentMethodSriMappingBackfillServiceTests
         var cash = PaymentMethod.Create(TenantA, "EFECTIVO", "Efectivo", false, false, 1, ActorId);
         // Simula que el operador ya configuró manualmente un código distinto al sugerido (p. ej.
         // "15" — Compensación de deudas) antes de correr el backfill.
-        cash.Update(cash.Name, cash.RequiresReference, cash.IsCreditAllowed, cash.SortOrder, ActorId, cash.DetailType, "15");
+        cash.Update(
+            cash.Name,
+            cash.RequiresReference,
+            cash.IsCreditAllowed,
+            cash.SortOrder,
+            ActorId,
+            cash.DetailType,
+            "15"
+        );
         db.PaymentMethods.Add(cash);
         await db.SaveChangesAsync();
 
         var service = NewService(db, FullCatalog);
         var result = await service.RunAsync();
 
-        result.RowsUpdated.Should().Be(0, because: "ya tenía un mapeo configurado, el backfill no debe tocarlo");
+        result
+            .RowsUpdated.Should()
+            .Be(0, because: "ya tenía un mapeo configurado, el backfill no debe tocarlo");
         (await db.PaymentMethods.IgnoreQueryFilters().SingleAsync(pm => pm.Id == cash.Id))
-            .SriPaymentMethodCode.Should().Be("15");
+            .SriPaymentMethodCode.Should()
+            .Be("15");
     }
 
     [Fact]
@@ -163,7 +198,8 @@ public sealed class PaymentMethodSriMappingBackfillServiceTests
         result.RowsUpdated.Should().Be(0);
         result.SkippedInactiveCatalog.Should().Be(1);
         (await db.PaymentMethods.IgnoreQueryFilters().SingleAsync(pm => pm.Id == cash.Id))
-            .SriPaymentMethodCode.Should().BeNull();
+            .SriPaymentMethodCode.Should()
+            .BeNull();
     }
 
     [Fact]
@@ -171,9 +207,7 @@ public sealed class PaymentMethodSriMappingBackfillServiceTests
     {
         var dbName = Guid.NewGuid().ToString();
         await using var db = NewDbContext(dbName);
-        var credito = PaymentMethod.Create(
-            TenantA, "CREDITO", "Crédito", false, true, 5, ActorId
-        );
+        var credito = PaymentMethod.Create(TenantA, "CREDITO", "Crédito", false, true, 5, ActorId);
         db.PaymentMethods.Add(credito);
         await db.SaveChangesAsync();
 
@@ -183,7 +217,8 @@ public sealed class PaymentMethodSriMappingBackfillServiceTests
         result.RowsUpdated.Should().Be(0);
         result.SkippedNoMapping.Should().Be(1);
         (await db.PaymentMethods.IgnoreQueryFilters().SingleAsync(pm => pm.Id == credito.Id))
-            .SriPaymentMethodCode.Should().BeNull();
+            .SriPaymentMethodCode.Should()
+            .BeNull();
     }
 
     [Fact]
@@ -191,8 +226,24 @@ public sealed class PaymentMethodSriMappingBackfillServiceTests
     {
         var dbName = Guid.NewGuid().ToString();
         await using var db = NewDbContext(dbName);
-        var cashTenantA = PaymentMethod.Create(TenantA, "EFECTIVO", "Efectivo", false, false, 1, ActorId);
-        var cashTenantB = PaymentMethod.Create(TenantB, "EFECTIVO", "Efectivo", false, false, 1, ActorId);
+        var cashTenantA = PaymentMethod.Create(
+            TenantA,
+            "EFECTIVO",
+            "Efectivo",
+            false,
+            false,
+            1,
+            ActorId
+        );
+        var cashTenantB = PaymentMethod.Create(
+            TenantB,
+            "EFECTIVO",
+            "Efectivo",
+            false,
+            false,
+            1,
+            ActorId
+        );
         db.PaymentMethods.AddRange(cashTenantA, cashTenantB);
         await db.SaveChangesAsync();
 
@@ -200,8 +251,12 @@ public sealed class PaymentMethodSriMappingBackfillServiceTests
         var result = await service.RunAsync();
 
         result.RowsUpdated.Should().Be(2);
-        var reloadedA = await db.PaymentMethods.IgnoreQueryFilters().SingleAsync(pm => pm.Id == cashTenantA.Id);
-        var reloadedB = await db.PaymentMethods.IgnoreQueryFilters().SingleAsync(pm => pm.Id == cashTenantB.Id);
+        var reloadedA = await db
+            .PaymentMethods.IgnoreQueryFilters()
+            .SingleAsync(pm => pm.Id == cashTenantA.Id);
+        var reloadedB = await db
+            .PaymentMethods.IgnoreQueryFilters()
+            .SingleAsync(pm => pm.Id == cashTenantB.Id);
         reloadedA.TenantId.Should().Be(TenantA);
         reloadedB.TenantId.Should().Be(TenantB);
         reloadedA.SriPaymentMethodCode.Should().Be("01");
@@ -222,7 +277,9 @@ public sealed class PaymentMethodSriMappingBackfillServiceTests
         var second = await service.RunAsync();
 
         first.RowsUpdated.Should().Be(1);
-        second.RowsUpdated.Should().Be(0, because: "ya no quedan filas con SriPaymentMethodCode null");
+        second
+            .RowsUpdated.Should()
+            .Be(0, because: "ya no quedan filas con SriPaymentMethodCode null");
     }
 
     private sealed class FixedCurrentCompany(Guid companyId) : ICurrentCompany

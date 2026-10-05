@@ -67,10 +67,7 @@ public sealed class StockRepository : IStockRepository
     ) =>
         _db.Set<CurrentStock>()
             .ForOperationalScope(tenantId, _company)
-            .FirstOrDefaultAsync(
-                s => s.WarehouseId == warehouseId && s.ProductId == productId,
-                ct
-            );
+            .FirstOrDefaultAsync(s => s.WarehouseId == warehouseId && s.ProductId == productId, ct);
 
     public async Task<IReadOnlyList<CurrentStock>> GetStockByWarehouseAsync(
         Guid tenantId,
@@ -146,8 +143,11 @@ public sealed class StockRepository : IStockRepository
             }
             // COMPRAS-METODO-ZH-01A2: retry only from a restored unit of work (failure before domain
             // events were published); a later failure is surfaced, never replayed half-applied.
-            catch (Exception ex) when (attempt < MaxSequenceRetryAttempts && IsSequenceConflict(ex)
-                && _db.LastSaveFailureIsRetryable)
+            catch (Exception ex)
+                when (attempt < MaxSequenceRetryAttempts
+                    && IsSequenceConflict(ex)
+                    && _db.LastSaveFailureIsRetryable
+                )
             {
                 await RecoverFromConflictAndRetrackAsync(ct);
             }
@@ -205,15 +205,28 @@ public sealed class StockRepository : IStockRepository
             .FirstOrDefaultAsync(ct);
 
         // Earlier lines in this unit of work have not reached the database yet.
-        var pendingLast = _db.ChangeTracker.Entries<StockMovement>()
+        var pendingLast = _db
+            .ChangeTracker.Entries<StockMovement>()
             .Where(e => e.State == EntityState.Added)
             .Select(e => e.Entity)
-            .Where(m => m.TenantId == r.TenantId && m.CompanyId == r.CompanyId
-                && m.ProductId == r.ProductId && m.WarehouseId == r.WarehouseId)
+            .Where(m =>
+                m.TenantId == r.TenantId
+                && m.CompanyId == r.CompanyId
+                && m.ProductId == r.ProductId
+                && m.WarehouseId == r.WarehouseId
+            )
             .OrderByDescending(m => m.SequenceNumber)
-            .Select(m => new { m.SequenceNumber, m.RunningAverageCost, m.RunningStockValue })
+            .Select(m => new
+            {
+                m.SequenceNumber,
+                m.RunningAverageCost,
+                m.RunningStockValue,
+            })
             .FirstOrDefault();
-        if (pendingLast is not null && (last is null || pendingLast.SequenceNumber > last.SequenceNumber))
+        if (
+            pendingLast is not null
+            && (last is null || pendingLast.SequenceNumber > last.SequenceNumber)
+        )
             last = pendingLast;
 
         var nextSeq = (last?.SequenceNumber ?? 0) + 1;
@@ -230,9 +243,14 @@ public sealed class StockRepository : IStockRepository
         // ya no es la BD quien lo redondea). Fail-closed (05B1): el provider es obligatorio y lanza si
         // no hay contexto de empresa o política — nunca hay fallback silencioso a 6 decimales.
         var averageCostDecimals = (await _precision.GetEffectiveAsync(ct)).AverageCostDecimals;
-        var newRunningAverageCost = resultQty > 0m
-            ? Math.Round(newRunningStockValue / resultQty, averageCostDecimals, MidpointRounding.AwayFromZero)
-            : 0m;
+        var newRunningAverageCost =
+            resultQty > 0m
+                ? Math.Round(
+                    newRunningStockValue / resultQty,
+                    averageCostDecimals,
+                    MidpointRounding.AwayFromZero
+                )
+                : 0m;
 
         // Branch Ownership: el movimiento pertenece a la sucursal dueña de la bodega afectada,
         // no a la sucursal de sesión activa del operador — en una transferencia inter-sucursal,

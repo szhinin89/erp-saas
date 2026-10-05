@@ -154,125 +154,672 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
     [
         new("1", "Activo", null, AccountType.Asset, AccountNature.Debit, false),
         new("1.1", "Activo corriente", "1", AccountType.Asset, AccountNature.Debit, false),
-        new("1.1.01", "Efectivo y equivalentes", "1.1", AccountType.Asset, AccountNature.Debit, false),
+        new(
+            "1.1.01",
+            "Efectivo y equivalentes",
+            "1.1",
+            AccountType.Asset,
+            AccountNature.Debit,
+            false
+        ),
         new("1.1.01.001", "Caja general", "1.1.01", AccountType.Asset, AccountNature.Debit, true),
         new("1.1.01.002", "Caja chica", "1.1.01", AccountType.Asset, AccountNature.Debit, true),
-        new("1.1.01.003", "Fondos por depositar", "1.1.01", AccountType.Asset, AccountNature.Debit, true),
+        new(
+            "1.1.01.003",
+            "Fondos por depositar",
+            "1.1.01",
+            AccountType.Asset,
+            AccountNature.Debit,
+            true
+        ),
         new("1.1.02", "Bancos", "1.1", AccountType.Asset, AccountNature.Debit, false),
-        new("1.1.02.001", "Bancos cuenta corriente", "1.1.02", AccountType.Asset, AccountNature.Debit, true),
-        new("1.1.02.002", "Bancos cuenta ahorros", "1.1.02", AccountType.Asset, AccountNature.Debit, true),
-        new("1.1.03", "Cuentas y documentos por cobrar", "1.1", AccountType.Asset, AccountNature.Debit, false),
-        new("1.1.03.001", "Cuentas por cobrar clientes", "1.1.03", AccountType.Asset, AccountNature.Debit, true),
-        new("1.1.03.002", "Cuentas por cobrar tarjetas credito/debito", "1.1.03", AccountType.Asset, AccountNature.Debit, true),
-        new("1.1.03.003", "Otras cuentas por cobrar", "1.1.03", AccountType.Asset, AccountNature.Debit, true),
-        new("1.1.03.004", "Anticipos a proveedores", "1.1.03", AccountType.Asset, AccountNature.Debit, true),
+        new(
+            "1.1.02.001",
+            "Bancos cuenta corriente",
+            "1.1.02",
+            AccountType.Asset,
+            AccountNature.Debit,
+            true
+        ),
+        new(
+            "1.1.02.002",
+            "Bancos cuenta ahorros",
+            "1.1.02",
+            AccountType.Asset,
+            AccountNature.Debit,
+            true
+        ),
+        new(
+            "1.1.03",
+            "Cuentas y documentos por cobrar",
+            "1.1",
+            AccountType.Asset,
+            AccountNature.Debit,
+            false
+        ),
+        new(
+            "1.1.03.001",
+            "Cuentas por cobrar clientes",
+            "1.1.03",
+            AccountType.Asset,
+            AccountNature.Debit,
+            true
+        ),
+        new(
+            "1.1.03.002",
+            "Cuentas por cobrar tarjetas credito/debito",
+            "1.1.03",
+            AccountType.Asset,
+            AccountNature.Debit,
+            true
+        ),
+        new(
+            "1.1.03.003",
+            "Otras cuentas por cobrar",
+            "1.1.03",
+            AccountType.Asset,
+            AccountNature.Debit,
+            true
+        ),
+        new(
+            "1.1.03.004",
+            "Anticipos a proveedores",
+            "1.1.03",
+            AccountType.Asset,
+            AccountNature.Debit,
+            true
+        ),
         new("1.1.04", "Inventarios", "1.1", AccountType.Asset, AccountNature.Debit, false),
-        new("1.1.04.001", "Inventario mercaderias", "1.1.04", AccountType.Asset, AccountNature.Debit, true),
-        new("1.1.04.002", "Inventario en transito", "1.1.04", AccountType.Asset, AccountNature.Debit, true),
-        new("1.1.04.003", "Inventario por ajustes", "1.1.04", AccountType.Asset, AccountNature.Debit, true),
+        new(
+            "1.1.04.001",
+            "Inventario mercaderias",
+            "1.1.04",
+            AccountType.Asset,
+            AccountNature.Debit,
+            true
+        ),
+        new(
+            "1.1.04.002",
+            "Inventario en transito",
+            "1.1.04",
+            AccountType.Asset,
+            AccountNature.Debit,
+            true
+        ),
+        new(
+            "1.1.04.003",
+            "Inventario por ajustes",
+            "1.1.04",
+            AccountType.Asset,
+            AccountNature.Debit,
+            true
+        ),
         new("1.1.05", "Impuestos a favor", "1.1", AccountType.Asset, AccountNature.Debit, false),
-        new("1.1.05.001", "IVA credito tributario", "1.1.05", AccountType.Asset, AccountNature.Debit, true),
-        new("1.1.05.002", "IVA retenido por clientes", "1.1.05", AccountType.Asset, AccountNature.Debit, true),
-        new("1.1.05.003", "Retenciones renta a favor", "1.1.05", AccountType.Asset, AccountNature.Debit, true),
+        new(
+            "1.1.05.001",
+            "IVA credito tributario",
+            "1.1.05",
+            AccountType.Asset,
+            AccountNature.Debit,
+            true
+        ),
+        new(
+            "1.1.05.002",
+            "IVA retenido por clientes",
+            "1.1.05",
+            AccountType.Asset,
+            AccountNature.Debit,
+            true
+        ),
+        new(
+            "1.1.05.003",
+            "Retenciones renta a favor",
+            "1.1.05",
+            AccountType.Asset,
+            AccountNature.Debit,
+            true
+        ),
         new("1.1.06", "Pagos anticipados", "1.1", AccountType.Asset, AccountNature.Debit, false),
-        new("1.1.06.001", "Seguros pagados por anticipado", "1.1.06", AccountType.Asset, AccountNature.Debit, true),
+        new(
+            "1.1.06.001",
+            "Seguros pagados por anticipado",
+            "1.1.06",
+            AccountType.Asset,
+            AccountNature.Debit,
+            true
+        ),
         new("1.2", "Activo no corriente", "1", AccountType.Asset, AccountNature.Debit, false),
-        new("1.2.01", "Propiedad, planta y equipo", "1.2", AccountType.Asset, AccountNature.Debit, false),
-        new("1.2.01.001", "Equipos de computacion", "1.2.01", AccountType.Asset, AccountNature.Debit, true),
-        new("1.2.01.002", "Muebles y enseres", "1.2.01", AccountType.Asset, AccountNature.Debit, true),
+        new(
+            "1.2.01",
+            "Propiedad, planta y equipo",
+            "1.2",
+            AccountType.Asset,
+            AccountNature.Debit,
+            false
+        ),
+        new(
+            "1.2.01.001",
+            "Equipos de computacion",
+            "1.2.01",
+            AccountType.Asset,
+            AccountNature.Debit,
+            true
+        ),
+        new(
+            "1.2.01.002",
+            "Muebles y enseres",
+            "1.2.01",
+            AccountType.Asset,
+            AccountNature.Debit,
+            true
+        ),
         new("2", "Pasivo", null, AccountType.Liability, AccountNature.Credit, false),
         new("2.1", "Pasivo corriente", "2", AccountType.Liability, AccountNature.Credit, false),
-        new("2.1.01", "Cuentas y documentos por pagar", "2.1", AccountType.Liability, AccountNature.Credit, false),
-        new("2.1.01.001", "Cuentas por pagar proveedores", "2.1.01", AccountType.Liability, AccountNature.Credit, true),
-        new("2.1.01.002", "Anticipos de clientes", "2.1.01", AccountType.Liability, AccountNature.Credit, true),
+        new(
+            "2.1.01",
+            "Cuentas y documentos por pagar",
+            "2.1",
+            AccountType.Liability,
+            AccountNature.Credit,
+            false
+        ),
+        new(
+            "2.1.01.001",
+            "Cuentas por pagar proveedores",
+            "2.1.01",
+            AccountType.Liability,
+            AccountNature.Credit,
+            true
+        ),
+        new(
+            "2.1.01.002",
+            "Anticipos de clientes",
+            "2.1.01",
+            AccountType.Liability,
+            AccountNature.Credit,
+            true
+        ),
         new("2.1.02", "IVA por pagar", "2.1", AccountType.Liability, AccountNature.Credit, false),
-        new("2.1.02.001", "IVA cobrado en ventas", "2.1.02", AccountType.Liability, AccountNature.Credit, true),
-        new("2.1.02.002", "Retenciones IVA por pagar", "2.1.02", AccountType.Liability, AccountNature.Credit, true),
-        new("2.1.02.003", "Retenciones renta por pagar", "2.1.02", AccountType.Liability, AccountNature.Credit, true),
-        new("2.1.03", "Impuestos especiales por pagar", "2.1", AccountType.Liability, AccountNature.Credit, false),
-        new("2.1.03.001", "ICE por pagar", "2.1.03", AccountType.Liability, AccountNature.Credit, true),
-        new("2.1.03.002", "IRBP por pagar", "2.1.03", AccountType.Liability, AccountNature.Credit, true),
-        new("2.1.03.003", "Impuesto a la renta por pagar", "2.1.03", AccountType.Liability, AccountNature.Credit, true),
-        new("2.1.04", "Nomina y beneficios por pagar", "2.1", AccountType.Liability, AccountNature.Credit, false),
-        new("2.1.04.001", "Sueldos por pagar", "2.1.04", AccountType.Liability, AccountNature.Credit, true),
+        new(
+            "2.1.02.001",
+            "IVA cobrado en ventas",
+            "2.1.02",
+            AccountType.Liability,
+            AccountNature.Credit,
+            true
+        ),
+        new(
+            "2.1.02.002",
+            "Retenciones IVA por pagar",
+            "2.1.02",
+            AccountType.Liability,
+            AccountNature.Credit,
+            true
+        ),
+        new(
+            "2.1.02.003",
+            "Retenciones renta por pagar",
+            "2.1.02",
+            AccountType.Liability,
+            AccountNature.Credit,
+            true
+        ),
+        new(
+            "2.1.03",
+            "Impuestos especiales por pagar",
+            "2.1",
+            AccountType.Liability,
+            AccountNature.Credit,
+            false
+        ),
+        new(
+            "2.1.03.001",
+            "ICE por pagar",
+            "2.1.03",
+            AccountType.Liability,
+            AccountNature.Credit,
+            true
+        ),
+        new(
+            "2.1.03.002",
+            "IRBP por pagar",
+            "2.1.03",
+            AccountType.Liability,
+            AccountNature.Credit,
+            true
+        ),
+        new(
+            "2.1.03.003",
+            "Impuesto a la renta por pagar",
+            "2.1.03",
+            AccountType.Liability,
+            AccountNature.Credit,
+            true
+        ),
+        new(
+            "2.1.04",
+            "Nomina y beneficios por pagar",
+            "2.1",
+            AccountType.Liability,
+            AccountNature.Credit,
+            false
+        ),
+        new(
+            "2.1.04.001",
+            "Sueldos por pagar",
+            "2.1.04",
+            AccountType.Liability,
+            AccountNature.Credit,
+            true
+        ),
         new("3", "Patrimonio", null, AccountType.Equity, AccountNature.Credit, false),
         new("3.1", "Capital y resultados", "3", AccountType.Equity, AccountNature.Credit, false),
         new("3.1.01", "Capital social", "3.1", AccountType.Equity, AccountNature.Credit, false),
         new("3.1.01.001", "Capital", "3.1.01", AccountType.Equity, AccountNature.Credit, true),
-        new("3.1.02", "Resultados de ejercicios anteriores", "3.1", AccountType.Equity, AccountNature.Credit, false),
-        new("3.1.02.001", "Resultados acumulados", "3.1.02", AccountType.Equity, AccountNature.Credit, true),
-        new("3.1.03", "Resultado del ejercicio actual", "3.1", AccountType.Equity, AccountNature.Credit, false),
-        new("3.1.03.001", "Resultado del ejercicio", "3.1.03", AccountType.Equity, AccountNature.Credit, true),
+        new(
+            "3.1.02",
+            "Resultados de ejercicios anteriores",
+            "3.1",
+            AccountType.Equity,
+            AccountNature.Credit,
+            false
+        ),
+        new(
+            "3.1.02.001",
+            "Resultados acumulados",
+            "3.1.02",
+            AccountType.Equity,
+            AccountNature.Credit,
+            true
+        ),
+        new(
+            "3.1.03",
+            "Resultado del ejercicio actual",
+            "3.1",
+            AccountType.Equity,
+            AccountNature.Credit,
+            false
+        ),
+        new(
+            "3.1.03.001",
+            "Resultado del ejercicio",
+            "3.1.03",
+            AccountType.Equity,
+            AccountNature.Credit,
+            true
+        ),
         new("4", "Ingresos", null, AccountType.Income, AccountNature.Credit, false),
         new("4.1", "Ingresos operacionales", "4", AccountType.Income, AccountNature.Credit, false),
-        new("4.1.01", "Ventas de mercaderia", "4.1", AccountType.Income, AccountNature.Credit, false),
-        new("4.1.01.001", "Ventas tarifa general", "4.1.01", AccountType.Income, AccountNature.Credit, true),
-        new("4.1.01.002", "Ventas tarifa 0%", "4.1.01", AccountType.Income, AccountNature.Credit, true),
-        new("4.1.01.003", "Ventas exentas de IVA", "4.1.01", AccountType.Income, AccountNature.Credit, true),
-        new("4.1.01.004", "Ventas no objeto de IVA", "4.1.01", AccountType.Income, AccountNature.Credit, true),
-        new("4.1.01.005", "Ventas de servicios retail", "4.1.01", AccountType.Income, AccountNature.Credit, true),
-        new("4.1.02", "Descuentos sobre ventas", "4.1", AccountType.Income, AccountNature.Credit, false),
-        new("4.1.02.001", "Descuentos concedidos en ventas", "4.1.02", AccountType.Income, AccountNature.Credit, true),
+        new(
+            "4.1.01",
+            "Ventas de mercaderia",
+            "4.1",
+            AccountType.Income,
+            AccountNature.Credit,
+            false
+        ),
+        new(
+            "4.1.01.001",
+            "Ventas tarifa general",
+            "4.1.01",
+            AccountType.Income,
+            AccountNature.Credit,
+            true
+        ),
+        new(
+            "4.1.01.002",
+            "Ventas tarifa 0%",
+            "4.1.01",
+            AccountType.Income,
+            AccountNature.Credit,
+            true
+        ),
+        new(
+            "4.1.01.003",
+            "Ventas exentas de IVA",
+            "4.1.01",
+            AccountType.Income,
+            AccountNature.Credit,
+            true
+        ),
+        new(
+            "4.1.01.004",
+            "Ventas no objeto de IVA",
+            "4.1.01",
+            AccountType.Income,
+            AccountNature.Credit,
+            true
+        ),
+        new(
+            "4.1.01.005",
+            "Ventas de servicios retail",
+            "4.1.01",
+            AccountType.Income,
+            AccountNature.Credit,
+            true
+        ),
+        new(
+            "4.1.02",
+            "Descuentos sobre ventas",
+            "4.1",
+            AccountType.Income,
+            AccountNature.Credit,
+            false
+        ),
+        new(
+            "4.1.02.001",
+            "Descuentos concedidos en ventas",
+            "4.1.02",
+            AccountType.Income,
+            AccountNature.Credit,
+            true
+        ),
         new("4.2", "Otros ingresos", "4", AccountType.Income, AccountNature.Credit, false),
-        new("4.2.01", "Ajustes y diferencias positivas", "4.2", AccountType.Income, AccountNature.Credit, false),
-        new("4.2.01.001", "Ingresos por ajustes positivos de inventario", "4.2.01", AccountType.Income, AccountNature.Credit, true),
+        new(
+            "4.2.01",
+            "Ajustes y diferencias positivas",
+            "4.2",
+            AccountType.Income,
+            AccountNature.Credit,
+            false
+        ),
+        new(
+            "4.2.01.001",
+            "Ingresos por ajustes positivos de inventario",
+            "4.2.01",
+            AccountType.Income,
+            AccountNature.Credit,
+            true
+        ),
         // PURCHASE-CREDIT-NOTE-DISCOUNT-POSTING-ACCOUNT-01: NC de compra tipo Descuento/Promoción
         // reduce CxP pero nunca mueve inventario/Kardex (a diferencia de NC tipo Devolución, que sí
         // afecta "1.1.04.001 Inventario mercaderias" vía PurchaseReturn) — necesitaba una cuenta
         // propia de contrapartida, nunca inventario. Mismo grupo económico que "4.2.01.001" (ajuste/
         // diferencia reconocida sin mover inventario), llena el hueco de numeración ya reservado.
-        new("4.2.01.002", "Descuentos obtenidos en compras", "4.2.01", AccountType.Income, AccountNature.Credit, true),
-        new("4.2.01.003", "Diferencias positivas de caja", "4.2.01", AccountType.Income, AccountNature.Credit, true),
+        new(
+            "4.2.01.002",
+            "Descuentos obtenidos en compras",
+            "4.2.01",
+            AccountType.Income,
+            AccountNature.Credit,
+            true
+        ),
+        new(
+            "4.2.01.003",
+            "Diferencias positivas de caja",
+            "4.2.01",
+            AccountType.Income,
+            AccountNature.Credit,
+            true
+        ),
         new("5", "Costos", null, AccountType.Cost, AccountNature.Debit, false),
         new("5.1", "Costo de ventas", "5", AccountType.Cost, AccountNature.Debit, false),
-        new("5.1.01", "Costo directo de ventas", "5.1", AccountType.Cost, AccountNature.Debit, false),
-        new("5.1.01.001", "Costo de ventas mercaderia", "5.1.01", AccountType.Cost, AccountNature.Debit, true),
-        new("5.1.01.002", "Costo de servicios retail", "5.1.01", AccountType.Cost, AccountNature.Debit, true),
-        new("5.1.01.003", "Costo ICE/IRBP no recuperable", "5.1.01", AccountType.Cost, AccountNature.Debit, true),
+        new(
+            "5.1.01",
+            "Costo directo de ventas",
+            "5.1",
+            AccountType.Cost,
+            AccountNature.Debit,
+            false
+        ),
+        new(
+            "5.1.01.001",
+            "Costo de ventas mercaderia",
+            "5.1.01",
+            AccountType.Cost,
+            AccountNature.Debit,
+            true
+        ),
+        new(
+            "5.1.01.002",
+            "Costo de servicios retail",
+            "5.1.01",
+            AccountType.Cost,
+            AccountNature.Debit,
+            true
+        ),
+        new(
+            "5.1.01.003",
+            "Costo ICE/IRBP no recuperable",
+            "5.1.01",
+            AccountType.Cost,
+            AccountNature.Debit,
+            true
+        ),
         // ACCOUNTING-CHART-CANONICAL-HIERARCHY-01: padre corregido de "5" a "5.1" — por código
         // ("5.1.02" son 3 segmentos) el padre canónico es el prefijo inmediato "5.1" (Costo de
         // ventas, ya existente), no la raíz "5". Bug de dato preexistente, sin tocar código/nombre.
         new("5.1.02", "Ajustes de inventario", "5.1", AccountType.Cost, AccountNature.Debit, false),
-        new("5.1.02.001", "Mermas y faltantes de inventario", "5.1.02", AccountType.Cost, AccountNature.Debit, true),
-        new("5.1.02.002", "Descuadres negativos de inventario", "5.1.02", AccountType.Cost, AccountNature.Debit, true),
+        new(
+            "5.1.02.001",
+            "Mermas y faltantes de inventario",
+            "5.1.02",
+            AccountType.Cost,
+            AccountNature.Debit,
+            true
+        ),
+        new(
+            "5.1.02.002",
+            "Descuadres negativos de inventario",
+            "5.1.02",
+            AccountType.Cost,
+            AccountNature.Debit,
+            true
+        ),
         new("6", "Gastos", null, AccountType.Expense, AccountNature.Debit, false),
         new("6.1", "Gastos administrativos", "6", AccountType.Expense, AccountNature.Debit, false),
-        new("6.1.01", "Gastos administrativos operativos", "6.1", AccountType.Expense, AccountNature.Debit, false),
-        new("6.1.01.001", "Gastos administrativos generales", "6.1.01", AccountType.Expense, AccountNature.Debit, true),
-        new("6.1.01.002", "Suministros de oficina", "6.1.01", AccountType.Expense, AccountNature.Debit, true),
-        new("6.1.01.003", "Servicios basicos", "6.1.01", AccountType.Expense, AccountNature.Debit, true),
+        new(
+            "6.1.01",
+            "Gastos administrativos operativos",
+            "6.1",
+            AccountType.Expense,
+            AccountNature.Debit,
+            false
+        ),
+        new(
+            "6.1.01.001",
+            "Gastos administrativos generales",
+            "6.1.01",
+            AccountType.Expense,
+            AccountNature.Debit,
+            true
+        ),
+        new(
+            "6.1.01.002",
+            "Suministros de oficina",
+            "6.1.01",
+            AccountType.Expense,
+            AccountNature.Debit,
+            true
+        ),
+        new(
+            "6.1.01.003",
+            "Servicios basicos",
+            "6.1.01",
+            AccountType.Expense,
+            AccountNature.Debit,
+            true
+        ),
         new("6.1.01.004", "Arriendos", "6.1.01", AccountType.Expense, AccountNature.Debit, true),
-        new("6.1.01.005", "Honorarios profesionales", "6.1.01", AccountType.Expense, AccountNature.Debit, true),
-        new("6.1.01.006", "Mantenimiento y reparaciones", "6.1.01", AccountType.Expense, AccountNature.Debit, true),
+        new(
+            "6.1.01.005",
+            "Honorarios profesionales",
+            "6.1.01",
+            AccountType.Expense,
+            AccountNature.Debit,
+            true
+        ),
+        new(
+            "6.1.01.006",
+            "Mantenimiento y reparaciones",
+            "6.1.01",
+            AccountType.Expense,
+            AccountNature.Debit,
+            true
+        ),
         // EXPENSES-CATALOG-BOOTSTRAP-09-FIX — faltaban cuentas propias para 2 de las 7 categorías
         // que ExpensesCatalogBootstrapStep necesita bajo "Gastos administrativos" (el plan solo
         // tenía 6 cuentas hoja para 7 categorías del catálogo de gastos, forzando un mapeo
         // desplazado/incorrecto). Aditivo: no reemplaza ni renombra ninguna cuenta existente.
-        new("6.1.01.007", "Tecnologia y sistemas", "6.1.01", AccountType.Expense, AccountNature.Debit, true),
-        new("6.1.01.008", "Movilizacion y transporte", "6.1.01", AccountType.Expense, AccountNature.Debit, true),
+        new(
+            "6.1.01.007",
+            "Tecnologia y sistemas",
+            "6.1.01",
+            AccountType.Expense,
+            AccountNature.Debit,
+            true
+        ),
+        new(
+            "6.1.01.008",
+            "Movilizacion y transporte",
+            "6.1.01",
+            AccountType.Expense,
+            AccountNature.Debit,
+            true
+        ),
         new("6.2", "Gastos de venta", "6", AccountType.Expense, AccountNature.Debit, false),
-        new("6.2.01", "Gastos comerciales directos", "6.2", AccountType.Expense, AccountNature.Debit, false),
-        new("6.2.01.001", "Publicidad y marketing", "6.2.01", AccountType.Expense, AccountNature.Debit, true),
-        new("6.2.01.002", "Comisiones de venta", "6.2.01", AccountType.Expense, AccountNature.Debit, true),
-        new("6.2.01.003", "Empaques, fundas y suministros de venta", "6.2.01", AccountType.Expense, AccountNature.Debit, true),
-        new("6.2.01.004", "Transporte y entregas a clientes", "6.2.01", AccountType.Expense, AccountNature.Debit, true),
+        new(
+            "6.2.01",
+            "Gastos comerciales directos",
+            "6.2",
+            AccountType.Expense,
+            AccountNature.Debit,
+            false
+        ),
+        new(
+            "6.2.01.001",
+            "Publicidad y marketing",
+            "6.2.01",
+            AccountType.Expense,
+            AccountNature.Debit,
+            true
+        ),
+        new(
+            "6.2.01.002",
+            "Comisiones de venta",
+            "6.2.01",
+            AccountType.Expense,
+            AccountNature.Debit,
+            true
+        ),
+        new(
+            "6.2.01.003",
+            "Empaques, fundas y suministros de venta",
+            "6.2.01",
+            AccountType.Expense,
+            AccountNature.Debit,
+            true
+        ),
+        new(
+            "6.2.01.004",
+            "Transporte y entregas a clientes",
+            "6.2.01",
+            AccountType.Expense,
+            AccountNature.Debit,
+            true
+        ),
         new("6.3", "Gastos financieros", "6", AccountType.Expense, AccountNature.Debit, false),
-        new("6.3.01", "Gastos financieros directos", "6.3", AccountType.Expense, AccountNature.Debit, false),
-        new("6.3.01.001", "Comisiones bancarias", "6.3.01", AccountType.Expense, AccountNature.Debit, true),
-        new("6.3.01.002", "Comisiones tarjetas credito/debito", "6.3.01", AccountType.Expense, AccountNature.Debit, true),
-        new("6.3.01.003", "Intereses financieros", "6.3.01", AccountType.Expense, AccountNature.Debit, true),
-        new("6.4", "Impuestos y no deducibles", "6", AccountType.Expense, AccountNature.Debit, false),
-        new("6.4.01", "Impuestos, multas y no deducibles", "6.4", AccountType.Expense, AccountNature.Debit, false),
-        new("6.4.01.001", "Impuestos no recuperables", "6.4.01", AccountType.Expense, AccountNature.Debit, true),
-        new("6.4.01.002", "Multas y gastos no deducibles", "6.4.01", AccountType.Expense, AccountNature.Debit, true),
-        new("6.5", "Descuadres y perdidas operativas", "6", AccountType.Expense, AccountNature.Debit, false),
-        new("6.5.01", "Descuadres y mermas operativas", "6.5", AccountType.Expense, AccountNature.Debit, false),
-        new("6.5.01.001", "Descuadres de caja", "6.5.01", AccountType.Expense, AccountNature.Debit, true),
-        new("6.5.01.002", "Mermas retail", "6.5.01", AccountType.Expense, AccountNature.Debit, true),
+        new(
+            "6.3.01",
+            "Gastos financieros directos",
+            "6.3",
+            AccountType.Expense,
+            AccountNature.Debit,
+            false
+        ),
+        new(
+            "6.3.01.001",
+            "Comisiones bancarias",
+            "6.3.01",
+            AccountType.Expense,
+            AccountNature.Debit,
+            true
+        ),
+        new(
+            "6.3.01.002",
+            "Comisiones tarjetas credito/debito",
+            "6.3.01",
+            AccountType.Expense,
+            AccountNature.Debit,
+            true
+        ),
+        new(
+            "6.3.01.003",
+            "Intereses financieros",
+            "6.3.01",
+            AccountType.Expense,
+            AccountNature.Debit,
+            true
+        ),
+        new(
+            "6.4",
+            "Impuestos y no deducibles",
+            "6",
+            AccountType.Expense,
+            AccountNature.Debit,
+            false
+        ),
+        new(
+            "6.4.01",
+            "Impuestos, multas y no deducibles",
+            "6.4",
+            AccountType.Expense,
+            AccountNature.Debit,
+            false
+        ),
+        new(
+            "6.4.01.001",
+            "Impuestos no recuperables",
+            "6.4.01",
+            AccountType.Expense,
+            AccountNature.Debit,
+            true
+        ),
+        new(
+            "6.4.01.002",
+            "Multas y gastos no deducibles",
+            "6.4.01",
+            AccountType.Expense,
+            AccountNature.Debit,
+            true
+        ),
+        new(
+            "6.5",
+            "Descuadres y perdidas operativas",
+            "6",
+            AccountType.Expense,
+            AccountNature.Debit,
+            false
+        ),
+        new(
+            "6.5.01",
+            "Descuadres y mermas operativas",
+            "6.5",
+            AccountType.Expense,
+            AccountNature.Debit,
+            false
+        ),
+        new(
+            "6.5.01.001",
+            "Descuadres de caja",
+            "6.5.01",
+            AccountType.Expense,
+            AccountNature.Debit,
+            true
+        ),
+        new(
+            "6.5.01.002",
+            "Mermas retail",
+            "6.5.01",
+            AccountType.Expense,
+            AccountNature.Debit,
+            true
+        ),
     ];
 
-    internal static readonly IReadOnlyCollection<string> RequiredRetailAccountCodes =
-        RetailChart.Select(a => a.Code).ToArray();
+    internal static readonly IReadOnlyCollection<string> RequiredRetailAccountCodes = RetailChart
+        .Select(a => a.Code)
+        .ToArray();
 
     static AccountingBootstrapStep()
     {
@@ -604,8 +1151,11 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
     // (AmountKind Retention combinado) y las líneas nuevas que la reemplazan (RetentionVat +
     // RetentionIncome). La línea de Debe (CxP proveedor) no cambia — se mantiene igual en ambas
     // formas.
-    private static readonly MinimalPostingRuleLine LegacyRetentionsDocumentIssuedVatLine =
-        new("2.1.02.002", AccountNature.Credit, PostingAmountKind.Retention);
+    private static readonly MinimalPostingRuleLine LegacyRetentionsDocumentIssuedVatLine = new(
+        "2.1.02.002",
+        AccountNature.Credit,
+        PostingAmountKind.Retention
+    );
 
     // PURCHASE-CREDIT-NOTE-DISCOUNT-POSTING-ACCOUNT-01 — forma vieja sembrada antes de esta fase
     // para "Purchases"/"PurchaseCreditNoteAuthorized" (Subtotal/TaxIce acreditando por error
@@ -634,8 +1184,11 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
     // se cobró realmente). Usada exclusivamente para reconocer con precisión qué companies tienen
     // esta forma vieja y corregirlas — ver TryCorrectLegacySalesInvoiceIssuedRule. No se usa para
     // nada más. El resto de líneas (Subtotal/TaxVat/TaxIce, todas Credit) no cambia.
-    private static readonly MinimalPostingRuleLine LegacySalesInvoiceIssuedDebitLine =
-        new("1.1.03.001", AccountNature.Debit, PostingAmountKind.GrandTotal);
+    private static readonly MinimalPostingRuleLine LegacySalesInvoiceIssuedDebitLine = new(
+        "1.1.03.001",
+        AccountNature.Debit,
+        PostingAmountKind.GrandTotal
+    );
 
     /// <summary>
     /// SALES-CASH-VS-RECEIVABLE-POSTING-SPLIT-AND-CANCEL-REVERSAL-01 Lote 3 — a diferencia del gap
@@ -646,11 +1199,19 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
     /// positivos si una company personalizó la regla a otra forma de 4 líneas distinta.
     /// </summary>
     internal static bool MatchesLegacySalesInvoiceIssuedForm(
-        IReadOnlyCollection<(string AccountCode, AccountNature Nature, PostingAmountKind AmountKind)> lines
+        IReadOnlyCollection<(
+            string AccountCode,
+            AccountNature Nature,
+            PostingAmountKind AmountKind
+        )> lines
     )
     {
         var currentSet = lines.ToHashSet();
-        var legacySet = new HashSet<(string AccountCode, AccountNature Nature, PostingAmountKind AmountKind)>
+        var legacySet = new HashSet<(
+            string AccountCode,
+            AccountNature Nature,
+            PostingAmountKind AmountKind
+        )>
         {
             ("1.1.03.001", AccountNature.Debit, PostingAmountKind.GrandTotal),
             ("4.1.01.001", AccountNature.Credit, PostingAmountKind.Subtotal),
@@ -673,7 +1234,11 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
     /// bootstrap (que aplicará <see cref="TryCorrectLegacyPurchaseCreditNoteAuthorizedRule"/>).
     /// </summary>
     internal static bool MatchesLegacyPurchaseCreditNoteAuthorizedForm(
-        IReadOnlyCollection<(string AccountCode, AccountNature Nature, PostingAmountKind AmountKind)> lines
+        IReadOnlyCollection<(
+            string AccountCode,
+            AccountNature Nature,
+            PostingAmountKind AmountKind
+        )> lines
     )
     {
         var currentSet = lines.ToHashSet();
@@ -690,8 +1255,12 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
     // de esto, el backfill solo verificaba "¿tiene AL MENOS UNA PostingRule?", lo que dejaba a esas
     // companies fuera de cualquier backfill automático de reglas nuevas agregadas después de su
     // primer seed.
-    internal static readonly IReadOnlyCollection<(string SourceModule, string FactType)> RequiredPostingRuleKeys =
-        MinimalPostingRules.Select(r => (r.SourceModule, r.FactType)).ToArray();
+    internal static readonly IReadOnlyCollection<(
+        string SourceModule,
+        string FactType
+    )> RequiredPostingRuleKeys = MinimalPostingRules
+        .Select(r => (r.SourceModule, r.FactType))
+        .ToArray();
 
     // RETENTIONS-TAX-COMPONENT-POSTING-02C — RequiredPostingRuleKeys (01H) detecta si a una
     // company le falta una regla ENTERA, pero no si una regla existente quedó con menos líneas de
@@ -797,11 +1366,16 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         // empresa (ICompanyClock), nunca DateTime.UtcNow.Year — evita crear el período del año
         // equivocado si el bootstrap corre en la ventana horaria en que UTC ya cruzó el 1 de enero
         // pero en Ecuador todavía es 31 de diciembre (o viceversa).
-        var currentYear = (await _companyClock.TodayAsync(companyId, tenantId, cancellationToken)).Year;
+        var currentYear = (
+            await _companyClock.TodayAsync(companyId, tenantId, cancellationToken)
+        ).Year;
         var hasPeriodForYear = await _db
             .AccountingPeriods.IgnoreQueryFilters()
             .AnyAsync(
-                p => p.TenantId == tenantId && p.CompanyId == companyId && p.FiscalYear == currentYear,
+                p =>
+                    p.TenantId == tenantId
+                    && p.CompanyId == companyId
+                    && p.FiscalYear == currentYear,
                 cancellationToken
             );
 
@@ -854,55 +1428,54 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         // "Retentions"/"DocumentIssued" sembrada por RETENTIONS-POSTING-RULE-SEED-01H con 2
         // líneas. legacyRule es null si esa regla no existe o ya tiene la forma vigente (nada que
         // corregir) — ver CorrectLegacyPostingRulesAsync.
-        var legacyRule =
-            existingRuleKeySet.Contains(("Retentions", "DocumentIssued"))
-                ? await _db
-                    .PostingRules.IgnoreQueryFilters()
-                    .Include(r => r.Lines)
-                    .FirstOrDefaultAsync(
-                        r =>
-                            r.TenantId == tenantId
-                            && r.CompanyId == companyId
-                            && r.SourceModule == "Retentions"
-                            && r.FactType == "DocumentIssued",
-                        cancellationToken
-                    )
-                : null;
+        var legacyRule = existingRuleKeySet.Contains(("Retentions", "DocumentIssued"))
+            ? await _db
+                .PostingRules.IgnoreQueryFilters()
+                .Include(r => r.Lines)
+                .FirstOrDefaultAsync(
+                    r =>
+                        r.TenantId == tenantId
+                        && r.CompanyId == companyId
+                        && r.SourceModule == "Retentions"
+                        && r.FactType == "DocumentIssued",
+                    cancellationToken
+                )
+            : null;
 
         // PURCHASE-CREDIT-NOTE-DISCOUNT-POSTING-ACCOUNT-01 — mismo criterio exacto que
         // legacyRule/Retentions arriba: null si la regla no existe o ya tiene la forma vigente.
-        var legacyCreditNoteRule =
-            existingRuleKeySet.Contains(("Purchases", "PurchaseCreditNoteAuthorized"))
-                ? await _db
-                    .PostingRules.IgnoreQueryFilters()
-                    .Include(r => r.Lines)
-                    .FirstOrDefaultAsync(
-                        r =>
-                            r.TenantId == tenantId
-                            && r.CompanyId == companyId
-                            && r.SourceModule == "Purchases"
-                            && r.FactType == "PurchaseCreditNoteAuthorized",
-                        cancellationToken
-                    )
-                : null;
+        var legacyCreditNoteRule = existingRuleKeySet.Contains(
+            ("Purchases", "PurchaseCreditNoteAuthorized")
+        )
+            ? await _db
+                .PostingRules.IgnoreQueryFilters()
+                .Include(r => r.Lines)
+                .FirstOrDefaultAsync(
+                    r =>
+                        r.TenantId == tenantId
+                        && r.CompanyId == companyId
+                        && r.SourceModule == "Purchases"
+                        && r.FactType == "PurchaseCreditNoteAuthorized",
+                    cancellationToken
+                )
+            : null;
 
         // SALES-CASH-VS-RECEIVABLE-POSTING-SPLIT-AND-CANCEL-REVERSAL-01 Lote 3 — mismo criterio
         // exacto que legacyRule/Retentions y legacyCreditNoteRule arriba: null si la regla no
         // existe o ya tiene la forma vigente (5 líneas, Caja+CxC condicionales).
-        var legacySalesInvoiceIssuedRule =
-            existingRuleKeySet.Contains(("Sales", "InvoiceIssued"))
-                ? await _db
-                    .PostingRules.IgnoreQueryFilters()
-                    .Include(r => r.Lines)
-                    .FirstOrDefaultAsync(
-                        r =>
-                            r.TenantId == tenantId
-                            && r.CompanyId == companyId
-                            && r.SourceModule == "Sales"
-                            && r.FactType == "InvoiceIssued",
-                        cancellationToken
-                    )
-                : null;
+        var legacySalesInvoiceIssuedRule = existingRuleKeySet.Contains(("Sales", "InvoiceIssued"))
+            ? await _db
+                .PostingRules.IgnoreQueryFilters()
+                .Include(r => r.Lines)
+                .FirstOrDefaultAsync(
+                    r =>
+                        r.TenantId == tenantId
+                        && r.CompanyId == companyId
+                        && r.SourceModule == "Sales"
+                        && r.FactType == "InvoiceIssued",
+                    cancellationToken
+                )
+            : null;
 
         // ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — mismo criterio: null si la regla no existe.
         var supplierPaymentRules = await _db
@@ -912,7 +1485,10 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
                 r.TenantId == tenantId
                 && r.CompanyId == companyId
                 && r.SourceModule == "Payables"
-                && (r.FactType == "SupplierPaymentConfirmed" || r.FactType == "SupplierPaymentReversed")
+                && (
+                    r.FactType == "SupplierPaymentConfirmed"
+                    || r.FactType == "SupplierPaymentReversed"
+                )
             )
             .ToListAsync(cancellationToken);
         var legacySupplierPaymentConfirmedRule = supplierPaymentRules.FirstOrDefault(r =>
@@ -956,21 +1532,33 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         var seededRulesCount = 0;
         foreach (var m in missingRules)
         {
-            var missingAccountCode = m.Lines.Select(l => l.AccountCode)
+            var missingAccountCode = m
+                .Lines.Select(l => l.AccountCode)
                 .FirstOrDefault(code => !accountByCode.ContainsKey(code));
             if (missingAccountCode is not null)
             {
-                LogPostingRuleSkippedMissingAccount(m.SourceModule, m.FactType, missingAccountCode, companyId);
+                LogPostingRuleSkippedMissingAccount(
+                    m.SourceModule,
+                    m.FactType,
+                    missingAccountCode,
+                    companyId
+                );
                 continue;
             }
 
-            var invalidAccountCode = m.Lines.Select(l => l.AccountCode)
+            var invalidAccountCode = m
+                .Lines.Select(l => l.AccountCode)
                 .FirstOrDefault(code =>
                     !accountByCode[code].IsActive || !accountByCode[code].AllowsPosting
                 );
             if (invalidAccountCode is not null)
             {
-                LogPostingRuleSkippedInvalidAccount(m.SourceModule, m.FactType, invalidAccountCode, companyId);
+                LogPostingRuleSkippedInvalidAccount(
+                    m.SourceModule,
+                    m.FactType,
+                    invalidAccountCode,
+                    companyId
+                );
                 continue;
             }
 
@@ -1085,7 +1673,8 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         }
 
         var line = rule.Lines.Single();
-        _db.Entry(line).Property(l => l.AmountKind).CurrentValue = PostingAmountKind.AppliedToPayable;
+        _db.Entry(line).Property(l => l.AmountKind).CurrentValue =
+            PostingAmountKind.AppliedToPayable;
         rule.AddLine(accountByCode["1.1.03.004"].Id, nature, PostingAmountKind.SupplierCredit);
         return true;
     }
@@ -1222,7 +1811,12 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         if (status != "Legacy4" && status != "Legacy5")
         {
             if (status != "Canonical7")
-                _logger.LogWarning("Sales/InvoiceIssued company={CompanyId} rule={RuleId}: {Diagnostic}", companyId, rule.Id, status);
+                _logger.LogWarning(
+                    "Sales/InvoiceIssued company={CompanyId} rule={RuleId}: {Diagnostic}",
+                    companyId,
+                    rule.Id,
+                    status
+                );
             return false;
         }
 
@@ -1230,11 +1824,24 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         {
             // Keep the original receivable line ID and the three credit line IDs.
             var receivable = rule.Lines.Single(l => l.AmountKind == PostingAmountKind.GrandTotal);
-            _db.Entry(receivable).Property(l => l.AmountKind).CurrentValue = PostingAmountKind.PendingBalance;
-            rule.AddLine(accountByCode["1.1.01.001"].Id, AccountNature.Debit, PostingAmountKind.CashApplied);
+            _db.Entry(receivable).Property(l => l.AmountKind).CurrentValue =
+                PostingAmountKind.PendingBalance;
+            rule.AddLine(
+                accountByCode["1.1.01.001"].Id,
+                AccountNature.Debit,
+                PostingAmountKind.CashApplied
+            );
         }
-        rule.AddLine(accountByCode["4.1.02.001"].Id, AccountNature.Debit, PostingAmountKind.Discount);
-        rule.AddLine(accountByCode["2.1.03.002"].Id, AccountNature.Credit, PostingAmountKind.TaxIrbpnr);
+        rule.AddLine(
+            accountByCode["4.1.02.001"].Id,
+            AccountNature.Debit,
+            PostingAmountKind.Discount
+        );
+        rule.AddLine(
+            accountByCode["2.1.03.002"].Id,
+            AccountNature.Credit,
+            PostingAmountKind.TaxIrbpnr
+        );
         return true;
     }
 

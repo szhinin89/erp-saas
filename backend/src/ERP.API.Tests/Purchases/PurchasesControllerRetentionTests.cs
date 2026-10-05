@@ -1,3 +1,4 @@
+using System.Reflection;
 using ERP.API.Controllers;
 using ERP.API.Tests.Support;
 using ERP.Application.Common;
@@ -13,7 +14,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
-using System.Reflection;
 
 namespace ERP.API.Tests.Purchases;
 
@@ -34,7 +34,10 @@ public sealed class PurchasesControllerRetentionTests
         services.AddSingleton<IWebHostEnvironment>(new StubWebHostEnvironment());
         controller.ControllerContext = new ControllerContext
         {
-            HttpContext = new DefaultHttpContext { RequestServices = services.BuildServiceProvider() },
+            HttpContext = new DefaultHttpContext
+            {
+                RequestServices = services.BuildServiceProvider(),
+            },
         };
         return controller;
     }
@@ -55,7 +58,10 @@ public sealed class PurchasesControllerRetentionTests
         new(RetentionTaxType.Vat, "725", 100m, 30m, 30m);
 
     private static string? PolicyOf(string methodName) =>
-        typeof(PurchasesController).GetMethod(methodName)!.GetCustomAttribute<AuthorizeAttribute>()?.Policy;
+        typeof(PurchasesController)
+            .GetMethod(methodName)!
+            .GetCustomAttribute<AuthorizeAttribute>()
+            ?.Policy;
 
     [Fact]
     public async Task ConfirmPurchase_mapea_la_intencion_de_retencion_al_comando_con_el_id_de_la_ruta()
@@ -67,7 +73,12 @@ public sealed class PurchasesControllerRetentionTests
             return Result<PurchaseInvoiceDto>.Success(null!);
         });
         var purchaseInvoiceId = Guid.NewGuid();
-        var intent = new RetentionIntent(true, Guid.NewGuid(), new DateOnly(2026, 9, 30), new[] { VatLine() });
+        var intent = new RetentionIntent(
+            true,
+            Guid.NewGuid(),
+            new DateOnly(2026, 9, 30),
+            new[] { VatLine() }
+        );
 
         var response = await controller.ConfirmPurchase(
             purchaseInvoiceId,
@@ -77,7 +88,9 @@ public sealed class PurchasesControllerRetentionTests
 
         response.Should().BeOfType<OkObjectResult>();
         captured.Should().NotBeNull();
-        captured!.InvoiceId.Should().Be(purchaseInvoiceId, "la compra siempre viene de la ruta, nunca del body");
+        captured!
+            .InvoiceId.Should()
+            .Be(purchaseInvoiceId, "la compra siempre viene de la ruta, nunca del body");
         captured.Retention.Should().BeSameAs(intent);
     }
 
@@ -92,7 +105,11 @@ public sealed class PurchasesControllerRetentionTests
         });
 
         await controller.ConfirmPurchase(Guid.NewGuid(), null, CancellationToken.None);
-        await controller.ConfirmPurchase(Guid.NewGuid(), new ConfirmPurchaseRequest(), CancellationToken.None);
+        await controller.ConfirmPurchase(
+            Guid.NewGuid(),
+            new ConfirmPurchaseRequest(),
+            CancellationToken.None
+        );
 
         captured.Should().HaveCount(2).And.OnlyContain(c => c.Retention == null);
     }
@@ -100,11 +117,21 @@ public sealed class PurchasesControllerRetentionTests
     [Fact]
     public void ConfirmPurchaseRequest_nunca_expone_Tenant_Company_Branch_ni_numero_de_retencion()
     {
-        var requestProperties = typeof(ConfirmPurchaseRequest).GetProperties().Select(p => p.Name).ToArray();
-        var intentProperties = typeof(RetentionIntent).GetProperties().Select(p => p.Name).ToArray();
+        var requestProperties = typeof(ConfirmPurchaseRequest)
+            .GetProperties()
+            .Select(p => p.Name)
+            .ToArray();
+        var intentProperties = typeof(RetentionIntent)
+            .GetProperties()
+            .Select(p => p.Name)
+            .ToArray();
 
         requestProperties.Should().NotContain(new[] { "TenantId", "CompanyId", "BranchId" });
-        intentProperties.Should().NotContain(new[] { "TenantId", "CompanyId", "BranchId", "RetentionNumber", "SourceDocumentId" });
+        intentProperties
+            .Should()
+            .NotContain(
+                new[] { "TenantId", "CompanyId", "BranchId", "RetentionNumber", "SourceDocumentId" }
+            );
     }
 
     /// <summary>
@@ -115,7 +142,10 @@ public sealed class PurchasesControllerRetentionTests
     [InlineData(nameof(PurchasesController.ConfirmPurchase), PurchasePermissions.Update)]
     [InlineData(nameof(PurchasesController.GetRetentionPreview), PurchasePermissions.View)]
     [InlineData(nameof(PurchasesController.GetRetention), PurchasePermissions.View)]
-    public void Endpoints_de_retencion_de_Compras_usan_permisos_de_Compras(string method, string permission)
+    public void Endpoints_de_retencion_de_Compras_usan_permisos_de_Compras(
+        string method,
+        string permission
+    )
     {
         PolicyOf(method).Should().Be($"perm:{permission}");
         PolicyOf(method).Should().NotContain("expenses");
@@ -129,23 +159,45 @@ public sealed class PurchasesControllerRetentionTests
     [Fact]
     public void No_existe_anulacion_aislada_de_la_retencion_de_una_compra()
     {
-        typeof(PurchasesController).GetMethods().Select(m => m.Name).Should().NotContain("CancelRetention");
-        typeof(PurchasesController).Assembly.GetType("ERP.API.Controllers.CancelPurchaseRetentionRequest").Should().BeNull();
-        typeof(ConfirmPurchaseCommand).Assembly.GetType("ERP.Application.Modules.Retentions.UseCases.CancelRetentionCommand").Should().BeNull();
+        typeof(PurchasesController)
+            .GetMethods()
+            .Select(m => m.Name)
+            .Should()
+            .NotContain("CancelRetention");
+        typeof(PurchasesController)
+            .Assembly.GetType("ERP.API.Controllers.CancelPurchaseRetentionRequest")
+            .Should()
+            .BeNull();
+        typeof(ConfirmPurchaseCommand)
+            .Assembly.GetType("ERP.Application.Modules.Retentions.UseCases.CancelRetentionCommand")
+            .Should()
+            .BeNull();
     }
 
     [Fact]
     public void La_emision_posterior_de_retencion_sobre_una_compra_confirmada_fue_retirada()
     {
-        typeof(PurchasesController).GetMethods().Select(m => m.Name).Should().NotContain("IssueRetention");
-        typeof(PurchasesController).Assembly.GetType("ERP.API.Controllers.IssuePurchaseRetentionRequest").Should().BeNull();
-        typeof(ConfirmPurchaseCommand).Assembly.GetType("ERP.Application.Modules.Retentions.UseCases.IssueRetentionCommand").Should().BeNull();
+        typeof(PurchasesController)
+            .GetMethods()
+            .Select(m => m.Name)
+            .Should()
+            .NotContain("IssueRetention");
+        typeof(PurchasesController)
+            .Assembly.GetType("ERP.API.Controllers.IssuePurchaseRetentionRequest")
+            .Should()
+            .BeNull();
+        typeof(ConfirmPurchaseCommand)
+            .Assembly.GetType("ERP.Application.Modules.Retentions.UseCases.IssueRetentionCommand")
+            .Should()
+            .BeNull();
     }
 
     [Fact]
     public void GetRetention_requiere_el_permiso_de_Compras_PurchasePermissions_View()
     {
-        var method = typeof(PurchasesController).GetMethod(nameof(PurchasesController.GetRetention))!;
+        var method = typeof(PurchasesController).GetMethod(
+            nameof(PurchasesController.GetRetention)
+        )!;
         var authorize = method.GetCustomAttribute<AuthorizeAttribute>();
 
         authorize.Should().NotBeNull();

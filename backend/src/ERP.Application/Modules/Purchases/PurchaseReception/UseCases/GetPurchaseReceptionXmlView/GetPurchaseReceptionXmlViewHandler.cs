@@ -58,19 +58,15 @@ public sealed class GetPurchaseReceptionXmlViewHandler
             : TryExtract(document.XmlContent);
 
         var lines = document
-            .Lines.Select((line, index) =>
-                ToLineDto(
-                    line,
-                    extras?.Lines.Count > index ? extras.Lines[index] : null
-                )
+            .Lines.Select(
+                (line, index) =>
+                    ToLineDto(line, extras?.Lines.Count > index ? extras.Lines[index] : null)
             )
             .ToList();
         var lineCalculatedTotal = lines.Sum(l => l.LineTotal);
         var taxSummaries = extras is null
             ? []
-            : extras
-                .TaxSummaries.Select(t => ToTaxSummaryDto(t, lines))
-                .ToList();
+            : extras.TaxSummaries.Select(t => ToTaxSummaryDto(t, lines)).ToList();
         var subtotal = extras?.Totals.TotalWithoutTaxes ?? document.Subtotal;
         var discount = extras?.Totals.TotalDiscount ?? extras?.DiscountAmount ?? 0m;
         var totalIce = SumTax(taxSummaries, SriIceTaxCode, extras?.IceAmount ?? 0m);
@@ -161,7 +157,8 @@ public sealed class GetPurchaseReceptionXmlViewHandler
         IReadOnlyList<PurchaseReceptionXmlViewLineDto> lines
     )
     {
-        var rate = tax.TaxRate
+        var rate =
+            tax.TaxRate
             ?? lines
                 .SelectMany(l => l.Taxes)
                 .Where(t => t.TaxCode == tax.TaxCode && t.TaxRateCode == tax.TaxRateCode)
@@ -219,11 +216,11 @@ public sealed class GetPurchaseReceptionXmlViewHandler
             LineTotal: lineTotal,
             Taxes: taxes,
             AdditionalDetails: extraLine
-                    ?.AdditionalDetails.Select(d => new PurchaseReceptionXmlViewAdditionalDetailDto(
-                        d.Name,
-                        d.Value
-                    ))
-                    .ToList()
+                ?.AdditionalDetails.Select(d => new PurchaseReceptionXmlViewAdditionalDetailDto(
+                    d.Name,
+                    d.Value
+                ))
+                .ToList()
                 ?? []
         );
     }
@@ -260,7 +257,9 @@ public sealed class GetPurchaseReceptionXmlViewHandler
         return BuildLegacyTaxes(line);
     }
 
-    private static List<PurchaseReceptionXmlViewLineTaxDto> BuildLegacyTaxes(PurchaseReceptionLine line)
+    private static List<PurchaseReceptionXmlViewLineTaxDto> BuildLegacyTaxes(
+        PurchaseReceptionLine line
+    )
     {
         var taxes = new List<PurchaseReceptionXmlViewLineTaxDto>
         {

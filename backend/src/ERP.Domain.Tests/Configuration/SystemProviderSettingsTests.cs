@@ -45,7 +45,14 @@ public sealed class SystemProviderSettingsTests
         var settings = SystemProviderSettings.CreateNew();
 
         var act = () =>
-            settings.Configure(null, "ZH Technologies S.A.", "J62021002", null, enabled: true, UserId);
+            settings.Configure(
+                null,
+                "ZH Technologies S.A.",
+                "J62021002",
+                null,
+                enabled: true,
+                UserId
+            );
 
         act.Should()
             .Throw<DomainRuleViolationException>()
@@ -72,7 +79,14 @@ public sealed class SystemProviderSettingsTests
         var settings = SystemProviderSettings.CreateNew();
 
         var act = () =>
-            settings.Configure("1790012345001", "ZH Technologies S.A.", "J62021002", null, enabled: true, UserId);
+            settings.Configure(
+                "1790012345001",
+                "ZH Technologies S.A.",
+                "J62021002",
+                null,
+                enabled: true,
+                UserId
+            );
 
         act.Should()
             .Throw<DomainRuleViolationException>()
@@ -86,7 +100,14 @@ public sealed class SystemProviderSettingsTests
         var settings = SystemProviderSettings.CreateNew();
 
         var act = () =>
-            settings.Configure("179001234500A", "ZH Technologies S.A.", "J62021002", new DateOnly(2026, 11, 3), enabled: true, UserId);
+            settings.Configure(
+                "179001234500A",
+                "ZH Technologies S.A.",
+                "J62021002",
+                new DateOnly(2026, 11, 3),
+                enabled: true,
+                UserId
+            );
 
         act.Should().Throw<ArgumentException>();
         settings.Enabled.Should().BeFalse();
@@ -97,7 +118,14 @@ public sealed class SystemProviderSettingsTests
     {
         var settings = SystemProviderSettings.CreateNew();
 
-        settings.Configure("1790012345001", "ZH Technologies S.A.", "J62021002", null, enabled: false, UserId);
+        settings.Configure(
+            "1790012345001",
+            "ZH Technologies S.A.",
+            "J62021002",
+            null,
+            enabled: false,
+            UserId
+        );
 
         settings.Enabled.Should().BeFalse();
         settings.EffectiveDate.Should().BeNull();

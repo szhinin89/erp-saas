@@ -43,11 +43,19 @@ public sealed class ForgotPasswordHandlerTests
                 .Setup(t => t.TryAcquireAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(true);
             Tokens
-                .Setup(r => r.AddAsync(It.IsAny<PasswordResetToken>(), It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.AddAsync(It.IsAny<PasswordResetToken>(), It.IsAny<CancellationToken>())
+                )
                 .Callback<PasswordResetToken, CancellationToken>((t, _) => AddedTokens.Add(t))
                 .Returns(Task.CompletedTask);
             Sender
-                .Setup(s => s.SendPasswordResetLinkAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .Setup(s =>
+                    s.SendPasswordResetLinkAsync(
+                        It.IsAny<string>(),
+                        It.IsAny<string>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .Callback<string, string, CancellationToken>((_, link, _) => SentLinks.Add(link))
                 .Returns(Task.CompletedTask);
         }
@@ -69,17 +77,30 @@ public sealed class ForgotPasswordHandlerTests
         public IdentityUser GivenUser(params CompanyEntity[] companies)
         {
             var user = IdentityUser.Create("ana.perez", "Ana", "Perez", Email, "hash", Actor);
-            Access.Setup(r => r.GetUserByEmailAsync(Email, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+            Access
+                .Setup(r => r.GetUserByEmailAsync(Email, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(user);
             var memberships = companies
                 .Select(c => CompanyUserMembership.Create(c.Id, user.Id, "Admin", null, Actor))
                 .ToList();
             Access
-                .Setup(r => r.GetActiveCompanyUserMembershipsForUserSystemAsync(user.Id, It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetActiveCompanyUserMembershipsForUserSystemAsync(
+                        user.Id,
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync(memberships);
             Companies
-                .Setup(r => r.GetByIdsAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((IReadOnlyCollection<Guid> ids, CancellationToken _) =>
-                    companies.Where(c => ids.Contains(c.Id)).ToList()
+                .Setup(r =>
+                    r.GetByIdsAsync(
+                        It.IsAny<IReadOnlyCollection<Guid>>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(
+                    (IReadOnlyCollection<Guid> ids, CancellationToken _) =>
+                        companies.Where(c => ids.Contains(c.Id)).ToList()
                 );
             return user;
         }
@@ -89,7 +110,9 @@ public sealed class ForgotPasswordHandlerTests
             var tenant = Tenant.Create("Tenant", $"t-{Guid.NewGuid():N}", Actor);
             if (!active)
                 tenant.Deactivate(Actor);
-            Tenants.Setup(r => r.GetByIdAsync(tenant.Id, It.IsAny<CancellationToken>())).ReturnsAsync(tenant);
+            Tenants
+                .Setup(r => r.GetByIdAsync(tenant.Id, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(tenant);
             return tenant;
         }
     }
@@ -99,10 +122,14 @@ public sealed class ForgotPasswordHandlerTests
 
     /// <summary>Mismo algoritmo que PasswordResetTokenCrypto.Hash (internal): SHA-256 en Base64.</summary>
     private static string HashOf(string raw) =>
-        Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(raw)));
+        Convert.ToBase64String(
+            System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(raw))
+        );
 
-    private static Task<ERP.Application.Common.Result<bool>> Send(Fixture f, string email = Email) =>
-        f.Build().Handle(new ForgotPasswordCommand(email), CancellationToken.None);
+    private static Task<ERP.Application.Common.Result<bool>> Send(
+        Fixture f,
+        string email = Email
+    ) => f.Build().Handle(new ForgotPasswordCommand(email), CancellationToken.None);
 
     // C/D/E — la respuesta pública no distingue ninguna rama.
     [Fact]
@@ -119,12 +146,14 @@ public sealed class ForgotPasswordHandlerTests
 
         var results = new[] { await Send(existing), await Send(nonexistent), await Send(multiple) };
 
-        results.Should().AllSatisfy(r =>
-        {
-            r.IsSuccess.Should().BeTrue();
-            r.Value.Should().BeTrue();
-            r.Error.Should().BeNullOrEmpty();
-        });
+        results
+            .Should()
+            .AllSatisfy(r =>
+            {
+                r.IsSuccess.Should().BeTrue();
+                r.Value.Should().BeTrue();
+                r.Error.Should().BeNullOrEmpty();
+            });
         existing.AddedTokens.Should().ContainSingle();
     }
 
@@ -138,9 +167,22 @@ public sealed class ForgotPasswordHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         f.AddedTokens.Should().BeEmpty();
-        f.Tokens.Verify(r => r.InvalidateActiveForUserAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.Tokens.Verify(
+            r =>
+                r.InvalidateActiveForUserAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
         f.Sender.VerifyNoOtherCalls();
-        f.Logger.Entries.Should().Contain(e => e.EventId.Name == "PasswordResetRequestSuppressed" && e.Message.Contains("NoAccount"));
+        f.Logger.Entries.Should()
+            .Contain(e =>
+                e.EventId.Name == "PasswordResetRequestSuppressed"
+                && e.Message.Contains("NoAccount")
+            );
     }
 
     // G — membresías en varios tenants: no se elige uno, no hay token ni entrega.
@@ -155,11 +197,12 @@ public sealed class ForgotPasswordHandlerTests
         result.IsSuccess.Should().BeTrue();
         f.AddedTokens.Should().BeEmpty();
         f.Sender.VerifyNoOtherCalls();
-        f.Logger.Entries.Should().Contain(e =>
-            e.EventId.Name == "PasswordResetRequestSuppressed"
-            && e.Message.Contains("AmbiguousTenant")
-            && e.Message.Contains(user.Id.ToString())
-        );
+        f.Logger.Entries.Should()
+            .Contain(e =>
+                e.EventId.Name == "PasswordResetRequestSuppressed"
+                && e.Message.Contains("AmbiguousTenant")
+                && e.Message.Contains(user.Id.ToString())
+            );
     }
 
     [Fact]
@@ -221,7 +264,8 @@ public sealed class ForgotPasswordHandlerTests
         logs.Should().NotContain(f.AddedTokens.Single().TokenHash);
         logs.Should().NotContain(Email);
         f.Logger.Entries.Select(e => e.EventId.Name)
-            .Should().Equal("PasswordResetRequested", "PasswordResetDeliveryRequested");
+            .Should()
+            .Equal("PasswordResetRequested", "PasswordResetDeliveryRequested");
         f.Logger.Entries.Last().Message.Should().Contain(user.Id.ToString());
     }
 
@@ -233,12 +277,19 @@ public sealed class ForgotPasswordHandlerTests
         var tenant = f.GivenTenant();
         var user = f.GivenUser(CompanyOf(tenant.Id));
         var order = new List<string>();
-        f.Tokens
-            .Setup(r => r.InvalidateActiveForUserAsync(user.Id, PasswordResetToken.KindIdentity, tenant.Id, It.IsAny<CancellationToken>()))
+        f.Tokens.Setup(r =>
+                r.InvalidateActiveForUserAsync(
+                    user.Id,
+                    PasswordResetToken.KindIdentity,
+                    tenant.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .Callback(() => order.Add("invalidate"))
             .Returns(Task.CompletedTask);
-        f.Tokens
-            .Setup(r => r.AddAsync(It.IsAny<PasswordResetToken>(), It.IsAny<CancellationToken>()))
+        f.Tokens.Setup(r =>
+                r.AddAsync(It.IsAny<PasswordResetToken>(), It.IsAny<CancellationToken>())
+            )
             .Callback(() => order.Add("add"))
             .Returns(Task.CompletedTask);
 
@@ -254,8 +305,7 @@ public sealed class ForgotPasswordHandlerTests
         var f = new Fixture();
         var tenant = f.GivenTenant();
         f.GivenUser(CompanyOf(tenant.Id));
-        f.Throttle
-            .Setup(t => t.TryAcquireAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        f.Throttle.Setup(t => t.TryAcquireAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
         var result = await Send(f);
@@ -263,7 +313,10 @@ public sealed class ForgotPasswordHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeTrue();
         f.AddedTokens.Should().BeEmpty();
-        f.Access.Verify(r => r.GetUserByEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.Access.Verify(
+            r => r.GetUserByEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
         f.Logger.Entries.Should().Contain(e => e.Message.Contains("RateLimited"));
     }
 
@@ -274,7 +327,10 @@ public sealed class ForgotPasswordHandlerTests
 
         await Send(f, "  Nadie@Test.COM ");
 
-        f.Throttle.Verify(t => t.TryAcquireAsync("nadie@test.com", It.IsAny<CancellationToken>()), Times.Once);
+        f.Throttle.Verify(
+            t => t.TryAcquireAsync("nadie@test.com", It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     // Formato inválido: error de validación (no depende de la cuenta) y no consume cupo.
@@ -294,8 +350,9 @@ public sealed class ForgotPasswordHandlerTests
     public async Task Fallo_tecnico_al_buscar_la_cuenta_se_propaga()
     {
         var f = new Fixture();
-        f.Access
-            .Setup(r => r.GetUserByEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        f.Access.Setup(r =>
+                r.GetUserByEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())
+            )
             .ThrowsAsync(new InvalidOperationException("db down"));
 
         var act = () => Send(f);

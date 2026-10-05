@@ -31,11 +31,26 @@ public sealed class CashMovementDirectQueryAuditTests
             var file in Directory.EnumerateFiles(backendRoot, "*.cs", SearchOption.AllDirectories)
         )
         {
-            if (file.Contains($"{Path.DirectorySeparatorChar}Migrations{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
+            if (
+                file.Contains(
+                    $"{Path.DirectorySeparatorChar}Migrations{Path.DirectorySeparatorChar}",
+                    StringComparison.OrdinalIgnoreCase
+                )
+            )
                 continue;
-            if (file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
+            if (
+                file.Contains(
+                    $"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}",
+                    StringComparison.OrdinalIgnoreCase
+                )
+            )
                 continue;
-            if (file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
+            if (
+                file.Contains(
+                    $"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}",
+                    StringComparison.OrdinalIgnoreCase
+                )
+            )
                 continue;
             if (file.Contains(".Tests", StringComparison.OrdinalIgnoreCase))
                 continue;

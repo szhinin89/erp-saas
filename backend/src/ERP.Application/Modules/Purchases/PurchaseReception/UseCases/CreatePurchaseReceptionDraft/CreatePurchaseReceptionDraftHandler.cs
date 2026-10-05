@@ -88,7 +88,8 @@ public sealed class CreatePurchaseReceptionDraftHandler
 
         if (document.SourceDocType != PurchaseReceptionSourceDocType.Invoice)
             return Result<PurchaseDraftDto>.ValidationFailure(
-                "Solo una factura puede generar un borrador de compra. Procese la nota de crédito desde su flujo propio.");
+                "Solo una factura puede generar un borrador de compra. Procese la nota de crédito desde su flujo propio."
+            );
 
         if (
             document.Status != PurchaseReceptionDocumentStatus.Verified
@@ -100,8 +101,18 @@ public sealed class CreatePurchaseReceptionDraftHandler
             );
         }
 
-        if (await _expenseRepo.ExistsByAccessKeyAsync(_tenant.TenantId, document.AccessKey, cancellationToken)
-            || await _expenseRepo.ExistsByReceptionDocumentIdAsync(_tenant.TenantId, document.Id, cancellationToken))
+        if (
+            await _expenseRepo.ExistsByAccessKeyAsync(
+                _tenant.TenantId,
+                document.AccessKey,
+                cancellationToken
+            )
+            || await _expenseRepo.ExistsByReceptionDocumentIdAsync(
+                _tenant.TenantId,
+                document.Id,
+                cancellationToken
+            )
+        )
             return Result<PurchaseDraftDto>.Conflict("La recepción ya fue utilizada como gasto.");
 
         var existingPurchase = await _purchaseRepo.GetByAccessKeyAsync(
@@ -115,7 +126,13 @@ public sealed class CreatePurchaseReceptionDraftHandler
             );
 
         var supplier = await ReceptionSupplierResolver.ResolveAsync(
-            document, _bpRepo, _documentRepo, _tenant.TenantId, _user.UserId, cancellationToken);
+            document,
+            _bpRepo,
+            _documentRepo,
+            _tenant.TenantId,
+            _user.UserId,
+            cancellationToken
+        );
         if (!supplier.IsSuccess)
             return Result<PurchaseDraftDto>.Failure(supplier.Error!, supplier.Code);
 
@@ -175,7 +192,9 @@ public sealed class CreatePurchaseReceptionDraftHandler
     /// las líneas persistidas para no perder Item Matching. Si no hay XML, o si el re-parseo falla,
     /// se usan las líneas persistidas tal cual — comportamiento idéntico al anterior.
     /// </summary>
-    private IReadOnlyList<PurchaseDraftMergedLine> BuildMergedLines(PurchaseReceptionDocument document)
+    private IReadOnlyList<PurchaseDraftMergedLine> BuildMergedLines(
+        PurchaseReceptionDocument document
+    )
     {
         if (string.IsNullOrWhiteSpace(document.XmlContent))
             return document.Lines.Select(PurchaseDraftMergedLine.FromPersisted).ToList();
@@ -222,7 +241,9 @@ public sealed class CreatePurchaseReceptionDraftHandler
         );
     }
 
-    private async Task<IReadOnlyDictionary<Guid, PurchaseDraftLinePackagingSnapshot>> ResolvePackagingSnapshotsAsync(
+    private async Task<
+        IReadOnlyDictionary<Guid, PurchaseDraftLinePackagingSnapshot>
+    > ResolvePackagingSnapshotsAsync(
         PurchaseReceptionDocument document,
         CancellationToken cancellationToken
     )

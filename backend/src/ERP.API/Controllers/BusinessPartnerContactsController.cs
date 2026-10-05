@@ -67,7 +67,10 @@ public sealed class BusinessPartnerContactsController : ControllerBase
         CancellationToken cancellationToken = default
     )
     {
-        var result = await _mediator.Send(new GetBpContactByIdQuery(bpId, contactId), cancellationToken);
+        var result = await _mediator.Send(
+            new GetBpContactByIdQuery(bpId, contactId),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 

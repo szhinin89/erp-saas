@@ -39,7 +39,9 @@ public sealed class StockAdjustmentBranchOwnershipTests
     private static ICompanyClock StubCompanyClock()
     {
         var mock = new Mock<ICompanyClock>();
-        mock.Setup(c => c.TodayAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        mock.Setup(c =>
+                c.TodayAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(AdjustmentDate);
         return mock.Object;
     }
@@ -155,15 +157,19 @@ public sealed class StockAdjustmentBranchOwnershipTests
     {
         var warehouseOfBranchB = CreateWarehouse(BranchBId);
         var f = new CreateFixture(activeBranchId: BranchAId);
-        f.WarehouseRepo
-            .Setup(r => r.GetByIdAsync(TenantId, warehouseOfBranchB.Id, It.IsAny<CancellationToken>()))
+        f.WarehouseRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, warehouseOfBranchB.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(warehouseOfBranchB);
 
         var result = await f.BuildHandler()
             .Handle(BuildCreateCommand(warehouseOfBranchB.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
-        f.AdjRepo.Verify(r => r.AddAsync(It.IsAny<StockAdjustment>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.AdjRepo.Verify(
+            r => r.AddAsync(It.IsAny<StockAdjustment>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -171,15 +177,19 @@ public sealed class StockAdjustmentBranchOwnershipTests
     {
         var f = new CreateFixture(activeBranchId: BranchAId);
         var missingWarehouseId = Guid.NewGuid();
-        f.WarehouseRepo
-            .Setup(r => r.GetByIdAsync(TenantId, missingWarehouseId, It.IsAny<CancellationToken>()))
+        f.WarehouseRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, missingWarehouseId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((Warehouse?)null);
 
         var result = await f.BuildHandler()
             .Handle(BuildCreateCommand(missingWarehouseId), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
-        f.AdjRepo.Verify(r => r.AddAsync(It.IsAny<StockAdjustment>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.AdjRepo.Verify(
+            r => r.AddAsync(It.IsAny<StockAdjustment>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -187,8 +197,9 @@ public sealed class StockAdjustmentBranchOwnershipTests
     {
         var warehouseOfBranchA = CreateWarehouse(BranchAId);
         var f = new CreateFixture(activeBranchId: BranchAId);
-        f.WarehouseRepo
-            .Setup(r => r.GetByIdAsync(TenantId, warehouseOfBranchA.Id, It.IsAny<CancellationToken>()))
+        f.WarehouseRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, warehouseOfBranchA.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(warehouseOfBranchA);
         f.AdjRepo.Setup(r => r.GetNextSequentialAsync(TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
@@ -197,7 +208,10 @@ public sealed class StockAdjustmentBranchOwnershipTests
             .Handle(BuildCreateCommand(warehouseOfBranchA.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        f.AdjRepo.Verify(r => r.AddAsync(It.IsAny<StockAdjustment>(), It.IsAny<CancellationToken>()), Times.Once);
+        f.AdjRepo.Verify(
+            r => r.AddAsync(It.IsAny<StockAdjustment>(), It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     // ── ExecuteStockAdjustmentCommandHandler ─────────────────────────────
@@ -219,7 +233,9 @@ public sealed class StockAdjustmentBranchOwnershipTests
             User.Setup(u => u.UserId).Returns(UserId);
 
             ReasonRepo
-                .Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(CreateReason());
         }
 
@@ -287,8 +303,9 @@ public sealed class StockAdjustmentBranchOwnershipTests
         var f = new ExecuteFixture(activeBranchId: BranchAId);
         f.AdjRepo.Setup(r => r.GetByIdAsync(TenantId, adj.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(adj);
-        f.WarehouseRepo
-            .Setup(r => r.GetByIdAsync(TenantId, warehouseOfBranchB.Id, It.IsAny<CancellationToken>()))
+        f.WarehouseRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, warehouseOfBranchB.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(warehouseOfBranchB);
 
         var result = await f.BuildHandler()
@@ -329,11 +346,11 @@ public sealed class StockAdjustmentBranchOwnershipTests
         var f = new ExecuteFixture(activeBranchId: BranchAId);
         f.AdjRepo.Setup(r => r.GetByIdAsync(TenantId, adj.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(adj);
-        f.WarehouseRepo
-            .Setup(r => r.GetByIdAsync(TenantId, warehouseOfBranchA.Id, It.IsAny<CancellationToken>()))
+        f.WarehouseRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, warehouseOfBranchA.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(warehouseOfBranchA);
-        f.StockRepo
-            .Setup(r =>
+        f.StockRepo.Setup(r =>
                 r.AppendMovementAsync(
                     TenantId,
                     CompanyId,
@@ -402,7 +419,9 @@ public sealed class StockAdjustmentBranchOwnershipTests
             Branch.Setup(b => b.BranchId).Returns(activeBranchId);
             User.Setup(u => u.UserId).Returns(UserId);
             ReasonRepo
-                .Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(CreateReason());
         }
 
@@ -428,12 +447,16 @@ public sealed class StockAdjustmentBranchOwnershipTests
         var f = new CancelFixture(activeBranchId: BranchAId);
         f.AdjRepo.Setup(r => r.GetByIdAsync(TenantId, adj.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(adj);
-        f.WarehouseRepo
-            .Setup(r => r.GetByIdAsync(TenantId, warehouseOfBranchB.Id, It.IsAny<CancellationToken>()))
+        f.WarehouseRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, warehouseOfBranchB.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(warehouseOfBranchB);
 
         var result = await f.BuildHandler()
-            .Handle(new CancelStockAdjustmentCommand(adj.Id, "Error de digitación"), CancellationToken.None);
+            .Handle(
+                new CancelStockAdjustmentCommand(adj.Id, "Error de digitación"),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
@@ -481,7 +504,13 @@ public sealed class StockAdjustmentBranchOwnershipTests
         }
 
         public GetStockAdjustmentByIdQueryHandler BuildHandler() =>
-            new(AdjRepo.Object, ReasonRepo.Object, WarehouseRepo.Object, Tenant.Object, Branch.Object);
+            new(
+                AdjRepo.Object,
+                ReasonRepo.Object,
+                WarehouseRepo.Object,
+                Tenant.Object,
+                Branch.Object
+            );
     }
 
     [Fact]
@@ -492,8 +521,9 @@ public sealed class StockAdjustmentBranchOwnershipTests
         var f = new GetByIdFixture(activeBranchId: BranchAId);
         f.AdjRepo.Setup(r => r.GetByIdAsync(TenantId, adj.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(adj);
-        f.WarehouseRepo
-            .Setup(r => r.GetByIdAsync(TenantId, warehouseOfBranchB.Id, It.IsAny<CancellationToken>()))
+        f.WarehouseRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, warehouseOfBranchB.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(warehouseOfBranchB);
 
         var result = await f.BuildHandler()
@@ -511,11 +541,11 @@ public sealed class StockAdjustmentBranchOwnershipTests
         var f = new GetByIdFixture(activeBranchId: BranchAId);
         f.AdjRepo.Setup(r => r.GetByIdAsync(TenantId, adj.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(adj);
-        f.WarehouseRepo
-            .Setup(r => r.GetByIdAsync(TenantId, warehouseOfBranchA.Id, It.IsAny<CancellationToken>()))
+        f.WarehouseRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, warehouseOfBranchA.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(warehouseOfBranchA);
-        f.ReasonRepo
-            .Setup(r => r.GetByIdAsync(TenantId, ReasonId, It.IsAny<CancellationToken>()))
+        f.ReasonRepo.Setup(r => r.GetByIdAsync(TenantId, ReasonId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(CreateReason());
 
         var result = await f.BuildHandler()
@@ -543,14 +573,18 @@ public sealed class StockAdjustmentBranchOwnershipTests
             Tenant.Setup(t => t.TenantId).Returns(TenantId);
             Branch.Setup(b => b.BranchId).Returns(activeBranchId);
             ReasonRepo
-                .Setup(r =>
-                    r.ListAsync(TenantId, null, true, It.IsAny<CancellationToken>())
-                )
+                .Setup(r => r.ListAsync(TenantId, null, true, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Array.Empty<InventoryAdjustmentReason>());
         }
 
         public ListStockAdjustmentsQueryHandler BuildHandler() =>
-            new(AdjRepo.Object, ReasonRepo.Object, WarehouseRepo.Object, Tenant.Object, Branch.Object);
+            new(
+                AdjRepo.Object,
+                ReasonRepo.Object,
+                WarehouseRepo.Object,
+                Tenant.Object,
+                Branch.Object
+            );
     }
 
     private static ListStockAdjustmentsQuery BuildListQuery(Guid? warehouseId = null) =>
@@ -561,8 +595,9 @@ public sealed class StockAdjustmentBranchOwnershipTests
     {
         var warehouseOfBranchB = CreateWarehouse(BranchBId);
         var f = new ListFixture(activeBranchId: BranchAId);
-        f.WarehouseRepo
-            .Setup(r => r.GetByIdAsync(TenantId, warehouseOfBranchB.Id, It.IsAny<CancellationToken>()))
+        f.WarehouseRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, warehouseOfBranchB.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(warehouseOfBranchB);
 
         var result = await f.BuildHandler()
@@ -593,13 +628,11 @@ public sealed class StockAdjustmentBranchOwnershipTests
     {
         var warehouseOfBranchA = CreateWarehouse(BranchAId);
         var f = new ListFixture(activeBranchId: BranchAId);
-        f.WarehouseRepo
-            .Setup(r =>
+        f.WarehouseRepo.Setup(r =>
                 r.GetAsync(TenantId, null, null, BranchAId, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(new[] { warehouseOfBranchA });
-        f.AdjRepo
-            .Setup(r =>
+        f.AdjRepo.Setup(r =>
                 r.GetPagedAsync(
                     TenantId,
                     1,
@@ -629,11 +662,11 @@ public sealed class StockAdjustmentBranchOwnershipTests
     {
         var warehouseOfBranchA = CreateWarehouse(BranchAId);
         var f = new ListFixture(activeBranchId: BranchAId);
-        f.WarehouseRepo
-            .Setup(r => r.GetByIdAsync(TenantId, warehouseOfBranchA.Id, It.IsAny<CancellationToken>()))
+        f.WarehouseRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, warehouseOfBranchA.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(warehouseOfBranchA);
-        f.AdjRepo
-            .Setup(r =>
+        f.AdjRepo.Setup(r =>
                 r.GetPagedAsync(
                     TenantId,
                     1,

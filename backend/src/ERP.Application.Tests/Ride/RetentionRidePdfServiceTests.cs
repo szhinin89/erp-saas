@@ -106,7 +106,9 @@ public sealed class RetentionRidePdfServiceTests
     {
         var renderer = new Mock<IRideRenderer>();
         renderer
-            .Setup(r => r.RenderAsync(It.IsAny<IRideDocumentLayout>(), It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.RenderAsync(It.IsAny<IRideDocumentLayout>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(pdfBytes ?? [1, 2, 3]);
 
         var brandingProvider = new Mock<IRideBrandingProvider>();
@@ -159,8 +161,12 @@ public sealed class RetentionRidePdfServiceTests
         var (renderer, brandingProvider) = MockDependencies();
         IRideDocumentLayout? capturedLayout = null;
         renderer
-            .Setup(r => r.RenderAsync(It.IsAny<IRideDocumentLayout>(), It.IsAny<CancellationToken>()))
-            .Callback<IRideDocumentLayout, CancellationToken>((layout, _) => capturedLayout = layout)
+            .Setup(r =>
+                r.RenderAsync(It.IsAny<IRideDocumentLayout>(), It.IsAny<CancellationToken>())
+            )
+            .Callback<IRideDocumentLayout, CancellationToken>(
+                (layout, _) => capturedLayout = layout
+            )
             .ReturnsAsync([9]);
 
         var service = new RetentionRidePdfService(
@@ -170,7 +176,12 @@ public sealed class RetentionRidePdfServiceTests
             brandingProvider.Object
         );
 
-        await service.GeneratePdfAsync(xml, Guid.NewGuid(), Guid.NewGuid(), ct: CancellationToken.None);
+        await service.GeneratePdfAsync(
+            xml,
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            ct: CancellationToken.None
+        );
 
         capturedLayout.Should().BeOfType<RetentionRideDocumentLayout>();
     }

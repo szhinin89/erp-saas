@@ -21,7 +21,11 @@ public sealed class PaymentRepository : IPaymentRepository
     ) =>
         _context
             .Payments.Include(x => x.Lines)
-            .Where(x => x.TenantId == tenantId && x.CompanyId == companyId && x.ClientRequestId == clientRequestId)
+            .Where(x =>
+                x.TenantId == tenantId
+                && x.CompanyId == companyId
+                && x.ClientRequestId == clientRequestId
+            )
             .FirstOrDefaultAsync(ct);
 
     public async Task<Payment?> GetByIdForUpdateAsync(
@@ -54,7 +58,10 @@ public sealed class PaymentRepository : IPaymentRepository
             .FirstOrDefaultAsync(ct);
 
     public async Task<
-        IReadOnlyDictionary<Guid, (Guid PartnerId, decimal Amount, DateOnly PaymentDate, string? Reference, string Status)>
+        IReadOnlyDictionary<
+            Guid,
+            (Guid PartnerId, decimal Amount, DateOnly PaymentDate, string? Reference, string Status)
+        >
     > GetJournalSourceSummariesByIdsAsync(
         Guid tenantId,
         Guid companyId,

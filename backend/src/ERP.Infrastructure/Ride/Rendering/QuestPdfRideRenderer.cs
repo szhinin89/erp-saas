@@ -192,7 +192,9 @@ public sealed class QuestPdfRideRenderer : IRideRenderer
                                     );
                                 row.ConstantItem(8);
                                 row.RelativeItem(2)
-                                    .Element(c => RetentionTotalSection.Compose(c, retentionLayout));
+                                    .Element(c =>
+                                        RetentionTotalSection.Compose(c, retentionLayout)
+                                    );
                             });
                     });
 

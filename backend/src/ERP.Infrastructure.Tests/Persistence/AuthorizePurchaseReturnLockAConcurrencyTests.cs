@@ -488,7 +488,12 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
             CancellationToken ct = default
         ) =>
             Task.FromResult(
-                ERP.Application.Common.Services.CompanyTimeZone.DayUtcRange(day, ERP.Application.Common.Services.CompanyTimeZone.Resolve(ERP.Application.Common.Services.CompanyTimeZone.DefaultTimezoneId))
+                ERP.Application.Common.Services.CompanyTimeZone.DayUtcRange(
+                    day,
+                    ERP.Application.Common.Services.CompanyTimeZone.Resolve(
+                        ERP.Application.Common.Services.CompanyTimeZone.DefaultTimezoneId
+                    )
+                )
             );
 
         public Task<DateTime> CompanyLocalToUtcAsync(
@@ -498,7 +503,12 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
             CancellationToken ct = default
         ) =>
             Task.FromResult(
-                ERP.Application.Common.Services.CompanyTimeZone.ToUtc(companyLocal, ERP.Application.Common.Services.CompanyTimeZone.Resolve(ERP.Application.Common.Services.CompanyTimeZone.DefaultTimezoneId))
+                ERP.Application.Common.Services.CompanyTimeZone.ToUtc(
+                    companyLocal,
+                    ERP.Application.Common.Services.CompanyTimeZone.Resolve(
+                        ERP.Application.Common.Services.CompanyTimeZone.DefaultTimezoneId
+                    )
+                )
             );
     }
 
@@ -518,7 +528,9 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
     {
         // ZH-BACKEND-SECURITY-ERROR-FINAL-HARDENING-01: clasificación técnica real (único punto).
         public string? ClassifyFailureCode(Exception exception) =>
-            new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator().ClassifyFailureCode(exception);
+            new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator().ClassifyFailureCode(
+                exception
+            );
 
         public bool TryGetUniqueViolation(Exception exception, out DatabaseUniqueViolationInfo info)
         {

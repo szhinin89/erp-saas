@@ -120,9 +120,10 @@ public sealed class CalculateRetentionHandler
         // base, sin código activo), nunca uno distinto calculado aparte.
         string? skipReason = null;
         if (result.Lines.Count == 0)
-            skipReason = eligibility.Reasons.Count > 0
-                ? string.Join(" ", eligibility.Reasons)
-                : result.SkipReason;
+            skipReason =
+                eligibility.Reasons.Count > 0
+                    ? string.Join(" ", eligibility.Reasons)
+                    : result.SkipReason;
 
         var dto = new RetentionPreviewDto(
             result

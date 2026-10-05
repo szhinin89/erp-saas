@@ -50,19 +50,33 @@ public sealed class SriIncomeCatalogMigrationSupplierDefaultsTests : IAsyncLifet
         await using (var db = CreateContext())
             await db.GetService<IMigrator>().MigrateAsync(PreviousMigration);
 
-        var defaults = await SeedSupplierDefaultsAsync(Concept303, Concept304, Concept312, Concept327, Concept341);
+        var defaults = await SeedSupplierDefaultsAsync(
+            Concept303,
+            Concept304,
+            Concept312,
+            Concept327,
+            Concept341
+        );
 
         await using (var db = CreateContext())
             await db.Database.MigrateAsync();
 
         await using var check = CreateContext();
-        var after = await check.SupplierRetentionDefaults.AsNoTracking().ToDictionaryAsync(d => d.SriRetentionCodeId);
+        var after = await check
+            .SupplierRetentionDefaults.AsNoTracking()
+            .ToDictionaryAsync(d => d.SriRetentionCodeId);
 
         after.Should().HaveCount(5, "ningún default se elimina");
         after[Concept303].IsActive.Should().BeTrue("303 conserva su significado");
-        after[Concept312].IsActive.Should().BeTrue("312 conserva su significado (solo cambia la tasa)");
-        after[Concept304].IsActive.Should().BeFalse("304 cambió de significado: requiere validación explícita");
-        after[Concept327].IsActive.Should().BeFalse("327 cambió de significado y su tasa es condicional");
+        after[Concept312]
+            .IsActive.Should()
+            .BeTrue("312 conserva su significado (solo cambia la tasa)");
+        after[Concept304]
+            .IsActive.Should()
+            .BeFalse("304 cambió de significado: requiere validación explícita");
+        after[Concept327]
+            .IsActive.Should()
+            .BeFalse("327 cambió de significado y su tasa es condicional");
         after[Concept341].IsActive.Should().BeFalse("341 ya no existe en el Catálogo ATS vigente");
 
         foreach (var (codeId, id) in defaults)
@@ -78,7 +92,12 @@ public sealed class SriIncomeCatalogMigrationSupplierDefaultsTests : IAsyncLifet
         await using (var bootstrap = CreateContext())
         {
             var tenant = Tenant.Create("RETMIG", $"retmig-{Guid.NewGuid():N}"[..16], _userId);
-            var company = Company.CreateManaged(tenant.Id, "1790012345001", "Retenedora S.A.", createdBy: _userId);
+            var company = Company.CreateManaged(
+                tenant.Id,
+                "1790012345001",
+                "Retenedora S.A.",
+                createdBy: _userId
+            );
             bootstrap.Tenants.Add(tenant);
             bootstrap.Companies.Add(company);
             await bootstrap.SaveChangesAsync();
@@ -87,13 +106,27 @@ public sealed class SriIncomeCatalogMigrationSupplierDefaultsTests : IAsyncLifet
         }
 
         await using var db = CreateContext();
-        var supplier = BusinessPartner.Create(_tenantId, TaxIdentification.SriRuc, "1791352688001", 2, "Proveedor", _userId);
+        var supplier = BusinessPartner.Create(
+            _tenantId,
+            TaxIdentification.SriRuc,
+            "1791352688001",
+            2,
+            "Proveedor",
+            _userId
+        );
         db.BusinessPartners.Add(supplier);
         var result = new Dictionary<Guid, Guid>();
         var order = 0;
         foreach (var conceptId in conceptIds)
         {
-            var entry = SupplierRetentionDefault.Create(_tenantId, _companyId, supplier.Id, conceptId, order++, _userId);
+            var entry = SupplierRetentionDefault.Create(
+                _tenantId,
+                _companyId,
+                supplier.Id,
+                conceptId,
+                order++,
+                _userId
+            );
             db.SupplierRetentionDefaults.Add(entry);
             result[conceptId] = entry.Id;
         }
@@ -103,7 +136,9 @@ public sealed class SriIncomeCatalogMigrationSupplierDefaultsTests : IAsyncLifet
 
     private ErpDbContext CreateContext() =>
         new(
-            new DbContextOptionsBuilder<ErpDbContext>().UseNpgsql(_postgres.GetConnectionString()).Options,
+            new DbContextOptionsBuilder<ErpDbContext>()
+                .UseNpgsql(_postgres.GetConnectionString())
+                .Options,
             new FixedTenant(() => _tenantId),
             new NoOpPublisher(),
             new FixedCompany(() => _companyId)
@@ -124,9 +159,13 @@ public sealed class SriIncomeCatalogMigrationSupplierDefaultsTests : IAsyncLifet
 
     private sealed class NoOpPublisher : IPublisher
     {
-        public Task Publish(object notification, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
             where TNotification : INotification => Task.CompletedTask;
     }
 }

@@ -69,9 +69,18 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
         CancellationToken cancellationToken = default
     )
     {
-        var company = await _companyRepo.GetByIdForTenantAsync(companyId, tenantId, cancellationToken);
+        var company = await _companyRepo.GetByIdForTenantAsync(
+            companyId,
+            tenantId,
+            cancellationToken
+        );
 
-        var branches = await _branchRepo.GetByCompanyAsync(tenantId, companyId, activeFilter: true, cancellationToken: cancellationToken);
+        var branches = await _branchRepo.GetByCompanyAsync(
+            tenantId,
+            companyId,
+            activeFilter: true,
+            cancellationToken: cancellationToken
+        );
         var mainBranch = branches.FirstOrDefault(b => b.IsMainBranch);
 
         var mainEstablishment = await _establishmentRepo.GetMainByCompanyAsync(
@@ -86,10 +95,9 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
             cancellationToken
         );
 
-        var mainWarehouse =
-            mainBranch is not null
-                ? await _warehouseRepo.GetMainForBranchAsync(tenantId, mainBranch.Id, cancellationToken)
-                : null;
+        var mainWarehouse = mainBranch is not null
+            ? await _warehouseRepo.GetMainForBranchAsync(tenantId, mainBranch.Id, cancellationToken)
+            : null;
 
         var companyWarehouses = await _warehouseRepo.GetAsync(
             tenantId,
@@ -120,7 +128,9 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
             cancellationToken
         );
 
-        var fiscalPolicy = await _salesFiscalPolicyResolver.GetEffectivePolicyAsync(cancellationToken);
+        var fiscalPolicy = await _salesFiscalPolicyResolver.GetEffectivePolicyAsync(
+            cancellationToken
+        );
         var branding = await _brandingResolver.GetAsync(tenantId, companyId, cancellationToken);
         var maxCategoryDepth = await _catalogConfigResolver.ResolveMaxCategoryDepthAsync(
             tenantId,
@@ -129,11 +139,21 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
         );
         _ = maxCategoryDepth; // resuelto solo para confirmar que el fallback no lanza — siempre Ready.
 
-        var hasActiveItems = (await _itemRepo.GetAllActiveAsync(tenantId, cancellationToken)).Count > 0;
+        var hasActiveItems =
+            (await _itemRepo.GetAllActiveAsync(tenantId, cancellationToken)).Count > 0;
 
         var identity = BuildIdentitySection(company, branding);
-        var structure = BuildStructureSection(mainBranch, mainEstablishment, defaultEmissionPoint, mainWarehouse, hasAnyActiveCashRegister);
-        var electronicInvoicing = BuildElectronicInvoicingSection(sriSettings, defaultEmissionPoint);
+        var structure = BuildStructureSection(
+            mainBranch,
+            mainEstablishment,
+            defaultEmissionPoint,
+            mainWarehouse,
+            hasAnyActiveCashRegister
+        );
+        var electronicInvoicing = BuildElectronicInvoicingSection(
+            sriSettings,
+            defaultEmissionPoint
+        );
         var sales = BuildSalesSection(invoiceDefaults, defaultPriceList);
         var inventory = BuildInventorySection(hasAnyActiveWarehouse, hasActiveItems);
         var cashRegister = BuildCashRegisterSection(hasAnyActiveCashRegister);
@@ -155,7 +175,9 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
 
         bool AreaSatisfied(ReadinessBlockingArea area) =>
             !allItems.Any(i =>
-                i.BlockingArea == area && i.Severity == ReadinessSeverity.Blocking && i.Status != ReadinessStatus.Ready
+                i.BlockingArea == area
+                && i.Severity == ReadinessSeverity.Blocking
+                && i.Status != ReadinessStatus.Ready
             );
 
         var canSell = AreaSatisfied(ReadinessBlockingArea.Sales);
@@ -168,11 +190,10 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
         );
         var hasWarningGap = allItems.Any(i => i.Status == ReadinessStatus.Warning);
 
-        var overallStatus = hasBlockingGap
-            ? ReadinessStatus.Missing
-            : hasWarningGap
-                ? ReadinessStatus.Warning
-                : ReadinessStatus.Ready;
+        var overallStatus =
+            hasBlockingGap ? ReadinessStatus.Missing
+            : hasWarningGap ? ReadinessStatus.Warning
+            : ReadinessStatus.Ready;
 
         return new CompanyOperationalReadinessResult(
             OverallStatus: overallStatus,
@@ -282,7 +303,8 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
         Domain.Modules.Company.Entities.EmissionPoint? defaultEmissionPoint
     )
     {
-        var hasSriConfig = sriSettings is not null && !string.IsNullOrWhiteSpace(sriSettings.WsdlUrl);
+        var hasSriConfig =
+            sriSettings is not null && !string.IsNullOrWhiteSpace(sriSettings.WsdlUrl);
         var hasCertificate = !string.IsNullOrWhiteSpace(sriSettings?.CertP12Path);
 
         var items = new List<ReadinessItem>
@@ -330,7 +352,8 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
     )
     {
         var warehouseResolved =
-            invoiceDefaults.DefaultWarehouseId is not null || !invoiceDefaults.RequiresManualWarehouseSelection;
+            invoiceDefaults.DefaultWarehouseId is not null
+            || !invoiceDefaults.RequiresManualWarehouseSelection;
 
         var items = new List<ReadinessItem>
         {
@@ -385,7 +408,10 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
     }
 
     // ── Inventario ────────────────────────────────────────────────────────────
-    private static ReadinessSection BuildInventorySection(bool hasAnyActiveWarehouse, bool hasActiveItems)
+    private static ReadinessSection BuildInventorySection(
+        bool hasAnyActiveWarehouse,
+        bool hasActiveItems
+    )
     {
         var items = new List<ReadinessItem>
         {
@@ -397,7 +423,13 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
                 ReadinessActionTarget.Warehouses
             ),
             // Profundidad de categorías siempre resuelve con SystemDefault — informativo, nunca bloqueante.
-            Item("inventory.categoryDepth", true, ReadinessSeverity.Info, null, ReadinessActionTarget.Items),
+            Item(
+                "inventory.categoryDepth",
+                true,
+                ReadinessSeverity.Info,
+                null,
+                ReadinessActionTarget.Items
+            ),
             Item(
                 "inventory.activeItems",
                 hasActiveItems,
@@ -447,9 +479,21 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
                 ReadinessActionTarget.CompanyBranding
             ),
             // Siempre resuelve con SystemDefault — informativo, nunca bloqueante.
-            Item("documents.decimalPrecision", true, ReadinessSeverity.Info, null, ReadinessActionTarget.DecimalSettings),
+            Item(
+                "documents.decimalPrecision",
+                true,
+                ReadinessSeverity.Info,
+                null,
+                ReadinessActionTarget.DecimalSettings
+            ),
             // No hay verificación real de generación de RIDE sin emitir un documento — informativo.
-            Item("documents.ride", true, ReadinessSeverity.Info, null, ReadinessActionTarget.ElectronicInvoicingSettings),
+            Item(
+                "documents.ride",
+                true,
+                ReadinessSeverity.Info,
+                null,
+                ReadinessActionTarget.ElectronicInvoicingSettings
+            ),
         };
 
         return Section("documents", items);
@@ -465,11 +509,10 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
         bool forceWarningNotMissing = false
     )
     {
-        var status = ready
-            ? ReadinessStatus.Ready
-            : forceWarningNotMissing
-                ? ReadinessStatus.Warning
-                : ReadinessStatus.Missing;
+        var status =
+            ready ? ReadinessStatus.Ready
+            : forceWarningNotMissing ? ReadinessStatus.Warning
+            : ReadinessStatus.Missing;
 
         return new ReadinessItem(code, status, severity, blockingArea, actionTarget);
     }
@@ -481,11 +524,10 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
         );
         var hasWarningGap = items.Any(i => i.Status == ReadinessStatus.Warning);
 
-        var status = hasBlockingGap
-            ? ReadinessStatus.Missing
-            : hasWarningGap
-                ? ReadinessStatus.Warning
-                : ReadinessStatus.Ready;
+        var status =
+            hasBlockingGap ? ReadinessStatus.Missing
+            : hasWarningGap ? ReadinessStatus.Warning
+            : ReadinessStatus.Ready;
 
         return new ReadinessSection(code, status, items);
     }

@@ -66,8 +66,10 @@ public sealed class PurchaseReceptionVerifier : IPurchaseReceptionVerifier
                 );
                 supplierExists = supplierRole is not null;
                 if (record.SourceDocType == PurchaseReceptionSourceDocType.Invoice)
-                    supplierExists = businessPartner.TenantId == _tenant.TenantId
-                        && supplierRole is { IsActive: true } && supplierRole.TenantId == _tenant.TenantId;
+                    supplierExists =
+                        businessPartner.TenantId == _tenant.TenantId
+                        && supplierRole is { IsActive: true }
+                        && supplierRole.TenantId == _tenant.TenantId;
             }
 
             var purchaseExists = false;

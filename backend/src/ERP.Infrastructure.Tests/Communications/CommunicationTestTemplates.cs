@@ -30,15 +30,30 @@ internal static class CommunicationTestTemplates
             new Dictionary<string, string?> { [nameof(UserName)] = UserName };
     }
 
-    public static SalesInvoiceAuthorizedTemplateModel Invoice(string customerName = "Cliente Demo") =>
-        new(customerName, "001-001-000000001", "2108202601179214672100110010010000000011234567811", "100.00", "ZH Demo");
+    public static SalesInvoiceAuthorizedTemplateModel Invoice(
+        string customerName = "Cliente Demo"
+    ) =>
+        new(
+            customerName,
+            "001-001-000000001",
+            "2108202601179214672100110010010000000011234567811",
+            "100.00",
+            "ZH Demo"
+        );
 
     /// <summary>Resolver real para templates productivos + la definición estructural de PASSWORD_RESET.</summary>
-    public sealed class WithStructuralSystemTemplate(ICommunicationTemplateResolver inner) : ICommunicationTemplateResolver
+    public sealed class WithStructuralSystemTemplate(ICommunicationTemplateResolver inner)
+        : ICommunicationTemplateResolver
     {
-        public Task<Result<CommunicationTemplateDefinition>> ResolveAsync(CommunicationScope scope, string templateKey, CancellationToken ct = default) =>
+        public Task<Result<CommunicationTemplateDefinition>> ResolveAsync(
+            CommunicationScope scope,
+            string templateKey,
+            CancellationToken ct = default
+        ) =>
             templateKey == CommunicationPurposes.PasswordReset
-                ? Task.FromResult(Result<CommunicationTemplateDefinition>.Success(StructuralPasswordReset))
+                ? Task.FromResult(
+                    Result<CommunicationTemplateDefinition>.Success(StructuralPasswordReset)
+                )
                 : inner.ResolveAsync(scope, templateKey, ct);
     }
 }

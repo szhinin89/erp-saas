@@ -10,11 +10,7 @@ public interface IBankRepository
         string? search = null,
         CancellationToken cancellationToken = default
     );
-    Task<Bank?> GetByIdAsync(
-        Guid tenantId,
-        Guid id,
-        CancellationToken cancellationToken = default
-    );
+    Task<Bank?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken cancellationToken = default);
     Task<bool> ExistsByCodeAsync(
         Guid tenantId,
         string countryCode,

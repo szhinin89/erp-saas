@@ -56,8 +56,7 @@ public sealed record DeactivateExpenseCategoryNodeCommand(Guid Id)
 
 public sealed class ListExpenseCategoryTreeValidator
     : AbstractValidator<ListExpenseCategoryTreeQuery>
-{
-}
+{ }
 
 public sealed class GetExpenseCategoryNodeByIdValidator
     : AbstractValidator<GetExpenseCategoryNodeByIdQuery>
@@ -388,7 +387,6 @@ public sealed class CreateExpenseCategoryNodeHandler
                 "La subcategoria debe crearse bajo una categoria de gasto."
             );
     }
-
 }
 
 public sealed class UpdateExpenseCategoryNodeHandler
@@ -454,12 +452,7 @@ public sealed class UpdateExpenseCategoryNodeHandler
                     "La subcategoria requiere cuenta contable."
                 );
 
-            var account = await _accounts.GetByIdAsync(
-                tid,
-                cid,
-                cmd.AccountingAccountId.Value,
-                ct
-            );
+            var account = await _accounts.GetByIdAsync(tid, cid, cmd.AccountingAccountId.Value, ct);
             var accountValidation = ExpenseCategoryRules.ValidateExpenseAccount(account);
             if (accountValidation is not null)
                 return accountValidation;
@@ -633,32 +626,12 @@ file static class ExpenseCategoryRules
         CancellationToken ct
     )
     {
-        if (
-            await repo.CodeExistsAsync(
-                tenantId,
-                companyId,
-                parentId,
-                level,
-                code,
-                excludeId,
-                ct
-            )
-        )
+        if (await repo.CodeExistsAsync(tenantId, companyId, parentId, level, code, excludeId, ct))
             return Result<ExpenseCategoryNodeDto>.Conflict(
                 "Ya existe un nodo de gasto con el mismo codigo en este nivel."
             );
 
-        if (
-            await repo.NameExistsAsync(
-                tenantId,
-                companyId,
-                parentId,
-                level,
-                name,
-                excludeId,
-                ct
-            )
-        )
+        if (await repo.NameExistsAsync(tenantId, companyId, parentId, level, name, excludeId, ct))
             return Result<ExpenseCategoryNodeDto>.Conflict(
                 "Ya existe un nodo de gasto con el mismo nombre en este nivel."
             );

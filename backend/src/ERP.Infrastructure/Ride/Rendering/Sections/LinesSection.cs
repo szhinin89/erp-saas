@@ -1,9 +1,9 @@
+using System.Globalization;
 using ERP.Application.Modules.Ride.Templates;
 using ERP.Domain.Common;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
-using System.Globalization;
 
 namespace ERP.Infrastructure.Ride.Rendering.Sections;
 
@@ -64,26 +64,46 @@ public static class LinesSection
                     .Cell()
                     .Element(BodyCell)
                     .AlignRight()
-                    .Text(line.Quantity.ToString($"F{layout.Precision.QuantityDecimals}", CultureInfo.InvariantCulture));
+                    .Text(
+                        line.Quantity.ToString(
+                            $"F{layout.Precision.QuantityDecimals}",
+                            CultureInfo.InvariantCulture
+                        )
+                    );
                 table.Cell().Element(BodyCell).Text(line.Description);
                 table.Cell().Element(BodyCell).Text(string.Empty);
                 table
                     .Cell()
                     .Element(BodyCell)
                     .AlignRight()
-                    .Text(line.UnitPrice.ToString($"F{layout.Precision.SalesUnitPriceDecimals}", CultureInfo.InvariantCulture));
+                    .Text(
+                        line.UnitPrice.ToString(
+                            $"F{layout.Precision.SalesUnitPriceDecimals}",
+                            CultureInfo.InvariantCulture
+                        )
+                    );
                 table.Cell().Element(BodyCell).Text(string.Empty);
                 table.Cell().Element(BodyCell).Text(string.Empty);
                 table
                     .Cell()
                     .Element(BodyCell)
                     .AlignRight()
-                    .Text(line.Discount.ToString($"F{FiscalPrecision.TaxAmount}", CultureInfo.InvariantCulture));
+                    .Text(
+                        line.Discount.ToString(
+                            $"F{FiscalPrecision.TaxAmount}",
+                            CultureInfo.InvariantCulture
+                        )
+                    );
                 table
                     .Cell()
                     .Element(BodyCell)
                     .AlignRight()
-                    .Text(line.Subtotal.ToString($"F{FiscalPrecision.TaxAmount}", CultureInfo.InvariantCulture));
+                    .Text(
+                        line.Subtotal.ToString(
+                            $"F{FiscalPrecision.TaxAmount}",
+                            CultureInfo.InvariantCulture
+                        )
+                    );
             }
         });
     }

@@ -68,7 +68,8 @@ public sealed class CommercialElectronicDocumentXmlSupplier : IElectronicDocumen
         );
         if (!additionalInfo.IsSuccess)
             return Result<ElectronicDocumentXml>.ValidationFailure(
-                additionalInfo.Error ?? "No se pudo componer la información adicional del comprobante.",
+                additionalInfo.Error
+                    ?? "No se pudo componer la información adicional del comprobante.",
                 additionalInfo.Code
             );
 

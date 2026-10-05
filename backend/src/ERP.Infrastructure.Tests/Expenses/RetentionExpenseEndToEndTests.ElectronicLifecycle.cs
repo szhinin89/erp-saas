@@ -31,29 +31,46 @@ public sealed partial class RetentionExpenseEndToEndTests
         await using var electronicDb = CreateContext();
         var transmission = sri is null
             ? null
-            : RetentionElectronicTestWiring.Transmission(electronicDb, new FixedCurrentCompany(_companyId), sri);
+            : RetentionElectronicTestWiring.Transmission(
+                electronicDb,
+                new FixedCurrentCompany(_companyId),
+                sri
+            );
 
         var confirm = await BuildConfirmHandler(db, transmission)
-            .Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)), CancellationToken.None);
+            .Handle(
+                new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)),
+                CancellationToken.None
+            );
 
         confirm.IsSuccess.Should().BeTrue(confirm.Error);
         await using var verify = CreateContext();
-        var retention = await verify.RetentionDocuments.AsNoTracking().SingleAsync(x => x.SourceDocumentId == expenseId);
+        var retention = await verify
+            .RetentionDocuments.AsNoTracking()
+            .SingleAsync(x => x.SourceDocumentId == expenseId);
         return (expenseId, retention.Id);
     }
 
     private async Task<ElectronicDocument?> ReadRetentionElectronicAsync(Guid retentionId)
     {
         await using var db = CreateContext();
-        return await db.ElectronicDocuments.AsNoTracking()
-            .SingleOrDefaultAsync(d => d.SourceModule == "Retentions" && d.SourceEntityId == retentionId);
+        return await db
+            .ElectronicDocuments.AsNoTracking()
+            .SingleOrDefaultAsync(d =>
+                d.SourceModule == "Retentions" && d.SourceEntityId == retentionId
+            );
     }
 
-    private async Task<Result<ERP.Application.Modules.Expenses.DTOs.ExpenseDocumentDetailDto>> CancelExpenseAsync(Guid expenseId)
+    private async Task<
+        Result<ERP.Application.Modules.Expenses.DTOs.ExpenseDocumentDetailDto>
+    > CancelExpenseAsync(Guid expenseId)
     {
         var (db, _) = BuildWiredContext();
         return await BuildCancelHandler(db)
-            .Handle(new CancelExpenseDocumentCommand(expenseId, "RETQA anulacion electronica"), CancellationToken.None);
+            .Handle(
+                new CancelExpenseDocumentCommand(expenseId, "RETQA anulacion electronica"),
+                CancellationToken.None
+            );
     }
 
     [Fact]
@@ -64,7 +81,9 @@ public sealed partial class RetentionExpenseEndToEndTests
         var (_, retentionId) = await ConfirmExpenseWithRetentionAsync("RETQA-EL1", sri);
 
         var electronic = await ReadRetentionElectronicAsync(retentionId);
-        electronic.Should().NotBeNull("la transmisión arranca sin acción manual (Gastos no tiene botón)");
+        electronic
+            .Should()
+            .NotBeNull("la transmisión arranca sin acción manual (Gastos no tiene botón)");
         electronic!.CurrentState.Should().Be(ElectronicDocumentState.Authorized);
         sri.SendCalls.Should().Be(1);
     }
@@ -78,33 +97,52 @@ public sealed partial class RetentionExpenseEndToEndTests
         var cancel = await CancelExpenseAsync(expenseId);
 
         cancel.IsSuccess.Should().BeFalse();
-        cancel.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.SourceCancellationRequiresSriAnnulment);
+        cancel
+            .Code.Should()
+            .Be(ApiResponseCodes.ElectronicDocuments.SourceCancellationRequiresSriAnnulment);
         await using var verify = CreateContext();
-        (await verify.ExpenseDocuments.AsNoTracking().SingleAsync(x => x.Id == expenseId)).Status
-            .Should().Be(ExpenseStatus.Confirmed);
-        (await verify.RetentionDocuments.AsNoTracking().SingleAsync(x => x.Id == retentionId)).Status
-            .Should().Be(RetentionStatus.Issued);
-        var payable = await verify.AccountsPayables.AsNoTracking().Include(x => x.Installments)
+        (await verify.ExpenseDocuments.AsNoTracking().SingleAsync(x => x.Id == expenseId))
+            .Status.Should()
+            .Be(ExpenseStatus.Confirmed);
+        (await verify.RetentionDocuments.AsNoTracking().SingleAsync(x => x.Id == retentionId))
+            .Status.Should()
+            .Be(RetentionStatus.Issued);
+        var payable = await verify
+            .AccountsPayables.AsNoTracking()
+            .Include(x => x.Installments)
             .SingleAsync(x => x.OriginId == expenseId);
         payable.RetainedAmount.Should().Be(10.5m, "la CxP no se revierte");
-        var retentionEntry = await verify.JournalEntries.AsNoTracking()
+        var retentionEntry = await verify
+            .JournalEntries.AsNoTracking()
             .SingleAsync(x => x.SourceModule == "Retentions" && x.SourceEventId == retentionId);
         retentionEntry.Status.Should().NotBe(JournalEntryStatus.Reversed);
-        var expenseEntry = await verify.JournalEntries.AsNoTracking()
+        var expenseEntry = await verify
+            .JournalEntries.AsNoTracking()
             .SingleAsync(x => x.SourceModule == "Expenses" && x.SourceEventId == expenseId);
         expenseEntry.Status.Should().NotBe(JournalEntryStatus.Reversed);
-        (await ReadRetentionElectronicAsync(retentionId))!.CurrentState.Should().Be(ElectronicDocumentState.Authorized);
+        (await ReadRetentionElectronicAsync(retentionId))!
+            .CurrentState.Should()
+            .Be(ElectronicDocumentState.Authorized);
     }
 
     [Fact]
     public async Task Retencion_de_gasto_nunca_transmitida_se_anula_y_su_comprobante_queda_Discarded()
     {
-        var (expenseId, retentionId) = await ConfirmExpenseWithRetentionAsync("RETQA-EL3", sri: null);
+        var (expenseId, retentionId) = await ConfirmExpenseWithRetentionAsync(
+            "RETQA-EL3",
+            sri: null
+        );
         await using (var db = CreateContext())
         {
             db.ElectronicDocuments.Add(
                 ElectronicDocument.Create(
-                    _tenantId, _companyId, ElectronicDocumentType.Retention, "Retentions", retentionId, _createdBy)
+                    _tenantId,
+                    _companyId,
+                    ElectronicDocumentType.Retention,
+                    "Retentions",
+                    retentionId,
+                    _createdBy
+                )
             );
             await db.SaveChangesAsync();
         }
@@ -113,6 +151,8 @@ public sealed partial class RetentionExpenseEndToEndTests
 
         cancel.IsSuccess.Should().BeTrue(cancel.Error);
         await AssertRetentionReversedOnceAsync(expenseId);
-        (await ReadRetentionElectronicAsync(retentionId))!.CurrentState.Should().Be(ElectronicDocumentState.Discarded);
+        (await ReadRetentionElectronicAsync(retentionId))!
+            .CurrentState.Should()
+            .Be(ElectronicDocumentState.Discarded);
     }
 }

@@ -8,7 +8,10 @@ namespace ERP.Application.Modules.Communications.ElectronicDocuments;
 /// </summary>
 public interface IElectronicDocumentCommunicationContributorResolver
 {
-    IElectronicDocumentCommunicationContributor? Resolve(string sourceModule, ElectronicDocumentType documentType);
+    IElectronicDocumentCommunicationContributor? Resolve(
+        string sourceModule,
+        ElectronicDocumentType documentType
+    );
 
     /// <summary>Todas las rutas soportadas (para la reconciliación).</summary>
     IReadOnlyList<ElectronicDocumentCommunicationRoute> Routes { get; }
@@ -21,14 +24,24 @@ public sealed record ElectronicDocumentCommunicationRoute(
     string Purpose
 );
 
-public sealed class ElectronicDocumentCommunicationContributorResolver : IElectronicDocumentCommunicationContributorResolver
+public sealed class ElectronicDocumentCommunicationContributorResolver
+    : IElectronicDocumentCommunicationContributorResolver
 {
-    private readonly IReadOnlyDictionary<(string, ElectronicDocumentType), IElectronicDocumentCommunicationContributor> _byRoute;
+    private readonly IReadOnlyDictionary<
+        (string, ElectronicDocumentType),
+        IElectronicDocumentCommunicationContributor
+    > _byRoute;
 
-    public ElectronicDocumentCommunicationContributorResolver(IEnumerable<IElectronicDocumentCommunicationContributor> contributors)
+    public ElectronicDocumentCommunicationContributorResolver(
+        IEnumerable<IElectronicDocumentCommunicationContributor> contributors
+    )
     {
         var routes = new List<ElectronicDocumentCommunicationRoute>();
-        var byRoute = new Dictionary<(string, ElectronicDocumentType), IElectronicDocumentCommunicationContributor>();
+        var byRoute =
+            new Dictionary<
+                (string, ElectronicDocumentType),
+                IElectronicDocumentCommunicationContributor
+            >();
         foreach (var contributor in contributors)
         {
             foreach (var (documentType, target) in contributor.Targets)
@@ -38,7 +51,14 @@ public sealed class ElectronicDocumentCommunicationContributorResolver : IElectr
                     throw new InvalidOperationException(
                         $"Más de un contributor de comunicación para {contributor.SourceModule}/{documentType}."
                     );
-                routes.Add(new ElectronicDocumentCommunicationRoute(contributor.SourceModule, documentType, target.SourceType, target.Purpose));
+                routes.Add(
+                    new ElectronicDocumentCommunicationRoute(
+                        contributor.SourceModule,
+                        documentType,
+                        target.SourceType,
+                        target.Purpose
+                    )
+                );
             }
         }
 
@@ -48,6 +68,8 @@ public sealed class ElectronicDocumentCommunicationContributorResolver : IElectr
 
     public IReadOnlyList<ElectronicDocumentCommunicationRoute> Routes { get; }
 
-    public IElectronicDocumentCommunicationContributor? Resolve(string sourceModule, ElectronicDocumentType documentType) =>
-        _byRoute.GetValueOrDefault((sourceModule, documentType));
+    public IElectronicDocumentCommunicationContributor? Resolve(
+        string sourceModule,
+        ElectronicDocumentType documentType
+    ) => _byRoute.GetValueOrDefault((sourceModule, documentType));
 }

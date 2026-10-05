@@ -18,6 +18,7 @@ public sealed class PurchaseInvoiceConfirmedEvent : BaseDomainEvent, IAuditEvent
     /// ADR-026 §4. Accounting los consume tal cual, nunca los recalcula.
     /// </summary>
     public decimal Subtotal { get; }
+
     /// <summary>Frozen costing SSOT: net purchase base including reviewed freight and additional costs.</summary>
     public decimal CostSubtotal { get; }
     public decimal TotalVat { get; }

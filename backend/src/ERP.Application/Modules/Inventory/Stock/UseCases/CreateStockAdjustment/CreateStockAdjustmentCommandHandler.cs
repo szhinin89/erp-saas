@@ -72,7 +72,9 @@ public sealed class CreateStockAdjustmentCommandHandler
 
         var warehouse = await _warehouseRepo.GetByIdAsync(tid, request.WarehouseId, ct);
         if (warehouse is null)
-            return Result<StockAdjustmentDto>.ValidationFailure("La bodega seleccionada no existe.");
+            return Result<StockAdjustmentDto>.ValidationFailure(
+                "La bodega seleccionada no existe."
+            );
         if (warehouse.BranchId != _branch.BranchId)
             return Result<StockAdjustmentDto>.ValidationFailure(
                 "La bodega seleccionada no pertenece a la sucursal activa."
@@ -80,7 +82,9 @@ public sealed class CreateStockAdjustmentCommandHandler
 
         var reason = await _reasonRepo.GetByIdAsync(tid, request.ReasonId, ct);
         if (reason is null)
-            return Result<StockAdjustmentDto>.ValidationFailure("El motivo seleccionado no existe.");
+            return Result<StockAdjustmentDto>.ValidationFailure(
+                "El motivo seleccionado no existe."
+            );
 
         var lineResult = await _lineResolver.ResolveAsync(
             tid,

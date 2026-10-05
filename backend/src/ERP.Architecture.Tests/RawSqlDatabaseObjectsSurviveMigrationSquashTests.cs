@@ -1,5 +1,5 @@
-using FluentAssertions;
 using System.Text.RegularExpressions;
+using FluentAssertions;
 
 namespace ERP.Architecture.Tests;
 
@@ -65,8 +65,12 @@ public sealed partial class RawSqlDatabaseObjectsSurviveMigrationSquashTests
 
         var missing = RequiredRawSqlObjects
             .SelectMany(kv =>
-                kv.Value
-                    .Where(fragment => !migrationsSql.Contains(Normalize(fragment), StringComparison.OrdinalIgnoreCase))
+                kv.Value.Where(fragment =>
+                        !migrationsSql.Contains(
+                            Normalize(fragment),
+                            StringComparison.OrdinalIgnoreCase
+                        )
+                    )
                     .Select(fragment => $"{kv.Key}: {fragment}")
             )
             .ToList();
@@ -94,12 +98,18 @@ public sealed partial class RawSqlDatabaseObjectsSurviveMigrationSquashTests
         created
             .Where(name => !RequiredRawSqlObjects.ContainsKey(name))
             .Should()
-            .BeEmpty("cada objeto de BD creado con migrationBuilder.Sql debe registrarse en RequiredRawSqlObjects");
+            .BeEmpty(
+                "cada objeto de BD creado con migrationBuilder.Sql debe registrarse en RequiredRawSqlObjects"
+            );
     }
 
     private static IEnumerable<string> ReadMigrationsSql()
     {
-        var migrationsDir = Path.Combine(ResolveBackendSrcRoot(), "ERP.Infrastructure", "Migrations");
+        var migrationsDir = Path.Combine(
+            ResolveBackendSrcRoot(),
+            "ERP.Infrastructure",
+            "Migrations"
+        );
         Directory.Exists(migrationsDir).Should().BeTrue();
 
         return Directory

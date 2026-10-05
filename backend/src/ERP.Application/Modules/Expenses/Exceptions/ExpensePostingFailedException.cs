@@ -12,7 +12,8 @@ namespace ERP.Application.Modules.Expenses.Exceptions;
 /// específico (nunca un <c>catch (Exception)</c> genérico) y traducirlo a
 /// <c>Result&lt;T&gt;.ValidationFailure</c>.
 /// </summary>
-public sealed class ExpensePostingFailedException : ERP.Domain.Exceptions.DomainRuleViolationException
+public sealed class ExpensePostingFailedException
+    : ERP.Domain.Exceptions.DomainRuleViolationException
 {
     public string? Code { get; }
 

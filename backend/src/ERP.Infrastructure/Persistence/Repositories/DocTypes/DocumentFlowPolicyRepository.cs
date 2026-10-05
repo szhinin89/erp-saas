@@ -10,15 +10,18 @@ public sealed class DocumentFlowPolicyRepository : IDocumentFlowPolicyRepository
 
     public DocumentFlowPolicyRepository(ErpDbContext db) => _db = db;
 
-    public async Task<IReadOnlyList<(DocumentFlowPolicy Policy, string DocumentTypeName)>> ListAsync(
-        Guid tenantId,
-        Guid companyId,
-        CancellationToken ct = default
-    )
+    public async Task<
+        IReadOnlyList<(DocumentFlowPolicy Policy, string DocumentTypeName)>
+    > ListAsync(Guid tenantId, Guid companyId, CancellationToken ct = default)
     {
         var rows = await _db
             .DocumentFlowPolicies.Where(p => p.TenantId == tenantId && p.CompanyId == companyId)
-            .Join(_db.DocTypes, p => p.DocumentTypeCode, dt => dt.Code, (p, dt) => new { p, dt.Name })
+            .Join(
+                _db.DocTypes,
+                p => p.DocumentTypeCode,
+                dt => dt.Code,
+                (p, dt) => new { p, dt.Name }
+            )
             .OrderBy(x => x.Name)
             .AsNoTracking()
             .ToListAsync(ct);
@@ -37,11 +40,17 @@ public sealed class DocumentFlowPolicyRepository : IDocumentFlowPolicyRepository
             .DocumentFlowPolicies.Where(p =>
                 p.TenantId == tenantId && p.CompanyId == companyId && p.Id == id
             )
-            .Join(_db.DocTypes, p => p.DocumentTypeCode, dt => dt.Code, (p, dt) => new { p, dt.Name })
+            .Join(
+                _db.DocTypes,
+                p => p.DocumentTypeCode,
+                dt => dt.Code,
+                (p, dt) => new { p, dt.Name }
+            )
             .FirstOrDefaultAsync(ct);
 
         return row is null ? null : (row.p, row.Name);
     }
 
-    public async Task SaveChangesAsync(CancellationToken ct = default) => await _db.SaveChangesAsync(ct);
+    public async Task SaveChangesAsync(CancellationToken ct = default) =>
+        await _db.SaveChangesAsync(ct);
 }

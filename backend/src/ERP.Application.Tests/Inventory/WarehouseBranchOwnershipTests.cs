@@ -84,7 +84,14 @@ public sealed class WarehouseBranchOwnershipTests
         }
 
         public CreateWarehouseCommandHandler BuildHandler() =>
-            new(Repo.Object, BranchRepo.Object, Activity.Object, Tenant.Object, Company.Object, User.Object);
+            new(
+                Repo.Object,
+                BranchRepo.Object,
+                Activity.Object,
+                Tenant.Object,
+                Company.Object,
+                User.Object
+            );
     }
 
     private static CreateWarehouseCommand BuildCreateCommand(Guid branchId) =>
@@ -121,7 +128,10 @@ public sealed class WarehouseBranchOwnershipTests
             .Handle(BuildCreateCommand(branchOfCompanyB.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
-        f.Repo.Verify(r => r.AddAsync(It.IsAny<Warehouse>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.Repo.Verify(
+            r => r.AddAsync(It.IsAny<Warehouse>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
         f.Repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -144,7 +154,10 @@ public sealed class WarehouseBranchOwnershipTests
             .Handle(BuildCreateCommand(missingBranchId), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
-        f.Repo.Verify(r => r.AddAsync(It.IsAny<Warehouse>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.Repo.Verify(
+            r => r.AddAsync(It.IsAny<Warehouse>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -166,7 +179,10 @@ public sealed class WarehouseBranchOwnershipTests
             .Handle(BuildCreateCommand(ownBranch.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        f.Repo.Verify(r => r.AddAsync(It.IsAny<Warehouse>(), It.IsAny<CancellationToken>()), Times.Once);
+        f.Repo.Verify(
+            r => r.AddAsync(It.IsAny<Warehouse>(), It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     // ── UpdateWarehouseCommandHandler ────────────────────────────────────
@@ -188,7 +204,14 @@ public sealed class WarehouseBranchOwnershipTests
         }
 
         public UpdateWarehouseCommandHandler BuildHandler() =>
-            new(Repo.Object, BranchRepo.Object, Activity.Object, Tenant.Object, Company.Object, User.Object);
+            new(
+                Repo.Object,
+                BranchRepo.Object,
+                Activity.Object,
+                Tenant.Object,
+                Company.Object,
+                User.Object
+            );
     }
 
     private static Warehouse CreateWarehouse(Guid branchId) =>
@@ -234,7 +257,14 @@ public sealed class WarehouseBranchOwnershipTests
         var branchOfCompanyB = CreateBranch(CompanyBId);
 
         var f = new UpdateFixture();
-        f.Repo.Setup(r => r.GetByIdForCompanyAsync(TenantId, CompanyAId, warehouse.Id, It.IsAny<CancellationToken>()))
+        f.Repo.Setup(r =>
+                r.GetByIdForCompanyAsync(
+                    TenantId,
+                    CompanyAId,
+                    warehouse.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(warehouse);
         f.BranchRepo.Setup(r =>
                 r.GetByIdForCompanyAsync(
@@ -261,7 +291,14 @@ public sealed class WarehouseBranchOwnershipTests
         var otherOwnBranch = CreateBranch(CompanyAId);
 
         var f = new UpdateFixture();
-        f.Repo.Setup(r => r.GetByIdForCompanyAsync(TenantId, CompanyAId, warehouse.Id, It.IsAny<CancellationToken>()))
+        f.Repo.Setup(r =>
+                r.GetByIdForCompanyAsync(
+                    TenantId,
+                    CompanyAId,
+                    warehouse.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(warehouse);
         f.BranchRepo.Setup(r =>
                 r.GetByIdForCompanyAsync(

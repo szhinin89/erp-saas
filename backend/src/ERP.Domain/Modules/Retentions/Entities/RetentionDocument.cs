@@ -17,7 +17,10 @@ namespace ERP.Domain.Modules.Retentions.Entities;
 /// se invoca desde Application antes de construir este agregado — este agregado no la conoce ni la
 /// duplica.
 /// </summary>
-public sealed class RetentionDocument : AuditableEntity, ITenantScopedEntity, ICompanyOperationalEntity
+public sealed class RetentionDocument
+    : AuditableEntity,
+        ITenantScopedEntity,
+        ICompanyOperationalEntity
 {
     public const int RetentionNumberMaxLen = 30;
     public const int CancelReasonMaxLen = 500;
@@ -132,14 +135,20 @@ public sealed class RetentionDocument : AuditableEntity, ITenantScopedEntity, IC
                 nameof(sourceDocumentType)
             );
         if (sourceDocumentId == Guid.Empty)
-            throw new ArgumentException("El documento origen es obligatorio.", nameof(sourceDocumentId));
+            throw new ArgumentException(
+                "El documento origen es obligatorio.",
+                nameof(sourceDocumentId)
+            );
         if (subjectBusinessPartnerId == Guid.Empty)
             throw new ArgumentException(
                 "El sujeto retenido (proveedor) es obligatorio.",
                 nameof(subjectBusinessPartnerId)
             );
         if (emissionPointId == Guid.Empty)
-            throw new ArgumentException("El punto de emisión es obligatorio.", nameof(emissionPointId));
+            throw new ArgumentException(
+                "El punto de emisión es obligatorio.",
+                nameof(emissionPointId)
+            );
         if (sourceDocumentSnapshot?.Subtotal is < 0)
             throw new ArgumentException(
                 "El subtotal del documento sustento no puede ser negativo.",
@@ -168,7 +177,9 @@ public sealed class RetentionDocument : AuditableEntity, ITenantScopedEntity, IC
             SourceDocumentSriTypeCode = Normalize(sourceDocumentSnapshot?.SriTypeCode),
             SourceDocumentNumber = Normalize(sourceDocumentSnapshot?.DocumentNumber),
             SourceDocumentIssueDate = sourceDocumentSnapshot?.IssueDate,
-            SourceDocumentAuthorizationNumber = Normalize(sourceDocumentSnapshot?.AuthorizationNumber),
+            SourceDocumentAuthorizationNumber = Normalize(
+                sourceDocumentSnapshot?.AuthorizationNumber
+            ),
             SourceDocumentTaxSupportCode = Normalize(sourceDocumentSnapshot?.TaxSupportCode),
             SourceDocumentSubtotal = sourceDocumentSnapshot?.Subtotal,
             SourceDocumentTotal = sourceDocumentSnapshot?.Total,
@@ -177,7 +188,8 @@ public sealed class RetentionDocument : AuditableEntity, ITenantScopedEntity, IC
         return document;
     }
 
-    private static string? Normalize(string? value) => value?.Trim() is { Length: > 0 } text ? text : null;
+    private static string? Normalize(string? value) =>
+        value?.Trim() is { Length: > 0 } text ? text : null;
 
     /// <summary>
     /// Agrega una línea de retención al borrador y recalcula totales inmediatamente desde las
@@ -255,7 +267,10 @@ public sealed class RetentionDocument : AuditableEntity, ITenantScopedEntity, IC
         if (string.IsNullOrWhiteSpace(reason))
             throw new ArgumentException("El motivo de anulación es obligatorio.", nameof(reason));
         if (cancelledBy == Guid.Empty)
-            throw new ArgumentException("El usuario que anula es obligatorio.", nameof(cancelledBy));
+            throw new ArgumentException(
+                "El usuario que anula es obligatorio.",
+                nameof(cancelledBy)
+            );
 
         Status = RetentionStatus.Cancelled;
         CancelReason = reason.Trim();
@@ -280,8 +295,12 @@ public sealed class RetentionDocument : AuditableEntity, ITenantScopedEntity, IC
 
     private void RecalculateTotals()
     {
-        TotalRetainedVat = _lines.Where(l => l.TaxType == RetentionTaxType.Vat).Sum(l => l.RetainedAmount);
-        TotalRetainedIncome = _lines.Where(l => l.TaxType == RetentionTaxType.Income).Sum(l => l.RetainedAmount);
+        TotalRetainedVat = _lines
+            .Where(l => l.TaxType == RetentionTaxType.Vat)
+            .Sum(l => l.RetainedAmount);
+        TotalRetainedIncome = _lines
+            .Where(l => l.TaxType == RetentionTaxType.Income)
+            .Sum(l => l.RetainedAmount);
         TotalRetained = TotalRetainedVat + TotalRetainedIncome;
     }
 

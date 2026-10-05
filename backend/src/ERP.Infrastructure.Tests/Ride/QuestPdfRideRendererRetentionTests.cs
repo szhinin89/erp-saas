@@ -1,7 +1,7 @@
+using System.Text;
 using ERP.Application.Modules.Ride.Rendering;
 using ERP.Infrastructure.Ride.Rendering;
 using FluentAssertions;
-using System.Text;
 
 namespace ERP.Infrastructure.Tests.Ride;
 

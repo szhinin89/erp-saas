@@ -6,9 +6,6 @@ namespace ERP.Domain.Configuration.Interfaces;
 public interface ISystemProviderSettingsRepository
 {
     Task<SystemProviderSettings?> GetAsync(CancellationToken cancellationToken = default);
-    Task AddAsync(
-        SystemProviderSettings settings,
-        CancellationToken cancellationToken = default
-    );
+    Task AddAsync(SystemProviderSettings settings, CancellationToken cancellationToken = default);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

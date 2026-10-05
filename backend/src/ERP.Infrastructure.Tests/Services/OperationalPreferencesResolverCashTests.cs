@@ -38,7 +38,9 @@ public sealed class OperationalPreferencesResolverCashTests
             UserId
         );
 
-    private static OperationalPreferencesResolver BuildResolver(Mock<IOrgSettingsRepository> orgRepo) =>
+    private static OperationalPreferencesResolver BuildResolver(
+        Mock<IOrgSettingsRepository> orgRepo
+    ) =>
         new(
             orgRepo.Object,
             Mock.Of<ICurrentTenant>(),
@@ -51,10 +53,26 @@ public sealed class OperationalPreferencesResolverCashTests
     {
         var orgRepo = new Mock<IOrgSettingsRepository>();
         orgRepo
-            .Setup(r => r.GetAllForScopeAsync(TenantA, CompanyA, OrgScope.Company, CompanyA, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetAllForScopeAsync(
+                    TenantA,
+                    CompanyA,
+                    OrgScope.Company,
+                    CompanyA,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(new[] { Setting(TenantA, CompanyA, true) });
         orgRepo
-            .Setup(r => r.GetAllForScopeAsync(TenantA, CompanyB, OrgScope.Company, CompanyB, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetAllForScopeAsync(
+                    TenantA,
+                    CompanyB,
+                    OrgScope.Company,
+                    CompanyB,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(new[] { Setting(TenantA, CompanyB, false) });
         var resolver = BuildResolver(orgRepo);
 
@@ -74,10 +92,26 @@ public sealed class OperationalPreferencesResolverCashTests
         // mismo mock/valor por accidente.
         var orgRepo = new Mock<IOrgSettingsRepository>();
         orgRepo
-            .Setup(r => r.GetAllForScopeAsync(TenantA, CompanyA, OrgScope.Company, CompanyA, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetAllForScopeAsync(
+                    TenantA,
+                    CompanyA,
+                    OrgScope.Company,
+                    CompanyA,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(new[] { Setting(TenantA, CompanyA, false) });
         orgRepo
-            .Setup(r => r.GetAllForScopeAsync(TenantB, CompanyA, OrgScope.Company, CompanyA, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetAllForScopeAsync(
+                    TenantB,
+                    CompanyA,
+                    OrgScope.Company,
+                    CompanyA,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(new[] { Setting(TenantB, CompanyA, true) });
         var resolver = BuildResolver(orgRepo);
 
@@ -93,7 +127,15 @@ public sealed class OperationalPreferencesResolverCashTests
     {
         var orgRepo = new Mock<IOrgSettingsRepository>();
         orgRepo
-            .Setup(r => r.GetAllForScopeAsync(TenantA, CompanyA, OrgScope.Company, CompanyA, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetAllForScopeAsync(
+                    TenantA,
+                    CompanyA,
+                    OrgScope.Company,
+                    CompanyA,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(Array.Empty<OrgSetting>());
         var resolver = BuildResolver(orgRepo);
 
@@ -107,19 +149,38 @@ public sealed class OperationalPreferencesResolverCashTests
     {
         var orgRepo = new Mock<IOrgSettingsRepository>();
         orgRepo
-            .Setup(r => r.GetAllForScopeAsync(TenantA, CompanyA, OrgScope.Company, CompanyA, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetAllForScopeAsync(
+                    TenantA,
+                    CompanyA,
+                    OrgScope.Company,
+                    CompanyA,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(new[] { Setting(TenantA, CompanyA, true) });
         orgRepo
-            .Setup(r => r.GetAllForScopeAsync(TenantA, CompanyB, OrgScope.Company, CompanyB, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetAllForScopeAsync(
+                    TenantA,
+                    CompanyB,
+                    OrgScope.Company,
+                    CompanyB,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(new[] { Setting(TenantA, CompanyB, false) });
         var resolver = BuildResolver(orgRepo);
 
         // Simula un usuario cambiando de empresa activa dentro de la misma sesión de tenant.
-        (await resolver.ResolveAsync(TenantA, CompanyA, CancellationToken.None)).Cash.AllowManualInOutMovements
-            .Should().BeTrue();
-        (await resolver.ResolveAsync(TenantA, CompanyB, CancellationToken.None)).Cash.AllowManualInOutMovements
-            .Should().BeFalse();
-        (await resolver.ResolveAsync(TenantA, CompanyA, CancellationToken.None)).Cash.AllowManualInOutMovements
-            .Should().BeTrue();
+        (await resolver.ResolveAsync(TenantA, CompanyA, CancellationToken.None))
+            .Cash.AllowManualInOutMovements.Should()
+            .BeTrue();
+        (await resolver.ResolveAsync(TenantA, CompanyB, CancellationToken.None))
+            .Cash.AllowManualInOutMovements.Should()
+            .BeFalse();
+        (await resolver.ResolveAsync(TenantA, CompanyA, CancellationToken.None))
+            .Cash.AllowManualInOutMovements.Should()
+            .BeTrue();
     }
 }

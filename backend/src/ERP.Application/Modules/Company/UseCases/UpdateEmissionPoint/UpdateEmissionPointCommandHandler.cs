@@ -66,7 +66,13 @@ public sealed class UpdateEmissionPointCommandHandler
         entity.SetDefault(command.IsDefault, _user.UserId);
 
         if (wasDefault != command.IsDefault)
-            await LogFlagChangeAsync(entity, entity.Id, wasDefault, command.IsDefault, cancellationToken);
+            await LogFlagChangeAsync(
+                entity,
+                entity.Id,
+                wasDefault,
+                command.IsDefault,
+                cancellationToken
+            );
 
         await _repo.SaveChangesAsync(cancellationToken);
 

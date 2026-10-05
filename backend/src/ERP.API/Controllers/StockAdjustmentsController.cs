@@ -77,7 +77,10 @@ public sealed class StockAdjustmentsController : ControllerBase
     /// <summary>Obtiene un ajuste de inventario por Id (cabecera + líneas).</summary>
     [HttpGet("adjustments/{id:guid}")]
     [Authorize(Policy = $"perm:{InventoryPermissions.AdjustmentsView}")]
-    [ProducesResponseType(typeof(Contracts.ApiResponse<StockAdjustmentDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(Contracts.ApiResponse<StockAdjustmentDto>),
+        StatusCodes.Status200OK
+    )]
     public async Task<IActionResult> GetAdjustment(Guid id, CancellationToken ct = default)
     {
         var result = await _mediator.Send(new GetStockAdjustmentByIdQuery(id), ct);
@@ -103,7 +106,10 @@ public sealed class StockAdjustmentsController : ControllerBase
     /// <summary>Actualiza un ajuste en Draft (cabecera + reemplazo total de líneas).</summary>
     [HttpPut("adjustments/{id:guid}")]
     [Authorize(Policy = $"perm:{InventoryPermissions.AdjustmentsUpdate}")]
-    [ProducesResponseType(typeof(Contracts.ApiResponse<StockAdjustmentDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(Contracts.ApiResponse<StockAdjustmentDto>),
+        StatusCodes.Status200OK
+    )]
     public async Task<IActionResult> UpdateAdjustment(
         Guid id,
         [FromBody] UpdateStockAdjustmentCommand command,
@@ -134,10 +140,7 @@ public sealed class StockAdjustmentsController : ControllerBase
         CancellationToken ct = default
     )
     {
-        var result = await _mediator.Send(
-            new CancelStockAdjustmentCommand(id, request.Reason),
-            ct
-        );
+        var result = await _mediator.Send(new CancelStockAdjustmentCommand(id, request.Reason), ct);
         return this.ToOkOrBadRequest(result);
     }
 }

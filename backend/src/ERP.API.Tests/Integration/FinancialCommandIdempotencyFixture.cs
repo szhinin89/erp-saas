@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using ERP.API.Tests.Support;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Entities;
@@ -21,7 +22,6 @@ using ERP.Infrastructure.Seeding.Steps;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
-using System.Net.Http.Headers;
 
 namespace ERP.API.Tests.Integration;
 
@@ -93,27 +93,85 @@ public sealed class FinancialCommandIdempotencyFixture : IAsyncLifetime
         CompanyId = company.Id;
 
         var branch = Branch.Create(
-            TenantId, "Matriz", "Av. Principal 123", "SUC-A", null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null,
-            isMainBranch: true, createdBy: _adminId, companyId: CompanyId
+            TenantId,
+            "Matriz",
+            "Av. Principal 123",
+            "SUC-A",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            isMainBranch: true,
+            createdBy: _adminId,
+            companyId: CompanyId
         );
         db.Branches.Add(branch);
         await db.SaveChangesAsync();
         BranchId = branch.Id;
 
-        var establishment = Establishment.Create(TenantId, BranchId, CompanyId, "001", "Matriz", "Av. Principal 123", null, true, _adminId);
+        var establishment = Establishment.Create(
+            TenantId,
+            BranchId,
+            CompanyId,
+            "001",
+            "Matriz",
+            "Av. Principal 123",
+            null,
+            true,
+            _adminId
+        );
         db.Establishments.Add(establishment);
         await db.SaveChangesAsync();
-        var emissionPoint = EmissionPoint.Create(TenantId, CompanyId, establishment.Id, "001", null, EmissionType.Physical, true, _adminId);
+        var emissionPoint = EmissionPoint.Create(
+            TenantId,
+            CompanyId,
+            establishment.Id,
+            "001",
+            null,
+            EmissionType.Physical,
+            true,
+            _adminId
+        );
         db.EmissionPoints.Add(emissionPoint);
         await db.SaveChangesAsync();
         EmissionPointId = emissionPoint.Id;
 
-        var cashMethod = PaymentMethod.Create(TenantId, "EFEC", "Efectivo", false, false, 1, _adminId, affectsPhysicalCash: true);
+        var cashMethod = PaymentMethod.Create(
+            TenantId,
+            "EFEC",
+            "Efectivo",
+            false,
+            false,
+            1,
+            _adminId,
+            affectsPhysicalCash: true
+        );
         db.PaymentMethods.Add(cashMethod);
 
         // Un solo socio con ambos roles (la identificación es única por tenant).
-        var partner = BusinessPartner.Create(TenantId, "05", "1710034065", 1, "Socio Idempotencia", _adminId);
+        var partner = BusinessPartner.Create(
+            TenantId,
+            "05",
+            "1710034065",
+            1,
+            "Socio Idempotencia",
+            _adminId
+        );
         db.BusinessPartners.Add(partner);
         await db.SaveChangesAsync();
         db.BusinessPartnerRoles.AddRange(
@@ -125,18 +183,38 @@ public sealed class FinancialCommandIdempotencyFixture : IAsyncLifetime
         CustomerId = partner.Id;
 
         var cashAccount = Account.Create(
-            TenantId, CompanyId, AccountCode.Create($"1.1.{Guid.NewGuid():N}"[..8]), "Caja idempotencia", null,
-            AccountType.Asset, AccountNature.Debit, allowsPosting: true, createdBy: _adminId
+            TenantId,
+            CompanyId,
+            AccountCode.Create($"1.1.{Guid.NewGuid():N}"[..8]),
+            "Caja idempotencia",
+            null,
+            AccountType.Asset,
+            AccountNature.Debit,
+            allowsPosting: true,
+            createdBy: _adminId
         );
         db.Accounts.Add(cashAccount);
         await db.SaveChangesAsync();
         CashAccountId = cashAccount.Id;
 
-        await new AccountingBootstrapStep(db, new AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance)
-            .ExecuteAsync(new CompanyBootstrapContext(TenantId, CompanyId, _adminId));
-        await new PrecisionPolicyBootstrapStep(db).ExecuteAsync(new CompanyBootstrapContext(TenantId, CompanyId, _adminId));
+        await new AccountingBootstrapStep(
+            db,
+            new AlwaysTodayCompanyClock(),
+            NullLogger<AccountingBootstrapStep>.Instance
+        ).ExecuteAsync(new CompanyBootstrapContext(TenantId, CompanyId, _adminId));
+        await new PrecisionPolicyBootstrapStep(db).ExecuteAsync(
+            new CompanyBootstrapContext(TenantId, CompanyId, _adminId)
+        );
 
-        var reason = CashMovementReason.Create(TenantId, CompanyId, "IDEM-IN", "Ingreso idempotencia", CashMovementType.ManualIncome, 1, _adminId);
+        var reason = CashMovementReason.Create(
+            TenantId,
+            CompanyId,
+            "IDEM-IN",
+            "Ingreso idempotencia",
+            CashMovementType.ManualIncome,
+            1,
+            _adminId
+        );
         db.Set<CashMovementReason>().Add(reason);
         await db.SaveChangesAsync();
         ManualIncomeReasonId = reason.Id;
@@ -153,28 +231,63 @@ public sealed class FinancialCommandIdempotencyFixture : IAsyncLifetime
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
 
         var user = IdentityUser.Create(
-            $"op-{Guid.NewGuid():N}", "Operador", "Idem", $"op-{Guid.NewGuid():N}@example.com", "hash", _adminId
+            $"op-{Guid.NewGuid():N}",
+            "Operador",
+            "Idem",
+            $"op-{Guid.NewGuid():N}@example.com",
+            "hash",
+            _adminId
         );
         db.IdentityUsers.Add(user);
         await db.SaveChangesAsync();
         var membership = CompanyUserMembership.Create(CompanyId, user.Id, "Admin", null, _adminId);
         db.CompanyUserMemberships.Add(membership);
         await db.SaveChangesAsync();
-        db.CompanyUserBranches.Add(CompanyUserBranch.Create(TenantId, CompanyId, membership.Id, BranchId, _adminId));
+        db.CompanyUserBranches.Add(
+            CompanyUserBranch.Create(TenantId, CompanyId, membership.Id, BranchId, _adminId)
+        );
         await db.SaveChangesAsync();
 
-        var (registerId, sessionId) = await OpenSessionAsync(db, user.Id, $"C{Guid.NewGuid():N}"[..8], openingCash);
+        var (registerId, sessionId) = await OpenSessionAsync(
+            db,
+            user.Id,
+            $"C{Guid.NewGuid():N}"[..8],
+            openingCash
+        );
         return new Operator(user.Id, registerId, sessionId);
     }
 
-    private async Task<(Guid RegisterId, Guid SessionId)> OpenSessionAsync(ErpDbContext db, Guid userId, string code, decimal openingCash)
+    private async Task<(Guid RegisterId, Guid SessionId)> OpenSessionAsync(
+        ErpDbContext db,
+        Guid userId,
+        string code,
+        decimal openingCash
+    )
     {
-        var register = CashRegister.Create(TenantId, CompanyId, BranchId, code, $"Caja {code}", _adminId, EmissionPointId);
+        var register = CashRegister.Create(
+            TenantId,
+            CompanyId,
+            BranchId,
+            code,
+            $"Caja {code}",
+            _adminId,
+            EmissionPointId
+        );
         register.SetAccountingAccount(CashAccountId, _adminId);
         db.CashRegisters.Add(register);
         await db.SaveChangesAsync();
         var session = CashSession.Open(
-            TenantId, CompanyId, BranchId, userId, register.Id, register.Code, register.Name, EmissionPointId, "001", openingCash, _adminId
+            TenantId,
+            CompanyId,
+            BranchId,
+            userId,
+            register.Id,
+            register.Code,
+            register.Name,
+            EmissionPointId,
+            "001",
+            openingCash,
+            _adminId
         );
         db.Set<CashSession>().Add(session);
         await db.SaveChangesAsync();
@@ -187,8 +300,17 @@ public sealed class FinancialCommandIdempotencyFixture : IAsyncLifetime
         using var scope = Factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var payable = AccountsPayable.CreateFromOrigin(
-            TenantId, CompanyId, BranchId, SupplierId, AccountsPayableOriginType.PurchaseInvoice, Guid.NewGuid(), "01",
-            $"001-001-{Random.Shared.Next(1, 999_999_999):D9}", Today, Today, _adminId
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            Guid.NewGuid(),
+            "01",
+            $"001-001-{Random.Shared.Next(1, 999_999_999):D9}",
+            Today,
+            Today,
+            _adminId
         );
         var installment = payable.AddInstallment(1, Today.AddDays(30), amount);
         db.AccountsPayables.Add(payable);
@@ -206,22 +328,48 @@ public sealed class FinancialCommandIdempotencyFixture : IAsyncLifetime
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var companyId = foreignCompany ? await EnsureForeignCompanyAsync(db) : CompanyId;
         var invoice = SalesInvoice.CreateDraft(
-            TenantId, companyId, BranchId, CustomerId,
+            TenantId,
+            companyId,
+            BranchId,
+            CustomerId,
             CustomerSnapshot.Create("Cliente Idempotencia", "1710034065", "05"),
             invoiceNumber: $"001-001-{Random.Shared.Next(1, 999_999_999):D9}",
             issueDate: Today,
             createdBy: _adminId,
-            paymentTerm: PaymentTermSnapshot.Create(Guid.NewGuid(), "Crédito", installments: 1, daysBetween: 30),
+            paymentTerm: PaymentTermSnapshot.Create(
+                Guid.NewGuid(),
+                "Crédito",
+                installments: 1,
+                daysBetween: 30
+            ),
             cashSessionId: _anchorSessionId,
             emissionType: EmissionType.Physical
         );
         invoice.ReplaceLines(
-            new[] { SalesInvoiceDetail.Create(invoice.Id, TenantId, "Producto", quantity: 1, unitPrice: amount, vatCode: "0", uomCode: "UNIT") },
+            new[]
+            {
+                SalesInvoiceDetail.Create(
+                    invoice.Id,
+                    TenantId,
+                    "Producto",
+                    quantity: 1,
+                    unitPrice: amount,
+                    vatCode: "0",
+                    uomCode: "UNIT"
+                ),
+            },
             _adminId
         );
         db.SalesInvoices.Add(invoice);
         await db.SaveChangesAsync();
-        var receivable = SalesReceivable.Create(TenantId, companyId, invoice.Id, CustomerId, amount, _adminId);
+        var receivable = SalesReceivable.Create(
+            TenantId,
+            companyId,
+            invoice.Id,
+            CustomerId,
+            amount,
+            _adminId
+        );
         db.SalesReceivables.Add(receivable);
         await db.SaveChangesAsync();
         return receivable.Id;
@@ -251,7 +399,15 @@ public sealed class FinancialCommandIdempotencyFixture : IAsyncLifetime
         using var scope = Factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var code = $"N{Guid.NewGuid():N}"[..8];
-        var register = CashRegister.Create(TenantId, CompanyId, BranchId, code, $"Caja {code}", _adminId, EmissionPointId);
+        var register = CashRegister.Create(
+            TenantId,
+            CompanyId,
+            BranchId,
+            code,
+            $"Caja {code}",
+            _adminId,
+            EmissionPointId
+        );
         db.CashRegisters.Add(register);
         await db.SaveChangesAsync();
         return register.Id;
@@ -261,7 +417,9 @@ public sealed class FinancialCommandIdempotencyFixture : IAsyncLifetime
     {
         using var scope = Factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
-        var register = await db.CashRegisters.IgnoreQueryFilters().SingleAsync(r => r.Id == cashRegisterId);
+        var register = await db
+            .CashRegisters.IgnoreQueryFilters()
+            .SingleAsync(r => r.Id == cashRegisterId);
         register.SetAccountingAccount(CashAccountId, _adminId);
         await db.SaveChangesAsync();
     }
@@ -272,7 +430,13 @@ public sealed class FinancialCommandIdempotencyFixture : IAsyncLifetime
         using var scope = Factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var reason = CashMovementReason.Create(
-            TenantId, CompanyId, $"R{Guid.NewGuid():N}"[..8], "Ingreso escenario", CashMovementType.ManualIncome, 1, _adminId
+            TenantId,
+            CompanyId,
+            $"R{Guid.NewGuid():N}"[..8],
+            "Ingreso escenario",
+            CashMovementType.ManualIncome,
+            1,
+            _adminId
         );
         if (!active)
             reason.Disable(_adminId);
@@ -285,7 +449,9 @@ public sealed class FinancialCommandIdempotencyFixture : IAsyncLifetime
     {
         using var scope = Factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
-        var reason = await db.Set<CashMovementReason>().IgnoreQueryFilters().SingleAsync(r => r.Id == reasonId);
+        var reason = await db.Set<CashMovementReason>()
+            .IgnoreQueryFilters()
+            .SingleAsync(r => r.Id == reasonId);
         reason.Enable(_adminId);
         await db.SaveChangesAsync();
     }
@@ -295,20 +461,40 @@ public sealed class FinancialCommandIdempotencyFixture : IAsyncLifetime
     {
         using var scope = Factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
-        var profile = AccessProfile.Create(TenantId, $"Perfil {Guid.NewGuid():N}"[..20], null, _adminId);
+        var profile = AccessProfile.Create(
+            TenantId,
+            $"Perfil {Guid.NewGuid():N}"[..20],
+            null,
+            _adminId
+        );
         db.AccessProfiles.Add(profile);
         await db.SaveChangesAsync();
         foreach (var key in permissionKeys)
-            db.AccessProfilePermissions.Add(AccessProfilePermission.Create(TenantId, profile.Id, key, true, _adminId));
+            db.AccessProfilePermissions.Add(
+                AccessProfilePermission.Create(TenantId, profile.Id, key, true, _adminId)
+            );
         var user = IdentityUser.Create(
-            $"lim-{Guid.NewGuid():N}", "Limitado", "Idem", $"lim-{Guid.NewGuid():N}@example.com", "hash", _adminId
+            $"lim-{Guid.NewGuid():N}",
+            "Limitado",
+            "Idem",
+            $"lim-{Guid.NewGuid():N}@example.com",
+            "hash",
+            _adminId
         );
         db.IdentityUsers.Add(user);
         await db.SaveChangesAsync();
-        var membership = CompanyUserMembership.Create(CompanyId, user.Id, "Cajero", profile.Id, _adminId);
+        var membership = CompanyUserMembership.Create(
+            CompanyId,
+            user.Id,
+            "Cajero",
+            profile.Id,
+            _adminId
+        );
         db.CompanyUserMemberships.Add(membership);
         await db.SaveChangesAsync();
-        db.CompanyUserBranches.Add(CompanyUserBranch.Create(TenantId, CompanyId, membership.Id, BranchId, _adminId));
+        db.CompanyUserBranches.Add(
+            CompanyUserBranch.Create(TenantId, CompanyId, membership.Id, BranchId, _adminId)
+        );
         await db.SaveChangesAsync();
         return user.Id;
     }
@@ -319,7 +505,8 @@ public sealed class FinancialCommandIdempotencyFixture : IAsyncLifetime
         _baseFactory.MutableUser.UserId = userId;
         var client = Factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
-            "Bearer", TestJwtFactory.CreateSessionJwt(TenantId, userId, role: role)
+            "Bearer",
+            TestJwtFactory.CreateSessionJwt(TenantId, userId, role: role)
         );
         client.DefaultRequestHeaders.Add("X-Branch-Id", BranchId.ToString());
         return client;
@@ -328,43 +515,78 @@ public sealed class FinancialCommandIdempotencyFixture : IAsyncLifetime
     public IServiceScope CreateDbScope() => Factory.Services.CreateScope();
 
     /// <summary>Contadores físicos de efectos económicos (por documento cuando hay FK directa, delta por tenant si no).</summary>
-    public async Task<Effects> CountEffectsAsync(Guid? installmentId = null, Guid? receivableId = null, Guid? sessionId = null)
+    public async Task<Effects> CountEffectsAsync(
+        Guid? installmentId = null,
+        Guid? receivableId = null,
+        Guid? sessionId = null
+    )
     {
         using var scope = CreateDbScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
 
         var supplierPaymentIds = installmentId is null
             ? new List<Guid>()
-            : await db.SupplierPaymentApplicationLines.IgnoreQueryFilters()
+            : await db
+                .SupplierPaymentApplicationLines.IgnoreQueryFilters()
                 .Where(l => l.AccountsPayableInstallmentId == installmentId)
-                .Select(l => l.SupplierPaymentId).Distinct().ToListAsync();
+                .Select(l => l.SupplierPaymentId)
+                .Distinct()
+                .ToListAsync();
         var installmentPaid = installmentId is null
             ? 0m
-            : await db.Set<AccountsPayableInstallment>().IgnoreQueryFilters()
-                .Where(i => i.Id == installmentId).Select(i => i.PaidAmount).SingleAsync();
+            : await db.Set<AccountsPayableInstallment>()
+                .IgnoreQueryFilters()
+                .Where(i => i.Id == installmentId)
+                .Select(i => i.PaidAmount)
+                .SingleAsync();
 
         var collectionIds = receivableId is null
             ? new List<Guid>()
-            : await db.Payments.IgnoreQueryFilters()
-                .Where(p => p.Lines.Any(l => l.ReceivableId == receivableId)).Select(p => p.Id).ToListAsync();
+            : await db
+                .Payments.IgnoreQueryFilters()
+                .Where(p => p.Lines.Any(l => l.ReceivableId == receivableId))
+                .Select(p => p.Id)
+                .ToListAsync();
         var receivablePaid = receivableId is null
             ? 0m
-            : await db.SalesReceivables.IgnoreQueryFilters().Where(r => r.Id == receivableId).Select(r => r.PaidAmount).SingleAsync();
+            : await db
+                .SalesReceivables.IgnoreQueryFilters()
+                .Where(r => r.Id == receivableId)
+                .Select(r => r.PaidAmount)
+                .SingleAsync();
 
         var movements = sessionId is null
             ? new List<(CashMovementType Type, decimal Amount)>()
-            : (await db.CashMovements.IgnoreQueryFilters().Where(m => m.CashSessionId == sessionId)
-                .Select(m => new { m.MovementType, m.Amount }).ToListAsync())
-                .Select(m => (Type: m.MovementType, m.Amount)).ToList();
+            : (
+                await db
+                    .CashMovements.IgnoreQueryFilters()
+                    .Where(m => m.CashSessionId == sessionId)
+                    .Select(m => new { m.MovementType, m.Amount })
+                    .ToListAsync()
+            )
+                .Select(m => (Type: m.MovementType, m.Amount))
+                .ToList();
 
-        var journalEntries = await db.JournalEntries.IgnoreQueryFilters().CountAsync(j => j.TenantId == TenantId);
-        var outbox = await db.OutboxMessages.IgnoreQueryFilters().CountAsync(o => o.TenantId == TenantId);
-        var supplierCredits = await db.SupplierCredits.IgnoreQueryFilters().CountAsync(c => c.TenantId == TenantId);
+        var journalEntries = await db
+            .JournalEntries.IgnoreQueryFilters()
+            .CountAsync(j => j.TenantId == TenantId);
+        var outbox = await db
+            .OutboxMessages.IgnoreQueryFilters()
+            .CountAsync(o => o.TenantId == TenantId);
+        var supplierCredits = await db
+            .SupplierCredits.IgnoreQueryFilters()
+            .CountAsync(c => c.TenantId == TenantId);
 
         return new Effects(
-            supplierPaymentIds.Count, installmentPaid, collectionIds.Count, receivablePaid,
-            movements.Count(m => m.Type is not CashMovementType.Opening), movements.Where(m => m.Type is not CashMovementType.Opening).Sum(m => m.Amount),
-            journalEntries, outbox, supplierCredits
+            supplierPaymentIds.Count,
+            installmentPaid,
+            collectionIds.Count,
+            receivablePaid,
+            movements.Count(m => m.Type is not CashMovementType.Opening),
+            movements.Where(m => m.Type is not CashMovementType.Opening).Sum(m => m.Amount),
+            journalEntries,
+            outbox,
+            supplierCredits
         );
     }
 

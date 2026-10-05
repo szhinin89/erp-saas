@@ -35,38 +35,100 @@ public sealed class SupplierPaymentRuleMaintenanceTests
 
     private static readonly string[] AccountCodes = ["2.1.01.001", "1.1.03.004", "9.9.99.999"];
 
-    private ErpDbContext Db() => new(new DbContextOptionsBuilder<ErpDbContext>()
-        .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
-        .UseInMemoryDatabase(database).AddInterceptors(new NewChildEntityTrackingInterceptor()).Options,
-        new FixedCurrentTenant(tenant), new NoOpPublisher(), new FixedCurrentCompany(companyId));
+    private ErpDbContext Db() =>
+        new(
+            new DbContextOptionsBuilder<ErpDbContext>()
+                .ConfigureWarnings(w =>
+                    w.Ignore(
+                        Microsoft
+                            .EntityFrameworkCore
+                            .Diagnostics
+                            .InMemoryEventId
+                            .TransactionIgnoredWarning
+                    )
+                )
+                .UseInMemoryDatabase(database)
+                .AddInterceptors(new NewChildEntityTrackingInterceptor())
+                .Options,
+            new FixedCurrentTenant(tenant),
+            new NoOpPublisher(),
+            new FixedCurrentCompany(companyId)
+        );
 
-    private AccountingChartBackfillService Service(ErpDbContext db) => new(db,
-        new FakeHostEnvironment(isProduction: true),
-        new AccountingBootstrapStep(db, new AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance),
-        NullLogger<AccountingChartBackfillService>.Instance);
+    private AccountingChartBackfillService Service(ErpDbContext db) =>
+        new(
+            db,
+            new FakeHostEnvironment(isProduction: true),
+            new AccountingBootstrapStep(
+                db,
+                new AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            ),
+            NullLogger<AccountingChartBackfillService>.Instance
+        );
 
-    public enum Shape { Legacy, Canonical, CustomLines, CustomHeader }
+    public enum Shape
+    {
+        Legacy,
+        Canonical,
+        CustomLines,
+        CustomHeader,
+    }
 
     private async Task Seed(Shape shape, string? advanceState = null)
     {
         await using var db = Db();
-        var company = Company.CreateManaged(tenant, "1790012345001", "Maintenance", createdBy: actor);
+        var company = Company.CreateManaged(
+            tenant,
+            "1790012345001",
+            "Maintenance",
+            createdBy: actor
+        );
         db.Companies.Add(company);
         companyId = company.Id;
-        var accounts = AccountCodes.ToDictionary(c => c, c => Account.Create(tenant, company.Id,
-            AccountCode.Create(c), c, null, AccountType.Asset, AccountNature.Debit, true, actor));
-        if (advanceState == "inactive") accounts["1.1.03.004"].Disable(actor);
-        if (advanceState == "nonpostable") accounts["1.1.03.004"].SetAllowsPosting(false, actor);
-        db.Accounts.AddRange(accounts.Where(a => advanceState != "missing" || a.Key != "1.1.03.004").Select(a => a.Value));
+        var accounts = AccountCodes.ToDictionary(
+            c => c,
+            c =>
+                Account.Create(
+                    tenant,
+                    company.Id,
+                    AccountCode.Create(c),
+                    c,
+                    null,
+                    AccountType.Asset,
+                    AccountNature.Debit,
+                    true,
+                    actor
+                )
+        );
+        if (advanceState == "inactive")
+            accounts["1.1.03.004"].Disable(actor);
+        if (advanceState == "nonpostable")
+            accounts["1.1.03.004"].SetAllowsPosting(false, actor);
+        db.Accounts.AddRange(
+            accounts
+                .Where(a => advanceState != "missing" || a.Key != "1.1.03.004")
+                .Select(a => a.Value)
+        );
 
-        foreach (var (factType, nature) in new[]
+        foreach (
+            var (factType, nature) in new[]
+            {
+                ("SupplierPaymentConfirmed", AccountNature.Debit),
+                ("SupplierPaymentReversed", AccountNature.Credit),
+            }
+        )
         {
-            ("SupplierPaymentConfirmed", AccountNature.Debit),
-            ("SupplierPaymentReversed", AccountNature.Credit),
-        })
-        {
-            var rule = PostingRule.Create(tenant, company.Id, "Payables", factType, null, null,
-                shape == Shape.CustomHeader ? "CUSTOM" : null, actor);
+            var rule = PostingRule.Create(
+                tenant,
+                company.Id,
+                "Payables",
+                factType,
+                null,
+                null,
+                shape == Shape.CustomHeader ? "CUSTOM" : null,
+                actor
+            );
             switch (shape)
             {
                 case Shape.Legacy:
@@ -74,8 +136,16 @@ public sealed class SupplierPaymentRuleMaintenanceTests
                     rule.AddLine(accounts["2.1.01.001"].Id, nature, PostingAmountKind.GrandTotal);
                     break;
                 case Shape.Canonical:
-                    rule.AddLine(accounts["2.1.01.001"].Id, nature, PostingAmountKind.AppliedToPayable);
-                    rule.AddLine(accounts["1.1.03.004"].Id, nature, PostingAmountKind.SupplierCredit);
+                    rule.AddLine(
+                        accounts["2.1.01.001"].Id,
+                        nature,
+                        PostingAmountKind.AppliedToPayable
+                    );
+                    rule.AddLine(
+                        accounts["1.1.03.004"].Id,
+                        nature,
+                        PostingAmountKind.SupplierCredit
+                    );
                     break;
                 case Shape.CustomLines:
                     // Un admin cambió la cuenta de CxP por otra: ya no coincide con ninguna forma conocida.
@@ -85,8 +155,18 @@ public sealed class SupplierPaymentRuleMaintenanceTests
             db.PostingRules.Add(rule);
         }
 
-        var journal = JournalEntry.Create(tenant, company.Id, new DateOnly(2026, 1, 1), Guid.NewGuid(),
-            2026, "Payables", "SupplierPaymentConfirmed", Guid.NewGuid(), "Historical", actor);
+        var journal = JournalEntry.Create(
+            tenant,
+            company.Id,
+            new DateOnly(2026, 1, 1),
+            Guid.NewGuid(),
+            2026,
+            "Payables",
+            "SupplierPaymentConfirmed",
+            Guid.NewGuid(),
+            "Historical",
+            actor
+        );
         journal.AddLine(accounts["2.1.01.001"].Id, "CxP", 100m, 0m);
         journal.AddLine(accounts["9.9.99.999"].Id, "Banco", 0m, 100m);
         journal.Post(actor, 1);
@@ -98,15 +178,25 @@ public sealed class SupplierPaymentRuleMaintenanceTests
     {
         await using var db = Db();
         var rules = await db.PostingRules.Include(r => r.Lines).ToListAsync();
-        rules.Should().NotBeEmpty("la instantánea debe ver las reglas reales de la empresa sembrada");
-        return rules.SelectMany(r => r.Lines.Select(l => $"{r.Id}/{r.FactType}/{l.Id}/{l.AccountId}/{l.Nature}/{l.AmountKind}/{l.SortOrder}"))
-            .OrderBy(s => s).ToArray();
+        rules
+            .Should()
+            .NotBeEmpty("la instantánea debe ver las reglas reales de la empresa sembrada");
+        return rules
+            .SelectMany(r =>
+                r.Lines.Select(l =>
+                    $"{r.Id}/{r.FactType}/{l.Id}/{l.AccountId}/{l.Nature}/{l.AmountKind}/{l.SortOrder}"
+                )
+            )
+            .OrderBy(s => s)
+            .ToArray();
     }
 
     private async Task<string> JournalSnapshot()
     {
         await using var db = Db();
-        return System.Text.Json.JsonSerializer.Serialize(await db.JournalEntries.Include(j => j.Lines).ToListAsync());
+        return System.Text.Json.JsonSerializer.Serialize(
+            await db.JournalEntries.Include(j => j.Lines).ToListAsync()
+        );
     }
 
     private async Task<IReadOnlyList<SupplierPaymentRuleMaintenanceResult>> Run(bool apply)
@@ -122,30 +212,47 @@ public sealed class SupplierPaymentRuleMaintenanceTests
         var before = await Snapshot();
         var history = await JournalSnapshot();
 
-        (await Run(apply: true)).Select(r => r.Diagnostic).Should().OnlyContain(d => d == "Legacy -> Canonical: applied");
+        (await Run(apply: true))
+            .Select(r => r.Diagnostic)
+            .Should()
+            .OnlyContain(d => d == "Legacy -> Canonical: applied");
 
         await using (var db = Db())
         {
             var accounts = await db.Accounts.ToDictionaryAsync(a => a.Id, a => a.Code.Value);
-            foreach (var (factType, nature) in new[]
-            {
-                ("SupplierPaymentConfirmed", AccountNature.Debit),
-                ("SupplierPaymentReversed", AccountNature.Credit),
-            })
-            {
-                var rule = await db.PostingRules.Include(r => r.Lines).SingleAsync(r => r.FactType == factType);
-                rule.Lines.Select(l => (accounts[l.AccountId], l.Nature, l.AmountKind)).Should().BeEquivalentTo(new[]
+            foreach (
+                var (factType, nature) in new[]
                 {
-                    ("2.1.01.001", nature, PostingAmountKind.AppliedToPayable),
-                    ("1.1.03.004", nature, PostingAmountKind.SupplierCredit),
-                });
+                    ("SupplierPaymentConfirmed", AccountNature.Debit),
+                    ("SupplierPaymentReversed", AccountNature.Credit),
+                }
+            )
+            {
+                var rule = await db
+                    .PostingRules.Include(r => r.Lines)
+                    .SingleAsync(r => r.FactType == factType);
+                rule.Lines.Select(l => (accounts[l.AccountId], l.Nature, l.AmountKind))
+                    .Should()
+                    .BeEquivalentTo(
+                        new[]
+                        {
+                            ("2.1.01.001", nature, PostingAmountKind.AppliedToPayable),
+                            ("1.1.03.004", nature, PostingAmountKind.SupplierCredit),
+                        }
+                    );
                 var legacyLineId = before.Single(s => s.Contains($"/{factType}/")).Split('/')[2];
-                rule.Lines.Single(l => l.AmountKind == PostingAmountKind.AppliedToPayable).Id.ToString().Should().Be(legacyLineId);
+                rule.Lines.Single(l => l.AmountKind == PostingAmountKind.AppliedToPayable)
+                    .Id.ToString()
+                    .Should()
+                    .Be(legacyLineId);
             }
         }
 
         var after = await Snapshot();
-        (await Run(apply: true)).Select(r => r.Diagnostic).Should().OnlyContain(d => d == "Canonical");
+        (await Run(apply: true))
+            .Select(r => r.Diagnostic)
+            .Should()
+            .OnlyContain(d => d == "Canonical");
         (await Snapshot()).Should().Equal(after, "segunda corrida: sin cambios ni duplicados");
         (await JournalSnapshot()).Should().Be(history, "nunca toca asientos históricos");
     }
@@ -156,7 +263,10 @@ public sealed class SupplierPaymentRuleMaintenanceTests
         await Seed(Shape.Canonical);
         var before = await Snapshot();
 
-        (await Run(apply: true)).Select(r => r.Diagnostic).Should().OnlyContain(d => d == "Canonical");
+        (await Run(apply: true))
+            .Select(r => r.Diagnostic)
+            .Should()
+            .OnlyContain(d => d == "Canonical");
         (await Snapshot()).Should().Equal(before);
     }
 
@@ -181,7 +291,10 @@ public sealed class SupplierPaymentRuleMaintenanceTests
         await Seed(Shape.Legacy);
         var before = await Snapshot();
 
-        (await Run(apply: false)).Select(r => r.Diagnostic).Should().OnlyContain(d => d == "Legacy");
+        (await Run(apply: false))
+            .Select(r => r.Diagnostic)
+            .Should()
+            .OnlyContain(d => d == "Legacy");
         (await Snapshot()).Should().Equal(before);
     }
 
@@ -194,7 +307,11 @@ public sealed class SupplierPaymentRuleMaintenanceTests
         await Seed(Shape.Legacy, state);
         var before = await Snapshot();
 
-        (await Run(apply: true)).Should().OnlyContain(r => r.Diagnostic.Contains("InvalidAccounts") && r.Diagnostic.Contains("1.1.03.004"));
+        (await Run(apply: true))
+            .Should()
+            .OnlyContain(r =>
+                r.Diagnostic.Contains("InvalidAccounts") && r.Diagnostic.Contains("1.1.03.004")
+            );
         (await Snapshot()).Should().Equal(before);
     }
 
@@ -209,18 +326,27 @@ public sealed class SupplierPaymentRuleMaintenanceTests
             await db.SaveChangesAsync();
             companyId = company.Id;
             this.companyId = company.Id;
-            var step = new AccountingBootstrapStep(db, new AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(tenant, companyId, actor));
         }
         var before = await Snapshot();
 
         var rows = await Run(apply: true);
 
-        rows.Where(r => r.CompanyId == companyId).Select(r => (r.FactType, r.Diagnostic)).Should().BeEquivalentTo(new[]
-        {
-            ("SupplierPaymentConfirmed", "Canonical"),
-            ("SupplierPaymentReversed", "Canonical"),
-        });
+        rows.Where(r => r.CompanyId == companyId)
+            .Select(r => (r.FactType, r.Diagnostic))
+            .Should()
+            .BeEquivalentTo(
+                new[]
+                {
+                    ("SupplierPaymentConfirmed", "Canonical"),
+                    ("SupplierPaymentReversed", "Canonical"),
+                }
+            );
         (await Snapshot()).Should().Equal(before);
     }
 
@@ -229,7 +355,8 @@ public sealed class SupplierPaymentRuleMaintenanceTests
         public string EnvironmentName { get; set; } = isProduction ? "Production" : "Development";
         public string ApplicationName { get; set; } = "ERP.Infrastructure.Tests";
         public string ContentRootPath { get; set; } = AppContext.BaseDirectory;
-        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } = null!;
+        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } =
+            null!;
     }
 
     private sealed class FixedCurrentTenant(Guid tenantId) : ICurrentTenant
@@ -247,9 +374,13 @@ public sealed class SupplierPaymentRuleMaintenanceTests
 
     private sealed class NoOpPublisher : IPublisher
     {
-        public Task Publish(object notification, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
             where TNotification : INotification => Task.CompletedTask;
     }
 }

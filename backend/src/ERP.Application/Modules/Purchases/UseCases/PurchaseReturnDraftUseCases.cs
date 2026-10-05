@@ -1,3 +1,6 @@
+using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Companies;
@@ -7,9 +10,6 @@ using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentValidation;
 using MediatR;
-using System.Globalization;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace ERP.Application.Modules.Purchases.UseCases;
 
@@ -351,7 +351,8 @@ public sealed class UpdatePurchaseReturnDraftHandler
         ICurrentUser u,
         ICompanyPrecisionPolicyProvider precision,
         IPurchaseCreditNoteRepository? creditNoteRepo = null,
-        ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces.IPurchaseReceptionDocumentRepository? receptionRepo = null
+        ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces.IPurchaseReceptionDocumentRepository? receptionRepo =
+            null
     )
     {
         _precision = precision;
@@ -426,24 +427,50 @@ public sealed class UpdatePurchaseReturnDraftHandler
             );
         }
 
-        var creditNote = _creditNoteRepo is null ? null
+        var creditNote = _creditNoteRepo is null
+            ? null
             : await _creditNoteRepo.GetByLinkedPurchaseReturnIdAsync(tid, purchaseReturn.Id, ct);
         if (creditNote is not null)
         {
-            var resolved = await CreditNoteReturnLines.ResolveAsync(invoice, cmd.Lines, _returnRepo, tid, (await _precision.GetEffectiveAsync(ct)).QuantityDecimals, ct);
+            var resolved = await CreditNoteReturnLines.ResolveAsync(
+                invoice,
+                cmd.Lines,
+                _returnRepo,
+                tid,
+                (await _precision.GetEffectiveAsync(ct)).QuantityDecimals,
+                ct
+            );
             if (resolved.Error is not null)
                 return Result<PurchaseReturnDto>.ValidationFailure(resolved.Error);
-            if (creditNote.Status != PurchaseCreditNoteStatus.Draft || purchaseReturn.Status != PurchaseReturnStatus.Draft)
-                return Result<PurchaseReturnDto>.ValidationFailure("La NC y su devolución deben estar en borrador.");
+            if (
+                creditNote.Status != PurchaseCreditNoteStatus.Draft
+                || purchaseReturn.Status != PurchaseReturnStatus.Draft
+            )
+                return Result<PurchaseReturnDto>.ValidationFailure(
+                    "La NC y su devolución deben estar en borrador."
+                );
             if (creditNote.ReceptionDocumentId is { } receptionId)
             {
                 var reception = await _receptionRepo!.GetByIdAsync(tid, receptionId, ct);
-                var total = resolved.Fiscal.Sum(l => l.Subtotal + l.VatAmount + l.IceAmount + l.IrbpnrAmount);
+                var total = resolved.Fiscal.Sum(l =>
+                    l.Subtotal + l.VatAmount + l.IceAmount + l.IrbpnrAmount
+                );
                 if (reception is null || Math.Abs(total - reception.TotalAmount) > 0.01m)
-                    return Result<PurchaseReturnDto>.ValidationFailure("El total no coincide con la NC/XML recibido.");
+                    return Result<PurchaseReturnDto>.ValidationFailure(
+                        "El total no coincide con la NC/XML recibido."
+                    );
             }
-            creditNote.UpdateDraft(creditNote.CreditNoteNumber, creditNote.AccessKey, creditNote.AuthorizationNumber,
-                creditNote.AuthorizationDate, creditNote.IssueDate, cmd.Reason, resolved.Fiscal, [], _u.UserId);
+            creditNote.UpdateDraft(
+                creditNote.CreditNoteNumber,
+                creditNote.AccessKey,
+                creditNote.AuthorizationNumber,
+                creditNote.AuthorizationDate,
+                creditNote.IssueDate,
+                cmd.Reason,
+                resolved.Fiscal,
+                [],
+                _u.UserId
+            );
         }
 
         purchaseReturn.UpdateDraft(cmd.Reason, lines, _u.UserId);
@@ -504,8 +531,13 @@ public sealed class CancelPurchaseReturnDraftHandler
         var cancelHash = ComputeCancelPayloadHash(purchaseReturn.Id, cmd.Reason);
         purchaseReturn.Cancel(cmd.Reason, _u.UserId, cmd.ClientRequestId, cancelHash);
 
-        var creditNote = _creditNoteRepo is null ? null
-            : await _creditNoteRepo.GetByLinkedPurchaseReturnIdAsync(_t.TenantId, purchaseReturn.Id, ct);
+        var creditNote = _creditNoteRepo is null
+            ? null
+            : await _creditNoteRepo.GetByLinkedPurchaseReturnIdAsync(
+                _t.TenantId,
+                purchaseReturn.Id,
+                ct
+            );
         creditNote?.CancelLinkedReturn(purchaseReturn, _u.UserId);
         await _returnRepo.SaveChangesAsync(ct);
         return Result<PurchaseReturnDto>.Success(Map.ToDto(purchaseReturn));

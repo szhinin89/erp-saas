@@ -56,7 +56,10 @@ public sealed class StockMovementConfiguration : IEntityTypeConfiguration<StockM
         // P0-02 (diseño §10.3) — trazabilidad línea-a-línea genérica, reutilizable por cualquier
         // módulo futuro; no es la fuente de "cantidad ya devuelta" (consulta derivada de negocio).
         builder.Property(x => x.SourceDocLineId).HasColumnName("source_doc_line_id");
-        builder.Property(x => x.UnitCost).HasColumnName("unit_cost").HasColumnType("numeric(22,10)");
+        builder
+            .Property(x => x.UnitCost)
+            .HasColumnName("unit_cost")
+            .HasColumnType("numeric(22,10)");
         builder
             .Property(x => x.TotalCost)
             .HasColumnName("total_cost")

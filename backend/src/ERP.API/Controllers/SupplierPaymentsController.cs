@@ -66,7 +66,15 @@ public sealed class SupplierPaymentsController : ControllerBase
         CancellationToken ct
     ) =>
         this.ToOkOrBadRequest(
-            await _mediator.Send(new ReverseSupplierPaymentCommand(id, body.Reason, body.CashNotDeliveredConfirmed, body.BankReversalReason), ct)
+            await _mediator.Send(
+                new ReverseSupplierPaymentCommand(
+                    id,
+                    body.Reason,
+                    body.CashNotDeliveredConfirmed,
+                    body.BankReversalReason
+                ),
+                ct
+            )
         );
 
     [HttpGet]
@@ -79,7 +87,10 @@ public sealed class SupplierPaymentsController : ControllerBase
         CancellationToken ct = default
     ) =>
         this.ToOkOrBadRequest(
-            await _mediator.Send(new GetSupplierPaymentsListQuery(supplierId, status, page, pageSize), ct),
+            await _mediator.Send(
+                new GetSupplierPaymentsListQuery(supplierId, status, page, pageSize),
+                ct
+            ),
             "OK"
         );
 }

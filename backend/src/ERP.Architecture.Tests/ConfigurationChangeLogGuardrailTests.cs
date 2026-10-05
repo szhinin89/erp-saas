@@ -40,7 +40,9 @@ public sealed class ConfigurationChangeLogGuardrailTests
         var implementations = Types
             .InAssembly(InfrastructureAssembly)
             .That()
-            .ImplementInterface(typeof(ERP.Domain.Configuration.Interfaces.IConfigurationChangeLogger))
+            .ImplementInterface(
+                typeof(ERP.Domain.Configuration.Interfaces.IConfigurationChangeLogger)
+            )
             .GetTypes()
             .Select(t => t.FullName)
             .ToList();

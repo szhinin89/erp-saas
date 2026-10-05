@@ -37,11 +37,20 @@ public sealed class RetentionEligibilityServiceTests
         fx.SetupDefault("725", "IVA", 30m);
         fx.SetupDefault("303", "RENTA", 1.75m);
 
-        var result = await fx.Service.EvaluateAsync(TenantId, CompanyId, SupplierId, 100m, 500m, CancellationToken.None);
+        var result = await fx.Service.EvaluateAsync(
+            TenantId,
+            CompanyId,
+            SupplierId,
+            100m,
+            500m,
+            CancellationToken.None
+        );
 
         result.CanRetainVat.Should().BeFalse();
         result.Reasons.Should().Contain(r => r.Contains("WithholdsVat=false"));
-        result.CanRetainIncome.Should().BeTrue("la empresa sí retiene renta y el resto de condiciones se cumplen");
+        result
+            .CanRetainIncome.Should()
+            .BeTrue("la empresa sí retiene renta y el resto de condiciones se cumplen");
     }
 
     [Fact]
@@ -53,10 +62,19 @@ public sealed class RetentionEligibilityServiceTests
         fx.SetupDefault("725", "IVA", 30m);
         fx.SetupDefault("303", "RENTA", 1.75m);
 
-        var result = await fx.Service.EvaluateAsync(TenantId, CompanyId, SupplierId, 100m, 500m, CancellationToken.None);
+        var result = await fx.Service.EvaluateAsync(
+            TenantId,
+            CompanyId,
+            SupplierId,
+            100m,
+            500m,
+            CancellationToken.None
+        );
 
         result.CanRetainVat.Should().BeTrue();
-        result.Candidates.Should().ContainSingle(c => c.TaxType == "IVA" && c.RetentionCode == "725");
+        result
+            .Candidates.Should()
+            .ContainSingle(c => c.TaxType == "IVA" && c.RetentionCode == "725");
         result.MissingRetentionCode.Should().BeFalse();
     }
 
@@ -69,11 +87,21 @@ public sealed class RetentionEligibilityServiceTests
         fx.SetupDefault("303", "RENTA", 10m);
         fx.SetupDefault("304", "RENTA", 2m);
 
-        var result = await fx.Service.EvaluateAsync(TenantId, CompanyId, SupplierId, 0m, 500m, CancellationToken.None);
+        var result = await fx.Service.EvaluateAsync(
+            TenantId,
+            CompanyId,
+            SupplierId,
+            0m,
+            500m,
+            CancellationToken.None
+        );
 
         result.CanRetainIncome.Should().BeTrue();
         result.Candidates.Should().HaveCount(2);
-        result.Candidates.Select(c => c.RetentionCode).Should().BeEquivalentTo(new[] { "303", "304" });
+        result
+            .Candidates.Select(c => c.RetentionCode)
+            .Should()
+            .BeEquivalentTo(new[] { "303", "304" });
     }
 
     [Fact]
@@ -85,7 +113,14 @@ public sealed class RetentionEligibilityServiceTests
         fx.SetupDefault("725", "IVA", 30m);
         fx.SetupDefault("303", "RENTA", 1.75m);
 
-        var result = await fx.Service.EvaluateAsync(TenantId, CompanyId, SupplierId, 100m, 500m, CancellationToken.None);
+        var result = await fx.Service.EvaluateAsync(
+            TenantId,
+            CompanyId,
+            SupplierId,
+            100m,
+            500m,
+            CancellationToken.None
+        );
 
         result.CanRetainVat.Should().BeFalse();
         result.CanRetainIncome.Should().BeFalse();
@@ -102,7 +137,14 @@ public sealed class RetentionEligibilityServiceTests
         fx.SetupDefault("725", "IVA", 30m);
         fx.SetupDefault("303", "RENTA", 1.75m);
 
-        var result = await fx.Service.EvaluateAsync(TenantId, CompanyId, SupplierId, 0m, 0m, CancellationToken.None);
+        var result = await fx.Service.EvaluateAsync(
+            TenantId,
+            CompanyId,
+            SupplierId,
+            0m,
+            0m,
+            CancellationToken.None
+        );
 
         result.CanRetainVat.Should().BeFalse();
         result.CanRetainIncome.Should().BeFalse();
@@ -118,11 +160,22 @@ public sealed class RetentionEligibilityServiceTests
         fx.SetupSupplierRole(isExempt: false);
         // Sin defaults configurados en absoluto.
 
-        var result = await fx.Service.EvaluateAsync(TenantId, CompanyId, SupplierId, 100m, 500m, CancellationToken.None);
+        var result = await fx.Service.EvaluateAsync(
+            TenantId,
+            CompanyId,
+            SupplierId,
+            100m,
+            500m,
+            CancellationToken.None
+        );
 
         result.CanRetainVat.Should().BeFalse();
         result.CanRetainIncome.Should().BeFalse();
-        result.MissingRetentionCode.Should().BeFalse("no hay ningún default configurado — no es un código huérfano, simplemente no existe");
+        result
+            .MissingRetentionCode.Should()
+            .BeFalse(
+                "no hay ningún default configurado — no es un código huérfano, simplemente no existe"
+            );
         result.Reasons.Should().Contain(r => r.Contains("no hay ningún default activo"));
     }
 
@@ -134,7 +187,14 @@ public sealed class RetentionEligibilityServiceTests
         fx.SetupSupplierRole(isExempt: false);
         fx.SetupOrphanDefault(); // configurado pero el resolver no lo encuentra activo
 
-        var result = await fx.Service.EvaluateAsync(TenantId, CompanyId, SupplierId, 100m, 0m, CancellationToken.None);
+        var result = await fx.Service.EvaluateAsync(
+            TenantId,
+            CompanyId,
+            SupplierId,
+            100m,
+            0m,
+            CancellationToken.None
+        );
 
         result.CanRetainVat.Should().BeFalse();
         result.MissingRetentionCode.Should().BeTrue();
@@ -150,10 +210,21 @@ public sealed class RetentionEligibilityServiceTests
         fx.SetupDefault("725", "IVA", 30m);
         fx.SetupDefault("303", "RENTA", 1.75m);
 
-        var result = await fx.Service.EvaluateAsync(TenantId, CompanyId, SupplierId, 100m, 500m, CancellationToken.None);
+        var result = await fx.Service.EvaluateAsync(
+            TenantId,
+            CompanyId,
+            SupplierId,
+            100m,
+            500m,
+            CancellationToken.None
+        );
 
         result.IsSupplierRequiredToKeepAccounting.Should().BeTrue();
-        result.CanRetainVat.Should().BeTrue("IsRequiredToKeepAccounting no debe bloquear ni cambiar la elegibilidad en esta subfase");
+        result
+            .CanRetainVat.Should()
+            .BeTrue(
+                "IsRequiredToKeepAccounting no debe bloquear ni cambiar la elegibilidad en esta subfase"
+            );
         result.CanRetainIncome.Should().BeTrue();
     }
 
@@ -166,12 +237,25 @@ public sealed class RetentionEligibilityServiceTests
         fx.SetupDefault("725", "IVA", 30m);
         fx.SetupDefault("303", "RENTA", 1.75m);
 
-        await fx.Service.EvaluateAsync(TenantId, CompanyId, SupplierId, 100m, 500m, CancellationToken.None);
+        await fx.Service.EvaluateAsync(
+            TenantId,
+            CompanyId,
+            SupplierId,
+            100m,
+            500m,
+            CancellationToken.None
+        );
 
         // El servicio solo depende de repos de lectura — no existe ningún método de escritura en
         // las interfaces inyectadas para verificar "no llamado".
-        fx.CompanyRepo.Verify(r => r.GetByIdAsync(CompanyId, It.IsAny<CancellationToken>()), Times.Once);
-        fx.RoleRepo.Verify(r => r.GetByTypeAsync(SupplierId, RoleType.Supplier, It.IsAny<CancellationToken>()), Times.Once);
+        fx.CompanyRepo.Verify(
+            r => r.GetByIdAsync(CompanyId, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+        fx.RoleRepo.Verify(
+            r => r.GetByTypeAsync(SupplierId, RoleType.Supplier, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     private sealed class Fixture
@@ -187,7 +271,9 @@ public sealed class RetentionEligibilityServiceTests
             get
             {
                 RetentionDefaultRepo
-                    .Setup(r => r.GetActiveByBusinessPartnerAsync(SupplierId, It.IsAny<CancellationToken>()))
+                    .Setup(r =>
+                        r.GetActiveByBusinessPartnerAsync(SupplierId, It.IsAny<CancellationToken>())
+                    )
                     .ReturnsAsync(_defaults);
                 return new RetentionEligibilityService(
                     CompanyRepo.Object,
@@ -209,7 +295,9 @@ public sealed class RetentionEligibilityServiceTests
                 WithholdsVat = withholdsVat,
                 WithholdsRenta = withholdsRenta,
             };
-            CompanyRepo.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<CancellationToken>())).ReturnsAsync(company);
+            CompanyRepo
+                .Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(company);
         }
 
         public void SetupSupplierRole(bool isExempt, bool isRequiredToKeepAccounting = false)
@@ -218,26 +306,55 @@ public sealed class RetentionEligibilityServiceTests
                 isRetentionExempt: isExempt,
                 isRequiredToKeepAccounting: isRequiredToKeepAccounting
             );
-            var role = BusinessPartnerRole.Create(TenantId, SupplierId, RoleType.Supplier, UserId, supplierConfig: config);
+            var role = BusinessPartnerRole.Create(
+                TenantId,
+                SupplierId,
+                RoleType.Supplier,
+                UserId,
+                supplierConfig: config
+            );
             RoleRepo
-                .Setup(r => r.GetByTypeAsync(SupplierId, RoleType.Supplier, It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetByTypeAsync(SupplierId, RoleType.Supplier, It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(role);
         }
 
         public void SetupDefault(string code, string taxType, decimal percentage)
         {
             var codeId = Guid.NewGuid();
-            var entry = SupplierRetentionDefault.Create(TenantId, CompanyId, SupplierId, codeId, _defaults.Count, UserId);
+            var entry = SupplierRetentionDefault.Create(
+                TenantId,
+                CompanyId,
+                SupplierId,
+                codeId,
+                _defaults.Count,
+                UserId
+            );
             _defaults.Add(entry);
             RetResolver
                 .Setup(r => r.GetSelectableByIdAsync(codeId, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new RetentionCodeInfo(taxType, code, $"Retención {taxType} {percentage}%", percentage));
+                .ReturnsAsync(
+                    new RetentionCodeInfo(
+                        taxType,
+                        code,
+                        $"Retención {taxType} {percentage}%",
+                        percentage
+                    )
+                );
         }
 
         public void SetupOrphanDefault()
         {
             var codeId = Guid.NewGuid();
-            var entry = SupplierRetentionDefault.Create(TenantId, CompanyId, SupplierId, codeId, _defaults.Count, UserId);
+            var entry = SupplierRetentionDefault.Create(
+                TenantId,
+                CompanyId,
+                SupplierId,
+                codeId,
+                _defaults.Count,
+                UserId
+            );
             _defaults.Add(entry);
             RetResolver
                 .Setup(r => r.GetSelectableByIdAsync(codeId, It.IsAny<CancellationToken>()))

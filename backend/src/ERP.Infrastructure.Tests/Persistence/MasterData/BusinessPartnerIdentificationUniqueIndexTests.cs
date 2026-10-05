@@ -51,14 +51,18 @@ public sealed class BusinessPartnerIdentificationUniqueIndexTests : IAsyncLifeti
             new FixedCurrentCompany(() => Guid.Empty)
         );
 
-    private ErpDbContext Db(Guid tenantId) => CreateContext(_postgres.GetConnectionString(), tenantId);
+    private ErpDbContext Db(Guid tenantId) =>
+        CreateContext(_postgres.GetConnectionString(), tenantId);
 
     private BusinessPartner Bp(Guid tenantId, string type, string number, string name) =>
         BusinessPartner.Create(tenantId, type, number, type == "04" ? 2 : 1, name, _actor);
 
     private static async Task<PostgresException> SaveExpectingUniqueViolation(ErpDbContext db)
     {
-        var ex = await FluentActions.Invoking(() => db.SaveChangesAsync()).Should().ThrowAsync<DbUpdateException>();
+        var ex = await FluentActions
+            .Invoking(() => db.SaveChangesAsync())
+            .Should()
+            .ThrowAsync<DbUpdateException>();
         var pg = ex.Which.InnerException.Should().BeOfType<PostgresException>().Subject;
         pg.SqlState.Should().Be(PostgresErrorCodes.UniqueViolation);
         pg.ConstraintName.Should().Be("uq_mbp_identification");
@@ -75,7 +79,11 @@ public sealed class BusinessPartnerIdentificationUniqueIndexTests : IAsyncLifeti
             )
             .SingleAsync();
 
-        definition.Should().Contain("CREATE UNIQUE INDEX uq_mbp_identification ON public.master_business_partners");
+        definition
+            .Should()
+            .Contain(
+                "CREATE UNIQUE INDEX uq_mbp_identification ON public.master_business_partners"
+            );
         definition.Should().Contain("(tenant_id, identification_type, identification_number)");
         definition.Should().NotContain("WHERE", "ADR-BP-03: el índice es incondicional");
     }
@@ -121,7 +129,8 @@ public sealed class BusinessPartnerIdentificationUniqueIndexTests : IAsyncLifeti
             dbB.BusinessPartners.Add(Bp(_tenantB, "04", "1791352688001", "Empresa en B"));
             await FluentActions.Invoking(() => dbB.SaveChangesAsync()).Should().NotThrowAsync();
 
-            var visibleInB = await dbB.BusinessPartners.AsNoTracking()
+            var visibleInB = await dbB
+                .BusinessPartners.AsNoTracking()
                 .Where(x => x.Identification.Number == "1791352688001")
                 .ToListAsync();
             visibleInB.Should().ContainSingle().Which.TenantId.Should().Be(_tenantB);
@@ -154,10 +163,18 @@ public sealed class BusinessPartnerIdentificationUniqueIndexTests : IAsyncLifeti
         }
 
         await using var check = Db(_tenantA);
-        (await check.BusinessPartners.AsNoTracking().CountAsync(x => x.Identification.Number == "1710034073"))
+        (
+            await check
+                .BusinessPartners.AsNoTracking()
+                .CountAsync(x => x.Identification.Number == "1710034073")
+        )
             .Should()
             .Be(1);
-        (await check.BusinessPartners.AsNoTracking().CountAsync(x => x.Identification.Number == "1710034081"))
+        (
+            await check
+                .BusinessPartners.AsNoTracking()
+                .CountAsync(x => x.Identification.Number == "1710034081")
+        )
             .Should()
             .Be(1);
     }
@@ -168,8 +185,24 @@ public sealed class BusinessPartnerIdentificationUniqueIndexTests : IAsyncLifeti
         await using var db = Db(_tenantA);
         var bp = Bp(_tenantA, "04", "1791352688005", "Cliente y Proveedor");
         db.BusinessPartners.Add(bp);
-        db.BusinessPartnerRoles.Add(BusinessPartnerRole.Create(_tenantA, bp.Id, RoleType.Customer, _actor, customerConfig: CustomerRoleConfig.Create()));
-        db.BusinessPartnerRoles.Add(BusinessPartnerRole.Create(_tenantA, bp.Id, RoleType.Supplier, _actor, SupplierRoleConfig.Create()));
+        db.BusinessPartnerRoles.Add(
+            BusinessPartnerRole.Create(
+                _tenantA,
+                bp.Id,
+                RoleType.Customer,
+                _actor,
+                customerConfig: CustomerRoleConfig.Create()
+            )
+        );
+        db.BusinessPartnerRoles.Add(
+            BusinessPartnerRole.Create(
+                _tenantA,
+                bp.Id,
+                RoleType.Supplier,
+                _actor,
+                SupplierRoleConfig.Create()
+            )
+        );
         await FluentActions.Invoking(() => db.SaveChangesAsync()).Should().NotThrowAsync();
 
         // Registrar al mismo RUC "como proveedor" en un BP aparte duplicaría la identificación.
@@ -185,10 +218,15 @@ public sealed class BusinessPartnerIdentificationUniqueIndexTests : IAsyncLifeti
         await db.SaveChangesAsync();
         db.BusinessPartners.Add(Bp(_tenantA, "04", "1790016919002", "Carrera 2"));
 
-        var ex = await FluentActions.Invoking(() => db.SaveChangesAsync()).Should().ThrowAsync<DbUpdateException>();
+        var ex = await FluentActions
+            .Invoking(() => db.SaveChangesAsync())
+            .Should()
+            .ThrowAsync<DbUpdateException>();
 
-        new PostgresDatabaseExceptionTranslator().TryGetUniqueViolation(ex.Which, out var info).Should().BeTrue();
+        new PostgresDatabaseExceptionTranslator()
+            .TryGetUniqueViolation(ex.Which, out var info)
+            .Should()
+            .BeTrue();
         info.ConstraintName.Should().Be("uq_mbp_identification");
     }
-
 }

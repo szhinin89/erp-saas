@@ -156,6 +156,9 @@ public sealed class ElectronicDocumentXmlSupplierResolverTests
             ERP.Application.Tests.TestSupport.AdditionalInfoTestDoubles.PassThroughComposer()
         );
 
-        resolver.Resolve(ElectronicDocumentType.Invoice).Should().BeOfType<CommercialElectronicDocumentXmlSupplier>();
+        resolver
+            .Resolve(ElectronicDocumentType.Invoice)
+            .Should()
+            .BeOfType<CommercialElectronicDocumentXmlSupplier>();
     }
 }

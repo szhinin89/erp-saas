@@ -45,7 +45,11 @@ public sealed class AccountingChartBackfillServiceHierarchyTests
         new(
             db,
             new FakeHostEnvironment(isProduction: false),
-            new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance),
+            new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            ),
             NullLogger<AccountingChartBackfillService>.Instance
         );
 
@@ -113,11 +117,32 @@ public sealed class AccountingChartBackfillServiceHierarchyTests
 
         await using (var db = NewDbContext(dbName))
         {
-            var root = AddAccount(db, "5", null, type: AccountType.Cost, nature: AccountNature.Debit, allowsPosting: false);
-            var mid = AddAccount(db, "5.1", root.Id, type: AccountType.Cost, nature: AccountNature.Debit, allowsPosting: false);
+            var root = AddAccount(
+                db,
+                "5",
+                null,
+                type: AccountType.Cost,
+                nature: AccountNature.Debit,
+                allowsPosting: false
+            );
+            var mid = AddAccount(
+                db,
+                "5.1",
+                root.Id,
+                type: AccountType.Cost,
+                nature: AccountNature.Debit,
+                allowsPosting: false
+            );
             // Legacy: apunta directo a la raíz "5" en vez de al intermedio "5.1" (mismo bug que
             // tenía "5.1.02" en el blueprint original antes de ACCOUNTING-CHART-CANONICAL-HIERARCHY-01).
-            var leaf = AddAccount(db, "5.1.02", root.Id, type: AccountType.Cost, nature: AccountNature.Debit, allowsPosting: false);
+            var leaf = AddAccount(
+                db,
+                "5.1.02",
+                root.Id,
+                type: AccountType.Cost,
+                nature: AccountNature.Debit,
+                allowsPosting: false
+            );
             await db.SaveChangesAsync();
             (midId, leafId) = (mid.Id, leaf.Id);
         }
@@ -300,7 +325,9 @@ public sealed class AccountingChartBackfillServiceHierarchyTests
         summary.TotalFixed.Should().Be(1);
         summary.TotalUnresolved.Should().Be(0);
 
-        var companyWithIssuesResult = summary.Companies.Single(c => c.CompanyId == companyWithIssuesId);
+        var companyWithIssuesResult = summary.Companies.Single(c =>
+            c.CompanyId == companyWithIssuesId
+        );
         companyWithIssuesResult.IssuesBefore.Should().BeGreaterThan(0);
         companyWithIssuesResult.IssuesAfter.Should().Be(0);
         companyWithIssuesResult.FixedParentCount.Should().Be(1);
@@ -310,7 +337,9 @@ public sealed class AccountingChartBackfillServiceHierarchyTests
         companyCleanResult.FixedParentCount.Should().Be(0);
 
         await using var verifyDb = NewDbContext(dbName);
-        var leafAfter = await verifyDb.Accounts.IgnoreQueryFilters().SingleAsync(a => a.Id == leafId);
+        var leafAfter = await verifyDb
+            .Accounts.IgnoreQueryFilters()
+            .SingleAsync(a => a.Id == leafId);
         leafAfter.ParentAccountId.Should().Be(midId);
     }
 
@@ -344,7 +373,11 @@ public sealed class AccountingChartBackfillServiceHierarchyTests
         // las cuentas legacy que ya existían con padre null).
         await using (var db = NewDbContext(dbName))
         {
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
@@ -364,9 +397,10 @@ public sealed class AccountingChartBackfillServiceHierarchyTests
     private sealed class FakeHostEnvironment(bool isProduction)
         : Microsoft.Extensions.Hosting.IHostEnvironment
     {
-        public string EnvironmentName { get; set; } = isProduction
-            ? Microsoft.Extensions.Hosting.Environments.Production
-            : Microsoft.Extensions.Hosting.Environments.Development;
+        public string EnvironmentName { get; set; } =
+            isProduction
+                ? Microsoft.Extensions.Hosting.Environments.Production
+                : Microsoft.Extensions.Hosting.Environments.Development;
         public string ApplicationName { get; set; } = "ERP.Infrastructure.Tests";
         public string ContentRootPath { get; set; } = AppContext.BaseDirectory;
         public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } =

@@ -7,7 +7,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ERP.Infrastructure.Persistence.Configurations.Payables;
 
-public sealed class SupplierPaymentMethodLineConfiguration : IEntityTypeConfiguration<SupplierPaymentMethodLine>
+public sealed class SupplierPaymentMethodLineConfiguration
+    : IEntityTypeConfiguration<SupplierPaymentMethodLine>
 {
     public void Configure(EntityTypeBuilder<SupplierPaymentMethodLine> builder)
     {
@@ -31,7 +32,10 @@ public sealed class SupplierPaymentMethodLineConfiguration : IEntityTypeConfigur
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").IsRequired();
         builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
-        builder.Property(x => x.SupplierPaymentId).HasColumnName("supplier_payment_id").IsRequired();
+        builder
+            .Property(x => x.SupplierPaymentId)
+            .HasColumnName("supplier_payment_id")
+            .IsRequired();
         builder.Property(x => x.PaymentMethodId).HasColumnName("payment_method_id").IsRequired();
         builder.Property(x => x.CompanyBankAccountId).HasColumnName("company_bank_account_id");
         builder.Property(x => x.CashRegisterId).HasColumnName("cash_register_id");
@@ -40,10 +44,7 @@ public sealed class SupplierPaymentMethodLineConfiguration : IEntityTypeConfigur
             .HasColumnName("amount")
             .HasColumnType("numeric(18,2)")
             .IsRequired();
-        builder
-            .Property(x => x.ReferenceNumber)
-            .HasColumnName("reference_number")
-            .HasMaxLength(60);
+        builder.Property(x => x.ReferenceNumber).HasColumnName("reference_number").HasMaxLength(60);
         builder.Property(x => x.CheckNumber).HasColumnName("check_number").HasMaxLength(30);
         builder.Property(x => x.CheckDate).HasColumnName("check_date");
         builder.Property(x => x.Notes).HasColumnName("notes").HasMaxLength(500);

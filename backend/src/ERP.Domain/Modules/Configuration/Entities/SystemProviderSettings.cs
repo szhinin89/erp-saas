@@ -78,7 +78,10 @@ public sealed class SystemProviderSettings
                 nameof(ciiuCode)
             );
 
-        if (enabled && (normalizedRuc is null || normalizedLegalName is null || normalizedCiiu is null))
+        if (
+            enabled
+            && (normalizedRuc is null || normalizedLegalName is null || normalizedCiiu is null)
+        )
             throw new DomainRuleViolationException(
                 "No se puede habilitar el proveedor de sistema sin RUC, razón social y CIIU completos."
             );

@@ -59,6 +59,7 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
         .Build();
 
     private readonly Guid _userId = Guid.NewGuid();
+
     // Misma fecha fija que AlwaysTodayCompanyClock: el bootstrap siembra el período de ese año.
     private readonly DateOnly _today = new(2026, 9, 17);
     private Guid _tenantId;
@@ -82,7 +83,12 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
         await db.Database.MigrateAsync();
 
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _userId);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _userId);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: _userId
+        );
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
         await db.SaveChangesAsync();
@@ -90,11 +96,41 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
         _companyId = company.Id;
 
         var branch = Branch.Create(
-            _tenantId, "Matriz", "Av. Principal 123", "001", null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, true, _userId,
+            _tenantId,
+            "Matriz",
+            "Av. Principal 123",
+            "001",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            true,
+            _userId,
             companyId: _companyId
         );
-        var supplier = BusinessPartner.Create(_tenantId, "05", "1710034065", 1, "Proveedor Test", _userId);
+        var supplier = BusinessPartner.Create(
+            _tenantId,
+            "05",
+            "1710034065",
+            1,
+            "Proveedor Test",
+            _userId
+        );
         db.Branches.Add(branch);
         db.BusinessPartners.Add(supplier);
         await db.SaveChangesAsync();
@@ -103,17 +139,46 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
 
         // Empresa nueva: plan de cuentas + período + PostingRules por el bootstrap REAL (incluye las
         // reglas canónicas SupplierCreditRefunded/SupplierCreditRefundReversed de 02D-B).
-        await new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance)
-            .ExecuteAsync(new ERP.Application.Common.Interfaces.CompanyBootstrapContext(_tenantId, _companyId, _userId));
+        await new AccountingBootstrapStep(
+            db,
+            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+            NullLogger<AccountingBootstrapStep>.Instance
+        ).ExecuteAsync(
+            new ERP.Application.Common.Interfaces.CompanyBootstrapContext(
+                _tenantId,
+                _companyId,
+                _userId
+            )
+        );
 
-        var accounts = await db.Accounts.Where(a => a.CompanyId == _companyId).ToDictionaryAsync(a => a.Code.Value, a => a.Id);
+        var accounts = await db
+            .Accounts.Where(a => a.CompanyId == _companyId)
+            .ToDictionaryAsync(a => a.Code.Value, a => a.Id);
         _bankLedgerAccountId = accounts["1.1.02.001"];
         _bankSavingsLedgerAccountId = accounts["1.1.02.002"];
         _pettyCashLedgerAccountId = accounts["1.1.01.002"];
         _advancesLedgerAccountId = accounts["1.1.03.004"];
 
-        var cashMethod = PaymentMethod.Create(_tenantId, "CASH", "Efectivo", false, false, 1, _userId, affectsPhysicalCash: true);
-        var bankMethod = PaymentMethod.Create(_tenantId, "TRANSFER", "Transferencia", true, false, 2, _userId, PaymentMethodDetailType.Transfer);
+        var cashMethod = PaymentMethod.Create(
+            _tenantId,
+            "CASH",
+            "Efectivo",
+            false,
+            false,
+            1,
+            _userId,
+            affectsPhysicalCash: true
+        );
+        var bankMethod = PaymentMethod.Create(
+            _tenantId,
+            "TRANSFER",
+            "Transferencia",
+            true,
+            false,
+            2,
+            _userId,
+            PaymentMethodDetailType.Transfer
+        );
         db.PaymentMethods.AddRange(cashMethod, bankMethod);
 
         var bank = Bank.Create(_tenantId, "PICHINCHA", "Banco Pichincha", "Pichincha", _userId);
@@ -122,29 +187,67 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
         _bankMethodId = bankMethod.Id;
 
         var companyBankAccount = CompanyBankAccount.Create(
-            _tenantId, _companyId, bank.Id, BankAccountType.Checking, "2200123456", "Banco Pichincha CTE",
-            _bankLedgerAccountId, _userId
+            _tenantId,
+            _companyId,
+            bank.Id,
+            BankAccountType.Checking,
+            "2200123456",
+            "Banco Pichincha CTE",
+            _bankLedgerAccountId,
+            _userId
         );
         db.CompanyBankAccounts.Add(companyBankAccount);
 
         // Caja con cuenta propia distinta de "Caja general": prueba que el Debe sale de la caja real.
-        var cashRegister = CashRegister.Create(_tenantId, _companyId, _branchId, "CAJA-02", "Caja Chica", _userId);
+        var cashRegister = CashRegister.Create(
+            _tenantId,
+            _companyId,
+            _branchId,
+            "CAJA-02",
+            "Caja Chica",
+            _userId
+        );
         cashRegister.SetAccountingAccount(_pettyCashLedgerAccountId, _userId);
         db.CashRegisters.Add(cashRegister);
 
-        var establishment = Establishment.Create(_tenantId, _branchId, _companyId, "001", "Matriz", "Av. Principal 123", null, isMain: true, _userId);
+        var establishment = Establishment.Create(
+            _tenantId,
+            _branchId,
+            _companyId,
+            "001",
+            "Matriz",
+            "Av. Principal 123",
+            null,
+            isMain: true,
+            _userId
+        );
         db.Set<Establishment>().Add(establishment);
         await db.SaveChangesAsync();
         var emissionPoint = EmissionPoint.Create(
-            _tenantId, _companyId, establishment.Id, "001", "Punto 1",
-            ERP.Domain.Modules.Company.Enums.EmissionType.Electronic, isDefault: true, _userId
+            _tenantId,
+            _companyId,
+            establishment.Id,
+            "001",
+            "Punto 1",
+            ERP.Domain.Modules.Company.Enums.EmissionType.Electronic,
+            isDefault: true,
+            _userId
         );
         db.Set<EmissionPoint>().Add(emissionPoint);
         await db.SaveChangesAsync();
 
         var session = CashSession.Open(
-            _tenantId, _companyId, _branchId, _userId, cashRegister.Id, "CAJA-02", "Caja Chica",
-            emissionPoint.Id, "001", 500m, _userId
+            _tenantId,
+            _companyId,
+            _branchId,
+            _userId,
+            cashRegister.Id,
+            "CAJA-02",
+            "Caja Chica",
+            emissionPoint.Id,
+            "001",
+            500m,
+            _userId
         );
         db.Set<CashSession>().Add(session);
         await db.SaveChangesAsync();
@@ -194,12 +297,25 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
         services.AddScoped<IJournalEntrySequenceRepository, JournalEntrySequenceRepository>();
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<IPostingEngine, PostingEngine>();
-        services.AddScoped<ISupplierCreditRepository>(_ => new SupplierCreditRepository(db, company));
-        services.AddScoped<ISupplierCreditRefundTransactionRepository>(_ => new SupplierCreditRefundTransactionRepository(db, company));
+        services.AddScoped<ISupplierCreditRepository>(_ => new SupplierCreditRepository(
+            db,
+            company
+        ));
+        services.AddScoped<ISupplierCreditRefundTransactionRepository>(
+            _ => new SupplierCreditRefundTransactionRepository(db, company)
+        );
         services.AddScoped(typeof(IAuditWriter<>), typeof(EfAuditWriter<>));
         services.AddScoped<IAuditService, AuditService>();
-        services.AddScoped<IAuditContext>(_ => new FixedAuditContext(() => _tenantId, () => _companyId, _userId));
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(SupplierCreditRefundedPostingTranslator).Assembly));
+        services.AddScoped<IAuditContext>(_ => new FixedAuditContext(
+            () => _tenantId,
+            () => _companyId,
+            _userId
+        ));
+        services.AddMediatR(cfg =>
+            cfg.RegisterServicesFromAssembly(
+                typeof(SupplierCreditRefundedPostingTranslator).Assembly
+            )
+        );
 
         deferred.Inner = services.BuildServiceProvider().GetRequiredService<IPublisher>();
         return db;
@@ -243,9 +359,24 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
     {
         await using var db = CreateContext();
         var payment = SupplierPayment.Create(
-            _tenantId, _companyId, _branchId, _supplierId, _today, amount,
-            $"SP-{Guid.NewGuid():N}"[..12], null,
-            [new SupplierPaymentMethodLineInput(_bankMethodId, _companyBankAccountId, null, amount, "OP-1", TransactionDate: _today)],
+            _tenantId,
+            _companyId,
+            _branchId,
+            _supplierId,
+            _today,
+            amount,
+            $"SP-{Guid.NewGuid():N}"[..12],
+            null,
+            [
+                new SupplierPaymentMethodLineInput(
+                    _bankMethodId,
+                    _companyBankAccountId,
+                    null,
+                    amount,
+                    "OP-1",
+                    TransactionDate: _today
+                ),
+            ],
             [],
             [],
             _userId,
@@ -253,7 +384,15 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
             allowWithoutPayable: true
         );
         var credit = SupplierCredit.CreateFromSupplierPayment(
-            _tenantId, _companyId, _branchId, _supplierId, "USD", payment.Id, payment.UnappliedAmount, _userId);
+            _tenantId,
+            _companyId,
+            _branchId,
+            _supplierId,
+            "USD",
+            payment.Id,
+            payment.UnappliedAmount,
+            _userId
+        );
         db.SupplierPayments.Add(payment);
         db.Set<SupplierCredit>().Add(credit);
         await db.SaveChangesAsync();
@@ -261,38 +400,61 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
     }
 
     private async Task<Result<SupplierCreditRefundTransactionDto>> RefundAsync(
-        Guid creditId, decimal amount, bool cash, string? reference = "TRX-778899")
+        Guid creditId,
+        decimal amount,
+        bool cash,
+        string? reference = "TRX-778899"
+    )
     {
         await using var db = BuildWiredContext();
-        return await RegisterHandler(db).HandleWithDomainRules(
-            new RegisterSupplierCreditRefundCommand(
-                creditId,
-                cash ? null : _companyBankAccountId,
-                cash ? _cashRegisterId : null,
-                cash ? "CASH" : "TRANSFER",
-                amount,
-                _today,
-                reference,
-                Guid.NewGuid()
-            ),
-            CancellationToken.None
-        );
+        return await RegisterHandler(db)
+            .HandleWithDomainRules(
+                new RegisterSupplierCreditRefundCommand(
+                    creditId,
+                    cash ? null : _companyBankAccountId,
+                    cash ? _cashRegisterId : null,
+                    cash ? "CASH" : "TRANSFER",
+                    amount,
+                    _today,
+                    reference,
+                    Guid.NewGuid()
+                ),
+                CancellationToken.None
+            );
     }
 
-    private async Task<Result<SupplierCreditRefundTransactionDto>> ReverseAsync(Guid creditId, Guid refundId)
+    private async Task<Result<SupplierCreditRefundTransactionDto>> ReverseAsync(
+        Guid creditId,
+        Guid refundId
+    )
     {
         await using var db = BuildWiredContext();
-        return await ReverseHandler(db).HandleWithDomainRules(
-            new ReverseSupplierCreditRefundCommand(creditId, refundId, "Transferencia devuelta por el banco", _today, Guid.NewGuid()),
-            CancellationToken.None
-        );
+        return await ReverseHandler(db)
+            .HandleWithDomainRules(
+                new ReverseSupplierCreditRefundCommand(
+                    creditId,
+                    refundId,
+                    "Transferencia devuelta por el banco",
+                    _today,
+                    Guid.NewGuid()
+                ),
+                CancellationToken.None
+            );
     }
 
-    private async Task<List<(Guid AccountId, decimal Debit, decimal Credit)>> JournalLinesAsync(Guid sourceEventId, string factType)
+    private async Task<List<(Guid AccountId, decimal Debit, decimal Credit)>> JournalLinesAsync(
+        Guid sourceEventId,
+        string factType
+    )
     {
         await using var db = CreateContext();
-        var entries = await db.JournalEntries.Include(j => j.Lines)
-            .Where(j => j.SourceEventId == sourceEventId && j.SourceModule == "Purchases" && j.SourceEventType == factType)
+        var entries = await db
+            .JournalEntries.Include(j => j.Lines)
+            .Where(j =>
+                j.SourceEventId == sourceEventId
+                && j.SourceModule == "Purchases"
+                && j.SourceEventType == factType
+            )
             .ToListAsync();
         entries.Should().ContainSingle($"exactamente un asiento {factType} por movimiento");
         entries[0].EntryDate.Should().Be(_today);
@@ -302,14 +464,19 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
     private async Task<Guid> RefundMovementIdAsync(Guid refundTransactionId)
     {
         await using var db = CreateContext();
-        return (await db.SupplierCreditRefundTransactions.AsNoTracking().SingleAsync(t => t.Id == refundTransactionId))
-            .SupplierCreditMovementId;
+        return (
+            await db
+                .SupplierCreditRefundTransactions.AsNoTracking()
+                .SingleAsync(t => t.Id == refundTransactionId)
+        ).SupplierCreditMovementId;
     }
 
     private async Task<decimal> AvailableAsync(Guid creditId)
     {
         await using var db = CreateContext();
-        return (await db.Set<SupplierCredit>().AsNoTracking().SingleAsync(c => c.Id == creditId)).AvailableAmount;
+        return (
+            await db.Set<SupplierCredit>().AsNoTracking().SingleAsync(c => c.Id == creditId)
+        ).AvailableAmount;
     }
 
     [Fact]
@@ -321,20 +488,45 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
 
         result.IsSuccess.Should().BeTrue(result.Error);
         (await AvailableAsync(creditId)).Should().Be(60m, "reembolso parcial");
-        var lines = await JournalLinesAsync(await RefundMovementIdAsync(result.Value!.Id), "SupplierCreditRefunded");
-        lines.Should().BeEquivalentTo(new[]
-        {
-            (_bankLedgerAccountId, 40m, 0m),
-            (_advancesLedgerAccountId, 0m, 40m),
-        });
+        var lines = await JournalLinesAsync(
+            await RefundMovementIdAsync(result.Value!.Id),
+            "SupplierCreditRefunded"
+        );
+        lines
+            .Should()
+            .BeEquivalentTo(
+                new[] { (_bankLedgerAccountId, 40m, 0m), (_advancesLedgerAccountId, 0m, 40m) }
+            );
 
         await using var db = CreateContext();
-        var ruleAccount = (await db.PostingRules.Include(r => r.Lines)
-            .SingleAsync(r => r.SourceModule == "Purchases" && r.FactType == "SupplierCreditRefunded")).Lines.Single().AccountId;
-        ruleAccount.Should().Be(_advancesLedgerAccountId, "la cuenta de anticipos sale de la PostingRule (SSOT), no del código");
-        var tx = await db.SupplierCreditRefundTransactions.AsNoTracking().SingleAsync(t => t.Id == result.Value.Id);
-        (tx.CompanyBankAccountId, tx.EffectiveDate, tx.Amount, tx.PaymentMethodCode, tx.ExternalReference, tx.DestinationCodeSnapshot)
-            .Should().Be((_companyBankAccountId, _today, 40m, "TRANSFER", "TRX-778899", "2200123456"));
+        var ruleAccount = (
+            await db
+                .PostingRules.Include(r => r.Lines)
+                .SingleAsync(r =>
+                    r.SourceModule == "Purchases" && r.FactType == "SupplierCreditRefunded"
+                )
+        )
+            .Lines.Single()
+            .AccountId;
+        ruleAccount
+            .Should()
+            .Be(
+                _advancesLedgerAccountId,
+                "la cuenta de anticipos sale de la PostingRule (SSOT), no del código"
+            );
+        var tx = await db
+            .SupplierCreditRefundTransactions.AsNoTracking()
+            .SingleAsync(t => t.Id == result.Value.Id);
+        (
+            tx.CompanyBankAccountId,
+            tx.EffectiveDate,
+            tx.Amount,
+            tx.PaymentMethodCode,
+            tx.ExternalReference,
+            tx.DestinationCodeSnapshot
+        )
+            .Should()
+            .Be((_companyBankAccountId, _today, 40m, "TRANSFER", "TRX-778899", "2200123456"));
     }
 
     [Fact]
@@ -349,16 +541,30 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.CashMovementId.Should().NotBeNull();
-        var lines = await JournalLinesAsync(await RefundMovementIdAsync(result.Value.Id), "SupplierCreditRefunded");
-        lines.Should().BeEquivalentTo(new[]
-        {
-            (_pettyCashLedgerAccountId, 30m, 0m),
-            (_advancesLedgerAccountId, 0m, 30m),
-        });
+        var lines = await JournalLinesAsync(
+            await RefundMovementIdAsync(result.Value.Id),
+            "SupplierCreditRefunded"
+        );
+        lines
+            .Should()
+            .BeEquivalentTo(
+                new[] { (_pettyCashLedgerAccountId, 30m, 0m), (_advancesLedgerAccountId, 0m, 30m) }
+            );
         await using var verify = CreateContext();
-        (await verify.JournalEntries.CountAsync()).Should().Be(journalsBefore + 1, "el CashMovement nunca contabiliza por sí mismo");
-        (await verify.JournalEntries.AnyAsync(j => j.SourceEventId == result.Value.CashMovementId!.Value)).Should().BeFalse();
-        var cashMovement = await verify.Set<CashMovement>().AsNoTracking().SingleAsync(m => m.Id == result.Value.CashMovementId!.Value);
+        (await verify.JournalEntries.CountAsync())
+            .Should()
+            .Be(journalsBefore + 1, "el CashMovement nunca contabiliza por sí mismo");
+        (
+            await verify.JournalEntries.AnyAsync(j =>
+                j.SourceEventId == result.Value.CashMovementId!.Value
+            )
+        )
+            .Should()
+            .BeFalse();
+        var cashMovement = await verify
+            .Set<CashMovement>()
+            .AsNoTracking()
+            .SingleAsync(m => m.Id == result.Value.CashMovementId!.Value);
         cashMovement.MovementType.Should().Be(CashMovementType.ManualIncome);
         cashMovement.Amount.Should().Be(30m);
     }
@@ -372,7 +578,9 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
 
         await using (var db = CreateContext())
         {
-            var bankAccount = await db.CompanyBankAccounts.SingleAsync(b => b.Id == _companyBankAccountId);
+            var bankAccount = await db.CompanyBankAccounts.SingleAsync(b =>
+                b.Id == _companyBankAccountId
+            );
             bankAccount.Update(bankAccount.DisplayName, _bankSavingsLedgerAccountId, _userId);
             await db.SaveChangesAsync();
         }
@@ -382,15 +590,24 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
 
         reversed.IsSuccess.Should().BeTrue(reversed.Error);
         (await AvailableAsync(creditId)).Should().Be(100m);
-        var lines = await JournalLinesAsync(await RefundMovementIdAsync(reversed.Value!.Id), "SupplierCreditRefundReversed");
-        lines.Should().BeEquivalentTo(new[]
-        {
-            (_advancesLedgerAccountId, 40m, 0m),
-            (_bankLedgerAccountId, 0m, 40m),
-        }, "nunca se resuelve la cuenta vigente del banco al reversar");
+        var lines = await JournalLinesAsync(
+            await RefundMovementIdAsync(reversed.Value!.Id),
+            "SupplierCreditRefundReversed"
+        );
+        lines
+            .Should()
+            .BeEquivalentTo(
+                new[] { (_advancesLedgerAccountId, 40m, 0m), (_bankLedgerAccountId, 0m, 40m) },
+                "nunca se resuelve la cuenta vigente del banco al reversar"
+            );
         await using var verify = CreateContext();
-        (await verify.SupplierCreditRefundTransactions.CountAsync(t => t.SupplierCreditId == creditId))
-            .Should().Be(2, "el reembolso original nunca se borra; la reversa es una fila nueva");
+        (
+            await verify.SupplierCreditRefundTransactions.CountAsync(t =>
+                t.SupplierCreditId == creditId
+            )
+        )
+            .Should()
+            .Be(2, "el reembolso original nunca se borra; la reversa es una fila nueva");
     }
 
     [Fact]
@@ -405,14 +622,20 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
         reversed.IsSuccess.Should().BeTrue(reversed.Error);
         reversed.Value!.CashSessionId.Should().Be(_cashSessionId);
         (await AvailableAsync(creditId)).Should().Be(100m);
-        var lines = await JournalLinesAsync(await RefundMovementIdAsync(reversed.Value.Id), "SupplierCreditRefundReversed");
-        lines.Should().BeEquivalentTo(new[]
-        {
-            (_advancesLedgerAccountId, 25m, 0m),
-            (_pettyCashLedgerAccountId, 0m, 25m),
-        });
+        var lines = await JournalLinesAsync(
+            await RefundMovementIdAsync(reversed.Value.Id),
+            "SupplierCreditRefundReversed"
+        );
+        lines
+            .Should()
+            .BeEquivalentTo(
+                new[] { (_advancesLedgerAccountId, 25m, 0m), (_pettyCashLedgerAccountId, 0m, 25m) }
+            );
         await using var verify = CreateContext();
-        var expense = await verify.Set<CashMovement>().AsNoTracking().SingleAsync(m => m.Id == reversed.Value.CashMovementId!.Value);
+        var expense = await verify
+            .Set<CashMovement>()
+            .AsNoTracking()
+            .SingleAsync(m => m.Id == reversed.Value.CashMovementId!.Value);
         expense.MovementType.Should().Be(CashMovementType.ManualExpense);
     }
 
@@ -424,11 +647,14 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
         var creditId = await SeedAdvanceAsync(100m);
         await using (var db = CreateContext())
         {
-            var rule = await db.PostingRules.SingleAsync(r => r.SourceModule == "Purchases" && r.FactType == "SupplierCreditRefunded");
+            var rule = await db.PostingRules.SingleAsync(r =>
+                r.SourceModule == "Purchases" && r.FactType == "SupplierCreditRefunded"
+            );
             rule.Disable(_userId);
             await db.SaveChangesAsync();
         }
-        int cashMovementsBefore, journalsBefore;
+        int cashMovementsBefore,
+            journalsBefore;
         await using (var db = CreateContext())
         {
             cashMovementsBefore = await db.Set<CashMovement>().CountAsync();
@@ -439,9 +665,19 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
 
         result.IsSuccess.Should().BeFalse("sin asiento no hay reembolso (fail-closed)");
         await using var verify = CreateContext();
-        (await verify.Set<SupplierCredit>().AsNoTracking().SingleAsync(c => c.Id == creditId)).AvailableAmount.Should().Be(100m);
-        (await verify.Set<SupplierCreditMovement>().CountAsync(m => m.SupplierCreditId == creditId)).Should().Be(0);
-        (await verify.SupplierCreditRefundTransactions.CountAsync(t => t.SupplierCreditId == creditId)).Should().Be(0);
+        (await verify.Set<SupplierCredit>().AsNoTracking().SingleAsync(c => c.Id == creditId))
+            .AvailableAmount.Should()
+            .Be(100m);
+        (await verify.Set<SupplierCreditMovement>().CountAsync(m => m.SupplierCreditId == creditId))
+            .Should()
+            .Be(0);
+        (
+            await verify.SupplierCreditRefundTransactions.CountAsync(t =>
+                t.SupplierCreditId == creditId
+            )
+        )
+            .Should()
+            .Be(0);
         (await verify.Set<CashMovement>().CountAsync()).Should().Be(cashMovementsBefore);
         (await verify.JournalEntries.CountAsync()).Should().Be(journalsBefore);
     }
@@ -452,10 +688,20 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
         var creditId = await SeedAdvanceAsync(100m);
         await using var db = BuildWiredContext();
 
-        var result = await RegisterHandler(db).HandleWithDomainRules(
-            new RegisterSupplierCreditRefundCommand(creditId, _companyBankAccountId, null, "CASH", 40m, _today, null, Guid.NewGuid()),
-            CancellationToken.None
-        );
+        var result = await RegisterHandler(db)
+            .HandleWithDomainRules(
+                new RegisterSupplierCreditRefundCommand(
+                    creditId,
+                    _companyBankAccountId,
+                    null,
+                    "CASH",
+                    40m,
+                    _today,
+                    null,
+                    Guid.NewGuid()
+                ),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("efectivo físico");
@@ -469,15 +715,22 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
         public Task Publish(object notification, CancellationToken cancellationToken = default) =>
             Inner!.Publish(notification, cancellationToken);
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
             where TNotification : INotification => Inner!.Publish(notification, cancellationToken);
     }
 
     private sealed class NoOpPublisher : IPublisher
     {
-        public Task Publish(object notification, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
             where TNotification : INotification => Task.CompletedTask;
     }
 

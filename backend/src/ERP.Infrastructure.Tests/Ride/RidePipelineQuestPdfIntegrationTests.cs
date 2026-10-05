@@ -1,3 +1,4 @@
+using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Modules.Companies;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
@@ -16,7 +17,6 @@ using ERP.Domain.Modules.Ride.ValueObjects;
 using ERP.Infrastructure.Ride.Rendering;
 using FluentAssertions;
 using Moq;
-using System.Text;
 
 namespace ERP.Infrastructure.Tests.Ride;
 
@@ -190,9 +190,16 @@ public sealed class RidePipelineQuestPdfIntegrationTests
             storageService.Object,
             repository.Object,
             currentUser.Object,
-                Mock.Of<ICompanyPrecisionPolicyRepository>(p =>
-                    p.FindAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()) ==
-                    Task.FromResult<CompanyPrecisionPolicy?>(CompanyPrecisionPolicy.CreateStandardCommercial(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid())))
+            Mock.Of<ICompanyPrecisionPolicyRepository>(p =>
+                p.FindAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+                == Task.FromResult<CompanyPrecisionPolicy?>(
+                    CompanyPrecisionPolicy.CreateStandardCommercial(
+                        Guid.NewGuid(),
+                        Guid.NewGuid(),
+                        Guid.NewGuid()
+                    )
+                )
+            )
         );
 
         var result = await pipeline.ExecuteAsync(

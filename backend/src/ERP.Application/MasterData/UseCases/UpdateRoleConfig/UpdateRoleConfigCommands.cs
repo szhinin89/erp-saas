@@ -15,27 +15,21 @@ public sealed record UpdateSupplierRoleConfigCommand(
     Guid BusinessPartnerId,
     Guid RoleId,
     SupplierRoleConfigDto Config
-)
-    : IRequest<Result<BusinessPartnerRoleDto>>,
-        ITenantScopedRequest;
+) : IRequest<Result<BusinessPartnerRoleDto>>, ITenantScopedRequest;
 
 /// <summary>Actualiza la config del rol Carrier (número autorización transporte, capacidad).</summary>
 public sealed record UpdateCarrierRoleConfigCommand(
     Guid BusinessPartnerId,
     Guid RoleId,
     CarrierRoleConfigDto Config
-)
-    : IRequest<Result<BusinessPartnerRoleDto>>,
-        ITenantScopedRequest;
+) : IRequest<Result<BusinessPartnerRoleDto>>, ITenantScopedRequest;
 
 /// <summary>Actualiza la config del rol Customer (CRM fields).</summary>
 public sealed record UpdateCustomerRoleConfigCommand(
     Guid BusinessPartnerId,
     Guid RoleId,
     CustomerRoleConfigDto Config
-)
-    : IRequest<Result<BusinessPartnerRoleDto>>,
-        ITenantScopedRequest;
+) : IRequest<Result<BusinessPartnerRoleDto>>, ITenantScopedRequest;
 
 /// <summary>Actualiza las notas internas de cualquier rol.</summary>
 public sealed record UpdateRoleNotesCommand(Guid BusinessPartnerId, Guid RoleId, string? Notes)

@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using ERP.Application.Modules.Media;
 using ERP.Domain.Configuration.Constants;
 using ERP.Domain.Configuration.Enums;
@@ -5,7 +6,6 @@ using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Media.Enums;
 using Microsoft.Extensions.Logging;
-using System.Text.RegularExpressions;
 
 namespace ERP.Infrastructure.Services;
 

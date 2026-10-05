@@ -102,7 +102,9 @@ public sealed class SupplierCreditRepository : ISupplierCreditRepository
             .Select(x => (Guid?)x.Id)
             .FirstOrDefaultAsync(ct);
 
-    public async Task<IReadOnlyDictionary<Guid, SupplierCreditSourceDocument>> GetSourceDocumentsAsync(
+    public async Task<
+        IReadOnlyDictionary<Guid, SupplierCreditSourceDocument>
+    > GetSourceDocumentsAsync(
         Guid tenantId,
         IReadOnlyCollection<Guid> supplierCreditIds,
         CancellationToken ct = default
@@ -120,19 +122,53 @@ public sealed class SupplierCreditRepository : ISupplierCreditRepository
             from c in credits
             join r in _db.PurchaseReturns.AsNoTracking() on c.SourcePurchaseReturnId equals r.Id
             where r.TenantId == tenantId
-            select new { c.Id, DocumentId = r.Id, r.ReturnNumber, r.AuthorizedAtUtc }
+            select new
+            {
+                c.Id,
+                DocumentId = r.Id,
+                r.ReturnNumber,
+                r.AuthorizedAtUtc,
+            }
         ).ToListAsync(ct);
 
         var fromPayments = await (
             from c in credits
             join p in _db.SupplierPayments.AsNoTracking() on c.SourceSupplierPaymentId equals p.Id
             where p.TenantId == tenantId
-            select new { c.Id, DocumentId = p.Id, p.SystemNumber, p.PaymentDate }
+            select new
+            {
+                c.Id,
+                DocumentId = p.Id,
+                p.SystemNumber,
+                p.PaymentDate,
+            }
         ).ToListAsync(ct);
 
         return fromReturns
-            .Select(x => (x.Id, Doc: new SupplierCreditSourceDocument(x.DocumentId, x.ReturnNumber, null, x.AuthorizedAtUtc)))
-            .Concat(fromPayments.Select(x => (x.Id, Doc: new SupplierCreditSourceDocument(x.DocumentId, x.SystemNumber, (DateOnly?)x.PaymentDate, null))))
+            .Select(x =>
+                (
+                    x.Id,
+                    Doc: new SupplierCreditSourceDocument(
+                        x.DocumentId,
+                        x.ReturnNumber,
+                        null,
+                        x.AuthorizedAtUtc
+                    )
+                )
+            )
+            .Concat(
+                fromPayments.Select(x =>
+                    (
+                        x.Id,
+                        Doc: new SupplierCreditSourceDocument(
+                            x.DocumentId,
+                            x.SystemNumber,
+                            (DateOnly?)x.PaymentDate,
+                            null
+                        )
+                    )
+                )
+            )
             .ToDictionary(x => x.Id, x => x.Doc);
     }
 
@@ -152,9 +188,10 @@ public sealed class SupplierCreditRepository : ISupplierCreditRepository
         if (aggregate is null)
             return new SupplierCreditOpenBalance(0m, 0, null);
 
-        Guid? singleId = aggregate.Count == 1
-            ? await open.Select(x => (Guid?)x.Id).FirstOrDefaultAsync(ct)
-            : null;
+        Guid? singleId =
+            aggregate.Count == 1
+                ? await open.Select(x => (Guid?)x.Id).FirstOrDefaultAsync(ct)
+                : null;
         return new SupplierCreditOpenBalance(aggregate.Available, aggregate.Count, singleId);
     }
 
@@ -174,7 +211,9 @@ public sealed class SupplierCreditRepository : ISupplierCreditRepository
         else if (criteria.SourceType == SupplierCreditSourceType.PurchaseReturn)
             query = query.Where(x => x.SourcePurchaseReturnId != null);
         if (criteria.IsOpen is { } isOpen)
-            query = isOpen ? query.Where(x => x.AvailableAmount > 0) : query.Where(x => x.AvailableAmount <= 0);
+            query = isOpen
+                ? query.Where(x => x.AvailableAmount > 0)
+                : query.Where(x => x.AvailableAmount <= 0);
 
         var total = await query.CountAsync(ct);
         var items = await query

@@ -48,7 +48,8 @@ public sealed class BranchAccessGuard : IBranchAccessGuard
         // La sucursal activa es CONTEXTO: inexistente, ajena, deshabilitada o no autorizada →
         // BRANCH_SCOPE_FORBIDDEN (mismo status y código para las cuatro, sin enumeración). Se
         // decide por código; UNAUTHORIZED y COMPANY_SCOPE_FORBIDDEN pasan intactos.
-        return access.IsSuccess
+        return
+            access.IsSuccess
             || access.Code
                 is not (ApiResponseCodes.Common.NotFound or ApiResponseCodes.Common.Forbidden)
             ? access

@@ -55,11 +55,21 @@ public sealed class GetElectronicDocumentQueryHandlerTests
         var sourceEntityId = Guid.NewGuid();
         var document = CreateDocument(CompanyAId, sourceEntityId);
         var f = new Fixture(activeCompanyId: CompanyAId);
-        f.Repo.Setup(r => r.GetBySourceAsync(TenantId, SourceModule, sourceEntityId, It.IsAny<CancellationToken>()))
+        f.Repo.Setup(r =>
+                r.GetBySourceAsync(
+                    TenantId,
+                    SourceModule,
+                    sourceEntityId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(document);
 
         var result = await f.BuildHandler()
-            .Handle(new GetElectronicDocumentQuery(SourceModule, sourceEntityId), CancellationToken.None);
+            .Handle(
+                new GetElectronicDocumentQuery(SourceModule, sourceEntityId),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value.Should().NotBeNull();
@@ -71,11 +81,21 @@ public sealed class GetElectronicDocumentQueryHandlerTests
         var sourceEntityId = Guid.NewGuid();
         var document = CreateDocument(CompanyBId, sourceEntityId);
         var f = new Fixture(activeCompanyId: CompanyAId);
-        f.Repo.Setup(r => r.GetBySourceAsync(TenantId, SourceModule, sourceEntityId, It.IsAny<CancellationToken>()))
+        f.Repo.Setup(r =>
+                r.GetBySourceAsync(
+                    TenantId,
+                    SourceModule,
+                    sourceEntityId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(document);
 
         var result = await f.BuildHandler()
-            .Handle(new GetElectronicDocumentQuery(SourceModule, sourceEntityId), CancellationToken.None);
+            .Handle(
+                new GetElectronicDocumentQuery(SourceModule, sourceEntityId),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value.Should().BeNull();
@@ -94,11 +114,21 @@ public sealed class GetElectronicDocumentQueryHandlerTests
         var document = CreateDocument(CompanyAId, sourceEntityId);
         var f = new Fixture(activeCompanyId: CompanyAId);
         f.Tenant.Setup(t => t.TenantId).Returns(otherTenantId);
-        f.Repo.Setup(r => r.GetBySourceAsync(TenantId, SourceModule, sourceEntityId, It.IsAny<CancellationToken>()))
+        f.Repo.Setup(r =>
+                r.GetBySourceAsync(
+                    TenantId,
+                    SourceModule,
+                    sourceEntityId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(document);
 
         var result = await f.BuildHandler()
-            .Handle(new GetElectronicDocumentQuery(SourceModule, sourceEntityId), CancellationToken.None);
+            .Handle(
+                new GetElectronicDocumentQuery(SourceModule, sourceEntityId),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value.Should().BeNull();

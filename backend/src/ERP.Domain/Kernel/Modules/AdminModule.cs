@@ -36,7 +36,8 @@ public static class AdminModule
         SortOrder = 10,
         Id = "a1000000-0000-4000-9000-000000000008",
         ParentId = "bd7b2326-c77b-4534-ad6f-a7edb19827d6",
-        RelatedActionPermissionsCsv = AccessPermissions.IdentityUsersCreate + ","
+        RelatedActionPermissionsCsv = AccessPermissions.IdentityUsersCreate
+            + ","
             + AccessPermissions.IdentityUsersAssignTemporaryPassword
     )]
     public const string Users = "/access/users";
@@ -72,8 +73,11 @@ public static class AdminModule
         LabelKey = "app.nav.item.admin.securityGroup",
         SortOrder = 40,
         Id = "09671d4f-1687-44cd-8d26-c8f0c245957b",
-        PermissionsAnyCsv = AdminPermissions.DelegationView + "," + AccessPermissions.SessionsView
-            + "," + AdminPermissions.ActivityView
+        PermissionsAnyCsv = AdminPermissions.DelegationView
+            + ","
+            + AccessPermissions.SessionsView
+            + ","
+            + AdminPermissions.ActivityView
     )]
     public const string SecurityGroup = "/admin/security-group";
 

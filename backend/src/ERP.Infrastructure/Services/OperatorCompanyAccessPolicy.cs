@@ -22,9 +22,7 @@ public sealed class OperatorCompanyAccessPolicy : IOperatorCompanyAccessPolicy
         _accessRepository = accessRepository;
     }
 
-    public async Task<bool> IsAuthorizedOperatorAsync(
-        CancellationToken cancellationToken = default
-    )
+    public async Task<bool> IsAuthorizedOperatorAsync(CancellationToken cancellationToken = default)
     {
         if (!_operatorContext.IsOperatorMode)
             return false;

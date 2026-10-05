@@ -31,7 +31,16 @@ public sealed class SupplierCreditSupplierPaymentSourceTests
         );
 
     private static SupplierCredit FromReturn() =>
-        SupplierCredit.CreateFromReturn(TenantId, CompanyId, BranchId, SupplierId, "USD", Guid.NewGuid(), 30m, UserId);
+        SupplierCredit.CreateFromReturn(
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            "USD",
+            Guid.NewGuid(),
+            30m,
+            UserId
+        );
 
     [Fact]
     public void CreateFromSupplierPayment_fija_origen_pago_monto_integro_y_no_levanta_eventos()
@@ -47,7 +56,9 @@ public sealed class SupplierCreditSupplierPaymentSourceTests
         credit.AvailableAmount.Should().Be(20m);
         credit.IsIntact.Should().BeTrue();
         credit.CurrencyCode.Should().Be("USD");
-        credit.DomainEvents.Should().BeEmpty("el único posting del anticipo es el del SupplierPayment");
+        credit
+            .DomainEvents.Should()
+            .BeEmpty("el único posting del anticipo es el del SupplierPayment");
     }
 
     [Fact]
@@ -120,8 +131,10 @@ public sealed class SupplierCreditSupplierPaymentSourceTests
         var fromReturn = FromReturn();
 
         ((Action)(() => fromPayment.RegisterSourceReturnCancellation(UserId, Guid.NewGuid(), "h")))
-            .Should().Throw<DomainRuleViolationException>();
+            .Should()
+            .Throw<DomainRuleViolationException>();
         ((Action)(() => fromReturn.RegisterSourcePaymentReversal(UserId, Guid.NewGuid(), "h")))
-            .Should().Throw<DomainRuleViolationException>();
+            .Should()
+            .Throw<DomainRuleViolationException>();
     }
 }

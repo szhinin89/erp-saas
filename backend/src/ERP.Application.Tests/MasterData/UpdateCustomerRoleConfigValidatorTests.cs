@@ -57,7 +57,14 @@ public sealed class UpdateCustomerRoleConfigValidatorTests
     public async Task CustomerCategory_con_codigo_sembrado_es_valido()
     {
         _categoryRepo
-            .Setup(r => r.CodeExistsActiveAsync(TenantId, CompanyId, "Retail", It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.CodeExistsActiveAsync(
+                    TenantId,
+                    CompanyId,
+                    "Retail",
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(true);
 
         var cmd = new UpdateCustomerRoleConfigCommand(
@@ -75,7 +82,14 @@ public sealed class UpdateCustomerRoleConfigValidatorTests
     public async Task CustomerCategory_fuera_del_catalogo_de_la_empresa_es_invalido()
     {
         _categoryRepo
-            .Setup(r => r.CodeExistsActiveAsync(TenantId, CompanyId, "NoExiste", It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.CodeExistsActiveAsync(
+                    TenantId,
+                    CompanyId,
+                    "NoExiste",
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(false);
 
         var cmd = new UpdateCustomerRoleConfigCommand(
@@ -92,18 +106,23 @@ public sealed class UpdateCustomerRoleConfigValidatorTests
     [Fact]
     public async Task CustomerCategory_null_es_valido_sin_consultar_el_catalogo()
     {
-        var cmd = new UpdateCustomerRoleConfigCommand(BpId, RoleId, CustomerRoleConfigDto.From(CustomerRoleConfig.Create()));
+        var cmd = new UpdateCustomerRoleConfigCommand(
+            BpId,
+            RoleId,
+            CustomerRoleConfigDto.From(CustomerRoleConfig.Create())
+        );
 
         var result = await CreateValidator().ValidateAsync(cmd);
 
         result.Errors.Should().NotContain(e => e.PropertyName.Contains("CustomerCategory"));
         _categoryRepo.Verify(
-            r => r.CodeExistsActiveAsync(
-                It.IsAny<Guid>(),
-                It.IsAny<Guid>(),
-                It.IsAny<string>(),
-                It.IsAny<CancellationToken>()
-            ),
+            r =>
+                r.CodeExistsActiveAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }
@@ -119,24 +138,29 @@ public sealed class UpdateCustomerRoleConfigValidatorTests
             ActorId,
             customerConfig: CustomerRoleConfig.Create(customerClassification: "LegacyValue")
         );
-        _roleRepo.Setup(r => r.GetByIdAsync(RoleId, It.IsAny<CancellationToken>())).ReturnsAsync(role);
+        _roleRepo
+            .Setup(r => r.GetByIdAsync(RoleId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(role);
 
         var cmd = new UpdateCustomerRoleConfigCommand(
             BpId,
             RoleId,
-            CustomerRoleConfigDto.From(CustomerRoleConfig.Create(customerClassification: "LegacyValue"))
+            CustomerRoleConfigDto.From(
+                CustomerRoleConfig.Create(customerClassification: "LegacyValue")
+            )
         );
 
         var result = await CreateValidator().ValidateAsync(cmd);
 
         result.Errors.Should().NotContain(e => e.PropertyName.Contains("CustomerClassification"));
         _classificationRepo.Verify(
-            r => r.CodeExistsActiveAsync(
-                It.IsAny<Guid>(),
-                It.IsAny<Guid>(),
-                It.IsAny<string>(),
-                It.IsAny<CancellationToken>()
-            ),
+            r =>
+                r.CodeExistsActiveAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }
@@ -151,17 +175,26 @@ public sealed class UpdateCustomerRoleConfigValidatorTests
             ActorId,
             customerConfig: CustomerRoleConfig.Create(customerClassification: "Nacional")
         );
-        _roleRepo.Setup(r => r.GetByIdAsync(RoleId, It.IsAny<CancellationToken>())).ReturnsAsync(role);
+        _roleRepo
+            .Setup(r => r.GetByIdAsync(RoleId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(role);
         _classificationRepo
             .Setup(r =>
-                r.CodeExistsActiveAsync(TenantId, CompanyId, "OtroValor", It.IsAny<CancellationToken>())
+                r.CodeExistsActiveAsync(
+                    TenantId,
+                    CompanyId,
+                    "OtroValor",
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(false);
 
         var cmd = new UpdateCustomerRoleConfigCommand(
             BpId,
             RoleId,
-            CustomerRoleConfigDto.From(CustomerRoleConfig.Create(customerClassification: "OtroValor"))
+            CustomerRoleConfigDto.From(
+                CustomerRoleConfig.Create(customerClassification: "OtroValor")
+            )
         );
 
         var result = await CreateValidator().ValidateAsync(cmd);
@@ -182,17 +215,26 @@ public sealed class UpdateCustomerRoleConfigValidatorTests
             ActorId,
             customerConfig: CustomerRoleConfig.Create(customerClassification: "LegacyValue")
         );
-        _roleRepo.Setup(r => r.GetByIdAsync(RoleId, It.IsAny<CancellationToken>())).ReturnsAsync(role);
+        _roleRepo
+            .Setup(r => r.GetByIdAsync(RoleId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(role);
         _classificationRepo
             .Setup(r =>
-                r.CodeExistsActiveAsync(TenantId, CompanyId, "LegacyValue", It.IsAny<CancellationToken>())
+                r.CodeExistsActiveAsync(
+                    TenantId,
+                    CompanyId,
+                    "LegacyValue",
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(false);
 
         var cmd = new UpdateCustomerRoleConfigCommand(
             BpId,
             RoleId,
-            CustomerRoleConfigDto.From(CustomerRoleConfig.Create(customerClassification: "LegacyValue"))
+            CustomerRoleConfigDto.From(
+                CustomerRoleConfig.Create(customerClassification: "LegacyValue")
+            )
         );
 
         var result = await CreateValidator().ValidateAsync(cmd);

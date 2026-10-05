@@ -54,7 +54,10 @@ public sealed class StockAdjustmentLineConfiguration : IEntityTypeConfiguration<
             .Property(x => x.UnitCostBase)
             .HasColumnName("unit_cost_base")
             .HasColumnType("numeric(22,10)");
-        builder.Property(x => x.TotalCost).HasColumnName("total_cost").HasColumnType("numeric(18,2)");
+        builder
+            .Property(x => x.TotalCost)
+            .HasColumnName("total_cost")
+            .HasColumnType("numeric(18,2)");
         builder
             .Property(x => x.CurrentStockBefore)
             .HasColumnName("current_stock_before")

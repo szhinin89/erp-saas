@@ -56,7 +56,9 @@ public sealed class GlobalAuthController : ControllerBase
         return CompleteAuthResponse(result);
     }
 
-    private IActionResult CompleteAuthResponse(ERP.Application.Common.Result<AuthResponseDto> result)
+    private IActionResult CompleteAuthResponse(
+        ERP.Application.Common.Result<AuthResponseDto> result
+    )
     {
         if (result.IsSuccess)
         {

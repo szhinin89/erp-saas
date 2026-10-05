@@ -43,11 +43,11 @@ public sealed class PaymentTermDefaultResolverTests
     {
         var f = new Fixture();
         var pt = PaymentTerm.Create(TenantId, "30D", "30 días", 1, 30, UserId);
-        f.PaymentTerms
-            .Setup(r => r.GetByIdAsync(TenantId, pt.Id, It.IsAny<CancellationToken>()))
+        f.PaymentTerms.Setup(r => r.GetByIdAsync(TenantId, pt.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(pt);
 
-        var result = await f.BuildResolver().ResolveForPurchaseAsync(SupplierId, pt.Id, CancellationToken.None);
+        var result = await f.BuildResolver()
+            .ResolveForPurchaseAsync(SupplierId, pt.Id, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeSameAs(pt);
@@ -62,11 +62,13 @@ public sealed class PaymentTermDefaultResolverTests
     {
         var f = new Fixture();
         var missingId = Guid.NewGuid();
-        f.PaymentTerms
-            .Setup(r => r.GetByIdAsync(TenantId, missingId, It.IsAny<CancellationToken>()))
+        f.PaymentTerms.Setup(r =>
+                r.GetByIdAsync(TenantId, missingId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((PaymentTerm?)null);
 
-        var result = await f.BuildResolver().ResolveForPurchaseAsync(SupplierId, missingId, CancellationToken.None);
+        var result = await f.BuildResolver()
+            .ResolveForPurchaseAsync(SupplierId, missingId, CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("no existe");
@@ -78,11 +80,11 @@ public sealed class PaymentTermDefaultResolverTests
         var f = new Fixture();
         var pt = PaymentTerm.Create(TenantId, "30D", "30 días", 1, 30, UserId);
         pt.Disable(UserId);
-        f.PaymentTerms
-            .Setup(r => r.GetByIdAsync(TenantId, pt.Id, It.IsAny<CancellationToken>()))
+        f.PaymentTerms.Setup(r => r.GetByIdAsync(TenantId, pt.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(pt);
 
-        var result = await f.BuildResolver().ResolveForPurchaseAsync(SupplierId, pt.Id, CancellationToken.None);
+        var result = await f.BuildResolver()
+            .ResolveForPurchaseAsync(SupplierId, pt.Id, CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("inactiva");
@@ -98,16 +100,23 @@ public sealed class PaymentTermDefaultResolverTests
         var f = new Fixture();
         var defaultPt = PaymentTerm.Create(TenantId, "CONT", "Contado", 1, 0, UserId);
         var settings = CompanyBpPurchaseSettings.Create(
-            TenantId, Guid.NewGuid(), SupplierId, defaultPt.Id, UserId
+            TenantId,
+            Guid.NewGuid(),
+            SupplierId,
+            defaultPt.Id,
+            UserId
         );
-        f.PurchaseSettings
-            .Setup(r => r.GetByBusinessPartnerAsync(SupplierId, It.IsAny<CancellationToken>()))
+        f.PurchaseSettings.Setup(r =>
+                r.GetByBusinessPartnerAsync(SupplierId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(settings);
-        f.PaymentTerms
-            .Setup(r => r.GetByIdAsync(TenantId, defaultPt.Id, It.IsAny<CancellationToken>()))
+        f.PaymentTerms.Setup(r =>
+                r.GetByIdAsync(TenantId, defaultPt.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(defaultPt);
 
-        var result = await f.BuildResolver().ResolveForPurchaseAsync(SupplierId, null, CancellationToken.None);
+        var result = await f.BuildResolver()
+            .ResolveForPurchaseAsync(SupplierId, null, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeSameAs(defaultPt);
@@ -120,16 +129,23 @@ public sealed class PaymentTermDefaultResolverTests
         var defaultPt = PaymentTerm.Create(TenantId, "CONT", "Contado", 1, 0, UserId);
         defaultPt.Disable(UserId);
         var settings = CompanyBpPurchaseSettings.Create(
-            TenantId, Guid.NewGuid(), SupplierId, defaultPt.Id, UserId
+            TenantId,
+            Guid.NewGuid(),
+            SupplierId,
+            defaultPt.Id,
+            UserId
         );
-        f.PurchaseSettings
-            .Setup(r => r.GetByBusinessPartnerAsync(SupplierId, It.IsAny<CancellationToken>()))
+        f.PurchaseSettings.Setup(r =>
+                r.GetByBusinessPartnerAsync(SupplierId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(settings);
-        f.PaymentTerms
-            .Setup(r => r.GetByIdAsync(TenantId, defaultPt.Id, It.IsAny<CancellationToken>()))
+        f.PaymentTerms.Setup(r =>
+                r.GetByIdAsync(TenantId, defaultPt.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(defaultPt);
 
-        var result = await f.BuildResolver().ResolveForPurchaseAsync(SupplierId, null, CancellationToken.None);
+        var result = await f.BuildResolver()
+            .ResolveForPurchaseAsync(SupplierId, null, CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Debe seleccionar");
@@ -139,11 +155,13 @@ public sealed class PaymentTermDefaultResolverTests
     public async Task Sin_explicito_y_sin_CompanyBpPurchaseSettings_exige_seleccion()
     {
         var f = new Fixture();
-        f.PurchaseSettings
-            .Setup(r => r.GetByBusinessPartnerAsync(SupplierId, It.IsAny<CancellationToken>()))
+        f.PurchaseSettings.Setup(r =>
+                r.GetByBusinessPartnerAsync(SupplierId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((CompanyBpPurchaseSettings?)null);
 
-        var result = await f.BuildResolver().ResolveForPurchaseAsync(SupplierId, null, CancellationToken.None);
+        var result = await f.BuildResolver()
+            .ResolveForPurchaseAsync(SupplierId, null, CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Debe seleccionar");
@@ -158,13 +176,19 @@ public sealed class PaymentTermDefaultResolverTests
     {
         var f = new Fixture();
         var settings = CompanyBpPurchaseSettings.Create(
-            TenantId, Guid.NewGuid(), SupplierId, paymentTermId: null, UserId
+            TenantId,
+            Guid.NewGuid(),
+            SupplierId,
+            paymentTermId: null,
+            UserId
         );
-        f.PurchaseSettings
-            .Setup(r => r.GetByBusinessPartnerAsync(SupplierId, It.IsAny<CancellationToken>()))
+        f.PurchaseSettings.Setup(r =>
+                r.GetByBusinessPartnerAsync(SupplierId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(settings);
 
-        var result = await f.BuildResolver().ResolveForPurchaseAsync(SupplierId, null, CancellationToken.None);
+        var result = await f.BuildResolver()
+            .ResolveForPurchaseAsync(SupplierId, null, CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Debe seleccionar");
@@ -180,15 +204,22 @@ public sealed class PaymentTermDefaultResolverTests
         var f = new Fixture();
         var ptA = PaymentTerm.Create(TenantId, "30D", "30 días", 1, 30, UserId);
         var companyAId = Guid.NewGuid();
-        var settingsA = CompanyBpPurchaseSettings.Create(TenantId, companyAId, SupplierId, ptA.Id, UserId);
-        f.PurchaseSettings
-            .Setup(r => r.GetByBusinessPartnerAsync(SupplierId, It.IsAny<CancellationToken>()))
+        var settingsA = CompanyBpPurchaseSettings.Create(
+            TenantId,
+            companyAId,
+            SupplierId,
+            ptA.Id,
+            UserId
+        );
+        f.PurchaseSettings.Setup(r =>
+                r.GetByBusinessPartnerAsync(SupplierId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(settingsA);
-        f.PaymentTerms
-            .Setup(r => r.GetByIdAsync(TenantId, ptA.Id, It.IsAny<CancellationToken>()))
+        f.PaymentTerms.Setup(r => r.GetByIdAsync(TenantId, ptA.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(ptA);
 
-        var result = await f.BuildResolver().ResolveForPurchaseAsync(SupplierId, null, CancellationToken.None);
+        var result = await f.BuildResolver()
+            .ResolveForPurchaseAsync(SupplierId, null, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Id.Should().Be(ptA.Id);
@@ -201,11 +232,11 @@ public sealed class PaymentTermDefaultResolverTests
     {
         var f = new Fixture();
         var pt = PaymentTerm.Create(TenantId, "30D", "30 días", 1, 30, UserId);
-        f.PaymentTerms
-            .Setup(r => r.GetByIdAsync(TenantId, pt.Id, It.IsAny<CancellationToken>()))
+        f.PaymentTerms.Setup(r => r.GetByIdAsync(TenantId, pt.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(pt);
 
-        var result = await f.BuildResolver().ResolveForSaleAsync(CustomerId, pt.Id, CancellationToken.None);
+        var result = await f.BuildResolver()
+            .ResolveForSaleAsync(CustomerId, pt.Id, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeSameAs(pt);
@@ -221,11 +252,11 @@ public sealed class PaymentTermDefaultResolverTests
         var f = new Fixture();
         var pt = PaymentTerm.Create(TenantId, "30D", "30 días", 1, 30, UserId);
         pt.Disable(UserId);
-        f.PaymentTerms
-            .Setup(r => r.GetByIdAsync(TenantId, pt.Id, It.IsAny<CancellationToken>()))
+        f.PaymentTerms.Setup(r => r.GetByIdAsync(TenantId, pt.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(pt);
 
-        var result = await f.BuildResolver().ResolveForSaleAsync(CustomerId, pt.Id, CancellationToken.None);
+        var result = await f.BuildResolver()
+            .ResolveForSaleAsync(CustomerId, pt.Id, CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("inactiva");
@@ -241,17 +272,24 @@ public sealed class PaymentTermDefaultResolverTests
         var f = new Fixture();
         var defaultPt = PaymentTerm.Create(TenantId, "CONT", "Contado", 1, 0, UserId);
         var settings = CompanyBpSalesSettings.Create(
-            TenantId, Guid.NewGuid(), CustomerId, null, UserId
+            TenantId,
+            Guid.NewGuid(),
+            CustomerId,
+            null,
+            UserId
         );
         settings.SetPaymentTerm(defaultPt.Id, UserId);
-        f.SalesSettings
-            .Setup(r => r.GetByBusinessPartnerAsync(CustomerId, It.IsAny<CancellationToken>()))
+        f.SalesSettings.Setup(r =>
+                r.GetByBusinessPartnerAsync(CustomerId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(settings);
-        f.PaymentTerms
-            .Setup(r => r.GetByIdAsync(TenantId, defaultPt.Id, It.IsAny<CancellationToken>()))
+        f.PaymentTerms.Setup(r =>
+                r.GetByIdAsync(TenantId, defaultPt.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(defaultPt);
 
-        var result = await f.BuildResolver().ResolveForSaleAsync(CustomerId, null, CancellationToken.None);
+        var result = await f.BuildResolver()
+            .ResolveForSaleAsync(CustomerId, null, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeSameAs(defaultPt);
@@ -264,17 +302,24 @@ public sealed class PaymentTermDefaultResolverTests
         var defaultPt = PaymentTerm.Create(TenantId, "CONT", "Contado", 1, 0, UserId);
         defaultPt.Disable(UserId);
         var settings = CompanyBpSalesSettings.Create(
-            TenantId, Guid.NewGuid(), CustomerId, null, UserId
+            TenantId,
+            Guid.NewGuid(),
+            CustomerId,
+            null,
+            UserId
         );
         settings.SetPaymentTerm(defaultPt.Id, UserId);
-        f.SalesSettings
-            .Setup(r => r.GetByBusinessPartnerAsync(CustomerId, It.IsAny<CancellationToken>()))
+        f.SalesSettings.Setup(r =>
+                r.GetByBusinessPartnerAsync(CustomerId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(settings);
-        f.PaymentTerms
-            .Setup(r => r.GetByIdAsync(TenantId, defaultPt.Id, It.IsAny<CancellationToken>()))
+        f.PaymentTerms.Setup(r =>
+                r.GetByIdAsync(TenantId, defaultPt.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(defaultPt);
 
-        var result = await f.BuildResolver().ResolveForSaleAsync(CustomerId, null, CancellationToken.None);
+        var result = await f.BuildResolver()
+            .ResolveForSaleAsync(CustomerId, null, CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Debe seleccionar");
@@ -284,11 +329,13 @@ public sealed class PaymentTermDefaultResolverTests
     public async Task Venta_sin_explicito_y_sin_CompanyBpSalesSettings_exige_seleccion()
     {
         var f = new Fixture();
-        f.SalesSettings
-            .Setup(r => r.GetByBusinessPartnerAsync(CustomerId, It.IsAny<CancellationToken>()))
+        f.SalesSettings.Setup(r =>
+                r.GetByBusinessPartnerAsync(CustomerId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((CompanyBpSalesSettings?)null);
 
-        var result = await f.BuildResolver().ResolveForSaleAsync(CustomerId, null, CancellationToken.None);
+        var result = await f.BuildResolver()
+            .ResolveForSaleAsync(CustomerId, null, CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Debe seleccionar");
@@ -303,13 +350,19 @@ public sealed class PaymentTermDefaultResolverTests
     {
         var f = new Fixture();
         var settings = CompanyBpSalesSettings.Create(
-            TenantId, Guid.NewGuid(), CustomerId, null, UserId
+            TenantId,
+            Guid.NewGuid(),
+            CustomerId,
+            null,
+            UserId
         );
-        f.SalesSettings
-            .Setup(r => r.GetByBusinessPartnerAsync(CustomerId, It.IsAny<CancellationToken>()))
+        f.SalesSettings.Setup(r =>
+                r.GetByBusinessPartnerAsync(CustomerId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(settings);
 
-        var result = await f.BuildResolver().ResolveForSaleAsync(CustomerId, null, CancellationToken.None);
+        var result = await f.BuildResolver()
+            .ResolveForSaleAsync(CustomerId, null, CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Debe seleccionar");

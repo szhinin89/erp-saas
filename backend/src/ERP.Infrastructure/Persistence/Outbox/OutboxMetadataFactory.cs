@@ -1,6 +1,6 @@
-using ERP.Domain.Common;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using ERP.Domain.Common;
 
 namespace ERP.Infrastructure.Persistence.Outbox;
 

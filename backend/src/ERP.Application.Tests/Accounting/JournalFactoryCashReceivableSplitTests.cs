@@ -221,7 +221,10 @@ public sealed class JournalFactoryCashReceivableSplitTests
         result.IsSuccess.Should().BeTrue();
         m.Captured!.Lines.Should().Contain(l => l.AccountId == cash && l.Debit == 115m);
         m.Captured.Lines.Should()
-            .NotContain(l => l.AccountId == receivable, "PendingBalance=0 nunca genera línea de CxC");
+            .NotContain(
+                l => l.AccountId == receivable,
+                "PendingBalance=0 nunca genera línea de CxC"
+            );
     }
 
     [Fact]
@@ -266,15 +269,16 @@ public sealed class JournalFactoryCashReceivableSplitTests
         var m = new Mocks();
         m.SetupRule(rule);
 
-        var result = await m.BuildEngine().PostAsync(
-            Fact(
-                cashApplied: 0.28m,
-                pendingBalance: 0m,
-                subtotal: 0.30m,
-                totalVat: 0.04m,
-                totalDiscount: 0.06m
-            )
-        );
+        var result = await m.BuildEngine()
+            .PostAsync(
+                Fact(
+                    cashApplied: 0.28m,
+                    pendingBalance: 0m,
+                    subtotal: 0.30m,
+                    totalVat: 0.04m,
+                    totalDiscount: 0.06m
+                )
+            );
 
         result.IsSuccess.Should().BeTrue();
         m.Captured.Should().NotBeNull();
@@ -298,15 +302,16 @@ public sealed class JournalFactoryCashReceivableSplitTests
         var m = new Mocks();
         m.SetupRule(rule);
 
-        var result = await m.BuildEngine().PostAsync(
-            Fact(
-                cashApplied: 1.02m,
-                pendingBalance: 0m,
-                subtotal: 1.00m,
-                totalVat: 0m,
-                totalIrbpnr: 0.02m
-            )
-        );
+        var result = await m.BuildEngine()
+            .PostAsync(
+                Fact(
+                    cashApplied: 1.02m,
+                    pendingBalance: 0m,
+                    subtotal: 1.00m,
+                    totalVat: 0m,
+                    totalIrbpnr: 0.02m
+                )
+            );
 
         result.IsSuccess.Should().BeTrue();
         m.Captured.Should().NotBeNull();

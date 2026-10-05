@@ -57,18 +57,48 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
 
         _createdBy = Guid.NewGuid();
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _createdBy);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _createdBy);
-        var otherCompany = Company.CreateManaged(tenant.Id, "1790012345002", "Otra S.A.", createdBy: _createdBy);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: _createdBy
+        );
+        var otherCompany = Company.CreateManaged(
+            tenant.Id,
+            "1790012345002",
+            "Otra S.A.",
+            createdBy: _createdBy
+        );
         var period = AccountingPeriod.Create(
-            tenant.Id, company.Id, 2026, 8, new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31), _createdBy
+            tenant.Id,
+            company.Id,
+            2026,
+            8,
+            new DateOnly(2026, 8, 1),
+            new DateOnly(2026, 8, 31),
+            _createdBy
         );
         var cash = Account.Create(
-            tenant.Id, company.Id, AccountCode.Create("1.1.01"), "Caja", null,
-            AccountType.Asset, AccountNature.Debit, true, _createdBy
+            tenant.Id,
+            company.Id,
+            AccountCode.Create("1.1.01"),
+            "Caja",
+            null,
+            AccountType.Asset,
+            AccountNature.Debit,
+            true,
+            _createdBy
         );
         var sales = Account.Create(
-            tenant.Id, company.Id, AccountCode.Create("4.1.01"), "Ventas", null,
-            AccountType.Income, AccountNature.Credit, true, _createdBy
+            tenant.Id,
+            company.Id,
+            AccountCode.Create("4.1.01"),
+            "Ventas",
+            null,
+            AccountType.Income,
+            AccountNature.Credit,
+            true,
+            _createdBy
         );
 
         db.Tenants.Add(tenant);
@@ -103,8 +133,16 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
 
     private JournalEntry BalancedEntry(DateOnly date, decimal amount, Guid companyId) =>
         JournalEntry.Create(
-            _tenantId, companyId, date, _accountingPeriodId, 2026,
-            "Sales", "InvoiceIssued", Guid.NewGuid(), $"Venta {amount:F2}", _createdBy
+            _tenantId,
+            companyId,
+            date,
+            _accountingPeriodId,
+            2026,
+            "Sales",
+            "InvoiceIssued",
+            Guid.NewGuid(),
+            $"Venta {amount:F2}",
+            _createdBy
         );
 
     [Fact]
@@ -126,8 +164,14 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
 
         var repo = new JournalEntryRepository(CreateContext());
         var (items, totalCount) = await repo.GetPostedEntriesPageAsync(
-            _tenantId, _companyId, new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31),
-            null, null, 1, 50
+            _tenantId,
+            _companyId,
+            new DateOnly(2026, 8, 1),
+            new DateOnly(2026, 8, 31),
+            null,
+            null,
+            1,
+            50
         );
 
         totalCount.Should().Be(1);
@@ -157,7 +201,9 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
         JournalEntry reversal;
         await using (var db = CreateContext())
         {
-            var loaded = await db.JournalEntries.Include(x => x.Lines).FirstAsync(x => x.Id == original.Id);
+            var loaded = await db
+                .JournalEntries.Include(x => x.Lines)
+                .FirstAsync(x => x.Id == original.Id);
             reversal = loaded.Reverse(_createdBy, 2, "Error de digitación");
             db.JournalEntries.Add(reversal);
             await db.SaveChangesAsync();
@@ -166,17 +212,36 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
         var repo = new JournalEntryRepository(CreateContext());
 
         var (items, totalCount) = await repo.GetPostedEntriesPageAsync(
-            _tenantId, _companyId, new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31),
-            null, null, 1, 50
+            _tenantId,
+            _companyId,
+            new DateOnly(2026, 8, 1),
+            new DateOnly(2026, 8, 31),
+            null,
+            null,
+            1,
+            50
         );
 
-        totalCount.Should().Be(2, because: "el original Reversed y su reverso Posted deben aparecer ambos en el Libro Diario");
+        totalCount
+            .Should()
+            .Be(
+                2,
+                because: "el original Reversed y su reverso Posted deben aparecer ambos en el Libro Diario"
+            );
         items.Select(e => e.Id).Should().BeEquivalentTo(new[] { original.Id, reversal.Id });
-        items.Should().ContainSingle(e => e.Id == original.Id && e.Status == JournalEntryStatus.Reversed);
-        items.Should().ContainSingle(e => e.Id == reversal.Id && e.Status == JournalEntryStatus.Posted);
+        items
+            .Should()
+            .ContainSingle(e => e.Id == original.Id && e.Status == JournalEntryStatus.Reversed);
+        items
+            .Should()
+            .ContainSingle(e => e.Id == reversal.Id && e.Status == JournalEntryStatus.Posted);
 
         var totals = await repo.GetAccountLineTotalsAsync(
-            _tenantId, _companyId, new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31), null
+            _tenantId,
+            _companyId,
+            new DateOnly(2026, 8, 1),
+            new DateOnly(2026, 8, 31),
+            null
         );
 
         // El reverso invierte Débito/Crédito del original — sumando ambos, cada cuenta queda con
@@ -199,19 +264,47 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
 
         // Cuentas propias de la otra Company (Account es CompanyId-scoped — no reutiliza las de _companyId).
         var otherCash = Account.Create(
-            _tenantId, _otherCompanyId, AccountCode.Create("1.1.01"), "Caja (otra)", null,
-            AccountType.Asset, AccountNature.Debit, true, _createdBy
+            _tenantId,
+            _otherCompanyId,
+            AccountCode.Create("1.1.01"),
+            "Caja (otra)",
+            null,
+            AccountType.Asset,
+            AccountNature.Debit,
+            true,
+            _createdBy
         );
         var otherSales = Account.Create(
-            _tenantId, _otherCompanyId, AccountCode.Create("4.1.01"), "Ventas (otra)", null,
-            AccountType.Income, AccountNature.Credit, true, _createdBy
+            _tenantId,
+            _otherCompanyId,
+            AccountCode.Create("4.1.01"),
+            "Ventas (otra)",
+            null,
+            AccountType.Income,
+            AccountNature.Credit,
+            true,
+            _createdBy
         );
         var otherPeriod = AccountingPeriod.Create(
-            _tenantId, _otherCompanyId, 2026, 8, new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31), _createdBy
+            _tenantId,
+            _otherCompanyId,
+            2026,
+            8,
+            new DateOnly(2026, 8, 1),
+            new DateOnly(2026, 8, 31),
+            _createdBy
         );
         var theirs = JournalEntry.Create(
-            _tenantId, _otherCompanyId, new DateOnly(2026, 8, 5), otherPeriod.Id, 2026,
-            "Sales", "InvoiceIssued", Guid.NewGuid(), "Venta de otra company", _createdBy
+            _tenantId,
+            _otherCompanyId,
+            new DateOnly(2026, 8, 5),
+            otherPeriod.Id,
+            2026,
+            "Sales",
+            "InvoiceIssued",
+            Guid.NewGuid(),
+            "Venta de otra company",
+            _createdBy
         );
         theirs.AddLine(otherCash.Id, null, 999m, 0m);
         theirs.AddLine(otherSales.Id, null, 0m, 999m);
@@ -225,12 +318,21 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
 
         var repo = new JournalEntryRepository(CreateContext());
         var totals = await repo.GetAccountLineTotalsAsync(
-            _tenantId, _companyId, new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31), null
+            _tenantId,
+            _companyId,
+            new DateOnly(2026, 8, 1),
+            new DateOnly(2026, 8, 31),
+            null
         );
 
         totals.Should().ContainKey(_cashAccountId);
         totals[_cashAccountId].TotalDebit.Should().Be(100m);
-        totals.Should().NotContainKey(otherCash.Id, because: "GetAccountLineTotalsAsync está scoped a _companyId — nunca debe fugar datos de otra Company");
+        totals
+            .Should()
+            .NotContainKey(
+                otherCash.Id,
+                because: "GetAccountLineTotalsAsync está scoped a _companyId — nunca debe fugar datos de otra Company"
+            );
     }
 
     [Fact]
@@ -253,7 +355,9 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
 
         await using (var db = CreateContext())
         {
-            var loaded = await db.JournalEntries.Include(x => x.Lines).FirstAsync(x => x.Id == original.Id);
+            var loaded = await db
+                .JournalEntries.Include(x => x.Lines)
+                .FirstAsync(x => x.Id == original.Id);
             var reversal = loaded.Reverse(_createdBy, 2, "Factura de compra anulada");
             db.JournalEntries.Add(reversal);
             await db.SaveChangesAsync();
@@ -279,7 +383,9 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
         var cashLine = result.Value.Lines.Single(l => l.AccountId == _cashAccountId);
         cashLine.PeriodDebit.Should().Be(200m);
         cashLine.PeriodCredit.Should().Be(200m);
-        cashLine.ClosingDebit.Should().Be(0m, because: "el movimiento neta en cero, nunca queda un saldo final artificial");
+        cashLine
+            .ClosingDebit.Should()
+            .Be(0m, because: "el movimiento neta en cero, nunca queda un saldo final artificial");
         cashLine.ClosingCredit.Should().Be(0m);
 
         var salesLine = result.Value.Lines.Single(l => l.AccountId == _salesAccountId);
@@ -307,7 +413,9 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
 
         await using (var db = CreateContext())
         {
-            var loaded = await db.JournalEntries.Include(x => x.Lines).FirstAsync(x => x.Id == original.Id);
+            var loaded = await db
+                .JournalEntries.Include(x => x.Lines)
+                .FirstAsync(x => x.Id == original.Id);
             var reversal = loaded.Reverse(_createdBy, 2, "Factura anulada");
             db.JournalEntries.Add(reversal);
             await db.SaveChangesAsync();
@@ -349,7 +457,9 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
 
         await using (var db = CreateContext())
         {
-            var loaded = await db.JournalEntries.Include(x => x.Lines).FirstAsync(x => x.Id == original.Id);
+            var loaded = await db
+                .JournalEntries.Include(x => x.Lines)
+                .FirstAsync(x => x.Id == original.Id);
             var reversal = loaded.Reverse(_createdBy, 2, "Cobro duplicado");
             db.JournalEntries.Add(reversal);
             await db.SaveChangesAsync();
@@ -386,19 +496,47 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
         mine.Post(_createdBy, 1);
 
         var otherCash = Account.Create(
-            _tenantId, _otherCompanyId, AccountCode.Create("1.1.01"), "Caja (otra)", null,
-            AccountType.Asset, AccountNature.Debit, true, _createdBy
+            _tenantId,
+            _otherCompanyId,
+            AccountCode.Create("1.1.01"),
+            "Caja (otra)",
+            null,
+            AccountType.Asset,
+            AccountNature.Debit,
+            true,
+            _createdBy
         );
         var otherSales = Account.Create(
-            _tenantId, _otherCompanyId, AccountCode.Create("4.1.01"), "Ventas (otra)", null,
-            AccountType.Income, AccountNature.Credit, true, _createdBy
+            _tenantId,
+            _otherCompanyId,
+            AccountCode.Create("4.1.01"),
+            "Ventas (otra)",
+            null,
+            AccountType.Income,
+            AccountNature.Credit,
+            true,
+            _createdBy
         );
         var otherPeriod = AccountingPeriod.Create(
-            _tenantId, _otherCompanyId, 2026, 8, new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31), _createdBy
+            _tenantId,
+            _otherCompanyId,
+            2026,
+            8,
+            new DateOnly(2026, 8, 1),
+            new DateOnly(2026, 8, 31),
+            _createdBy
         );
         var theirs = JournalEntry.Create(
-            _tenantId, _otherCompanyId, new DateOnly(2026, 8, 5), otherPeriod.Id, 2026,
-            "Sales", "InvoiceIssued", Guid.NewGuid(), "Venta de otra company", _createdBy
+            _tenantId,
+            _otherCompanyId,
+            new DateOnly(2026, 8, 5),
+            otherPeriod.Id,
+            2026,
+            "Sales",
+            "InvoiceIssued",
+            Guid.NewGuid(),
+            "Venta de otra company",
+            _createdBy
         );
         theirs.AddLine(otherCash.Id, null, 999m, 0m);
         theirs.AddLine(otherSales.Id, null, 0m, 999m);
@@ -424,8 +562,15 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
             CancellationToken.None
         );
 
-        result.Value!.AssetLines.Should().ContainSingle(l => l.AccountId == _cashAccountId && l.Amount == 100m);
-        result.Value.AssetLines.Should().NotContain(l => l.AccountId == otherCash.Id, "Balance General está scoped a _companyId — nunca debe fugar datos de otra Company");
+        result
+            .Value!.AssetLines.Should()
+            .ContainSingle(l => l.AccountId == _cashAccountId && l.Amount == 100m);
+        result
+            .Value.AssetLines.Should()
+            .NotContain(
+                l => l.AccountId == otherCash.Id,
+                "Balance General está scoped a _companyId — nunca debe fugar datos de otra Company"
+            );
     }
 
     // ── ACCOUNTING-REPORTS-QUERY-TRANSLATION-BUG-11E ──────────────────────
@@ -460,11 +605,20 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
         var repo = new JournalEntryRepository(CreateContext());
 
         var rows = await repo.GetPostedLinesByAccountAsync(
-            _tenantId, _companyId, _cashAccountId, new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31)
+            _tenantId,
+            _companyId,
+            _cashAccountId,
+            new DateOnly(2026, 8, 1),
+            new DateOnly(2026, 8, 31)
         );
 
         rows.Should().HaveCount(2);
-        rows[0].EntryNumber.Should().Be(1, "el resultado debe llegar ordenado por EntryDate/EntryNumber, no en orden de inserción");
+        rows[0]
+            .EntryNumber.Should()
+            .Be(
+                1,
+                "el resultado debe llegar ordenado por EntryDate/EntryNumber, no en orden de inserción"
+            );
         rows[1].EntryNumber.Should().Be(2);
 
         var handler = new GetGeneralLedgerReportHandler(
@@ -476,7 +630,11 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
         );
 
         var result = await handler.Handle(
-            new GetGeneralLedgerReportQuery(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31), AccountId: _cashAccountId),
+            new GetGeneralLedgerReportQuery(
+                new DateOnly(2026, 8, 1),
+                new DateOnly(2026, 8, 31),
+                AccountId: _cashAccountId
+            ),
             CancellationToken.None
         );
 
@@ -484,16 +642,30 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
         result.Value!.Accounts.Should().ContainSingle().Which.Movements.Should().HaveCount(2);
     }
 
-    private sealed class NoOpSourceResolver : ERP.Application.Modules.Accounting.Queries.IJournalEntrySourceResolver
+    private sealed class NoOpSourceResolver
+        : ERP.Application.Modules.Accounting.Queries.IJournalEntrySourceResolver
     {
-        public Task<IReadOnlyDictionary<Guid, ERP.Application.Modules.Accounting.Queries.JournalEntrySourceInfo>> ResolveManyAsync(
+        public Task<
+            IReadOnlyDictionary<
+                Guid,
+                ERP.Application.Modules.Accounting.Queries.JournalEntrySourceInfo
+            >
+        > ResolveManyAsync(
             Guid tenantId,
             Guid companyId,
             IReadOnlyList<ERP.Application.Modules.Accounting.Queries.JournalEntrySourceRequest> requests,
             CancellationToken ct = default
         ) =>
-            Task.FromResult<IReadOnlyDictionary<Guid, ERP.Application.Modules.Accounting.Queries.JournalEntrySourceInfo>>(
-                new Dictionary<Guid, ERP.Application.Modules.Accounting.Queries.JournalEntrySourceInfo>()
+            Task.FromResult<
+                IReadOnlyDictionary<
+                    Guid,
+                    ERP.Application.Modules.Accounting.Queries.JournalEntrySourceInfo
+                >
+            >(
+                new Dictionary<
+                    Guid,
+                    ERP.Application.Modules.Accounting.Queries.JournalEntrySourceInfo
+                >()
             );
     }
 

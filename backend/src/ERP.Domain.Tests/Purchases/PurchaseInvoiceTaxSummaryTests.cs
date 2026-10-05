@@ -142,7 +142,9 @@ public sealed class PurchaseInvoiceTaxSummaryTests
         inv.Confirm(UserId);
 
         var summary = inv.TaxSummaries.Single();
-        summary.TotalAmount.Should().Be(summary.TaxableBase + summary.IceAmount + summary.VatAmount);
+        summary
+            .TotalAmount.Should()
+            .Be(summary.TaxableBase + summary.IceAmount + summary.VatAmount);
         summary.IceAmount.Should().BeGreaterThan(0);
     }
 
@@ -213,27 +215,21 @@ public sealed class PurchaseInvoiceTaxSummaryTests
 
     // ── FLOW-READY-02F.1 — dimensión IRBPNR en el resumen fiscal ────────────────────────────
 
-    private static void AttachIrbpnr(
-        PurchaseInvoiceDetail line,
-        string rateCode,
-        decimal amount
-    ) =>
-        line.ReplaceTaxes(
-            [
-                PurchaseInvoiceDetailTax.Create(
-                    line.Id,
-                    TenantId,
-                    "5",
-                    rateCode,
-                    "IRBPNR",
-                    0.02m,
-                    SriTaxCalculationType.Specific,
-                    line.TaxableBase,
-                    amount,
-                    PurchaseTaxSource.Xml
-                ),
-            ]
-        );
+    private static void AttachIrbpnr(PurchaseInvoiceDetail line, string rateCode, decimal amount) =>
+        line.ReplaceTaxes([
+            PurchaseInvoiceDetailTax.Create(
+                line.Id,
+                TenantId,
+                "5",
+                rateCode,
+                "IRBPNR",
+                0.02m,
+                SriTaxCalculationType.Specific,
+                line.TaxableBase,
+                amount,
+                PurchaseTaxSource.Xml
+            ),
+        ]);
 
     [Fact]
     public void Lineas_con_distinto_IrbpnrCode_no_se_mezclan()
@@ -266,8 +262,8 @@ public sealed class PurchaseInvoiceTaxSummaryTests
 
         var summary = inv.TaxSummaries.Single();
         summary.IrbpnrAmount.Should().Be(0.48m);
-        summary.TotalAmount
-            .Should()
+        summary
+            .TotalAmount.Should()
             .Be(summary.TaxableBase + summary.IceAmount + summary.VatAmount + summary.IrbpnrAmount);
     }
 
@@ -321,6 +317,8 @@ public sealed class PurchaseInvoiceTaxSummaryTests
         );
 
         method.Should().NotBeNull();
-        method!.IsAssembly.Should().BeTrue("Create() debe ser internal — solo PurchaseInvoice puede construir summaries");
+        method!
+            .IsAssembly.Should()
+            .BeTrue("Create() debe ser internal — solo PurchaseInvoice puede construir summaries");
     }
 }

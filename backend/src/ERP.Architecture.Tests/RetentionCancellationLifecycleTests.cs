@@ -55,8 +55,12 @@ public sealed class RetentionCancellationLifecycleTests
             .HaveDependencyOn("ERP.Application.Modules.Retentions.Services.IRetentionCanceller")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
-        ApplicationAssembly.GetType("ERP.Application.Modules.Retentions.UseCases.CancelRetentionCommand")
-            .Should().BeNull("la retención solo se anula anulando su documento origen");
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        ApplicationAssembly
+            .GetType("ERP.Application.Modules.Retentions.UseCases.CancelRetentionCommand")
+            .Should()
+            .BeNull("la retención solo se anula anulando su documento origen");
     }
 }

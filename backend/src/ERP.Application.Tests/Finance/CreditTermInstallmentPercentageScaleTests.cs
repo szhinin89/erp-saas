@@ -1,9 +1,9 @@
+using System.Globalization;
 using ERP.Application.Modules.Finance.UseCases.CreditTerms;
 using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Finance.Enums;
 using FluentAssertions;
-using System.Globalization;
 
 namespace ERP.Application.Tests.Finance;
 
@@ -60,10 +60,12 @@ public sealed class CreditTermInstallmentPercentageScaleTests
         foreach (var result in new[] { create, update })
         {
             result.IsValid.Should().BeFalse();
-            result.Errors.Should().Contain(e =>
-                e.PropertyName == "Installments[0].Percentage"
-                && e.ErrorMessage == InstallmentPercentageRules.ScaleMessage
-            );
+            result
+                .Errors.Should()
+                .Contain(e =>
+                    e.PropertyName == "Installments[0].Percentage"
+                    && e.ErrorMessage == InstallmentPercentageRules.ScaleMessage
+                );
         }
     }
 
@@ -85,12 +87,20 @@ public sealed class CreditTermInstallmentPercentageScaleTests
                 Guid.NewGuid(),
                 percentages.Select((p, i) => (i + 1, (i + 1) * 30, p))
             );
-        act.Should().NotThrow("la suma en memoria es 100 exacto: el dominio no detecta el problema");
+        act.Should()
+            .NotThrow("la suma en memoria es 100 exacto: el dominio no detecta el problema");
 
-        foreach (var result in new[] { CreateValidator.Validate(Create(percentages)), UpdateValidator.Validate(Update(percentages)) })
+        foreach (
+            var result in new[]
+            {
+                CreateValidator.Validate(Create(percentages)),
+                UpdateValidator.Validate(Update(percentages)),
+            }
+        )
         {
             result.IsValid.Should().BeFalse();
-            result.Errors.Where(e => e.ErrorMessage == InstallmentPercentageRules.ScaleMessage)
+            result
+                .Errors.Where(e => e.ErrorMessage == InstallmentPercentageRules.ScaleMessage)
                 .Select(e => e.PropertyName)
                 .Should()
                 .BeEquivalentTo("Installments[0].Percentage", "Installments[1].Percentage");

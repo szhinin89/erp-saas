@@ -5,7 +5,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ERP.Infrastructure.Persistence.Configurations.Configuration;
 
-public sealed class ConfigurationChangeLogConfiguration : IEntityTypeConfiguration<ConfigurationChangeLog>
+public sealed class ConfigurationChangeLogConfiguration
+    : IEntityTypeConfiguration<ConfigurationChangeLog>
 {
     private const int KeyMaxLength = 200;
     private const int EntityTypeMaxLength = 40;

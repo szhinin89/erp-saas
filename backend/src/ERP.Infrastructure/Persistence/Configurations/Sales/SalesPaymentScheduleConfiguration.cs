@@ -5,7 +5,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 namespace ERP.Infrastructure.Persistence.Configurations.Sales;
 
 /// <summary>ADR-033, Fase 4 — espejo exacto de PurchasePaymentScheduleConfiguration.</summary>
-public sealed class SalesPaymentScheduleConfiguration : IEntityTypeConfiguration<SalesPaymentSchedule>
+public sealed class SalesPaymentScheduleConfiguration
+    : IEntityTypeConfiguration<SalesPaymentSchedule>
 {
     public void Configure(EntityTypeBuilder<SalesPaymentSchedule> builder)
     {

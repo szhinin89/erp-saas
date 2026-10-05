@@ -41,13 +41,27 @@ public sealed class CompanyPrecisionPolicy : AuditableEntity, ICompanyScopedEnti
         Guid tenantId,
         Guid companyId,
         Guid createdBy
-    ) => Create(tenantId, companyId, PrecisionProfileType.StandardCommercial, PrecisionPolicyDefinitions.Standard, createdBy);
+    ) =>
+        Create(
+            tenantId,
+            companyId,
+            PrecisionProfileType.StandardCommercial,
+            PrecisionPolicyDefinitions.Standard,
+            createdBy
+        );
 
     public static CompanyPrecisionPolicy CreateHighPrecision(
         Guid tenantId,
         Guid companyId,
         Guid createdBy
-    ) => Create(tenantId, companyId, PrecisionProfileType.HighPrecision, PrecisionPolicyDefinitions.HighPrecision, createdBy);
+    ) =>
+        Create(
+            tenantId,
+            companyId,
+            PrecisionProfileType.HighPrecision,
+            PrecisionPolicyDefinitions.HighPrecision,
+            createdBy
+        );
 
     public static CompanyPrecisionPolicy CreateCustom(
         Guid tenantId,

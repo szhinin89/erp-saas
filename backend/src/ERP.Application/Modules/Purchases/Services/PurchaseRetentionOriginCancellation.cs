@@ -35,11 +35,19 @@ public sealed class PurchaseRetentionOriginCancellation : IRetentionOriginCancel
         CancellationToken ct = default
     )
     {
-        var purchase = await _purchases.GetByIdAsync(request.TenantId, request.SourceDocumentId, ct);
+        var purchase = await _purchases.GetByIdAsync(
+            request.TenantId,
+            request.SourceDocumentId,
+            ct
+        );
         if (purchase is null || purchase.CompanyId != request.CompanyId)
-            return Result<RetentionOriginCancellationOutcome>.NotFound("La compra de la retención no existe.");
+            return Result<RetentionOriginCancellationOutcome>.NotFound(
+                "La compra de la retención no existe."
+            );
         if (purchase.Status == PurchaseStatus.Cancelled)
-            return Result<RetentionOriginCancellationOutcome>.Success(RetentionOriginCancellationOutcome.AlreadyCancelled);
+            return Result<RetentionOriginCancellationOutcome>.Success(
+                RetentionOriginCancellationOutcome.AlreadyCancelled
+            );
 
         var result = await _cancelPurchase.ExecuteAsync(
             new PurchaseCancellationContext(
@@ -54,7 +62,9 @@ public sealed class PurchaseRetentionOriginCancellation : IRetentionOriginCancel
             ct
         );
         return result.IsSuccess
-            ? Result<RetentionOriginCancellationOutcome>.Success(RetentionOriginCancellationOutcome.Cancelled)
+            ? Result<RetentionOriginCancellationOutcome>.Success(
+                RetentionOriginCancellationOutcome.Cancelled
+            )
             : Result<RetentionOriginCancellationOutcome>.Failure(result.Error!, result.Code);
     }
 }

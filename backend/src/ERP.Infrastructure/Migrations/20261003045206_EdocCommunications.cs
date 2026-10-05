@@ -15,12 +15,14 @@ namespace ERP.Infrastructure.Migrations
                 name: "reference_id",
                 table: "communication_outbox_attachments",
                 type: "uuid",
-                nullable: true);
+                nullable: true
+            );
 
             migrationBuilder.AddCheckConstraint(
                 name: "ck_communication_outbox_attachments_content_source",
                 table: "communication_outbox_attachments",
-                sql: "file_storage_path IS NOT NULL OR binary_content IS NOT NULL OR reference_id IS NOT NULL");
+                sql: "file_storage_path IS NOT NULL OR binary_content IS NOT NULL OR reference_id IS NOT NULL"
+            );
         }
 
         /// <inheritdoc />
@@ -28,11 +30,13 @@ namespace ERP.Infrastructure.Migrations
         {
             migrationBuilder.DropCheckConstraint(
                 name: "ck_communication_outbox_attachments_content_source",
-                table: "communication_outbox_attachments");
+                table: "communication_outbox_attachments"
+            );
 
             migrationBuilder.DropColumn(
                 name: "reference_id",
-                table: "communication_outbox_attachments");
+                table: "communication_outbox_attachments"
+            );
         }
     }
 }

@@ -114,8 +114,9 @@ public sealed class GetMyAvailableBranchesHandlerTests
                 r.GetCompanyUserMembershipAsync(CompanyId, UserId, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync((CompanyUserMembership?)null);
-        f.OperatorAccessPolicy
-            .Setup(o => o.IsAuthorizedOperatorAsync(It.IsAny<CancellationToken>()))
+        f.OperatorAccessPolicy.Setup(o =>
+                o.IsAuthorizedOperatorAsync(It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(true);
 
         var mainBranch = CreateBranch("Matriz", isMain: true);
@@ -155,13 +156,20 @@ public sealed class GetMyAvailableBranchesHandlerTests
     public async Task Admin_global_con_membership_propia_pero_CompanyUserBranch_revocada_recibe_todas_las_sucursales_activas()
     {
         var f = new Fixture();
-        var membership = CompanyUserMembership.Create(CompanyId, UserId, "Admin", null, Guid.NewGuid());
+        var membership = CompanyUserMembership.Create(
+            CompanyId,
+            UserId,
+            "Admin",
+            null,
+            Guid.NewGuid()
+        );
         f.AccessRepository.Setup(r =>
                 r.GetCompanyUserMembershipAsync(CompanyId, UserId, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(membership);
-        f.OperatorAccessPolicy
-            .Setup(o => o.IsAuthorizedOperatorAsync(It.IsAny<CancellationToken>()))
+        f.OperatorAccessPolicy.Setup(o =>
+                o.IsAuthorizedOperatorAsync(It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(true);
 
         var mainBranch = CreateBranch("Sucursal Principal", isMain: true);
@@ -208,8 +216,9 @@ public sealed class GetMyAvailableBranchesHandlerTests
                 r.GetCompanyUserMembershipAsync(CompanyId, UserId, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync((CompanyUserMembership?)null);
-        f.OperatorAccessPolicy
-            .Setup(o => o.IsAuthorizedOperatorAsync(It.IsAny<CancellationToken>()))
+        f.OperatorAccessPolicy.Setup(o =>
+                o.IsAuthorizedOperatorAsync(It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(true);
         f.BranchRepository.Setup(r =>
                 r.GetByCompanyAsync(TenantId, CompanyId, true, null, It.IsAny<CancellationToken>())
@@ -222,7 +231,8 @@ public sealed class GetMyAvailableBranchesHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value!.Branches.Should().BeEmpty();
         f.BranchRepository.Verify(
-            r => r.GetByCompanyAsync(TenantId, CompanyId, true, null, It.IsAny<CancellationToken>()),
+            r =>
+                r.GetByCompanyAsync(TenantId, CompanyId, true, null, It.IsAny<CancellationToken>()),
             Times.Once
         );
     }

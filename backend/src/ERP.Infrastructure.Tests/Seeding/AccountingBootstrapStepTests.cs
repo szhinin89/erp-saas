@@ -72,7 +72,9 @@ public sealed class AccountingBootstrapStepTests
             // ya cargado, ver AuthorizePurchaseReturnConcurrencyTests) — sin este interceptor
             // (normalmente registrado solo vía DependencyInjection.cs en producción), EF clasifica
             // mal la línea nueva como Modified en vez de Added.
-            .AddInterceptors(new ERP.Infrastructure.Persistence.Interceptors.NewChildEntityTrackingInterceptor())
+            .AddInterceptors(
+                new ERP.Infrastructure.Persistence.Interceptors.NewChildEntityTrackingInterceptor()
+            )
             .Options;
 
         return new ErpDbContext(
@@ -88,17 +90,18 @@ public sealed class AccountingBootstrapStepTests
     {
         var dbName = Guid.NewGuid().ToString();
         await using var db = NewDbContext(dbName);
-        var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+        var step = new AccountingBootstrapStep(
+            db,
+            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+            NullLogger<AccountingBootstrapStep>.Instance
+        );
 
         await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
 
         var accounts = await db.Accounts.Where(a => a.CompanyId == _companyId).ToListAsync();
         accounts.Should().HaveCount(AccountingBootstrapStep.RetailChartAccountCount);
         accounts.Should().OnlyContain(a => a.IsActive);
-        accounts
-            .Where(a => a.ParentAccountId is null)
-            .Should()
-            .OnlyContain(a => !a.AllowsPosting);
+        accounts.Where(a => a.ParentAccountId is null).Should().OnlyContain(a => !a.AllowsPosting);
         accounts.Should().Contain(a => a.Code.Value == "1.1.01.001" && a.Name == "Caja general");
         accounts.Should().Contain(a => a.Code.Value == "1.1.01.002" && a.AllowsPosting);
         accounts.Should().Contain(a => a.Code.Value == "1.1.03.002" && a.AllowsPosting);
@@ -113,15 +116,21 @@ public sealed class AccountingBootstrapStepTests
             .ParentAccountId.Should()
             .Be(cashParent.Id);
         accounts
-            .Where(a => a.AccountType is AccountType.Asset or AccountType.Cost or AccountType.Expense)
+            .Where(a =>
+                a.AccountType is AccountType.Asset or AccountType.Cost or AccountType.Expense
+            )
             .Should()
             .OnlyContain(a => a.Nature == AccountNature.Debit);
         accounts
-            .Where(a => a.AccountType is AccountType.Liability or AccountType.Equity or AccountType.Income)
+            .Where(a =>
+                a.AccountType is AccountType.Liability or AccountType.Equity or AccountType.Income
+            )
             .Should()
             .OnlyContain(a => a.Nature == AccountNature.Credit);
 
-        var periods = await db.AccountingPeriods.Where(p => p.CompanyId == _companyId).ToListAsync();
+        var periods = await db
+            .AccountingPeriods.Where(p => p.CompanyId == _companyId)
+            .ToListAsync();
         periods.Should().ContainSingle();
         periods[0].FiscalYear.Should().Be(DateTime.UtcNow.Year);
         periods[0].StartDate.Should().Be(new DateOnly(DateTime.UtcNow.Year, 1, 1));
@@ -136,13 +145,21 @@ public sealed class AccountingBootstrapStepTests
 
         await using (var db = NewDbContext(dbName))
         {
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
         await using (var db = NewDbContext(dbName))
         {
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
@@ -150,7 +167,9 @@ public sealed class AccountingBootstrapStepTests
         (await verifyDb.Accounts.CountAsync(a => a.CompanyId == _companyId))
             .Should()
             .Be(AccountingBootstrapStep.RetailChartAccountCount);
-        (await verifyDb.AccountingPeriods.CountAsync(p => p.CompanyId == _companyId)).Should().Be(1);
+        (await verifyDb.AccountingPeriods.CountAsync(p => p.CompanyId == _companyId))
+            .Should()
+            .Be(1);
     }
 
     [Fact]
@@ -160,7 +179,11 @@ public sealed class AccountingBootstrapStepTests
 
         await using (var db = NewDbContext(dbName))
         {
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
@@ -175,15 +198,22 @@ public sealed class AccountingBootstrapStepTests
 
         await using (var db = NewDbContext(dbName))
         {
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
         await using var verifyDb = NewDbContext(dbName);
         var accounts = await verifyDb.Accounts.Where(a => a.CompanyId == _companyId).ToListAsync();
         accounts.Should().HaveCount(AccountingBootstrapStep.RetailChartAccountCount);
-        accounts.Should()
-            .Contain(a => a.Code.Value == "6.1.01.001" && a.Name == "Gastos administrativos generales");
+        accounts
+            .Should()
+            .Contain(a =>
+                a.Code.Value == "6.1.01.001" && a.Name == "Gastos administrativos generales"
+            );
     }
 
     [Fact]
@@ -197,17 +227,47 @@ public sealed class AccountingBootstrapStepTests
             {
                 ("1.1.01.001", "Caja General Legacy", AccountType.Asset, AccountNature.Debit),
                 ("1.1.02.001", "Bancos Legacy", AccountType.Asset, AccountNature.Debit),
-                ("1.1.03.001", "Cuentas por cobrar clientes Legacy", AccountType.Asset, AccountNature.Debit),
-                ("1.1.04.001", "Inventario mercaderías Legacy", AccountType.Asset, AccountNature.Debit),
-                ("1.1.05.001", "IVA crédito tributario Legacy", AccountType.Asset, AccountNature.Debit),
-                ("2.1.01.001", "Cuentas por pagar proveedores Legacy", AccountType.Liability, AccountNature.Credit),
+                (
+                    "1.1.03.001",
+                    "Cuentas por cobrar clientes Legacy",
+                    AccountType.Asset,
+                    AccountNature.Debit
+                ),
+                (
+                    "1.1.04.001",
+                    "Inventario mercaderías Legacy",
+                    AccountType.Asset,
+                    AccountNature.Debit
+                ),
+                (
+                    "1.1.05.001",
+                    "IVA crédito tributario Legacy",
+                    AccountType.Asset,
+                    AccountNature.Debit
+                ),
+                (
+                    "2.1.01.001",
+                    "Cuentas por pagar proveedores Legacy",
+                    AccountType.Liability,
+                    AccountNature.Credit
+                ),
                 ("2.1.02.001", "IVA por pagar Legacy", AccountType.Liability, AccountNature.Credit),
                 ("2.1.03.001", "ICE por pagar Legacy", AccountType.Liability, AccountNature.Credit),
                 ("3.1.01.001", "Capital Legacy", AccountType.Equity, AccountNature.Credit),
-                ("3.1.02.001", "Resultados acumulados Legacy", AccountType.Equity, AccountNature.Credit),
+                (
+                    "3.1.02.001",
+                    "Resultados acumulados Legacy",
+                    AccountType.Equity,
+                    AccountNature.Credit
+                ),
                 ("4.1.01.001", "Ventas Legacy", AccountType.Income, AccountNature.Credit),
                 ("5.1.01.001", "Costo de ventas Legacy", AccountType.Cost, AccountNature.Debit),
-                ("6.1.01.001", "Gastos administrativos Legacy", AccountType.Expense, AccountNature.Debit),
+                (
+                    "6.1.01.001",
+                    "Gastos administrativos Legacy",
+                    AccountType.Expense,
+                    AccountNature.Debit
+                ),
             };
 
             foreach (var (code, name, type, nature) in legacyAccounts)
@@ -231,7 +291,11 @@ public sealed class AccountingBootstrapStepTests
 
         await using (var db = NewDbContext(dbName))
         {
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
@@ -242,7 +306,9 @@ public sealed class AccountingBootstrapStepTests
         accounts.Single(a => a.Code.Value == "1.1.01.001").Name.Should().Be("Caja General Legacy");
         accounts.Single(a => a.Code.Value == "1.1.01.001").ParentAccountId.Should().BeNull();
         accounts.Should().Contain(a => a.Code.Value == "1.1.01.002" && a.Name == "Caja chica");
-        accounts.Should().Contain(a => a.Code.Value == "4.1.01.002" && a.Name == "Ventas tarifa 0%");
+        accounts
+            .Should()
+            .Contain(a => a.Code.Value == "4.1.01.002" && a.Name == "Ventas tarifa 0%");
     }
 
     [Fact]
@@ -270,7 +336,11 @@ public sealed class AccountingBootstrapStepTests
 
         await using (var db = NewDbContext(dbName))
         {
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
@@ -288,7 +358,11 @@ public sealed class AccountingBootstrapStepTests
     {
         var dbName = Guid.NewGuid().ToString();
         await using var db = NewDbContext(dbName);
-        var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+        var step = new AccountingBootstrapStep(
+            db,
+            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+            NullLogger<AccountingBootstrapStep>.Instance
+        );
 
         await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
 
@@ -329,16 +403,24 @@ public sealed class AccountingBootstrapStepTests
         // Caja/Banco es siempre dinámica vía PostingFact.Allocations (cuenta real del destino).
         var refundRules = rules.Where(r => r.FactType.StartsWith("SupplierCreditRefund")).ToList();
         refundRules.Should().HaveCount(2);
-        foreach (var (factType, nature) in new[]
+        foreach (
+            var (factType, nature) in new[]
+            {
+                ("SupplierCreditRefunded", AccountNature.Credit),
+                ("SupplierCreditRefundReversed", AccountNature.Debit),
+            }
+        )
         {
-            ("SupplierCreditRefunded", AccountNature.Credit),
-            ("SupplierCreditRefundReversed", AccountNature.Debit),
-        })
-        {
-            var line = refundRules.Single(r => r.FactType == factType).Lines.Should().ContainSingle().Which;
+            var line = refundRules
+                .Single(r => r.FactType == factType)
+                .Lines.Should()
+                .ContainSingle()
+                .Which;
             line.Nature.Should().Be(nature);
             line.AmountKind.Should().Be(PostingAmountKind.GrandTotal);
-            (await db.Accounts.SingleAsync(a => a.Id == line.AccountId)).Code.Value.Should().Be("1.1.03.004");
+            (await db.Accounts.SingleAsync(a => a.Id == line.AccountId))
+                .Code.Value.Should()
+                .Be("1.1.03.004");
         }
 
         // El resto de reglas tiene sus líneas fijas (>=2). Las 2 reglas de Pagos a Proveedores
@@ -352,10 +434,16 @@ public sealed class AccountingBootstrapStepTests
             var rule = rules.Single(r => r.SourceModule == "Payables" && r.FactType == factType);
             rule.Lines.Should().HaveCount(2);
             rule.Lines.Should().OnlyContain(l => l.Nature == nature);
-            var applied = rule.Lines.Single(l => l.AmountKind == PostingAmountKind.AppliedToPayable);
-            (await db.Accounts.SingleAsync(a => a.Id == applied.AccountId)).Code.Value.Should().Be("2.1.01.001");
+            var applied = rule.Lines.Single(l =>
+                l.AmountKind == PostingAmountKind.AppliedToPayable
+            );
+            (await db.Accounts.SingleAsync(a => a.Id == applied.AccountId))
+                .Code.Value.Should()
+                .Be("2.1.01.001");
             var advance = rule.Lines.Single(l => l.AmountKind == PostingAmountKind.SupplierCredit);
-            (await db.Accounts.SingleAsync(a => a.Id == advance.AccountId)).Code.Value.Should().Be("1.1.03.004");
+            (await db.Accounts.SingleAsync(a => a.Id == advance.AccountId))
+                .Code.Value.Should()
+                .Be("1.1.03.004");
         }
 
         await AssertSupplierPaymentRuleAsync("SupplierPaymentConfirmed", AccountNature.Debit);
@@ -363,9 +451,14 @@ public sealed class AccountingBootstrapStepTests
 
         // PAYABLES-PAYMENTS-LEGACY-CLEANUP-14 — "Finance"/"SupplierPaymentApplied" ya no se siembra
         // (sin RegisterPaymentCommand/traductor que lo dispare, sería configuración muerta).
-        rules.Should().NotContain(r => r.SourceModule == "Finance" && r.FactType == "SupplierPaymentApplied");
-        rules.Should()
-            .NotContain(r => r.SourceModule == "Purchases" && r.FactType == "PurchaseCreditNoteCancelled");
+        rules
+            .Should()
+            .NotContain(r => r.SourceModule == "Finance" && r.FactType == "SupplierPaymentApplied");
+        rules
+            .Should()
+            .NotContain(r =>
+                r.SourceModule == "Purchases" && r.FactType == "PurchaseCreditNoteCancelled"
+            );
     }
 
     /// <summary>
@@ -379,7 +472,11 @@ public sealed class AccountingBootstrapStepTests
     {
         var dbName = Guid.NewGuid().ToString();
         await using var db = NewDbContext(dbName);
-        var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+        var step = new AccountingBootstrapStep(
+            db,
+            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+            NullLogger<AccountingBootstrapStep>.Instance
+        );
 
         await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
 
@@ -393,19 +490,27 @@ public sealed class AccountingBootstrapStepTests
         rule.Lines.Should().HaveCount(4);
 
         var discountAccountId = (
-            await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "4.2.01.002")
+            await db.Accounts.SingleAsync(a =>
+                a.CompanyId == _companyId && a.Code.Value == "4.2.01.002"
+            )
         ).Id;
 
-        var subtotalLine = rule.Lines.Should().ContainSingle(l => l.AmountKind == PostingAmountKind.Subtotal).Which;
+        var subtotalLine = rule
+            .Lines.Should()
+            .ContainSingle(l => l.AmountKind == PostingAmountKind.Subtotal)
+            .Which;
         subtotalLine.Nature.Should().Be(AccountNature.Credit);
         subtotalLine.AccountId.Should().Be(discountAccountId);
 
-        var iceLine = rule.Lines.Should().ContainSingle(l => l.AmountKind == PostingAmountKind.TaxIce).Which;
+        var iceLine = rule
+            .Lines.Should()
+            .ContainSingle(l => l.AmountKind == PostingAmountKind.TaxIce)
+            .Which;
         iceLine.Nature.Should().Be(AccountNature.Credit);
         iceLine.AccountId.Should().Be(discountAccountId);
 
-        var accountCodesById = await db.Accounts
-            .Where(a => a.CompanyId == _companyId)
+        var accountCodesById = await db
+            .Accounts.Where(a => a.CompanyId == _companyId)
             .ToDictionaryAsync(a => a.Id, a => a.Code.Value);
         rule.Lines.Select(l => accountCodesById[l.AccountId])
             .Should()
@@ -426,37 +531,61 @@ public sealed class AccountingBootstrapStepTests
     {
         var dbName = Guid.NewGuid().ToString();
         await using var db = NewDbContext(dbName);
-        var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+        var step = new AccountingBootstrapStep(
+            db,
+            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+            NullLogger<AccountingBootstrapStep>.Instance
+        );
 
         await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
 
         var rule = await db
             .PostingRules.Include(r => r.Lines)
             .SingleAsync(r =>
-                r.CompanyId == _companyId && r.SourceModule == "Retentions" && r.FactType == "DocumentIssued"
+                r.CompanyId == _companyId
+                && r.SourceModule == "Retentions"
+                && r.FactType == "DocumentIssued"
             );
 
         rule.IsActive.Should().BeTrue();
         rule.Lines.Should().HaveCount(3);
 
-        var debitLine = rule.Lines.Should().ContainSingle(l => l.Nature == AccountNature.Debit).Which;
+        var debitLine = rule
+            .Lines.Should()
+            .ContainSingle(l => l.Nature == AccountNature.Debit)
+            .Which;
         debitLine.AmountKind.Should().Be(PostingAmountKind.Retention);
-        (await db.Accounts.SingleAsync(a => a.Id == debitLine.AccountId)).Code.Value
-            .Should()
-            .Be("2.1.01.001", because: "Debe = CxP proveedor, cuenta genérica ya usada por el resto del ERP");
+        (await db.Accounts.SingleAsync(a => a.Id == debitLine.AccountId))
+            .Code.Value.Should()
+            .Be(
+                "2.1.01.001",
+                because: "Debe = CxP proveedor, cuenta genérica ya usada por el resto del ERP"
+            );
 
         var creditLines = rule.Lines.Where(l => l.Nature == AccountNature.Credit).ToList();
         creditLines.Should().HaveCount(2);
 
-        var vatLine = creditLines.Should().ContainSingle(l => l.AmountKind == PostingAmountKind.RetentionVat).Which;
-        (await db.Accounts.SingleAsync(a => a.Id == vatLine.AccountId)).Code.Value
+        var vatLine = creditLines
             .Should()
-            .Be("2.1.02.002", because: "Haber = Retenciones IVA por pagar, cuenta canónica del plan retail");
+            .ContainSingle(l => l.AmountKind == PostingAmountKind.RetentionVat)
+            .Which;
+        (await db.Accounts.SingleAsync(a => a.Id == vatLine.AccountId))
+            .Code.Value.Should()
+            .Be(
+                "2.1.02.002",
+                because: "Haber = Retenciones IVA por pagar, cuenta canónica del plan retail"
+            );
 
-        var incomeLine = creditLines.Should().ContainSingle(l => l.AmountKind == PostingAmountKind.RetentionIncome).Which;
-        (await db.Accounts.SingleAsync(a => a.Id == incomeLine.AccountId)).Code.Value
+        var incomeLine = creditLines
             .Should()
-            .Be("2.1.02.003", because: "Haber = Retenciones Renta por pagar, cuenta canónica del plan retail ya sembrada sin usar");
+            .ContainSingle(l => l.AmountKind == PostingAmountKind.RetentionIncome)
+            .Which;
+        (await db.Accounts.SingleAsync(a => a.Id == incomeLine.AccountId))
+            .Code.Value.Should()
+            .Be(
+                "2.1.02.003",
+                because: "Haber = Retenciones Renta por pagar, cuenta canónica del plan retail ya sembrada sin usar"
+            );
     }
 
     /// <summary>
@@ -472,29 +601,44 @@ public sealed class AccountingBootstrapStepTests
     {
         var dbName = Guid.NewGuid().ToString();
         await using var db = NewDbContext(dbName);
-        var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+        var step = new AccountingBootstrapStep(
+            db,
+            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+            NullLogger<AccountingBootstrapStep>.Instance
+        );
 
         await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
 
         var rule = await db
             .PostingRules.Include(r => r.Lines)
             .SingleAsync(r =>
-                r.CompanyId == _companyId && r.SourceModule == "Expenses" && r.FactType == "DocumentConfirmed"
+                r.CompanyId == _companyId
+                && r.SourceModule == "Expenses"
+                && r.FactType == "DocumentConfirmed"
             );
 
         rule.IsActive.Should().BeTrue();
         rule.Lines.Should().HaveCount(2);
 
-        var debitLine = rule.Lines.Should().ContainSingle(l => l.Nature == AccountNature.Debit).Which;
+        var debitLine = rule
+            .Lines.Should()
+            .ContainSingle(l => l.Nature == AccountNature.Debit)
+            .Which;
         debitLine.AmountKind.Should().Be(PostingAmountKind.TaxVat);
-        (await db.Accounts.SingleAsync(a => a.Id == debitLine.AccountId)).Code.Value
-            .Should()
-            .Be("1.1.05.001", because: "Debe = IVA crédito tributario, se omite en cero si el gasto no tiene IVA");
+        (await db.Accounts.SingleAsync(a => a.Id == debitLine.AccountId))
+            .Code.Value.Should()
+            .Be(
+                "1.1.05.001",
+                because: "Debe = IVA crédito tributario, se omite en cero si el gasto no tiene IVA"
+            );
 
-        var creditLine = rule.Lines.Should().ContainSingle(l => l.Nature == AccountNature.Credit).Which;
+        var creditLine = rule
+            .Lines.Should()
+            .ContainSingle(l => l.Nature == AccountNature.Credit)
+            .Which;
         creditLine.AmountKind.Should().Be(PostingAmountKind.GrandTotal);
-        (await db.Accounts.SingleAsync(a => a.Id == creditLine.AccountId)).Code.Value
-            .Should()
+        (await db.Accounts.SingleAsync(a => a.Id == creditLine.AccountId))
+            .Code.Value.Should()
             .Be("2.1.01.001", because: "Haber = CxP proveedores por el total del gasto");
     }
 
@@ -514,14 +658,20 @@ public sealed class AccountingBootstrapStepTests
     {
         var dbName = Guid.NewGuid().ToString();
         await using var db = NewDbContext(dbName);
-        var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+        var step = new AccountingBootstrapStep(
+            db,
+            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+            NullLogger<AccountingBootstrapStep>.Instance
+        );
 
         await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
 
         var rule = await db
             .PostingRules.Include(r => r.Lines)
             .SingleAsync(r =>
-                r.CompanyId == _companyId && r.SourceModule == "Purchases" && r.FactType == "PurchaseReturn"
+                r.CompanyId == _companyId
+                && r.SourceModule == "Purchases"
+                && r.FactType == "PurchaseReturn"
             );
 
         rule.IsActive.Should().BeTrue();
@@ -530,18 +680,30 @@ public sealed class AccountingBootstrapStepTests
         var debitLines = rule.Lines.Where(l => l.Nature == AccountNature.Debit).ToList();
         debitLines.Should().HaveCount(3);
 
-        var payableLine = debitLines.Should().ContainSingle(l => l.AmountKind == PostingAmountKind.AppliedToPayable).Which;
-        (await db.Accounts.SingleAsync(a => a.Id == payableLine.AccountId)).Code.Value
+        var payableLine = debitLines
             .Should()
-            .Be("2.1.01.001", because: "Debe = CxP proveedores, se reduce por el monto aplicado de la devolución");
+            .ContainSingle(l => l.AmountKind == PostingAmountKind.AppliedToPayable)
+            .Which;
+        (await db.Accounts.SingleAsync(a => a.Id == payableLine.AccountId))
+            .Code.Value.Should()
+            .Be(
+                "2.1.01.001",
+                because: "Debe = CxP proveedores, se reduce por el monto aplicado de la devolución"
+            );
 
         var creditLines = rule.Lines.Where(l => l.Nature == AccountNature.Credit).ToList();
         creditLines.Should().HaveCount(5);
 
-        var inventoryLine = creditLines.Should().ContainSingle(l => l.AmountKind == PostingAmountKind.HistoricalCost).Which;
-        (await db.Accounts.SingleAsync(a => a.Id == inventoryLine.AccountId)).Code.Value
+        var inventoryLine = creditLines
             .Should()
-            .Be("1.1.04.001", because: "Haber = Inventario mercaderías, por el costo histórico de lo devuelto");
+            .ContainSingle(l => l.AmountKind == PostingAmountKind.HistoricalCost)
+            .Which;
+        (await db.Accounts.SingleAsync(a => a.Id == inventoryLine.AccountId))
+            .Code.Value.Should()
+            .Be(
+                "1.1.04.001",
+                because: "Haber = Inventario mercaderías, por el costo histórico de lo devuelto"
+            );
     }
 
     /// <summary>
@@ -559,14 +721,20 @@ public sealed class AccountingBootstrapStepTests
     {
         var dbName = Guid.NewGuid().ToString();
         await using var db = NewDbContext(dbName);
-        var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+        var step = new AccountingBootstrapStep(
+            db,
+            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+            NullLogger<AccountingBootstrapStep>.Instance
+        );
 
         await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
 
         var rule = await db
             .PostingRules.Include(r => r.Lines)
             .SingleAsync(r =>
-                r.CompanyId == _companyId && r.SourceModule == "Purchases" && r.FactType == "PurchaseReturnCancelled"
+                r.CompanyId == _companyId
+                && r.SourceModule == "Purchases"
+                && r.FactType == "PurchaseReturnCancelled"
             );
 
         rule.IsActive.Should().BeTrue();
@@ -575,18 +743,30 @@ public sealed class AccountingBootstrapStepTests
         var debitLines = rule.Lines.Where(l => l.Nature == AccountNature.Debit).ToList();
         debitLines.Should().HaveCount(5);
 
-        var inventoryLine = debitLines.Should().ContainSingle(l => l.AmountKind == PostingAmountKind.HistoricalCost).Which;
-        (await db.Accounts.SingleAsync(a => a.Id == inventoryLine.AccountId)).Code.Value
+        var inventoryLine = debitLines
             .Should()
-            .Be("1.1.04.001", because: "Debe = Inventario mercaderías, vuelve a aumentar al cancelar la devolución");
+            .ContainSingle(l => l.AmountKind == PostingAmountKind.HistoricalCost)
+            .Which;
+        (await db.Accounts.SingleAsync(a => a.Id == inventoryLine.AccountId))
+            .Code.Value.Should()
+            .Be(
+                "1.1.04.001",
+                because: "Debe = Inventario mercaderías, vuelve a aumentar al cancelar la devolución"
+            );
 
         var creditLines = rule.Lines.Where(l => l.Nature == AccountNature.Credit).ToList();
         creditLines.Should().HaveCount(3);
 
-        var payableLine = creditLines.Should().ContainSingle(l => l.AmountKind == PostingAmountKind.AppliedToPayable).Which;
-        (await db.Accounts.SingleAsync(a => a.Id == payableLine.AccountId)).Code.Value
+        var payableLine = creditLines
             .Should()
-            .Be("2.1.01.001", because: "Haber = CxP proveedores, vuelve a aumentar lo exigible al cancelar");
+            .ContainSingle(l => l.AmountKind == PostingAmountKind.AppliedToPayable)
+            .Which;
+        (await db.Accounts.SingleAsync(a => a.Id == payableLine.AccountId))
+            .Code.Value.Should()
+            .Be(
+                "2.1.01.001",
+                because: "Haber = CxP proveedores, vuelve a aumentar lo exigible al cancelar"
+            );
     }
 
     /// <summary>
@@ -600,25 +780,44 @@ public sealed class AccountingBootstrapStepTests
     {
         var dbName = Guid.NewGuid().ToString();
         await using var db = NewDbContext(dbName);
-        var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+        var step = new AccountingBootstrapStep(
+            db,
+            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+            NullLogger<AccountingBootstrapStep>.Instance
+        );
 
         await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
 
         var authorizedRule = await db
             .PostingRules.Include(r => r.Lines)
             .SingleAsync(r =>
-                r.CompanyId == _companyId && r.SourceModule == "Purchases" && r.FactType == "PurchaseReturn"
+                r.CompanyId == _companyId
+                && r.SourceModule == "Purchases"
+                && r.FactType == "PurchaseReturn"
             );
         var cancelledRule = await db
             .PostingRules.Include(r => r.Lines)
             .SingleAsync(r =>
-                r.CompanyId == _companyId && r.SourceModule == "Purchases" && r.FactType == "PurchaseReturnCancelled"
+                r.CompanyId == _companyId
+                && r.SourceModule == "Purchases"
+                && r.FactType == "PurchaseReturnCancelled"
             );
 
-        var accountCodesById = (await db.Accounts.ToListAsync()).ToDictionary(a => a.Id, a => a.Code.Value);
+        var accountCodesById = (await db.Accounts.ToListAsync()).ToDictionary(
+            a => a.Id,
+            a => a.Code.Value
+        );
 
         var authorizedShape = authorizedRule
-            .Lines.Select(l => (l.AmountKind, AccountCode: accountCodesById[l.AccountId], InvertedNature: l.Nature == AccountNature.Debit ? AccountNature.Credit : AccountNature.Debit))
+            .Lines.Select(l =>
+                (
+                    l.AmountKind,
+                    AccountCode: accountCodesById[l.AccountId],
+                    InvertedNature: l.Nature == AccountNature.Debit
+                        ? AccountNature.Credit
+                        : AccountNature.Debit
+                )
+            )
             .OrderBy(x => x.AmountKind)
             .ToList();
         var cancelledShape = cancelledRule
@@ -648,30 +847,48 @@ public sealed class AccountingBootstrapStepTests
     {
         var dbName = Guid.NewGuid().ToString();
         await using var db = NewDbContext(dbName);
-        var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+        var step = new AccountingBootstrapStep(
+            db,
+            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+            NullLogger<AccountingBootstrapStep>.Instance
+        );
 
         await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
 
         var rule = await db
             .PostingRules.Include(r => r.Lines)
             .SingleAsync(r =>
-                r.CompanyId == _companyId && r.SourceModule == "Purchases" && r.FactType == "SupplierCreditApplied"
+                r.CompanyId == _companyId
+                && r.SourceModule == "Purchases"
+                && r.FactType == "SupplierCreditApplied"
             );
 
         rule.IsActive.Should().BeTrue();
         rule.Lines.Should().HaveCount(2);
 
-        var debitLine = rule.Lines.Should().ContainSingle(l => l.Nature == AccountNature.Debit).Which;
+        var debitLine = rule
+            .Lines.Should()
+            .ContainSingle(l => l.Nature == AccountNature.Debit)
+            .Which;
         debitLine.AmountKind.Should().Be(PostingAmountKind.GrandTotal);
-        (await db.Accounts.SingleAsync(a => a.Id == debitLine.AccountId)).Code.Value
-            .Should()
-            .Be("2.1.01.001", because: "Debe = CxP proveedores, se reduce por el monto de crédito aplicado a la factura destino");
+        (await db.Accounts.SingleAsync(a => a.Id == debitLine.AccountId))
+            .Code.Value.Should()
+            .Be(
+                "2.1.01.001",
+                because: "Debe = CxP proveedores, se reduce por el monto de crédito aplicado a la factura destino"
+            );
 
-        var creditLine = rule.Lines.Should().ContainSingle(l => l.Nature == AccountNature.Credit).Which;
+        var creditLine = rule
+            .Lines.Should()
+            .ContainSingle(l => l.Nature == AccountNature.Credit)
+            .Which;
         creditLine.AmountKind.Should().Be(PostingAmountKind.GrandTotal);
-        (await db.Accounts.SingleAsync(a => a.Id == creditLine.AccountId)).Code.Value
-            .Should()
-            .Be("1.1.03.004", because: "Haber = Anticipos a proveedores, se reduce el crédito a favor ya reconocido como activo");
+        (await db.Accounts.SingleAsync(a => a.Id == creditLine.AccountId))
+            .Code.Value.Should()
+            .Be(
+                "1.1.03.004",
+                because: "Haber = Anticipos a proveedores, se reduce el crédito a favor ya reconocido como activo"
+            );
     }
 
     /// <summary>
@@ -687,30 +904,48 @@ public sealed class AccountingBootstrapStepTests
     {
         var dbName = Guid.NewGuid().ToString();
         await using var db = NewDbContext(dbName);
-        var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+        var step = new AccountingBootstrapStep(
+            db,
+            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+            NullLogger<AccountingBootstrapStep>.Instance
+        );
 
         await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
 
         var rule = await db
             .PostingRules.Include(r => r.Lines)
             .SingleAsync(r =>
-                r.CompanyId == _companyId && r.SourceModule == "Purchases" && r.FactType == "SupplierCreditApplicationReversed"
+                r.CompanyId == _companyId
+                && r.SourceModule == "Purchases"
+                && r.FactType == "SupplierCreditApplicationReversed"
             );
 
         rule.IsActive.Should().BeTrue();
         rule.Lines.Should().HaveCount(2);
 
-        var debitLine = rule.Lines.Should().ContainSingle(l => l.Nature == AccountNature.Debit).Which;
+        var debitLine = rule
+            .Lines.Should()
+            .ContainSingle(l => l.Nature == AccountNature.Debit)
+            .Which;
         debitLine.AmountKind.Should().Be(PostingAmountKind.GrandTotal);
-        (await db.Accounts.SingleAsync(a => a.Id == debitLine.AccountId)).Code.Value
-            .Should()
-            .Be("1.1.03.004", because: "Debe = Anticipos a proveedores, vuelve a aumentar el crédito a favor al revertir la aplicación");
+        (await db.Accounts.SingleAsync(a => a.Id == debitLine.AccountId))
+            .Code.Value.Should()
+            .Be(
+                "1.1.03.004",
+                because: "Debe = Anticipos a proveedores, vuelve a aumentar el crédito a favor al revertir la aplicación"
+            );
 
-        var creditLine = rule.Lines.Should().ContainSingle(l => l.Nature == AccountNature.Credit).Which;
+        var creditLine = rule
+            .Lines.Should()
+            .ContainSingle(l => l.Nature == AccountNature.Credit)
+            .Which;
         creditLine.AmountKind.Should().Be(PostingAmountKind.GrandTotal);
-        (await db.Accounts.SingleAsync(a => a.Id == creditLine.AccountId)).Code.Value
-            .Should()
-            .Be("2.1.01.001", because: "Haber = CxP proveedores, vuelve a aumentar lo exigible de la factura destino al revertir");
+        (await db.Accounts.SingleAsync(a => a.Id == creditLine.AccountId))
+            .Code.Value.Should()
+            .Be(
+                "2.1.01.001",
+                because: "Haber = CxP proveedores, vuelve a aumentar lo exigible de la factura destino al revertir"
+            );
     }
 
     /// <summary>
@@ -725,25 +960,44 @@ public sealed class AccountingBootstrapStepTests
     {
         var dbName = Guid.NewGuid().ToString();
         await using var db = NewDbContext(dbName);
-        var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+        var step = new AccountingBootstrapStep(
+            db,
+            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+            NullLogger<AccountingBootstrapStep>.Instance
+        );
 
         await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
 
         var appliedRule = await db
             .PostingRules.Include(r => r.Lines)
             .SingleAsync(r =>
-                r.CompanyId == _companyId && r.SourceModule == "Purchases" && r.FactType == "SupplierCreditApplied"
+                r.CompanyId == _companyId
+                && r.SourceModule == "Purchases"
+                && r.FactType == "SupplierCreditApplied"
             );
         var reversedRule = await db
             .PostingRules.Include(r => r.Lines)
             .SingleAsync(r =>
-                r.CompanyId == _companyId && r.SourceModule == "Purchases" && r.FactType == "SupplierCreditApplicationReversed"
+                r.CompanyId == _companyId
+                && r.SourceModule == "Purchases"
+                && r.FactType == "SupplierCreditApplicationReversed"
             );
 
-        var accountCodesById = (await db.Accounts.ToListAsync()).ToDictionary(a => a.Id, a => a.Code.Value);
+        var accountCodesById = (await db.Accounts.ToListAsync()).ToDictionary(
+            a => a.Id,
+            a => a.Code.Value
+        );
 
         var appliedShape = appliedRule
-            .Lines.Select(l => (l.AmountKind, AccountCode: accountCodesById[l.AccountId], InvertedNature: l.Nature == AccountNature.Debit ? AccountNature.Credit : AccountNature.Debit))
+            .Lines.Select(l =>
+                (
+                    l.AmountKind,
+                    AccountCode: accountCodesById[l.AccountId],
+                    InvertedNature: l.Nature == AccountNature.Debit
+                        ? AccountNature.Credit
+                        : AccountNature.Debit
+                )
+            )
             .OrderBy(x => x.AmountKind)
             .ToList();
         var reversedShape = reversedRule
@@ -792,15 +1046,23 @@ public sealed class AccountingBootstrapStepTests
 
         await using (var db = NewDbContext(dbName))
         {
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
         await using var verifyDb = NewDbContext(dbName);
         var rules = await verifyDb.PostingRules.Where(r => r.CompanyId == _companyId).ToListAsync();
-        rules.Should().NotContain(r => r.SourceModule == "Retentions" && r.FactType == "DocumentIssued");
+        rules
+            .Should()
+            .NotContain(r => r.SourceModule == "Retentions" && r.FactType == "DocumentIssued");
         rules.Should().Contain(r => r.SourceModule == "Sales" && r.FactType == "InvoiceIssued");
-        rules.Should().Contain(r => r.SourceModule == "Payables" && r.FactType == "SupplierPaymentConfirmed");
+        rules
+            .Should()
+            .Contain(r => r.SourceModule == "Payables" && r.FactType == "SupplierPaymentConfirmed");
     }
 
     /// <summary>
@@ -834,15 +1096,23 @@ public sealed class AccountingBootstrapStepTests
 
         await using (var db = NewDbContext(dbName))
         {
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
         await using var verifyDb = NewDbContext(dbName);
         var rules = await verifyDb.PostingRules.Where(r => r.CompanyId == _companyId).ToListAsync();
-        rules.Should().NotContain(r => r.SourceModule == "Expenses" && r.FactType == "DocumentConfirmed");
+        rules
+            .Should()
+            .NotContain(r => r.SourceModule == "Expenses" && r.FactType == "DocumentConfirmed");
         rules.Should().Contain(r => r.SourceModule == "Sales" && r.FactType == "InvoiceIssued");
-        rules.Should().Contain(r => r.SourceModule == "Retentions" && r.FactType == "DocumentIssued");
+        rules
+            .Should()
+            .Contain(r => r.SourceModule == "Retentions" && r.FactType == "DocumentIssued");
     }
 
     [Fact]
@@ -870,19 +1140,26 @@ public sealed class AccountingBootstrapStepTests
 
         await using (var db = NewDbContext(dbName))
         {
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
         await using var verifyDb = NewDbContext(dbName);
         var rules = await verifyDb.PostingRules.Where(r => r.CompanyId == _companyId).ToListAsync();
-        rules.Should()
+        rules
+            .Should()
             .NotContain(r => r.SourceModule == "Finance" && r.FactType == "CollectionApplied");
         // SALES-CASH-VS-RECEIVABLE-POSTING-SPLIT-AND-CANCEL-REVERSAL-01 Lote 3 — "1.1.01.001 Caja
         // general" ahora también es la cuenta de la línea Debe CashApplied de "Sales"/
         // "InvoiceIssued" (antes solo la usaba "Finance"/"CollectionApplied"), así que una cuenta
         // "1.1.01.001" no postable ahora bloquea AMBAS reglas fail-closed, no solo CollectionApplied.
-        rules.Should().NotContain(r => r.SourceModule == "Sales" && r.FactType == "InvoiceIssued");
+        rules
+            .Should()
+            .NotContain(r => r.SourceModule == "Sales" && r.FactType == "InvoiceIssued");
     }
 
     [Fact]
@@ -890,7 +1167,11 @@ public sealed class AccountingBootstrapStepTests
     {
         var dbName = Guid.NewGuid().ToString();
         await using var db = NewDbContext(dbName);
-        var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+        var step = new AccountingBootstrapStep(
+            db,
+            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+            NullLogger<AccountingBootstrapStep>.Instance
+        );
 
         await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
 
@@ -912,13 +1193,21 @@ public sealed class AccountingBootstrapStepTests
 
         await using (var db = NewDbContext(dbName))
         {
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
         await using (var db = NewDbContext(dbName))
         {
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
@@ -935,14 +1224,20 @@ public sealed class AccountingBootstrapStepTests
 
         await using (var db = NewDbContext(dbName))
         {
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
         await using (var db = NewDbContext(dbName))
         {
             var rule = await db.PostingRules.SingleAsync(r =>
-                r.CompanyId == _companyId && r.SourceModule == "Sales" && r.FactType == "InvoiceIssued"
+                r.CompanyId == _companyId
+                && r.SourceModule == "Sales"
+                && r.FactType == "InvoiceIssued"
             );
             rule.Disable(_actorId);
             await db.SaveChangesAsync();
@@ -950,18 +1245,27 @@ public sealed class AccountingBootstrapStepTests
 
         await using (var db = NewDbContext(dbName))
         {
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
         await using var verifyDb = NewDbContext(dbName);
         var rules = await verifyDb
             .PostingRules.Where(r =>
-                r.CompanyId == _companyId && r.SourceModule == "Sales" && r.FactType == "InvoiceIssued"
+                r.CompanyId == _companyId
+                && r.SourceModule == "Sales"
+                && r.FactType == "InvoiceIssued"
             )
             .ToListAsync();
-        rules.Should()
-            .ContainSingle(because: "la regla ya existe (aunque deshabilitada) — el seed nunca re-crea ni reactiva una regla existente")
+        rules
+            .Should()
+            .ContainSingle(
+                because: "la regla ya existe (aunque deshabilitada) — el seed nunca re-crea ni reactiva una regla existente"
+            )
             .Which.IsActive.Should()
             .BeFalse();
     }
@@ -977,7 +1281,11 @@ public sealed class AccountingBootstrapStepTests
     {
         var dbName = Guid.NewGuid().ToString();
         await using var db = NewDbContext(dbName);
-        var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+        var step = new AccountingBootstrapStep(
+            db,
+            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+            NullLogger<AccountingBootstrapStep>.Instance
+        );
 
         await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
 
@@ -1002,7 +1310,11 @@ public sealed class AccountingBootstrapStepTests
     {
         var dbName = Guid.NewGuid().ToString();
         await using var db = NewDbContext(dbName);
-        var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+        var step = new AccountingBootstrapStep(
+            db,
+            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+            NullLogger<AccountingBootstrapStep>.Instance
+        );
 
         await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
 
@@ -1057,7 +1369,11 @@ public sealed class AccountingBootstrapStepTests
             // Seed inicial (crea el plan de cuentas, incluida 2.1.02.003 sin usar) y luego se
             // reemplazan las líneas de Retentions/DocumentIssued por la forma vieja de 01H —
             // simula una company que pasó por el seed antes de que 02C existiera.
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
@@ -1074,14 +1390,25 @@ public sealed class AccountingBootstrapStepTests
             await db.SaveChangesAsync();
 
             var payablesAccountId = (
-                await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "2.1.01.001")
+                await db.Accounts.SingleAsync(a =>
+                    a.CompanyId == _companyId && a.Code.Value == "2.1.01.001"
+                )
             ).Id;
             var vatAccountId = (
-                await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "2.1.02.002")
+                await db.Accounts.SingleAsync(a =>
+                    a.CompanyId == _companyId && a.Code.Value == "2.1.02.002"
+                )
             ).Id;
 
             var legacyRule = ERP.Domain.Modules.Accounting.Entities.PostingRule.Create(
-                _tenantId, _companyId, "Retentions", "DocumentIssued", null, null, null, _actorId
+                _tenantId,
+                _companyId,
+                "Retentions",
+                "DocumentIssued",
+                null,
+                null,
+                null,
+                _actorId
             );
             legacyRule.AddLine(payablesAccountId, AccountNature.Debit, PostingAmountKind.Retention);
             legacyRule.AddLine(vatAccountId, AccountNature.Credit, PostingAmountKind.Retention);
@@ -1092,7 +1419,11 @@ public sealed class AccountingBootstrapStepTests
 
         await using (var db = NewDbContext(dbName))
         {
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
@@ -1100,7 +1431,9 @@ public sealed class AccountingBootstrapStepTests
         var corrected = await verifyDb
             .PostingRules.Include(r => r.Lines)
             .SingleAsync(r =>
-                r.CompanyId == _companyId && r.SourceModule == "Retentions" && r.FactType == "DocumentIssued"
+                r.CompanyId == _companyId
+                && r.SourceModule == "Retentions"
+                && r.FactType == "DocumentIssued"
             );
 
         corrected.Lines.Should().HaveCount(3);
@@ -1109,14 +1442,18 @@ public sealed class AccountingBootstrapStepTests
             .ContainSingle(l => l.Id == debitLineId, because: "el Debe de CxP proveedor no se toca")
             .Which.AmountKind.Should()
             .Be(PostingAmountKind.Retention);
-        corrected.Lines.Where(l => l.Nature == AccountNature.Credit).Select(l => l.AmountKind)
+        corrected
+            .Lines.Where(l => l.Nature == AccountNature.Credit)
+            .Select(l => l.AmountKind)
             .Should()
-            .BeEquivalentTo(new[] { PostingAmountKind.RetentionVat, PostingAmountKind.RetentionIncome });
+            .BeEquivalentTo(
+                new[] { PostingAmountKind.RetentionVat, PostingAmountKind.RetentionIncome }
+            );
         var incomeAccountId = corrected
             .Lines.Single(l => l.AmountKind == PostingAmountKind.RetentionIncome)
             .AccountId;
-        (await verifyDb.Accounts.SingleAsync(a => a.Id == incomeAccountId)).Code.Value
-            .Should()
+        (await verifyDb.Accounts.SingleAsync(a => a.Id == incomeAccountId))
+            .Code.Value.Should()
             .Be("2.1.02.003");
     }
 
@@ -1133,7 +1470,11 @@ public sealed class AccountingBootstrapStepTests
 
         await using (var db = NewDbContext(dbName))
         {
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
@@ -1151,7 +1492,11 @@ public sealed class AccountingBootstrapStepTests
 
         await using (var db = NewDbContext(dbName))
         {
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
@@ -1159,13 +1504,20 @@ public sealed class AccountingBootstrapStepTests
         var rules = await verifyDb
             .PostingRules.Include(r => r.Lines)
             .Where(r =>
-                r.CompanyId == _companyId && r.SourceModule == "Retentions" && r.FactType == "DocumentIssued"
+                r.CompanyId == _companyId
+                && r.SourceModule == "Retentions"
+                && r.FactType == "DocumentIssued"
             )
             .ToListAsync();
 
         rules.Should().ContainSingle();
         var finalLineIds = rules[0].Lines.Select(l => l.Id).OrderBy(id => id).ToList();
-        finalLineIds.Should().BeEquivalentTo(originalLineIds, because: "no debe agregar, quitar ni recrear líneas ya correctas");
+        finalLineIds
+            .Should()
+            .BeEquivalentTo(
+                originalLineIds,
+                because: "no debe agregar, quitar ni recrear líneas ya correctas"
+            );
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -1194,28 +1546,48 @@ public sealed class AccountingBootstrapStepTests
 
         await using (var db = NewDbContext(dbName))
         {
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
         await using (var db = NewDbContext(dbName))
         {
             var payablesAccountId = (
-                await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "2.1.01.001")
+                await db.Accounts.SingleAsync(a =>
+                    a.CompanyId == _companyId && a.Code.Value == "2.1.01.001"
+                )
             ).Id;
-            foreach (var (factType, nature) in new[]
+            foreach (
+                var (factType, nature) in new[]
+                {
+                    ("SupplierPaymentConfirmed", AccountNature.Debit),
+                    ("SupplierPaymentReversed", AccountNature.Credit),
+                }
+            )
             {
-                ("SupplierPaymentConfirmed", AccountNature.Debit),
-                ("SupplierPaymentReversed", AccountNature.Credit),
-            })
-            {
-                var current = await db.PostingRules.Include(r => r.Lines)
-                    .SingleAsync(r => r.CompanyId == _companyId && r.SourceModule == "Payables" && r.FactType == factType);
+                var current = await db
+                    .PostingRules.Include(r => r.Lines)
+                    .SingleAsync(r =>
+                        r.CompanyId == _companyId
+                        && r.SourceModule == "Payables"
+                        && r.FactType == factType
+                    );
                 db.PostingRules.Remove(current);
                 await db.SaveChangesAsync();
 
                 var legacy = ERP.Domain.Modules.Accounting.Entities.PostingRule.Create(
-                    _tenantId, _companyId, "Payables", factType, null, null, null, _actorId
+                    _tenantId,
+                    _companyId,
+                    "Payables",
+                    factType,
+                    null,
+                    null,
+                    null,
+                    _actorId
                 );
                 legacy.AddLine(payablesAccountId, nature, PostingAmountKind.GrandTotal);
                 db.PostingRules.Add(legacy);
@@ -1226,27 +1598,44 @@ public sealed class AccountingBootstrapStepTests
 
         await using (var db = NewDbContext(dbName))
         {
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
         await using var verifyDb = NewDbContext(dbName);
         var advanceAccountId = (
-            await verifyDb.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "1.1.03.004")
+            await verifyDb.Accounts.SingleAsync(a =>
+                a.CompanyId == _companyId && a.Code.Value == "1.1.03.004"
+            )
         ).Id;
-        foreach (var (factType, nature) in new[]
+        foreach (
+            var (factType, nature) in new[]
+            {
+                ("SupplierPaymentConfirmed", AccountNature.Debit),
+                ("SupplierPaymentReversed", AccountNature.Credit),
+            }
+        )
         {
-            ("SupplierPaymentConfirmed", AccountNature.Debit),
-            ("SupplierPaymentReversed", AccountNature.Credit),
-        })
-        {
-            var corrected = await verifyDb.PostingRules.Include(r => r.Lines)
-                .SingleAsync(r => r.CompanyId == _companyId && r.SourceModule == "Payables" && r.FactType == factType);
+            var corrected = await verifyDb
+                .PostingRules.Include(r => r.Lines)
+                .SingleAsync(r =>
+                    r.CompanyId == _companyId
+                    && r.SourceModule == "Payables"
+                    && r.FactType == factType
+                );
             corrected.Lines.Should().HaveCount(2);
             var applied = corrected.Lines.Single(l => l.Id == legacyLineIds[factType]);
-            applied.AmountKind.Should().Be(PostingAmountKind.AppliedToPayable, "la línea histórica conserva su Id");
+            applied
+                .AmountKind.Should()
+                .Be(PostingAmountKind.AppliedToPayable, "la línea histórica conserva su Id");
             applied.Nature.Should().Be(nature);
-            var advance = corrected.Lines.Single(l => l.AmountKind == PostingAmountKind.SupplierCredit);
+            var advance = corrected.Lines.Single(l =>
+                l.AmountKind == PostingAmountKind.SupplierCredit
+            );
             advance.AccountId.Should().Be(advanceAccountId);
             advance.Nature.Should().Be(nature);
         }
@@ -1254,14 +1643,23 @@ public sealed class AccountingBootstrapStepTests
         // Idempotente: una segunda corrida no agrega líneas.
         await using (var db = NewDbContext(dbName))
         {
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
         await using var againDb = NewDbContext(dbName);
-        (await againDb.PostingRules.Include(r => r.Lines)
-            .Where(r => r.CompanyId == _companyId && r.SourceModule == "Payables")
-            .SelectMany(r => r.Lines)
-            .CountAsync()).Should().Be(4);
+        (
+            await againDb
+                .PostingRules.Include(r => r.Lines)
+                .Where(r => r.CompanyId == _companyId && r.SourceModule == "Payables")
+                .SelectMany(r => r.Lines)
+                .CountAsync()
+        )
+            .Should()
+            .Be(4);
     }
 
     [Fact]
@@ -1272,7 +1670,11 @@ public sealed class AccountingBootstrapStepTests
 
         await using (var db = NewDbContext(dbName))
         {
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
@@ -1281,28 +1683,49 @@ public sealed class AccountingBootstrapStepTests
             var rule = await db
                 .PostingRules.Include(r => r.Lines)
                 .SingleAsync(r =>
-                    r.CompanyId == _companyId && r.SourceModule == "Sales" && r.FactType == "InvoiceIssued"
+                    r.CompanyId == _companyId
+                    && r.SourceModule == "Sales"
+                    && r.FactType == "InvoiceIssued"
                 );
             db.PostingRules.Remove(rule);
             await db.SaveChangesAsync();
 
             var receivableAccountId = (
-                await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "1.1.03.001")
+                await db.Accounts.SingleAsync(a =>
+                    a.CompanyId == _companyId && a.Code.Value == "1.1.03.001"
+                )
             ).Id;
             var salesAccountId = (
-                await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "4.1.01.001")
+                await db.Accounts.SingleAsync(a =>
+                    a.CompanyId == _companyId && a.Code.Value == "4.1.01.001"
+                )
             ).Id;
             var vatAccountId = (
-                await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "2.1.02.001")
+                await db.Accounts.SingleAsync(a =>
+                    a.CompanyId == _companyId && a.Code.Value == "2.1.02.001"
+                )
             ).Id;
             var iceAccountId = (
-                await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "2.1.03.001")
+                await db.Accounts.SingleAsync(a =>
+                    a.CompanyId == _companyId && a.Code.Value == "2.1.03.001"
+                )
             ).Id;
 
             var legacyRule = ERP.Domain.Modules.Accounting.Entities.PostingRule.Create(
-                _tenantId, _companyId, "Sales", "InvoiceIssued", null, null, null, _actorId
+                _tenantId,
+                _companyId,
+                "Sales",
+                "InvoiceIssued",
+                null,
+                null,
+                null,
+                _actorId
             );
-            legacyRule.AddLine(receivableAccountId, AccountNature.Debit, PostingAmountKind.GrandTotal);
+            legacyRule.AddLine(
+                receivableAccountId,
+                AccountNature.Debit,
+                PostingAmountKind.GrandTotal
+            );
             legacyRule.AddLine(salesAccountId, AccountNature.Credit, PostingAmountKind.Subtotal);
             legacyRule.AddLine(vatAccountId, AccountNature.Credit, PostingAmountKind.TaxVat);
             legacyRule.AddLine(iceAccountId, AccountNature.Credit, PostingAmountKind.TaxIce);
@@ -1316,7 +1739,11 @@ public sealed class AccountingBootstrapStepTests
 
         await using (var db = NewDbContext(dbName))
         {
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
@@ -1324,14 +1751,17 @@ public sealed class AccountingBootstrapStepTests
         var corrected = await verifyDb
             .PostingRules.Include(r => r.Lines)
             .SingleAsync(r =>
-                r.CompanyId == _companyId && r.SourceModule == "Sales" && r.FactType == "InvoiceIssued"
+                r.CompanyId == _companyId
+                && r.SourceModule == "Sales"
+                && r.FactType == "InvoiceIssued"
             );
 
         corrected.Lines.Should().HaveCount(7);
 
         var debitLines = corrected.Lines.Where(l => l.Nature == AccountNature.Debit).ToList();
         debitLines.Should().HaveCount(3);
-        debitLines.Select(l => l.AmountKind)
+        debitLines
+            .Select(l => l.AmountKind)
             .Should()
             .BeEquivalentTo(
                 new[]
@@ -1344,29 +1774,37 @@ public sealed class AccountingBootstrapStepTests
 
         var creditLines = corrected.Lines.Where(l => l.Nature == AccountNature.Credit).ToList();
         creditLines.Should().HaveCount(4);
-        creditLines.Select(l => l.Id)
+        creditLines
+            .Select(l => l.Id)
             .Should()
-            .Contain(creditLineIds, because: "las líneas Haber históricas Subtotal/TaxVat/TaxIce se conservan");
-        creditLines.Select(l => l.AmountKind)
-            .Should()
-            .Contain(PostingAmountKind.TaxIrbpnr);
+            .Contain(
+                creditLineIds,
+                because: "las líneas Haber históricas Subtotal/TaxVat/TaxIce se conservan"
+            );
+        creditLines.Select(l => l.AmountKind).Should().Contain(PostingAmountKind.TaxIrbpnr);
 
-        var cashAccountId = debitLines.Single(l => l.AmountKind == PostingAmountKind.CashApplied).AccountId;
-        (await verifyDb.Accounts.SingleAsync(a => a.Id == cashAccountId)).Code.Value.Should().Be("1.1.01.001");
+        var cashAccountId = debitLines
+            .Single(l => l.AmountKind == PostingAmountKind.CashApplied)
+            .AccountId;
+        (await verifyDb.Accounts.SingleAsync(a => a.Id == cashAccountId))
+            .Code.Value.Should()
+            .Be("1.1.01.001");
 
-        var receivableLine = debitLines.Single(l => l.AmountKind == PostingAmountKind.PendingBalance);
-        (await verifyDb.Accounts.SingleAsync(a => a.Id == receivableLine.AccountId)).Code.Value
-            .Should()
+        var receivableLine = debitLines.Single(l =>
+            l.AmountKind == PostingAmountKind.PendingBalance
+        );
+        (await verifyDb.Accounts.SingleAsync(a => a.Id == receivableLine.AccountId))
+            .Code.Value.Should()
             .Be("1.1.03.001");
 
         var discountLine = debitLines.Single(l => l.AmountKind == PostingAmountKind.Discount);
-        (await verifyDb.Accounts.SingleAsync(a => a.Id == discountLine.AccountId)).Code.Value
-            .Should()
+        (await verifyDb.Accounts.SingleAsync(a => a.Id == discountLine.AccountId))
+            .Code.Value.Should()
             .Be("4.1.02.001");
 
         var irbpnrLine = creditLines.Single(l => l.AmountKind == PostingAmountKind.TaxIrbpnr);
-        (await verifyDb.Accounts.SingleAsync(a => a.Id == irbpnrLine.AccountId)).Code.Value
-            .Should()
+        (await verifyDb.Accounts.SingleAsync(a => a.Id == irbpnrLine.AccountId))
+            .Code.Value.Should()
             .Be("2.1.03.002");
     }
 
@@ -1382,20 +1820,30 @@ public sealed class AccountingBootstrapStepTests
 
         await using (var db = NewDbContext(dbName))
         {
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
 
             var rule = await db
                 .PostingRules.Include(r => r.Lines)
                 .SingleAsync(r =>
-                    r.CompanyId == _companyId && r.SourceModule == "Sales" && r.FactType == "InvoiceIssued"
+                    r.CompanyId == _companyId
+                    && r.SourceModule == "Sales"
+                    && r.FactType == "InvoiceIssued"
                 );
             originalLineIds = rule.Lines.Select(l => l.Id).OrderBy(id => id).ToList();
         }
 
         await using (var db = NewDbContext(dbName))
         {
-            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
@@ -1403,14 +1851,20 @@ public sealed class AccountingBootstrapStepTests
         var rules = await verifyDb
             .PostingRules.Include(r => r.Lines)
             .Where(r =>
-                r.CompanyId == _companyId && r.SourceModule == "Sales" && r.FactType == "InvoiceIssued"
+                r.CompanyId == _companyId
+                && r.SourceModule == "Sales"
+                && r.FactType == "InvoiceIssued"
             )
             .ToListAsync();
 
         rules.Should().ContainSingle();
         var finalLineIds = rules[0].Lines.Select(l => l.Id).OrderBy(id => id).ToList();
-        finalLineIds.Should()
-            .BeEquivalentTo(originalLineIds, because: "no debe agregar, quitar ni recrear líneas ya correctas");
+        finalLineIds
+            .Should()
+            .BeEquivalentTo(
+                originalLineIds,
+                because: "no debe agregar, quitar ni recrear líneas ya correctas"
+            );
     }
 
     private sealed class FixedCurrentTenant(Guid tenantId) : ICurrentTenant

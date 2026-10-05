@@ -41,13 +41,15 @@ public sealed class PricingContextualResolutionTests
         public Mock<ICompanyClock> CompanyClock { get; } = new();
 
         public IPricingAdjustmentStrategyResolver Strategies { get; } =
-            new PricingAdjustmentStrategyResolver(new IPricingAdjustmentStrategy[]
-            {
-                new PercentDiscountStrategy(),
-                new PercentMarkupStrategy(),
-                new FixedAdjustmentStrategy(),
-                new FixedPriceStrategy(),
-            });
+            new PricingAdjustmentStrategyResolver(
+                new IPricingAdjustmentStrategy[]
+                {
+                    new PercentDiscountStrategy(),
+                    new PercentMarkupStrategy(),
+                    new FixedAdjustmentStrategy(),
+                    new FixedPriceStrategy(),
+                }
+            );
 
         public Fixture()
         {
@@ -72,9 +74,17 @@ public sealed class PricingContextualResolutionTests
 
     private static Item CreateItem(decimal basePrice = 100m) =>
         Item.Create(
-            TenantId, "SKU-001", "Item de prueba", "Item de prueba", ItemTypeId, "UNIT",
-            ItemTaxConfig.Create("10", "10"), ItemSaleConfig.Create(isForSale: true),
-            ItemStockConfig.Create(), UserId, baseSalePrice: basePrice
+            TenantId,
+            "SKU-001",
+            "Item de prueba",
+            "Item de prueba",
+            ItemTypeId,
+            "UNIT",
+            ItemTaxConfig.Create("10", "10"),
+            ItemSaleConfig.Create(isForSale: true),
+            ItemStockConfig.Create(),
+            UserId,
+            baseSalePrice: basePrice
         );
 
     private static PriceList CreateList(
@@ -83,27 +93,40 @@ public sealed class PricingContextualResolutionTests
         decimal? ruleValue = 10m
     ) =>
         PriceList.Create(
-            TenantId, CompanyId, code, $"Lista {code}", "USD",
-            isDefault: code == "DEFAULT", createdBy: UserId, ruleType: ruleType, ruleValue: ruleValue
+            TenantId,
+            CompanyId,
+            code,
+            $"Lista {code}",
+            "USD",
+            isDefault: code == "DEFAULT",
+            createdBy: UserId,
+            ruleType: ruleType,
+            ruleValue: ruleValue
         );
 
-    private static PriceListSelectionResult Candidate(PriceList list, PriceListSelectionSource source) =>
-        new(list.Id, list.Name, source);
+    private static PriceListSelectionResult Candidate(
+        PriceList list,
+        PriceListSelectionSource source
+    ) => new(list.Id, list.Name, source);
 
     private void SetupItem(Fixture f, Item item) =>
-        f.Items
-            .Setup(r => r.GetByIdLightAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+        f
+            .Items.Setup(r => r.GetByIdLightAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(item);
 
     private void SetupList(Fixture f, PriceList list) =>
-        f.PriceLists
-            .Setup(r => r.GetByIdAsync(TenantId, list.Id, It.IsAny<CancellationToken>()))
+        f
+            .PriceLists.Setup(r => r.GetByIdAsync(TenantId, list.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(list);
 
     private void SetupAssignment(Fixture f, PriceList list, Item item, bool active) =>
-        f.Assignments
-            .Setup(a => a.FindByKeyAsync(TenantId, list.Id, item.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(active ? PriceListItem.Create(TenantId, CompanyId, list.Id, item.Id, UserId) : null);
+        f
+            .Assignments.Setup(a =>
+                a.FindByKeyAsync(TenantId, list.Id, item.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                active ? PriceListItem.Create(TenantId, CompanyId, list.Id, item.Id, UserId) : null
+            );
 
     [Fact]
     public async Task Item_asignado_en_la_lista_del_cliente_usa_esa_lista_con_SelectionSource_Customer()
@@ -114,11 +137,11 @@ public sealed class PricingContextualResolutionTests
         SetupItem(f, item);
         SetupList(f, customerList);
         SetupAssignment(f, customerList, item, active: true);
-        f.Selection
-            .Setup(s => s.ResolveAsync(CustomerId, It.IsAny<CancellationToken>()))
+        f.Selection.Setup(s => s.ResolveAsync(CustomerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new[] { Candidate(customerList, PriceListSelectionSource.Customer) });
 
-        var result = await f.Build().ResolveAsync(new PricingContext(item.Id, CustomerId), CancellationToken.None);
+        var result = await f.Build()
+            .ResolveAsync(new PricingContext(item.Id, CustomerId), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.PriceListId.Should().Be(customerList.Id);
@@ -138,15 +161,17 @@ public sealed class PricingContextualResolutionTests
         SetupList(f, defaultList);
         SetupAssignment(f, customerList, item, active: false);
         SetupAssignment(f, defaultList, item, active: true);
-        f.Selection
-            .Setup(s => s.ResolveAsync(CustomerId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[]
-            {
-                Candidate(customerList, PriceListSelectionSource.Customer),
-                Candidate(defaultList, PriceListSelectionSource.CompanyDefault),
-            });
+        f.Selection.Setup(s => s.ResolveAsync(CustomerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new[]
+                {
+                    Candidate(customerList, PriceListSelectionSource.Customer),
+                    Candidate(defaultList, PriceListSelectionSource.CompanyDefault),
+                }
+            );
 
-        var result = await f.Build().ResolveAsync(new PricingContext(item.Id, CustomerId), CancellationToken.None);
+        var result = await f.Build()
+            .ResolveAsync(new PricingContext(item.Id, CustomerId), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.PriceListId.Should().Be(defaultList.Id);
@@ -166,15 +191,17 @@ public sealed class PricingContextualResolutionTests
         SetupList(f, defaultList);
         SetupAssignment(f, customerList, item, active: false);
         SetupAssignment(f, defaultList, item, active: false);
-        f.Selection
-            .Setup(s => s.ResolveAsync(CustomerId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[]
-            {
-                Candidate(customerList, PriceListSelectionSource.Customer),
-                Candidate(defaultList, PriceListSelectionSource.CompanyDefault),
-            });
+        f.Selection.Setup(s => s.ResolveAsync(CustomerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new[]
+                {
+                    Candidate(customerList, PriceListSelectionSource.Customer),
+                    Candidate(defaultList, PriceListSelectionSource.CompanyDefault),
+                }
+            );
 
-        var result = await f.Build().ResolveAsync(new PricingContext(item.Id, CustomerId), CancellationToken.None);
+        var result = await f.Build()
+            .ResolveAsync(new PricingContext(item.Id, CustomerId), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.PriceListId.Should().BeNull();
@@ -195,11 +222,13 @@ public sealed class PricingContextualResolutionTests
         SetupItem(f, item);
         SetupList(f, defaultList);
         SetupAssignment(f, defaultList, item, active: true);
-        f.Selection
-            .Setup(s => s.ResolveAsync(CustomerId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { Candidate(defaultList, PriceListSelectionSource.CompanyDefault) });
+        f.Selection.Setup(s => s.ResolveAsync(CustomerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new[] { Candidate(defaultList, PriceListSelectionSource.CompanyDefault) }
+            );
 
-        var result = await f.Build().ResolveAsync(new PricingContext(item.Id, CustomerId), CancellationToken.None);
+        var result = await f.Build()
+            .ResolveAsync(new PricingContext(item.Id, CustomerId), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.PriceListId.Should().Be(defaultList.Id);
@@ -215,15 +244,29 @@ public sealed class PricingContextualResolutionTests
         SetupItem(f, item);
         SetupList(f, customerList);
         SetupAssignment(f, customerList, item, active: true);
-        var exception = PricingRule.Create(TenantId, CompanyId, customerList.Id, item.Id, PricingRuleType.PercentDiscount, 15m, UserId);
-        f.Rules
-            .Setup(r => r.GetActiveForItemInListAsync(TenantId, customerList.Id, item.Id, It.IsAny<CancellationToken>()))
+        var exception = PricingRule.Create(
+            TenantId,
+            CompanyId,
+            customerList.Id,
+            item.Id,
+            PricingRuleType.PercentDiscount,
+            15m,
+            UserId
+        );
+        f.Rules.Setup(r =>
+                r.GetActiveForItemInListAsync(
+                    TenantId,
+                    customerList.Id,
+                    item.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(exception);
-        f.Selection
-            .Setup(s => s.ResolveAsync(CustomerId, It.IsAny<CancellationToken>()))
+        f.Selection.Setup(s => s.ResolveAsync(CustomerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new[] { Candidate(customerList, PriceListSelectionSource.Customer) });
 
-        var result = await f.Build().ResolveAsync(new PricingContext(item.Id, CustomerId), CancellationToken.None);
+        var result = await f.Build()
+            .ResolveAsync(new PricingContext(item.Id, CustomerId), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.UnitPrice.Should().Be(85m);
@@ -240,15 +283,31 @@ public sealed class PricingContextualResolutionTests
         SetupItem(f, item);
         SetupList(f, defaultList);
         SetupAssignment(f, defaultList, item, active: true);
-        var exception = PricingRule.Create(TenantId, CompanyId, defaultList.Id, item.Id, PricingRuleType.FixedPrice, 77m, UserId);
-        f.Rules
-            .Setup(r => r.GetActiveForItemInListAsync(TenantId, defaultList.Id, item.Id, It.IsAny<CancellationToken>()))
+        var exception = PricingRule.Create(
+            TenantId,
+            CompanyId,
+            defaultList.Id,
+            item.Id,
+            PricingRuleType.FixedPrice,
+            77m,
+            UserId
+        );
+        f.Rules.Setup(r =>
+                r.GetActiveForItemInListAsync(
+                    TenantId,
+                    defaultList.Id,
+                    item.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(exception);
-        f.Selection
-            .Setup(s => s.ResolveAsync(It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { Candidate(defaultList, PriceListSelectionSource.CompanyDefault) });
+        f.Selection.Setup(s => s.ResolveAsync(It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new[] { Candidate(defaultList, PriceListSelectionSource.CompanyDefault) }
+            );
 
-        var result = await f.Build().ResolveAsync(new PricingContext(item.Id, null), CancellationToken.None);
+        var result = await f.Build()
+            .ResolveAsync(new PricingContext(item.Id, null), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.UnitPrice.Should().Be(77m);
@@ -267,20 +326,23 @@ public sealed class PricingContextualResolutionTests
         SetupList(f, defaultList);
         SetupAssignment(f, customerList, item, active: false);
         SetupAssignment(f, defaultList, item, active: true);
-        f.Selection
-            .Setup(s => s.ResolveAsync(CustomerId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[]
-            {
-                Candidate(customerList, PriceListSelectionSource.Customer),
-                Candidate(defaultList, PriceListSelectionSource.CompanyDefault),
-            });
+        f.Selection.Setup(s => s.ResolveAsync(CustomerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new[]
+                {
+                    Candidate(customerList, PriceListSelectionSource.Customer),
+                    Candidate(defaultList, PriceListSelectionSource.CompanyDefault),
+                }
+            );
 
-        var result = await f.Build().ResolveAsync(new PricingContext(item.Id, CustomerId), CancellationToken.None);
+        var result = await f.Build()
+            .ResolveAsync(new PricingContext(item.Id, CustomerId), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.SelectionSource.Should().Be(PriceListSelectionSource.CompanyDefault);
         f.Assignments.Verify(
-            a => a.FindByKeyAsync(TenantId, customerList.Id, item.Id, It.IsAny<CancellationToken>()),
+            a =>
+                a.FindByKeyAsync(TenantId, customerList.Id, item.Id, It.IsAny<CancellationToken>()),
             Times.Once
         );
         f.Assignments.Verify(
@@ -301,11 +363,11 @@ public sealed class PricingContextualResolutionTests
         SetupItem(f, item);
         SetupList(f, sharedList);
         SetupAssignment(f, sharedList, item, active: true);
-        f.Selection
-            .Setup(s => s.ResolveAsync(CustomerId, It.IsAny<CancellationToken>()))
+        f.Selection.Setup(s => s.ResolveAsync(CustomerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new[] { Candidate(sharedList, PriceListSelectionSource.Customer) });
 
-        var result = await f.Build().ResolveAsync(new PricingContext(item.Id, CustomerId), CancellationToken.None);
+        var result = await f.Build()
+            .ResolveAsync(new PricingContext(item.Id, CustomerId), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         f.PriceLists.Verify(
@@ -330,16 +392,21 @@ public sealed class PricingContextualResolutionTests
         SetupItem(f, item);
         SetupList(f, defaultList);
         SetupAssignment(f, defaultList, item, active: true);
-        f.Selection
-            .Setup(s => s.ResolveAsync((Guid?)null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { Candidate(defaultList, PriceListSelectionSource.CompanyDefault) });
+        f.Selection.Setup(s => s.ResolveAsync((Guid?)null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new[] { Candidate(defaultList, PriceListSelectionSource.CompanyDefault) }
+            );
 
-        var result = await f.Build().ResolveAsync(new PricingContext(item.Id), CancellationToken.None);
+        var result = await f.Build()
+            .ResolveAsync(new PricingContext(item.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.PriceListId.Should().Be(defaultList.Id);
         result.Value!.SelectionSource.Should().Be(PriceListSelectionSource.CompanyDefault);
-        f.Selection.Verify(s => s.ResolveAsync((Guid?)null, It.IsAny<CancellationToken>()), Times.Once);
+        f.Selection.Verify(
+            s => s.ResolveAsync((Guid?)null, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -348,11 +415,11 @@ public sealed class PricingContextualResolutionTests
         var f = new Fixture();
         var item = CreateItem(100m);
         SetupItem(f, item);
-        f.Selection
-            .Setup(s => s.ResolveAsync(It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
+        f.Selection.Setup(s => s.ResolveAsync(It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<PriceListSelectionResult>());
 
-        var result = await f.Build().ResolveAsync(new PricingContext(item.Id, CustomerId), CancellationToken.None);
+        var result = await f.Build()
+            .ResolveAsync(new PricingContext(item.Id, CustomerId), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.PriceListId.Should().BeNull();
@@ -373,20 +440,34 @@ public sealed class PricingContextualResolutionTests
         SetupItem(f, item);
         SetupList(f, defaultList);
         SetupAssignment(f, defaultList, item, active: true);
-        f.Selection
-            .Setup(s => s.ResolveAsync(CustomerId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { Candidate(defaultList, PriceListSelectionSource.CompanyDefault) });
+        f.Selection.Setup(s => s.ResolveAsync(CustomerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new[] { Candidate(defaultList, PriceListSelectionSource.CompanyDefault) }
+            );
 
-        await f.Build().ResolveAsync(new PricingContext(item.Id, CustomerId), CancellationToken.None);
+        await f.Build()
+            .ResolveAsync(new PricingContext(item.Id, CustomerId), CancellationToken.None);
 
-        f.Items.Verify(r => r.GetByIdLightAsync(item.Id, TenantId, It.IsAny<CancellationToken>()), Times.Once);
-        f.PriceLists.Verify(r => r.GetByIdAsync(TenantId, defaultList.Id, It.IsAny<CancellationToken>()), Times.Once);
+        f.Items.Verify(
+            r => r.GetByIdLightAsync(item.Id, TenantId, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+        f.PriceLists.Verify(
+            r => r.GetByIdAsync(TenantId, defaultList.Id, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
         f.Assignments.Verify(
             a => a.FindByKeyAsync(TenantId, defaultList.Id, item.Id, It.IsAny<CancellationToken>()),
             Times.Once
         );
         f.Rules.Verify(
-            r => r.GetActiveForItemInListAsync(TenantId, defaultList.Id, item.Id, It.IsAny<CancellationToken>()),
+            r =>
+                r.GetActiveForItemInListAsync(
+                    TenantId,
+                    defaultList.Id,
+                    item.Id,
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Once
         );
     }

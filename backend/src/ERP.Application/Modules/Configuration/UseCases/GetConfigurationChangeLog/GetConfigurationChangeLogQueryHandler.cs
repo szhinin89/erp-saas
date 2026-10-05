@@ -46,7 +46,8 @@ public sealed class GetConfigurationChangeLogQueryHandler
 
         return Result<ConfigurationChangeLogPageDto>.Success(
             new ConfigurationChangeLogPageDto(
-                items.Select(l => new ConfigurationChangeLogDto(
+                items
+                    .Select(l => new ConfigurationChangeLogDto(
                         l.Id,
                         l.Scope.ToString(),
                         l.ScopeId,

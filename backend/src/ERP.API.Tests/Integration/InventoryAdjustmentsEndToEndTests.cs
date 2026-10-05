@@ -1,3 +1,8 @@
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using ERP.API.Tests.Support;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Branches.Entities;
@@ -11,11 +16,6 @@ using ERP.Infrastructure.Persistence;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using System.Net;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace ERP.API.Tests.Integration;
 
@@ -86,11 +86,7 @@ public sealed class InventoryAdjustmentsFlowFixture : IAsyncLifetime
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
 
         _adminId = Guid.NewGuid();
-        var tenant = Tenant.Create(
-            "ZH-InvAdjustments-Test",
-            $"zh-ia-{Guid.NewGuid():N}",
-            _adminId
-        );
+        var tenant = Tenant.Create("ZH-InvAdjustments-Test", $"zh-ia-{Guid.NewGuid():N}", _adminId);
         db.Tenants.Add(tenant);
         await db.SaveChangesAsync();
         TenantId = tenant.Id;
@@ -251,7 +247,13 @@ public sealed class InventoryAdjustmentsFlowFixture : IAsyncLifetime
         db.IdentityUsers.Add(user);
         await db.SaveChangesAsync();
 
-        var membership = CompanyUserMembership.Create(CompanyId, user.Id, role, profileId, _adminId);
+        var membership = CompanyUserMembership.Create(
+            CompanyId,
+            user.Id,
+            role,
+            profileId,
+            _adminId
+        );
         db.CompanyUserMemberships.Add(membership);
         await db.SaveChangesAsync();
 
@@ -264,7 +266,10 @@ public sealed class InventoryAdjustmentsFlowFixture : IAsyncLifetime
     }
 
     /// <summary>Crea un AccessProfile con exactamente los permisos indicados (IsAllowed=true).</summary>
-    public async Task<Guid> CreateProfileWithPermissionsAsync(string name, params string[] permissionKeys)
+    public async Task<Guid> CreateProfileWithPermissionsAsync(
+        string name,
+        params string[] permissionKeys
+    )
     {
         using var scope = Factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
@@ -309,7 +314,8 @@ public sealed class InventoryAdjustmentsFlowFixture : IAsyncLifetime
 }
 
 [Trait("Category", "PostgreSql")]
-public sealed class InventoryAdjustmentsEndToEndTests : IClassFixture<InventoryAdjustmentsFlowFixture>
+public sealed class InventoryAdjustmentsEndToEndTests
+    : IClassFixture<InventoryAdjustmentsFlowFixture>
 {
     private readonly InventoryAdjustmentsFlowFixture _f;
 
@@ -318,7 +324,8 @@ public sealed class InventoryAdjustmentsEndToEndTests : IClassFixture<InventoryA
         Converters = { new JsonStringEnumConverter() },
     };
 
-    public InventoryAdjustmentsEndToEndTests(InventoryAdjustmentsFlowFixture fixture) => _f = fixture;
+    public InventoryAdjustmentsEndToEndTests(InventoryAdjustmentsFlowFixture fixture) =>
+        _f = fixture;
 
     // ══════════════════════════════════════════════════════════════════════
     // Helpers privados
@@ -332,7 +339,9 @@ public sealed class InventoryAdjustmentsEndToEndTests : IClassFixture<InventoryA
     )
     {
         var http = client ?? _f.Client;
-        var code = $"{codePrefix ?? allowedMovementType.ToUpperInvariant()}-{Guid.NewGuid():N}"[..18];
+        var code = $"{codePrefix ?? allowedMovementType.ToUpperInvariant()}-{Guid.NewGuid():N}"[
+            ..18
+        ];
         var response = await http.PostAsJsonAsync(
             "/api/v1/inventory/adjustment-reasons",
             new
@@ -394,7 +403,10 @@ public sealed class InventoryAdjustmentsEndToEndTests : IClassFixture<InventoryA
         )!.Data!;
     }
 
-    private async Task<HttpResponseMessage> ExecuteAdjustmentAsync(Guid id, HttpClient? client = null) =>
+    private async Task<HttpResponseMessage> ExecuteAdjustmentAsync(
+        Guid id,
+        HttpClient? client = null
+    ) =>
         await (client ?? _f.Client).PostAsync(
             $"/api/v1/inventory/stock/adjustments/{id}/execute",
             null
@@ -413,9 +425,8 @@ public sealed class InventoryAdjustmentsEndToEndTests : IClassFixture<InventoryA
     private async Task<decimal> GetCurrentQuantityAsync(Guid itemId)
     {
         using var scope = _f.CreateDbScope();
-        var stockRepo = scope.ServiceProvider.GetRequiredService<
-            ERP.Domain.Modules.Inventory.Interfaces.IStockRepository
-        >();
+        var stockRepo =
+            scope.ServiceProvider.GetRequiredService<ERP.Domain.Modules.Inventory.Interfaces.IStockRepository>();
         var stock = await stockRepo.GetStockAsync(_f.TenantId, _f.WarehouseId, itemId, default);
         return stock?.Quantity ?? 0m;
     }
@@ -448,7 +459,9 @@ public sealed class InventoryAdjustmentsEndToEndTests : IClassFixture<InventoryA
         )!.Data!;
         list.Should().Contain(r => r.Id == sobranteId && r.AllowedMovementType == "Ingreso");
         list.Should()
-            .Contain(r => r.Id == caducadoId && r.AllowedMovementType == "Egreso" && r.RequiresNotes);
+            .Contain(r =>
+                r.Id == caducadoId && r.AllowedMovementType == "Egreso" && r.RequiresNotes
+            );
 
         // ── Update: Code es inmutable, Name/otros sí editables ──
         var updateResponse = await _f.Client.PutAsJsonAsync(
@@ -534,7 +547,10 @@ public sealed class InventoryAdjustmentsEndToEndTests : IClassFixture<InventoryA
         var executeEmptyNotes = await ExecuteAdjustmentAsync(draftEmptyNotes.Id);
         executeEmptyNotes
             .StatusCode.Should()
-            .Be(HttpStatusCode.UnprocessableEntity, await executeEmptyNotes.Content.ReadAsStringAsync());
+            .Be(
+                HttpStatusCode.UnprocessableEntity,
+                await executeEmptyNotes.Content.ReadAsStringAsync()
+            );
         var emptyNotesError = await executeEmptyNotes.Content.ReadAsStringAsync();
         emptyNotesError.Should().Contain("observaciones");
 
@@ -587,16 +603,18 @@ public sealed class InventoryAdjustmentsEndToEndTests : IClassFixture<InventoryA
                 },
             }
         );
-        updateNotes.StatusCode.Should().Be(HttpStatusCode.OK, await updateNotes.Content.ReadAsStringAsync());
+        updateNotes
+            .StatusCode.Should()
+            .Be(HttpStatusCode.OK, await updateNotes.Content.ReadAsStringAsync());
 
         var executeWithNotes = await ExecuteAdjustmentAsync(draftEmptyNotes.Id);
         executeWithNotes
             .StatusCode.Should()
             .Be(HttpStatusCode.OK, await executeWithNotes.Content.ReadAsStringAsync());
         var executed = (
-            await executeWithNotes.Content.ReadFromJsonAsync<IaEnvelope<StockAdjustmentResponseDto>>(
-                JsonOptions
-            )
+            await executeWithNotes.Content.ReadFromJsonAsync<
+                IaEnvelope<StockAdjustmentResponseDto>
+            >(JsonOptions)
         )!.Data!;
         executed.Status.Should().Be("Executed");
     }
@@ -608,7 +626,10 @@ public sealed class InventoryAdjustmentsEndToEndTests : IClassFixture<InventoryA
     [Fact]
     public async Task Escenario2_Ingreso_unidad_base_crea_Draft_sin_postear_y_Execute_postea_PositiveAdjust()
     {
-        var (reasonId, _) = await CreateReasonAsync(InventoryAdjustmentReason.Ingreso, codePrefix: "SOBRANTE2");
+        var (reasonId, _) = await CreateReasonAsync(
+            InventoryAdjustmentReason.Ingreso,
+            codePrefix: "SOBRANTE2"
+        );
 
         var qtyBeforeCreate = await GetCurrentQuantityAsync(_f.ItemId);
 
@@ -637,9 +658,9 @@ public sealed class InventoryAdjustmentsEndToEndTests : IClassFixture<InventoryA
         );
         getDraftResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var getDraft = (
-            await getDraftResponse.Content.ReadFromJsonAsync<IaEnvelope<StockAdjustmentResponseDto>>(
-                JsonOptions
-            )
+            await getDraftResponse.Content.ReadFromJsonAsync<
+                IaEnvelope<StockAdjustmentResponseDto>
+            >(JsonOptions)
         )!.Data!;
         getDraft.Status.Should().Be("Draft");
 
@@ -668,11 +689,15 @@ public sealed class InventoryAdjustmentsEndToEndTests : IClassFixture<InventoryA
         executed.Status.Should().Be("Executed");
 
         var qtyAfterExecute = await GetCurrentQuantityAsync(_f.ItemId);
-        qtyAfterExecute.Should().Be(qtyAfterCreate + 5m, "Execute debe incrementar el saldo en exactamente 5");
+        qtyAfterExecute
+            .Should()
+            .Be(qtyAfterCreate + 5m, "Execute debe incrementar el saldo en exactamente 5");
 
         using var scope = _f.CreateDbScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
-        var movement = await db.StockMovements.AsNoTracking().SingleAsync(m => m.SourceDocId == draft.Id);
+        var movement = await db
+            .StockMovements.AsNoTracking()
+            .SingleAsync(m => m.SourceDocId == draft.Id);
         movement.MovementType.Should().Be(StockMovementType.PositiveAdjust);
         movement.Quantity.Should().Be(5m);
         movement.UomCode.Should().Be(_f.BaseUomCode);
@@ -808,7 +833,9 @@ public sealed class InventoryAdjustmentsEndToEndTests : IClassFixture<InventoryA
         // a partir del promedio corrido — verificable por RunningAverageCost, que para un Egreso
         // (que solo reduce cantidad y valor en la misma proporción) debe permanecer igual al
         // promedio corrido inmediatamente anterior.
-        movement.UnitCost.Should().BeNull("un Egreso nunca captura un costo manual en el Kardex");
+        movement
+            .UnitCost.Should()
+            .BeNull("un Egreso nunca captura un costo manual en el Kardex");
         movement
             .RunningAverageCost.Should()
             .Be(
@@ -905,9 +932,21 @@ public sealed class InventoryAdjustmentsEndToEndTests : IClassFixture<InventoryA
             .StockMovements.AsNoTracking()
             .SingleAsync(m => m.SourceDocId == egresoDraft.Id);
 
-        movement.UnitCost.Should().BeNull("el costo manual del request nunca debe llegar al Kardex de un Egreso");
-        movement.TotalCost.Should().Be(2m * avgCostBeforeEgreso, "TotalCost se calcula desde el costo promedio vigente, no desde el costo manual del request (999)");
-        movement.RunningAverageCost.Should().Be(avgCostBeforeEgreso, "un Egreso no cambia el costo promedio, ni siquiera con un costo manual distinto en el request");
+        movement
+            .UnitCost.Should()
+            .BeNull("el costo manual del request nunca debe llegar al Kardex de un Egreso");
+        movement
+            .TotalCost.Should()
+            .Be(
+                2m * avgCostBeforeEgreso,
+                "TotalCost se calcula desde el costo promedio vigente, no desde el costo manual del request (999)"
+            );
+        movement
+            .RunningAverageCost.Should()
+            .Be(
+                avgCostBeforeEgreso,
+                "un Egreso no cambia el costo promedio, ni siquiera con un costo manual distinto en el request"
+            );
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -948,7 +987,9 @@ public sealed class InventoryAdjustmentsEndToEndTests : IClassFixture<InventoryA
         using (var preScope = _f.CreateDbScope())
         {
             var preDb = preScope.ServiceProvider.GetRequiredService<ErpDbContext>();
-            movementCountBefore = await preDb.StockMovements.CountAsync(m => m.SourceDocId == draft.Id);
+            movementCountBefore = await preDb.StockMovements.CountAsync(m =>
+                m.SourceDocId == draft.Id
+            );
         }
         movementCountBefore.Should().Be(0);
 
@@ -957,7 +998,10 @@ public sealed class InventoryAdjustmentsEndToEndTests : IClassFixture<InventoryA
         var body = await executeResponse.Content.ReadAsStringAsync();
         body.Should()
             .Contain("Stock insuficiente", "el mensaje de error debe ser específico, no genérico");
-        body.Should().Contain(excessiveQty.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture));
+        body.Should()
+            .Contain(
+                excessiveQty.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture)
+            );
 
         using var scope = _f.CreateDbScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
@@ -965,7 +1009,9 @@ public sealed class InventoryAdjustmentsEndToEndTests : IClassFixture<InventoryA
         movementCountAfter.Should().Be(0, "un Execute fallido no debe dejar ningún StockMovement");
 
         var qtyAfterFailedExecute = await GetCurrentQuantityAsync(_f.ItemId);
-        qtyAfterFailedExecute.Should().Be(currentQty, "un Execute fallido no debe mutar CurrentStock");
+        qtyAfterFailedExecute
+            .Should()
+            .Be(currentQty, "un Execute fallido no debe mutar CurrentStock");
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -975,7 +1021,10 @@ public sealed class InventoryAdjustmentsEndToEndTests : IClassFixture<InventoryA
     [Fact]
     public async Task Escenario5_Ingreso_con_PackagingLevel_Caja_x12_resuelve_QuantityInBaseUom_correctamente()
     {
-        var (reasonId, _) = await CreateReasonAsync(InventoryAdjustmentReason.Ingreso, codePrefix: "SOBRANTE5");
+        var (reasonId, _) = await CreateReasonAsync(
+            InventoryAdjustmentReason.Ingreso,
+            codePrefix: "SOBRANTE5"
+        );
 
         var qtyBefore = await GetCurrentQuantityAsync(_f.ItemId);
 
@@ -1016,13 +1065,25 @@ public sealed class InventoryAdjustmentsEndToEndTests : IClassFixture<InventoryA
         executedLine.QuantityInBaseUom.Should().Be(_f.BoxConversionFactor);
 
         var qtyAfter = await GetCurrentQuantityAsync(_f.ItemId);
-        qtyAfter.Should().Be(qtyBefore + _f.BoxConversionFactor, "1 caja x12 debe posteer 12 unidades base, no 1");
+        qtyAfter
+            .Should()
+            .Be(
+                qtyBefore + _f.BoxConversionFactor,
+                "1 caja x12 debe posteer 12 unidades base, no 1"
+            );
 
         using var scope = _f.CreateDbScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
-        var movement = await db.StockMovements.AsNoTracking().SingleAsync(m => m.SourceDocId == draft.Id);
+        var movement = await db
+            .StockMovements.AsNoTracking()
+            .SingleAsync(m => m.SourceDocId == draft.Id);
         movement.Quantity.Should().Be(_f.BoxConversionFactor);
-        movement.UomCode.Should().Be(_f.BaseUomCode, "el Kardex siempre postea en unidad base, nunca en la presentación de captura");
+        movement
+            .UomCode.Should()
+            .Be(
+                _f.BaseUomCode,
+                "el Kardex siempre postea en unidad base, nunca en la presentación de captura"
+            );
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -1032,7 +1093,10 @@ public sealed class InventoryAdjustmentsEndToEndTests : IClassFixture<InventoryA
     [Fact]
     public async Task Escenario6_Cancel_postea_movimientos_inversos_sin_tocar_los_originales_y_neto_es_cero()
     {
-        var (reasonId, _) = await CreateReasonAsync(InventoryAdjustmentReason.Ingreso, codePrefix: "SOBRANTE6");
+        var (reasonId, _) = await CreateReasonAsync(
+            InventoryAdjustmentReason.Ingreso,
+            codePrefix: "SOBRANTE6"
+        );
 
         var qtyBefore = await GetCurrentQuantityAsync(_f.ItemId);
 
@@ -1098,7 +1162,9 @@ public sealed class InventoryAdjustmentsEndToEndTests : IClassFixture<InventoryA
             var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
 
             // El movimiento ORIGINAL sigue existiendo, sin cambios.
-            var original = await db.StockMovements.AsNoTracking().SingleAsync(m => m.Id == originalMovementId);
+            var original = await db
+                .StockMovements.AsNoTracking()
+                .SingleAsync(m => m.Id == originalMovementId);
             original.MovementType.Should().Be(originalType);
             original.Quantity.Should().Be(originalQuantity);
             original.ResultQuantity.Should().Be(originalResultQuantity);
@@ -1119,7 +1185,9 @@ public sealed class InventoryAdjustmentsEndToEndTests : IClassFixture<InventoryA
         }
 
         var qtyAfterCancel = await GetCurrentQuantityAsync(_f.ItemId);
-        qtyAfterCancel.Should().Be(qtyBefore, "Execute + Cancel debe tener efecto neto cero sobre el saldo");
+        qtyAfterCancel
+            .Should()
+            .Be(qtyBefore, "Execute + Cancel debe tener efecto neto cero sobre el saldo");
 
         // Cancelar de nuevo debe rechazarse (no "resucita").
         var secondCancel = await CancelAdjustmentAsync(draft.Id, "Segundo intento");
@@ -1133,7 +1201,10 @@ public sealed class InventoryAdjustmentsEndToEndTests : IClassFixture<InventoryA
     [Fact]
     public async Task Escenario7a_Update_sobre_ajuste_Executed_es_rechazado()
     {
-        var (reasonId, _) = await CreateReasonAsync(InventoryAdjustmentReason.Ingreso, codePrefix: "SOBRANTE7A");
+        var (reasonId, _) = await CreateReasonAsync(
+            InventoryAdjustmentReason.Ingreso,
+            codePrefix: "SOBRANTE7A"
+        );
 
         var draft = await CreateAdjustmentOkAsync(
             InventoryAdjustmentReason.Ingreso,
@@ -1180,13 +1251,19 @@ public sealed class InventoryAdjustmentsEndToEndTests : IClassFixture<InventoryA
         );
         updateResponse
             .StatusCode.Should()
-            .Be(HttpStatusCode.UnprocessableEntity, await updateResponse.Content.ReadAsStringAsync());
+            .Be(
+                HttpStatusCode.UnprocessableEntity,
+                await updateResponse.Content.ReadAsStringAsync()
+            );
     }
 
     [Fact]
     public async Task Escenario7b_Execute_sobre_ajuste_ya_Cancelled_es_rechazado()
     {
-        var (reasonId, _) = await CreateReasonAsync(InventoryAdjustmentReason.Ingreso, codePrefix: "SOBRANTE7B");
+        var (reasonId, _) = await CreateReasonAsync(
+            InventoryAdjustmentReason.Ingreso,
+            codePrefix: "SOBRANTE7B"
+        );
 
         var draft = await CreateAdjustmentOkAsync(
             InventoryAdjustmentReason.Ingreso,
@@ -1206,7 +1283,8 @@ public sealed class InventoryAdjustmentsEndToEndTests : IClassFixture<InventoryA
             }
         );
         (await ExecuteAdjustmentAsync(draft.Id)).StatusCode.Should().Be(HttpStatusCode.OK);
-        (await CancelAdjustmentAsync(draft.Id, "Anulado para el test")).StatusCode.Should()
+        (await CancelAdjustmentAsync(draft.Id, "Anulado para el test"))
+            .StatusCode.Should()
             .Be(HttpStatusCode.OK);
 
         var executeAfterCancel = await ExecuteAdjustmentAsync(draft.Id);
@@ -1233,7 +1311,10 @@ public sealed class InventoryAdjustmentsEndToEndTests : IClassFixture<InventoryA
             "inventory.adjustments.view",
             "inventory.adjustment-reasons.view"
         );
-        var viewOnlyUserId = await _f.CreateUserWithBranchAccessAsync("Operador", viewOnlyProfileId);
+        var viewOnlyUserId = await _f.CreateUserWithBranchAccessAsync(
+            "Operador",
+            viewOnlyProfileId
+        );
         var viewOnlyClient = _f.CreateClientForUser(viewOnlyUserId, "Operador");
 
         var (reasonId, _) = await CreateReasonAsync(
@@ -1272,7 +1353,10 @@ public sealed class InventoryAdjustmentsEndToEndTests : IClassFixture<InventoryA
             "inventory.adjustments.create",
             "inventory.adjustment-reasons.view"
         );
-        var createOnlyUserId = await _f.CreateUserWithBranchAccessAsync("Operador", createOnlyProfileId);
+        var createOnlyUserId = await _f.CreateUserWithBranchAccessAsync(
+            "Operador",
+            createOnlyProfileId
+        );
         var createOnlyClient = _f.CreateClientForUser(createOnlyUserId, "Operador");
 
         var draftByCreateOnlyUser = await CreateAdjustmentAsync(

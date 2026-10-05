@@ -40,20 +40,51 @@ public sealed class SearchItemsForInvoiceContextualPricingTests
             Company.Setup(c => c.CompanyId).Returns(CompanyId);
 
             var match = new InvoiceItemMatch(
-                ItemId, "SKU-001", "Item de prueba", null, "UNI", true, "Bodega Principal",
-                10m, 5m, basePrice, vatCode, null, "UNI",
-                Array.Empty<InvoiceItemPackagingLevelDto>(), null
+                ItemId,
+                "SKU-001",
+                "Item de prueba",
+                null,
+                "UNI",
+                true,
+                "Bodega Principal",
+                10m,
+                5m,
+                basePrice,
+                vatCode,
+                null,
+                "UNI",
+                Array.Empty<InvoiceItemPackagingLevelDto>(),
+                null
             );
             Repo.Setup(r =>
-                    r.SearchAsync(TenantId, CompanyId, It.IsAny<string>(), It.IsAny<Guid?>(), It.IsAny<int>(), It.IsAny<CancellationToken>())
+                    r.SearchAsync(
+                        TenantId,
+                        CompanyId,
+                        It.IsAny<string>(),
+                        It.IsAny<Guid?>(),
+                        It.IsAny<int>(),
+                        It.IsAny<CancellationToken>()
+                    )
                 )
                 .ReturnsAsync(new[] { match });
 
-            Sri.Setup(s => s.ResolveVatRatesAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(vatCode is null
-                    ? new Dictionary<string, SriVatInfo>()
-                    : new Dictionary<string, SriVatInfo> { [vatCode] = new("IVA", vatPercent) });
-            Sri.Setup(s => s.ResolveIceRatesAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
+            Sri.Setup(s =>
+                    s.ResolveVatRatesAsync(
+                        It.IsAny<IEnumerable<string>>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(
+                    vatCode is null
+                        ? new Dictionary<string, SriVatInfo>()
+                        : new Dictionary<string, SriVatInfo> { [vatCode] = new("IVA", vatPercent) }
+                );
+            Sri.Setup(s =>
+                    s.ResolveIceRatesAsync(
+                        It.IsAny<IEnumerable<string>>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync(new Dictionary<string, SriIceInfo>());
         }
 
@@ -62,22 +93,54 @@ public sealed class SearchItemsForInvoiceContextualPricingTests
 
         public void SetPricing(Guid? customerId, PricingResult result) =>
             PricingResolver
-                .Setup(p => p.ResolveManyAsync(
-                    It.Is<PricingBatchContext>(c => c.ItemIds.Contains(ItemId) && c.CustomerId == customerId),
-                    It.IsAny<CancellationToken>()
-                ))
-                .ReturnsAsync(Result<IReadOnlyDictionary<Guid, PricingResult>>.Success(
-                    new Dictionary<Guid, PricingResult> { [ItemId] = result }
-                ));
+                .Setup(p =>
+                    p.ResolveManyAsync(
+                        It.Is<PricingBatchContext>(c =>
+                            c.ItemIds.Contains(ItemId) && c.CustomerId == customerId
+                        ),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(
+                    Result<IReadOnlyDictionary<Guid, PricingResult>>.Success(
+                        new Dictionary<Guid, PricingResult> { [ItemId] = result }
+                    )
+                );
     }
 
-    private static PricingResult CustomerResult(decimal unitPrice, string ruleApplied = "PercentDiscount:10") =>
-        new(ItemId, Guid.NewGuid(), "VIP", "Lista VIP", "USD", 100m, ruleApplied, unitPrice,
-            "Descuento 10% (regla general)", PriceListSelectionSource.Customer);
+    private static PricingResult CustomerResult(
+        decimal unitPrice,
+        string ruleApplied = "PercentDiscount:10"
+    ) =>
+        new(
+            ItemId,
+            Guid.NewGuid(),
+            "VIP",
+            "Lista VIP",
+            "USD",
+            100m,
+            ruleApplied,
+            unitPrice,
+            "Descuento 10% (regla general)",
+            PriceListSelectionSource.Customer
+        );
 
-    private static PricingResult DefaultResult(decimal unitPrice, string ruleApplied = "PercentMarkup:20") =>
-        new(ItemId, Guid.NewGuid(), "GEN", "Lista General", "USD", 100m, ruleApplied, unitPrice,
-            "Recargo 20% (regla general)", PriceListSelectionSource.CompanyDefault);
+    private static PricingResult DefaultResult(
+        decimal unitPrice,
+        string ruleApplied = "PercentMarkup:20"
+    ) =>
+        new(
+            ItemId,
+            Guid.NewGuid(),
+            "GEN",
+            "Lista General",
+            "USD",
+            100m,
+            ruleApplied,
+            unitPrice,
+            "Recargo 20% (regla general)",
+            PriceListSelectionSource.CompanyDefault
+        );
 
     private static PricingResult PvpResult(decimal basePrice = 100m) =>
         new(ItemId, null, "PVP", "Precio base", "USD", basePrice, null, basePrice, null, null);
@@ -88,7 +151,11 @@ public sealed class SearchItemsForInvoiceContextualPricingTests
         var f = new Fixture(basePrice: 100m);
         f.SetPricing(CustomerId, CustomerResult(90m));
 
-        var result = await f.Build().Handle(new SearchItemsForInvoiceQuery("prue", null, CustomerId: CustomerId), CancellationToken.None);
+        var result = await f.Build()
+            .Handle(
+                new SearchItemsForInvoiceQuery("prue", null, CustomerId: CustomerId),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         var row = result.Value!.Single();
@@ -104,7 +171,11 @@ public sealed class SearchItemsForInvoiceContextualPricingTests
         var f = new Fixture(basePrice: 100m);
         f.SetPricing(CustomerId, DefaultResult(120m));
 
-        var result = await f.Build().Handle(new SearchItemsForInvoiceQuery("prue", null, CustomerId: CustomerId), CancellationToken.None);
+        var result = await f.Build()
+            .Handle(
+                new SearchItemsForInvoiceQuery("prue", null, CustomerId: CustomerId),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         var row = result.Value!.Single();
@@ -118,7 +189,11 @@ public sealed class SearchItemsForInvoiceContextualPricingTests
         var f = new Fixture(basePrice: 100m);
         f.SetPricing(CustomerId, PvpResult(100m));
 
-        var result = await f.Build().Handle(new SearchItemsForInvoiceQuery("prue", null, CustomerId: CustomerId), CancellationToken.None);
+        var result = await f.Build()
+            .Handle(
+                new SearchItemsForInvoiceQuery("prue", null, CustomerId: CustomerId),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         var row = result.Value!.Single();
@@ -136,7 +211,11 @@ public sealed class SearchItemsForInvoiceContextualPricingTests
         var f = new Fixture(basePrice: 100m);
         f.SetPricing(CustomerId, CustomerResult(80m, "PercentDiscount:20 (ítem)"));
 
-        var result = await f.Build().Handle(new SearchItemsForInvoiceQuery("prue", null, CustomerId: CustomerId), CancellationToken.None);
+        var result = await f.Build()
+            .Handle(
+                new SearchItemsForInvoiceQuery("prue", null, CustomerId: CustomerId),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.Single().DiscountedSalePriceWithoutTax.Should().Be(80m);
@@ -150,7 +229,11 @@ public sealed class SearchItemsForInvoiceContextualPricingTests
         // resultado, cualquiera sea el origen.
         f.SetPricing(CustomerId, DefaultResult(110m));
 
-        var result = await f.Build().Handle(new SearchItemsForInvoiceQuery("prue", null, CustomerId: CustomerId), CancellationToken.None);
+        var result = await f.Build()
+            .Handle(
+                new SearchItemsForInvoiceQuery("prue", null, CustomerId: CustomerId),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.Single().PriceListName.Should().Be("Lista General");
@@ -162,15 +245,20 @@ public sealed class SearchItemsForInvoiceContextualPricingTests
         var f = new Fixture(basePrice: 100m);
         f.SetPricing(null, DefaultResult(105m));
 
-        var result = await f.Build().Handle(new SearchItemsForInvoiceQuery("prue", null, CustomerId: null), CancellationToken.None);
+        var result = await f.Build()
+            .Handle(
+                new SearchItemsForInvoiceQuery("prue", null, CustomerId: null),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.Single().PriceListName.Should().Be("Lista General");
         f.PricingResolver.Verify(
-            p => p.ResolveManyAsync(
-                It.Is<PricingBatchContext>(c => c.CustomerId == null),
-                It.IsAny<CancellationToken>()
-            ),
+            p =>
+                p.ResolveManyAsync(
+                    It.Is<PricingBatchContext>(c => c.CustomerId == null),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Once
         );
     }
@@ -183,8 +271,16 @@ public sealed class SearchItemsForInvoiceContextualPricingTests
         f.SetPricing(CustomerId, CustomerResult(90m));
         f.SetPricing(otherCustomerId, PvpResult(100m));
 
-        var first = await f.Build().Handle(new SearchItemsForInvoiceQuery("prue", null, CustomerId: CustomerId), CancellationToken.None);
-        var second = await f.Build().Handle(new SearchItemsForInvoiceQuery("prue", null, CustomerId: otherCustomerId), CancellationToken.None);
+        var first = await f.Build()
+            .Handle(
+                new SearchItemsForInvoiceQuery("prue", null, CustomerId: CustomerId),
+                CancellationToken.None
+            );
+        var second = await f.Build()
+            .Handle(
+                new SearchItemsForInvoiceQuery("prue", null, CustomerId: otherCustomerId),
+                CancellationToken.None
+            );
 
         first.Value!.Single().DiscountedSalePriceWithoutTax.Should().Be(90m);
         second.Value!.Single().DiscountedSalePriceWithoutTax.Should().BeNull();
@@ -197,7 +293,11 @@ public sealed class SearchItemsForInvoiceContextualPricingTests
         var f = new Fixture(basePrice: 100m);
         f.SetPricing(CustomerId, CustomerResult(90m));
 
-        await f.Build().Handle(new SearchItemsForInvoiceQuery("prue", null, CustomerId: CustomerId), CancellationToken.None);
+        await f.Build()
+            .Handle(
+                new SearchItemsForInvoiceQuery("prue", null, CustomerId: CustomerId),
+                CancellationToken.None
+            );
 
         f.PricingResolver.Verify(
             p => p.ResolveManyAsync(It.IsAny<PricingBatchContext>(), It.IsAny<CancellationToken>()),
@@ -219,7 +319,11 @@ public sealed class SearchItemsForInvoiceContextualPricingTests
         var f = new Fixture(basePrice: 100m, vatCode: "10", vatPercent: 15m);
         f.SetPricing(CustomerId, CustomerResult(90m));
 
-        var result = await f.Build().Handle(new SearchItemsForInvoiceQuery("prue", null, CustomerId: CustomerId), CancellationToken.None);
+        var result = await f.Build()
+            .Handle(
+                new SearchItemsForInvoiceQuery("prue", null, CustomerId: CustomerId),
+                CancellationToken.None
+            );
 
         var row = result.Value!.Single();
         row.FinalSalePrice.Should().Be(115m);
@@ -233,10 +337,22 @@ public sealed class SearchItemsForInvoiceContextualPricingTests
         var f = new Fixture(basePrice: 100m);
         f.SetPricing(CustomerId, CustomerResult(90m));
 
-        await f.Build().Handle(new SearchItemsForInvoiceQuery("prue", null, CustomerId: CustomerId), CancellationToken.None);
+        await f.Build()
+            .Handle(
+                new SearchItemsForInvoiceQuery("prue", null, CustomerId: CustomerId),
+                CancellationToken.None
+            );
 
         f.Repo.Verify(
-            r => r.SearchAsync(TenantId, CompanyId, It.IsAny<string>(), It.IsAny<Guid?>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            r =>
+                r.SearchAsync(
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<string>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<int>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Once
         );
     }

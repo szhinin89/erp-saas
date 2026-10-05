@@ -45,8 +45,7 @@ public sealed class CategoryNodeCatalogConfigurationResolverUsageTests
     public async Task Create_consulta_max_depth_al_resolver_y_rechaza_si_lo_excede()
     {
         var f = new Fixture();
-        f.CatalogResolver
-            .Setup(r =>
+        f.CatalogResolver.Setup(r =>
                 r.ResolveMaxCategoryDepthAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(1);
@@ -60,8 +59,7 @@ public sealed class CategoryNodeCatalogConfigurationResolverUsageTests
             UserId
         );
         parent.SetPath($"/{parent.Id}");
-        f.Repo
-            .Setup(r => r.GetByIdAsync(parent.Id, It.IsAny<CancellationToken>()))
+        f.Repo.Setup(r => r.GetByIdAsync(parent.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(parent);
 
         var result = await f.BuildCreateHandler()
@@ -72,8 +70,7 @@ public sealed class CategoryNodeCatalogConfigurationResolverUsageTests
 
         result.IsSuccess.Should().BeFalse();
         f.CatalogResolver.Verify(
-            r =>
-                r.ResolveMaxCategoryDepthAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()),
+            r => r.ResolveMaxCategoryDepthAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()),
             Times.Once
         );
     }
@@ -82,17 +79,18 @@ public sealed class CategoryNodeCatalogConfigurationResolverUsageTests
     public async Task Create_permite_el_nodo_cuando_no_excede_max_depth()
     {
         var f = new Fixture();
-        f.CatalogResolver
-            .Setup(r =>
+        f.CatalogResolver.Setup(r =>
                 r.ResolveMaxCategoryDepthAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(3);
-        f.Repo
-            .Setup(r => r.CodeExistsAsync("FAM01", TenantId, null, It.IsAny<CancellationToken>()))
+        f.Repo.Setup(r => r.CodeExistsAsync("FAM01", TenantId, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
         var result = await f.BuildCreateHandler()
-            .Handle(new CreateCategoryNodeCommand(null, "FAM01", "Familia", null, "Family"), default);
+            .Handle(
+                new CreateCategoryNodeCommand(null, "FAM01", "Familia", null, "Family"),
+                default
+            );
 
         result.IsSuccess.Should().BeTrue();
     }
@@ -101,13 +99,11 @@ public sealed class CategoryNodeCatalogConfigurationResolverUsageTests
     public async Task GetCategoryTree_expone_el_max_depth_resuelto_en_el_DTO()
     {
         var f = new Fixture();
-        f.CatalogResolver
-            .Setup(r =>
+        f.CatalogResolver.Setup(r =>
                 r.ResolveMaxCategoryDepthAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(5);
-        f.Repo
-            .Setup(r => r.GetAllAsync(TenantId, false, It.IsAny<CancellationToken>()))
+        f.Repo.Setup(r => r.GetAllAsync(TenantId, false, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<ItemCategoryNode>());
 
         var result = await f.BuildGetTreeHandler().Handle(new GetCategoryTreeQuery(), default);

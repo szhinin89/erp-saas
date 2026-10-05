@@ -53,7 +53,12 @@ public sealed class PurchaseCreditNoteDiscountIntegrationTests : IAsyncLifetime
         await db.Database.MigrateAsync();
 
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _userId);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _userId);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: _userId
+        );
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
         await db.SaveChangesAsync();
@@ -92,9 +97,23 @@ public sealed class PurchaseCreditNoteDiscountIntegrationTests : IAsyncLifetime
         await db.SaveChangesAsync();
         _branchId = branch.Id;
 
-        var supplier = BusinessPartner.Create(_tenantId, "05", "1710034065", 1, "Proveedor Test", _userId);
+        var supplier = BusinessPartner.Create(
+            _tenantId,
+            "05",
+            "1710034065",
+            1,
+            "Proveedor Test",
+            _userId
+        );
         db.BusinessPartners.Add(supplier);
-        var paymentTerm = PaymentTerm.Create(_tenantId, "CONT", "Contado", installments: 1, daysBetweenInstallments: 0, _userId);
+        var paymentTerm = PaymentTerm.Create(
+            _tenantId,
+            "CONT",
+            "Contado",
+            installments: 1,
+            daysBetweenInstallments: 0,
+            _userId
+        );
         db.Add(paymentTerm);
         await db.SaveChangesAsync();
         _supplierId = supplier.Id;
@@ -178,7 +197,10 @@ public sealed class PurchaseCreditNoteDiscountIntegrationTests : IAsyncLifetime
         var invoiceId = await SeedConfirmedInvoiceWithZeroPercentVatAsync(100m);
 
         await using var db = CreateContext();
-        var invoiceRepo = new PurchaseInvoiceRepository(db, new FixedCurrentCompany(() => _companyId));
+        var invoiceRepo = new PurchaseInvoiceRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        );
         var invoice = await invoiceRepo.GetByIdAsync(_tenantId, invoiceId, CancellationToken.None);
         invoice.Should().NotBeNull();
         var summary = invoice!.TaxSummaries.Should().ContainSingle().Which;
@@ -268,15 +290,29 @@ public sealed class PurchaseCreditNoteDiscountIntegrationTests : IAsyncLifetime
         var invoiceId = await SeedConfirmedInvoiceWithZeroPercentVatAsync(100m);
 
         await using var db = CreateContext();
-        var invoiceRepo = new PurchaseInvoiceRepository(db, new FixedCurrentCompany(() => _companyId));
+        var invoiceRepo = new PurchaseInvoiceRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        );
         var invoice = await invoiceRepo.GetByIdAsync(_tenantId, invoiceId, CancellationToken.None);
         var summary = invoice!.TaxSummaries.Should().ContainSingle().Which;
-        var creditNoteRepo = new PurchaseCreditNoteRepository(db, new FixedCurrentCompany(() => _companyId));
+        var creditNoteRepo = new PurchaseCreditNoteRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        );
         var payableRepo = new AccountsPayableRepository(db);
-        var returnRepo = new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId));
+        var returnRepo = new PurchaseReturnRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        );
 
         var payableBefore = await payableRepo.GetByOriginAsync(
-            _tenantId, _companyId, AccountsPayableOriginType.PurchaseInvoice, invoiceId, CancellationToken.None);
+            _tenantId,
+            _companyId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            invoiceId,
+            CancellationToken.None
+        );
         var outstandingBeforeAuthorize = payableBefore!.OutstandingAmount;
         outstandingBeforeAuthorize.Should().Be(100m, "seed: 1 cuota de 100, sin pagos registrados");
 
@@ -285,7 +321,9 @@ public sealed class PurchaseCreditNoteDiscountIntegrationTests : IAsyncLifetime
             invoiceRepo,
             payableRepo,
             new ERP.Infrastructure.Persistence.Repositories.Purchases.PurchaseReceptionDocumentRepository(
-                db, new FixedCurrentCompany(() => _companyId)),
+                db,
+                new FixedCurrentCompany(() => _companyId)
+            ),
             new RealDatabaseExceptionTranslator(),
             new FixedCurrentTenant(() => _tenantId),
             new FixedCurrentCompany(() => _companyId),
@@ -296,11 +334,19 @@ public sealed class PurchaseCreditNoteDiscountIntegrationTests : IAsyncLifetime
         );
         var created = await createHandler.Handle(
             new CreateDraftPurchaseCreditNoteCommand(
-                Guid.NewGuid(), invoiceId, null, PurchaseCreditNoteApplicationType.Discount,
-                $"001-001-{Random.Shared.Next(100000, 999999)}", null, null, null,
-                DateOnly.FromDateTime(DateTime.UtcNow), "Descuento por pronto pago",
+                Guid.NewGuid(),
+                invoiceId,
+                null,
+                PurchaseCreditNoteApplicationType.Discount,
+                $"001-001-{Random.Shared.Next(100000, 999999)}",
+                null,
+                null,
+                null,
+                DateOnly.FromDateTime(DateTime.UtcNow),
+                "Descuento por pronto pago",
                 Array.Empty<PurchaseCreditNoteDraftLineInput>(),
-                new[] { new PurchaseCreditNoteTaxSummaryLineInput(summary.Id, 3.00m) }),
+                new[] { new PurchaseCreditNoteTaxSummaryLineInput(summary.Id, 3.00m) }
+            ),
             CancellationToken.None
         );
         created.IsSuccess.Should().BeTrue(created.Error);
@@ -312,7 +358,9 @@ public sealed class PurchaseCreditNoteDiscountIntegrationTests : IAsyncLifetime
             new AccountsPayableRepository(authDb),
             new PurchaseReturnRepository(authDb, new FixedCurrentCompany(() => _companyId)),
             new ERP.Infrastructure.Persistence.Repositories.Purchases.PurchaseReceptionDocumentRepository(
-                authDb, new FixedCurrentCompany(() => _companyId)),
+                authDb,
+                new FixedCurrentCompany(() => _companyId)
+            ),
             new UnitOfWork(authDb),
             new RealDatabaseExceptionTranslator(),
             // No se llama (IrbpnrAmount = 0 para esta NC) — descuento sin IRBPNR nunca evalúa el
@@ -338,12 +386,18 @@ public sealed class PurchaseCreditNoteDiscountIntegrationTests : IAsyncLifetime
         // llega vacía y el cálculo daría 0 sin que eso sea un bug de negocio.
         await using var verifyDb = CreateContext();
         var payableAfter = await new AccountsPayableRepository(verifyDb).GetByOriginAsync(
-            _tenantId, _companyId, AccountsPayableOriginType.PurchaseInvoice, invoiceId, CancellationToken.None);
+            _tenantId,
+            _companyId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            invoiceId,
+            CancellationToken.None
+        );
         payableAfter!.OutstandingAmount.Should().Be(outstandingBeforeAuthorize - 3.00m);
 
         // No crea PurchaseReturn (nunca mueve inventario/Kardex): NC por descuento no genera
         // ninguna fila en purchase_returns para esta factura.
-        var returnsForInvoice = await verifyDb.PurchaseReturns.AsNoTracking()
+        var returnsForInvoice = await verifyDb
+            .PurchaseReturns.AsNoTracking()
             .Where(r => r.PurchaseInvoiceId == invoiceId)
             .ToListAsync(CancellationToken.None);
         returnsForInvoice.Should().BeEmpty();
@@ -397,7 +451,9 @@ public sealed class PurchaseCreditNoteDiscountIntegrationTests : IAsyncLifetime
     {
         // ZH-BACKEND-SECURITY-ERROR-FINAL-HARDENING-01: clasificación técnica real (único punto).
         public string? ClassifyFailureCode(Exception exception) =>
-            new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator().ClassifyFailureCode(exception);
+            new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator().ClassifyFailureCode(
+                exception
+            );
 
         public bool TryGetUniqueViolation(Exception exception, out DatabaseUniqueViolationInfo info)
         {

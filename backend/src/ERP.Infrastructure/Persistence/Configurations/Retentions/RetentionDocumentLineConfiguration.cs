@@ -8,7 +8,8 @@ namespace ERP.Infrastructure.Persistence.Configurations.Retentions;
 /// Fase <c>RETENTIONS-PERSISTENCE-01B</c>. Línea hija de <see cref="RetentionDocument"/> — mismo
 /// patrón que <c>ExpenseLineConfiguration</c>.
 /// </summary>
-public sealed class RetentionDocumentLineConfiguration : IEntityTypeConfiguration<RetentionDocumentLine>
+public sealed class RetentionDocumentLineConfiguration
+    : IEntityTypeConfiguration<RetentionDocumentLine>
 {
     public void Configure(EntityTypeBuilder<RetentionDocumentLine> builder)
     {
@@ -21,7 +22,11 @@ public sealed class RetentionDocumentLineConfiguration : IEntityTypeConfiguratio
             .Property(x => x.RetentionDocumentId)
             .HasColumnName("retention_document_id")
             .IsRequired();
-        builder.Property(x => x.TaxType).HasColumnName("tax_type").HasConversion<int>().IsRequired();
+        builder
+            .Property(x => x.TaxType)
+            .HasColumnName("tax_type")
+            .HasConversion<int>()
+            .IsRequired();
         builder
             .Property(x => x.RetentionCode)
             .HasColumnName("retention_code")

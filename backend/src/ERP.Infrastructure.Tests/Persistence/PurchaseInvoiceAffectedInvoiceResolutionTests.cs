@@ -272,10 +272,12 @@ public sealed class PurchaseInvoiceAffectedInvoiceResolutionTests : IAsyncLifeti
         );
 
         resolved.Should().NotBeNull();
-        resolved!.Id.Should().Be(
-            confirmedId,
-            because: "la NC nueva debe apuntar a la compra Confirmed activa, nunca a la Cancelled histórica"
-        );
+        resolved!
+            .Id.Should()
+            .Be(
+                confirmedId,
+                because: "la NC nueva debe apuntar a la compra Confirmed activa, nunca a la Cancelled histórica"
+            );
         resolved.Id.Should().NotBe(cancelledId);
         resolved.Status.Should().Be(PurchaseStatus.Confirmed);
     }
@@ -308,9 +310,11 @@ public sealed class PurchaseInvoiceAffectedInvoiceResolutionTests : IAsyncLifeti
             invoiceNumber
         );
 
-        resolved.Should().BeNull(
-            because: "una compra Cancelled es historial — nunca debe habilitar \"Procesar NC\" como si estuviera activa"
-        );
+        resolved
+            .Should()
+            .BeNull(
+                because: "una compra Cancelled es historial — nunca debe habilitar \"Procesar NC\" como si estuviera activa"
+            );
     }
 
     [Fact]

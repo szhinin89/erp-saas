@@ -18,7 +18,12 @@ public sealed class ImportBatchTests
         return batch;
     }
 
-    private static ImportBatch CreateValidatedBatch(int total, int valid, int issueRows, int warningRows)
+    private static ImportBatch CreateValidatedBatch(
+        int total,
+        int valid,
+        int issueRows,
+        int warningRows
+    )
     {
         var batch = CreateUploadedBatch();
         batch.BeginValidating(Guid.NewGuid());

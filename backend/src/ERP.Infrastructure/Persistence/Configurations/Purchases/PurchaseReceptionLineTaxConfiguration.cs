@@ -29,7 +29,11 @@ public sealed class PurchaseReceptionLineTaxConfiguration
             .HasColumnName("tax_rate_code")
             .HasMaxLength(PurchaseReceptionLineTax.TaxRateCodeMaxLen)
             .IsRequired();
-        builder.Property(x => x.Tarifa).HasColumnName("rate").HasColumnType("numeric(10,4)").IsRequired();
+        builder
+            .Property(x => x.Tarifa)
+            .HasColumnName("rate")
+            .HasColumnType("numeric(10,4)")
+            .IsRequired();
         builder
             .Property(x => x.TaxableBase)
             .HasColumnName("taxable_base")
@@ -44,6 +48,8 @@ public sealed class PurchaseReceptionLineTaxConfiguration
         builder
             .HasIndex(x => x.PurchaseReceptionLineId)
             .HasDatabaseName("ix_purchase_reception_line_taxes_line");
-        builder.HasIndex(x => x.TenantId).HasDatabaseName("ix_purchase_reception_line_taxes_tenant");
+        builder
+            .HasIndex(x => x.TenantId)
+            .HasDatabaseName("ix_purchase_reception_line_taxes_tenant");
     }
 }

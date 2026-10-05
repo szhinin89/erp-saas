@@ -1,7 +1,7 @@
-using ERP.Application.Common;
-using ERP.Domain.Modules.Purchases;
 using System.Globalization;
 using System.Xml.Linq;
+using ERP.Application.Common;
+using ERP.Domain.Modules.Purchases;
 
 namespace ERP.Application.Modules.Purchases.PurchaseReception.XmlParsing;
 
@@ -171,7 +171,9 @@ public sealed class PurchaseXmlDraftParser : IPurchaseXmlDraftParser
                 SriPaymentMethodCode: sriPaymentMethodCode,
                 Lines: lines,
                 LineErrors: lineErrors,
-                TotalWithoutTaxes: OptionalText(infoFactura, "totalSinImpuestos") is { } net ? ParseDecimal(net) : null
+                TotalWithoutTaxes: OptionalText(infoFactura, "totalSinImpuestos") is { } net
+                    ? ParseDecimal(net)
+                    : null
             );
 
             return Result<ParsedPurchaseXml>.Success(header);

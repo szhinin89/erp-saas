@@ -124,13 +124,9 @@ public sealed class PurchaseReceptionDetailProcessor : IPurchaseReceptionDetailP
                         parsedLine.SupplierAuxCode,
                         itemId,
                         matchStatus,
-                        parsedLine.Taxes.Select(t => (
-                            t.TaxCode,
-                            t.TaxRateCode,
-                            t.Tarifa,
-                            t.TaxableBase,
-                            t.TaxAmount
-                        )),
+                        parsedLine.Taxes.Select(t =>
+                            (t.TaxCode, t.TaxRateCode, t.Tarifa, t.TaxableBase, t.TaxAmount)
+                        ),
                         parsedLine.AdditionalFields.Select(f => (f.Name, f.Value, f.Position))
                     );
 

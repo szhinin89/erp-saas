@@ -68,7 +68,9 @@ public sealed class CompanyBrandingRideProviderTests
         // IMediaService aquí, este test deja de compilar con un solo parámetro.
         var resolver = new Mock<ICompanyBrandingResolver>();
         resolver
-            .Setup(r => r.GetAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(CompanyBrandingSettings.Empty());
 
         var provider = new CompanyBrandingRideProvider(resolver.Object);

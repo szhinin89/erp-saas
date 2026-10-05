@@ -24,7 +24,8 @@ public sealed class PreviewSalesRepricingQueryHandlerTests
     {
         public Mock<IPricingResolver> Pricing { get; } = new();
 
-        public PreviewSalesRepricingQueryHandler BuildHandler() => new(Pricing.Object, PrecisionPolicyTestDouble.Mock());
+        public PreviewSalesRepricingQueryHandler BuildHandler() =>
+            new(Pricing.Object, PrecisionPolicyTestDouble.Mock());
 
         public void SetupOld(Guid? customerId, IReadOnlyDictionary<Guid, PricingResult> dict) =>
             Pricing
@@ -83,7 +84,8 @@ public sealed class PreviewSalesRepricingQueryHandlerTests
             }
         );
 
-        var result = await f.BuildHandler().Handle(Query(OldCustomerId, NewCustomerId), CancellationToken.None);
+        var result = await f.BuildHandler()
+            .Handle(Query(OldCustomerId, NewCustomerId), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         var item = result.Value!.Single();
@@ -102,18 +104,33 @@ public sealed class PreviewSalesRepricingQueryHandlerTests
             OldCustomerId,
             new Dictionary<Guid, PricingResult>
             {
-                [ItemId] = Result_(ItemId, listA, "Lista A", 90m, 100m, source: PriceListSelectionSource.Customer),
+                [ItemId] = Result_(
+                    ItemId,
+                    listA,
+                    "Lista A",
+                    90m,
+                    100m,
+                    source: PriceListSelectionSource.Customer
+                ),
             }
         );
         f.SetupOld(
             NewCustomerId,
             new Dictionary<Guid, PricingResult>
             {
-                [ItemId] = Result_(ItemId, listB, "Lista B", 70m, 100m, source: PriceListSelectionSource.Customer),
+                [ItemId] = Result_(
+                    ItemId,
+                    listB,
+                    "Lista B",
+                    70m,
+                    100m,
+                    source: PriceListSelectionSource.Customer
+                ),
             }
         );
 
-        var result = await f.BuildHandler().Handle(Query(OldCustomerId, NewCustomerId), CancellationToken.None);
+        var result = await f.BuildHandler()
+            .Handle(Query(OldCustomerId, NewCustomerId), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         var item = result.Value!.Single();
@@ -140,7 +157,11 @@ public sealed class PreviewSalesRepricingQueryHandlerTests
             new Dictionary<Guid, PricingResult>
             {
                 [ItemId] = Result_(
-                    ItemId, customerListId, "Lista Mayorista", 90m, 100m,
+                    ItemId,
+                    customerListId,
+                    "Lista Mayorista",
+                    90m,
+                    100m,
                     source: PriceListSelectionSource.Customer
                 ),
             }
@@ -150,13 +171,18 @@ public sealed class PreviewSalesRepricingQueryHandlerTests
             new Dictionary<Guid, PricingResult>
             {
                 [ItemId] = Result_(
-                    ItemId, defaultListId, "Lista General", 100m, 100m,
+                    ItemId,
+                    defaultListId,
+                    "Lista General",
+                    100m,
+                    100m,
                     source: PriceListSelectionSource.CompanyDefault
                 ),
             }
         );
 
-        var result = await f.BuildHandler().Handle(Query(OldCustomerId, NewCustomerId), CancellationToken.None);
+        var result = await f.BuildHandler()
+            .Handle(Query(OldCustomerId, NewCustomerId), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         var item = result.Value!.Single();
@@ -176,7 +202,11 @@ public sealed class PreviewSalesRepricingQueryHandlerTests
             new Dictionary<Guid, PricingResult>
             {
                 [ItemId] = Result_(
-                    ItemId, defaultListId, "Lista General", 100m, 100m,
+                    ItemId,
+                    defaultListId,
+                    "Lista General",
+                    100m,
+                    100m,
                     source: PriceListSelectionSource.CompanyDefault
                 ),
             }
@@ -186,13 +216,18 @@ public sealed class PreviewSalesRepricingQueryHandlerTests
             new Dictionary<Guid, PricingResult>
             {
                 [ItemId] = Result_(
-                    ItemId, customerListId, "Lista Mayorista", 85m, 100m,
+                    ItemId,
+                    customerListId,
+                    "Lista Mayorista",
+                    85m,
+                    100m,
                     source: PriceListSelectionSource.Customer
                 ),
             }
         );
 
-        var result = await f.BuildHandler().Handle(Query(OldCustomerId, NewCustomerId), CancellationToken.None);
+        var result = await f.BuildHandler()
+            .Handle(Query(OldCustomerId, NewCustomerId), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         var item = result.Value!.Single();
@@ -218,13 +253,19 @@ public sealed class PreviewSalesRepricingQueryHandlerTests
             new Dictionary<Guid, PricingResult>
             {
                 [ItemId] = Result_(
-                    ItemId, newListId, "Lista Mayorista", 36m, 40m,
-                    ruleApplied: "PriceListItem (lista)", source: PriceListSelectionSource.Customer
+                    ItemId,
+                    newListId,
+                    "Lista Mayorista",
+                    36m,
+                    40m,
+                    ruleApplied: "PriceListItem (lista)",
+                    source: PriceListSelectionSource.Customer
                 ),
             }
         );
 
-        var result = await f.BuildHandler().Handle(Query(OldCustomerId, NewCustomerId), CancellationToken.None);
+        var result = await f.BuildHandler()
+            .Handle(Query(OldCustomerId, NewCustomerId), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         var item = result.Value!.Single();
@@ -249,11 +290,19 @@ public sealed class PreviewSalesRepricingQueryHandlerTests
             NewCustomerId,
             new Dictionary<Guid, PricingResult>
             {
-                [ItemId] = Result_(ItemId, listId, "Lista Mayorista", 20m, 25m, ruleApplied: "PercentDiscount:20"),
+                [ItemId] = Result_(
+                    ItemId,
+                    listId,
+                    "Lista Mayorista",
+                    20m,
+                    25m,
+                    ruleApplied: "PercentDiscount:20"
+                ),
             }
         );
 
-        var result = await f.BuildHandler().Handle(Query(OldCustomerId, NewCustomerId), CancellationToken.None);
+        var result = await f.BuildHandler()
+            .Handle(Query(OldCustomerId, NewCustomerId), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         var item = result.Value!.Single();
@@ -274,7 +323,14 @@ public sealed class PreviewSalesRepricingQueryHandlerTests
             OldCustomerId,
             new Dictionary<Guid, PricingResult>
             {
-                [ItemId] = Result_(ItemId, listId, "Lista Mayorista", 20m, 25m, ruleApplied: "PercentDiscount:20"),
+                [ItemId] = Result_(
+                    ItemId,
+                    listId,
+                    "Lista Mayorista",
+                    20m,
+                    25m,
+                    ruleApplied: "PercentDiscount:20"
+                ),
             }
         );
         f.SetupOld(
@@ -285,7 +341,8 @@ public sealed class PreviewSalesRepricingQueryHandlerTests
             }
         );
 
-        var result = await f.BuildHandler().Handle(Query(OldCustomerId, NewCustomerId), CancellationToken.None);
+        var result = await f.BuildHandler()
+            .Handle(Query(OldCustomerId, NewCustomerId), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         var item = result.Value!.Single();
@@ -306,7 +363,14 @@ public sealed class PreviewSalesRepricingQueryHandlerTests
             OldCustomerId,
             new Dictionary<Guid, PricingResult>
             {
-                [ItemId] = Result_(ItemId, listId, "Lista Mayorista", 90m, 100m, ruleApplied: "PriceListItem (lista)"),
+                [ItemId] = Result_(
+                    ItemId,
+                    listId,
+                    "Lista Mayorista",
+                    90m,
+                    100m,
+                    ruleApplied: "PriceListItem (lista)"
+                ),
             }
         );
         f.SetupOld(
@@ -314,14 +378,19 @@ public sealed class PreviewSalesRepricingQueryHandlerTests
             new Dictionary<Guid, PricingResult>
             {
                 [ItemId] = Result_(
-                    ItemId, listId, "Lista Mayorista", 70m, 100m,
+                    ItemId,
+                    listId,
+                    "Lista Mayorista",
+                    70m,
+                    100m,
                     ruleApplied: "PriceListItemException (excepción cliente)",
                     ruleDescription: "Precio de excepción para este cliente"
                 ),
             }
         );
 
-        var result = await f.BuildHandler().Handle(Query(OldCustomerId, NewCustomerId), CancellationToken.None);
+        var result = await f.BuildHandler()
+            .Handle(Query(OldCustomerId, NewCustomerId), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         var item = result.Value!.Single();
@@ -375,23 +444,27 @@ public sealed class PreviewSalesRepricingQueryHandlerTests
             Times.Exactly(2)
         );
         f.Pricing.Verify(
-            p => p.ResolveManyAsync(
-                It.Is<PricingBatchContext>(c =>
-                    c.ItemIds.Count == 3
-                    && c.ItemIds.Contains(itemA)
-                    && c.ItemIds.Contains(itemB)
-                    && c.ItemIds.Contains(itemC)
-                    && c.CustomerId == OldCustomerId
+            p =>
+                p.ResolveManyAsync(
+                    It.Is<PricingBatchContext>(c =>
+                        c.ItemIds.Count == 3
+                        && c.ItemIds.Contains(itemA)
+                        && c.ItemIds.Contains(itemB)
+                        && c.ItemIds.Contains(itemC)
+                        && c.CustomerId == OldCustomerId
+                    ),
+                    It.IsAny<CancellationToken>()
                 ),
-                It.IsAny<CancellationToken>()
-            ),
             Times.Once
         );
         f.Pricing.Verify(
-            p => p.ResolveManyAsync(
-                It.Is<PricingBatchContext>(c => c.ItemIds.Count == 3 && c.CustomerId == NewCustomerId),
-                It.IsAny<CancellationToken>()
-            ),
+            p =>
+                p.ResolveManyAsync(
+                    It.Is<PricingBatchContext>(c =>
+                        c.ItemIds.Count == 3 && c.CustomerId == NewCustomerId
+                    ),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Once
         );
     }
@@ -418,10 +491,11 @@ public sealed class PreviewSalesRepricingQueryHandlerTests
         var item = result.Value!.Single();
         item.Changed.Should().BeFalse();
         f.Pricing.Verify(
-            p => p.ResolveManyAsync(
-                It.Is<PricingBatchContext>(c => c.CustomerId == null),
-                It.IsAny<CancellationToken>()
-            ),
+            p =>
+                p.ResolveManyAsync(
+                    It.Is<PricingBatchContext>(c => c.CustomerId == null),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Exactly(2)
         );
     }
@@ -433,15 +507,17 @@ public sealed class PreviewSalesRepricingQueryHandlerTests
         // ICurrentCompany ambientales) — este handler no lo reimplementa, solo debe propagar el
         // Failure tal cual, sin construir ningún item de comparación con datos parciales.
         var f = new Fixture();
-        f.Pricing
-            .Setup(p => p.ResolveManyAsync(It.IsAny<PricingBatchContext>(), It.IsAny<CancellationToken>()))
+        f.Pricing.Setup(p =>
+                p.ResolveManyAsync(It.IsAny<PricingBatchContext>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(
                 Result<IReadOnlyDictionary<Guid, PricingResult>>.Failure(
                     "No se pudo resolver el contexto de tenant/empresa."
                 )
             );
 
-        var result = await f.BuildHandler().Handle(Query(OldCustomerId, NewCustomerId), CancellationToken.None);
+        var result = await f.BuildHandler()
+            .Handle(Query(OldCustomerId, NewCustomerId), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         f.Pricing.Verify(
@@ -456,7 +532,10 @@ public sealed class PreviewSalesRepricingQueryHandlerTests
         var f = new Fixture();
 
         var result = await f.BuildHandler()
-            .Handle(new PreviewSalesRepricingQuery(new List<Guid>(), OldCustomerId, NewCustomerId), CancellationToken.None);
+            .Handle(
+                new PreviewSalesRepricingQuery(new List<Guid>(), OldCustomerId, NewCustomerId),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value.Should().BeEmpty();

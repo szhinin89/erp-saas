@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Accounting.Posting;
@@ -11,8 +13,6 @@ using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 using FluentValidation;
 using MediatR;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace ERP.Application.Modules.Purchases.UseCases;
 
@@ -142,11 +142,7 @@ public sealed class AuthorizePurchaseCreditNoteHandler
                 );
             }
 
-            var invoice = await _invoiceRepo.GetByIdAsync(
-                tid,
-                creditNote.PurchaseInvoiceId,
-                ct
-            );
+            var invoice = await _invoiceRepo.GetByIdAsync(tid, creditNote.PurchaseInvoiceId, ct);
             if (invoice is null)
             {
                 await _uow.RollbackAsync(ct);
@@ -169,10 +165,7 @@ public sealed class AuthorizePurchaseCreditNoteHandler
             }
 
             var balanceDueBeforeApplication = payable.OutstandingAmount;
-            var authorizeHash = ComputeAuthorizePayloadHash(
-                creditNote.Id,
-                cmd.ClientRequestId
-            );
+            var authorizeHash = ComputeAuthorizePayloadHash(creditNote.Id, cmd.ClientRequestId);
 
             // ── Guard IRBPNR (TAX-LINE-SSOT-ICE-IRBPNR-01 Fase 5E) — mismo criterio que
             // ConfirmPurchaseUseCases STEP 0 / AuthorizePurchaseReturnHandler: precondición antes
@@ -211,11 +204,7 @@ public sealed class AuthorizePurchaseCreditNoteHandler
 
             if (creditNote.ReceptionDocumentId is { } receptionDocumentId)
             {
-                var receptionDoc = await _receptionRepo.GetByIdAsync(
-                    tid,
-                    receptionDocumentId,
-                    ct
-                );
+                var receptionDoc = await _receptionRepo.GetByIdAsync(tid, receptionDocumentId, ct);
                 if (receptionDoc is null)
                 {
                     await _uow.RollbackAsync(ct);
@@ -281,7 +270,12 @@ public sealed class AuthorizePurchaseCreditNoteHandler
             await _uow.CommitAsync(ct);
 
             return Result<PurchaseCreditNoteDto>.Success(
-                CreditNoteMap.ToDto(creditNote, invoice.InvoiceNumber, invoice.SupplierName, payable.OutstandingAmount)
+                CreditNoteMap.ToDto(
+                    creditNote,
+                    invoice.InvoiceNumber,
+                    invoice.SupplierName,
+                    payable.OutstandingAmount
+                )
             );
         }
         catch

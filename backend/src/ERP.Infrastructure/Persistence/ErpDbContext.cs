@@ -211,8 +211,7 @@ public class ErpDbContext : DbContext
     // ── MasterData BC ─────────────────────────────────────────────────────
     public DbSet<BusinessPartner> BusinessPartners => Set<BusinessPartner>();
     public DbSet<BusinessPartnerRole> BusinessPartnerRoles => Set<BusinessPartnerRole>();
-    public DbSet<CompanyBpSalesSettings> CompanyBpSalesSettings =>
-        Set<CompanyBpSalesSettings>();
+    public DbSet<CompanyBpSalesSettings> CompanyBpSalesSettings => Set<CompanyBpSalesSettings>();
     public DbSet<CompanyBpPurchaseSettings> CompanyBpPurchaseSettings =>
         Set<CompanyBpPurchaseSettings>();
     public DbSet<SupplierRetentionDefault> SupplierRetentionDefaults =>
@@ -248,9 +247,11 @@ public class ErpDbContext : DbContext
 
     // ── Communications BC ───────────────────────────────────────────────
     public DbSet<CommunicationOutbox> CommunicationOutbox => Set<CommunicationOutbox>();
-    public DbSet<CommunicationOutboxAttachment> CommunicationOutboxAttachments => Set<CommunicationOutboxAttachment>();
+    public DbSet<CommunicationOutboxAttachment> CommunicationOutboxAttachments =>
+        Set<CommunicationOutboxAttachment>();
     public DbSet<CommunicationTemplate> CommunicationTemplates => Set<CommunicationTemplate>();
-    public DbSet<CommunicationDeliveryAttempt> CommunicationDeliveryAttempts => Set<CommunicationDeliveryAttempt>();
+    public DbSet<CommunicationDeliveryAttempt> CommunicationDeliveryAttempts =>
+        Set<CommunicationDeliveryAttempt>();
 
     // ── DocTypes (internal document/process SSOT + workflow policy) ──────
     public DbSet<DocType> DocTypes => Set<DocType>();
@@ -266,7 +267,8 @@ public class ErpDbContext : DbContext
     public DbSet<SriIceRate> SriIceRates => Set<SriIceRate>();
     public DbSet<SriIrbpnrRate> SriIrbpnrRates => Set<SriIrbpnrRate>();
     public DbSet<SriRetentionCode> SriRetentionCodes => Set<SriRetentionCode>();
-    public DbSet<SriRetentionCodeVersion> SriRetentionCodeVersions => Set<SriRetentionCodeVersion>();
+    public DbSet<SriRetentionCodeVersion> SriRetentionCodeVersions =>
+        Set<SriRetentionCodeVersion>();
     public DbSet<SriNormativeSource> SriNormativeSources => Set<SriNormativeSource>();
     public DbSet<SriPaymentMethod> SriPaymentMethods => Set<SriPaymentMethod>();
     public DbSet<SriTaxRegime> SriTaxRegimes => Set<SriTaxRegime>();
@@ -381,8 +383,7 @@ public class ErpDbContext : DbContext
     public DbSet<ExpenseCategoryNode> ExpenseCategoryNodes => Set<ExpenseCategoryNode>();
     public DbSet<ExpenseDocument> ExpenseDocuments => Set<ExpenseDocument>();
     public DbSet<ExpenseLine> ExpenseLines => Set<ExpenseLine>();
-    public DbSet<ExpensePaymentSchedule> ExpensePaymentSchedules =>
-        Set<ExpensePaymentSchedule>();
+    public DbSet<ExpensePaymentSchedule> ExpensePaymentSchedules => Set<ExpensePaymentSchedule>();
 
     // ── Retentions BC (RETENTIONS-PERSISTENCE-01B — transversal, ver
     //    docs/decisions/RETENTIONS-MODULE-DESIGN-01.md) ─────────────────────
@@ -420,6 +421,7 @@ public class ErpDbContext : DbContext
     public DbSet<ERP.Domain.Modules.Sales.Entities.SalesPaymentSchedule> SalesPaymentSchedules =>
         Set<ERP.Domain.Modules.Sales.Entities.SalesPaymentSchedule>();
     public DbSet<PaymentMethod> PaymentMethods => Set<PaymentMethod>();
+
     // SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01
     public DbSet<ERP.Domain.Modules.Sales.Entities.PaymentMethodAccount> PaymentMethodAccounts =>
         Set<ERP.Domain.Modules.Sales.Entities.PaymentMethodAccount>();

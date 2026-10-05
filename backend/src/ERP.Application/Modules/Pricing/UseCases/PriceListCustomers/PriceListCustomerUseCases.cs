@@ -86,7 +86,9 @@ public sealed class GetPriceListCustomersHandler
         var tenantId = _t.TenantId;
         var priceList = await _priceLists.GetByIdAsync(tenantId, q.PriceListId, ct);
         if (priceList is null)
-            return Result<IReadOnlyList<PriceListCustomerDto>>.NotFound("Lista de precios no encontrada.");
+            return Result<IReadOnlyList<PriceListCustomerDto>>.NotFound(
+                "Lista de precios no encontrada."
+            );
 
         // 2 queries totales, sin importar cuántos clientes tenga la lista (nunca N+1) — mismo
         // patrón que GetItemsAssignedToPriceListHandler.
@@ -149,7 +151,9 @@ public sealed class AssignCustomerToPriceListHandler
 
         var targetList = await _priceLists.GetByIdAsync(tenantId, cmd.PriceListId, ct);
         if (targetList is null)
-            return Result<PriceListCustomerAssignResultDto>.NotFound("Lista de precios no encontrada.");
+            return Result<PriceListCustomerAssignResultDto>.NotFound(
+                "Lista de precios no encontrada."
+            );
 
         // CustomerId existente y perteneciente al Tenant — IBusinessPartnerRepository filtra
         // por tenant vía global query filter (fail-closed), nunca se pasa el tenantId manual.
@@ -159,13 +163,19 @@ public sealed class AssignCustomerToPriceListHandler
 
         // Como máximo una relación ACTIVA por (Tenant, Company, Customer) — se busca ANTES de
         // escribir para nunca fallar con el constraint de BD como un error técnico.
-        var existingForCustomer = await _assignments.GetByCustomerAsync(tenantId, cmd.CustomerId, ct);
+        var existingForCustomer = await _assignments.GetByCustomerAsync(
+            tenantId,
+            cmd.CustomerId,
+            ct
+        );
         var currentActive = existingForCustomer.FirstOrDefault(a => a.IsActive);
 
         // Reactivación/creación puntual para ESTA lista concreta (independiente de si el cliente
         // tiene otra activa) — se necesita para saber si hay que reactivar una fila deshabilitada
         // en vez de duplicarla.
-        var existingForThisList = existingForCustomer.FirstOrDefault(a => a.PriceListId == cmd.PriceListId);
+        var existingForThisList = existingForCustomer.FirstOrDefault(a =>
+            a.PriceListId == cmd.PriceListId
+        );
 
         if (currentActive is not null && currentActive.PriceListId == cmd.PriceListId)
             // Ya asignado exactamente a esta lista — idempotente, sin cambios.
@@ -177,7 +187,11 @@ public sealed class AssignCustomerToPriceListHandler
         {
             // Tiene otra lista activa y el usuario todavía no confirmó el cambio — no se escribe
             // nada, se expone el conflicto para que la UI pida confirmación explícita.
-            var conflictingList = await _priceLists.GetByIdAsync(tenantId, currentActive.PriceListId, ct);
+            var conflictingList = await _priceLists.GetByIdAsync(
+                tenantId,
+                currentActive.PriceListId,
+                ct
+            );
             return Result<PriceListCustomerAssignResultDto>.Success(
                 new PriceListCustomerAssignResultDto(
                     PriceListCustomerAssignStatus.Conflict,
@@ -240,11 +254,21 @@ public sealed class DisablePriceListCustomerHandler
         _u = u;
     }
 
-    public async Task<Result<bool>> Handle(DisablePriceListCustomerCommand cmd, CancellationToken ct)
+    public async Task<Result<bool>> Handle(
+        DisablePriceListCustomerCommand cmd,
+        CancellationToken ct
+    )
     {
-        var existing = await _assignments.FindByKeyAsync(_t.TenantId, cmd.PriceListId, cmd.CustomerId, ct);
+        var existing = await _assignments.FindByKeyAsync(
+            _t.TenantId,
+            cmd.PriceListId,
+            cmd.CustomerId,
+            ct
+        );
         if (existing is not { IsActive: true })
-            return Result<bool>.NotFound("El cliente no está asignado (activo) a esta lista de precios.");
+            return Result<bool>.NotFound(
+                "El cliente no está asignado (activo) a esta lista de precios."
+            );
 
         existing.Disable(_u.UserId);
         await _assignments.SaveChangesAsync(ct);

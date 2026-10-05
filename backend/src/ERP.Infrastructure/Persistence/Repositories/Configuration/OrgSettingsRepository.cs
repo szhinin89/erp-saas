@@ -89,7 +89,9 @@ public sealed class OrgSettingsRepository : IOrgSettingsRepository
 
         // CONFIG-FOUNDATION-P2-01: solo se registra si la definition exige auditoría y el valor
         // realmente cambió — nunca se loguea un no-op (escribir el mismo valor que ya estaba).
-        if (definition.RequiresAudit && !string.Equals(oldValue, newValue, StringComparison.Ordinal))
+        if (
+            definition.RequiresAudit && !string.Equals(oldValue, newValue, StringComparison.Ordinal)
+        )
         {
             await _changeLogger.LogAsync(
                 new ConfigurationChangeLogEntry(
@@ -154,7 +156,10 @@ public sealed class OrgSettingsRepository : IOrgSettingsRepository
             throw ConfigurationDefinitionViolationException.UnknownKey(setting.Key);
 
         if (!definition!.AllowedScopes.Contains(setting.Scope))
-            throw ConfigurationDefinitionViolationException.ScopeNotAllowed(setting.Key, setting.Scope);
+            throw ConfigurationDefinitionViolationException.ScopeNotAllowed(
+                setting.Key,
+                setting.Scope
+            );
 
         if (setting.DataType != definition.PersistedDataType)
             throw ConfigurationDefinitionViolationException.DataTypeMismatch(
@@ -164,7 +169,10 @@ public sealed class OrgSettingsRepository : IOrgSettingsRepository
             );
 
         if (!definition.IsValidValue(setting.Value))
-            throw ConfigurationDefinitionViolationException.InvalidValue(setting.Key, setting.Value);
+            throw ConfigurationDefinitionViolationException.InvalidValue(
+                setting.Key,
+                setting.Value
+            );
 
         return definition;
     }

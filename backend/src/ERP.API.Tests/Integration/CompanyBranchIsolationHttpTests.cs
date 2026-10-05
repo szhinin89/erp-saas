@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.Http.Headers;
 using ERP.API.Tests.Support;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Branches.Entities;
@@ -7,8 +9,6 @@ using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Services;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using System.Net;
-using System.Net.Http.Headers;
 
 namespace ERP.API.Tests.Integration;
 
@@ -129,7 +129,13 @@ public sealed class CompanyBranchIsolationHttpFixture : IAsyncLifetime
         UserId = user.Id;
 
         // Membership solo en Empresa A — el usuario nunca tuvo acceso a Empresa B.
-        var membership = CompanyUserMembership.Create(companyA.Id, user.Id, "Admin", null, _adminId);
+        var membership = CompanyUserMembership.Create(
+            companyA.Id,
+            user.Id,
+            "Admin",
+            null,
+            _adminId
+        );
         db.CompanyUserMemberships.Add(membership);
         await db.SaveChangesAsync();
 
@@ -180,12 +186,14 @@ public sealed class CompanyBranchIsolationHttpFixture : IAsyncLifetime
 }
 
 [Trait("Category", "PostgreSql")]
-public sealed class CompanyBranchIsolationHttpTests : IClassFixture<CompanyBranchIsolationHttpFixture>
+public sealed class CompanyBranchIsolationHttpTests
+    : IClassFixture<CompanyBranchIsolationHttpFixture>
 {
     private const string Endpoint = "/api/v1/cash-registers";
     private readonly CompanyBranchIsolationHttpFixture _f;
 
-    public CompanyBranchIsolationHttpTests(CompanyBranchIsolationHttpFixture fixture) => _f = fixture;
+    public CompanyBranchIsolationHttpTests(CompanyBranchIsolationHttpFixture fixture) =>
+        _f = fixture;
 
     [Fact]
     public async Task Request_con_X_Company_Id_y_X_Branch_Id_ambos_de_Empresa_A_es_aceptado_200()
@@ -281,10 +289,7 @@ public sealed class CompanyBranchIsolationHttpTests : IClassFixture<CompanyBranc
     {
         // GetBranchesQuery es ICompanyScopedRequest pero no IBranchScopedRequest —
         // debe funcionar solo con X-Company-Id, sin exigir sucursal.
-        using var request = new HttpRequestMessage(
-            HttpMethod.Get,
-            "/api/v1/settings/branches"
-        );
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/settings/branches");
         request.Headers.Add("X-Company-Id", _f.CompanyAId.ToString());
 
         using var response = await _f.Client.SendAsync(request);

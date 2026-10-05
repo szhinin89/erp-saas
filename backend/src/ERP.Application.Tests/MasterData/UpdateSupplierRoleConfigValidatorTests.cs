@@ -40,7 +40,11 @@ public sealed class UpdateSupplierRoleConfigValidatorTests
 
         result.Errors.Should().NotContain(e => e.PropertyName.Contains("DefaultTaxSupportCode"));
         _catalogRepo.Verify(
-            r => r.TaxSupportCodeExistsActiveAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            r =>
+                r.TaxSupportCodeExistsActiveAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }
@@ -84,7 +88,11 @@ public sealed class UpdateSupplierRoleConfigValidatorTests
 
         result.Errors.Should().NotContain(e => e.PropertyName.Contains("DefaultPaymentMethodCode"));
         _catalogRepo.Verify(
-            r => r.PaymentMethodCodeExistsActiveAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            r =>
+                r.PaymentMethodCodeExistsActiveAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }
@@ -128,7 +136,11 @@ public sealed class UpdateSupplierRoleConfigValidatorTests
 
         result.Errors.Should().NotContain(e => e.PropertyName.Contains("RefundProviderTypeCode"));
         _catalogRepo.Verify(
-            r => r.SupplierTypeCodeExistsActiveAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            r =>
+                r.SupplierTypeCodeExistsActiveAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }

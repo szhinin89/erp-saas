@@ -12,18 +12,26 @@ namespace ERP.Application.Modules.Communications.Services;
 /// </summary>
 public interface ICommunicationQueue
 {
-    Task<QueuedCommunicationDto> EnqueueAsync(CommunicationRequest request, CancellationToken ct = default);
+    Task<QueuedCommunicationDto> EnqueueAsync(
+        CommunicationRequest request,
+        CancellationToken ct = default
+    );
 }
 
 /// <param name="Scope">Alcance explícito: <see cref="CommunicationScope.Company"/> o <see cref="CommunicationScope.System"/>.</param>
 /// <param name="Purpose">Propósito registrado en <c>CommunicationPurposes</c> (define alcance y canales permitidos).</param>
 /// <param name="Source">Origen de negocio (módulo, tipo, id): parte de la identidad.</param>
 /// <param name="RecipientRole">Rol estable del destinatario: parte de la identidad (el email no).</param>
+/// <param name="RecipientName"></param>
 /// <param name="Template">
 /// Variables tipadas del template del propósito (ZH-COMMUNICATIONS-TEMPLATES-01): el módulo origen
 /// aporta datos, nunca asunto/HTML/texto. La cola resuelve el template (default u override de la
 /// empresa) y lo renderiza AL ENCOLAR.
 /// </param>
+/// <param name="Attachments"></param>
+/// <param name="Channel"></param>
+/// <param name="Priority"></param>
+/// <param name="ScheduledAtUtc"></param>
 /// <param name="RecipientEmail">
 /// ZH-EDOC-COMMUNICATIONS-01 — puede venir null/vacío/inválido: la cola NO lanza ni inventa un correo;
 /// registra la comunicación como Failed/Permanent con <c>COMMUNICATION_RECIPIENT_MISSING</c> (semántica

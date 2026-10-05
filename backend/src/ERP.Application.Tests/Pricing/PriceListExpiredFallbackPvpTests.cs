@@ -70,7 +70,15 @@ public sealed class PriceListExpiredFallbackPvpTests
                         It.IsAny<CancellationToken>()
                     )
                 )
-                .ReturnsAsync(PriceListItem.Create(TenantId, CompanyId, Guid.NewGuid(), Guid.NewGuid(), UserId));
+                .ReturnsAsync(
+                    PriceListItem.Create(
+                        TenantId,
+                        CompanyId,
+                        Guid.NewGuid(),
+                        Guid.NewGuid(),
+                        UserId
+                    )
+                );
         }
 
         public PricingResolver Build() =>
@@ -131,7 +139,8 @@ public sealed class PriceListExpiredFallbackPvpTests
         strategy
             .Setup(s => s.Apply(It.IsAny<decimal>(), It.IsAny<decimal>()))
             .Returns((decimal basePrice, decimal pct) => basePrice * (1 - pct / 100m));
-        f.Strategies.Setup(s => s.Resolve(PricingRuleType.PercentDiscount)).Returns(strategy.Object);
+        f.Strategies.Setup(s => s.Resolve(PricingRuleType.PercentDiscount))
+            .Returns(strategy.Object);
 
         var item = CreateItem(100m);
         var priceList = CreatePriceList(
@@ -140,11 +149,11 @@ public sealed class PriceListExpiredFallbackPvpTests
             PricingRuleType.PercentDiscount,
             10m
         );
-        f.Items
-            .Setup(r => r.GetByIdLightAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+        f.Items.Setup(r => r.GetByIdLightAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(item);
-        f.PriceLists
-            .Setup(r => r.GetByIdAsync(TenantId, priceList.Id, It.IsAny<CancellationToken>()))
+        f.PriceLists.Setup(r =>
+                r.GetByIdAsync(TenantId, priceList.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(priceList);
 
         var result = await f.Build().ResolveAsync(item.Id, priceList.Id, CancellationToken.None);
@@ -166,11 +175,11 @@ public sealed class PriceListExpiredFallbackPvpTests
             PricingRuleType.PercentDiscount,
             10m
         );
-        f.Items
-            .Setup(r => r.GetByIdLightAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+        f.Items.Setup(r => r.GetByIdLightAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(item);
-        f.PriceLists
-            .Setup(r => r.GetByIdAsync(TenantId, priceList.Id, It.IsAny<CancellationToken>()))
+        f.PriceLists.Setup(r =>
+                r.GetByIdAsync(TenantId, priceList.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(priceList);
 
         var result = await f.Build().ResolveAsync(item.Id, priceList.Id, CancellationToken.None);
@@ -194,11 +203,11 @@ public sealed class PriceListExpiredFallbackPvpTests
             PricingRuleType.PercentDiscount,
             10m
         );
-        f.Items
-            .Setup(r => r.GetByIdLightAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+        f.Items.Setup(r => r.GetByIdLightAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(item);
-        f.PriceLists
-            .Setup(r => r.GetByIdAsync(TenantId, priceList.Id, It.IsAny<CancellationToken>()))
+        f.PriceLists.Setup(r =>
+                r.GetByIdAsync(TenantId, priceList.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(priceList);
 
         var result = await f.Build().ResolveAsync(item.Id, priceList.Id, CancellationToken.None);
@@ -213,11 +222,9 @@ public sealed class PriceListExpiredFallbackPvpTests
     {
         var f = new Fixture();
         var item = CreateItem(24.30m);
-        f.Items
-            .Setup(r => r.GetByIdLightAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+        f.Items.Setup(r => r.GetByIdLightAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(item);
-        f.PriceLists
-            .Setup(r => r.GetAllAsync(TenantId, true, null, It.IsAny<CancellationToken>()))
+        f.PriceLists.Setup(r => r.GetAllAsync(TenantId, true, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<PriceList>());
 
         var result = await f.Build().ResolveAsync(item.Id, null, CancellationToken.None);
@@ -234,11 +241,11 @@ public sealed class PriceListExpiredFallbackPvpTests
         var f = new Fixture();
         var item = CreateItem(24.30m);
         var missingListId = Guid.NewGuid();
-        f.Items
-            .Setup(r => r.GetByIdLightAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+        f.Items.Setup(r => r.GetByIdLightAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(item);
-        f.PriceLists
-            .Setup(r => r.GetByIdAsync(TenantId, missingListId, It.IsAny<CancellationToken>()))
+        f.PriceLists.Setup(r =>
+                r.GetByIdAsync(TenantId, missingListId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((PriceList?)null);
 
         var result = await f.Build().ResolveAsync(item.Id, missingListId, CancellationToken.None);
@@ -254,11 +261,11 @@ public sealed class PriceListExpiredFallbackPvpTests
         var item = CreateItem(24.30m);
         var priceList = CreatePriceList(null, null);
         priceList.Disable(UserId);
-        f.Items
-            .Setup(r => r.GetByIdLightAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+        f.Items.Setup(r => r.GetByIdLightAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(item);
-        f.PriceLists
-            .Setup(r => r.GetByIdAsync(TenantId, priceList.Id, It.IsAny<CancellationToken>()))
+        f.PriceLists.Setup(r =>
+                r.GetByIdAsync(TenantId, priceList.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(priceList);
 
         var result = await f.Build().ResolveAsync(item.Id, priceList.Id, CancellationToken.None);
@@ -272,15 +279,20 @@ public sealed class PriceListExpiredFallbackPvpTests
     {
         var f = new Fixture();
         var item = CreateItem(basePrice: null);
-        f.Items
-            .Setup(r => r.GetByIdLightAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+        f.Items.Setup(r => r.GetByIdLightAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(item);
 
         var result = await f.Build().ResolveAsync(item.Id, null, CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         f.PriceLists.Verify(
-            r => r.GetAllAsync(It.IsAny<Guid>(), It.IsAny<bool?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()),
+            r =>
+                r.GetAllAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<bool?>(),
+                    It.IsAny<string?>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }

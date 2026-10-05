@@ -1,3 +1,5 @@
+using System.Net;
+using System.Text.Json;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
 using ERP.API.Tests.Support;
@@ -6,8 +8,6 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
-using System.Net;
-using System.Text.Json;
 
 namespace ERP.API.Tests.Integration;
 
@@ -22,8 +22,14 @@ public sealed class DevCacheEndpointsHttpContractTests : IAsyncLifetime
 {
     private static readonly string[] RedisHealthKeys =
     [
-        "redisConfigured", "redisConnected", "fallbackActive", "provider",
-        "writeReadOk", "latencyMs", "redisPingMs", "instanceName",
+        "redisConfigured",
+        "redisConnected",
+        "fallbackActive",
+        "provider",
+        "writeReadOk",
+        "latencyMs",
+        "redisPingMs",
+        "instanceName",
     ];
 
     private readonly PostgreSqlTestWebAppFactory _factory = new();
@@ -37,7 +43,10 @@ public sealed class DevCacheEndpointsHttpContractTests : IAsyncLifetime
     public async Task DisposeAsync() => await _factory.DisposeAsync();
 
     /// <summary>Host en Development; Redis explícito (null = sin Redis: cache en memoria).</summary>
-    private WebApplicationFactory<Program> Development(string? redisConnection, string? instanceName = null) =>
+    private WebApplicationFactory<Program> Development(
+        string? redisConnection,
+        string? instanceName = null
+    ) =>
         _factory.WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Development");
@@ -47,17 +56,25 @@ public sealed class DevCacheEndpointsHttpContractTests : IAsyncLifetime
                 builder.UseSetting("Redis:InstanceName", instanceName);
         });
 
-    private static async Task<(HttpStatusCode Status, JsonElement Body)> Get(WebApplicationFactory<Program> app, string path)
+    private static async Task<(HttpStatusCode Status, JsonElement Body)> Get(
+        WebApplicationFactory<Program> app,
+        string path
+    )
     {
         var response = await app.CreateClient().GetAsync(path);
-        var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.Clone();
+        var body = JsonDocument
+            .Parse(await response.Content.ReadAsStringAsync())
+            .RootElement.Clone();
         return (response.StatusCode, body);
     }
 
     private static JsonElement RedisHealthData(JsonElement body)
     {
         var data = body.GetProperty("data");
-        data.EnumerateObject().Select(p => p.Name).Should().Equal(RedisHealthKeys, "misma forma y orden del JSON");
+        data.EnumerateObject()
+            .Select(p => p.Name)
+            .Should()
+            .Equal(RedisHealthKeys, "misma forma y orden del JSON");
         return data;
     }
 
@@ -70,8 +87,12 @@ public sealed class DevCacheEndpointsHttpContractTests : IAsyncLifetime
 
         status.Should().Be(HttpStatusCode.NotFound);
         body.GetProperty("code").GetString().Should().Be("NOT_FOUND");
-        body.GetProperty("data").GetProperty("errors").EnumerateArray().Select(e => e.GetString())
-            .Should().Equal("Endpoint disponible solo en Development.");
+        body.GetProperty("data")
+            .GetProperty("errors")
+            .EnumerateArray()
+            .Select(e => e.GetString())
+            .Should()
+            .Equal("Endpoint disponible solo en Development.");
     }
 
     [Fact]
@@ -88,7 +109,10 @@ public sealed class DevCacheEndpointsHttpContractTests : IAsyncLifetime
         data.GetProperty("redisConnected").GetBoolean().Should().BeFalse();
         data.GetProperty("fallbackActive").GetBoolean().Should().Be(provider.FallbackActive);
         data.GetProperty("provider").GetString().Should().Be(provider.ProviderName);
-        data.GetProperty("writeReadOk").GetBoolean().Should().BeTrue("round-trip sobre IDistributedCache en memoria");
+        data.GetProperty("writeReadOk")
+            .GetBoolean()
+            .Should()
+            .BeTrue("round-trip sobre IDistributedCache en memoria");
         data.GetProperty("latencyMs").GetInt64().Should().BeGreaterThanOrEqualTo(0);
         data.GetProperty("redisPingMs").ValueKind.Should().Be(JsonValueKind.Null);
         data.GetProperty("instanceName").GetString().Should().Be("ERP_");
@@ -134,7 +158,10 @@ public sealed class DevCacheEndpointsHttpContractTests : IAsyncLifetime
         data.GetProperty("redisConfigured").GetBoolean().Should().BeTrue();
         data.GetProperty("redisConnected").GetBoolean().Should().BeFalse();
         data.GetProperty("redisPingMs").ValueKind.Should().Be(JsonValueKind.Null);
-        data.GetProperty("writeReadOk").GetBoolean().Should().BeFalse("el round-trip contra Redis caído falla y se informa, no revienta");
+        data.GetProperty("writeReadOk")
+            .GetBoolean()
+            .Should()
+            .BeFalse("el round-trip contra Redis caído falla y se informa, no revienta");
         data.GetProperty("latencyMs").GetInt64().Should().Be(-1);
     }
 
@@ -147,11 +174,33 @@ public sealed class DevCacheEndpointsHttpContractTests : IAsyncLifetime
 
         status.Should().Be(HttpStatusCode.OK);
         var data = body.GetProperty("data");
-        data.EnumerateObject().Select(p => p.Name).Should().Equal(
-            "cache_hit_total", "cache_miss_total", "cache_set_total", "hitRatio", "hitsByCategory",
-            "missesByCategory", "permissions", "provider", "fallbackActive", "redisConfigured");
-        data.GetProperty("permissions").EnumerateObject().Select(p => p.Name).Should().Equal(
-            "cache_hit_total", "cache_miss_total", "cache_set_total", "cache_error_total", "hitRatio", "miss_reason");
+        data.EnumerateObject()
+            .Select(p => p.Name)
+            .Should()
+            .Equal(
+                "cache_hit_total",
+                "cache_miss_total",
+                "cache_set_total",
+                "hitRatio",
+                "hitsByCategory",
+                "missesByCategory",
+                "permissions",
+                "provider",
+                "fallbackActive",
+                "redisConfigured"
+            );
+        data.GetProperty("permissions")
+            .EnumerateObject()
+            .Select(p => p.Name)
+            .Should()
+            .Equal(
+                "cache_hit_total",
+                "cache_miss_total",
+                "cache_set_total",
+                "cache_error_total",
+                "hitRatio",
+                "miss_reason"
+            );
         data.GetProperty("redisConfigured").GetBoolean().Should().BeFalse();
     }
 }

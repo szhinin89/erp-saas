@@ -15,26 +15,30 @@ namespace ERP.Infrastructure.Migrations
                 name: "claim_token",
                 table: "communication_outbox",
                 type: "uuid",
-                nullable: true);
+                nullable: true
+            );
 
             migrationBuilder.AddColumn<string>(
                 name: "failure_category",
                 table: "communication_outbox",
                 type: "character varying(30)",
                 maxLength: 30,
-                nullable: true);
+                nullable: true
+            );
 
             migrationBuilder.AddColumn<DateTime>(
                 name: "lease_until_utc",
                 table: "communication_outbox",
                 type: "timestamp with time zone",
-                nullable: true);
+                nullable: true
+            );
 
             migrationBuilder.CreateIndex(
                 name: "ix_communication_outbox_claimable",
                 table: "communication_outbox",
                 columns: new[] { "status", "scheduled_at_utc" },
-                filter: "status IN ('Pending', 'Processing')");
+                filter: "status IN ('Pending', 'Processing')"
+            );
         }
 
         /// <inheritdoc />
@@ -42,19 +46,14 @@ namespace ERP.Infrastructure.Migrations
         {
             migrationBuilder.DropIndex(
                 name: "ix_communication_outbox_claimable",
-                table: "communication_outbox");
+                table: "communication_outbox"
+            );
 
-            migrationBuilder.DropColumn(
-                name: "claim_token",
-                table: "communication_outbox");
+            migrationBuilder.DropColumn(name: "claim_token", table: "communication_outbox");
 
-            migrationBuilder.DropColumn(
-                name: "failure_category",
-                table: "communication_outbox");
+            migrationBuilder.DropColumn(name: "failure_category", table: "communication_outbox");
 
-            migrationBuilder.DropColumn(
-                name: "lease_until_utc",
-                table: "communication_outbox");
+            migrationBuilder.DropColumn(name: "lease_until_utc", table: "communication_outbox");
         }
     }
 }

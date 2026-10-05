@@ -33,7 +33,10 @@ public sealed class GetRetentionEligibilityHandlerTests
         var fx = new Fixture();
 
         var result = await fx.Handler.Handle(
-            new GetRetentionEligibilityQuery(RetentionSourceDocumentType.PurchaseInvoice, Guid.NewGuid()),
+            new GetRetentionEligibilityQuery(
+                RetentionSourceDocumentType.PurchaseInvoice,
+                Guid.NewGuid()
+            ),
             CancellationToken.None
         );
 
@@ -45,10 +48,15 @@ public sealed class GetRetentionEligibilityHandlerTests
         result.Value.CanRetainVat.Should().BeFalse();
         result.Value.CanRetainIncome.Should().BeFalse();
         fx.EligibilityService.Verify(
-            s => s.EvaluateAsync(
-                It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(),
-                It.IsAny<decimal>(), It.IsAny<decimal>(), It.IsAny<CancellationToken>()
-            ),
+            s =>
+                s.EvaluateAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<decimal>(),
+                    It.IsAny<decimal>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never,
             "no debe evaluarse ninguna regla fiscal para un tipo de origen no soportado"
         );
@@ -94,14 +102,22 @@ public sealed class GetRetentionEligibilityHandlerTests
                 Candidates: new[]
                 {
                     new RetentionEligibilityCandidate("IVA", "725", "Retención IVA 30%", 30m),
-                    new RetentionEligibilityCandidate("RENTA", "303", "Honorarios profesionales", 10m),
+                    new RetentionEligibilityCandidate(
+                        "RENTA",
+                        "303",
+                        "Honorarios profesionales",
+                        10m
+                    ),
                 },
                 Reasons: Array.Empty<string>()
             )
         );
 
         var result = await fx.Handler.Handle(
-            new GetRetentionEligibilityQuery(RetentionSourceDocumentType.ExpenseDocument, document.Id),
+            new GetRetentionEligibilityQuery(
+                RetentionSourceDocumentType.ExpenseDocument,
+                document.Id
+            ),
             CancellationToken.None
         );
 
@@ -119,17 +135,25 @@ public sealed class GetRetentionEligibilityHandlerTests
         fx.SetupDocument(document);
 
         var result = await fx.Handler.Handle(
-            new GetRetentionEligibilityQuery(RetentionSourceDocumentType.ExpenseDocument, document.Id),
+            new GetRetentionEligibilityQuery(
+                RetentionSourceDocumentType.ExpenseDocument,
+                document.Id
+            ),
             CancellationToken.None
         );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
         fx.EligibilityService.Verify(
-            s => s.EvaluateAsync(
-                It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(),
-                It.IsAny<decimal>(), It.IsAny<decimal>(), It.IsAny<CancellationToken>()
-            ),
+            s =>
+                s.EvaluateAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<decimal>(),
+                    It.IsAny<decimal>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never,
             "documento de otra sucursal nunca debe llegar a evaluarse — falla cerrado antes"
         );
@@ -139,12 +163,16 @@ public sealed class GetRetentionEligibilityHandlerTests
     public async Task ExpenseDocument_inexistente_o_de_otro_tenant_devuelve_NotFound()
     {
         var fx = new Fixture();
-        fx.Docs
-            .Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        fx.Docs.Setup(r =>
+                r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((ExpenseDocument?)null);
 
         var result = await fx.Handler.Handle(
-            new GetRetentionEligibilityQuery(RetentionSourceDocumentType.ExpenseDocument, Guid.NewGuid()),
+            new GetRetentionEligibilityQuery(
+                RetentionSourceDocumentType.ExpenseDocument,
+                Guid.NewGuid()
+            ),
             CancellationToken.None
         );
 
@@ -163,7 +191,10 @@ public sealed class GetRetentionEligibilityHandlerTests
         fx.SetupDocument(document);
 
         var result = await fx.Handler.Handle(
-            new GetRetentionEligibilityQuery(RetentionSourceDocumentType.ExpenseDocument, document.Id),
+            new GetRetentionEligibilityQuery(
+                RetentionSourceDocumentType.ExpenseDocument,
+                document.Id
+            ),
             CancellationToken.None
         );
 
@@ -187,31 +218,54 @@ public sealed class GetRetentionEligibilityHandlerTests
             );
 
         public void SetupDocument(ExpenseDocument document) =>
-            Docs
-                .Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            Docs.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(document);
 
         public void SetupEligibility(Guid supplierId, RetentionEligibilityResult result) =>
             EligibilityService
-                .Setup(s => s.EvaluateAsync(
-                    TenantId, CompanyId, supplierId,
-                    It.IsAny<decimal>(), It.IsAny<decimal>(), It.IsAny<CancellationToken>()
-                ))
+                .Setup(s =>
+                    s.EvaluateAsync(
+                        TenantId,
+                        CompanyId,
+                        supplierId,
+                        It.IsAny<decimal>(),
+                        It.IsAny<decimal>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync(result);
 
         public ExpenseDocument DraftDocument(Guid branchId) =>
             ExpenseDocument.CreateDraft(
-                TenantId, CompanyId, branchId, SupplierId, "Proveedor Demo", "1791352688001",
-                new DateOnly(2026, 8, 27), new DateOnly(2026, 8, 27), "01", "001-001-000000123",
-                Guid.NewGuid(), "Contado", 1, 0, UserId
+                TenantId,
+                CompanyId,
+                branchId,
+                SupplierId,
+                "Proveedor Demo",
+                "1791352688001",
+                new DateOnly(2026, 8, 27),
+                new DateOnly(2026, 8, 27),
+                "01",
+                "001-001-000000123",
+                Guid.NewGuid(),
+                "Contado",
+                1,
+                0,
+                UserId
             );
 
         public ExpenseDocument ConfirmedDocument(Guid branchId)
         {
             var document = DraftDocument(branchId);
             var line = ExpenseLine.Create(
-                document.Id, TenantId, ExpenseSubcategoryId, ExpenseAccountId,
-                "Internet", 1m, 100m, "0"
+                document.Id,
+                TenantId,
+                ExpenseSubcategoryId,
+                ExpenseAccountId,
+                "Internet",
+                1m,
+                100m,
+                "0"
             );
             document.ReplaceLines([line], UserId);
             document.Confirm(

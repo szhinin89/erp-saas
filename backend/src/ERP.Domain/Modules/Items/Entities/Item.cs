@@ -213,7 +213,9 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
             );
 
         if (_variants.Any(v => v.IsActive && v.SKU == variantSku))
-            throw new DomainRuleViolationException($"Ya existe una variante con SKU '{variantSku}'.");
+            throw new DomainRuleViolationException(
+                $"Ya existe una variante con SKU '{variantSku}'."
+            );
 
         // Validar unicidad de combinación de atributos de eje
         var newCombo = axisAttributes
@@ -363,8 +365,7 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
     )
     {
         var list = configurations.ToList();
-        var duplicated = list
-            .GroupBy(c => c.SriTaxCategoryCode.Trim())
+        var duplicated = list.GroupBy(c => c.SriTaxCategoryCode.Trim())
             .FirstOrDefault(g => g.Count() > 1);
         if (duplicated is not null)
             throw new ArgumentException(

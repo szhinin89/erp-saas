@@ -19,20 +19,11 @@ public sealed class AccountCodeComparerTests
     [Fact]
     public void Orden_natural_completo_del_ejemplo_del_ticket()
     {
-        var codes = new[]
-        {
-            "1.1.01.002",
-            "1.1.10",
-            "1.1.01.001",
-            "1.1",
-            "1.1.02",
-            "1",
-        };
+        var codes = new[] { "1.1.01.002", "1.1.10", "1.1.01.001", "1.1", "1.1.02", "1" };
 
         var sorted = codes.OrderBy(c => c, AccountCodeComparer.Instance).ToList();
 
-        sorted.Should()
-            .Equal("1", "1.1", "1.1.01.001", "1.1.01.002", "1.1.02", "1.1.10");
+        sorted.Should().Equal("1", "1.1", "1.1.01.001", "1.1.01.002", "1.1.02", "1.1.10");
     }
 
     [Fact]

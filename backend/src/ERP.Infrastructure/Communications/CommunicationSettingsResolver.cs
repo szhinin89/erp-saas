@@ -38,16 +38,26 @@ public sealed class CommunicationSettingsResolver : ICommunicationSettingsResolv
     /// el fallback de instancia vigente); System lee solo la configuración de instancia
     /// (<c>Communications:Email:*</c>) y nunca la de una empresa — no hay fallback cruzado.
     /// </summary>
-    public Task<CommunicationEmailSettings> ResolveEmailAsync(CommunicationScope scope, CancellationToken ct = default) =>
+    public Task<CommunicationEmailSettings> ResolveEmailAsync(
+        CommunicationScope scope,
+        CancellationToken ct = default
+    ) =>
         scope.Kind switch
         {
             CommunicationScopeKind.Company => ResolveAsync(scope.CompanyId!.Value, ct),
             CommunicationScopeKind.System => ResolveAsync(companyScopeId: null, ct),
-            _ => throw new ArgumentOutOfRangeException(nameof(scope), scope.Kind, "Alcance de comunicación desconocido."),
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(scope),
+                scope.Kind,
+                "Alcance de comunicación desconocido."
+            ),
         };
 
     /// <param name="companyScopeId">Empresa cuyo OrgSettings se lee; null = solo instancia.</param>
-    private async Task<CommunicationEmailSettings> ResolveAsync(Guid? companyScopeId, CancellationToken ct)
+    private async Task<CommunicationEmailSettings> ResolveAsync(
+        Guid? companyScopeId,
+        CancellationToken ct
+    )
     {
         // Bug corregido (CONFIG-AUDIT-01 / COMMUNICATIONS-SETTINGS-UI-01): antes las tres
         // funciones GetStringAsync/GetIntAsync/GetBoolAsync consultaban OrgSettings con
@@ -56,29 +66,43 @@ public sealed class CommunicationSettingsResolver : ICommunicationSettingsResolv
         // scopeId=companyId) — la capa OrgSettings jamás se leía en la práctica y todo
         // dependía silenciosamente del fallback por variable de entorno.
 
-        var enabled = await GetBoolAsync(OrgSettingKeys.Communications.EmailEnabled, companyScopeId, ct)
+        var enabled =
+            await GetBoolAsync(OrgSettingKeys.Communications.EmailEnabled, companyScopeId, ct)
             ?? _configuration.GetValue("Communications:Email:Enabled", false);
-        var host = await GetStringAsync(OrgSettingKeys.Communications.SmtpHost, companyScopeId, ct)
+        var host =
+            await GetStringAsync(OrgSettingKeys.Communications.SmtpHost, companyScopeId, ct)
             ?? _configuration["Communications:Email:SmtpHost"];
-        var port = await GetIntAsync(OrgSettingKeys.Communications.SmtpPort, companyScopeId, ct)
+        var port =
+            await GetIntAsync(OrgSettingKeys.Communications.SmtpPort, companyScopeId, ct)
             ?? _configuration.GetValue("Communications:Email:SmtpPort", 587);
-        var username = await GetStringAsync(OrgSettingKeys.Communications.SmtpUsername, companyScopeId, ct)
+        var username =
+            await GetStringAsync(OrgSettingKeys.Communications.SmtpUsername, companyScopeId, ct)
             ?? _configuration["Communications:Email:SmtpUsername"];
-        var storedPassword = await GetStringAsync(OrgSettingKeys.Communications.SmtpPassword, companyScopeId, ct);
+        var storedPassword = await GetStringAsync(
+            OrgSettingKeys.Communications.SmtpPassword,
+            companyScopeId,
+            ct
+        );
         var password = storedPassword is not null
             ? _secretProtector.UnprotectOrPlaintext(storedPassword)
             : _configuration["Communications:Email:SmtpPassword"];
-        var senderEmail = await GetStringAsync(OrgSettingKeys.Communications.SenderEmail, companyScopeId, ct)
+        var senderEmail =
+            await GetStringAsync(OrgSettingKeys.Communications.SenderEmail, companyScopeId, ct)
             ?? _configuration["Communications:Email:SenderEmail"];
-        var senderName = await GetStringAsync(OrgSettingKeys.Communications.SenderName, companyScopeId, ct)
+        var senderName =
+            await GetStringAsync(OrgSettingKeys.Communications.SenderName, companyScopeId, ct)
             ?? _configuration["Communications:Email:SenderName"];
-        var useSsl = await GetBoolAsync(OrgSettingKeys.Communications.UseSsl, companyScopeId, ct)
+        var useSsl =
+            await GetBoolAsync(OrgSettingKeys.Communications.UseSsl, companyScopeId, ct)
             ?? _configuration.GetValue("Communications:Email:UseSsl", true);
-        var replyTo = await GetStringAsync(OrgSettingKeys.Communications.ReplyToEmail, companyScopeId, ct)
+        var replyTo =
+            await GetStringAsync(OrgSettingKeys.Communications.ReplyToEmail, companyScopeId, ct)
             ?? _configuration["Communications:Email:ReplyToEmail"];
-        var maxRetries = await GetIntAsync(OrgSettingKeys.Communications.MaxRetries, companyScopeId, ct)
+        var maxRetries =
+            await GetIntAsync(OrgSettingKeys.Communications.MaxRetries, companyScopeId, ct)
             ?? _configuration.GetValue("Communications:Email:MaxRetries", 3);
-        var language = await GetStringAsync(OrgSettingKeys.Communications.DefaultLanguage, companyScopeId, ct)
+        var language =
+            await GetStringAsync(OrgSettingKeys.Communications.DefaultLanguage, companyScopeId, ct)
             ?? _configuration["Communications:Email:DefaultLanguage"]
             ?? "es";
 
@@ -126,4 +150,3 @@ public sealed class CommunicationSettingsResolver : ICommunicationSettingsResolv
         return bool.TryParse(raw, out var value) ? value : null;
     }
 }
-

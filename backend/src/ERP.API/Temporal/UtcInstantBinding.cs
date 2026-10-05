@@ -1,7 +1,7 @@
-using ERP.Domain.Common;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using ERP.Domain.Common;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace ERP.API.Temporal;
 
@@ -34,8 +34,11 @@ public sealed class UtcInstantJsonConverter : JsonConverter<DateTime>
     /// una respuesta es un defecto del origen (debería ser DateOnly o UTC) — se reporta en vez de
     /// emitirlo sin zona.
     /// </summary>
-    public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options) =>
-        writer.WriteStringValue(UtcDateTime.EnsureUtc(value));
+    public override void Write(
+        Utf8JsonWriter writer,
+        DateTime value,
+        JsonSerializerOptions options
+    ) => writer.WriteStringValue(UtcDateTime.EnsureUtc(value));
 }
 
 /// <summary>Mismo contrato que <see cref="UtcInstantJsonConverter"/> para query string / route.</summary>

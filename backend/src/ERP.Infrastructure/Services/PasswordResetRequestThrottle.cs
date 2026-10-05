@@ -1,10 +1,10 @@
+using System.Security.Cryptography;
+using System.Text;
 using ERP.Application.Common.Config;
 using ERP.Application.Common.Interfaces;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace ERP.Infrastructure.Services;
 
@@ -33,7 +33,10 @@ public sealed class PasswordResetRequestThrottle : IPasswordResetRequestThrottle
         _redis = redis;
     }
 
-    public Task<bool> TryAcquireAsync(string normalizedEmail, CancellationToken cancellationToken = default)
+    public Task<bool> TryAcquireAsync(
+        string normalizedEmail,
+        CancellationToken cancellationToken = default
+    )
     {
         var options = _options.Value;
         return DistributedFixedWindowRateLimit.TryAcquireAsync(

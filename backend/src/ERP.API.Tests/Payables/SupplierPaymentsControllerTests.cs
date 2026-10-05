@@ -26,7 +26,10 @@ public sealed class SupplierPaymentsControllerTests
         services.AddSingleton<IWebHostEnvironment>(new StubWebHostEnvironment());
         controller.ControllerContext = new ControllerContext
         {
-            HttpContext = new DefaultHttpContext { RequestServices = services.BuildServiceProvider() },
+            HttpContext = new DefaultHttpContext
+            {
+                RequestServices = services.BuildServiceProvider(),
+            },
         };
         return controller;
     }
@@ -36,18 +39,26 @@ public sealed class SupplierPaymentsControllerTests
         public string EnvironmentName { get; set; } = "Development";
         public string ApplicationName { get; set; } = "ERP.API.Tests";
         public string WebRootPath { get; set; } = "";
-        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; } = null!;
+        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; } =
+            null!;
         public string ContentRootPath { get; set; } = "";
-        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } = null!;
+        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } =
+            null!;
     }
 
-    private static RegisterSupplierPaymentRequest SampleRequest(Guid supplierId, Guid installmentId) =>
+    private static RegisterSupplierPaymentRequest SampleRequest(
+        Guid supplierId,
+        Guid installmentId
+    ) =>
         new(
             supplierId,
             new DateOnly(2026, 8, 28),
             300m,
             null,
-            new[] { new SupplierPaymentMethodLineRequest(Guid.NewGuid(), Guid.NewGuid(), null, 300m) },
+            new[]
+            {
+                new SupplierPaymentMethodLineRequest(Guid.NewGuid(), Guid.NewGuid(), null, 300m),
+            },
             new[] { new SupplierPaymentApplicationLineRequest(installmentId, 300m) },
             new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) }
         );
@@ -211,7 +222,12 @@ public sealed class SupplierPaymentsControllerTests
         {
             sentRequest = req;
             return Result<SupplierPaymentsListResponse>.Success(
-                new SupplierPaymentsListResponse(Array.Empty<SupplierPaymentListItemDto>(), 0, 1, 25)
+                new SupplierPaymentsListResponse(
+                    Array.Empty<SupplierPaymentListItemDto>(),
+                    0,
+                    1,
+                    25
+                )
             );
         });
 
@@ -228,7 +244,12 @@ public sealed class SupplierPaymentsControllerTests
         {
             sentRequest = req;
             return Result<SupplierPaymentsListResponse>.Success(
-                new SupplierPaymentsListResponse(Array.Empty<SupplierPaymentListItemDto>(), 0, 2, 10)
+                new SupplierPaymentsListResponse(
+                    Array.Empty<SupplierPaymentListItemDto>(),
+                    0,
+                    2,
+                    10
+                )
             );
         });
 
@@ -243,9 +264,7 @@ public sealed class SupplierPaymentsControllerTests
         );
 
         response.Should().BeOfType<OkObjectResult>();
-        sentRequest
-            .Should()
-            .Be(new GetSupplierPaymentsListQuery(supplierId, "Confirmed", 2, 10));
+        sentRequest.Should().Be(new GetSupplierPaymentsListQuery(supplierId, "Confirmed", 2, 10));
     }
 
     // ── POST /{id}/reverse ────────────────────────────────────────────────────
@@ -301,19 +320,31 @@ public sealed class SupplierPaymentsControllerTests
             new ReverseSupplierPaymentRequest(
                 "Transferencia rechazada",
                 CashNotDeliveredConfirmed: true,
-                BankReversalReason: ERP.Domain.Modules.Payables.Enums.SupplierPaymentBankReversalReason.RejectedByBank
+                BankReversalReason: ERP.Domain
+                    .Modules
+                    .Payables
+                    .Enums
+                    .SupplierPaymentBankReversalReason
+                    .RejectedByBank
             ),
             CancellationToken.None
         );
 
-        sentRequest.Should().Be(
-            new ReverseSupplierPaymentCommand(
-                id,
-                "Transferencia rechazada",
-                true,
-                ERP.Domain.Modules.Payables.Enums.SupplierPaymentBankReversalReason.RejectedByBank
-            )
-        );
+        sentRequest
+            .Should()
+            .Be(
+                new ReverseSupplierPaymentCommand(
+                    id,
+                    "Transferencia rechazada",
+                    true,
+                    ERP.Domain
+                        .Modules
+                        .Payables
+                        .Enums
+                        .SupplierPaymentBankReversalReason
+                        .RejectedByBank
+                )
+            );
     }
 
     [Fact]

@@ -108,10 +108,7 @@ public sealed class PurchasesBranchScopeTests
 
         result.Should().Be(expected);
         nextCalled.Should().BeTrue();
-        f.Guard.Verify(
-            g => g.RequireCurrentBranchAsync(It.IsAny<CancellationToken>()),
-            Times.Once
-        );
+        f.Guard.Verify(g => g.RequireCurrentBranchAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     private static object BuildBehaviorFor(Fixture f, object request)

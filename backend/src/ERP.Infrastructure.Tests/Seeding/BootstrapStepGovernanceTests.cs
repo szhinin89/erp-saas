@@ -1,8 +1,8 @@
+using System.Reflection;
+using System.Text.RegularExpressions;
 using ERP.Application.Common.Interfaces;
 using ERP.Infrastructure.Seeding.Global;
 using FluentAssertions;
-using System.Reflection;
-using System.Text.RegularExpressions;
 
 namespace ERP.Infrastructure.Tests.Seeding;
 

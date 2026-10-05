@@ -1,8 +1,8 @@
+using System.Reflection;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.Ride.Enums;
 using ERP.Infrastructure.Ride.ElectronicDocumentsAdapter;
 using FluentAssertions;
-using System.Reflection;
 
 namespace ERP.Infrastructure.Tests.Ride;
 
@@ -17,12 +17,11 @@ namespace ERP.Infrastructure.Tests.Ride;
 /// </summary>
 public sealed class ElectronicDocumentRideSourceXmlProviderMapDocumentTypeTests
 {
-    private static readonly MethodInfo MapDocumentTypeMethod = typeof(
-        ElectronicDocumentRideSourceXmlProvider
-    ).GetMethod(
-        "MapDocumentType",
-        BindingFlags.NonPublic | BindingFlags.Static
-    ) ?? throw new InvalidOperationException("MapDocumentType no encontrado por reflexión.");
+    private static readonly MethodInfo MapDocumentTypeMethod =
+        typeof(ElectronicDocumentRideSourceXmlProvider).GetMethod(
+            "MapDocumentType",
+            BindingFlags.NonPublic | BindingFlags.Static
+        ) ?? throw new InvalidOperationException("MapDocumentType no encontrado por reflexión.");
 
     public static IEnumerable<object[]> AllElectronicDocumentTypes() =>
         Enum.GetNames<ElectronicDocumentType>().Select(name => new object[] { name });
@@ -35,7 +34,8 @@ public sealed class ElectronicDocumentRideSourceXmlProviderMapDocumentTypeTests
     {
         var expected = Enum.Parse<RideDocumentType>(electronicDocumentTypeName);
 
-        var actual = (RideDocumentType)MapDocumentTypeMethod.Invoke(null, [electronicDocumentTypeName])!;
+        var actual = (RideDocumentType)
+            MapDocumentTypeMethod.Invoke(null, [electronicDocumentTypeName])!;
 
         actual.Should().Be(expected);
     }

@@ -4,7 +4,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ERP.Infrastructure.Persistence.Configurations.Sales;
 
-public sealed class SalesInvoiceDetailTaxConfiguration : IEntityTypeConfiguration<SalesInvoiceDetailTax>
+public sealed class SalesInvoiceDetailTaxConfiguration
+    : IEntityTypeConfiguration<SalesInvoiceDetailTax>
 {
     public void Configure(EntityTypeBuilder<SalesInvoiceDetailTax> builder)
     {
@@ -49,11 +50,7 @@ public sealed class SalesInvoiceDetailTaxConfiguration : IEntityTypeConfiguratio
             .HasColumnName("tax_amount")
             .HasColumnType("numeric(18,2)")
             .IsRequired();
-        builder
-            .Property(x => x.Source)
-            .HasColumnName("source")
-            .HasConversion<int>()
-            .IsRequired();
+        builder.Property(x => x.Source).HasColumnName("source").HasConversion<int>().IsRequired();
 
         builder
             .HasIndex(x => x.SalesInvoiceDetailId)

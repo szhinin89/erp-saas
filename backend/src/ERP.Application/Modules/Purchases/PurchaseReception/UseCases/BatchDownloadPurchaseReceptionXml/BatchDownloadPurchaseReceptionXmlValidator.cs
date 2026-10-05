@@ -9,9 +9,7 @@ public sealed class BatchDownloadPurchaseReceptionXmlValidator
 
     public BatchDownloadPurchaseReceptionXmlValidator()
     {
-        RuleFor(x => x.DocumentIds)
-            .NotEmpty()
-            .WithMessage("Debe indicar al menos un documento.");
+        RuleFor(x => x.DocumentIds).NotEmpty().WithMessage("Debe indicar al menos un documento.");
 
         RuleFor(x => x.DocumentIds)
             .Must(ids => ids.Count <= MaxBatchSize)

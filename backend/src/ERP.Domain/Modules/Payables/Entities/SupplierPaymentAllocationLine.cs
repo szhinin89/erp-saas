@@ -41,7 +41,10 @@ public sealed class SupplierPaymentAllocationLine : IMustHaveTenant
                 nameof(supplierPaymentApplicationLineId)
             );
         if (amount <= 0)
-            throw new ArgumentException("El monto de la distribución debe ser mayor a cero.", nameof(amount));
+            throw new ArgumentException(
+                "El monto de la distribución debe ser mayor a cero.",
+                nameof(amount)
+            );
 
         return new SupplierPaymentAllocationLine
         {

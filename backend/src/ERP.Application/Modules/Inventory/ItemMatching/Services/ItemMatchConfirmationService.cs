@@ -119,8 +119,11 @@ public sealed class ItemMatchConfirmationService : IItemMatchConfirmationService
             if (item is not null)
             {
                 var normalizedCode = line.SupplierCode.Trim().ToUpperInvariant();
-                var learnedCode = item.SupplierCodes.Any(c => c.SupplierId == supplierId && c.Code == normalizedCode && c.IsActive)
-                    ? normalizedCode : line.SupplierCode;
+                var learnedCode = item.SupplierCodes.Any(c =>
+                    c.SupplierId == supplierId && c.Code == normalizedCode && c.IsActive
+                )
+                    ? normalizedCode
+                    : line.SupplierCode;
                 item.DisableSupplierCode(supplierId, learnedCode, unmatchedBy);
                 await _itemRepo.SaveChangesAsync(cancellationToken);
             }

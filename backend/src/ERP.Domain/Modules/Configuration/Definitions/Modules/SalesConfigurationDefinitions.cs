@@ -1,6 +1,6 @@
+using System.Globalization;
 using ERP.Domain.Configuration.Constants;
 using ERP.Domain.Configuration.Enums;
-using System.Globalization;
 
 namespace ERP.Domain.Configuration.Definitions.Modules;
 
@@ -24,8 +24,10 @@ public static class SalesConfigurationDefinitions
                     NumberStyles.Number,
                     CultureInfo.InvariantCulture,
                     out var parsed
-                ) && parsed >= 0m,
-            DeveloperNotes = "\"0\" es un valor manual válido (bloquea Consumidor Final a crédito), distinto de ausencia de fila. Fallback: régimen tributario vía ConsumerFinalPolicyDefaults.",
+                )
+                && parsed >= 0m,
+            DeveloperNotes =
+                "\"0\" es un valor manual válido (bloquea Consumidor Final a crédito), distinto de ausencia de fila. Fallback: régimen tributario vía ConsumerFinalPolicyDefaults.",
         };
     }
 }

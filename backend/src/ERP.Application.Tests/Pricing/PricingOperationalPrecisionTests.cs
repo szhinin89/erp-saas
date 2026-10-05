@@ -28,16 +28,28 @@ public sealed class PricingOperationalPrecisionTests
     private static readonly Guid ItemTypeId = Guid.NewGuid();
 
     private static readonly IPricingAdjustmentStrategyResolver Strategies =
-        new PricingAdjustmentStrategyResolver(new IPricingAdjustmentStrategy[]
-        {
-            new PercentDiscountStrategy(),
-            new PercentMarkupStrategy(),
-            new FixedAdjustmentStrategy(),
-            new FixedPriceStrategy(),
-        });
+        new PricingAdjustmentStrategyResolver(
+            new IPricingAdjustmentStrategy[]
+            {
+                new PercentDiscountStrategy(),
+                new PercentMarkupStrategy(),
+                new FixedAdjustmentStrategy(),
+                new FixedPriceStrategy(),
+            }
+        );
 
     private static PriceList ListWith(PricingRuleType type, decimal value) =>
-        PriceList.Create(TenantId, CompanyId, "L1", "Lista", "USD", isDefault: false, createdBy: UserId, ruleType: type, ruleValue: value);
+        PriceList.Create(
+            TenantId,
+            CompanyId,
+            "L1",
+            "Lista",
+            "USD",
+            isDefault: false,
+            createdBy: UserId,
+            ruleType: type,
+            ruleValue: value
+        );
 
     [Theory]
     [InlineData(2, 0.67)]
@@ -63,7 +75,10 @@ public sealed class PricingOperationalPrecisionTests
         price.Should().Be(0m);
     }
 
-    private static PricingResolver BuildResolver(Item item, ERP.Application.Modules.Companies.UseCases.PrecisionPolicy.EffectivePrecisionPolicyDto policy)
+    private static PricingResolver BuildResolver(
+        Item item,
+        ERP.Application.Modules.Companies.UseCases.PrecisionPolicy.EffectivePrecisionPolicyDto policy
+    )
     {
         var items = new Mock<IItemRepository>();
         items
@@ -72,7 +87,12 @@ public sealed class PricingOperationalPrecisionTests
         var priceLists = new Mock<IPriceListRepository>();
         priceLists
             .Setup(r =>
-                r.GetAllAsync(It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>())
+                r.GetAllAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<bool>(),
+                    It.IsAny<string?>(),
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(new List<PriceList>());
         var tenant = new Mock<ICurrentTenant>();
@@ -80,7 +100,9 @@ public sealed class PricingOperationalPrecisionTests
         var company = new Mock<ICurrentCompany>();
         company.Setup(c => c.CompanyId).Returns(CompanyId);
         var provider = new Mock<ICompanyPrecisionPolicyProvider>();
-        provider.Setup(p => p.GetEffectiveAsync(It.IsAny<CancellationToken>())).ReturnsAsync(policy);
+        provider
+            .Setup(p => p.GetEffectiveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(policy);
 
         return new PricingResolver(
             items.Object,
@@ -98,20 +120,35 @@ public sealed class PricingOperationalPrecisionTests
 
     private static Item ItemWithBase(decimal basePrice) =>
         Item.Create(
-            TenantId, $"SKU-{Guid.NewGuid():N}"[..12], "Item", "Item", ItemTypeId, "UNIT",
-            ItemTaxConfig.Create("10", "10"), ItemSaleConfig.Create(isForSale: true),
-            ItemStockConfig.Create(), UserId, baseSalePrice: basePrice
+            TenantId,
+            $"SKU-{Guid.NewGuid():N}"[..12],
+            "Item",
+            "Item",
+            ItemTypeId,
+            "UNIT",
+            ItemTaxConfig.Create("10", "10"),
+            ItemSaleConfig.Create(isForSale: true),
+            ItemStockConfig.Create(),
+            UserId,
+            baseSalePrice: basePrice
         );
 
     [Theory]
     [InlineData(2, 1.23)]
     [InlineData(6, 1.234567)]
-    public async Task ResolveAsync_precio_base_respeta_salesUnitPriceDecimals_de_la_politica(int decimals, double expected)
+    public async Task ResolveAsync_precio_base_respeta_salesUnitPriceDecimals_de_la_politica(
+        int decimals,
+        double expected
+    )
     {
         var item = ItemWithBase(1.2345674m);
-        var policy = PrecisionPolicyTestDouble.DefaultDto() with { SalesUnitPriceDecimals = decimals };
+        var policy = PrecisionPolicyTestDouble.DefaultDto() with
+        {
+            SalesUnitPriceDecimals = decimals,
+        };
 
-        var result = await BuildResolver(item, policy).ResolveAsync(item.Id, null, CancellationToken.None);
+        var result = await BuildResolver(item, policy)
+            .ResolveAsync(item.Id, null, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.UnitPrice.Should().Be((decimal)expected);

@@ -104,7 +104,9 @@ public sealed class CancelExpenseDocumentUseCasesTests
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.DomainRuleViolation);
         result.Error.Should().Contain("pagos registrados");
-        document.Status.Should().Be(ExpenseStatus.Confirmed, "el gasto no debe anularse si la CxP no pudo anularse");
+        document
+            .Status.Should()
+            .Be(ExpenseStatus.Confirmed, "el gasto no debe anularse si la CxP no pudo anularse");
         fx.Uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
         fx.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -175,8 +177,9 @@ public sealed class CancelExpenseDocumentUseCasesTests
     public async Task Cancelar_gasto_inexistente_devuelve_NotFound()
     {
         var fx = new Fixture();
-        fx.Docs
-            .Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        fx.Docs.Setup(r =>
+                r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((ExpenseDocument?)null);
 
         var result = await fx.Handler.Handle(
@@ -196,7 +199,9 @@ public sealed class CancelExpenseDocumentUseCasesTests
         );
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(CancelExpenseDocumentCommand.Reason));
+        result
+            .Errors.Should()
+            .Contain(e => e.PropertyName == nameof(CancelExpenseDocumentCommand.Reason));
     }
 
     [Fact]
@@ -206,9 +211,13 @@ public sealed class CancelExpenseDocumentUseCasesTests
         var document = fx.ConfirmedDocument();
         fx.SetupDocument(document);
         fx.SetupNoPayable(document.Id);
-        fx.Docs
-            .Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new ExpensePostingFailedException("No se encontró el asiento a reversar.", "JOURNAL_ENTRY_NOT_FOUND"));
+        fx.Docs.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(
+                new ExpensePostingFailedException(
+                    "No se encontró el asiento a reversar.",
+                    "JOURNAL_ENTRY_NOT_FOUND"
+                )
+            );
 
         var result = await fx.Handler.Handle(
             new CancelExpenseDocumentCommand(document.Id, "Motivo"),
@@ -227,8 +236,7 @@ public sealed class CancelExpenseDocumentUseCasesTests
         var fx = new Fixture();
         var document = fx.ConfirmedDocument();
         fx.SetupDocument(document);
-        fx.WorkflowPolicy
-            .Setup(w =>
+        fx.WorkflowPolicy.Setup(w =>
                 w.EnsureCancellationFlowAsync(
                     CompanyId,
                     DocTypeCodes.ExpenseDocument,
@@ -244,7 +252,9 @@ public sealed class CancelExpenseDocumentUseCasesTests
         );
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Be("La política de flujo documental no permite anular este tipo de documento.");
+        result
+            .Error.Should()
+            .Be("La política de flujo documental no permite anular este tipo de documento.");
         fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -254,8 +264,7 @@ public sealed class CancelExpenseDocumentUseCasesTests
         var fx = new Fixture();
         var document = fx.ConfirmedDocument();
         fx.SetupDocument(document);
-        fx.WorkflowPolicy
-            .Setup(w =>
+        fx.WorkflowPolicy.Setup(w =>
                 w.EnsureCancellationFlowAsync(
                     CompanyId,
                     DocTypeCodes.ExpenseDocument,
@@ -271,7 +280,9 @@ public sealed class CancelExpenseDocumentUseCasesTests
         );
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Be("El motivo de anulación es obligatorio según la política de flujo documental.");
+        result
+            .Error.Should()
+            .Be("El motivo de anulación es obligatorio según la política de flujo documental.");
         fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -282,8 +293,7 @@ public sealed class CancelExpenseDocumentUseCasesTests
         var document = fx.ConfirmedDocument();
         fx.SetupDocument(document);
         var payable = fx.SetupPayable(document.Id, document.GrandTotal);
-        fx.WorkflowPolicy
-            .Setup(w =>
+        fx.WorkflowPolicy.Setup(w =>
                 w.EnsureCancellationFlowAsync(
                     CompanyId,
                     DocTypeCodes.ExpenseDocument,
@@ -317,7 +327,9 @@ public sealed class CancelExpenseDocumentUseCasesTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        payable.Status.Should().NotBe(ERP.Domain.Modules.Payables.Enums.AccountsPayableStatus.Cancelled);
+        payable
+            .Status.Should()
+            .NotBe(ERP.Domain.Modules.Payables.Enums.AccountsPayableStatus.Cancelled);
     }
 
     // RETENTIONS-EXPENSES-INTEGRATION-01D-3 — reemplaza el bloqueo mínimo de 01D-2: al anular un
@@ -421,9 +433,13 @@ public sealed class CancelExpenseDocumentUseCasesTests
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
         result.Error.Should().Contain("pagos aplicados");
-        retention.Status.Should().Be(RetentionStatus.Issued, "no debe anularse si la reversa de CxP no es segura");
+        retention
+            .Status.Should()
+            .Be(RetentionStatus.Issued, "no debe anularse si la reversa de CxP no es segura");
         document.Status.Should().Be(ExpenseStatus.Confirmed);
-        payable.RetainedAmount.Should().Be(4.50m, "no debe reversarse parcialmente/de forma insegura");
+        payable
+            .RetainedAmount.Should()
+            .Be(4.50m, "no debe reversarse parcialmente/de forma insegura");
         fx.Uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
         fx.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
         fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -440,9 +456,13 @@ public sealed class CancelExpenseDocumentUseCasesTests
         fx.SetupDocument(document);
         fx.SetupNoPayable(document.Id);
         var retention = fx.SetupIssuedRetention(document.Id);
-        fx.Docs
-            .Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new ExpensePostingFailedException("No se encontró el asiento a reversar.", "JOURNAL_ENTRY_NOT_FOUND"));
+        fx.Docs.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(
+                new ExpensePostingFailedException(
+                    "No se encontró el asiento a reversar.",
+                    "JOURNAL_ENTRY_NOT_FOUND"
+                )
+            );
 
         var result = await fx.Handler.Handle(
             new CancelExpenseDocumentCommand(document.Id, "Documento duplicado"),
@@ -455,7 +475,12 @@ public sealed class CancelExpenseDocumentUseCasesTests
         fx.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
         // La mutación en memoria (retention.Cancel() ya ejecutado por el canceller) nunca se
         // flushea a BD porque SaveChangesAsync lanzó — mismo criterio que el gasto/AP.
-        retention.Status.Should().Be(RetentionStatus.Cancelled, "mutado en memoria, pero nunca persistido (no hay SaveChanges exitoso)");
+        retention
+            .Status.Should()
+            .Be(
+                RetentionStatus.Cancelled,
+                "mutado en memoria, pero nunca persistido (no hay SaveChanges exitoso)"
+            );
     }
 
     // 10) No permite cancelar dos veces: un gasto ya Cancelled se sigue bloqueando antes de tocar
@@ -477,10 +502,14 @@ public sealed class CancelExpenseDocumentUseCasesTests
         result.IsSuccess.Should().BeFalse();
         retention.Status.Should().Be(RetentionStatus.Issued);
         fx.RetentionRepo.Verify(
-            r => r.GetBySourceAsync(
-                TenantId, CompanyId, RetentionSourceDocumentType.ExpenseDocument,
-                document.Id, It.IsAny<CancellationToken>()
-            ),
+            r =>
+                r.GetBySourceAsync(
+                    TenantId,
+                    CompanyId,
+                    RetentionSourceDocumentType.ExpenseDocument,
+                    document.Id,
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }
@@ -497,7 +526,11 @@ public sealed class CancelExpenseDocumentUseCasesTests
         // (solo con PayableRepo mockeado por debajo), no un mock, para que estos tests verifiquen el
         // efecto real de dominio (RetentionDocument.Cancel + AccountsPayable.ReverseRetention), no
         // solo que el handler "llamó" a algo.
-        public IRetentionCanceller RetentionCanceller => new RetentionCanceller(PayableRepo.Object, ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.NoElectronicDocument());
+        public IRetentionCanceller RetentionCanceller =>
+            new RetentionCanceller(
+                PayableRepo.Object,
+                ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.NoElectronicDocument()
+            );
 
         public CancelExpenseDocumentHandler Handler =>
             new(
@@ -516,7 +549,8 @@ public sealed class CancelExpenseDocumentUseCasesTests
 
         public Fixture()
         {
-            Docs.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+            Docs.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
             // RETENTIONS-EXPENSES-INTEGRATION-01D-2: por defecto, sin retención activa — mismo
             // comportamiento que antes de esta fase para todos los tests existentes (regresión).
             RetentionRepo
@@ -562,17 +596,35 @@ public sealed class CancelExpenseDocumentUseCasesTests
 
         public ExpenseDocument DraftDocument() =>
             ExpenseDocument.CreateDraft(
-                TenantId, CompanyId, BranchId, SupplierId, "Proveedor Demo", "1791352688001",
-                new DateOnly(2026, 8, 27), new DateOnly(2026, 8, 27), "01", "001-001-000000123",
-                Guid.NewGuid(), "Contado", 1, 0, UserId
+                TenantId,
+                CompanyId,
+                BranchId,
+                SupplierId,
+                "Proveedor Demo",
+                "1791352688001",
+                new DateOnly(2026, 8, 27),
+                new DateOnly(2026, 8, 27),
+                "01",
+                "001-001-000000123",
+                Guid.NewGuid(),
+                "Contado",
+                1,
+                0,
+                UserId
             );
 
         public ExpenseDocument ConfirmedDocument()
         {
             var document = DraftDocument();
             var line = ExpenseLine.Create(
-                document.Id, TenantId, ExpenseSubcategoryId, ExpenseAccountId,
-                "Internet", 1m, 100m, "0"
+                document.Id,
+                TenantId,
+                ExpenseSubcategoryId,
+                ExpenseAccountId,
+                "Internet",
+                1m,
+                100m,
+                "0"
             );
             document.ReplaceLines([line], UserId);
             document.Confirm(
@@ -586,8 +638,7 @@ public sealed class CancelExpenseDocumentUseCasesTests
         }
 
         public void SetupDocument(ExpenseDocument document) =>
-            Docs
-                .Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            Docs.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(document);
 
         public void SetupNoPayable(Guid expenseDocumentId) =>
@@ -606,10 +657,17 @@ public sealed class CancelExpenseDocumentUseCasesTests
         public AccountsPayable SetupPayable(Guid expenseDocumentId, decimal grandTotal)
         {
             var payable = AccountsPayable.CreateFromOrigin(
-                TenantId, CompanyId, BranchId, SupplierId,
-                AccountsPayableOriginType.ExpenseDocument, expenseDocumentId,
-                "01", "001-001-000000123",
-                new DateOnly(2026, 8, 27), new DateOnly(2026, 8, 27), UserId
+                TenantId,
+                CompanyId,
+                BranchId,
+                SupplierId,
+                AccountsPayableOriginType.ExpenseDocument,
+                expenseDocumentId,
+                "01",
+                "001-001-000000123",
+                new DateOnly(2026, 8, 27),
+                new DateOnly(2026, 8, 27),
+                UserId
             );
             payable.AddInstallment(1, new DateOnly(2026, 8, 27), grandTotal);
 
@@ -630,15 +688,31 @@ public sealed class CancelExpenseDocumentUseCasesTests
 
         // RETENTIONS-EXPENSES-INTEGRATION-01D-3 — retención emitida sobre el gasto, lista para
         // devolver desde ExistsActiveBySourceAsync/GetBySourceAsync como "activa".
-        public RetentionDocument SetupIssuedRetention(Guid expenseDocumentId, decimal totalRetained = 4.50m)
+        public RetentionDocument SetupIssuedRetention(
+            Guid expenseDocumentId,
+            decimal totalRetained = 4.50m
+        )
         {
             var retention = RetentionDocument.Create(
-                TenantId, CompanyId, BranchId, RetentionSourceDocumentType.ExpenseDocument,
-                expenseDocumentId, SupplierId, Guid.NewGuid(), UserId
+                TenantId,
+                CompanyId,
+                BranchId,
+                RetentionSourceDocumentType.ExpenseDocument,
+                expenseDocumentId,
+                SupplierId,
+                Guid.NewGuid(),
+                UserId
             );
             retention.AddLine(
                 RetentionDocumentLine.Create(
-                    retention.Id, TenantId, RetentionTaxType.Vat, "725", "Retención IVA 725", 100m, 30m, totalRetained
+                    retention.Id,
+                    TenantId,
+                    RetentionTaxType.Vat,
+                    "725",
+                    "Retención IVA 725",
+                    100m,
+                    30m,
+                    totalRetained
                 )
             );
             retention.Issue("001-001-000000001", new DateOnly(2026, 8, 27), UserId);
@@ -647,16 +721,22 @@ public sealed class CancelExpenseDocumentUseCasesTests
             RetentionRepo
                 .Setup(r =>
                     r.ExistsActiveBySourceAsync(
-                        TenantId, CompanyId, RetentionSourceDocumentType.ExpenseDocument,
-                        expenseDocumentId, It.IsAny<CancellationToken>()
+                        TenantId,
+                        CompanyId,
+                        RetentionSourceDocumentType.ExpenseDocument,
+                        expenseDocumentId,
+                        It.IsAny<CancellationToken>()
                     )
                 )
                 .ReturnsAsync(true);
             RetentionRepo
                 .Setup(r =>
                     r.GetBySourceAsync(
-                        TenantId, CompanyId, RetentionSourceDocumentType.ExpenseDocument,
-                        expenseDocumentId, It.IsAny<CancellationToken>()
+                        TenantId,
+                        CompanyId,
+                        RetentionSourceDocumentType.ExpenseDocument,
+                        expenseDocumentId,
+                        It.IsAny<CancellationToken>()
                     )
                 )
                 .ReturnsAsync(retention);
@@ -669,23 +749,35 @@ public sealed class CancelExpenseDocumentUseCasesTests
         public RetentionDocument SetupDraftRetention(Guid expenseDocumentId)
         {
             var retention = RetentionDocument.Create(
-                TenantId, CompanyId, BranchId, RetentionSourceDocumentType.ExpenseDocument,
-                expenseDocumentId, SupplierId, Guid.NewGuid(), UserId
+                TenantId,
+                CompanyId,
+                BranchId,
+                RetentionSourceDocumentType.ExpenseDocument,
+                expenseDocumentId,
+                SupplierId,
+                Guid.NewGuid(),
+                UserId
             );
 
             RetentionRepo
                 .Setup(r =>
                     r.ExistsActiveBySourceAsync(
-                        TenantId, CompanyId, RetentionSourceDocumentType.ExpenseDocument,
-                        expenseDocumentId, It.IsAny<CancellationToken>()
+                        TenantId,
+                        CompanyId,
+                        RetentionSourceDocumentType.ExpenseDocument,
+                        expenseDocumentId,
+                        It.IsAny<CancellationToken>()
                     )
                 )
                 .ReturnsAsync(true);
             RetentionRepo
                 .Setup(r =>
                     r.GetBySourceAsync(
-                        TenantId, CompanyId, RetentionSourceDocumentType.ExpenseDocument,
-                        expenseDocumentId, It.IsAny<CancellationToken>()
+                        TenantId,
+                        CompanyId,
+                        RetentionSourceDocumentType.ExpenseDocument,
+                        expenseDocumentId,
+                        It.IsAny<CancellationToken>()
                     )
                 )
                 .ReturnsAsync(retention);

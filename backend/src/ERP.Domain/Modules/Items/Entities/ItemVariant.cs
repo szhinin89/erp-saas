@@ -86,7 +86,9 @@ public sealed class ItemVariant : MasterEntity, ITenantScopedEntity
     {
         var bc = _barcodes.FirstOrDefault(b => b.Id == barcodeId);
         if (bc is null)
-            throw new DomainRuleViolationException("Código de barras no encontrado en esta variante.");
+            throw new DomainRuleViolationException(
+                "Código de barras no encontrado en esta variante."
+            );
         bc.Disable(updatedBy);
     }
 

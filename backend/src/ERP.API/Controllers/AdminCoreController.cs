@@ -44,11 +44,13 @@ public sealed class AdminCoreController : ControllerBase
         var result = await _mediator.Send(new ListCompaniesForAdminCoreQuery(), cancellationToken);
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<AdminCoreCompanyDto>());
     }
+
     [HttpPut("companies/{id:guid}")]
     public async Task<IActionResult> UpdateCompany(
         Guid id,
         [FromBody] UpdateCompanyForAdminCoreCommand command,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         if (id != command.Id)
             return this.ApiBadRequest("El id de ruta no coincide con el cuerpo.");

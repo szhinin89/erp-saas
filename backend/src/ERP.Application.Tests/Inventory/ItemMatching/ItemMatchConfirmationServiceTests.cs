@@ -55,8 +55,7 @@ public sealed class ItemMatchConfirmationServiceTests
             supplierCode: supplierCode
         );
 
-    private static Item CreateItem() =>
-        CreateItemCore();
+    private static Item CreateItem() => CreateItemCore();
 
     private static Item CreateItemCore()
     {
@@ -89,9 +88,25 @@ public sealed class ItemMatchConfirmationServiceTests
         var line = CreateLine(document.Id, "prov-caja");
         var item = CreateItem();
         var repo = new Mock<IItemRepository>();
-        repo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>())).ReturnsAsync(item);
-        await new ItemMatchConfirmationService(repo.Object).ConfirmAsync(document, line, item.Id, UserId, DateTime.UtcNow);
-        repo.Verify(r => r.SupplierCodeExistsAsync(SupplierId, "PROV-CAJA", TenantId, It.IsAny<CancellationToken>()), Times.Once);
+        repo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item);
+        await new ItemMatchConfirmationService(repo.Object).ConfirmAsync(
+            document,
+            line,
+            item.Id,
+            UserId,
+            DateTime.UtcNow
+        );
+        repo.Verify(
+            r =>
+                r.SupplierCodeExistsAsync(
+                    SupplierId,
+                    "PROV-CAJA",
+                    TenantId,
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
         item.SupplierCodes.Should().ContainSingle(c => c.Code == "PROV-CAJA");
         line.SupplierCode.Should().Be("prov-caja");
         await new ItemMatchConfirmationService(repo.Object).UnconfirmAsync(document, line, UserId);
@@ -157,14 +172,7 @@ public sealed class ItemMatchConfirmationServiceTests
             .ReturnsAsync(item);
 
         var service = new ItemMatchConfirmationService(itemRepo.Object);
-        await service.ConfirmAsync(
-            document,
-            line,
-            item.Id,
-            UserId,
-            DateTime.UtcNow,
-            packagingId
-        );
+        await service.ConfirmAsync(document, line, item.Id, UserId, DateTime.UtcNow, packagingId);
 
         item.SupplierCodes.Should()
             .ContainSingle(c =>
@@ -240,14 +248,7 @@ public sealed class ItemMatchConfirmationServiceTests
             .ReturnsAsync(true);
 
         var service = new ItemMatchConfirmationService(itemRepo.Object);
-        await service.ConfirmAsync(
-            document,
-            line,
-            item.Id,
-            UserId,
-            DateTime.UtcNow,
-            packagingId
-        );
+        await service.ConfirmAsync(document, line, item.Id, UserId, DateTime.UtcNow, packagingId);
 
         itemRepo.Verify(
             r =>

@@ -39,7 +39,12 @@ public sealed class AccountCodeComparer : IComparer<string>
 
     private static int CompareSegment(string a, string b)
     {
-        if (IsAllDigits(a) && IsAllDigits(b) && long.TryParse(a, out var an) && long.TryParse(b, out var bn))
+        if (
+            IsAllDigits(a)
+            && IsAllDigits(b)
+            && long.TryParse(a, out var an)
+            && long.TryParse(b, out var bn)
+        )
         {
             var numericComparison = an.CompareTo(bn);
             return numericComparison != 0 ? numericComparison : string.CompareOrdinal(a, b);

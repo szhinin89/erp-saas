@@ -1,7 +1,7 @@
+using System.Text.Json.Nodes;
 using ERP.Application.Modules.Caja.FundingRequests;
 using ERP.Application.Modules.Payables.UseCases;
 using FluentAssertions;
-using System.Text.Json.Nodes;
 
 namespace ERP.Application.Tests.Caja;
 
@@ -19,18 +19,37 @@ public sealed class CashFundingPaymentSnapshotTests
     private static readonly Guid BankMethod = Guid.NewGuid();
     private static readonly Guid Installment = Guid.NewGuid();
 
-    private static RegisterSupplierPaymentCommand MixedIntent(decimal cash = 80m, decimal bank = 120m) =>
+    private static RegisterSupplierPaymentCommand MixedIntent(
+        decimal cash = 80m,
+        decimal bank = 120m
+    ) =>
         new(
             Supplier,
             new DateOnly(2026, 9, 20),
             cash + bank,
             " REC-99 ",
             [
-                new SupplierPaymentMethodLineRequest(BankMethod, Bank, null, bank, "OP-7788", TransactionDate: new DateOnly(2026, 9, 19)),
-                new SupplierPaymentMethodLineRequest(CashMethod, null, Cash, cash, Notes: "Entrega en caja"),
+                new SupplierPaymentMethodLineRequest(
+                    BankMethod,
+                    Bank,
+                    null,
+                    bank,
+                    "OP-7788",
+                    TransactionDate: new DateOnly(2026, 9, 19)
+                ),
+                new SupplierPaymentMethodLineRequest(
+                    CashMethod,
+                    null,
+                    Cash,
+                    cash,
+                    Notes: "Entrega en caja"
+                ),
             ],
             [new SupplierPaymentApplicationLineRequest(Installment, cash + bank)],
-            [new SupplierPaymentAllocationLineRequest(0, 0, bank), new SupplierPaymentAllocationLineRequest(1, 0, cash)],
+            [
+                new SupplierPaymentAllocationLineRequest(0, 0, bank),
+                new SupplierPaymentAllocationLineRequest(1, 0, cash),
+            ],
             ConfirmUnappliedAmount: false
         );
 
@@ -48,20 +67,36 @@ public sealed class CashFundingPaymentSnapshotTests
             200.50m,
             " REC-99 ",
             [
-                new SupplierPaymentMethodLineRequest(Guid.Parse("22222222-2222-2222-2222-222222222222"), null, Guid.Parse("33333333-3333-3333-3333-333333333333"), 200.500m, Notes: "Entrega"),
+                new SupplierPaymentMethodLineRequest(
+                    Guid.Parse("22222222-2222-2222-2222-222222222222"),
+                    null,
+                    Guid.Parse("33333333-3333-3333-3333-333333333333"),
+                    200.500m,
+                    Notes: "Entrega"
+                ),
             ],
-            [new SupplierPaymentApplicationLineRequest(Guid.Parse("44444444-4444-4444-4444-444444444444"), 200.5m)],
+            [
+                new SupplierPaymentApplicationLineRequest(
+                    Guid.Parse("44444444-4444-4444-4444-444444444444"),
+                    200.5m
+                ),
+            ],
             [new SupplierPaymentAllocationLineRequest(0, 0, 200.50m)],
             ConfirmUnappliedAmount: false
         );
 
         var snapshot = CashFundingPaymentSnapshot.FromIntent(intent);
 
-        CashFundingPaymentSnapshot.Serialize(snapshot).Should().Be(
-            """{"supplierId":"11111111-1111-1111-1111-111111111111","paymentDate":"2026-09-20","totalAmount":200.5,"receiptNumber":"REC-99","methodLines":[{"paymentMethodId":"22222222-2222-2222-2222-222222222222","companyBankAccountId":null,"cashRegisterId":"33333333-3333-3333-3333-333333333333","amount":200.5,"referenceNumber":null,"checkNumber":null,"checkDate":null,"notes":"Entrega","transactionDate":null}],"applicationLines":[{"accountsPayableInstallmentId":"44444444-4444-4444-4444-444444444444","amountApplied":200.5}],"allocations":[{"methodLineIndex":0,"applicationLineIndex":0,"amount":200.5}],"confirmUnappliedAmount":false}"""
-        );
-        CashFundingPaymentSnapshot.ComputeHash(snapshot)
-            .Should().Be("69FBAFF583E455A0DB952B6BB8396649D5CD657CDCF9972A5F34697CE2528D82");
+        CashFundingPaymentSnapshot
+            .Serialize(snapshot)
+            .Should()
+            .Be(
+                """{"supplierId":"11111111-1111-1111-1111-111111111111","paymentDate":"2026-09-20","totalAmount":200.5,"receiptNumber":"REC-99","methodLines":[{"paymentMethodId":"22222222-2222-2222-2222-222222222222","companyBankAccountId":null,"cashRegisterId":"33333333-3333-3333-3333-333333333333","amount":200.5,"referenceNumber":null,"checkNumber":null,"checkDate":null,"notes":"Entrega","transactionDate":null}],"applicationLines":[{"accountsPayableInstallmentId":"44444444-4444-4444-4444-444444444444","amountApplied":200.5}],"allocations":[{"methodLineIndex":0,"applicationLineIndex":0,"amount":200.5}],"confirmUnappliedAmount":false}"""
+            );
+        CashFundingPaymentSnapshot
+            .ComputeHash(snapshot)
+            .Should()
+            .Be("69FBAFF583E455A0DB952B6BB8396649D5CD657CDCF9972A5F34697CE2528D82");
     }
 
     [Fact]
@@ -75,14 +110,20 @@ public sealed class CashFundingPaymentSnapshotTests
             CashFundingPaymentSnapshot.Deserialize(json, CashFundingPaymentSnapshot.CurrentVersion)
         );
 
-        restored.Should().BeEquivalentTo(intent with { ReceiptNumber = "REC-99" }, o => o.WithStrictOrdering());
+        restored
+            .Should()
+            .BeEquivalentTo(intent with { ReceiptNumber = "REC-99" }, o => o.WithStrictOrdering());
     }
 
     [Fact]
     public void Hash_es_estable_y_de_64_caracteres()
     {
-        var a = CashFundingPaymentSnapshot.ComputeHash(CashFundingPaymentSnapshot.FromIntent(MixedIntent()));
-        var b = CashFundingPaymentSnapshot.ComputeHash(CashFundingPaymentSnapshot.FromIntent(MixedIntent()));
+        var a = CashFundingPaymentSnapshot.ComputeHash(
+            CashFundingPaymentSnapshot.FromIntent(MixedIntent())
+        );
+        var b = CashFundingPaymentSnapshot.ComputeHash(
+            CashFundingPaymentSnapshot.FromIntent(MixedIntent())
+        );
 
         a.Should().Be(b).And.HaveLength(64);
     }
@@ -90,8 +131,12 @@ public sealed class CashFundingPaymentSnapshotTests
     [Fact]
     public void Hash_no_depende_de_la_escala_de_los_decimales()
     {
-        var plain = CashFundingPaymentSnapshot.ComputeHash(CashFundingPaymentSnapshot.FromIntent(MixedIntent(80m, 120m)));
-        var scaled = CashFundingPaymentSnapshot.ComputeHash(CashFundingPaymentSnapshot.FromIntent(MixedIntent(80.00m, 120.0m)));
+        var plain = CashFundingPaymentSnapshot.ComputeHash(
+            CashFundingPaymentSnapshot.FromIntent(MixedIntent(80m, 120m))
+        );
+        var scaled = CashFundingPaymentSnapshot.ComputeHash(
+            CashFundingPaymentSnapshot.FromIntent(MixedIntent(80.00m, 120.0m))
+        );
 
         scaled.Should().Be(plain);
     }
@@ -99,8 +144,12 @@ public sealed class CashFundingPaymentSnapshotTests
     [Fact]
     public void Hash_cambia_si_cambia_la_intencion()
     {
-        var a = CashFundingPaymentSnapshot.ComputeHash(CashFundingPaymentSnapshot.FromIntent(MixedIntent(80m)));
-        var b = CashFundingPaymentSnapshot.ComputeHash(CashFundingPaymentSnapshot.FromIntent(MixedIntent(80.01m)));
+        var a = CashFundingPaymentSnapshot.ComputeHash(
+            CashFundingPaymentSnapshot.FromIntent(MixedIntent(80m))
+        );
+        var b = CashFundingPaymentSnapshot.ComputeHash(
+            CashFundingPaymentSnapshot.FromIntent(MixedIntent(80.01m))
+        );
 
         b.Should().NotBe(a);
     }
@@ -113,8 +162,12 @@ public sealed class CashFundingPaymentSnapshotTests
 
         // Simula jsonb: mismas claves/valores, otro orden y otro espaciado.
         var node = JsonNode.Parse(CashFundingPaymentSnapshot.Serialize(snapshot))!.AsObject();
-        var reordered = new JsonObject(node.Reverse().Select(p => KeyValuePair.Create(p.Key, p.Value?.DeepClone())));
-        var normalized = reordered.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+        var reordered = new JsonObject(
+            node.Reverse().Select(p => KeyValuePair.Create(p.Key, p.Value?.DeepClone()))
+        );
+        var normalized = reordered.ToJsonString(
+            new System.Text.Json.JsonSerializerOptions { WriteIndented = true }
+        );
 
         var reread = CashFundingPaymentSnapshot.Deserialize(normalized, 1);
         CashFundingPaymentSnapshot.ComputeHash(reread).Should().Be(original);
@@ -123,10 +176,14 @@ public sealed class CashFundingPaymentSnapshotTests
     [Fact]
     public void Version_no_soportada_se_rechaza()
     {
-        var json = CashFundingPaymentSnapshot.Serialize(CashFundingPaymentSnapshot.FromIntent(MixedIntent()));
+        var json = CashFundingPaymentSnapshot.Serialize(
+            CashFundingPaymentSnapshot.FromIntent(MixedIntent())
+        );
 
-        FluentActions.Invoking(() => CashFundingPaymentSnapshot.Deserialize(json, 2))
-            .Should().Throw<InvalidOperationException>();
+        FluentActions
+            .Invoking(() => CashFundingPaymentSnapshot.Deserialize(json, 2))
+            .Should()
+            .Throw<InvalidOperationException>();
     }
 
     [Fact]
@@ -138,23 +195,46 @@ public sealed class CashFundingPaymentSnapshotTests
         CashFundingPaymentSnapshot.CashAmountFor(snapshot, Cash).Should().Be(80m);
 
         var bankOnly = snapshot with { MethodLines = [snapshot.MethodLines[0]] };
-        CashFundingPaymentSnapshot.SingleCashRegisterId(bankOnly).Should().BeNull("sin efectivo no hay caja objetivo");
+        CashFundingPaymentSnapshot
+            .SingleCashRegisterId(bankOnly)
+            .Should()
+            .BeNull("sin efectivo no hay caja objetivo");
 
         var twoRegisters = snapshot with
         {
-            MethodLines = [snapshot.MethodLines[1], snapshot.MethodLines[1] with { CashRegisterId = Guid.NewGuid() }],
+            MethodLines =
+            [
+                snapshot.MethodLines[1],
+                snapshot.MethodLines[1] with
+                {
+                    CashRegisterId = Guid.NewGuid(),
+                },
+            ],
         };
-        CashFundingPaymentSnapshot.SingleCashRegisterId(twoRegisters).Should().BeNull("una solicitud atiende exactamente una caja");
+        CashFundingPaymentSnapshot
+            .SingleCashRegisterId(twoRegisters)
+            .Should()
+            .BeNull("una solicitud atiende exactamente una caja");
     }
 
     [Fact]
     public void El_contrato_no_contiene_contexto_ni_actores()
     {
-        var json = CashFundingPaymentSnapshot.Serialize(CashFundingPaymentSnapshot.FromIntent(MixedIntent()));
+        var json = CashFundingPaymentSnapshot.Serialize(
+            CashFundingPaymentSnapshot.FromIntent(MixedIntent())
+        );
         var keys = JsonNode.Parse(json)!.AsObject().Select(p => p.Key).ToList();
 
-        keys.Should().Equal(
-            "supplierId", "paymentDate", "totalAmount", "receiptNumber",
-            "methodLines", "applicationLines", "allocations", "confirmUnappliedAmount");
+        keys.Should()
+            .Equal(
+                "supplierId",
+                "paymentDate",
+                "totalAmount",
+                "receiptNumber",
+                "methodLines",
+                "applicationLines",
+                "allocations",
+                "confirmUnappliedAmount"
+            );
     }
 }

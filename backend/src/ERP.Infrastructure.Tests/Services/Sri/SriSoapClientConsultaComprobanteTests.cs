@@ -103,7 +103,9 @@ public sealed class SriSoapClientConsultaComprobanteTests
 
         await Client(handler).QueryDocumentStatusAsync(AccessKey, TestWsdl);
 
-        handler.Url.Should().Be("https://celcer.sri.gob.ec/comprobantes-electronicos-ws/ConsultaComprobante");
+        handler
+            .Url.Should()
+            .Be("https://celcer.sri.gob.ec/comprobantes-electronicos-ws/ConsultaComprobante");
         handler.RequestBody.Should().Contain("xmlns:ec=\"http://ec.gob.sri.ws.consultas\"");
         handler.RequestBody.Should().Contain("<ec:consultarEstadoAutorizacionComprobante>");
         handler.RequestBody.Should().Contain($"<claveAcceso>{AccessKey}</claveAcceso>");
@@ -115,9 +117,13 @@ public sealed class SriSoapClientConsultaComprobanteTests
     [InlineData("PENDIENTE DE ANULAR", SriFiscalStatus.PendingAnnulment)]
     [InlineData("ANULADO", SriFiscalStatus.Annulled)]
     [InlineData(" pendiente  de anular ", SriFiscalStatus.PendingAnnulment)]
-    public async Task Los_cuatro_estados_oficiales_se_tipan_sin_perder_el_literal(string literal, SriFiscalStatus expected)
+    public async Task Los_cuatro_estados_oficiales_se_tipan_sin_perder_el_literal(
+        string literal,
+        SriFiscalStatus expected
+    )
     {
-        var result = await Client(new CapturingHandler(Success(literal))).QueryDocumentStatusAsync(AccessKey, TestWsdl);
+        var result = await Client(new CapturingHandler(Success(literal)))
+            .QueryDocumentStatusAsync(AccessKey, TestWsdl);
 
         result.Outcome.Should().Be(SriStatusQueryOutcome.Success);
         result.FiscalStatus.Should().Be(expected);
@@ -125,7 +131,9 @@ public sealed class SriSoapClientConsultaComprobanteTests
         result.AccessKey.Should().Be(AccessKey);
         result.DocumentType.Should().Be("COMPROBANTE DE RETENCION");
         result.IssuerRuc.Should().Be("1791352688001");
-        result.AuthorizationDateUtc.Should().Be(new DateTime(2024, 12, 12, 15, 49, 37, DateTimeKind.Utc));
+        result
+            .AuthorizationDateUtc.Should()
+            .Be(new DateTime(2024, 12, 12, 15, 49, 37, DateTimeKind.Utc));
         result.RawResponse.Should().Contain("EstadoAutorizacionComprobante");
     }
 
@@ -134,7 +142,8 @@ public sealed class SriSoapClientConsultaComprobanteTests
     [InlineData("estadoAutorizacion")]
     public async Task RECHAZADA_codigo_99_es_consulta_rechazada_nunca_NO_AUTORIZADO(string element)
     {
-        var result = await Client(new CapturingHandler(Rejected(element))).QueryDocumentStatusAsync(AccessKey, TestWsdl);
+        var result = await Client(new CapturingHandler(Rejected(element)))
+            .QueryDocumentStatusAsync(AccessKey, TestWsdl);
 
         result.Outcome.Should().Be(SriStatusQueryOutcome.Rejected);
         result.FiscalStatus.Should().Be(SriFiscalStatus.Unknown);
@@ -156,7 +165,9 @@ public sealed class SriSoapClientConsultaComprobanteTests
     [Fact]
     public async Task Error_de_red_es_Unavailable_nunca_un_estado_fiscal()
     {
-        var result = await Client(new FailingHandler(() => new HttpRequestException("no route to host")))
+        var result = await Client(
+                new FailingHandler(() => new HttpRequestException("no route to host"))
+            )
             .QueryDocumentStatusAsync(AccessKey, TestWsdl);
 
         result.Outcome.Should().Be(SriStatusQueryOutcome.Unavailable);
@@ -168,7 +179,8 @@ public sealed class SriSoapClientConsultaComprobanteTests
     [InlineData("")]
     public async Task Literal_no_oficial_es_Unknown(string literal)
     {
-        var result = await Client(new CapturingHandler(Success(literal))).QueryDocumentStatusAsync(AccessKey, TestWsdl);
+        var result = await Client(new CapturingHandler(Success(literal)))
+            .QueryDocumentStatusAsync(AccessKey, TestWsdl);
 
         result.Outcome.Should().Be(SriStatusQueryOutcome.Unknown);
         result.FiscalStatus.Should().Be(SriFiscalStatus.Unknown);
@@ -177,7 +189,9 @@ public sealed class SriSoapClientConsultaComprobanteTests
     [Fact]
     public async Task Respuesta_de_otra_clave_de_acceso_se_descarta()
     {
-        var result = await Client(new CapturingHandler(Success("ANULADO", key: new string('9', 49))))
+        var result = await Client(
+                new CapturingHandler(Success("ANULADO", key: new string('9', 49)))
+            )
             .QueryDocumentStatusAsync(AccessKey, TestWsdl);
 
         result.Outcome.Should().Be(SriStatusQueryOutcome.Unknown);
@@ -187,7 +201,8 @@ public sealed class SriSoapClientConsultaComprobanteTests
     [Fact]
     public async Task Respuesta_no_XML_es_Unknown_y_no_lanza()
     {
-        var result = await Client(new CapturingHandler("<html>proxy error")).QueryDocumentStatusAsync(AccessKey, TestWsdl);
+        var result = await Client(new CapturingHandler("<html>proxy error"))
+            .QueryDocumentStatusAsync(AccessKey, TestWsdl);
 
         result.Outcome.Should().Be(SriStatusQueryOutcome.Unknown);
         result.FiscalStatus.Should().Be(SriFiscalStatus.Unknown);
@@ -198,7 +213,8 @@ public sealed class SriSoapClientConsultaComprobanteTests
     {
         var handler = new CapturingHandler(Success("ANULADO"));
 
-        var result = await Client(handler).QueryDocumentStatusAsync(AccessKey, "https://example.com/otro-servicio?wsdl");
+        var result = await Client(handler)
+            .QueryDocumentStatusAsync(AccessKey, "https://example.com/otro-servicio?wsdl");
 
         result.Outcome.Should().Be(SriStatusQueryOutcome.Unavailable);
         handler.Calls.Should().Be(0);
@@ -209,7 +225,10 @@ public sealed class SriSoapClientConsultaComprobanteTests
     {
         var handler = new CapturingHandler(Success("PENDIENTE DE ANULAR"));
 
-        var result = await new SriDocumentStatusQuery(Client(handler)).QueryAsync(AccessKey, TestWsdl);
+        var result = await new SriDocumentStatusQuery(Client(handler)).QueryAsync(
+            AccessKey,
+            TestWsdl
+        );
 
         result.FiscalStatus.Should().Be(SriFiscalStatus.PendingAnnulment);
         handler.Calls.Should().Be(1);

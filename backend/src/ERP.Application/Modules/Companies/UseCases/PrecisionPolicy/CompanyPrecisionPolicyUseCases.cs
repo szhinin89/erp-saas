@@ -84,7 +84,13 @@ public sealed class GetPrecisionPolicyMetadataHandler
     )
     {
         var fields = PrecisionPolicyDefinitions
-            .Fields.Select(f => new PrecisionFieldMetadataDto(f.Key, f.Kind.ToString(), f.Min, f.Max, f.Standard))
+            .Fields.Select(f => new PrecisionFieldMetadataDto(
+                f.Key,
+                f.Kind.ToString(),
+                f.Min,
+                f.Max,
+                f.Standard
+            ))
             .ToList();
 
         var profiles = new List<PrecisionProfileMetadataDto>
@@ -100,7 +106,9 @@ public sealed class GetPrecisionPolicyMetadataHandler
         };
 
         return Task.FromResult(
-            Result<PrecisionPolicyMetadataDto>.Success(new PrecisionPolicyMetadataDto(fields, profiles))
+            Result<PrecisionPolicyMetadataDto>.Success(
+                new PrecisionPolicyMetadataDto(fields, profiles)
+            )
         );
     }
 }
@@ -119,20 +127,31 @@ public sealed class UpdateCompanyPrecisionPolicyCommandValidator
     {
         RuleFor(x => x.ProfileType)
             .Must(p => ValidProfiles.Contains(p, StringComparer.OrdinalIgnoreCase))
-            .WithMessage("Perfil de precisión inválido. Use StandardCommercial, HighPrecision o Custom.");
+            .WithMessage(
+                "Perfil de precisión inválido. Use StandardCommercial, HighPrecision o Custom."
+            );
 
         // Los rangos individuales solo se aplican realmente cuando ProfileType = Custom (Standard
         // y HighPrecision ignoran estos campos y fuerzan sus propios valores fijos en el handler),
         // pero se validan siempre para rechazar temprano un payload evidentemente corrupto. Los
         // rangos salen de PrecisionPolicyDefinitions (única fuente), nunca de literales aquí.
         RangeRule(x => x.SalesUnitPriceDecimals, PrecisionPolicyDefinitions.SalesUnitPriceDecimals);
-        RangeRule(x => x.PurchaseUnitPriceDecimals, PrecisionPolicyDefinitions.PurchaseUnitPriceDecimals);
+        RangeRule(
+            x => x.PurchaseUnitPriceDecimals,
+            PrecisionPolicyDefinitions.PurchaseUnitPriceDecimals
+        );
         RangeRule(x => x.QuantityDecimals, PrecisionPolicyDefinitions.QuantityDecimals);
         RangeRule(x => x.PercentageDecimals, PrecisionPolicyDefinitions.PercentageDecimals);
         RangeRule(x => x.UnitCostDecimals, PrecisionPolicyDefinitions.UnitCostDecimals);
         RangeRule(x => x.AverageCostDecimals, PrecisionPolicyDefinitions.AverageCostDecimals);
-        RangeRule(x => x.ConversionFactorDecimals, PrecisionPolicyDefinitions.ConversionFactorDecimals);
-        RangeRule(x => x.SettlementToleranceAmount, PrecisionPolicyDefinitions.SettlementToleranceAmount);
+        RangeRule(
+            x => x.ConversionFactorDecimals,
+            PrecisionPolicyDefinitions.ConversionFactorDecimals
+        );
+        RangeRule(
+            x => x.SettlementToleranceAmount,
+            PrecisionPolicyDefinitions.SettlementToleranceAmount
+        );
         // ZH-DESIGN-SYSTEM-PRECISION-04D1 — la tolerancia es un MONTO: su escala es la de money
         // (FiscalPrecision.TaxAmount, la misma que expone EffectivePrecisionPolicyDto.MoneyDecimals y la de
         // la columna numeric(5,2)). Un valor con más decimales se rechaza aquí, nunca lo redondea PostgreSQL.
@@ -143,7 +162,10 @@ public sealed class UpdateCompanyPrecisionPolicyCommandValidator
             );
     }
 
-    private void RangeRule<T>(System.Linq.Expressions.Expression<Func<UpdateCompanyPrecisionPolicyCommand, T>> selector, string key)
+    private void RangeRule<T>(
+        System.Linq.Expressions.Expression<Func<UpdateCompanyPrecisionPolicyCommand, T>> selector,
+        string key
+    )
         where T : struct, IComparable<T>
     {
         var def = PrecisionPolicyDefinitions.Get(key);
@@ -153,7 +175,9 @@ public sealed class UpdateCompanyPrecisionPolicyCommandValidator
                 var value = Convert.ToDecimal(v, System.Globalization.CultureInfo.InvariantCulture);
                 return value >= def.Min && value <= def.Max;
             })
-            .WithMessage(System.FormattableString.Invariant($"Debe estar entre {def.Min} y {def.Max}."));
+            .WithMessage(
+                System.FormattableString.Invariant($"Debe estar entre {def.Min} y {def.Max}.")
+            );
     }
 }
 

@@ -127,7 +127,15 @@ public sealed class BatchDownloadPurchaseReceptionXmlHandlerTests
             NullLogger<BatchDownloadPurchaseReceptionXmlHandler>.Instance
         );
 
-        return new Harness(handler, repo, provider, purchaseRepo, expenseRepo, creditNoteRepo, container);
+        return new Harness(
+            handler,
+            repo,
+            provider,
+            purchaseRepo,
+            expenseRepo,
+            creditNoteRepo,
+            container
+        );
     }
 
     [Fact]
@@ -152,12 +160,22 @@ public sealed class BatchDownloadPurchaseReceptionXmlHandlerTests
             .ReturnsAsync(pending);
         h.Repo.Setup(r => r.GetByIdAsync(TenantId, already.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(already);
-        h.Provider
-            .Setup(p =>
-                p.GetAuthorizedXmlAsync(TenantId, CompanyId, pending.AccessKey, It.IsAny<CancellationToken>())
+        h.Provider.Setup(p =>
+                p.GetAuthorizedXmlAsync(
+                    TenantId,
+                    CompanyId,
+                    pending.AccessKey,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(
-                new SriReceptionXmlQueryResult(true, pending.AccessKey, DateTime.UtcNow, "<factura>ok</factura>", null)
+                new SriReceptionXmlQueryResult(
+                    true,
+                    pending.AccessKey,
+                    DateTime.UtcNow,
+                    "<factura>ok</factura>",
+                    null
+                )
             );
 
         var result = await h.Handler.Handle(
@@ -170,8 +188,12 @@ public sealed class BatchDownloadPurchaseReceptionXmlHandlerTests
         result.Value.Downloaded.Should().Be(1);
         result.Value.Skipped.Should().Be(1);
         result.Value.Failed.Should().Be(0);
-        result.Value.Items.Should().Contain(i => i.DocumentId == pending.Id && i.Status == "Downloaded");
-        result.Value.Items.Should().Contain(i => i.DocumentId == already.Id && i.Status == "SkippedAlreadyHasXml");
+        result
+            .Value.Items.Should()
+            .Contain(i => i.DocumentId == pending.Id && i.Status == "Downloaded");
+        result
+            .Value.Items.Should()
+            .Contain(i => i.DocumentId == already.Id && i.Status == "SkippedAlreadyHasXml");
 
         // PURCHASE-RECEPTION-BULK-SRI-XML-DOWNLOAD-01 — el resumen por documento trae lo mínimo
         // para refrescar los badges de la fila sin abrir "Ver XML".
@@ -188,9 +210,13 @@ public sealed class BatchDownloadPurchaseReceptionXmlHandlerTests
 
         // Nunca se llama al SRI para el documento que ya tenía XML — regla no negociable del feature.
         h.Provider.Verify(
-            p => p.GetAuthorizedXmlAsync(
-                It.IsAny<Guid>(), It.IsAny<Guid>(), already.AccessKey, It.IsAny<CancellationToken>()
-            ),
+            p =>
+                p.GetAuthorizedXmlAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    already.AccessKey,
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
         h.Repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -203,15 +229,39 @@ public sealed class BatchDownloadPurchaseReceptionXmlHandlerTests
         var ok = SampleDocument("AK-OK-00000000000000000000000000000003");
         var failing = SampleDocument("AK-FAIL-0000000000000000000000000004");
 
-        h.Repo.Setup(r => r.GetByIdAsync(TenantId, ok.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ok);
-        h.Repo.Setup(r => r.GetByIdAsync(TenantId, failing.Id, It.IsAny<CancellationToken>())).ReturnsAsync(failing);
+        h.Repo.Setup(r => r.GetByIdAsync(TenantId, ok.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(ok);
+        h.Repo.Setup(r => r.GetByIdAsync(TenantId, failing.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(failing);
 
-        h.Provider
-            .Setup(p => p.GetAuthorizedXmlAsync(TenantId, CompanyId, ok.AccessKey, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new SriReceptionXmlQueryResult(true, ok.AccessKey, DateTime.UtcNow, "<factura>ok</factura>", null));
-        h.Provider
-            .Setup(p => p.GetAuthorizedXmlAsync(TenantId, CompanyId, failing.AccessKey, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new SriReceptionXmlQueryResult(false, null, null, null, "ERROR_CONEXION"));
+        h.Provider.Setup(p =>
+                p.GetAuthorizedXmlAsync(
+                    TenantId,
+                    CompanyId,
+                    ok.AccessKey,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new SriReceptionXmlQueryResult(
+                    true,
+                    ok.AccessKey,
+                    DateTime.UtcNow,
+                    "<factura>ok</factura>",
+                    null
+                )
+            );
+        h.Provider.Setup(p =>
+                p.GetAuthorizedXmlAsync(
+                    TenantId,
+                    CompanyId,
+                    failing.AccessKey,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new SriReceptionXmlQueryResult(false, null, null, null, "ERROR_CONEXION")
+            );
 
         var result = await h.Handler.Handle(
             new BatchDownloadPurchaseReceptionXmlCommand([ok.Id, failing.Id]),
@@ -222,7 +272,9 @@ public sealed class BatchDownloadPurchaseReceptionXmlHandlerTests
         result.Value!.Downloaded.Should().Be(1);
         result.Value.Failed.Should().Be(1);
         result.Value.Items.Should().Contain(i => i.DocumentId == ok.Id && i.Status == "Downloaded");
-        result.Value.Items.Should().Contain(i => i.DocumentId == failing.Id && i.Status == "SriError");
+        result
+            .Value.Items.Should()
+            .Contain(i => i.DocumentId == failing.Id && i.Status == "SriError");
     }
 
     [Fact]
@@ -242,9 +294,13 @@ public sealed class BatchDownloadPurchaseReceptionXmlHandlerTests
         result.Value!.Failed.Should().Be(1);
         result.Value.Items.Single().Status.Should().Be("Error");
         h.Provider.Verify(
-            p => p.GetAuthorizedXmlAsync(
-                It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()
-            ),
+            p =>
+                p.GetAuthorizedXmlAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }
@@ -256,9 +312,23 @@ public sealed class BatchDownloadPurchaseReceptionXmlHandlerTests
         var pending = SampleDocument("AK-NOSIDE-000000000000000000000000005");
         h.Repo.Setup(r => r.GetByIdAsync(TenantId, pending.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(pending);
-        h.Provider
-            .Setup(p => p.GetAuthorizedXmlAsync(TenantId, CompanyId, pending.AccessKey, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new SriReceptionXmlQueryResult(true, pending.AccessKey, DateTime.UtcNow, "<factura>ok</factura>", null));
+        h.Provider.Setup(p =>
+                p.GetAuthorizedXmlAsync(
+                    TenantId,
+                    CompanyId,
+                    pending.AccessKey,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new SriReceptionXmlQueryResult(
+                    true,
+                    pending.AccessKey,
+                    DateTime.UtcNow,
+                    "<factura>ok</factura>",
+                    null
+                )
+            );
 
         await h.Handler.Handle(
             new BatchDownloadPurchaseReceptionXmlCommand([pending.Id]),
@@ -268,11 +338,11 @@ public sealed class BatchDownloadPurchaseReceptionXmlHandlerTests
         // El repositorio de compras/gastos solo se consulta (lectura, para el DTO del caso de uso
         // individual y para el resumen de badges del lote) — nunca se invoca un método de
         // creación/persistencia.
-        h.PurchaseRepo
-            .Invocations.Should()
-            .OnlyContain(i => i.Method.Name == nameof(IPurchaseInvoiceRepository.GetByAccessKeyAsync));
-        h.ExpenseRepo
-            .Invocations.Should()
+        h.PurchaseRepo.Invocations.Should()
+            .OnlyContain(i =>
+                i.Method.Name == nameof(IPurchaseInvoiceRepository.GetByAccessKeyAsync)
+            );
+        h.ExpenseRepo.Invocations.Should()
             .OnlyContain(i =>
                 i.Method.Name == nameof(IExpenseDocumentRepository.ExistsByAccessKeyAsync)
                 || i.Method.Name == nameof(IExpenseDocumentRepository.GetActiveIdByAccessKeyAsync)
@@ -293,14 +363,24 @@ public sealed class BatchDownloadPurchaseReceptionXmlHandlerTests
 
         h.Repo.Setup(r => r.GetByIdAsync(TenantId, creditNoteDoc.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(creditNoteDoc);
-        h.Provider
-            .Setup(p => p.GetAuthorizedXmlAsync(
-                TenantId, CompanyId, creditNoteDoc.AccessKey, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new SriReceptionXmlQueryResult(
-                false, null, null, null, "No autorizado en el SRI."));
-        h.CreditNoteRepo
-            .Setup(r => r.GetIdByReceptionDocumentIdAsync(
-                TenantId, creditNoteDoc.Id, It.IsAny<CancellationToken>()))
+        h.Provider.Setup(p =>
+                p.GetAuthorizedXmlAsync(
+                    TenantId,
+                    CompanyId,
+                    creditNoteDoc.AccessKey,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new SriReceptionXmlQueryResult(false, null, null, null, "No autorizado en el SRI.")
+            );
+        h.CreditNoteRepo.Setup(r =>
+                r.GetIdByReceptionDocumentIdAsync(
+                    TenantId,
+                    creditNoteDoc.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(linkedCreditNoteId);
 
         var result = await h.Handler.Handle(
@@ -315,8 +395,12 @@ public sealed class BatchDownloadPurchaseReceptionXmlHandlerTests
         item.CancelledCreditNoteId.Should().BeNull();
         // Ya hay una NC activa vinculada — nunca se consulta la Cancelled más reciente.
         h.CreditNoteRepo.Verify(
-            r => r.GetLatestCancelledIdByReceptionDocumentIdAsync(
-                It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            r =>
+                r.GetLatestCancelledIdByReceptionDocumentIdAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }
@@ -325,31 +409,47 @@ public sealed class BatchDownloadPurchaseReceptionXmlHandlerTests
     public async Task Handle_bounds_concurrent_sri_calls_to_at_most_three()
     {
         using var h = BuildHarness();
-        var documents = Enumerable.Range(0, 8)
+        var documents = Enumerable
+            .Range(0, 8)
             .Select(i => SampleDocument($"AK-CONC-{i:D2}-00000000000000000000000006"))
             .ToList();
         foreach (var doc in documents)
-            h.Repo.Setup(r => r.GetByIdAsync(TenantId, doc.Id, It.IsAny<CancellationToken>())).ReturnsAsync(doc);
+            h.Repo.Setup(r => r.GetByIdAsync(TenantId, doc.Id, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(doc);
 
         var concurrent = 0;
         var maxObserved = 0;
         var gate = new object();
-        h.Provider
-            .Setup(p => p.GetAuthorizedXmlAsync(TenantId, CompanyId, It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .Returns(async (Guid _, Guid _, string accessKey, CancellationToken ct) =>
-            {
-                lock (gate)
+        h.Provider.Setup(p =>
+                p.GetAuthorizedXmlAsync(
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .Returns(
+                async (Guid _, Guid _, string accessKey, CancellationToken ct) =>
                 {
-                    concurrent++;
-                    maxObserved = Math.Max(maxObserved, concurrent);
+                    lock (gate)
+                    {
+                        concurrent++;
+                        maxObserved = Math.Max(maxObserved, concurrent);
+                    }
+                    await Task.Delay(30, ct);
+                    lock (gate)
+                    {
+                        concurrent--;
+                    }
+                    return new SriReceptionXmlQueryResult(
+                        true,
+                        accessKey,
+                        DateTime.UtcNow,
+                        "<factura>ok</factura>",
+                        null
+                    );
                 }
-                await Task.Delay(30, ct);
-                lock (gate)
-                {
-                    concurrent--;
-                }
-                return new SriReceptionXmlQueryResult(true, accessKey, DateTime.UtcNow, "<factura>ok</factura>", null);
-            });
+            );
 
         var result = await h.Handler.Handle(
             new BatchDownloadPurchaseReceptionXmlCommand(documents.Select(d => d.Id).ToList()),

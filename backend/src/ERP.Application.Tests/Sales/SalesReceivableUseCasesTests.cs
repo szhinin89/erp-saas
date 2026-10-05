@@ -79,13 +79,7 @@ public sealed class SalesReceivableUseCasesTests
     public void Build_sin_resumen_de_factura_no_muestra_GUID_usa_fallback_textual()
     {
         var r = CreateReceivable();
-        var dto = SalesReceivableDtoMapper.Build(
-            r,
-            null,
-            null,
-            null,
-            new DateOnly(2026, 8, 17)
-        );
+        var dto = SalesReceivableDtoMapper.Build(r, null, null, null, new DateOnly(2026, 8, 17));
 
         dto.CustomerName.Should().NotBe(CustomerId.ToString());
         dto.CustomerName.Should().Be("Cliente no disponible");
@@ -273,19 +267,15 @@ public sealed class SalesReceivableUseCasesTests
             )
             .ReturnsAsync(new List<Branch> { branch });
 
-        var user = IdentityUser.Create(
-            "admin.zh",
-            "Admin",
-            "ZH",
-            "admin@zh.com",
-            "hash",
-            ActorId
-        );
+        var user = IdentityUser.Create("admin.zh", "Admin", "ZH", "admin@zh.com", "hash", ActorId);
         typeof(IdentityUser).GetProperty("Id")!.SetValue(user, CreatedByUserId);
         var accessRepo = new Mock<IAccessRepository>();
         accessRepo
             .Setup(r =>
-                r.GetUsersByIdsAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>())
+                r.GetUsersByIdsAsync(
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(new List<IdentityUser> { user });
 

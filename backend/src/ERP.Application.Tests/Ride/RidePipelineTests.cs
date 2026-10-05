@@ -48,8 +48,11 @@ public sealed class RidePipelineTests
         public Fixture()
         {
             CurrentUser.SetupGet(u => u.UserId).Returns(UserId);
-            PrecisionPolicies.Setup(p => p.FindAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(CompanyPrecisionPolicy.CreateStandardCommercial(TenantId, CompanyId, UserId));
+            PrecisionPolicies
+                .Setup(p => p.FindAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(
+                    CompanyPrecisionPolicy.CreateStandardCommercial(TenantId, CompanyId, UserId)
+                );
         }
 
         public RidePipeline BuildPipeline() =>
@@ -97,14 +100,27 @@ public sealed class RidePipelineTests
     {
         var fixture = new Fixture();
         fixture.SetupAvailableSource();
-        fixture.ParserResolver.Setup(r => r.Resolve(RideDocumentType.Invoice))
+        fixture
+            .ParserResolver.Setup(r => r.Resolve(RideDocumentType.Invoice))
             .Returns(new FakeRideXmlParser(RideDocumentType.Invoice));
-        fixture.TemplateResolver.Setup(r => r.Resolve(It.IsAny<RideTemplateSelector>()))
+        fixture
+            .TemplateResolver.Setup(r => r.Resolve(It.IsAny<RideTemplateSelector>()))
             .Returns(new DefaultInvoiceRideTemplate());
-        fixture.PrecisionPolicies.Setup(p => p.FindAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+        fixture
+            .PrecisionPolicies.Setup(p =>
+                p.FindAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((CompanyPrecisionPolicy?)null);
-        var result = await fixture.BuildPipeline().ExecuteAsync(
-            TenantId, CompanyId, SourceModule, SourceEntityId, false, CancellationToken.None);
+        var result = await fixture
+            .BuildPipeline()
+            .ExecuteAsync(
+                TenantId,
+                CompanyId,
+                SourceModule,
+                SourceEntityId,
+                false,
+                CancellationToken.None
+            );
         result.IsSuccess.Should().BeFalse();
         fixture.Renderer.Invocations.Should().BeEmpty();
         fixture.CacheStrategy.Invocations.Should().BeEmpty();
@@ -272,17 +288,29 @@ public sealed class RidePipelineTests
     [InlineData(true, false, 4, 2)]
     [InlineData(true, true, 6, 4)]
     public async Task Case3_parser_and_template_registered_completes_the_full_orchestration_on_cache_miss(
-        bool creditNote, bool highPrecision, int quantityDecimals, int priceDecimals)
+        bool creditNote,
+        bool highPrecision,
+        int quantityDecimals,
+        int priceDecimals
+    )
     {
         var fixture = new Fixture();
         var documentType = creditNote ? RideDocumentType.CreditNote : RideDocumentType.Invoice;
         fixture.SetupAvailableSource(documentType);
-        fixture.PrecisionPolicies.Setup(p => p.FindAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(highPrecision
-                ? CompanyPrecisionPolicy.CreateHighPrecision(TenantId, CompanyId, UserId)
-                : CompanyPrecisionPolicy.CreateStandardCommercial(TenantId, CompanyId, UserId));
-        fixture.ParserResolver.Setup(r => r.Resolve(documentType)).Returns(new FakeRideXmlParser(documentType));
-        fixture.TemplateResolver.Setup(r => r.Resolve(It.IsAny<RideTemplateSelector>()))
+        fixture
+            .PrecisionPolicies.Setup(p =>
+                p.FindAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                highPrecision
+                    ? CompanyPrecisionPolicy.CreateHighPrecision(TenantId, CompanyId, UserId)
+                    : CompanyPrecisionPolicy.CreateStandardCommercial(TenantId, CompanyId, UserId)
+            );
+        fixture
+            .ParserResolver.Setup(r => r.Resolve(documentType))
+            .Returns(new FakeRideXmlParser(documentType));
+        fixture
+            .TemplateResolver.Setup(r => r.Resolve(It.IsAny<RideTemplateSelector>()))
             .Returns(creditNote ? new CreditNoteRideTemplate() : new DefaultInvoiceRideTemplate());
         fixture
             .ContentHasher.Setup(h => h.Compute(AuthorizedXml))
@@ -357,16 +385,39 @@ public sealed class RidePipelineTests
         result.Value.Metadata!.WasCached.Should().BeFalse();
         var version = $"precision-1-q{quantityDecimals}-p{priceDecimals}";
         result.Value.Metadata.TemplateVersion.Should().Be(version);
-        fixture.PrecisionPolicies.Verify(p => p.FindAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()), Times.Once);
-        fixture.Renderer.Verify(r => r.RenderAsync(
-            It.Is<IRideDocumentLayout>(l => l is InvoiceRideDocumentLayout &&
-                ((InvoiceRideDocumentLayout)l).Precision.QuantityDecimals == quantityDecimals &&
-                ((InvoiceRideDocumentLayout)l).Precision.SalesUnitPriceDecimals == priceDecimals),
-            It.IsAny<CancellationToken>()), Times.Once);
-        fixture.CacheStrategy.Verify(c => c.TryGetCachedAsync(
-            TenantId, ElectronicDocumentId, It.IsAny<RideContentHash>(), documentType.ToString(),
-            version, "unversioned", "unversioned", RidePipeline.RideSpecificationVersion,
-            It.IsAny<CancellationToken>()), Times.Once);
+        fixture.PrecisionPolicies.Verify(
+            p => p.FindAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+        fixture.Renderer.Verify(
+            r =>
+                r.RenderAsync(
+                    It.Is<IRideDocumentLayout>(l =>
+                        l is InvoiceRideDocumentLayout
+                        && ((InvoiceRideDocumentLayout)l).Precision.QuantityDecimals
+                            == quantityDecimals
+                        && ((InvoiceRideDocumentLayout)l).Precision.SalesUnitPriceDecimals
+                            == priceDecimals
+                    ),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+        fixture.CacheStrategy.Verify(
+            c =>
+                c.TryGetCachedAsync(
+                    TenantId,
+                    ElectronicDocumentId,
+                    It.IsAny<RideContentHash>(),
+                    documentType.ToString(),
+                    version,
+                    "unversioned",
+                    "unversioned",
+                    RidePipeline.RideSpecificationVersion,
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
         fixture.Repository.Verify(
             r => r.AddAsync(It.IsAny<RidePdfDocument>(), It.IsAny<CancellationToken>()),
             Times.Once

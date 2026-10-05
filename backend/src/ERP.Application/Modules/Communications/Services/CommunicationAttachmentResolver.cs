@@ -56,7 +56,10 @@ public sealed class CommunicationAttachmentException(string message, Exception? 
 /// <summary>Convierte los adjuntos persistidos de una comunicación en bytes listos para el transporte.</summary>
 public interface ICommunicationAttachmentResolver
 {
-    Task<IReadOnlyList<EmailAttachment>> ResolveAsync(CommunicationOutbox communication, CancellationToken ct = default);
+    Task<IReadOnlyList<EmailAttachment>> ResolveAsync(
+        CommunicationOutbox communication,
+        CancellationToken ct = default
+    );
 }
 
 /// <summary>
@@ -67,7 +70,10 @@ public interface ICommunicationAttachmentResolver
 public sealed partial class CommunicationAttachmentResolver : ICommunicationAttachmentResolver
 {
     private readonly IFileStorage _fileStorage;
-    private readonly IReadOnlyDictionary<CommunicationAttachmentType, ICommunicationAttachmentContentProvider> _providers;
+    private readonly IReadOnlyDictionary<
+        CommunicationAttachmentType,
+        ICommunicationAttachmentContentProvider
+    > _providers;
     private readonly ILogger<CommunicationAttachmentResolver> _logger;
 
     public CommunicationAttachmentResolver(
@@ -82,7 +88,10 @@ public sealed partial class CommunicationAttachmentResolver : ICommunicationAtta
         _logger = logger;
     }
 
-    public async Task<IReadOnlyList<EmailAttachment>> ResolveAsync(CommunicationOutbox communication, CancellationToken ct = default)
+    public async Task<IReadOnlyList<EmailAttachment>> ResolveAsync(
+        CommunicationOutbox communication,
+        CancellationToken ct = default
+    )
     {
         ArgumentNullException.ThrowIfNull(communication);
         var resolved = new List<EmailAttachment>(communication.Attachments.Count);
@@ -91,7 +100,9 @@ public sealed partial class CommunicationAttachmentResolver : ICommunicationAtta
         {
             var content = await ResolveContentAsync(communication, attachment, ct);
             if (content is not null)
-                resolved.Add(new EmailAttachment(attachment.FileName, attachment.ContentType, content));
+                resolved.Add(
+                    new EmailAttachment(attachment.FileName, attachment.ContentType, content)
+                );
         }
 
         return resolved;
@@ -119,11 +130,18 @@ public sealed partial class CommunicationAttachmentResolver : ICommunicationAtta
         CancellationToken ct
     )
     {
-        if (communication.TenantId is not { } tenantId || communication.CompanyId is not { } companyId)
-            throw new CommunicationAttachmentException("Un adjunto por referencia requiere una comunicación con alcance de empresa.");
+        if (
+            communication.TenantId is not { } tenantId
+            || communication.CompanyId is not { } companyId
+        )
+            throw new CommunicationAttachmentException(
+                "Un adjunto por referencia requiere una comunicación con alcance de empresa."
+            );
 
         if (!_providers.TryGetValue(attachment.AttachmentType, out var provider))
-            throw new CommunicationAttachmentException($"No hay proveedor para adjuntos {attachment.AttachmentType}.");
+            throw new CommunicationAttachmentException(
+                $"No hay proveedor para adjuntos {attachment.AttachmentType}."
+            );
 
         var resolution = await provider.ResolveAsync(
             new CommunicationAttachmentReference(
@@ -140,21 +158,36 @@ public sealed partial class CommunicationAttachmentResolver : ICommunicationAtta
         if (resolution.Content is { Length: > 0 } content)
             return content;
 
-        LogAttachmentSkipped(communication.Id, attachment.AttachmentType, resolution.SkippedReason ?? "empty");
+        LogAttachmentSkipped(
+            communication.Id,
+            attachment.AttachmentType,
+            resolution.SkippedReason ?? "empty"
+        );
         return null;
     }
 
     private async Task<byte[]> ReadStoredAsync(string storedPath, CancellationToken ct)
     {
-        await using var stream = await _fileStorage.GetAsync(storedPath, ct)
-            ?? throw new CommunicationAttachmentException("El archivo adjunto no está disponible en el almacenamiento.");
+        await using var stream =
+            await _fileStorage.GetAsync(storedPath, ct)
+            ?? throw new CommunicationAttachmentException(
+                "El archivo adjunto no está disponible en el almacenamiento."
+            );
         using var buffer = new MemoryStream();
         await stream.CopyToAsync(buffer, ct);
         return buffer.ToArray();
     }
 
     // Sin nombres de archivo ni rutas: solo el tipo y el motivo técnico.
-    [LoggerMessage(EventId = 4220, EventName = "CommunicationAttachmentSkipped", Level = LogLevel.Information,
-        Message = "Communications: optional attachment {AttachmentType} omitted for {CommunicationId}: {Reason}")]
-    private partial void LogAttachmentSkipped(Guid communicationId, CommunicationAttachmentType attachmentType, string reason);
+    [LoggerMessage(
+        EventId = 4220,
+        EventName = "CommunicationAttachmentSkipped",
+        Level = LogLevel.Information,
+        Message = "Communications: optional attachment {AttachmentType} omitted for {CommunicationId}: {Reason}"
+    )]
+    private partial void LogAttachmentSkipped(
+        Guid communicationId,
+        CommunicationAttachmentType attachmentType,
+        string reason
+    );
 }

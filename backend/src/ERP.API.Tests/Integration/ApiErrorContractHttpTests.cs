@@ -1,3 +1,6 @@
+using System.Net;
+using System.Net.Http.Headers;
+using System.Text.Json;
 using ERP.API.Tests.Support;
 using ERP.Application.Access.Authorization;
 using ERP.Domain.Access.Entities;
@@ -14,9 +17,6 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using System.Net;
-using System.Net.Http.Headers;
-using System.Text.Json;
 
 namespace ERP.API.Tests.Integration;
 
@@ -78,17 +78,36 @@ public sealed class ApiErrorContractHttpTests : IAsyncLifetime
         {
             var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
             var tenant = Tenant.Create("ZH-ErrorContract", $"zh-ec-{Guid.NewGuid():N}", _adminId);
-            var otherTenant = Tenant.Create("ZH-ErrorContract-B", $"zh-eb-{Guid.NewGuid():N}", _adminId);
+            var otherTenant = Tenant.Create(
+                "ZH-ErrorContract-B",
+                $"zh-eb-{Guid.NewGuid():N}",
+                _adminId
+            );
             db.Tenants.AddRange(tenant, otherTenant);
             await db.SaveChangesAsync();
             _tenantId = tenant.Id;
-            var otherTenantCompany = Company.CreateManaged(otherTenant.Id, $"179{Guid.NewGuid():N}"[..13], "Empresa Tenant B", createdBy: _adminId);
+            var otherTenantCompany = Company.CreateManaged(
+                otherTenant.Id,
+                $"179{Guid.NewGuid():N}"[..13],
+                "Empresa Tenant B",
+                createdBy: _adminId
+            );
             db.Companies.Add(otherTenantCompany);
             await db.SaveChangesAsync();
             _otherTenantCompanyId = otherTenantCompany.Id;
 
-            var company = Company.CreateManaged(_tenantId, $"179{Guid.NewGuid():N}"[..13], "Empresa A", createdBy: _adminId);
-            var foreignCompany = Company.CreateManaged(_tenantId, $"179{Guid.NewGuid():N}"[..13], "Empresa B", createdBy: _adminId);
+            var company = Company.CreateManaged(
+                _tenantId,
+                $"179{Guid.NewGuid():N}"[..13],
+                "Empresa A",
+                createdBy: _adminId
+            );
+            var foreignCompany = Company.CreateManaged(
+                _tenantId,
+                $"179{Guid.NewGuid():N}"[..13],
+                "Empresa B",
+                createdBy: _adminId
+            );
             db.Companies.AddRange(company, foreignCompany);
             await db.SaveChangesAsync();
             _companyId = company.Id;
@@ -96,7 +115,12 @@ public sealed class ApiErrorContractHttpTests : IAsyncLifetime
 
             var branch = NewBranch(company.Id, "Matriz A", "SUC-A");
             var foreignBranch = NewBranch(foreignCompany.Id, "Matriz B", "SUC-B");
-            var unauthorizedBranch = NewBranch(company.Id, "Sucursal A2", "SUC-A2", isMainBranch: false);
+            var unauthorizedBranch = NewBranch(
+                company.Id,
+                "Sucursal A2",
+                "SUC-A2",
+                isMainBranch: false
+            );
             db.Branches.AddRange(branch, foreignBranch, unauthorizedBranch);
             await db.SaveChangesAsync();
             _branchId = branch.Id;
@@ -104,34 +128,64 @@ public sealed class ApiErrorContractHttpTests : IAsyncLifetime
             _unauthorizedBranchId = unauthorizedBranch.Id;
 
             _username = $"ec-{Guid.NewGuid():N}";
-            var hash = scope.ServiceProvider.GetRequiredService<ERP.Application.Common.Interfaces.IPasswordHasher>().HashPassword(UserPassword);
-            var user = IdentityUser.Create(_username, "Usuario", "Prueba", $"ec-{Guid.NewGuid():N}@test.com", hash, _adminId);
+            var hash = scope
+                .ServiceProvider.GetRequiredService<ERP.Application.Common.Interfaces.IPasswordHasher>()
+                .HashPassword(UserPassword);
+            var user = IdentityUser.Create(
+                _username,
+                "Usuario",
+                "Prueba",
+                $"ec-{Guid.NewGuid():N}@test.com",
+                hash,
+                _adminId
+            );
             db.IdentityUsers.Add(user);
             await db.SaveChangesAsync();
             _userId = user.Id;
 
-            var membership = CompanyUserMembership.Create(company.Id, user.Id, "Admin", null, _adminId);
+            var membership = CompanyUserMembership.Create(
+                company.Id,
+                user.Id,
+                "Admin",
+                null,
+                _adminId
+            );
             db.CompanyUserMemberships.Add(membership);
             await db.SaveChangesAsync();
-            db.CompanyUserBranches.Add(CompanyUserBranch.Create(_tenantId, company.Id, membership.Id, branch.Id, _adminId));
+            db.CompanyUserBranches.Add(
+                CompanyUserBranch.Create(_tenantId, company.Id, membership.Id, branch.Id, _adminId)
+            );
 
-            var partner = ERP.Domain.MasterData.Entities.BusinessPartner.Create(_tenantId, "05", "1710034065", 1, "Proveedor Activo", _adminId);
+            var partner = ERP.Domain.MasterData.Entities.BusinessPartner.Create(
+                _tenantId,
+                "05",
+                "1710034065",
+                1,
+                "Proveedor Activo",
+                _adminId
+            );
             db.BusinessPartners.Add(partner);
             _activePartnerId = partner.Id;
 
             var document = NewReceptionDocument(company.Id, branch.Id, AccessKey);
-            var foreignDocument = NewReceptionDocument(foreignCompany.Id, foreignBranch.Id, AccessKey[..^1] + "2");
+            var foreignDocument = NewReceptionDocument(
+                foreignCompany.Id,
+                foreignBranch.Id,
+                AccessKey[..^1] + "2"
+            );
             db.PurchaseReceptionDocuments.AddRange(document, foreignDocument);
             await db.SaveChangesAsync();
             _documentId = document.Id;
             _foreignDocumentId = foreignDocument.Id;
         }
 
-        _app = _factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
-        {
-            services.AddScoped<IRuntimePermissionAuthorizer, AllowAllPermissionAuthorizer>();
-            services.AddScoped<ISriReceptionXmlProvider, SriUnavailableXmlProvider>();
-        }));
+        _app = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureTestServices(services =>
+            {
+                services.AddScoped<IRuntimePermissionAuthorizer, AllowAllPermissionAuthorizer>();
+                services.AddScoped<ISriReceptionXmlProvider, SriUnavailableXmlProvider>();
+            })
+        );
         _client = _app.CreateClient();
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             "Bearer",
@@ -152,7 +206,11 @@ public sealed class ApiErrorContractHttpTests : IAsyncLifetime
     [Fact]
     public async Task Download_xml_con_SRI_no_disponible_responde_502_SRI_COMMUNICATION_ERROR_y_no_toca_el_documento()
     {
-        var (status, code, errors) = await SendAsync(HttpMethod.Post, $"/api/v1/purchases/reception/{_documentId}/download-xml", _branchId);
+        var (status, code, errors) = await SendAsync(
+            HttpMethod.Post,
+            $"/api/v1/purchases/reception/{_documentId}/download-xml",
+            _branchId
+        );
 
         status.Should().Be(HttpStatusCode.BadGateway);
         code.Should().Be("SRI_COMMUNICATION_ERROR");
@@ -160,15 +218,25 @@ public sealed class ApiErrorContractHttpTests : IAsyncLifetime
 
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
-        var document = await db.PurchaseReceptionDocuments.IgnoreQueryFilters().SingleAsync(d => d.Id == _documentId);
+        var document = await db
+            .PurchaseReceptionDocuments.IgnoreQueryFilters()
+            .SingleAsync(d => d.Id == _documentId);
         document.Status.Should().Be(PurchaseReceptionDocumentStatus.Imported);
     }
 
     [Fact]
     public async Task Download_xml_de_documento_inexistente_y_de_otra_empresa_son_el_mismo_404()
     {
-        var nonexistent = await SendAsync(HttpMethod.Post, $"/api/v1/purchases/reception/{Guid.NewGuid()}/download-xml", _branchId);
-        var foreign = await SendAsync(HttpMethod.Post, $"/api/v1/purchases/reception/{_foreignDocumentId}/download-xml", _branchId);
+        var nonexistent = await SendAsync(
+            HttpMethod.Post,
+            $"/api/v1/purchases/reception/{Guid.NewGuid()}/download-xml",
+            _branchId
+        );
+        var foreign = await SendAsync(
+            HttpMethod.Post,
+            $"/api/v1/purchases/reception/{_foreignDocumentId}/download-xml",
+            _branchId
+        );
 
         nonexistent.Status.Should().Be(HttpStatusCode.NotFound);
         nonexistent.Code.Should().Be("NOT_FOUND");
@@ -182,7 +250,11 @@ public sealed class ApiErrorContractHttpTests : IAsyncLifetime
     [InlineData("ride/pdf")]
     public async Task Retencion_inexistente_responde_404_NOT_FOUND(string suffix)
     {
-        var (status, code, errors) = await SendAsync(HttpMethod.Get, $"/api/v1/retentions/{Guid.NewGuid()}/{suffix}", branchId: null);
+        var (status, code, errors) = await SendAsync(
+            HttpMethod.Get,
+            $"/api/v1/retentions/{Guid.NewGuid()}/{suffix}",
+            branchId: null
+        );
 
         status.Should().Be(HttpStatusCode.NotFound);
         code.Should().Be("NOT_FOUND");
@@ -213,7 +285,10 @@ public sealed class ApiErrorContractHttpTests : IAsyncLifetime
         // auth-refresh-ip: 60/min por IP por defecto; sin refresh token cada llamada es 401 hasta agotar la ventana.
         for (var i = 0; i < 200 && last.Status != HttpStatusCode.TooManyRequests; i++)
         {
-            using var response = await anonymous.PostAsync("/api/v1/auth/refresh", JsonContent("{}"));
+            using var response = await anonymous.PostAsync(
+                "/api/v1/auth/refresh",
+                JsonContent("{}")
+            );
             last = await ReadAsync(response);
             if (last.Status != HttpStatusCode.TooManyRequests)
                 last.Code.Should().Be("UNAUTHORIZED");
@@ -223,14 +298,16 @@ public sealed class ApiErrorContractHttpTests : IAsyncLifetime
         last.Code.Should().Be("RATE_LIMITED");
     }
 
-
     // ── ZH-DOMAIN-RULE-ERROR-SSOT-01 ─────────────────────────────────────────────────────────
 
     [Fact]
     public async Task Regla_de_dominio_por_HTTP_real_es_422_DOMAIN_RULE_VIOLATION_con_mensaje_publico()
     {
         // ActivateBusinessPartnerHandler ya no captura la regla: la traduce DomainRuleBehavior.
-        using var request = new HttpRequestMessage(HttpMethod.Patch, $"/api/v1/master/business-partners/{_activePartnerId}/activate");
+        using var request = new HttpRequestMessage(
+            HttpMethod.Patch,
+            $"/api/v1/master/business-partners/{_activePartnerId}/activate"
+        );
         request.Headers.Add("X-Company-Id", _companyId.ToString());
         using var response = await _client.SendAsync(request);
         var (status, code, errors) = await ReadAsync(response);
@@ -245,9 +322,21 @@ public sealed class ApiErrorContractHttpTests : IAsyncLifetime
     [Fact]
     public async Task Empresa_por_id_de_otro_tenant_de_otra_empresa_sin_membership_e_inexistente_son_el_mismo_404()
     {
-        var otherTenant = await SendAsync(HttpMethod.Get, $"/api/v1/companies/{_otherTenantCompanyId}", branchId: null);
-        var sameTenantNoMembership = await SendAsync(HttpMethod.Get, $"/api/v1/companies/{_foreignCompanyId}", branchId: null);
-        var nonexistent = await SendAsync(HttpMethod.Get, $"/api/v1/companies/{Guid.NewGuid()}", branchId: null);
+        var otherTenant = await SendAsync(
+            HttpMethod.Get,
+            $"/api/v1/companies/{_otherTenantCompanyId}",
+            branchId: null
+        );
+        var sameTenantNoMembership = await SendAsync(
+            HttpMethod.Get,
+            $"/api/v1/companies/{_foreignCompanyId}",
+            branchId: null
+        );
+        var nonexistent = await SendAsync(
+            HttpMethod.Get,
+            $"/api/v1/companies/{Guid.NewGuid()}",
+            branchId: null
+        );
 
         nonexistent.Status.Should().Be(HttpStatusCode.NotFound);
         nonexistent.Code.Should().Be("NOT_FOUND");
@@ -258,23 +347,57 @@ public sealed class ApiErrorContractHttpTests : IAsyncLifetime
     [Fact]
     public async Task Empresa_de_contexto_sin_acceso_es_403_COMPANY_SCOPE_FORBIDDEN_igual_en_handler_y_en_behavior()
     {
-        var handler = await SendAsync(HttpMethod.Get, "/api/v1/companies/current", branchId: null, companyId: _foreignCompanyId);
-        var handlerOtherTenant = await SendAsync(HttpMethod.Get, "/api/v1/companies/current", branchId: null, companyId: _otherTenantCompanyId);
-        var handlerNonexistent = await SendAsync(HttpMethod.Get, "/api/v1/companies/current", branchId: null, companyId: Guid.NewGuid());
-        var behavior = await SendAsync(HttpMethod.Get, "/api/v1/cash-registers", _branchId, companyId: _foreignCompanyId);
+        var handler = await SendAsync(
+            HttpMethod.Get,
+            "/api/v1/companies/current",
+            branchId: null,
+            companyId: _foreignCompanyId
+        );
+        var handlerOtherTenant = await SendAsync(
+            HttpMethod.Get,
+            "/api/v1/companies/current",
+            branchId: null,
+            companyId: _otherTenantCompanyId
+        );
+        var handlerNonexistent = await SendAsync(
+            HttpMethod.Get,
+            "/api/v1/companies/current",
+            branchId: null,
+            companyId: Guid.NewGuid()
+        );
+        var behavior = await SendAsync(
+            HttpMethod.Get,
+            "/api/v1/cash-registers",
+            _branchId,
+            companyId: _foreignCompanyId
+        );
 
         handler.Status.Should().Be(HttpStatusCode.Forbidden);
         handler.Code.Should().Be("COMPANY_SCOPE_FORBIDDEN");
-        (handlerOtherTenant.Status, handlerOtherTenant.Code).Should().Be((handler.Status, handler.Code));
-        handlerNonexistent.Should().BeEquivalentTo(handlerOtherTenant, "ajena de otro tenant e inexistente son indistinguibles");
+        (handlerOtherTenant.Status, handlerOtherTenant.Code)
+            .Should()
+            .Be((handler.Status, handler.Code));
+        handlerNonexistent
+            .Should()
+            .BeEquivalentTo(
+                handlerOtherTenant,
+                "ajena de otro tenant e inexistente son indistinguibles"
+            );
         (behavior.Status, behavior.Code).Should().Be((handler.Status, handler.Code));
     }
 
     [Fact]
     public async Task Sucursal_propia_no_autorizada_es_403_explicito()
     {
-        var context = await SendAsync(HttpMethod.Get, "/api/v1/cash-registers", _unauthorizedBranchId);
-        var switchTo = await SendJsonAsync("/api/v1/session/switch-branch", $"{{\"branchId\":\"{_unauthorizedBranchId}\"}}");
+        var context = await SendAsync(
+            HttpMethod.Get,
+            "/api/v1/cash-registers",
+            _unauthorizedBranchId
+        );
+        var switchTo = await SendJsonAsync(
+            "/api/v1/session/switch-branch",
+            $"{{\"branchId\":\"{_unauthorizedBranchId}\"}}"
+        );
 
         context.Status.Should().Be(HttpStatusCode.Forbidden);
         context.Code.Should().Be("BRANCH_SCOPE_FORBIDDEN");
@@ -287,8 +410,14 @@ public sealed class ApiErrorContractHttpTests : IAsyncLifetime
     [Fact]
     public async Task Cambiar_a_sucursal_de_otra_empresa_o_inexistente_es_el_mismo_404()
     {
-        var foreign = await SendJsonAsync("/api/v1/session/switch-branch", $"{{\"branchId\":\"{_foreignBranchId}\"}}");
-        var nonexistent = await SendJsonAsync("/api/v1/session/switch-branch", $"{{\"branchId\":\"{Guid.NewGuid()}\"}}");
+        var foreign = await SendJsonAsync(
+            "/api/v1/session/switch-branch",
+            $"{{\"branchId\":\"{_foreignBranchId}\"}}"
+        );
+        var nonexistent = await SendJsonAsync(
+            "/api/v1/session/switch-branch",
+            $"{{\"branchId\":\"{Guid.NewGuid()}\"}}"
+        );
 
         nonexistent.Status.Should().Be(HttpStatusCode.NotFound);
         nonexistent.Code.Should().Be("NOT_FOUND");
@@ -311,7 +440,10 @@ public sealed class ApiErrorContractHttpTests : IAsyncLifetime
     public async Task Login_usuario_inexistente_y_contrasena_incorrecta_son_indistinguibles()
     {
         using var anonymous = _app.CreateClient();
-        async Task<(HttpStatusCode Status, string? Code, string[] Errors)> Login(string user, string password)
+        async Task<(HttpStatusCode Status, string? Code, string[] Errors)> Login(
+            string user,
+            string password
+        )
         {
             using var response = await anonymous.PostAsync(
                 "/api/v1/auth/login",
@@ -328,16 +460,27 @@ public sealed class ApiErrorContractHttpTests : IAsyncLifetime
         wrongPassword.Should().BeEquivalentTo(nonexistent);
     }
 
-    private async Task<(HttpStatusCode Status, string? Code, string[] Errors)> SendJsonAsync(string url, string json)
+    private async Task<(HttpStatusCode Status, string? Code, string[] Errors)> SendJsonAsync(
+        string url,
+        string json
+    )
     {
-        using var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = JsonContent(json) };
+        using var request = new HttpRequestMessage(HttpMethod.Post, url)
+        {
+            Content = JsonContent(json),
+        };
         request.Headers.Add("X-Company-Id", _companyId.ToString());
         request.Headers.Add("X-Branch-Id", _branchId.ToString());
         using var response = await _client.SendAsync(request);
         return await ReadAsync(response);
     }
 
-    private async Task<(HttpStatusCode Status, string? Code, string[] Errors)> SendAsync(HttpMethod method, string url, Guid? branchId, Guid? companyId = null)
+    private async Task<(HttpStatusCode Status, string? Code, string[] Errors)> SendAsync(
+        HttpMethod method,
+        string url,
+        Guid? branchId,
+        Guid? companyId = null
+    )
     {
         using var request = new HttpRequestMessage(method, url);
         request.Headers.Add("X-Company-Id", (companyId ?? _companyId).ToString());
@@ -353,20 +496,33 @@ public sealed class ApiErrorContractHttpTests : IAsyncLifetime
     private static StringContent JsonContent(string json) =>
         new(json, System.Text.Encoding.UTF8, "application/json");
 
-    private static async Task<(HttpStatusCode Status, string? Code, string[] Errors)> ReadAsync(HttpResponseMessage response)
+    private static async Task<(HttpStatusCode Status, string? Code, string[] Errors)> ReadAsync(
+        HttpResponseMessage response
+    )
     {
         var text = await response.Content.ReadAsStringAsync();
         if (string.IsNullOrWhiteSpace(text) || !text.TrimStart().StartsWith('{'))
             return (response.StatusCode, null, []);
         var json = JsonDocument.Parse(text).RootElement;
-        var errors = json.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Object
-            && data.TryGetProperty("errors", out var e) && e.ValueKind == JsonValueKind.Array
-            ? e.EnumerateArray().Select(x => x.GetString()!).ToArray()
-            : [];
-        return (response.StatusCode, json.TryGetProperty("code", out var c) ? c.GetString() : null, errors);
+        var errors =
+            json.TryGetProperty("data", out var data)
+            && data.ValueKind == JsonValueKind.Object
+            && data.TryGetProperty("errors", out var e)
+            && e.ValueKind == JsonValueKind.Array
+                ? e.EnumerateArray().Select(x => x.GetString()!).ToArray()
+                : [];
+        return (
+            response.StatusCode,
+            json.TryGetProperty("code", out var c) ? c.GetString() : null,
+            errors
+        );
     }
 
-    private PurchaseReceptionDocument NewReceptionDocument(Guid companyId, Guid branchId, string accessKey) =>
+    private PurchaseReceptionDocument NewReceptionDocument(
+        Guid companyId,
+        Guid branchId,
+        string accessKey
+    ) =>
         PurchaseReceptionDocument.Create(
             _tenantId,
             companyId,

@@ -29,17 +29,44 @@ public sealed class CashSessionOwnershipTests
 
     private static CashSession OpenSessionOwnedBy(Guid ownerId) =>
         CashSession.Open(
-            TenantId, CompanyId, BranchId, ownerId, Guid.NewGuid(),
-            "CAJA-01", "Caja Principal", Guid.NewGuid(), "001", 100m, ownerId
+            TenantId,
+            CompanyId,
+            BranchId,
+            ownerId,
+            Guid.NewGuid(),
+            "CAJA-01",
+            "Caja Principal",
+            Guid.NewGuid(),
+            "001",
+            100m,
+            ownerId
         );
 
     private static OperationalPreferences Preferences() =>
         new(
-            SalesPos: new SalesPosPreferences(true, false, true, 0m, null, false, false, null, null),
+            SalesPos: new SalesPosPreferences(
+                true,
+                false,
+                true,
+                0m,
+                null,
+                false,
+                false,
+                null,
+                null
+            ),
             Cash: new CashPreferences(true, true, 0m, false, true, true),
             Purchases: new PurchasesPreferences(null, true, true, true, false),
             Inventory: new InventoryPreferences(false, true, false, 0m),
-            Printing: new PrintingPreferences("AskBeforePrint", 1, "80mm", false, true, true, false),
+            Printing: new PrintingPreferences(
+                "AskBeforePrint",
+                1,
+                "80mm",
+                false,
+                true,
+                true,
+                false
+            ),
             ElectronicDocuments: new ElectronicDocumentsPreferences(true, 3, true, true),
             Notifications: new NotificationsPreferences(true, false, "es")
         );
@@ -69,7 +96,9 @@ public sealed class CashSessionOwnershipTests
     private static Mock<IOperationalPreferencesResolver> PreferencesResolver()
     {
         var resolver = new Mock<IOperationalPreferencesResolver>();
-        resolver.Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>())).ReturnsAsync(Preferences());
+        resolver
+            .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Preferences());
         return resolver;
     }
 
@@ -85,34 +114,60 @@ public sealed class CashSessionOwnershipTests
         session.IsControlledBy(Guid.Empty).Should().BeFalse();
 
         session.Close(OwnerId, new List<CashClosingCount>(), "cierre");
-        session.IsControlledBy(OwnerId).Should().BeFalse("una sesión cerrada ya no la controla nadie");
+        session
+            .IsControlledBy(OwnerId)
+            .Should()
+            .BeFalse("una sesión cerrada ya no la controla nadie");
     }
 
     // ── Movimiento manual ─────────────────────────────────────────────────
 
-    private static (RecordCashMovementHandler Handler, Mock<ICashSessionRepository> Repo) BuildRecordHandler(
-        CashSession session,
-        Guid currentUserId
-    )
+    private static (
+        RecordCashMovementHandler Handler,
+        Mock<ICashSessionRepository> Repo
+    ) BuildRecordHandler(CashSession session, Guid currentUserId)
     {
         var repo = new Mock<ICashSessionRepository>();
-        repo.Setup(r => r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())).ReturnsAsync(session);
+        repo.Setup(r =>
+                r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(session);
         var reasons = new Mock<ICashMovementReasonRepository>();
         var reason = CashMovementReason.Create(
-            TenantId, CompanyId, "MOTIVO", "Motivo", CashMovementType.ManualExpense, 1, OwnerId
+            TenantId,
+            CompanyId,
+            "MOTIVO",
+            "Motivo",
+            CashMovementType.ManualExpense,
+            1,
+            OwnerId
         );
         reasons
-            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(reason);
         var handler = new RecordCashMovementHandler(
-            repo.Object, reasons.Object, new Mock<IUnitOfWork>().Object,
-            Tenant().Object, Branch().Object, User(currentUserId).Object, PreferencesResolver().Object
+            repo.Object,
+            reasons.Object,
+            new Mock<IUnitOfWork>().Object,
+            Tenant().Object,
+            Branch().Object,
+            User(currentUserId).Object,
+            PreferencesResolver().Object
         );
         return (handler, repo);
     }
 
     private static RecordCashMovementCommand ManualExpense(Guid sessionId) =>
-        new(sessionId, "ManualExpense", Guid.NewGuid(), 20m, "Compra menor", ClientRequestId: Guid.NewGuid());
+        new(
+            sessionId,
+            "ManualExpense",
+            Guid.NewGuid(),
+            20m,
+            "Compra menor",
+            ClientRequestId: Guid.NewGuid()
+        );
 
     [Fact]
     public async Task Dueño_registra_movimiento_manual_en_su_caja()
@@ -144,13 +199,14 @@ public sealed class CashSessionOwnershipTests
 
     // ── Cierre ────────────────────────────────────────────────────────────
 
-    private static (CloseCashSessionHandler Handler, Mock<ICashSessionRepository> Repo) BuildCloseHandler(
-        CashSession session,
-        Guid currentUserId
-    )
+    private static (
+        CloseCashSessionHandler Handler,
+        Mock<ICashSessionRepository> Repo
+    ) BuildCloseHandler(CashSession session, Guid currentUserId)
     {
         var repo = new Mock<ICashSessionRepository>();
-        repo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>())).ReturnsAsync(session);
+        repo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(session);
         var handler = new CloseCashSessionHandler(
             repo.Object,
             new Mock<IEmissionPointRepository>().Object,
@@ -213,13 +269,25 @@ public sealed class CashSessionOwnershipTests
     // 02E-C — el cierre bloquea la sesión FOR UPDATE (delegado a la configuración de GetByIdAsync) y
     // cancela las solicitudes de efectivo pendientes (ninguna en estos escenarios).
     private static void WireCloseLocks(Mock<ICashSessionRepository> repo) =>
-        repo.Setup(r => r.GetByIdForUpdateAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        repo.Setup(r =>
+                r.GetByIdForUpdateAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .Returns((Guid t, Guid id, CancellationToken c) => repo.Object.GetByIdAsync(t, id, c));
 
     private static ICashFundingRequestRepository NoPendingFundingRequests()
     {
         var mock = new Mock<ICashFundingRequestRepository>();
-        mock.Setup(r => r.ListPendingBySessionForUpdateAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        mock.Setup(r =>
+                r.ListPendingBySessionForUpdateAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(Array.Empty<ERP.Domain.Modules.Caja.Entities.CashFundingRequest>());
         return mock.Object;
     }

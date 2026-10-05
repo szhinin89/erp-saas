@@ -29,7 +29,7 @@ public sealed class PurchaseReceptionDocumentRepository : IPurchaseReceptionDocu
     ) =>
         Scoped(tenantId)
             .Include(x => x.Lines)
-            .ThenInclude(l => l.Taxes)
+                .ThenInclude(l => l.Taxes)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
 
     public Task<PurchaseReceptionDocument?> GetByLineIdAsync(
@@ -39,7 +39,7 @@ public sealed class PurchaseReceptionDocumentRepository : IPurchaseReceptionDocu
     ) =>
         Scoped(tenantId)
             .Include(x => x.Lines)
-            .ThenInclude(l => l.Taxes)
+                .ThenInclude(l => l.Taxes)
             .FirstOrDefaultAsync(x => x.Lines.Any(l => l.Id == lineId), ct);
 
     public async Task<(IReadOnlyList<PurchaseReceptionDocument> Items, int Total)> GetPagedAsync(
@@ -71,10 +71,11 @@ public sealed class PurchaseReceptionDocumentRepository : IPurchaseReceptionDocu
         Guid tenantId,
         string accessKey,
         CancellationToken ct = default
-    ) => Scoped(tenantId)
-        .Include(x => x.Lines)
-        .ThenInclude(l => l.Taxes)
-        .FirstOrDefaultAsync(x => x.AccessKey == accessKey, ct);
+    ) =>
+        Scoped(tenantId)
+            .Include(x => x.Lines)
+                .ThenInclude(l => l.Taxes)
+            .FirstOrDefaultAsync(x => x.AccessKey == accessKey, ct);
 
     public Task SaveChangesAsync(CancellationToken ct = default) => _db.SaveChangesAsync(ct);
 }

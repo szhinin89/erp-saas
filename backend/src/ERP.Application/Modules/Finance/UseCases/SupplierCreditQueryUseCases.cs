@@ -103,13 +103,23 @@ public sealed class GetSupplierCreditByIdHandler
             .Select(m => m.TargetPurchasePayableId!.Value)
             .Distinct()
             .ToList();
-        var payables = await _payables.GetDocumentRefsByIdsAsync(tid, credit.CompanyId, payableIds, ct);
+        var payables = await _payables.GetDocumentRefsByIdsAsync(
+            tid,
+            credit.CompanyId,
+            payableIds,
+            ct
+        );
         var refunds = await _refunds.ListBySupplierCreditIdAsync(tid, credit.Id, ct);
-        var paymentMethodNames = refunds.Count == 0
-            ? new Dictionary<string, string>()
-            : (await _paymentMethods.ListAsync(tid, onlyActive: false, ct))
-                .GroupBy(m => m.Code, StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(g => g.Key, g => g.First().Name, StringComparer.OrdinalIgnoreCase);
+        var paymentMethodNames =
+            refunds.Count == 0
+                ? new Dictionary<string, string>()
+                : (await _paymentMethods.ListAsync(tid, onlyActive: false, ct))
+                    .GroupBy(m => m.Code, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.First().Name,
+                        StringComparer.OrdinalIgnoreCase
+                    );
         var users = await _access.GetUsersByIdsAsync(
             credit.Movements.Select(m => m.CreatedByUserId).Distinct().ToList(),
             ct
@@ -183,7 +193,10 @@ public sealed class GetSupplierCreditListHandler
             items.Select(c => c.Id).ToList(),
             ct
         );
-        var names = await _partners.GetNamesByIdsAsync(items.Select(c => c.SupplierId).Distinct(), ct);
+        var names = await _partners.GetNamesByIdsAsync(
+            items.Select(c => c.SupplierId).Distinct(),
+            ct
+        );
 
         return Result<SupplierCreditListResultDto>.Success(
             new SupplierCreditListResultDto(

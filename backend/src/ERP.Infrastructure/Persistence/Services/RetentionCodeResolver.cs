@@ -1,9 +1,9 @@
+using System.Globalization;
 using ERP.Application.Modules.Purchases.Services;
 using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Domain.Modules.SriCatalogs.Entities;
 using ERP.Domain.Modules.SriCatalogs.Enums;
 using Microsoft.EntityFrameworkCore;
-using System.Globalization;
 
 namespace ERP.Infrastructure.Persistence.Services;
 
@@ -93,7 +93,10 @@ public sealed class RetentionCodeResolver : IRetentionCodeResolver
             ? null
             : await _db
                 .SriRetentionCodes.AsNoTracking()
-                .FirstOrDefaultAsync(x => x.TaxType == catalogTaxType && x.Code == normalizedCode, ct);
+                .FirstOrDefaultAsync(
+                    x => x.TaxType == catalogTaxType && x.Code == normalizedCode,
+                    ct
+                );
 
         return concept is null
             ? RetentionCodeResolution.Failed(
@@ -185,7 +188,8 @@ public sealed class RetentionCodeResolver : IRetentionCodeResolver
     private static string FormatDate(DateOnly date) =>
         date.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
 
-    private static string FormatRate(decimal rate) => rate.ToString("0.####", CultureInfo.InvariantCulture);
+    private static string FormatRate(decimal rate) =>
+        rate.ToString("0.####", CultureInfo.InvariantCulture);
 
     private static RetentionCodeInfo ToInfo(SriRetentionCode r) =>
         new(r.TaxType, r.Code, r.Name, r.Percentage, r.Id, r.IsActive);

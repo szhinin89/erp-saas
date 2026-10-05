@@ -49,8 +49,7 @@ public sealed class CashMovementReasonRepository : ICashMovementReasonRepository
         CancellationToken ct = default
     )
     {
-        var q = _db
-            .Set<CashMovementReason>()
+        var q = _db.Set<CashMovementReason>()
             .Where(r => r.TenantId == tenantId && r.CompanyId == companyId);
 
         if (!includeInactive)

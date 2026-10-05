@@ -63,7 +63,6 @@ public sealed class AuthController : ControllerBase
     /// Login devolvió cuando RequirePasswordReset estaba activo (sin JWT), fija la nueva
     /// contraseña y devuelve una sesión completa igual que un login exitoso.
     /// </summary>
-
     [HttpPost("global-login")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]
@@ -81,6 +80,7 @@ public sealed class AuthController : ControllerBase
 
         return this.ApiFailure(result, ApiResponseCodes.Common.Unauthorized);
     }
+
     [HttpPost("complete-password-reset")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]

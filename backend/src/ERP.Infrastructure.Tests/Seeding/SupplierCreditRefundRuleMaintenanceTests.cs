@@ -32,41 +32,98 @@ public sealed class SupplierCreditRefundRuleMaintenanceTests
 
     private static readonly string[] AccountCodes = ["1.1.03.004", "9.9.99.999"];
 
-    private ErpDbContext Db() => new(new DbContextOptionsBuilder<ErpDbContext>()
-        .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
-        .UseInMemoryDatabase(database).AddInterceptors(new NewChildEntityTrackingInterceptor()).Options,
-        new FixedCurrentTenant(tenant), new NoOpPublisher(), new FixedCurrentCompany(companyId));
+    private ErpDbContext Db() =>
+        new(
+            new DbContextOptionsBuilder<ErpDbContext>()
+                .ConfigureWarnings(w =>
+                    w.Ignore(
+                        Microsoft
+                            .EntityFrameworkCore
+                            .Diagnostics
+                            .InMemoryEventId
+                            .TransactionIgnoredWarning
+                    )
+                )
+                .UseInMemoryDatabase(database)
+                .AddInterceptors(new NewChildEntityTrackingInterceptor())
+                .Options,
+            new FixedCurrentTenant(tenant),
+            new NoOpPublisher(),
+            new FixedCurrentCompany(companyId)
+        );
 
-    private AccountingChartBackfillService Service(ErpDbContext db) => new(db,
-        new FakeHostEnvironment(isProduction: true),
-        new AccountingBootstrapStep(db, new AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance),
-        NullLogger<AccountingChartBackfillService>.Instance);
+    private AccountingChartBackfillService Service(ErpDbContext db) =>
+        new(
+            db,
+            new FakeHostEnvironment(isProduction: true),
+            new AccountingBootstrapStep(
+                db,
+                new AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            ),
+            NullLogger<AccountingChartBackfillService>.Instance
+        );
 
-    public enum Shape { Missing, Canonical, CustomLines, ObsoletePerDestination }
+    public enum Shape
+    {
+        Missing,
+        Canonical,
+        CustomLines,
+        ObsoletePerDestination,
+    }
 
     private async Task Seed(Shape shape, bool advanceAccountActive = true)
     {
         await using var db = Db();
-        var company = Company.CreateManaged(tenant, "1790012345001", "Maintenance", createdBy: actor);
+        var company = Company.CreateManaged(
+            tenant,
+            "1790012345001",
+            "Maintenance",
+            createdBy: actor
+        );
         db.Companies.Add(company);
         companyId = company.Id;
-        var accounts = AccountCodes.ToDictionary(c => c, c => Account.Create(tenant, company.Id,
-            AccountCode.Create(c), c, null, AccountType.Asset, AccountNature.Debit, true, actor));
+        var accounts = AccountCodes.ToDictionary(
+            c => c,
+            c =>
+                Account.Create(
+                    tenant,
+                    company.Id,
+                    AccountCode.Create(c),
+                    c,
+                    null,
+                    AccountType.Asset,
+                    AccountNature.Debit,
+                    true,
+                    actor
+                )
+        );
         if (!advanceAccountActive)
             accounts["1.1.03.004"].Disable(actor);
         db.Accounts.AddRange(accounts.Values);
 
-        foreach (var (factType, nature) in new[]
-        {
-            ("SupplierCreditRefunded", AccountNature.Credit),
-            ("SupplierCreditRefundReversed", AccountNature.Debit),
-        })
+        foreach (
+            var (factType, nature) in new[]
+            {
+                ("SupplierCreditRefunded", AccountNature.Credit),
+                ("SupplierCreditRefundReversed", AccountNature.Debit),
+            }
+        )
         {
             switch (shape)
             {
                 case Shape.Canonical:
                 case Shape.CustomLines:
-                    var rule = PostingRule.Create(tenant, company.Id, "Purchases", factType, null, null, null, actor);
+                    var rule = PostingRule.Create(
+                        tenant,
+                        company.Id,
+                        "Purchases",
+                        factType,
+                        null,
+                        null,
+                        null,
+                        actor
+                    );
                     rule.AddLine(
                         accounts[shape == Shape.Canonical ? "1.1.03.004" : "9.9.99.999"].Id,
                         nature,
@@ -76,7 +133,16 @@ public sealed class SupplierCreditRefundRuleMaintenanceTests
                     break;
                 case Shape.ObsoletePerDestination:
                     // Forma previa a 02D-B: una regla por código de destino, configurada a mano.
-                    var legacy = PostingRule.Create(tenant, company.Id, "Purchases", $"{factType}:2200123456", null, null, null, actor);
+                    var legacy = PostingRule.Create(
+                        tenant,
+                        company.Id,
+                        "Purchases",
+                        $"{factType}:2200123456",
+                        null,
+                        null,
+                        null,
+                        actor
+                    );
                     legacy.AddLine(accounts["9.9.99.999"].Id, nature, PostingAmountKind.GrandTotal);
                     db.PostingRules.Add(legacy);
                     break;
@@ -89,8 +155,14 @@ public sealed class SupplierCreditRefundRuleMaintenanceTests
     {
         await using var db = Db();
         var rules = await db.PostingRules.Include(r => r.Lines).ToListAsync();
-        return rules.SelectMany(r => r.Lines.Select(l => $"{r.Id}/{r.FactType}/{l.Id}/{l.AccountId}/{l.Nature}/{l.AmountKind}"))
-            .OrderBy(s => s).ToArray();
+        return rules
+            .SelectMany(r =>
+                r.Lines.Select(l =>
+                    $"{r.Id}/{r.FactType}/{l.Id}/{l.AccountId}/{l.Nature}/{l.AmountKind}"
+                )
+            )
+            .OrderBy(s => s)
+            .ToArray();
     }
 
     private async Task<IReadOnlyList<SupplierCreditRefundRuleMaintenanceResult>> Run(bool apply)
@@ -103,17 +175,23 @@ public sealed class SupplierCreditRefundRuleMaintenanceTests
     {
         await using var db = Db();
         var accounts = await db.Accounts.ToDictionaryAsync(a => a.Id, a => a.Code.Value);
-        foreach (var (factType, nature) in new[]
+        foreach (
+            var (factType, nature) in new[]
+            {
+                ("SupplierCreditRefunded", AccountNature.Credit),
+                ("SupplierCreditRefundReversed", AccountNature.Debit),
+            }
+        )
         {
-            ("SupplierCreditRefunded", AccountNature.Credit),
-            ("SupplierCreditRefundReversed", AccountNature.Debit),
-        })
-        {
-            var rule = await db.PostingRules.Include(r => r.Lines)
+            var rule = await db
+                .PostingRules.Include(r => r.Lines)
                 .SingleAsync(r => r.SourceModule == "Purchases" && r.FactType == factType);
             rule.Lines.Select(l => (accounts[l.AccountId], l.Nature, l.AmountKind))
-                .Should().Equal([("1.1.03.004", nature, PostingAmountKind.GrandTotal)],
-                    "Anticipos por GrandTotal; Caja/Banco nunca es una línea fija de la regla");
+                .Should()
+                .Equal(
+                    [("1.1.03.004", nature, PostingAmountKind.GrandTotal)],
+                    "Anticipos por GrandTotal; Caja/Banco nunca es una línea fija de la regla"
+                );
         }
     }
 
@@ -129,7 +207,11 @@ public sealed class SupplierCreditRefundRuleMaintenanceTests
         }
         await using (var db = Db())
         {
-            var step = new AccountingBootstrapStep(db, new AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(
+                db,
+                new AlwaysTodayCompanyClock(),
+                NullLogger<AccountingBootstrapStep>.Instance
+            );
             await step.ExecuteAsync(new CompanyBootstrapContext(tenant, companyId, actor));
         }
         await AssertCanonicalRulesAsync();
@@ -137,11 +219,16 @@ public sealed class SupplierCreditRefundRuleMaintenanceTests
 
         var rows = await Run(apply: true);
 
-        rows.Where(r => r.CompanyId == companyId).Select(r => (r.FactType, r.Diagnostic)).Should().BeEquivalentTo(new[]
-        {
-            ("SupplierCreditRefunded", "Canonical"),
-            ("SupplierCreditRefundReversed", "Canonical"),
-        });
+        rows.Where(r => r.CompanyId == companyId)
+            .Select(r => (r.FactType, r.Diagnostic))
+            .Should()
+            .BeEquivalentTo(
+                new[]
+                {
+                    ("SupplierCreditRefunded", "Canonical"),
+                    ("SupplierCreditRefundReversed", "Canonical"),
+                }
+            );
         (await Snapshot()).Should().Equal(before);
     }
 
@@ -150,15 +237,23 @@ public sealed class SupplierCreditRefundRuleMaintenanceTests
     {
         await Seed(Shape.Missing);
 
-        (await Run(apply: false)).Select(r => r.Diagnostic).Should().OnlyContain(d => d == "MissingRule");
+        (await Run(apply: false))
+            .Select(r => r.Diagnostic)
+            .Should()
+            .OnlyContain(d => d == "MissingRule");
         (await Snapshot()).Should().BeEmpty("dry-run nunca escribe");
 
-        (await Run(apply: true)).Select(r => r.Diagnostic)
-            .Should().OnlyContain(d => d == "MissingRule -> Canonical: created");
+        (await Run(apply: true))
+            .Select(r => r.Diagnostic)
+            .Should()
+            .OnlyContain(d => d == "MissingRule -> Canonical: created");
         await AssertCanonicalRulesAsync();
         var after = await Snapshot();
 
-        (await Run(apply: true)).Select(r => r.Diagnostic).Should().OnlyContain(d => d == "Canonical");
+        (await Run(apply: true))
+            .Select(r => r.Diagnostic)
+            .Should()
+            .OnlyContain(d => d == "Canonical");
         (await Snapshot()).Should().Equal(after, "segunda corrida: sin cambios ni duplicados");
     }
 
@@ -183,8 +278,10 @@ public sealed class SupplierCreditRefundRuleMaintenanceTests
         var rows = await Run(apply: true);
 
         rows.Should().Contain(r => r.Diagnostic.StartsWith("Obsolete per-destination rules: 2"));
-        rows.Where(r => !r.FactType.Contains(':')).Select(r => r.Diagnostic)
-            .Should().OnlyContain(d => d == "MissingRule -> Canonical: created");
+        rows.Where(r => !r.FactType.Contains(':'))
+            .Select(r => r.Diagnostic)
+            .Should()
+            .OnlyContain(d => d == "MissingRule -> Canonical: created");
         (await Snapshot()).Should().Contain(obsolete, "nunca borra la configuración anterior");
     }
 
@@ -193,8 +290,11 @@ public sealed class SupplierCreditRefundRuleMaintenanceTests
     {
         await Seed(Shape.Missing, advanceAccountActive: false);
 
-        (await Run(apply: true)).Should()
-            .OnlyContain(r => r.Diagnostic.Contains("InvalidAccounts") && r.Diagnostic.Contains("1.1.03.004"));
+        (await Run(apply: true))
+            .Should()
+            .OnlyContain(r =>
+                r.Diagnostic.Contains("InvalidAccounts") && r.Diagnostic.Contains("1.1.03.004")
+            );
         (await Snapshot()).Should().BeEmpty();
     }
 
@@ -203,7 +303,8 @@ public sealed class SupplierCreditRefundRuleMaintenanceTests
         public string EnvironmentName { get; set; } = isProduction ? "Production" : "Development";
         public string ApplicationName { get; set; } = "ERP.Infrastructure.Tests";
         public string ContentRootPath { get; set; } = AppContext.BaseDirectory;
-        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } = null!;
+        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } =
+            null!;
     }
 
     private sealed class FixedCurrentTenant(Guid tenantId) : ICurrentTenant
@@ -221,9 +322,13 @@ public sealed class SupplierCreditRefundRuleMaintenanceTests
 
     private sealed class NoOpPublisher : IPublisher
     {
-        public Task Publish(object notification, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
             where TNotification : INotification => Task.CompletedTask;
     }
 }

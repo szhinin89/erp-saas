@@ -52,7 +52,10 @@ public interface IPricingResolver
     /// usando el primero cuyo ítem tenga un <c>PriceListItem</c> activo. No reimplementa ninguna
     /// fórmula — delega el cálculo por-lista a la misma ruta que <see cref="ResolveAsync(Guid, Guid?, CancellationToken)"/>.
     /// </summary>
-    Task<Result<PricingResult>> ResolveAsync(PricingContext context, CancellationToken ct = default);
+    Task<Result<PricingResult>> ResolveAsync(
+        PricingContext context,
+        CancellationToken ct = default
+    );
 
     /// <summary>
     /// PRICING-CONTEXTUAL-BATCH-RESOLUTION-05D: misma decisión exacta que

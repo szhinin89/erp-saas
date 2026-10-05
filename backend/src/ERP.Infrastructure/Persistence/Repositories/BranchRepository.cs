@@ -28,7 +28,10 @@ public sealed class BranchRepository : IBranchRepository
         // JWT/ICurrentTenant/ICurrentCompany — sin esto, cualquier login sin preferencias devuelve
         // 0 sucursales siempre. El WHERE explícito por tenantId de abajo sigue siendo la autoridad
         // real de scoping, igual que en AccessRepository/UserSessionRepository/CompanyUserBranchRepository.
-        var q = _context.Branches.AsPlatformQuery().AsQueryable().Where(x => x.TenantId == tenantId);
+        var q = _context
+            .Branches.AsPlatformQuery()
+            .AsQueryable()
+            .Where(x => x.TenantId == tenantId);
         if (activeFilter is true)
             q = q.Where(x => x.IsActive);
         else if (activeFilter is false)
