@@ -37,6 +37,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <!-- Bound concurrent Testcontainers lifecycles while preserving per-test isolation. -->
+        <None Update="xunit.runner.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
         <None Update="TestData\FacturaEjemplo.xml">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
