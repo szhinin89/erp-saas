@@ -217,7 +217,23 @@ public sealed class SalesDiscountAndDraftBranchScopeTests
             .Setup(p => p.ResolveAsync(It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<PriceListSelectionResult>());
 
+        // A3 — UpdateSalesDraftHandler ahora delega la mutación a IUnitOfWork.
+        // ExecuteInTransactionAsync. Fake pass-through (mismo patrón ya existente en
+        // CreateInitialAdminHandlerTests): corre el delegate inline, sin transacción real.
+        var unitOfWork = new Mock<IUnitOfWork>();
+        unitOfWork
+            .Setup(u =>
+                u.ExecuteInTransactionAsync(
+                    It.IsAny<Func<CancellationToken, Task>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .Returns(
+                (Func<CancellationToken, Task> operation, CancellationToken ct) => operation(ct)
+            );
+
         var handler = new UpdateSalesDraftHandler(
+            unitOfWork.Object,
             repo.Object,
             bpRepo.Object,
             Mock.Of<IBusinessPartnerRoleRepository>(),
