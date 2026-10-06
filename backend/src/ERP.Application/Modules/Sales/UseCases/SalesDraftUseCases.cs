@@ -632,6 +632,9 @@ public sealed class UpdateSalesDraftHandler
     private readonly ICompanyPrecisionPolicyProvider _precision;
     private readonly IUnitOfWork _unitOfWork;
 
+    // A3 (Atomic Sales Draft Update): boundary transaccional único para todo el Update.
+    private readonly IUnitOfWork _uow;
+
     public UpdateSalesDraftHandler(
         IUnitOfWork unitOfWork,
         ISalesInvoiceRepository repo,
@@ -1018,6 +1021,21 @@ public sealed class UpdateSalesDraftHandler
         outcome.Success = Result<SalesInvoiceDto>.Success(SalesMapper.ToDto(inv));
         return null;
     }
+}
+
+/// <summary>
+/// A3 — Canal interno para devolver un <see cref="Result{T}"/> de validación desde dentro de
+/// <see cref="IUnitOfWork.ExecuteInTransactionAsync"/> (cuyo delegate solo puede retornar Task):
+/// lanzarlo provoca el rollback completo de la transacción y el handler lo traduce de vuelta al
+/// Result original. Uso exclusivo de UpdateSalesDraftHandler.
+/// </summary>
+file sealed class TransactionalRejectionException : Exception
+{
+    public Result<SalesInvoiceDto> Rejection { get; }
+
+    public TransactionalRejectionException(Result<SalesInvoiceDto> rejection)
+        : base(rejection.Error) =>
+        Rejection = rejection;
 }
 
 public sealed class GetSalesInvoiceByIdHandler
