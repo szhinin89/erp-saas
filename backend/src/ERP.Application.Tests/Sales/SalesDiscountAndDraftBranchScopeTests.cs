@@ -83,6 +83,25 @@ public sealed class SalesDiscountAndDraftBranchScopeTests
             Notifications: new NotificationsPreferences(true, false, "es")
         );
 
+    // A3 (Atomic Sales Draft Update): UoW de paso — ejecuta el delegate directamente y propaga
+    // excepciones, imitando ExecuteInTransactionAsync sin BD. Suficiente para estos tests de
+    // guards/branch-scope (que no escriben) y para la suite focalizada de atomicidad, que usa su
+    // propio doble con control de commit/rollback.
+    private static readonly Mock<ERP.Application.Common.IUnitOfWork> PassThroughUnitOfWork =
+        new();
+
+    static SalesDiscountAndDraftBranchScopeTests() =>
+        PassThroughUnitOfWork
+            .Setup(u =>
+                u.ExecuteInTransactionAsync(
+                    It.IsAny<Func<CancellationToken, Task>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .Returns<Func<CancellationToken, Task>, CancellationToken>(async (op, ct) =>
+                await op(ct)
+            );
+
     // ── ApplySalesDiscountHandler ───────────────────────────────────────
 
     private static (ApplySalesDiscountHandler Handler, SalesInvoice Invoice) BuildDiscountHandler(

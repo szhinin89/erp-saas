@@ -1020,6 +1020,21 @@ public sealed class UpdateSalesDraftHandler
     }
 }
 
+/// <summary>
+/// A3 — Canal interno para devolver un <see cref="Result{T}"/> de validación desde dentro de
+/// <see cref="IUnitOfWork.ExecuteInTransactionAsync"/> (cuyo delegate solo puede retornar Task):
+/// lanzarlo provoca el rollback completo de la transacción y el handler lo traduce de vuelta al
+/// Result original. Uso exclusivo de UpdateSalesDraftHandler.
+/// </summary>
+file sealed class TransactionalRejectionException : Exception
+{
+    public Result<SalesInvoiceDto> Rejection { get; }
+
+    public TransactionalRejectionException(Result<SalesInvoiceDto> rejection)
+        : base(rejection.Error) =>
+        Rejection = rejection;
+}
+
 public sealed class GetSalesInvoiceByIdHandler
     : IRequestHandler<GetSalesInvoiceByIdQuery, Result<SalesInvoiceDto>>
 {
