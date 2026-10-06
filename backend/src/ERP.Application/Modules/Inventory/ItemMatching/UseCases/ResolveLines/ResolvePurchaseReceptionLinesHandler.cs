@@ -327,7 +327,7 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
         var barcode = newItem.Barcode.Trim();
         if (barcode.Length > 0 && !barcodes.Add(barcode))
             messages.Add($"El código de barras '{barcode}' está repetido en el lote.");
-        else if (barcode.Length > 0 && await items.BarcodeExistsAsync(barcode, tenant.TenantId, ct))
+        else if (barcode.Length > 0 && await items.BarcodeExistsAsync(barcode, tenant.TenantId, company.CompanyId, ct))
             messages.Add($"El código de barras '{barcode}' ya está asignado a otro ítem.");
 
         var conflictingFactor = itemLines

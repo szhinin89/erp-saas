@@ -76,7 +76,7 @@ public sealed class AddBarcodeHandler
             );
 
         var code = cmd.Code.Trim();
-        if (await _repo.BarcodeExistsAsync(code, _t.TenantId, ct))
+        if (await _repo.BarcodeExistsAsync(code, _t.TenantId, item.CompanyId, ct))
             return Result<VariantBarcodeDto>.Conflict(
                 $"El código de barras '{code}' ya está asignado a otro ítem."
             );

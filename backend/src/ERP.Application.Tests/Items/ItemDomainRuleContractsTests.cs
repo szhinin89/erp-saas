@@ -62,7 +62,7 @@ public sealed class ItemDomainRuleContractsTests
         repo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(item);
         repo.Setup(r =>
-                r.BarcodeExistsAsync(It.IsAny<string>(), TenantId, It.IsAny<CancellationToken>())
+                r.BarcodeExistsAsync(It.IsAny<string>(), TenantId, item.CompanyId, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(false);
         var catalog = new Mock<IItemCatalogRepository>();

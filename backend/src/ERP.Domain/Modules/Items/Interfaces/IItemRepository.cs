@@ -55,6 +55,7 @@ public interface IItemRepository
     Task<bool> BarcodeExistsAsync(
         string code,
         Guid tenantId,
+        Guid companyId,
         CancellationToken cancellationToken = default
     );
 

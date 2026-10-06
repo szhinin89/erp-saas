@@ -87,6 +87,57 @@ public sealed class ItemCompanyScopeA1Tests : IAsyncLifetime
         return item;
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task BarcodeExists_A5_respects_explicit_company_and_tenant(bool packaging)
+    {
+        const string code = "A5-BAR";
+        await using (var owner = Context(_companyA))
+        {
+            var item = Product(_companyA, "A5-OWNER");
+            if (packaging)
+                item.ReplacePackagingLevels([("UNIT", 1, 1m, "UNIT", code, null, true, true, true)], _actor);
+            else
+                item.AddVariant([], "A5-VAR", 0, _actor).AddBarcode(code, "Internal", _tenantId, _actor);
+            owner.Items.Add(item);
+            await owner.SaveChangesAsync();
+        }
+        await using var db = Context(_companyA);
+        var repo = new ItemRepository(db);
+        (await repo.BarcodeExistsAsync(code, _tenantId, _companyA)).Should().BeTrue();
+        Func<Task> duplicate = () => Save(_companyA, "A5-DUPLICATE", code);
+        await duplicate.Should().ThrowAsync<DbUpdateException>();
+        (await repo.BarcodeExistsAsync(code, _tenantId, _companyB)).Should().BeFalse();
+        (await repo.BarcodeExistsAsync(code, Guid.NewGuid(), _companyA)).Should().BeFalse();
+        (await repo.BarcodeExistsAsync(code, _tenantId, Guid.Empty)).Should().BeFalse();
+        await using var otherCompany = Context(_companyB);
+        (await new ItemRepository(otherCompany).BarcodeExistsAsync(code, _tenantId, _companyB)).Should().BeFalse();
+        await Save(_companyB, "A5-OTHER", code);
+        (await new ItemRepository(otherCompany).BarcodeExistsAsync(code, _tenantId, _companyB)).Should().BeTrue();
+        var otherTenant = Tenant.Create("A5 Other Tenant", $"a5-{Guid.NewGuid():N}"[..16], _actor);
+        var company = Company.CreateManaged(otherTenant.Id, "1790012345003", "A5 Other Company", createdBy: _actor);
+        var type = ItemTypeDefinition.Create(otherTenant.Id, "A5-CLASS", "Classification", 0, _actor);
+        await using var foreign = new ErpDbContext(
+            new DbContextOptionsBuilder<ErpDbContext>().UseNpgsql(_postgres.GetConnectionString()).Options,
+            new CurrentTenant(otherTenant.Id), new NoOpPublisher(), new CurrentCompany(company.Id));
+        foreign.Tenants.Add(otherTenant);
+        foreign.Companies.Add(company);
+        foreign.ItemTypes.Add(type);
+        var foreignItem = Item.Create(otherTenant.Id, "A5-FOREIGN", "Foreign", "Foreign", type.Id, "UNIT",
+            ItemTaxConfig.Create("10", "10"), ItemSaleConfig.Create(), ItemStockConfig.Create(), _actor, companyId: company.Id);
+        if (packaging)
+            foreignItem.ReplacePackagingLevels([("UNIT", 1, 1m, "UNIT", code, null, true, true, true)], _actor);
+        else
+            foreignItem.AddVariant([], "A5-FOREIGN-VAR", 0, _actor).AddBarcode(code, "Internal", otherTenant.Id, _actor);
+        foreign.Items.Add(foreignItem);
+        await foreign.SaveChangesAsync();
+        var foreignRepo = new ItemRepository(foreign);
+        (await foreignRepo.BarcodeExistsAsync(code, otherTenant.Id, company.Id)).Should().BeTrue();
+        (await foreignRepo.BarcodeExistsAsync(code, _tenantId, company.Id)).Should().BeFalse();
+        (await repo.BarcodeExistsAsync(code, otherTenant.Id, company.Id)).Should().BeFalse();
+    }
+
     [Fact]
     public async Task Same_sku_barcode_variant_and_supplier_code_are_allowed_in_another_company()
     {

@@ -113,6 +113,7 @@ public sealed class CreateItemCommandHandler : IRequestHandler<CreateItemCommand
                 await _repository.BarcodeExistsAsync(
                     barcode.Code.Trim(),
                     tenantId,
+                    _company.CompanyId,
                     cancellationToken
                 )
             )

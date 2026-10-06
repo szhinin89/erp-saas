@@ -143,13 +143,14 @@ public sealed class ItemRepository : IItemRepository
     public async Task<bool> BarcodeExistsAsync(
         string code,
         Guid tenantId,
+        Guid companyId,
         CancellationToken cancellationToken = default
     ) =>
         await _context.ItemVariantBarcodes.AnyAsync(
-            b => b.TenantId == tenantId && b.Code == code && b.IsActive,
+            b => b.TenantId == tenantId && EF.Property<Guid>(b, "CompanyId") == companyId && b.Code == code && b.IsActive,
             cancellationToken
         ) || await _context.ItemPackagingLevels.AnyAsync(
-            p => p.TenantId == tenantId && p.Barcode == code && p.IsActive,
+            p => p.TenantId == tenantId && EF.Property<Guid>(p, "CompanyId") == companyId && p.Barcode == code && p.IsActive,
             cancellationToken
         );
 

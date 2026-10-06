@@ -435,7 +435,7 @@ public sealed class ItemImportProcessor : IImportProcessor
         var duplicatesInCatalog = new List<string>();
         foreach (var code in distinct)
         {
-            if (await _itemRepo.BarcodeExistsAsync(code, _ctx.TenantId, ct))
+            if (await _itemRepo.BarcodeExistsAsync(code, _ctx.TenantId, _ctx.CompanyId, ct))
                 duplicatesInCatalog.Add(code);
         }
 

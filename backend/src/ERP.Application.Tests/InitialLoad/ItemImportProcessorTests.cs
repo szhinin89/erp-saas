@@ -15,6 +15,7 @@ namespace ERP.Application.Tests.InitialLoad;
 public sealed class ItemImportProcessorTests
 {
     private static readonly Guid TenantId = Guid.NewGuid();
+    private static readonly Guid CompanyId = Guid.NewGuid();
 
     private readonly Mock<IItemImportSheetReader> _reader = new();
     private readonly Mock<IItemRepository> _itemRepo = new();
@@ -29,6 +30,7 @@ public sealed class ItemImportProcessorTests
     private ItemImportProcessor BuildProcessor()
     {
         _ctx.SetupGet(x => x.TenantId).Returns(TenantId);
+        _ctx.SetupGet(x => x.CompanyId).Returns(CompanyId);
         return new ItemImportProcessor(
             _reader.Object,
             _itemRepo.Object,
@@ -90,7 +92,7 @@ public sealed class ItemImportProcessorTests
             .ReturnsAsync(false);
         _itemRepo
             .Setup(x =>
-                x.BarcodeExistsAsync(It.IsAny<string>(), TenantId, It.IsAny<CancellationToken>())
+                x.BarcodeExistsAsync(It.IsAny<string>(), TenantId, CompanyId, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(false);
     }
@@ -231,7 +233,7 @@ public sealed class ItemImportProcessorTests
         SetupHappyPathCatalogs();
         _itemRepo
             .Setup(x =>
-                x.BarcodeExistsAsync(It.IsAny<string>(), TenantId, It.IsAny<CancellationToken>())
+                x.BarcodeExistsAsync(It.IsAny<string>(), TenantId, CompanyId, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(true);
         var processor = BuildProcessor();
