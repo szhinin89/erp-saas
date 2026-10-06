@@ -76,7 +76,8 @@ public sealed class StockAdjustmentBranchOwnershipTests
             ItemTaxConfig.Create("10", "10"),
             ItemSaleConfig.Create(),
             ItemStockConfig.Create(),
-            UserId
+            UserId,
+            companyId: CompanyId
         );
 
     internal static InventoryAdjustmentReason CreateReason(
@@ -249,7 +250,9 @@ public sealed class StockAdjustmentBranchOwnershipTests
                 Branch.Object,
                 User.Object,
                 StubCompanyClock(),
-                PrecisionPolicyTestDouble.Mock()
+                PrecisionPolicyTestDouble.Mock(),
+                A1ItemTestSupport.Products(TenantId, CompanyId),
+                A1ItemTestSupport.InventoryControl()
             );
     }
 

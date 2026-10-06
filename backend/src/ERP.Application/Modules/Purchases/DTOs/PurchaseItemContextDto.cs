@@ -8,7 +8,7 @@ public sealed class PurchaseItemContextDto
     public string ShortName { get; init; } = default!;
     public string Description { get; init; } = default!;
     public string BaseUomCode { get; init; } = default!;
-    public bool TracksStock { get; init; }
+    public bool ParticipatesInInventory { get; init; }
     public IReadOnlyList<PurchaseItemPackagingLevelDto> PackagingLevels { get; init; } = [];
     public string? SupplierCode { get; init; }
 

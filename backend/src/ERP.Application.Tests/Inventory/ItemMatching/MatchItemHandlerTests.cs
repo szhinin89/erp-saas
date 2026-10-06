@@ -88,7 +88,8 @@ public sealed class MatchItemHandlerTests
             ItemTaxConfig.Create("10", "10"),
             ItemSaleConfig.Create(),
             ItemStockConfig.Create(),
-            UserId
+            UserId,
+            companyId: CompanyId
         );
 
     private static MatchItemHandler BuildHandler(

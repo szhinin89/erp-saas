@@ -6,6 +6,7 @@ import { PrintingPreferencesSection } from "./sections/PrintingPreferencesSectio
 import { ElectronicDocumentsPreferencesSection } from "./sections/ElectronicDocumentsPreferencesSection";
 import { PurchasesPreferencesSection } from "./sections/PurchasesPreferencesSection";
 import { PayablesPreferencesSection } from "./sections/PayablesPreferencesSection";
+import { InventoryPreferencesSection } from "./sections/InventoryPreferencesSection";
 import { EmptyPreferencesSection } from "./sections/EmptyPreferencesSection";
 
 export type OperationalPreferencesTabId =
@@ -71,7 +72,7 @@ export const operationalPreferencesTabs: OperationalPreferencesTab[] = [
     id: "inventory",
     labelKey: "settings.operations.tabs.inventory",
     icon: "inventory_2",
-    component: emptyTabComponent("settings.operations.inventory.title"),
+    component: InventoryPreferencesSection,
   },
   {
     id: "printing",

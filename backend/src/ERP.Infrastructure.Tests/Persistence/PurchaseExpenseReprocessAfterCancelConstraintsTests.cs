@@ -178,7 +178,8 @@ public sealed class PurchaseExpenseReprocessAfterCancelConstraintsTests : IAsync
             defaultUomCode: "UNIT",
             taxConfig: ItemTaxConfig.Create(saleVatCode: "10", purchaseVatCode: "10"),
             saleConfig: ItemSaleConfig.Create(isForSale: true),
-            stockConfig: ItemStockConfig.Create(tracksStock: true),
+            stockConfig: ItemStockConfig.Create(stockControlEnabled: true),
+            companyId: company.Id,
             createdBy: _userId
         );
         db.Set<Item>().Add(item);

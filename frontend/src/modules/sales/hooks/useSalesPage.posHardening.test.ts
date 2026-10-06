@@ -28,7 +28,7 @@ const item = (id: string): InvoiceItemSearchResultDto => ({
   id,
   sku: id,
   description: id,
-  tracksStock: true,
+  participatesInInventory: true,
   availableStock: 100,
   packagingLevels: [],
   baseUomCode: "UNIT",

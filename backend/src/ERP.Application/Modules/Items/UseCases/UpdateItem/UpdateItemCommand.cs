@@ -26,7 +26,7 @@ public sealed record UpdateItemCommand(
     // null = "no viene en el payload" → se preserva el valor existente del agregado
     // (no hay UI hoy que lo setee; ver UpdateItemCommandHandler).
     bool? IsFavorite = null,
-    bool TracksStock = true,
+    bool StockControlEnabled = true,
     bool TracksLot = false,
     bool TracksSeries = false,
     bool AllowDecimalQty = false,

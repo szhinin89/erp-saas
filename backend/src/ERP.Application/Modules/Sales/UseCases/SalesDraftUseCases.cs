@@ -1187,7 +1187,7 @@ file static class SalesLineBuilder
             // congelar ListPriceAtSale/PriceListId/PriceListName/PricingSource. Independiente del
             // resultado de la validación de piso de descuento (que solo consume resolvedPrice).
             PricingResult? pricingResultValue = null;
-            bool tracksStockForCost = false;
+            bool participatesInInventoryForCost = false;
 
             if (l.ItemId.HasValue)
             {
@@ -1240,7 +1240,7 @@ file static class SalesLineBuilder
 
                 // Kardex: la bodega de despacho es obligatoria por línea cuando el ítem
                 // controla inventario — una misma factura puede despachar de bodegas distintas.
-                if (item.StockConfig.TracksStock)
+                if (item.ParticipatesInInventory)
                 {
                     if (l.WarehouseId is null || l.WarehouseId == Guid.Empty)
                         return new(
@@ -1250,7 +1250,7 @@ file static class SalesLineBuilder
                             )
                         );
                     warehouseId = l.WarehouseId;
-                    tracksStockForCost = true;
+                    participatesInInventoryForCost = true;
                 }
 
                 // Configuración Tributaria CLOSED: el Item es la única fuente de verdad —
@@ -1358,7 +1358,7 @@ file static class SalesLineBuilder
             // dato" para no persistir un costo cero engañoso.
             decimal? unitCostAtSale = null;
             decimal? totalCostAtSale = null;
-            if (tracksStockForCost && l.ItemId.HasValue && warehouseId.HasValue)
+            if (participatesInInventoryForCost && l.ItemId.HasValue && warehouseId.HasValue)
             {
                 var averageCost = await costService.ObtenerCostoPromedioAsync(
                     tid,

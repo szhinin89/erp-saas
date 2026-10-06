@@ -23,7 +23,7 @@ function makeResult(
     description: "CLUB 850CC RB CAJA X12",
     productFamilyName: null,
     uomAbbrev: "CAJA",
-    tracksStock: true,
+    participatesInInventory: true,
     warehouseName: "Matriz",
     availableStock: 5,
     averageCost: 18.5,

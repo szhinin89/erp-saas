@@ -66,6 +66,7 @@ public sealed class ConfigurationDefinitionCatalogTests
         yield return new object[] { OrgSettingKeys.Purchases.AllowManualCostChange };
         yield return new object[] { OrgSettingKeys.Purchases.RequireReasonForCostChange };
         yield return new object[] { OrgSettingKeys.Payables.AllowSupplierPaymentWithoutPayable };
+        yield return new object[] { OrgSettingKeys.Inventory.StockControlEnabled };
         yield return new object[] { OrgSettingKeys.Inventory.AllowNegativeStock };
         yield return new object[] { OrgSettingKeys.Inventory.RequireReasonForAdjustment };
         yield return new object[] { OrgSettingKeys.Inventory.RequireApprovalForLargeAdjustment };
@@ -121,6 +122,16 @@ public sealed class ConfigurationDefinitionCatalogTests
 
         definition!.AllowedScopes.Should().BeEquivalentTo([OrgScope.Branch]);
         definition.AllowedScopes.Should().NotContain(OrgScope.Company);
+    }
+
+    [Fact]
+    public void Inventory_stock_control_is_company_scoped_and_enabled_by_default()
+    {
+        ConfigurationDefinitionCatalog.TryGet(OrgSettingKeys.Inventory.StockControlEnabled, out var definition).Should().BeTrue();
+        definition!.AllowedScopes.Should().BeEquivalentTo([OrgScope.Company]);
+        definition.DefaultValue.Should().Be("true");
+        definition.IsValidValue("false").Should().BeTrue();
+        definition.IsValidValue("invalid").Should().BeFalse();
     }
 
     [Fact]

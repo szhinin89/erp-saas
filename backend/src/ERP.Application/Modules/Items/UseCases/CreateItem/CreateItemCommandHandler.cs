@@ -16,6 +16,7 @@ public sealed class CreateItemCommandHandler : IRequestHandler<CreateItemCommand
     private readonly IItemTypeRepository _itemTypeRepo;
     private readonly ICurrentTenant _currentTenant;
     private readonly ICurrentUser _user;
+    private readonly ICurrentCompany _company;
     private readonly IDatabaseExceptionTranslator _dbEx;
     private readonly ISriCatalogResolver _sri;
 
@@ -27,7 +28,8 @@ public sealed class CreateItemCommandHandler : IRequestHandler<CreateItemCommand
         ICurrentTenant tenant,
         ICurrentUser user,
         IDatabaseExceptionTranslator dbEx,
-        ISriCatalogResolver sri
+        ISriCatalogResolver sri,
+        ICurrentCompany company
     )
     {
         _repository = repository;
@@ -38,6 +40,7 @@ public sealed class CreateItemCommandHandler : IRequestHandler<CreateItemCommand
         _user = user;
         _dbEx = dbEx;
         _sri = sri;
+        _company = company;
     }
 
     public async Task<Result<ItemDto>> Handle(
@@ -156,7 +159,7 @@ public sealed class CreateItemCommandHandler : IRequestHandler<CreateItemCommand
                     cmd.IsFavorite
                 ),
                 ItemStockConfig.Create(
-                    cmd.TracksStock,
+                    cmd.StockControlEnabled,
                     cmd.TracksLot,
                     cmd.TracksSeries,
                     cmd.AllowDecimalQty,
@@ -168,7 +171,9 @@ public sealed class CreateItemCommandHandler : IRequestHandler<CreateItemCommand
                 cmd.CategoryNodeId,
                 cmd.BrandId,
                 cmd.Observations,
-                cmd.BaseSalePrice
+                cmd.BaseSalePrice,
+                companyId: _company.CompanyId,
+                nature: cmd.Nature
             );
         }
         catch (ArgumentException ex)

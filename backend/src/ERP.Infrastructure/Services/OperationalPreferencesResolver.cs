@@ -182,6 +182,7 @@ public sealed class OperationalPreferencesResolver : IOperationalPreferencesReso
         );
 
         var inventory = new InventoryPreferences(
+            StockControlEnabled: Bool(OrgSettingKeys.Inventory.StockControlEnabled, true),
             AllowNegativeStock: Bool(OrgSettingKeys.Inventory.AllowNegativeStock, false),
             RequireReasonForAdjustment: Bool(
                 OrgSettingKeys.Inventory.RequireReasonForAdjustment,

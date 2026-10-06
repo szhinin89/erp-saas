@@ -100,6 +100,20 @@ export function GeneralTab({
       </ZHField>
       <ZHGrid cols={3}>
         <ZHField
+          label={t("items.nature.label", "Naturaleza operativa")}
+          required
+          fieldError={fe(errors.nature?.message)}
+        >
+          <ZhSelect {...register("nature")} disabled={disabled || isEditMode}>
+            <option value="Product">
+              {t("items.nature.product", "Producto")}
+            </option>
+            <option value="Service">
+              {t("items.nature.service", "Servicio")}
+            </option>
+          </ZhSelect>
+        </ZHField>
+        <ZHField
           label={t("items.form.brand", "Marca")}
           required={!isEditMode}
           fieldError={fe(errors.brandId?.message)}

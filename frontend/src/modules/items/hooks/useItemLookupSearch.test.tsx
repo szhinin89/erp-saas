@@ -8,8 +8,8 @@ vi.mock("../facades/itemLookupFacade", () => ({ itemLookupFacade: { search } }))
 import { ITEM_LOOKUP_DEBOUNCE_MS, useItemLookupSearch } from "./useItemLookupSearch";
 import type { ItemDto } from "../../../types/items";
 
-const item = (id: string, sku: string, tracksStock = true) =>
-  ({ id, sku, shortName: `Producto ${sku}`, description: "", tracksStock, defaultUomCode: "UN" }) as unknown as ItemDto;
+const item = (id: string, sku: string, participatesInInventory = true) =>
+  ({ id, sku, shortName: `Producto ${sku}`, description: "", participatesInInventory, defaultUomCode: "UN" }) as unknown as ItemDto;
 
 const page = (items: ItemDto[]) => ({ items, totalCount: items.length, pageNumber: 1, pageSize: 12 });
 
@@ -57,20 +57,20 @@ describe("useItemLookupSearch", () => {
     expect(result.current.results.map((i) => i.id)).toEqual(["2", "1"]);
   });
 
-  it("tracksStock se pide al backend y la página se usa tal cual (sin filtrar en React)", async () => {
+  it("participatesInInventory se pide al backend y la página se usa tal cual (sin filtrar en React)", async () => {
     search.mockResolvedValue(page([item("1", "A", true), item("2", "B", true)]));
-    const { result } = renderHook(() => useItemLookupSearch({ tracksStock: true }));
+    const { result } = renderHook(() => useItemLookupSearch({ participatesInInventory: true }));
     act(() => result.current.setQuery("ab"));
     await waitFor(() => expect(result.current.results).toHaveLength(2));
-    expect(search).toHaveBeenCalledWith({ search: "ab", isActive: true, pageSize: 12, tracksStock: true });
+    expect(search).toHaveBeenCalledWith({ search: "ab", isActive: true, pageSize: 12, participatesInInventory: true });
   });
 
-  it("sin tracksStock la consulta no lleva el filtro (búsqueda general sin cambios)", async () => {
+  it("sin participatesInInventory la consulta no lleva el filtro (búsqueda general sin cambios)", async () => {
     const { result } = renderHook(() => useItemLookupSearch());
     act(() => result.current.setQuery("ab"));
     await waitFor(() => expect(search).toHaveBeenCalledTimes(1));
     expect(search.mock.calls[0][0]).toEqual({ search: "ab", isActive: true, pageSize: 12 });
-    expect("tracksStock" in search.mock.calls[0][0]).toBe(false);
+    expect("participatesInInventory" in search.mock.calls[0][0]).toBe(false);
   });
 
   it("descarta una respuesta vieja que llega después de una búsqueda más nueva", async () => {

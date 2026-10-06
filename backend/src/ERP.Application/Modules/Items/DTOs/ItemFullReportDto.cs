@@ -33,5 +33,7 @@ public record ItemFullReportDto(
     // ── Audit ──────────────────────────────────────────────────────────
     bool IsActive,
     DateTime CreatedAt,
-    DateTime? UpdatedAt
+    DateTime? UpdatedAt,
+    Guid CompanyId,
+    ERP.Domain.Modules.Items.Entities.ItemNature Nature
 );

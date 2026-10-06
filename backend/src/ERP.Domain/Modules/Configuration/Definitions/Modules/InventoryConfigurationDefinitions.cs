@@ -5,8 +5,8 @@ using ERP.Domain.Configuration.Enums;
 namespace ERP.Domain.Configuration.Definitions.Modules;
 
 /// <summary>
-/// Definitions para OrgSettingKeys.Inventory. Ninguna de estas keys tiene efecto real conectado
-/// todavía — se guardan y exponen en /settings/operations, marcadas como "aún no conectado" en
+/// Definitions para OrgSettingKeys.Inventory. StockControlEnabled gobierna disponibilidad en A1.
+/// Las otras keys se guardan y exponen en /settings/operations, marcadas como "aún no conectado" en
 /// la UI.
 ///
 /// RequireReasonForAdjustment: evaluado en CONFIG-DYNAMIC-OPERATIONS-02 y DELIBERADAMENTE NO
@@ -24,6 +24,7 @@ public static class InventoryConfigurationDefinitions
 {
     public static IEnumerable<ConfigurationDefinition> All()
     {
+        yield return Bool(OrgSettingKeys.Inventory.StockControlEnabled, "true");
         yield return Bool(OrgSettingKeys.Inventory.AllowNegativeStock, "false");
         yield return Bool(OrgSettingKeys.Inventory.RequireReasonForAdjustment, "true");
         yield return Bool(OrgSettingKeys.Inventory.RequireApprovalForLargeAdjustment, "false");

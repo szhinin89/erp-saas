@@ -7,6 +7,7 @@ import {
   ZHFormSection,
   ZHGrid,
 } from "../../zh/ZHForm";
+import { ZhSelect } from "../../zh/inputs";
 import { ZhDecimalInput } from "../../zh/inputs/ZhDecimalInput";
 import { Badge } from "../../PageShell";
 import { applyServerErrors } from "../../../modules/lib/validationErrors";
@@ -145,7 +146,7 @@ export function ItemEditorForm({
           isAvailableOnPOS: existingItem.saleConfig.isAvailableOnPOS,
           isAvailableOnMobile: existingItem.saleConfig.isAvailableOnMobile,
           isEcommerceActive: existingItem.saleConfig.isEcommerceActive,
-          tracksStock: existingItem.stockConfig.tracksStock,
+          stockControlEnabled: existingItem.stockConfig.stockControlEnabled,
           tracksLot: existingItem.stockConfig.tracksLot,
           tracksSeries: existingItem.stockConfig.tracksSeries,
           allowDecimalQty: existingItem.stockConfig.allowDecimalQty,
@@ -171,6 +172,7 @@ export function ItemEditorForm({
         shortName: values.shortName,
         description: values.description,
         itemTypeId: values.itemTypeId,
+        nature: values.nature,
         categoryNodeId: values.categoryNodeId,
         brandId: values.brandId,
         defaultUomCode: values.defaultUomCode,
@@ -293,6 +295,12 @@ export function ItemEditorForm({
         </ZHField>
 
         <ZHGrid cols={2}>
+          <ZHField label="Naturaleza operativa">
+            <ZhSelect {...register("nature")} disabled={isUpdate}>
+              <option value="Product">Producto</option>
+              <option value="Service">Servicio</option>
+            </ZhSelect>
+          </ZHField>
           <ZHField
             label="Tipo de ítem"
             required

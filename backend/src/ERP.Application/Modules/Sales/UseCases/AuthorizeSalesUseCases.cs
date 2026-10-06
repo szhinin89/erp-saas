@@ -64,6 +64,7 @@ public sealed class AuthorizeSalesInvoiceHandler
     private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
     private readonly IOperationalPreferencesResolver _preferences;
+    private readonly ERP.Domain.Modules.Items.Interfaces.IItemRepository _itemRepo;
     private readonly ERP.Application.Modules.Companies.ICompanyPrecisionPolicyProvider _precisionPolicyProvider;
 
     public AuthorizeSalesInvoiceHandler(
@@ -93,7 +94,8 @@ public sealed class AuthorizeSalesInvoiceHandler
         ICurrentBranch b,
         ICurrentUser u,
         IOperationalPreferencesResolver preferences,
-        ERP.Application.Modules.Companies.ICompanyPrecisionPolicyProvider precisionPolicyProvider
+        ERP.Application.Modules.Companies.ICompanyPrecisionPolicyProvider precisionPolicyProvider,
+        ERP.Domain.Modules.Items.Interfaces.IItemRepository itemRepo
     )
     {
         _repo = repo;
@@ -122,6 +124,7 @@ public sealed class AuthorizeSalesInvoiceHandler
         _b = b;
         _u = u;
         _preferences = preferences;
+        _itemRepo = itemRepo;
         _precisionPolicyProvider = precisionPolicyProvider;
     }
 
@@ -456,22 +459,30 @@ public sealed class AuthorizeSalesInvoiceHandler
             return Result<SalesInvoiceDto>.ValidationFailure(message);
         }
 
-        // ── Validar stock disponible por línea (Kardex) ─────────────
-        // "Sin stock suficiente, no se factura" — decisión de negocio explícita, salvo que la
-        // empresa haya habilitado sales.pos.allow_sell_without_stock (CONFIG-DYNAMIC-OPERATIONS-02).
-        // Con la preferencia activa, el egreso de inventario más abajo se ejecuta igual y puede
-        // dejar CurrentStock en negativo — StockRepository.CreateAndTrackMovementAsync ya trata
-        // ese caso de forma defensiva (RunningAverageCost cae a 0 cuando la cantidad resultante no
-        // es positiva, en vez de dividir por cero/negativo), así que no hay riesgo de excepción ni
-        // de costeo corrupto — solo de que el costo promedio se reinicie hasta el próximo ingreso.
-        // WarehouseId solo está poblado en líneas cuyo ítem controla inventario
-        // (impuesto por SalesLineBuilder al crear el borrador).
+        // A1: nature decides inventory participation; company/item flags decide availability enforcement.
+        // AllowSellWithoutStock and Kardex valuation retain their existing A2-pending behavior.
+        var operationalItems = new Dictionary<Guid, ERP.Domain.Modules.Items.Entities.Item>();
+        foreach (var line in inv.Lines.Where(l => l.ItemId.HasValue))
+        {
+            var item = await _itemRepo.GetByIdLightAsync(line.ItemId!.Value, tid, ct);
+            if (item is null || item.CompanyId != cid)
+                return Result<SalesInvoiceDto>.ValidationFailure("El ítem no pertenece a esta empresa.");
+            operationalItems[item.Id] = item;
+            if (item.ParticipatesInInventory && line.WarehouseId is null)
+                return Result<SalesInvoiceDto>.ValidationFailure($"El producto '{line.Description}' requiere bodega.");
+            if (!item.ParticipatesInInventory && line.WarehouseId.HasValue)
+                return Result<SalesInvoiceDto>.ValidationFailure($"El servicio '{line.Description}' no admite bodega.");
+        }
         var preferences = await _preferences.ResolveAsync(ct);
-        if (!preferences.SalesPos.AllowSellWithoutStock)
+        if (preferences.Inventory.StockControlEnabled && !preferences.SalesPos.AllowSellWithoutStock)
         {
             foreach (var line in inv.Lines)
             {
                 if (line.ItemId is null || line.WarehouseId is null)
+                    continue;
+
+                var item = operationalItems[line.ItemId.Value];
+                if (!item.RequiresStockAvailability(preferences.Inventory.StockControlEnabled))
                     continue;
 
                 var stock = await _stockRepo.GetStockAsync(

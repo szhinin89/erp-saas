@@ -40,6 +40,7 @@ export type PayablesPreferencesDto = {
 };
 
 export type InventoryPreferencesDto = {
+  stockControlEnabled: boolean;
   allowNegativeStock: boolean;
   requireReasonForAdjustment: boolean;
   requireApprovalForLargeAdjustment: boolean;

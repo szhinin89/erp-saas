@@ -11,11 +11,11 @@ public sealed class ItemRepository : IItemRepository
 
     public ItemRepository(ErpDbContext context) => _context = context;
 
-    // Item es tenant-scoped (sin CompanyId) — filtro simple por tenantId.
+    // Tenant + authenticated Company, fail-closed; no Branch ownership.
     // El global query filter de EF ya aplica el filtro automático;
     // el parámetro tenantId es para casos en que se llama sin contexto HTTP.
     private IQueryable<Item> Scoped(Guid tenantId) =>
-        _context.Items.Where(x => x.TenantId == tenantId);
+        _context.Items.Where(x => x.TenantId == tenantId && _context.FilterHasCompanyContext && x.CompanyId == _context.FilterCompanyId);
 
     public async Task<Item?> GetByIdAsync(
         Guid id,
@@ -147,6 +147,9 @@ public sealed class ItemRepository : IItemRepository
     ) =>
         await _context.ItemVariantBarcodes.AnyAsync(
             b => b.TenantId == tenantId && b.Code == code && b.IsActive,
+            cancellationToken
+        ) || await _context.ItemPackagingLevels.AnyAsync(
+            p => p.TenantId == tenantId && p.Barcode == code && p.IsActive,
             cancellationToken
         );
 
@@ -375,8 +378,8 @@ public sealed class ItemRepository : IItemRepository
         if (filter.IsForSale is not null)
             query = query.Where(x => x.SaleConfig.IsForSale == filter.IsForSale);
 
-        if (filter.TracksStock is not null)
-            query = query.Where(x => x.StockConfig.TracksStock == filter.TracksStock);
+        if (filter.ParticipatesInInventory is not null)
+            query = query.Where(x => (x.Nature == ItemNature.Product) == filter.ParticipatesInInventory);
 
         if (filter.IsFavorite is not null)
             query = query.Where(x => x.SaleConfig.IsFavorite == filter.IsFavorite);
@@ -433,13 +436,24 @@ public sealed class ItemRepository : IItemRepository
             .OrderBy(x => x.Code.SKU)
             .ToListAsync(cancellationToken);
 
-    public async Task AddAsync(Item item, CancellationToken cancellationToken = default) =>
+    public async Task AddAsync(Item item, CancellationToken cancellationToken = default)
+    {
+        if (_context.FilterTenantId == Guid.Empty || !_context.FilterHasCompanyContext || item.TenantId != _context.FilterTenantId || item.CompanyId != _context.FilterCompanyId)
+            throw new ERP.Domain.Exceptions.DomainRuleViolationException("El ítem no pertenece al contexto operativo actual.");
         await _context.Items.AddAsync(item, cancellationToken);
+    }
 
     public async Task TrackVariantAsync(
         ItemVariant variant,
         CancellationToken cancellationToken = default
-    ) => await _context.ItemVariants.AddAsync(variant, cancellationToken);
+    )
+    {
+        var item = await GetByIdLightAsync(variant.ItemId, variant.TenantId, cancellationToken);
+        if (item is null)
+            throw new ERP.Domain.Exceptions.DomainRuleViolationException("Ítem no encontrado en la empresa actual.");
+        _context.Entry(variant).Property<Guid>("CompanyId").CurrentValue = item.CompanyId;
+        await _context.ItemVariants.AddAsync(variant, cancellationToken);
+    }
 
     public async Task ReplaceImagesAsync(
         Guid itemId,
@@ -447,6 +461,8 @@ public sealed class ItemRepository : IItemRepository
         CancellationToken cancellationToken = default
     )
     {
+        if (await GetByIdLightAsync(itemId, _context.FilterTenantId, cancellationToken) is null)
+            throw new ERP.Domain.Exceptions.DomainRuleViolationException("Ítem no encontrado en la empresa actual.");
         var existing = await _context
             .ItemImages.Where(x => x.ItemId == itemId)
             .ToListAsync(cancellationToken);
@@ -460,6 +476,8 @@ public sealed class ItemRepository : IItemRepository
         CancellationToken cancellationToken = default
     )
     {
+        if (await GetByIdLightAsync(itemId, _context.FilterTenantId, cancellationToken) is null)
+            throw new ERP.Domain.Exceptions.DomainRuleViolationException("Ítem no encontrado en la empresa actual.");
         var existing = await _context
             .ItemUnitConversions.Where(x => x.ItemId == itemId)
             .ToListAsync(cancellationToken);
@@ -473,6 +491,8 @@ public sealed class ItemRepository : IItemRepository
         CancellationToken cancellationToken = default
     )
     {
+        if (await GetByIdLightAsync(itemId, _context.FilterTenantId, cancellationToken) is null)
+            throw new ERP.Domain.Exceptions.DomainRuleViolationException("Ítem no encontrado en la empresa actual.");
         var existing = await _context
             .ItemSubstitutes.Where(x => x.ItemId == itemId)
             .ToListAsync(cancellationToken);
@@ -486,7 +506,11 @@ public sealed class ItemRepository : IItemRepository
         CancellationToken cancellationToken = default
     )
     {
+        if (await GetByIdLightAsync(itemId, _context.FilterTenantId, cancellationToken) is null)
+            throw new ERP.Domain.Exceptions.DomainRuleViolationException("Ítem no encontrado en la empresa actual.");
         var incoming = newLevels.ToList();
+        foreach (var level in incoming)
+            _context.Entry(level).Property<Guid>("CompanyId").CurrentValue = _context.FilterCompanyId;
         var existing = await _context
             .ItemPackagingLevels.Where(x => x.ItemId == itemId)
             .ToListAsync(cancellationToken);

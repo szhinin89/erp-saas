@@ -40,7 +40,7 @@ function baseLine(
     _pvp: 26,
     _stockQty: 5,
     _stockWarehouse: "Bodega Principal",
-    _tracksStock: true,
+    _participatesInInventory: true,
     ...overrides,
   };
 }

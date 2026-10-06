@@ -961,7 +961,7 @@ export function useSalesPage() {
       // Kardex: la bodega de despacho es obligatoria por línea para ítems que
       // controlan inventario — se toma la bodega activa del buscador al momento
       // de agregar el ítem (una misma factura puede combinar líneas de bodegas distintas).
-      if (item.tracksStock && !selectedWarehouseId) {
+      if (item.participatesInInventory && !selectedWarehouseId) {
         message.error("Seleccione una bodega antes de agregar este producto.");
         return;
       }
@@ -994,7 +994,7 @@ export function useSalesPage() {
       const stockQty = item.availableStock ?? undefined;
       const vatCode = pricing.vatCode ?? "";
       const iceCode = normalizeOptionalCode(pricing.iceCode);
-      const lineWarehouseId = item.tracksStock ? selectedWarehouseId : null;
+      const lineWarehouseId = item.participatesInInventory ? selectedWarehouseId : null;
 
       // SALES-PRESENTATIONS-03: por defecto se vende en unidad base (comportamiento actual
       // preservado) — salvo que el texto buscado haya coincidido con el barcode de una
@@ -1062,7 +1062,8 @@ export function useSalesPage() {
         _cost: cost,
         _stockQty: stockQty,
         _stockWarehouse: selectedWh?.name,
-        _tracksStock: item.tracksStock,
+        _participatesInInventory: item.participatesInInventory,
+        _stockControlEnabled: item.stockControlEnabled,
         _packagingLevels: item.packagingLevels,
       };
 
@@ -1188,12 +1189,12 @@ export function useSalesPage() {
       setValue(
         "lines",
         currentLines.map((l) =>
-          l._tracksStock ? { ...l, warehouseId: id } : l,
+          l._participatesInInventory ? { ...l, warehouseId: id } : l,
         ),
         { shouldValidate: true, shouldDirty: true },
       );
 
-      const affected = currentLines.filter((l) => l._tracksStock && l.itemId);
+      const affected = currentLines.filter((l) => l._participatesInInventory && l.itemId);
       void Promise.all(
         affected.map(async (l) => {
           try {

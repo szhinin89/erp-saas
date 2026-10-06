@@ -34,6 +34,8 @@ public sealed class ExecuteStockAdjustmentCommandHandler
     private readonly ICurrentUser _user;
     private readonly ICompanyClock _companyClock;
     private readonly ICompanyPrecisionPolicyProvider _precision;
+    private readonly ERP.Domain.Modules.Items.Interfaces.IItemRepository _itemRepo;
+    private readonly ERP.Domain.Configuration.Interfaces.IOperationalPreferencesResolver _preferences;
 
     public ExecuteStockAdjustmentCommandHandler(
         IStockAdjustmentRepository adjRepo,
@@ -44,10 +46,14 @@ public sealed class ExecuteStockAdjustmentCommandHandler
         ICurrentBranch branch,
         ICurrentUser user,
         ICompanyClock companyClock,
-        ICompanyPrecisionPolicyProvider precision
+        ICompanyPrecisionPolicyProvider precision,
+        ERP.Domain.Modules.Items.Interfaces.IItemRepository itemRepo,
+        ERP.Domain.Configuration.Interfaces.IOperationalPreferencesResolver preferences
     )
     {
         _precision = precision;
+        _itemRepo = itemRepo;
+        _preferences = preferences;
         _adjRepo = adjRepo;
         _reasonRepo = reasonRepo;
         _stockRepo = stockRepo;
@@ -97,6 +103,15 @@ public sealed class ExecuteStockAdjustmentCommandHandler
                 $"El motivo '{reason.Name}' requiere observaciones."
             );
 
+        var products = new Dictionary<Guid, ERP.Domain.Modules.Items.Entities.Item>();
+        foreach (var line in adj.Lines)
+        {
+            var item = await _itemRepo.GetByIdLightAsync(line.ItemId, tid, ct);
+            if (item is null || item.CompanyId != adj.CompanyId || !item.ParticipatesInInventory)
+                return Result<StockAdjustmentDto>.ValidationFailure("Solo se pueden ajustar productos de la empresa actual.");
+            products[item.Id] = item;
+        }
+        var preferences = await _preferences.ResolveAsync(ct);
         var isIngreso = adj.MovementType == StockAdjustment.MovementTypeIngreso;
 
         if (isIngreso)
@@ -111,6 +126,8 @@ public sealed class ExecuteStockAdjustmentCommandHandler
         {
             foreach (var line in adj.Lines)
             {
+                if (!products[line.ItemId].RequiresStockAvailability(preferences.Inventory.StockControlEnabled))
+                    continue;
                 var stock = await _stockRepo.GetStockAsync(tid, adj.WarehouseId, line.ItemId, ct);
                 var available = stock?.Quantity ?? 0m;
                 if (available < line.QuantityInBaseUom)

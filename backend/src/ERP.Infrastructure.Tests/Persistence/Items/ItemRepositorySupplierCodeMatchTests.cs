@@ -3,6 +3,7 @@ using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.ValueObjects;
 using ERP.Domain.Tenants.Entities;
+using ERP.Domain.Modules.Company.Entities;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories.Items;
 using FluentAssertions;
@@ -22,6 +23,7 @@ public sealed class ItemRepositorySupplierCodeMatchTests : IAsyncLifetime
         .Build();
 
     private Guid _tenantId;
+    private Guid _companyId;
     private Guid _createdBy;
 
     public async Task InitializeAsync()
@@ -33,6 +35,9 @@ public sealed class ItemRepositorySupplierCodeMatchTests : IAsyncLifetime
 
         _createdBy = Guid.NewGuid();
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _createdBy);
+        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Item Test Company", createdBy: _createdBy);
+        _companyId = company.Id;
+        db.Companies.Add(company);
         db.Tenants.Add(tenant);
         await db.SaveChangesAsync();
 
@@ -75,7 +80,7 @@ public sealed class ItemRepositorySupplierCodeMatchTests : IAsyncLifetime
                 ItemTaxConfig.Create("10", "10"),
                 ItemSaleConfig.Create(),
                 ItemStockConfig.Create(),
-                _createdBy
+                _createdBy, companyId: _companyId
             );
             item.ReplacePackagingLevels(
                 [
@@ -119,7 +124,7 @@ public sealed class ItemRepositorySupplierCodeMatchTests : IAsyncLifetime
             options,
             new FixedCurrentTenant(tenantId),
             new NoOpPublisher(),
-            new FixedCurrentCompany()
+            new FixedCurrentCompany(_companyId)
         );
     }
 
@@ -129,9 +134,9 @@ public sealed class ItemRepositorySupplierCodeMatchTests : IAsyncLifetime
         public string? Slug => null;
     }
 
-    private sealed class FixedCurrentCompany : ICurrentCompany
+    private sealed class FixedCurrentCompany(Guid companyId) : ICurrentCompany
     {
-        public Guid CompanyId => Guid.Empty;
+        public Guid CompanyId => companyId;
         public bool IsAuthenticated => true;
         public bool HasCompanyContext => true;
     }

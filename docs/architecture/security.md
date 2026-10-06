@@ -136,3 +136,7 @@ Producto multi-tenant. Detalle billing/planes: [`docs/archive/SAAS-COMMERCIAL.md
 Cursor hint operativo: `.cursor/rules/saas-navigation-no-sensitive-url.mdc`.
 
 Tarifas SRI: ver [backend.md#tarifas-sri](./backend.md).
+
+### Items: alcance Tenant + Company (A1)
+
+Item exige empresa del contexto autenticado y no tiene BranchId. Sin empresa válida, root y colecciones hijas no son visibles. Variantes, atributos, barcodes, imágenes, conversiones, sustitutos, packaging, códigos de proveedor, impuestos especiales y auditoría heredan aislamiento del Item. Sustitutos exigen ambos Items dentro del scope. Pricing y las operaciones resuelven el mismo Item de la empresa actual. BusinessPartner permanece tenant-wide. Constraints PostgreSQL respaldan las unicidades por empresa. Véase [ADR-040](../decisions/ADR-040-item-company-scope-inventory-nature.md).

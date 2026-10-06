@@ -25,7 +25,7 @@ function line(overrides: Partial<PurchaseLineFormValues> = {}): PurchaseLineForm
       shortName: "Item",
       description: "Item",
       baseUomCode: "UNIT",
-      tracksStock: true,
+      participatesInInventory: true,
       packagingLevels: [],
       supplierCode: "SUP-1",
       currentStock: 0,
@@ -217,7 +217,7 @@ describe("purchaseLineReadiness", () => {
       baseUomCode: "UNIT",
       conversionFactor: 12,
       quantityInBaseUom: 12,
-      context: { ...line().context!, tracksStock: false, pvp: 0 },
+      context: { ...line().context!, participatesInInventory: false, pvp: 0 },
     });
 
     const readiness = getPurchaseLineReadiness(serviceLine, { precisionPolicy: TEST_PRECISION_POLICY, vatRates: { "2": 15 } });

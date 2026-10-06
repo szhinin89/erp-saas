@@ -10,8 +10,8 @@ import { ItemLookupPicker } from "./ItemLookupPicker";
 import type { ItemDto } from "../../../types/items";
 
 const ITEMS = [
-  { id: "1", sku: "SKU-1", shortName: "Arroz 1kg", description: "Arroz blanco", tracksStock: true },
-  { id: "2", sku: "SKU-2", shortName: "Azúcar 1kg", description: "Azúcar", tracksStock: false },
+  { id: "1", sku: "SKU-1", shortName: "Arroz 1kg", description: "Arroz blanco", participatesInInventory: true },
+  { id: "2", sku: "SKU-2", shortName: "Azúcar 1kg", description: "Azúcar", participatesInInventory: false },
 ] as unknown as ItemDto[];
 
 function renderPicker(props: Partial<Parameters<typeof ItemLookupPicker>[0]> = {}) {
@@ -62,11 +62,11 @@ describe("ItemLookupPicker", () => {
     expect(onSelect).toHaveBeenCalledWith(ITEMS[1]);
   });
 
-  it("tracksStock se envía al backend; sin él, la búsqueda general no lo incluye", async () => {
-    const { input } = renderPicker({ tracksStock: true });
+  it("participatesInInventory se envía al backend; sin él, la búsqueda general no lo incluye", async () => {
+    const { input } = renderPicker({ participatesInInventory: true });
     fireEvent.change(input, { target: { value: "kg" } });
     await screen.findByText("Arroz 1kg");
-    expect(search).toHaveBeenCalledWith({ search: "kg", isActive: true, pageSize: 12, tracksStock: true });
+    expect(search).toHaveBeenCalledWith({ search: "kg", isActive: true, pageSize: 12, participatesInInventory: true });
     cleanup();
 
     search.mockClear();

@@ -600,3 +600,7 @@ Si cualquier checkbox es "SÍ" (hay violación) → **BLOQUEAR PR**.
 | Política legacy pre-prod | [§ Política de compatibilidad legacy](#política-de-compatibilidad-legacy) más arriba en este documento |
 | Reglas bloqueantes PR | [pr-rules-catalog.md](./pr-rules-catalog.md) (B-07 a B-11) |
 | Catálogos globales | Schema `global` — 16 tablas SRI + INEC |
+
+### Naturaleza operativa de Item (A1)
+
+ItemTypeDefinition = clasificación; ItemNature = naturaleza operativa. Product siempre participa en Inventory y conserva Warehouse por línea. Service no utiliza Warehouse ni genera movimientos, stock, kardex o costo promedio de inventario. StockControlEnabled de Item y inventory.stock_control_enabled de Company controlan disponibilidad: OFF en cualquiera mantiene movimientos del Product sin bloqueo; ambos ON conservan validación y AllowSellWithoutStock existentes. Digital y la evolución de costos negativos quedan fuera de A1. Esta distinción no reabre Tipos de Ítem CLOSED. [ADR-040](../decisions/ADR-040-item-company-scope-inventory-nature.md).

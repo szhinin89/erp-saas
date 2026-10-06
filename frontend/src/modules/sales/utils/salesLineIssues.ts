@@ -61,7 +61,7 @@ export function collectSalesLineIssues(
           message: issue.message,
         });
       }
-    if (line._tracksStock && !line.warehouseId)
+    if (line._participatesInInventory && !line.warehouseId)
       issues.push({
         key: line._key,
         field: "warehouseId",

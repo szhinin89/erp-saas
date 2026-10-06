@@ -183,9 +183,10 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
                 isForSale: true
             ),
             stockConfig: ERP.Domain.Modules.Items.ValueObjects.ItemStockConfig.Create(
-                tracksStock: true
+                stockControlEnabled: true
             ),
-            createdBy: _userId
+            createdBy: _userId,
+            companyId: _companyId
         );
         db.Set<ERP.Domain.Modules.Items.Entities.Item>().Add(item);
         await db.SaveChangesAsync();

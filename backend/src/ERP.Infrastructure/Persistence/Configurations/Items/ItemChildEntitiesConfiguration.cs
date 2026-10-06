@@ -104,6 +104,7 @@ public sealed class ItemPackagingLevelConfiguration : IEntityTypeConfiguration<I
     public void Configure(EntityTypeBuilder<ItemPackagingLevel> builder)
     {
         builder.ToTable("item_packaging_levels");
+        builder.Property<Guid>("CompanyId").HasColumnName("company_id").IsRequired();
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
@@ -145,7 +146,8 @@ public sealed class ItemPackagingLevelConfiguration : IEntityTypeConfiguration<I
             .HasDatabaseName("uq_item_packaging_uom");
 
         builder
-            .HasIndex(x => x.Barcode)
+            .HasIndex("TenantId", "CompanyId", "Barcode")
+            .IsUnique()
             .HasDatabaseName("ix_item_packaging_levels_barcode")
             .HasFilter("barcode IS NOT NULL");
     }

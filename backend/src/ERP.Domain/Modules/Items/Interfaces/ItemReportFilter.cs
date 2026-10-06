@@ -12,6 +12,6 @@ public record ItemReportFilter(
     Guid? BrandId = null,
     string? Barcode = null,
     // ZH-INVENTORY-STOCK-ITEM-LOOKUP-01 — null = sin filtro (comportamiento previo); true/false =
-    // solo ítems con/sin control de stock (StockConfig.TracksStock), antes del orden y la paginación.
-    bool? TracksStock = null
+    // solo ítems Product/Service según participación en inventario (Item.Nature), antes del orden y la paginación.
+    bool? ParticipatesInInventory = null
 );

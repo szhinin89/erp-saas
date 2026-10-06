@@ -264,7 +264,8 @@ public sealed class PurchaseDraftPackagingTests
             ItemTaxConfig.Create("10", "10"),
             ItemSaleConfig.Create(),
             ItemStockConfig.Create(),
-            UserId
+            UserId,
+            companyId: CompanyId
         );
 
         item.ReplacePackagingLevels(

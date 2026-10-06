@@ -291,7 +291,7 @@ public sealed class ConfirmPurchaseHandlerTests
         return inv;
     }
 
-    private static Item CreateItem(bool tracksStock = true)
+    private static Item CreateItem(bool stockControlEnabled = true)
     {
         var item = Item.Create(
             TenantId,
@@ -302,8 +302,10 @@ public sealed class ConfirmPurchaseHandlerTests
             "UNIT",
             ItemTaxConfig.Create("10", "10"),
             ItemSaleConfig.Create(),
-            ItemStockConfig.Create(tracksStock),
-            UserId
+            ItemStockConfig.Create(stockControlEnabled),
+            UserId,
+            companyId: CompanyId,
+            nature: stockControlEnabled ? ItemNature.Product : ItemNature.Service
         );
         item.ReplacePackagingLevels(
             [
@@ -441,6 +443,9 @@ public sealed class ConfirmPurchaseHandlerTests
             .Setup(r => r.GetByIdAsync(TenantId, WhId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(warehouse);
 
+        if (itemForMarginGuard?.Nature == ItemNature.Service)
+            foreach (var line in inv.Lines)
+                typeof(PurchaseInvoiceDetail).GetProperty("WarehouseId")!.SetValue(line, null);
         var itemRepo = new Mock<IItemRepository>();
         if (itemForXmlLines is not null)
         {
@@ -454,7 +459,12 @@ public sealed class ConfirmPurchaseHandlerTests
             .Setup(r =>
                 r.GetByIdLightAsync(It.IsAny<Guid>(), TenantId, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync((ERP.Domain.Modules.Items.Entities.Item?)null);
+            .ReturnsAsync((Guid id, Guid tenant, CancellationToken ct) =>
+            {
+                var item = itemForXmlLines ?? CreateItem();
+                if (itemForXmlLines is null) typeof(Item).GetProperty("Id")!.SetValue(item, id);
+                return item;
+            });
         if (itemForMarginGuard is not null)
         {
             itemRepo
@@ -744,7 +754,7 @@ public sealed class ConfirmPurchaseHandlerTests
     [Fact]
     public async Task Confirm_permite_sin_recepcion_xml_si_alguna_linea_ya_esta_vinculada()
     {
-        var item = CreateItem(tracksStock: true);
+        var item = CreateItem(stockControlEnabled: true);
         var pacaId = item.PackagingLevels.Single(p => p.UomCode == "PACA").Id;
         var inv = CreateXmlDraftInvoice(
             item.Id,
@@ -810,7 +820,7 @@ public sealed class ConfirmPurchaseHandlerTests
     [Fact]
     public async Task Confirm_bloquea_compra_xml_de_item_inventariable_sin_presentacion()
     {
-        var item = CreateItem(tracksStock: true);
+        var item = CreateItem(stockControlEnabled: true);
         var inv = CreateXmlDraftInvoice(item.Id);
         var (handler, _, stockRepo, _) = BuildHandler(inv, itemForXmlLines: item);
 
@@ -849,7 +859,7 @@ public sealed class ConfirmPurchaseHandlerTests
     [Fact]
     public async Task Confirm_permite_compra_xml_de_PACA_X12_con_presentacion_vinculada()
     {
-        var item = CreateItem(tracksStock: true);
+        var item = CreateItem(stockControlEnabled: true);
         var pacaId = item.PackagingLevels.Single(p => p.UomCode == "PACA").Id;
         var inv = CreateXmlDraftInvoice(
             item.Id,
@@ -1518,7 +1528,7 @@ public sealed class ConfirmPurchaseHandlerTests
     {
         // Caso real: CLUB PLATINO LATA 355CC NRB X6 TERMO cargado como UNIDAD X1
         // en vez de SIXPACK X6 -> LandedUnitCost muy por encima del PVP (margen ≈ -373.05%).
-        var item = CreateItem(tracksStock: true);
+        var item = CreateItem(stockControlEnabled: true);
         var inv = CreateDraftInvoiceWithCustomLine(item.Id, quantity: 1m, unitPrice: 5.1090m);
         var (handler, _, stockRepo, _) = BuildHandler(
             inv,
@@ -1563,7 +1573,7 @@ public sealed class ConfirmPurchaseHandlerTests
     public async Task Confirm_permite_presentacion_con_costo_correcto()
     {
         // Mismo producto cargado como SIXPACK X6 -> margen ≈ 21.16%, no bloquea.
-        var item = CreateItem(tracksStock: true);
+        var item = CreateItem(stockControlEnabled: true);
         var inv = CreateDraftInvoiceWithCustomLine(item.Id, quantity: 1m, unitPrice: 0.8515m);
         var (handler, _, stockRepo, _) = BuildHandler(
             inv,
@@ -1608,7 +1618,7 @@ public sealed class ConfirmPurchaseHandlerTests
     {
         // Sin precio de venta resuelto (pricing resolver falla / sin PricingRule/BaseSalePrice)
         // el guard no puede evaluar margen -> no bloquea.
-        var item = CreateItem(tracksStock: true);
+        var item = CreateItem(stockControlEnabled: true);
         var inv = CreateDraftInvoiceWithCustomLine(item.Id, quantity: 1m, unitPrice: 5.1090m);
         var (handler, _, _, _) = BuildHandler(
             inv,
@@ -1627,7 +1637,7 @@ public sealed class ConfirmPurchaseHandlerTests
     [Fact]
     public async Task Confirm_no_bloquea_item_no_inventariable_aunque_margen_sea_extremo()
     {
-        var item = CreateItem(tracksStock: false);
+        var item = CreateItem(stockControlEnabled: false);
         var inv = CreateDraftInvoiceWithCustomLine(item.Id, quantity: 1m, unitPrice: 5.1090m);
         var (handler, _, _, _) = BuildHandler(
             inv,
@@ -1643,11 +1653,37 @@ public sealed class ConfirmPurchaseHandlerTests
         result.IsSuccess.Should().BeTrue($"Error: {result.Error}");
     }
 
+    [Theory]
+    [InlineData(ItemNature.Product)]
+    [InlineData(ItemNature.Service)]
+    public async Task Nature_controls_purchase_movements_even_when_individual_control_is_off(ItemNature nature)
+    {
+        var item = CreateItem(stockControlEnabled: false);
+        typeof(Item).GetProperty("Nature")!.SetValue(item, nature);
+        var inv = CreateDraftInvoiceWithCustomLine(item.Id, quantity: 1m, unitPrice: 10m);
+        var (handler, _, stock, _) = BuildHandler(inv, itemForMarginGuard: item);
+        var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id), CancellationToken.None);
+        result.IsSuccess.Should().BeTrue(result.Error);
+        stock.Invocations.Count(i => i.Method.Name == "AppendMovementAsync").Should().Be(nature == ItemNature.Product ? 1 : 0);
+    }
+
+    [Fact]
+    public async Task Foreign_company_item_cannot_be_purchased_or_move_inventory()
+    {
+        var item = CreateItem();
+        typeof(Item).GetProperty("CompanyId")!.SetValue(item, Guid.NewGuid());
+        var inv = CreateDraftInvoiceWithCustomLine(item.Id, quantity: 1m, unitPrice: 10m);
+        var (handler, _, stock, _) = BuildHandler(inv, itemForMarginGuard: item);
+        var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id), CancellationToken.None);
+        result.IsSuccess.Should().BeFalse();
+        stock.Invocations.Should().NotContain(i => i.Method.Name == "AppendMovementAsync");
+    }
+
     [Fact]
     public async Task Confirm_no_bloquea_margen_negativo_leve()
     {
         // marginPct = -10% (costo 1.10 vs venta 1.00) — leve, no cruza el umbral de -50%.
-        var item = CreateItem(tracksStock: true);
+        var item = CreateItem(stockControlEnabled: true);
         var inv = CreateDraftInvoiceWithCustomLine(item.Id, quantity: 1m, unitPrice: 1.10m);
         var (handler, _, _, _) = BuildHandler(
             inv,

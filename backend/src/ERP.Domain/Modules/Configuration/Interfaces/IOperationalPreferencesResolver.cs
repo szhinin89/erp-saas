@@ -74,7 +74,8 @@ public sealed record InventoryPreferences(
     bool AllowNegativeStock,
     bool RequireReasonForAdjustment,
     bool RequireApprovalForLargeAdjustment,
-    decimal LargeAdjustmentThresholdAmount
+    decimal LargeAdjustmentThresholdAmount,
+    bool StockControlEnabled = true
 );
 
 /// <summary>

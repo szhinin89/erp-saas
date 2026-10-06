@@ -269,7 +269,7 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
             )
                 return "La presentación seleccionada no pertenece al ítem.";
             if (
-                item.StockConfig.TracksStock
+                item.ParticipatesInInventory
                 && input.PackagingLevelId is null
                 && registered?.PackagingLevelId is null
             )

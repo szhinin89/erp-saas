@@ -803,10 +803,14 @@ public sealed class CreatePurchaseDraftHandler
             string? snapshotItemName = null;
             string? snapshotSupplierCode = null;
             var packaging = new PurchaseLinePackagingSnapshot(null, "UNIT", "UNIT", 1m);
+            var participatesInInventory = false;
 
             if (l.ItemId.HasValue)
             {
                 var item = await _itemRepo.GetByIdAsync(l.ItemId.Value, tid, ct);
+                if (item is null)
+                    return new(null!, Result<PurchaseInvoiceDto>.ValidationFailure("El ítem no pertenece a esta empresa."));
+                participatesInInventory = item.ParticipatesInInventory;
                 if (item is not null)
                 {
                     snapshotSku = item.Code.SKU;
@@ -884,7 +888,7 @@ public sealed class CreatePurchaseDraftHandler
                 );
 
             string? snapshotWhCode = null;
-            var whId = l.WarehouseId ?? globalWhId;
+            var whId = participatesInInventory ? l.WarehouseId ?? globalWhId : null;
             if (whId.HasValue)
             {
                 var whCheck = await WarehouseBranchGuard.ValidateAsync(
@@ -916,7 +920,7 @@ public sealed class CreatePurchaseDraftHandler
                 vatCode,
                 packaging.UomCode,
                 l.ItemId,
-                l.WarehouseId,
+                participatesInInventory ? l.WarehouseId : null,
                 l.Notes,
                 normalizedLine.DiscountPct,
                 iceCode,
@@ -1139,10 +1143,14 @@ public sealed class UpdatePurchaseDraftHandler
             string? snapshotItemName = null;
             string? snapshotSupplierCode = null;
             var packaging = new PurchaseLinePackagingSnapshot(null, "UNIT", "UNIT", 1m);
+            var participatesInInventory = false;
 
             if (l.ItemId.HasValue)
             {
                 var item = await _itemRepo.GetByIdAsync(l.ItemId.Value, _t.TenantId, ct);
+                if (item is null)
+                    return Result<PurchaseInvoiceDto>.ValidationFailure("El ítem no pertenece a esta empresa.");
+                participatesInInventory = item.ParticipatesInInventory;
                 if (item is not null)
                 {
                     snapshotSku = item.Code.SKU;
@@ -1201,7 +1209,7 @@ public sealed class UpdatePurchaseDraftHandler
                 );
 
             string? snapshotWhCode = null;
-            var whId = l.WarehouseId ?? cmd.GlobalWarehouseId;
+            var whId = participatesInInventory ? l.WarehouseId ?? cmd.GlobalWarehouseId : null;
             if (whId.HasValue)
             {
                 var whCheck = await WarehouseBranchGuard.ValidateAsync(
@@ -1233,7 +1241,7 @@ public sealed class UpdatePurchaseDraftHandler
                 vatCode,
                 packaging.UomCode,
                 l.ItemId,
-                l.WarehouseId,
+                participatesInInventory ? l.WarehouseId : null,
                 l.Notes,
                 normalizedLine.DiscountPct,
                 iceCode,

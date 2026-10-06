@@ -3026,7 +3026,7 @@
   "items.tax.sri": "SRI",
   "items.tax.sriHint": "Services only: 01=Services, 02=Leasing, etc.",
   "items.stock.title": "Inventory configuration",
-  "items.stock.tracksStock": "Tracks stock",
+  "items.stock.participatesInInventory": "Tracks stock",
   "items.stock.tracksLot": "Lot tracking",
   "items.stock.tracksSeries": "Serial tracking",
   "items.stock.allowDecimalQty": "Decimal quantities",
@@ -4038,5 +4038,13 @@
   "purchases.cancel.retentionAuthorizedWarning": "This purchase's withholding was already authorized by SRI: the purchase is not cancelled here; the withholding must first be annulled at SRI.",
   "purchases.sriAnnulment.title": "The withholding was already authorized by SRI",
   "purchases.sriAnnulment.message": "The withholding was already authorized by SRI and must first be annulled at SRI. The request will be recorded with the given reason; the purchase stays in force (not cancelled, payable and accounting not reversed) until you record that SRI confirmed ANNULLED.",
-  "purchases.sriAnnulment.start": "Start annulment process"
+  "purchases.sriAnnulment.start": "Start annulment process",
+  "items.nature.label": "Operational nature",
+  "items.nature.product": "Product",
+  "items.nature.service": "Service",
+  "items.nature.serviceInventory": "Services do not participate in inventory.",
+  "items.stock.stockControlEnabled": "Enforce stock availability",
+  "items.stock.stockControlEnabledDesc": "Validates availability when company control is enabled. Products always record inventory.",
+  "settings.operations.inventory.stockControlEnabledLabel": "Company inventory control",
+  "settings.operations.inventory.stockControlEnabledDesc": "Enforces availability for products with individual stock control. Disabling it still records all movements."
 }

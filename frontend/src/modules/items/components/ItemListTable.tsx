@@ -55,12 +55,16 @@ export function ItemListTable({
       ),
     },
     { key: "type", header: t("items.list.col.type", "Tipo"), render: (item) => <span title={item.itemTypeName}>{item.itemTypeName}</span> },
+    { key: "nature", header: t("items.nature.label", "Naturaleza operativa"), render: (item) => item.nature === "Service" ? t("items.nature.service", "Servicio") : t("items.nature.product", "Producto") },
     { key: "uom", header: t("items.list.col.uom", "UOM"), render: (item) => <code title={item.defaultUomCode}>{item.defaultUomAbbrev}</code> },
     {
       key: "flags",
       header: t("items.list.col.flags", "Flags"),
       render: (item) => (
         <div className="prd-badge-wrap">
+          {item.participatesInInventory && item.stockControlEnabled && (
+            <Badge label={t("items.stock.stockControlEnabled", "Controlar disponibilidad")} variant="info" size="md" />
+          )}
           {item.tracksLot && (
             <Badge label={t("items.flags.lot", "LOT")} variant="info" size="md" title={t("items.flags.lotTitle", "Lotes")} />
           )}

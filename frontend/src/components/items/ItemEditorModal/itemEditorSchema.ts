@@ -30,6 +30,7 @@ export function buildItemEditorSchema(mode: ItemEditorMode) {
         .trim()
         .min(1, "La descripción es obligatoria.")
         .max(254, "La descripción no puede exceder 254 caracteres."),
+      nature: z.enum(["Product", "Service"]).default("Product"),
       itemTypeId: z.string().min(1, "El tipo de ítem es obligatorio."),
       categoryNodeId: z.string().min(1, "La categoría es obligatoria."),
       brandId: z.string().min(1, "La marca es obligatoria."),

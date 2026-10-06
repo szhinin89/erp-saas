@@ -98,7 +98,8 @@ public sealed class GetPurchaseItemContextQueryHandlerTests
             ItemTaxConfig.Create("10", "10"),
             ItemSaleConfig.Create(),
             ItemStockConfig.Create(),
-            UserId
+            UserId,
+            companyId: CompanyId
         );
 
         if (iceCatalogCode is not null)

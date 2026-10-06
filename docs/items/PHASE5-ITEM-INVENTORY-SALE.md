@@ -4,7 +4,7 @@
 **Fecha de cierre**: 2026-07-02
 **Nivel documental**: 3 (detalle técnico especializado, referenciado desde [`STATUS.md`](../../STATUS.md))
 
-Este documento es la referencia oficial de las decisiones funcionales de la Fase 5 del módulo Items. Se apoya en las Fases 1-4 ya cerradas y no las reabre.
+Este documento conserva las decisiones históricas de Fase 5. A1 / [ADR-040](../decisions/ADR-040-item-company-scope-inventory-nature.md) reemplaza la semántica de participación: ItemTypeDefinition sigue siendo clasificación pura; ItemNature decide Product/Service y StockControlEnabled controla disponibilidad. Digital queda FUTURE. Las reglas vigentes se encuentran en [architecture.md](../architecture/architecture.md#naturaleza-operativa-de-item-a1).
 
 ---
 

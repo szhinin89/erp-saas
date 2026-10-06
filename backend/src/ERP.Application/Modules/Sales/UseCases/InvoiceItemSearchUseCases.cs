@@ -28,13 +28,15 @@ public sealed class SearchItemsForInvoiceHandler
     private readonly IPricingResolver _pricingResolver;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
+    private readonly ERP.Domain.Configuration.Interfaces.IOperationalPreferencesResolver _preferences;
 
     public SearchItemsForInvoiceHandler(
         IInvoiceItemSearchRepository repo,
         ISriCatalogResolver sri,
         IPricingResolver pricingResolver,
         ICurrentTenant tenant,
-        ICurrentCompany company
+        ICurrentCompany company,
+        ERP.Domain.Configuration.Interfaces.IOperationalPreferencesResolver preferences
     )
     {
         _repo = repo;
@@ -42,6 +44,7 @@ public sealed class SearchItemsForInvoiceHandler
         _pricingResolver = pricingResolver;
         _tenant = tenant;
         _company = company;
+        _preferences = preferences;
     }
 
     public async Task<Result<IReadOnlyList<InvoiceItemSearchResultDto>>> Handle(
@@ -92,7 +95,9 @@ public sealed class SearchItemsForInvoiceHandler
             );
         var pricingByItemId = pricingResult.Value!;
 
-        var results = matches.Select(m => Enrich(m, vatMap, iceMap, pricingByItemId)).ToList();
+        var preferences = await _preferences.ResolveAsync(cancellationToken);
+        var enforce = preferences.Inventory.StockControlEnabled && !preferences.SalesPos.AllowSellWithoutStock;
+        var results = matches.Select(m => Enrich(m, vatMap, iceMap, pricingByItemId) with { StockControlEnabled = enforce && m.ParticipatesInInventory && m.StockControlEnabled }).ToList();
         return Result<IReadOnlyList<InvoiceItemSearchResultDto>>.Success(results);
     }
 
@@ -162,7 +167,7 @@ public sealed class SearchItemsForInvoiceHandler
             match.Description,
             match.ProductFamilyName,
             match.UomAbbrev,
-            match.TracksStock,
+            match.ParticipatesInInventory,
             match.WarehouseName,
             match.AvailableStock,
             match.AverageCost,

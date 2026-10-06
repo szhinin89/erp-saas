@@ -130,7 +130,9 @@ public sealed class GetItemFullReportQueryHandler
             detail.PackagingLevels,
             item.IsActive,
             item.CreatedAt,
-            item.UpdatedAt
+            item.UpdatedAt,
+            item.CompanyId,
+            item.Nature
         );
 
         return Result<ItemFullReportDto>.Success(report);

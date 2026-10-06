@@ -24,7 +24,7 @@ function baseLine(overrides: Partial<SalesLineFormValues>): SalesLineFormValues 
     iceCode: undefined,
     _sku: "CUBHUEVO",
     _name: "CUBETA DE HUEVO",
-    _tracksStock: true,
+    _participatesInInventory: true,
     ...overrides,
   };
 }

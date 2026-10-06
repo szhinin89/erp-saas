@@ -130,13 +130,15 @@ export function lineQuantityInBaseUom(line: {
  * nunca contra `quantity` cruda — el stock disponible (`_stockQty`) siempre está en unidad base,
  * así que comparar contra "1 caja" en vez de "12 unidades" bloquearía/permitiría mal la venta. */
 export function lineExceedsStock(line: {
-  _tracksStock?: boolean;
+  _participatesInInventory?: boolean;
+  _stockControlEnabled?: boolean;
   _stockQty?: number;
   quantity: number;
   conversionFactor?: number;
 }): boolean {
   return (
-    !!line._tracksStock &&
+    !!line._participatesInInventory &&
+    line._stockControlEnabled !== false &&
     line._stockQty != null &&
     lineQuantityInBaseUom(line) > line._stockQty
   );

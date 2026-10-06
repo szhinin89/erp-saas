@@ -21,7 +21,7 @@ const saleConfigSchema = z.object({
 
 const stockConfigSchema = z
   .object({
-    tracksStock: z.boolean().default(true),
+    stockControlEnabled: z.boolean().default(true),
     tracksLot: z.boolean().default(false),
     tracksSeries: z.boolean().default(false),
     allowDecimalQty: z.boolean().default(false),
@@ -99,7 +99,8 @@ export const createItemSchema = z.object({
     .min(1, "items.validation.descriptionRequired")
     .max(254, "items.validation.descriptionMax"),
   observations: z.string().max(500).nullable().optional(),
-  itemTypeId: z.string().uuid("items.validation.itemTypeRequired"),
+  nature: z.enum(["Product", "Service"]).default("Product"),
+    itemTypeId: z.string().uuid("items.validation.itemTypeRequired"),
   defaultUomCode: z
     .string()
     .trim()
@@ -164,6 +165,7 @@ export const defaultCreateItemValues: CreateItemFormValues = {
   description: "",
   observations: null,
   itemTypeId: "",
+  nature: "Product",
   defaultUomCode: "",
   categoryNodeId: "",
   brandId: "",
@@ -183,7 +185,7 @@ export const defaultCreateItemValues: CreateItemFormValues = {
     isEcommerceActive: false,
   },
   stockConfig: {
-    tracksStock: true,
+    stockControlEnabled: true,
     tracksLot: false,
     tracksSeries: false,
     allowDecimalQty: false,

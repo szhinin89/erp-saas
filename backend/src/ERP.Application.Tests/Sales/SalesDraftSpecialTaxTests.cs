@@ -311,8 +311,9 @@ public sealed class SalesDraftSpecialTaxTests
             "UNIT",
             ItemTaxConfig.Create("10", "10"),
             ItemSaleConfig.Create(),
-            ItemStockConfig.Create(tracksStock: false),
-            UserId
+            ItemStockConfig.Create(stockControlEnabled: false),
+            UserId,
+            companyId: CompanyId, nature: ItemNature.Service
         );
 
         var configs = new List<(string, string)>();

@@ -106,9 +106,10 @@ public sealed class IgnoreQueryFiltersScopeIntegrationTests : IAsyncLifetime
         db.ItemTypes.AddRange(itemTypeA, itemTypeB);
         await db.SaveChangesAsync();
 
-        var itemA = CreateItem(tenantA.Id, itemTypeA.Id, "ITEM-A");
-        var itemB = CreateItem(tenantB.Id, itemTypeB.Id, "ITEM-C");
-        db.Items.AddRange(itemA, itemB);
+        var itemA = CreateItem(tenantA.Id, companyA.Id, itemTypeA.Id, "ITEM-A");
+        var itemB = CreateItem(tenantB.Id, companyC.Id, itemTypeB.Id, "ITEM-C");
+        var itemCompanyB = CreateItem(tenantA.Id, companyB.Id, itemTypeA.Id, "ITEM-A");
+        db.Items.AddRange(itemA, itemCompanyB, itemB);
         await db.SaveChangesAsync();
 
         var scopeA = await CreateCompanyScopeAsync(
@@ -126,7 +127,7 @@ public sealed class IgnoreQueryFiltersScopeIntegrationTests : IAsyncLifetime
             companyB,
             supplierA,
             paymentTermA,
-            itemA,
+            itemCompanyB,
             2
         );
         var scopeC = await CreateCompanyScopeAsync(
@@ -580,7 +581,7 @@ public sealed class IgnoreQueryFiltersScopeIntegrationTests : IAsyncLifetime
         );
     }
 
-    private static Item CreateItem(Guid tenantId, Guid itemTypeId, string sku) =>
+    private static Item CreateItem(Guid tenantId, Guid companyId, Guid itemTypeId, string sku) =>
         Item.Create(
             tenantId,
             sku,
@@ -590,7 +591,8 @@ public sealed class IgnoreQueryFiltersScopeIntegrationTests : IAsyncLifetime
             "UNIT",
             taxConfig: ItemTaxConfig.Create("10", "10"),
             saleConfig: ItemSaleConfig.Create(isForSale: true),
-            stockConfig: ItemStockConfig.Create(tracksStock: true),
+            stockConfig: ItemStockConfig.Create(stockControlEnabled: true),
+            companyId: companyId,
             createdBy: Guid.NewGuid()
         );
 

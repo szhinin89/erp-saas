@@ -14,7 +14,7 @@ const line = (key = 1): SalesLineFormValues => ({
   discountPct: 0,
   vatCode: "10",
   warehouseId: "wh",
-  _tracksStock: true,
+  _participatesInInventory: true,
   _stockQty: 10,
 });
 const error = (errors: unknown) => ({

@@ -3,6 +3,7 @@ using ERP.Domain.Modules.Items.Models;
 
 namespace ERP.Domain.Modules.Items.Interfaces;
 
+/// <summary>All reads/writes are scoped to Tenant + authenticated Company; absent company context fails closed.</summary>
 public interface IItemRepository
 {
     /// <summary>Carga completa con variantes, imágenes, conversiones, sustitutos y empaques.</summary>
@@ -50,14 +51,14 @@ public interface IItemRepository
         CancellationToken cancellationToken = default
     );
 
-    /// <summary>Código de barras único por tenant (todo el catálogo, no solo el ítem actual).</summary>
+    /// <summary>Código de barras único por tenant + company (todo el catálogo, no solo el ítem actual).</summary>
     Task<bool> BarcodeExistsAsync(
         string code,
         Guid tenantId,
         CancellationToken cancellationToken = default
     );
 
-    /// <summary>Código de proveedor único por (tenant, supplier) en todo el catálogo.</summary>
+    /// <summary>Código de proveedor único por (tenant, company, supplier) en todo el catálogo.</summary>
     Task<bool> SupplierCodeExistsAsync(
         Guid supplierId,
         string code,
@@ -65,7 +66,7 @@ public interface IItemRepository
         CancellationToken cancellationToken = default
     );
 
-    /// <summary>SKU de variante único por tenant (todo el catálogo, no solo el ítem actual).</summary>
+    /// <summary>SKU de variante único por tenant + company (todo el catálogo, no solo el ítem actual).</summary>
     Task<bool> VariantSkuExistsAsync(
         string sku,
         Guid tenantId,

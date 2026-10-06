@@ -223,9 +223,10 @@ public sealed class SupplierCreditReadModelIntegrationTests : IAsyncLifetime
                 isForSale: true
             ),
             stockConfig: ERP.Domain.Modules.Items.ValueObjects.ItemStockConfig.Create(
-                tracksStock: true
+                stockControlEnabled: true
             ),
-            createdBy: _userId
+            createdBy: _userId,
+            companyId: _companyId
         );
         db.Add(item);
         await db.SaveChangesAsync();

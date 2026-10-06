@@ -27,7 +27,7 @@ function baseLine(overrides: Partial<SalesLineFormValues> = {}): SalesLineFormVa
     iceCode: undefined,
     _sku: "CUBHUEVO",
     _name: "CUBETA DE HUEVO",
-    _tracksStock: false,
+    _participatesInInventory: false,
     ...overrides,
   };
 }
@@ -137,12 +137,12 @@ describe("SalesInvoiceDetailsSection — consistencia cantidad/precio/descuento/
 
   it("la advertencia de stock aparece cuando el reescaneo hace que la cantidad supere el disponible", () => {
     const { rerender } = renderSection([
-      baseLine({ quantity: 1, _tracksStock: true, _stockQty: 1 }),
+      baseLine({ quantity: 1, _participatesInInventory: true, _stockQty: 1 }),
     ]);
     expect(screen.queryByText(/Cantidad excede stock/i)).toBeNull();
 
     rerender(
-      sectionElement([baseLine({ quantity: 2, _tracksStock: true, _stockQty: 1 })]),
+      sectionElement([baseLine({ quantity: 2, _participatesInInventory: true, _stockQty: 1 })]),
     );
 
     expect(screen.getByText(/Cantidad excede stock/i)).not.toBeNull();

@@ -69,3 +69,7 @@
 ## i18n
 
 Español e Inglés.
+
+### A1 — Items por empresa y naturaleza operativa
+
+Catálogo aislado por Tenant + Company, sin ownership de Branch. SKU, variantes, barcode y códigos de proveedor permiten los mismos valores entre empresas. Product siempre registra inventario; Service no lo utiliza. Control general de Company e individual de Item gobiernan la validación de disponibilidad. Tipos de Ítem siguen siendo clasificación pura. [ADR-040](docs/decisions/ADR-040-item-company-scope-inventory-nature.md).

@@ -26,7 +26,8 @@ public sealed class ItemMatchFinderTests
             ItemTaxConfig.Create("10", "10"),
             ItemSaleConfig.Create(),
             ItemStockConfig.Create(),
-            UserId
+            UserId,
+            companyId: Guid.NewGuid()
         );
 
     [Fact]

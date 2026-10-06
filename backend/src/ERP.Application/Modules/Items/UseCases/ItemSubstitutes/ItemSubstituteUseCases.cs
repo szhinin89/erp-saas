@@ -77,6 +77,10 @@ public sealed class ReplaceItemSubstitutesCommandHandler
                 "Un ítem no puede ser sustituto de sí mismo."
             );
 
+        foreach (var substitute in cmd.Substitutes)
+            if (await _repository.GetByIdLightAsync(substitute.SubstituteItemId, item.TenantId, cancellationToken) is null)
+                return Result<ItemDetailDto>.ValidationFailure("El sustituto no pertenece a la empresa actual.");
+
         var newSubstitutes = cmd
             .Substitutes.Select(s =>
                 ItemSubstitute.Create(

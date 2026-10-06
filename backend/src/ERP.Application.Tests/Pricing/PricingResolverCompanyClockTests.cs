@@ -100,7 +100,8 @@ public sealed class PricingResolverCompanyClockTests
             ItemSaleConfig.Create(isForSale: true),
             ItemStockConfig.Create(),
             UserId,
-            baseSalePrice: basePrice
+            baseSalePrice: basePrice,
+            companyId: CompanyId
         );
 
     private static PriceList CreatePriceList(DateOnly? validFrom, DateOnly? validUntil) =>

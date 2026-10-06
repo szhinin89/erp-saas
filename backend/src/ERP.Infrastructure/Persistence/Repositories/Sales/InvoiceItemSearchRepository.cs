@@ -48,7 +48,7 @@ public sealed class InvoiceItemSearchRepository : IInvoiceItemSearchRepository
         // consulta separada, liviana, y luego se re-ordena el resultado final en memoria — evita
         // traducir "ToList().IndexOf(...)" dentro de la consulta pesada de abajo (no traducible a SQL).
         var rankedIds = await _db
-            .Items.Where(i => i.TenantId == tenantId && i.IsActive && i.SaleConfig.IsForSale)
+            .Items.Where(i => i.TenantId == tenantId && i.CompanyId == companyId && i.IsActive && i.SaleConfig.IsForSale)
             .Select(i => new
             {
                 i.Id,
@@ -111,9 +111,9 @@ public sealed class InvoiceItemSearchRepository : IInvoiceItemSearchRepository
                     .Select(u => u.Abbrev ?? u.Name)
                     .FirstOrDefault()
                     ?? i.DefaultUomCode,
-                i.StockConfig.TracksStock,
-                warehouseName,
-                warehouseId != null
+                i.Nature == ERP.Domain.Modules.Items.Entities.ItemNature.Product,
+                i.Nature == ERP.Domain.Modules.Items.Entities.ItemNature.Product ? warehouseName : null,
+                i.Nature == ERP.Domain.Modules.Items.Entities.ItemNature.Product && warehouseId != null
                     ? _db
                         .CurrentStocks.Where(cs =>
                             cs.ProductId == i.Id
@@ -124,7 +124,7 @@ public sealed class InvoiceItemSearchRepository : IInvoiceItemSearchRepository
                         .Select(cs => (decimal?)(cs.Quantity - cs.ReservedQuantity))
                         .FirstOrDefault()
                     : (decimal?)null,
-                warehouseId != null
+                i.Nature == ERP.Domain.Modules.Items.Entities.ItemNature.Product && warehouseId != null
                     ? _db
                         .CurrentStocks.Where(cs =>
                             cs.ProductId == i.Id
@@ -171,7 +171,8 @@ public sealed class InvoiceItemSearchRepository : IInvoiceItemSearchRepository
                         && EF.Functions.ILike(p.Barcode, trimmedQuery)
                     )
                     .Select(p => (Guid?)p.Id)
-                    .FirstOrDefault()
+                    .FirstOrDefault(),
+                i.StockConfig.StockControlEnabled
             ))
             .ToListAsync(ct);
 

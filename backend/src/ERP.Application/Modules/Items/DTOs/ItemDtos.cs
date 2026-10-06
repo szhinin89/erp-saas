@@ -15,14 +15,19 @@ public record ItemDto(
     bool IsForSale,
     bool IsFavorite,
     bool IsEcommerceActive,
-    bool TracksStock,
+    bool StockControlEnabled,
     bool TracksLot,
     bool TracksSeries,
     decimal? BaseSalePrice,
     bool IsActive,
     DateTime CreatedAt,
-    DateTime? UpdatedAt
-);
+    DateTime? UpdatedAt,
+    Guid CompanyId = default,
+    ERP.Domain.Modules.Items.Entities.ItemNature Nature = ERP.Domain.Modules.Items.Entities.ItemNature.Product
+)
+{
+    public bool ParticipatesInInventory => Nature == ERP.Domain.Modules.Items.Entities.ItemNature.Product;
+}
 
 // ── Nested VOs ─────────────────────────────────────────────────────────────
 public record ItemTaxConfigDto(
@@ -45,7 +50,7 @@ public record ItemSaleConfigDto(
 );
 
 public record ItemStockConfigDto(
-    bool TracksStock,
+    bool StockControlEnabled,
     bool TracksLot,
     bool TracksSeries,
     bool AllowDecimalQty,
@@ -151,8 +156,14 @@ public record ItemDetailDto(
     decimal? BaseSalePrice,
     bool IsActive,
     DateTime CreatedAt,
-    DateTime? UpdatedAt
-);
+    DateTime? UpdatedAt,
+    Guid CompanyId = default,
+    ERP.Domain.Modules.Items.Entities.ItemNature Nature = ERP.Domain.Modules.Items.Entities.ItemNature.Product
+)
+{
+    public bool ParticipatesInInventory => Nature == ERP.Domain.Modules.Items.Entities.ItemNature.Product;
+    public bool StockControlEnabled => StockConfig.StockControlEnabled;
+}
 
 // ── Paginated list ─────────────────────────────────────────────────────────
 public record GetItemsResponse(

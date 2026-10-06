@@ -53,7 +53,8 @@ public sealed class PricingListUxTests
             ItemSaleConfig.Create(isForSale: true),
             ItemStockConfig.Create(),
             _userId,
-            baseSalePrice: 100m
+            baseSalePrice: 100m,
+            companyId: Guid.NewGuid()
         );
 
     private PriceList List() =>

@@ -25,7 +25,7 @@ export interface SalesConfigStatusInput {
   /** Tipo de emisión EFECTIVO de la venta en pantalla (snapshot de la factura o caja abierta). */
   emissionType: string | null | undefined;
   docTypeCode: string | null | undefined;
-  lines: readonly { _tracksStock?: boolean; warehouseId?: string | null }[];
+  lines: readonly { _participatesInInventory?: boolean; warehouseId?: string | null }[];
   /** Forma de pago SRI por defecto (cabecera) — solo relevante para emisión electrónica. */
   defaultSriPaymentCode: string | null | undefined;
   payments: readonly { paymentMethodId: string; amount: number }[];
@@ -64,7 +64,7 @@ export function computeSalesConfigStatus(
       message: "Tipo de emisión (punto de emisión de la caja sin configurar)",
     });
 
-  if (input.lines.some((l) => l._tracksStock && !l.warehouseId))
+  if (input.lines.some((l) => l._participatesInInventory && !l.warehouseId))
     issues.push({ severity: "error", message: "Bodega" });
 
   if (!input.docTypeCode)

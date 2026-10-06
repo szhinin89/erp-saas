@@ -540,7 +540,7 @@ export function computeUnitPriceFromBaseUnitCost(params: {
  * cabecera) — nunca reimplementa la fórmula de costo/margen en paralelo.
  *
  * Deliberadamente NO bloquea: sin producto vinculado, sin precio de venta (pvp) conocido, en
- * servicios/no inventariables (`tracksStock !== true`), o con margen negativo leve (>= -50%) —
+ * servicios/no inventariables (`participatesInInventory !== true`), o con margen negativo leve (>= -50%) —
  * esos son negocios reales de bajo margen, no errores de presentación.
  */
 export function buildSuspiciousPackagingCostWarning(
@@ -549,7 +549,7 @@ export function buildSuspiciousPackagingCostWarning(
   t?: TFunction,
 ): { blocking: true; message: string } | null {
   const ctx = line.context;
-  if (!line.itemId || !ctx || ctx.tracksStock !== true) return null;
+  if (!line.itemId || !ctx || ctx.participatesInInventory !== true) return null;
   const salePrice = ctx.pvp ?? 0;
   if (!(salePrice > 0)) return null;
 
@@ -588,7 +588,7 @@ export function buildMissingSalePriceForMarginWarning(
   t?: TFunction,
 ): { blocking: false; message: string } | null {
   const ctx = line.context;
-  if (!line.itemId || !ctx || ctx.tracksStock !== true) return null;
+  if (!line.itemId || !ctx || ctx.participatesInInventory !== true) return null;
   const salePrice = ctx.pvp ?? 0;
   if (salePrice > 0) return null;
 

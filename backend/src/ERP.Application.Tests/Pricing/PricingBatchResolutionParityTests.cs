@@ -192,7 +192,8 @@ public sealed class PricingBatchResolutionParityTests
             ItemSaleConfig.Create(isForSale: true),
             ItemStockConfig.Create(),
             UserId,
-            baseSalePrice: basePrice
+            baseSalePrice: basePrice,
+            companyId: CompanyId
         );
 
     private static PriceList CreateList(

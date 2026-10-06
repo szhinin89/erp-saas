@@ -2,7 +2,7 @@ namespace ERP.Domain.Modules.Items.ValueObjects;
 
 public sealed class ItemStockConfig
 {
-    public bool TracksStock { get; private set; }
+    public bool StockControlEnabled { get; private set; }
     public bool TracksLot { get; private set; }
     public bool TracksSeries { get; private set; }
     public bool AllowDecimalQty { get; private set; }
@@ -13,7 +13,7 @@ public sealed class ItemStockConfig
     private ItemStockConfig() { }
 
     public static ItemStockConfig Create(
-        bool tracksStock = true,
+        bool stockControlEnabled = true,
         bool tracksLot = false,
         bool tracksSeries = false,
         bool allowDecimalQty = false,
@@ -40,7 +40,7 @@ public sealed class ItemStockConfig
 
         return new ItemStockConfig
         {
-            TracksStock = tracksStock,
+            StockControlEnabled = stockControlEnabled,
             TracksLot = tracksLot,
             TracksSeries = tracksSeries,
             AllowDecimalQty = allowDecimalQty,

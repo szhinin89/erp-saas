@@ -37,13 +37,15 @@ internal static class ItemMappingService
             item.SaleConfig.IsForSale,
             item.SaleConfig.IsFavorite,
             item.SaleConfig.IsEcommerceActive,
-            item.StockConfig.TracksStock,
+            item.StockConfig.StockControlEnabled,
             item.StockConfig.TracksLot,
             item.StockConfig.TracksSeries,
             item.BaseSalePrice,
             item.IsActive,
             item.CreatedAt,
-            item.UpdatedAt
+            item.UpdatedAt,
+            item.CompanyId,
+            item.Nature
         );
 
     /// <summary>
@@ -128,7 +130,9 @@ internal static class ItemMappingService
             item.BaseSalePrice,
             item.IsActive,
             item.CreatedAt,
-            item.UpdatedAt
+            item.UpdatedAt,
+            item.CompanyId,
+            item.Nature
         );
 
     private static ItemTaxConfigDto MapTaxConfig(
@@ -181,7 +185,7 @@ internal static class ItemMappingService
 
     private static ItemStockConfigDto MapStockConfig(Item item) =>
         new(
-            item.StockConfig.TracksStock,
+            item.StockConfig.StockControlEnabled,
             item.StockConfig.TracksLot,
             item.StockConfig.TracksSeries,
             item.StockConfig.AllowDecimalQty,

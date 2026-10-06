@@ -6,6 +6,7 @@ public sealed class CreateItemCommandValidator : AbstractValidator<CreateItemCom
 {
     public CreateItemCommandValidator()
     {
+        RuleFor(x => x.Nature).IsInEnum();
         RuleFor(x => x.SKU)
             .NotEmpty()
             .WithMessage("El SKU es obligatorio.")
@@ -71,6 +72,7 @@ public sealed class CreateItemCommandValidator : AbstractValidator<CreateItemCom
         RuleForEach(x => x.Barcodes)
             .ChildRules(b =>
             {
+        RuleFor(x => x.Nature).IsInEnum();
                 b.RuleFor(x => x.Code)
                     .NotEmpty()
                     .WithMessage("El código de barras es obligatorio.")
@@ -99,6 +101,7 @@ public sealed class CreateItemCommandValidator : AbstractValidator<CreateItemCom
         RuleForEach(x => x.SupplierCodes)
             .ChildRules(s =>
             {
+        RuleFor(x => x.Nature).IsInEnum();
                 s.RuleFor(x => x.SupplierId).NotEmpty().WithMessage("El proveedor es obligatorio.");
                 s.RuleFor(x => x.Code)
                     .NotEmpty()

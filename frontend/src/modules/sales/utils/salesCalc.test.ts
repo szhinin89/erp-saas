@@ -397,33 +397,43 @@ describe("salesCalc — UI preview layer", () => {
 
 // ── lineExceedsStock — advertencia preventiva de stock (SALES-RETAIL-READY-01-FIX03) ──
 describe("lineExceedsStock", () => {
+  it("no advierte por disponibilidad cuando el control efectivo está OFF", () => {
+    expect(
+      lineExceedsStock({
+        _participatesInInventory: true,
+        _stockControlEnabled: false,
+        _stockQty: 0,
+        quantity: 100,
+      }),
+    ).toBe(false);
+  });
   it("true cuando la cantidad supera el stock disponible en un ítem inventariable", () => {
     expect(
-      lineExceedsStock({ _tracksStock: true, _stockQty: 0, quantity: 1 }),
+      lineExceedsStock({ _participatesInInventory: true, _stockQty: 0, quantity: 1 }),
     ).toBe(true);
     expect(
-      lineExceedsStock({ _tracksStock: true, _stockQty: 3, quantity: 5 }),
+      lineExceedsStock({ _participatesInInventory: true, _stockQty: 3, quantity: 5 }),
     ).toBe(true);
   });
 
   it("false cuando la cantidad no supera el stock disponible", () => {
     expect(
-      lineExceedsStock({ _tracksStock: true, _stockQty: 5, quantity: 5 }),
+      lineExceedsStock({ _participatesInInventory: true, _stockQty: 5, quantity: 5 }),
     ).toBe(false);
     expect(
-      lineExceedsStock({ _tracksStock: true, _stockQty: 10, quantity: 1 }),
+      lineExceedsStock({ _participatesInInventory: true, _stockQty: 10, quantity: 1 }),
     ).toBe(false);
   });
 
   it("false para ítems que no controlan inventario, sin importar la cantidad", () => {
     expect(
-      lineExceedsStock({ _tracksStock: false, _stockQty: 0, quantity: 100 }),
+      lineExceedsStock({ _participatesInInventory: false, _stockQty: 0, quantity: 100 }),
     ).toBe(false);
   });
 
   it("false (no bloquea) cuando el dato de disponibilidad no está cargado — nunca inventa stock", () => {
     expect(
-      lineExceedsStock({ _tracksStock: true, _stockQty: undefined, quantity: 100 }),
+      lineExceedsStock({ _participatesInInventory: true, _stockQty: undefined, quantity: 100 }),
     ).toBe(false);
   });
 
@@ -433,7 +443,7 @@ describe("lineExceedsStock", () => {
     // Stock 10 unidades base, venta 1 caja x12 = 12 unidades base requeridas → excede.
     expect(
       lineExceedsStock({
-        _tracksStock: true,
+        _participatesInInventory: true,
         _stockQty: 10,
         quantity: 1,
         conversionFactor: 12,
@@ -445,7 +455,7 @@ describe("lineExceedsStock", () => {
     // Stock 20 unidades base, venta 1 caja x12 = 12 unidades base requeridas → no excede.
     expect(
       lineExceedsStock({
-        _tracksStock: true,
+        _participatesInInventory: true,
         _stockQty: 20,
         quantity: 1,
         conversionFactor: 12,

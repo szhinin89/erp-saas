@@ -21,7 +21,7 @@ type Props = {
  * `AdjustmentProductPicker` y `TransferProductPicker`, dos copias del mismo componente). Usa el
  * picker del owner `items` (`itemPickerFacade` → `ItemLookupPicker`) y solo agrega la regla propia
  * de Inventario —un ítem sin control de stock no tiene saldo que ajustar o mover— pedida al
- * backend (`tracksStock`, filtrada antes de paginar: ZH-INVENTORY-STOCK-ITEM-LOOKUP-01) y el
+ * backend (`participatesInInventory`, filtrada antes de paginar: ZH-INVENTORY-STOCK-ITEM-LOOKUP-01) y el
  * perfil de línea. No consulta existencias: el saldo por
  * bodega es otra capacidad (stockService / warehouse-availability).
  */
@@ -32,7 +32,7 @@ export function StockItemPicker({ onSelect, placeholder, emptyText, disabled }: 
       emptyText={emptyText}
       disabled={disabled}
       pageSize={12}
-      tracksStock
+      participatesInInventory
       onSelect={(item) =>
         onSelect({
           id: item.id,

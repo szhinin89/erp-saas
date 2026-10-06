@@ -18,7 +18,7 @@ public sealed record GetItemsQuery(
     string? Barcode = null,
     int PageNumber = 1,
     int PageSize = 20,
-    bool? TracksStock = null
+    bool? ParticipatesInInventory = null
 ) : IRequest<Result<GetItemsResponse>>, ICompanyScopedRequest;
 
 public sealed class GetItemsQueryHandler : IRequestHandler<GetItemsQuery, Result<GetItemsResponse>>
@@ -57,7 +57,7 @@ public sealed class GetItemsQueryHandler : IRequestHandler<GetItemsQuery, Result
             query.CategoryNodeId,
             query.BrandId,
             query.Barcode,
-            query.TracksStock
+            query.ParticipatesInInventory
         );
 
         var (items, total) = await _repository.GetPageAsync(

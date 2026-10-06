@@ -18,7 +18,7 @@ export interface GetItemsParams {
   brandId?: string;
   barcode?: string;
   /** ZH-INVENTORY-STOCK-ITEM-LOOKUP-01 — solo ítems con (true) / sin (false) control de stock; filtrado en el backend antes de paginar. */
-  tracksStock?: boolean;
+  participatesInInventory?: boolean;
   pageNumber?: number;
   pageSize?: number;
 }
@@ -62,7 +62,8 @@ export interface CreateItemRequest {
   isAvailableOnPOS?: boolean;
   isAvailableOnMobile?: boolean;
   isEcommerceActive?: boolean;
-  tracksStock?: boolean;
+  stockControlEnabled?: boolean;
+  nature: "Product" | "Service";
   tracksLot?: boolean;
   tracksSeries?: boolean;
   allowDecimalQty?: boolean;
@@ -73,7 +74,7 @@ export interface CreateItemRequest {
 
 export interface UpdateItemRequest extends Omit<
   CreateItemRequest,
-  "barcodes" | "supplierCodes" | "categoryNodeId" | "brandId" | "itemTypeId"
+  "barcodes" | "supplierCodes" | "categoryNodeId" | "brandId" | "itemTypeId" | "nature"
 > {
   id: string;
   // SKU es editable (Fase 1) — único por tenant, excluyendo el propio ítem.
@@ -106,8 +107,8 @@ function buildParams(params: GetItemsParams): string {
   if (params.categoryNodeId) q.set("categoryNodeId", params.categoryNodeId);
   if (params.brandId) q.set("brandId", params.brandId);
   if (params.barcode) q.set("barcode", params.barcode);
-  if (params.tracksStock !== undefined)
-    q.set("tracksStock", String(params.tracksStock));
+  if (params.participatesInInventory !== undefined)
+    q.set("participatesInInventory", String(params.participatesInInventory));
   q.set("pageNumber", String(params.pageNumber ?? 1));
   q.set("pageSize", String(params.pageSize ?? 20));
   return q.toString() ? `?${q.toString()}` : "";

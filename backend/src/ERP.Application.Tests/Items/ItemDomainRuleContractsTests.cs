@@ -32,7 +32,8 @@ public sealed class ItemDomainRuleContractsTests
             ItemTaxConfig.Create("10", "10"),
             ItemSaleConfig.Create(),
             ItemStockConfig.Create(),
-            UserId
+            UserId,
+            companyId: Guid.NewGuid()
         );
         var variant = item.AddVariant([], "SKU-V1", 1, UserId);
         return (item, variant);

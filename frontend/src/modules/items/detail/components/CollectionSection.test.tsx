@@ -62,7 +62,7 @@ describe("PackagingLevelsSection", () => {
         levels={[]}
         uomOptions={uomOptions}
         baseUomCode="UNIDAD"
-        tracksStock
+        participatesInInventory
         usedPackagingLevelIds={new Set()}
         onSave={vi.fn()}
       />,
@@ -88,7 +88,7 @@ describe("PackagingLevelsSection", () => {
         levels={[baseUnitLevel]}
         uomOptions={uomOptions}
         baseUomCode="UNIDAD"
-        tracksStock
+        participatesInInventory
         usedPackagingLevelIds={new Set()}
         onSave={onSave}
       />,
@@ -142,7 +142,7 @@ describe("PackagingLevelsSection", () => {
         levels={[]}
         uomOptions={uomOptions}
         baseUomCode="UNIDAD"
-        tracksStock
+        participatesInInventory
         usedPackagingLevelIds={new Set()}
         onSave={onSave}
       />,
@@ -180,7 +180,7 @@ describe("PackagingLevelsSection", () => {
         levels={[]}
         uomOptions={uomOptions}
         baseUomCode="UNIDAD"
-        tracksStock
+        participatesInInventory
         usedPackagingLevelIds={new Set()}
         onSave={onSave}
       />,
@@ -214,7 +214,7 @@ describe("PackagingLevelsSection", () => {
         levels={[baseUnitLevel]}
         uomOptions={uomOptions}
         baseUomCode="UNIDAD"
-        tracksStock
+        participatesInInventory
         usedPackagingLevelIds={new Set()}
         onSave={onSave}
       />,
@@ -247,7 +247,7 @@ describe("PackagingLevelsSection", () => {
         levels={[baseUnitLevel, pacaLevel]}
         uomOptions={uomOptions}
         baseUomCode="UNIDAD"
-        tracksStock
+        participatesInInventory
         usedPackagingLevelIds={new Set()}
         onSave={onSave}
       />,
@@ -288,7 +288,7 @@ describe("PackagingLevelsSection", () => {
         levels={[baseUnitLevel, pacaLevel]}
         uomOptions={uomOptions}
         baseUomCode="UNIDAD"
-        tracksStock
+        participatesInInventory
         usedPackagingLevelIds={new Set()}
         onSave={vi.fn()}
       />,
@@ -308,7 +308,7 @@ describe("PackagingLevelsSection", () => {
         levels={[]}
         uomOptions={uomOptions}
         baseUomCode="UNIDAD"
-        tracksStock
+        participatesInInventory
         usedPackagingLevelIds={new Set()}
         onSave={vi.fn()}
       />,
@@ -337,7 +337,7 @@ describe("PackagingLevelsSection", () => {
         levels={[]}
         uomOptions={uomOptions}
         baseUomCode="UNIDAD"
-        tracksStock
+        participatesInInventory
         usedPackagingLevelIds={new Set()}
         onSave={vi.fn()}
       />,
@@ -372,7 +372,7 @@ describe("PackagingLevelsSection", () => {
         levels={[baseUnitLevel]}
         uomOptions={uomOptions}
         baseUomCode="UNIDAD"
-        tracksStock
+        participatesInInventory
         usedPackagingLevelIds={new Set()}
         onSave={vi.fn()}
       />,
@@ -410,7 +410,7 @@ describe("PackagingLevelsSection", () => {
         levels={[baseUnitLevel]}
         uomOptions={uomOptions}
         baseUomCode="UNIDAD"
-        tracksStock
+        participatesInInventory
         usedPackagingLevelIds={new Set(["unidad-1"])}
         onSave={vi.fn()}
       />,
@@ -441,7 +441,7 @@ describe("PackagingLevelsSection", () => {
         levels={[baseUnitLevel, secondLevel]}
         uomOptions={[...uomOptions, { code: "CAJA", name: "Caja", abbrev: "CAJA" }]}
         baseUomCode="UNIDAD"
-        tracksStock
+        participatesInInventory
         usedPackagingLevelIds={new Set()}
         onSave={onSave}
       />,
@@ -484,7 +484,7 @@ describe("PackagingLevelsSection", () => {
         levels={[baseUnitLevel]}
         uomOptions={uomOptions}
         baseUomCode="UNIDAD"
-        tracksStock
+        participatesInInventory
         usedPackagingLevelIds={new Set()}
         onSave={vi.fn()}
       />,

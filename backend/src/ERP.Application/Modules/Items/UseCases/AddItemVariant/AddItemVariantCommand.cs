@@ -86,7 +86,7 @@ public sealed class AddItemVariantCommandHandler
                 _user.UserId
             );
 
-            // SKU de variante único por tenant (Fase 6) — no solo dentro del propio ítem.
+            // SKU de variante único por tenant + company (A1) — no solo dentro del propio ítem.
             // El SKU final (con override o autogenerado a partir de los atributos) recién
             // se conoce tras AddVariant; se verifica contra el catálogo completo antes de
             // persistir, mismo patrón ya aplicado a barcode/código de proveedor en Fase 2.

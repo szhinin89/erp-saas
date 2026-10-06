@@ -252,6 +252,15 @@ public sealed class UpdateOperationalPreferencesCommandHandler
             await UpsertAsync(
                 tenantId,
                 companyId,
+                OrgSettingKeys.Inventory.StockControlEnabled,
+                Bool(inventory.StockControlEnabled),
+                SettingDataType.Bool,
+                userId,
+                cancellationToken
+            );
+            await UpsertAsync(
+                tenantId,
+                companyId,
                 OrgSettingKeys.Inventory.AllowNegativeStock,
                 Bool(inventory.AllowNegativeStock),
                 SettingDataType.Bool,
@@ -460,7 +469,8 @@ public sealed class UpdateOperationalPreferencesCommandHandler
                     p.Inventory.AllowNegativeStock,
                     p.Inventory.RequireReasonForAdjustment,
                     p.Inventory.RequireApprovalForLargeAdjustment,
-                    p.Inventory.LargeAdjustmentThresholdAmount
+                    p.Inventory.LargeAdjustmentThresholdAmount,
+                    p.Inventory.StockControlEnabled
                 ),
                 Printing: new PrintingPreferencesDto(
                     p.Printing.SalesReceiptMode,

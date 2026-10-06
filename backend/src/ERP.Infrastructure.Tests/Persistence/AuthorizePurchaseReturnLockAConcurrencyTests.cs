@@ -169,8 +169,9 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
             defaultUomCode: "UNIT",
             taxConfig: ItemTaxConfig.Create(saleVatCode: "10", purchaseVatCode: "10"),
             saleConfig: ItemSaleConfig.Create(isForSale: true),
-            stockConfig: ItemStockConfig.Create(tracksStock: true),
-            createdBy: _userId
+            stockConfig: ItemStockConfig.Create(stockControlEnabled: true),
+            createdBy: _userId,
+            companyId: _companyId
         );
         db.Set<Item>().Add(item);
         await db.SaveChangesAsync();

@@ -45,14 +45,14 @@ describe("computeSalesConfigStatus", () => {
 
   it("error bloqueante si una línea de stock no tiene bodega (mismo criterio que el schema)", () => {
     const s = computeSalesConfigStatus(
-      input({ lines: [{ _tracksStock: true, warehouseId: null }] }),
+      input({ lines: [{ _participatesInInventory: true, warehouseId: null }] }),
     );
     expect(s.missing).toContain("Bodega");
   });
 
   it("línea de stock CON bodega no bloquea", () => {
     const s = computeSalesConfigStatus(
-      input({ lines: [{ _tracksStock: true, warehouseId: "wh-1" }] }),
+      input({ lines: [{ _participatesInInventory: true, warehouseId: "wh-1" }] }),
     );
     expect(s.missing).toEqual([]);
   });

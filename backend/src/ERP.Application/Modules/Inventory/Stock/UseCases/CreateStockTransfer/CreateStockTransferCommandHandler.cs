@@ -14,6 +14,7 @@ public sealed class CreateStockTransferCommandHandler
     private readonly IStockTransferRepository _repo;
     private readonly IInterBranchAccessGuard _interBranchGuard;
     private readonly ICurrentTenant _tenant;
+    private readonly ERP.Domain.Modules.Items.Interfaces.IItemRepository _itemRepo;
     private readonly ICurrentUser _user;
     private readonly ICompanyClock _companyClock;
 
@@ -22,12 +23,14 @@ public sealed class CreateStockTransferCommandHandler
         IInterBranchAccessGuard interBranchGuard,
         ICurrentTenant tenant,
         ICurrentUser user,
-        ICompanyClock companyClock
+        ICompanyClock companyClock,
+        ERP.Domain.Modules.Items.Interfaces.IItemRepository itemRepo
     )
     {
         _repo = repo;
         _interBranchGuard = interBranchGuard;
         _tenant = tenant;
+        _itemRepo = itemRepo;
         _user = user;
         _companyClock = companyClock;
     }
@@ -54,6 +57,13 @@ public sealed class CreateStockTransferCommandHandler
             return Result<StockTransferDto>.Failure(access.Error!, access.Code);
 
         var ctx = access.Value!;
+        foreach (var line in request.Lines)
+        {
+            var item = await _itemRepo.GetByIdLightAsync(line.ProductId, ctx.TenantId, ct);
+            if (item is null || item.CompanyId != ctx.CompanyId || !item.ParticipatesInInventory)
+                return Result<StockTransferDto>.ValidationFailure("Solo se pueden transferir productos de la empresa actual.");
+        }
+
         var seq = await _repo.GetNextSequentialAsync(ctx.TenantId, ctx.CompanyId, ct);
         var uid = _user.UserId;
         var transferDate = await _companyClock.TodayAsync(ctx.CompanyId, ctx.TenantId, ct);

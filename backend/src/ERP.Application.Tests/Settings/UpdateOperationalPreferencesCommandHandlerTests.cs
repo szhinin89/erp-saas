@@ -76,7 +76,7 @@ public sealed class UpdateOperationalPreferencesCommandHandlerTests
             ),
             Cash: new CashPreferencesInput(true, false, 0, false, false, false),
             Purchases: null,
-            Inventory: null,
+            Inventory: new InventoryPreferencesInput(false, true, false, 0m, StockControlEnabled: false),
             Printing: null,
             ElectronicDocuments: null,
             Notifications: null
@@ -88,6 +88,7 @@ public sealed class UpdateOperationalPreferencesCommandHandlerTests
         written.Should().NotBeEmpty();
         written.Should().OnlyContain(s => s.TenantId == ActiveTenantId);
         written.Should().OnlyContain(s => s.CompanyId == ActiveCompanyId);
+        bool.Parse(written.Single(s => s.Key == ERP.Domain.Configuration.Constants.OrgSettingKeys.Inventory.StockControlEnabled).Value!).Should().BeFalse();
         written
             .Should()
             .NotContain(s => s.TenantId == OtherTenantId || s.CompanyId == OtherCompanyId);

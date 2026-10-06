@@ -17,7 +17,7 @@ export interface ItemLookupSearchOptions {
    * Solo ítems con control de stock (Inventario). Lo filtra el backend antes de ordenar y paginar
    * (ZH-INVENTORY-STOCK-ITEM-LOOKUP-01): nunca se filtra una página parcial en React.
    */
-  tracksStock?: boolean;
+  participatesInInventory?: boolean;
 }
 
 export interface ItemLookupSearchState {
@@ -43,7 +43,7 @@ export interface ItemLookupSearchState {
 export function useItemLookupSearch({
   pageSize = 12,
   enabled = true,
-  tracksStock,
+  participatesInInventory,
 }: ItemLookupSearchOptions = {}): ItemLookupSearchState {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ItemDto[]>([]);
@@ -71,7 +71,7 @@ export function useItemLookupSearch({
           search: term,
           isActive: true,
           pageSize,
-          ...(tracksStock === undefined ? {} : { tracksStock }),
+          ...(participatesInInventory === undefined ? {} : { participatesInInventory }),
         });
         if (request !== requestRef.current) return;
         setResults(page.items);
@@ -83,7 +83,7 @@ export function useItemLookupSearch({
       if (request === requestRef.current) setLoading(false);
     }, ITEM_LOOKUP_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [term, active, enabled, pageSize, tracksStock]);
+  }, [term, active, enabled, pageSize, participatesInInventory]);
 
   const reset = useCallback(() => {
     requestRef.current++;

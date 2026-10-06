@@ -419,7 +419,7 @@ export function SalesInvoiceLineGridRow({
                       <span className="sf-product__stock-uom"> UDS</span>
                     )}
                   </span>
-                  {line._tracksStock && stockQty != null && (
+                  {line._participatesInInventory && stockQty != null && (
                     <Badge
                       label={
                         exceedsStock
@@ -434,7 +434,7 @@ export function SalesInvoiceLineGridRow({
                   )}
                 </>
               )}
-              {line._tracksStock && line.itemId && (
+              {line._participatesInInventory && line.itemId && (
                 // Reutiliza el Kardex ya existente (mismo destino que "Ver Movimiento de
                 // Inventario" en el listado de facturas) — sin endpoint ni componente nuevo.
                 // Nueva pestaña: no debe abandonar la venta en curso.
@@ -467,7 +467,7 @@ export function SalesInvoiceLineGridRow({
                 />
               </div>
             )}
-            {line._tracksStock && (
+            {line._participatesInInventory && (
               <>
                 <div className="sf-product__stock-location">
                   {readOnly ? (

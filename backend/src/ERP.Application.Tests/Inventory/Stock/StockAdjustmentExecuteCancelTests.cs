@@ -138,7 +138,9 @@ public sealed class StockAdjustmentExecuteCancelTests
                 Branch.Object,
                 User.Object,
                 StubCompanyClock(),
-                PrecisionPolicyTestDouble.Mock()
+                PrecisionPolicyTestDouble.Mock(),
+                A1ItemTestSupport.Products(TenantId, CompanyId),
+                A1ItemTestSupport.InventoryControl()
             );
     }
 

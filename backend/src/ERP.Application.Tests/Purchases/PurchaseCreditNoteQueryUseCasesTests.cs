@@ -159,8 +159,9 @@ public sealed class PurchaseCreditNoteQueryUseCasesTests
                 purchaseVatCode: "0"
             ),
             ERP.Domain.Modules.Items.ValueObjects.ItemSaleConfig.Create(isForSale: true),
-            ERP.Domain.Modules.Items.ValueObjects.ItemStockConfig.Create(tracksStock: true),
-            Guid.NewGuid()
+            ERP.Domain.Modules.Items.ValueObjects.ItemStockConfig.Create(stockControlEnabled: true),
+            Guid.NewGuid(),
+            companyId: CompanyId
         );
         var itemId = item.Id;
         var warehouseId = Guid.NewGuid();

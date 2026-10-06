@@ -14,7 +14,10 @@ export interface ItemDto {
   isForSale: boolean;
   isFavorite: boolean;
   isEcommerceActive: boolean;
-  tracksStock: boolean;
+  participatesInInventory: boolean;
+  stockControlEnabled: boolean;
+  nature: "Product" | "Service";
+  companyId: string;
   tracksLot: boolean;
   tracksSeries: boolean;
   // PVP — SSOT del precio base del ítem (ADR-021, Pricing Engine v2). Nunca se deriva
@@ -47,7 +50,7 @@ export interface ItemSaleConfigDto {
 }
 
 export interface ItemStockConfigDto {
-  tracksStock: boolean;
+  stockControlEnabled: boolean;
   tracksLot: boolean;
   tracksSeries: boolean;
   allowDecimalQty: boolean;

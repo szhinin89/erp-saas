@@ -37,7 +37,7 @@ function baseLine(overrides: Partial<SalesLineFormValues> = {}): SalesLineFormVa
     _cost: 24.3041,
     _stockQty: 5,
     _stockWarehouse: "Bodega Principal",
-    _tracksStock: true,
+    _participatesInInventory: true,
     ...overrides,
   };
 }
@@ -135,7 +135,7 @@ describe("SalesInvoiceDetailsSection — ficha de línea de venta retail (FIX06)
   });
 
   it("muestra el enlace Ver stock global cuando el ítem controla inventario", () => {
-    renderSection([baseLine({ itemId: "item-1", _tracksStock: true })]);
+    renderSection([baseLine({ itemId: "item-1", _participatesInInventory: true })]);
     const link = screen.getByRole("link", { name: /ver stock global/i });
     expect(link).not.toBeNull();
     expect(link?.getAttribute("href")).toBe("/inventory/kardex?productId=item-1");
@@ -317,7 +317,7 @@ describe("SalesInvoiceDetailsSection — ficha de línea de venta retail (FIX06)
   });
 
   it("la advertencia de stock sigue funcionando cuando la cantidad supera el disponible", () => {
-    renderSection([baseLine({ quantity: 10, _stockQty: 5, _tracksStock: true })]);
+    renderSection([baseLine({ quantity: 10, _stockQty: 5, _participatesInInventory: true })]);
     expect(screen.getByText(/cantidad excede stock/i)).not.toBeNull();
     expect(screen.getByText(/Disponible:.*Solicitado:/i)).not.toBeNull();
   });

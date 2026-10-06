@@ -341,8 +341,9 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
                 ItemSaleConfig.Create(true),
                 ItemStockConfig.Create(true),
                 _userId,
-                baseSalePrice: 5m
-            );
+                baseSalePrice: 5m,
+            companyId: _companyId
+        );
             item.ReplacePackagingLevels(
                 [("Unidad", 1, 1m, UnitUom, null, null, true, true, true)],
                 _userId

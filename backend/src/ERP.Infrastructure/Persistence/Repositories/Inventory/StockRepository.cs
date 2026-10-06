@@ -107,6 +107,12 @@ public sealed class StockRepository : IStockRepository
         Guid? sourceDocLineId = null
     )
     {
+        if (!_company.HasCompanyContext || companyId != _company.CompanyId)
+            throw new ERP.Domain.Exceptions.DomainRuleViolationException("Empresa de inventario inválida.");
+        var item = await _db.Items.FirstOrDefaultAsync(i => i.Id == productId && i.TenantId == tenantId && i.CompanyId == companyId, ct);
+        if (item is null || !item.ParticipatesInInventory)
+            throw new ERP.Domain.Exceptions.DomainRuleViolationException("El ítem no es un producto de la empresa actual.");
+
         var request = new PendingMovement(
             tenantId,
             companyId,

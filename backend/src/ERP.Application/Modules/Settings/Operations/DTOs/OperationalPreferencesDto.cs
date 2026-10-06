@@ -47,7 +47,8 @@ public sealed record InventoryPreferencesDto(
     bool AllowNegativeStock,
     bool RequireReasonForAdjustment,
     bool RequireApprovalForLargeAdjustment,
-    decimal LargeAdjustmentThresholdAmount
+    decimal LargeAdjustmentThresholdAmount,
+    bool StockControlEnabled = true
 );
 
 public sealed record PrintingPreferencesDto(

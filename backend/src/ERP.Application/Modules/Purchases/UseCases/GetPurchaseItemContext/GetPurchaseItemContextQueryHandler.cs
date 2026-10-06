@@ -69,16 +69,16 @@ public sealed class GetPurchaseItemContextQueryHandler
             );
 
         // 2. STOCK — SSOT desde CurrentStock
-        var stock = await _stockRepo.GetStockAsync(tid, request.WarehouseId, request.ItemId, ct);
+        var stock = item.ParticipatesInInventory ? await _stockRepo.GetStockAsync(tid, request.WarehouseId, request.ItemId, ct) : null;
         var currentQty = stock?.Quantity ?? 0m;
         var availableQty = stock?.AvailableQuantity ?? 0m;
         var reservedQty = stock?.ReservedQuantity ?? 0m;
         var averageCost = stock?.AverageCost ?? 0m;
 
         // 3. ÚLTIMO COSTO — desde StockMovement (PurchaseEntry más reciente)
-        var lastCost =
-            await _stockRepo.GetLastPurchaseCostAsync(tid, request.ItemId, request.WarehouseId, ct)
-            ?? 0m;
+        var lastCost = item.ParticipatesInInventory
+            ? await _stockRepo.GetLastPurchaseCostAsync(tid, request.ItemId, request.WarehouseId, ct) ?? 0m
+            : 0m;
 
         // 4. PVP — SSOT vía PricingResolver (Motor de Pricing). Sin precio configurado
         // o sin lista predeterminada, se muestra 0 — es solo contexto informativo para
@@ -123,7 +123,7 @@ public sealed class GetPurchaseItemContextQueryHandler
                 ShortName = item.Code.ShortName,
                 Description = item.Code.Description,
                 BaseUomCode = item.DefaultUomCode,
-                TracksStock = item.StockConfig.TracksStock,
+                ParticipatesInInventory = item.ParticipatesInInventory,
                 PackagingLevels = item
                     .PackagingLevels.Where(p => p.IsActive)
                     .OrderBy(p => p.Level)

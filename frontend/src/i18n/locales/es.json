@@ -3004,7 +3004,7 @@
   "items.tax.sri": "SRI",
   "items.tax.sriHint": "Solo para servicios: 01=Servicios, 02=Arrendamiento, etc.",
   "items.stock.title": "Configuración de inventario",
-  "items.stock.tracksStock": "Maneja stock",
+  "items.stock.participatesInInventory": "Maneja stock",
   "items.stock.tracksLot": "Rastreo por lote",
   "items.stock.tracksSeries": "Rastreo por serie",
   "items.stock.allowDecimalQty": "Cantidades decimales",
@@ -4038,5 +4038,13 @@
   "purchases.cancel.retentionAuthorizedWarning": "La retención de esta compra ya fue autorizada por el SRI: la compra no se anula aquí, primero debe anularse la retención ante el SRI.",
   "purchases.sriAnnulment.title": "La retención ya fue autorizada por el SRI",
   "purchases.sriAnnulment.message": "La retención ya fue autorizada por el SRI y debe anularse primero ante el SRI. Se registrará la solicitud con el motivo indicado; la compra seguirá vigente (no se anula, no se revierte la cuenta por pagar ni la contabilidad) hasta que registre que el SRI confirmó ANULADO.",
-  "purchases.sriAnnulment.start": "Iniciar proceso de anulación"
+  "purchases.sriAnnulment.start": "Iniciar proceso de anulación",
+  "items.nature.label": "Naturaleza operativa",
+  "items.nature.product": "Producto",
+  "items.nature.service": "Servicio",
+  "items.nature.serviceInventory": "Los servicios no participan en inventario.",
+  "items.stock.stockControlEnabled": "Controlar disponibilidad",
+  "items.stock.stockControlEnabledDesc": "Valida existencias cuando el control de la empresa está activo. El producto siempre registra inventario.",
+  "settings.operations.inventory.stockControlEnabledLabel": "Control general de inventario",
+  "settings.operations.inventory.stockControlEnabledDesc": "Activa la validación de existencias de productos con control individual. Desactivarlo mantiene todos los movimientos."
 }

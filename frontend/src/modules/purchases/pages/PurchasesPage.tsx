@@ -1365,10 +1365,10 @@ function buildXmlConfirmChecklist(
     (line) => line.itemId && !line.packagingLevelId,
   );
   const stockLinesWithoutPresentation = linesWithoutPresentation.filter(
-    (line) => line.context?.tracksStock === true,
+    (line) => line.context?.participatesInInventory === true,
   );
   const unknownPresentationRisk = linesWithoutPresentation.filter(
-    (line) => line.context?.tracksStock === undefined,
+    (line) => line.context?.participatesInInventory === undefined,
   );
   const taxesRecognized = xmlLines.filter((line) => {
     const persisted = line.purchaseReceptionLineId

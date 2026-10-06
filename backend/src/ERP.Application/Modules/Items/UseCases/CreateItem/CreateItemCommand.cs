@@ -44,11 +44,12 @@ public sealed record CreateItemCommand(
     bool IsEcommerceActive = false,
     bool IsFavorite = false,
     // ── Stock config ──────────────────────────────────────────────────────
-    bool TracksStock = true,
+    bool StockControlEnabled = true,
     bool TracksLot = false,
     bool TracksSeries = false,
     bool AllowDecimalQty = false,
     bool AllowDecimalSale = false,
     decimal? MinStockQty = null,
-    decimal? MaxStockQty = null
+    decimal? MaxStockQty = null,
+    ERP.Domain.Modules.Items.Entities.ItemNature Nature = ERP.Domain.Modules.Items.Entities.ItemNature.Product
 ) : IRequest<Result<ItemDto>>, ICompanyScopedRequest;

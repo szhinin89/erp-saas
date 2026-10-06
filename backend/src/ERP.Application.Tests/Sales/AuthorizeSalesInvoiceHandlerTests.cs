@@ -462,7 +462,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             branch.Object,
             user.Object,
             preferences.Object,
-            PrecisionPolicyTestDouble.Mock()
+            PrecisionPolicyTestDouble.Mock(),
+            OperativeItemRepository()
         );
 
         return (handler, companyClock, receivableRepo);
@@ -480,7 +481,11 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     ) BuildHandlerWithInsufficientStock(
         SalesInvoice inv,
         bool allowSellWithoutStock,
-        Guid? activeBranchId = null
+        Guid? activeBranchId = null,
+        bool companyControl = true,
+        bool itemControl = true,
+        ERP.Domain.Modules.Items.Entities.ItemNature nature = ERP.Domain.Modules.Items.Entities.ItemNature.Product,
+        Guid? itemCompany = null
     )
     {
         var repo = new Mock<ISalesInvoiceRepository>();
@@ -574,7 +579,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         var preferences = new Mock<IOperationalPreferencesResolver>();
         preferences
             .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(DefaultOperationalPreferences(allowSellWithoutStock));
+            .ReturnsAsync(DefaultOperationalPreferences(allowSellWithoutStock) with { Inventory = new InventoryPreferences(false, true, false, 0m, companyControl) });
 
         // SALES-COLLECTION-ACCOUNT-SSOT-CLEANUP-01 — Efectivo (método por defecto de este bloque)
         // se resuelve antes de llegar a la validación de stock, así que necesita un mock funcional
@@ -614,7 +619,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             branch.Object,
             user.Object,
             preferences.Object,
-            PrecisionPolicyTestDouble.Mock()
+            PrecisionPolicyTestDouble.Mock(),
+            OperativeItemRepository(itemControl, nature, itemCompany)
         );
 
         return (handler, stockRepo);
@@ -877,7 +883,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             branch.Object,
             user.Object,
             preferences.Object,
-            PrecisionPolicyTestDouble.Mock()
+            PrecisionPolicyTestDouble.Mock(),
+            OperativeItemRepository()
         );
 
         return (handler, stockRepo);
@@ -937,7 +944,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             branch.Object,
             user.Object,
             Mock.Of<IOperationalPreferencesResolver>(),
-            PrecisionPolicyTestDouble.Mock()
+            PrecisionPolicyTestDouble.Mock(),
+            OperativeItemRepository()
         );
 
         var result = await handler.Handle(
@@ -3221,4 +3229,57 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         resolvedTypes.Should().Equal(type);
         inv.InvoiceNumber.Should().Be("001-001-000000001");
     }
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(false, false)]
+    public async Task Product_with_control_off_moves_inventory_without_availability_block(bool companyControl, bool itemControl)
+    {
+        var itemId = Guid.NewGuid();
+        var warehouseId = Guid.NewGuid();
+        var inv = CreateDraftInvoiceWithStockTrackedLine(itemId, warehouseId);
+        var (handler, stock) = BuildHandlerWithInsufficientStock(inv, false, companyControl: companyControl, itemControl: itemControl);
+        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+        result.IsSuccess.Should().BeTrue(result.Error);
+        stock.Verify(s => s.GetStockAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        stock.Invocations.Should().Contain(i => i.Method.Name == "AppendMovementAsync");
+    }
+
+    [Fact]
+    public async Task Service_sale_has_no_stock_reads_or_movements()
+    {
+        var inv = CreateDraftInvoiceWithStockTrackedLine(Guid.NewGuid(), Guid.NewGuid());
+        typeof(SalesInvoiceDetail).GetProperty("WarehouseId")!.SetValue(inv.Lines.Single(), null);
+        var (handler, stock) = BuildHandlerWithInsufficientStock(inv, false, nature: ERP.Domain.Modules.Items.Entities.ItemNature.Service);
+        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+        result.IsSuccess.Should().BeTrue(result.Error);
+        stock.Invocations.Should().NotContain(i => i.Method.Name == "AppendMovementAsync" || i.Method.Name == "GetStockAsync");
+    }
+
+    [Fact]
+    public async Task Foreign_company_item_cannot_be_authorized_or_move_inventory()
+    {
+        var inv = CreateDraftInvoiceWithStockTrackedLine(Guid.NewGuid(), Guid.NewGuid());
+        var (handler, stock) = BuildHandlerWithInsufficientStock(inv, true, itemCompany: Guid.NewGuid());
+        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+        result.IsSuccess.Should().BeFalse();
+        stock.Invocations.Should().NotContain(i => i.Method.Name == "AppendMovementAsync");
+    }
+
+    private static ERP.Domain.Modules.Items.Interfaces.IItemRepository OperativeItemRepository(bool itemControl = true, ERP.Domain.Modules.Items.Entities.ItemNature nature = ERP.Domain.Modules.Items.Entities.ItemNature.Product, Guid? itemCompany = null)
+    {
+        var repo = new Mock<ERP.Domain.Modules.Items.Interfaces.IItemRepository>();
+        repo.Setup(r => r.GetByIdLightAsync(It.IsAny<Guid>(), TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid id, Guid tenantId, CancellationToken ct) =>
+            {
+                var item = ERP.Domain.Modules.Items.Entities.Item.Create(tenantId, "OPERATIVE", "Product", "Product", Guid.NewGuid(), "UNIT",
+                    ERP.Domain.Modules.Items.ValueObjects.ItemTaxConfig.Create("10", "10", null),
+                    ERP.Domain.Modules.Items.ValueObjects.ItemSaleConfig.Create(),
+                    ERP.Domain.Modules.Items.ValueObjects.ItemStockConfig.Create(stockControlEnabled: itemControl), UserId, companyId: itemCompany ?? CompanyId, nature: nature);
+                typeof(ERP.Domain.Modules.Items.Entities.Item).GetProperty("Id")!.SetValue(item, id);
+                return item;
+            });
+        return repo.Object;
+    }
+
 }

@@ -188,6 +188,7 @@ public static class OrgSettingKeys
     /// </summary>
     public static class Inventory
     {
+        public const string StockControlEnabled = "inventory.stock_control_enabled";
         public const string AllowNegativeStock = "inventory.allow_negative_stock";
         public const string RequireReasonForAdjustment = "inventory.require_reason_for_adjustment";
         public const string RequireApprovalForLargeAdjustment =

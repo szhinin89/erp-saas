@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.ValueObjects;
 using ERP.Domain.Tenants.Entities;
+using ERP.Domain.Modules.Company.Entities;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories.Items;
 using FluentAssertions;
@@ -131,11 +132,15 @@ public sealed class RawSqlDatabaseObjectsBaselineIntegrationTests : IAsyncLifeti
     {
         var createdBy = Guid.NewGuid();
         Guid tenantId;
+        Guid companyId;
 
         await using (var db = CreateContext(Guid.Empty))
         {
             var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], createdBy);
             tenantId = tenant.Id;
+            var company = Company.CreateManaged(tenant.Id, "1790012345001", "Similarity Company", createdBy: createdBy);
+            companyId = company.Id;
+            db.Companies.Add(company);
             var itemType = ItemTypeDefinition.Create(tenantId, "PHYSICAL", "Fisico", 1, createdBy);
             var item = Item.Create(
                 tenantId,
@@ -147,7 +152,7 @@ public sealed class RawSqlDatabaseObjectsBaselineIntegrationTests : IAsyncLifeti
                 ItemTaxConfig.Create("10", "10"),
                 ItemSaleConfig.Create(),
                 ItemStockConfig.Create(),
-                createdBy
+                createdBy, companyId: companyId
             );
             db.Tenants.Add(tenant);
             db.ItemTypes.Add(itemType);
@@ -155,7 +160,7 @@ public sealed class RawSqlDatabaseObjectsBaselineIntegrationTests : IAsyncLifeti
             await db.SaveChangesAsync();
         }
 
-        await using var readDb = CreateContext(tenantId);
+        await using var readDb = CreateContext(tenantId, companyId);
         var matches = await new ItemRepository(readDb).SearchBySimilarityAsync(
             "Leche entera 1L",
             tenantId,
@@ -171,14 +176,14 @@ public sealed class RawSqlDatabaseObjectsBaselineIntegrationTests : IAsyncLifeti
         await db.Database.SqlQueryRaw<int>(sql).SingleAsync();
 #pragma warning restore EF1002
 
-    private ErpDbContext CreateContext(Guid tenantId) =>
+    private ErpDbContext CreateContext(Guid tenantId, Guid companyId = default) =>
         new(
             new DbContextOptionsBuilder<ErpDbContext>()
                 .UseNpgsql(_postgres.GetConnectionString())
                 .Options,
             new FixedCurrentTenant(tenantId),
             new NoOpPublisher(),
-            new FixedCurrentCompany()
+            new FixedCurrentCompany(companyId)
         );
 
     private sealed class FixedCurrentTenant(Guid tenantId) : ICurrentTenant
@@ -187,9 +192,9 @@ public sealed class RawSqlDatabaseObjectsBaselineIntegrationTests : IAsyncLifeti
         public string? Slug => null;
     }
 
-    private sealed class FixedCurrentCompany : ICurrentCompany
+    private sealed class FixedCurrentCompany(Guid companyId) : ICurrentCompany
     {
-        public Guid CompanyId => Guid.Empty;
+        public Guid CompanyId => companyId;
         public bool IsAuthenticated => true;
         public bool HasCompanyContext => true;
     }

@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+export const inventoryPreferencesSchema = z.object({ stockControlEnabled: z.boolean() });
+export type InventoryPreferencesValues = z.infer<typeof inventoryPreferencesSchema>;
+
 /**
  * Cada schema valida SOLO el subconjunto de campos editable en esta primera versión (los
  * conectados a efecto real en backend — ver plan CONFIG-DYNAMIC-OPERATIONS-01). Los demás campos

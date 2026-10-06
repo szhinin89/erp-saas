@@ -14,16 +14,19 @@ public sealed class GetItemWarehouseAvailabilityQueryHandler
     private readonly IWarehouseRepository _warehouseRepo;
     private readonly IStockRepository _stockRepo;
     private readonly ICurrentTenant _tenant;
+    private readonly ERP.Domain.Modules.Items.Interfaces.IItemRepository _itemRepo;
 
     public GetItemWarehouseAvailabilityQueryHandler(
         IWarehouseRepository warehouseRepo,
         IStockRepository stockRepo,
-        ICurrentTenant tenant
+        ICurrentTenant tenant,
+        ERP.Domain.Modules.Items.Interfaces.IItemRepository itemRepo
     )
     {
         _warehouseRepo = warehouseRepo;
         _stockRepo = stockRepo;
         _tenant = tenant;
+        _itemRepo = itemRepo;
     }
 
     public async Task<Result<IReadOnlyList<ItemWarehouseAvailabilityDto>>> Handle(
@@ -31,6 +34,11 @@ public sealed class GetItemWarehouseAvailabilityQueryHandler
         CancellationToken ct
     )
     {
+        var item = await _itemRepo.GetByIdLightAsync(request.ItemId, _tenant.TenantId, ct);
+        if (item is null)
+            return Result<IReadOnlyList<ItemWarehouseAvailabilityDto>>.NotFound("Ítem no encontrado.");
+        if (!item.ParticipatesInInventory)
+            return Result<IReadOnlyList<ItemWarehouseAvailabilityDto>>.Success([]);
         var warehouses = await _warehouseRepo.GetAsync(
             _tenant.TenantId,
             activeFilter: true,

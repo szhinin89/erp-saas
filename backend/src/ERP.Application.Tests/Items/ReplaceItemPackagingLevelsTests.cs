@@ -38,7 +38,8 @@ public sealed class ReplaceItemPackagingLevelsTests
             ItemTaxConfig.Create("10", "10"),
             ItemSaleConfig.Create(),
             ItemStockConfig.Create(),
-            UserId
+            UserId,
+            companyId: Guid.NewGuid()
         );
         item.ReplacePackagingLevels(
             [

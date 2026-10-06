@@ -184,8 +184,9 @@ public sealed class InventoryAdjustmentsFlowFixture : IAsyncLifetime
             defaultUomCode: BaseUomCode,
             taxConfig: ItemTaxConfig.Create(saleVatCode: null, purchaseVatCode: null),
             saleConfig: ItemSaleConfig.Create(isForSale: false),
-            stockConfig: ItemStockConfig.Create(tracksStock: true),
-            createdBy: _adminId
+            stockConfig: ItemStockConfig.Create(stockControlEnabled: true),
+            createdBy: _adminId,
+            companyId: CompanyId
         );
         db.Set<Item>().Add(item);
         await db.SaveChangesAsync();

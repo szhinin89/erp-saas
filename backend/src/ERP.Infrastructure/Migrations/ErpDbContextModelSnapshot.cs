@@ -7899,6 +7899,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("category_node_id");
 
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -7927,6 +7931,12 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("item_type_id");
 
+                    b.Property<string>("Nature")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("nature");
+
                     b.Property<string>("Observations")
                         .HasColumnType("text")
                         .HasColumnName("observations");
@@ -7948,6 +7958,8 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("BrandId");
 
                     b.HasIndex("CategoryNodeId");
+
+                    b.HasIndex("CompanyId");
 
                     b.HasIndex("ItemTypeId");
 
@@ -8258,6 +8270,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("numeric(18,10)")
                         .HasColumnName("base_quantity");
 
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -8321,10 +8337,6 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Barcode")
-                        .HasDatabaseName("ix_item_packaging_levels_barcode")
-                        .HasFilter("barcode IS NOT NULL");
-
                     b.HasIndex("ItemId", "Level")
                         .IsUnique()
                         .HasDatabaseName("uq_item_packaging_level");
@@ -8332,6 +8344,13 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("ItemId", "UomCode")
                         .IsUnique()
                         .HasDatabaseName("uq_item_packaging_uom");
+
+                    b.HasIndex("ItemId", "TenantId", "CompanyId");
+
+                    b.HasIndex("TenantId", "CompanyId", "Barcode")
+                        .IsUnique()
+                        .HasDatabaseName("ix_item_packaging_levels_barcode")
+                        .HasFilter("barcode IS NOT NULL");
 
                     b.ToTable("item_packaging_levels", (string)null);
                 });
@@ -8465,6 +8484,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("code");
 
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -8520,9 +8543,11 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("uq_item_supplier_codes_primary")
                         .HasFilter("is_primary = true");
 
-                    b.HasIndex("TenantId", "SupplierId", "Code")
+                    b.HasIndex("ItemId", "TenantId", "CompanyId");
+
+                    b.HasIndex("TenantId", "CompanyId", "SupplierId", "Code")
                         .IsUnique()
-                        .HasDatabaseName("uq_item_supplier_codes_tenant_supplier_code");
+                        .HasDatabaseName("uq_item_supplier_codes_tenant_company_supplier_code");
 
                     b.ToTable("item_supplier_codes", (string)null);
                 });
@@ -8659,6 +8684,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -8718,9 +8747,11 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("ItemId")
                         .HasDatabaseName("ix_item_variants_item");
 
-                    b.HasIndex("TenantId", "SKU")
+                    b.HasIndex("ItemId", "TenantId", "CompanyId");
+
+                    b.HasIndex("TenantId", "CompanyId", "SKU")
                         .IsUnique()
-                        .HasDatabaseName("uq_item_variants_tenant_sku");
+                        .HasDatabaseName("uq_item_variants_tenant_company_sku");
 
                     b.ToTable("item_variants", (string)null);
                 });
@@ -8794,6 +8825,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("code");
 
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -8839,11 +8874,13 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("uq_item_variant_barcodes_primary")
                         .HasFilter("is_primary = true");
 
-                    b.HasIndex("VariantId");
+                    b.HasIndex("ItemId", "TenantId", "CompanyId");
 
-                    b.HasIndex("TenantId", "Code")
+                    b.HasIndex("TenantId", "CompanyId", "Code")
                         .IsUnique()
-                        .HasDatabaseName("uq_item_variant_barcode_tenant_code");
+                        .HasDatabaseName("uq_item_variant_barcode_tenant_company_code");
+
+                    b.HasIndex("VariantId", "TenantId", "CompanyId");
 
                     b.ToTable("item_variant_barcodes", (string)null);
                 });
@@ -9863,6 +9900,8 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("PriceListId", "ItemId")
                         .IsUnique()
                         .HasDatabaseName("uq_price_list_items_list_item");
+
+                    b.HasIndex("ItemId", "TenantId", "CompanyId");
 
                     b.ToTable("price_list_items", (string)null);
                 });
@@ -18414,6 +18453,12 @@ namespace ERP.Infrastructure.Migrations
                         .HasForeignKey("CategoryNodeId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("ERP.Domain.Modules.Company.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("ERP.Domain.Modules.Items.Entities.ItemTypeDefinition", null)
                         .WithMany()
                         .HasForeignKey("ItemTypeId")
@@ -18513,6 +18558,10 @@ namespace ERP.Infrastructure.Migrations
                                 .HasColumnType("numeric(16,6)")
                                 .HasColumnName("min_stock_qty");
 
+                            b1.Property<bool>("StockControlEnabled")
+                                .HasColumnType("boolean")
+                                .HasColumnName("stock_control_enabled");
+
                             b1.Property<bool>("TracksLot")
                                 .HasColumnType("boolean")
                                 .HasColumnName("tracks_lot");
@@ -18520,10 +18569,6 @@ namespace ERP.Infrastructure.Migrations
                             b1.Property<bool>("TracksSeries")
                                 .HasColumnType("boolean")
                                 .HasColumnName("tracks_series");
-
-                            b1.Property<bool>("TracksStock")
-                                .HasColumnType("boolean")
-                                .HasColumnName("tracks_stock");
 
                             b1.HasKey("ItemId");
 
@@ -18595,7 +18640,8 @@ namespace ERP.Infrastructure.Migrations
                 {
                     b.HasOne("ERP.Domain.Modules.Items.Entities.Item", null)
                         .WithMany("PackagingLevels")
-                        .HasForeignKey("ItemId")
+                        .HasForeignKey("ItemId", "TenantId", "CompanyId")
+                        .HasPrincipalKey("Id", "TenantId", "CompanyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -18620,12 +18666,6 @@ namespace ERP.Infrastructure.Migrations
 
             modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.ItemSupplierCode", b =>
                 {
-                    b.HasOne("ERP.Domain.Modules.Items.Entities.Item", null)
-                        .WithMany("SupplierCodes")
-                        .HasForeignKey("ItemId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("ERP.Domain.Modules.Items.Entities.ItemPackagingLevel", null)
                         .WithMany()
                         .HasForeignKey("PackagingLevelId")
@@ -18635,6 +18675,13 @@ namespace ERP.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("SupplierId")
                         .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Items.Entities.Item", null)
+                        .WithMany("SupplierCodes")
+                        .HasForeignKey("ItemId", "TenantId", "CompanyId")
+                        .HasPrincipalKey("Id", "TenantId", "CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
@@ -18651,7 +18698,8 @@ namespace ERP.Infrastructure.Migrations
                 {
                     b.HasOne("ERP.Domain.Modules.Items.Entities.Item", null)
                         .WithMany("Variants")
-                        .HasForeignKey("ItemId")
+                        .HasForeignKey("ItemId", "TenantId", "CompanyId")
+                        .HasPrincipalKey("Id", "TenantId", "CompanyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -18673,9 +18721,17 @@ namespace ERP.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ERP.Domain.Modules.Items.Entities.Item", null)
+                        .WithMany()
+                        .HasForeignKey("ItemId", "TenantId", "CompanyId")
+                        .HasPrincipalKey("Id", "TenantId", "CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("ERP.Domain.Modules.Items.Entities.ItemVariant", null)
                         .WithMany("Barcodes")
-                        .HasForeignKey("VariantId")
+                        .HasForeignKey("VariantId", "TenantId", "CompanyId")
+                        .HasPrincipalKey("Id", "TenantId", "CompanyId")
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 
@@ -18823,6 +18879,13 @@ namespace ERP.Infrastructure.Migrations
                     b.HasOne("ERP.Domain.Modules.Pricing.Entities.PriceList", null)
                         .WithMany()
                         .HasForeignKey("PriceListId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Items.Entities.Item", null)
+                        .WithMany()
+                        .HasForeignKey("ItemId", "TenantId", "CompanyId")
+                        .HasPrincipalKey("Id", "TenantId", "CompanyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

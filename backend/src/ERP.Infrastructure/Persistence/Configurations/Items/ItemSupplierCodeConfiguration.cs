@@ -10,6 +10,7 @@ public sealed class ItemSupplierCodeConfiguration : IEntityTypeConfiguration<Ite
     public void Configure(EntityTypeBuilder<ItemSupplierCode> builder)
     {
         builder.ToTable("item_supplier_codes");
+        builder.Property<Guid>("CompanyId").HasColumnName("company_id").IsRequired();
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
@@ -41,17 +42,12 @@ public sealed class ItemSupplierCodeConfiguration : IEntityTypeConfiguration<Ite
             .HasIndex(x => x.PackagingLevelId)
             .HasDatabaseName("ix_item_supplier_codes_packaging_level");
 
-        // Un código de proveedor identifica un único ítem en todo el catálogo del tenant
+        // Un código de proveedor identifica un único ítem en el catálogo de Tenant + Company
         // (Fase 2) — ya no está acotado por item_id.
         builder
-            .HasIndex(x => new
-            {
-                x.TenantId,
-                x.SupplierId,
-                x.Code,
-            })
+            .HasIndex("TenantId", "CompanyId", "SupplierId", "Code")
             .IsUnique()
-            .HasDatabaseName("uq_item_supplier_codes_tenant_supplier_code");
+            .HasDatabaseName("uq_item_supplier_codes_tenant_company_supplier_code");
 
         // A lo sumo un código de proveedor marcado como principal por ítem (no obligatorio).
         builder

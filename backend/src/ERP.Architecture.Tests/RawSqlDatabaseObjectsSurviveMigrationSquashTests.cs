@@ -21,6 +21,14 @@ public sealed partial class RawSqlDatabaseObjectsSurviveMigrationSquashTests
     private static readonly IReadOnlyDictionary<string, string[]> RequiredRawSqlObjects =
         new Dictionary<string, string[]>
         {
+            // A1: Item company uniqueness and inventory nature guards must survive a squash.
+            ["uq_items_tenant_company_sku"] = ["CREATE UNIQUE INDEX uq_items_tenant_company_sku ON items(tenant_id, company_id, sku)"],
+            ["a1_item_barcode_unique"] = ["CREATE FUNCTION a1_item_barcode_unique() RETURNS trigger"],
+            ["a1_variant_barcode_unique"] = ["CREATE TRIGGER a1_variant_barcode_unique BEFORE INSERT OR UPDATE ON item_variant_barcodes"],
+            ["a1_packaging_barcode_unique"] = ["CREATE TRIGGER a1_packaging_barcode_unique BEFORE INSERT OR UPDATE ON item_packaging_levels"],
+            ["a1_inventory_product_scope"] = ["CREATE FUNCTION a1_inventory_product_scope() RETURNS trigger"],
+            ["a1_stock_product_scope"] = ["CREATE TRIGGER a1_stock_product_scope BEFORE INSERT OR UPDATE ON current_stocks"],
+            ["a1_movement_product_scope"] = ["CREATE TRIGGER a1_movement_product_scope BEFORE INSERT OR UPDATE ON stock_movements"],
             // ADR-BP-03: identificación única e incondicional por tenant.
             ["uq_mbp_identification"] =
             [

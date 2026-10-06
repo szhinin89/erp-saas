@@ -222,8 +222,9 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
             defaultUomCode: "UNIT",
             taxConfig: ItemTaxConfig.Create(saleVatCode: "4", purchaseVatCode: "4"),
             saleConfig: ItemSaleConfig.Create(isForSale: true),
-            stockConfig: ItemStockConfig.Create(tracksStock: true),
-            createdBy: _userId
+            stockConfig: ItemStockConfig.Create(stockControlEnabled: true),
+            createdBy: _userId,
+            companyId: _companyId
         );
         db.Set<Item>().Add(item);
         await db.SaveChangesAsync();

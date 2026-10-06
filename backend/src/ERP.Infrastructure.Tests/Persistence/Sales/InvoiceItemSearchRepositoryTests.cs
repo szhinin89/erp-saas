@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.ValueObjects;
 using ERP.Domain.Tenants.Entities;
+using ERP.Domain.Modules.Company.Entities;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories.Sales;
 using FluentAssertions;
@@ -28,6 +29,7 @@ public sealed class InvoiceItemSearchRepositoryTests : IAsyncLifetime
         .Build();
 
     private Guid _tenantId;
+    private Guid _companyId;
     private Guid _createdBy;
     private Guid _itemTypeId;
 
@@ -41,6 +43,9 @@ public sealed class InvoiceItemSearchRepositoryTests : IAsyncLifetime
         _createdBy = Guid.NewGuid();
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _createdBy);
         var itemType = ItemTypeDefinition.Create(tenant.Id, "PHYSICAL", "Fisico", 1, _createdBy);
+        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Item Test Company", createdBy: _createdBy);
+        _companyId = company.Id;
+        db.Companies.Add(company);
         db.Tenants.Add(tenant);
         db.ItemTypes.Add(itemType);
         await db.SaveChangesAsync();
@@ -61,7 +66,7 @@ public sealed class InvoiceItemSearchRepositoryTests : IAsyncLifetime
             options,
             new FixedCurrentTenant(tenantId),
             new NoOpPublisher(),
-            new FixedCurrentCompany()
+            new FixedCurrentCompany(_companyId)
         );
     }
 
@@ -84,8 +89,8 @@ public sealed class InvoiceItemSearchRepositoryTests : IAsyncLifetime
             "UNIT",
             ItemTaxConfig.Create(null, null),
             ItemSaleConfig.Create(),
-            ItemStockConfig.Create(tracksStock: false),
-            _createdBy
+            ItemStockConfig.Create(stockControlEnabled: false),
+            _createdBy, companyId: _companyId
         );
 
         if (barcode is not null)
@@ -111,7 +116,7 @@ public sealed class InvoiceItemSearchRepositoryTests : IAsyncLifetime
         await using var readDb = CreateContext(_tenantId);
         var repo = new InvoiceItemSearchRepository(readDb);
 
-        var results = await repo.SearchAsync(_tenantId, Guid.Empty, "COLA-3", null, 10);
+        var results = await repo.SearchAsync(_tenantId, _companyId, "COLA-3", null, 10);
 
         results.Should().ContainSingle(r => r.Sku == "COLA-300");
     }
@@ -132,7 +137,7 @@ public sealed class InvoiceItemSearchRepositoryTests : IAsyncLifetime
         await using var readDb = CreateContext(_tenantId);
         var repo = new InvoiceItemSearchRepository(readDb);
 
-        var results = await repo.SearchAsync(_tenantId, Guid.Empty, "Chocolate", null, 10);
+        var results = await repo.SearchAsync(_tenantId, _companyId, "Chocolate", null, 10);
 
         results.Should().ContainSingle(r => r.Sku == "SKU-GALLETA-01");
     }
@@ -161,7 +166,7 @@ public sealed class InvoiceItemSearchRepositoryTests : IAsyncLifetime
         await using var readDb = CreateContext(_tenantId);
         var repo = new InvoiceItemSearchRepository(readDb);
 
-        var results = await repo.SearchAsync(_tenantId, Guid.Empty, barcode, null, 10);
+        var results = await repo.SearchAsync(_tenantId, _companyId, barcode, null, 10);
 
         results.Should().ContainSingle(r => r.Sku == "ARR-01");
     }
@@ -200,7 +205,7 @@ public sealed class InvoiceItemSearchRepositoryTests : IAsyncLifetime
         await using var readDb = CreateContext(_tenantId);
         var repo = new InvoiceItemSearchRepository(readDb);
 
-        var results = await repo.SearchAsync(_tenantId, Guid.Empty, scannedCode, null, 10);
+        var results = await repo.SearchAsync(_tenantId, _companyId, scannedCode, null, 10);
 
         results.Should().HaveCount(2);
         results[0].Sku.Should().Be("LECHE-01");
@@ -229,6 +234,8 @@ public sealed class InvoiceItemSearchRepositoryTests : IAsyncLifetime
                 1,
                 _createdBy
             );
+            var otherCompany = Company.CreateManaged(otherTenant.Id, "1790012345002", "Other Company", createdBy: _createdBy);
+            db.Companies.Add(otherCompany);
             db.Tenants.Add(otherTenant);
             db.ItemTypes.Add(otherItemType);
             await db.SaveChangesAsync();
@@ -242,8 +249,8 @@ public sealed class InvoiceItemSearchRepositoryTests : IAsyncLifetime
                 "UNIT",
                 ItemTaxConfig.Create(null, null),
                 ItemSaleConfig.Create(),
-                ItemStockConfig.Create(tracksStock: false),
-                _createdBy
+                ItemStockConfig.Create(stockControlEnabled: false),
+                _createdBy, companyId: otherCompany.Id
             );
             var variant = otherItem.AddVariant([], null, 0, _createdBy);
             variant.AddBarcode(barcode, "EAN13", otherTenant.Id, _createdBy, isPrimary: true);
@@ -258,7 +265,7 @@ public sealed class InvoiceItemSearchRepositoryTests : IAsyncLifetime
         await using var readDb = CreateContext(_tenantId);
         var repo = new InvoiceItemSearchRepository(readDb);
 
-        var results = await repo.SearchAsync(_tenantId, Guid.Empty, barcode, null, 10);
+        var results = await repo.SearchAsync(_tenantId, _companyId, barcode, null, 10);
 
         results.Should().BeEmpty();
         otherTenantId.Should().NotBe(_tenantId); // guarda de sanity del setup
@@ -286,7 +293,7 @@ public sealed class InvoiceItemSearchRepositoryTests : IAsyncLifetime
         await using var readDb = CreateContext(_tenantId);
         var repo = new InvoiceItemSearchRepository(readDb);
 
-        var results = await repo.SearchAsync(_tenantId, Guid.Empty, "Pan Integral", null, 2);
+        var results = await repo.SearchAsync(_tenantId, _companyId, "Pan Integral", null, 2);
 
         results.Should().HaveCount(2);
     }
@@ -297,9 +304,9 @@ public sealed class InvoiceItemSearchRepositoryTests : IAsyncLifetime
         public string? Slug => null;
     }
 
-    private sealed class FixedCurrentCompany : ICurrentCompany
+    private sealed class FixedCurrentCompany(Guid companyId) : ICurrentCompany
     {
-        public Guid CompanyId => Guid.Empty;
+        public Guid CompanyId => companyId;
         public bool IsAuthenticated => true;
         public bool HasCompanyContext => true;
     }

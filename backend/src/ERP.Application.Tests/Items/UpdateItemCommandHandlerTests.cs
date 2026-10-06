@@ -33,7 +33,8 @@ public sealed class UpdateItemCommandHandlerTests
             ItemSaleConfig.Create(isFavorite: isFavorite),
             ItemStockConfig.Create(),
             UserId,
-            baseSalePrice: baseSalePrice
+            baseSalePrice: baseSalePrice,
+            companyId: Guid.NewGuid()
         );
         return item;
     }

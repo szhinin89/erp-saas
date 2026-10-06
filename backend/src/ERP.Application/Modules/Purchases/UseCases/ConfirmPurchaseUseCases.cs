@@ -205,11 +205,24 @@ public sealed class ConfirmPurchaseHandler
                     $"La línea XML '{line.Description}' referencia un ítem inexistente."
                 );
 
-            if (item.StockConfig.TracksStock && line.PackagingLevelId is null)
+            if (item.ParticipatesInInventory && line.PackagingLevelId is null)
                 return Result<PurchaseInvoiceDto>.ValidationFailure(
                     $"La línea XML '{line.Description}' corresponde a un ítem inventariable sin presentación vinculada. "
                         + "Asocie el código de proveedor a la presentación correcta antes de confirmar."
                 );
+        }
+
+        var operationalItems = new Dictionary<Guid, ERP.Domain.Modules.Items.Entities.Item>();
+        foreach (var line in inv.Lines.Where(l => l.ItemId.HasValue))
+        {
+            var item = await _itemRepo.GetByIdLightAsync(line.ItemId!.Value, tid, ct);
+            if (item is null || item.CompanyId != cid)
+                return Result<PurchaseInvoiceDto>.ValidationFailure("El ítem no pertenece a esta empresa.");
+            operationalItems[item.Id] = item;
+            if (item.ParticipatesInInventory && (line.WarehouseId ?? inv.GlobalWarehouseId) is null)
+                return Result<PurchaseInvoiceDto>.ValidationFailure($"El producto '{line.Description}' requiere bodega.");
+            if (!item.ParticipatesInInventory && line.WarehouseId.HasValue)
+                return Result<PurchaseInvoiceDto>.ValidationFailure($"El servicio '{line.Description}' no admite bodega.");
         }
 
         // ── STEP 0: Guard IRBPNR (FLOW-READY-02F.2) ──────────────────────
@@ -315,7 +328,7 @@ public sealed class ConfirmPurchaseHandler
                 continue;
 
             var marginItem = await _itemRepo.GetByIdLightAsync(marginItemId, tid, ct);
-            if (marginItem is null || !marginItem.StockConfig.TracksStock)
+            if (marginItem is null || !marginItem.ParticipatesInInventory)
                 continue;
 
             var pricingResult = await _pricingResolver.ResolveAsync(marginItemId, ct: ct);
@@ -370,6 +383,8 @@ public sealed class ConfirmPurchaseHandler
         foreach (var line in inv.Lines)
         {
             if (line.ItemId is null)
+                continue;
+            if (!operationalItems[line.ItemId.Value].ParticipatesInInventory)
                 continue;
             var warehouseId = line.WarehouseId ?? inv.GlobalWarehouseId;
             if (warehouseId is null)

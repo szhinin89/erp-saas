@@ -4,9 +4,8 @@ namespace ERP.Domain.Modules.Items.Entities;
 
 /// <summary>
 /// Auditoría de dominio de <see cref="Item"/>: creación, actualización, cambio de precio
-/// base, activación y desactivación. Item es tenant-scoped únicamente (compartido entre
-/// companies del tenant, ver Item.cs) — a diferencia de Pricing, esta auditoría no
-/// lleva CompanyId. Solo los campos que Item necesita — nada de "God table". Append-only.
+/// base, activación y desactivación. Hereda el scope Tenant + Company a través del Item
+/// auditado, sin duplicar CompanyId. Append-only.
 /// </summary>
 public sealed class ItemAudit : AuditRecordBase
 {

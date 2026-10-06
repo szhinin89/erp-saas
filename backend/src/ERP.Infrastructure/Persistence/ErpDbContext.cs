@@ -479,6 +479,17 @@ public class ErpDbContext : DbContext
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ErpDbContext).Assembly);
         EnterpriseQueryFilterConfigurator.Apply(modelBuilder, this);
+        modelBuilder.Entity<ItemVariant>().HasQueryFilter(x => x.TenantId == FilterTenantId && FilterTenantId != Guid.Empty && Items.Any(i => i.Id == x.ItemId));
+        modelBuilder.Entity<ItemVariantBarcode>().HasQueryFilter(x => x.TenantId == FilterTenantId && FilterTenantId != Guid.Empty && Items.Any(i => i.Id == x.ItemId));
+        modelBuilder.Entity<ItemImage>().HasQueryFilter(x => x.TenantId == FilterTenantId && FilterTenantId != Guid.Empty && Items.Any(i => i.Id == x.ItemId));
+        modelBuilder.Entity<ItemUnitConversion>().HasQueryFilter(x => x.TenantId == FilterTenantId && FilterTenantId != Guid.Empty && Items.Any(i => i.Id == x.ItemId));
+        modelBuilder.Entity<ItemPackagingLevel>().HasQueryFilter(x => x.TenantId == FilterTenantId && FilterTenantId != Guid.Empty && Items.Any(i => i.Id == x.ItemId));
+        modelBuilder.Entity<ItemSupplierCode>().HasQueryFilter(x => x.TenantId == FilterTenantId && FilterTenantId != Guid.Empty && Items.Any(i => i.Id == x.ItemId));
+        modelBuilder.Entity<ItemSpecialTaxConfiguration>().HasQueryFilter(x => x.TenantId == FilterTenantId && FilterTenantId != Guid.Empty && Items.Any(i => i.Id == x.ItemId));
+        modelBuilder.Entity<ItemSubstitute>().HasQueryFilter(x => x.TenantId == FilterTenantId && FilterTenantId != Guid.Empty && Items.Any(i => i.Id == x.ItemId) && Items.Any(i => i.Id == x.SubstituteItemId));
+        modelBuilder.Entity<ItemVariantAttribute>().HasQueryFilter(x => x.TenantId == FilterTenantId && FilterTenantId != Guid.Empty && ItemVariants.Any(v => v.Id == x.VariantId));
+
+        modelBuilder.Entity<ItemAudit>().HasQueryFilter(x => x.TenantId == FilterTenantId && FilterTenantId != Guid.Empty && Items.Any(i => i.Id == x.EntityId));
         // Navigation seeding moved to NavigationSyncService (startup upsert).
         // Historic migrations with seed data remain valid — they won't be regenerated.
         base.OnModelCreating(modelBuilder);

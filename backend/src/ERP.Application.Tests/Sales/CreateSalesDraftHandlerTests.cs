@@ -1138,8 +1138,9 @@ public sealed class CreateSalesDraftHandlerTests
             "UNIT",
             ItemTaxConfig.Create("10", "10"),
             ItemSaleConfig.Create(),
-            ItemStockConfig.Create(tracksStock: false),
-            UserId
+            ItemStockConfig.Create(stockControlEnabled: false),
+            UserId,
+            companyId: CompanyId, nature: ItemNature.Service
         );
         item.ReplacePackagingLevels(
             [
@@ -1480,8 +1481,9 @@ public sealed class CreateSalesDraftHandlerTests
             "UNIT",
             ItemTaxConfig.Create("10", "10"),
             ItemSaleConfig.Create(),
-            ItemStockConfig.Create(tracksStock: true),
-            UserId
+            ItemStockConfig.Create(stockControlEnabled: true),
+            UserId,
+            companyId: CompanyId
         );
         f.ItemRepo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(item);
@@ -1642,8 +1644,9 @@ public sealed class CreateSalesDraftHandlerTests
             "UNIT",
             ItemTaxConfig.Create("10", "10"),
             ItemSaleConfig.Create(),
-            ItemStockConfig.Create(tracksStock: false),
-            UserId
+            ItemStockConfig.Create(stockControlEnabled: false),
+            UserId,
+            companyId: CompanyId, nature: ItemNature.Service
         );
         f.ItemRepo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(item);
@@ -1870,8 +1873,9 @@ public sealed class CreateSalesDraftHandlerTests
             "UNIT",
             ItemTaxConfig.Create("10", "10"),
             ItemSaleConfig.Create(maxDiscountPercent: 20m),
-            ItemStockConfig.Create(tracksStock: false),
-            UserId
+            ItemStockConfig.Create(stockControlEnabled: false),
+            UserId,
+            companyId: CompanyId, nature: ItemNature.Service
         );
 
     private static CreateSalesDraftCommand CommandFor(Item item, decimal unitPrice) =>

@@ -24,9 +24,9 @@ export function mapInvoiceLinesToFormValues(inv: SalesInvoiceDto): SalesLineForm
     conversionFactor: l.conversionFactor,
     _sku: l.snapshotSku ?? undefined,
     _name: l.snapshotItemName ?? undefined,
-    // El backend solo persiste warehouseId para ítems que controlan stock
-    // (SalesLineBuilder) — su presencia es una señal segura de _tracksStock.
-    _tracksStock: l.warehouseId != null,
+    // El backend solo persiste warehouseId para Products que participan en inventario
+    // (SalesLineBuilder) — su presencia es una señal segura de _participatesInInventory.
+    _participatesInInventory: l.warehouseId != null,
     // SALES-HISTORICAL-PRICING-SNAPSHOT-01: snapshot histórico tal como quedó persistido en
     // el Draft — nunca recalculado aquí. Null cuando el backend no tuvo el dato disponible
     // al momento de vender (factura anterior a esta fase, o sin costo Kardex resuelto);

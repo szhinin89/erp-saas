@@ -84,7 +84,8 @@ public sealed class PricingContextualResolutionTests
             ItemSaleConfig.Create(isForSale: true),
             ItemStockConfig.Create(),
             UserId,
-            baseSalePrice: basePrice
+            baseSalePrice: basePrice,
+            companyId: CompanyId
         );
 
     private static PriceList CreateList(

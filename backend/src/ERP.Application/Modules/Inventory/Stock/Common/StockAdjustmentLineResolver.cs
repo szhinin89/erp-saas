@@ -61,6 +61,9 @@ internal sealed class StockAdjustmentLineResolver
                     $"El ítem '{input.ItemName}' no existe."
                 );
 
+            if (!item.ParticipatesInInventory || item.CompanyId != companyId)
+                return Result<List<StockAdjustmentLine>>.ValidationFailure("Solo se pueden ajustar productos de la empresa actual.");
+
             string uomCode;
             var baseUomCode = item.DefaultUomCode;
             decimal conversionFactor;

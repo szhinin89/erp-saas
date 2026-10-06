@@ -81,7 +81,8 @@ public sealed class GetSalesItemPricingQueryHandlerTests
             ItemTaxConfig.Create(vatCode, "10"),
             ItemSaleConfig.Create(isForSale: isForSale, maxDiscountPercent: 8m),
             ItemStockConfig.Create(),
-            UserId
+            UserId,
+            companyId: CompanyId
         );
         if (!isActive)
             item.Disable(UserId);

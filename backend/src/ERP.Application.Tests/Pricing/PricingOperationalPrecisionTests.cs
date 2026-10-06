@@ -130,7 +130,8 @@ public sealed class PricingOperationalPrecisionTests
             ItemSaleConfig.Create(isForSale: true),
             ItemStockConfig.Create(),
             UserId,
-            baseSalePrice: basePrice
+            baseSalePrice: basePrice,
+            companyId: CompanyId
         );
 
     [Theory]

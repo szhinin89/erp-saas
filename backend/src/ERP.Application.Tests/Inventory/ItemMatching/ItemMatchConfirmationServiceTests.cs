@@ -69,7 +69,8 @@ public sealed class ItemMatchConfirmationServiceTests
             ItemTaxConfig.Create("10", "10"),
             ItemSaleConfig.Create(),
             ItemStockConfig.Create(),
-            UserId
+            UserId,
+            companyId: CompanyId
         );
         item.ReplacePackagingLevels(
             [

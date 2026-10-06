@@ -51,7 +51,8 @@ public sealed class InitialStockImportProcessorTests
             ItemTaxConfig.Create(null, null, null),
             ItemSaleConfig.Create(true, null, false, availableOnPos, false, false, false),
             ItemStockConfig.Create(true, false, false, false, false, null, null),
-            Guid.NewGuid()
+            Guid.NewGuid(),
+            companyId: CompanyId
         );
 
     private static Warehouse ActiveWarehouse() =>

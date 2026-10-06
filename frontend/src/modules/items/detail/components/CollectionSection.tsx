@@ -264,7 +264,7 @@ export function PackagingLevelsSection({
   uomOptions,
   baseUomCode,
   usedPackagingLevelIds,
-  tracksStock,
+  participatesInInventory,
   disabled = false,
   onSave,
 }: {
@@ -273,7 +273,7 @@ export function PackagingLevelsSection({
   uomOptions: PackagingUomOption[];
   baseUomCode: string;
   usedPackagingLevelIds: Set<string>;
-  tracksStock: boolean;
+  participatesInInventory: boolean;
   disabled?: boolean;
   onSave: (levels: PackagingLevelInput[]) => Promise<void>;
 }) {
@@ -343,12 +343,12 @@ export function PackagingLevelsSection({
     rows: { id: string | null; draft: PackagingLevelDraft }[],
   ): string | null => {
     const baseCount = rows.filter((r) => r.draft.isBaseUnit).length;
-    if (tracksStock && baseCount !== 1)
+    if (participatesInInventory && baseCount !== 1)
       return t(
         "items.packaging.errors.baseUnitRequired",
         "Debe existir una presentación base, por ejemplo UNIDAD X1 con cantidad base 1.",
       );
-    if (!tracksStock && baseCount > 1)
+    if (!participatesInInventory && baseCount > 1)
       return t(
         "items.packaging.errors.baseUnitMaxOne",
         "No puede existir más de una presentación marcada como unidad base.",

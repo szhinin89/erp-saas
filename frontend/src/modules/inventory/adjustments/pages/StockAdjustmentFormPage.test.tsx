@@ -96,7 +96,7 @@ const ITEM = {
   sku: "SKU-1",
   shortName: "Arroz 1kg",
   description: "Arroz",
-  tracksStock: true,
+  participatesInInventory: true,
   defaultUomCode: "UN",
 };
 

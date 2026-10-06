@@ -17,7 +17,7 @@ const context: PurchaseItemContextDto = {
   shortName: "Fanta",
   description: "Fanta naranja",
   baseUomCode: "UNIT",
-  tracksStock: true,
+  participatesInInventory: true,
   supplierCode: "3172",
   packagingLevels: [
     {
@@ -756,7 +756,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
       expect(warning).toBeNull();
     });
 
-    it("no bloquea servicio/no inventariable (tracksStock false)", () => {
+    it("no bloquea servicio/no inventariable (participatesInInventory false)", () => {
       const warning = buildSuspiciousPackagingCostWarning(
         line({
           quantity: 8,
@@ -764,7 +764,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
           packagingLevelId: "unidad-x1",
           context: {
             ...clubPlatinoContext,
-            tracksStock: false,
+            participatesInInventory: false,
           },
         }), getPrecisionPolicy(),
       );
@@ -876,7 +876,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
           quantity: 8,
           unitPrice: 5.109,
           packagingLevelId: "unidad-x1",
-          context: { ...noPvpContext, tracksStock: false },
+          context: { ...noPvpContext, participatesInInventory: false },
         }), getPrecisionPolicy(),
       );
 

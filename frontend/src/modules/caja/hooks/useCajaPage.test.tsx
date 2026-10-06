@@ -206,6 +206,7 @@ function buildOperationalPreferences(
     payables: { allowSupplierPaymentWithoutPayable: false },
     inventory: {
       allowNegativeStock: false,
+      stockControlEnabled: true,
       requireReasonForAdjustment: true,
       requireApprovalForLargeAdjustment: false,
       largeAdjustmentThresholdAmount: 0,

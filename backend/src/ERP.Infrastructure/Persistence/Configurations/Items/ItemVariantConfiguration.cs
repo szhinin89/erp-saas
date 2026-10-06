@@ -9,6 +9,8 @@ public sealed class ItemVariantConfiguration : IEntityTypeConfiguration<ItemVari
     public void Configure(EntityTypeBuilder<ItemVariant> builder)
     {
         builder.ToTable("item_variants");
+        builder.Property<Guid>("CompanyId").HasColumnName("company_id").IsRequired();
+        builder.HasAlternateKey("Id", "TenantId", "CompanyId");
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
@@ -39,16 +41,17 @@ public sealed class ItemVariantConfiguration : IEntityTypeConfiguration<ItemVari
         builder
             .HasMany(x => x.Barcodes)
             .WithOne()
-            .HasForeignKey(nameof(ItemVariantBarcode.VariantId))
+            .HasPrincipalKey("Id", "TenantId", "CompanyId")
+            .HasForeignKey("VariantId", "TenantId", "CompanyId")
             .OnDelete(DeleteBehavior.Cascade);
 
         // El SKU de variante identifica un único ítem/variante en todo el catálogo del
         // tenant (Fase 6) — ya no está acotado por item_id, mismo criterio ya aplicado a
         // barcode/código de proveedor en Fase 2.
         builder
-            .HasIndex(x => new { x.TenantId, x.SKU })
+            .HasIndex("TenantId", "CompanyId", "SKU")
             .IsUnique()
-            .HasDatabaseName("uq_item_variants_tenant_sku");
+            .HasDatabaseName("uq_item_variants_tenant_company_sku");
 
         builder.HasIndex(x => x.ItemId).HasDatabaseName("ix_item_variants_item");
     }
@@ -87,6 +90,8 @@ public sealed class ItemVariantBarcodeConfiguration : IEntityTypeConfiguration<I
     public void Configure(EntityTypeBuilder<ItemVariantBarcode> builder)
     {
         builder.ToTable("item_variant_barcodes");
+        builder.Property<Guid>("CompanyId").HasColumnName("company_id").IsRequired();
+        builder.HasOne<Item>().WithMany().HasForeignKey("ItemId", "TenantId", "CompanyId").HasPrincipalKey(x => new { x.Id, x.TenantId, x.CompanyId }).OnDelete(DeleteBehavior.Restrict);
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
@@ -114,12 +119,12 @@ public sealed class ItemVariantBarcodeConfiguration : IEntityTypeConfiguration<I
             .HasPrincipalKey(t => t.Code)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // El código de barras identifica un único ítem en todo el catálogo del tenant
+        // El código de barras identifica un único ítem en el catálogo de Tenant + Company
         // (Fase 2) — ya no está acotado por item_id.
         builder
-            .HasIndex(x => new { x.TenantId, x.Code })
+            .HasIndex("TenantId", "CompanyId", "Code")
             .IsUnique()
-            .HasDatabaseName("uq_item_variant_barcode_tenant_code");
+            .HasDatabaseName("uq_item_variant_barcode_tenant_company_code");
 
         // Exactamente un barcode principal por ítem (no por variante), sin importar
         // cuántas variantes tenga — filtro por ItemId.

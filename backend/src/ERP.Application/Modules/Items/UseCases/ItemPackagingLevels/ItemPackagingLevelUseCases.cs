@@ -119,13 +119,13 @@ public sealed class ReplaceItemPackagingLevelsCommandHandler
 
         var levels = cmd.Levels ?? [];
         var baseCount = levels.Count(l => l.IsBaseUnit);
-        if (item.StockConfig.TracksStock && baseCount != 1)
+        if (item.ParticipatesInInventory && baseCount != 1)
         {
             return Result<ItemDetailDto>.ValidationFailure(
                 "Los ítems que manejan stock deben tener exactamente una presentación base."
             );
         }
-        if (!item.StockConfig.TracksStock && baseCount > 1)
+        if (!item.ParticipatesInInventory && baseCount > 1)
         {
             return Result<ItemDetailDto>.ValidationFailure(
                 "No puede existir más de una presentación marcada como unidad base."

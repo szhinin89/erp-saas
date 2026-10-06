@@ -168,7 +168,8 @@ public sealed class ResolvePurchaseReceptionLinesHandlerTests
             ItemTaxConfig.Create("0", "0"),
             ItemSaleConfig.Create(true),
             ItemStockConfig.Create(true),
-            UserId
+            UserId,
+            companyId: CompanyId
         );
         return item;
     }

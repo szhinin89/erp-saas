@@ -89,7 +89,7 @@ function hasInvalidTax(line: PurchaseLineFormValues, options: PurchaseLineReadin
 }
 
 function requiresPresentation(line: PurchaseLineFormValues) {
-  return hasXmlOrigin(line) && !!line.itemId && line.context?.tracksStock === true;
+  return hasXmlOrigin(line) && !!line.itemId && line.context?.participatesInInventory === true;
 }
 
 function message(

@@ -47,6 +47,7 @@ function toFormValues(item: ItemDetailDto): CreateItemFormValues {
     description: item.description,
     observations: item.observations,
     itemTypeId: item.itemTypeId,
+    nature: item.nature,
     defaultUomCode: item.defaultUomCode,
     categoryNodeId: item.categoryNodeId,
     brandId: item.brandId,
@@ -66,7 +67,7 @@ function toFormValues(item: ItemDetailDto): CreateItemFormValues {
       isEcommerceActive: item.saleConfig.isEcommerceActive,
     },
     stockConfig: {
-      tracksStock: item.stockConfig.tracksStock,
+      stockControlEnabled: item.stockConfig.stockControlEnabled,
       tracksLot: item.stockConfig.tracksLot,
       tracksSeries: item.stockConfig.tracksSeries,
       allowDecimalQty: item.stockConfig.allowDecimalQty,
@@ -302,13 +303,13 @@ export function ItemFormTabs({
                 itemId={itemId}
                 unitConversions={detail.item?.unitConversions}
               />
-              {isEditMode && detail.item ? (
+              {isEditMode && detail.item?.participatesInInventory ? (
                 <PackagingLevelsSection
                   t={t}
                   levels={detail.item.packagingLevels}
                   uomOptions={sriUomOptions}
                   baseUomCode={detail.item.defaultUomCode}
-                  tracksStock={detail.item.tracksStock}
+                  participatesInInventory={detail.item.participatesInInventory}
                   usedPackagingLevelIds={
                     new Set(
                       detail.item.supplierCodes

@@ -160,8 +160,9 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
             defaultUomCode: "UNIT",
             taxConfig: ItemTaxConfig.Create(saleVatCode: "10", purchaseVatCode: "10"),
             saleConfig: ItemSaleConfig.Create(isForSale: true),
-            stockConfig: ItemStockConfig.Create(tracksStock: true),
-            createdBy: _createdBy
+            stockConfig: ItemStockConfig.Create(stockControlEnabled: true),
+            createdBy: _createdBy,
+            companyId: _companyId
         );
         db.Set<Item>().Add(item);
         await db.SaveChangesAsync();

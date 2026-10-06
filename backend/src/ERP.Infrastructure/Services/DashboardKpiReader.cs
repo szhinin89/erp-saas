@@ -194,7 +194,7 @@ public sealed class DashboardKpiReader : IDashboardKpiReader
     /// stock actual) — se agrega la cantidad de <c>CurrentStock</c> por <c>ProductId</c> en todas
     /// las bodegas de la empresa antes de comparar contra <c>MinStockQty</c>, para no contar el
     /// mismo producto más de una vez si está repartido en varias bodegas. Solo ítems activos que
-    /// llevan control de inventario (<c>StockConfig.TracksStock</c>); un ítem sin ninguna fila de
+    /// llevan control de inventario (<c>StockConfig.StockControlEnabled</c>); un ítem sin ninguna fila de
     /// <c>CurrentStock</c> (nunca tuvo movimiento) cuenta como cantidad cero (no aparece en el
     /// diccionario agregado, <c>GetValueOrDefault</c> resuelve a 0).
     /// </summary>
@@ -217,7 +217,7 @@ public sealed class DashboardKpiReader : IDashboardKpiReader
 
         var trackedItems = await _db
             .Items.AsNoTracking()
-            .Where(i => i.TenantId == tenantId && i.IsActive && i.StockConfig.TracksStock)
+            .Where(i => i.TenantId == tenantId && i.IsActive && i.StockConfig.StockControlEnabled)
             .Select(i => new { i.Id, i.StockConfig.MinStockQty })
             .ToListAsync(ct);
 

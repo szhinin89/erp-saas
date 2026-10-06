@@ -46,7 +46,8 @@ export const salesLineSchema = z.object({
   _isManualPrice: z.boolean().optional(),
   _stockQty: z.number().optional(),
   _stockWarehouse: z.string().optional(),
-  _tracksStock: z.boolean().optional(),
+  _participatesInInventory: z.boolean().optional(),
+  _stockControlEnabled: z.boolean().optional(),
   // SALES-HISTORICAL-PRICING-SNAPSHOT-01: snapshot histórico persistido, hidratado SOLO al
   // cargar una factura ya guardada (loadForEdit) — deliberadamente distinto de los efímeros de
   // captura de arriba (_basePrice/_priceListName/_discountDescription/_stockWarehouse), que
@@ -143,7 +144,7 @@ export const salesInvoiceSchema = z
   })
   .superRefine((data, ctx) => {
     data.lines.forEach((line, idx) => {
-      if (line._tracksStock && !line.warehouseId) {
+      if (line._participatesInInventory && !line.warehouseId) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["lines", idx, "warehouseId"],

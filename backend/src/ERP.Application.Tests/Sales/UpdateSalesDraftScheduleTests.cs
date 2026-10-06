@@ -828,8 +828,9 @@ public sealed class UpdateSalesDraftScheduleTests
             "UNIT",
             ItemTaxConfig.Create("10", "10"),
             ItemSaleConfig.Create(),
-            ItemStockConfig.Create(tracksStock: false),
-            UserId
+            ItemStockConfig.Create(stockControlEnabled: false),
+            UserId,
+            companyId: CompanyId, nature: ItemNature.Service
         );
 
     [Fact]

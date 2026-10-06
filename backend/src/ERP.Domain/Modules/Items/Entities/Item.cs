@@ -7,10 +7,10 @@ namespace ERP.Domain.Modules.Items.Entities;
 
 /// <summary>
 /// Aggregate Root del catálogo de ítems.
-/// Scope: tenantId only — compartido entre todas las companies del tenant.
-/// REGLA: SKU es inmutable. Stock, costo y precio nunca viven aquí.
+/// Scope: Tenant + Company; las sucursales comparten el catálogo de su empresa.
+/// REGLA: SKU es inmutable. Stock y costo de inventario pertenecen a Inventory.
 /// </summary>
-public sealed class Item : MasterEntity, ITenantScopedEntity
+public sealed class Item : MasterEntity, ITenantScopedEntity, ICompanyScopedEntity
 {
     private readonly List<ItemVariant> _variants = new();
     private readonly List<ItemImage> _images = new();
@@ -21,6 +21,12 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
     private readonly List<ItemSpecialTaxConfiguration> _specialTaxConfigurations = new();
 
     // ── Identidad ─────────────────────────────────────────────────────────
+    public Guid CompanyId { get; private set; }
+    public ItemNature Nature { get; private set; }
+    public bool ParticipatesInInventory => Nature == ItemNature.Product;
+    public bool RequiresStockAvailability(bool companyControlEnabled) =>
+        ParticipatesInInventory && companyControlEnabled && StockConfig.StockControlEnabled;
+
     public ItemCode Code { get; private set; } = null!;
     public Guid ItemTypeId { get; private set; }
     public string? Observations { get; private set; }
@@ -71,9 +77,17 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
         Guid? categoryNodeId = null,
         Guid? brandId = null,
         string? observations = null,
-        decimal? baseSalePrice = null
+        decimal? baseSalePrice = null,
+        Guid companyId = default,
+        ItemNature nature = ItemNature.Product
     )
     {
+        if (tenantId == Guid.Empty || companyId == Guid.Empty)
+            throw new ArgumentException("Tenant y empresa son obligatorios para el ítem.");
+        if (!Enum.IsDefined(nature))
+            throw new ArgumentException("Naturaleza operativa inválida.", nameof(nature));
+        if (nature == ItemNature.Service)
+            stockConfig = ItemStockConfig.Create(stockControlEnabled: false, allowDecimalQty: stockConfig.AllowDecimalQty, allowDecimalSale: stockConfig.AllowDecimalSale);
         if (string.IsNullOrWhiteSpace(defaultUomCode))
             throw new ArgumentException(
                 "La unidad de medida base es obligatoria.",
@@ -92,6 +106,8 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
         var item = new Item
         {
             TenantId = tenantId,
+            CompanyId = companyId,
+            Nature = nature,
             Code = code,
             ItemTypeId = itemTypeId,
             DefaultUomCode = defaultUomCode.Trim().ToUpperInvariant(),
@@ -174,7 +190,9 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
 
     public void UpdateStockConfig(ItemStockConfig stockConfig, Guid updatedBy)
     {
-        StockConfig = stockConfig;
+        StockConfig = Nature == ItemNature.Service
+            ? ItemStockConfig.Create(stockControlEnabled: false, allowDecimalQty: stockConfig.AllowDecimalQty, allowDecimalSale: stockConfig.AllowDecimalSale)
+            : stockConfig;
         SetUpdated(updatedBy);
     }
 
@@ -406,11 +424,11 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
     {
         var list = levels.ToList();
         var baseCount = list.Count(l => l.IsBaseUnit);
-        if (StockConfig.TracksStock && baseCount != 1)
+        if (ParticipatesInInventory && baseCount != 1)
             throw new DomainRuleViolationException(
                 "Debe existir exactamente un nivel base (IsBaseUnit=true)."
             );
-        if (!StockConfig.TracksStock && baseCount > 1)
+        if (!ParticipatesInInventory && baseCount > 1)
             throw new DomainRuleViolationException(
                 "No puede existir más de un nivel base (IsBaseUnit=true)."
             );

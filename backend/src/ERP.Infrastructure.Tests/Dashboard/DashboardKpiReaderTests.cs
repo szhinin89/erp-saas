@@ -673,10 +673,10 @@ public sealed class DashboardKpiReaderTests : IAsyncLifetime
         seed.Set<Warehouse>().Add(warehouse2);
         await seed.SaveChangesAsync();
 
-        var outOfStockItem = await CreateItemAsync(seed, minStockQty: 5m);
-        var lowStockItem = await CreateItemAsync(seed, minStockQty: 10m);
-        var normalItem = await CreateItemAsync(seed, minStockQty: 10m);
-        await CreateItemAsync(seed, minStockQty: 5m); // sin CurrentStock — cuenta como sin stock
+        var outOfStockItem = await CreateItemAsync(seed, infra.CompanyId, minStockQty: 5m);
+        var lowStockItem = await CreateItemAsync(seed, infra.CompanyId, minStockQty: 10m);
+        var normalItem = await CreateItemAsync(seed, infra.CompanyId, minStockQty: 10m);
+        await CreateItemAsync(seed, infra.CompanyId, minStockQty: 5m); // sin CurrentStock — cuenta como sin stock
 
         // outOfStockItem: 0 en total (nunca se le aplicó movimiento).
         var outOfStockStock = CurrentStock.Create(
@@ -728,7 +728,7 @@ public sealed class DashboardKpiReaderTests : IAsyncLifetime
         result.LowStockSkuCount.Should().Be(1); // lowStockItem (3+4=7 <= 10), una sola vez
     }
 
-    private async Task<Item> CreateItemAsync(ErpDbContext db, decimal minStockQty)
+    private async Task<Item> CreateItemAsync(ErpDbContext db, Guid companyId, decimal minStockQty)
     {
         var item = Item.Create(
             _tenantId,
@@ -739,7 +739,8 @@ public sealed class DashboardKpiReaderTests : IAsyncLifetime
             defaultUomCode: "UNIT",
             taxConfig: ItemTaxConfig.Create(saleVatCode: "0", purchaseVatCode: "0"),
             saleConfig: ItemSaleConfig.Create(isForSale: true),
-            stockConfig: ItemStockConfig.Create(tracksStock: true, minStockQty: minStockQty),
+            stockConfig: ItemStockConfig.Create(stockControlEnabled: true, minStockQty: minStockQty),
+            companyId: companyId,
             createdBy: _createdBy
         );
         db.Set<Item>().Add(item);

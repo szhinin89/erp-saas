@@ -29,11 +29,22 @@ export function InventoryTab({
 }: Props) {
   const {
     register,
+    watch,
     control,
     formState: { errors },
   } = useFormContext<CreateItemFormValues>();
   const navigate = useNavigate();
   const fe = (msg?: string) => (msg ? t(msg, msg) : null);
+
+  if (watch("nature") === "Service")
+    return (
+      <p className="zh-text-muted">
+        {t(
+          "items.nature.serviceInventory",
+          "Los servicios no participan en inventario.",
+        )}
+      </p>
+    );
 
   return (
     <>
@@ -46,14 +57,17 @@ export function InventoryTab({
       >
         <div className="items-option-grid">
           <Controller
-            name="stockConfig.tracksStock"
+            name="stockConfig.stockControlEnabled"
             control={control}
             render={({ field }) => (
               <ZHToggle
-                label={t("items.stock.tracksStock", "Maneja stock")}
+                label={t(
+                  "items.stock.stockControlEnabled",
+                  "Controlar disponibilidad",
+                )}
                 description={t(
-                  "items.stock.tracksStockDesc",
-                  "El sistema descuenta y controla existencias de este ítem.",
+                  "items.stock.stockControlEnabledDesc",
+                  "Valida existencias cuando el control de la empresa está activo. El producto siempre registra inventario.",
                 )}
                 value={!!field.value}
                 onChange={field.onChange}

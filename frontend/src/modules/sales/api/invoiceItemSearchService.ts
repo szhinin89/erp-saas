@@ -21,7 +21,8 @@ export interface InvoiceItemSearchResultDto {
   description: string;
   productFamilyName: string | null;
   uomAbbrev: string;
-  tracksStock: boolean;
+  participatesInInventory: boolean;
+  stockControlEnabled?: boolean;
   warehouseName: string | null;
   availableStock: number | null;
   averageCost: number | null;

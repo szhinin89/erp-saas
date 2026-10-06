@@ -37,7 +37,7 @@ function boxLine(overrides: Partial<SalesLineFormValues> = {}): SalesLineFormVal
     _name: "CLUB 850CC RB CAJA X12",
     _pvp: 1.5,
     _stockQty: 20,
-    _tracksStock: true,
+    _participatesInInventory: true,
     _packagingLevels: PACKAGING_LEVELS,
     ...overrides,
   };

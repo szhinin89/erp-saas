@@ -125,7 +125,7 @@ export function SalesItemSearchResultsGrid({
             </span>
 
             <span className="sf-result__col sf-result__col-stock">
-              {item.tracksStock ? (
+              {item.participatesInInventory ? (
                 item.availableStock != null ? (
                   <>
                     <span className="sf-result__stock-qty">

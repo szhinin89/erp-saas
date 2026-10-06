@@ -17,6 +17,12 @@ public sealed class ItemConfiguration : IEntityTypeConfiguration<Item>
         builder.Property(x => x.Id).HasColumnName("id");
         builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
 
+        builder.Property(x => x.CompanyId).HasColumnName("company_id").IsRequired();
+        builder.Property(x => x.Nature).HasColumnName("nature").HasConversion<string>().HasMaxLength(16).IsRequired();
+        builder.Ignore(x => x.ParticipatesInInventory);
+        builder.HasAlternateKey(x => new { x.Id, x.TenantId, x.CompanyId });
+        builder.HasOne<ERP.Domain.Modules.Company.Entities.Company>().WithMany().HasForeignKey(x => x.CompanyId).OnDelete(DeleteBehavior.Restrict);
+
         // ── ItemTypeId — FK a catálogo tenant-editable (item_types.id) ─
         builder.Property(x => x.ItemTypeId).HasColumnName("item_type_id").IsRequired();
 
@@ -99,7 +105,7 @@ public sealed class ItemConfiguration : IEntityTypeConfiguration<Item>
             x => x.StockConfig,
             stock =>
             {
-                stock.Property(s => s.TracksStock).HasColumnName("tracks_stock").IsRequired();
+                stock.Property(s => s.StockControlEnabled).HasColumnName("stock_control_enabled").IsRequired();
                 stock.Property(s => s.TracksLot).HasColumnName("tracks_lot").IsRequired();
                 stock.Property(s => s.TracksSeries).HasColumnName("tracks_series").IsRequired();
                 stock
@@ -137,7 +143,8 @@ public sealed class ItemConfiguration : IEntityTypeConfiguration<Item>
         builder
             .HasMany(x => x.Variants)
             .WithOne()
-            .HasForeignKey(nameof(ItemVariant.ItemId))
+            .HasPrincipalKey(x => new { x.Id, x.TenantId, x.CompanyId })
+            .HasForeignKey("ItemId", "TenantId", "CompanyId")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder
@@ -161,13 +168,15 @@ public sealed class ItemConfiguration : IEntityTypeConfiguration<Item>
         builder
             .HasMany(x => x.PackagingLevels)
             .WithOne()
-            .HasForeignKey(nameof(ItemPackagingLevel.ItemId))
+            .HasPrincipalKey(x => new { x.Id, x.TenantId, x.CompanyId })
+            .HasForeignKey("ItemId", "TenantId", "CompanyId")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder
             .HasMany(x => x.SupplierCodes)
             .WithOne()
-            .HasForeignKey(nameof(ItemSupplierCode.ItemId))
+            .HasPrincipalKey(x => new { x.Id, x.TenantId, x.CompanyId })
+            .HasForeignKey("ItemId", "TenantId", "CompanyId")
             .OnDelete(DeleteBehavior.Cascade);
 
         // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.2)
@@ -188,21 +197,8 @@ public sealed class ItemConfiguration : IEntityTypeConfiguration<Item>
             .HasIndex(x => new { x.TenantId, x.CategoryNodeId })
             .HasDatabaseName("ix_items_subscriber_category");
 
-        // SKU es clave de negocio única por tenant (editable — ver Item.UpdateSku).
-        // NOTA (verificado 2026-07-07, auditoría de cierre): se intentó declarar el índice
-        // único compuesto (tenant_id, sku) vía Fluent API — tanto `x => new { x.TenantId, x.Code.SKU }`
-        // como el overload de string `HasIndex("TenantId", "Code.SKU")` — y ambos fallan en
-        // tiempo de diseño con InvalidOperationException: EF Core no puede resolver una
-        // propiedad de un tipo OwnsOne (Code.SKU) combinada con una propiedad del propio
-        // owner (TenantId) en un mismo índice cuando el owned type comparte tabla con el
-        // owner. Esto NO es una limitación de este código — es una limitación conocida de
-        // EF Core con owned types de la misma tabla. La única forma real de resolverlo sería
-        // promover SKU a propiedad directa de Item (fuera de ItemCode VO), lo cual es un
-        // cambio de modelo de dominio, no de configuración EF — fuera de alcance de este
-        // cierre. El índice se sigue creando por SQL crudo en la migración
-        // Fase1ItemIdentityHardening; EF no lo conoce (el snapshot del modelo se deriva de
-        // OnModelCreating, no del historial de migraciones), así que una regeneración futura
-        // de migraciones seguiría sin reflejarlo — riesgo real y documentado, no resuelto.
+        // UNIQUE(tenant_id, company_id, sku) is created explicitly by the A1 migration
+        // because SKU belongs to the table-split ItemCode owned value object.
 
         // ── Integridad referencial de clasificación ─────────────────────────
         builder

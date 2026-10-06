@@ -30,6 +30,10 @@ public sealed class PriceListItemConfiguration : IEntityTypeConfiguration<PriceL
             .HasForeignKey(x => x.PriceListId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.HasOne<ERP.Domain.Modules.Items.Entities.Item>().WithMany()
+            .HasForeignKey(x => new { x.ItemId, x.TenantId, x.CompanyId })
+            .HasPrincipalKey(x => new { x.Id, x.TenantId, x.CompanyId }).OnDelete(DeleteBehavior.Restrict);
+
         builder.HasIndex(x => x.ItemId).HasDatabaseName("ix_price_list_items_item");
 
         builder

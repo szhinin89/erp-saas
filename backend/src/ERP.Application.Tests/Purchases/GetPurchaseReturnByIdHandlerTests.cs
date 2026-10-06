@@ -130,8 +130,9 @@ public sealed class GetPurchaseReturnByIdHandlerTests
             "UNIT",
             ItemTaxConfig.Create(saleVatCode: "10", purchaseVatCode: "10"),
             ItemSaleConfig.Create(isForSale: true),
-            ItemStockConfig.Create(tracksStock: true),
-            UserId
+            ItemStockConfig.Create(stockControlEnabled: true),
+            UserId,
+            companyId: CompanyId
         );
 
     private static Warehouse BuildWarehouse(string name) =>

@@ -89,7 +89,7 @@ public sealed class SearchItemsForInvoiceContextualPricingTests
         }
 
         public SearchItemsForInvoiceHandler Build() =>
-            new(Repo.Object, Sri.Object, PricingResolver.Object, Tenant.Object, Company.Object);
+            new(Repo.Object, Sri.Object, PricingResolver.Object, Tenant.Object, Company.Object, Preferences());
 
         public void SetPricing(Guid? customerId, PricingResult result) =>
             PricingResolver
@@ -356,4 +356,13 @@ public sealed class SearchItemsForInvoiceContextualPricingTests
             Times.Once
         );
     }
+    private static ERP.Domain.Configuration.Interfaces.IOperationalPreferencesResolver Preferences()
+    {
+        var mock = new Mock<ERP.Domain.Configuration.Interfaces.IOperationalPreferencesResolver>();
+        mock.Setup(r => r.ResolveAsync(It.IsAny<CancellationToken>())).ReturnsAsync(
+            new ERP.Domain.Configuration.Interfaces.OperationalPreferences(
+                new(true, false, true, 0, null, false, false, null, null), null!, null!, new(false, true, false, 0), null!, null!, null!));
+        return mock.Object;
+    }
+
 }

@@ -314,7 +314,7 @@ public sealed record InvoiceItemMatch(
     string Description,
     string? ProductFamilyName,
     string UomAbbrev,
-    bool TracksStock,
+    bool ParticipatesInInventory,
     string? WarehouseName,
     decimal? AvailableStock,
     decimal? AverageCost,
@@ -323,7 +323,8 @@ public sealed record InvoiceItemMatch(
     string? IceCode,
     string BaseUomCode,
     IReadOnlyList<InvoiceItemPackagingLevelDto> PackagingLevels,
-    Guid? MatchedPackagingLevelId
+    Guid? MatchedPackagingLevelId,
+    bool StockControlEnabled = true
 );
 
 /// <summary>
@@ -342,7 +343,7 @@ public sealed record InvoiceItemSearchResultDto(
     string Description,
     string? ProductFamilyName,
     string UomAbbrev,
-    bool TracksStock,
+    bool ParticipatesInInventory,
     string? WarehouseName,
     decimal? AvailableStock,
     decimal? AverageCost,
@@ -358,5 +359,6 @@ public sealed record InvoiceItemSearchResultDto(
     string? PriceListName,
     string? DiscountDescription,
     decimal? DiscountedSalePriceWithoutTax,
-    decimal? DiscountedFinalSalePrice
+    decimal? DiscountedFinalSalePrice,
+    bool StockControlEnabled = true
 );

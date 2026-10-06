@@ -93,7 +93,7 @@ public sealed class UpdateItemCommandHandler : IRequestHandler<UpdateItemCommand
 
             item.UpdateStockConfig(
                 ItemStockConfig.Create(
-                    cmd.TracksStock,
+                    cmd.StockControlEnabled,
                     cmd.TracksLot,
                     cmd.TracksSeries,
                     cmd.AllowDecimalQty,

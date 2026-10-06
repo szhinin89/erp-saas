@@ -52,7 +52,8 @@ public sealed class GetOperationalPreferencesQueryHandler
                     p.Inventory.AllowNegativeStock,
                     p.Inventory.RequireReasonForAdjustment,
                     p.Inventory.RequireApprovalForLargeAdjustment,
-                    p.Inventory.LargeAdjustmentThresholdAmount
+                    p.Inventory.LargeAdjustmentThresholdAmount,
+                    p.Inventory.StockControlEnabled
                 ),
                 Printing: new PrintingPreferencesDto(
                     p.Printing.SalesReceiptMode,
