@@ -60,11 +60,27 @@ public sealed class UpdateSalesDraftScheduleTests
         public Mock<ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository> BankAccountRepo { get; } =
             new();
 
+        // A3 — UpdateSalesDraftHandler ahora delega toda la mutación a IUnitOfWork.
+        // ExecuteInTransactionAsync. Fake pass-through (mismo patrón ya existente en
+        // CreateInitialAdminHandlerTests): corre el delegate inline, sin transacción real.
+        public Mock<IUnitOfWork> UnitOfWork { get; } = new();
+
         public PaymentTerm DefaultPt { get; } =
             PaymentTerm.Create(TenantId, "CONT", "Contado", 1, 0, UserId);
 
         public Fixture()
         {
+            UnitOfWork
+                .Setup(u =>
+                    u.ExecuteInTransactionAsync(
+                        It.IsAny<Func<CancellationToken, Task>>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .Returns(
+                    (Func<CancellationToken, Task> operation, CancellationToken ct) => operation(ct)
+                );
+
             // SALES-CONTEXTUAL-PRICING-DRAFT-06B: default "sin pricing resuelto" (diccionario
             // vacío) para los tests de esta suite que no le importa el pricing contextual — evita
             // depender del comportamiento de Moq para mocks sin configurar en un método nuevo.
@@ -189,6 +205,7 @@ public sealed class UpdateSalesDraftScheduleTests
 
         public UpdateSalesDraftHandler BuildHandler() =>
             new(
+                UnitOfWork.Object,
                 Repo.Object,
                 BpRepo.Object,
                 RoleRepo.Object,
@@ -997,6 +1014,79 @@ public sealed class UpdateSalesDraftScheduleTests
     }
 
     private static readonly Guid NewCustomerIdForSnapshotTest = Guid.NewGuid();
+
+    // ── A3 — Atomic Sales Draft Update: boundary transaccional ──────────────
+    // Estos tests verifican el CONTRACTO de atomicidad del handler con la infraestructura
+    // de tests YA existente (Moq + Fixture pass-through). NO sustituyen el test PostgreSQL
+    // real de rollback, que sigue pendiente de ejecución cuando Docker esté disponible:
+    // el DELETE directo (RemoveLinesByInvoiceAsync) y su rollback solo pueden probarse de
+    // verdad contra una base real.
+
+    [Fact]
+    public async Task A3_Update_DelegaTodaMutacionAExecuteInTransactionAsync()
+    {
+        var f = new Fixture();
+        var inv = f.ExistingInvoice(manualSchedule: false, unitPrice: 100m);
+        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
+
+        var cmd = Fixture.BaseCommand(inv, newUnitPrice: 200m);
+        var result = await f.BuildHandler().Handle(cmd, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        // Toda la mutación (UpdateDraft, Lines+Taxes, Payments, Schedules) corrió DENTRO
+        // del único boundary transaccional proveído por IUnitOfWork.
+        f.UnitOfWork.Verify(
+            u =>
+                u.ExecuteInTransactionAsync(
+                    It.IsAny<Func<CancellationToken, Task>>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+        // El SaveChanges final lo ejecuta el propio UoW antes del Commit — el handler ya no
+        // persiste por su cuenta (único punto de persistencia del agregado).
+        f.Repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        // Los DELETEs directos de hijos forman parte del mismo boundary.
+        f.Repo.Verify(
+            r => r.RemoveLinesByInvoiceAsync(inv.Id, It.IsAny<IEnumerable<SalesInvoiceDetail>>(), It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task A3_RechazoPosteriorAMutacion_RetornaElMismoResult_Y_AbandonaTransaccionRollback()
+    {
+        // Escenario del bug original: un rechazo de validación ocurre DESPUÉS de que los
+        // DELETEs directos de hijos ya se ejecutaron. Antes de A3 eso dejaba el Draft
+        // parcialmente alterado; ahora el rechazo se propaga como excepción interna a través
+        // de ExecuteInTransactionAsync (que en producción hace rollback completo) y el
+        // handler devuelve exactamente el mismo Result de ValidationFailure que antes.
+        var f = new Fixture();
+        var inv = f.ExistingInvoice(manualSchedule: true, unitPrice: 100m);
+        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
+        var originalSchedule = inv.PaymentSchedules.ToList();
+
+        var cmd = Fixture.BaseCommand(inv, newUnitPrice: 200m); // cambia el total sin nuevo schedule
+        var result = await f.BuildHandler().Handle(cmd, CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("personalizado");
+        // La mutación ocurrió dentro del boundary (el fake corre el delegate; en producción
+        // cualquier excepción lanzada desde él provoca rollback completo de la transacción).
+        f.UnitOfWork.Verify(
+            u =>
+                u.ExecuteInTransactionAsync(
+                    It.IsAny<Func<CancellationToken, Task>>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+        // Con rechazo, nada se persiste: ni SaveChanges del handler ni del agregado.
+        f.Repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        inv.PaymentSchedules.Should().BeEquivalentTo(originalSchedule);
+    }
 
     [Fact]
     public async Task Escenario8_autorizacion_no_recalcula_snapshots_de_pricing()
