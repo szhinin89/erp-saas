@@ -6,7 +6,6 @@ using ERP.Application.Modules.Pricing.Services;
 using ERP.Application.Modules.Sales.DTOs;
 using ERP.Application.Modules.Sales.Services;
 using ERP.Application.Modules.Sales.UseCases;
-using ERP.Application.Tests.TestSupport;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.MasterData.Entities;
@@ -400,10 +399,46 @@ public sealed class UpdateSalesDraftAtomicityPostgreSqlTests : IAsyncLifetime
             preferences.Object,
             creditPolicy.Object,
             Mock.Of<ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository>(),
-            PrecisionPolicyTestDouble.Mock()
+            CreatePrecisionPolicy()
         );
 
         return (handler, db);
+    }
+
+    /// <summary>
+    /// Doble local de <see cref="ERP.Application.Modules.Companies.ICompanyPrecisionPolicyProvider"/>
+    /// que copia EXACTAMENTE el comportamiento de PrecisionPolicyTestDouble.Mock()
+    /// (COMPANY-PRECISION-POLICY-SSOT-01), sin depender de ERP.Application.Tests.
+    /// </summary>
+    private static ERP.Application.Modules.Companies.ICompanyPrecisionPolicyProvider CreatePrecisionPolicy()
+    {
+        var dto = new ERP.Application.Modules.Companies.UseCases.PrecisionPolicy.EffectivePrecisionPolicyDto(
+            ProfileType: "StandardCommercial",
+            SalesUnitPriceDecimals: 2,
+            PurchaseUnitPriceDecimals: 4,
+            QuantityDecimals: 4,
+            PercentageDecimals: 2,
+            UnitCostDecimals: 6,
+            AverageCostDecimals: 6,
+            ConversionFactorDecimals: 6,
+            SettlementToleranceAmount: 0.02m,
+            IsLocked: false,
+            LockedAt: null,
+            LockedReason: null,
+            MoneyDecimals: 2,
+            TaxDecimals: 2,
+            AccountingDecimals: 2,
+            FiscalPercentageDecimals: ERP.Domain.Common.FiscalPrecision.Percentage,
+            WarehouseCapacityDecimals: ERP.Domain.Modules.Inventory.Entities.WarehousePrecision.Capacity,
+            CreditInstallmentPercentageDecimals: ERP.Domain.Modules.Finance.Entities.CreditTermsPrecision.InstallmentPercentage,
+            PackagingWeightDecimals: ERP.Domain.Modules.Items.Entities.ItemPrecision.PackagingWeight
+        );
+
+        var mock = new Mock<ERP.Application.Modules.Companies.ICompanyPrecisionPolicyProvider>();
+        mock
+            .Setup(p => p.GetEffectiveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(dto);
+        return mock.Object;
     }
 
     private static OperationalPreferences DefaultPreferences() =>
