@@ -1,1 +1,6 @@
 (empty)
+.aider*
+
+# .NET build artifacts
+**/bin/
+**/obj/
