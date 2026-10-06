@@ -62,6 +62,8 @@ public sealed class GetStockQueryHandler
             s.AvailableQuantity,
             s.TotalStockValue,
             s.AverageCost,
-            s.LastUpdatedAt
+            s.LastUpdatedAt,
+            s.CostBasis,
+            s.CostPending
         );
 }

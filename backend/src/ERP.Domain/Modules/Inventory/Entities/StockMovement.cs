@@ -10,6 +10,8 @@ public sealed class StockMovement : AuditableEntity, ITenantScopedEntity, ICompa
     public const int ReferenceMaxLen = 100;
     public const int SourceDocTypeMaxLen = 50;
     public const int UomCodeMaxLen = 20;
+    public const int StockValueScale = 2; // Existing stock_movements.running_stock_value numeric(18,2).
+    private bool _valuationDraft;
 
     /// <summary>
     /// Sucursal dueña del hecho físico de inventario (Branch Ownership) — SIEMPRE
@@ -44,6 +46,8 @@ public sealed class StockMovement : AuditableEntity, ITenantScopedEntity, ICompa
     public decimal? TotalCost { get; private set; }
     public decimal RunningAverageCost { get; private set; }
     public decimal RunningStockValue { get; private set; }
+    public decimal? CostBasis { get; private set; }
+    public bool CostPending { get; private set; }
     public DateOnly EffectiveDate { get; private set; }
 
     // ── Extensiones futuras (sin lógica en esta fase) ───────────────────
@@ -52,6 +56,21 @@ public sealed class StockMovement : AuditableEntity, ITenantScopedEntity, ICompa
     public Guid? AccountingTransactionId { get; private set; }
 
     private StockMovement() { }
+
+    /// <summary>Completes valuation before the new movement is appended; historical rows are never updated.</summary>
+    public void CompleteValuation(decimal? basis, bool pending, decimal average, decimal value, decimal? totalCost)
+    {
+        if (!_valuationDraft)
+            throw new DomainRuleViolationException("A historical inventory valuation cannot be rewritten.");
+        if (basis < 0m || totalCost < 0m)
+            throw new DomainRuleViolationException("Inventory cost cannot be negative.");
+        CostBasis = basis;
+        CostPending = pending;
+        RunningAverageCost = average;
+        RunningStockValue = value;
+        TotalCost = totalCost;
+        _valuationDraft = false;
+    }
 
     /// <summary>
     /// Factory de bajo nivel. El cálculo de <see cref="SequenceNumber"/>, <see cref="RunningAverageCost"/>
@@ -136,6 +155,7 @@ public sealed class StockMovement : AuditableEntity, ITenantScopedEntity, ICompa
 
         var m = new StockMovement
         {
+            _valuationDraft = true,
             Id = Guid.NewGuid(),
             TenantId = tenantId,
             CompanyId = companyId,

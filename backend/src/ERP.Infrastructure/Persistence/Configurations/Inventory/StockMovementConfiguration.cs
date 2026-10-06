@@ -9,6 +9,11 @@ public sealed class StockMovementConfiguration : IEntityTypeConfiguration<StockM
     public void Configure(EntityTypeBuilder<StockMovement> builder)
     {
         builder.ToTable("stock_movements");
+        builder.HasIndex(x => new { x.CompanyId, x.SourceDocType, x.SourceDocId, x.SourceDocLineId, x.MovementType })
+            .IsUnique().HasDatabaseName("uq_stock_movements_sale_document_line")
+            .HasFilter($"source_doc_line_id IS NOT NULL AND movement_type IN ({(int)ERP.Domain.Modules.Inventory.Enums.StockMovementType.SaleExit}, {(int)ERP.Domain.Modules.Inventory.Enums.StockMovementType.SaleReturn})");
+        builder.Property(x => x.CostBasis).HasColumnName("cost_basis").HasColumnType("numeric(22,10)");
+        builder.Property(x => x.CostPending).HasColumnName("cost_pending");
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").IsRequired();

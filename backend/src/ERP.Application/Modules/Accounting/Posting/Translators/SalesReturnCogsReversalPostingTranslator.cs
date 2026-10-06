@@ -35,18 +35,21 @@ public sealed class SalesReturnCogsReversalPostingTranslator
     private readonly IPostingEngine _postingEngine;
     private readonly ICompanyClock _companyClock;
     private readonly ILogger<SalesReturnCogsReversalPostingTranslator> _logger;
+    private readonly ERP.Application.Modules.Inventory.Costing.InventoryCostAccounting? _costAccounting;
 
     public SalesReturnCogsReversalPostingTranslator(
         IStockRepository stockRepository,
         IPostingEngine postingEngine,
         ICompanyClock companyClock,
-        ILogger<SalesReturnCogsReversalPostingTranslator> logger
+        ILogger<SalesReturnCogsReversalPostingTranslator> logger,
+        ERP.Application.Modules.Inventory.Costing.InventoryCostAccounting? costAccounting = null
     )
     {
         _stockRepository = stockRepository;
         _postingEngine = postingEngine;
         _companyClock = companyClock;
         _logger = logger;
+        _costAccounting = costAccounting;
     }
 
     public async Task Handle(SalesReturnAuthorizedEvent e, CancellationToken ct)
@@ -59,6 +62,13 @@ public sealed class SalesReturnCogsReversalPostingTranslator
         );
 
         var totalCost = movements.Sum(m => m.TotalCost ?? 0m);
+        if (_costAccounting is not null)
+        {
+            var date = await _companyClock.TodayAsync(e.CompanyId, e.TenantId!.Value, ct);
+            await _costAccounting.RecordAsync(e.TenantId.Value, e.CompanyId, e.SalesInvoiceId, e.SalesReturnId,
+                -totalCost, date, "Return", e.UserId, ct);
+            return;
+        }
         if (totalCost <= 0m)
         {
             _logger.LogInformation(

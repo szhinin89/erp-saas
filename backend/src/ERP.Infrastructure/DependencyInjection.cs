@@ -762,6 +762,8 @@ public static class DependencyInjection
             ERP.Domain.Modules.Inventory.Interfaces.IStockRepository,
             ERP.Infrastructure.Persistence.Repositories.Inventory.StockRepository
         >();
+        services.AddScoped<ERP.Domain.Modules.Inventory.Interfaces.IInventoryCostLedger,
+            ERP.Infrastructure.Persistence.Repositories.Inventory.InventoryCostLedger>();
         services.AddScoped<
             ERP.Domain.Modules.Inventory.Interfaces.IStockAdjustmentRepository,
             ERP.Infrastructure.Persistence.Repositories.Inventory.StockAdjustmentRepository

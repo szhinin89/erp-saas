@@ -96,8 +96,12 @@ public sealed class SearchItemsForInvoiceHandler
         var pricingByItemId = pricingResult.Value!;
 
         var preferences = await _preferences.ResolveAsync(cancellationToken);
-        var enforce = preferences.Inventory.StockControlEnabled && !preferences.SalesPos.AllowSellWithoutStock;
-        var results = matches.Select(m => Enrich(m, vatMap, iceMap, pricingByItemId) with { StockControlEnabled = enforce && m.ParticipatesInInventory && m.StockControlEnabled }).ToList();
+        var results = matches.Select(m => Enrich(m, vatMap, iceMap, pricingByItemId) with
+        {
+            StockControlEnabled = ERP.Domain.Modules.Inventory.Policies.SaleStockPolicy.RequiresAvailableStock(
+                m.ParticipatesInInventory, preferences.Inventory.StockControlEnabled,
+                m.StockControlEnabled, preferences.SalesPos.AllowSellWithoutStock)
+        }).ToList();
         return Result<IReadOnlyList<InvoiceItemSearchResultDto>>.Success(results);
     }
 

@@ -6,6 +6,8 @@ using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using ERP.Domain.Configuration.Interfaces;
+using ERP.Domain.Modules.Inventory.Policies;
 
 namespace ERP.Infrastructure.Persistence.Repositories.Inventory;
 
@@ -24,6 +26,9 @@ public sealed class StockRepository : IStockRepository
     private readonly ICurrentCompany _company;
     private readonly IDatabaseExceptionTranslator _exceptionTranslator;
     private readonly ICompanyPrecisionPolicyProvider _precision;
+    private readonly IOperationalPreferencesResolver? _preferences;
+    private Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? _ownedStockTransaction;
+    private readonly HashSet<string> _heldStockKeys = new();
 
     private sealed record PendingMovement(
         Guid TenantId,
@@ -41,7 +46,9 @@ public sealed class StockRepository : IStockRepository
         decimal? UnitCost,
         Guid? LotId,
         Guid? SerialId,
-        Guid? SourceDocLineId
+        Guid? SourceDocLineId,
+        bool AllowNegativeSale,
+        bool EnforceAvailability
     );
 
     private readonly List<PendingMovement> _pending = new();
@@ -50,10 +57,12 @@ public sealed class StockRepository : IStockRepository
         ErpDbContext db,
         ICurrentCompany company,
         IDatabaseExceptionTranslator exceptionTranslator,
-        ICompanyPrecisionPolicyProvider precision
+        ICompanyPrecisionPolicyProvider precision,
+        IOperationalPreferencesResolver? preferences = null
     )
     {
         _precision = precision;
+        _preferences = preferences;
         _db = db;
         _company = company;
         _exceptionTranslator = exceptionTranslator;
@@ -113,6 +122,11 @@ public sealed class StockRepository : IStockRepository
         if (item is null || !item.ParticipatesInInventory)
             throw new ERP.Domain.Exceptions.DomainRuleViolationException("El ítem no es un producto de la empresa actual.");
 
+        var preferences = _preferences is null ? null : await _preferences.ResolveAsync(ct);
+        var enforce = SaleStockPolicy.RequiresAvailableStock(true,
+            preferences?.Inventory.StockControlEnabled ?? true, item.StockConfig.StockControlEnabled,
+            preferences?.SalesPos.AllowSellWithoutStock ?? false);
+
         var request = new PendingMovement(
             tenantId,
             companyId,
@@ -129,7 +143,9 @@ public sealed class StockRepository : IStockRepository
             unitCost,
             lotId,
             serialId,
-            sourceDocLineId
+            sourceDocLineId,
+            movementType == StockMovementType.SaleExit && !enforce,
+            movementType == StockMovementType.SaleExit && enforce
         );
 
         var movement = await CreateAndTrackMovementAsync(request, ct);
@@ -144,6 +160,13 @@ public sealed class StockRepository : IStockRepository
             try
             {
                 var result = await _db.SaveChangesAsync(ct);
+                if (_ownedStockTransaction is not null)
+                {
+                    await _ownedStockTransaction.CommitAsync(ct);
+                    await _ownedStockTransaction.DisposeAsync();
+                    _ownedStockTransaction = null;
+                }
+                _heldStockKeys.Clear();
                 _pending.Clear();
                 return result;
             }
@@ -156,6 +179,17 @@ public sealed class StockRepository : IStockRepository
                 )
             {
                 await RecoverFromConflictAndRetrackAsync(ct);
+            }
+            catch
+            {
+                if (_ownedStockTransaction is not null)
+                {
+                    await _ownedStockTransaction.RollbackAsync(ct);
+                    await _ownedStockTransaction.DisposeAsync();
+                    _ownedStockTransaction = null;
+                }
+                _heldStockKeys.Clear();
+                throw;
             }
         }
     }
@@ -170,6 +204,7 @@ public sealed class StockRepository : IStockRepository
         CancellationToken ct
     )
     {
+        await LockStockResourceAsync(r, ct);
         var stock =
             await GetStockAsync(r.TenantId, r.WarehouseId, r.ProductId, ct)
             ?? _db.ChangeTracker.Entries<CurrentStock>()
@@ -207,6 +242,7 @@ public sealed class StockRepository : IStockRepository
                 m.SequenceNumber,
                 m.RunningAverageCost,
                 m.RunningStockValue,
+                m.CostBasis,
             })
             .FirstOrDefaultAsync(ct);
 
@@ -227,6 +263,7 @@ public sealed class StockRepository : IStockRepository
                 m.SequenceNumber,
                 m.RunningAverageCost,
                 m.RunningStockValue,
+                m.CostBasis,
             })
             .FirstOrDefault();
         if (
@@ -241,9 +278,17 @@ public sealed class StockRepository : IStockRepository
 
         // Salidas sin costo explícito consumen el costo promedio corrido del propio Kardex
         // (nunca CurrentStock.AverageCost, que es solo una proyección derivada).
-        var resolvedUnitCost = r.UnitCost ?? lastRunningAvg;
+        decimal? basis = r.UnitCost ?? last?.CostBasis ?? (lastRunningAvg > 0m ? lastRunningAvg : null);
+        if (basis is null)
+            basis = await _db.Set<StockMovement>()
+                .Where(m => m.TenantId == r.TenantId && m.CompanyId == r.CompanyId
+                    && m.ProductId == r.ProductId && m.WarehouseId == r.WarehouseId
+                    && (m.CostBasis.HasValue || m.RunningAverageCost > 0m))
+                .OrderByDescending(m => m.SequenceNumber)
+                .Select(m => m.CostBasis ?? m.RunningAverageCost).Cast<decimal?>().FirstOrDefaultAsync(ct);
+        var resolvedUnitCost = basis ?? 0m;
         var resultQty = previousQty + r.Quantity;
-        var newRunningStockValue = Math.Max(0m, lastRunningValue + r.Quantity * resolvedUnitCost);
+        var newRunningStockValue = lastRunningValue + r.Quantity * resolvedUnitCost;
         // ERP-PRECISION-OPERATIONAL-05B: el costo promedio corrido se persiste con la escala
         // averageCostDecimals de la política de la empresa (con la columna ya ampliada a numeric(22,10)
         // ya no es la BD quien lo redondea). Fail-closed (05B1): el provider es obligatorio y lanza si
@@ -256,7 +301,7 @@ public sealed class StockRepository : IStockRepository
                     averageCostDecimals,
                     MidpointRounding.AwayFromZero
                 )
-                : 0m;
+                : resolvedUnitCost;
 
         // Branch Ownership: el movimiento pertenece a la sucursal dueña de la bodega afectada,
         // no a la sucursal de sesión activa del operador — en una transferencia inter-sucursal,
@@ -301,15 +346,158 @@ public sealed class StockRepository : IStockRepository
             // no hay costo manual) sigue alimentando SOLO TotalCost — vía el parámetro dedicado
             // valuationUnitCost, nunca UnitCost — para que Accounting pueda costear salidas sin que
             // eso se confunda con "esta salida capturó un costo manual".
-            valuationUnitCost: resolvedUnitCost
+            valuationUnitCost: basis
         );
+
+        var totalCost = movement.TotalCost;
+        var pendingCost = basis is null || (r.MovementType == StockMovementType.SaleExit && resultQty < 0m);
+        if (r.MovementType == StockMovementType.SaleExit && pendingCost
+            && (r.SourceDocId is null || r.SourceDocLineId is null))
+            throw new ERP.Domain.Exceptions.DomainRuleViolationException("El costo pendiente requiere documento y línea de venta.");
+        if (r.MovementType == StockMovementType.SaleExit && r.SourceDocLineId.HasValue)
+        {
+            var pendingQuantity = basis is null ? -r.Quantity
+                : Math.Min(-r.Quantity, Math.Max(0m, -resultQty));
+            _db.Set<SaleCostObligation>().Add(SaleCostObligation.Create(movement, pendingQuantity, basis));
+        }
+        else if (r.MovementType == StockMovementType.SaleReturn && r.SourceDocLineId.HasValue)
+        {
+            Guid invoiceId;
+            Guid invoiceLineId;
+            if (r.SourceDocType == "SalesReturn")
+            {
+                var detail = await _db.Set<ERP.Domain.Modules.Sales.Entities.SalesReturnDetail>()
+                    .FirstAsync(d => d.Id == r.SourceDocLineId.Value && d.ReturnId == r.SourceDocId && d.TenantId == r.TenantId, ct);
+                var document = await _db.Set<ERP.Domain.Modules.Sales.Entities.SalesReturn>()
+                    .FirstAsync(d => d.Id == r.SourceDocId && d.TenantId == r.TenantId && d.CompanyId == r.CompanyId, ct);
+                invoiceId = document.SalesInvoiceId;
+                invoiceLineId = detail.OriginalInvoiceDetailId;
+            }
+            else
+            {
+                invoiceId = r.SourceDocId ?? Guid.Empty;
+                invoiceLineId = r.SourceDocLineId.Value;
+            }
+            var obligations = await GetCostObligationsAsync(r, ct);
+            var original = obligations.SingleOrDefault(o => o.InvoiceId == invoiceId && o.InvoiceLineId == invoiceLineId);
+            if (original is not null)
+            {
+                var ledger = new InventoryCostLedger(_db);
+                await ledger.LockInvoiceAsync(r.TenantId, r.CompanyId, invoiceId, ct);
+                var postings = await ledger.GetInvoicePostingsAsync(r.TenantId, r.CompanyId, invoiceId, ct);
+                var priorRecognizedCost = postings.Where(p => p.Status != "Canceled")
+                    .Sum(p => p.FactType == "CostOfGoodsSold" ? p.Amount : -p.Amount);
+                var allocation = original.Return(movement, r.Quantity);
+                _db.Set<SaleCostAllocation>().Add(allocation);
+                var remainingCost = await ledger.GetCurrentInvoiceCostAsync(r.TenantId, r.CompanyId, invoiceId, ct);
+                var returnedCost = priorRecognizedCost - Math.Round(remainingCost!.Value,
+                    InventoryCostPosting.AmountScale, MidpointRounding.AwayFromZero);
+                if (returnedCost < 0m)
+                    throw new ERP.Domain.Exceptions.DomainRuleViolationException("La devolución no tiene una base contable de costo consistente.");
+                totalCost = returnedCost == 0m && allocation.PreviousUnitCost is null
+                    && allocation.ResolvedQuantity == 0m ? null : returnedCost;
+                newRunningStockValue = lastRunningValue + returnedCost;
+                _db.Set<InventoryCostPosting>().Add(InventoryCostPosting.Create(r.TenantId, r.CompanyId,
+                    invoiceId, movement.Id, -returnedCost, r.EffectiveDate, "Return", r.ActorId, notify: true));
+                // Resolved returned units are a real-cost entry. They can cover another still-live
+                // sale deficit, without reopening the returned original units or changing historical rows.
+                if (allocation.ActualUnitCost.HasValue && allocation.ResolvedQuantity > 0m)
+                {
+                    // The returned inventory carries its allocated recognized monetary value,
+                    // including the proportional rounding remainder, not a new commercial price.
+                    var returnedUnitCost = allocation.CogsAdjustment != 0m
+                        ? returnedCost * allocation.ActualUnitCost.Value / -allocation.CogsAdjustment
+                        : allocation.ActualUnitCost.Value;
+                    basis = returnedUnitCost;
+                    newRunningStockValue -= await CoverPendingCostsAsync(r, movement,
+                        allocation.ResolvedQuantity, returnedUnitCost, ct);
+                }
+            }
+            // Legacy sales have no A2 obligations: their existing return behavior is preserved.
+        }
+        else if (r.Quantity > 0m && r.UnitCost.HasValue)
+        {
+            newRunningStockValue -= await CoverPendingCostsAsync(r, movement, r.Quantity, r.UnitCost.Value, ct);
+        }
+        var outstanding = (await GetCostObligationsAsync(r, ct)).Where(o => o.PendingQuantity > 0m).ToList();
+        pendingCost = basis is null || outstanding.Count > 0;
+        if (resultQty < 0m)
+        {
+            var valued = outstanding.Where(o => o.ProvisionalUnitCost.HasValue).ToList();
+            var valuedQuantity = valued.Sum(o => o.PendingQuantity);
+            if (valuedQuantity > 0m)
+                basis = valued.Sum(o => o.PendingQuantity * o.ProvisionalUnitCost!.Value) / valuedQuantity;
+        }
+        newRunningStockValue = Math.Round(newRunningStockValue, StockMovement.StockValueScale, MidpointRounding.AwayFromZero);
+        newRunningAverageCost = resultQty > 0m
+            ? Math.Round(newRunningStockValue / resultQty, averageCostDecimals, MidpointRounding.AwayFromZero)
+            : basis ?? 0m;
+        if (resultQty > 0m && basis.HasValue) basis = newRunningAverageCost;
+        movement.CompleteValuation(basis, pendingCost, newRunningAverageCost, newRunningStockValue, totalCost);
 
         await _db.Set<StockMovement>().AddAsync(movement, ct);
 
         // CurrentStock se actualiza como proyección derivada del mismo hecho — no es su origen.
-        stock.ApplyMovement(r.Quantity, r.ActorId, resolvedUnitCost);
+        stock.ApplyKardexMovement(movement, r.AllowNegativeSale, r.EnforceAvailability);
 
         return movement;
+    }
+
+    private async Task LockStockResourceAsync(PendingMovement r, CancellationToken ct)
+    {
+        if (!_db.Database.IsNpgsql()) return;
+        if (_db.Database.CurrentTransaction is null)
+            _ownedStockTransaction = await _db.Database.BeginTransactionAsync(ct);
+        var key = $"inventory:{r.TenantId}:{r.CompanyId}:{r.ProductId}:{r.WarehouseId}";
+        if (!_heldStockKeys.Add(key)) return;
+        await _db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({key}, 0))", ct);
+        // An authorization precheck may have loaded an older snapshot before this resource lock.
+        foreach (var entry in _db.ChangeTracker.Entries<CurrentStock>().Where(e =>
+            e.Entity.TenantId == r.TenantId && e.Entity.CompanyId == r.CompanyId
+            && e.Entity.ProductId == r.ProductId && e.Entity.WarehouseId == r.WarehouseId
+            && e.State == EntityState.Unchanged).ToList())
+            await entry.ReloadAsync(ct);
+    }
+
+    private async Task<List<SaleCostObligation>> GetCostObligationsAsync(PendingMovement r, CancellationToken ct)
+    {
+        var persisted = await _db.Set<SaleCostObligation>()
+            .Where(o => o.TenantId == r.TenantId && o.CompanyId == r.CompanyId
+                && o.ProductId == r.ProductId && o.WarehouseId == r.WarehouseId).ToListAsync(ct);
+        return persisted.Concat(_db.Set<SaleCostObligation>().Local)
+            .Where(o => o.TenantId == r.TenantId && o.CompanyId == r.CompanyId
+                && o.ProductId == r.ProductId && o.WarehouseId == r.WarehouseId)
+            .DistinctBy(o => o.Id).ToList();
+    }
+
+    private async Task<decimal> CoverPendingCostsAsync(PendingMovement r, StockMovement movement,
+        decimal quantity, decimal actualCost, CancellationToken ct)
+    {
+        var adjustment = 0m;
+        var obligations = await GetCostObligationsAsync(r, ct);
+        foreach (var obligation in obligations.Where(o => o.PendingQuantity > 0m).OrderBy(o => o.SequenceNumber))
+        {
+            if (quantity <= 0m) break;
+            var ledger = new InventoryCostLedger(_db);
+            await ledger.LockInvoiceAsync(r.TenantId, r.CompanyId, obligation.InvoiceId, ct);
+            var covered = Math.Min(quantity, obligation.PendingQuantity);
+            var allocation = obligation.Cover(movement, covered, actualCost);
+            _db.Set<SaleCostAllocation>().Add(allocation);
+            adjustment += allocation.CogsAdjustment;
+            if (allocation.CogsAdjustment != 0m)
+            {
+                var costTarget = await ledger.GetCurrentInvoiceCostAsync(r.TenantId, r.CompanyId, obligation.InvoiceId, ct);
+                var postings = await ledger.GetInvoicePostingsAsync(r.TenantId, r.CompanyId, obligation.InvoiceId, ct);
+                var previousCost = postings.Where(p => p.Status != "Canceled")
+                    .Sum(p => p.FactType == "CostOfGoodsSold" ? p.Amount : -p.Amount);
+                var delta = Math.Round(costTarget!.Value, InventoryCostPosting.AmountScale, MidpointRounding.AwayFromZero) - previousCost;
+                _db.Set<InventoryCostPosting>().Add(InventoryCostPosting.Create(r.TenantId, r.CompanyId,
+                    obligation.InvoiceId, allocation.Id, delta, r.EffectiveDate,
+                    "Coverage", r.ActorId, notify: true));
+            }
+            quantity -= covered;
+        }
+        return adjustment;
     }
 
     private bool IsSequenceConflict(Exception ex)
@@ -329,6 +517,14 @@ public sealed class StockRepository : IStockRepository
         foreach (var entry in _db.ChangeTracker.Entries<StockMovement>().ToList())
             if (entry.State == EntityState.Added)
                 entry.State = EntityState.Detached;
+
+        foreach (var entry in _db.ChangeTracker.Entries<SaleCostAllocation>().ToList())
+            if (entry.State == EntityState.Added) entry.State = EntityState.Detached;
+        foreach (var entry in _db.ChangeTracker.Entries<InventoryCostPosting>().ToList())
+            if (entry.State == EntityState.Added) entry.State = EntityState.Detached;
+        foreach (var entry in _db.ChangeTracker.Entries<SaleCostObligation>().ToList())
+            if (entry.State == EntityState.Added) entry.State = EntityState.Detached;
+            else if (entry.State == EntityState.Modified) await entry.ReloadAsync(ct);
 
         foreach (var entry in _db.ChangeTracker.Entries<CurrentStock>().ToList())
         {

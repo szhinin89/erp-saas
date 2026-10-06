@@ -9,7 +9,9 @@ public sealed record CurrentStockDto(
     decimal AvailableQuantity,
     decimal TotalStockValue,
     decimal AverageCost,
-    DateTime LastUpdatedAt
+    DateTime LastUpdatedAt,
+    decimal? CostBasis = null,
+    bool CostPending = false
 );
 
 public sealed record StockMovementDto(
@@ -33,7 +35,9 @@ public sealed record StockMovementDto(
     string? SourceDocType,
     Guid CreatedBy,
     DateTime CreatedAt,
-    string? CreatedByName = null
+    string? CreatedByName = null,
+    decimal? CostBasis = null,
+    bool CostPending = false
 );
 
 public sealed record AggregatedStockDto(

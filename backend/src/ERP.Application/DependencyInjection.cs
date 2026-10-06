@@ -23,6 +23,7 @@ public static class DependencyInjection
         var assembly = Assembly.GetExecutingAssembly();
 
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(assembly));
+        services.AddScoped<ERP.Application.Modules.Inventory.Costing.InventoryCostAccounting>();
         services.AddScoped<IEffectivePermissionKeysProvider, EffectivePermissionKeysProvider>();
         services.AddScoped<ICompanyContextProvider, CompanyContextProvider>();
         services.AddScoped<ICommunicationQueue, CommunicationQueue>();

@@ -1,6 +1,16 @@
 # Project Status
 
-**Single source of truth** for delivery state. Updated: **2026-10-03** · Kernel refactor: **2026-06-05**.
+## A2 — Allow Sell Without Stock + Negative Inventory Costing (2026-10-06)
+
+**Estado: CLOSED. Cierre operativo aprobado; commit único autorizado, sin push.** A1 permanece CLOSED en `43cce57a9`.
+
+- Política compartida de disponibilidad: controles Company/Item y AllowSellWithoutStock; reservas incluidas y validación transaccional por Item + Warehouse.
+- Saldo negativo autorizado, base conocida conservada y costo desconocido explícitamente pendiente. Obligaciones por línea y asignaciones trazables/idempotentes; las entradas cubren obligaciones vigentes por SequenceNumber ascendente dentro de Company + Item + Warehouse, sin cambiar el promedio ponderado.
+- COGS provisional, regularización posterior, pendientes contables durables/reintentables, anulación sin residual y devolución vinculada a unidades originales (pendientes primero; costo reconocido proporcional después). Kardex histórico sin reescritura destructiva y modelo base Accounting intacto.
+- Gates: Domain **1340/1340**; Sales/COGS Application **84/84**; guardrails existentes **143/143**; API build PASS; `git diff --check` PASS. PostgreSQL: **23 escenarios verificados** (corrida general 21 PASS y dos fallas de fixture por número de devolución demasiado largo; reintento focalizado **3/3 PASS**, incluidos ambos casos corregidos y prioridad de compensación).
+- Migración `20261006120230_NegativeSaleCostObligations` y ModelSnapshot; validada en PostgreSQL efímero y **aplicada sin errores a desarrollo dberpsaas**. Smoke mínimo de persistencia **PASS**: registro en historial y lectura de las tres tablas y columnas de valoración nuevas, en transacción de solo lectura. Nuevos endpoints de consulta/reintento documentados en backend/README.md. Decisión y límites: [ADR-041](docs/decisions/ADR-041-negative-sale-inventory-cost-obligations.md).
+
+**Single source of truth** for delivery state. Updated: **2026-10-06** · Kernel refactor: **2026-06-05**.
 
 ## POS-RELIABLE-SALE-01 — Cobro POS confiable y tipo de emisión coherente (2026-10-03)
 

@@ -460,7 +460,6 @@ public sealed class AuthorizeSalesInvoiceHandler
         }
 
         // A1: nature decides inventory participation; company/item flags decide availability enforcement.
-        // AllowSellWithoutStock and Kardex valuation retain their existing A2-pending behavior.
         var operationalItems = new Dictionary<Guid, ERP.Domain.Modules.Items.Entities.Item>();
         foreach (var line in inv.Lines.Where(l => l.ItemId.HasValue))
         {
@@ -474,7 +473,6 @@ public sealed class AuthorizeSalesInvoiceHandler
                 return Result<SalesInvoiceDto>.ValidationFailure($"El servicio '{line.Description}' no admite bodega.");
         }
         var preferences = await _preferences.ResolveAsync(ct);
-        if (preferences.Inventory.StockControlEnabled && !preferences.SalesPos.AllowSellWithoutStock)
         {
             foreach (var line in inv.Lines)
             {
@@ -482,7 +480,9 @@ public sealed class AuthorizeSalesInvoiceHandler
                     continue;
 
                 var item = operationalItems[line.ItemId.Value];
-                if (!item.RequiresStockAvailability(preferences.Inventory.StockControlEnabled))
+                if (!ERP.Domain.Modules.Inventory.Policies.SaleStockPolicy.RequiresAvailableStock(
+                    item.ParticipatesInInventory, preferences.Inventory.StockControlEnabled,
+                    item.StockConfig.StockControlEnabled, preferences.SalesPos.AllowSellWithoutStock))
                     continue;
 
                 var stock = await _stockRepo.GetStockAsync(
@@ -491,7 +491,7 @@ public sealed class AuthorizeSalesInvoiceHandler
                     line.ItemId.Value,
                     ct
                 );
-                var available = stock?.Quantity ?? 0m;
+                var available = stock?.AvailableQuantity ?? 0m;
                 // SALES-PRESENTATIONS-02: el stock disponible siempre está en unidad base — la
                 // comparación debe hacerse contra QuantityInBaseUom, nunca contra Quantity cruda
                 // (que puede estar expresada en la presentación vendida, ej. cajas).
@@ -654,7 +654,8 @@ public sealed class AuthorizeSalesInvoiceHandler
                 inv.Id,
                 "SalesInvoice",
                 uid,
-                cancellationToken: ct
+                cancellationToken: ct,
+                sourceDocLineId: line.Id
             );
         }
 

@@ -28,6 +28,16 @@ public sealed class StockController : ControllerBase
 
     public StockController(IMediator mediator) => _mediator = mediator;
 
+    [HttpGet("costs/pending")]
+    [Authorize(Policy = $"perm:{InventoryPermissions.StockView}")]
+    public async Task<IActionResult> GetPendingCosts(CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new ERP.Application.Modules.Inventory.Costing.GetPendingInventoryCostsQuery(), ct));
+
+    [HttpPost("costs/retry")]
+    [Authorize(Policy = $"perm:{InventoryPermissions.StockManage}")]
+    public async Task<IActionResult> RetryCostPostings(CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new ERP.Application.Modules.Inventory.Costing.RetryInventoryCostPostingsCommand(), ct));
+
     /// <summary>Consulta stock actual por item y/o bodega.</summary>
     [HttpGet]
     [Authorize(Policy = $"perm:{InventoryPermissions.StockView}")]

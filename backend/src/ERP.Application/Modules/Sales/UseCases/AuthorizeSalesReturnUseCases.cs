@@ -281,7 +281,8 @@ public sealed class AuthorizeSalesReturnHandler
                     salesReturn.Id,
                     "SalesReturn",
                     uid,
-                    cancellationToken: ct
+                    cancellationToken: ct,
+                    sourceDocLineId: line.Id
                 );
             }
 

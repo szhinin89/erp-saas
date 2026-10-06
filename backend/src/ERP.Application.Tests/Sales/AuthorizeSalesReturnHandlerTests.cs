@@ -274,7 +274,8 @@ public sealed class AuthorizeSalesReturnHandlerTests
                     It.IsAny<decimal?>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
-                    It.IsAny<CancellationToken>()
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<Guid?>()
                 )
             )
             .ReturnsAsync((StockMovement?)null!);
@@ -473,7 +474,8 @@ public sealed class AuthorizeSalesReturnHandlerTests
                     It.IsAny<decimal?>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
-                    It.IsAny<CancellationToken>()
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<Guid?>()
                 ),
             Times.Once
         );
@@ -495,7 +497,8 @@ public sealed class AuthorizeSalesReturnHandlerTests
                     It.IsAny<decimal?>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
-                    It.IsAny<CancellationToken>()
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<Guid?>()
                 ),
             Times.Once
         );
@@ -536,7 +539,8 @@ public sealed class AuthorizeSalesReturnHandlerTests
                     It.IsAny<decimal?>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
-                    It.IsAny<CancellationToken>()
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<Guid?>()
                 ),
             Times.Once
         );
@@ -573,7 +577,8 @@ public sealed class AuthorizeSalesReturnHandlerTests
                     It.IsAny<decimal?>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
-                    It.IsAny<CancellationToken>()
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<Guid?>()
                 ),
             Times.Never
         );
@@ -685,7 +690,8 @@ public sealed class AuthorizeSalesReturnHandlerTests
                     It.IsAny<decimal?>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
-                    It.IsAny<CancellationToken>()
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<Guid?>()
                 ),
             Times.Once
         );

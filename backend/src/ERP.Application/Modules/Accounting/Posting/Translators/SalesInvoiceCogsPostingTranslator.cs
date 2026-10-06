@@ -37,16 +37,19 @@ public sealed class SalesInvoiceCogsPostingTranslator
     private readonly IStockRepository _stockRepository;
     private readonly IPostingEngine _postingEngine;
     private readonly ILogger<SalesInvoiceCogsPostingTranslator> _logger;
+    private readonly ERP.Application.Modules.Inventory.Costing.InventoryCostAccounting? _costAccounting;
 
     public SalesInvoiceCogsPostingTranslator(
         IStockRepository stockRepository,
         IPostingEngine postingEngine,
-        ILogger<SalesInvoiceCogsPostingTranslator> logger
+        ILogger<SalesInvoiceCogsPostingTranslator> logger,
+        ERP.Application.Modules.Inventory.Costing.InventoryCostAccounting? costAccounting = null
     )
     {
         _stockRepository = stockRepository;
         _postingEngine = postingEngine;
         _logger = logger;
+        _costAccounting = costAccounting;
     }
 
     public async Task Handle(SalesInvoiceAuthorizedEvent e, CancellationToken ct)
@@ -59,6 +62,12 @@ public sealed class SalesInvoiceCogsPostingTranslator
         );
 
         var totalCost = movements.Sum(m => m.TotalCost ?? 0m);
+        if (_costAccounting is not null)
+        {
+            await _costAccounting.RecordAsync(e.TenantId!.Value, e.CompanyId, e.InvoiceId, e.InvoiceId,
+                totalCost, e.IssueDate, "Original", e.UserId, ct);
+            return;
+        }
         if (totalCost <= 0m)
         {
             _logger.LogInformation(

@@ -9,6 +9,8 @@ public sealed class CurrentStockConfiguration : IEntityTypeConfiguration<Current
     public void Configure(EntityTypeBuilder<CurrentStock> builder)
     {
         builder.ToTable("current_stocks");
+        builder.Property(x => x.CostBasis).HasColumnName("cost_basis").HasColumnType("numeric(22,10)");
+        builder.Property(x => x.CostPending).HasColumnName("cost_pending");
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").IsRequired();

@@ -43,21 +43,27 @@ public sealed class SalesInvoiceCancelledPostingTranslator
     private readonly IJournalEntryRepository _journalEntryRepository;
     private readonly IMediator _mediator;
     private readonly ILogger<SalesInvoiceCancelledPostingTranslator> _logger;
+    private readonly ERP.Application.Modules.Inventory.Costing.InventoryCostAccounting? _costAccounting;
 
     public SalesInvoiceCancelledPostingTranslator(
         IJournalEntryRepository journalEntryRepository,
         IMediator mediator,
-        ILogger<SalesInvoiceCancelledPostingTranslator> logger
+        ILogger<SalesInvoiceCancelledPostingTranslator> logger,
+        ERP.Application.Modules.Inventory.Costing.InventoryCostAccounting? costAccounting = null
     )
     {
         _journalEntryRepository = journalEntryRepository;
         _mediator = mediator;
         _logger = logger;
+        _costAccounting = costAccounting;
     }
 
     public async Task Handle(SalesInvoiceCancelledEvent e, CancellationToken ct)
     {
         var tenantId = e.TenantId!.Value;
+        if (_costAccounting is not null)
+            await _costAccounting.CancelAsync(tenantId, e.CompanyId, e.InvoiceId,
+                $"Factura {e.InvoiceNumber} anulada: {e.CancelReason}", ct);
 
         // Una sola consulta trae todos los JournalEntry asociados a este InvoiceId (ambos
         // FactType, si existen) — mismo mecanismo que PurchaseInvoiceCancelledPostingTranslator,

@@ -91,7 +91,9 @@ public sealed class GetStockMovementsQueryHandler
             m.SourceDocId,
             m.SourceDocType,
             m.CreatedBy,
-            m.CreatedAt
+            m.CreatedAt,
+            CostBasis: m.CostBasis,
+            CostPending: m.CostPending
         );
 
     /// <summary>

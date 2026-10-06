@@ -28,6 +28,14 @@ dotnet run --project ERP.API --launch-profile http   # :5003
 dotnet test ERP.slnx -c Release
 ```
 
+## A2: pendientes de costo de inventario
+
+Con contexto autenticado de empresa, `GET /api/v1/inventory/stock/costs/pending`
+(StockView) consulta obligaciones de costo y errores contables durables.
+`POST /api/v1/inventory/stock/costs/retry` (StockManage) reintenta la contabilización
+idempotente; el costo desconocido requiere una entrada con valoración real.
+Ver [ADR-041](../docs/decisions/ADR-041-negative-sale-inventory-cost-obligations.md).
+
 ## Reglas
 
 [`AI-RULES/BACKEND-RULES.md`](../AI-RULES/BACKEND-RULES.md) · [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md)

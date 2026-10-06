@@ -15,18 +15,21 @@ public sealed class GetItemWarehouseAvailabilityQueryHandler
     private readonly IStockRepository _stockRepo;
     private readonly ICurrentTenant _tenant;
     private readonly ERP.Domain.Modules.Items.Interfaces.IItemRepository _itemRepo;
+    private readonly ERP.Domain.Configuration.Interfaces.IOperationalPreferencesResolver? _preferences;
 
     public GetItemWarehouseAvailabilityQueryHandler(
         IWarehouseRepository warehouseRepo,
         IStockRepository stockRepo,
         ICurrentTenant tenant,
-        ERP.Domain.Modules.Items.Interfaces.IItemRepository itemRepo
+        ERP.Domain.Modules.Items.Interfaces.IItemRepository itemRepo,
+        ERP.Domain.Configuration.Interfaces.IOperationalPreferencesResolver? preferences = null
     )
     {
         _warehouseRepo = warehouseRepo;
         _stockRepo = stockRepo;
         _tenant = tenant;
         _itemRepo = itemRepo;
+        _preferences = preferences;
     }
 
     public async Task<Result<IReadOnlyList<ItemWarehouseAvailabilityDto>>> Handle(
@@ -39,6 +42,10 @@ public sealed class GetItemWarehouseAvailabilityQueryHandler
             return Result<IReadOnlyList<ItemWarehouseAvailabilityDto>>.NotFound("Ítem no encontrado.");
         if (!item.ParticipatesInInventory)
             return Result<IReadOnlyList<ItemWarehouseAvailabilityDto>>.Success([]);
+        var preferences = _preferences is null ? null : await _preferences.ResolveAsync(ct);
+        var enforce = ERP.Domain.Modules.Inventory.Policies.SaleStockPolicy.RequiresAvailableStock(true,
+            preferences?.Inventory.StockControlEnabled ?? true, item.StockConfig.StockControlEnabled,
+            preferences?.SalesPos.AllowSellWithoutStock ?? false);
         var warehouses = await _warehouseRepo.GetAsync(
             _tenant.TenantId,
             activeFilter: true,
@@ -59,7 +66,7 @@ public sealed class GetItemWarehouseAvailabilityQueryHandler
                     w.Name,
                     available,
                     stock?.ReservedQuantity ?? 0m,
-                    available > 0
+                    !enforce || available > 0
                 );
             })
             .ToList();

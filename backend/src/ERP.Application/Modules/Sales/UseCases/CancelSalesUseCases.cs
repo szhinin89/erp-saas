@@ -144,7 +144,8 @@ public sealed class CancelSalesInvoiceHandler
                 inv.Id,
                 "SalesInvoice",
                 _u.UserId,
-                cancellationToken: ct
+                cancellationToken: ct,
+                sourceDocLineId: line.Id
             );
         }
 

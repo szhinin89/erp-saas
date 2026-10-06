@@ -12,7 +12,9 @@ public sealed class CurrentStock : AuditableEntity, ITenantScopedEntity, ICompan
     public decimal ReservedQuantity { get; private set; }
     public decimal AvailableQuantity => Quantity - ReservedQuantity;
     public decimal TotalStockValue { get; private set; }
-    public decimal AverageCost => Quantity > 0m ? TotalStockValue / Quantity : 0m;
+    public decimal AverageCost => Quantity > 0m ? TotalStockValue / Quantity : CostBasis ?? 0m;
+    public decimal? CostBasis { get; private set; }
+    public bool CostPending { get; private set; }
     public DateTime LastUpdatedAt { get; private set; }
 
     /// <summary>Optimistic concurrency token — EF Core uses this for concurrent update detection.</summary>
@@ -56,6 +58,28 @@ public sealed class CurrentStock : AuditableEntity, ITenantScopedEntity, ICompan
         Quantity = newQty;
         LastUpdatedAt = DateTime.UtcNow;
         SetUpdated(updatedBy);
+    }
+
+    public void ApplyKardexMovement(StockMovement movement, bool authorizedNegativeSale, bool enforceAvailability)
+    {
+        if (movement.ProductId != ProductId || movement.WarehouseId != WarehouseId
+            || movement.CompanyId != CompanyId || movement.TenantId != TenantId
+            || movement.PreviousQuantity != Quantity)
+            throw new DomainRuleViolationException("Inventory movement does not match its current stock.");
+        var sale = movement.MovementType == ERP.Domain.Modules.Inventory.Enums.StockMovementType.SaleExit;
+        if (authorizedNegativeSale && !sale)
+            throw new DomainRuleViolationException("Only an authorized SaleExit can consume negative stock.");
+        if (sale && enforceAvailability && AvailableQuantity < -movement.Quantity)
+            throw new DomainRuleViolationException("Insufficient available stock.");
+        // Positive entries may compensate an existing negative balance partially; they never create a deficit.
+        if (movement.ResultQuantity < 0m && movement.Quantity < 0m && !(sale && authorizedNegativeSale))
+            throw new DomainRuleViolationException("Movement would leave insufficient stock.");
+        Quantity = movement.ResultQuantity;
+        TotalStockValue = movement.RunningStockValue;
+        CostBasis = movement.CostBasis;
+        CostPending = movement.CostPending;
+        LastUpdatedAt = DateTime.UtcNow;
+        SetUpdated(movement.CreatedBy);
     }
 
     public void Reserve(decimal quantity, Guid updatedBy)
