@@ -499,14 +499,13 @@ public sealed class UpdateSalesDraftAtomicityPostgreSqlTests : IAsyncLifetime
     [Fact]
     public async Task UpdateDraft_WhenLateValidationRejectsAfterChildDeletes_RollsBackEntireDraft()
     {
-        var invoiceId = (
-            await using var dbSeed = CreateContext()
-            await dbSeed
-                .SalesInvoices.AsNoTracking()
-                .Where(i => i.InvoiceNumber == "A3-ATOMIC-001")
-                .Select(i => i.Id)
-                .SingleAsync()
-        );
+        await using var dbSeed = CreateContext();
+
+        var invoiceId = await dbSeed
+            .SalesInvoices.AsNoTracking()
+            .Where(i => i.InvoiceNumber == "A3-ATOMIC-001")
+            .Select(i => i.Id)
+            .SingleAsync();
 
         // ── SNAPSHOT PREVIO (estado original persistido) ─────────────────────────────
         var before = await ReadSnapshotAsync(invoiceId);
