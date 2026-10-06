@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Purchases;
 using ERP.Application.Common;
 using ERP.Application.Modules.Sales.UseCases;
 using ERP.Application.Tests.TestSupport;
@@ -329,7 +330,7 @@ public sealed class SalesReturnDraftSpecialTaxTests
         returnLine.IrbpnrCode.Should().Be("5001");
         returnLine.IrbpnrAmount.Should().Be(0m);
         returnLine.Taxes.Should().Contain(t => t.TaxCode == SriTaxCategoryCodes.Irbpnr);
-        returnLine.Taxes.Single(t => t.TaxCode == SriTaxCategoryCodes.Irbpnr).Amount
+        returnLine.Taxes.Single(t => t.TaxCode == SriTaxCategoryCodes.Irbpnr).TaxAmount
             .Should().Be(0m);
         // IVA/ICE existentes no se pierden ni cambian.
         returnLine.VatAmount.Should().Be(line.VatAmount);
