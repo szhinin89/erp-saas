@@ -1,0 +1,14 @@
+/workspace/backend/src/ERP.Domain/bin/Debug/net10.0/ERP.Domain.deps.json
+/workspace/backend/src/ERP.Domain/bin/Debug/net10.0/ERP.Domain.dll
+/workspace/backend/src/ERP.Domain/bin/Debug/net10.0/ERP.Domain.pdb
+/workspace/backend/src/ERP.Domain/bin/Debug/net10.0/ERP.Domain.xml
+/workspace/backend/src/ERP.Domain/obj/Debug/net10.0/ERP.Domain.csproj.AssemblyReference.cache
+/workspace/backend/src/ERP.Domain/obj/Debug/net10.0/ERP.Domain.GeneratedMSBuildEditorConfig.editorconfig
+/workspace/backend/src/ERP.Domain/obj/Debug/net10.0/ERP.Domain.AssemblyInfoInputs.cache
+/workspace/backend/src/ERP.Domain/obj/Debug/net10.0/ERP.Domain.AssemblyInfo.cs
+/workspace/backend/src/ERP.Domain/obj/Debug/net10.0/ERP.Domain.csproj.CoreCompileInputs.cache
+/workspace/backend/src/ERP.Domain/obj/Debug/net10.0/ERP.Domain.dll
+/workspace/backend/src/ERP.Domain/obj/Debug/net10.0/refint/ERP.Domain.dll
+/workspace/backend/src/ERP.Domain/obj/Debug/net10.0/ERP.Domain.xml
+/workspace/backend/src/ERP.Domain/obj/Debug/net10.0/ERP.Domain.pdb
+/workspace/backend/src/ERP.Domain/obj/Debug/net10.0/ref/ERP.Domain.dll

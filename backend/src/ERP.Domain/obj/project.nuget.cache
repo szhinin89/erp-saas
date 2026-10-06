@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "NXryy9sw4fw=",
+  "success": true,
+  "projectFilePath": "/workspace/backend/src/ERP.Domain/ERP.Domain.csproj",
+  "expectedPackageFiles": [
+    "/root/.nuget/packages/mediatr.contracts/2.0.1/mediatr.contracts.2.0.1.nupkg.sha512"
+  ],
+  "logs": []
+}
