@@ -267,6 +267,76 @@ public sealed class SalesReturnDraftSpecialTaxTests
     }
 
     [Fact]
+    public async Task UpdateSalesReturnDraft_WhenOriginalIrbpnrIdentityHasZeroAmount_ProjectsZeroRowInsteadOfDroppingIt()
+    {
+        // A4 — la existencia fiscal de IRBPNR se determina por el código original, NO por el monto.
+        // Línea con identidad IRBPNR (código "5", code 5001) y Amount = 0 → la devolución debe
+        // conservar la fila IRBPNR con Amount 0; no puede desaparecer por ser cero.
+        var (invoice, line) = BuildAuthorizedInvoiceWithLine(
+            quantity: 10m,
+            unitPrice: 100m,
+            iceCode: "3010",
+            iceRate: 10m,
+            irbpnrCode: "5001",
+            irbpnrRate: 0.02m,
+            irbpnrAmount: 0m
+        );
+
+        var salesReturn = SalesReturn.CreateDraft(
+            TenantId,
+            CompanyId,
+            invoice.Id,
+            CustomerId,
+            returnNumber: "001-002-000000001",
+            reason: "Producto en mal estado",
+            createdBy: UserId
+        );
+
+        var returnRepo = new Mock<ISalesReturnRepository>();
+        returnRepo
+            .Setup(r => r.GetByIdAsync(TenantId, salesReturn.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(salesReturn);
+        returnRepo.Setup(r =>
+                r.GetReturnedQuantityByInvoiceDetailAsync(
+                    TenantId,
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(0m);
+
+        var invoiceRepo = MockInvoiceRepo(invoice);
+
+        var handler = new UpdateSalesReturnDraftHandler(
+            returnRepo.Object,
+            invoiceRepo.Object,
+            Tenant(),
+            Branch(),
+            User(),
+            PrecisionPolicyTestDouble.Mock()
+        );
+        var result = await handler.Handle(
+            new UpdateSalesReturnDraftCommand(
+                salesReturn.Id,
+                new List<SalesReturnLineInput> { new(line.Id, 10m) }
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+
+        var returnLine = salesReturn.Lines.Single();
+        returnLine.IrbpnrCode.Should().Be("5001");
+        returnLine.IrbpnrAmount.Should().Be(0m);
+        returnLine.Taxes.Should().Contain(t => t.TaxCode == SriTaxCategoryCodes.Irbpnr);
+        returnLine.Taxes.Single(t => t.TaxCode == SriTaxCategoryCodes.Irbpnr).Amount
+            .Should().Be(0m);
+        // IVA/ICE existentes no se pierden ni cambian.
+        returnLine.VatAmount.Should().Be(line.VatAmount);
+        returnLine.IceAmount.Should().Be(line.IceAmount);
+    }
+
+    [Fact]
     public void CreateSalesReturnDraftHandler_no_depende_de_IItemRepository_ni_de_Compras()
     {
         // Reglas 7/8 — el snapshot fiscal viene exclusivamente de SalesInvoiceDetail.Taxes de la

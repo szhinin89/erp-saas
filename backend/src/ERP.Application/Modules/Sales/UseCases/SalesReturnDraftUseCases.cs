@@ -417,10 +417,7 @@ file static class SalesReturnLineBuilder
             // IRBPNR no tiene campo escalar legacy — vive únicamente en Taxes, prorrateado por la
             // misma fracción de cantidad. Sin fila si la línea original no tenía IRBPNR (nunca se
             // genera IRBPNR falso).
-            if (
-                !string.IsNullOrWhiteSpace(originalLine.IrbpnrCode)
-                && originalLine.IrbpnrAmount > 0
-            )
+            if (!string.IsNullOrWhiteSpace(originalLine.IrbpnrCode))
             {
                 var irbpnrTax = originalLine.Taxes.First(t =>
                     t.TaxCode == SriTaxCategoryCodes.Irbpnr
