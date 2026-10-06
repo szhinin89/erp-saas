@@ -60,11 +60,24 @@ public sealed class UpdateSalesDraftScheduleTests
         public Mock<ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository> BankAccountRepo { get; } =
             new();
 
-        public PaymentTerm DefaultPt { get; } =
-            PaymentTerm.Create(TenantId, "CONT", "Contado", 1, 0, UserId);
+        // A3 (Atomic Sales Draft Update): doble de IUnitOfWork que imita ExecuteInTransactionAsync
+        // sin BD — corre el delegate y propaga excepciones (el rollback real lo garantiza la
+        // implementación de Infrastructure; aquí se verifica el BOUNDARY, no la BD). Mismo patrón
+        // del fake de CreateInitialAdminHandlerTests.
+        public Mock<IUnitOfWork> Uow { get; } = new();
 
         public Fixture()
         {
+            Uow
+                .Setup(u =>
+                    u.ExecuteInTransactionAsync(
+                        It.IsAny<Func<CancellationToken, Task>>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .Returns(
+                    (Func<CancellationToken, Task> operation, CancellationToken ct) => operation(ct)
+                );
             // SALES-CONTEXTUAL-PRICING-DRAFT-06B: default "sin pricing resuelto" (diccionario
             // vacío) para los tests de esta suite que no le importa el pricing contextual — evita
             // depender del comportamiento de Moq para mocks sin configurar en un método nuevo.
