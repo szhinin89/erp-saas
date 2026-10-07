@@ -306,6 +306,10 @@ public sealed class CreateSalesDraftHandler
                 "No existe una caja abierta para realizar ventas."
             );
 
+        if (!await SalesWarehouseGuard.AreValidAsync(cmd.Lines.Select(l => l.WarehouseId),
+                _t.TenantId, _c.CompanyId, _b.BranchId, _warehouseRepo, ct))
+            return Result<SalesInvoiceDto>.ValidationFailure(SalesWarehouseGuard.Error);
+
         var bp = await _bpRepo.GetByIdAsync(cmd.CustomerId, ct);
         if (bp is null)
             return Result<SalesInvoiceDto>.NotFound("Cliente no encontrado.");
@@ -688,6 +692,10 @@ public sealed class UpdateSalesDraftHandler
         CancellationToken ct
     )
     {
+        if (!await SalesWarehouseGuard.AreValidAsync(cmd.Lines.Select(l => l.WarehouseId),
+                _t.TenantId, _c.CompanyId, _b.BranchId, _warehouseRepo, ct))
+            return Result<SalesInvoiceDto>.ValidationFailure(SalesWarehouseGuard.Error);
+
         var bp = await _bpRepo.GetByIdAsync(cmd.CustomerId, ct);
         if (bp is null)
             return Result<SalesInvoiceDto>.NotFound("Cliente no encontrado.");

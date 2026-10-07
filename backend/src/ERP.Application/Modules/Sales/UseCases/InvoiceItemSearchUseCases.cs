@@ -28,6 +28,8 @@ public sealed class SearchItemsForInvoiceHandler
     private readonly IPricingResolver _pricingResolver;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
+    private readonly ICurrentBranch _branch;
+    private readonly ERP.Domain.Modules.Inventory.Interfaces.IWarehouseRepository _warehouses;
     private readonly ERP.Domain.Configuration.Interfaces.IOperationalPreferencesResolver _preferences;
 
     public SearchItemsForInvoiceHandler(
@@ -36,7 +38,9 @@ public sealed class SearchItemsForInvoiceHandler
         IPricingResolver pricingResolver,
         ICurrentTenant tenant,
         ICurrentCompany company,
-        ERP.Domain.Configuration.Interfaces.IOperationalPreferencesResolver preferences
+        ERP.Domain.Configuration.Interfaces.IOperationalPreferencesResolver preferences,
+        ICurrentBranch branch,
+        ERP.Domain.Modules.Inventory.Interfaces.IWarehouseRepository warehouses
     )
     {
         _repo = repo;
@@ -45,6 +49,8 @@ public sealed class SearchItemsForInvoiceHandler
         _tenant = tenant;
         _company = company;
         _preferences = preferences;
+        _branch = branch;
+        _warehouses = warehouses;
     }
 
     public async Task<Result<IReadOnlyList<InvoiceItemSearchResultDto>>> Handle(
@@ -52,6 +58,10 @@ public sealed class SearchItemsForInvoiceHandler
         CancellationToken cancellationToken
     )
     {
+        if (!await SalesWarehouseGuard.AreValidAsync([request.WarehouseId],
+                _tenant.TenantId, _company.CompanyId, _branch.BranchId, _warehouses, cancellationToken))
+            return Result<IReadOnlyList<InvoiceItemSearchResultDto>>.ValidationFailure(SalesWarehouseGuard.Error);
+
         var q = request.Query.Trim();
         if (q.Length < 2)
             return Result<IReadOnlyList<InvoiceItemSearchResultDto>>.Success(

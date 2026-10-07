@@ -41,6 +41,7 @@ public sealed class AuthorizeSalesInvoiceHandler
     private readonly ISalesInvoiceRepository _repo;
     private readonly ISalesReceivableRepository _rxRepo;
     private readonly IStockRepository _stockRepo;
+    private readonly IWarehouseRepository _warehouseRepo;
     private readonly IPaymentTermRepository _ptRepo;
     private readonly ISriTaxResolver _tax;
     private readonly IDocumentSequenceRepository _seqRepo;
@@ -95,7 +96,8 @@ public sealed class AuthorizeSalesInvoiceHandler
         ICurrentUser u,
         IOperationalPreferencesResolver preferences,
         ERP.Application.Modules.Companies.ICompanyPrecisionPolicyProvider precisionPolicyProvider,
-        ERP.Domain.Modules.Items.Interfaces.IItemRepository itemRepo
+        ERP.Domain.Modules.Items.Interfaces.IItemRepository itemRepo,
+        IWarehouseRepository warehouseRepo
     )
     {
         _repo = repo;
@@ -125,6 +127,7 @@ public sealed class AuthorizeSalesInvoiceHandler
         _u = u;
         _preferences = preferences;
         _itemRepo = itemRepo;
+        _warehouseRepo = warehouseRepo;
         _precisionPolicyProvider = precisionPolicyProvider;
     }
 
@@ -143,6 +146,10 @@ public sealed class AuthorizeSalesInvoiceHandler
 
         if (inv.Status != Domain.Modules.Sales.Enums.SalesInvoiceStatus.Draft)
             return Result<SalesInvoiceDto>.ValidationFailure("Esta factura ya fue autorizada.");
+
+        if (!await SalesWarehouseGuard.AreValidAsync(inv.Lines.Select(l => l.WarehouseId),
+                tid, cid, inv.BranchId, _warehouseRepo, ct))
+            return Result<SalesInvoiceDto>.ValidationFailure(SalesWarehouseGuard.Error);
 
         // ── Validar que la condición de pago del borrador siga activa (ADR-033, Fase 2 P1) ──
         // El snapshot congelado en el borrador (inv.PaymentTerm) no refleja cambios posteriores

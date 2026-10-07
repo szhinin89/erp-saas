@@ -25,6 +25,8 @@ public sealed class SearchItemsForInvoiceContextualPricingTests
     private static readonly Guid CompanyId = Guid.NewGuid();
     private static readonly Guid ItemId = Guid.NewGuid();
     private static readonly Guid CustomerId = Guid.NewGuid();
+    private static readonly Guid BranchId = Guid.NewGuid();
+    private static readonly Guid UserId = Guid.NewGuid();
 
     private sealed class Fixture
     {
@@ -33,11 +35,38 @@ public sealed class SearchItemsForInvoiceContextualPricingTests
         public Mock<IPricingResolver> PricingResolver { get; } = new();
         public Mock<ICurrentTenant> Tenant { get; } = new();
         public Mock<ICurrentCompany> Company { get; } = new();
+        public Mock<ICurrentBranch> Branch { get; } = new();
+        public Mock<ERP.Domain.Modules.Inventory.Interfaces.IWarehouseRepository> Warehouses { get; } = new();
 
         public Fixture(decimal basePrice = 100m, string? vatCode = "10", decimal vatPercent = 15m)
         {
             Tenant.Setup(t => t.TenantId).Returns(TenantId);
             Company.Setup(c => c.CompanyId).Returns(CompanyId);
+            Branch.Setup(b => b.BranchId).Returns(BranchId);
+
+            Warehouses
+                .Setup(r => r.GetByIdForCompanyAsync(
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync((Guid tenant, Guid company, Guid id, CancellationToken _) =>
+                {
+                    var warehouse = ERP.Domain.Modules.Inventory.Entities.Warehouse.Create(
+                        tenant,
+                        BranchId,
+                        "Warehouse",
+                        "W",
+                        null, null, null, null, null, null, null, null, null,
+                        UserId,
+                        company);
+
+                    typeof(ERP.Domain.Modules.Inventory.Entities.Warehouse)
+                        .GetProperty("Id")!
+                        .SetValue(warehouse, id);
+
+                    return warehouse;
+                });
 
             var match = new InvoiceItemMatch(
                 ItemId,
@@ -89,7 +118,15 @@ public sealed class SearchItemsForInvoiceContextualPricingTests
         }
 
         public SearchItemsForInvoiceHandler Build() =>
-            new(Repo.Object, Sri.Object, PricingResolver.Object, Tenant.Object, Company.Object, Preferences());
+            new(
+                Repo.Object,
+                Sri.Object,
+                PricingResolver.Object,
+                Tenant.Object,
+                Company.Object,
+                Preferences(),
+                Branch.Object,
+                Warehouses.Object);
 
         public void SetPricing(Guid? customerId, PricingResult result) =>
             PricingResolver

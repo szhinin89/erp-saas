@@ -4,6 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useSalesPage } from "./useSalesPage";
 import { apiGet, apiPost } from "../../lib/apiEnvelope";
 import { salesItemPricingService } from "../api/salesItemPricingService";
+import { stockLookupFacade } from "../../inventory/facades/stockLookupFacade";
+import type { ItemWarehouseAvailabilityDto } from "../../inventory/facades/stockLookupFacade";
 import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 import type { InvoiceItemSearchResultDto } from "../api/invoiceItemSearchService";
 
@@ -207,6 +209,41 @@ describe("POS hardening: real hook, mocked transport only", () => {
     act(() => result.current.removeLine(result.current.lines[0]._key));
     expect(result.current.lines.map((l) => l.itemId)).toEqual(["B"]);
   });
+  it("Warehouse A to B keeps B when A responds last and invalidates old stock", async () => {
+    const { result } = await setup();
+    await act(async () => { await result.current.addLineWithItem(item("product")); });
+    let resolveA!: (rows: ItemWarehouseAvailabilityDto[]) => void;
+    let resolveB!: (rows: ItemWarehouseAvailabilityDto[]) => void;
+    vi.spyOn(stockLookupFacade, "getWarehouseAvailability")
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveA = resolve; }))
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveB = resolve; }));
+    act(() => { result.current.handleWarehouseChange("wh-1"); });
+    act(() => { result.current.handleWarehouseChange("wh-2"); });
+    expect(result.current.lines[0]._stockQty).toBeUndefined();
+    expect(result.current.lines[0]._stockWarehouse).toBeUndefined();
+    const rows: ItemWarehouseAvailabilityDto[] = [
+      { warehouseId: "wh-1", warehouseName: "Principal", canSell: true, reserved: 0, available: 5 },
+      { warehouseId: "wh-2", warehouseName: "Alterna", canSell: true, reserved: 0, available: 20 },
+    ];
+    await act(async () => { resolveB(rows); });
+    await act(async () => { resolveA(rows); });
+    expect(result.current.lines[0]).toMatchObject({ warehouseId: "wh-2", _stockQty: 20, _stockWarehouse: "Alterna" });
+  });
+
+  it("Warehouse response cannot overwrite a line changed individually", async () => {
+    const { result } = await setup();
+    await act(async () => { await result.current.addLineWithItem(item("product")); });
+    let resolve!: (rows: ItemWarehouseAvailabilityDto[]) => void;
+    vi.spyOn(stockLookupFacade, "getWarehouseAvailability")
+      .mockImplementationOnce(() => new Promise((done) => { resolve = done; }));
+    act(() => { result.current.handleWarehouseChange("wh-1"); });
+    act(() => { result.current.onUpdateLineWarehouse(result.current.lines[0]._key, "wh-2", {
+      warehouseId: "wh-2", warehouseName: "Alterna", canSell: true, reserved: 0, available: 20,
+    }); });
+    await act(async () => { resolve([{ warehouseId: "wh-1", warehouseName: "Principal", canSell: true, reserved: 0, available: 5 }]); });
+    expect(result.current.lines[0]).toMatchObject({ warehouseId: "wh-2", _stockQty: 20, _stockWarehouse: "Alterna" });
+  });
+
   it("merges rescan, edits quantity/discount/net price, changes warehouse and clears", async () => {
     const { result } = await setup();
     await act(async () => {

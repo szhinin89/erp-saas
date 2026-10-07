@@ -464,7 +464,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             preferences.Object,
             PrecisionPolicyTestDouble.Mock(),
             OperativeItemRepository()
-        );
+        , OperativeWarehouseRepository());
 
         return (handler, companyClock, receivableRepo);
     }
@@ -621,7 +621,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             preferences.Object,
             PrecisionPolicyTestDouble.Mock(),
             OperativeItemRepository(itemControl, nature, itemCompany)
-        );
+        , OperativeWarehouseRepository());
 
         return (handler, stockRepo);
     }
@@ -885,7 +885,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             preferences.Object,
             PrecisionPolicyTestDouble.Mock(),
             OperativeItemRepository()
-        );
+        , OperativeWarehouseRepository());
 
         return (handler, stockRepo);
     }
@@ -946,7 +946,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             Mock.Of<IOperationalPreferencesResolver>(),
             PrecisionPolicyTestDouble.Mock(),
             OperativeItemRepository()
-        );
+        , OperativeWarehouseRepository());
 
         var result = await handler.Handle(
             new AuthorizeSalesInvoiceCommand(inv.Id),
@@ -3278,6 +3278,20 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
                     ERP.Domain.Modules.Items.ValueObjects.ItemStockConfig.Create(stockControlEnabled: itemControl), UserId, companyId: itemCompany ?? CompanyId, nature: nature);
                 typeof(ERP.Domain.Modules.Items.Entities.Item).GetProperty("Id")!.SetValue(item, id);
                 return item;
+            });
+        return repo.Object;
+    }
+
+    private static ERP.Domain.Modules.Inventory.Interfaces.IWarehouseRepository OperativeWarehouseRepository()
+    {
+        var repo = new Mock<ERP.Domain.Modules.Inventory.Interfaces.IWarehouseRepository>();
+        repo.Setup(r => r.GetByIdForCompanyAsync(TenantId, CompanyId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid tenant, Guid company, Guid id, CancellationToken _) =>
+            {
+                var warehouse = ERP.Domain.Modules.Inventory.Entities.Warehouse.Create(tenant, BranchId, "Warehouse", "W", null, null,
+                    null, null, null, null, null, null, null, UserId, company);
+                typeof(ERP.Domain.Modules.Inventory.Entities.Warehouse).GetProperty("Id")!.SetValue(warehouse, id);
+                return warehouse;
             });
         return repo.Object;
     }

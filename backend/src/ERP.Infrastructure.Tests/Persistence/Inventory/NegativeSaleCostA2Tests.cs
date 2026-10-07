@@ -162,7 +162,7 @@ public sealed class NegativeSaleCostA2Tests : IAsyncLifetime
                 Mock.Of<ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository>(), sessions.Object, registers.Object,
                 new AccountRepository(db), Mock.Of<IPostingEngine>(), NullLogger<AuthorizeSalesInvoiceHandler>.Instance,
                 new CurrentTenant(_tenantId), company, Mock.Of<ICurrentBranch>(b => b.BranchId == _branchId), Mock.Of<ICurrentUser>(u => u.UserId == _actor),
-                new Preferences(true), StandardPrecisionPolicyProvider.Instance, new ItemRepository(db));
+                new Preferences(true), StandardPrecisionPolicyProvider.Instance, new ItemRepository(db), new ERP.Infrastructure.Persistence.Repositories.WarehouseRepository(db, company));
             (await handler.Handle(new(invoice.Id), CancellationToken.None)).IsSuccess.Should().BeTrue();
         }
         await using var read = Context(_companyA);

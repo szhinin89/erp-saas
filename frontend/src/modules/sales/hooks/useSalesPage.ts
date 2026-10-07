@@ -427,7 +427,9 @@ export function useSalesPage() {
   // ── Issue flow state (Nueva Venta → Emitir Factura) ────────────────
   const issueInFlightRef = useRef(false);
   const lineLoadVersionRef = useRef(0);
-  useEffect(() => () => { ++lineLoadVersionRef.current; }, []);
+  const warehouseLoadVersionRef = useRef(0);
+  const lineWarehouseRequestsRef = useRef(new Map<number, object>());
+  useEffect(() => () => { ++lineLoadVersionRef.current; ++warehouseLoadVersionRef.current; }, []);
   const [issuePhase, setIssuePhase] = useState<IssuePhase>("idle");
   const [issueStepIndex, setIssueStepIndex] = useState(0);
   const [issueResult, setIssueResult] = useState<SalesInvoiceDto | null>(null);
@@ -1127,6 +1129,7 @@ export function useSalesPage() {
       warehouseId: string,
       option?: ItemWarehouseAvailabilityDto,
     ) => {
+      lineWarehouseRequestsRef.current.delete(key);
       const currentLines = getValues("lines");
       setValue(
         "lines",
@@ -1184,12 +1187,13 @@ export function useSalesPage() {
   // el stock de cada línea afectada con el mismo servicio que usa el selector por línea.
   const handleWarehouseChange = useCallback(
     (id: string) => {
+      const version = ++warehouseLoadVersionRef.current;
       setSelectedWarehouseId(id);
       const currentLines = getValues("lines");
       setValue(
         "lines",
         currentLines.map((l) =>
-          l._participatesInInventory ? { ...l, warehouseId: id } : l,
+          l._participatesInInventory ? { ...l, warehouseId: id, _stockQty: undefined, _stockWarehouse: undefined } : l,
         ),
         { shouldValidate: true, shouldDirty: true },
       );
@@ -1197,17 +1201,20 @@ export function useSalesPage() {
       const affected = currentLines.filter((l) => l._participatesInInventory && l.itemId);
       void Promise.all(
         affected.map(async (l) => {
+          const request = {};
+          lineWarehouseRequestsRef.current.set(l._key, request);
           try {
             const options = await stockLookupFacade.getWarehouseAvailability(
               l.itemId!,
             );
             const match = options.find((o) => o.warehouseId === id);
-            if (!match) return;
+            if (!match || version !== warehouseLoadVersionRef.current
+                || lineWarehouseRequestsRef.current.get(l._key) !== request) return;
             const latest = getValues("lines");
             setValue(
               "lines",
               latest.map((x) =>
-                x._key === l._key
+                x._key === l._key && x.itemId === l.itemId && x.warehouseId === id
                   ? {
                       ...x,
                       _stockQty: match.available,
@@ -1262,6 +1269,8 @@ export function useSalesPage() {
   // ── Form reset ─────────────────────────────────────────────────────
   const resetForm = useCallback(async () => {
     ++lineLoadVersionRef.current;
+    ++warehouseLoadVersionRef.current;
+    lineWarehouseRequestsRef.current.clear();
     setServerLineIssues([]);
     const base = emptySalesInvoiceForm();
     reset({
