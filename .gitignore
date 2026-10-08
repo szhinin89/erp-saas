@@ -4,3 +4,5 @@
 # .NET build artifacts
 **/bin/
 **/obj/
+
+backend/src/ERP.API/files/
