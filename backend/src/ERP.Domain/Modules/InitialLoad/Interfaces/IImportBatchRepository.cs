@@ -12,6 +12,10 @@ public interface IImportBatchRepository
         CancellationToken cancellationToken = default
     );
 
+    // Requires an active transaction; reloads state after obtaining the scoped row lock.
+    Task<ImportBatch?> GetByIdForUpdateAsync(Guid id, Guid tenantId, Guid companyId,
+        CancellationToken cancellationToken = default);
+
     Task<(IReadOnlyList<ImportBatch> Batches, int TotalCount)> GetPageAsync(
         Guid tenantId,
         Guid companyId,

@@ -26,6 +26,21 @@ public sealed class ImportBatchRepository : IImportBatchRepository
             .Include(x => x.Files)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
+    public async Task<ImportBatch?> GetByIdForUpdateAsync(Guid id, Guid tenantId, Guid companyId,
+        CancellationToken cancellationToken = default)
+    {
+        if (_context.Database.CurrentTransaction is null)
+            throw new InvalidOperationException("El bloqueo del lote requiere una transacción.");
+        await _context.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT 1 FROM import_batches WHERE id = {id} AND tenant_id = {tenantId} AND company_id = {companyId} FOR UPDATE",
+            cancellationToken);
+        var batch = await GetByIdAsync(id, tenantId, companyId, cancellationToken);
+        // The initial request lookup may have tracked a snapshot before another request committed.
+        if (batch is not null)
+            await _context.Entry(batch).ReloadAsync(cancellationToken);
+        return batch;
+    }
+
     public async Task<(IReadOnlyList<ImportBatch> Batches, int TotalCount)> GetPageAsync(
         Guid tenantId,
         Guid companyId,

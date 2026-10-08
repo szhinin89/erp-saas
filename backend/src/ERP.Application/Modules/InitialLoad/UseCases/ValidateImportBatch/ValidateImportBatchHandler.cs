@@ -26,6 +26,7 @@ public sealed partial class ValidateImportBatchHandler
     private readonly IReadOnlyDictionary<ImportType, IImportProcessor> _processors;
     private readonly IOperationalContext _ctx;
     private readonly ILogger<ValidateImportBatchHandler> _logger;
+    private readonly IUnitOfWork _unitOfWork;
 
     public ValidateImportBatchHandler(
         IImportBatchRepository batchRepo,
@@ -34,7 +35,8 @@ public sealed partial class ValidateImportBatchHandler
         IFileStorage fileStorage,
         IReadOnlyDictionary<ImportType, IImportProcessor> processors,
         IOperationalContext ctx,
-        ILogger<ValidateImportBatchHandler> logger
+        ILogger<ValidateImportBatchHandler> logger,
+        IUnitOfWork unitOfWork
     )
     {
         _batchRepo = batchRepo;
@@ -44,6 +46,7 @@ public sealed partial class ValidateImportBatchHandler
         _processors = processors;
         _ctx = ctx;
         _logger = logger;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<Result<ImportBatchDto>> Handle(
@@ -65,6 +68,14 @@ public sealed partial class ValidateImportBatchHandler
                 "No hay un procesador disponible para este tipo de importación."
             );
 
+        return batch.ImportType == ImportType.Items
+            ? await ValidateItemsAsync(batch, processor, cancellationToken)
+            : await ValidateRowsAsync(batch, processor, cancellationToken);
+    }
+
+    private async Task<Result<ImportBatchDto>> ValidateRowsAsync(
+        ImportBatch batch, IImportProcessor processor, CancellationToken cancellationToken)
+    {
         var file = batch.Files.OrderByDescending(f => f.UploadedAt).FirstOrDefault();
         if (file is null)
             return Result<ImportBatchDto>.ValidationFailure(

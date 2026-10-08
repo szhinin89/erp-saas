@@ -1,5 +1,14 @@
 # Project Status
 
+## IL-1C — Idempotencia, concurrencia y recovery de Productos (2026-10-08)
+
+**Estado: IMPLEMENTADO y validado; apto para declarar CLOSED. Sin migración, commit ni push.** IL-1A, IL-1B e Items core permanecen CLOSED.
+
+- Confirmación y revalidación toman el mismo lock PostgreSQL por lote + Tenant + Company dentro de la transacción y recargan el estado después de esperar. Completed devuelve el resultado persistido sin ejecutar filas ni crear Items/catálogos/outbox otra vez; retry tras respuesta perdida converge al mismo resultado.
+- Revalidación reemplaza incidencias y filas en una sola transacción. Fallo, archivo faltante o cancelación revierte staging y estado; primera validación conserva Uploaded y revalidación conserva Validated. Estados intermedios no se confirman por separado. Lotes completados rechazan revalidación. Otro lote conserva create-only y detecta duplicados existentes.
+- Gates PASS: unitarios focales InitialLoad **92/92**; PostgreSQL 16 con migraciones completas **28/28** (14 regresiones IL-1B + 14 escenarios IL-1C); API build y diff check PASS. Incluye requests concurrentes forzados bajo lock real, retry post-commit sin duplicados/outbox adicional, confirmación contra revalidación, reemplazos concurrentes, rollback tras DELETE, cancelación esperando lock, recovery inicial, scope y preview/confirmación/retry de 201 filas.
+- **BUG REAL adicional fuera del alcance de Productos:** el bucle legacy de ConfirmImportBatchHandler para otros tipos deja filas fallidas sin marcar; con una página de 200 fallos persistentes puede pedirla indefinidamente y volver a añadir incidencias. Observado en código; no modificado. Productos aborta y revierte en el primer fallo.
+
 ## IL-1B — Confirmación atómica del catálogo de Productos (2026-10-08)
 
 **Estado: IMPLEMENTADO y validado; apto para declarar CLOSED. Sin migración, commit ni push.** IL-1A e Items core permanecen CLOSED.

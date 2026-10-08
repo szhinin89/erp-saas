@@ -48,6 +48,11 @@ public sealed class ImportBatchIssueRepository : IImportBatchIssueRepository
         return await query.OrderBy(x => x.RowNumber).ToListAsync(cancellationToken);
     }
 
+    public async Task DeleteByBatchAsync(Guid importBatchId, Guid tenantId, Guid companyId,
+        CancellationToken cancellationToken = default) =>
+        await _context.ImportBatchIssues.Where(x => x.ImportBatchId == importBatchId
+            && x.TenantId == tenantId && x.CompanyId == companyId).ExecuteDeleteAsync(cancellationToken);
+
     public async Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
         await _context.SaveChangesAsync(cancellationToken);
 }

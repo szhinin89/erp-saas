@@ -60,9 +60,10 @@ public sealed class InitialLoadPostgresFixture : IAsyncLifetime
 /// <summary>PostgreSQL 16 + migraciones completas. Comandos, validadores, repositorios y UoW reales.
 /// Solo contexto, publisher ajeno a esta prueba y lectores no usados son fakes; fallos de storage se inyectan explícitamente.</summary>
 [Trait("Category", "PostgreSql")]
-public sealed class ConfirmItemsAtomicPostgreSqlTests : IClassFixture<InitialLoadPostgresFixture>, IAsyncLifetime
+public sealed partial class ConfirmItemsAtomicPostgreSqlTests : IClassFixture<InitialLoadPostgresFixture>, IAsyncLifetime
 {
     private readonly ServiceProvider _services;
+    private readonly string _connectionString;
     private static long _nextTaxNumber = 1790012345;
     private int _outboxBaseline;
     private Guid _tenant;
@@ -77,6 +78,7 @@ public sealed class ConfirmItemsAtomicPostgreSqlTests : IClassFixture<InitialLoa
 
     public ConfirmItemsAtomicPostgreSqlTests(InitialLoadPostgresFixture postgres)
     {
+        _connectionString = postgres.ConnectionString;
         var tenant = new Mock<ICurrentTenant>();
         tenant.SetupGet(x => x.TenantId).Returns(() => _tenant);
         var company = new Mock<ICurrentCompany>();
@@ -105,7 +107,7 @@ public sealed class ConfirmItemsAtomicPostgreSqlTests : IClassFixture<InitialLoa
         services.AddSingleton(Mock.Of<ICurrentUser>(x => x.UserId == _user));
         services.AddSingleton(publisher.Object);
         services.AddDbContext<ErpDbContext>(o => o.UseNpgsql(postgres.ConnectionString).AddInterceptors(
-            new CompanyTenantInterceptor(), new NewChildEntityTrackingInterceptor(), new ItemFailureInterceptor(this)));
+            new CompanyTenantInterceptor(), new NewChildEntityTrackingInterceptor(), new ItemFailureInterceptor(this), new BatchLockObserver(this)));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IItemRepository, ItemRepository>();
         services.AddScoped<ICategoryNodeRepository, CategoryNodeRepository>();
@@ -117,6 +119,10 @@ public sealed class ConfirmItemsAtomicPostgreSqlTests : IClassFixture<InitialLoa
         config.Setup(x => x.ResolveMaxCategoryDepthAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync(3);
         services.AddSingleton(config.Object);
         services.AddSingleton(Mock.Of<IItemImportSheetReader>());
+        var files = new Mock<ERP.Application.Common.Interfaces.IFileStorage>();
+        files.Setup(x => x.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => new MemoryStream([1]));
+        services.AddSingleton(files.Object);
         services.AddSingleton(Mock.Of<IBusinessPartnerRepository>());
         services.AddScoped<ItemImportProcessor>();
         services.AddScoped<IImportBatchRepository, ImportBatchRepository>();
@@ -339,6 +345,12 @@ public sealed class ConfirmItemsAtomicPostgreSqlTests : IClassFixture<InitialLoa
         public override ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData,
             InterceptionResult<int> result, CancellationToken cancellationToken = default)
         {
+            if (test._failStaging && eventData.Context!.ChangeTracker.Entries<ImportBatchRow>()
+                .Any(e => e.State == EntityState.Added))
+            {
+                if (test._cancel) throw new OperationCanceledException();
+                throw new InvalidOperationException("Injected staging failure");
+            }
             if (test._failureSku is not null && eventData.Context!.ChangeTracker.Entries<Item>()
                 .Any(e => e.State == EntityState.Added && e.Entity.Code.SKU == test._failureSku))
             {

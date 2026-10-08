@@ -3,6 +3,7 @@ using ERP.Application.Modules.InitialLoad.DTOs;
 using ERP.Application.Modules.InitialLoad.Interfaces;
 using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.InitialLoad.Entities;
+using ERP.Domain.Modules.InitialLoad.Enums;
 
 namespace ERP.Application.Modules.InitialLoad.UseCases.ConfirmImportBatch;
 
@@ -11,17 +12,25 @@ public sealed partial class ConfirmImportBatchHandler
     private async Task<Result<ImportBatchConfirmResultDto>> ConfirmItemsAsync(
         ImportBatch batch, IImportProcessor processor, CancellationToken ct)
     {
-        var errors = await _rowRepo.GetPageAsync(batch.Id, batch.TenantId, batch.CompanyId,
-            pageNumber: 1, pageSize: 1, onlyWithBlockingIssue: true, ct);
-        if (batch.IssueRows > 0 || errors.TotalCount > 0 || batch.ValidRows != batch.TotalRows)
-            return Result<ImportBatchConfirmResultDto>.ValidationFailure(
-                "El lote tiene errores. Debe corregir todas las filas antes de confirmar.");
-        if (processor is not ICatalogImportConfirmation catalogConfirmation)
-            return Result<ImportBatchConfirmResultDto>.Failure("El procesador no soporta confirmación de catálogos.");
-
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
+            batch = await _batchRepo.GetByIdForUpdateAsync(batch.Id, _ctx.TenantId, _ctx.CompanyId, ct)
+                ?? throw new DomainRuleViolationException("Lote de importación no encontrado.");
+            if (batch.Status == ImportStatus.Completed)
+            {
+                await _unitOfWork.CommitAsync(ct);
+                return Result<ImportBatchConfirmResultDto>.Success(
+                    new(batch.Id, batch.Status, batch.ImportedRows, FailedRows: 0));
+            }
+            var errors = await _rowRepo.GetPageAsync(batch.Id, batch.TenantId, batch.CompanyId,
+                pageNumber: 1, pageSize: 1, onlyWithBlockingIssue: true, ct);
+            if (batch.IssueRows > 0 || errors.TotalCount > 0 || batch.ValidRows != batch.TotalRows)
+                throw new DomainRuleViolationException(
+                    "El lote tiene errores. Debe corregir todas las filas antes de confirmar.");
+            if (processor is not ICatalogImportConfirmation catalogConfirmation)
+                throw new DomainRuleViolationException("El procesador no soporta confirmación de catálogos.");
+
             batch.BeginConfirming(_ctx.UserId);
             await _batchRepo.SaveChangesAsync(ct);
             var importedRows = 0;

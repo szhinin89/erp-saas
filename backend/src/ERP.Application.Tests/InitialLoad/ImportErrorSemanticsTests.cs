@@ -72,7 +72,7 @@ public sealed class ImportErrorSemanticsTests
                 Files.Object,
                 ProcessorMap,
                 Ctx.Object,
-                NullLogger<ValidateImportBatchHandler>.Instance
+                NullLogger<ValidateImportBatchHandler>.Instance, Mock.Of<IUnitOfWork>()
             );
 
         public ConfirmImportBatchHandler Confirm() =>

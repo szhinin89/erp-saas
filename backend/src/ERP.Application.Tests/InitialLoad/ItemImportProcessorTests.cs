@@ -641,6 +641,7 @@ public sealed class ItemImportProcessorTests
         var issues = new Mock<IImportBatchIssueRepository>();
         var files = new Mock<IFileStorage>();
         batches.Setup(x => x.GetByIdAsync(batch.Id, TenantId, CompanyId, It.IsAny<CancellationToken>())).ReturnsAsync(batch);
+        batches.Setup(x => x.GetByIdForUpdateAsync(batch.Id, TenantId, CompanyId, It.IsAny<CancellationToken>())).ReturnsAsync(batch);
         files.Setup(x => x.GetAsync("file.xlsx", It.IsAny<CancellationToken>())).ReturnsAsync(new MemoryStream([1]));
         var first = ValidRow();
         var second = ValidRow();
@@ -657,7 +658,7 @@ public sealed class ItemImportProcessorTests
         var handler = new ValidateImportBatchHandler(
             batches.Object, rows.Object, issues.Object, files.Object,
             new Dictionary<ImportType, IImportProcessor> { [ImportType.Items] = processor }, _ctx.Object,
-            NullLogger<ValidateImportBatchHandler>.Instance);
+            NullLogger<ValidateImportBatchHandler>.Instance, Mock.Of<IUnitOfWork>());
         var result = await handler.Handle(new ValidateImportBatchCommand(batch.Id), default);
         result.IsSuccess.Should().BeTrue();
         result.Value!.ValidRows.Should().Be(0);

@@ -35,5 +35,8 @@ public interface IImportBatchRowRepository
         CancellationToken cancellationToken = default
     );
 
+    Task DeleteByBatchAsync(Guid importBatchId, Guid tenantId, Guid companyId,
+        CancellationToken cancellationToken = default);
+
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

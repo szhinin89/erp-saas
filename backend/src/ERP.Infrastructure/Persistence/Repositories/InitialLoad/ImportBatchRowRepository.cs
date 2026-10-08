@@ -57,6 +57,11 @@ public sealed class ImportBatchRowRepository : IImportBatchRowRepository
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
+    public async Task DeleteByBatchAsync(Guid importBatchId, Guid tenantId, Guid companyId,
+        CancellationToken cancellationToken = default) =>
+        await _context.ImportBatchRows.Where(x => x.ImportBatchId == importBatchId
+            && x.TenantId == tenantId && x.CompanyId == companyId).ExecuteDeleteAsync(cancellationToken);
+
     public async Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
         await _context.SaveChangesAsync(cancellationToken);
 }

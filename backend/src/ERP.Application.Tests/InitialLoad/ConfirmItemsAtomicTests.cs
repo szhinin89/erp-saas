@@ -32,6 +32,7 @@ public sealed class ConfirmItemsAtomicTests
         var rows = Enumerable.Range(1, 2).Select(i => ImportBatchRow.Create(_tenant, _company, batch.Id, i, "{}", _user)).ToList();
         foreach (var row in rows) row.SetParsedData(row.RowNumber.ToString(), false, _user);
         _batches.Setup(x => x.GetByIdAsync(batch.Id, _tenant, _company, It.IsAny<CancellationToken>())).ReturnsAsync(batch);
+        _batches.Setup(x => x.GetByIdForUpdateAsync(batch.Id, _tenant, _company, It.IsAny<CancellationToken>())).ReturnsAsync(batch);
         _rows.Setup(x => x.GetValidRowsPageAsync(batch.Id, _tenant, _company, 200, It.IsAny<CancellationToken>())).ReturnsAsync(rows);
         var ctx = Mock.Of<IOperationalContext>(x => x.TenantId == _tenant && x.CompanyId == _company && x.UserId == _user);
         var handler = new ConfirmImportBatchHandler(_batches.Object, _rows.Object, _issues.Object,
@@ -41,13 +42,28 @@ public sealed class ConfirmItemsAtomicTests
     }
 
     [Fact]
-    public async Task Lote_con_errores_se_rechaza_antes_de_abrir_transaccion()
+    public async Task Retry_de_lote_completado_devuelve_resultado_sin_procesar_filas()
+    {
+        var catalog = _processor.As<ICatalogImportConfirmation>();
+        var f = Setup();
+        catalog.Setup(x => x.ConfirmRowAsync(It.IsAny<string>(), false, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => RowConfirmResult.Success(Guid.NewGuid()));
+        var first = await f.Handler.Handle(new(f.Batch.Id), default);
+        var retry = await f.Handler.Handle(new(f.Batch.Id), default);
+        retry.IsSuccess.Should().BeTrue();
+        retry.Value.Should().Be(first.Value);
+        catalog.Verify(x => x.ConfirmRowAsync(It.IsAny<string>(), false, It.IsAny<CancellationToken>()), Times.Exactly(2));
+        _rows.Verify(x => x.GetValidRowsPageAsync(f.Batch.Id, _tenant, _company, 200, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Lote_con_errores_se_rechaza_bajo_bloqueo()
     {
         var f = Setup(errors: 1);
         var result = await f.Handler.Handle(new(f.Batch.Id), default);
         result.IsSuccess.Should().BeFalse();
         f.Batch.Status.Should().Be(ImportStatus.Validated);
-        _uow.Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _uow.Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Once);
         _processor.Verify(x => x.ConfirmRowAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -59,7 +75,7 @@ public sealed class ConfirmItemsAtomicTests
             .ReturnsAsync((Rows: (IReadOnlyList<ImportBatchRow>)[], TotalCount: 1));
         var result = await f.Handler.Handle(new(f.Batch.Id), default);
         result.IsSuccess.Should().BeFalse();
-        _uow.Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _uow.Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Theory]
