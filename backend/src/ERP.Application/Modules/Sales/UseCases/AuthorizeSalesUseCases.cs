@@ -42,6 +42,7 @@ public sealed class AuthorizeSalesInvoiceHandler
     private readonly ISalesReceivableRepository _rxRepo;
     private readonly IStockRepository _stockRepo;
     private readonly IWarehouseRepository _warehouseRepo;
+    private readonly ISalesAuthorizationRetryReader? _retryReader;
     private readonly IPaymentTermRepository _ptRepo;
     private readonly ISriTaxResolver _tax;
     private readonly IDocumentSequenceRepository _seqRepo;
@@ -97,7 +98,8 @@ public sealed class AuthorizeSalesInvoiceHandler
         IOperationalPreferencesResolver preferences,
         ERP.Application.Modules.Companies.ICompanyPrecisionPolicyProvider precisionPolicyProvider,
         ERP.Domain.Modules.Items.Interfaces.IItemRepository itemRepo,
-        IWarehouseRepository warehouseRepo
+        IWarehouseRepository warehouseRepo,
+        ISalesAuthorizationRetryReader? retryReader = null
     )
     {
         _repo = repo;
@@ -128,10 +130,48 @@ public sealed class AuthorizeSalesInvoiceHandler
         _preferences = preferences;
         _itemRepo = itemRepo;
         _warehouseRepo = warehouseRepo;
+        _retryReader = retryReader;
         _precisionPolicyProvider = precisionPolicyProvider;
     }
 
     public async Task<Result<SalesInvoiceDto>> Handle(
+        AuthorizeSalesInvoiceCommand cmd,
+        CancellationToken ct
+    )
+    {
+        try
+        {
+            var result = await AuthorizeAsync(cmd, ct);
+            // A concurrent winner can commit between reading Draft and a precheck (e.g.
+            // availability). A rejected attempt is successful only if this same invoice committed.
+            return !result.IsSuccess
+                ? await ReadCommittedAuthorizationAsync(cmd, ct) ?? result
+                : result;
+        }
+        catch (Exception ex) when (_retryReader is not null
+            && (_retryReader.IsConflict(ex) || ex is ERP.Domain.Exceptions.DomainRuleViolationException))
+        {
+            // The failed unit of work may still contain an Authorized aggregate and staged
+            // effects. Only committed state read through a fresh context can prove success.
+            var committed = await ReadCommittedAuthorizationAsync(cmd, ct);
+            if (committed is not null)
+                return committed;
+            throw;
+        }
+    }
+
+    private async Task<Result<SalesInvoiceDto>?> ReadCommittedAuthorizationAsync(
+        AuthorizeSalesInvoiceCommand cmd, CancellationToken ct)
+    {
+        if (_retryReader is null)
+            return null;
+        var committed = await _retryReader.ReadAuthorizedAsync(
+            _t.TenantId, _c.CompanyId, _b.BranchId, cmd.InvoiceId, ct);
+        return committed is null ? null : Result<SalesInvoiceDto>.Success(
+            SalesMapper.ToDto(committed.Invoice, committed.ElectronicDocument));
+    }
+
+    private async Task<Result<SalesInvoiceDto>> AuthorizeAsync(
         AuthorizeSalesInvoiceCommand cmd,
         CancellationToken ct
     )
@@ -141,8 +181,15 @@ public sealed class AuthorizeSalesInvoiceHandler
         var uid = _u.UserId;
 
         var inv = await _repo.GetByIdAsync(tid, cmd.InvoiceId, ct);
-        if (inv is null || inv.BranchId != _b.BranchId)
+        if (inv is null || inv.TenantId != tid || inv.CompanyId != cid || cid == Guid.Empty
+            || inv.BranchId != _b.BranchId || _b.BranchId == Guid.Empty)
             return Result<SalesInvoiceDto>.NotFound("Factura no encontrada.");
+
+        if (inv.Status == SalesInvoiceStatus.Authorized)
+        {
+            var existingDocument = await _edocRepo.GetBySourceAsync(tid, "Sales", inv.Id, ct);
+            return Result<SalesInvoiceDto>.Success(SalesMapper.ToDto(inv, existingDocument));
+        }
 
         if (inv.Status != Domain.Modules.Sales.Enums.SalesInvoiceStatus.Draft)
             return Result<SalesInvoiceDto>.ValidationFailure("Esta factura ya fue autorizada.");

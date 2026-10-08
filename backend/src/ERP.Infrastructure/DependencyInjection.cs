@@ -200,6 +200,8 @@ public static class DependencyInjection
         services.AddScoped<ICompanyProvisioningService, CompanyProvisioningService>();
         services.AddSingleton<ISecurityMetrics, SecurityMetrics>();
         services.AddSingleton<IDatabaseExceptionTranslator, PostgresDatabaseExceptionTranslator>();
+        services.AddScoped<ERP.Application.Modules.Sales.Services.ISalesAuthorizationRetryReader,
+            ERP.Infrastructure.Persistence.Repositories.Sales.SalesAuthorizationRetryReader>();
         services.AddScoped<
             ERP.Application.MasterData.Reconciliation.IMasterDataReconciliationService,
             MasterData.Reconciliation.BusinessPartnerReconciliationService
