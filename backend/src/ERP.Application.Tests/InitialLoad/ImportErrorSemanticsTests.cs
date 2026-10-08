@@ -82,7 +82,8 @@ public sealed class ImportErrorSemanticsTests
                 Issues.Object,
                 ProcessorMap,
                 Ctx.Object,
-                NullLogger<ConfirmImportBatchHandler>.Instance
+                NullLogger<ConfirmImportBatchHandler>.Instance,
+                Mock.Of<IUnitOfWork>()
             );
     }
 

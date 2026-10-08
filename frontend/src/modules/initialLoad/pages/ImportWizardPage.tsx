@@ -266,7 +266,7 @@ export function ImportWizardPage({
               />
               <div className="zh-form-actions-row">
                 <ZHBtn
-                  disabled={batch.validRows === 0}
+                  disabled={batch.validRows === 0 || (importType === "Items" && batch.issueRows > 0)}
                   onClick={() => setConfirmModalOpen(true)}
                 >
                   Confirmar importación
@@ -287,7 +287,9 @@ export function ImportWizardPage({
         title="Confirmar importación"
         subtitle={
           batch
-            ? `Se importarán ${batch.validRows} ${resultEntityLabelPlural} válidos. ${batch.issueRows} fila(s) con error serán omitidas.`
+            ? importType === "Items"
+              ? `Se importará el lote completo de ${batch.totalRows} productos. Todas las filas deben ser válidas.`
+              : `Se importarán ${batch.validRows} ${resultEntityLabelPlural} válidos. ${batch.issueRows} fila(s) con error serán omitidas.`
             : undefined
         }
         footer={
@@ -301,7 +303,9 @@ export function ImportWizardPage({
       >
         <div className="il-confirm-summary">
           <p className="zh-form-help il-confirm-summary__intro">
-            Esta acción crea los registros válidos en el sistema. No se puede deshacer.
+            {importType === "Items"
+              ? "Esta acción importa el lote completo. Si una fila falla, no se guardará ningún producto, categoría o marca de esta importación."
+              : "Esta acción crea los registros válidos en el sistema. No se puede deshacer."}
           </p>
           {batch && (
             <>

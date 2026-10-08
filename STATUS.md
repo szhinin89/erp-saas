@@ -1,5 +1,14 @@
 # Project Status
 
+## IL-1B — Confirmación atómica del catálogo de Productos (2026-10-08)
+
+**Estado: IMPLEMENTADO y validado; apto para declarar CLOSED. Sin migración, commit ni push.** IL-1A e Items core permanecen CLOSED.
+
+- Productos rechaza lotes con errores; Items, Categorías, Marcas, marcas de filas y finalización del lote comparten una transacción. Primer rechazo, excepción o cancelación aborta todo; rollback con token no cancelable y limpieza del tracker. Los otros tipos de importación conservan su comportamiento.
+- Autocreación leída del lote: OFF no crea faltantes; ON crea al confirmar. Categoría/Marca se releen; inactivos, categoría con hijos activos o rama deshabilitada se rechazan. La UI de Productos exige todas las filas válidas y comunica confirmación completa.
+- Gates PASS: confirmación unitarios **8/8**; regresión focal de processor/semántica de errores **60/60**; PostgreSQL 16 con migraciones completas **14/14** (13 escenarios + caso de 201 filas con fallo en segunda página). Comprueba rollback real de Items, catálogos, filas y outbox desde contexto nuevo; ON/OFF ante faltantes tras preview, clasificación invalidada, rechazo de dominio, fallo técnico y cancelación. API build, frontend build/platform guard y diff check PASS.
+- Sin BUG REAL adicional confirmado. Idempotencia, concurrencia, retry, revalidación del lote y recovery permanecen fuera de alcance (IL-1C).
+
 ## A9 — Commercial → ElectronicDocument recovery (2026-10-08)
 
 **Estado: IMPLEMENTADO y validado; apto para declarar CLOSED. Sin commit/push.** A1–A8 permanecen CLOSED.

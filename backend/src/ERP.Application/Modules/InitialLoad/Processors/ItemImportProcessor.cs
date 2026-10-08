@@ -39,7 +39,7 @@ namespace ERP.Application.Modules.InitialLoad.Processors;
 /// y la creación real ocurre recién en <c>ConfirmRowAsync</c> — nunca en Validate, para no dejar
 /// catálogo huérfano si el usuario cancela el lote sin confirmar.
 /// </summary>
-public sealed class ItemImportProcessor : IImportProcessor, IImportBatchValidator
+public sealed class ItemImportProcessor : IImportProcessor, IImportBatchValidator, ICatalogImportConfirmation
 {
     private readonly IItemImportSheetReader _reader;
     private readonly IItemRepository _itemRepo;
@@ -224,17 +224,20 @@ public sealed class ItemImportProcessor : IImportProcessor, IImportBatchValidato
         return new RowValidationResult(JsonSerializer.Serialize(parsed), hasBlockingIssue, issues);
     }
 
-    public async Task<RowConfirmResult> ConfirmRowAsync(string parsedDataJson, CancellationToken ct)
+    public Task<RowConfirmResult> ConfirmRowAsync(string parsedDataJson, CancellationToken ct) =>
+        ConfirmRowAsync(parsedDataJson, autoCreateCatalogValues: false, ct);
+
+    public async Task<RowConfirmResult> ConfirmRowAsync(string parsedDataJson, bool autoCreateCatalogValues, CancellationToken ct)
     {
         var parsed = JsonSerializer.Deserialize<ParsedItemRow>(parsedDataJson)!;
 
-        var categoryNodeId = await ResolveOrCreateCategoryAsync(parsed.CategoryName, ct);
+        var categoryNodeId = await ResolveOrCreateCategoryAsync(parsed.CategoryName, autoCreateCatalogValues, ct);
         if (categoryNodeId is null)
             return RowConfirmResult.Failed(
                 $"No se pudo resolver/crear la categoría '{parsed.CategoryName}'."
             );
 
-        var brandId = await ResolveOrCreateBrandAsync(parsed.BrandName, ct);
+        var brandId = await ResolveOrCreateBrandAsync(parsed.BrandName, autoCreateCatalogValues, ct);
         if (brandId is null)
             return RowConfirmResult.Failed(
                 $"No se pudo resolver/crear la marca '{parsed.BrandName}'."
@@ -602,15 +605,22 @@ public sealed class ItemImportProcessor : IImportProcessor, IImportBatchValidato
 
     private async Task<Guid?> ResolveOrCreateCategoryAsync(
         string categoryName,
+        bool autoCreateCatalogValues,
         CancellationToken ct
     )
     {
-        var categories = await _categoryRepo.GetAllAsync(_ctx.TenantId, includeInactive: false, ct);
+        var categories = await _categoryRepo.GetAllAsync(_ctx.TenantId, includeInactive: true, ct);
         var existing = categories.FirstOrDefault(c =>
             string.Equals(c.Name, categoryName, StringComparison.OrdinalIgnoreCase)
         );
         if (existing is not null)
-            return existing.Id;
+            return existing.IsActive
+                && !await _categoryRepo.HasActiveChildrenAsync(existing.Id, ct)
+                && !await _categoryRepo.AnyAncestorDisabledAsync(existing.Id, ct)
+                ? existing.Id : null;
+
+        if (!autoCreateCatalogValues)
+            return null;
 
         var result = await _mediator.Send(
             new CreateCategoryNodeCommand(
@@ -626,14 +636,17 @@ public sealed class ItemImportProcessor : IImportProcessor, IImportBatchValidato
         return result.IsSuccess ? result.Value!.Id : null;
     }
 
-    private async Task<Guid?> ResolveOrCreateBrandAsync(string brandName, CancellationToken ct)
+    private async Task<Guid?> ResolveOrCreateBrandAsync(string brandName, bool autoCreateCatalogValues, CancellationToken ct)
     {
         var brands = await _catalogRepo.GetBrandsAsync(_ctx.TenantId, ct);
         var existing = brands.FirstOrDefault(b =>
-            b.IsActive && string.Equals(b.Name, brandName, StringComparison.OrdinalIgnoreCase)
+            string.Equals(b.Name, brandName, StringComparison.OrdinalIgnoreCase)
         );
         if (existing is not null)
-            return existing.Id;
+            return existing.IsActive ? existing.Id : null;
+
+        if (!autoCreateCatalogValues)
+            return null;
 
         var result = await _mediator.Send(
             new CreateBrandCommand(Code: DeriveCode(brandName, 20), Name: brandName),

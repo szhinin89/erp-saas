@@ -11,11 +11,7 @@ using Microsoft.Extensions.Logging;
 namespace ERP.Application.Modules.InitialLoad.UseCases.ConfirmImportBatch;
 
 /// <summary>
-/// Parcial-seguro por construcción: solo procesa filas sin error bloqueante
-/// (<see cref="IImportBatchRowRepository.StreamValidRowsAsync"/>) — las filas bloqueadas nunca
-/// llegan a <c>ConfirmRowAsync</c>. Una excepción/fallo en una fila no aborta el lote: se
-/// registra como <see cref="ImportBatchIssue"/> (código <c>CONFIRM_FAILED</c>) y continúa con la
-/// siguiente.
+/// Productos se confirma como una única transacción. Otros tipos conservan su flujo existente.
 /// </summary>
 public sealed partial class ConfirmImportBatchHandler
     : IRequestHandler<ConfirmImportBatchCommand, Result<ImportBatchConfirmResultDto>>
@@ -26,6 +22,7 @@ public sealed partial class ConfirmImportBatchHandler
     private readonly IReadOnlyDictionary<ImportType, IImportProcessor> _processors;
     private readonly IOperationalContext _ctx;
     private readonly ILogger<ConfirmImportBatchHandler> _logger;
+    private readonly IUnitOfWork _unitOfWork;
 
     public ConfirmImportBatchHandler(
         IImportBatchRepository batchRepo,
@@ -33,7 +30,8 @@ public sealed partial class ConfirmImportBatchHandler
         IImportBatchIssueRepository issueRepo,
         IReadOnlyDictionary<ImportType, IImportProcessor> processors,
         IOperationalContext ctx,
-        ILogger<ConfirmImportBatchHandler> logger
+        ILogger<ConfirmImportBatchHandler> logger,
+        IUnitOfWork unitOfWork
     )
     {
         _batchRepo = batchRepo;
@@ -42,6 +40,7 @@ public sealed partial class ConfirmImportBatchHandler
         _processors = processors;
         _ctx = ctx;
         _logger = logger;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<Result<ImportBatchConfirmResultDto>> Handle(
@@ -64,6 +63,9 @@ public sealed partial class ConfirmImportBatchHandler
             return Result<ImportBatchConfirmResultDto>.ValidationFailure(
                 "No hay un procesador disponible para este tipo de importación."
             );
+
+        if (batch.ImportType == ImportType.Items)
+            return await ConfirmItemsAsync(batch, processor, cancellationToken);
 
         batch.BeginConfirming(_ctx.UserId);
         await _batchRepo.SaveChangesAsync(cancellationToken);

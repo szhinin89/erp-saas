@@ -82,7 +82,7 @@ public sealed class ItemImportProcessorTests
             Guid.NewGuid()
         );
         _categoryRepo
-            .Setup(x => x.GetAllAsync(TenantId, false, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetAllAsync(TenantId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([category]);
 
         _catalogRepo.Setup(x => x.BarcodeTypeExistsAndActiveAsync("Internal", It.IsAny<CancellationToken>())).ReturnsAsync(true);
