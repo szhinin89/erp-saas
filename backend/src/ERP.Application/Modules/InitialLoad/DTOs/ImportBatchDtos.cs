@@ -139,10 +139,8 @@ public sealed record ParsedSupplierRow(
 /// sí viene resuelto porque los tipos de ítem son un catálogo cerrado que Validate solo puede
 /// leer, nunca crear.
 ///
-/// <see cref="IsAvailableOnPOS"/> ya incorpora la regla "sin precio (o precio inválido) → no
-/// disponible en POS": el processor la fuerza a false en Validate cuando
-/// <see cref="BaseSalePrice"/> es null, independientemente de lo que diga la columna de la
-/// plantilla. <see cref="SupplierId"/> ya viene resuelto (o null si no se pudo vincular de forma
+/// POS conserva la elección explícita SI/NO; SI sin PVP positivo bloquea la fila.
+/// <see cref="SupplierId"/> ya viene resuelto (o null si no se pudo vincular de forma
 /// inequívoca) porque resolver un proveedor es una lectura pura, sin efectos secundarios.
 /// </summary>
 public sealed record ParsedItemRow(
@@ -153,14 +151,17 @@ public sealed record ParsedItemRow(
     string DefaultUomCode,
     string CategoryName,
     string BrandName,
-    IReadOnlyList<string> BarcodeCodes,
+    IReadOnlyList<ParsedItemBarcode> Barcodes,
     string? SaleVatCode,
+    string? PurchaseVatCode,
     decimal? BaseSalePrice,
     bool IsAvailableOnPOS,
     Guid? SupplierId,
     string? SupplierItemCode,
     string? Observations
 );
+
+public sealed record ParsedItemBarcode(string Code, string BarcodeType);
 
 /// <summary>
 /// Fila de Stock Inicial ya tipada — resultado del mapeo de <c>InitialStockImportProcessor</c>

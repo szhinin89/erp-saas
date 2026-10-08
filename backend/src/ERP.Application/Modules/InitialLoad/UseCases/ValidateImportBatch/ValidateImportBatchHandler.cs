@@ -127,15 +127,23 @@ public sealed partial class ValidateImportBatchHandler
         var warningRowCount = 0;
         var newIssues = new List<Domain.Modules.InitialLoad.Entities.ImportBatchIssue>();
 
+        IReadOnlyList<RowValidationResult> validations;
+        var rowValidations = new List<RowValidationResult>();
         for (var i = 0; i < rows.Count; i++)
-        {
-            var row = rows[i];
-            var validation = await processor.ValidateRowAsync(
-                row.RowNumber,
+            rowValidations.Add(await processor.ValidateRowAsync(
+                rows[i].RowNumber,
                 readResult.Rows[i],
                 batch.AutoCreateCatalogValues,
                 cancellationToken
-            );
+            ));
+        validations = processor is IImportBatchValidator batchValidator
+            ? batchValidator.ValidateBatch(rowValidations)
+            : rowValidations;
+
+        for (var i = 0; i < rows.Count; i++)
+        {
+            var row = rows[i];
+            var validation = validations[i];
 
             row.SetParsedData(validation.ParsedDataJson, validation.HasBlockingIssue, _ctx.UserId);
 

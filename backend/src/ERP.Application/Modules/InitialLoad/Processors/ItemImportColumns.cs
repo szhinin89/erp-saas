@@ -14,12 +14,16 @@ public static class ItemImportColumns
     public const string Name = "Nombre";
     public const string ItemTypeCode = "Tipo de Ítem";
     public const string UomCode = "Unidad Base";
-    public const string VatCode = "IVA";
+    public const string SaleVatCode = "IVA Venta";
+    public const string PurchaseVatCode = "IVA Compra";
     public const string CategoryName = "Categoría";
     public const string BrandName = "Marca";
     public const string Barcode1 = "Código Barra 1";
     public const string Barcode2 = "Código Barra 2";
     public const string Barcode3 = "Código Barra 3";
+    public const string BarcodeType1 = "Tipo Código Barra 1";
+    public const string BarcodeType2 = "Tipo Código Barra 2";
+    public const string BarcodeType3 = "Tipo Código Barra 3";
     public const string Pvp = "PVP";
     public const string AvailableOnPos = "Disponible POS";
     public const string SupplierQuery = "Proveedor";
@@ -33,12 +37,16 @@ public static class ItemImportColumns
         Name,
         ItemTypeCode,
         UomCode,
-        VatCode,
+        SaleVatCode,
+        PurchaseVatCode,
         CategoryName,
         BrandName,
         Barcode1,
+        BarcodeType1,
         Barcode2,
+        BarcodeType2,
         Barcode3,
+        BarcodeType3,
         Pvp,
         AvailableOnPos,
         SupplierQuery,

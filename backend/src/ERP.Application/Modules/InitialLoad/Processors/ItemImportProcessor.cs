@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using ERP.Application.Common;
 using ERP.Application.Items.UseCases.Brands;
@@ -10,6 +11,7 @@ using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.InitialLoad.Enums;
 using ERP.Domain.Modules.Items.Interfaces;
 using MediatR;
+using FluentValidation;
 
 namespace ERP.Application.Modules.InitialLoad.Processors;
 
@@ -25,7 +27,7 @@ namespace ERP.Application.Modules.InitialLoad.Processors;
 /// producto principal completo (SKU, categoría, marca, hasta 3 códigos de barras, PVP,
 /// proveedor+código). Ningún dato de stock/costeo/Kardex se escribe desde aquí.
 ///
-/// DESVIACIÓN DOCUMENTADA (mantenida de la primera vuelta): <c>CreateItemCommandValidator</c> ya
+/// Contrato vigente: <c>CreateItemCommandValidator</c>
 /// exige Categoría/Marca/al menos un código de barras para CUALQUIER ítem — faltar cualquiera de
 /// los tres sigue siendo error bloqueante aquí, nunca advertencia, para que el preview nunca
 /// marque "válida" una fila que fallaría en Confirm.
@@ -37,7 +39,7 @@ namespace ERP.Application.Modules.InitialLoad.Processors;
 /// y la creación real ocurre recién en <c>ConfirmRowAsync</c> — nunca en Validate, para no dejar
 /// catálogo huérfano si el usuario cancela el lote sin confirmar.
 /// </summary>
-public sealed class ItemImportProcessor : IImportProcessor
+public sealed class ItemImportProcessor : IImportProcessor, IImportBatchValidator
 {
     private readonly IItemImportSheetReader _reader;
     private readonly IItemRepository _itemRepo;
@@ -102,7 +104,8 @@ public sealed class ItemImportProcessor : IImportProcessor
         var name = Get(rawRow, ItemImportColumns.Name);
         var itemTypeCode = Get(rawRow, ItemImportColumns.ItemTypeCode);
         var uomCode = Get(rawRow, ItemImportColumns.UomCode);
-        var vatCode = Get(rawRow, ItemImportColumns.VatCode);
+        var saleVatCode = Get(rawRow, ItemImportColumns.SaleVatCode);
+        var purchaseVatCode = Get(rawRow, ItemImportColumns.PurchaseVatCode);
         var categoryName = Get(rawRow, ItemImportColumns.CategoryName);
         var brandName = Get(rawRow, ItemImportColumns.BrandName);
         var availableOnPosRaw = Get(rawRow, ItemImportColumns.AvailableOnPos);
@@ -138,7 +141,8 @@ public sealed class ItemImportProcessor : IImportProcessor
 
         var itemTypeId = await ResolveItemTypeAsync(itemTypeCode, issues, ct);
         await ValidateUomAsync(uomCode, issues, ct);
-        var resolvedVatCode = await ValidateVatAsync(vatCode, issues, ct);
+        var resolvedSaleVatCode = await ValidateVatAsync(saleVatCode, ItemImportColumns.SaleVatCode, issues, ct);
+        var resolvedPurchaseVatCode = await ValidateVatAsync(purchaseVatCode, ItemImportColumns.PurchaseVatCode, issues, ct);
         await ValidateCatalogNameAsync(
             categoryName,
             "La categoría",
@@ -164,7 +168,7 @@ public sealed class ItemImportProcessor : IImportProcessor
             issues
         );
 
-        var barcodeCodes = await ValidateBarcodesAsync(rawRow, issues, ct);
+        var barcodes = await ValidateBarcodesAsync(rawRow, issues, ct);
 
         var baseSalePrice = await ValidatePriceAsync(priceRaw, issues);
 
@@ -180,9 +184,21 @@ public sealed class ItemImportProcessor : IImportProcessor
 
         var supplierId = await ResolveSupplierAsync(supplierQuery, supplierItemCode, issues, ct);
 
-        // Regla explícita: sin precio válido, nunca disponible en POS — independientemente de lo
-        // que diga la columna de la plantilla.
-        var isAvailableOnPos = baseSalePrice.HasValue && ParseBool(availableOnPosRaw);
+        var isAvailableOnPos = string.Equals(availableOnPosRaw, "SI", StringComparison.OrdinalIgnoreCase);
+        if (!isAvailableOnPos && !string.Equals(availableOnPosRaw, "NO", StringComparison.OrdinalIgnoreCase))
+            issues.Add(new RowIssue(ImportSeverity.Error, "INVALID_POS", "Disponible POS debe indicar SI o NO.", ItemImportColumns.AvailableOnPos));
+        if (isAvailableOnPos && (!baseSalePrice.HasValue || baseSalePrice <= 0))
+            issues.Add(new RowIssue(ImportSeverity.Error, "POS_REQUIRES_PRICE", "Disponible POS=SI exige un PVP válido mayor que cero.", ItemImportColumns.Pvp));
+
+        if (supplierId.HasValue && !string.IsNullOrWhiteSpace(supplierItemCode)
+            && await _itemRepo.SupplierCodeExistsAsync(supplierId.Value, supplierItemCode, _ctx.TenantId, ct))
+            issues.Add(new RowIssue(ImportSeverity.Error, "DUPLICATE_SUPPLIER_CODE", "El código ya está asignado a otro ítem para este proveedor.", ItemImportColumns.SupplierItemCode));
+
+        var category = (await _categoryRepo.GetAllAsync(_ctx.TenantId, false, ct)).FirstOrDefault(c =>
+            string.Equals(c.Name, categoryName, StringComparison.OrdinalIgnoreCase));
+        if (category is not null && (await _categoryRepo.HasActiveChildrenAsync(category.Id, ct)
+            || await _categoryRepo.AnyAncestorDisabledAsync(category.Id, ct)))
+            issues.Add(new RowIssue(ImportSeverity.Error, "INVALID_CATEGORY", "La categoría debe ser un nodo hoja de una rama activa.", ItemImportColumns.CategoryName));
 
         var parsed = new ParsedItemRow(
             sku?.Trim() ?? string.Empty,
@@ -192,14 +208,17 @@ public sealed class ItemImportProcessor : IImportProcessor
             uomCode?.Trim() ?? string.Empty,
             categoryName?.Trim() ?? string.Empty,
             brandName?.Trim() ?? string.Empty,
-            barcodeCodes,
-            resolvedVatCode,
+            barcodes,
+            resolvedSaleVatCode,
+            resolvedPurchaseVatCode,
             baseSalePrice,
             isAvailableOnPos,
             supplierId,
             supplierId.HasValue ? supplierItemCode?.Trim() : null,
             observations
         );
+
+        ValidateItemContract(parsed, rawRow, issues);
 
         var hasBlockingIssue = issues.Any(i => i.Severity == ImportSeverity.Error);
         return new RowValidationResult(JsonSerializer.Serialize(parsed), hasBlockingIssue, issues);
@@ -222,8 +241,8 @@ public sealed class ItemImportProcessor : IImportProcessor
             );
 
         var barcodes = parsed
-            .BarcodeCodes.Select(
-                (code, idx) => new CreateItemBarcodeDto(code, "Internal", idx == 0)
+            .Barcodes.Select(
+                (barcode, idx) => new CreateItemBarcodeDto(barcode.Code, barcode.BarcodeType, idx == 0)
             )
             .ToList();
 
@@ -246,6 +265,7 @@ public sealed class ItemImportProcessor : IImportProcessor
                 brandId.Value,
                 barcodes,
                 SaleVatCode: parsed.SaleVatCode,
+                PurchaseVatCode: parsed.PurchaseVatCode,
                 Observations: parsed.Observations,
                 SupplierCodes: supplierCodes,
                 BaseSalePrice: parsed.BaseSalePrice,
@@ -324,6 +344,7 @@ public sealed class ItemImportProcessor : IImportProcessor
 
     private async Task<string?> ValidateVatAsync(
         string? vatCode,
+        string fieldName,
         List<RowIssue> issues,
         CancellationToken ct
     )
@@ -339,7 +360,7 @@ public sealed class ItemImportProcessor : IImportProcessor
                     ImportSeverity.Error,
                     "INVALID_VAT_CODE",
                     $"El código de IVA '{vatCode}' no existe en el catálogo SRI.",
-                    ItemImportColumns.VatCode
+                    fieldName
                 )
             );
             return null;
@@ -365,6 +386,12 @@ public sealed class ItemImportProcessor : IImportProcessor
         }
 
         var name = rawName.Trim();
+        if (name.Length > 120)
+        {
+            issues.Add(new RowIssue(ImportSeverity.Error, "INVALID_LENGTH",
+                $"{label} no puede exceder 120 caracteres.", fieldName));
+            return;
+        }
         if (await existsAsync(name))
             return;
 
@@ -392,96 +419,135 @@ public sealed class ItemImportProcessor : IImportProcessor
         }
     }
 
-    private async Task<IReadOnlyList<string>> ValidateBarcodesAsync(
-        IReadOnlyDictionary<string, string?> rawRow,
-        List<RowIssue> issues,
-        CancellationToken ct
-    )
+    private async Task<IReadOnlyList<ParsedItemBarcode>> ValidateBarcodesAsync(
+        IReadOnlyDictionary<string, string?> rawRow, List<RowIssue> issues, CancellationToken ct)
     {
-        var raw = new[]
+        var columns = new[]
         {
-            Get(rawRow, ItemImportColumns.Barcode1),
-            Get(rawRow, ItemImportColumns.Barcode2),
-            Get(rawRow, ItemImportColumns.Barcode3),
-        }
-            .Where(c => !string.IsNullOrWhiteSpace(c))
-            .Select(c => c!.Trim())
-            .ToList();
-
-        if (raw.Count == 0)
+            (ItemImportColumns.Barcode1, ItemImportColumns.BarcodeType1),
+            (ItemImportColumns.Barcode2, ItemImportColumns.BarcodeType2),
+            (ItemImportColumns.Barcode3, ItemImportColumns.BarcodeType3),
+        };
+        var barcodes = new List<ParsedItemBarcode>();
+        foreach (var (codeColumn, typeColumn) in columns)
         {
-            AddMissing(
-                issues,
-                ItemImportColumns.Barcode1,
-                "Debe indicar al menos un código de barras (Código Barra 1/2/3)."
-            );
-            return [];
-        }
-
-        var distinct = raw.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-        if (distinct.Count != raw.Count)
-        {
-            issues.Add(
-                new RowIssue(
-                    ImportSeverity.Error,
-                    "DUPLICATE_BARCODE_IN_ROW",
-                    "Los códigos de barras de la fila no pueden repetirse entre sí.",
-                    ItemImportColumns.Barcode1
-                )
-            );
-            return distinct;
-        }
-
-        var duplicatesInCatalog = new List<string>();
-        foreach (var code in distinct)
-        {
+            var code = Get(rawRow, codeColumn);
+            var type = Get(rawRow, typeColumn);
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                if (!string.IsNullOrWhiteSpace(type))
+                    AddMissing(issues, codeColumn, "Un tipo de barcode requiere su código.");
+                continue;
+            }
+            if (string.IsNullOrWhiteSpace(type))
+                AddMissing(issues, typeColumn, "El tipo de código de barras es obligatorio.");
+            else if (!await _catalogRepo.BarcodeTypeExistsAndActiveAsync(type, ct))
+                issues.Add(new RowIssue(ImportSeverity.Error, "INVALID_BARCODE_TYPE",
+                    "El tipo de código de barras no existe o está inactivo.", typeColumn));
             if (await _itemRepo.BarcodeExistsAsync(code, _ctx.TenantId, _ctx.CompanyId, ct))
-                duplicatesInCatalog.Add(code);
+                issues.Add(new RowIssue(ImportSeverity.Error, "DUPLICATE_BARCODE",
+                    "El código de barras ya está asignado a otro ítem.", codeColumn));
+            barcodes.Add(new ParsedItemBarcode(code, type ?? string.Empty));
         }
-
-        if (duplicatesInCatalog.Count > 0)
-            issues.Add(
-                new RowIssue(
-                    ImportSeverity.Error,
-                    "DUPLICATE_BARCODE",
-                    $"Código(s) de barras ya asignados a otro ítem: {string.Join(", ", duplicatesInCatalog)}.",
-                    ItemImportColumns.Barcode1
-                )
-            );
-
-        return distinct;
+        if (barcodes.Count == 0)
+            AddMissing(issues, ItemImportColumns.Barcode1, "Debe indicar al menos un código de barras.");
+        if (barcodes.Select(b => Normalize(b.Code)).Distinct().Count() != barcodes.Count)
+            issues.Add(new RowIssue(ImportSeverity.Error, "DUPLICATE_BARCODE_IN_ROW",
+                "Los códigos de barras de la fila no pueden repetirse.", ItemImportColumns.Barcode1));
+        return barcodes;
     }
 
     private static Task<decimal?> ValidatePriceAsync(string? priceRaw, List<RowIssue> issues)
     {
         if (string.IsNullOrWhiteSpace(priceRaw))
-        {
-            issues.Add(
-                new RowIssue(
-                    ImportSeverity.Warning,
-                    "MISSING_SALE_PRICE",
-                    "El ítem no tiene PVP — se importa igual, pero sin disponibilidad en POS.",
-                    ItemImportColumns.Pvp
-                )
-            );
             return Task.FromResult<decimal?>(null);
-        }
-
-        if (decimal.TryParse(priceRaw, out var parsedPrice) && parsedPrice >= 0)
-            return Task.FromResult<decimal?>(parsedPrice);
-
-        // Regla explícita: PVP inválido nunca bloquea la fila — se importa el ítem base sin
-        // precio (misma consecuencia que PVP ausente), solo se reporta que no se aplicó.
-        issues.Add(
-            new RowIssue(
-                ImportSeverity.Warning,
-                "PRICE_NOT_APPLIED",
-                $"El PVP '{priceRaw}' no es un número válido — el ítem se importa sin precio.",
-                ItemImportColumns.Pvp
-            )
-        );
+        if (decimal.TryParse(priceRaw, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent,
+            CultureInfo.InvariantCulture, out var price) && price >= 0)
+            return Task.FromResult<decimal?>(price);
+        issues.Add(new RowIssue(ImportSeverity.Error, "INVALID_PRICE",
+            "El PVP debe ser un número no negativo, con punto decimal y sin separador de miles.", ItemImportColumns.Pvp));
         return Task.FromResult<decimal?>(null);
     }
+
+    private static void ValidateItemContract(ParsedItemRow row, IReadOnlyDictionary<string, string?> rawRow, List<RowIssue> issues)
+    {
+        // Reutiliza el contrato CLOSED sin escribir ni alterar su validador.
+        // Categoría/Marca se validan por nombre y catálogo arriba, sin IDs ficticios.
+        var command = new CreateItemCommand(row.SKU, row.ShortName, row.Description,
+            row.ItemTypeId, row.DefaultUomCode, null, null,
+            row.Barcodes.Select((b, i) => new CreateItemBarcodeDto(b.Code, b.BarcodeType, i == 0)).ToList(),
+            SaleVatCode: row.SaleVatCode, PurchaseVatCode: row.PurchaseVatCode,
+            Observations: row.Observations, BaseSalePrice: row.BaseSalePrice,
+            SupplierCodes: row.SupplierId.HasValue && row.SupplierItemCode is not null
+                ? [new CreateItemSupplierCodeDto(row.SupplierId.Value, row.SupplierItemCode, true)] : null,
+            IsAvailableOnPOS: row.IsAvailableOnPOS);
+        foreach (var error in new CreateItemCommandValidator().Validate(command, options => options.IncludeProperties(
+            nameof(CreateItemCommand.SKU), nameof(CreateItemCommand.ShortName), nameof(CreateItemCommand.Description),
+            nameof(CreateItemCommand.ItemTypeId), nameof(CreateItemCommand.DefaultUomCode),
+            nameof(CreateItemCommand.SaleVatCode), nameof(CreateItemCommand.PurchaseVatCode),
+            nameof(CreateItemCommand.Observations), nameof(CreateItemCommand.BaseSalePrice),
+            nameof(CreateItemCommand.Barcodes), nameof(CreateItemCommand.SupplierCodes), nameof(CreateItemCommand.Nature)
+        )).Errors)
+        {
+            var field = error.PropertyName switch
+            {
+                "SKU" => ItemImportColumns.Sku,
+                "ShortName" or "Description" => ItemImportColumns.Name,
+                "ItemTypeId" => ItemImportColumns.ItemTypeCode,
+                "DefaultUomCode" => ItemImportColumns.UomCode,
+                "SaleVatCode" => ItemImportColumns.SaleVatCode,
+                "PurchaseVatCode" => ItemImportColumns.PurchaseVatCode,
+                "Observations" => ItemImportColumns.Observations,
+                "BaseSalePrice" => ItemImportColumns.Pvp,
+                _ when error.PropertyName.StartsWith("Barcodes[", StringComparison.Ordinal) => BarcodeField(error.PropertyName, rawRow),
+                _ when error.PropertyName.StartsWith("SupplierCodes") => ItemImportColumns.SupplierItemCode,
+                _ => ItemImportColumns.Barcode1,
+            };
+            if (!issues.Any(i => i.Severity == ImportSeverity.Error && i.FieldName == field))
+                issues.Add(new RowIssue(ImportSeverity.Error, "ITEM_CONTRACT_INVALID", error.ErrorMessage, field));
+        }
+    }
+
+    private static string BarcodeField(string property, IReadOnlyDictionary<string, string?> rawRow)
+    {
+        var columns = new[]
+        {
+            (Code: ItemImportColumns.Barcode1, Type: ItemImportColumns.BarcodeType1),
+            (Code: ItemImportColumns.Barcode2, Type: ItemImportColumns.BarcodeType2),
+            (Code: ItemImportColumns.Barcode3, Type: ItemImportColumns.BarcodeType3),
+        }.Where(c => !string.IsNullOrWhiteSpace(Get(rawRow, c.Code))).ToList();
+        var index = int.Parse(property.Split('[', ']')[1], CultureInfo.InvariantCulture);
+        return property.EndsWith("BarcodeType", StringComparison.Ordinal) ? columns[index].Type : columns[index].Code;
+    }
+
+    public IReadOnlyList<RowValidationResult> ValidateBatch(IReadOnlyList<RowValidationResult> rows)
+    {
+        var parsed = rows.Select(r => JsonSerializer.Deserialize<ParsedItemRow>(r.ParsedDataJson)!).ToList();
+        var issues = rows.Select(r => r.Issues.ToList()).ToList();
+        void Check(IEnumerable<(string Key, int Row)> entries, string code, string field)
+        {
+            foreach (var group in entries.Where(e => e.Key.Length > 0).GroupBy(e => e.Key))
+            {
+                var affected = group.Select(e => e.Row).Distinct().ToList();
+                if (affected.Count < 2) continue;
+                foreach (var index in affected)
+                    issues[index].Add(new RowIssue(ImportSeverity.Error, code,
+                        "Valor duplicado entre filas del archivo.", field));
+            }
+        }
+        Check(parsed.Select((r, i) => (Normalize(r.SKU), i)), "DUPLICATE_SKU_IN_FILE", ItemImportColumns.Sku);
+        Check(parsed.SelectMany((r, i) => r.Barcodes.Select(b => (Normalize(b.Code), i))),
+            "DUPLICATE_BARCODE_IN_FILE", ItemImportColumns.Barcode1);
+        Check(parsed.Select((r, i) => (r.SupplierId.HasValue && !string.IsNullOrWhiteSpace(r.SupplierItemCode)
+            ? r.SupplierId.Value.ToString() + ":" + Normalize(r.SupplierItemCode) : string.Empty, i)),
+            "DUPLICATE_SUPPLIER_CODE_IN_FILE", ItemImportColumns.SupplierItemCode);
+        return rows.Select((r, i) => r with
+        {
+            Issues = issues[i], HasBlockingIssue = issues[i].Any(x => x.Severity == ImportSeverity.Error),
+        }).ToList();
+    }
+
+    private static string Normalize(string value) => value.Trim().ToUpperInvariant();
 
     private async Task<Guid?> ResolveSupplierAsync(
         string? supplierQuery,
@@ -589,17 +655,6 @@ public sealed class ItemImportProcessor : IImportProcessor
 
     private static void AddMissing(List<RowIssue> issues, string field, string message) =>
         issues.Add(new RowIssue(ImportSeverity.Error, "MISSING_REQUIRED_FIELD", message, field));
-
-    private static bool ParseBool(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-            return false;
-        var v = value.Trim();
-        return string.Equals(v, "SI", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(v, "SÍ", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(v, "TRUE", StringComparison.OrdinalIgnoreCase)
-            || v == "1";
-    }
 
     private static string? Get(IReadOnlyDictionary<string, string?> row, string column) =>
         row.TryGetValue(column, out var value) ? value?.Trim() : null;
