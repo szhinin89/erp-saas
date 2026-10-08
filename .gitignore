@@ -6,3 +6,5 @@
 **/obj/
 
 backend/src/ERP.API/files/
+.api-startup.log
+backend/src/ERP.API/logs/
