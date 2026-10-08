@@ -1,5 +1,11 @@
 # WORK_QUEUE.md — Cola de tareas controladas
 
+## A9 — Commercial → ElectronicDocument recovery
+
+**Status: IMPLEMENTADO y validado; apto para declarar CLOSED (2026-10-08).**
+
+Recuperación durable exclusivamente de SalesInvoice Authorized + Electronic + secuencial definitivo sin documento por origen. Registro create-only en infraestructura existente; scopes frescos; concurrencia PostgreSQL segura. No reautoriza ni reanuda/envía documentos existentes. Sin migración, commit ni push. Gates y resultados: `STATUS.md`, sección A9. A1–A8 permanecen CLOSED por instrucción vigente.
+
 ## A3 — Atomic Sales Draft Update
 
 **Status: OPEN**
@@ -46,4 +52,3 @@ Una actualización rechazada debe dejar el Sales Draft exactamente igual.
 - **A6** — Warehouse guards/race
 - **A7** — Sales concurrency
 - **A8** — Authorization retry/idempotence
-- **A9** — Commercial → ElectronicDocument recovery

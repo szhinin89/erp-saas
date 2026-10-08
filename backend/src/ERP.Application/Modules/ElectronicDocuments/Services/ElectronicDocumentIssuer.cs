@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace ERP.Application.Modules.ElectronicDocuments.Services;
 
-public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
+public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer, IElectronicDocumentRegistration
 {
     private readonly IElectronicDocumentRepository _repository;
     private readonly IElectronicDocumentXmlSupplierResolver _xmlSupplierResolver;
@@ -56,9 +56,20 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
         _logger = logger;
     }
 
-    public async Task<Result<ElectronicDocumentDto>> RegisterAsync(
+    public Task<Result<ElectronicDocumentDto>> RegisterAsync(
         RegisterElectronicDocumentRequest request,
         CancellationToken ct = default
+    ) => RegisterCoreAsync(request, createOnly: false, ct);
+
+    public Task<Result<ElectronicDocumentDto>> RegisterMissingAsync(
+        RegisterElectronicDocumentRequest request,
+        CancellationToken ct = default
+    ) => RegisterCoreAsync(request, createOnly: true, ct);
+
+    private async Task<Result<ElectronicDocumentDto>> RegisterCoreAsync(
+        RegisterElectronicDocumentRequest request,
+        bool createOnly,
+        CancellationToken ct
     )
     {
         LogRegisterStarted(
@@ -97,6 +108,11 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
         );
         if (existing is not null)
         {
+            // Recovery must never resume even Draft/Failed. This check also covers a
+            // request that inserted between candidate selection and registration.
+            if (createOnly)
+                return Result<ElectronicDocumentDto>.Success(ElectronicDocumentMapper.ToDto(existing));
+
             // Draft/Failed nunca llegaron a ningún estado terminal — se reanuda el pipeline
             // sobre esa misma fila en vez de bloquear con "ya existe" (ver invariante en
             // ElectronicDocument: la fila se crea ANTES de correr el pipeline).
@@ -143,7 +159,9 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
             );
         }
 
-        return await RunPipelineAsync(document, request, ct);
+        return createOnly
+            ? Result<ElectronicDocumentDto>.Success(ElectronicDocumentMapper.ToDto(document))
+            : await RunPipelineAsync(document, request, ct);
     }
 
     /// <summary>

@@ -18,6 +18,11 @@ Actualizado: 2026-10-06. Fuente de verdad de entrega: `STATUS.md`. Este archivo 
 
 ## Estado general
 
+### A9 implementado y validado (2026-10-08)
+- Commercial → ElectronicDocument recovery: job recurrente create-only, scopes frescos y unicidad por origen existente; sin pipeline para documentos existentes ni repetición comercial.
+- Gates PASS: PostgreSQL 19/19, guard de filtros 1/1, job 1/1, issuer 31/31, Architecture 143/143, architecture:check, API build y diff check.
+- Apto para declarar CLOSED. Sin migración, commit ni push. Detalle vigente: `STATUS.md`, sección A9.
+
 ERP en preparación final / piloto real.
 No desarrollo general.
 Prioridad: bugs reales, blockers de piloto y deuda estructural con impacto real.

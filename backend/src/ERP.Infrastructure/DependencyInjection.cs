@@ -202,6 +202,8 @@ public static class DependencyInjection
         services.AddSingleton<IDatabaseExceptionTranslator, PostgresDatabaseExceptionTranslator>();
         services.AddScoped<ERP.Application.Modules.Sales.Services.ISalesAuthorizationRetryReader,
             ERP.Infrastructure.Persistence.Repositories.Sales.SalesAuthorizationRetryReader>();
+        services.AddScoped<ERP.Application.Modules.Sales.Services.ISalesElectronicDocumentRecovery,
+            ERP.Infrastructure.Persistence.Repositories.Sales.SalesElectronicDocumentRecovery>();
         services.AddScoped<
             ERP.Application.MasterData.Reconciliation.IMasterDataReconciliationService,
             MasterData.Reconciliation.BusinessPartnerReconciliationService
@@ -420,6 +422,8 @@ public static class DependencyInjection
             ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentIssuer,
             ERP.Application.Modules.ElectronicDocuments.Services.ElectronicDocumentIssuer
         >();
+        services.AddScoped<ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentRegistration,
+            ERP.Application.Modules.ElectronicDocuments.Services.ElectronicDocumentIssuer>();
         // ADR-036 — gate SSOT de ciclo de vida del origen (resuelto por SourceModule; cada módulo
         // dueño registra su guard) y la única decisión de anulación del origen según el estado
         // electrónico. Sin guard registrado, un origen conserva el comportamiento v1.0.

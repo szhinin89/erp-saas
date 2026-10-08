@@ -1,5 +1,16 @@
 # Project Status
 
+## A9 — Commercial → ElectronicDocument recovery (2026-10-08)
+
+**Estado: IMPLEMENTADO y validado; apto para declarar CLOSED. Sin commit/push.** A1–A8 permanecen CLOSED.
+
+- Job recurrente `sales-electronic-document-recovery` cada minuto (con Hangfire habilitado): detecta SalesInvoice Authorized + snapshot Electronic + punto de emisión y número definitivo, sin ElectronicDocument por origen. Sin ventana de antigüedad ni dependencia de la request original.
+- Descubrimiento cross-tenant de identificadores; contexto Tenant/Company y scope nuevos por candidato. Relectura scoped y validación de Tenant + Company + Branch, estado y número antes del registro.
+- Entrada aditiva create-only `IElectronicDocumentRegistration.RegisterMissingAsync` en el issuer existente: crea Draft sin pipeline; cualquier existente, incluidos Draft/Failed, es no-op. El retry electrónico normal conserva ownership del procesamiento posterior y no cambia. Sin Authorize, secuencia ni efectos comerciales repetidos.
+- Unicidad existente `uq_electronic_document_source` como garantía final. El perdedor de una carrera descarta su tracker fallido y verifica el documento confirmado; no reanuda ni envía. Sin migración.
+- Validación: PostgreSQL 16 con migraciones completas **19/19 escenarios** (18 PASS en la corrida final y 1/1 multitenant tras corregir el fixture de operador de caja); guard de filtros **1/1**; job/scopes **1/1**; regresión issuer **31/31**; Architecture **143/143**; `architecture:check` PASS, 0 nuevas violaciones; API build PASS; `git diff --check` PASS.
+- Incluye crash tras commit/contexto nuevo, carreras forzadas en INSERT entre recuperadores y contra la request original, ejecuciones repetidas, existentes sin pipeline, scopes reales, exclusiones, cancelación después del descubrimiento y fallo previo al INSERT recuperable. Ningún BUG REAL adicional confirmado dentro de A9.
+
 ## A2 — Allow Sell Without Stock + Negative Inventory Costing (2026-10-06)
 
 **Estado: CLOSED. Cierre operativo aprobado; commit único autorizado, sin push.** A1 permanece CLOSED en `43cce57a9`.

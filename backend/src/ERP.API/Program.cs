@@ -386,6 +386,7 @@ if (hangfireEnabled)
     >();
     builder.Services.AddScoped<IMasterDataReconciliationJob, MasterDataReconciliationJob>();
     builder.Services.AddScoped<IElectronicDocumentRetryJob, ElectronicDocumentRetryJob>();
+    builder.Services.AddScoped<ISalesElectronicDocumentRecoveryJob, SalesElectronicDocumentRecoveryJob>();
     builder.Services.AddScoped<IRetentionElectronicRecoveryJob, RetentionElectronicRecoveryJob>();
     builder.Services.AddScoped<IExpireUserSessionsJob, ExpireUserSessionsJob>();
 }
@@ -905,6 +906,12 @@ if (hangfireEnabled)
 
     RecurringJob.AddOrUpdate<IElectronicDocumentRetryJob>(
         "electronic-document-retry",
+        x => x.ExecuteAsync(CancellationToken.None),
+        "* * * * *"
+    );
+
+    RecurringJob.AddOrUpdate<ISalesElectronicDocumentRecoveryJob>(
+        "sales-electronic-document-recovery",
         x => x.ExecuteAsync(CancellationToken.None),
         "* * * * *"
     );
